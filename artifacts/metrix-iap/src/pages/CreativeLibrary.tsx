@@ -1,11 +1,12 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import {
   Layers, TrendingUp, Activity, RefreshCw, ChevronDown, ChevronUp,
-  Flame, CheckCircle2, RotateCcw, AlertCircle,
+  Flame, CheckCircle2, RotateCcw, AlertCircle, FileText, ArrowRight,
 } from "lucide-react";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
-import { CREATIVE_CONCEPTS, CREATIVE_VARIABLES, ADS } from "@/lib/mock-data";
+import { CREATIVE_CONCEPTS, CREATIVE_VARIABLES, ADS, BRIEFS } from "@/lib/mock-data";
 import type { ConfidenceLabel, PerformanceTier, CreativeConcept } from "@/lib/types";
 
 // ─── Chip helpers ──────────────────────────────────────────────────────
@@ -99,6 +100,9 @@ function PerfBar({ index }: { index: number }) {
 
 function AngleRow({ concept, last }: { concept: CreativeConcept; last: boolean }) {
   const [open, setOpen] = useState(false);
+  const [, navigate] = useLocation();
+  const linkedBriefs = BRIEFS.filter(b => concept.related_briefs.includes(b.id));
+  const linkedAds = ADS.filter(a => concept.related_ads.includes(a.id));
   return (
     <div className={cn("border-t border-border/20", last && !open && "rounded-b-xl overflow-hidden")}>
       <button
@@ -169,6 +173,50 @@ function AngleRow({ concept, last }: { concept: CreativeConcept; last: boolean }
             <div className="text-[10px] text-muted-foreground mb-1">Primary Message</div>
             <p className="text-[11px] text-foreground font-medium">{concept.primary_message}</p>
           </div>
+
+          {/* Closed-loop linkage: source briefs + deployed ads */}
+          {(linkedBriefs.length > 0 || linkedAds.length > 0) && (
+            <div className="border-t border-border/20 pt-3 grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <div className="text-[9px] text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                  <FileText className="w-2.5 h-2.5" /> Source Briefs ({linkedBriefs.length})
+                </div>
+                {linkedBriefs.length === 0 ? (
+                  <p className="text-[10px] text-muted-foreground/50">None registered.</p>
+                ) : (
+                  linkedBriefs.map(b => (
+                    <button
+                      key={b.id}
+                      onClick={() => navigate(`/app/briefs/${b.id}`)}
+                      className="w-full flex items-center gap-1.5 text-left group"
+                    >
+                      <ArrowRight className="w-2.5 h-2.5 text-muted-foreground shrink-0" />
+                      <span className="text-[10px] text-muted-foreground group-hover:text-foreground truncate transition-colors">{b.title}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <div className="text-[9px] text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                  <Activity className="w-2.5 h-2.5" /> Deployed Ads ({linkedAds.length})
+                </div>
+                {linkedAds.length === 0 ? (
+                  <p className="text-[10px] text-muted-foreground/50">None deployed.</p>
+                ) : (
+                  <div className="flex flex-wrap gap-1">
+                    {linkedAds.slice(0, 6).map(a => (
+                      <span key={a.id} className="px-1.5 py-0.5 rounded border border-border/30 bg-muted/30 text-muted-foreground text-[9px] font-mono">
+                        {a.id} · P{a.tier}
+                      </span>
+                    ))}
+                    {linkedAds.length > 6 && (
+                      <span className="text-[9px] text-muted-foreground">+{linkedAds.length - 6}</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

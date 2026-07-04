@@ -1341,6 +1341,42 @@ function makeBrief(n: number) {
 
 export const BRIEFS: ReturnType<typeof makeBrief>[] = Array.from({ length: 12 }, (_, i) => makeBrief(i + 1));
 
+// ─── Closed-loop linkage ──────────────────────────────────────────────
+// Wire the back-references that make the analysis → strategy → brief →
+// asset → analysis loop legible in the UI. SAMPLE linkage — deterministic,
+// scoped by workspace, prefers a shared hook variable where one exists.
+(function linkClosedLoop() {
+  const conceptsByWs = new Map<string, CreativeConcept[]>();
+  for (const c of CREATIVE_CONCEPTS) {
+    const arr = conceptsByWs.get(c.workspace_id) ?? [];
+    arr.push(c);
+    conceptsByWs.set(c.workspace_id, arr);
+  }
+
+  // Concept ↔ Ad: every deployed ad registers under a library concept.
+  ADS.forEach((ad, i) => {
+    const pool = conceptsByWs.get(ad.workspace_id);
+    if (!pool || pool.length === 0) return;
+    const match =
+      pool.find(c => ad.variable_codes.includes(c.hook_variable)) ??
+      pool[i % pool.length];
+    ad.creative_concept_id = match.id;
+    if (!match.related_ads.includes(ad.id)) match.related_ads.push(ad.id);
+  });
+
+  // Concept ↔ Brief: brief generation registers concepts into the local
+  // IAP library. Register each brief on up to 2 concepts in its workspace.
+  BRIEFS.forEach((brief, i) => {
+    const pool = conceptsByWs.get(brief.workspace_id);
+    if (!pool || pool.length === 0) return;
+    const start = i % pool.length;
+    for (let k = 0; k < Math.min(2, pool.length); k++) {
+      const c = pool[(start + k) % pool.length];
+      if (!c.related_briefs.includes(brief.id)) c.related_briefs.push(brief.id);
+    }
+  });
+})();
+
 // ─── Reports (10) ─────────────────────────────────────────────────────
 
 export const REPORTS: Report[] = Array.from({ length: 10 }, (_, i) => {

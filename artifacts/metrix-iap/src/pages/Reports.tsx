@@ -170,7 +170,7 @@ export function Reports() {
           <div>
             <h1 className="text-xl font-bold text-foreground tracking-tight">Reports</h1>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {currentWorkspace.name} — {allReports.length} report{allReports.length !== 1 ? "s" : ""}
+              Client-ready deliverables curated from IAP analysis runs — {currentWorkspace.name} · {allReports.length} report{allReports.length !== 1 ? "s" : ""}
             </p>
           </div>
         </div>

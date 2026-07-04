@@ -1,0 +1,1 @@
+- [Metrix IAP closed-loop linkage](metrix-iap-closed-loop.md) — cross-entity back-refs (Ad/Concept/Brief) filled at gen time by linkClosedLoop() IIFE, not per-render.

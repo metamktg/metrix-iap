@@ -3,8 +3,9 @@ import { cn } from "@/lib/utils";
 import {
   ChevronLeft, FileText, Target, Eye, Zap, MessageSquare,
   Lightbulb, CheckCircle2, XCircle, BarChart3, Layers, AlertCircle,
+  ArrowRight, Activity,
 } from "lucide-react";
-import { BRIEFS, WORKSPACES, USERS, ANALYSIS_RUNS } from "@/lib/mock-data";
+import { BRIEFS, WORKSPACES, USERS, ANALYSIS_RUNS, CREATIVE_CONCEPTS, ADS } from "@/lib/mock-data";
 
 // ─── Status / funnel styling ───────────────────────────────────────────
 
@@ -63,6 +64,13 @@ export function BriefDetail() {
       </div>
     );
   }
+
+  // Local IAP library registration — concepts this brief registered, and the
+  // ads deployed from them (closes the strategy → asset → analysis loop).
+  const registeredConcepts = CREATIVE_CONCEPTS.filter(c => c.related_briefs.includes(brief.id));
+  const deployedAds = ADS.filter(
+    a => a.creative_concept_id && registeredConcepts.some(c => c.id === a.creative_concept_id)
+  );
 
   return (
     <div className="h-full overflow-y-auto">
@@ -247,6 +255,64 @@ export function BriefDetail() {
             <p className="text-xs text-muted-foreground leading-relaxed">{brief.production_notes}</p>
           </Section>
         </div>
+
+        {/* Creative Library Registration — closed-loop linkage */}
+        <Section icon={<Layers className="w-3.5 h-3.5" />} title="Creative Library Registration">
+          <div className="space-y-4">
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              Concepts from this brief are registered in the local IAP library under their
+              concept/cell naming convention. Deployed ads feed performance back into the next analysis run.
+            </p>
+
+            {registeredConcepts.length === 0 ? (
+              <p className="text-[11px] text-muted-foreground/60">
+                Not yet registered. Approve this brief to register its concepts in the library.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {registeredConcepts.map(c => {
+                  const ads = ADS.filter(a => a.creative_concept_id === c.id);
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => navigate("/app/creative-library")}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg border border-border/50 hover:border-border hover:bg-white/[0.02] text-left transition-all"
+                    >
+                      <span className="text-[10px] font-mono font-bold text-primary/80 shrink-0 w-10">{c.cell_id}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[11px] font-medium text-foreground truncate">{c.name}</div>
+                        <div className="text-[10px] text-muted-foreground flex items-center gap-1.5">
+                          <Activity className="w-2.5 h-2.5" /> {ads.length} deployed ad{ads.length !== 1 ? "s" : ""}
+                          <span className="text-muted-foreground/30">·</span>
+                          {c.recommended_action}
+                        </div>
+                      </div>
+                      <ArrowRight className="w-3 h-3 text-muted-foreground shrink-0" />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {deployedAds.length > 0 && (
+              <div className="border-t border-border/40 pt-3">
+                <div className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1.5">
+                  Deployed Assets ({deployedAds.length})
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {deployedAds.slice(0, 8).map(a => (
+                    <span key={a.id} className="px-1.5 py-0.5 rounded border border-border/40 bg-muted/30 text-muted-foreground text-[10px] font-mono">
+                      {a.id} · P{a.tier}
+                    </span>
+                  ))}
+                  {deployedAds.length > 8 && (
+                    <span className="px-1.5 py-0.5 text-muted-foreground text-[10px]">+{deployedAds.length - 8} more</span>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </Section>
 
         {/* Footer actions */}
         <div className="flex items-center gap-3 py-4 border-t border-border/40">

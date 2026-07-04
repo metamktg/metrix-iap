@@ -4,9 +4,9 @@ import { cn } from "@/lib/utils";
 import {
   Zap, ChevronLeft, ChevronDown, ChevronRight,
   CheckCircle2, AlertCircle, Clock, Target,
-  Activity, FileText, ArrowRight, User,
+  Activity, FileText, ArrowRight, User, Layers,
 } from "lucide-react";
-import { ANALYSIS_RUNS, WORKSPACES } from "@/lib/mock-data";
+import { ANALYSIS_RUNS, WORKSPACES, BRIEFS, REPORTS } from "@/lib/mock-data";
 import type { Finding, DecisionFeedItem, Recommendation, ConfidenceLabel, PerformanceTier } from "@/lib/types";
 
 // ─── Helpers ──────────────────────────────────────────────────────────
@@ -249,6 +249,10 @@ export function RunDetail() {
   const openFindings = run.findings.filter(f => f.is_open);
   const sq = run.signal_quality;
 
+  // Downstream outputs of this analysis — the closed loop.
+  const runReports = REPORTS.filter(r => r.run_id === run.id);
+  const runBriefs = BRIEFS.filter(b => b.run_id === run.id);
+
   const SQ_DIMENSIONS = [
     { key: "tracking_confidence", label: "Tracking Confidence", value: sq.tracking_confidence },
     { key: "conversion_volume_confidence", label: "Conversion Volume", value: sq.conversion_volume_confidence },
@@ -461,6 +465,71 @@ export function RunDetail() {
           )}
         </div>
 
+        {/* Downstream Outputs — the closed loop */}
+        {(runReports.length > 0 || runBriefs.length > 0) && (
+          <div className="bg-card border border-border/60 rounded-xl p-5 space-y-4">
+            <div className="flex items-center gap-2">
+              <ArrowRight className="w-3.5 h-3.5 text-primary" />
+              <span className="text-xs font-semibold text-foreground uppercase tracking-wide">Downstream Outputs</span>
+              <span className="text-[10px] text-muted-foreground ml-1">Reporting & strategy generated from this analysis</span>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+
+              {/* Reports — curated from the analysis layer */}
+              <div className="space-y-2">
+                <div className="text-[10px] text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                  <FileText className="w-3 h-3" /> Reports ({runReports.length})
+                </div>
+                {runReports.length === 0 ? (
+                  <p className="text-[11px] text-muted-foreground/50 px-1">No reports curated from this run yet.</p>
+                ) : (
+                  runReports.map(r => (
+                    <button
+                      key={r.id}
+                      onClick={() => navigate("/app/reports")}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg border border-border/50 hover:border-border hover:bg-white/[0.02] text-left transition-all"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[11px] font-medium text-foreground truncate">{r.title}</div>
+                        <div className="text-[10px] text-muted-foreground">
+                          {r.status}{r.client_ready ? " · Client-ready" : ""}
+                        </div>
+                      </div>
+                      <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" />
+                    </button>
+                  ))
+                )}
+              </div>
+
+              {/* Briefs — strategy formation output */}
+              <div className="space-y-2">
+                <div className="text-[10px] text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                  <Layers className="w-3 h-3" /> Creative Briefs ({runBriefs.length})
+                </div>
+                {runBriefs.length === 0 ? (
+                  <p className="text-[11px] text-muted-foreground/50 px-1">No briefs generated from this run yet.</p>
+                ) : (
+                  runBriefs.map(b => (
+                    <button
+                      key={b.id}
+                      onClick={() => navigate(`/app/briefs/${b.id}`)}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg border border-border/50 hover:border-border hover:bg-white/[0.02] text-left transition-all"
+                    >
+                      <Layers className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[11px] font-medium text-foreground truncate">{b.title}</div>
+                        <div className="text-[10px] text-muted-foreground">{b.status} · {b.funnel_stage}</div>
+                      </div>
+                      <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" />
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Action footer */}
         <div className="flex items-center gap-3 py-4 border-t border-border/40">
           <button
@@ -470,21 +539,19 @@ export function RunDetail() {
             <Zap className="w-3.5 h-3.5" />
             New Run
           </button>
-          <div
-            title="Brief generation will be available when the Claude skill is configured."
-            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border/30 text-xs font-medium text-muted-foreground/40 cursor-not-allowed select-none"
-          >
-            <FileText className="w-3.5 h-3.5" />
-            Generate Brief
-            <span className="text-[9px] border border-border/30 px-1 py-0.5 rounded font-mono opacity-60">Coming soon</span>
-          </div>
           <button
-            disabled
-            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border/40 text-xs font-medium text-muted-foreground cursor-not-allowed opacity-50"
+            onClick={() => navigate(runBriefs.length > 0 ? `/app/briefs/${runBriefs[0].id}` : "/app/briefs")}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border/60 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-border transition-all"
+          >
+            <Layers className="w-3.5 h-3.5" />
+            {runBriefs.length > 0 ? `View Brief${runBriefs.length > 1 ? "s" : ""} (${runBriefs.length})` : "Generate Brief"}
+          </button>
+          <button
+            onClick={() => navigate("/app/reports")}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border/60 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-border transition-all"
           >
             <FileText className="w-3.5 h-3.5" />
-            Export Report
-            <span className="text-[9px] border border-border/40 px-1 py-0.5 rounded font-mono">Phase 4</span>
+            {runReports.length > 0 ? `View Report${runReports.length > 1 ? "s" : ""} (${runReports.length})` : "Build Report"}
           </button>
         </div>
 
