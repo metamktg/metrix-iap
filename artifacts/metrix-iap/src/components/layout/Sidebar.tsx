@@ -160,14 +160,21 @@ export function Sidebar() {
       style={{ background: "hsl(222 61% 5%)" }}
     >
       {/* Logo */}
-      <div className="flex items-center gap-2 px-4 py-4 border-b border-border/40">
-        <div className="w-6 h-6 rounded bg-primary flex items-center justify-center">
-          <Zap className="w-3.5 h-3.5 text-white fill-white" />
+      <div className="px-4 py-4 border-b border-border/40">
+        <div className="flex items-center gap-2">
+          <img
+            src={`${import.meta.env.BASE_URL}metrix-logo.png`}
+            alt="Metrix"
+            className="w-6 h-6 object-contain shrink-0"
+          />
+          <span className="text-sm font-bold tracking-tight text-foreground">METRIX</span>
+          <span className="text-[10px] font-mono text-muted-foreground border border-border/60 px-1 py-0.5 rounded leading-none">
+            IAP
+          </span>
         </div>
-        <span className="text-sm font-bold tracking-tight text-foreground">METRIX</span>
-        <span className="text-[10px] font-mono text-muted-foreground border border-border/60 px-1 py-0.5 rounded leading-none">
-          IAP
-        </span>
+        <p className="text-[10px] text-muted-foreground/70 mt-1.5 leading-tight">
+          Not more data. Better decisions.
+        </p>
       </div>
 
       {/* Workspace switcher */}
