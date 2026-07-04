@@ -12,6 +12,10 @@ import { BriefEngine } from "@/pages/BriefEngine";
 import { BriefDetail } from "@/pages/BriefDetail";
 import { CreativeLibrary } from "@/pages/CreativeLibrary";
 import { Reports } from "@/pages/Reports";
+import { ImportCenter } from "@/pages/ImportCenter";
+import { BenchmarkMemoryPage } from "@/pages/BenchmarkMemory";
+import { ChangeWatch } from "@/pages/ChangeWatch";
+import { Settings } from "@/pages/Settings";
 
 // ─── Stub page — used for pages built in Phase 3+ ─────────────────────
 function StubPage({ name, phase = "3" }: { name: string; phase?: string }) {
@@ -53,16 +57,16 @@ function Router() {
       <Route path="/app/workspaces/:workspaceId/imports" component={() => <StubPage name="Import Center" />} />
 
       {/* Global routes */}
-      <Route path="/app/imports" component={() => <StubPage name="Import Center" />} />
+      <Route path="/app/imports" component={ImportCenter} />
       <Route path="/app/iap/new" component={IAPRunBuilder} />
       <Route path="/app/iap/runs/:runId" component={RunDetail} />
       <Route path="/app/creative-library" component={CreativeLibrary} />
       <Route path="/app/briefs" component={BriefEngine} />
       <Route path="/app/briefs/:briefId" component={BriefDetail} />
       <Route path="/app/reports" component={Reports} />
-      <Route path="/app/benchmarks" component={() => <StubPage name="Benchmark Memory" phase="5" />} />
-      <Route path="/app/change-watch" component={() => <StubPage name="Change Watch" phase="5" />} />
-      <Route path="/app/settings" component={() => <StubPage name="Settings" phase="4" />} />
+      <Route path="/app/benchmarks" component={BenchmarkMemoryPage} />
+      <Route path="/app/change-watch" component={ChangeWatch} />
+      <Route path="/app/settings" component={Settings} />
       <Route component={() => <StubPage name="Page Not Found" />} />
     </Switch>
   );
