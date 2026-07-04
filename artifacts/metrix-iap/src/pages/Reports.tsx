@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import {
   FileText, ChevronDown, ChevronUp, ChevronRight,
-  CheckCircle2, User, Calendar, Zap,
+  CheckCircle2, User, Calendar, Zap, Share2, Check,
 } from "lucide-react";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { REPORTS, WORKSPACES, USERS, ANALYSIS_RUNS } from "@/lib/mock-data";
@@ -22,6 +22,7 @@ const STATUS_STYLES: Record<string, string> = {
 function ReportCard({ report }: { report: typeof REPORTS[0] }) {
   const [, navigate] = useLocation();
   const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
   const ws = WORKSPACES.find(w => w.id === report.workspace_id);
   const author = USERS.find(u => u.id === report.generated_by);
   const run = ANALYSIS_RUNS.find(r => r.id === report.run_id);
@@ -122,19 +123,27 @@ function ReportCard({ report }: { report: typeof REPORTS[0] }) {
           {/* Footer actions */}
           <div className="flex items-center gap-2 pt-2 border-t border-border/30">
             <button
-              disabled
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/40 text-[11px] text-muted-foreground cursor-not-allowed opacity-50"
+              onClick={() => window.print()}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/60 text-[11px] text-muted-foreground hover:text-foreground hover:border-border transition-all"
             >
               <FileText className="w-3 h-3" />
               Export PDF
-              <span className="text-[9px] border border-border/30 px-1 py-0.5 rounded font-mono">Phase 5</span>
             </button>
             <button
-              disabled
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/40 text-[11px] text-muted-foreground cursor-not-allowed opacity-50"
+              onClick={() => {
+                const summary = `${report.title}\n${ws?.name ?? ""} · ${report.status}\n\n${report.executive_summary}`;
+                const done = () => {
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                };
+                const p = navigator.clipboard?.writeText(summary);
+                if (p) p.then(done).catch(() => {});
+                else done();
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/60 text-[11px] text-muted-foreground hover:text-foreground hover:border-border transition-all"
             >
-              Share with Client
-              <span className="text-[9px] border border-border/30 px-1 py-0.5 rounded font-mono">Phase 5</span>
+              {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Share2 className="w-3 h-3" />}
+              {copied ? "Copied to clipboard" : "Share with Client"}
             </button>
           </div>
         </div>

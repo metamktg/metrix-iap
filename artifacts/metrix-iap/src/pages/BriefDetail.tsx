@@ -333,12 +333,11 @@ export function BriefDetail() {
             </button>
           )}
           <button
-            disabled
-            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border/40 text-xs font-medium text-muted-foreground cursor-not-allowed opacity-50 ml-auto"
+            onClick={() => window.print()}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border/60 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-border transition-all ml-auto"
           >
             <FileText className="w-3.5 h-3.5" />
             Export Brief PDF
-            <span className="text-[9px] border border-border/40 px-1 py-0.5 rounded font-mono">Phase 5</span>
           </button>
         </div>
       </div>

@@ -13,6 +13,8 @@ import { BriefDetail } from "@/pages/BriefDetail";
 import { CreativeLibrary } from "@/pages/CreativeLibrary";
 import { Reports } from "@/pages/Reports";
 import { ImportCenter } from "@/pages/ImportCenter";
+import { AccountIntelligence } from "@/pages/AccountIntelligence";
+import { AccountDetail } from "@/pages/AccountDetail";
 import { BenchmarkMemoryPage } from "@/pages/BenchmarkMemory";
 import { ChangeWatch } from "@/pages/ChangeWatch";
 import { Settings } from "@/pages/Settings";
@@ -52,9 +54,9 @@ function Router() {
 
       {/* Workspace routes — AppShell handles onboarding gate per workspace */}
       <Route path="/app/workspaces/:workspaceId" component={WorkspaceHome} />
-      <Route path="/app/workspaces/:workspaceId/ad-accounts" component={() => <StubPage name="Ad Accounts" />} />
-      <Route path="/app/workspaces/:workspaceId/ad-accounts/:adAccountId" component={() => <StubPage name="Account Intelligence" />} />
-      <Route path="/app/workspaces/:workspaceId/imports" component={() => <StubPage name="Import Center" />} />
+      <Route path="/app/workspaces/:workspaceId/ad-accounts" component={AccountIntelligence} />
+      <Route path="/app/workspaces/:workspaceId/ad-accounts/:adAccountId" component={AccountDetail} />
+      <Route path="/app/workspaces/:workspaceId/imports" component={ImportCenter} />
 
       {/* Global routes */}
       <Route path="/app/imports" component={ImportCenter} />
