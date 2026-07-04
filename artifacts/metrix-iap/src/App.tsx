@@ -1,25 +1,25 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
+import { AppShell } from "@/components/layout/AppShell";
+import { MasterCommandCenter } from "@/pages/MasterCommandCenter";
+import { WorkspaceHome } from "@/pages/WorkspaceHome";
 
-// Phase 1 complete — shell and pages coming in Phase 2+
-// Placeholder route components rendered until Phase 2 shell is built
-function ComingSoon({ name }: { name: string }) {
+// ─── Stub page — used for pages built in Phase 3+ ─────────────────────
+function StubPage({ name, phase = "3" }: { name: string; phase?: string }) {
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-background">
-      <div className="text-center space-y-3">
-        <div className="text-xs font-mono text-metrix-cyan uppercase tracking-widest mb-2">
-          METRIX IAP — Phase 1 Complete
+    <div className="flex-1 flex items-center justify-center py-24">
+      <div className="text-center space-y-3 max-w-sm">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-border/60 text-xs text-muted-foreground font-mono mb-2">
+          Phase {phase}
         </div>
-        <h1 className="text-2xl font-bold text-foreground">{name}</h1>
-        <p className="text-sm text-muted-foreground">
-          Foundation layer built. Shell + screens coming in Phase 2.
+        <h2 className="text-lg font-bold text-foreground">{name}</h2>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          This screen is scheduled for Phase {phase} of the prototype build.
+          Navigate to the Bookster workspace to explore available data.
         </p>
-        <div className="mt-6 text-xs text-muted-foreground font-mono">
-          Types ✓ · Mock Data ✓ · Supabase Stub ✓ · Scoring Utils ✓ · Workspace Context ✓
-        </div>
       </div>
     </div>
   );
@@ -28,7 +28,7 @@ function ComingSoon({ name }: { name: string }) {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: Infinity, // mock data never goes stale
+      staleTime: Infinity,
       retry: false,
     },
   },
@@ -37,22 +37,27 @@ const queryClient = new QueryClient({
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={() => <ComingSoon name="Master Command Center" />} />
-      <Route path="/app" component={() => <ComingSoon name="Master Command Center" />} />
-      <Route path="/app/workspaces/:workspaceId" component={() => <ComingSoon name="Workspace Home" />} />
-      <Route path="/app/workspaces/:workspaceId/ad-accounts" component={() => <ComingSoon name="Ad Accounts" />} />
-      <Route path="/app/workspaces/:workspaceId/ad-accounts/:adAccountId" component={() => <ComingSoon name="Account Intelligence" />} />
-      <Route path="/app/imports" component={() => <ComingSoon name="Import Center" />} />
-      <Route path="/app/iap/new" component={() => <ComingSoon name="IAP Run Builder" />} />
-      <Route path="/app/iap/runs/:runId" component={() => <ComingSoon name="IAP Analysis Run" />} />
-      <Route path="/app/creative-library" component={() => <ComingSoon name="Creative Intelligence Library" />} />
-      <Route path="/app/briefs" component={() => <ComingSoon name="Brief Engine" />} />
-      <Route path="/app/briefs/:briefId" component={() => <ComingSoon name="Brief Detail" />} />
-      <Route path="/app/reports" component={() => <ComingSoon name="Reports" />} />
-      <Route path="/app/benchmarks" component={() => <ComingSoon name="Benchmark Memory — Coming Soon" />} />
-      <Route path="/app/change-watch" component={() => <ComingSoon name="Change Watch — Coming Soon" />} />
-      <Route path="/app/settings" component={() => <ComingSoon name="Settings" />} />
-      <Route component={() => <ComingSoon name="Not Found" />} />
+      {/* Master Command Center — always visible, no workspace required */}
+      <Route path="/" component={MasterCommandCenter} />
+
+      {/* Workspace routes — AppShell handles onboarding gate per workspace */}
+      <Route path="/app/workspaces/:workspaceId" component={WorkspaceHome} />
+      <Route path="/app/workspaces/:workspaceId/ad-accounts" component={() => <StubPage name="Ad Accounts" />} />
+      <Route path="/app/workspaces/:workspaceId/ad-accounts/:adAccountId" component={() => <StubPage name="Account Intelligence" />} />
+      <Route path="/app/workspaces/:workspaceId/imports" component={() => <StubPage name="Import Center" />} />
+
+      {/* Global routes */}
+      <Route path="/app/imports" component={() => <StubPage name="Import Center" />} />
+      <Route path="/app/iap/new" component={() => <StubPage name="IAP Run Builder" phase="3" />} />
+      <Route path="/app/iap/runs/:runId" component={() => <StubPage name="IAP Analysis Run" phase="3" />} />
+      <Route path="/app/creative-library" component={() => <StubPage name="Creative Intelligence Library" phase="4" />} />
+      <Route path="/app/briefs" component={() => <StubPage name="Brief Engine" phase="4" />} />
+      <Route path="/app/briefs/:briefId" component={() => <StubPage name="Brief Detail" phase="4" />} />
+      <Route path="/app/reports" component={() => <StubPage name="Reports" phase="4" />} />
+      <Route path="/app/benchmarks" component={() => <StubPage name="Benchmark Memory" phase="5" />} />
+      <Route path="/app/change-watch" component={() => <StubPage name="Change Watch" phase="5" />} />
+      <Route path="/app/settings" component={() => <StubPage name="Settings" phase="4" />} />
+      <Route component={() => <StubPage name="Page Not Found" />} />
     </Switch>
   );
 }
@@ -63,7 +68,9 @@ function App() {
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
           <WorkspaceProvider>
-            <Router />
+            <AppShell>
+              <Router />
+            </AppShell>
           </WorkspaceProvider>
         </WouterRouter>
         <Toaster />
