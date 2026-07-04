@@ -1,0 +1,240 @@
+0. Scope statement — read before building anything
+
+This build produces a fully mocked, fully typed frontend prototype. No live backend calls, no live Supabase project, no live LLM analysis calls, no live Meta API. Every diagnosis, score, and decision in this prototype is generated from static/seeded mock data, not computed at runtime. Structure the code so a real backend and a real analysis engine can be dropped in later without touching component code. lib/supabase.ts is a typed stub client only, clearly commented // TODO: real Supabase project not connected this pass.
+
+Do not try to provision Supabase tables. Do not try to call any external AI API to generate the "diagnosis" text. Write it as realistic static content instead.
+
+1. What Metrix IAP actually is
+
+Metrix IAP is not a generic analytics dashboard concept, it's a specific internal methodology already in production use at Meta Marketing Agency, running on a fixed pipeline:
+
+Raw Meta Ads exports
+→ DATA BUNDLE PREP        (normalize + validate two paired CSV exports into one bundle)
+→ ANALYSIS CORE           (11-dimension read: buyer-intent funnel, traffic quality,
+                            audience psychology, creative DNA, messaging themes,
+                            cross-dimensional patterns, variable extraction,
+                            performance tiers, failure patterns, confidence scoring,
+                            winning variable stack)
+→ REPORT SUMMARY          (client-ready document)
+→ STRATEGY MAP            (ICP registry, message pillars, scaling playbook)
+→ BRIEF BUILDER           (production-ready creative briefs)
+→ [optional] MST path     (Matrix Sprint Test: creative-scan validation →
+                            post-launch test-engine read of rows/columns/diagonals)
+→ OPTIMIZATION LOOP       (re-weights variables, sets budget allocation, feeds
+                            back into Strategy Map and Brief Builder)
+
+Build the UI around this exact pipeline, not a generic "ingest/label/diagnose" restatement of it. Every screen in this prototype is a window into one stage of that pipeline.
+
+Real taxonomy to use throughout (do not invent substitutes)
+
+Confidence labels (every insight, every decision card carries exactly one):
+
+
+high — >100 conversions OR >$1,000 spend with a consistent pattern
+medium — directional, below the high threshold
+validation_required — promising signal, insufficient spend or time
+insufficient — cannot support action
+
+
+Performance tiers (every creative/ad is classified into exactly one):
+
+
+Tier 1 — Scale Winners (high ROAS + strong buying intent + efficient acquisition)
+Tier 2 — Optimize Candidates (high intent with a bottleneck, or solid performance with iteration potential)
+Tier 3 — Test / Pivot (mixed signals, needs controlled retest)
+Tier 4 — Eliminate (poor performance across multiple metrics, clear failure pattern)
+
+
+Optimization/budget allocation bands (Decision Feed and Sprint Matrix should reference these, not invented percentages):
+
+
+Critical Scale — 60% budget band, +20% lift vs baseline
+Scale — 25% band, +10–19% lift
+Optimize — 10% band, 0–9% performance
+Validate — 5% band, new/unproven
+Retire — −20% or worse
+
+
+Decision Feed action verbs (product-facing, keep these, they're the human-readable layer on top of the tiers above): Scale, Hold, Isolate, Kill, Rebuild, Retest, Brief Next Sprint. Every decision card must tag its underlying tier + confidence label alongside the action verb, so the UI-friendly verb is always traceable to the real classification system underneath it. Don't let these float free of each other.
+
+Variable code families (reference in Creative Signal tab, don't invent new ones): CN_ concept, FW_ framework/angle, HK_ hook, TN_ tone, CTA_ call-to-action. Show these as short badges next to creative names (e.g. HK_ProofFirst, FW_ProblemSolution), not as prose.
+
+ICP profile schema (Strategy-adjacent fields, use in Account Intelligence and Workspace Home wherever an ICP appears): profile_id, profile_name, demographic_foundation, psychographic_profile, behavioral_signals, funnel_entry_point, performance_data, message_resonance, strategic_recommendation, confidence_level.
+
+MST matrix logic (Sprint Matrix tab): a matrix test has rows (cross-avatar variable signals), columns (avatar/ICP-specific patterns), and diagonals (maximum variable isolation). Every tested variable resolves to one of: universal_winner, avatar_specific, underperformer, neutral, insufficient_data.
+
+2. Build order — checkpoint after each phase, do not generate all phases in one pass
+
+Phase 1 — Foundation
+
+
+lib/types.ts: full type system (entity list in section 6)
+lib/mock/generate.ts: a seed generator, not hand-typed literals. Write small template pools (hooks, angles, offers, ICPs) and combine them programmatically to hit the volumes in section 7.
+lib/mock-data.ts: exports the generated data, consumed by pages
+lib/supabase.ts: typed stub client per the scope statement
+Workspace context: URL-driven (/app/workspaces/[workspaceId]/... is the source of truth), wrapped in a React context that exposes currentWorkspace to the whole app tree. One source of truth, not two.
+
+
+Phase 2 — Shell
+
+
+components/layout/workspace-switcher.tsx
+components/layout/app-sidebar.tsx (grouped nav per section 4)
+components/layout/topbar.tsx (global search via cmdk, notifications, account menu)
+loading.tsx / error.tsx per route segment under /app
+
+
+Phase 3 — Core value screens, full fidelity, this is what gets demoed
+
+
+Master Command Center (/app)
+Workspace Home (/app/workspaces/[workspaceId])
+IAP Analysis Run (/app/iap/runs/[runId]) — Overview and Decision Feed tabs first, then the rest of the tabs
+
+
+Phase 4 — Supporting screens, full fidelity, secondary priority
+Ad Accounts, Account Intelligence, Import Center, IAP Run Builder, Creative Intelligence Library, Brief Engine, Reports
+
+Phase 5 — Roadmap-stub fidelity, mocked and clearly labeled "coming soon" where real logic would be needed
+Benchmark Memory, Change Watch, Settings
+
+Stop and confirm with me between phases.
+
+3. Stack
+
+Next.js, TypeScript, Tailwind, shadcn/ui, cmdk for the command palette, papaparse for CSV parsing in the Import Center. No external AI SDK calls this pass.
+
+4. Navigation IA (grouped sidebar, not a flat 13-item list)
+
+
+Home: Master Command Center, Workspace Home
+Analysis: Ad Accounts, Account Intelligence, Import Center, IAP Run Builder, IAP Analysis Run
+Creative: Creative Intelligence Library, Brief Engine
+Intelligence (roadmap-stub): Benchmark Memory, Change Watch
+Reports: Reports
+Admin: Settings
+
+
+5. Workspace model — six real accounts, not generic placeholders
+
+Master user switches between these exact six workspaces. Each carries its own ad accounts, imports, analysis runs, reports, briefs, decision history, team, and permission state, and each should feel like a distinct real account, not a copy-pasted template with a different name swapped in. Use the fingerprints below to seed each workspace's mock data so it reads as authentic:
+
+Meta Marketing Agency (type: Agency) — the master/internal agency workspace. Team roster and cross-account rollups live here.
+
+SKOV Pet (type: Brand, account: Natural TeaSense Inc., skovpet.com) — dog supplement/treat brand. K9 Growth Accelerator engagement. Meta creative themes: World Cup tie-in and slow-feeder-bowl campaigns. Google Ads is PMax configured strictly as a retargeting/brand-protection layer, not cold acquisition, make sure that distinction shows up in the Ad Accounts table (label it "PMax — Retargeting Only," not a generic PMax badge). Brand voice reference: Dog Standards communications strategy. Contacts: Flora Yao, Ginny Mu.
+
+IMCO Wheels (type: Client, account: IMCO Enterprise Inc.) — Miami truck/SUV customization shop. Bilingual EN/ES Meta campaign, WhatsApp-conversion objective, not purchase/lead objective, the funnel ends in a WhatsApp chat, not a checkout. Seed campaign names and ad copy fields with EN/ES pairs to make that bilingual structure visible in the Ads tab.
+
+King of Violence (type: Client, kingofviolence.com) — Chuck Liddell's combat sports apparel brand, fighter partners Justin Gaethje and Chris Camozzi. Shopify-based CRO account, not pure media buying, so Account Intelligence for this workspace should surface CRO-flavored recommendations (hero copy, cart progress bar, exit-intent) alongside Meta performance, not just ad-level decisions. Seed a recent ROAS improvement arc (roughly 1.32x → 1.86x over a recent window) as the account's dominant recent signal. Brand voice is deadpan, understated, not hype-y, keep any generated ad copy or creative names in that register, not generic fitness-apparel enthusiasm. Status should read as "Watch" or "Needs Action," not "Healthy," this account has an active retention/at-risk situation in reality, that tension should be visible in the workspace health summary.
+
+Bookster (type: Client, Bookster.ai, contact Jan Kostadinov) — AI book-summary app, lead/trial-gen funnel, not ecommerce. This is the most data-rich real fingerprint available, use it directly:
+
+
+Registration step was moved from first to last (pre-paywall). Seed a before/after pair: cost per trial $575.86 → $258.34, reg-to-trial rate 8.3% → 22.2%, with Android as the primary driver of the gain. This belongs in Account Intelligence as a "What changed" finding with confidence: high.
+A pixel/CAPI tracking issue is the diagnosed root cause of a mid-cycle performance drop, seed this as an open, unresolved finding, not a closed one.
+Creative testing: a BYOC (bring-your-own-content) upload-flow angle should appear as a Tier 1 or Tier 2 candidate in the Ads tab, tagged with a relevant HK_ code.
+Objective is lead-gen/registration, not purchase, so this workspace's fact tables should use Leads and Registrations as the primary conversion column, not Purchases, and CPA should read as cost-per-trial, not cost-per-purchase.
+
+
+Metrix Internal (type: Internal) — the product team's own workspace, used for dogfooding and QA. Lower spend volumes, mostly Validate-tier and insufficient_data entries, since this is a sandbox account, not a live client. This is a good place to seed most of the validation_required and insufficient confidence-label examples so the Decision Feed shows the full range of confidence states somewhere in the app.
+
+6. Data architecture
+
+Create TypeScript types and generated mock data for: users, organizations, workspaces, workspace_members, roles, clients, brands, ad_accounts, imports, import_files, column_mappings, campaigns, ad_sets, ads, creative_assets, creative_concepts, creative_variables, icp_profiles, fact_ad_insights_daily, fact_breakdown_demographic_text, fact_breakdown_device_placement_platform, analysis_runs, signal_quality_scores, findings, recommendations, decision_feed_items, mst_matrices, mst_matrix_cells, sprint_matrices, briefs, reports, benchmark_memory, change_events, audit_logs, prompt_versions, model_runs.
+
+decision_feed_items must include: decision_type (Scale/Hold/Isolate/Kill/Rebuild/Retest/Brief Next Sprint), tier (1-4), confidence_label, evidence, supporting_metric, why_it_matters, action, risk_if_ignored, owner, status (Open/Accepted/Rejected/In Progress/Completed/Needs Review).
+
+icp_profiles must match the real schema exactly: profile_id, profile_name, demographic_foundation, psychographic_profile, behavioral_signals, funnel_entry_point, performance_data, message_resonance, strategic_recommendation, confidence_level.
+
+Create these files:
+
+
+lib/types.ts
+lib/mock/generate.ts
+lib/mock-data.ts
+lib/supabase.ts
+lib/utils/metrix-scoring.ts
+lib/utils/import-validation.ts
+components/metrix/
+components/layout/workspace-switcher.tsx
+components/layout/app-sidebar.tsx
+components/layout/topbar.tsx
+
+
+7. Mock data volumes
+
+1 master organization, 6 workspaces (fingerprinted per section 5), 9 users, 8 ad accounts, 12 imports, 12 analysis runs, 30 campaigns, 60 ads, 45 creative concepts, 40 recommendations, 12 briefs, 10 reports, 20 benchmark records, 15 change-watch events, at least 8 ICP profiles distributed across the client workspaces, at least 3 MST matrices (KOV and Bookster are the most realistic candidates for a matrix test given their creative-testing activity).
+
+8. Routes and page specs
+
+Keep the full route list and per-page field lists from the original spec, unchanged in structure, updated in taxonomy per section 1:
+
+/app — Master Command Center: workspace switcher, global search, notification center, KPI cards (Workspaces, Active Ad Accounts, Open IAP Runs, Priority Decisions, Spend Analyzed, Briefs Generated), cross-workspace "Needs Attention" feed, recent runs/imports/briefs/reports, global decision feed, CTAs (Start New IAP Run, Upload Meta Export, Generate Brief).
+
+/app/workspaces/[workspaceId] — Workspace Home: workspace name/type, health summary, active ad accounts, latest diagnosis, signal quality score, creative learning velocity, Priority Read, Decision Feed, latest imports/briefs/reports, team members, action buttons.
+
+/app/workspaces/[workspaceId]/ad-accounts — Ad Accounts table: platform badge, status (Connected/Manual CSV Mode/Needs Attention/API Sync Coming Soon), last import/analysis date, spend analyzed, data quality score, open recommendations.
+
+/app/workspaces/[workspaceId]/ad-accounts/[adAccountId] — Account Intelligence: overview, Priority Read, Signal Quality, Decision Feed, Creative Signal, Campaign Intelligence, Segment Intelligence, Recommendations, Sprint Matrix, Reports, Briefs, Learning Memory. Must answer: what matters right now, what changed, what's working, why, what's next, what to brief next.
+
+/app/imports — Import Center, scoped to the real Meta pivot-export workflow, not a generic uploader. Supports exactly two paired CSV types per import: (1) Demographic + Text breakdown, (2) Device + Placement + Platform breakdown, same date range, same core metric set. Column mapping is a review-and-confirm step against hardcoded expected headers for these two known export types, not a general fuzzy-match inference engine, flag anything outside the expected set as "Needs Mapping." UI: drag-and-drop, file-pair detection, mapping preview, validation status, missing-column/duplicate/date-mismatch/low-sample-size/invalid-totals warnings, ready-to-process state, import history table. Statuses: Uploaded, Validating, Needs Mapping, Warning, Ready, Processed, Failed.
+
+/app/iap/new — IAP Run Builder, 6-step flow: workspace → ad account → import files/date range → objective → analysis depth → confirm. Objectives: Purchase volume, CPA reduction, ROAS improvement, Lead quality, Creative fatigue diagnosis, Creative testing read, Scale readiness, Account audit, Next sprint planning, Client reporting. Depths: Fast Read, Full IAP Analysis, Creative Sprint Analysis, Executive Report, Investor/Demo Mode.
+
+/app/iap/runs/[runId] — IAP Analysis Run. Header: workspace, ad account, date range, run status, confidence score. Sticky Priority Read panel. Tabs: Overview, Signal Quality, Campaigns, Ad Sets, Ads, Creative Signal, Segments, Decision Feed, Sprint Matrix, Report Preview, Run Memory.
+
+
+Overview: executive diagnosis, what matters now, highest-confidence findings, primary constraint, primary opportunity, recommended next action, risk if ignored.
+Signal Quality: score across tracking confidence, conversion volume confidence, spend sufficiency, creative diversity, learning stability, funnel consistency, segment clarity, data cleanliness, date range reliability, breakdown usefulness.
+Campaigns/Ad Sets/Ads tabs: tables per the original field lists, with tier and confidence-label columns added.
+Creative Signal: winning/weak hooks, strongest/weak offers, winning formats, fatigued concepts, under-tested angles, proof gaps, audience-message mismatch, funnel-stage mismatch, creative volume sufficiency, creative diversity score. Show CN_/FW_/HK_/TN_/CTA_ code badges per section 1.
+Segments: age/gender, placement, device, platform, text-message performance, high-signal vs muddy segments.
+Decision Feed: prioritized decision cards per the decision_feed_items schema in section 6. Use the real example decision language from the original brief as a style reference (e.g. "Scale the strongest UGC proof-led concept, but only after isolating the segment carrying the result").
+Sprint Matrix: MST-flavored per section 1, rows/columns/diagonals, variable classification, concept/hook/angle/format/funnel-stage/hypothesis/budget-priority/success-metric/confidence/production-notes.
+Report Preview: Executive Summary, What Happened, What It Means, What To Do Next, Creative Learnings, Budget Decisions, Next Sprint, Appendix.
+Run Memory: import source files, prompt version, analysis version, decisions generated/accepted/rejected, notes, run comparison, audit trail.
+
+
+/app/creative-library — Creative Intelligence Library: concept cards with descriptive labels ("Founder-led proof hook for skeptical buyers," never "Concept 04"), taxonomy (hooks/angles/offers/formats/proof/visual system), performance fingerprint, fatigue state, account fit, winning segments, related ads/briefs/decisions.
+
+/app/briefs and /app/briefs/[briefId] — Brief Engine: list view (status, workspace, source run, objective, owner, date, export action) and detail view (diagnosis, audience insight, winning signal, messaging direction, creative concepts, hook options, offer framing, proof requirements, visual direction, format guidance, funnel stage, test matrix, production notes, do-not-do section, success metric, export).
+
+/app/reports — Reports: list with workspace, account, date generated, source run, status, client-ready toggle, export action, preview.
+
+/app/benchmarks (roadmap-stub) — Benchmark Memory: account/concept/hook/offer/placement benchmarks, historical CPA/ROAS ranges, fatigue thresholds, previous winners/false-positives/rejected recommendations. Make the "moat is structured learning, not surface analytics" framing explicit in the copy.
+
+/app/change-watch (roadmap-stub) — Change Watch: campaign/creative/budget/status/name/tracking change log, date detected, source, potential impact, related performance shift, audit detail.
+
+/app/settings — user/workspace settings, team, roles and permissions (Master Admin, Workspace Admin, Strategist, Media Buyer, Creative Strategist, Client Viewer, Read Only), connected accounts, import settings, prompt versions, data retention, billing placeholder, API sync placeholder, schema preview.
+
+9. Design system
+
+Dark premium interface. Deep navy/near-black background, white/off-white type, electric blue accents, amber/gold for priority states, red reserved for true risk/critical only. Subtle card borders, dense but readable, decision-first hierarchy, Priority Read before charts. Tables, cards, tabs, badges, scorecards, status chips. No gradients, no illustrations, no generic analytics-dashboard look. Desktop-first, this is a demo tool, don't spend build budget on mobile breakpoints this pass. King of Violence workspace specifically should read deadpan and understated in any generated copy, not hype-driven, that's a real brand-voice constraint, not a generic style note.
+
+10. Do not
+
+
+Provision or connect a real Supabase project
+Build a general-purpose CSV column auto-mapper
+Call any external AI API to generate diagnosis or decision text
+Imply any confidence score or decision came from a live model run
+Promise guaranteed ROAS lift or claim live Meta API sync
+Position this as a replacement for Meta Ads Manager
+Call it a dashboard
+Build all 13 routes to equal fidelity in one pass, follow the phase priority in section 2
+Genericize the six workspaces into interchangeable templates, each one has a real fingerprint in section 5, use it
+
+
+11. Acceptance criteria
+
+
+App opens to Master Command Center, workspace switching works end to end and visibly changes every downstream screen
+Phase 3 screens are fully built and demo-ready before Phase 4/5 are touched
+Decision Feed cards show decision verb + tier + confidence label together, never just one
+Bookster workspace surfaces the real before/after registration-flow finding as a headline "what changed" item
+KOV workspace shows an at-risk/Watch status and CRO-flavored recommendations, not just ad metrics
+SKOV Pet's Google Ads account is clearly labeled as retargeting-only PMax, not cold-acquisition PMax
+IMCO Wheels shows bilingual EN/ES campaign structure and a WhatsApp-conversion objective, not a purchase objective
+Import Center reflects the real two-file Meta pivot-export structure
+Mock data is generated programmatically, not hand-typed, and clearly labeled demo/sample wherever performance claims appear
+Backend types are structured so Supabase can be wired in later without a rebuild

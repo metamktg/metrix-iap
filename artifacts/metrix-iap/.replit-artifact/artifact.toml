@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Metrix IAP"
+version = "1.0.0"
+id = "artifacts/metrix-iap"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19673
+
+[services.development]
+run = "pnpm --filter @workspace/metrix-iap run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/metrix-iap", "run", "build" ]
+publicDir = "artifacts/metrix-iap/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19673"
+BASE_PATH = "/"
