@@ -1,34 +1,35 @@
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import {
-  ChevronRight, Search, Bell, User, ExternalLink,
-  AlertCircle, CheckCircle2,
+  ChevronRight, Bell, AlertCircle, CheckCircle2,
 } from "lucide-react";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { workspaceNeedsOnboarding } from "@/lib/workspace-state";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 
 // ─── Breadcrumb builder ────────────────────────────────────────────────
 
-function buildBreadcrumbs(location: string, workspaceName?: string): { label: string; href?: string }[] {
+function buildBreadcrumbs(location: string, workspaceName: string): { label: string; href?: string }[] {
   if (location === "/" || location === "/app") {
     return [{ label: "Master Command Center" }];
   }
 
   const crumbs: { label: string; href?: string }[] = [];
 
-  if (workspaceName) {
-    crumbs.push({ label: workspaceName, href: location.includes("/app/workspaces/") ? location.split("/").slice(0, 4).join("/") : undefined });
+  // Workspace name only when on a workspace route
+  if (location.includes("/app/workspaces/")) {
+    crumbs.push({
+      label: workspaceName,
+      href: location.split("/").slice(0, 4).join("/"),
+    });
   }
 
   if (location.includes("/imports")) crumbs.push({ label: "Import Center" });
-  else if (location.includes("/ad-accounts") && !location.includes("/ad-accounts/")) crumbs.push({ label: "Ad Accounts" });
   else if (location.includes("/ad-accounts/")) crumbs.push({ label: "Ad Accounts" }, { label: "Account Intelligence" });
+  else if (location.includes("/ad-accounts")) crumbs.push({ label: "Ad Accounts" });
   else if (location.includes("/iap/new")) crumbs.push({ label: "IAP Run Builder" });
   else if (location.includes("/iap/runs/")) crumbs.push({ label: "IAP Runs" }, { label: "Analysis Run" });
   else if (location.includes("/creative-library")) crumbs.push({ label: "Creative Library" });
-  else if (location.includes("/briefs/")) crumbs.push({ label: "Briefs" }, { label: "Brief Detail" });
+  else if (location.includes("/briefs/")) crumbs.push({ label: "Brief Engine" }, { label: "Brief Detail" });
   else if (location.includes("/briefs")) crumbs.push({ label: "Brief Engine" });
   else if (location.includes("/reports")) crumbs.push({ label: "Reports" });
   else if (location.includes("/settings")) crumbs.push({ label: "Settings" });
@@ -41,19 +42,27 @@ function buildBreadcrumbs(location: string, workspaceName?: string): { label: st
 // ─── Health status badge ───────────────────────────────────────────────
 
 const HEALTH_CONFIG = {
-  Healthy: { icon: CheckCircle2, class: "text-[hsl(var(--metrix-success))]", label: "Healthy" },
-  Watch: { icon: AlertCircle, class: "text-yellow-400", label: "Watch" },
-  "Needs Action": { icon: AlertCircle, class: "text-orange-400", label: "Needs Action" },
-  Critical: { icon: AlertCircle, class: "text-destructive", label: "Critical" },
-};
+  Healthy: { icon: CheckCircle2, cls: "text-[hsl(var(--metrix-success))]", label: "Healthy" },
+  Watch: { icon: AlertCircle, cls: "text-yellow-400", label: "Watch" },
+  "Needs Action": { icon: AlertCircle, cls: "text-orange-400", label: "Needs Action" },
+  Critical: { icon: AlertCircle, cls: "text-destructive", label: "Critical" },
+} as const;
 
 // ─── Topbar ────────────────────────────────────────────────────────────
 
 export function Topbar() {
   const [location] = useLocation();
-  const { currentWorkspace, currentUser } = useWorkspace();
-  const crumbs = buildBreadcrumbs(location, currentWorkspace?.name);
-  const needsOnboarding = currentWorkspace ? workspaceNeedsOnboarding(currentWorkspace.id) : false;
+  const { currentWorkspace, currentUser, isOnWorkspaceRoute } = useWorkspace();
+
+  const crumbs = buildBreadcrumbs(location, currentWorkspace.name);
+
+  // "Setup required" badge only shows when explicitly on a non-Bookster workspace route
+  const showSetupRequired = isOnWorkspaceRoute && workspaceNeedsOnboarding(currentWorkspace.id);
+  // Health indicator only when not needing onboarding
+  const showHealth = !showSetupRequired;
+
+  const hc = HEALTH_CONFIG[currentWorkspace.health_status];
+  const HIcon = hc.icon;
 
   return (
     <header className="h-12 flex items-center gap-3 px-4 border-b border-border/60 bg-background/95 backdrop-blur-sm shrink-0">
@@ -82,42 +91,36 @@ export function Topbar() {
         ))}
       </div>
 
-      {/* Workspace health indicator */}
-      {currentWorkspace && !needsOnboarding && (() => {
-        const hc = HEALTH_CONFIG[currentWorkspace.health_status];
-        const HIcon = hc.icon;
-        return (
-          <div className={cn("flex items-center gap-1 text-xs font-medium", hc.class)}>
-            <HIcon className="w-3.5 h-3.5" />
-            <span>{hc.label}</span>
-          </div>
-        );
-      })()}
+      {/* Workspace health */}
+      {showHealth && (
+        <div className={cn("flex items-center gap-1 text-xs font-medium", hc.cls)}>
+          <HIcon className="w-3.5 h-3.5" />
+          <span>{hc.label}</span>
+        </div>
+      )}
 
-      {/* Onboarding indicator */}
-      {currentWorkspace && needsOnboarding && (
+      {/* Setup required (onboarding workspaces only) */}
+      {showSetupRequired && (
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground border border-border/60 rounded px-2 py-1">
           <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40" />
           <span>Setup required</span>
         </div>
       )}
 
-      {/* Divider */}
       <div className="w-px h-4 bg-border/60" />
 
       {/* Actions */}
       <div className="flex items-center gap-1">
-        {/* Notifications */}
         <button className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors relative">
           <Bell className="w-3.5 h-3.5" />
-          {currentWorkspace?.id === "ws_bookster" && (
+          {currentWorkspace.id === "ws_bookster" && (
             <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-destructive" />
           )}
         </button>
-
-        {/* User avatar */}
         <button className="w-7 h-7 rounded flex items-center justify-center bg-primary/15 border border-primary/20 text-primary hover:bg-primary/20 transition-colors">
-          <span className="text-[10px] font-bold leading-none">AC</span>
+          <span className="text-[10px] font-bold leading-none">
+            {currentUser.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
+          </span>
         </button>
       </div>
     </header>

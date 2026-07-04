@@ -133,9 +133,7 @@ export function BenchmarkMemoryPage() {
 
   const types: Array<BM["benchmark_type"] | "All"> = ["All", "account", "concept", "hook", "offer", "placement"];
 
-  const all = currentWorkspace
-    ? BENCHMARK_MEMORY.filter(b => b.workspace_id === currentWorkspace.id)
-    : BENCHMARK_MEMORY;
+  const all = BENCHMARK_MEMORY.filter(b => b.workspace_id === currentWorkspace.id);
 
   const filtered = typeFilter === "All" ? all : all.filter(b => b.benchmark_type === typeFilter);
   const sorted = [...filtered].sort((a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime());
@@ -148,7 +146,7 @@ export function BenchmarkMemoryPage() {
         <div>
           <h1 className="text-xl font-bold text-foreground tracking-tight">Benchmark Memory</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {currentWorkspace ? currentWorkspace.name : "All workspaces"} — {all.length} benchmark record{all.length !== 1 ? "s" : ""}
+            {currentWorkspace.name} — {all.length} benchmark record{all.length !== 1 ? "s" : ""}
           </p>
         </div>
 
