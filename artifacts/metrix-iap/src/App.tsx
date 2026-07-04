@@ -6,6 +6,8 @@ import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
 import { AppShell } from "@/components/layout/AppShell";
 import { MasterCommandCenter } from "@/pages/MasterCommandCenter";
 import { WorkspaceHome } from "@/pages/WorkspaceHome";
+import { IAPRunBuilder } from "@/pages/IAPRunBuilder";
+import { RunDetail } from "@/pages/RunDetail";
 
 // ─── Stub page — used for pages built in Phase 3+ ─────────────────────
 function StubPage({ name, phase = "3" }: { name: string; phase?: string }) {
@@ -48,8 +50,8 @@ function Router() {
 
       {/* Global routes */}
       <Route path="/app/imports" component={() => <StubPage name="Import Center" />} />
-      <Route path="/app/iap/new" component={() => <StubPage name="IAP Run Builder" phase="3" />} />
-      <Route path="/app/iap/runs/:runId" component={() => <StubPage name="IAP Analysis Run" phase="3" />} />
+      <Route path="/app/iap/new" component={IAPRunBuilder} />
+      <Route path="/app/iap/runs/:runId" component={RunDetail} />
       <Route path="/app/creative-library" component={() => <StubPage name="Creative Intelligence Library" phase="4" />} />
       <Route path="/app/briefs" component={() => <StubPage name="Brief Engine" phase="4" />} />
       <Route path="/app/briefs/:briefId" component={() => <StubPage name="Brief Detail" phase="4" />} />
