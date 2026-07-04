@@ -1,0 +1,126 @@
+#,Section,Metric,Status
+1,Base (all business model types),Amount spent ({ACCOUNT_CURRENCY}),Existing
+2,Base (all business model types),Reach,Existing
+3,Base (all business model types),Impressions,Existing
+4,Base (all business model types),Frequency,Existing
+5,Base (all business model types),"CPM (cost per 1,000 impressions)",Existing
+6,Base (all business model types),"Cost per 1,000 Accounts Center accounts reached",Existing
+7,Base (all business model types),Result type,Existing
+8,Base (all business model types),Results,Existing
+9,Base (all business model types),Cost per result,Existing
+10,Base (all business model types),Result rate,Existing
+11,Base (all business model types),Results rate per link clicks,Existing
+12,Base (all business model types),Result value type,Existing
+13,Base (all business model types),Results value,Existing
+14,Base (all business model types),Views,Existing
+15,Base (all business model types),Clicks (all),Existing
+16,Base (all business model types),CPC (all),Existing
+17,Base (all business model types),CTR (all),Existing
+18,Base (all business model types),Link clicks,Existing
+19,Base (all business model types),CPC (cost per link click),Existing
+20,Base (all business model types),CTR (link click-through rate),Existing
+21,Base (all business model types),Unique CTR (link click-through rate),Existing
+22,Base (all business model types),Unique clicks (all),Existing
+23,Base (all business model types),Cost per unique click (all),Existing
+24,Base (all business model types),Cost per unique link click,Existing
+25,Base (all business model types),Outbound clicks,Existing
+26,Base (all business model types),Unique outbound clicks,Existing
+27,Base (all business model types),Outbound CTR (click-through rate),Existing
+28,Base (all business model types),Unique outbound CTR (click-through rate),Existing
+29,Base (all business model types),Cost per outbound click,Existing
+30,Base (all business model types),Cost per unique outbound click,Existing
+31,Base (all business model types),Landing page views,New
+32,Base (all business model types),Cost per landing page view,New
+33,Base (all business model types),Landing page views rate per link clicks,Existing
+34,Base (all business model types),Page engagement,Existing
+35,Base (all business model types),Post engagements,Existing
+36,Base (all business model types),Post comments,Existing
+37,Base (all business model types),Post reactions,Existing
+38,Base (all business model types),Post saves,Existing
+39,Base (all business model types),Post shares,New
+40,Base (all business model types),Cost per Page engagement,Existing
+41,Base (all business model types),Cost per post engagement,Existing
+42,Base (all business model types),Cost per post share,New
+43,Base (all business model types),Cost per interaction,Existing
+44,Base (all business model types),Instagram profile visits,Existing
+45,Base (all business model types),Quality ranking,New
+46,Base (all business model types),Engagement rate ranking,Existing
+47,Base (all business model types),Conversion rate ranking,New
+48,Base (all business model types),Ad recall lift rate,Existing
+49,Base (all business model types),Video average play time,Existing
+50,Base (all business model types),Video plays,Existing
+51,Base (all business model types),3-second video plays,Existing
+52,Base (all business model types),Unique 2-second continuous video plays,Existing
+53,Base (all business model types),Video plays at 25%,Existing
+54,Base (all business model types),Video plays at 50%,Existing
+55,Base (all business model types),Video plays at 75%,Existing
+56,Base (all business model types),Video plays at 95%,Existing
+57,Base (all business model types),Video plays at 100%,Existing
+58,Base (all business model types),ThruPlays,Existing
+59,Base (all business model types),Cost per ThruPlay,Existing
+60,Base (all business model types),Cost per 3-second video play,Existing
+61,Base (all business model types),Cost per 2-second continuous video play,Existing
+62,Ecommerce / DTC specific,Adds to cart,Existing
+63,Ecommerce / DTC specific,Cost per add to cart,Existing
+64,Ecommerce / DTC specific,Adds to cart conversion value,Existing
+65,Ecommerce / DTC specific,Content views,New
+66,Ecommerce / DTC specific,Cost per content view,New
+67,Ecommerce / DTC specific,Content views conversion value,New
+68,Ecommerce / DTC specific,Checkouts initiated,Existing
+69,Ecommerce / DTC specific,Cost per checkout initiated,Existing
+70,Ecommerce / DTC specific,Purchases,Existing
+71,Ecommerce / DTC specific,Cost per purchase,Existing
+72,Ecommerce / DTC specific,Purchase ROAS (return on ad spend),Existing
+73,Ecommerce / DTC specific,Website purchase ROAS (return on ad spend),Existing
+74,Ecommerce / DTC specific,Website purchases,Existing
+75,Ecommerce / DTC specific,Website purchases conversion value,New
+76,Ecommerce / DTC specific,Direct website purchases,New
+77,Ecommerce / DTC specific,Direct website purchases conversion value,New
+78,Ecommerce / DTC specific,Shops-assisted purchases,New
+79,Ecommerce / DTC specific,Shops-assisted purchases conversion value,New
+80,Ecommerce / DTC specific,Meta purchases,Existing
+81,Ecommerce / DTC specific,Meta purchases conversion value,New
+82,Ecommerce / DTC specific,Purchases conversion value,Existing
+83,Ecommerce / DTC specific,Average purchases conversion value,Existing
+84,Ecommerce / DTC specific,Purchases rate per landing page views,Existing
+85,Ecommerce / DTC specific,Purchases rate per link clicks,Existing
+86,Service business specific,Leads,Existing
+87,Service business specific,Cost per lead,Existing
+88,Service business specific,Leads conversion value,New
+89,Service business specific,Meta leads,Existing
+90,Service business specific,Website leads,Existing
+91,Service business specific,Contacts,New
+92,Service business specific,Cost per contact,New
+93,Service business specific,Contact conversion value,New
+94,Service business specific,Appointments scheduled,New
+95,Service business specific,Cost per appointment scheduled,New
+96,Service business specific,Registrations completed,New
+97,Service business specific,Cost per registration completed,New
+98,Service business specific,Registrations completed conversion value,New
+99,Service business specific,Calls placed,New
+100,Service business specific,20-second calls,New
+101,Service business specific,60-second calls,New
+102,Service business specific,Estimated call confirmation clicks,New
+103,Service business specific,Callback requests submitted,New
+104,App promotion specific,App installs,Existing
+105,App promotion specific,Cost per app install,Existing
+106,App promotion specific,Mobile app installs,Existing
+107,App promotion specific,Cost per mobile app install,New
+108,App promotion specific,Cost per app activation,Existing
+109,App promotion specific,App activations,Existing
+110,App promotion specific,App activations conversion value,Existing
+111,App promotion specific,In-app sessions,Existing
+112,App promotion specific,Cost per in-app session,New
+113,App promotion specific,In-app sessions conversion value,Existing
+114,App promotion specific,In-app purchases,Existing
+115,App promotion specific,Cost per in-app purchase,New
+116,App promotion specific,In-app registrations completed,Existing
+117,App promotion specific,Cost per in-app registration completed,New
+118,App promotion specific,In-app trials started,Existing
+119,App promotion specific,Cost per in-app trial started,New
+120,App promotion specific,In-app subscriptions,New
+121,App promotion specific,Cost per in-app subscription,New
+122,App promotion specific,In-app subscriptions conversion value,Existing
+123,App promotion specific,Ratings submitted,Existing
+124,App promotion specific,Cost per rating submitted,New
+125,App promotion specific,Ratings submitted conversion value,New
