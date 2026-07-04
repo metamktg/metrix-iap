@@ -10,26 +10,25 @@ interface AppShellProps {
 }
 
 export function AppShell({ children }: AppShellProps) {
-  const { currentWorkspace } = useWorkspace();
-  const needsOnboarding = currentWorkspace
-    ? workspaceNeedsOnboarding(currentWorkspace.id)
-    : false;
+  const { currentWorkspace, isOnWorkspaceRoute } = useWorkspace();
+
+  // Show onboarding only when explicitly navigated to a workspace route
+  // AND that workspace has no data yet. Never gate global routes.
+  const needsOnboarding =
+    isOnWorkspaceRoute && workspaceNeedsOnboarding(currentWorkspace.id);
 
   return (
     <div
       className="flex h-screen w-screen overflow-hidden"
       style={{ background: "hsl(222 61% 5%)" }}
     >
-      {/* Left sidebar */}
       <Sidebar />
 
-      {/* Main area: topbar + content */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <Topbar />
 
-        {/* Content */}
         <main className="flex-1 overflow-hidden flex flex-col">
-          {needsOnboarding && currentWorkspace ? (
+          {needsOnboarding ? (
             <WorkspaceOnboarding workspace={currentWorkspace} />
           ) : (
             <div className="flex-1 overflow-auto">

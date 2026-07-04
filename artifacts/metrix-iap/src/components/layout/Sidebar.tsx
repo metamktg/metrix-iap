@@ -2,8 +2,7 @@ import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import {
   Upload, Zap, LayoutDashboard, BarChart3, Lightbulb,
-  FileText, BookOpen, TrendingUp, Bell, Settings,
-  ChevronRight, Lock,
+  FileText, BookOpen, TrendingUp, Bell, Settings, Lock,
 } from "lucide-react";
 import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -27,12 +26,9 @@ interface NavGroup {
 
 // ─── Nav group builder ─────────────────────────────────────────────────
 
-function buildNavGroups(workspaceId: string | null): NavGroup[] {
-  const base = workspaceId ? `/app/workspaces/${workspaceId}` : null;
-  const accounts = workspaceId
-    ? AD_ACCOUNTS.filter((a) => a.workspace_id === workspaceId)
-    : [];
-
+function buildNavGroups(workspaceId: string): NavGroup[] {
+  const base = `/app/workspaces/${workspaceId}`;
+  const accounts = AD_ACCOUNTS.filter((a) => a.workspace_id === workspaceId);
   const openRecs = accounts.reduce((sum, a) => sum + a.open_recommendations, 0);
 
   return [
@@ -42,8 +38,8 @@ function buildNavGroups(workspaceId: string | null): NavGroup[] {
         {
           label: "Import Center",
           icon: Upload,
-          href: base ? `${base}/imports` : "/app/imports",
-          badge: base === `/app/workspaces/ws_bookster` ? 2 : undefined,
+          href: "/app/imports",
+          badge: workspaceId === "ws_bookster" ? 2 : undefined,
           badgeVariant: "blue",
         },
         {
@@ -59,12 +55,12 @@ function buildNavGroups(workspaceId: string | null): NavGroup[] {
         {
           label: "Workspace Overview",
           icon: LayoutDashboard,
-          href: base ?? "/",
+          href: base,
         },
         {
           label: "Account Intelligence",
           icon: BarChart3,
-          href: base ? `${base}/ad-accounts` : "/",
+          href: `${base}/ad-accounts`,
           badge: openRecs > 0 ? openRecs : undefined,
           badgeVariant: "gold",
         },
@@ -123,6 +119,10 @@ function buildNavGroups(workspaceId: string | null): NavGroup[] {
 // ─── Active check ──────────────────────────────────────────────────────
 
 function isActive(href: string, location: string): boolean {
+  // Workspace overview: match exactly (don't highlight when on sub-routes)
+  if (href.match(/\/app\/workspaces\/[^/]+$/)) {
+    return location === href;
+  }
   if (href === "/" || href === "/app") return location === "/" || location === "/app";
   return location.startsWith(href);
 }
@@ -152,24 +152,22 @@ function NavBadge({ value, variant = "blue" }: { value: string | number; variant
 export function Sidebar() {
   const [location] = useLocation();
   const { currentWorkspace } = useWorkspace();
-  const navGroups = buildNavGroups(currentWorkspace?.id ?? null);
+  const navGroups = buildNavGroups(currentWorkspace.id);
 
   return (
     <aside
-      className="flex flex-col w-[220px] shrink-0 h-full border-r border-border/60 bg-background overflow-hidden"
+      className="flex flex-col w-[220px] shrink-0 h-full border-r border-border/60 overflow-hidden"
       style={{ background: "hsl(222 61% 5%)" }}
     >
       {/* Logo */}
       <div className="flex items-center gap-2 px-4 py-4 border-b border-border/40">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded bg-primary flex items-center justify-center">
-            <Zap className="w-3.5 h-3.5 text-white fill-white" />
-          </div>
-          <span className="text-sm font-bold tracking-tight text-foreground">METRIX</span>
-          <span className="text-[10px] font-mono text-muted-foreground border border-border/60 px-1 py-0.5 rounded leading-none">
-            IAP
-          </span>
+        <div className="w-6 h-6 rounded bg-primary flex items-center justify-center">
+          <Zap className="w-3.5 h-3.5 text-white fill-white" />
         </div>
+        <span className="text-sm font-bold tracking-tight text-foreground">METRIX</span>
+        <span className="text-[10px] font-mono text-muted-foreground border border-border/60 px-1 py-0.5 rounded leading-none">
+          IAP
+        </span>
       </div>
 
       {/* Workspace switcher */}

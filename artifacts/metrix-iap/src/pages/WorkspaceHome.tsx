@@ -33,14 +33,6 @@ export function WorkspaceHome() {
   const [, navigate] = useLocation();
   const { currentWorkspace } = useWorkspace();
 
-  if (!currentWorkspace) {
-    return (
-      <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
-        No workspace selected.
-      </div>
-    );
-  }
-
   const wsId = currentWorkspace.id;
 
   const accounts = AD_ACCOUNTS.filter(a => a.workspace_id === wsId);

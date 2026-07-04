@@ -151,9 +151,7 @@ export function Reports() {
 
   const statuses = ["All", "Draft", "In Review", "Final", "Sent"];
 
-  const allReports = currentWorkspace
-    ? REPORTS.filter(r => r.workspace_id === currentWorkspace.id)
-    : REPORTS;
+  const allReports = REPORTS.filter(r => r.workspace_id === currentWorkspace.id);
 
   const filtered = statusFilter === "All"
     ? allReports
@@ -172,7 +170,7 @@ export function Reports() {
           <div>
             <h1 className="text-xl font-bold text-foreground tracking-tight">Reports</h1>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {currentWorkspace ? currentWorkspace.name : "All workspaces"} — {allReports.length} report{allReports.length !== 1 ? "s" : ""}
+              {currentWorkspace.name} — {allReports.length} report{allReports.length !== 1 ? "s" : ""}
             </p>
           </div>
         </div>

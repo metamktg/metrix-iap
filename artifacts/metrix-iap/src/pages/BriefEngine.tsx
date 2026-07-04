@@ -35,9 +35,7 @@ export function BriefEngine() {
 
   const statuses = ["All", "Draft", "In Review", "Approved", "In Production", "Archived"];
 
-  const allBriefs = currentWorkspace
-    ? BRIEFS.filter(b => b.workspace_id === currentWorkspace.id)
-    : BRIEFS;
+  const allBriefs = BRIEFS.filter(b => b.workspace_id === currentWorkspace.id);
 
   const filtered = allBriefs.filter(b => {
     const matchSearch = !search || b.title.toLowerCase().includes(search.toLowerCase());
@@ -58,7 +56,7 @@ export function BriefEngine() {
           <div>
             <h1 className="text-xl font-bold text-foreground tracking-tight">Brief Engine</h1>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {currentWorkspace ? currentWorkspace.name : "All workspaces"} — {allBriefs.length} brief{allBriefs.length !== 1 ? "s" : ""}
+              {currentWorkspace.name} — {allBriefs.length} brief{allBriefs.length !== 1 ? "s" : ""}
             </p>
           </div>
           <button

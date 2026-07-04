@@ -362,7 +362,7 @@ export function CreativeLibrary() {
         <div>
           <h1 className="text-xl font-bold text-foreground tracking-tight">Creative Intelligence Library</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {currentWorkspace ? currentWorkspace.name : "All workspaces"} — variable codes, concept performance, active ads
+            {currentWorkspace.name} — variable codes, concept performance, active ads
           </p>
         </div>
 

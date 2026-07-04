@@ -135,9 +135,7 @@ export function ChangeWatch() {
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [reviewedIds, setReviewedIds] = useState<Set<string>>(new Set());
 
-  const all = currentWorkspace
-    ? CHANGE_EVENTS.filter(e => e.workspace_id === currentWorkspace.id)
-    : CHANGE_EVENTS;
+  const all = CHANGE_EVENTS.filter(e => e.workspace_id === currentWorkspace.id);
 
   const events = all.map(e =>
     reviewedIds.has(e.id) ? { ...e, status: "Reviewed" as ChangeEvent["status"] } : e
@@ -165,7 +163,7 @@ export function ChangeWatch() {
           <div>
             <h1 className="text-xl font-bold text-foreground tracking-tight">Change Watch</h1>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {currentWorkspace ? currentWorkspace.name : "All workspaces"} — {all.length} event{all.length !== 1 ? "s" : ""} detected
+              {currentWorkspace.name} — {all.length} event{all.length !== 1 ? "s" : ""} detected
             </p>
           </div>
           {newCount > 0 && (

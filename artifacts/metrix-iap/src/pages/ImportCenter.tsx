@@ -166,9 +166,7 @@ export function ImportCenter() {
 
   const statuses = ["All", "Processed", "Warning", "Needs Mapping", "Failed"];
 
-  const allImports = currentWorkspace
-    ? IMPORTS.filter(i => i.workspace_id === currentWorkspace.id)
-    : IMPORTS;
+  const allImports = IMPORTS.filter(i => i.workspace_id === currentWorkspace.id);
 
   const filtered = statusFilter === "All"
     ? allImports
@@ -192,7 +190,7 @@ export function ImportCenter() {
           <div>
             <h1 className="text-xl font-bold text-foreground tracking-tight">Import Center</h1>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {currentWorkspace ? currentWorkspace.name : "All workspaces"} — {allImports.length} import{allImports.length !== 1 ? "s" : ""}
+              {currentWorkspace.name} — {allImports.length} import{allImports.length !== 1 ? "s" : ""}
             </p>
           </div>
           <button
