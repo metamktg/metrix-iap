@@ -1223,47 +1223,113 @@ export const MST_MATRICES: MSTMatrix[] = [
 
 // ─── Briefs (12) ──────────────────────────────────────────────────────
 
-export const BRIEFS: ReturnType<typeof makeBrief>[] = Array.from({ length: 12 }, (_, i) => makeBrief(i + 1));
+const BRIEF_TITLES_BY_WS: Record<string, string[]> = {
+  ws_bookster: [
+    "BYOC Upload Flow — Hook Isolation Brief",
+    "C4E Aspirational Authority — Sprint Refresh",
+    "Android Trial Gen — Registration Pre-Paywall",
+    "Registration Flow — Pre-Paywall Hook Test",
+  ],
+  ws_skov: [
+    "K9 World Cup — Bundle Offer Extension",
+    "Slow Feeder Bowl — Testimonial Angle",
+  ],
+  ws_kov: [
+    "Chuck Fighter Creative — Deadpan Refresh",
+    "Cart Recovery — Urgency Hook Variants",
+    "KOV CRO Brief — Hero Copy Variants",
+  ],
+  ws_imco: [
+    "IMCO Retarget — WhatsApp Final Push",
+    "IMCO Seasonal — Summer WhatsApp Push",
+  ],
+  ws_mma: [
+    "MMA Case Study — Proof Hook Sprint",
+    "Agency Inbound — Demo Request Brief",
+  ],
+  ws_metrix: [
+    "QA Sprint — Variable Isolation Test",
+  ],
+};
+
+const AUDIENCE_INSIGHTS_BY_WS: Record<string, string[]> = {
+  ws_bookster: ["Time-starved professional reader, Android-dominant, 25–44.", "Depth-seeking female 45–54. High registration rate, weaker checkout conversion.", "High-achiever guilt reader. Values efficiency framing over feature lists."],
+  ws_skov: ["Performance-minded dog owner, 25–45, suburban. Responds to scientific proof.", "Casual pet parent. Health-conscious millennial. Influenced by lifestyle imagery."],
+  ws_kov: ["Combat sports loyalist, deadpan brand sensitivity. Distrusts hype.", "UFC fan, 22–38, event-driven purchasing cycle. Responds to earned credibility."],
+  ws_imco: ["Miami truck owner, bilingual, WhatsApp-preferred.", "Spanish-dominant, community-influenced buyer. High WhatsApp engagement."],
+  ws_mma: ["Marketing director, 30–50, ROI-first buyer. Skeptical of agency promises.", "Performance marketer, multiple agency relationships. Responds to specific metrics."],
+  ws_metrix: ["Internal QA persona. Used to validate confidence label rendering."],
+};
+
+const WINNING_SIGNALS_BY_WS: Record<string, string[]> = {
+  ws_bookster: ["HK_Authority + TN_Aspirational + CTA_StartFree performing at P1.", "BYOC hook showing 88 hook score — validate with dedicated budget.", "C4E control: primary checkout-depth driver. Android bidding advantage confirmed."],
+  ws_skov: ["World Cup K9 athlete creative at 3.2x ROAS — T1 confirmed.", "Slow feeder bowl demo video: P2 with room to scale.", "Bundle offer test in progress — early conversion signal positive."],
+  ws_kov: ["Cart recovery at 2.38x ROAS — highest lever in account.", "Chuck fighter-led content outperforming generic brand creative 2:1.", "Deadpan delivery is the brand-safe hook. No enthusiasm — let the gear speak."],
+  ws_imco: ["EN/ES retarget creative at P1. WhatsApp CTA in first 3 seconds is key.", "Before/After visual structure outperforming all other angles.", "Spanish-first copy with WhatsApp call to action leading conversion."],
+  ws_mma: ["Case study hook (HK_ProofFirst) is the P1 control.", "Demo CTA outperforming Learn More by 22% on Director segment.", "Proof-first + rational tone is the winning stack for B2B leads."],
+  ws_metrix: ["Low signal. Sandbox signals only — no real benchmark set."],
+};
+
+const MESSAGING_DIRECTION_BY_WS: Record<string, string[]> = {
+  ws_bookster: ["Lead with efficiency proof, not feature list.", "15 minutes a day. Key ideas retained. No card required.", "Guilt-hook on unfinished books — then offer the exit."],
+  ws_skov: ["Performance proof first. Scientific framing over lifestyle imagery.", "World Cup energy. K9 athlete visual. Bundle CTA.", "Ingredient quality proof. Vet-approved framing."],
+  ws_kov: ["Deadpan delivery only. No enthusiasm. Let the gear speak.", "Fighter-led content. Short copy. Product flat lay.", "Cart recovery urgency. Limited run. No hype."],
+  ws_imco: ["Spanish-first copy. WhatsApp CTA in first 3 seconds.", "Before/After transformation. Local credibility signals.", "Community voice. Real builds. Real customers."],
+  ws_mma: ["Lead with ROI proof, then the system behind it.", "Case study anchor. Specific metrics. Not general claims.", "Demo CTA primary. Learn More as fallback only."],
+  ws_metrix: ["QA messaging only. No production copy."],
+};
+
+const VISUAL_DIRECTION_BY_WS: Record<string, string[]> = {
+  ws_bookster: ["Dark DR card. Oversized typography. Yellow mascot.", "Cozy reading lamp environment. Tilted phone UI reveal.", "Split screen: book pile vs. 15-min insight card."],
+  ws_skov: ["Dog in motion. World Cup energy. Performance callouts.", "Ingredient label close-up. Clean white background.", "Before/after: dog energy levels. Authentic owner footage."],
+  ws_kov: ["Fighter portrait. Minimal copy overlay. Product flat lay.", "Deadpan lifestyle. Muted palette. No gradient backgrounds.", "Chuck in gear. Sparse composition. Dark background."],
+  ws_imco: ["Before/after truck transformation. Real vehicle photography.", "Clean split screen. EN/ES text overlay.", "Miami street aesthetic. Low angle. Chrome detail close-up."],
+  ws_mma: ["Clean data card. Agency brand colours. Metric callouts.", "Case study screenshot. Real platform data. No stock.", "Founder-led direct-to-camera. Professional but not corporate."],
+  ws_metrix: ["QA placeholder visuals only."],
+};
 
 function makeBrief(n: number) {
   const wsPool = ["ws_bookster","ws_bookster","ws_bookster","ws_skov","ws_skov","ws_kov","ws_kov","ws_imco","ws_mma","ws_mma","ws_metrix","ws_bookster"];
   const runPool = ["run_0001","run_0001","run_0001","run_0002","run_0002","run_0004","run_0004","run_0003","run_0005","run_0005","run_0006","run_0001"];
   const wsId = wsPool[n - 1];
   const runId = runPool[n - 1];
+  const titles = BRIEF_TITLES_BY_WS[wsId] ?? ["Sprint Brief"];
+  const audiences = AUDIENCE_INSIGHTS_BY_WS[wsId] ?? ["Audience data pending."];
+  const winningSignals = WINNING_SIGNALS_BY_WS[wsId] ?? ["Signal data pending."];
+  const messaging = MESSAGING_DIRECTION_BY_WS[wsId] ?? ["Messaging direction pending."];
+  const visuals = VISUAL_DIRECTION_BY_WS[wsId] ?? ["Visual direction pending."];
+
+  const objectiveByWs: Record<string, AnalysisRun["objective"][]> = {
+    ws_bookster: ["CPA reduction", "CPA reduction", "Creative testing read"],
+    ws_skov: ["ROAS improvement", "ROAS improvement"],
+    ws_kov: ["ROAS improvement", "CPA reduction", "ROAS improvement"],
+    ws_imco: ["Lead quality", "Lead quality"],
+    ws_mma: ["Lead quality", "Lead quality"],
+    ws_metrix: ["Creative testing read"],
+  };
+  const objectives = objectiveByWs[wsId] ?? (["CPA reduction"] as AnalysisRun["objective"][]);
+
   return {
     id: id("brief", n),
     workspace_id: wsId,
     run_id: runId,
     status: pick(["Draft","In Review","Approved","In Production","Archived"]) as "Draft"|"In Review"|"Approved"|"In Production"|"Archived",
-    title: pick([
-      "BYOC Upload Flow — Next Sprint Brief",
-      "C4E Replacement — Aspirational Authority Refresh",
-      "Android Trial Gen — Hook Isolation Test",
-      "K9 World Cup — Bundle Offer Extension",
-      "Slow Feeder Bowl — Testimonial Angle",
-      "Chuck Fighter Creative — Deadpan Refresh",
-      "Cart Recovery — Urgency Hook Variants",
-      "IMCO Retarget — WhatsApp Final Push",
-      "MMA Case Study — Proof Hook Sprint",
-      "KOV CRO Brief — Hero Copy Variants",
-      "QA Sprint — Variable Isolation Test",
-      "Registration Flow — Pre-Paywall Hook Test",
-    ]),
-    objective: pick(["CPA reduction","ROAS improvement","Creative testing read","Lead quality"]) as AnalysisRun["objective"],
+    title: pick(titles),
+    objective: pick(objectives),
     owner: pick(["usr_0001","usr_0003","usr_0008"]),
     created_at: isoDate(randInt(1, 20)),
     updated_at: isoDate(1),
     diagnosis: "SAMPLE diagnosis from IAP analysis. See source run for full context.",
-    audience_insight: pick(["Time-starved professional reader, Android-dominant, 25–44.", "Combat sports loyalist, deadpan brand sensitivity.", "Miami truck owner, bilingual, WhatsApp-preferred."]),
-    winning_signal: pick(["HK_Authority + TN_Aspirational + CTA_StartFree performing at T1.", "Cart recovery at 2.38x ROAS — highest lever in account.", "BYOC hook showing 88 hook score — validate with dedicated budget."]),
-    messaging_direction: pick(["Lead with efficiency proof, not feature list.", "Deadpan delivery only. No enthusiasm. Let the gear speak.", "Spanish-first copy. WhatsApp CTA in first 3 seconds."]),
+    audience_insight: pick(audiences),
+    winning_signal: pick(winningSignals),
+    messaging_direction: pick(messaging),
     creative_concepts: [
       { name: pick(["Control refresh","Challenger variant","Isolation test"]), hook: pick(HOOK_TEMPLATES), angle: pick(["Before/After","Authority","Problem-Solution"]), variable_codes: pickN([...HOOK_TEMPLATES,...FRAMEWORK_TEMPLATES], 3), format: pick(["Feed","Story","Reel"]), notes: "SAMPLE concept." },
     ],
     hook_options: pickN(HOOK_TEMPLATES, 3),
     offer_framing: pick(["Try free — no card required.", "Start free. Cancel anytime.", "Message us for a custom quote.", "Shop now — limited run."]),
     proof_requirements: ["3 real data points minimum", "No generic stock imagery", "Real user outcomes preferred"],
-    visual_direction: pick(["Dark DR card. Oversized typography. Yellow mascot.", "Fighter portrait. Minimal copy overlay. Product flat lay.", "Before/after. Clean split. Real vehicle photography."]),
+    visual_direction: pick(visuals),
     format_guidance: "Feed first. Story second. Reel only if hook is motion-native.",
     funnel_stage: pick(["TOF","MOF","BOF"]),
     test_matrix: "Isolate one variable per cell. Min $1,000 spend per variant before reading.",
@@ -1272,6 +1338,8 @@ function makeBrief(n: number) {
     success_metric: pick(["CPT < $280", "ROAS > 2.0x", "CPL < $65", "WhatsApp initiation rate > 3%"]),
   };
 }
+
+export const BRIEFS: ReturnType<typeof makeBrief>[] = Array.from({ length: 12 }, (_, i) => makeBrief(i + 1));
 
 // ─── Reports (10) ─────────────────────────────────────────────────────
 

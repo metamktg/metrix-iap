@@ -470,14 +470,14 @@ export function RunDetail() {
             <Zap className="w-3.5 h-3.5" />
             New Run
           </button>
-          <button
-            disabled
-            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border/40 text-xs font-medium text-muted-foreground cursor-not-allowed opacity-50"
+          <div
+            title="Brief generation will be available when the Claude skill is configured."
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border/30 text-xs font-medium text-muted-foreground/40 cursor-not-allowed select-none"
           >
             <FileText className="w-3.5 h-3.5" />
             Generate Brief
-            <span className="text-[9px] border border-border/40 px-1 py-0.5 rounded font-mono">Phase 4</span>
-          </button>
+            <span className="text-[9px] border border-border/30 px-1 py-0.5 rounded font-mono opacity-60">Coming soon</span>
+          </div>
           <button
             disabled
             className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border/40 text-xs font-medium text-muted-foreground cursor-not-allowed opacity-50"
