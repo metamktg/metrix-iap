@@ -6,8 +6,9 @@ import {
   Flame, CheckCircle2, RotateCcw, AlertCircle, FileText, ArrowRight,
 } from "lucide-react";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
-import { CREATIVE_CONCEPTS, CREATIVE_VARIABLES, ADS, BRIEFS } from "@/lib/mock-data";
-import type { ConfidenceLabel, PerformanceTier, CreativeConcept } from "@/lib/types";
+import { CREATIVE_CONCEPTS, CREATIVE_VARIABLES, ADS, BRIEFS, CREATIVE_ALIGNMENT_CHECKS } from "@/lib/mock-data";
+import { DataSourceBadge } from "@/components/ui/DataSourceBadge";
+import type { ConfidenceLabel, PerformanceTier, CreativeConcept, CreativeAlignmentCheck, ResolutionPath, ThresholdStatus } from "@/lib/types";
 
 // ─── Chip helpers ──────────────────────────────────────────────────────
 
@@ -173,6 +174,76 @@ function AngleRow({ concept, last }: { concept: CreativeConcept; last: boolean }
             <div className="text-[10px] text-muted-foreground mb-1">Primary Message</div>
             <p className="text-[11px] text-foreground font-medium">{concept.primary_message}</p>
           </div>
+
+          {/* Creative Alignment Check — resolver fields from creative_alignment_checks */}
+          {(() => {
+            const check = CREATIVE_ALIGNMENT_CHECKS.find(c => c.creative_concept_id === concept.id);
+            if (!check) return null;
+            const isUnresolved = check.resolution_path === "unresolved";
+            const resColor: Record<string, string> = {
+              naming_convention: "text-emerald-400 border-emerald-500/20 bg-emerald-500/10",
+              ad_id_fallback: "text-yellow-400 border-yellow-400/20 bg-yellow-400/10",
+              unresolved: "text-red-400 border-red-500/20 bg-red-500/10",
+            };
+            const threshColor: Record<string, string> = {
+              pass: "text-emerald-400 border-emerald-500/20 bg-emerald-500/10",
+              flagged: "text-orange-400 border-orange-400/20 bg-orange-400/10",
+            };
+            return (
+              <div className={cn(
+                "border-t pt-3",
+                isUnresolved ? "border-red-500/30" : "border-border/20"
+              )}>
+                {/* Unresolved banner — INSUFFICIENT confidence treatment */}
+                {isUnresolved && (
+                  <div className="flex items-center justify-between gap-3 mb-2.5 px-2.5 py-1.5 rounded border border-red-500/30 bg-red-500/8">
+                    <div className="flex items-center gap-1.5">
+                      <AlertCircle className="w-3 h-3 text-red-400 shrink-0" />
+                      <span className="text-[10px] font-bold text-red-400 uppercase tracking-wide">INSUFFICIENT</span>
+                      <span className="text-[10px] text-red-400/80">— creative alignment unresolved</span>
+                    </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); window.alert("Close Library Gap — brief a new creative variant targeting this concept. (Feature wiring in Phase 2.)"); }}
+                      className="text-[9px] px-2 py-0.5 rounded border border-red-500/40 bg-red-500/10 text-red-300 font-semibold hover:bg-red-500/20 transition-colors shrink-0"
+                    >
+                      Close library gap →
+                    </button>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle2 className="w-3 h-3 text-muted-foreground" />
+                  <span className="text-[10px] font-semibold text-foreground">Creative Alignment Check</span>
+                  <DataSourceBadge table="creative_alignment_checks" />
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <span className={cn("text-[9px] px-1.5 py-0.5 rounded border font-mono leading-none", resColor[check.resolution_path])}>
+                    {check.resolution_path.replace(/_/g, " ")}
+                  </span>
+                  {check.alignment_score !== undefined && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded border border-border/30 bg-muted/20 text-muted-foreground font-mono leading-none">
+                      alignment: {check.alignment_score}
+                    </span>
+                  )}
+                  {check.threshold_status && (
+                    <span className={cn("text-[9px] px-1.5 py-0.5 rounded border font-semibold leading-none", threshColor[check.threshold_status])}>
+                      {check.threshold_status}
+                    </span>
+                  )}
+                  <span className="text-[9px] px-1.5 py-0.5 rounded border border-border/30 bg-muted/20 text-muted-foreground font-mono leading-none">
+                    {check.check_stage.replace(/_/g, " ")}
+                  </span>
+                  {check.user_bypassed && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded border border-yellow-400/20 bg-yellow-400/10 text-yellow-400 font-semibold leading-none">
+                      bypassed
+                    </span>
+                  )}
+                </div>
+                {check.bypass_reason && (
+                  <p className="text-[10px] text-muted-foreground/60 mt-1 italic">{check.bypass_reason}</p>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Closed-loop linkage: source briefs + deployed ads */}
           {(linkedBriefs.length > 0 || linkedAds.length > 0) && (

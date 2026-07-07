@@ -1,0 +1,107 @@
+Please perform a surgical final revision of the Metrix Replit application.
+
+Use `metrix_bookster_seed_bundle_v1.json` as the primary seed source. Place it in the repo as a static seed file, for example:
+
+`src/data/seeds/metrix_bookster_seed_bundle_v1.json`
+
+Do not build a generic upload-first demo flow. This should follow the native Metrix architecture and future Supabase path.
+
+Primary requirements:
+
+1. Load the app to the Manager / Agency Overview first.
+2. Use a standard manager-account hierarchy:
+
+   * Manager account: Metrix Manager / Agency Overview
+   * Sub-accounts: Ad Accounts
+   * Configured account: Bookster
+   * Unconfigured account: SKOV Pet
+3. Bookster must hydrate the full platform from the seed:
+
+   * Overview
+   * Listen
+   * Analysis
+   * Strategy
+   * Brief Builder under Strategy
+   * Report Builder
+   * MST
+   * Optimization Loop inside the Bookster Ad Account overview
+4. SKOV Pet must remain unconfigured:
+
+   * Show Connect Meta Ad Account / Add Manual Import state
+   * Do not populate fake metrics, fake analysis, fake reports, fake MST, or fake recommendations
+5. Manager Overview may only aggregate bottom-line totals:
+
+   * spend
+   * impressions
+   * link clicks
+   * CTR
+   * event totals
+   * account-level recommendations with clear account descriptors
+6. Never cross-contaminate accounts:
+
+   * Analysis, Strategy, Reports, MST, Briefs, and Optimization Loop must always be scoped to the active `adAccountId`.
+7. Final primary navigation:
+
+   * Ad Account
+   * Listen
+   * Analysis
+   * Strategy
+   * Report Builder
+   * MST
+   * Metrix Agent
+   * Settings
+8. Remove all pipeline/CRM language:
+
+   * no agency sales pipeline
+   * no prospects
+   * no proposal status
+   * no lead status
+   * no CRM deal flow
+   * no fake contact placeholders
+   * no generic client-management modules
+9. Repair the swipe mechanism:
+
+   * Swipe right: Add to Tray / Approve
+   * Swipe left: Skip / Reject
+   * Tap / Space: Open Details
+   * Undo: Restore last card
+   * Inputs must support mouse drag, touch drag, keyboard arrows after focus, and visible buttons
+   * Approved cards go to Task Tray
+   * Rejected cards go to Dismissed Log with restore option
+   * Approved suggestions become manual implementation tasks only. They must not auto-edit campaigns.
+10. MST:
+
+* Render Bookster MST as active.
+* Use the Book2 local library and historical 4x4 matrix from the seed.
+* Show human-readable concept and angle descriptors first.
+* Keep raw variable codes as secondary chips only.
+* Do not show Pass / Conditional / Fail statuses.
+* Do not remap variables in this build.
+* Do not claim completed MST performance where only setup/matrix data exists.
+
+11. Report Builder:
+
+* Default to Metrix-branded reports.
+* Support white-label configuration.
+* Replace empty client logo area with Facebook page DP when available.
+* Export formats: PDF, Google Doc, HTML.
+* Render from latest IAP analysis/strategy JSON. Do not run independent heavy analysis inside Report Builder.
+
+12. Visual/UI pass:
+
+* Use the latest Metrix wordmark and metrix.ad branding.
+* Keep the dark UI.
+* Improve contrast, readability, spacing, typography, responsive behavior, card hierarchy, tables, badges, and sidebar polish.
+* Remove noisy icons, fake SaaS filler, generic gradients, and placeholder modules.
+
+13. Fallback rule:
+
+* If the primary JSON cannot be located or validated, regenerate missing structure using the official IAP architecture:
+  `IAP_DATA_BUNDLE_PREP → IAP_ANALYSIS_CORE → IAP_REPORT_SUMMARY(mode) → IAP_STRATEGY_MAP → IAP_BRIEF_BUILDER → MST local library / MST_TEST_ENGINE only when actual MST performance exists → IAP_OPTIMIZATION_LOOP`.
+* Use ZIP HTML artifacts as backup extraction sources.
+* If needed, locate manual imports referenced in the source map:
+  `IAP-Device-SIGNAL-BOOK (4).csv`
+  `IAP-DEMO-SIGNAL-BOOK (2).csv`
+* Never synthesize unsupported metrics, conclusions, MST results, or performance claims.
+
+Do not mark complete until Bookster fully hydrates every layer without manual navigation hacks, swipe works, the Manager/Ad Account hierarchy is correct, and no sales-pipeline language remains.

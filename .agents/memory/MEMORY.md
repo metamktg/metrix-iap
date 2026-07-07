@@ -1,1 +1,2 @@
 - [Metrix IAP closed-loop linkage](metrix-iap-closed-loop.md) — cross-entity back-refs (Ad/Concept/Brief) filled at gen time by linkClosedLoop() IIFE, not per-render.
+- [Metrix IAP account scoping](metrix-iap-account-scoping.md) — manager aggregates totals only; all modules scope to one ad account via useScopedAdAccountId(), unconfigured→UnconfiguredState.

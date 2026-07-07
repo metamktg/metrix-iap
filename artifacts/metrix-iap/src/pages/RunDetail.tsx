@@ -5,9 +5,11 @@ import {
   Zap, ChevronLeft, ChevronDown, ChevronRight,
   CheckCircle2, AlertCircle, Clock, Target,
   Activity, FileText, ArrowRight, User, Layers,
+  CheckCheck, Loader2, XCircle, SkipForward, List,
 } from "lucide-react";
-import { ANALYSIS_RUNS, WORKSPACES, BRIEFS, REPORTS } from "@/lib/mock-data";
-import type { Finding, DecisionFeedItem, Recommendation, ConfidenceLabel, PerformanceTier } from "@/lib/types";
+import { ANALYSIS_RUNS, WORKSPACES, BRIEFS, REPORTS, ANALYSIS_RUN_STAGES, ANALYSIS_RUN_COHORTS } from "@/lib/mock-data";
+import { DataSourceBadge } from "@/components/ui/DataSourceBadge";
+import type { Finding, DecisionFeedItem, Recommendation, ConfidenceLabel, PerformanceTier, AnalysisRunStage, AnalysisRunStageStatus, CohortKey } from "@/lib/types";
 
 // ─── Helpers ──────────────────────────────────────────────────────────
 
@@ -222,6 +224,181 @@ function RecCard({ rec }: { rec: Recommendation }) {
   );
 }
 
+// ─── Stage status helpers ──────────────────────────────────────────────
+
+const STAGE_STATUS_STYLES: Record<AnalysisRunStageStatus, { icon: React.ReactNode; bar: string; label: string; text: string }> = {
+  complete: {
+    icon: <CheckCheck className="w-3 h-3 text-emerald-400" />,
+    bar: "bg-emerald-500",
+    label: "Complete",
+    text: "text-emerald-400",
+  },
+  running: {
+    icon: <Loader2 className="w-3 h-3 text-primary animate-spin" />,
+    bar: "bg-primary",
+    label: "Running",
+    text: "text-primary",
+  },
+  failed: {
+    icon: <XCircle className="w-3 h-3 text-destructive" />,
+    bar: "bg-destructive",
+    label: "Failed",
+    text: "text-destructive",
+  },
+  skipped: {
+    icon: <SkipForward className="w-3 h-3 text-muted-foreground/50" />,
+    bar: "bg-muted/50",
+    label: "Skipped",
+    text: "text-muted-foreground/50",
+  },
+  pending: {
+    icon: <Clock className="w-3 h-3 text-muted-foreground/40" />,
+    bar: "bg-muted/20",
+    label: "Pending",
+    text: "text-muted-foreground/40",
+  },
+};
+
+// ─── 11-Stage Pipeline Tracker ─────────────────────────────────────────
+
+function PipelineTracker({ stages }: { stages: AnalysisRunStage[] }) {
+  const [open, setOpen] = useState(false);
+  const completed = stages.filter(s => s.status === "complete").length;
+  const failed = stages.filter(s => s.status === "failed").length;
+
+  return (
+    <div className="bg-card border border-border/60 rounded-xl overflow-hidden">
+      <button
+        className="w-full flex items-center gap-3 px-5 py-3.5 text-left hover:bg-white/[0.02] transition-colors"
+        onClick={() => setOpen(o => !o)}
+      >
+        <List className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-foreground">11-Stage IAP Pipeline</span>
+            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-muted/40 border border-border/30 text-muted-foreground leading-none">
+              {completed}/{stages.length}
+            </span>
+            {failed > 0 && (
+              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-destructive/10 border border-destructive/20 text-destructive leading-none">
+                {failed} failed
+              </span>
+            )}
+          </div>
+          {/* Mini progress track */}
+          <div className="flex gap-0.5 mt-1.5">
+            {stages.map(s => {
+              const style = STAGE_STATUS_STYLES[s.status];
+              return (
+                <div
+                  key={s.id}
+                  title={`${s.stage_number}. ${s.stage_name}`}
+                  className={cn("h-1 flex-1 rounded-full transition-all", style.bar)}
+                />
+              );
+            })}
+          </div>
+        </div>
+        <DataSourceBadge table="analysis_run_stages" className="ml-auto" />
+        <ChevronDown className={cn("w-3.5 h-3.5 text-muted-foreground shrink-0 transition-transform ml-2", open && "rotate-180")} />
+      </button>
+
+      {open && (
+        <div className="border-t border-border/30 divide-y divide-border/20">
+          {stages.map(s => {
+            const style = STAGE_STATUS_STYLES[s.status];
+            return (
+              <div key={s.id} className="flex items-start gap-3 px-5 py-3 hover:bg-white/[0.02] transition-colors">
+                <div className="flex items-center gap-2 w-8 shrink-0">
+                  <span className="text-[9px] font-mono text-muted-foreground/50 w-4 text-right">{s.stage_number}</span>
+                  {style.icon}
+                </div>
+                <div className="flex-1 min-w-0 space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className={cn("text-[11px] font-semibold leading-none", style.text)}>
+                      {s.stage_name}
+                    </span>
+                    <span className={cn("text-[9px] px-1.5 py-0.5 rounded border leading-none font-medium",
+                      s.status === "complete" ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+                        : s.status === "running" ? "border-primary/20 bg-primary/10 text-primary"
+                        : s.status === "failed" ? "border-destructive/20 bg-destructive/10 text-destructive"
+                        : "border-border/30 bg-muted/20 text-muted-foreground/50"
+                    )}>
+                      {style.label}
+                    </span>
+                    {s.duration_ms && (
+                      <span className="text-[9px] font-mono text-muted-foreground/40 ml-auto">
+                        {(s.duration_ms / 1000).toFixed(1)}s
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">{s.prompt_label}</p>
+                  {s.output_summary && s.status === "complete" && (
+                    <p className="text-[10px] text-muted-foreground/60 font-mono">{s.output_summary}</p>
+                  )}
+                  {s.error_message && (
+                    <p className="text-[10px] text-destructive">{s.error_message}</p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Cohort Snapshot ───────────────────────────────────────────────────
+
+const COHORT_LABELS: Record<CohortKey, string> = {
+  age_gender: "Age × Gender", placement: "Placement", device: "Device",
+  creative_angle: "Creative Angle", funnel_stage: "Funnel Stage", language: "Language",
+  geography: "Geography", audience_type: "Audience Type",
+};
+
+function CohortSnapshot({ runId }: { runId: string }) {
+  const cohorts = ANALYSIS_RUN_COHORTS.filter(c => c.run_id === runId);
+  if (cohorts.length === 0) return null;
+  return (
+    <div className="bg-card border border-border/60 rounded-xl p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <List className="w-3.5 h-3.5 text-muted-foreground" />
+        <span className="text-xs font-semibold text-foreground">Cohort Snapshot</span>
+        <span className="text-[9px] text-muted-foreground ml-1">Analysis dimensions active at run time</span>
+        <DataSourceBadge table="analysis_run_cohorts" className="ml-auto" />
+      </div>
+      <div className="space-y-2">
+        {cohorts.map(c => (
+          <div key={c.id} className="flex items-start gap-3 py-2 border-t border-border/20 first:border-0">
+            <div className="flex items-center gap-1.5">
+              {c.was_primary && (
+                <span className="text-[9px] px-1.5 py-0.5 rounded border border-primary/25 bg-primary/10 text-primary font-semibold leading-none">
+                  Primary
+                </span>
+              )}
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-border/30 bg-muted/20 text-muted-foreground/60 leading-none">
+                {c.cohort_key}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[11px] font-medium text-foreground">{COHORT_LABELS[c.cohort_key] ?? c.cohort_key}</div>
+              <div className="text-[10px] text-muted-foreground">{c.snapshot_label}</div>
+            </div>
+            <div className="shrink-0 text-right">
+              {Object.entries(c.kpi_targets_snapshot).map(([k, v]) => (
+                <div key={k} className="text-[9px] font-mono text-muted-foreground/60">
+                  {k.replace(/_/g, " ")}: {k.includes("usd") ? `$${v}` : v}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── RunDetail ────────────────────────────────────────────────────────
 
 export function RunDetail() {
@@ -231,6 +408,7 @@ export function RunDetail() {
 
   const run = ANALYSIS_RUNS.find(r => r.id === runId);
   const workspace = run ? WORKSPACES.find(w => w.id === run.workspace_id) : null;
+  const stages = ANALYSIS_RUN_STAGES.filter(s => s.run_id === runId).sort((a, b) => a.stage_number - b.stage_number);
 
   if (!run) {
     return (
@@ -348,6 +526,12 @@ export function RunDetail() {
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed">{run.priority_read}</p>
         </div>
+
+        {/* 11-Stage Pipeline tracker */}
+        {stages.length > 0 && <PipelineTracker stages={stages} />}
+
+        {/* Cohort snapshot */}
+        <CohortSnapshot runId={run.id} />
 
         {/* Two-column: Diagnosis + Signal Quality */}
         <div className="grid grid-cols-2 gap-5">
