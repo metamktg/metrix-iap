@@ -13,6 +13,16 @@ import type {
   CreativeBrief, Report, BenchmarkMemory, ChangeEvent, AuditLog,
   PromptVersion, ModelRun, ConfidenceLabel, PerformanceTier, BudgetBand,
   DecisionType, DecisionStatus,
+  // V2.0 types
+  CohortKey, CohortDefinition, ClientEnabledCohort,
+  AnalysisRunStage, AnalysisRunStageStatus, AnalysisRunCohort,
+  IntelligenceCard, IntelligenceCardType, IntelligenceCardSubtype, EntityScope,
+  ReviewStatus, ApprovedFor, ReviewableEntityType,
+  BSILSuggestion, BSILSuggestionType, BSILBudgetScopeObject, BSILStatus,
+  ReviewEvent, ApprovalEvent, HumanEdit,
+  CreativeAlignmentCheck, ResolutionPath, ThresholdStatus, CheckStage,
+  AlertRule, AlertRuleCondition,
+  LearningRegistryEntry,
 } from "../types";
 
 // ─── Seeded RNG (deterministic) ───────────────────────────────────────
@@ -781,6 +791,7 @@ export const ANALYSIS_RUNS: AnalysisRun[] = [
     primary_opportunity: "Android segment is tracking cleanly and delivering $258.34 CPT vs. $575.86 pre-restructure. Increasing Android-specific budget allocation by 40% has strong supporting evidence.",
     recommended_next_action: "1. Resolve CAPI integration gap with dev team — this is blocking reliable iOS optimization. 2. Scale C4E on Android via dedicated Android campaign with CBO. 3. Brief next sprint around BYOC upload-flow angle — T1 candidate with validation_required confidence.",
     risk_if_ignored: "CAPI gap will continue to suppress iOS targeting signal, inflating CPT reads and preventing accurate creative fatigue detection. C4E fatigue window is approaching — without a tested replacement, trial volume will decline.",
+    cohort_key: "device" as const,
     created_by: "usr_0001",
     created_at: isoDate(2),
     completed_at: isoDate(2),
@@ -807,6 +818,7 @@ export const ANALYSIS_RUNS: AnalysisRun[] = [
     primary_opportunity: "K9 supplement bundle offer has never been tested as a standalone angle. Strong overlap with slow feeder buyers suggests high conversion probability.",
     recommended_next_action: "1. Scale World Cup creative on current trajectory — T1 confirmed. 2. Test bundle offer against slow feeder bowl audience. 3. Do not expand Google PMax beyond retargeting mandate.",
     risk_if_ignored: "World Cup tie-in is event-dependent — creative has a shelf life. Failure to develop the next angle before fatigue will cause volume decline without a tested replacement.",
+    cohort_key: "creative_angle" as const,
     created_by: "usr_0001",
     created_at: isoDate(3),
     completed_at: isoDate(3),
@@ -833,6 +845,7 @@ export const ANALYSIS_RUNS: AnalysisRun[] = [
     primary_opportunity: "EN/ES retargeting at $18.40 CPL — highest confidence. Story format in ES has not been tested as a WhatsApp CTA driver.",
     recommended_next_action: "1. Increase retargeting budget allocation — T1 confirmed. 2. Test Story format with WhatsApp CTA in ES segment. 3. Give seasonal campaign 30 more days or retire — currently insufficient_data.",
     risk_if_ignored: "Seasonal campaign is consuming budget at 3x the CPL of retargeting with no validated return. ES story format test delay risks missing the window.",
+    cohort_key: "language" as const,
     created_by: "usr_0003",
     created_at: isoDate(5),
     completed_at: isoDate(5),
@@ -859,6 +872,7 @@ export const ANALYSIS_RUNS: AnalysisRun[] = [
     primary_opportunity: "Cart recovery at 2.38x ROAS is T1 confirmed — scale immediately. CRO improvements (hero copy, cart progress bar, exit-intent) are estimated to improve checkout rate by 15–25%.",
     recommended_next_action: "1. Kill Camozzi creative immediately — T4 confirmed, clear failure pattern. 2. Scale cart recovery budget — T1 with high confidence. 3. Brief Shopify CRO improvements: hero copy rewrite, cart progress bar install, exit-intent popup. 4. Retest Gaethje creative with isolated control.",
     risk_if_ignored: "Without CRO improvements, increasing paid media budget will not improve profitability. Camozzi creative is actively depressing account average ROAS. Account may fall back below 1.32x baseline without immediate action.",
+    cohort_key: "placement" as const,
     created_by: "usr_0008",
     created_at: isoDate(4),
     completed_at: isoDate(4),
@@ -885,6 +899,7 @@ export const ANALYSIS_RUNS: AnalysisRun[] = [
     primary_opportunity: "HK_ProofFirst hook validated — build next sprint around proof-led angles with case study specificity.",
     recommended_next_action: "1. Scale demo request campaigns — T1 confirmed. 2. Brief next sprint: proof-led hook variants with new case study specifics. 3. Give CPA reduction test 30 more days or retire.",
     risk_if_ignored: "Without a validated CPA reduction creative, cost efficiency will plateau. Agency brand campaign is running at 25% higher CPL — review or pause.",
+    cohort_key: "creative_angle" as const,
     created_by: "usr_0002",
     created_at: isoDate(7),
     completed_at: isoDate(7),
@@ -893,31 +908,35 @@ export const ANALYSIS_RUNS: AnalysisRun[] = [
     decision_feed: generateDecisionFeed("run_0005", "ws_mma", "aa_mma_meta", 5),
   },
   // Metrix Internal runs
-  ...Array.from({ length: 7 }, (_, i) => ({
-    id: id("run", 6 + i),
-    workspace_id: pick(["ws_bookster","ws_skov","ws_kov","ws_imco","ws_mma","ws_metrix"]),
-    ad_account_id: pick(["aa_bookster_meta","aa_skov_meta","aa_kov_meta","aa_imco_meta","aa_mma_meta","aa_metrix_meta"]),
-    import_ids: [id("imp", (i % 12) + 1)],
-    status: pick(["Completed","Completed","Running","Failed"]) as AnalysisRun["status"],
-    objective: pick(["CPA reduction","ROAS improvement","Creative testing read","Account audit"]) as AnalysisRun["objective"],
-    depth: pick(["Fast Read","Full IAP Analysis","Executive Report"]) as AnalysisRun["depth"],
-    date_range_start: isoDate(60 + i * 14),
-    date_range_end: isoDate(30 + i * 7),
-    confidence_score: randInt(45, 85),
-    signal_quality: makeSignalQuality(randInt(45, 82)),
-    priority_read: "SAMPLE — historical run. Signal quality moderate. No priority action surfaced.",
-    executive_diagnosis: "Historical analysis. See run details for findings.",
-    primary_constraint: pick(["Creative diversity","Spend insufficiency","Tracking gaps","Learning instability"]),
-    primary_opportunity: pick(["Scale T1 creative","Expand to new audience","Brief new angle","Reduce CPA via creative isolation"]),
-    recommended_next_action: "Review findings and decision feed.",
-    risk_if_ignored: "Performance plateau without creative refresh.",
-    created_by: "usr_0001",
-    created_at: isoDate(35 + i * 10),
-    completed_at: isoDate(34 + i * 10),
-    findings: generateGenericFindings(id("run", 6 + i), pick(["ws_bookster","ws_skov","ws_kov","ws_imco","ws_mma"]), 3),
-    recommendations: generateRecommendations(id("run", 6 + i), pick(["ws_bookster","ws_skov","ws_kov","ws_imco","ws_mma"]), 3),
-    decision_feed: generateDecisionFeed(id("run", 6 + i), pick(["ws_bookster","ws_skov","ws_kov","ws_imco","ws_mma"]), pick(["aa_bookster_meta","aa_skov_meta","aa_kov_meta","aa_imco_meta","aa_mma_meta"]), 4),
-  })),
+  ...Array.from({ length: 7 }, (_, i) => {
+    const cohortKeys: CohortKey[] = ["device","creative_angle","age_gender","placement","language","audience_type","funnel_stage"];
+    return {
+      id: id("run", 6 + i),
+      workspace_id: pick(["ws_bookster","ws_skov","ws_kov","ws_imco","ws_mma","ws_metrix"]),
+      ad_account_id: pick(["aa_bookster_meta","aa_skov_meta","aa_kov_meta","aa_imco_meta","aa_mma_meta","aa_metrix_meta"]),
+      import_ids: [id("imp", (i % 12) + 1)],
+      status: pick(["Completed","Completed","Running","Failed"]) as AnalysisRun["status"],
+      objective: pick(["CPA reduction","ROAS improvement","Creative testing read","Account audit"]) as AnalysisRun["objective"],
+      depth: pick(["Fast Read","Full IAP Analysis","Executive Report"]) as AnalysisRun["depth"],
+      date_range_start: isoDate(60 + i * 14),
+      date_range_end: isoDate(30 + i * 7),
+      confidence_score: randInt(45, 85),
+      signal_quality: makeSignalQuality(randInt(45, 82)),
+      priority_read: "SAMPLE — historical run. Signal quality moderate. No priority action surfaced.",
+      executive_diagnosis: "Historical analysis. See run details for findings.",
+      primary_constraint: pick(["Creative diversity","Spend insufficiency","Tracking gaps","Learning instability"]),
+      primary_opportunity: pick(["Scale T1 creative","Expand to new audience","Brief new angle","Reduce CPA via creative isolation"]),
+      recommended_next_action: "Review findings and decision feed.",
+      risk_if_ignored: "Performance plateau without creative refresh.",
+      cohort_key: cohortKeys[i % cohortKeys.length],
+      created_by: "usr_0001",
+      created_at: isoDate(35 + i * 10),
+      completed_at: isoDate(34 + i * 10),
+      findings: generateGenericFindings(id("run", 6 + i), pick(["ws_bookster","ws_skov","ws_kov","ws_imco","ws_mma"]), 3),
+      recommendations: generateRecommendations(id("run", 6 + i), pick(["ws_bookster","ws_skov","ws_kov","ws_imco","ws_mma"]), 3),
+      decision_feed: generateDecisionFeed(id("run", 6 + i), pick(["ws_bookster","ws_skov","ws_kov","ws_imco","ws_mma"]), pick(["aa_bookster_meta","aa_skov_meta","aa_kov_meta","aa_imco_meta","aa_mma_meta"]), 4),
+    };
+  }),
 ];
 
 // ─── Decision Feed generators ─────────────────────────────────────────
@@ -1336,6 +1355,7 @@ function makeBrief(n: number) {
     production_notes: "Do not use stock photography. All copy subject to brand voice review.",
     do_not_do: ["No gradient backgrounds", "No enthusiasm-driven copy (KOV)", "No feature-list headlines", "No implied ROAS guarantees"],
     success_metric: pick(["CPT < $280", "ROAS > 2.0x", "CPL < $65", "WhatsApp initiation rate > 3%"]),
+    cohort_key: pick(["device","creative_angle","age_gender","placement","language"]) as CohortKey,
   };
 }
 
@@ -1384,11 +1404,13 @@ export const REPORTS: Report[] = Array.from({ length: 10 }, (_, i) => {
   const wsPool = ["ws_bookster","ws_bookster","ws_skov","ws_skov","ws_kov","ws_imco","ws_mma","ws_mma","ws_metrix","ws_bookster"];
   const aaPool = ["aa_bookster_meta","aa_bookster_meta","aa_skov_meta","aa_skov_meta","aa_kov_meta","aa_imco_meta","aa_mma_meta","aa_mma_meta","aa_metrix_meta","aa_bookster_meta"];
   const runPool = ["run_0001","run_0001","run_0002","run_0002","run_0004","run_0003","run_0005","run_0005","run_0006","run_0001"];
+  const reportCohortKeys: CohortKey[] = ["device","creative_angle","age_gender","placement","language","audience_type","device","creative_angle","age_gender","device"];
   return {
     id: id("rpt", n),
     workspace_id: wsPool[i],
     run_id: runPool[i],
     ad_account_id: aaPool[i],
+    cohort_key: reportCohortKeys[i],
     title: pick(["IAP Full Analysis Report","Creative Sprint Report","Executive Summary","Monthly Performance Report","Sprint Test Readout"]),
     status: pick(["Draft","Final","Final","In Review","Sent"]) as Report["status"],
     client_ready: pick([true, true, false]),
@@ -1490,4 +1512,311 @@ export const PROMPT_VERSIONS: PromptVersion[] = [
 export const CREATIVE_VARIABLES: CreativeVariable[] = [
   ...HOOK_TEMPLATES.map((code, i) => ({ id: id("cv", i + 1), workspace_id: pick(WORKSPACES.map(w => w.id)), code, family: "HK" as const, label: code.replace("HK_", "Hook: "), performance_index: randInt(70, 180), usage_count: randInt(2, 18), win_rate: randFloat(0.1, 0.7) })),
   ...FRAMEWORK_TEMPLATES.map((code, i) => ({ id: id("cv", 20 + i), workspace_id: pick(WORKSPACES.map(w => w.id)), code, family: "FW" as const, label: code.replace("FW_", "Framework: "), performance_index: randInt(70, 160), usage_count: randInt(2, 14), win_rate: randFloat(0.1, 0.65) })),
+];
+
+// ═══════════════════════════════════════════════════════════════════════
+// V2.0 MOCK DATA — Four-Plane Architecture (Section 11)
+// ═══════════════════════════════════════════════════════════════════════
+
+const COHORT_KEYS: CohortKey[] = ["age_gender", "placement", "device", "creative_angle", "funnel_stage", "language", "geography", "audience_type"];
+
+// ─── Cohort Definitions ───────────────────────────────────────────────
+
+export const COHORT_DEFINITIONS: CohortDefinition[] = [
+  { id: "cd_0001", cohort_key: "age_gender", label: "Age × Gender", description: "Segments by age range and gender for creative and bidding differentiation.", funnel_stages: ["TOF", "MOF"], kpi_targets: { cpa_max_usd: 45, roas_min: 2.0 }, created_at: isoDate(60) },
+  { id: "cd_0002", cohort_key: "placement", label: "Placement", description: "Feed vs. Story vs. Reel placement performance isolation.", funnel_stages: ["TOF", "MOF", "BOF"], kpi_targets: { cpa_max_usd: 50, ctr_min: 0.015 }, created_at: isoDate(60) },
+  { id: "cd_0003", cohort_key: "device", label: "Device", description: "Mobile vs. Desktop conversion efficiency — critical for iOS/Android splits.", funnel_stages: ["TOF", "MOF", "BOF"], kpi_targets: { cpa_max_usd: 300, conversion_rate_min: 0.01 }, created_at: isoDate(60) },
+  { id: "cd_0004", cohort_key: "creative_angle", label: "Creative Angle", description: "Hook variable family performance comparison across angles.", funnel_stages: ["TOF"], kpi_targets: { hook_score_min: 60, cpa_max_usd: 55 }, created_at: isoDate(60) },
+  { id: "cd_0005", cohort_key: "funnel_stage", label: "Funnel Stage", description: "TOF / MOF / BOF performance segmentation for budget allocation.", funnel_stages: ["TOF", "MOF", "BOF"], kpi_targets: { roas_min: 1.5, cpa_max_usd: 60 }, created_at: isoDate(60) },
+  { id: "cd_0006", cohort_key: "language", label: "Language", description: "EN vs. ES creative performance — bilingual market split.", funnel_stages: ["TOF", "MOF"], kpi_targets: { cpa_max_usd: 35, whatsapp_initiation_min: 0.03 }, created_at: isoDate(60) },
+  { id: "cd_0007", cohort_key: "geography", label: "Geography", description: "DMA-level geo targeting — Miami metro, national, international.", funnel_stages: ["TOF", "MOF", "BOF"], kpi_targets: { cpa_max_usd: 40 }, created_at: isoDate(60) },
+  { id: "cd_0008", cohort_key: "audience_type", label: "Audience Type", description: "Cold prospecting vs. warm lookalike vs. retargeting audience type.", funnel_stages: ["TOF", "MOF", "BOF"], kpi_targets: { roas_min: 2.5 }, created_at: isoDate(60) },
+];
+
+// ─── Client Enabled Cohorts ───────────────────────────────────────────
+
+export const CLIENT_ENABLED_COHORTS: ClientEnabledCohort[] = [
+  // Bookster — device and funnel stage are primary (iOS/Android split is key)
+  { id: "cec_0001", client_id: "ws_bookster", workspace_id: "ws_bookster", cohort_key: "device", cohort_definition_id: "cd_0003", is_primary: true, priority: 1, funnel_stages: ["TOF", "MOF", "BOF"], kpi_targets: { cpa_max_usd: 300, conversion_rate_min: 0.01 }, enabled: true, updated_at: isoDate(2) },
+  { id: "cec_0002", client_id: "ws_bookster", workspace_id: "ws_bookster", cohort_key: "creative_angle", cohort_definition_id: "cd_0004", is_primary: false, priority: 2, funnel_stages: ["TOF"], kpi_targets: { hook_score_min: 60, cpa_max_usd: 280 }, enabled: true, updated_at: isoDate(2) },
+  { id: "cec_0003", client_id: "ws_bookster", workspace_id: "ws_bookster", cohort_key: "age_gender", cohort_definition_id: "cd_0001", is_primary: false, priority: 3, funnel_stages: ["TOF", "MOF"], kpi_targets: { cpa_max_usd: 320 }, enabled: true, updated_at: isoDate(7) },
+  { id: "cec_0004", client_id: "ws_bookster", workspace_id: "ws_bookster", cohort_key: "placement", cohort_definition_id: "cd_0002", is_primary: false, priority: 4, funnel_stages: ["TOF", "MOF"], kpi_targets: { cpa_max_usd: 300, ctr_min: 0.015 }, enabled: false, updated_at: isoDate(14) },
+  // SKOV Pet
+  { id: "cec_0005", client_id: "ws_skov", workspace_id: "ws_skov", cohort_key: "creative_angle", cohort_definition_id: "cd_0004", is_primary: true, priority: 1, funnel_stages: ["TOF"], kpi_targets: { roas_min: 3.0, cpa_max_usd: 30 }, enabled: true, updated_at: isoDate(3) },
+  { id: "cec_0006", client_id: "ws_skov", workspace_id: "ws_skov", cohort_key: "audience_type", cohort_definition_id: "cd_0008", is_primary: false, priority: 2, funnel_stages: ["TOF", "MOF"], kpi_targets: { roas_min: 2.5 }, enabled: true, updated_at: isoDate(3) },
+  // IMCO Wheels
+  { id: "cec_0007", client_id: "ws_imco", workspace_id: "ws_imco", cohort_key: "language", cohort_definition_id: "cd_0006", is_primary: true, priority: 1, funnel_stages: ["TOF", "MOF"], kpi_targets: { cpa_max_usd: 32, whatsapp_initiation_min: 0.03 }, enabled: true, updated_at: isoDate(5) },
+  { id: "cec_0008", client_id: "ws_imco", workspace_id: "ws_imco", cohort_key: "geography", cohort_definition_id: "cd_0007", is_primary: false, priority: 2, funnel_stages: ["TOF"], kpi_targets: { cpa_max_usd: 35 }, enabled: true, updated_at: isoDate(5) },
+  // King of Violence
+  { id: "cec_0009", client_id: "ws_kov", workspace_id: "ws_kov", cohort_key: "creative_angle", cohort_definition_id: "cd_0004", is_primary: true, priority: 1, funnel_stages: ["TOF", "MOF"], kpi_targets: { roas_min: 2.0, cpa_max_usd: 40 }, enabled: true, updated_at: isoDate(4) },
+  { id: "cec_0010", client_id: "ws_kov", workspace_id: "ws_kov", cohort_key: "funnel_stage", cohort_definition_id: "cd_0005", is_primary: false, priority: 2, funnel_stages: ["TOF", "MOF", "BOF"], kpi_targets: { roas_min: 1.8 }, enabled: true, updated_at: isoDate(4) },
+];
+
+// ─── Analysis Run Stages (11 IAP prompts per run) ─────────────────────
+
+const IAP_STAGE_NAMES = [
+  { name: "Data Ingestion", label: "Parse & validate import files" },
+  { name: "Signal Quality Assessment", label: "Score tracking confidence & data sufficiency" },
+  { name: "Buyer-Intent Funnel", label: "Map conversion paths and funnel drop-offs" },
+  { name: "Performance Tiers", label: "Classify T1–T4 across campaigns and ads" },
+  { name: "Creative DNA Analysis", label: "Isolate winning hook/tone/framework variables" },
+  { name: "Audience Psychology", label: "Identify ICP resonance patterns" },
+  { name: "Traffic Quality", label: "Assess placement, device and CPM distribution" },
+  { name: "Failure Patterns", label: "Detect and classify underperformers" },
+  { name: "Cross-Dimensional Patterns", label: "Surface multi-variable interactions" },
+  { name: "Confidence Scoring", label: "Apply confidence labels per IAP taxonomy" },
+  { name: "Output Generation", label: "Generate intelligence cards and recommendations" },
+];
+
+function makeRunStages(runId: string, overallStatus: AnalysisRun["status"]): AnalysisRunStage[] {
+  return IAP_STAGE_NAMES.map((s, i) => {
+    let status: AnalysisRunStageStatus = "complete";
+    if (overallStatus === "Pending") status = i === 0 ? "pending" : "pending";
+    else if (overallStatus === "Running") status = i < 7 ? "complete" : i === 7 ? "running" : "pending";
+    else if (overallStatus === "Failed") status = i < 5 ? "complete" : i === 5 ? "failed" : "skipped";
+    const durationMs = status === "complete" ? randInt(800, 4200) : undefined;
+    return {
+      id: `stage_${runId}_${String(i + 1).padStart(2, "0")}`,
+      run_id: runId,
+      stage_number: i + 1,
+      stage_name: s.name,
+      prompt_label: s.label,
+      status,
+      started_at: status !== "pending" ? isoDate(2) : undefined,
+      completed_at: status === "complete" ? isoDate(2) : undefined,
+      duration_ms: durationMs,
+      output_summary: status === "complete" ? pick([
+        "Stage complete — outputs staged.",
+        "Analysis complete. Findings generated.",
+        "Processed successfully.",
+        "No anomalies detected.",
+      ]) : status === "failed" ? "Stage failed: token limit exceeded on large context window." : undefined,
+    };
+  });
+}
+
+export const ANALYSIS_RUN_STAGES: AnalysisRunStage[] = [
+  ...makeRunStages("run_0001", "Completed"),
+  ...makeRunStages("run_0002", "Completed"),
+  ...makeRunStages("run_0003", "Completed"),
+  ...makeRunStages("run_0004", "Completed"),
+  ...makeRunStages("run_0005", "Running"),
+  ...makeRunStages("run_0006", "Failed"),
+];
+
+// ─── Analysis Run Cohorts ─────────────────────────────────────────────
+
+export const ANALYSIS_RUN_COHORTS: AnalysisRunCohort[] = [
+  { id: "arc_0001", run_id: "run_0001", cohort_key: "device", cohort_definition_id: "cd_0003", snapshot_label: "Device (iOS vs Android)", was_primary: true, kpi_targets_snapshot: { cpa_max_usd: 300 } },
+  { id: "arc_0002", run_id: "run_0001", cohort_key: "creative_angle", cohort_definition_id: "cd_0004", snapshot_label: "Creative Angle (Hook family)", was_primary: false, kpi_targets_snapshot: { hook_score_min: 60, cpa_max_usd: 280 } },
+  { id: "arc_0003", run_id: "run_0001", cohort_key: "age_gender", cohort_definition_id: "cd_0001", snapshot_label: "Age × Gender (Female 45-54)", was_primary: false, kpi_targets_snapshot: { cpa_max_usd: 320 } },
+  { id: "arc_0004", run_id: "run_0002", cohort_key: "creative_angle", cohort_definition_id: "cd_0004", snapshot_label: "Creative Angle (World Cup vs Standard)", was_primary: true, kpi_targets_snapshot: { roas_min: 3.0, cpa_max_usd: 30 } },
+  { id: "arc_0005", run_id: "run_0003", cohort_key: "language", cohort_definition_id: "cd_0006", snapshot_label: "Language (EN vs ES)", was_primary: true, kpi_targets_snapshot: { cpa_max_usd: 32, whatsapp_initiation_min: 0.03 } },
+  { id: "arc_0006", run_id: "run_0004", cohort_key: "creative_angle", cohort_definition_id: "cd_0004", snapshot_label: "Creative Angle (Fighter-led vs Generic)", was_primary: true, kpi_targets_snapshot: { roas_min: 2.0, cpa_max_usd: 40 } },
+  { id: "arc_0007", run_id: "run_0004", cohort_key: "funnel_stage", cohort_definition_id: "cd_0005", snapshot_label: "Funnel Stage (TOF/MOF/BOF)", was_primary: false, kpi_targets_snapshot: { roas_min: 1.8 } },
+];
+
+// ─── Intelligence Cards ───────────────────────────────────────────────
+
+function makeCard(
+  n: number,
+  runId: string,
+  wsId: string,
+  cohortKey: CohortKey,
+  cardType: IntelligenceCardType,
+  subtype: IntelligenceCardSubtype,
+  scope: EntityScope,
+  title: string,
+  evidence: string,
+  recommendation: string,
+  confidence: ConfidenceLabel,
+  priority: IntelligenceCard["priority"],
+  severity: IntelligenceCard["severity"],
+  reviewStatus: ReviewStatus = "needs_review",
+): IntelligenceCard {
+  return {
+    id: id("ic", n),
+    run_id: runId,
+    workspace_id: wsId,
+    cohort_key: cohortKey,
+    card_type: cardType,
+    card_subtype: subtype,
+    entity_scope: scope,
+    entity_id: scope === "campaign" ? `cmp_${String(n).padStart(4, "0")}` : scope === "ad_set" ? `as_${String(n).padStart(4, "0")}` : `ad_${String(n).padStart(4, "0")}`,
+    entity_name: title.split(":")[0].trim(),
+    title,
+    evidence_summary: evidence,
+    recommendation,
+    confidence_grade: confidence,
+    priority,
+    severity,
+    review_status: reviewStatus,
+    approved_for: reviewStatus === "approved" ? ["internal_use"] : undefined,
+    feeds_learning_registry: reviewStatus === "approved",
+    created_at: isoDate(randInt(1, 5)),
+    updated_at: isoDate(1),
+  };
+}
+
+export const INTELLIGENCE_CARDS: IntelligenceCard[] = [
+  // Bookster — device cohort (primary)
+  makeCard(1, "run_0001", "ws_bookster", "device", "performance_insight", "tier_change", "campaign", "C4E Android campaign: T1 confirmed — scale", "C4E Android delivered $258.34 CPT vs $575.86 pre-restructure. 3 weeks of consistent data. High confidence.", "Scale C4E Android campaign by 40%. Maintain iOS-separate campaign structure until CAPI resolved.", "high", "Critical", "Critical", "reviewed"),
+  makeCard(2, "run_0001", "ws_bookster", "device", "tracking_alert", "tracking_gap", "account", "iOS tracking gap: CAPI/Pixel mismatch detected", "Pixel and CAPI event counts diverge by ~35% on iOS. iOS conversion data is unreliable for optimization.", "Do not scale iOS-targeted budget until CAPI gap is resolved. Escalate to dev team.", "high", "Critical", "Critical", "needs_review"),
+  makeCard(3, "run_0001", "ws_bookster", "creative_angle", "creative_signal", "hook_winner", "ad", "HK_Authority + TN_Aspirational: winning hook stack", "Hook stack generated 88 hook score and drove majority of checkout-depth events. 3 ad variants confirmed.", "Prioritize HK_Authority + TN_Aspirational in next sprint brief. Test 2 new variants with same stack.", "high", "High", "High", "approved"),
+  makeCard(4, "run_0001", "ws_bookster", "creative_angle", "fatigue_alert", "creative_fatigue", "ad", "C4E fatigue window approaching — 3–5 weeks", "Hook score declining from 92 to 81 over last 3 weeks. Fatigue trajectory consistent with past cycles.", "Brief replacement angle immediately. BYOC upload-flow is the top candidate (88 hook score).", "medium", "High", "High", "needs_review"),
+  makeCard(5, "run_0001", "ws_bookster", "age_gender", "audience_signal", "audience_mismatch", "campaign", "Female 45–54: high reg rate, weak checkout conversion", "C2B drives strong registrations in F45-54 but checkout follows for <30% of registrants.", "Add quiz-gate before paywall for this segment. Test checkout-depth creative variants.", "medium", "Medium", "Medium", "needs_review"),
+  makeCard(6, "run_0001", "ws_bookster", "creative_angle", "opportunity", "scale_candidate", "ad", "BYOC upload-flow: T1/T2 candidate — validate", "BYOC showing $282.40 CPT with improving trend. 88 hook score. Insufficient spend for high confidence.", "Allocate dedicated $5,000 validation budget to BYOC angle. Measure over 14 days.", "validation_required", "Medium", "Medium", "needs_review"),
+
+  // SKOV — creative angle cohort (primary)
+  makeCard(7, "run_0002", "ws_skov", "creative_angle", "performance_insight", "tier_change", "campaign", "World Cup K9 creative: T1 confirmed at 3.2x ROAS", "World Cup creative delivered 3.2x ROAS on $18,400 spend. Consistent across 14 days. High confidence.", "Scale World Cup creative — T1 confirmed. Monitor for event fatigue post-tournament.", "high", "Critical", "High", "approved"),
+  makeCard(8, "run_0002", "ws_skov", "creative_angle", "opportunity", "scale_candidate", "campaign", "Bundle offer: untested opportunity with strong overlap signal", "Slow feeder bowl buyers show 67% overlap with supplement purchasers. Bundle not yet tested.", "Brief and launch bundle offer creative. Set $3,000 validation budget against slow feeder audience.", "medium", "Medium", "Medium", "needs_review"),
+
+  // IMCO — language cohort (primary)
+  makeCard(9, "run_0003", "ws_imco", "language", "performance_insight", "roas_recovery", "campaign", "EN/ES retargeting at $18.40 CPL — T1 confirmed", "EN/ES bilingual retargeting campaign delivering $18.40 CPL vs. $29–31 in cold TOF. T1 confirmed.", "Increase retargeting budget allocation by 30%. Maintain bilingual creative structure.", "high", "Critical", "High", "reviewed"),
+  makeCard(10, "run_0003", "ws_imco", "language", "creative_signal", "hook_winner", "ad", "ES Story format with WhatsApp CTA: untested opportunity", "EN/ES parity holds in feed. ES Story with WhatsApp CTA not yet tested — ES initiation slightly lower.", "Test ES Story format with WhatsApp CTA in first 3 seconds. $2,000 validation budget.", "validation_required", "Medium", "Medium", "needs_review"),
+
+  // KOV — creative angle cohort (primary)
+  makeCard(11, "run_0004", "ws_kov", "creative_angle", "performance_insight", "retire_candidate", "ad", "Camozzi creative: T4 — eliminate immediately", "Camozzi promo: 0.94x ROAS, $74.80 CPA vs $38.60 account average. 3 consecutive weeks of failure.", "Pause all Camozzi variants immediately. Reallocate budget to cart recovery.", "medium", "Critical", "Critical", "needs_review"),
+  makeCard(12, "run_0004", "ws_kov", "creative_angle", "performance_insight", "scale_candidate", "campaign", "Cart recovery: T1 at 2.38x ROAS — scale", "Cart recovery campaign: 2.38x ROAS, $29.80 CPA, high confidence. Best lever in account.", "Increase cart recovery budget by 40%. Expand retargeting window to 14-day cart abandonment.", "high", "Critical", "High", "approved"),
+  makeCard(13, "run_0004", "ws_kov", "funnel_stage", "budget_signal", "cpa_spike", "account", "CRO gaps blocking checkout — estimated 15–25% loss", "Hero copy, cart progress bar, exit-intent missing. CRO analysis suggests 15–25% checkout improvement potential.", "Brief Shopify CRO: hero copy rewrite, cart progress bar, exit-intent popup. Priority over creative.", "medium", "High", "High", "needs_review"),
+];
+
+// ─── BSIL Suggestions (budget objects only — campaign/ad_set) ─────────
+
+export const BSIL_SUGGESTIONS: BSILSuggestion[] = [
+  {
+    id: "bsil_0001", run_id: "run_0001", workspace_id: "ws_bookster", cohort_key: "device",
+    budget_scope_object: "campaign", entity_id: "cmp_0015", entity_name: "BKSTR | C4E Control | Trial Gen | Android | TOF",
+    suggestion_type: "increase_budget", rationale: "C4E Android T1 confirmed. $258.34 CPT well below $300 threshold. Scale opportunity with high confidence.", confidence_grade: "high",
+    status: "pending", suggested_delta_usd: 4500, suggested_delta_pct: 40,
+    review_status: "needs_review", created_at: isoDate(2), updated_at: isoDate(2),
+  },
+  {
+    id: "bsil_0002", run_id: "run_0001", workspace_id: "ws_bookster", cohort_key: "device",
+    budget_scope_object: "campaign", entity_id: "cmp_0019", entity_name: "BKSTR | C3 | Behavior Shift | Broad | iOS",
+    suggestion_type: "decrease_budget", rationale: "iOS tracking gap makes optimization unreliable. Reallocate to Android until CAPI resolved.", confidence_grade: "high",
+    status: "approved", suggested_delta_usd: -3200, suggested_delta_pct: -35,
+    review_status: "approved", created_at: isoDate(2), updated_at: isoDate(1),
+  },
+  {
+    id: "bsil_0003", run_id: "run_0001", workspace_id: "ws_bookster", cohort_key: "creative_angle",
+    budget_scope_object: "ad_set", entity_id: "as_0006", entity_name: "C2E READ LESS KEEP MORE | TOF | Broad",
+    suggestion_type: "reallocate_budget", rationale: "C2E showing $441.80 CPT — 71% above threshold. Reallocate to C4E Android ad set.", confidence_grade: "medium",
+    status: "pending", suggested_delta_usd: -1800, suggested_delta_pct: -25,
+    review_status: "needs_review", created_at: isoDate(2), updated_at: isoDate(2),
+  },
+  {
+    id: "bsil_0004", run_id: "run_0004", workspace_id: "ws_kov", cohort_key: "creative_angle",
+    budget_scope_object: "campaign", entity_id: "cmp_0014", entity_name: "KOV | Camozzi Promo | Dead Creative Test",
+    suggestion_type: "pause_campaign", rationale: "T4 confirmed. 0.94x ROAS, $74.80 CPA. 3 weeks of consistent underperformance.", confidence_grade: "medium",
+    status: "executed_manually", suggested_delta_usd: -3900, suggested_delta_pct: -100,
+    review_status: "approved", created_at: isoDate(4), updated_at: isoDate(3),
+  },
+  {
+    id: "bsil_0005", run_id: "run_0004", workspace_id: "ws_kov", cohort_key: "creative_angle",
+    budget_scope_object: "campaign", entity_id: "cmp_0012", entity_name: "KOV | Cart Recovery | Retarget | MOF",
+    suggestion_type: "scale_ad_set", rationale: "Cart recovery T1 at 2.38x ROAS. Highest-efficiency lever in account.", confidence_grade: "high",
+    status: "pending", suggested_delta_usd: 2400, suggested_delta_pct: 40,
+    review_status: "needs_review", created_at: isoDate(4), updated_at: isoDate(4),
+  },
+  {
+    id: "bsil_0006", run_id: "run_0002", workspace_id: "ws_skov", cohort_key: "creative_angle",
+    budget_scope_object: "campaign", entity_id: "cmp_0001", entity_name: "SKOV | World Cup | K9 Performance | TOF",
+    suggestion_type: "increase_budget", rationale: "World Cup T1 at 3.2x ROAS. Strong headroom before fatigue threshold.", confidence_grade: "high",
+    status: "pending", suggested_delta_usd: 3200, suggested_delta_pct: 20,
+    review_status: "needs_review", created_at: isoDate(3), updated_at: isoDate(3),
+  },
+];
+
+// ─── Review Events ────────────────────────────────────────────────────
+
+export const REVIEW_EVENTS: ReviewEvent[] = [
+  { id: "rev_0001", workspace_id: "ws_bookster", entity_type: "intelligence_card", entity_id: "ic_0001", reviewer_id: "usr_0003", review_status: "reviewed", notes: "C4E Android scaling confirmed. Proceeding to approval.", created_at: isoDate(2) },
+  { id: "rev_0002", workspace_id: "ws_bookster", entity_type: "intelligence_card", entity_id: "ic_0003", reviewer_id: "usr_0003", review_status: "approved", notes: "Hook stack confirmed by multiple ad variants. Approve for learning registry.", created_at: isoDate(1) },
+  { id: "rev_0003", workspace_id: "ws_kov", entity_type: "intelligence_card", entity_id: "ic_0012", reviewer_id: "usr_0007", review_status: "approved", notes: "Cart recovery scale approved. Budget increase confirmed.", created_at: isoDate(3) },
+  { id: "rev_0004", workspace_id: "ws_bookster", entity_type: "bsil_suggestion", entity_id: "bsil_0002", reviewer_id: "usr_0001", review_status: "approved", notes: "iOS budget reduction approved. CAPI fix must be in place before reverting.", created_at: isoDate(1) },
+  { id: "rev_0005", workspace_id: "ws_kov", entity_type: "bsil_suggestion", entity_id: "bsil_0004", reviewer_id: "usr_0001", review_status: "approved", notes: "Camozzi pause approved. Budget reallocated to cart recovery.", created_at: isoDate(3) },
+  { id: "rev_0006", workspace_id: "ws_bookster", entity_type: "creative_brief", entity_id: "brief_0001", reviewer_id: "usr_0003", review_status: "reviewed", notes: "Brief reviewed. Awaiting creative team sign-off.", created_at: isoDate(4) },
+  { id: "rev_0007", workspace_id: "ws_skov", entity_type: "report", entity_id: "rpt_0003", reviewer_id: "usr_0001", review_status: "approved", notes: "SKOV report approved for client delivery.", created_at: isoDate(3) },
+];
+
+// ─── Approval Events ──────────────────────────────────────────────────
+
+export const APPROVAL_EVENTS: ApprovalEvent[] = [
+  { id: "apv_0001", workspace_id: "ws_bookster", entity_type: "intelligence_card", entity_id: "ic_0003", approver_id: "usr_0001", approved_for: "learning_registry", feeds_learning_registry: true, notes: "HK_Authority + TN_Aspirational confirmed winning stack. Feed to optimization loop.", created_at: isoDate(1) },
+  { id: "apv_0002", workspace_id: "ws_kov", entity_type: "intelligence_card", entity_id: "ic_0012", approver_id: "usr_0001", approved_for: "internal_use", feeds_learning_registry: false, notes: "Cart recovery scale confirmed for internal execution.", created_at: isoDate(3) },
+  { id: "apv_0003", workspace_id: "ws_kov", entity_type: "bsil_suggestion", entity_id: "bsil_0004", approver_id: "usr_0001", approved_for: "internal_use", feeds_learning_registry: true, notes: "Camozzi T4 failure pattern registered in learning registry.", created_at: isoDate(3) },
+  { id: "apv_0004", workspace_id: "ws_bookster", entity_type: "bsil_suggestion", entity_id: "bsil_0002", approver_id: "usr_0001", approved_for: "internal_use", feeds_learning_registry: false, notes: "iOS budget reduction — operational action only, no learning signal.", created_at: isoDate(1) },
+  { id: "apv_0005", workspace_id: "ws_skov", entity_type: "intelligence_card", entity_id: "ic_0007", approver_id: "usr_0001", approved_for: "learning_registry", feeds_learning_registry: true, notes: "World Cup K9 T1 creative pattern — approve for loop. Seasonal dependency noted.", created_at: isoDate(3) },
+];
+
+// ─── Human Edits ──────────────────────────────────────────────────────
+
+export const HUMAN_EDITS: HumanEdit[] = [
+  { id: "he_0001", workspace_id: "ws_bookster", entity_type: "intelligence_card", entity_id: "ic_0003", editor_id: "usr_0003", field_name: "recommendation", old_value: "Prioritize HK_Authority in next sprint.", new_value: "Prioritize HK_Authority + TN_Aspirational in next sprint brief. Test 2 new variants with same stack.", edit_reason: "Made more specific based on production team feedback.", created_at: isoDate(2) },
+  { id: "he_0002", workspace_id: "ws_kov", entity_type: "bsil_suggestion", entity_id: "bsil_0004", editor_id: "usr_0007", field_name: "rationale", old_value: "T4 confirmed underperformer.", new_value: "T4 confirmed. 0.94x ROAS, $74.80 CPA. 3 weeks of consistent underperformance.", edit_reason: "Added specific metrics for approval record.", created_at: isoDate(4) },
+];
+
+// ─── Creative Alignment Checks ────────────────────────────────────────
+
+export const CREATIVE_ALIGNMENT_CHECKS: CreativeAlignmentCheck[] = CREATIVE_CONCEPTS.slice(0, 20).map((cc, i) => {
+  const resolutionPath: ResolutionPath = i % 7 === 6 ? "unresolved" : i % 3 === 0 ? "naming_convention" : "ad_id_fallback";
+  const alignmentScore = resolutionPath === "unresolved" ? undefined : randInt(45, 97);
+  const thresholdStatus: ThresholdStatus | undefined = alignmentScore !== undefined ? (alignmentScore >= 70 ? "pass" : "flagged") : undefined;
+  return {
+    id: id("cac", i + 1),
+    creative_concept_id: cc.id,
+    workspace_id: cc.workspace_id,
+    resolution_path: resolutionPath,
+    alignment_score: alignmentScore,
+    threshold_status: thresholdStatus,
+    check_stage: (i % 2 === 0 ? "pre_publish" : "post_hoc") as CheckStage,
+    user_bypassed: thresholdStatus === "flagged" && i % 5 === 0,
+    bypass_reason: thresholdStatus === "flagged" && i % 5 === 0 ? "Creative team approved manually — timeline constraint." : undefined,
+    checked_at: isoDate(randInt(1, 14)),
+  };
+});
+
+// ─── Alert Rules ──────────────────────────────────────────────────────
+
+export const ALERT_RULES: AlertRule[] = [
+  { id: "ar_0001", workspace_id: "ws_bookster", cohort_key: "device", condition: "cpa_above_threshold", threshold_value: 350, severity: "High", is_active: true, created_by: "usr_0001", created_at: isoDate(30) },
+  { id: "ar_0002", workspace_id: "ws_bookster", condition: "tracking_gap_detected", threshold_value: 0.2, severity: "Critical", is_active: true, created_by: "usr_0001", created_at: isoDate(30) },
+  { id: "ar_0003", workspace_id: "ws_skov", cohort_key: "creative_angle", condition: "roas_below_threshold", threshold_value: 2.5, severity: "High", is_active: true, created_by: "usr_0001", created_at: isoDate(30) },
+  { id: "ar_0004", workspace_id: "ws_kov", condition: "roas_below_threshold", threshold_value: 1.5, severity: "Critical", is_active: true, created_by: "usr_0001", created_at: isoDate(30) },
+  { id: "ar_0005", workspace_id: "ws_kov", cohort_key: "creative_angle", condition: "fatigue_score_critical", threshold_value: 40, severity: "High", is_active: true, created_by: "usr_0008", created_at: isoDate(20) },
+  { id: "ar_0006", workspace_id: "ws_imco", cohort_key: "language", condition: "cpa_above_threshold", threshold_value: 40, severity: "Medium", is_active: true, created_by: "usr_0003", created_at: isoDate(25) },
+];
+
+// ─── Learning Registry ────────────────────────────────────────────────
+
+export const LEARNING_REGISTRY: LearningRegistryEntry[] = [
+  {
+    id: "lr_0001", workspace_id: "ws_bookster", cohort_key: "creative_angle",
+    entity_type: "intelligence_card", entity_id: "ic_0003", entity_title: "HK_Authority + TN_Aspirational: winning hook stack",
+    approved_for: "learning_registry", approval_event_id: "apv_0001",
+    signal_summary: "HK_Authority + TN_Aspirational hook stack confirmed T1 across 3 ad variants in Bookster. 88+ hook score. Drives checkout-depth events. Android-dominant.",
+    confidence_grade: "high", feeds_optimization_loop: true, recorded_at: isoDate(1), is_superseded: false,
+  },
+  {
+    id: "lr_0002", workspace_id: "ws_kov", cohort_key: "creative_angle",
+    entity_type: "bsil_suggestion", entity_id: "bsil_0004", entity_title: "Camozzi T4 failure pattern",
+    approved_for: "learning_registry", approval_event_id: "apv_0003",
+    signal_summary: "Camozzi promo creative: consistent T4 pattern across 3 weeks. 0.94x ROAS, $74.80 CPA. Fighter-UGC angle does not work for KOV audience — deadpan delivery required.",
+    confidence_grade: "medium", feeds_optimization_loop: true, recorded_at: isoDate(3), is_superseded: false,
+  },
+  {
+    id: "lr_0003", workspace_id: "ws_skov", cohort_key: "creative_angle",
+    entity_type: "intelligence_card", entity_id: "ic_0007", entity_title: "World Cup K9 T1 creative pattern",
+    approved_for: "learning_registry", approval_event_id: "apv_0005",
+    signal_summary: "World Cup / sports-event tie-in creative for SKOV Pet: T1 at 3.2x ROAS. K9 athlete performance angle + HK_Curiosity hook. Note: seasonal dependency — not reusable year-round.",
+    confidence_grade: "high", feeds_optimization_loop: true, recorded_at: isoDate(3), is_superseded: false,
+  },
+  {
+    id: "lr_0004", workspace_id: "ws_bookster", cohort_key: "device",
+    entity_type: "intelligence_card", entity_id: "ic_0001", entity_title: "C4E Android: T1 confirmed post-restructure",
+    approved_for: "learning_registry", approval_event_id: "apv_0001",
+    signal_summary: "Registration flow restructure (moved pre-paywall) drove $575→$258 CPT improvement. Android is the primary beneficiary. iOS remains impaired by CAPI gap — do not conflate Android gains with iOS performance.",
+    confidence_grade: "high", feeds_optimization_loop: true, recorded_at: isoDate(5), is_superseded: false,
+  },
 ];

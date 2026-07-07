@@ -1,238 +1,276 @@
 import { useLocation } from "wouter";
+import { useState, useId } from "react";
 import { cn } from "@/lib/utils";
-import {
-  Upload, Zap, LayoutDashboard, BarChart3, Lightbulb,
-  FileText, BookOpen, TrendingUp, Bell, Settings, Lock,
-} from "lucide-react";
-import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
-import { useWorkspace } from "@/contexts/WorkspaceContext";
-import { AD_ACCOUNTS } from "@/lib/mock-data";
+import { ChevronDown, Database } from "lucide-react";
+import { AccountSwitcher } from "./AccountSwitcher";
+import { DataSourceBadgeToggle } from "@/components/ui/DataSourceBadge";
+import { navTree } from "@/navigation/navTree";
+import { useNavBadges } from "@/navigation/useNavBadges";
+import type { NavSection, NavChild } from "@/navigation/navTree";
 
-// ─── Nav item types ────────────────────────────────────────────────────
+// ─── Badge pill ────────────────────────────────────────────────────────
 
-interface NavItem {
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  href: string;
-  badge?: string | number;
-  badgeVariant?: "blue" | "gold" | "danger" | "muted";
-  roadmap?: boolean;
-}
-
-interface NavGroup {
-  label: string;
-  items: NavItem[];
-}
-
-// ─── Nav group builder ─────────────────────────────────────────────────
-
-function buildNavGroups(workspaceId: string): NavGroup[] {
-  const base = `/app/workspaces/${workspaceId}`;
-  const accounts = AD_ACCOUNTS.filter((a) => a.workspace_id === workspaceId);
-  const openRecs = accounts.reduce((sum, a) => sum + a.open_recommendations, 0);
-
-  return [
-    {
-      label: "Pipeline",
-      items: [
-        {
-          label: "Import Center",
-          icon: Upload,
-          href: "/app/imports",
-          badge: workspaceId === "ws_bookster" ? 2 : undefined,
-          badgeVariant: "blue",
-        },
-        {
-          label: "IAP Run Builder",
-          icon: Zap,
-          href: "/app/iap/new",
-        },
-      ],
-    },
-    {
-      label: "Intelligence",
-      items: [
-        {
-          label: "Workspace Overview",
-          icon: LayoutDashboard,
-          href: base,
-        },
-        {
-          label: "Account Intelligence",
-          icon: BarChart3,
-          href: `${base}/ad-accounts`,
-          badge: openRecs > 0 ? openRecs : undefined,
-          badgeVariant: "gold",
-        },
-      ],
-    },
-    {
-      label: "Creative",
-      items: [
-        {
-          label: "Creative Library",
-          icon: Lightbulb,
-          href: "/app/creative-library",
-        },
-        {
-          label: "Brief Engine",
-          icon: FileText,
-          href: "/app/briefs",
-        },
-      ],
-    },
-    {
-      label: "Reports & Memory",
-      items: [
-        {
-          label: "Reports",
-          icon: BookOpen,
-          href: "/app/reports",
-        },
-        {
-          label: "Benchmark Memory",
-          icon: TrendingUp,
-          href: "/app/benchmarks",
-          roadmap: true,
-        },
-        {
-          label: "Change Watch",
-          icon: Bell,
-          href: "/app/change-watch",
-          roadmap: true,
-        },
-      ],
-    },
-    {
-      label: "Settings",
-      items: [
-        {
-          label: "Settings",
-          icon: Settings,
-          href: "/app/settings",
-        },
-      ],
-    },
-  ];
-}
-
-// ─── Active check ──────────────────────────────────────────────────────
-
-function isActive(href: string, location: string): boolean {
-  // Workspace overview: match exactly (don't highlight when on sub-routes)
-  if (href.match(/\/app\/workspaces\/[^/]+$/)) {
-    return location === href;
-  }
-  if (href === "/" || href === "/app") return location === "/" || location === "/app";
-  return location.startsWith(href);
-}
-
-// ─── Badge ─────────────────────────────────────────────────────────────
-
-const BADGE_STYLES: Record<string, string> = {
-  blue: "bg-primary/15 text-primary border-primary/20",
-  gold: "text-[hsl(var(--metrix-gold))] bg-[hsl(var(--metrix-gold)/0.12)] border-[hsl(var(--metrix-gold)/0.25)]",
-  danger: "bg-destructive/15 text-destructive border-destructive/20",
-  muted: "bg-muted text-muted-foreground border-border/40",
+const BADGE_STYLE: Record<string, string> = {
+  alerts:      "bg-destructive/15 text-destructive border-destructive/20",
+  signals:     "text-amber-400 bg-amber-400/10 border-amber-400/20",
+  suggestions: "bg-primary/15 text-primary border-primary/20",
+  briefs:      "bg-primary/15 text-primary border-primary/20",
+  mst:         "bg-muted text-muted-foreground border-border/40",
+  agent:       "bg-muted text-muted-foreground border-border/40",
 };
 
-function NavBadge({ value, variant = "blue" }: { value: string | number; variant?: string }) {
+function NavBadge({ count, badgeKey }: { count: number | null; badgeKey: string }) {
+  if (count == null || count <= 0) return null;
   return (
     <span className={cn(
-      "ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded border leading-none",
-      BADGE_STYLES[variant] ?? BADGE_STYLES.blue
+      "ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded border leading-none tabular-nums",
+      BADGE_STYLE[badgeKey] ?? "bg-muted text-muted-foreground border-border/40"
     )}>
-      {value}
+      {count}
     </span>
   );
 }
 
-// ─── Sidebar component ─────────────────────────────────────────────────
+// ─── Active checks ─────────────────────────────────────────────────────
+
+function isChildActive(to: string, location: string): boolean {
+  // Exact match for section roots (/app/analysis, /app/strategy)
+  if (to === "/app/analysis" || to === "/app/strategy") return location === to;
+  return location === to || location.startsWith(to + "/");
+}
+
+function matchesExtraPaths(section: NavSection, location: string): boolean {
+  return (section.matchPaths ?? []).some(
+    (p) => location === p || location.startsWith(p + "/")
+  );
+}
+
+function isSectionActive(section: NavSection, location: string): boolean {
+  if (matchesExtraPaths(section, location)) return true;
+  if (section.to) return location === section.to || location.startsWith(section.to + "/");
+  return (section.children ?? []).some(c => isChildActive(c.to, location));
+}
+
+// ─── wouter navigation helper ─────────────────────────────────────────
+
+function navigate(href: string, e: React.MouseEvent) {
+  e.preventDefault();
+  window.history.pushState({}, "", href);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+}
+
+// ─── Child row ─────────────────────────────────────────────────────────
+
+function ChildRow({ child, count }: { child: NavChild; count: number | null }) {
+  const [location] = useLocation();
+  const active = isChildActive(child.to, location);
+
+  return (
+    <li className="relative">
+      {active && (
+        <span className="absolute left-0 top-[5px] bottom-[5px] w-0.5 bg-primary rounded-full" />
+      )}
+      <a
+        href={child.to}
+        onClick={(e) => navigate(child.to, e)}
+        aria-current={active ? "page" : undefined}
+        className={cn(
+          "flex items-center gap-1.5 pl-3 pr-2 h-8 rounded-r text-[12px] transition-colors",
+          active
+            ? "text-foreground font-medium bg-primary/8"
+            : "text-muted-foreground/65 hover:text-foreground/80 hover:bg-white/[0.04]"
+        )}
+      >
+        <span className="flex-1 truncate leading-tight">{child.label}</span>
+        {child.placeholder && !active && (
+          <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/35 border border-border/25 px-1 py-0.5 rounded leading-none shrink-0">
+            Soon
+          </span>
+        )}
+        {!child.placeholder && child.dataSource && (
+          <Database className="w-2 h-2 shrink-0 text-muted-foreground/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+        )}
+        {child.badgeKey && !child.placeholder && (
+          <NavBadge count={count} badgeKey={child.badgeKey} />
+        )}
+      </a>
+    </li>
+  );
+}
+
+// ─── Expandable section ────────────────────────────────────────────────
+
+function ExpandableSection({
+  section,
+  badgeCounts,
+}: {
+  section: NavSection;
+  badgeCounts: Record<string, number | null>;
+}) {
+  const [location] = useLocation();
+  const sectionActive = isSectionActive(section, location);
+  const [open, setOpen] = useState(sectionActive);
+  const controlsId = useId();
+  const children = section.children ?? [];
+
+  return (
+    <li>
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={controlsId}
+        onClick={() => setOpen(v => !v)}
+        className={cn(
+          "w-full flex items-center gap-2 px-3 h-9 rounded text-[11px] font-semibold uppercase tracking-widest transition-colors select-none",
+          sectionActive
+            ? "text-foreground/90"
+            : "text-muted-foreground/50 hover:text-muted-foreground/80"
+        )}
+      >
+        <span className="w-4 shrink-0 text-[8px] font-mono text-muted-foreground/35 tabular-nums">
+          {section.number}
+        </span>
+        <span className="flex-1 text-left">{section.label}</span>
+        <ChevronDown
+          className={cn(
+            "w-3 h-3 shrink-0 text-muted-foreground/30 transition-transform duration-200",
+            open && "rotate-180"
+          )}
+        />
+      </button>
+
+      <ul
+        id={controlsId}
+        aria-label={`${section.label} pages`}
+        className={cn(
+          "mt-0.5 ml-3 pl-0 border-l border-border/20 space-y-0.5 pb-1",
+          open ? "block" : "hidden"
+        )}
+      >
+        {children.map(child => (
+          <ChildRow
+            key={child.id}
+            child={child}
+            count={child.badgeKey ? badgeCounts[child.badgeKey] ?? null : null}
+          />
+        ))}
+      </ul>
+    </li>
+  );
+}
+
+// ─── Leaf section (single direct link) ────────────────────────────────
+
+function LeafSection({
+  section,
+  badgeCounts,
+}: {
+  section: NavSection;
+  badgeCounts: Record<string, number | null>;
+}) {
+  const [location] = useLocation();
+  const active = isSectionActive(section, location);
+  const to = section.to!;
+
+  return (
+    <li className="relative">
+      {active && (
+        <span className="absolute left-0 top-[6px] bottom-[6px] w-0.5 bg-primary rounded-full" />
+      )}
+      <a
+        href={to}
+        onClick={(e) => navigate(to, e)}
+        aria-current={active ? "page" : undefined}
+        className={cn(
+          "flex items-center gap-2 px-3 h-9 rounded text-[11px] font-semibold uppercase tracking-widest transition-colors",
+          active
+            ? "bg-primary/8 text-foreground"
+            : "text-muted-foreground/50 hover:text-muted-foreground/80 hover:bg-white/[0.04]"
+        )}
+      >
+        <span className="w-4 shrink-0 text-[8px] font-mono text-muted-foreground/35 tabular-nums">
+          {section.number}
+        </span>
+        <span className="flex-1">{section.label}</span>
+        {section.badgeKey && (
+          <NavBadge
+            count={badgeCounts[section.badgeKey] ?? null}
+            badgeKey={section.badgeKey}
+          />
+        )}
+      </a>
+    </li>
+  );
+}
+
+// ─── Sidebar ───────────────────────────────────────────────────────────
 
 export function Sidebar() {
-  const [location] = useLocation();
-  const { currentWorkspace } = useWorkspace();
-  const navGroups = buildNavGroups(currentWorkspace.id);
+  const badgeCounts = useNavBadges();
 
   return (
     <aside
-      className="flex flex-col w-[220px] shrink-0 h-full border-r border-border/60 overflow-hidden"
+      className="flex flex-col w-[216px] shrink-0 h-full border-r border-border/50 overflow-hidden"
       style={{ background: "hsl(222 61% 5%)" }}
+      aria-label="Workspace sidebar"
     >
       {/* Logo */}
-      <div className="px-4 py-4 border-b border-border/40">
+      <div className="px-4 pt-4 pb-3 border-b border-border/40">
         <div className="flex items-center gap-2">
           <img
             src={`${import.meta.env.BASE_URL}metrix-logo.png`}
             alt="Metrix"
-            className="w-6 h-6 object-contain shrink-0"
+            className="w-5 h-5 object-contain shrink-0"
           />
-          <span className="text-sm font-bold tracking-tight text-foreground">METRIX</span>
-          <span className="text-[10px] font-mono text-muted-foreground border border-border/60 px-1 py-0.5 rounded leading-none">
+          <span className="text-[13px] font-bold tracking-tight text-foreground">METRIX</span>
+          <span className="text-[9px] font-mono text-muted-foreground/60 border border-border/50 px-1.5 py-0.5 rounded leading-none ml-0.5">
             IAP
           </span>
         </div>
-        <p className="text-[10px] text-muted-foreground/70 mt-1.5 leading-tight">
+        <p className="text-[9px] text-muted-foreground/45 mt-1 leading-tight tracking-wide">
           Not more data. Better decisions.
         </p>
       </div>
 
-      {/* Workspace switcher */}
+      {/* Account switcher */}
       <div className="px-2 py-2 border-b border-border/40">
-        <WorkspaceSwitcher />
+        <AccountSwitcher />
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto px-2 py-2 space-y-3">
-        {navGroups.map((group) => (
-          <div key={group.label}>
-            <div className="px-2 mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
-              {group.label}
-            </div>
-            <div className="space-y-0.5">
-              {group.items.map((item) => {
-                const Icon = item.icon;
-                const active = isActive(item.href, location);
-                return (
-                  <a
-                    key={item.href}
-                    href={item.href}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      window.history.pushState({}, "", item.href);
-                      window.dispatchEvent(new PopStateEvent("popstate"));
-                    }}
-                    className={cn(
-                      "flex items-center gap-2.5 px-2 py-1.5 rounded text-sm transition-colors",
-                      active
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "text-muted-foreground hover:text-foreground hover:bg-white/5",
-                      item.roadmap && "opacity-60"
-                    )}
-                  >
-                    <Icon className={cn("w-3.5 h-3.5 shrink-0", active ? "text-primary" : "")} />
-                    <span className="flex-1 truncate">{item.label}</span>
-                    {item.roadmap && (
-                      <Lock className="w-2.5 h-2.5 shrink-0 text-muted-foreground/50" />
-                    )}
-                    {item.badge !== undefined && (
-                      <NavBadge value={item.badge} variant={item.badgeVariant} />
-                    )}
-                  </a>
-                );
-              })}
-            </div>
-          </div>
-        ))}
+      <nav
+        className="flex-1 overflow-y-auto px-2 py-2"
+        aria-label="Main workspace navigation"
+      >
+        <ol className="space-y-0.5 list-none p-0 m-0">
+          {navTree.map((section) =>
+            section.children?.length ? (
+              <ExpandableSection
+                key={section.id}
+                section={section}
+                badgeCounts={badgeCounts}
+              />
+            ) : (
+              <LeafSection
+                key={section.id}
+                section={section}
+                badgeCounts={badgeCounts}
+              />
+            )
+          )}
+        </ol>
       </nav>
 
       {/* Footer */}
-      <div className="px-4 py-3 border-t border-border/40">
-        <div className="text-[10px] text-muted-foreground/50 font-mono">
-          METRIX IAP v0.1.0
-        </div>
-        <div className="text-[10px] text-muted-foreground/40 font-mono mt-0.5">
-          SAMPLE / DEMO DATA
+      <div className="px-3 py-3 border-t border-border/40 space-y-2.5">
+        <DataSourceBadgeToggle />
+        <div className="space-y-0.5">
+          <div className="text-[9px] text-muted-foreground/40 font-mono tracking-wider">
+            METRIX IAP v2.0-rc
+          </div>
+          <div className="text-[9px] text-muted-foreground/30 font-mono">
+            SAMPLE / DEMO DATA
+          </div>
         </div>
       </div>
     </aside>

@@ -518,6 +518,7 @@ export interface AnalysisRun {
   date_range_start: string;
   date_range_end: string;
   confidence_score: number; // 0–100
+  cohort_key?: CohortKey; // v2.0 — primary cohort dimension for this run
   signal_quality: SignalQualityScore;
   priority_read: string; // primary diagnostic text
   executive_diagnosis: string;
@@ -586,6 +587,7 @@ export interface CreativeBrief {
   id: string;
   workspace_id: string;
   run_id: string;
+  cohort_key?: CohortKey; // v2.0 — cohort dimension the brief targets
   status: BriefStatus;
   title: string;
   objective: string;
@@ -627,6 +629,7 @@ export interface Report {
   workspace_id: string;
   run_id: string;
   ad_account_id: string;
+  cohort_key?: CohortKey; // v2.0 — primary cohort dimension reported on
   title: string;
   status: ReportStatus;
   client_ready: boolean;
@@ -749,4 +752,278 @@ export interface NeedsAttentionItem {
   message: string;
   severity: "Critical" | "High" | "Medium";
   created_at: string;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// V2.0 SCHEMA — Four-Plane Architecture
+// Added to match Section 11 of the blueprint.
+// ═══════════════════════════════════════════════════════════════════════
+
+// ─── Cohort System (Section 6.3) ──────────────────────────────────────
+
+export type CohortKey =
+  | "age_gender"
+  | "placement"
+  | "device"
+  | "creative_angle"
+  | "funnel_stage"
+  | "language"
+  | "geography"
+  | "audience_type";
+
+export interface CohortDefinition {
+  id: string;
+  cohort_key: CohortKey;
+  label: string;
+  description: string;
+  funnel_stages: string[];
+  kpi_targets: Record<string, number>; // e.g. { cpa_max_usd: 45, roas_min: 2.0 }
+  created_at: string;
+}
+
+export interface ClientEnabledCohort {
+  id: string;
+  client_id: string;
+  workspace_id: string;
+  cohort_key: CohortKey;
+  cohort_definition_id: string;
+  is_primary: boolean;
+  priority: number; // 1 = highest priority
+  funnel_stages: string[];
+  kpi_targets: Record<string, number>;
+  enabled: boolean;
+  updated_at: string;
+}
+
+// ─── Analysis Run Pipeline (11-prompt chain) ──────────────────────────
+
+export type AnalysisRunStageStatus = "pending" | "running" | "complete" | "failed" | "skipped";
+
+export interface AnalysisRunStage {
+  id: string;
+  run_id: string;
+  stage_number: number; // 1–11
+  stage_name: string;
+  prompt_label: string;
+  status: AnalysisRunStageStatus;
+  started_at?: string;
+  completed_at?: string;
+  duration_ms?: number;
+  output_summary?: string;
+  error_message?: string;
+}
+
+export interface AnalysisRunCohort {
+  id: string;
+  run_id: string;
+  cohort_key: CohortKey;
+  cohort_definition_id: string;
+  snapshot_label: string;
+  was_primary: boolean;
+  kpi_targets_snapshot: Record<string, number>;
+}
+
+// ─── Intelligence Cards (Section 11 / replacing Decision Feed) ────────
+
+export type IntelligenceCardType =
+  | "performance_insight"
+  | "creative_signal"
+  | "budget_signal"
+  | "audience_signal"
+  | "tracking_alert"
+  | "fatigue_alert"
+  | "opportunity";
+
+export type IntelligenceCardSubtype =
+  | "tier_change"
+  | "creative_fatigue"
+  | "hook_winner"
+  | "audience_mismatch"
+  | "cpa_spike"
+  | "roas_recovery"
+  | "tracking_gap"
+  | "scale_candidate"
+  | "retire_candidate"
+  | "validation_needed";
+
+export type EntityScope = "campaign" | "ad_set" | "ad" | "creative" | "account";
+
+export type ReviewStatus = "needs_review" | "reviewed" | "approved" | "rejected";
+
+export type ApprovedFor =
+  | "internal_use"
+  | "client_report"
+  | "creative_brief"
+  | "strategy_export"
+  | "learning_registry";
+
+export interface IntelligenceCard {
+  id: string;
+  run_id: string;
+  workspace_id: string;
+  cohort_key: CohortKey;
+  card_type: IntelligenceCardType;
+  card_subtype: IntelligenceCardSubtype;
+  entity_scope: EntityScope;
+  entity_id?: string;
+  entity_name?: string;
+  title: string;
+  evidence_summary: string;
+  recommendation: string;
+  confidence_grade: ConfidenceLabel;
+  priority: "Critical" | "High" | "Medium" | "Low";
+  severity: "Critical" | "High" | "Medium" | "Low";
+  review_status: ReviewStatus;
+  approved_for?: ApprovedFor[];
+  feeds_learning_registry: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// ─── BSIL Suggestions (Section 10.1 — budget objects only) ───────────
+
+export type BSILSuggestionType =
+  | "increase_budget"
+  | "decrease_budget"
+  | "reallocate_budget"
+  | "pause_campaign"
+  | "scale_ad_set"
+  | "consolidate_ad_sets";
+
+export type BSILBudgetScopeObject = "campaign" | "ad_set";
+
+export type BSILStatus = "pending" | "approved" | "rejected" | "executed_manually";
+
+export interface BSILSuggestion {
+  id: string;
+  run_id: string;
+  workspace_id: string;
+  cohort_key: CohortKey;
+  budget_scope_object: BSILBudgetScopeObject;
+  entity_id: string;
+  entity_name: string;
+  suggestion_type: BSILSuggestionType;
+  rationale: string;
+  confidence_grade: ConfidenceLabel;
+  status: BSILStatus;
+  suggested_delta_usd?: number;
+  suggested_delta_pct?: number;
+  review_status: ReviewStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+// ─── Review & Approval Events (Section 11.4) ──────────────────────────
+
+export type ReviewableEntityType =
+  | "intelligence_card"
+  | "report"
+  | "creative_brief"
+  | "bsil_suggestion";
+
+export interface ReviewEvent {
+  id: string;
+  workspace_id: string;
+  entity_type: ReviewableEntityType;
+  entity_id: string;
+  reviewer_id: string;
+  review_status: ReviewStatus;
+  notes?: string;
+  created_at: string;
+}
+
+export interface ApprovalEvent {
+  id: string;
+  workspace_id: string;
+  entity_type: ReviewableEntityType;
+  entity_id: string;
+  approver_id: string;
+  approved_for: ApprovedFor;
+  feeds_learning_registry: boolean;
+  notes?: string;
+  created_at: string;
+}
+
+export interface HumanEdit {
+  id: string;
+  workspace_id: string;
+  entity_type: ReviewableEntityType;
+  entity_id: string;
+  editor_id: string;
+  field_name: string;
+  old_value: string;
+  new_value: string;
+  edit_reason?: string;
+  created_at: string;
+}
+
+// ─── Creative Alignment Checks ────────────────────────────────────────
+
+export type ResolutionPath = "naming_convention" | "ad_id_fallback" | "unresolved";
+
+export type ThresholdStatus = "pass" | "flagged";
+
+export type CheckStage = "pre_publish" | "post_hoc";
+
+export interface CreativeAlignmentCheck {
+  id: string;
+  creative_concept_id: string;
+  workspace_id: string;
+  resolution_path: ResolutionPath;
+  alignment_score?: number; // 0–100; undefined if unresolved
+  threshold_status?: ThresholdStatus;
+  check_stage: CheckStage;
+  user_bypassed: boolean;
+  bypass_reason?: string;
+  checked_at: string;
+}
+
+// ─── Alert Rules ──────────────────────────────────────────────────────
+
+export type AlertRuleCondition =
+  | "cpa_above_threshold"
+  | "roas_below_threshold"
+  | "fatigue_score_critical"
+  | "tracking_gap_detected"
+  | "spend_anomaly";
+
+export interface AlertRule {
+  id: string;
+  workspace_id: string;
+  cohort_key?: CohortKey;
+  condition: AlertRuleCondition;
+  threshold_value: number;
+  severity: "Critical" | "High" | "Medium";
+  is_active: boolean;
+  created_by: string;
+  created_at: string;
+}
+
+// ─── Learning Registry (Section 11.4) ─────────────────────────────────
+
+export interface LearningRegistryEntry {
+  id: string;
+  workspace_id: string;
+  cohort_key: CohortKey;
+  entity_type: ReviewableEntityType;
+  entity_id: string;
+  entity_title: string;
+  approved_for: ApprovedFor;
+  approval_event_id: string;
+  signal_summary: string;
+  confidence_grade: ConfidenceLabel;
+  feeds_optimization_loop: boolean;
+  recorded_at: string;
+  is_superseded: boolean;
+  superseded_by?: string;
+}
+
+// ─── Updated AnalysisRun with v2.0 fields ─────────────────────────────
+
+export interface AnalysisRunV2 extends AnalysisRun {
+  cohort_key: CohortKey;
+  stages: AnalysisRunStage[];
+  active_cohorts: AnalysisRunCohort[];
+  intelligence_cards: IntelligenceCard[];
+  bsil_suggestions: BSILSuggestion[];
 }
