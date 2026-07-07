@@ -4,7 +4,8 @@
 
 import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
-import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
+import { getAdAccount, getAnalysisData, getOptimizationLoop } from "@/lib/data/metrixSeedAdapter";
+import { RecommendationDeck, actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
 import {
   ModuleHeader, ScopeBanner, CaveatNote, UnconfiguredState, PendingState,
   readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel,
@@ -164,7 +165,7 @@ function PlacementTable({ rows }: { rows: PlacementRow[] }) {
 
 // ─── Page ─────────────────────────────────────────────────────────────
 
-type Tab = "cells" | "variables" | "demographics" | "placements";
+type Tab = "cells" | "top" | "variables" | "demographics" | "placements" | "recs";
 
 export function AnalysisView() {
   const adAccountId = useScopedAdAccountId();
@@ -199,11 +200,25 @@ export function AnalysisView() {
     );
   }
 
+  const optLoop = getOptimizationLoop(adAccountId);
+  const deckCards: DeckCard[] = (optLoop?.recommendation_cards ?? []).map((c) => ({
+    id: c.id,
+    title: c.title,
+    rationale: c.rationale,
+    recommendedAction: c.recommended_action,
+    impact: c.impact,
+    confidence: c.confidence,
+    scope: c.scope,
+    actionGroup: actionGroupForScope(c.scope),
+  }));
+
   const TABS: { id: Tab; label: string; count: number }[] = [
     { id: "cells", label: "Creative cells", count: a.performance_by_cell.length },
-    { id: "variables", label: "Variables", count: a.v3_variable_performance.length },
-    { id: "demographics", label: "Demographics", count: a.demographic_registration_signal.length },
+    { id: "top", label: "Top performers", count: a.top_checkout_cells.length + a.top_checkout_variables.length },
+    { id: "variables", label: "Creative DNA", count: a.v3_variable_performance.length },
+    { id: "demographics", label: "Audience", count: a.demographic_registration_signal.length },
     { id: "placements", label: "Placements", count: a.v3_placement_signal.length + a.c4e_placement_signal.length },
+    { id: "recs", label: "Recommendations", count: deckCards.length },
   ];
 
   return (
@@ -226,11 +241,32 @@ export function AnalysisView() {
       </div>
 
       <div className="px-6 py-5 space-y-4">
-        <CaveatNote text={a.performance_by_cell[0]?.iap_read ? "V3 checkout results were not populated by age/gender. Demographic checkout claims remain directional based on spend and click quality, not result counts." : "Demographic checkout claims remain directional."} />
+        {tab !== "recs" && (
+          <CaveatNote text={a.performance_by_cell[0]?.iap_read ? "V3 checkout results were not populated by age/gender. Demographic checkout claims remain directional based on spend and click quality, not result counts." : "Demographic checkout claims remain directional."} />
+        )}
 
         {tab === "cells" && <CellTable rows={a.performance_by_cell} />}
+        {tab === "top" && (
+          <div className="space-y-5">
+            <div>
+              <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-2">Top checkout cells</h3>
+              {a.top_checkout_cells.length ? <CellTable rows={a.top_checkout_cells} /> : <PendingState title="No ranked cells" message="No checkout-ranked cells for this account yet." />}
+            </div>
+            <div>
+              <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-2">Top checkout variables</h3>
+              {a.top_checkout_variables.length ? <VariableTable rows={a.top_checkout_variables} /> : <PendingState title="No ranked variables" message="No checkout-ranked variables for this account yet." />}
+            </div>
+          </div>
+        )}
         {tab === "variables" && <VariableTable rows={a.v3_variable_performance} />}
         {tab === "demographics" && <DemographicTable rows={a.demographic_registration_signal} />}
+        {tab === "recs" && (
+          deckCards.length ? (
+            <RecommendationDeck scopeId={account.id} cards={deckCards} emptyLabel="All recommendations reviewed" />
+          ) : (
+            <PendingState title="No recommendations" message="Optimization loop recommendations will appear here once generated." />
+          )
+        )}
         {tab === "placements" && (
           <div className="space-y-5">
             <div>

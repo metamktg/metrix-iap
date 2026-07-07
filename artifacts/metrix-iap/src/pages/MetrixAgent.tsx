@@ -32,7 +32,7 @@ export function MetrixAgent() {
         </span>
         <h1 className="text-[18px] font-semibold text-foreground leading-tight">Metrix Agent</h1>
         <p className="text-[12px] text-muted-foreground/60 mt-0.5">
-          Coming soon: source-backed AI operator for Metrix workflows.
+          A source-backed AI operator for Metrix workflows. Not enabled in this build.
         </p>
       </div>
 
@@ -54,8 +54,8 @@ export function MetrixAgent() {
                 <div className="w-10 h-10 rounded-xl border border-primary/30 bg-primary/10 flex items-center justify-center">
                   <Brain className="w-5 h-5 text-primary" />
                 </div>
-                <span className="text-[10px] font-semibold uppercase tracking-widest border border-primary/30 bg-primary/10 text-primary px-2 py-1 rounded">
-                  Coming Soon
+                <span className="text-[10px] font-semibold uppercase tracking-widest border border-border/40 bg-white/[0.04] text-muted-foreground/70 px-2 py-1 rounded">
+                  Not enabled
                 </span>
               </div>
 

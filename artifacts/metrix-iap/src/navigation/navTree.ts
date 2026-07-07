@@ -24,6 +24,8 @@ export type NavSection = {
   label: string;
   // Leaf section: direct link, no expand/collapse
   to?: string;
+  // Additional locations that should mark this section active.
+  matchPaths?: string[];
   // Expandable section: renders children list
   children?: NavChild[];
   badgeKey?: NavBadgeKey;
@@ -32,10 +34,11 @@ export type NavSection = {
 
 export const navTree: NavSection[] = [
   {
-    id: "account",
+    id: "overview",
     number: "00",
-    label: "Ad Account",
-    to: "/app/account",
+    label: "Overview",
+    to: "/",
+    matchPaths: ["/app/account"],
     dataSource: "core_reanalysis_read, campaign_summary",
   },
   {

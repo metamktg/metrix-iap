@@ -175,6 +175,39 @@ export function MetricTile({ label, value, sub }: { label: string; value: string
   );
 }
 
+// ─── In-page module tabs (sub-navigation) ────────────────────────────
+// Restores the layered feel inside a module without URL sub-routes.
+
+export function ModuleTabs<T extends string>({
+  tabs,
+  active,
+  onChange,
+}: {
+  tabs: { id: T; label: string; count?: number; Icon?: React.ComponentType<{ className?: string }> }[];
+  active: T;
+  onChange: (id: T) => void;
+}) {
+  return (
+    <div className="px-6 border-b border-border/40 flex items-center gap-0 overflow-x-auto">
+      {tabs.map((t) => (
+        <button
+          key={t.id}
+          onClick={() => onChange(t.id)}
+          aria-current={active === t.id ? "page" : undefined}
+          className={cn(
+            "flex items-center gap-1.5 h-10 px-3 text-[12px] font-medium border-b-2 transition-colors whitespace-nowrap shrink-0",
+            active === t.id ? "border-primary text-foreground" : "border-transparent text-muted-foreground/60 hover:text-foreground"
+          )}
+        >
+          {t.Icon && <t.Icon className="w-3 h-3" />}
+          {t.label}
+          {t.count != null && <span className="text-[9px] font-mono text-muted-foreground/40">{t.count}</span>}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 // ─── Section card wrapper ─────────────────────────────────────────────
 
 export function SectionCard({

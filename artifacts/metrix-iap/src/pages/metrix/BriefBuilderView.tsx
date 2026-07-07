@@ -1,9 +1,11 @@
 // ─── Brief Builder ────────────────────────────────────────────────────
 // Draft briefs derived from strategy pillars. Scoped to the active account.
+// Sub-tabs filter by asset type when more than one type is present.
 
+import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { getAdAccount, getBriefBuilder, getStrategyData } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, ScopeBanner, UnconfiguredState, PendingState, CaveatNote } from "./shared";
+import { ModuleHeader, ScopeBanner, ModuleTabs, UnconfiguredState, PendingState, CaveatNote } from "./shared";
 import { FileText, Sparkles } from "lucide-react";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -13,6 +15,7 @@ const STATUS_LABEL: Record<string, string> = {
 export function BriefBuilderView() {
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(adAccountId);
+  const [tab, setTab] = useState<string>("all");
 
   if (!account) {
     return (
@@ -45,16 +48,25 @@ export function BriefBuilderView() {
     );
   }
 
+  const briefs = bb.draft_briefs;
+  const types = Array.from(new Set(briefs.map((b) => b.asset_type)));
+  const shown = tab === "all" ? briefs : briefs.filter((b) => b.asset_type === tab);
+  const tabs = [
+    { id: "all", label: "All briefs", count: briefs.length },
+    ...types.map((t) => ({ id: t, label: t, count: briefs.filter((b) => b.asset_type === t).length })),
+  ];
+
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
       <ModuleHeader section="Strategy · 03" title="Brief Builder" subtitle="Creative briefs generated from strategy message pillars." table="creative_briefs" />
       <ScopeBanner account={account} />
+      {types.length > 1 && <ModuleTabs tabs={tabs} active={tab} onChange={setTab} />}
 
       <div className="px-6 py-5 space-y-4 max-w-4xl">
         <CaveatNote text={bb.source_policy} />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {bb.draft_briefs.map((b) => (
+          {shown.map((b) => (
             <div key={b.id} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col">
               <div className="flex items-center justify-between gap-2 mb-2">
                 <span className="inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/60 border border-border/40 px-1.5 py-0.5 rounded leading-none">

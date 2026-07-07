@@ -1,13 +1,13 @@
 // ─── MST (Message-Strategy Testing matrix) ────────────────────────────
-// Bookster → active: local library + 4×4 historical matrix. No Pass/Fail.
-// SKOV → not_available: setup state.
+// Bookster → active: local library + 4×4 historical matrix + variable library.
+// No Pass/Fail. SKOV → not_available: setup state.
 
 import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { getAdAccount, getMST } from "@/lib/data/metrixSeedAdapter";
 import { ModuleHeader, ScopeBanner, CaveatNote, UnconfiguredState, PendingState, readableVariables } from "./shared";
 import { cn } from "@/lib/utils";
-import { Grid3x3, Library } from "lucide-react";
+import { Grid3x3, Library, Tags } from "lucide-react";
 import type { MSTMatrix } from "@/lib/data/seedTypes";
 
 const ROW_COLOR: Record<string, string> = {
@@ -75,10 +75,12 @@ function Matrix({ matrix }: { matrix: MSTMatrix }) {
   );
 }
 
+type View = "matrix" | "library" | "variables";
+
 export function MSTView() {
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(adAccountId);
-  const [view, setView] = useState<"matrix" | "library">("matrix");
+  const [view, setView] = useState<View>("matrix");
 
   if (!account) {
     return (
@@ -111,21 +113,45 @@ export function MSTView() {
   const library = mst.local_book2_library ?? [];
   const matrix = mst.historical_matrix_4x4;
 
+  // ── Variable library: distinct variable codes by family, with usage count ──
+  const VAR_FAMILIES: { label: string; get: (c: (typeof library)[number]) => string | null | undefined }[] = [
+    { label: "Hook", get: (c) => c.hook_variable },
+    { label: "Tone", get: (c) => c.tone_variable },
+    { label: "Framework", get: (c) => c.framework_variable },
+    { label: "Concept", get: (c) => c.concept_variable },
+    { label: "Proof", get: (c) => c.proof_variable },
+    { label: "CTA", get: (c) => c.cta_variable },
+  ];
+  const variableGroups = VAR_FAMILIES.map((f) => {
+    const counts = new Map<string, number>();
+    for (const c of library) {
+      const raw = f.get(c);
+      if (!raw) continue;
+      counts.set(raw, (counts.get(raw) ?? 0) + 1);
+    }
+    const items = [...counts.entries()].map(([code, count]) => ({ code, count })).sort((a, b) => b.count - a.count);
+    return { label: f.label, items };
+  }).filter((g) => g.items.length > 0);
+  const distinctVarCount = variableGroups.reduce((n, g) => n + g.items.length, 0);
+
+  const btn = (v: View, Icon: React.ComponentType<{ className?: string }>, label: string, count?: number) => (
+    <button onClick={() => setView(v)} className={cn("flex items-center gap-1 h-7 px-2.5 rounded text-[11px] font-medium transition-colors", view === v ? "bg-white/[0.06] text-foreground" : "text-muted-foreground/60 hover:text-foreground")}>
+      <Icon className="w-3 h-3" /> {label} {count != null && <span className="font-mono text-muted-foreground/40">{count}</span>}
+    </button>
+  );
+
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
       <ModuleHeader
         section="MST · 05"
         title="Message-Strategy Testing"
-        subtitle="Concept × shared-variable matrix and the local creative library for this account."
+        subtitle="Concept × shared-variable matrix, the local creative library, and the variable library for this account."
         table="mst_matrices"
         right={
           <div className="flex items-center gap-1 rounded-md border border-border/40 p-0.5">
-            <button onClick={() => setView("matrix")} className={cn("flex items-center gap-1 h-7 px-2.5 rounded text-[11px] font-medium transition-colors", view === "matrix" ? "bg-white/[0.06] text-foreground" : "text-muted-foreground/60 hover:text-foreground")}>
-              <Grid3x3 className="w-3 h-3" /> Matrix
-            </button>
-            <button onClick={() => setView("library")} className={cn("flex items-center gap-1 h-7 px-2.5 rounded text-[11px] font-medium transition-colors", view === "library" ? "bg-white/[0.06] text-foreground" : "text-muted-foreground/60 hover:text-foreground")}>
-              <Library className="w-3 h-3" /> Library <span className="font-mono text-muted-foreground/40">{library.length}</span>
-            </button>
+            {btn("matrix", Grid3x3, "Matrix")}
+            {btn("library", Library, "Concept library", library.length)}
+            {btn("variables", Tags, "Variable library", distinctVarCount)}
           </div>
         }
       />
@@ -163,6 +189,35 @@ export function MSTView() {
               </div>
             ))}
           </div>
+        )}
+
+        {view === "variables" && (
+          distinctVarCount === 0 ? (
+            <PendingState title="No variables yet" message="The variable library aggregates from concepts in the local library." icon={Tags} />
+          ) : (
+            <div className="space-y-5">
+              <p className="text-[11px] text-muted-foreground/55">Distinct creative variables in use across this account's concept library, grouped by family. The count shows how many concepts use each variable.</p>
+              {variableGroups.map((g) => (
+                <div key={g.label}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/40">{g.label}</h3>
+                    <span className="text-[9px] font-mono text-muted-foreground/35">{g.items.length}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {g.items.map((it) => (
+                      <div key={it.code} className="flex items-center gap-2 rounded-lg border border-border/40 bg-white/[0.02] px-2.5 py-1.5">
+                        <div>
+                          <div className="text-[11px] font-medium text-foreground/85 leading-tight">{readableVariables(it.code)}</div>
+                          <div className="text-[9px] font-mono text-muted-foreground/40 mt-0.5">{it.code}</div>
+                        </div>
+                        <span className="text-[9px] font-mono text-muted-foreground/50 border border-border/40 rounded px-1.5 py-0.5 leading-none">×{it.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
         )}
       </div>
     </div>

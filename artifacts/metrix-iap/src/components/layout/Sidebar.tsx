@@ -39,7 +39,14 @@ function isChildActive(to: string, location: string): boolean {
   return location === to || location.startsWith(to + "/");
 }
 
+function matchesExtraPaths(section: NavSection, location: string): boolean {
+  return (section.matchPaths ?? []).some(
+    (p) => location === p || location.startsWith(p + "/")
+  );
+}
+
 function isSectionActive(section: NavSection, location: string): boolean {
+  if (matchesExtraPaths(section, location)) return true;
   if (section.to) return location === section.to || location.startsWith(section.to + "/");
   return (section.children ?? []).some(c => isChildActive(c.to, location));
 }

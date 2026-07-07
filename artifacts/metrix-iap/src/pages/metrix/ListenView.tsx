@@ -1,9 +1,11 @@
 // ─── Listen ───────────────────────────────────────────────────────────
 // Signal intake for the active ad account. Read-only source-backed signals.
+// Sub-tabs filter by signal scope (restores the layered feel).
 
+import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { getAdAccount, getListenSignals } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, ScopeBanner, ConfidenceBadge, UnconfiguredState, PendingState } from "./shared";
+import { ModuleHeader, ScopeBanner, ConfidenceBadge, ModuleTabs, UnconfiguredState, PendingState } from "./shared";
 import { cn } from "@/lib/utils";
 import { Radio, ArrowRight } from "lucide-react";
 
@@ -20,9 +22,13 @@ const SCOPE_STYLE: Record<string, string> = {
   mst: "bg-purple-500/10 text-purple-300 border-purple-500/20",
 };
 
+const SCOPE_ORDER = ["creative", "funnel", "placement", "mst"];
+const SCOPE_LABEL: Record<string, string> = { creative: "Creative", funnel: "Funnel", placement: "Placement", mst: "MST" };
+
 export function ListenView() {
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(adAccountId);
+  const [tab, setTab] = useState<string>("all");
 
   if (!account) {
     return (
@@ -42,18 +48,28 @@ export function ListenView() {
   }
 
   const signals = getListenSignals(adAccountId);
+  const present = SCOPE_ORDER.filter((s) => signals.some((x) => x.scope === s));
+  const tabs = [
+    { id: "all", label: "All signals", count: signals.length },
+    ...present.map((s) => ({ id: s, label: SCOPE_LABEL[s] ?? s, count: signals.filter((x) => x.scope === s).length })),
+  ];
+  const shown = tab === "all" ? signals : signals.filter((x) => x.scope === tab);
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
       <ModuleHeader section="Listen · 01" title="Signals" subtitle="Source-backed signals surfaced from this account's latest analysis." table="core_reanalysis_read, v3_placement_signal" />
       <ScopeBanner account={account} />
 
+      {signals.length > 0 && <ModuleTabs tabs={tabs} active={tab} onChange={setTab} />}
+
       <div className="px-6 py-5 max-w-3xl">
         {signals.length === 0 ? (
           <PendingState title="No signals yet" message="Signals appear here once analysis has run for this account." icon={Radio} />
+        ) : shown.length === 0 ? (
+          <PendingState title="No signals in this scope" message="Switch scope to view other signals." icon={Radio} />
         ) : (
           <div className="space-y-3">
-            {signals.map((s) => (
+            {shown.map((s) => (
               <div key={s.id} className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
                 <div className="flex items-center gap-1.5 flex-wrap mb-2">
                   <span className={cn("text-[9px] font-semibold border px-1.5 py-0.5 rounded uppercase tracking-wide leading-none", SCOPE_STYLE[s.scope] ?? "bg-muted text-muted-foreground/60 border-border/40")}>{s.scope}</span>
