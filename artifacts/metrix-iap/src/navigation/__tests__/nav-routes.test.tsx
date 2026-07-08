@@ -6,35 +6,19 @@
 // Renders the real Router against an in-memory wouter location.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, cleanup } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Router as WouterRouter } from "wouter";
-import { memoryLocation } from "wouter/memory-location";
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { cleanup } from "@testing-library/react";
 
-const seed = JSON.parse(
-  fs.readFileSync(
-    path.resolve(
-      path.dirname(fileURLToPath(import.meta.url)),
-      "../../../../api-server/src/data/metrix_seed_bundle.json"
-    ),
-    "utf-8"
-  )
-);
-
-vi.mock("@/contexts/MetrixDataContext", () => ({
-  useMetrixSeed: () => seed,
-  MetrixDataProvider: ({ children }: { children: React.ReactNode }) => children,
-}));
+vi.mock("@/contexts/MetrixDataContext", async () => {
+  const { seed } = await import("./seed");
+  return {
+    useMetrixSeed: () => seed,
+    MetrixDataProvider: ({ children }: { children: React.ReactNode }) =>
+      children,
+  };
+});
 
 import { navTree } from "../navTree";
-import { AccountProvider } from "@/contexts/AccountContext";
-import { Router as AppRouter } from "@/App";
-
-const NOT_FOUND_TEXT = "This route does not exist.";
-const SESSION_KEY = "metrix_active_account_v1";
+import { renderAt, seedAccountSession, NOT_FOUND_TEXT } from "./harness";
 
 // Every path the sidebar can link to (sections + children + matchPaths).
 const navPaths: { label: string; to: string }[] = navTree.flatMap((section) => [
@@ -63,31 +47,9 @@ const legacyRedirects: [string, string][] = [
   ["/app/settings", "/app/settings/account"],
 ];
 
-function renderAt(initialPath: string) {
-  const location = memoryLocation({ path: initialPath, record: true });
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, enabled: false } },
-  });
-  const result = render(
-    <QueryClientProvider client={queryClient}>
-      <WouterRouter hook={location.hook}>
-        <AccountProvider>
-          <AppRouter />
-        </AccountProvider>
-      </WouterRouter>
-    </QueryClientProvider>
-  );
-  return { ...result, location };
-}
-
 beforeEach(() => {
   cleanup();
-  sessionStorage.clear();
-  sessionStorage.setItem(
-    SESSION_KEY,
-    JSON.stringify({ type: "ad_account", adAccountId: "bookster" })
-  );
-  window.history.replaceState({}, "", "/");
+  seedAccountSession();
 });
 
 describe("every navTree path resolves to a real page", () => {
