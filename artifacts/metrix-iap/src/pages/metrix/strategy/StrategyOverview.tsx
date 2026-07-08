@@ -1,0 +1,122 @@
+// ─── Strategy · Overview ──────────────────────────────────────────────
+// Entry point for the Strategy section: pillar and hypothesis counts,
+// the pillar summaries, and jump-offs into each strategy subpage.
+
+import { useScopedAdAccountId } from "@/contexts/AccountContext";
+import { useMetrixSeed } from "@/contexts/MetrixDataContext";
+import { getAdAccount, getStrategyData, getBriefBuilder } from "@/lib/data/metrixSeedAdapter";
+import {
+  ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
+  SectionCard, CrossLink, fmtNum,
+} from "../shared";
+import { Compass, Map, Users, ListChecks } from "lucide-react";
+
+const SECTION = "Strategy · 04";
+
+export function StrategyOverview() {
+  const seed = useMetrixSeed();
+  const adAccountId = useScopedAdAccountId();
+  const account = getAdAccount(seed, adAccountId);
+
+  return (
+    <ModuleScopeGate section={SECTION} title="Strategy Overview" account={account}>
+      {() => {
+        const acct = account!;
+        const strategy = getStrategyData(seed, adAccountId);
+        const briefs = getBriefBuilder(seed, adAccountId);
+
+        if (!strategy || strategy.message_pillars.length === 0) {
+          return (
+            <div className="flex-1 flex flex-col">
+              <ModuleHeader section={SECTION} title="Strategy Overview" />
+              <ScopeBanner account={acct} />
+              <PendingState title="No strategy yet" message="Strategy pillars derive from validated analysis reads." icon={Compass} />
+            </div>
+          );
+        }
+
+        const pillars = strategy.message_pillars;
+        const hypotheses = strategy.active_hypotheses;
+        const testing = hypotheses.filter((h) => h.status.toLowerCase().includes("test")).length;
+
+        const subpages = [
+          {
+            to: "/app/strategy/map",
+            label: "Strategy Map",
+            Icon: Map,
+            desc: "How pillars, source cells, and hypotheses connect.",
+            stat: `${pillars.length} pillars mapped`,
+          },
+          {
+            to: "/app/strategy/avatars",
+            label: "Avatars / ICP",
+            Icon: Users,
+            desc: "The customer profiles the matrix targets, with their demographic reads.",
+            stat: "From matrix columns",
+          },
+          {
+            to: "/app/strategy/hypotheses",
+            label: "Hypothesis Queue",
+            Icon: ListChecks,
+            desc: "Active hypotheses and their validation status.",
+            stat: `${hypotheses.length} active`,
+          },
+        ];
+
+        return (
+          <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
+            <ModuleHeader
+              section={SECTION}
+              title="Strategy Overview"
+              subtitle="The account's message strategy at a glance: pillars, hypotheses, and where they lead."
+              table="message_pillars, active_hypotheses"
+            />
+            <ScopeBanner account={acct} />
+
+            <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+              <MetricTile label="Message pillars" value={fmtNum(pillars.length)} />
+              <MetricTile label="Active hypotheses" value={fmtNum(hypotheses.length)} />
+              <MetricTile label="In testing" value={fmtNum(testing)} />
+              <MetricTile label="Draft briefs" value={fmtNum(briefs?.draft_briefs.length ?? 0)} />
+            </div>
+
+            <div className="px-6 py-5 space-y-4 max-w-5xl">
+              <SectionCard title="Message pillars" desc="Validated message directions this account's strategy stands on." table="message_pillars">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {pillars.map((p) => (
+                    <div key={p.id} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-1.5">
+                      <span className="text-[10px] font-mono text-muted-foreground/70">{p.id}</span>
+                      <p className="text-[13px] font-semibold text-foreground leading-tight">{p.label}</p>
+                      <p className="text-[11px] text-muted-foreground/80 leading-relaxed">{p.plain_descriptor}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3">
+                  <CrossLink to="/app/strategy/map" label="See the full strategy map" />
+                </div>
+              </SectionCard>
+
+              <SectionCard title="Strategy modules" desc="Each module reads the same account strategy from a different angle.">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {subpages.map((s) => (
+                    <div key={s.to} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <s.Icon className="w-3.5 h-3.5 text-primary" />
+                        <span className="text-[13px] font-semibold text-foreground">{s.label}</span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground/80 leading-relaxed">{s.desc}</p>
+                      <div className="flex items-center justify-between mt-auto pt-1">
+                        <span className="text-[10px] font-mono text-muted-foreground/70">{s.stat}</span>
+                        <CrossLink to={s.to} label="Open" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </SectionCard>
+            </div>
+          </div>
+        );
+      }}
+    </ModuleScopeGate>
+  );
+}

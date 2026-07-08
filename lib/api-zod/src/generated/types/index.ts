@@ -13,6 +13,7 @@ export * from './metrixSeedBundle';
 export * from './metrixSeedBundleAdAccountsItem';
 export * from './metrixSeedBundleAppDefaults';
 export * from './metrixSeedBundleManagerAccount';
+export * from './metrixSeedBundleWorkspaceSettings';
 export * from './waitlistEntriesResult';
 export * from './waitlistEntry';
 export * from './waitlistSignupInput';

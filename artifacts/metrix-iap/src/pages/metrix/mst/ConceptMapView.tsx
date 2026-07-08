@@ -11,12 +11,12 @@ import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
   CrossLink, fmtUSD, fmtNum, eventLabel,
 } from "../shared";
-import { VariableCodeChips } from "./tables";
+import { VariableCodeChips } from "../analysis/tables";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { Network, Layers } from "lucide-react";
 import type { CellPerformanceRow } from "@/lib/data/seedTypes";
 
-const SECTION = "Analysis · 02";
+const SECTION = "MST · 07";
 
 interface ConceptGroup {
   name: string;
@@ -97,7 +97,7 @@ export function ConceptMapView() {
                   >
                     <div className="flex items-center gap-1.5 mb-1.5">
                       {g.cellIds.map((c) => (
-                        <span key={c} className="text-[9px] font-mono text-muted-foreground/50 border border-border/40 px-1 py-0.5 rounded leading-none">{c}</span>
+                        <span key={c} className="text-[9px] font-mono text-muted-foreground/70 border border-border/40 px-1 py-0.5 rounded leading-none">{c}</span>
                       ))}
                     </div>
                     <p className="text-[13px] font-semibold text-foreground leading-tight">{g.name}</p>
@@ -117,7 +117,7 @@ export function ConceptMapView() {
                           <span key={p.id} className="text-[10px] text-primary/80 border border-primary/20 bg-primary/[0.06] px-1.5 py-0.5 rounded leading-none">{p.label}</span>
                         ))
                       ) : (
-                        <span className="text-[10px] text-muted-foreground/40">No pillar linked yet</span>
+                        <span className="text-[10px] text-muted-foreground/60">No pillar linked yet</span>
                       )}
                     </div>
                   </button>
@@ -155,7 +155,7 @@ export function ConceptMapView() {
                   <div className="space-y-2">
                     {detail.cells.filter((r, i, arr) => arr.findIndex((x) => x.cell_id === r.cell_id) === i).map((r) => (
                       <div key={r.cell_id}>
-                        <span className="text-[9px] font-mono text-muted-foreground/50">{r.cell_id}</span>
+                        <span className="text-[9px] font-mono text-muted-foreground/70">{r.cell_id}</span>
                         <VariableCodeChips row={r} />
                       </div>
                     ))}

@@ -11,6 +11,8 @@ export type MetrixSeedBundleManagerAccount = { [key: string]: unknown };
 
 export type MetrixSeedBundleAdAccountsItem = { [key: string]: unknown };
 
+export type MetrixSeedBundleWorkspaceSettings = { [key: string]: unknown };
+
 /**
  * Full Metrix IAP seed bundle. Nested account payloads are intentionally loosely typed; the client narrows them with its own seed types.
  */
@@ -20,6 +22,7 @@ export interface MetrixSeedBundle {
   app_defaults?: MetrixSeedBundleAppDefaults;
   manager_account: MetrixSeedBundleManagerAccount;
   ad_accounts: MetrixSeedBundleAdAccountsItem[];
+  workspace_settings?: MetrixSeedBundleWorkspaceSettings;
   [key: string]: unknown;
  }
 

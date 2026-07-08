@@ -14,7 +14,7 @@ import {
 import { PlacementTable } from "./tables";
 import { Wallet } from "lucide-react";
 
-const SECTION = "Analysis · 02";
+const SECTION = "Analysis · 03";
 
 export function BudgetView() {
   const seed = useMetrixSeed();
@@ -92,10 +92,10 @@ export function BudgetView() {
                       <div key={event} className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
                         <p className="text-[11px] font-semibold text-foreground mb-2">{eventLabel(event)}</p>
                         <div className="space-y-1.5 text-[11px] tabular-nums">
-                          <div className="flex justify-between"><span className="text-muted-foreground/50">Spend</span><span className="text-foreground/85">{fmtUSD(totals.spend, 0)}</span></div>
-                          <div className="flex justify-between"><span className="text-muted-foreground/50">Results</span><span className="text-foreground/85">{fmtNum(totals.results)}</span></div>
-                          <div className="flex justify-between"><span className="text-muted-foreground/50">CPA</span><span className="text-foreground/85">{totals.results > 0 ? fmtUSD(totals.spend / totals.results) : "—"}</span></div>
-                          <div className="flex justify-between"><span className="text-muted-foreground/50">Link clicks</span><span className="text-foreground/85">{fmtNum(totals.link_clicks)}</span></div>
+                          <div className="flex justify-between"><span className="text-muted-foreground/70">Spend</span><span className="text-foreground/85">{fmtUSD(totals.spend, 0)}</span></div>
+                          <div className="flex justify-between"><span className="text-muted-foreground/70">Results</span><span className="text-foreground/85">{fmtNum(totals.results)}</span></div>
+                          <div className="flex justify-between"><span className="text-muted-foreground/70">CPA</span><span className="text-foreground/85">{totals.results > 0 ? fmtUSD(totals.spend / totals.results) : "—"}</span></div>
+                          <div className="flex justify-between"><span className="text-muted-foreground/70">Link clicks</span><span className="text-foreground/85">{fmtNum(totals.link_clicks)}</span></div>
                         </div>
                       </div>
                     ))}
@@ -135,11 +135,11 @@ export function BudgetView() {
                 >
                   <div className="space-y-5">
                     <div>
-                      <h4 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-2">V3 placement signal</h4>
+                      <h4 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">V3 placement signal</h4>
                       <PlacementTable rows={a.v3_placement_signal} />
                     </div>
                     <div>
-                      <h4 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-2">C4E placement signal</h4>
+                      <h4 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">C4E placement signal</h4>
                       <PlacementTable rows={a.c4e_placement_signal} />
                     </div>
                   </div>

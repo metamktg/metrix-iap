@@ -141,7 +141,7 @@ export function ConnectMetaDialog({
 
         {step === 1 && (
           <div className="space-y-3">
-            <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/40">
+            <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60">
               Select ad account to link
             </div>
             <div className="rounded-lg border border-primary/30 bg-primary/[0.06] p-3 flex items-center gap-3">
@@ -150,11 +150,11 @@ export function ConnectMetaDialog({
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-[12px] font-semibold text-foreground">{account.name}</div>
-                <div className="text-[10px] font-mono text-muted-foreground/50">{account.platform} · {account.id}</div>
+                <div className="text-[10px] font-mono text-muted-foreground/70">{account.platform} · {account.id}</div>
               </div>
               <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
             </div>
-            <p className="text-[10px] text-muted-foreground/40 leading-relaxed">
+            <p className="text-[10px] text-muted-foreground/60 leading-relaxed">
               In the live flow, every ad account you can access through Meta Business Manager
               would be listed here.
             </p>
@@ -277,7 +277,7 @@ export function ManualImportDialog({
                       : "border-border/40 bg-white/[0.02] hover:bg-white/[0.04]"
                   )}
                 >
-                  <Icon className={cn("w-4 h-4 shrink-0 mt-0.5", kind === id ? "text-primary" : "text-muted-foreground/50")} />
+                  <Icon className={cn("w-4 h-4 shrink-0 mt-0.5", kind === id ? "text-primary" : "text-muted-foreground/70")} />
                   <div className="min-w-0">
                     <div className="text-[12px] font-semibold text-foreground">{title}</div>
                     <p className="text-[11px] text-muted-foreground/70 leading-relaxed mt-0.5">{desc}</p>
@@ -300,7 +300,7 @@ export function ManualImportDialog({
                   onClick={() => fileRef.current?.click()}
                   className="w-full flex flex-col items-center gap-1.5 p-5 rounded-lg border border-dashed border-border/60 hover:border-primary/40 hover:bg-white/[0.02] transition-colors"
                 >
-                  <Upload className="w-4 h-4 text-muted-foreground/50" />
+                  <Upload className="w-4 h-4 text-muted-foreground/70" />
                   {fileName ? (
                     <span className="text-[12px] font-medium text-foreground">{fileName}</span>
                   ) : (
@@ -321,7 +321,7 @@ export function ManualImportDialog({
                   "flex items-center gap-1.5 h-9 px-4 rounded-md border text-[12px] font-medium transition-colors",
                   kind && fileName
                     ? "bg-primary/15 border-primary/30 text-primary hover:bg-primary/25"
-                    : "border-border/40 text-muted-foreground/40 cursor-not-allowed"
+                    : "border-border/40 text-muted-foreground/60 cursor-not-allowed"
                 )}
               >
                 Stage import <ArrowRight className="w-3.5 h-3.5" />

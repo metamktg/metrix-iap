@@ -59,12 +59,12 @@ export function Topbar() {
     <header className="h-11 flex items-center gap-3 px-4 shrink-0 mx-topbar">
       {/* Breadcrumb */}
       <nav aria-label="Breadcrumb" className="flex items-center gap-0 flex-1 min-w-0">
-        <span className="text-[11px] font-mono text-muted-foreground/40 shrink-0 pr-1">MX</span>
+        <span className="text-[11px] font-mono text-muted-foreground/60 shrink-0 pr-1">MX</span>
         {crumbs.map((crumb, i) => {
           const isLast = i === crumbs.length - 1;
           return (
             <span key={i} className="flex items-center min-w-0">
-              <ChevronRight className="w-3 h-3 text-muted-foreground/25 shrink-0 mx-0.5" />
+              <ChevronRight className="w-3 h-3 text-muted-foreground/50 shrink-0 mx-0.5" />
               <span className={cn("text-[12px] truncate", isLast ? "text-foreground font-medium" : "text-muted-foreground/60")}>
                 {crumb.label}
               </span>
@@ -80,7 +80,7 @@ export function Topbar() {
         </div>
       ) : unconfigured ? (
         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground border border-border/50 rounded px-2 py-1 shrink-0">
-          <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40" />
+          <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60" />
           <span>Setup required</span>
         </div>
       ) : (

@@ -8,6 +8,7 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, cleanup, fireEvent, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -27,42 +28,61 @@ vi.mock("@/contexts/MetrixDataContext", () => ({
   MetrixDataProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AccountProvider } from "@/contexts/AccountContext";
 import { SignalView } from "../listen/SignalView";
 import { AlertsView } from "../listen/AlertsView";
 import { RecommendationsView } from "../listen/RecommendationsView";
+import { AnalysisOverview } from "../analysis/AnalysisOverview";
 import { IapLibraryView } from "../analysis/IapLibraryView";
-import { ConceptMapView } from "../analysis/ConceptMapView";
+import { AudienceView } from "../analysis/AudienceView";
+import { PlacementsView } from "../analysis/PlacementsView";
 import { BudgetView } from "../analysis/BudgetView";
+import { StrategyOverview } from "../strategy/StrategyOverview";
+import { StrategyMapView } from "../strategy/StrategyMapView";
 import { HypothesisQueueView } from "../strategy/HypothesisQueueView";
 import { AvatarsView } from "../strategy/AvatarsView";
 import { BriefBuilderView } from "../briefs/BriefBuilderView";
 import { BriefHistoryView } from "../briefs/BriefHistoryView";
-import { MSTView } from "../MSTView";
-import { ReportBuilderView } from "../ReportBuilderView";
-import { SettingsView } from "../SettingsView";
+import { NewReportView } from "../reports/NewReportView";
+import { ReportHistoryView } from "../reports/ReportHistoryView";
+import { ExportsView } from "../reports/ExportsView";
+import { ConceptMapView } from "../mst/ConceptMapView";
+import { MatrixBuilderView } from "../mst/MatrixBuilderView";
+import { CreativeScanView } from "../mst/CreativeScanView";
+import { CrossmapResultsView } from "../mst/CrossmapResultsView";
+import { AccountSettingsView } from "../settings/AccountSettingsView";
 import { AdAccountOverview } from "../AdAccountOverview";
 
 const SESSION_KEY = "metrix_active_account_v1";
 
+// Every view gated by ModuleScopeGate (uniform pending/unconfigured states).
 const GATED_VIEWS: [string, React.ComponentType][] = [
   ["Listen · Signal", SignalView],
   ["Listen · Alerts", AlertsView],
   ["Listen · Recommendations", RecommendationsView],
+  ["Analysis · Overview", AnalysisOverview],
   ["Analysis · IAP Library", IapLibraryView],
-  ["Analysis · Concept Map", ConceptMapView],
+  ["Analysis · Audience", AudienceView],
+  ["Analysis · Placements", PlacementsView],
   ["Analysis · Budget", BudgetView],
+  ["Strategy · Overview", StrategyOverview],
+  ["Strategy · Map", StrategyMapView],
   ["Strategy · Hypothesis Queue", HypothesisQueueView],
   ["Strategy · Avatars", AvatarsView],
   ["Briefs · Brief Builder", BriefBuilderView],
   ["Briefs · History", BriefHistoryView],
+  ["Reports · New Report", NewReportView],
+  ["Reports · History", ReportHistoryView],
+  ["Reports · Exports", ExportsView],
+  ["MST · Concept Map", ConceptMapView],
+  ["MST · Matrix Builder", MatrixBuilderView],
+  ["MST · Creative Scan", CreativeScanView],
+  ["MST · Crossmap Results", CrossmapResultsView],
 ];
 
+// Views that gate themselves (custom no-account / unconfigured handling).
 const SELF_GATED_VIEWS: [string, React.ComponentType][] = [
-  ["MST", MSTView],
-  ["Report Builder", ReportBuilderView],
-  ["Settings", SettingsView],
+  ["Settings · Account", AccountSettingsView],
   ["Ad Account Overview", AdAccountOverview],
 ];
 

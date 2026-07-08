@@ -129,6 +129,9 @@ components:
           items:
             type: object
             additionalProperties: true
+        workspace_settings:
+          type: object
+          additionalProperties: true
       required:
         - schema_version
         - manager_account

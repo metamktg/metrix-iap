@@ -13,13 +13,13 @@ function PendingRow({ label, sub }: { label: string; sub?: string }) {
   return (
     <div className="flex items-start gap-3 py-3 border-b border-border/20 last:border-b-0">
       <div className="w-5 h-5 rounded border border-border/40 bg-white/[0.03] flex items-center justify-center shrink-0 mt-0.5">
-        <Clock className="w-2.5 h-2.5 text-muted-foreground/30" />
+        <Clock className="w-2.5 h-2.5 text-muted-foreground/60" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-[12px] font-medium text-foreground/70 leading-tight">{label}</p>
-        {sub && <p className="text-[10px] text-muted-foreground/40 mt-0.5 leading-tight">{sub}</p>}
+        {sub && <p className="text-[10px] text-muted-foreground/60 mt-0.5 leading-tight">{sub}</p>}
       </div>
-      <span className="text-[8px] font-semibold uppercase tracking-widest text-muted-foreground/30 border border-border/30 px-1.5 py-0.5 rounded shrink-0">
+      <span className="text-[8px] font-semibold uppercase tracking-widest text-muted-foreground/60 border border-border/30 px-1.5 py-0.5 rounded shrink-0">
         Pending
       </span>
     </div>
@@ -77,13 +77,13 @@ function WaitlistForm() {
       </p>
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
-          <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/40" />
+          <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/60" />
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@company.com"
-            className="w-full h-9 pl-8 pr-3 rounded-lg border border-border/50 bg-white/[0.03] text-[12px] text-foreground placeholder:text-muted-foreground/35 focus:outline-none focus:border-primary/50 transition-colors"
+            className="w-full h-9 pl-8 pr-3 rounded-lg border border-border/50 bg-white/[0.03] text-[12px] text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/50 transition-colors"
             aria-label="Email address"
           />
         </div>
@@ -113,7 +113,7 @@ export function MetrixAgent() {
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
       {/* Header */}
       <div className="px-6 py-5 border-b border-border/40">
-        <span className="text-[10px] font-mono text-muted-foreground/40 uppercase tracking-widest block mb-1">
+        <span className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest block mb-1">
           Metrix Agent · 07
         </span>
         <h1 className="text-[18px] font-semibold text-foreground leading-tight">Metrix Agent</h1>
@@ -163,11 +163,11 @@ export function MetrixAgent() {
                 ].map(({ icon: Icon, label, sub }) => (
                   <div key={label} className="flex items-start gap-3 p-2.5 rounded-lg border border-border/25 bg-white/[0.02]">
                     <div className="w-6 h-6 rounded border border-border/30 bg-white/[0.03] flex items-center justify-center shrink-0 mt-0.5">
-                      <Icon className="w-3 h-3 text-muted-foreground/50" />
+                      <Icon className="w-3 h-3 text-muted-foreground/70" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[11px] font-medium text-foreground/80 leading-tight">{label}</p>
-                      <p className="text-[10px] text-muted-foreground/45 mt-0.5 leading-tight">{sub}</p>
+                      <p className="text-[10px] text-muted-foreground/60 mt-0.5 leading-tight">{sub}</p>
                     </div>
                   </div>
                 ))}
@@ -180,7 +180,7 @@ export function MetrixAgent() {
 
           {/* Status card */}
           <div className="p-4 rounded-xl border border-border/40 bg-white/[0.02]">
-            <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/35 mb-3">
+            <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-3">
               Build status
             </div>
             <PendingRow
@@ -201,7 +201,7 @@ export function MetrixAgent() {
             />
           </div>
 
-          <p className="text-[10px] font-mono text-muted-foreground/25 text-center">
+          <p className="text-[10px] font-mono text-muted-foreground/50 text-center">
             No fake chat messages · No demo agent output · No simulated responses
           </p>
         </div>

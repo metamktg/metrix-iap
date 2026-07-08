@@ -17,7 +17,8 @@ export const GetMetrixSeedResponse = zod.object({
   "generated_at": zod.string().optional(),
   "app_defaults": zod.record(zod.string(), zod.unknown()).optional(),
   "manager_account": zod.record(zod.string(), zod.unknown()),
-  "ad_accounts": zod.array(zod.record(zod.string(), zod.unknown()))
+  "ad_accounts": zod.array(zod.record(zod.string(), zod.unknown())),
+  "workspace_settings": zod.record(zod.string(), zod.unknown()).optional()
 }).describe('Full Metrix IAP seed bundle. Nested account payloads are intentionally loosely typed; the client narrows them with its own seed types.')
 
 

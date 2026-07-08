@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import { Layers, FlaskConical, AlertTriangle, ArrowRight } from "lucide-react";
 import type { ActiveHypothesis } from "@/lib/data/seedTypes";
 
-const SECTION = "Strategy · 03";
+const SECTION = "Strategy · 04";
 
 const STATUS_STYLE: Record<string, string> = {
   ready_for_brief_builder: "bg-emerald-400/10 text-emerald-400 border-emerald-400/20",
@@ -110,7 +110,7 @@ export function HypothesisQueueView() {
                           <div className="flex-1 min-w-0">
                             <p className="text-[13px] font-semibold text-foreground leading-tight">{h.label}</p>
                             <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-muted-foreground/60">
-                              <ArrowRight className="w-3 h-3 text-muted-foreground/40" />
+                              <ArrowRight className="w-3 h-3 text-muted-foreground/60" />
                               {h.source}
                             </div>
                           </div>
@@ -150,7 +150,7 @@ export function HypothesisQueueView() {
                           <div className="mt-3 pt-3 border-t border-border/20 grid grid-cols-2 gap-x-3 gap-y-1.5">
                             {Object.entries(p.variable_stack).map(([k, v]) => (
                               <div key={k} className="text-[10px]">
-                                <span className="text-muted-foreground/40 uppercase tracking-wide">{k}</span>
+                                <span className="text-muted-foreground/60 uppercase tracking-wide">{k}</span>
                                 <div className="text-foreground/75">{v}</div>
                               </div>
                             ))}

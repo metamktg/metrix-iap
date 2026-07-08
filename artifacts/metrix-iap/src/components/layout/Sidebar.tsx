@@ -81,12 +81,12 @@ function ChildRow({ child, count }: { child: NavChild; count: number | null }) {
       >
         <span className="flex-1 truncate leading-tight">{child.label}</span>
         {child.placeholder && !active && (
-          <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/35 border border-border/25 px-1 py-0.5 rounded leading-none shrink-0">
+          <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/60 border border-border/25 px-1 py-0.5 rounded leading-none shrink-0">
             Soon
           </span>
         )}
         {!child.placeholder && child.dataSource && (
-          <Database className="w-2 h-2 shrink-0 text-muted-foreground/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <Database className="w-2 h-2 shrink-0 text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity" />
         )}
         {child.badgeKey && !child.placeholder && (
           <NavBadge count={count} badgeKey={child.badgeKey} />
@@ -126,16 +126,16 @@ function ExpandableSection({
           "w-full flex items-center gap-2 px-3 h-9 rounded text-[11px] font-semibold uppercase tracking-widest transition-colors select-none",
           sectionActive
             ? "text-foreground/90"
-            : "text-muted-foreground/50 hover:text-muted-foreground/80"
+            : "text-muted-foreground/70 hover:text-muted-foreground/80"
         )}
       >
-        <span className="w-4 shrink-0 text-[8px] font-mono text-muted-foreground/35 tabular-nums">
+        <span className="w-4 shrink-0 text-[8px] font-mono text-muted-foreground/60 tabular-nums">
           {section.number}
         </span>
         <span className="flex-1 text-left">{section.label}</span>
         <ChevronDown
           className={cn(
-            "w-3 h-3 shrink-0 text-muted-foreground/30 transition-transform duration-200",
+            "w-3 h-3 shrink-0 text-muted-foreground/60 transition-transform duration-200",
             open && "rotate-180"
           )}
         />
@@ -187,15 +187,15 @@ function LeafSection({
           "flex items-center gap-2 px-3 h-9 rounded-lg text-[11px] font-semibold uppercase tracking-widest transition-colors",
           active
             ? "mx-nav-active"
-            : "text-muted-foreground/50 hover:text-foreground hover:bg-[rgba(20,55,110,0.5)]"
+            : "text-muted-foreground/70 hover:text-foreground hover:bg-[rgba(20,55,110,0.5)]"
         )}
       >
-        <span className="w-4 shrink-0 text-[8px] font-mono text-muted-foreground/35 tabular-nums">
+        <span className="w-4 shrink-0 text-[8px] font-mono text-muted-foreground/60 tabular-nums">
           {section.number}
         </span>
         <span className="flex-1">{section.label}</span>
         {section.placeholder && (
-          <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/35 border border-border/25 px-1 py-0.5 rounded leading-none shrink-0 normal-case">
+          <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/60 border border-border/25 px-1 py-0.5 rounded leading-none shrink-0 normal-case">
             Soon
           </span>
         )}
@@ -233,7 +233,7 @@ export function Sidebar() {
             IAP
           </span>
         </div>
-        <p className="text-[9px] text-muted-foreground/45 mt-1 leading-tight tracking-wide">
+        <p className="text-[9px] text-muted-foreground/60 mt-1 leading-tight tracking-wide">
           Not more data. Better decisions.
         </p>
       </div>
@@ -271,10 +271,10 @@ export function Sidebar() {
       <div className="px-3 py-3 border-t border-border/40 space-y-2.5">
         <DataSourceBadgeToggle />
         <div className="space-y-0.5">
-          <div className="text-[9px] text-muted-foreground/40 font-mono tracking-wider">
+          <div className="text-[9px] text-muted-foreground/60 font-mono tracking-wider">
             METRIX IAP v2.0-rc
           </div>
-          <div className="text-[9px] text-muted-foreground/30 font-mono">
+          <div className="text-[9px] text-muted-foreground/60 font-mono">
             SAMPLE / DEMO DATA
           </div>
         </div>

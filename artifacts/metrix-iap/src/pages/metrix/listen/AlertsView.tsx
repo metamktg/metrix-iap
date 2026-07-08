@@ -16,7 +16,7 @@ import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { AlertTriangle, BellOff, Database } from "lucide-react";
 import type { SignalCard } from "@/lib/data/seedTypes";
 
-const SECTION = "Listen · 01";
+const SECTION = "Listen · 02";
 
 export function AlertsView() {
   const seed = useMetrixSeed();
@@ -63,7 +63,7 @@ export function AlertsView() {
                 <>
                   {highSignals.length > 0 && (
                     <div>
-                      <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-2">High-impact signals</h3>
+                      <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">High-impact signals</h3>
                       <div className="space-y-3">
                         {highSignals.map((s) => (
                           <button
@@ -87,7 +87,7 @@ export function AlertsView() {
 
                   {caveats.length > 0 && (
                     <div>
-                      <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-2">Data caveats</h3>
+                      <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Data caveats</h3>
                       <div className="space-y-3">
                         {caveats.map((c) => (
                           <div key={c.id} className="rounded-xl border border-amber-400/15 bg-amber-400/[0.04] p-4">

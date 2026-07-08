@@ -18,7 +18,7 @@ import type { SignalCard } from "@/lib/data/seedTypes";
 const SCOPE_ORDER = ["creative", "funnel", "placement", "mst"];
 const SCOPE_LABEL: Record<string, string> = { creative: "Creative", funnel: "Funnel", placement: "Placement", mst: "MST" };
 
-const SECTION = "Listen · 01";
+const SECTION = "Listen · 02";
 
 export function SignalView() {
   const seed = useMetrixSeed();

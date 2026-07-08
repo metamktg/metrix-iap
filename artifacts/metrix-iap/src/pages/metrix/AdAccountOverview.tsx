@@ -47,7 +47,7 @@ export function AdAccountOverview() {
   if (!account) {
     return (
       <div className="flex-1 flex flex-col">
-        <ModuleHeader section="Ad Account · 00" title="Ad Account Overview" subtitle="Select an ad account to begin." />
+        <ModuleHeader section="Ad Account · 01" title="Ad Account Overview" subtitle="Select an ad account to begin." />
         <PendingState title="No ad account selected" message="Choose an ad account from the switcher to view its overview." />
       </div>
     );
@@ -56,7 +56,7 @@ export function AdAccountOverview() {
   if (account.status !== "configured" || !account.iap) {
     return (
       <div className="flex-1 flex flex-col">
-        <ModuleHeader section="Ad Account · 00" title={account.name} subtitle="Ad account overview" />
+        <ModuleHeader section="Ad Account · 01" title={account.name} subtitle="Ad account overview" />
         <UnconfiguredState account={account} />
       </div>
     );
@@ -99,7 +99,7 @@ export function AdAccountOverview() {
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
       <ModuleHeader
-        section="Ad Account · 00"
+        section="Ad Account · 01"
         title={account.name}
         subtitle="Account health, current focus, layer readiness, and the account optimization loop."
         right={<span className="text-[10px] font-mono text-emerald-400/70 uppercase tracking-widest">Connected</span>}
@@ -109,7 +109,7 @@ export function AdAccountOverview() {
       <div className="px-6 py-5 space-y-6 max-w-6xl">
         {/* Health / totals */}
         <div>
-          <h2 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-3">Account totals</h2>
+          <h2 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-3">Account totals</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <MetricTile label="Total spend" value={fmtUSD(cs.total_spend_usd)} />
             <MetricTile label="Impressions" value={fmtNum(cs.total_impressions)} />
@@ -152,7 +152,7 @@ export function AdAccountOverview() {
                 <>
                   <p className="text-[12px] font-medium text-foreground leading-snug">{nextAction.title}</p>
                   <p className="text-[11px] text-foreground/70 mt-1 leading-relaxed">{nextAction.recommended_action}</p>
-                  <p className="text-[10px] text-muted-foreground/50 mt-2">{recCards.length} recommendation{recCards.length === 1 ? "" : "s"} in the optimization loop below.</p>
+                  <p className="text-[10px] text-muted-foreground/70 mt-2">{recCards.length} recommendation{recCards.length === 1 ? "" : "s"} in the optimization loop below.</p>
                 </>
               ) : (
                 <p className="text-[12px] text-muted-foreground/60 leading-relaxed">No recommendations yet.</p>
@@ -163,7 +163,7 @@ export function AdAccountOverview() {
 
         {/* Layer status / readiness */}
         <div>
-          <h2 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-3">Layer status</h2>
+          <h2 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-3">Layer status</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
             {layers.map((l) => (
               <button
@@ -175,14 +175,14 @@ export function AdAccountOverview() {
                   <l.Icon className="w-3.5 h-3.5 text-primary/60" />
                   <span className={cn(
                     "text-[8px] font-semibold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none",
-                    l.ready ? "text-emerald-400 border-emerald-400/25 bg-emerald-400/10" : "text-muted-foreground/50 border-border/40 bg-white/[0.03]"
+                    l.ready ? "text-emerald-400 border-emerald-400/25 bg-emerald-400/10" : "text-muted-foreground/70 border-border/40 bg-white/[0.03]"
                   )}>
                     {l.ready ? "Ready" : "Pending"}
                   </span>
                 </div>
                 <div>
                   <div className="text-[12px] font-semibold text-foreground leading-tight">{l.name}</div>
-                  <div className="text-[10px] text-muted-foreground/55 mt-0.5">
+                  <div className="text-[10px] text-muted-foreground/70 mt-0.5">
                     <span className="tabular-nums text-foreground/70 font-medium">{l.count}</span> {l.unit}
                   </div>
                 </div>
@@ -198,7 +198,7 @@ export function AdAccountOverview() {
               <div key={key} className="rounded-lg border border-border/40 bg-white/[0.02] p-3.5">
                 <div className="text-[11px] font-medium text-foreground leading-tight mb-2">{eventLabel(key)}</div>
                 <div className="text-[22px] font-semibold text-foreground tabular-nums leading-none">{fmtNum(e.results)}</div>
-                <div className="text-[10px] text-muted-foreground/50 mt-2 space-y-0.5">
+                <div className="text-[10px] text-muted-foreground/70 mt-2 space-y-0.5">
                   <div>Spend {fmtUSD(e.spend)}</div>
                   <div>Link clicks {fmtNum(e.link_clicks)}</div>
                 </div>
@@ -216,7 +216,7 @@ export function AdAccountOverview() {
                 <span className="text-[11px] font-semibold text-foreground">Checkout-depth control</span>
               </div>
               <p className="text-[12px] text-foreground/80 leading-relaxed">{core.primary_control_read}</p>
-              <p className="text-[9px] font-mono text-muted-foreground/40 mt-2">{core.primary_control}</p>
+              <p className="text-[9px] font-mono text-muted-foreground/60 mt-2">{core.primary_control}</p>
             </div>
             <div className="rounded-lg border border-blue-400/15 bg-blue-400/[0.03] p-3.5">
               <div className="flex items-center gap-1.5 mb-1.5">
@@ -224,7 +224,7 @@ export function AdAccountOverview() {
                 <span className="text-[11px] font-semibold text-foreground">Registration control</span>
               </div>
               <p className="text-[12px] text-foreground/80 leading-relaxed">{core.registration_control_read}</p>
-              <p className="text-[9px] font-mono text-muted-foreground/40 mt-2">{core.registration_control}</p>
+              <p className="text-[9px] font-mono text-muted-foreground/60 mt-2">{core.registration_control}</p>
             </div>
           </div>
           <div className="mt-3">

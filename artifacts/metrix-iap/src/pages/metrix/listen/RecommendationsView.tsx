@@ -10,7 +10,7 @@ import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile, CaveatNote,
 } from "../shared";
 
-const SECTION = "Listen · 01";
+const SECTION = "Listen · 02";
 
 export function RecommendationsView() {
   const seed = useMetrixSeed();

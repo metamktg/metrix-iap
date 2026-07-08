@@ -91,7 +91,7 @@ function DetailDrawer({
       <div className="fixed right-0 top-0 h-full w-[400px] max-w-full bg-[hsl(222_61%_6%)] border-l border-border/50 z-50 flex flex-col overflow-hidden shadow-2xl">
         <div className="flex items-center gap-2 px-5 py-4 border-b border-border/40">
           <div className="flex-1 min-w-0">
-            <div className="text-[10px] font-mono text-muted-foreground/40 uppercase tracking-widest mb-1">
+            <div className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest mb-1">
               Recommendation
             </div>
             <p className="text-[13px] font-semibold text-foreground leading-tight">{card.title}</p>
@@ -113,17 +113,17 @@ function DetailDrawer({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/40">Rationale</label>
+            <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Rationale</label>
             <p className="text-[12px] text-foreground/80 leading-relaxed">{card.rationale}</p>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/40">Recommended action</label>
+            <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Recommended action</label>
             <p className="text-[12px] text-foreground/80 leading-relaxed">{card.recommendedAction}</p>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/40">Confidence</label>
+            <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Confidence</label>
             <p className="text-[12px] text-foreground/80 capitalize">{card.confidence}</p>
           </div>
 
@@ -270,7 +270,7 @@ function SwipeCard({
         <p className="text-[12px] text-muted-foreground/70 leading-relaxed line-clamp-3">{card.rationale}</p>
 
         <div className="mt-auto pt-2 border-t border-border/20">
-          <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-1">Recommended</p>
+          <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-1">Recommended</p>
           <p className="text-[11px] text-foreground/75 leading-relaxed line-clamp-2">{card.recommendedAction}</p>
         </div>
       </div>
@@ -371,7 +371,7 @@ export function RecommendationDeck({
               <CheckCircle2 className="w-4 h-4 text-emerald-400/60" />
             </div>
             <p className="text-[13px] font-medium text-foreground/60">{emptyLabel}</p>
-            <p className="text-[11px] text-muted-foreground/40">Check the Task Tray for approved items.</p>
+            <p className="text-[11px] text-muted-foreground/60">Check the Task Tray for approved items.</p>
           </div>
         ) : (
           <div>
@@ -419,7 +419,7 @@ export function RecommendationDeck({
               </button>
             </div>
 
-            <div className="flex items-center justify-center gap-3 mt-3 text-[9px] text-muted-foreground/35 font-mono">
+            <div className="flex items-center justify-center gap-3 mt-3 text-[9px] text-muted-foreground/60 font-mono">
               <span>← reject</span>
               <span>→ approve</span>
               <span>↑ / space details</span>
@@ -466,7 +466,7 @@ function TaskTray({
     <div className="space-y-5">
       {groups.map((g) => (
         <div key={g.label}>
-          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-2">{g.label}</div>
+          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">{g.label}</div>
           <div className="space-y-2">
             {g.rows.map((s) => {
               const done = isDone(scopeId, s.id);
@@ -481,7 +481,7 @@ function TaskTray({
                   </button>
                   <div className="flex-1 min-w-0">
                     <p className={cn("text-[12px] font-medium leading-tight", done ? "text-foreground/50 line-through" : "text-foreground")}>{s.title}</p>
-                    <p className="text-[10px] text-muted-foreground/50 mt-0.5 leading-tight line-clamp-2">{s.recommendedAction}</p>
+                    <p className="text-[10px] text-muted-foreground/70 mt-0.5 leading-tight line-clamp-2">{s.recommendedAction}</p>
                     {s.descriptor && <span className="inline-flex mt-1.5 text-[8px] font-semibold border border-border/40 px-1 py-0.5 rounded text-foreground/60">{s.descriptor}</span>}
                   </div>
                   <button onClick={() => onRestore(s.id)} className="h-6 px-2 rounded text-[10px] font-medium text-muted-foreground hover:text-foreground border border-border/30 hover:border-border/50 transition-colors shrink-0" title="Restore to deck">
@@ -509,7 +509,7 @@ function DismissedLog({ items, onRestore }: { items: DeckCard[]; onRestore: (id:
         <div key={s.id} className="flex items-start gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.01] opacity-70">
           <div className="flex-1 min-w-0">
             <p className="text-[12px] font-medium text-foreground/60 leading-tight">{s.title}</p>
-            <p className="text-[10px] text-muted-foreground/40 mt-0.5 leading-tight line-clamp-1">{s.rationale}</p>
+            <p className="text-[10px] text-muted-foreground/60 mt-0.5 leading-tight line-clamp-1">{s.rationale}</p>
           </div>
           <button onClick={() => onRestore(s.id)} className="h-6 px-2 rounded text-[10px] font-medium text-muted-foreground hover:text-foreground border border-border/30 hover:border-border/50 transition-colors shrink-0" title="Restore to deck">
             <RotateCcw className="w-3 h-3" />
@@ -524,10 +524,10 @@ function EmptyPanel({ Icon, title, sub }: { Icon: React.ComponentType<{ classNam
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
       <div className="w-10 h-10 rounded-xl border border-border/40 bg-white/[0.03] flex items-center justify-center">
-        <Icon className="w-4 h-4 text-muted-foreground/40" />
+        <Icon className="w-4 h-4 text-muted-foreground/60" />
       </div>
       <p className="text-[13px] font-medium text-foreground/60">{title}</p>
-      <p className="text-[11px] text-muted-foreground/40 max-w-xs">{sub}</p>
+      <p className="text-[11px] text-muted-foreground/60 max-w-xs">{sub}</p>
     </div>
   );
 }
