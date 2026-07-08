@@ -6,6 +6,7 @@
   "scripts": {
     "hello": "tsx ./src/hello.ts",
     "check:metrix-settings-api": "tsx ./src/check-metrix-settings-api.ts",
+    "smoke:api-server": "tsx ./src/smoke-api-server.ts",
     "import:metrix": "tsx ./src/metrix-supabase/import.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
