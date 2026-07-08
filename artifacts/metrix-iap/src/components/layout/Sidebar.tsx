@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { useState, useId } from "react";
+import { useState, useEffect, useId } from "react";
 import { cn } from "@/lib/utils";
 import { ChevronDown, Database } from "lucide-react";
 import { AccountSwitcher } from "./AccountSwitcher";
@@ -109,6 +109,10 @@ function ExpandableSection({
   const sectionActive = isSectionActive(section, location);
   const [open, setOpen] = useState(sectionActive);
   const controlsId = useId();
+
+  useEffect(() => {
+    if (sectionActive) setOpen(true);
+  }, [location, sectionActive]);
   const children = section.children ?? [];
 
   return (
