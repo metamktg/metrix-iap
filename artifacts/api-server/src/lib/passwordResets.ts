@@ -1,8 +1,28 @@
 import { createHash, randomBytes } from "node:crypto";
 import { db, passwordResetTokensTable, type PasswordResetToken } from "@workspace/db";
-import { and, eq, gt, isNull, lt } from "drizzle-orm";
+import { logger } from "./logger";
+import { and, eq, gt, isNull, lt, or } from "drizzle-orm";
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
+const CLEANUP_GRACE_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+/**
+ * Delete tokens that expired or were used more than ~24h ago. The grace
+ * period keeps recent rows around briefly for debugging/auditing.
+ */
+export async function cleanupStalePasswordResetTokens(): Promise<number> {
+  const cutoff = new Date(Date.now() - CLEANUP_GRACE_MS);
+  const deleted = await db
+    .delete(passwordResetTokensTable)
+    .where(
+      or(
+        lt(passwordResetTokensTable.expiresAt, cutoff),
+        lt(passwordResetTokensTable.usedAt, cutoff),
+      ),
+    )
+    .returning({ id: passwordResetTokensTable.id });
+  return deleted.length;
+}
 
 function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
@@ -20,10 +40,12 @@ export async function createPasswordResetToken(userId: number): Promise<{
     userId,
     expiresAt,
   });
-  // Opportunistic cleanup of expired tokens.
-  await db
-    .delete(passwordResetTokensTable)
-    .where(lt(passwordResetTokensTable.expiresAt, new Date()));
+  // Opportunistic cleanup of stale tokens; never let it break token creation.
+  try {
+    await cleanupStalePasswordResetTokens();
+  } catch (err) {
+    logger.warn({ err }, "password reset token cleanup failed");
+  }
   return { token, expiresAt };
 }
 
