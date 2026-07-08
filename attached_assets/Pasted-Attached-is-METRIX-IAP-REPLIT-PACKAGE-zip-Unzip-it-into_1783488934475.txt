@@ -1,0 +1,18 @@
+Attached is METRIX_IAP_REPLIT_PACKAGE.zip. Unzip it into the project root before starting.
+
+Contents:
+- METRIX_IAP_MASTER_REPLIT_BRIEF.md — the full build spec. Read this first, completely, before touching any code.
+- normalized_data_bundle.json, campaign_intelligence.json, strategic_map.json, creative_briefs.json — real Bookster IAP loop output (Bundle Prep → Analysis Core → Strategy Map → Brief Builder), covering both Bookster products (BOOK0 app-install MST, BOOK2 lead/quiz), window 2026-05-02 to 2026-07-07.
+- BOOKSTER_JSON_HANDOFF_MANIFEST.md — describes the four JSON files above and their known gaps in detail.
+- Bookster_IAP_Local_Client_Library_v1_2_-_COPY_LIBRARY.csv — the copy bank (headlines/descriptions/primary text by concept).
+- bookster_book2_iap_local_client_library_augmented.json — cell-level variable stacks plus creative asset filename/path references for Book2.
+
+Task, in order:
+1. Read the brief fully — Parts A through E, including every flagged item and open question. Do not skip the "flagged inconsistencies" sections (A2c) or Part C0a's gaps — those affect what you can and can't build yet.
+2. Confirm the nav/IA structure in Part A2, and flag back to me anything in A2c you need a decision on before you start.
+3. Wire the frontend to Supabase for real (Part D7's dependency note) — this has to happen before auth or real data can work, don't build a login screen against static data.
+4. Use the attached JSON files as real seed data for every module — not placeholder numbers. Where the data doesn't cover something yet (Creative Scan/Test Engine, Optimization Loop, Meta ad_id for deep links — see Part C0a), build the UI to handle an empty/pending state cleanly rather than faking numbers.
+5. Build nav (Part A) and the creative visual/deep-link work (Part B) together — same pages, same pass.
+6. Everything else follows the "Suggested build order" at the end of the brief.
+
+Ask me before making any assumption call on the open items in Part E — don't guess on those.

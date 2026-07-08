@@ -39,7 +39,7 @@ export function DataSourceBadgeToggle() {
         "flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.5 rounded border transition-colors",
         on
           ? "text-primary border-primary/30 bg-primary/5 hover:bg-primary/10"
-          : "text-muted-foreground/50 border-border/30 bg-transparent hover:bg-white/5"
+          : "text-muted-foreground/70 border-border/30 bg-transparent hover:bg-white/5"
       )}
       title="Toggle data source annotations"
     >
@@ -80,24 +80,24 @@ export function DataSourceBadge({ table, className, collapsible = false }: DataS
 
   return (
     <div className={cn("inline-flex items-center gap-1.5 flex-wrap", className)}>
-      <Database className="w-2.5 h-2.5 text-muted-foreground/40 shrink-0" />
+      <Database className="w-2.5 h-2.5 text-muted-foreground/60 shrink-0" />
       {!collapsed && tables.map(t => (
         <span
           key={t}
-          className="inline-flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.5 rounded border border-border/30 bg-muted/20 text-muted-foreground/50 leading-none"
+          className="inline-flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.5 rounded border border-border/30 bg-muted/20 text-muted-foreground/70 leading-none"
         >
           {t}
         </span>
       ))}
       {collapsed && (
-        <span className="text-[9px] font-mono text-muted-foreground/35 leading-none">
+        <span className="text-[9px] font-mono text-muted-foreground/60 leading-none">
           {tables.length} table{tables.length > 1 ? "s" : ""}
         </span>
       )}
       {isCollapsible && (
         <button
           onClick={() => setCollapsed(c => !c)}
-          className="text-muted-foreground/30 hover:text-muted-foreground/60 transition-colors"
+          className="text-muted-foreground/60 hover:text-muted-foreground/60 transition-colors"
           title={collapsed ? "Show table names" : "Collapse"}
         >
           {collapsed ? <ChevronDown className="w-2.5 h-2.5" /> : <ChevronUp className="w-2.5 h-2.5" />}

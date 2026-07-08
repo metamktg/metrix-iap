@@ -17,7 +17,7 @@ import { CellTable, VariableTable } from "./tables";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import type { CellPerformanceRow } from "@/lib/data/seedTypes";
 
-const SECTION = "Analysis · 02";
+const SECTION = "Analysis · 03";
 
 type Tab = "cells" | "top" | "variables";
 
@@ -124,11 +124,11 @@ export function IapLibraryView() {
               {tab === "top" && (
                 <div className="space-y-5">
                   <div>
-                    <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-2">Top checkout cells</h3>
+                    <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Top checkout cells</h3>
                     {topCells.length ? <CellTable rows={topCells} onRowClick={setDetail} /> : <PendingState title="No ranked cells" message="No checkout-ranked cells in the current metric selection." />}
                   </div>
                   <div>
-                    <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-2">Top checkout variables</h3>
+                    <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Top checkout variables</h3>
                     {topVariables.length ? <VariableTable rows={topVariables} /> : <PendingState title="No ranked variables" message="No checkout-ranked variables in the current metric selection." />}
                   </div>
                 </div>
@@ -165,10 +165,10 @@ export function IapLibraryView() {
                       if (!code || typeof code !== "string") return null;
                       return (
                         <div key={key} className="flex items-center justify-between gap-2">
-                          <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wide">{label}</span>
+                          <span className="text-[10px] text-muted-foreground/70 uppercase tracking-wide">{label}</span>
                           <span className="text-[11px] text-foreground/80 text-right">
                             {readableVariables(code)}
-                            <span className="block text-[8px] font-mono text-muted-foreground/40">{code}</span>
+                            <span className="block text-[8px] font-mono text-muted-foreground/60">{code}</span>
                           </span>
                         </div>
                       );

@@ -22,9 +22,18 @@ import type {
 import type {
   ApiError,
   HealthStatus,
+  ListAgentWaitlistParams,
   MetrixSeedBundle,
+  NotificationPrefsResult,
+  NotificationPrefsUpdateInput,
+  RevokeWorkspaceInviteResult,
+  WaitlistEntriesResult,
   WaitlistSignupInput,
-  WaitlistSignupResult
+  WaitlistSignupResult,
+  WorkspaceInviteInput,
+  WorkspaceInviteResendResult,
+  WorkspaceInviteResult,
+  WorkspaceInvitesResult
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -201,6 +210,537 @@ export const useJoinAgentWaitlist = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getJoinAgentWaitlistMutationOptions(options));
+    }
+
+export const getListAgentWaitlistUrl = (params?: ListAgentWaitlistParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/metrix/agent-waitlist?${stringifiedParams}` : `/api/metrix/agent-waitlist`
+}
+
+/**
+ * Returns a page of waitlist entries (email and joined date), newest first. Use limit/offset to page through results; total reflects the full count. Requires an admin bearer key.
+ * @summary List Metrix Agent waitlist signups
+ */
+export const listAgentWaitlist = async (params?: ListAgentWaitlistParams, options?: RequestInit): Promise<WaitlistEntriesResult> => {
+
+  return customFetch<WaitlistEntriesResult>(getListAgentWaitlistUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAgentWaitlistQueryKey = (params?: ListAgentWaitlistParams,) => {
+    return [
+    `/api/metrix/agent-waitlist`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListAgentWaitlistQueryOptions = <TData = Awaited<ReturnType<typeof listAgentWaitlist>>, TError = ErrorType<ApiError>>(params?: ListAgentWaitlistParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgentWaitlist>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAgentWaitlistQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAgentWaitlist>>> = ({ signal }) => listAgentWaitlist(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAgentWaitlist>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAgentWaitlistQueryResult = NonNullable<Awaited<ReturnType<typeof listAgentWaitlist>>>
+export type ListAgentWaitlistQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary List Metrix Agent waitlist signups
+ */
+
+export function useListAgentWaitlist<TData = Awaited<ReturnType<typeof listAgentWaitlist>>, TError = ErrorType<ApiError>>(
+ params?: ListAgentWaitlistParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgentWaitlist>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAgentWaitlistQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListWorkspaceInvitesUrl = (workspaceId: string,) => {
+
+
+
+
+  return `/api/metrix/workspaces/${workspaceId}/invites`
+}
+
+/**
+ * Returns invites created for this workspace, newest first.
+ * @summary List pending workspace invites
+ */
+export const listWorkspaceInvites = async (workspaceId: string, options?: RequestInit): Promise<WorkspaceInvitesResult> => {
+
+  return customFetch<WorkspaceInvitesResult>(getListWorkspaceInvitesUrl(workspaceId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListWorkspaceInvitesQueryKey = (workspaceId: string,) => {
+    return [
+    `/api/metrix/workspaces/${workspaceId}/invites`
+    ] as const;
+    }
+
+
+export const getListWorkspaceInvitesQueryOptions = <TData = Awaited<ReturnType<typeof listWorkspaceInvites>>, TError = ErrorType<unknown>>(workspaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWorkspaceInvites>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListWorkspaceInvitesQueryKey(workspaceId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listWorkspaceInvites>>> = ({ signal }) => listWorkspaceInvites(workspaceId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: workspaceId !== null && workspaceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listWorkspaceInvites>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListWorkspaceInvitesQueryResult = NonNullable<Awaited<ReturnType<typeof listWorkspaceInvites>>>
+export type ListWorkspaceInvitesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List pending workspace invites
+ */
+
+export function useListWorkspaceInvites<TData = Awaited<ReturnType<typeof listWorkspaceInvites>>, TError = ErrorType<unknown>>(
+ workspaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWorkspaceInvites>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListWorkspaceInvitesQueryOptions(workspaceId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateWorkspaceInviteUrl = (workspaceId: string,) => {
+
+
+
+
+  return `/api/metrix/workspaces/${workspaceId}/invites`
+}
+
+/**
+ * Creates a pending invite for the given email and role. Idempotent per workspace and email.
+ * @summary Invite a member to the workspace
+ */
+export const createWorkspaceInvite = async (workspaceId: string,
+    workspaceInviteInput: WorkspaceInviteInput, options?: RequestInit): Promise<WorkspaceInviteResult> => {
+
+  return customFetch<WorkspaceInviteResult>(getCreateWorkspaceInviteUrl(workspaceId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(workspaceInviteInput)
+  }
+);}
+
+
+
+
+export const getCreateWorkspaceInviteMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createWorkspaceInvite>>, TError,{workspaceId: string;data: BodyType<WorkspaceInviteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createWorkspaceInvite>>, TError,{workspaceId: string;data: BodyType<WorkspaceInviteInput>}, TContext> => {
+
+const mutationKey = ['createWorkspaceInvite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createWorkspaceInvite>>, {workspaceId: string;data: BodyType<WorkspaceInviteInput>}> = (props) => {
+          const {workspaceId,data} = props ?? {};
+
+          return  createWorkspaceInvite(workspaceId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateWorkspaceInviteMutationResult = NonNullable<Awaited<ReturnType<typeof createWorkspaceInvite>>>
+    export type CreateWorkspaceInviteMutationBody = BodyType<WorkspaceInviteInput>
+    export type CreateWorkspaceInviteMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Invite a member to the workspace
+ */
+export const useCreateWorkspaceInvite = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createWorkspaceInvite>>, TError,{workspaceId: string;data: BodyType<WorkspaceInviteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createWorkspaceInvite>>,
+        TError,
+        {workspaceId: string;data: BodyType<WorkspaceInviteInput>},
+        TContext
+      > => {
+      return useMutation(getCreateWorkspaceInviteMutationOptions(options));
+    }
+
+export const getRevokeWorkspaceInviteUrl = (workspaceId: string,
+    inviteId: number,) => {
+
+
+
+
+  return `/api/metrix/workspaces/${workspaceId}/invites/${inviteId}`
+}
+
+/**
+ * Deletes the pending invite, freeing its seat.
+ * @summary Revoke a pending workspace invite
+ */
+export const revokeWorkspaceInvite = async (workspaceId: string,
+    inviteId: number, options?: RequestInit): Promise<RevokeWorkspaceInviteResult> => {
+
+  return customFetch<RevokeWorkspaceInviteResult>(getRevokeWorkspaceInviteUrl(workspaceId,inviteId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRevokeWorkspaceInviteMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeWorkspaceInvite>>, TError,{workspaceId: string;inviteId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokeWorkspaceInvite>>, TError,{workspaceId: string;inviteId: number}, TContext> => {
+
+const mutationKey = ['revokeWorkspaceInvite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeWorkspaceInvite>>, {workspaceId: string;inviteId: number}> = (props) => {
+          const {workspaceId,inviteId} = props ?? {};
+
+          return  revokeWorkspaceInvite(workspaceId,inviteId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokeWorkspaceInviteMutationResult = NonNullable<Awaited<ReturnType<typeof revokeWorkspaceInvite>>>
+
+    export type RevokeWorkspaceInviteMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Revoke a pending workspace invite
+ */
+export const useRevokeWorkspaceInvite = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeWorkspaceInvite>>, TError,{workspaceId: string;inviteId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revokeWorkspaceInvite>>,
+        TError,
+        {workspaceId: string;inviteId: number},
+        TContext
+      > => {
+      return useMutation(getRevokeWorkspaceInviteMutationOptions(options));
+    }
+
+export const getResendWorkspaceInviteUrl = (workspaceId: string,
+    inviteId: number,) => {
+
+
+
+
+  return `/api/metrix/workspaces/${workspaceId}/invites/${inviteId}/resend`
+}
+
+/**
+ * Bumps the invite's created_at timestamp to now and returns the updated invite.
+ * @summary Resend a pending workspace invite
+ */
+export const resendWorkspaceInvite = async (workspaceId: string,
+    inviteId: number, options?: RequestInit): Promise<WorkspaceInviteResendResult> => {
+
+  return customFetch<WorkspaceInviteResendResult>(getResendWorkspaceInviteUrl(workspaceId,inviteId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getResendWorkspaceInviteMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendWorkspaceInvite>>, TError,{workspaceId: string;inviteId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resendWorkspaceInvite>>, TError,{workspaceId: string;inviteId: number}, TContext> => {
+
+const mutationKey = ['resendWorkspaceInvite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resendWorkspaceInvite>>, {workspaceId: string;inviteId: number}> = (props) => {
+          const {workspaceId,inviteId} = props ?? {};
+
+          return  resendWorkspaceInvite(workspaceId,inviteId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResendWorkspaceInviteMutationResult = NonNullable<Awaited<ReturnType<typeof resendWorkspaceInvite>>>
+
+    export type ResendWorkspaceInviteMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Resend a pending workspace invite
+ */
+export const useResendWorkspaceInvite = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendWorkspaceInvite>>, TError,{workspaceId: string;inviteId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof resendWorkspaceInvite>>,
+        TError,
+        {workspaceId: string;inviteId: number},
+        TContext
+      > => {
+      return useMutation(getResendWorkspaceInviteMutationOptions(options));
+    }
+
+export const getGetNotificationPrefsUrl = (workspaceId: string,) => {
+
+
+
+
+  return `/api/metrix/workspaces/${workspaceId}/notification-prefs`
+}
+
+/**
+ * Returns persisted channel and event preference overrides for this workspace. Anything not listed falls back to seed defaults on the client.
+ * @summary Get workspace notification preference overrides
+ */
+export const getNotificationPrefs = async (workspaceId: string, options?: RequestInit): Promise<NotificationPrefsResult> => {
+
+  return customFetch<NotificationPrefsResult>(getGetNotificationPrefsUrl(workspaceId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetNotificationPrefsQueryKey = (workspaceId: string,) => {
+    return [
+    `/api/metrix/workspaces/${workspaceId}/notification-prefs`
+    ] as const;
+    }
+
+
+export const getGetNotificationPrefsQueryOptions = <TData = Awaited<ReturnType<typeof getNotificationPrefs>>, TError = ErrorType<unknown>>(workspaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNotificationPrefs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetNotificationPrefsQueryKey(workspaceId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getNotificationPrefs>>> = ({ signal }) => getNotificationPrefs(workspaceId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: workspaceId !== null && workspaceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getNotificationPrefs>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetNotificationPrefsQueryResult = NonNullable<Awaited<ReturnType<typeof getNotificationPrefs>>>
+export type GetNotificationPrefsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get workspace notification preference overrides
+ */
+
+export function useGetNotificationPrefs<TData = Awaited<ReturnType<typeof getNotificationPrefs>>, TError = ErrorType<unknown>>(
+ workspaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNotificationPrefs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetNotificationPrefsQueryOptions(workspaceId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateNotificationPrefsUrl = (workspaceId: string,) => {
+
+
+
+
+  return `/api/metrix/workspaces/${workspaceId}/notification-prefs`
+}
+
+/**
+ * Upserts channel and/or event preference overrides for this workspace and returns the full set of persisted overrides.
+ * @summary Update workspace notification preferences
+ */
+export const updateNotificationPrefs = async (workspaceId: string,
+    notificationPrefsUpdateInput: NotificationPrefsUpdateInput, options?: RequestInit): Promise<NotificationPrefsResult> => {
+
+  return customFetch<NotificationPrefsResult>(getUpdateNotificationPrefsUrl(workspaceId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(notificationPrefsUpdateInput)
+  }
+);}
+
+
+
+
+export const getUpdateNotificationPrefsMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateNotificationPrefs>>, TError,{workspaceId: string;data: BodyType<NotificationPrefsUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateNotificationPrefs>>, TError,{workspaceId: string;data: BodyType<NotificationPrefsUpdateInput>}, TContext> => {
+
+const mutationKey = ['updateNotificationPrefs'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateNotificationPrefs>>, {workspaceId: string;data: BodyType<NotificationPrefsUpdateInput>}> = (props) => {
+          const {workspaceId,data} = props ?? {};
+
+          return  updateNotificationPrefs(workspaceId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateNotificationPrefsMutationResult = NonNullable<Awaited<ReturnType<typeof updateNotificationPrefs>>>
+    export type UpdateNotificationPrefsMutationBody = BodyType<NotificationPrefsUpdateInput>
+    export type UpdateNotificationPrefsMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Update workspace notification preferences
+ */
+export const useUpdateNotificationPrefs = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateNotificationPrefs>>, TError,{workspaceId: string;data: BodyType<NotificationPrefsUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateNotificationPrefs>>,
+        TError,
+        {workspaceId: string;data: BodyType<NotificationPrefsUpdateInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateNotificationPrefsMutationOptions(options));
     }
 
 export const getHealthCheckUrl = () => {

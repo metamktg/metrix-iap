@@ -15,7 +15,7 @@ import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { FileText, Sparkles, Video, Users } from "lucide-react";
 import type { DraftBrief } from "@/lib/data/seedTypes";
 
-const SECTION = "Creative Briefs · 04";
+const SECTION = "Creative Briefs · 05";
 
 const STATUS_LABEL: Record<string, string> = {
   draft_from_seed: "Draft",
@@ -132,7 +132,7 @@ export function BriefBuilderView() {
                       <p className="text-[12px] text-foreground/80 leading-relaxed flex-1">{b.human_direction}</p>
 
                       <div className="mt-3 pt-3 border-t border-border/20">
-                        <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-1.5">Creative direction</div>
+                        <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-1.5">Creative direction</div>
                         <div className="flex flex-wrap gap-1.5">
                           {b.plain_variable_descriptors.map((d) => (
                             <span key={d} className="text-[10px] text-foreground/75 border border-border/40 bg-white/[0.03] px-1.5 py-0.5 rounded leading-none">{d}</span>

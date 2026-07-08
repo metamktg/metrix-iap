@@ -11,6 +11,8 @@ export type MetrixSeedBundleManagerAccount = { [key: string]: unknown };
 
 export type MetrixSeedBundleAdAccountsItem = { [key: string]: unknown };
 
+export type MetrixSeedBundleWorkspaceSettings = { [key: string]: unknown };
+
 /**
  * Full Metrix IAP seed bundle. Nested account payloads are intentionally loosely typed; the client narrows them with its own seed types.
  */
@@ -20,6 +22,7 @@ export interface MetrixSeedBundle {
   app_defaults?: MetrixSeedBundleAppDefaults;
   manager_account: MetrixSeedBundleManagerAccount;
   ad_accounts: MetrixSeedBundleAdAccountsItem[];
+  workspace_settings?: MetrixSeedBundleWorkspaceSettings;
   [key: string]: unknown;
  }
 
@@ -40,6 +43,100 @@ export interface WaitlistSignupResult {
   email: string;
 }
 
+export interface WaitlistEntry {
+  email: string;
+  joined_at: string;
+}
+
+export interface WaitlistEntriesResult {
+  entries: WaitlistEntry[];
+  total: number;
+}
+
+export type WorkspaceInviteInputRole = typeof WorkspaceInviteInputRole[keyof typeof WorkspaceInviteInputRole];
+
+
+export const WorkspaceInviteInputRole = {
+  analyst: 'analyst',
+  client_viewer: 'client_viewer',
+} as const;
+
+export interface WorkspaceInviteInput {
+  email: string;
+  role: WorkspaceInviteInputRole;
+}
+
+export interface WorkspaceInvite {
+  id: number;
+  email: string;
+  role: string;
+  status: string;
+  created_at: string;
+}
+
+export type WorkspaceInviteResultStatus = typeof WorkspaceInviteResultStatus[keyof typeof WorkspaceInviteResultStatus];
+
+
+export const WorkspaceInviteResultStatus = {
+  created: 'created',
+  already_invited: 'already_invited',
+} as const;
+
+export interface WorkspaceInviteResult {
+  status: WorkspaceInviteResultStatus;
+  invite: WorkspaceInvite;
+}
+
+export type RevokeWorkspaceInviteResultStatus = typeof RevokeWorkspaceInviteResultStatus[keyof typeof RevokeWorkspaceInviteResultStatus];
+
+
+export const RevokeWorkspaceInviteResultStatus = {
+  revoked: 'revoked',
+} as const;
+
+export interface RevokeWorkspaceInviteResult {
+  status: RevokeWorkspaceInviteResultStatus;
+}
+
+export type WorkspaceInviteResendResultStatus = typeof WorkspaceInviteResendResultStatus[keyof typeof WorkspaceInviteResendResultStatus];
+
+
+export const WorkspaceInviteResendResultStatus = {
+  resent: 'resent',
+} as const;
+
+export interface WorkspaceInviteResendResult {
+  status: WorkspaceInviteResendResultStatus;
+  invite: WorkspaceInvite;
+}
+
+export interface WorkspaceInvitesResult {
+  invites: WorkspaceInvite[];
+}
+
+export interface ChannelPref {
+  /** @minLength 1 */
+  id: string;
+  enabled: boolean;
+}
+
+export interface EventPref {
+  /** @minLength 1 */
+  id: string;
+  email: boolean;
+  in_app: boolean;
+}
+
+export interface NotificationPrefsUpdateInput {
+  channels?: ChannelPref[];
+  events?: EventPref[];
+}
+
+export interface NotificationPrefsResult {
+  channels: ChannelPref[];
+  events: EventPref[];
+}
+
 export interface ApiError {
   message: string;
 }
@@ -47,4 +144,18 @@ export interface ApiError {
 export interface HealthStatus {
   status: string;
 }
+
+export type ListAgentWaitlistParams = {
+/**
+ * Maximum number of entries to return (default 50, max 200).
+ * @minimum 1
+ * @maximum 200
+ */
+limit?: number;
+/**
+ * Number of entries to skip from the newest entry (default 0).
+ * @minimum 0
+ */
+offset?: number;
+};
 

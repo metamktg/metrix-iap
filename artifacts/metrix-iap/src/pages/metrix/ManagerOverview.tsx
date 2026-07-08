@@ -53,7 +53,7 @@ export function ManagerOverview() {
         title={manager.name}
         subtitle="Blended bottom-line performance across all connected ad accounts. Deeper analysis lives inside each ad account."
         right={
-          <span className="text-[10px] font-mono text-muted-foreground/40 uppercase tracking-widest">
+          <span className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest">
             {data.configured_ad_accounts} configured · {data.unconfigured_ad_accounts} to set up
           </span>
         }
@@ -62,7 +62,7 @@ export function ManagerOverview() {
       <div className="px-6 py-5 space-y-6 max-w-6xl">
         {/* Bottom-line totals */}
         <div>
-          <h2 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-3">Bottom-line totals</h2>
+          <h2 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-3">Bottom-line totals</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <MetricTile label="Total spend" value={fmtUSD(totals.spend_usd)} />
             <MetricTile label="Impressions" value={fmtNum(totals.impressions)} />
@@ -81,7 +81,7 @@ export function ManagerOverview() {
                   <span className="text-[11px] font-medium text-foreground leading-tight">{eventLabel(key)}</span>
                 </div>
                 <div className="text-[22px] font-semibold text-foreground tabular-nums leading-none">{fmtNum(e.results)}</div>
-                <div className="text-[10px] text-muted-foreground/50 mt-2 space-y-0.5">
+                <div className="text-[10px] text-muted-foreground/70 mt-2 space-y-0.5">
                   <div>Spend {fmtUSD(e.spend)}</div>
                   <div>Link clicks {fmtNum(e.link_clicks)}</div>
                 </div>
@@ -102,11 +102,11 @@ export function ManagerOverview() {
                   className="flex items-center gap-3 p-3.5 rounded-lg border border-border/40 bg-white/[0.02] hover:border-border/60 hover:bg-white/[0.04] transition-colors text-left"
                 >
                   <div className={cn("w-9 h-9 rounded-lg border flex items-center justify-center shrink-0", configured ? "border-emerald-400/25 bg-emerald-400/10" : "border-border/40 bg-white/[0.03]")}>
-                    {configured ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <Plug className="w-4 h-4 text-muted-foreground/50" />}
+                    {configured ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <Plug className="w-4 h-4 text-muted-foreground/70" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-[13px] font-medium text-foreground leading-tight">{a.name}</div>
-                    <div className="text-[10px] text-muted-foreground/50 mt-0.5 capitalize">{configured ? `${a.platform} · connected` : "Setup required"}</div>
+                    <div className="text-[10px] text-muted-foreground/70 mt-0.5 capitalize">{configured ? `${a.platform} · connected` : "Setup required"}</div>
                   </div>
                 </button>
               );
@@ -122,7 +122,7 @@ export function ManagerOverview() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-[13px] font-medium text-foreground/80 leading-tight">Add or connect an ad account</div>
-                <div className="text-[10px] text-muted-foreground/50 mt-0.5">Connect Meta or add a manual import</div>
+                <div className="text-[10px] text-muted-foreground/70 mt-0.5">Connect Meta or add a manual import</div>
               </div>
             </button>
           </div>
@@ -134,7 +134,7 @@ export function ManagerOverview() {
           desc="Cross-account signals surfaced at the agency level. Read-only — open the source account to act on them. No campaign is auto-edited."
         >
           {data.recommendation_cards.length === 0 ? (
-            <p className="text-[12px] text-muted-foreground/50 py-4 text-center">No account recommendations at the moment.</p>
+            <p className="text-[12px] text-muted-foreground/70 py-4 text-center">No account recommendations at the moment.</p>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               {data.recommendation_cards.map((c) => (
@@ -158,7 +158,7 @@ export function ManagerOverview() {
                     Open {accountName(c.account_id)} <ArrowRight className="w-3 h-3" />
                   </button>
                   {c.source_path && (
-                    <p className="text-[9px] font-mono text-muted-foreground/35 mt-2">source · {c.source_path}</p>
+                    <p className="text-[9px] font-mono text-muted-foreground/60 mt-2">source · {c.source_path}</p>
                   )}
                 </div>
               ))}

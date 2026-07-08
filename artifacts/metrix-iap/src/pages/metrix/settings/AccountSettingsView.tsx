@@ -1,24 +1,35 @@
-// ─── Settings ─────────────────────────────────────────────────────────
-// Account-scoped settings: data connection, white-label, data isolation.
+// ─── Settings · Account ───────────────────────────────────────────────
+// Account-scoped settings: data connection, white-label, data isolation,
+// plus the workspace-wide Metrix Agent waitlist admin section.
 
+import { useState } from "react";
 import { useScopedAdAccountId, useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getReportBuilder } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, ScopeBanner, SectionCard, CaveatNote, PendingState } from "./shared";
+import { ModuleHeader, ScopeBanner, SectionCard, CaveatNote, PendingState } from "../shared";
+import { ConnectMetaDialog, ManualImportDialog } from "../ConnectAccountDialogs";
+import { AgentWaitlistSection } from "./AgentWaitlistSection";
 import { cn } from "@/lib/utils";
 import { Plug, FileUp, Palette, ShieldCheck, CheckCircle2, Circle } from "lucide-react";
 
-export function SettingsView() {
+const SECTION = "Settings · 09";
+
+export function AccountSettingsView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const { manager } = useAccount();
   const account = getAdAccount(seed, adAccountId);
+  const [connectOpen, setConnectOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   if (!account) {
     return (
-      <div className="flex-1 flex flex-col">
-        <ModuleHeader section="Settings" title="Settings" />
+      <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
+        <ModuleHeader section={SECTION} title="Account" />
         <PendingState title="No ad account selected" message="Choose an ad account to manage its settings." />
+        <div className="px-6 py-5 space-y-5 max-w-3xl">
+          <AgentWaitlistSection />
+        </div>
       </div>
     );
   }
@@ -28,7 +39,7 @@ export function SettingsView() {
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
-      <ModuleHeader section="Settings" title="Settings" subtitle={`Configuration for ${account.name} under ${manager.name}.`} />
+      <ModuleHeader section={SECTION} title="Account" subtitle={`Configuration for ${account.name} under ${manager.name}.`} />
       <ScopeBanner account={account} />
 
       <div className="px-6 py-5 space-y-5 max-w-3xl">
@@ -36,24 +47,32 @@ export function SettingsView() {
         <SectionCard title="Data connection" desc="Meta ad account connection and manual import status.">
           <div className="space-y-2.5">
             <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
-              {configured ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> : <Circle className="w-4 h-4 text-muted-foreground/40 shrink-0" />}
+              {configured ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> : <Circle className="w-4 h-4 text-muted-foreground/60 shrink-0" />}
               <div className="flex-1 min-w-0">
                 <div className="text-[12px] font-medium text-foreground">Meta ad account</div>
-                <div className="text-[10px] text-muted-foreground/50">{configured ? `${account.platform} · connected` : "Not connected"}</div>
+                <div className="text-[10px] text-muted-foreground/70">{configured ? `${account.platform} · connected` : "Not connected"}</div>
               </div>
               {!configured && (
-                <button className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-[11px] font-medium text-primary hover:bg-primary/25 transition-colors">
+                <button
+                  onClick={() => setConnectOpen(true)}
+                  className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-[11px] font-medium text-primary hover:bg-primary/25 transition-colors"
+                  data-testid="button-connect-account"
+                >
                   <Plug className="w-3 h-3" /> Connect
                 </button>
               )}
             </div>
             <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
-              <FileUp className="w-4 h-4 text-muted-foreground/50 shrink-0" />
+              <FileUp className="w-4 h-4 text-muted-foreground/70 shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="text-[12px] font-medium text-foreground">Manual import</div>
-                <div className="text-[10px] text-muted-foreground/50">Upload exported performance data</div>
+                <div className="text-[10px] text-muted-foreground/70">Upload exported performance data</div>
               </div>
-              <button className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors">
+              <button
+                onClick={() => setImportOpen(true)}
+                className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+                data-testid="button-add-import"
+              >
                 <FileUp className="w-3 h-3" /> Add import
               </button>
             </div>
@@ -67,7 +86,7 @@ export function SettingsView() {
               <Palette className="w-4 h-4 text-primary shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="text-[12px] font-medium text-foreground capitalize">{rb.default_branding} branding</div>
-                <div className="text-[10px] text-muted-foreground/50">White-label {rb.white_label_supported ? "supported" : "unavailable"} · formats: {rb.export_formats.join(", ")}</div>
+                <div className="text-[10px] text-muted-foreground/70">White-label {rb.white_label_supported ? "supported" : "unavailable"} · formats: {rb.export_formats.join(", ")}</div>
               </div>
             </div>
             <div className="mt-2.5">
@@ -87,10 +106,16 @@ export function SettingsView() {
           </div>
         </SectionCard>
 
-        <div className={cn("text-[10px] font-mono text-muted-foreground/35", "px-1")}>
+        {/* Metrix Agent waitlist (admin, manager-wide) */}
+        <AgentWaitlistSection />
+
+        <div className={cn("text-[10px] font-mono text-muted-foreground/60", "px-1")}>
           Account ID · {account.id}
         </div>
       </div>
+
+      <ConnectMetaDialog account={account} open={connectOpen} onOpenChange={setConnectOpen} />
+      <ManualImportDialog account={account} open={importOpen} onOpenChange={setImportOpen} />
     </div>
   );
 }

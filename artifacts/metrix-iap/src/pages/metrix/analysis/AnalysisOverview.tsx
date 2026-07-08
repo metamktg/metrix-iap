@@ -1,0 +1,130 @@
+// ─── Analysis · Overview ──────────────────────────────────────────────
+// Entry point for the Analysis section: campaign totals, the core
+// control reads, and jump-offs into each analysis subpage.
+
+import { useScopedAdAccountId } from "@/contexts/AccountContext";
+import { useMetrixSeed } from "@/contexts/MetrixDataContext";
+import { getAdAccount, getAnalysisData, getCampaignSummary, getCoreControls } from "@/lib/data/metrixSeedAdapter";
+import {
+  ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
+  CaveatNote, SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct,
+} from "../shared";
+import { LineChart, Library, Users, LayoutGrid, Wallet } from "lucide-react";
+
+const SECTION = "Analysis · 03";
+
+export function AnalysisOverview() {
+  const seed = useMetrixSeed();
+  const adAccountId = useScopedAdAccountId();
+  const account = getAdAccount(seed, adAccountId);
+
+  return (
+    <ModuleScopeGate section={SECTION} title="Analysis Overview" account={account}>
+      {() => {
+        const acct = account!;
+        const summary = getCampaignSummary(seed, adAccountId);
+        const a = getAnalysisData(seed, adAccountId);
+        const controls = getCoreControls(seed, adAccountId);
+
+        if (!summary || !a) {
+          return (
+            <div className="flex-1 flex flex-col">
+              <ModuleHeader section={SECTION} title="Analysis Overview" />
+              <ScopeBanner account={acct} />
+              <PendingState title="No analysis yet" message="Analysis appears once performance data is connected or imported." icon={LineChart} />
+            </div>
+          );
+        }
+
+        const subpages = [
+          {
+            to: "/app/analysis/library",
+            label: "IAP Library",
+            Icon: Library,
+            desc: "Cell and variable performance across the account.",
+            stat: `${a.performance_by_cell.length} cell rows · ${a.v3_variable_performance.length} variable rows`,
+          },
+          {
+            to: "/app/analysis/audience",
+            label: "Audience",
+            Icon: Users,
+            desc: "Demographic registration signal by age and gender.",
+            stat: `${a.demographic_registration_signal.length} demographic rows`,
+          },
+          {
+            to: "/app/analysis/placements",
+            label: "Placements",
+            Icon: LayoutGrid,
+            desc: "Where delivery happened and what each placement produced.",
+            stat: `${a.v3_placement_signal.length + a.c4e_placement_signal.length} placement rows`,
+          },
+          {
+            to: "/app/analysis/budget",
+            label: "Budget Insight",
+            Icon: Wallet,
+            desc: "Spend allocation by result event, concept, and placement.",
+            stat: `${fmtUSD(summary.total_spend_usd, 0)} analyzed`,
+          },
+        ];
+
+        return (
+          <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
+            <ModuleHeader
+              section={SECTION}
+              title="Analysis Overview"
+              subtitle="What the account's performance data says, and where to drill in."
+              table="campaign_summary, performance_by_cell"
+            />
+            <ScopeBanner account={acct} />
+
+            <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+              <MetricTile label="Total spend" value={fmtUSD(summary.total_spend_usd, 0)} />
+              <MetricTile label="Impressions" value={fmtNum(summary.total_impressions)} />
+              <MetricTile label="Link clicks" value={fmtNum(summary.total_link_clicks)} />
+              <MetricTile label="Link CTR" value={fmtPct(summary.overall_link_ctr_pct)} />
+            </div>
+
+            <div className="px-6 py-5 space-y-4 max-w-5xl">
+              {summary.data_caveat && <CaveatNote text={summary.data_caveat} />}
+
+              {controls && (
+                <SectionCard title="Core control reads" desc="The current control concept for each funnel depth." table="core_reanalysis_read">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
+                      <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5">Primary control</div>
+                      <p className="text-[13px] font-semibold text-foreground">{controls.primary_control}</p>
+                      <p className="text-[11px] text-muted-foreground/80 mt-1.5 leading-relaxed">{controls.primary_control_read}</p>
+                    </div>
+                    <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
+                      <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5">Registration control</div>
+                      <p className="text-[13px] font-semibold text-foreground">{controls.registration_control}</p>
+                      <p className="text-[11px] text-muted-foreground/80 mt-1.5 leading-relaxed">{controls.registration_control_read}</p>
+                    </div>
+                  </div>
+                </SectionCard>
+              )}
+
+              <SectionCard title="Analysis modules" desc="Each module reads a different slice of the same account data.">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {subpages.map((s) => (
+                    <div key={s.to} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <s.Icon className="w-3.5 h-3.5 text-primary" />
+                        <span className="text-[13px] font-semibold text-foreground">{s.label}</span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground/80 leading-relaxed">{s.desc}</p>
+                      <div className="flex items-center justify-between mt-auto pt-1">
+                        <span className="text-[10px] font-mono text-muted-foreground/70">{s.stat}</span>
+                        <CrossLink to={s.to} label="Open" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </SectionCard>
+            </div>
+          </div>
+        );
+      }}
+    </ModuleScopeGate>
+  );
+}

@@ -18,6 +18,8 @@ import type {
   MST,
   CoreReanalysisRead,
   CampaignSummary,
+  ReportHistoryEntry,
+  WorkspaceSettings,
 } from "./seedTypes";
 
 // ─── App defaults ─────────────────────────────────────────────────────
@@ -101,4 +103,14 @@ export function getOptimizationLoop(seed: MetrixSeed, adAccountId: string | null
 
 export function getMST(seed: MetrixSeed, adAccountId: string | null): MST | null {
   return getAdAccount(seed, adAccountId)?.mst ?? null;
+}
+
+export function getReportHistory(seed: MetrixSeed, adAccountId: string | null): ReportHistoryEntry[] {
+  return getAdAccount(seed, adAccountId)?.iap?.report_builder?.report_history ?? [];
+}
+
+// ─── Workspace settings (manager-wide) ────────────────────────────────
+
+export function getWorkspaceSettings(seed: MetrixSeed): WorkspaceSettings | null {
+  return seed.workspace_settings ?? null;
 }

@@ -166,12 +166,25 @@ export interface BriefBuilder {
 
 // ─── Report builder ───────────────────────────────────────────────────
 
+export interface ReportHistoryEntry {
+  id: string;
+  title: string;
+  generated_at: string;
+  branding: string;
+  mode: "internal" | "client" | string;
+  section_count: number;
+  status: "draft" | "exported" | string;
+  export_format: string | null;
+  summary: string;
+}
+
 export interface ReportBuilder {
   default_branding: string;
   white_label_supported: boolean;
   logo_policy: string;
   export_formats: string[];
   report_sections: string[];
+  report_history?: ReportHistoryEntry[];
 }
 
 // ─── Optimization loop ────────────────────────────────────────────────
@@ -333,6 +346,73 @@ export interface AppDefaults {
   data_isolation_rule: string;
 }
 
+// ─── Workspace settings (manager-wide, not account-scoped) ────────────
+
+export interface WorkspaceTeamMember {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  status: "active" | "invited" | string;
+  last_active: string | null;
+}
+
+export interface WorkspaceRole {
+  id: string;
+  label: string;
+  description: string;
+}
+
+export interface WorkspaceTeam {
+  seat_limit: number;
+  members: WorkspaceTeamMember[];
+  roles: WorkspaceRole[];
+  access_policy: string;
+}
+
+export interface NotificationEventPref {
+  id: string;
+  label: string;
+  description: string;
+  email: boolean;
+  in_app: boolean;
+}
+
+export interface WorkspaceNotifications {
+  channels: { id: string; label: string; enabled: boolean }[];
+  events: NotificationEventPref[];
+  digest: { frequency: string; day: string; description: string };
+}
+
+export interface WorkspaceInvoice {
+  id: string;
+  date: string;
+  amount_usd: number;
+  status: string;
+}
+
+export interface WorkspaceBilling {
+  plan: string;
+  price_usd_month: number;
+  billing_cycle: string;
+  renews_at: string;
+  payment_method: string;
+  included: string[];
+  usage: {
+    connected_ad_accounts: number;
+    ad_account_limit: number;
+    seats_used: number;
+    seat_limit: number;
+  };
+  invoices: WorkspaceInvoice[];
+}
+
+export interface WorkspaceSettings {
+  team: WorkspaceTeam;
+  notifications: WorkspaceNotifications;
+  billing: WorkspaceBilling;
+}
+
 export interface MetrixSeed {
   schema_version: string;
   generated_at: string;
@@ -340,4 +420,5 @@ export interface MetrixSeed {
   app_defaults: AppDefaults;
   manager_account: ManagerAccount;
   ad_accounts: AdAccount[];
+  workspace_settings?: WorkspaceSettings;
 }

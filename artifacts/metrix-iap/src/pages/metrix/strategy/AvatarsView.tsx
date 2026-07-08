@@ -15,7 +15,7 @@ import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { Users } from "lucide-react";
 import type { MSTMatrixColumn, MSTMatrixCell } from "@/lib/data/seedTypes";
 
-const SECTION = "Strategy · 03";
+const SECTION = "Strategy · 04";
 
 type Tab = "avatars" | "audience";
 
@@ -89,18 +89,18 @@ export function AvatarsView() {
                           </div>
                           <div className="min-w-0">
                             <p className="text-[13px] font-semibold text-foreground leading-tight whitespace-pre-line">{col.name}</p>
-                            <span className="text-[9px] font-mono text-muted-foreground/45">{col.icp}</span>
+                            <span className="text-[9px] font-mono text-muted-foreground/60">{col.icp}</span>
                           </div>
                         </div>
                         <div className="space-y-1.5 mt-3">
                           {cells.slice(0, 2).map((c) => (
                             <p key={c.cell_id} className="text-[11px] text-muted-foreground/70 leading-snug">
-                              <span className="font-mono text-[9px] text-muted-foreground/40 mr-1">{c.cell_id}</span>
+                              <span className="font-mono text-[9px] text-muted-foreground/60 mr-1">{c.cell_id}</span>
                               {c.plain_text.headline ?? c.concept_code}
                             </p>
                           ))}
                         </div>
-                        <div className="mt-3 pt-3 border-t border-border/20 text-[10px] text-muted-foreground/45">
+                        <div className="mt-3 pt-3 border-t border-border/20 text-[10px] text-muted-foreground/60">
                           {cells.length} message angle{cells.length === 1 ? "" : "s"} · tap for details
                         </div>
                       </button>
@@ -136,7 +136,7 @@ export function AvatarsView() {
                     {c.plain_text.primary && <p className="mt-1">{c.plain_text.primary}</p>}
                     <div className="flex flex-wrap gap-1 mt-2">
                       {Object.values(c.variable_stack).filter(Boolean).map((v) => (
-                        <span key={v} className="text-[8px] font-mono text-muted-foreground/50 border border-border/30 px-1 py-0.5 rounded leading-none" title={readableVariables(v)}>
+                        <span key={v} className="text-[8px] font-mono text-muted-foreground/70 border border-border/30 px-1 py-0.5 rounded leading-none" title={readableVariables(v)}>
                           {v}
                         </span>
                       ))}

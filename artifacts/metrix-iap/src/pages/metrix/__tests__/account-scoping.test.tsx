@@ -7,7 +7,8 @@
 // production data.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, cleanup } from "@testing-library/react";
+import { render, cleanup, fireEvent, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -31,37 +32,57 @@ import { AccountProvider } from "@/contexts/AccountContext";
 import { SignalView } from "../listen/SignalView";
 import { AlertsView } from "../listen/AlertsView";
 import { RecommendationsView } from "../listen/RecommendationsView";
+import { AnalysisOverview } from "../analysis/AnalysisOverview";
 import { IapLibraryView } from "../analysis/IapLibraryView";
-import { ConceptMapView } from "../analysis/ConceptMapView";
+import { AudienceView } from "../analysis/AudienceView";
+import { PlacementsView } from "../analysis/PlacementsView";
 import { BudgetView } from "../analysis/BudgetView";
+import { StrategyOverview } from "../strategy/StrategyOverview";
+import { StrategyMapView } from "../strategy/StrategyMapView";
 import { HypothesisQueueView } from "../strategy/HypothesisQueueView";
 import { AvatarsView } from "../strategy/AvatarsView";
 import { BriefBuilderView } from "../briefs/BriefBuilderView";
 import { BriefHistoryView } from "../briefs/BriefHistoryView";
-import { MSTView } from "../MSTView";
-import { ReportBuilderView } from "../ReportBuilderView";
-import { SettingsView } from "../SettingsView";
+import { NewReportView } from "../reports/NewReportView";
+import { ReportHistoryView } from "../reports/ReportHistoryView";
+import { ExportsView } from "../reports/ExportsView";
+import { ConceptMapView } from "../mst/ConceptMapView";
+import { MatrixBuilderView } from "../mst/MatrixBuilderView";
+import { CreativeScanView } from "../mst/CreativeScanView";
+import { CrossmapResultsView } from "../mst/CrossmapResultsView";
+import { AccountSettingsView } from "../settings/AccountSettingsView";
 import { AdAccountOverview } from "../AdAccountOverview";
 
 const SESSION_KEY = "metrix_active_account_v1";
 
+// Every view gated by ModuleScopeGate (uniform pending/unconfigured states).
 const GATED_VIEWS: [string, React.ComponentType][] = [
   ["Listen · Signal", SignalView],
   ["Listen · Alerts", AlertsView],
   ["Listen · Recommendations", RecommendationsView],
+  ["Analysis · Overview", AnalysisOverview],
   ["Analysis · IAP Library", IapLibraryView],
-  ["Analysis · Concept Map", ConceptMapView],
+  ["Analysis · Audience", AudienceView],
+  ["Analysis · Placements", PlacementsView],
   ["Analysis · Budget", BudgetView],
+  ["Strategy · Overview", StrategyOverview],
+  ["Strategy · Map", StrategyMapView],
   ["Strategy · Hypothesis Queue", HypothesisQueueView],
   ["Strategy · Avatars", AvatarsView],
   ["Briefs · Brief Builder", BriefBuilderView],
   ["Briefs · History", BriefHistoryView],
+  ["Reports · New Report", NewReportView],
+  ["Reports · History", ReportHistoryView],
+  ["Reports · Exports", ExportsView],
+  ["MST · Concept Map", ConceptMapView],
+  ["MST · Matrix Builder", MatrixBuilderView],
+  ["MST · Creative Scan", CreativeScanView],
+  ["MST · Crossmap Results", CrossmapResultsView],
 ];
 
+// Views that gate themselves (custom no-account / unconfigured handling).
 const SELF_GATED_VIEWS: [string, React.ComponentType][] = [
-  ["MST", MSTView],
-  ["Report Builder", ReportBuilderView],
-  ["Settings", SettingsView],
+  ["Settings · Account", AccountSettingsView],
   ["Ad Account Overview", AdAccountOverview],
 ];
 
@@ -70,10 +91,15 @@ function select(type: "manager" | "ad_account", adAccountId: string | null) {
 }
 
 function renderView(View: React.ComponentType) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, enabled: false } },
+  });
   return render(
-    <AccountProvider>
-      <View />
-    </AccountProvider>
+    <QueryClientProvider client={queryClient}>
+      <AccountProvider>
+        <View />
+      </AccountProvider>
+    </QueryClientProvider>
   );
 }
 
@@ -118,6 +144,41 @@ describe("Manager selected", () => {
     const { container } = renderView(SignalView);
     expect(container.textContent).toContain("No ad account selected");
     expect(container.textContent).not.toContain("Scoped to ad account");
+  });
+});
+
+describe("Unconfigured-state actions (SKOV Pet)", () => {
+  it("Connect Meta Ad Account opens the guided connect flow", () => {
+    select("ad_account", "skov_pet");
+    renderView(SignalView);
+    fireEvent.click(screen.getByRole("button", { name: /Connect Meta Ad Account/i }));
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.textContent).toContain("Guided preview");
+    expect(dialog.textContent).toContain("Authorize with Meta");
+    expect(dialog.textContent).toContain("no data is generated");
+  });
+
+  it("connect flow ends in a pending state without configuring the account", () => {
+    select("ad_account", "skov_pet");
+    renderView(SignalView);
+    fireEvent.click(screen.getByRole("button", { name: /Connect Meta Ad Account/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Continue with Meta/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Link SKOV Pet/i }));
+    expect(screen.getByRole("dialog").textContent).toContain("Connection pending");
+    fireEvent.click(screen.getByRole("button", { name: /^Done$/i }));
+    // Account must remain unconfigured — no performance data appears.
+    expect(document.body.textContent).toContain("Connect Meta Ad Account");
+    expect(document.body.textContent).not.toContain("Bookster");
+  });
+
+  it("Add Manual Import opens the manual import entry point", () => {
+    select("ad_account", "skov_pet");
+    renderView(SignalView);
+    fireEvent.click(screen.getByRole("button", { name: /Add Manual Import/i }));
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.textContent).toContain("Add Manual Import");
+    expect(dialog.textContent).toContain("Performance export (CSV)");
+    expect(dialog.textContent).toContain("no performance data is generated");
   });
 });
 

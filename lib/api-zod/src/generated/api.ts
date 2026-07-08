@@ -17,7 +17,8 @@ export const GetMetrixSeedResponse = zod.object({
   "generated_at": zod.string().optional(),
   "app_defaults": zod.record(zod.string(), zod.unknown()).optional(),
   "manager_account": zod.record(zod.string(), zod.unknown()),
-  "ad_accounts": zod.array(zod.record(zod.string(), zod.unknown()))
+  "ad_accounts": zod.array(zod.record(zod.string(), zod.unknown())),
+  "workspace_settings": zod.record(zod.string(), zod.unknown()).optional()
 }).describe('Full Metrix IAP seed bundle. Nested account payloads are intentionally loosely typed; the client narrows them with its own seed types.')
 
 
@@ -32,6 +33,197 @@ export const JoinAgentWaitlistBody = zod.object({
 export const JoinAgentWaitlistResponse = zod.object({
   "status": zod.enum(['joined', 'already_joined']),
   "email": zod.string()
+})
+
+
+/**
+ * Returns a page of waitlist entries (email and joined date), newest first. Use limit/offset to page through results; total reflects the full count. Requires an admin bearer key.
+ * @summary List Metrix Agent waitlist signups
+ */
+export const listAgentWaitlistQueryLimitDefault = 50;
+export const listAgentWaitlistQueryLimitMax = 200;
+
+export const listAgentWaitlistQueryOffsetDefault = 0;
+export const listAgentWaitlistQueryOffsetMin = 0;
+
+
+
+export const ListAgentWaitlistQueryParams = zod.object({
+  "limit": zod.coerce.number().min(1).max(listAgentWaitlistQueryLimitMax).default(listAgentWaitlistQueryLimitDefault).describe('Maximum number of entries to return (default 50, max 200).'),
+  "offset": zod.coerce.number().min(listAgentWaitlistQueryOffsetMin).default(listAgentWaitlistQueryOffsetDefault).describe('Number of entries to skip from the newest entry (default 0).')
+})
+
+export const ListAgentWaitlistResponse = zod.object({
+  "entries": zod.array(zod.object({
+  "email": zod.string(),
+  "joined_at": zod.string()
+})),
+  "total": zod.number()
+})
+
+
+/**
+ * Returns invites created for this workspace, newest first.
+ * @summary List pending workspace invites
+ */
+
+
+
+export const ListWorkspaceInvitesParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.')
+})
+
+export const ListWorkspaceInvitesResponse = zod.object({
+  "invites": zod.array(zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "role": zod.string(),
+  "status": zod.string(),
+  "created_at": zod.string()
+}))
+})
+
+
+/**
+ * Creates a pending invite for the given email and role. Idempotent per workspace and email.
+ * @summary Invite a member to the workspace
+ */
+
+
+
+export const CreateWorkspaceInviteParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.')
+})
+
+export const CreateWorkspaceInviteBody = zod.object({
+  "email": zod.string().email(),
+  "role": zod.enum(['analyst', 'client_viewer'])
+})
+
+export const CreateWorkspaceInviteResponse = zod.object({
+  "status": zod.enum(['created', 'already_invited']),
+  "invite": zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "role": zod.string(),
+  "status": zod.string(),
+  "created_at": zod.string()
+})
+})
+
+
+/**
+ * Deletes the pending invite, freeing its seat.
+ * @summary Revoke a pending workspace invite
+ */
+
+
+
+
+export const RevokeWorkspaceInviteParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.'),
+  "inviteId": zod.coerce.number().min(1).describe('Invite identifier.')
+})
+
+export const RevokeWorkspaceInviteResponse = zod.object({
+  "status": zod.enum(['revoked'])
+})
+
+
+/**
+ * Bumps the invite's created_at timestamp to now and returns the updated invite.
+ * @summary Resend a pending workspace invite
+ */
+
+
+
+
+export const ResendWorkspaceInviteParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.'),
+  "inviteId": zod.coerce.number().min(1).describe('Invite identifier.')
+})
+
+export const ResendWorkspaceInviteResponse = zod.object({
+  "status": zod.enum(['resent']),
+  "invite": zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "role": zod.string(),
+  "status": zod.string(),
+  "created_at": zod.string()
+})
+})
+
+
+/**
+ * Returns persisted channel and event preference overrides for this workspace. Anything not listed falls back to seed defaults on the client.
+ * @summary Get workspace notification preference overrides
+ */
+
+
+
+export const GetNotificationPrefsParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.')
+})
+
+
+
+
+
+export const GetNotificationPrefsResponse = zod.object({
+  "channels": zod.array(zod.object({
+  "id": zod.string().min(1),
+  "enabled": zod.boolean()
+})),
+  "events": zod.array(zod.object({
+  "id": zod.string().min(1),
+  "email": zod.boolean(),
+  "in_app": zod.boolean()
+}))
+})
+
+
+/**
+ * Upserts channel and/or event preference overrides for this workspace and returns the full set of persisted overrides.
+ * @summary Update workspace notification preferences
+ */
+
+
+
+export const UpdateNotificationPrefsParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.')
+})
+
+
+
+
+
+export const UpdateNotificationPrefsBody = zod.object({
+  "channels": zod.array(zod.object({
+  "id": zod.string().min(1),
+  "enabled": zod.boolean()
+})).optional(),
+  "events": zod.array(zod.object({
+  "id": zod.string().min(1),
+  "email": zod.boolean(),
+  "in_app": zod.boolean()
+})).optional()
+})
+
+
+
+
+
+export const UpdateNotificationPrefsResponse = zod.object({
+  "channels": zod.array(zod.object({
+  "id": zod.string().min(1),
+  "enabled": zod.boolean()
+})),
+  "events": zod.array(zod.object({
+  "id": zod.string().min(1),
+  "email": zod.boolean(),
+  "in_app": zod.boolean()
+}))
 })
 
 

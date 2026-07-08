@@ -10,7 +10,7 @@ import {
 } from "../shared";
 import { FileClock, FileText } from "lucide-react";
 
-const SECTION = "Creative Briefs · 04";
+const SECTION = "Creative Briefs · 05";
 
 const STATUS_LABEL: Record<string, string> = {
   draft_from_seed: "Draft created from seed strategy",
@@ -61,7 +61,7 @@ export function BriefHistoryView() {
                   {briefs.map((b) => (
                     <div key={b.id} className="flex items-start gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
                       <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center shrink-0">
-                        <FileText className="w-3.5 h-3.5 text-muted-foreground/50" />
+                        <FileText className="w-3.5 h-3.5 text-muted-foreground/70" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">

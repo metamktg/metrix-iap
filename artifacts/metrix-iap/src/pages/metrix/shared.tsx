@@ -1,7 +1,9 @@
 // ─── Shared building blocks for seed-hydrated Metrix pages ────────────
 
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useLocation, useSearch } from "wouter";
+import { ConnectMetaDialog, ManualImportDialog } from "./ConnectAccountDialogs";
 import { Plug, FileUp, Clock, Database, Info, ArrowRight, CheckSquare, Square } from "lucide-react";
 import { DataSourceBadge } from "@/components/ui/DataSourceBadge";
 import { resolveVariableLabel } from "@/lib/variable-registry";
@@ -101,10 +103,10 @@ export function ModuleHeader({
 export function ScopeBanner({ account }: { account: AdAccount }) {
   return (
     <div className="flex items-center gap-2 px-6 py-2 border-b border-border/30 bg-white/[0.015]">
-      <Database className="w-3 h-3 text-muted-foreground/40 shrink-0" />
-      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/40">Scoped to ad account</span>
+      <Database className="w-3 h-3 text-muted-foreground/60 shrink-0" />
+      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Scoped to ad account</span>
       <span className="text-[11px] font-medium text-foreground/80">{account.name}</span>
-      <span className="text-[9px] font-mono text-muted-foreground/40">{account.platform}</span>
+      <span className="text-[9px] font-mono text-muted-foreground/60">{account.platform}</span>
     </div>
   );
 }
@@ -124,11 +126,13 @@ export function CaveatNote({ text }: { text: string }) {
 
 export function UnconfiguredState({ account }: { account: AdAccount }) {
   const s = account.overview_state;
+  const [connectOpen, setConnectOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   return (
     <div className="flex-1 flex items-center justify-center py-20 px-6">
       <div className="max-w-md text-center space-y-5">
         <div className="w-14 h-14 rounded-2xl border border-border/40 bg-white/[0.03] flex items-center justify-center mx-auto">
-          <Plug className="w-6 h-6 text-muted-foreground/50" />
+          <Plug className="w-6 h-6 text-muted-foreground/70" />
         </div>
         <div className="space-y-1.5">
           <h2 className="text-[16px] font-semibold text-foreground">{s?.title ?? "Connect Meta Ad Account"}</h2>
@@ -137,17 +141,25 @@ export function UnconfiguredState({ account }: { account: AdAccount }) {
           </p>
         </div>
         <div className="flex items-center justify-center gap-2">
-          <button className="flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary/15 border border-primary/30 text-[12px] font-medium text-primary hover:bg-primary/25 transition-colors">
+          <button
+            onClick={() => setConnectOpen(true)}
+            className="flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary/15 border border-primary/30 text-[12px] font-medium text-primary hover:bg-primary/25 transition-colors"
+          >
             <Plug className="w-3.5 h-3.5" /> {s?.primary_action ?? "Connect Meta Ad Account"}
           </button>
-          <button className="flex items-center gap-1.5 h-9 px-4 rounded-md border border-border/50 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors">
+          <button
+            onClick={() => setImportOpen(true)}
+            className="flex items-center gap-1.5 h-9 px-4 rounded-md border border-border/50 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+          >
             <FileUp className="w-3.5 h-3.5" /> {s?.secondary_action ?? "Add Manual Import"}
           </button>
         </div>
-        <p className="text-[10px] text-muted-foreground/35 leading-relaxed">
+        <p className="text-[10px] text-muted-foreground/60 leading-relaxed">
           No performance, analysis, or report data is shown until this account is configured.
         </p>
       </div>
+      <ConnectMetaDialog account={account} open={connectOpen} onOpenChange={setConnectOpen} />
+      <ManualImportDialog account={account} open={importOpen} onOpenChange={setImportOpen} />
     </div>
   );
 }
@@ -156,10 +168,10 @@ export function PendingState({ title, message, icon: Icon = Clock }: { title: st
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
       <div className="w-10 h-10 rounded-xl border border-border/40 bg-white/[0.03] flex items-center justify-center">
-        <Icon className="w-4 h-4 text-muted-foreground/40" />
+        <Icon className="w-4 h-4 text-muted-foreground/60" />
       </div>
       <p className="text-[13px] font-medium text-foreground/60">{title}</p>
-      <p className="text-[11px] text-muted-foreground/40 max-w-xs">{message}</p>
+      <p className="text-[11px] text-muted-foreground/60 max-w-xs">{message}</p>
     </div>
   );
 }
@@ -204,7 +216,7 @@ export function ModuleTabs<T extends string>({
         >
           {t.Icon && <t.Icon className="w-3 h-3" />}
           {t.label}
-          {t.count != null && <span className="text-[9px] font-mono text-muted-foreground/40">{t.count}</span>}
+          {t.count != null && <span className="text-[9px] font-mono text-muted-foreground/60">{t.count}</span>}
         </button>
       ))}
     </div>
@@ -284,7 +296,7 @@ export function MetricSelectionBar({
 }) {
   return (
     <div className="flex items-center gap-2 flex-wrap px-6 py-2.5 border-b border-border/30 bg-white/[0.01]">
-      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/40">
+      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">
         Metric selection
       </span>
       {events.map((e) => {

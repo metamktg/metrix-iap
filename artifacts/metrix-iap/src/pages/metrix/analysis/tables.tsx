@@ -6,7 +6,7 @@ import { readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel } from "../shared
 import type { CellPerformanceRow, VariablePerformanceRow, DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 
 export function Th({ children, right }: { children: React.ReactNode; right?: boolean }) {
-  return <th className={cn("text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40 font-semibold px-2.5 py-2", right ? "text-right" : "text-left")}>{children}</th>;
+  return <th className={cn("text-[9px] font-mono uppercase tracking-widest text-muted-foreground/60 font-semibold px-2.5 py-2", right ? "text-right" : "text-left")}>{children}</th>;
 }
 export function Td({ children, right, className }: { children: React.ReactNode; right?: boolean; className?: string }) {
   return <td className={cn("px-2.5 py-2 text-[11px] text-foreground/80 align-top", right && "text-right tabular-nums", className)}>{children}</td>;
@@ -37,7 +37,7 @@ export function VariableCodeChips({ row }: { row: CellPerformanceRow }) {
   return (
     <div className="flex flex-wrap gap-1 mt-1">
       {codes.map((c) => (
-        <span key={c} className="text-[8px] font-mono text-muted-foreground/50 border border-border/30 px-1 py-0.5 rounded leading-none" title={readableVariables(c)}>
+        <span key={c} className="text-[8px] font-mono text-muted-foreground/70 border border-border/30 px-1 py-0.5 rounded leading-none" title={readableVariables(c)}>
           {c}
         </span>
       ))}
@@ -68,7 +68,7 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
           >
             <Td>
               <div className="font-medium text-foreground">{r.book2_concept_name}</div>
-              <div className="text-[9px] font-mono text-muted-foreground/40 mt-0.5">{r.cell_id}{r.stage ? ` · ${r.stage}` : ""}</div>
+              <div className="text-[9px] font-mono text-muted-foreground/60 mt-0.5">{r.cell_id}{r.stage ? ` · ${r.stage}` : ""}</div>
               <VariableCodeChips row={r} />
             </Td>
             <Td>{eventLabel(r["Result type"])}</Td>
@@ -104,7 +104,7 @@ export function VariableTable({ rows }: { rows: VariablePerformanceRow[] }) {
           <tr key={r.variable_id + r["Result type"] + i} className="border-b border-border/20 hover:bg-white/[0.02]">
             <Td>
               <div className="font-medium text-foreground">{readableVariables(r.variable_id)}</div>
-              <div className="text-[9px] font-mono text-muted-foreground/40 mt-0.5">{r.variable_id}</div>
+              <div className="text-[9px] font-mono text-muted-foreground/60 mt-0.5">{r.variable_id}</div>
             </Td>
             <Td className="capitalize">{r.variable_family}</Td>
             <Td>{eventLabel(r["Result type"])}</Td>

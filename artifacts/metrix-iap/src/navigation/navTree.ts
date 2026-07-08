@@ -2,16 +2,16 @@
 // All labels, routes, badge keys, and placeholder flags live here.
 // Sidebar.tsx consumes this — no nav data defined elsewhere.
 //
-// Locked structure:
-//   Overview
-//   Listen        → Signal / Alerts / Recommendations
-//   Analysis      → IAP Library / Concept Map / Budget
-//   Strategy      → Hypothesis Queue / Avatars
-//   Creative Briefs → Brief Builder / History
-//   Report Builder
-//   MST
-//   Metrix Agent  (Coming Soon)
-//   Settings
+// Locked 9-section information architecture (user-specified):
+//   1 Overview
+//   2 Listen          → Alerts / Signal / Recommendations
+//   3 Analysis        → Overview / IAP Library / Audience / Placements / Budget Insight
+//   4 Strategy        → Overview / Strategy Map / Avatars · ICP / Hypothesis Queue
+//   5 Creative Briefs → Brief Builder / History
+//   6 Report Builder  → New Report / Report History / Exports
+//   7 MST             → Concept Map / Matrix Builder / Creative Scan / Crossmap Results
+//   8 Metrix Agent    (Coming Soon — waitlist)
+//   9 Settings        → Account / Integrations / Team & Access / Notifications / Billing
 
 export type NavBadgeKey =
   | "signals"
@@ -47,7 +47,7 @@ export type NavSection = {
 export const navTree: NavSection[] = [
   {
     id: "overview",
-    number: "00",
+    number: "01",
     label: "Overview",
     to: "/",
     matchPaths: ["/app/account"],
@@ -55,21 +55,21 @@ export const navTree: NavSection[] = [
   },
   {
     id: "listen",
-    number: "01",
+    number: "02",
     label: "Listen",
     children: [
+      {
+        id: "listen-alerts",
+        label: "Alerts",
+        to: "/app/listen/alerts",
+        dataSource: "signal_cards, data_caveats",
+      },
       {
         id: "listen-signal",
         label: "Signal",
         to: "/app/listen/signal",
         badgeKey: "signals",
         dataSource: "signal_cards",
-      },
-      {
-        id: "listen-alerts",
-        label: "Alerts",
-        to: "/app/listen/alerts",
-        dataSource: "signal_cards, data_caveats",
       },
       {
         id: "listen-recommendations",
@@ -81,9 +81,15 @@ export const navTree: NavSection[] = [
   },
   {
     id: "analysis",
-    number: "02",
+    number: "03",
     label: "Analysis",
     children: [
+      {
+        id: "analysis-overview",
+        label: "Overview",
+        to: "/app/analysis/overview",
+        dataSource: "performance_by_cell, campaign_summary",
+      },
       {
         id: "analysis-library",
         label: "IAP Library",
@@ -91,14 +97,20 @@ export const navTree: NavSection[] = [
         dataSource: "performance_by_cell, v3_variable_performance",
       },
       {
-        id: "analysis-concept-map",
-        label: "Concept Map",
-        to: "/app/analysis/concept-map",
-        dataSource: "performance_by_cell, message_pillars",
+        id: "analysis-audience",
+        label: "Audience",
+        to: "/app/analysis/audience",
+        dataSource: "demographic_registration_signal",
+      },
+      {
+        id: "analysis-placements",
+        label: "Placements",
+        to: "/app/analysis/placements",
+        dataSource: "v3_placement_signal, c4e_placement_signal",
       },
       {
         id: "analysis-budget",
-        label: "Budget",
+        label: "Budget Insight",
         to: "/app/analysis/budget",
         dataSource: "campaign_summary, performance_by_cell",
       },
@@ -106,26 +118,38 @@ export const navTree: NavSection[] = [
   },
   {
     id: "strategy",
-    number: "03",
+    number: "04",
     label: "Strategy",
     children: [
+      {
+        id: "strategy-overview",
+        label: "Overview",
+        to: "/app/strategy/overview",
+        dataSource: "message_pillars, active_hypotheses",
+      },
+      {
+        id: "strategy-map",
+        label: "Strategy Map",
+        to: "/app/strategy/map",
+        dataSource: "message_pillars, performance_by_cell",
+      },
+      {
+        id: "strategy-avatars",
+        label: "Avatars / ICP",
+        to: "/app/strategy/avatars",
+        dataSource: "historical_matrix_4x4, demographic_registration_signal",
+      },
       {
         id: "strategy-hypotheses",
         label: "Hypothesis Queue",
         to: "/app/strategy/hypotheses",
         dataSource: "active_hypotheses, message_pillars",
       },
-      {
-        id: "strategy-avatars",
-        label: "Avatars",
-        to: "/app/strategy/avatars",
-        dataSource: "historical_matrix_4x4, demographic_registration_signal",
-      },
     ],
   },
   {
     id: "briefs",
-    number: "04",
+    number: "05",
     label: "Creative Briefs",
     children: [
       {
@@ -145,22 +169,64 @@ export const navTree: NavSection[] = [
   },
   {
     id: "reports",
-    number: "05",
+    number: "06",
     label: "Report Builder",
-    to: "/app/report-builder",
-    dataSource: "report_sections",
+    children: [
+      {
+        id: "reports-new",
+        label: "New Report",
+        to: "/app/reports/new",
+        dataSource: "report_sections",
+      },
+      {
+        id: "reports-history",
+        label: "Report History",
+        to: "/app/reports/history",
+        dataSource: "report_history",
+      },
+      {
+        id: "reports-exports",
+        label: "Exports",
+        to: "/app/reports/exports",
+        dataSource: "report_history, export_formats",
+      },
+    ],
   },
   {
     id: "mst",
-    number: "06",
+    number: "07",
     label: "MST",
-    to: "/app/mst",
-    badgeKey: "mst",
-    dataSource: "historical_matrix_4x4",
+    children: [
+      {
+        id: "mst-concept-map",
+        label: "Concept Map",
+        to: "/app/mst/concept-map",
+        dataSource: "performance_by_cell, message_pillars",
+      },
+      {
+        id: "mst-matrix",
+        label: "Matrix Builder",
+        to: "/app/mst/matrix",
+        badgeKey: "mst",
+        dataSource: "historical_matrix_4x4",
+      },
+      {
+        id: "mst-creative-scan",
+        label: "Creative Scan",
+        to: "/app/mst/creative-scan",
+        dataSource: "local_book2_library",
+      },
+      {
+        id: "mst-crossmap",
+        label: "Crossmap Results",
+        to: "/app/mst/crossmap",
+        dataSource: "historical_matrix_4x4, performance_by_cell",
+      },
+    ],
   },
   {
     id: "agent",
-    number: "07",
+    number: "08",
     label: "Metrix Agent",
     to: "/app/agent",
     badgeKey: "agent",
@@ -168,8 +234,37 @@ export const navTree: NavSection[] = [
   },
   {
     id: "settings",
-    number: "08",
+    number: "09",
     label: "Settings",
-    to: "/app/settings",
+    children: [
+      {
+        id: "settings-account",
+        label: "Account",
+        to: "/app/settings/account",
+      },
+      {
+        id: "settings-integrations",
+        label: "Integrations",
+        to: "/app/settings/integrations",
+      },
+      {
+        id: "settings-team",
+        label: "Team & Access",
+        to: "/app/settings/team",
+        dataSource: "workspace_settings",
+      },
+      {
+        id: "settings-notifications",
+        label: "Notifications",
+        to: "/app/settings/notifications",
+        dataSource: "workspace_settings",
+      },
+      {
+        id: "settings-billing",
+        label: "Billing",
+        to: "/app/settings/billing",
+        dataSource: "workspace_settings",
+      },
+    ],
   },
 ];

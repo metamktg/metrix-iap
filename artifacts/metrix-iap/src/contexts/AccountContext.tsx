@@ -5,7 +5,7 @@
 // Defaults to the Manager / Agency overview (no ad account selected).
 // ═══════════════════════════════════════════════════════════════════════
 
-import React, { createContext, useContext, useMemo, useState, useCallback } from "react";
+import React, { createContext, useContext, useMemo, useState, useCallback, useEffect } from "react";
 import { useLocation } from "wouter";
 import {
   getManagerOverview,
@@ -18,6 +18,7 @@ import type { AdAccount, ManagerAccount } from "@/lib/data/seedTypes";
 export type SelectedAccountType = "manager" | "ad_account";
 
 const SESSION_KEY = "metrix_active_account_v1";
+const URL_PARAM = "account";
 
 interface PersistShape {
   type: SelectedAccountType;
@@ -49,21 +50,64 @@ function loadPersisted(): PersistShape {
   return { type: "manager", adAccountId: null };
 }
 
+function readUrlAccountParam(): string | null {
+  try {
+    return new URLSearchParams(window.location.search).get(URL_PARAM);
+  } catch {
+    return null;
+  }
+}
+
+function writeUrlAccountParam(adAccountId: string | null) {
+  try {
+    const url = new URL(window.location.href);
+    const current = url.searchParams.get(URL_PARAM);
+    if (adAccountId === current) return;
+    if (adAccountId) {
+      url.searchParams.set(URL_PARAM, adAccountId);
+    } else {
+      url.searchParams.delete(URL_PARAM);
+    }
+    window.history.replaceState(window.history.state, "", url.toString());
+  } catch {
+    /* ignore */
+  }
+}
+
 export function AccountProvider({ children }: { children: React.ReactNode }) {
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const seed = useMetrixSeed();
   const manager = getManagerOverview(seed);
   const adAccounts = getAdAccounts(seed);
 
-  const [persisted, setPersisted] = useState<PersistShape>(loadPersisted);
+  const [persisted, setPersisted] = useState<PersistShape>(() => {
+    const urlId = readUrlAccountParam();
+    if (urlId !== null) {
+      if (adAccounts.some((a) => a.id === urlId)) {
+        return { type: "ad_account", adAccountId: urlId };
+      }
+      // Unknown account id in the URL — fall back to manager mode.
+      return { type: "manager", adAccountId: null };
+    }
+    return loadPersisted();
+  });
 
-  const save = useCallback((next: PersistShape) => {
-    setPersisted(next);
+  // Persist the selection and keep the URL's ?account= param in sync so the
+  // current view stays shareable/bookmarkable across in-app navigation.
+  useEffect(() => {
     try {
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(next));
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(persisted));
     } catch {
       /* ignore */
     }
+  }, [persisted]);
+
+  useEffect(() => {
+    writeUrlAccountParam(persisted.type === "ad_account" ? persisted.adAccountId : null);
+  }, [persisted, location]);
+
+  const save = useCallback((next: PersistShape) => {
+    setPersisted(next);
   }, []);
 
   const selectManager = useCallback(() => {
