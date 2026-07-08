@@ -9,7 +9,10 @@ _Replace the heading above with the project's name, and this line with one sente
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- `pnpm --filter @workspace/scripts run import:metrix` — (re)apply Metrix Supabase schema and import the Bookster IAP loop package (idempotent)
+- Required env: `DATABASE_URL` — Replit Postgres connection string (waitlist)
+- Required secret: `SUPABASE_DB_URL` — Supabase session-pooler Postgres URI (Metrix data importer)
+- Required env: `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` — used by the API server to read Metrix data via supabase-js
 - Optional secret: `ADMIN_API_KEY` — admin bearer key gating GET /api/metrix/agent-waitlist (waitlist emails). Endpoint fails closed (401) when unset; admins enter the key in Settings → Metrix Agent waitlist.
 
 ## Stack
@@ -23,11 +26,18 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/metrix-iap/` — Metrix IAP web app (React + Vite); seed types in `src/lib/data/seedTypes.ts`, adapter in `src/lib/data/metrixSeedAdapter.ts`
+- `artifacts/api-server/` — Express API; Metrix seed assembly in `src/lib/metrixSeedAssembly.ts` (Supabase → seed bundle), route in `src/routes/metrix.ts`
+- `scripts/src/metrix-supabase/` — `schema.sql` (Supabase table definitions) + `import.ts` (idempotent importer)
+- `scripts/data/metrix/` — raw Bookster IAP loop package files (source data for the importer)
+- `lib/api-spec/openapi.yaml` — API contract; regenerate hooks/schemas with codegen after editing
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Metrix app data lives in Supabase Postgres (per ad account, date-stamped rows); the API server assembles a seed-compatible bundle from ~28 tables at request time (30s cache) and returns 503 if Supabase is down — no static fallback by design.
+- `optimization_loop` is `null` and Creative Scan surfaces are empty until those IAP loop stages actually run; `loop_status` records per-stage complete/pending. UI shows honest pending states — never fabricate data.
+- `ads.creative_asset_url` and `ads.meta_ad_id` are nullable, keyed for future asset backfill.
+- Waitlist + request-access stay on Replit Postgres (Drizzle); Supabase is only for Metrix IAP data.
 
 ## Product
 

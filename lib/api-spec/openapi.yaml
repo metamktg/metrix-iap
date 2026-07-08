@@ -276,6 +276,14 @@ components:
           type: string
         generated_at:
           type: string
+        integrity_note:
+          type: string
+        variable_registry:
+          type: array
+          description: Data-layer truth about variable families, including explicit registry_missing entries (ST_/AW_/CTA_ known gap).
+          items:
+            type: object
+            additionalProperties: true
         app_defaults:
           type: object
           additionalProperties: true

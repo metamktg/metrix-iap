@@ -8,6 +8,7 @@
 import type { MetrixSeedBundleAdAccountsItem } from './metrixSeedBundleAdAccountsItem';
 import type { MetrixSeedBundleAppDefaults } from './metrixSeedBundleAppDefaults';
 import type { MetrixSeedBundleManagerAccount } from './metrixSeedBundleManagerAccount';
+import type { MetrixSeedBundleVariableRegistryItem } from './metrixSeedBundleVariableRegistryItem';
 import type { MetrixSeedBundleWorkspaceSettings } from './metrixSeedBundleWorkspaceSettings';
 
 /**
@@ -16,6 +17,9 @@ import type { MetrixSeedBundleWorkspaceSettings } from './metrixSeedBundleWorksp
 export interface MetrixSeedBundle {
   schema_version: string;
   generated_at?: string;
+  integrity_note?: string;
+  /** Data-layer truth about variable families, including explicit registry_missing entries (ST_/AW_/CTA_ known gap). */
+  variable_registry?: MetrixSeedBundleVariableRegistryItem[];
   app_defaults?: MetrixSeedBundleAppDefaults;
   manager_account: MetrixSeedBundleManagerAccount;
   ad_accounts: MetrixSeedBundleAdAccountsItem[];

@@ -15,6 +15,7 @@ export * from './metrixSeedBundle';
 export * from './metrixSeedBundleAdAccountsItem';
 export * from './metrixSeedBundleAppDefaults';
 export * from './metrixSeedBundleManagerAccount';
+export * from './metrixSeedBundleVariableRegistryItem';
 export * from './metrixSeedBundleWorkspaceSettings';
 export * from './notificationPrefsResult';
 export * from './notificationPrefsUpdateInput';

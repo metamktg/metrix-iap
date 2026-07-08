@@ -5,6 +5,8 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type MetrixSeedBundleVariableRegistryItem = { [key: string]: unknown };
+
 export type MetrixSeedBundleAppDefaults = { [key: string]: unknown };
 
 export type MetrixSeedBundleManagerAccount = { [key: string]: unknown };
@@ -19,6 +21,9 @@ export type MetrixSeedBundleWorkspaceSettings = { [key: string]: unknown };
 export interface MetrixSeedBundle {
   schema_version: string;
   generated_at?: string;
+  integrity_note?: string;
+  /** Data-layer truth about variable families, including explicit registry_missing entries (ST_/AW_/CTA_ known gap). */
+  variable_registry?: MetrixSeedBundleVariableRegistryItem[];
   app_defaults?: MetrixSeedBundleAppDefaults;
   manager_account: MetrixSeedBundleManagerAccount;
   ad_accounts: MetrixSeedBundleAdAccountsItem[];

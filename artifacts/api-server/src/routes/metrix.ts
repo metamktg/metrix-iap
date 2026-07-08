@@ -23,13 +23,24 @@ import { and, count, desc, eq, sql } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { waitlistRateLimit } from "../middlewares/waitlistRateLimit";
 import { isDisposableEmailDomain } from "../lib/disposableEmailDomains";
-import seedBundle from "../data/metrix_seed_bundle.json" with { type: "json" };
+import { getMetrixSeedFromSupabase } from "../lib/metrixSeedAssembly";
 
 const router: IRouter = Router();
 
-router.get("/metrix/seed", (_req, res) => {
-  const data = GetMetrixSeedResponse.parse(seedBundle);
-  res.json(data);
+router.get("/metrix/seed", async (req, res) => {
+  try {
+    const bundle = await getMetrixSeedFromSupabase();
+    const data = GetMetrixSeedResponse.parse(bundle);
+    res.json(data);
+  } catch (err) {
+    // No static fallback by design: the app must not silently render stale
+    // bundled data when the Supabase-backed data layer is unavailable.
+    req.log.error({ err }, "Failed to assemble Metrix seed from Supabase");
+    res.status(503).json({
+      message:
+        err instanceof Error ? err.message : "Metrix data layer is unavailable.",
+    });
+  }
 });
 
 router.post("/metrix/agent-waitlist", waitlistRateLimit, async (req, res) => {

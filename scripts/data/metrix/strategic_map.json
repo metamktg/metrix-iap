@@ -1,0 +1,224 @@
+{
+  "icp_profiles": [
+    {
+      "profile_id": "ICP_BOOK0_C2_TimePoorLearner",
+      "profile_name": "Busy Parent / Time-Poor Learner (C2)",
+      "demographic_foundation": "30-54, mixed gender, time-scarce professional or parent",
+      "psychographic_profile": "No time for full books; guilt around not learning; wants permission to learn efficiently",
+      "behavioral_signals": "Responds to product-demo proof (HP_Time + CN_ProductDemo); best performing Row B (FW_BAB) cross-concept",
+      "funnel_entry_point": "TOF - App install",
+      "performance_data": {
+        "spend": 2332.11,
+        "cpa": 7.09,
+        "cvr_link_pct": 15.06,
+        "confidence": "high"
+      },
+      "message_resonance": "Highest resonance in account; 28% below blended BOOK0 CPA",
+      "strategic_recommendation": "Scale now with dedicated budget; build a second creative layer within this ICP before diversifying spend elsewhere",
+      "confidence_level": "high"
+    },
+    {
+      "profile_id": "ICP_BOOK0_MaleEfficiencyPocket",
+      "profile_name": "Male 55-64 / Male 35-44 efficiency pocket (cross-cut, not yet a dedicated ICP)",
+      "demographic_foundation": "Male, 35-44 and 55-64",
+      "psychographic_profile": "Unconfirmed - currently only receiving algorithmic overflow traffic, not purpose-built creative",
+      "behavioral_signals": "Best blended CPA in account ($9.49 and $10.33) despite no dedicated targeting or creative",
+      "funnel_entry_point": "Overflow from broad targeting",
+      "performance_data": {
+        "spend_m5564": 550.45,
+        "cpa_m5564": 9.49,
+        "spend_m3544": 557.74,
+        "cpa_m3544": 10.33,
+        "confidence": "medium"
+      },
+      "message_resonance": "Unconfirmed - no dedicated message tested yet",
+      "strategic_recommendation": "Build and test a purpose-built creative for this segment before assuming it is a durable ICP",
+      "confidence_level": "medium"
+    },
+    {
+      "profile_id": "ICP_BOOK2_C2B_QuizCompleter",
+      "profile_name": "Quiz-gate registration completer (BOOK2, C2B)",
+      "demographic_foundation": "Same targeting as BOOK2 broad quiz campaign; not yet demographically isolated",
+      "psychographic_profile": "Responds to product-demo / '1,000 books, 15 minutes each' proof",
+      "behavioral_signals": "Strong registration unlocker; checkout-depth did not follow through in V3 per prior Book2 library read",
+      "funnel_entry_point": "TOF quiz -> registration",
+      "performance_data": {
+        "spend": 1204.87,
+        "cpa": 16.28,
+        "cvr_link_pct": 11.65,
+        "confidence": "high"
+      },
+      "message_resonance": "Confirmed control cell for registration; checkout-stage resonance unconfirmed",
+      "strategic_recommendation": "Keep as control; brief a checkout-stage-specific message layer to close the registration-to-checkout gap",
+      "confidence_level": "high"
+    },
+    {
+      "profile_id": "ICP_BOOK0_C5_BYOC_PENDING",
+      "profile_name": "BYOC Working Professional (C5) - pending full definition",
+      "demographic_foundation": "25-40 working professionals, operators, founders (per Local Client Library CONCEPTS tab)",
+      "psychographic_profile": "Needs to process specific professional content, not generic summaries",
+      "behavioral_signals": "Only 2 of 4 matrix rows (B, D) have live data; too thin to read",
+      "funnel_entry_point": "TOF - App install",
+      "performance_data": {
+        "spend": 452.07,
+        "cpa": 20.55,
+        "confidence": "validation_required"
+      },
+      "message_resonance": "Unconfirmed",
+      "strategic_recommendation": "Do not judge from current data; needs full A-D funding before a verdict",
+      "confidence_level": "validation_required"
+    }
+  ],
+  "message_pillars": [
+    {
+      "pillar_id": "PILLAR_TimeEfficiency",
+      "pillar_name": "15-Minute Time Efficiency",
+      "strategic_purpose": "Convert time-scarcity guilt into permission to learn efficiently",
+      "target_icps": [
+        "ICP_BOOK0_C2_TimePoorLearner"
+      ],
+      "funnel_application": "TOF-MOF",
+      "performance_evidence": "C2 concept: $7.09 CPA, 15.06% CVR, $2,332 spend, high confidence",
+      "messaging_framework": "FW_BAB + HK_Benefit + HP_Time + CN_ProductDemo",
+      "execution_specifications": "Static, Feed-first, product-demo visual showing 15-minute mechanism",
+      "placement_strategy": "Feed, Facebook Reels, Instagram Reels (Android-weighted)",
+      "scaling_guidance": "Scale now; layer a second creative execution before expanding to new ICPs"
+    },
+    {
+      "pillar_id": "PILLAR_RationalValue",
+      "pillar_name": "Rational Self-Improvement Bridge",
+      "strategic_purpose": "Close the curiosity-to-commercial gap for aspirational self-improvers with a rational proof bridge",
+      "target_icps": [
+        "ICP_BOOK0_C2_TimePoorLearner"
+      ],
+      "funnel_application": "MOF",
+      "performance_evidence": "C4C cell (TN_Rational): $155.80 spend, 21.8% CVR at ad level - promising but validation_required",
+      "messaging_framework": "FW_StoryBrand + TN_Rational + HK_Story + HP_Confidence",
+      "execution_specifications": "Static or short video, rational proof overlay",
+      "placement_strategy": "Feed",
+      "scaling_guidance": "Fund a proper validation test at $300-500 before scaling"
+    },
+    {
+      "pillar_id": "PILLAR_MaleEfficiencyTest",
+      "pillar_name": "Male 35-64 Purpose-Built Efficiency Angle",
+      "strategic_purpose": "Convert an unclaimed high-efficiency audience pocket into a dedicated ICP",
+      "target_icps": [
+        "ICP_BOOK0_MaleEfficiencyPocket"
+      ],
+      "funnel_application": "TOF",
+      "performance_evidence": "$9.49-$10.33 blended CPA on overflow traffic alone, no dedicated creative yet",
+      "messaging_framework": "HP_Efficiency + TN_Rational + HK_Benefit (hypothesis, not yet tested)",
+      "execution_specifications": "Static, direct rational tone, avoid identity-aspirational framing already used for C1",
+      "placement_strategy": "Feed",
+      "scaling_guidance": "Validate with a dedicated $300-500 test before treating as proven"
+    }
+  ],
+  "variable_combinations": [
+    {
+      "combination": "FW_BAB + HK_Benefit + HP_Time + CN_ProductDemo",
+      "context": "BOOK0 C2 Row B",
+      "cpa": 7.09,
+      "cvr_pct": 15.06,
+      "confidence": "high",
+      "recommendation": "scale"
+    },
+    {
+      "combination": "FW_StoryBrand + TN_Rational + HK_Story + HP_Confidence",
+      "context": "BOOK0 C4C",
+      "cpa": 5.77,
+      "cvr_pct": 21.77,
+      "confidence": "medium",
+      "recommendation": "validate at scale"
+    },
+    {
+      "combination": "CN_Comparison + HK_Problem + HP_Money (C3 mechanic)",
+      "context": "BOOK0 C3, all rows",
+      "cpa": null,
+      "cvr_pct": 0.0,
+      "confidence": "high(of failure)",
+      "recommendation": "avoid / rebuild"
+    }
+  ],
+  "testing_hypotheses": [
+    {
+      "hypothesis_id": "HYP_001",
+      "statement": "We believe that isolating Row B (FW_BAB / product-demo) as a dedicated ad set within Concept C2 will lift CVR further because Row B already carries both the most spend and the strongest CPA cross-concept.",
+      "control": "Current C2B_STC_APP_BOOK0_T2 ad",
+      "test_variant": "New Row-B static execution, same ICP, new visual",
+      "isolated_variable": "Visual execution only (framework/hook/pain held constant)",
+      "sample_requirement": "$300 minimum spend or 30 results",
+      "duration": "14 days",
+      "success_criteria": "CPA <= $7.00, CVR >= 15%",
+      "risk": "Low - extends a proven lane",
+      "expected_impact": "10-20% CPA improvement",
+      "failure_plan": "Revert to current C2B control",
+      "priority": "P1"
+    },
+    {
+      "hypothesis_id": "HYP_002",
+      "statement": "We believe that confirming MMP/pixel health on the 3 zero-conversion campaigns will reveal a tracking gap rather than a genuine creative failure, because engagement (impressions/clicks) was present without a single downstream event across $2,963 of spend.",
+      "control": "N/A - diagnostic, not creative test",
+      "test_variant": "N/A",
+      "isolated_variable": "Attribution/postback configuration",
+      "sample_requirement": "N/A - technical audit",
+      "duration": "Immediate",
+      "success_criteria": "Postback/pixel confirmed firing correctly, or confirmed broken and reinstrumented",
+      "risk": "High if left unresolved - future budget decisions on these lanes are unreliable until closed",
+      "expected_impact": "Determines whether ~$3k of historical spend and 3 campaign lanes are salvageable",
+      "failure_plan": "If tracking confirmed healthy, reclassify as genuine creative/audience failure and retire",
+      "priority": "P1"
+    },
+    {
+      "hypothesis_id": "HYP_003",
+      "statement": "We believe that a dedicated Male 55-64 / Male 35-44 creative will outperform current overflow-driven CPA because these segments already convert best in the account without any purpose-built message.",
+      "control": "Current broad targeting (no dedicated creative)",
+      "test_variant": "New rational-tone, efficiency-led static",
+      "isolated_variable": "Audience + message pairing",
+      "sample_requirement": "$400-600",
+      "duration": "14-21 days",
+      "success_criteria": "CPA < $9.50 sustained at >= 20 results",
+      "risk": "Medium - unproven whether performance holds with intentional targeting vs. algorithmic overflow",
+      "expected_impact": "New scalable ICP if confirmed",
+      "failure_plan": "Fold segment back into broad targeting",
+      "priority": "P2"
+    },
+    {
+      "hypothesis_id": "HYP_004",
+      "statement": "We believe replacing BOOK2 C2E and C4E with a C2B-mechanic-based execution will restore conversion because C2E/C4E are structurally different extension cells producing near-zero results on meaningful spend, while C2B (same concept family, core matrix cell) converts at 11.65% CVR.",
+      "control": "C2B_STC_QF_BOOK2_T2",
+      "test_variant": "New C2E/C4E replacement using C2B's proof mechanic",
+      "isolated_variable": "Message mechanic (E/F extension concept vs. proven B mechanic)",
+      "sample_requirement": "$300 minimum",
+      "duration": "14 days",
+      "success_criteria": "CVR >= 8%, CPA <= $25",
+      "risk": "Low - reverting to a proven mechanic",
+      "expected_impact": "Recover ~$1,400/period currently allocated to underperforming extension cells",
+      "failure_plan": "Consolidate all BOOK2 spend into C2B until a new concept is validated",
+      "priority": "P1"
+    }
+  ],
+  "scaling_playbook": {
+    "scale_now": [
+      "BOOK0 Concept C2 (esp. Row B)",
+      "BOOK2 Concept C2B"
+    ],
+    "optimize": [
+      "BOOK0 C1",
+      "BOOK0 C4 (esp. C4C rational-tone cell)"
+    ],
+    "validate": [
+      "Male 55-64 / 35-44 dedicated creative",
+      "C5 BYOC (needs full A-D funding)",
+      "C4C rational tone at scale"
+    ],
+    "explore": [
+      "C6/C7 concept definition and formal MST inclusion (pending your input)"
+    ],
+    "avoid_combinations": [
+      "BOOK0 C3 (any variation) - zero conversions on real spend",
+      "BOOK2 C2E, C4E, C2F - structurally underperforming extension cells",
+      "Audience Network 'Native, banner & interstitial' placement - reach without quality"
+    ],
+    "budget_reallocation_note": "Recommend redirecting the ~$1,400 currently split across BOOK2 C2E/C4E/C2F toward a C2B-mechanic replacement (HYP_004) and the Male efficiency test (HYP_003), pending the tracking audit (HYP_002)."
+  }
+}

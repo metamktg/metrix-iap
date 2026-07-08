@@ -1,0 +1,1251 @@
+{
+  "report_metadata": {
+    "client": "Bookster",
+    "run_type": "Full IAP loop - BOOK0 + BOOK2",
+    "date_range": {
+      "start": "2026-05-02",
+      "end": "2026-07-07"
+    },
+    "source_bundle": "normalized_data_bundle.json"
+  },
+  "executive_summary": {
+    "total_spend": 8000.8361,
+    "total_results": 564,
+    "blended_cpa_by_book": {
+      "BOOK0": 9.8066,
+      "BOOK2": 41.4721
+    },
+    "top_finding": "BOOK0 Concept C2 (Time-Poor Learner) is the account's clear winner at 28% below blended CPA; BOOK0 Concept C3 and BOOK2 extension cells C2E/C4E/C2F are structurally failing.",
+    "critical_alert": "3 campaigns totaling $2,963.08 spend show zero recorded terminal conversions - validation_required pending MMP/pixel confirmation, not yet treated as creative failure."
+  },
+  "buyer_intent_funnel": {
+    "note": "ATC/checkout-stage events not present in this export (app-install and lead-gen cohorts use install/trial/registration/checkout-initiate as terminal events, not full ecommerce funnel). Buying intent score = Results x10 + Link Clicks x1.",
+    "concept_level_scores": [
+      {
+        "book": "BOOK0",
+        "concept_code": "C1",
+        "mapped_in_library": true,
+        "spend": 515.0538,
+        "link_clicks": 500,
+        "results": 42.0,
+        "cpa": 12.2632,
+        "buying_intent_score": 920.0,
+        "performance_lift_vs_baseline": -0.2505,
+        "performance_tier": "4 - Eliminate",
+        "confidence_level": "medium",
+        "what": "C1 produced $12.2632 CPA on $515.0538 spend (42 results).",
+        "why": "Concept-level performance driven by message-audience fit; see mapped variable stack where available.",
+        "so_what": "Meaningful budget share, currently eliminate",
+        "now_what": "Hold and monitor"
+      },
+      {
+        "book": "BOOK0",
+        "concept_code": "C2",
+        "mapped_in_library": true,
+        "spend": 2332.11,
+        "link_clicks": 2184,
+        "results": 329.0,
+        "cpa": 7.0885,
+        "buying_intent_score": 5474.0,
+        "performance_lift_vs_baseline": 0.2772,
+        "performance_tier": "1 - Scale Winners",
+        "confidence_level": "high",
+        "what": "C2 produced $7.0885 CPA on $2332.11 spend (329 results).",
+        "why": "Concept-level performance driven by message-audience fit; see mapped variable stack where available.",
+        "so_what": "Meaningful budget share, currently scale winners",
+        "now_what": "Scale with dedicated budget"
+      },
+      {
+        "book": "BOOK0",
+        "concept_code": "C3",
+        "mapped_in_library": true,
+        "spend": 286.84,
+        "link_clicks": 292,
+        "results": 0.0,
+        "cpa": null,
+        "buying_intent_score": 292.0,
+        "performance_lift_vs_baseline": null,
+        "performance_tier": "4 - Eliminate",
+        "confidence_level": "medium",
+        "what": "C3 produced $undefined CPA on $286.84 spend (0 results).",
+        "why": "Concept-level performance driven by message-audience fit; see mapped variable stack where available.",
+        "so_what": "Meaningful budget share, currently eliminate",
+        "now_what": "Investigate before further spend"
+      },
+      {
+        "book": "BOOK0",
+        "concept_code": "C4",
+        "mapped_in_library": true,
+        "spend": 621.1922,
+        "link_clicks": 584,
+        "results": 49.0,
+        "cpa": 12.6774,
+        "buying_intent_score": 1074.0,
+        "performance_lift_vs_baseline": -0.2927,
+        "performance_tier": "4 - Eliminate",
+        "confidence_level": "medium",
+        "what": "C4 produced $12.6774 CPA on $621.1922 spend (49 results).",
+        "why": "Concept-level performance driven by message-audience fit; see mapped variable stack where available.",
+        "so_what": "Meaningful budget share, currently eliminate",
+        "now_what": "Hold and monitor"
+      },
+      {
+        "book": "BOOK0",
+        "concept_code": "C5",
+        "mapped_in_library": true,
+        "spend": 452.07,
+        "link_clicks": 273,
+        "results": 22.0,
+        "cpa": 20.5486,
+        "buying_intent_score": 493.0,
+        "performance_lift_vs_baseline": -1.0954,
+        "performance_tier": "4 - Eliminate",
+        "confidence_level": "medium",
+        "what": "C5 produced $20.5486 CPA on $452.07 spend (22 results).",
+        "why": "Concept-level performance driven by message-audience fit; see mapped variable stack where available.",
+        "so_what": "Meaningful budget share, currently eliminate",
+        "now_what": "Hold and monitor"
+      },
+      {
+        "book": "BOOK0",
+        "concept_code": "C6",
+        "mapped_in_library": false,
+        "spend": 518.71,
+        "link_clicks": 526,
+        "results": 42.0,
+        "cpa": 12.3502,
+        "buying_intent_score": 946.0,
+        "performance_lift_vs_baseline": -0.2594,
+        "performance_tier": "4 - Eliminate",
+        "confidence_level": "medium",
+        "what": "C6 produced $12.3502 CPA on $518.71 spend (42 results).",
+        "why": "Concept not yet defined in Local Client Library; performance is trackable but not yet variable-attributable.",
+        "so_what": "Meaningful budget share, currently eliminate",
+        "now_what": "Hold and monitor"
+      },
+      {
+        "book": "BOOK0",
+        "concept_code": "C7",
+        "mapped_in_library": false,
+        "spend": 40.04,
+        "link_clicks": 43,
+        "results": 2.0,
+        "cpa": 20.02,
+        "buying_intent_score": 63.0,
+        "performance_lift_vs_baseline": -1.0415,
+        "performance_tier": "4 - Eliminate",
+        "confidence_level": "validation_required",
+        "what": "C7 produced $20.02 CPA on $40.04 spend (2 results).",
+        "why": "Concept not yet defined in Local Client Library; performance is trackable but not yet variable-attributable.",
+        "so_what": "Low spend, directional only.",
+        "now_what": "Hold and monitor"
+      },
+      {
+        "book": "BOOK2",
+        "concept_code": "C2",
+        "mapped_in_library": true,
+        "spend": 2443.61,
+        "link_clicks": 1107,
+        "results": 76.0,
+        "cpa": 32.1528,
+        "buying_intent_score": 1867.0,
+        "performance_lift_vs_baseline": 0.2247,
+        "performance_tier": "1 - Scale Winners",
+        "confidence_level": "high",
+        "what": "C2 produced $32.1528 CPA on $2443.61 spend (76 results).",
+        "why": "Concept-level performance driven by message-audience fit; see mapped variable stack where available.",
+        "so_what": "Meaningful budget share, currently scale winners",
+        "now_what": "Scale with dedicated budget"
+      },
+      {
+        "book": "BOOK2",
+        "concept_code": "C4",
+        "mapped_in_library": true,
+        "spend": 791.21,
+        "link_clicks": 339,
+        "results": 2.0,
+        "cpa": 395.605,
+        "buying_intent_score": 359.0,
+        "performance_lift_vs_baseline": -8.5391,
+        "performance_tier": "4 - Eliminate",
+        "confidence_level": "medium",
+        "what": "C4 produced $395.605 CPA on $791.21 spend (2 results).",
+        "why": "Concept-level performance driven by message-audience fit; see mapped variable stack where available.",
+        "so_what": "Meaningful budget share, currently eliminate",
+        "now_what": "Hold and monitor"
+      }
+    ]
+  },
+  "traffic_quality_correlation": [
+    {
+      "ad_name": "C1A_STC_APP_BOOK0_T2",
+      "book": "BOOK0",
+      "ctr_link_pct": 0.4562,
+      "cvr_link_pct": 4.7619,
+      "classification": "aligned_performance",
+      "confidence": "validation_required"
+    },
+    {
+      "ad_name": "C1B_STC_APP_BOOK0_T2",
+      "book": "BOOK0",
+      "ctr_link_pct": 0.0383,
+      "cvr_link_pct": 0,
+      "classification": "aligned_performance",
+      "confidence": "validation_required"
+    },
+    {
+      "ad_name": "C1C_STC_APP_BOOK0_T2",
+      "book": "BOOK0",
+      "ctr_link_pct": 0.3896,
+      "cvr_link_pct": 0,
+      "classification": "aligned_performance",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C1D_STC_APP_BOOK0_T2",
+      "book": "BOOK0",
+      "ctr_link_pct": 0.403,
+      "cvr_link_pct": 21.2435,
+      "classification": "low_ctr_high_cvr",
+      "confidence": "medium"
+    },
+    {
+      "ad_name": "C2A_STC_APP_BOOK0_T2",
+      "book": "BOOK0",
+      "ctr_link_pct": 0.0562,
+      "cvr_link_pct": 0,
+      "classification": "aligned_performance",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C2B_STC_APP_BOOK0_T2",
+      "book": "BOOK0",
+      "ctr_link_pct": 0.1623,
+      "cvr_link_pct": 24.0343,
+      "classification": "low_ctr_high_cvr",
+      "confidence": "high"
+    },
+    {
+      "ad_name": "C2C_STC_APP_BOOK0_T2",
+      "book": "BOOK0",
+      "ctr_link_pct": 0.3601,
+      "cvr_link_pct": 7.6923,
+      "classification": "aligned_performance",
+      "confidence": "validation_required"
+    },
+    {
+      "ad_name": "C2D_STC_APP_BOOK0_T2",
+      "book": "BOOK0",
+      "ctr_link_pct": 0.7412,
+      "cvr_link_pct": 8.6957,
+      "classification": "aligned_performance",
+      "confidence": "validation_required"
+    },
+    {
+      "ad_name": "C3A_STC_APP_BOOK0_T2",
+      "book": "BOOK0",
+      "ctr_link_pct": 0.6827,
+      "cvr_link_pct": 0,
+      "classification": "aligned_performance",
+      "confidence": "validation_required"
+    },
+    {
+      "ad_name": "C3B_STC_APP_BOOK0_T2",
+      "book": "BOOK0",
+      "ctr_link_pct": 0.5337,
+      "cvr_link_pct": 0,
+      "classification": "aligned_performance",
+      "confidence": "validation_required"
+    },
+    {
+      "ad_name": "C3C_STC_APP_BOOK0_T2",
+      "book": "BOOK0",
+      "ctr_link_pct": 0.0579,
+      "cvr_link_pct": 0,
+      "classification": "aligned_performance",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C3D_STC_APP_BOOK0_T2",
+      "book": "BOOK0",
+      "ctr_link_pct": 0.0263,
+      "cvr_link_pct": 0,
+      "classification": "aligned_performance",
+      "confidence": "validation_required"
+    },
+    {
+      "ad_name": "C4A_STC_APP_BOOK0_T2",
+      "book": "BOOK0",
+      "ctr_link_pct": 0.1247,
+      "cvr_link_pct": 0,
+      "classification": "aligned_performance",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C4B_STC_APP_BOOK0_T2",
+      "book": "BOOK0",
+      "ctr_link_pct": 0.0644,
+      "cvr_link_pct": 9.1398,
+      "classification": "aligned_performance",
+      "confidence": "medium"
+    },
+    {
+      "ad_name": "C4C_STC_APP_BOOK0_T2",
+      "book": "BOOK0",
+      "ctr_link_pct": 0.7964,
+      "cvr_link_pct": 21.7742,
+      "classification": "low_ctr_high_cvr",
+      "confidence": "medium"
+    },
+    {
+      "ad_name": "C4D_STC_APP_BOOK0_T2",
+      "book": "BOOK0",
+      "ctr_link_pct": 1.0147,
+      "cvr_link_pct": 16.129,
+      "classification": "aligned_performance",
+      "confidence": "validation_required"
+    },
+    {
+      "ad_name": "C5B_STC_APP_BOOK0_T2",
+      "book": "BOOK0",
+      "ctr_link_pct": 1.7658,
+      "cvr_link_pct": 10.5263,
+      "classification": "aligned_performance",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C5D_STC_APP_BOOK0_T2",
+      "book": "BOOK0",
+      "ctr_link_pct": 0.6596,
+      "cvr_link_pct": 5.5556,
+      "classification": "aligned_performance",
+      "confidence": "validation_required"
+    },
+    {
+      "ad_name": "C6A_STC_APP_BOOK0_T2",
+      "book": "BOOK0",
+      "ctr_link_pct": 0.1169,
+      "cvr_link_pct": 8.9623,
+      "classification": "aligned_performance",
+      "confidence": "medium"
+    },
+    {
+      "ad_name": "C6B_STC_APP_BOOK0_T2",
+      "book": "BOOK0",
+      "ctr_link_pct": 0.1428,
+      "cvr_link_pct": 8.3333,
+      "classification": "aligned_performance",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C7A_STC_APP_BOOK0_T2",
+      "book": "BOOK0",
+      "ctr_link_pct": 0.3967,
+      "cvr_link_pct": 5.5556,
+      "classification": "aligned_performance",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C1A_STC_APP_BOOK0_T1",
+      "book": "BOOK0",
+      "ctr_link_pct": 1.2727,
+      "cvr_link_pct": 0,
+      "classification": "aligned_performance",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C1B_STC_APP_BOOK0_T1",
+      "book": "BOOK0",
+      "ctr_link_pct": 2.0408,
+      "cvr_link_pct": 0,
+      "classification": "high_ctr_low_cvr",
+      "confidence": "medium"
+    },
+    {
+      "ad_name": "C1C_STC_APP_BOOK0_T1",
+      "book": "BOOK0",
+      "ctr_link_pct": 1.2658,
+      "cvr_link_pct": 0,
+      "classification": "aligned_performance",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C1D_STC_APP_BOOK0_T1",
+      "book": "BOOK0",
+      "ctr_link_pct": 1.5513,
+      "cvr_link_pct": 0,
+      "classification": "high_ctr_low_cvr",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C2A_STC_APP_BOOK0_T1",
+      "book": "BOOK0",
+      "ctr_link_pct": 0.0,
+      "cvr_link_pct": 0,
+      "classification": "aligned_performance",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C2B_STC_APP_BOOK0_T1",
+      "book": "BOOK0",
+      "ctr_link_pct": 1.6538,
+      "cvr_link_pct": 0,
+      "classification": "high_ctr_low_cvr",
+      "confidence": "validation_required"
+    },
+    {
+      "ad_name": "C2C_STC_APP_BOOK0_T1",
+      "book": "BOOK0",
+      "ctr_link_pct": 1.5707,
+      "cvr_link_pct": 0,
+      "classification": "high_ctr_low_cvr",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C2D_STC_APP_BOOK0_T1",
+      "book": "BOOK0",
+      "ctr_link_pct": 3.2258,
+      "cvr_link_pct": 0,
+      "classification": "high_ctr_low_cvr",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C3A_STC_APP_BOOK0_T1 - Copy",
+      "book": "BOOK0",
+      "ctr_link_pct": 1.469,
+      "cvr_link_pct": 0,
+      "classification": "aligned_performance",
+      "confidence": "validation_required"
+    },
+    {
+      "ad_name": "C3B_STC_APP_BOOK0_T1 - Copy",
+      "book": "BOOK0",
+      "ctr_link_pct": 2.7523,
+      "cvr_link_pct": 0,
+      "classification": "high_ctr_low_cvr",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C3C_STC_APP_BOOK0_T1",
+      "book": "BOOK0",
+      "ctr_link_pct": 0.0,
+      "cvr_link_pct": 0,
+      "classification": "aligned_performance",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C3D_STC_APP_BOOK0_T1",
+      "book": "BOOK0",
+      "ctr_link_pct": 1.4732,
+      "cvr_link_pct": 0,
+      "classification": "aligned_performance",
+      "confidence": "validation_required"
+    },
+    {
+      "ad_name": "C4A_STC_APP_BOOK0_T1",
+      "book": "BOOK0",
+      "ctr_link_pct": 0.4975,
+      "cvr_link_pct": 0,
+      "classification": "aligned_performance",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C4B_STC_APP_BOOK0_T1",
+      "book": "BOOK0",
+      "ctr_link_pct": 1.0989,
+      "cvr_link_pct": 0,
+      "classification": "aligned_performance",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C4C_STC_APP_BOOK0_T1",
+      "book": "BOOK0",
+      "ctr_link_pct": 1.1475,
+      "cvr_link_pct": 0,
+      "classification": "aligned_performance",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C4D_STC_APP_BOOK0_T1",
+      "book": "BOOK0",
+      "ctr_link_pct": 1.1652,
+      "cvr_link_pct": 0,
+      "classification": "aligned_performance",
+      "confidence": "validation_required"
+    },
+    {
+      "ad_name": "C5B_STC_APP_BOOK0_T1",
+      "book": "BOOK0",
+      "ctr_link_pct": 1.8931,
+      "cvr_link_pct": 10.1266,
+      "classification": "aligned_performance",
+      "confidence": "medium"
+    },
+    {
+      "ad_name": "C5D_STC_APP_BOOK0_T1",
+      "book": "BOOK0",
+      "ctr_link_pct": 1.4364,
+      "cvr_link_pct": 7.0064,
+      "classification": "aligned_performance",
+      "confidence": "medium"
+    },
+    {
+      "ad_name": "C6A_STC_APP_BOOK0_T1",
+      "book": "BOOK0",
+      "ctr_link_pct": 1.506,
+      "cvr_link_pct": 20.0,
+      "classification": "aligned_performance",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C6B_STC_APP_BOOK0_T1",
+      "book": "BOOK0",
+      "ctr_link_pct": 0.7267,
+      "cvr_link_pct": 2.3529,
+      "classification": "aligned_performance",
+      "confidence": "medium"
+    },
+    {
+      "ad_name": "C7A_STC_APP_BOOK0_T1",
+      "book": "BOOK0",
+      "ctr_link_pct": 1.7908,
+      "cvr_link_pct": 4.0,
+      "classification": "high_ctr_low_cvr",
+      "confidence": "validation_required"
+    },
+    {
+      "ad_name": "C1B_STC_APP_BOOK0_T1 - Copy",
+      "book": "BOOK0",
+      "ctr_link_pct": 0.8772,
+      "cvr_link_pct": 0,
+      "classification": "aligned_performance",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C1C_STC_APP_BOOK0_T1 - Copy",
+      "book": "BOOK0",
+      "ctr_link_pct": 0.0,
+      "cvr_link_pct": 0,
+      "classification": "aligned_performance",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C2A_STC_APP_BOOK0_T3",
+      "book": "BOOK0",
+      "ctr_link_pct": 1.0753,
+      "cvr_link_pct": 0,
+      "classification": "aligned_performance",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C2B_STC_APP_BOOK0_T1 - Copy",
+      "book": "BOOK0",
+      "ctr_link_pct": 1.7687,
+      "cvr_link_pct": 5.0273,
+      "classification": "aligned_performance",
+      "confidence": "high"
+    },
+    {
+      "ad_name": "C2C_STC_APP_BOOK0_T1 - Copy",
+      "book": "BOOK0",
+      "ctr_link_pct": 1.1364,
+      "cvr_link_pct": 0,
+      "classification": "aligned_performance",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C2D_STC_APP_BOOK0_T1 - Copy",
+      "book": "BOOK0",
+      "ctr_link_pct": 1.4862,
+      "cvr_link_pct": 0,
+      "classification": "aligned_performance",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C3C_STC_APP_BOOK0_T1 - Copy",
+      "book": "BOOK0",
+      "ctr_link_pct": 1.8868,
+      "cvr_link_pct": 0,
+      "classification": "high_ctr_low_cvr",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C3D_STC_APP_BOOK0_T1 - Copy",
+      "book": "BOOK0",
+      "ctr_link_pct": 3.125,
+      "cvr_link_pct": 0,
+      "classification": "high_ctr_low_cvr",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C4A_STC_APP_BOOK0_T1 - Copy",
+      "book": "BOOK0",
+      "ctr_link_pct": 0.8696,
+      "cvr_link_pct": 0,
+      "classification": "aligned_performance",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C4B_STC_APP_BOOK0_T1 - Copy",
+      "book": "BOOK0",
+      "ctr_link_pct": 2.8986,
+      "cvr_link_pct": 0,
+      "classification": "high_ctr_low_cvr",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C4C_STC_APP_BOOK0_T1 - Copy",
+      "book": "BOOK0",
+      "ctr_link_pct": 1.0582,
+      "cvr_link_pct": 0,
+      "classification": "aligned_performance",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C4D_STC_APP_BOOK0_T1 - Copy",
+      "book": "BOOK0",
+      "ctr_link_pct": 1.776,
+      "cvr_link_pct": 0,
+      "classification": "high_ctr_low_cvr",
+      "confidence": "medium"
+    },
+    {
+      "ad_name": "C2B_STC_QF_BOOK2_T2",
+      "book": "BOOK2",
+      "ctr_link_pct": 1.2763,
+      "cvr_link_pct": 0,
+      "classification": "aligned_performance",
+      "confidence": "medium"
+    },
+    {
+      "ad_name": "C2E_STC_QF_BOOK2_T2",
+      "book": "BOOK2",
+      "ctr_link_pct": 2.1259,
+      "cvr_link_pct": 0,
+      "classification": "high_ctr_low_cvr",
+      "confidence": "medium"
+    },
+    {
+      "ad_name": "C2F_STC_QF_BOOK2_T1",
+      "book": "BOOK2",
+      "ctr_link_pct": 1.8735,
+      "cvr_link_pct": 0,
+      "classification": "high_ctr_low_cvr",
+      "confidence": "validation_required"
+    },
+    {
+      "ad_name": "C4E_STC_QF_BOOK2_T1",
+      "book": "BOOK2",
+      "ctr_link_pct": 4.3478,
+      "cvr_link_pct": 0,
+      "classification": "high_ctr_low_cvr",
+      "confidence": "validation_required"
+    },
+    {
+      "ad_name": "C2B_STC_QF_BOOK2_T2",
+      "book": "BOOK2",
+      "ctr_link_pct": 1.4981,
+      "cvr_link_pct": 16.0521,
+      "classification": "aligned_performance",
+      "confidence": "medium"
+    },
+    {
+      "ad_name": "C2E_STC_QF_BOOK2_T2",
+      "book": "BOOK2",
+      "ctr_link_pct": 2.4291,
+      "cvr_link_pct": 16.6667,
+      "classification": "aligned_performance",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C2F_STC_QF_BOOK2_T2",
+      "book": "BOOK2",
+      "ctr_link_pct": 1.8018,
+      "cvr_link_pct": 0,
+      "classification": "high_ctr_low_cvr",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C4E_STC_QF_BOOK2_T2",
+      "book": "BOOK2",
+      "ctr_link_pct": 6.0976,
+      "cvr_link_pct": 20.0,
+      "classification": "aligned_performance",
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C2B_STC_QF_BOOK2_T2",
+      "book": "BOOK2",
+      "ctr_link_pct": 2.0224,
+      "cvr_link_pct": 0,
+      "classification": "high_ctr_low_cvr",
+      "confidence": "medium"
+    },
+    {
+      "ad_name": "C2E_STC_QF_BOOK2_T2",
+      "book": "BOOK2",
+      "ctr_link_pct": 2.1853,
+      "cvr_link_pct": 0,
+      "classification": "high_ctr_low_cvr",
+      "confidence": "medium"
+    },
+    {
+      "ad_name": "C2F_STC_QF_BOOK2_T1",
+      "book": "BOOK2",
+      "ctr_link_pct": 2.0742,
+      "cvr_link_pct": 0,
+      "classification": "high_ctr_low_cvr",
+      "confidence": "medium"
+    },
+    {
+      "ad_name": "C4E_STC_QF_BOOK2_T1",
+      "book": "BOOK2",
+      "ctr_link_pct": 2.6055,
+      "cvr_link_pct": 0,
+      "classification": "high_ctr_low_cvr",
+      "confidence": "medium"
+    },
+    {
+      "ad_name": "C4E_STC_QF_BOOK2_T1 - Copy",
+      "book": "BOOK2",
+      "ctr_link_pct": 1.0601,
+      "cvr_link_pct": 0,
+      "classification": "aligned_performance",
+      "confidence": "validation_required"
+    }
+  ],
+  "creative_dna_signals": [
+    {
+      "book": "BOOK0",
+      "concept_code": "C1",
+      "mapped_in_library": true,
+      "spend": 515.0538,
+      "link_clicks": 500,
+      "results": 42.0,
+      "cpa": 12.2632,
+      "buying_intent_score": 920.0,
+      "performance_lift_vs_baseline": -0.2505,
+      "performance_tier": "4 - Eliminate",
+      "confidence_level": "medium",
+      "what": "C1 produced $12.2632 CPA on $515.0538 spend (42 results).",
+      "why": "Concept-level performance driven by message-audience fit; see mapped variable stack where available.",
+      "so_what": "Meaningful budget share, currently eliminate",
+      "now_what": "Hold and monitor"
+    },
+    {
+      "book": "BOOK0",
+      "concept_code": "C2",
+      "mapped_in_library": true,
+      "spend": 2332.11,
+      "link_clicks": 2184,
+      "results": 329.0,
+      "cpa": 7.0885,
+      "buying_intent_score": 5474.0,
+      "performance_lift_vs_baseline": 0.2772,
+      "performance_tier": "1 - Scale Winners",
+      "confidence_level": "high",
+      "what": "C2 produced $7.0885 CPA on $2332.11 spend (329 results).",
+      "why": "Concept-level performance driven by message-audience fit; see mapped variable stack where available.",
+      "so_what": "Meaningful budget share, currently scale winners",
+      "now_what": "Scale with dedicated budget"
+    },
+    {
+      "book": "BOOK0",
+      "concept_code": "C3",
+      "mapped_in_library": true,
+      "spend": 286.84,
+      "link_clicks": 292,
+      "results": 0.0,
+      "cpa": null,
+      "buying_intent_score": 292.0,
+      "performance_lift_vs_baseline": null,
+      "performance_tier": "4 - Eliminate",
+      "confidence_level": "medium",
+      "what": "C3 produced $undefined CPA on $286.84 spend (0 results).",
+      "why": "Concept-level performance driven by message-audience fit; see mapped variable stack where available.",
+      "so_what": "Meaningful budget share, currently eliminate",
+      "now_what": "Investigate before further spend"
+    },
+    {
+      "book": "BOOK0",
+      "concept_code": "C4",
+      "mapped_in_library": true,
+      "spend": 621.1922,
+      "link_clicks": 584,
+      "results": 49.0,
+      "cpa": 12.6774,
+      "buying_intent_score": 1074.0,
+      "performance_lift_vs_baseline": -0.2927,
+      "performance_tier": "4 - Eliminate",
+      "confidence_level": "medium",
+      "what": "C4 produced $12.6774 CPA on $621.1922 spend (49 results).",
+      "why": "Concept-level performance driven by message-audience fit; see mapped variable stack where available.",
+      "so_what": "Meaningful budget share, currently eliminate",
+      "now_what": "Hold and monitor"
+    },
+    {
+      "book": "BOOK0",
+      "concept_code": "C5",
+      "mapped_in_library": true,
+      "spend": 452.07,
+      "link_clicks": 273,
+      "results": 22.0,
+      "cpa": 20.5486,
+      "buying_intent_score": 493.0,
+      "performance_lift_vs_baseline": -1.0954,
+      "performance_tier": "4 - Eliminate",
+      "confidence_level": "medium",
+      "what": "C5 produced $20.5486 CPA on $452.07 spend (22 results).",
+      "why": "Concept-level performance driven by message-audience fit; see mapped variable stack where available.",
+      "so_what": "Meaningful budget share, currently eliminate",
+      "now_what": "Hold and monitor"
+    },
+    {
+      "book": "BOOK0",
+      "concept_code": "C6",
+      "mapped_in_library": false,
+      "spend": 518.71,
+      "link_clicks": 526,
+      "results": 42.0,
+      "cpa": 12.3502,
+      "buying_intent_score": 946.0,
+      "performance_lift_vs_baseline": -0.2594,
+      "performance_tier": "4 - Eliminate",
+      "confidence_level": "medium",
+      "what": "C6 produced $12.3502 CPA on $518.71 spend (42 results).",
+      "why": "Concept not yet defined in Local Client Library; performance is trackable but not yet variable-attributable.",
+      "so_what": "Meaningful budget share, currently eliminate",
+      "now_what": "Hold and monitor"
+    },
+    {
+      "book": "BOOK0",
+      "concept_code": "C7",
+      "mapped_in_library": false,
+      "spend": 40.04,
+      "link_clicks": 43,
+      "results": 2.0,
+      "cpa": 20.02,
+      "buying_intent_score": 63.0,
+      "performance_lift_vs_baseline": -1.0415,
+      "performance_tier": "4 - Eliminate",
+      "confidence_level": "validation_required",
+      "what": "C7 produced $20.02 CPA on $40.04 spend (2 results).",
+      "why": "Concept not yet defined in Local Client Library; performance is trackable but not yet variable-attributable.",
+      "so_what": "Low spend, directional only.",
+      "now_what": "Hold and monitor"
+    },
+    {
+      "book": "BOOK2",
+      "concept_code": "C2",
+      "mapped_in_library": true,
+      "spend": 2443.61,
+      "link_clicks": 1107,
+      "results": 76.0,
+      "cpa": 32.1528,
+      "buying_intent_score": 1867.0,
+      "performance_lift_vs_baseline": 0.2247,
+      "performance_tier": "1 - Scale Winners",
+      "confidence_level": "high",
+      "what": "C2 produced $32.1528 CPA on $2443.61 spend (76 results).",
+      "why": "Concept-level performance driven by message-audience fit; see mapped variable stack where available.",
+      "so_what": "Meaningful budget share, currently scale winners",
+      "now_what": "Scale with dedicated budget"
+    },
+    {
+      "book": "BOOK2",
+      "concept_code": "C4",
+      "mapped_in_library": true,
+      "spend": 791.21,
+      "link_clicks": 339,
+      "results": 2.0,
+      "cpa": 395.605,
+      "buying_intent_score": 359.0,
+      "performance_lift_vs_baseline": -8.5391,
+      "performance_tier": "4 - Eliminate",
+      "confidence_level": "medium",
+      "what": "C4 produced $395.605 CPA on $791.21 spend (2 results).",
+      "why": "Concept-level performance driven by message-audience fit; see mapped variable stack where available.",
+      "so_what": "Meaningful budget share, currently eliminate",
+      "now_what": "Hold and monitor"
+    }
+  ],
+  "performance_tiers": [
+    {
+      "book": "BOOK0",
+      "concept_code": "C1",
+      "mapped_in_library": true,
+      "spend": 515.0538,
+      "link_clicks": 500,
+      "results": 42.0,
+      "cpa": 12.2632,
+      "buying_intent_score": 920.0,
+      "performance_lift_vs_baseline": -0.2505,
+      "performance_tier": "4 - Eliminate",
+      "confidence_level": "medium",
+      "what": "C1 produced $12.2632 CPA on $515.0538 spend (42 results).",
+      "why": "Concept-level performance driven by message-audience fit; see mapped variable stack where available.",
+      "so_what": "Meaningful budget share, currently eliminate",
+      "now_what": "Hold and monitor"
+    },
+    {
+      "book": "BOOK0",
+      "concept_code": "C2",
+      "mapped_in_library": true,
+      "spend": 2332.11,
+      "link_clicks": 2184,
+      "results": 329.0,
+      "cpa": 7.0885,
+      "buying_intent_score": 5474.0,
+      "performance_lift_vs_baseline": 0.2772,
+      "performance_tier": "1 - Scale Winners",
+      "confidence_level": "high",
+      "what": "C2 produced $7.0885 CPA on $2332.11 spend (329 results).",
+      "why": "Concept-level performance driven by message-audience fit; see mapped variable stack where available.",
+      "so_what": "Meaningful budget share, currently scale winners",
+      "now_what": "Scale with dedicated budget"
+    },
+    {
+      "book": "BOOK0",
+      "concept_code": "C3",
+      "mapped_in_library": true,
+      "spend": 286.84,
+      "link_clicks": 292,
+      "results": 0.0,
+      "cpa": null,
+      "buying_intent_score": 292.0,
+      "performance_lift_vs_baseline": null,
+      "performance_tier": "4 - Eliminate",
+      "confidence_level": "medium",
+      "what": "C3 produced $undefined CPA on $286.84 spend (0 results).",
+      "why": "Concept-level performance driven by message-audience fit; see mapped variable stack where available.",
+      "so_what": "Meaningful budget share, currently eliminate",
+      "now_what": "Investigate before further spend"
+    },
+    {
+      "book": "BOOK0",
+      "concept_code": "C4",
+      "mapped_in_library": true,
+      "spend": 621.1922,
+      "link_clicks": 584,
+      "results": 49.0,
+      "cpa": 12.6774,
+      "buying_intent_score": 1074.0,
+      "performance_lift_vs_baseline": -0.2927,
+      "performance_tier": "4 - Eliminate",
+      "confidence_level": "medium",
+      "what": "C4 produced $12.6774 CPA on $621.1922 spend (49 results).",
+      "why": "Concept-level performance driven by message-audience fit; see mapped variable stack where available.",
+      "so_what": "Meaningful budget share, currently eliminate",
+      "now_what": "Hold and monitor"
+    },
+    {
+      "book": "BOOK0",
+      "concept_code": "C5",
+      "mapped_in_library": true,
+      "spend": 452.07,
+      "link_clicks": 273,
+      "results": 22.0,
+      "cpa": 20.5486,
+      "buying_intent_score": 493.0,
+      "performance_lift_vs_baseline": -1.0954,
+      "performance_tier": "4 - Eliminate",
+      "confidence_level": "medium",
+      "what": "C5 produced $20.5486 CPA on $452.07 spend (22 results).",
+      "why": "Concept-level performance driven by message-audience fit; see mapped variable stack where available.",
+      "so_what": "Meaningful budget share, currently eliminate",
+      "now_what": "Hold and monitor"
+    },
+    {
+      "book": "BOOK0",
+      "concept_code": "C6",
+      "mapped_in_library": false,
+      "spend": 518.71,
+      "link_clicks": 526,
+      "results": 42.0,
+      "cpa": 12.3502,
+      "buying_intent_score": 946.0,
+      "performance_lift_vs_baseline": -0.2594,
+      "performance_tier": "4 - Eliminate",
+      "confidence_level": "medium",
+      "what": "C6 produced $12.3502 CPA on $518.71 spend (42 results).",
+      "why": "Concept not yet defined in Local Client Library; performance is trackable but not yet variable-attributable.",
+      "so_what": "Meaningful budget share, currently eliminate",
+      "now_what": "Hold and monitor"
+    },
+    {
+      "book": "BOOK0",
+      "concept_code": "C7",
+      "mapped_in_library": false,
+      "spend": 40.04,
+      "link_clicks": 43,
+      "results": 2.0,
+      "cpa": 20.02,
+      "buying_intent_score": 63.0,
+      "performance_lift_vs_baseline": -1.0415,
+      "performance_tier": "4 - Eliminate",
+      "confidence_level": "validation_required",
+      "what": "C7 produced $20.02 CPA on $40.04 spend (2 results).",
+      "why": "Concept not yet defined in Local Client Library; performance is trackable but not yet variable-attributable.",
+      "so_what": "Low spend, directional only.",
+      "now_what": "Hold and monitor"
+    },
+    {
+      "book": "BOOK2",
+      "concept_code": "C2",
+      "mapped_in_library": true,
+      "spend": 2443.61,
+      "link_clicks": 1107,
+      "results": 76.0,
+      "cpa": 32.1528,
+      "buying_intent_score": 1867.0,
+      "performance_lift_vs_baseline": 0.2247,
+      "performance_tier": "1 - Scale Winners",
+      "confidence_level": "high",
+      "what": "C2 produced $32.1528 CPA on $2443.61 spend (76 results).",
+      "why": "Concept-level performance driven by message-audience fit; see mapped variable stack where available.",
+      "so_what": "Meaningful budget share, currently scale winners",
+      "now_what": "Scale with dedicated budget"
+    },
+    {
+      "book": "BOOK2",
+      "concept_code": "C4",
+      "mapped_in_library": true,
+      "spend": 791.21,
+      "link_clicks": 339,
+      "results": 2.0,
+      "cpa": 395.605,
+      "buying_intent_score": 359.0,
+      "performance_lift_vs_baseline": -8.5391,
+      "performance_tier": "4 - Eliminate",
+      "confidence_level": "medium",
+      "what": "C4 produced $395.605 CPA on $791.21 spend (2 results).",
+      "why": "Concept-level performance driven by message-audience fit; see mapped variable stack where available.",
+      "so_what": "Meaningful budget share, currently eliminate",
+      "now_what": "Hold and monitor"
+    }
+  ],
+  "failure_patterns": [
+    {
+      "segment_type": "campaign",
+      "campaign": "BOOK0_APP_MAY26_IOS_MST _V1 [iOS]",
+      "spend": 429.55,
+      "engagement_present": true,
+      "diagnosis": "validation_required - confirm MMP/pixel before concluding creative failure",
+      "wasted_spend": 429.55
+    },
+    {
+      "segment_type": "campaign",
+      "campaign": "BOOK2_LEAD_JUN26_QUIZ_V1",
+      "spend": 787.09,
+      "engagement_present": true,
+      "diagnosis": "validation_required - confirm tracking before concluding creative failure",
+      "wasted_spend": 787.09
+    },
+    {
+      "segment_type": "campaign",
+      "campaign": "BOOK2_LEAD_JUN26_QUIZ_V3",
+      "spend": 1746.44,
+      "engagement_present": true,
+      "diagnosis": "validation_required - confirm tracking before concluding creative failure",
+      "wasted_spend": 1746.44
+    },
+    {
+      "segment_type": "placement",
+      "placement": "Native, banner & interstitial (audience_network)",
+      "spend": 585.22,
+      "engagement_present": true,
+      "diagnosis": "traffic_quality - reach without qualified action",
+      "wasted_spend": 585.22
+    },
+    {
+      "segment_type": "ad",
+      "ad_name": "C1B_STC_APP_BOOK0_T2",
+      "book": "BOOK0",
+      "spend": 53.71,
+      "engagement_present": true,
+      "diagnosis": "validation_required - needs tracking check",
+      "wasted_spend": 53.71
+    },
+    {
+      "segment_type": "ad",
+      "ad_name": "C3A_STC_APP_BOOK0_T2",
+      "book": "BOOK0",
+      "spend": 57.23,
+      "engagement_present": true,
+      "diagnosis": "traffic_quality_or_message_mismatch",
+      "wasted_spend": 57.23
+    },
+    {
+      "segment_type": "ad",
+      "ad_name": "C3B_STC_APP_BOOK0_T2",
+      "book": "BOOK0",
+      "spend": 35.42,
+      "engagement_present": true,
+      "diagnosis": "traffic_quality_or_message_mismatch",
+      "wasted_spend": 35.42
+    },
+    {
+      "segment_type": "ad",
+      "ad_name": "C3D_STC_APP_BOOK0_T2",
+      "book": "BOOK0",
+      "spend": 48.39,
+      "engagement_present": true,
+      "diagnosis": "traffic_quality_or_message_mismatch",
+      "wasted_spend": 48.39
+    },
+    {
+      "segment_type": "ad",
+      "ad_name": "C1B_STC_APP_BOOK0_T1",
+      "book": "BOOK0",
+      "spend": 112.54,
+      "engagement_present": true,
+      "diagnosis": "validation_required - needs tracking check",
+      "wasted_spend": 112.54
+    },
+    {
+      "segment_type": "ad",
+      "ad_name": "C2B_STC_APP_BOOK0_T1",
+      "book": "BOOK0",
+      "spend": 67.63,
+      "engagement_present": true,
+      "diagnosis": "validation_required - needs tracking check",
+      "wasted_spend": 67.63
+    },
+    {
+      "segment_type": "ad",
+      "ad_name": "C3A_STC_APP_BOOK0_T1 - Copy",
+      "book": "BOOK0",
+      "spend": 67.98,
+      "engagement_present": true,
+      "diagnosis": "traffic_quality_or_message_mismatch",
+      "wasted_spend": 67.98
+    },
+    {
+      "segment_type": "ad",
+      "ad_name": "C3D_STC_APP_BOOK0_T1",
+      "book": "BOOK0",
+      "spend": 42.73,
+      "engagement_present": true,
+      "diagnosis": "traffic_quality_or_message_mismatch",
+      "wasted_spend": 42.73
+    },
+    {
+      "segment_type": "ad",
+      "ad_name": "C4D_STC_APP_BOOK0_T1",
+      "book": "BOOK0",
+      "spend": 56.68,
+      "engagement_present": true,
+      "diagnosis": "validation_required - needs tracking check",
+      "wasted_spend": 56.68
+    },
+    {
+      "segment_type": "ad",
+      "ad_name": "C4D_STC_APP_BOOK0_T1 - Copy",
+      "book": "BOOK0",
+      "spend": 135.71,
+      "engagement_present": true,
+      "diagnosis": "validation_required - needs tracking check",
+      "wasted_spend": 135.71
+    },
+    {
+      "segment_type": "ad",
+      "ad_name": "C2B_STC_QF_BOOK2_T2",
+      "book": "BOOK2",
+      "spend": 426.46,
+      "engagement_present": true,
+      "diagnosis": "validation_required - needs tracking check",
+      "wasted_spend": 426.46
+    },
+    {
+      "segment_type": "ad",
+      "ad_name": "C2E_STC_QF_BOOK2_T2",
+      "book": "BOOK2",
+      "spend": 301.15,
+      "engagement_present": true,
+      "diagnosis": "validation_required - needs tracking check",
+      "wasted_spend": 301.15
+    },
+    {
+      "segment_type": "ad",
+      "ad_name": "C2F_STC_QF_BOOK2_T1",
+      "book": "BOOK2",
+      "spend": 37.64,
+      "engagement_present": true,
+      "diagnosis": "validation_required - needs tracking check",
+      "wasted_spend": 37.64
+    },
+    {
+      "segment_type": "ad",
+      "ad_name": "C4E_STC_QF_BOOK2_T1",
+      "book": "BOOK2",
+      "spend": 21.84,
+      "engagement_present": true,
+      "diagnosis": "validation_required - needs tracking check",
+      "wasted_spend": 21.84
+    },
+    {
+      "segment_type": "ad",
+      "ad_name": "C2B_STC_QF_BOOK2_T2",
+      "book": "BOOK2",
+      "spend": 103.31,
+      "engagement_present": true,
+      "diagnosis": "validation_required - needs tracking check",
+      "wasted_spend": 103.31
+    },
+    {
+      "segment_type": "ad",
+      "ad_name": "C2E_STC_QF_BOOK2_T2",
+      "book": "BOOK2",
+      "spend": 565.5,
+      "engagement_present": true,
+      "diagnosis": "validation_required - needs tracking check",
+      "wasted_spend": 565.5
+    },
+    {
+      "segment_type": "ad",
+      "ad_name": "C2F_STC_QF_BOOK2_T1",
+      "book": "BOOK2",
+      "spend": 315.72,
+      "engagement_present": true,
+      "diagnosis": "validation_required - needs tracking check",
+      "wasted_spend": 315.72
+    },
+    {
+      "segment_type": "ad",
+      "ad_name": "C4E_STC_QF_BOOK2_T1",
+      "book": "BOOK2",
+      "spend": 719.05,
+      "engagement_present": true,
+      "diagnosis": "validation_required - needs tracking check",
+      "wasted_spend": 719.05
+    },
+    {
+      "segment_type": "ad",
+      "ad_name": "C4E_STC_QF_BOOK2_T1 - Copy",
+      "book": "BOOK2",
+      "spend": 42.86,
+      "engagement_present": true,
+      "diagnosis": "validation_required - needs tracking check",
+      "wasted_spend": 42.86
+    }
+  ],
+  "winning_variable_stack": {
+    "book": "BOOK0",
+    "copy_theme": "Product Demo / Time-Efficiency",
+    "copy_angle": "CN_ProductDemo + HP_Time",
+    "hook_type": "HK_Benefit",
+    "demographic_segment": "Male 35-64 (best CPA pockets: M55-64 $9.49, M35-44 $10.33)",
+    "placement": "Feed, Facebook Reels, Instagram Reels",
+    "creative_format": "Static (STC)",
+    "cta_type": "CTA_StartFree",
+    "projected_combined_cpa": 6.8646,
+    "confidence_level": "medium",
+    "note": "Primary feed-forward signal to Strategy Map. Labeled hypothesis-grade (medium), not proven, pending larger sample on the male 55-64 / 35-44 cross-cut."
+  },
+  "insight_confidence": {
+    "high": 2,
+    "medium": 6,
+    "validation_required": 1,
+    "insufficient": 0
+  }
+}

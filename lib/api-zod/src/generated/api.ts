@@ -15,6 +15,8 @@ import * as zod from 'zod';
 export const GetMetrixSeedResponse = zod.object({
   "schema_version": zod.string(),
   "generated_at": zod.string().optional(),
+  "integrity_note": zod.string().optional(),
+  "variable_registry": zod.array(zod.record(zod.string(), zod.unknown())).optional().describe('Data-layer truth about variable families, including explicit registry_missing entries (ST_\/AW_\/CTA_ known gap).'),
   "app_defaults": zod.record(zod.string(), zod.unknown()).optional(),
   "manager_account": zod.record(zod.string(), zod.unknown()),
   "ad_accounts": zod.array(zod.record(zod.string(), zod.unknown())),
