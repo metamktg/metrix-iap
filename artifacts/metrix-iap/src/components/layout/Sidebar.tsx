@@ -34,8 +34,6 @@ function NavBadge({ count, badgeKey }: { count: number | null; badgeKey: string 
 // ─── Active checks ─────────────────────────────────────────────────────
 
 function isChildActive(to: string, location: string): boolean {
-  // Exact match for section roots (/app/analysis, /app/strategy)
-  if (to === "/app/analysis" || to === "/app/strategy") return location === to;
   return location === to || location.startsWith(to + "/");
 }
 
@@ -192,7 +190,12 @@ function LeafSection({
           {section.number}
         </span>
         <span className="flex-1">{section.label}</span>
-        {section.badgeKey && (
+        {section.placeholder && (
+          <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/35 border border-border/25 px-1 py-0.5 rounded leading-none shrink-0 normal-case">
+            Soon
+          </span>
+        )}
+        {section.badgeKey && !section.placeholder && (
           <NavBadge
             count={badgeCounts[section.badgeKey] ?? null}
             badgeKey={section.badgeKey}

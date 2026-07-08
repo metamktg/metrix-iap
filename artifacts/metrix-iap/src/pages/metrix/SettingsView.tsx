@@ -2,15 +2,17 @@
 // Account-scoped settings: data connection, white-label, data isolation.
 
 import { useScopedAdAccountId, useAccount } from "@/contexts/AccountContext";
+import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getReportBuilder } from "@/lib/data/metrixSeedAdapter";
 import { ModuleHeader, ScopeBanner, SectionCard, CaveatNote, PendingState } from "./shared";
 import { cn } from "@/lib/utils";
 import { Plug, FileUp, Palette, ShieldCheck, CheckCircle2, Circle } from "lucide-react";
 
 export function SettingsView() {
+  const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const { manager } = useAccount();
-  const account = getAdAccount(adAccountId);
+  const account = getAdAccount(seed, adAccountId);
 
   if (!account) {
     return (
@@ -22,7 +24,7 @@ export function SettingsView() {
   }
 
   const configured = account.status === "configured";
-  const rb = configured ? getReportBuilder(adAccountId) : null;
+  const rb = configured ? getReportBuilder(seed, adAccountId) : null;
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">

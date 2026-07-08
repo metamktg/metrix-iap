@@ -12,6 +12,7 @@ import {
   getAdAccounts,
   getAdAccount,
 } from "@/lib/data/metrixSeedAdapter";
+import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import type { AdAccount, ManagerAccount } from "@/lib/data/seedTypes";
 
 export type SelectedAccountType = "manager" | "ad_account";
@@ -50,8 +51,9 @@ function loadPersisted(): PersistShape {
 
 export function AccountProvider({ children }: { children: React.ReactNode }) {
   const [, navigate] = useLocation();
-  const manager = getManagerOverview();
-  const adAccounts = getAdAccounts();
+  const seed = useMetrixSeed();
+  const manager = getManagerOverview(seed);
+  const adAccounts = getAdAccounts(seed);
 
   const [persisted, setPersisted] = useState<PersistShape>(loadPersisted);
 
@@ -85,8 +87,8 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
   );
 
   const activeAdAccount = useMemo(
-    () => getAdAccount(persisted.adAccountId),
-    [persisted.adAccountId]
+    () => getAdAccount(seed, persisted.adAccountId),
+    [seed, persisted.adAccountId]
   );
 
   const value: AccountContextValue = {

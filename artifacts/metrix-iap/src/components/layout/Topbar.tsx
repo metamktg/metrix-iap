@@ -8,15 +8,22 @@ import { navTree } from "@/navigation/navTree";
 
 type BreadcrumbEntry = { label: string };
 
-function buildBreadcrumbs(location: string, leadLabel: string): BreadcrumbEntry[] {
+function buildBreadcrumbs(location: string, leadLabel: string, isManager: boolean): BreadcrumbEntry[] {
   const crumbs: BreadcrumbEntry[] = [{ label: leadLabel }];
 
   if (location === "/" || location === "") {
-    crumbs.push({ label: "Agency Overview" });
+    crumbs.push({ label: isManager ? "Agency Overview" : "Account Overview" });
     return crumbs;
   }
 
   for (const section of navTree) {
+    const matchesExtra = (section.matchPaths ?? []).some(
+      (p) => location === p || location.startsWith(p + "/")
+    );
+    if (matchesExtra) {
+      crumbs.push({ label: isManager ? "Agency Overview" : "Account Overview" });
+      return crumbs;
+    }
     if (!section.children?.length && section.to) {
       if (location === section.to || location.startsWith(section.to + "/")) {
         crumbs.push({ label: section.label });
@@ -24,11 +31,7 @@ function buildBreadcrumbs(location: string, leadLabel: string): BreadcrumbEntry[
       }
     }
     for (const child of section.children ?? []) {
-      const isExact = child.to === "/app/strategy";
-      const matches = isExact
-        ? location === child.to
-        : location === child.to || location.startsWith(child.to + "/");
-      if (matches) {
+      if (location === child.to || location.startsWith(child.to + "/")) {
         crumbs.push({ label: section.label });
         crumbs.push({ label: child.label });
         return crumbs;
@@ -47,7 +50,7 @@ export function Topbar() {
 
   const isManager = selectedAccountType === "manager";
   const leadLabel = isManager ? manager.name : activeAdAccount?.name ?? manager.name;
-  const crumbs = buildBreadcrumbs(location, leadLabel);
+  const crumbs = buildBreadcrumbs(location, leadLabel, isManager);
 
   const unconfigured = !isManager && activeAdAccount?.status === "unconfigured";
   const initials = leadLabel.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
