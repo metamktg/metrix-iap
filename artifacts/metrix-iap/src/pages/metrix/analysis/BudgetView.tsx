@@ -30,7 +30,7 @@ export function BudgetView() {
 
   return (
     <ModuleScopeGate section={SECTION} title="Budget" account={account}>
-      {(() => {
+      {() => {
         const acct = account!;
         const a = getAnalysisData(seed, adAccountId);
 
@@ -148,7 +148,7 @@ export function BudgetView() {
             </div>
           </div>
         );
-      })()}
+      }}
     </ModuleScopeGate>
   );
 }

@@ -27,7 +27,7 @@ export function BriefHistoryView() {
 
   return (
     <ModuleScopeGate section={SECTION} title="History" account={account}>
-      {(() => {
+      {() => {
         const acct = account!;
         const briefs = getBriefBuilder(seed, adAccountId)?.draft_briefs ?? [];
         const strategy = getStrategyData(seed, adAccountId);
@@ -83,7 +83,7 @@ export function BriefHistoryView() {
             </div>
           </div>
         );
-      })()}
+      }}
     </ModuleScopeGate>
   );
 }

@@ -214,6 +214,8 @@ export function ModuleTabs<T extends string>({
 // ─── Module scope gate ────────────────────────────────────────────────
 // Standard gating for account-scoped subpages: no account selected →
 // pending state; unconfigured account → connect state; else children.
+// Children are a render function so gated content is never evaluated
+// (and can never leak another account's data) when the gate blocks.
 
 export function ModuleScopeGate({
   section,
@@ -224,7 +226,7 @@ export function ModuleScopeGate({
   section: string;
   title: string;
   account: AdAccount | null;
-  children: React.ReactNode;
+  children: () => React.ReactNode;
 }) {
   if (!account) {
     return (
@@ -242,7 +244,7 @@ export function ModuleScopeGate({
       </div>
     );
   }
-  return <>{children}</>;
+  return <>{children()}</>;
 }
 
 // ─── Cross-module link ────────────────────────────────────────────────

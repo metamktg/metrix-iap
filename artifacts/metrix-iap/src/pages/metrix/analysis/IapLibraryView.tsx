@@ -60,7 +60,7 @@ export function IapLibraryView() {
 
   return (
     <ModuleScopeGate section={SECTION} title="IAP Library" account={account}>
-      {(() => {
+      {() => {
         const acct = account!;
         if (!a) {
           return (
@@ -193,7 +193,7 @@ export function IapLibraryView() {
             )}
           </div>
         );
-      })()}
+      }}
     </ModuleScopeGate>
   );
 }

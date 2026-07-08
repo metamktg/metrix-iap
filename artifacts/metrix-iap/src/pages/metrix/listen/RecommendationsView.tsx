@@ -19,7 +19,7 @@ export function RecommendationsView() {
 
   return (
     <ModuleScopeGate section={SECTION} title="Recommendations" account={account}>
-      {(() => {
+      {() => {
         const acct = account!;
         const loop = getOptimizationLoop(seed, adAccountId);
         const cards: DeckCard[] = (loop?.recommendation_cards ?? []).map((c) => ({
@@ -63,7 +63,7 @@ export function RecommendationsView() {
             </div>
           </div>
         );
-      })()}
+      }}
     </ModuleScopeGate>
   );
 }

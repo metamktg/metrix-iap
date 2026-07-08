@@ -28,7 +28,7 @@ export function AvatarsView() {
 
   return (
     <ModuleScopeGate section={SECTION} title="Avatars" account={account}>
-      {(() => {
+      {() => {
         const acct = account!;
         const mst = getMST(seed, adAccountId);
         const matrix = mst?.historical_matrix_4x4;
@@ -147,7 +147,7 @@ export function AvatarsView() {
             )}
           </div>
         );
-      })()}
+      }}
     </ModuleScopeGate>
   );
 }

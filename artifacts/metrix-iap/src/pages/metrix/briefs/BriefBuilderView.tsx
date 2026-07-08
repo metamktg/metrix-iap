@@ -56,7 +56,7 @@ export function BriefBuilderView() {
 
   return (
     <ModuleScopeGate section={SECTION} title="Brief Builder" account={account}>
-      {(() => {
+      {() => {
         const acct = account!;
         const briefs = bb?.draft_briefs ?? [];
         const strategy = getStrategyData(seed, adAccountId);
@@ -181,7 +181,7 @@ export function BriefBuilderView() {
             )}
           </div>
         );
-      })()}
+      }}
     </ModuleScopeGate>
   );
 }

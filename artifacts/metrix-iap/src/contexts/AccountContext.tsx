@@ -114,12 +114,12 @@ export function useAccount(): AccountContextValue {
 
 /**
  * Resolves the ad account a module should render.
- * Falls back to the first configured account so module deep-links always
- * have data, while respecting an explicit selection.
+ * Only returns an id when an ad account is explicitly selected — with the
+ * manager selected, account-scoped modules must prompt to pick an account
+ * rather than silently falling back to another account's data.
  */
 export function useScopedAdAccountId(): string | null {
-  const { activeAdAccountId, adAccounts } = useAccount();
-  if (activeAdAccountId) return activeAdAccountId;
-  const firstConfigured = adAccounts.find((a) => a.status === "configured");
-  return firstConfigured?.id ?? null;
+  const { selectedAccountType, activeAdAccountId } = useAccount();
+  if (selectedAccountType !== "ad_account") return null;
+  return activeAdAccountId;
 }

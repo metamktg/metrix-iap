@@ -26,7 +26,7 @@ export function AlertsView() {
 
   return (
     <ModuleScopeGate section={SECTION} title="Alerts" account={account}>
-      {(() => {
+      {() => {
         const acct = account!;
         const signals = getListenSignals(seed, adAccountId);
         const core = getCoreControls(seed, adAccountId);
@@ -133,7 +133,7 @@ export function AlertsView() {
             )}
           </div>
         );
-      })()}
+      }}
     </ModuleScopeGate>
   );
 }

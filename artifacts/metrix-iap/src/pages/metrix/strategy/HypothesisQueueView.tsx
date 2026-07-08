@@ -50,7 +50,7 @@ export function HypothesisQueueView() {
 
   return (
     <ModuleScopeGate section={SECTION} title="Hypothesis Queue" account={account}>
-      {(() => {
+      {() => {
         const acct = account!;
         if (!s) {
           return (
@@ -191,7 +191,7 @@ export function HypothesisQueueView() {
             )}
           </div>
         );
-      })()}
+      }}
     </ModuleScopeGate>
   );
 }

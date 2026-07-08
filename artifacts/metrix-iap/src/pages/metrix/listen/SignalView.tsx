@@ -41,7 +41,7 @@ export function SignalView() {
 
   return (
     <ModuleScopeGate section={SECTION} title="Signal" account={account}>
-      {(() => {
+      {() => {
         const acct = account!;
         const present = SCOPE_ORDER.filter((s) => signals.some((x) => x.scope === s));
         const tabs = [
@@ -130,7 +130,7 @@ export function SignalView() {
             )}
           </div>
         );
-      })()}
+      }}
     </ModuleScopeGate>
   );
 }

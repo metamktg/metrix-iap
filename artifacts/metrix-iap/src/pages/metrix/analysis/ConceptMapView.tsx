@@ -34,7 +34,7 @@ export function ConceptMapView() {
 
   return (
     <ModuleScopeGate section={SECTION} title="Concept Map" account={account}>
-      {(() => {
+      {() => {
         const acct = account!;
         const a = getAnalysisData(seed, adAccountId);
         const strategy = getStrategyData(seed, adAccountId);
@@ -173,7 +173,7 @@ export function ConceptMapView() {
             )}
           </div>
         );
-      })()}
+      }}
     </ModuleScopeGate>
   );
 }
