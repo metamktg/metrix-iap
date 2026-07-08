@@ -15,6 +15,7 @@ import {
   getGetNotificationPrefsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
 const SECTION = "Settings · 09";
 
@@ -62,12 +63,20 @@ export function NotificationsView() {
   const { manager } = useAccount();
   const ws = getWorkspaceSettings(seed);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const { data: prefs } = useGetNotificationPrefs(manager.id);
   const { mutate: updatePrefs, isPending } = useUpdateNotificationPrefs({
     mutation: {
       onSuccess: (result) => {
         queryClient.setQueryData(getGetNotificationPrefsQueryKey(manager.id), result);
+      },
+      onError: () => {
+        toast({
+          variant: "destructive",
+          title: "Couldn't save notification setting",
+          description: "The change was not saved. Please try again.",
+        });
       },
     },
   });
