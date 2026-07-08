@@ -1,0 +1,290 @@
+{
+  "briefs": [
+    {
+      "brief_metadata": {
+        "brief_id": "BOOK0-B001",
+        "mode": "matrix",
+        "voice": "Rational/Aspirational bridge",
+        "asset_type": "static",
+        "strategic_source": "strategic_map.json:PILLAR_TimeEfficiency",
+        "priority": "P1",
+        "confidence": "high"
+      },
+      "strategic_foundation": {
+        "data_insight": "C2 Row B is the account's best CPA/CVR combination ($7.09 CPA, 15.06% CVR) on the largest sample in the account.",
+        "target_icp": "ICP_BOOK0_C2_TimePoorLearner",
+        "message_pillar": "PILLAR_TimeEfficiency",
+        "concept_code": "CN_ProductDemo",
+        "angle_stack": "FW_BAB + TN_Rational + HK_Benefit + HP_Time + CTA_StartFree",
+        "performance_benchmark": "Current best: CPA $7.09, CVR 15.06%. Target: CPA <= $7.00, CVR >= 15%."
+      },
+      "testing_framework": {
+        "matrix_position": "C2B",
+        "matrix_naming_convention": "C2B_CN_ProductDemo_FW_BAB_TN_Rational_HK_Benefit_HP_Time_001",
+        "hypothesis": "HYP_001",
+        "isolated_variable": "Visual execution (new environment/scene, same message architecture)",
+        "control_reference": "C2B_STC_APP_BOOK0_T2",
+        "success_criteria": "CPA <= $7.00 and CVR >= 15% at >=30 results / 14-day read window",
+        "learning_objective": "Confirm whether visual freshness sustains the C2 lane or whether performance is message-bound"
+      },
+      "creative_specifications": {
+        "format": "Static",
+        "dimensions": "1080x1350 (Feed) + 1080x1920 (Stories/Reels)",
+        "duration": "N/A",
+        "placement": "Feed, Reels",
+        "safe_zones": "Standard Meta safe zone for Stories/Reels text",
+        "production_requirements": "App UI mockup, cozy/casual reading environment"
+      },
+      "copy_architecture": {
+        "hook": "Time-scarcity permission opener (HK_Benefit)",
+        "problem_agitation_or_value_setup": "No time for full books, guilt around not learning",
+        "product_solution": "15-minute structured key-idea reads",
+        "proof": "Visual product demo of the 15-minute mechanism",
+        "cta": "Start Free"
+      },
+      "visual_direction": {
+        "composition": "Phone UI tilted, cozy reading environment",
+        "style_guide": "Calm Intelligence visual language",
+        "color_palette": "Warm neutrals + purple proof accent",
+        "typography": "Clean sans-serif, benefit-led headline",
+        "imagery": "Bookster mascot, feature callouts",
+        "avoid_list": [
+          "Long-form dense text",
+          "Guilt-heavy problem framing without relief"
+        ]
+      },
+      "production_checklist": [
+        "Isolated variable clearly executed",
+        "All other elements match control",
+        "Naming convention followed",
+        "Technical specs met"
+      ],
+      "qa_requirements": [
+        "Copy-to-variable alignment scored before launch",
+        "Row/column consistency checked against C2A/C2C/C2D"
+      ],
+      "performance_tracking": {
+        "campaign_structure": "BOOK0 Android + iOS MST, C2 column",
+        "budget_allocation": "$400 per variation",
+        "timeline": "Launch immediate, evaluate day 14",
+        "decision_rules": {
+          "scale_if": "CPA <= $7.00 sustained",
+          "iterate_if": "CVR 8-15%",
+          "kill_if": "CPA > $12 at >=20 results"
+        }
+      }
+    },
+    {
+      "brief_metadata": {
+        "brief_id": "BOOK0-B002",
+        "mode": "matrix",
+        "voice": "Rational",
+        "asset_type": "static",
+        "strategic_source": "strategic_map.json:PILLAR_RationalValue",
+        "priority": "P2",
+        "confidence": "medium"
+      },
+      "strategic_foundation": {
+        "data_insight": "C4C (rational tone) shows 21.8% CVR at the ad level on $155.80 spend - promising but below high-confidence threshold.",
+        "target_icp": "ICP_BOOK0_C2_TimePoorLearner (secondary: Self-Improvement Seeker)",
+        "message_pillar": "PILLAR_RationalValue",
+        "concept_code": "CN_Lifestyle",
+        "angle_stack": "FW_StoryBrand + TN_Rational + HK_Story + HP_Confidence",
+        "performance_benchmark": "Current: CPA $5.77, CVR 21.8% (validation_required, n small). Target: hold CVR >=15% at 3x spend."
+      },
+      "testing_framework": {
+        "matrix_position": "C4C",
+        "matrix_naming_convention": "C4C_CN_Lifestyle_FW_StoryBrand_TN_Rational_HK_Story_HP_Confidence_001",
+        "hypothesis": "Not yet numbered - feeds from strategic_map pillar, not a formal hypothesis entry",
+        "isolated_variable": "Budget scale only (same creative, 3x spend)",
+        "control_reference": "C4C_STC_APP_BOOK0_T2",
+        "success_criteria": "CVR holds >= 15% and CPA <= $10 at >=$450 spend / 14-day window",
+        "learning_objective": "Determine if early strong CVR holds at real volume or was a small-sample artifact"
+      },
+      "creative_specifications": {
+        "format": "Static",
+        "dimensions": "1080x1350",
+        "duration": "N/A",
+        "placement": "Feed",
+        "safe_zones": "Standard",
+        "production_requirements": "Rational proof overlay, no new asset needed - budget test only"
+      },
+      "copy_architecture": {
+        "hook": "Story-led opener (HK_Story)",
+        "problem_agitation_or_value_setup": "Passive consumption, not living up to potential",
+        "product_solution": "Structured 15-minute learning routine",
+        "proof": "Rational proof point overlay",
+        "cta": "Start Free"
+      },
+      "visual_direction": {
+        "composition": "Existing asset - no change",
+        "style_guide": "Calm Intelligence",
+        "color_palette": "Existing",
+        "typography": "Existing",
+        "imagery": "Existing",
+        "avoid_list": [
+          "Do not introduce new visual variables in this test"
+        ]
+      },
+      "production_checklist": [
+        "Confirm no other variable changes",
+        "Budget increase only"
+      ],
+      "qa_requirements": [
+        "Monitor daily for early fatigue signal given small sample history"
+      ],
+      "performance_tracking": {
+        "campaign_structure": "BOOK0 C4 column",
+        "budget_allocation": "$450",
+        "timeline": "14 days",
+        "decision_rules": {
+          "scale_if": "CVR >= 15% sustained",
+          "iterate_if": "CVR 8-14%",
+          "kill_if": "CVR < 8% at full spend"
+        }
+      }
+    },
+    {
+      "brief_metadata": {
+        "brief_id": "BOOK0-B003",
+        "mode": "general",
+        "voice": "Rational/Direct",
+        "asset_type": "static",
+        "strategic_source": "strategic_map.json:PILLAR_MaleEfficiencyTest",
+        "priority": "P2",
+        "confidence": "medium"
+      },
+      "strategic_foundation": {
+        "data_insight": "Male 55-64 ($9.49 CPA) and Male 35-44 ($10.33 CPA) are the two best efficiency pockets in the account, currently only receiving algorithmic overflow.",
+        "target_icp": "ICP_BOOK0_MaleEfficiencyPocket",
+        "message_pillar": "PILLAR_MaleEfficiencyTest",
+        "concept_code": "CN_ComparisonorCN_ProductDemo (TBD by creative)",
+        "angle_stack": "HP_Efficiency + TN_Rational + HK_Benefit",
+        "performance_benchmark": "Current overflow CPA $9.49/$10.33. Target: CPA < $9.50 with intentional targeting."
+      },
+      "testing_framework": {
+        "matrix_position": "N/A - general mode",
+        "matrix_naming_convention": "N/A",
+        "hypothesis": "HYP_003",
+        "isolated_variable": "N/A - general scaling test",
+        "control_reference": "Current broad targeting",
+        "success_criteria": "CPA < $9.50 sustained at >= 20 results over 14-21 days",
+        "learning_objective": "Confirm whether this is a durable ICP or an artifact of broad-targeting delivery"
+      },
+      "creative_specifications": {
+        "format": "Static",
+        "dimensions": "1080x1350",
+        "duration": "N/A",
+        "placement": "Feed",
+        "safe_zones": "Standard",
+        "production_requirements": "New creative, rational/direct tone, avoid identity-aspirational framing already used for C1"
+      },
+      "copy_architecture": {
+        "hook": "Efficiency-led benefit opener",
+        "problem_agitation_or_value_setup": "Time/effort inefficiency in traditional reading",
+        "product_solution": "15-minute structured reads",
+        "proof": "Rational/data-driven proof point",
+        "cta": "Start Free"
+      },
+      "visual_direction": {
+        "composition": "Direct, uncluttered",
+        "style_guide": "Calm Intelligence",
+        "color_palette": "Neutral, confident",
+        "typography": "Direct sans-serif",
+        "imagery": "Product-forward, minimal lifestyle framing",
+        "avoid_list": [
+          "Aspirational/identity framing (reserved for C1)",
+          "Youth-coded visual cues"
+        ]
+      },
+      "production_checklist": [
+        "New asset build required",
+        "Dedicated ad set with intentional age/gender targeting"
+      ],
+      "qa_requirements": [
+        "Confirm targeting is intentional, not broad, before reading results as ICP-confirming"
+      ],
+      "performance_tracking": {
+        "campaign_structure": "New dedicated ad set, BOOK0",
+        "budget_allocation": "$500 across M35-44 and M55-64 split",
+        "timeline": "14-21 days",
+        "decision_rules": {
+          "scale_if": "CPA < $9.50 sustained",
+          "iterate_if": "CPA $9.50-$13",
+          "kill_if": "CPA > $13 at >=20 results"
+        }
+      }
+    },
+    {
+      "brief_metadata": {
+        "brief_id": "BOOK2-B001",
+        "mode": "general",
+        "voice": "Rational/Assertive",
+        "asset_type": "static",
+        "strategic_source": "strategic_map.json:ICP_BOOK2_C2B_QuizCompleter",
+        "priority": "P1",
+        "confidence": "high"
+      },
+      "strategic_foundation": {
+        "data_insight": "C2E and C4E (Book2 extension cells) combined spent $1,672 for 4 total conversions, while C2B (core matrix mechanic) converts at 11.65% CVR on similar spend.",
+        "target_icp": "ICP_BOOK2_C2B_QuizCompleter",
+        "message_pillar": "N/A - replacement/consolidation brief",
+        "concept_code": "CN_ProductDemo",
+        "angle_stack": "FW_BAB + TN_Rational + HK_Benefit + HP_Time + CTA_StartFree",
+        "performance_benchmark": "C2B current: CPA $16.28, CVR 11.65%. C2E/C4E target if rebuilt: match C2B within 20%."
+      },
+      "testing_framework": {
+        "matrix_position": "C2E / C4E replacement",
+        "matrix_naming_convention": "C2Bx_CN_ProductDemo_FW_BAB_TN_Rational_HK_Benefit_HP_Time_001",
+        "hypothesis": "HYP_004",
+        "isolated_variable": "Message mechanic (replace E/F extension logic with proven B mechanic)",
+        "control_reference": "C2B_STC_QF_BOOK2_T2",
+        "success_criteria": "CVR >= 8%, CPA <= $25 at >=$300 spend / 14-day window",
+        "learning_objective": "Confirm the B mechanic transfers to the E/F slots or whether those slots need a different approach entirely"
+      },
+      "creative_specifications": {
+        "format": "Static",
+        "dimensions": "1080x1350",
+        "duration": "N/A",
+        "placement": "Feed",
+        "safe_zones": "Standard",
+        "production_requirements": "Reuse validated C2B visual system with new copy variant"
+      },
+      "copy_architecture": {
+        "hook": "HK_Benefit - '1,000 books, 15 minutes each' proof",
+        "problem_agitation_or_value_setup": "Time-poor reading backlog",
+        "product_solution": "Structured 15-minute reads",
+        "proof": "Visual product demo, purple proof badge",
+        "cta": "Start Free"
+      },
+      "visual_direction": {
+        "composition": "Cozy reading/lamp environment, tilted phone UI",
+        "style_guide": "Calm Intelligence",
+        "color_palette": "Warm neutrals, purple proof accent",
+        "typography": "Consistent with C2B control",
+        "imagery": "Bookster mascot, feature callouts",
+        "avoid_list": [
+          "Do not reintroduce the E/F extension mechanic without a new hypothesis"
+        ]
+      },
+      "production_checklist": [
+        "Pause further spend on current C2E/C4E/C2F assets pending this test",
+        "Build replacement using C2B mechanic"
+      ],
+      "qa_requirements": [
+        "Confirm naming avoids confusion with legacy E/F cells",
+        "Verify against Book2 Local Client Library once formally created"
+      ],
+      "performance_tracking": {
+        "campaign_structure": "BOOK2 Quiz campaign",
+        "budget_allocation": "$300 per replacement variant",
+        "timeline": "14 days",
+        "decision_rules": {
+          "scale_if": "CVR >= 8% sustained",
+          "iterate_if": "CVR 4-8%",
+          "kill_if": "CVR < 4% at full spend"
+        }
+      }
+    }
+  ]
+}

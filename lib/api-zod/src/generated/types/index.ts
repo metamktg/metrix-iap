@@ -7,6 +7,12 @@
  */
 
 export * from './apiError';
+export * from './authChangePasswordInput';
+export * from './authLoginInput';
+export * from './authLogoutResult';
+export * from './authLogoutResultStatus';
+export * from './authUser';
+export * from './authUserResult';
 export * from './channelPref';
 export * from './eventPref';
 export * from './healthStatus';
@@ -15,13 +21,21 @@ export * from './metrixSeedBundle';
 export * from './metrixSeedBundleAdAccountsItem';
 export * from './metrixSeedBundleAppDefaults';
 export * from './metrixSeedBundleManagerAccount';
+export * from './metrixSeedBundleVariableRegistryItem';
 export * from './metrixSeedBundleWorkspaceSettings';
 export * from './notificationPrefsResult';
 export * from './notificationPrefsUpdateInput';
+export * from './requestAccessInput';
+export * from './requestAccessInputBusinessType';
+export * from './requestAccessResult';
+export * from './requestAccessResultStatus';
 export * from './revokeWorkspaceInviteResult';
 export * from './revokeWorkspaceInviteResultStatus';
+export * from './waitlistApprovalResult';
+export * from './waitlistApprovalResultStatus';
 export * from './waitlistEntriesResult';
 export * from './waitlistEntry';
+export * from './waitlistEntryStatus';
 export * from './waitlistSignupInput';
 export * from './waitlistSignupResult';
 export * from './waitlistSignupResultStatus';

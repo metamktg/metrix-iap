@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import {
   GetMetrixSeedResponse,
   JoinAgentWaitlistBody,
@@ -12,24 +12,44 @@ import {
   ResendWorkspaceInviteResponse,
   UpdateNotificationPrefsBody,
   UpdateNotificationPrefsResponse,
+  SubmitRequestAccessBody,
+  SubmitRequestAccessResponse,
+  ApproveAgentWaitlistEntryResponse,
 } from "@workspace/api-zod";
 import {
   db,
   agentWaitlistTable,
+  usersTable,
   workspaceInvitesTable,
   workspaceNotificationPrefsTable,
 } from "@workspace/db";
 import { and, count, desc, eq, sql } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
+import { requireAuth } from "../middlewares/requireAuth";
 import { waitlistRateLimit } from "../middlewares/waitlistRateLimit";
+import { hashPassword, generateTempPassword } from "../lib/passwords";
+import { sendApprovalEmail } from "../lib/approvalEmail";
 import { isDisposableEmailDomain } from "../lib/disposableEmailDomains";
-import seedBundle from "../data/metrix_seed_bundle.json" with { type: "json" };
+import { getMetrixSeedFromSupabase } from "../lib/metrixSeedAssembly";
+import { getSupabase } from "../lib/supabase";
+import { notifyRequestAccess } from "../lib/requestAccessNotification";
 
 const router: IRouter = Router();
 
-router.get("/metrix/seed", (_req, res) => {
-  const data = GetMetrixSeedResponse.parse(seedBundle);
-  res.json(data);
+router.get("/metrix/seed", requireAuth, async (req, res) => {
+  try {
+    const bundle = await getMetrixSeedFromSupabase();
+    const data = GetMetrixSeedResponse.parse(bundle);
+    res.json(data);
+  } catch (err) {
+    // No static fallback by design: the app must not silently render stale
+    // bundled data when the Supabase-backed data layer is unavailable.
+    req.log.error({ err }, "Failed to assemble Metrix seed from Supabase");
+    res.status(503).json({
+      message:
+        err instanceof Error ? err.message : "Metrix data layer is unavailable.",
+    });
+  }
 });
 
 router.post("/metrix/agent-waitlist", waitlistRateLimit, async (req, res) => {
@@ -60,6 +80,81 @@ router.post("/metrix/agent-waitlist", waitlistRateLimit, async (req, res) => {
   res.json(data);
 });
 
+router.post("/metrix/request-access", waitlistRateLimit, async (req, res) => {
+  const parsed = SubmitRequestAccessBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({
+      message:
+        "Please fill in all required fields with valid values (name, email, phone, business type, industry, and ad spend).",
+    });
+    return;
+  }
+
+  const email = parsed.data.email.trim().toLowerCase();
+  if (isDisposableEmailDomain(email)) {
+    res.status(400).json({
+      message: "Please use a permanent business email address.",
+    });
+    return;
+  }
+
+  const submission = {
+    full_name: parsed.data.full_name.trim(),
+    email,
+    phone: parsed.data.phone.trim(),
+    business_type: parsed.data.business_type,
+    industry: parsed.data.industry.trim(),
+    avg_monthly_ad_spend: parsed.data.avg_monthly_ad_spend.trim(),
+    website: parsed.data.website?.trim() || undefined,
+    linkedin: parsed.data.linkedin?.trim() || undefined,
+  };
+
+  let supabase;
+  try {
+    supabase = getSupabase();
+  } catch (err) {
+    req.log.error({ err }, "Supabase not configured for request-access");
+    res.status(503).json({
+      message: "We couldn't save your request right now. Please try again shortly.",
+    });
+    return;
+  }
+
+  const { error } = await supabase.from("request_access").insert({
+    full_name: submission.full_name,
+    email: submission.email,
+    phone: submission.phone,
+    business_type: submission.business_type,
+    industry: submission.industry,
+    avg_monthly_ad_spend: submission.avg_monthly_ad_spend,
+    website: submission.website ?? null,
+    linkedin: submission.linkedin ?? null,
+  });
+
+  if (error) {
+    // 23505 = unique violation on lower(email): request already on file.
+    if (error.code === "23505") {
+      const data = SubmitRequestAccessResponse.parse({
+        status: "already_requested",
+        email,
+      });
+      res.json(data);
+      return;
+    }
+    req.log.error({ error }, "Failed to store request-access submission");
+    res.status(503).json({
+      message: "We couldn't save your request right now. Please try again shortly.",
+    });
+    return;
+  }
+
+  // Fire the internal notification; never block or fail the submission on it.
+  void notifyRequestAccess(submission, req.log);
+
+  const data = SubmitRequestAccessResponse.parse({ status: "received", email });
+  res.json(data);
+});
+
 router.get("/metrix/agent-waitlist", requireAdmin, async (req, res) => {
   const parsedQuery = ListAgentWaitlistQueryParams.safeParse(req.query);
   if (!parsedQuery.success) {
@@ -71,7 +166,10 @@ router.get("/metrix/agent-waitlist", requireAdmin, async (req, res) => {
   const [rows, [{ total }]] = await Promise.all([
     db
       .select({
+        id: agentWaitlistTable.id,
         email: agentWaitlistTable.email,
+        status: agentWaitlistTable.status,
+        approvedAt: agentWaitlistTable.approvedAt,
         createdAt: agentWaitlistTable.createdAt,
       })
       .from(agentWaitlistTable)
@@ -83,13 +181,98 @@ router.get("/metrix/agent-waitlist", requireAdmin, async (req, res) => {
 
   const data = ListAgentWaitlistResponse.parse({
     entries: rows.map((row) => ({
+      id: row.id,
       email: row.email,
+      status: row.status,
+      approved_at: row.approvedAt ? row.approvedAt.toISOString() : undefined,
       joined_at: row.createdAt.toISOString(),
     })),
     total,
   });
   res.json(data);
 });
+
+router.post(
+  "/metrix/agent-waitlist/:entryId/approve",
+  requireAdmin,
+  async (req, res) => {
+    const entryId = Number.parseInt(String(req.params.entryId), 10);
+    if (!Number.isInteger(entryId) || entryId < 1) {
+      res.status(404).json({ message: "Waitlist entry not found." });
+      return;
+    }
+
+    const [entry] = await db
+      .select()
+      .from(agentWaitlistTable)
+      .where(eq(agentWaitlistTable.id, entryId))
+      .limit(1);
+
+    if (!entry) {
+      res.status(404).json({ message: "Waitlist entry not found." });
+      return;
+    }
+
+    const [existingUser] = await db
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(eq(usersTable.email, entry.email))
+      .limit(1);
+
+    if (entry.status === "approved" && existingUser) {
+      const data = ApproveAgentWaitlistEntryResponse.parse({
+        status: "already_approved",
+        email: entry.email,
+        email_sent: false,
+      });
+      res.json(data);
+      return;
+    }
+
+    const tempPassword = generateTempPassword();
+    const passwordHash = await hashPassword(tempPassword);
+
+    if (existingUser) {
+      await db
+        .update(usersTable)
+        .set({ passwordHash, mustChangePassword: true })
+        .where(eq(usersTable.id, existingUser.id));
+    } else {
+      await db
+        .insert(usersTable)
+        .values({ email: entry.email, passwordHash, mustChangePassword: true });
+    }
+
+    await db
+      .update(agentWaitlistTable)
+      .set({ status: "approved", approvedAt: new Date() })
+      .where(eq(agentWaitlistTable.id, entry.id));
+
+    const appUrl = getAppLoginUrl();
+    const emailResult = await sendApprovalEmail(
+      entry.email,
+      tempPassword,
+      appUrl,
+      req.log,
+    );
+
+    const data = ApproveAgentWaitlistEntryResponse.parse({
+      status: "approved",
+      email: entry.email,
+      email_sent: emailResult === "sent",
+      // Only surface the temp password to the admin when the email could not
+      // be delivered — otherwise it must never leave the email channel.
+      ...(emailResult === "sent" ? {} : { temp_password: tempPassword }),
+    });
+    res.json(data);
+  },
+);
+
+function getAppLoginUrl(): string {
+  const domains = process.env["REPLIT_DOMAINS"];
+  const domain = domains?.split(",")[0]?.trim();
+  return domain ? `https://${domain}/` : "https://app.metrix.ad/";
+}
 
 const inviteRowToApi = (row: {
   id: number;
@@ -105,8 +288,35 @@ const inviteRowToApi = (row: {
   created_at: row.createdAt.toISOString(),
 });
 
-router.get("/metrix/workspaces/:workspaceId/invites", async (req, res) => {
-  const workspaceId = req.params.workspaceId;
+// This deployment is single-workspace: the only valid workspaceId is the
+// manager account id from the Metrix seed bundle. Authenticated users are
+// members of that workspace; anything else is forbidden.
+const requireWorkspaceAccess = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  const workspaceId = String(req.params.workspaceId);
+  try {
+    const bundle = (await getMetrixSeedFromSupabase()) as {
+      manager_account?: { id?: string };
+    };
+    const allowedId = bundle.manager_account?.id;
+    if (!allowedId || workspaceId !== allowedId) {
+      res.status(403).json({ message: "You don't have access to this workspace." });
+      return;
+    }
+    next();
+  } catch (err) {
+    req.log.error({ err }, "Workspace access check failed (seed unavailable)");
+    res.status(503).json({
+      message: "Couldn't verify workspace access because the Metrix data layer is unavailable.",
+    });
+  }
+};
+
+router.get("/metrix/workspaces/:workspaceId/invites", requireAuth, requireWorkspaceAccess, async (req, res) => {
+  const workspaceId = String(req.params.workspaceId);
   const rows = await db
     .select()
     .from(workspaceInvitesTable)
@@ -119,8 +329,26 @@ router.get("/metrix/workspaces/:workspaceId/invites", async (req, res) => {
   res.json(data);
 });
 
-router.post("/metrix/workspaces/:workspaceId/invites", async (req, res) => {
-  const workspaceId = req.params.workspaceId;
+const getWorkspaceTeamFromSeed = async (): Promise<{
+  memberEmails: Set<string>;
+  seatLimit: number | null;
+}> => {
+  const bundle = (await getMetrixSeedFromSupabase()) as {
+    workspace_settings?: {
+      team?: { seat_limit?: number; members?: { email: string }[] };
+    };
+  };
+  const team = bundle.workspace_settings?.team;
+  return {
+    memberEmails: new Set(
+      (team?.members ?? []).map((m) => m.email.toLowerCase()),
+    ),
+    seatLimit: team?.seat_limit ?? null,
+  };
+};
+
+router.post("/metrix/workspaces/:workspaceId/invites", requireAuth, requireWorkspaceAccess, async (req, res) => {
+  const workspaceId = String(req.params.workspaceId);
   const parsed = CreateWorkspaceInviteBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ message: "A valid email and role are required." });
@@ -128,6 +356,61 @@ router.post("/metrix/workspaces/:workspaceId/invites", async (req, res) => {
   }
   const email = parsed.data.email.trim().toLowerCase();
   const role = parsed.data.role;
+
+  const [existingInvite] = await db
+    .select()
+    .from(workspaceInvitesTable)
+    .where(
+      and(
+        eq(workspaceInvitesTable.workspaceId, workspaceId),
+        eq(workspaceInvitesTable.email, email),
+      ),
+    )
+    .limit(1);
+
+  if (existingInvite) {
+    const data = CreateWorkspaceInviteResponse.parse({
+      status: "already_invited",
+      invite: inviteRowToApi(existingInvite),
+    });
+    res.json(data);
+    return;
+  }
+
+  let team: Awaited<ReturnType<typeof getWorkspaceTeamFromSeed>>;
+  try {
+    team = await getWorkspaceTeamFromSeed();
+  } catch (err) {
+    req.log.error({ err }, "Failed to load workspace team from Metrix seed");
+    res.status(503).json({
+      message:
+        "Couldn't verify available seats because the Metrix data layer is unavailable. Try again shortly.",
+    });
+    return;
+  }
+
+  if (team.seatLimit !== null) {
+    const pendingRows = await db
+      .select({ email: workspaceInvitesTable.email })
+      .from(workspaceInvitesTable)
+      .where(
+        and(
+          eq(workspaceInvitesTable.workspaceId, workspaceId),
+          eq(workspaceInvitesTable.status, "invited"),
+        ),
+      );
+    const pendingCount = pendingRows.filter(
+      (row) => !team.memberEmails.has(row.email.toLowerCase()),
+    ).length;
+    const seatsUsed = team.memberEmails.size + pendingCount;
+
+    if (seatsUsed >= team.seatLimit) {
+      res.status(409).json({
+        message: `This workspace is full: all ${team.seatLimit} seats are in use. Remove a member or cancel a pending invite before inviting someone new.`,
+      });
+      return;
+    }
+  }
 
   const inserted = await db
     .insert(workspaceInvitesTable)
@@ -171,9 +454,11 @@ const parseInviteId = (raw: string): number | null => {
 
 router.delete(
   "/metrix/workspaces/:workspaceId/invites/:inviteId",
+  requireAuth,
+  requireWorkspaceAccess,
   async (req, res) => {
-    const workspaceId = req.params.workspaceId;
-    const inviteId = parseInviteId(req.params.inviteId);
+    const workspaceId = String(req.params.workspaceId);
+    const inviteId = parseInviteId(String(req.params.inviteId));
     if (inviteId === null) {
       res.status(404).json({ message: "Invite not found." });
       return;
@@ -201,9 +486,11 @@ router.delete(
 
 router.post(
   "/metrix/workspaces/:workspaceId/invites/:inviteId/resend",
+  requireAuth,
+  requireWorkspaceAccess,
   async (req, res) => {
-    const workspaceId = req.params.workspaceId;
-    const inviteId = parseInviteId(req.params.inviteId);
+    const workspaceId = String(req.params.workspaceId);
+    const inviteId = parseInviteId(String(req.params.inviteId));
     if (inviteId === null) {
       res.status(404).json({ message: "Invite not found." });
       return;
@@ -250,8 +537,8 @@ const prefRowsToApi = (
     .map((r) => ({ id: r.key, email: r.email ?? false, in_app: r.inApp ?? false })),
 });
 
-router.get("/metrix/workspaces/:workspaceId/notification-prefs", async (req, res) => {
-  const workspaceId = req.params.workspaceId;
+router.get("/metrix/workspaces/:workspaceId/notification-prefs", requireAuth, requireWorkspaceAccess, async (req, res) => {
+  const workspaceId = String(req.params.workspaceId);
   const rows = await db
     .select()
     .from(workspaceNotificationPrefsTable)
@@ -260,8 +547,8 @@ router.get("/metrix/workspaces/:workspaceId/notification-prefs", async (req, res
   res.json(UpdateNotificationPrefsResponse.parse(prefRowsToApi(rows)));
 });
 
-router.put("/metrix/workspaces/:workspaceId/notification-prefs", async (req, res) => {
-  const workspaceId = req.params.workspaceId;
+router.put("/metrix/workspaces/:workspaceId/notification-prefs", requireAuth, requireWorkspaceAccess, async (req, res) => {
+  const workspaceId = String(req.params.workspaceId);
   const parsed = UpdateNotificationPrefsBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ message: "Invalid notification preference payload." });

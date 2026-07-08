@@ -4,9 +4,15 @@
 
 import { useState, type FormEvent } from "react";
 import { SectionCard } from "../shared";
-import { Users, Download, Loader2, Lock } from "lucide-react";
-import { listAgentWaitlist, getListAgentWaitlistQueryKey, ApiError } from "@workspace/api-client-react";
-import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { Users, Download, Loader2, Lock, CheckCircle2, Copy, MailCheck } from "lucide-react";
+import {
+  listAgentWaitlist,
+  getListAgentWaitlistQueryKey,
+  approveAgentWaitlistEntry,
+  ApiError,
+  type WaitlistApprovalResult,
+} from "@workspace/api-client-react";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const WAITLIST_PAGE_SIZE = 50;
 const WAITLIST_EXPORT_PAGE_SIZE = 200;
@@ -40,6 +46,28 @@ export function AgentWaitlistSection() {
   });
 
   const isUnauthorized = error instanceof ApiError && error.status === 401;
+
+  const [approvalResults, setApprovalResults] = useState<Record<number, WaitlistApprovalResult>>({});
+  const [copiedEntryId, setCopiedEntryId] = useState<number | null>(null);
+
+  const approveMutation = useMutation({
+    mutationFn: (entryId: number) =>
+      approveAgentWaitlistEntry(entryId, { headers: authHeaders }),
+    onSuccess: (result, entryId) => {
+      setApprovalResults((prev) => ({ ...prev, [entryId]: result }));
+      void queryClient.invalidateQueries({ queryKey: getListAgentWaitlistQueryKey() });
+    },
+  });
+
+  const handleCopyTempPassword = async (entryId: number, tempPassword: string) => {
+    try {
+      await navigator.clipboard.writeText(tempPassword);
+      setCopiedEntryId(entryId);
+      setTimeout(() => setCopiedEntryId((prev) => (prev === entryId ? null : prev)), 2000);
+    } catch {
+      // Clipboard unavailable — password stays visible for manual copy.
+    }
+  };
 
   const handleUnlock = (e: FormEvent) => {
     e.preventDefault();
@@ -116,7 +144,7 @@ export function AgentWaitlistSection() {
     if (isExporting || total === 0) return;
     setIsExporting(true);
     try {
-      const all: { email: string; joined_at: string }[] = [];
+      const all: { email: string; status: string; joined_at: string }[] = [];
       let offset = 0;
       for (;;) {
         const page = await listAgentWaitlist(
@@ -130,8 +158,8 @@ export function AgentWaitlistSection() {
       if (all.length === 0) return;
       const escapeCsv = (value: string) =>
         /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
-      const header = "email,joined_at";
-      const lines = all.map((e) => `${escapeCsv(e.email)},${e.joined_at}`);
+      const header = "email,status,joined_at";
+      const lines = all.map((e) => `${escapeCsv(e.email)},${e.status},${e.joined_at}`);
       const blob = new Blob([[header, ...lines].join("\n")], { type: "text/csv;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -185,14 +213,70 @@ export function AgentWaitlistSection() {
             <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70 font-medium">Joined</span>
           </div>
           <div className="max-h-64 overflow-y-auto divide-y divide-border/20">
-            {entries.map((entry) => (
-              <div key={entry.email} className="flex items-center justify-between px-3 py-2" data-testid={`row-waitlist-${entry.email}`}>
-                <span className="text-[12px] text-foreground truncate mr-3">{entry.email}</span>
-                <span className="text-[10px] font-mono text-muted-foreground/70 shrink-0">
-                  {new Date(entry.joined_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
-                </span>
+            {entries.map((entry) => {
+              const result = approvalResults[entry.id];
+              const isApproving = approveMutation.isPending && approveMutation.variables === entry.id;
+              return (
+                <div key={entry.id} className="px-3 py-2 space-y-1.5" data-testid={`row-waitlist-${entry.email}`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-[12px] text-foreground truncate">{entry.email}</span>
+                      {entry.status === "approved" ? (
+                        <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-400 shrink-0" data-testid={`badge-approved-${entry.email}`}>
+                          <CheckCircle2 className="w-3 h-3" /> Approved
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-medium text-amber-400/80 shrink-0" data-testid={`badge-pending-${entry.email}`}>
+                          Pending
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {entry.status === "pending" && (
+                        <button
+                          onClick={() => approveMutation.mutate(entry.id)}
+                          disabled={approveMutation.isPending}
+                          className="flex items-center gap-1 h-6 px-2 rounded border border-primary/30 bg-primary/10 text-[10px] font-medium text-primary hover:bg-primary/20 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                          data-testid={`button-approve-${entry.email}`}
+                        >
+                          {isApproving ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                          {isApproving ? "Approving…" : "Approve"}
+                        </button>
+                      )}
+                      <span className="text-[10px] font-mono text-muted-foreground/70">
+                        {new Date(entry.joined_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
+                      </span>
+                    </div>
+                  </div>
+                  {result && result.status === "approved" && (
+                    result.email_sent ? (
+                      <div className="flex items-center gap-1.5 text-[11px] text-emerald-400/90" data-testid={`text-approval-emailed-${entry.email}`}>
+                        <MailCheck className="w-3 h-3" /> Temporary password emailed to {result.email}.
+                      </div>
+                    ) : result.temp_password ? (
+                      <div className="flex items-center gap-2 p-2 rounded border border-amber-500/20 bg-amber-500/[0.06]" data-testid={`panel-temp-password-${entry.email}`}>
+                        <div className="text-[11px] text-foreground min-w-0">
+                          Email not sent — share this temporary password manually:{" "}
+                          <span className="font-mono text-[11px] text-amber-300">{result.temp_password}</span>
+                        </div>
+                        <button
+                          onClick={() => void handleCopyTempPassword(entry.id, result.temp_password!)}
+                          className="flex items-center gap-1 h-6 px-2 rounded border border-border/40 text-[10px] text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors shrink-0"
+                          data-testid={`button-copy-temp-password-${entry.email}`}
+                        >
+                          <Copy className="w-3 h-3" /> {copiedEntryId === entry.id ? "Copied" : "Copy"}
+                        </button>
+                      </div>
+                    ) : null
+                  )}
+                </div>
+              );
+            })}
+            {approveMutation.isError && (
+              <div className="px-3 py-2 text-[11px] text-red-400/80" data-testid="text-approve-error">
+                Approval failed. Check the admin key and try again.
               </div>
-            ))}
+            )}
             {hasNextPage && (
               <div className="p-2">
                 <button

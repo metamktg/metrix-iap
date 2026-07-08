@@ -5,10 +5,21 @@
   "type": "module",
   "scripts": {
     "hello": "tsx ./src/hello.ts",
+    "check:metrix-settings-api": "tsx ./src/check-metrix-settings-api.ts",
+    "smoke:api-server": "tsx ./src/smoke-api-server.ts",
+    "import:metrix": "tsx ./src/metrix-supabase/import.ts",
+    "create:user": "tsx ./src/create-user.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "@types/pg": "^8.20.0",
     "tsx": "catalog:"
+  },
+  "dependencies": {
+    "@workspace/db": "workspace:*",
+    "bcryptjs": "^3.0.3",
+    "drizzle-orm": "catalog:",
+    "pg": "^8.22.0"
   }
 }

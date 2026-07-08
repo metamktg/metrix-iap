@@ -116,6 +116,20 @@ export interface PlacementRow {
   CTR_link_pct?: number;
 }
 
+export interface ConceptRollupRow {
+  book: string;
+  concept: string;
+  date_start: string;
+  date_end: string;
+  spend: number | null;
+  link_clicks: number | null;
+  results: number | null;
+  cpa: number | null;
+  cvr_link_pct: number | null;
+  confidence: string | null;
+  mapped_in_library: boolean;
+}
+
 export interface AnalysisData {
   performance_by_cell: CellPerformanceRow[];
   v3_variable_performance: VariablePerformanceRow[];
@@ -124,6 +138,8 @@ export interface AnalysisData {
   c4e_placement_signal: PlacementRow[];
   top_checkout_cells: CellPerformanceRow[];
   top_checkout_variables: VariablePerformanceRow[];
+  /** Cross-book (BOOK0 + BOOK2) concept view from the normalized bundle. */
+  concept_rollup?: ConceptRollupRow[];
 }
 
 // ─── Strategy / Brief ─────────────────────────────────────────────────
@@ -135,6 +151,11 @@ export interface MessagePillar {
   plain_descriptor: string;
   why_it_matters: string;
   variable_stack: Record<string, string>;
+  funnel_application?: string;
+  execution_specifications?: string;
+  placement_strategy?: string;
+  scaling_guidance?: string;
+  target_icps?: string[];
 }
 
 export interface ActiveHypothesis {
@@ -143,11 +164,19 @@ export interface ActiveHypothesis {
   source: string;
   status: string;
   risk?: string;
+  test_variant?: string;
+  isolated_variable?: string;
+  success_criteria?: string;
+  expected_impact?: string;
 }
 
 export interface StrategyData {
   message_pillars: MessagePillar[];
   active_hypotheses: ActiveHypothesis[];
+  /** Full ICP profiles from the real Strategy Map loop output. */
+  icp_profiles?: Record<string, unknown>[];
+  variable_combinations?: Record<string, unknown>[];
+  scaling_playbook?: Record<string, unknown> | null;
 }
 
 export interface DraftBrief {
@@ -157,6 +186,12 @@ export interface DraftBrief {
   human_direction: string;
   plain_variable_descriptors: string[];
   status: string;
+  book?: string;
+  mode?: string;
+  voice?: string;
+  confidence?: string;
+  /** Full Brief Builder loop output document for this brief. */
+  full_brief?: Record<string, unknown>;
 }
 
 export interface BriefBuilder {
@@ -208,6 +243,16 @@ export interface CoreReanalysisRead {
   data_caveat: string;
 }
 
+export interface CampaignWindow {
+  campaign_name: string;
+  book: string | null;
+  os: string | null;
+  date_start: string | null;
+  date_end: string | null;
+  result_type: string | null;
+  spend: number | null;
+}
+
 export interface CampaignSummary {
   bottom_line_totals: Record<string, SeedResultEventTotals>;
   total_spend_usd: number;
@@ -215,6 +260,9 @@ export interface CampaignSummary {
   total_link_clicks: number;
   overall_link_ctr_pct: number;
   data_caveat: string;
+  window_start?: string;
+  window_end?: string;
+  campaign_windows?: CampaignWindow[];
 }
 
 // ─── Listen ───────────────────────────────────────────────────────────
@@ -304,6 +352,21 @@ export interface MST {
 
 // ─── Ad account ───────────────────────────────────────────────────────
 
+export interface LoopStageStatus {
+  stage: string;
+  status: "complete" | "pending" | string;
+  window_start?: string | null;
+  window_end?: string | null;
+  generated_at?: string | null;
+  source_file?: string | null;
+  note?: string | null;
+}
+
+export interface DataQualityFlag {
+  kind: string;
+  [k: string]: unknown;
+}
+
 export interface IAPData {
   metadata: Record<string, unknown>;
   core_reanalysis_read: CoreReanalysisRead;
@@ -312,7 +375,14 @@ export interface IAPData {
   strategy: StrategyData;
   brief_builder: BriefBuilder;
   report_builder: ReportBuilder;
-  optimization_loop: OptimizationLoop;
+  /** Null until the Optimization Loop stage of the IAP loop has actually run. */
+  optimization_loop: OptimizationLoop | null;
+  /** Analysis Core intelligence output (summary, concept scores, failure patterns). */
+  intelligence?: Record<string, unknown>;
+  /** Data-gap surface: anomalies, quality flags, attribution notes. */
+  data_quality?: DataQualityFlag[];
+  /** Which IAP loop stages have real data behind them. */
+  loop_status?: LoopStageStatus[];
 }
 
 export interface AdAccountOverviewState {
@@ -413,6 +483,13 @@ export interface WorkspaceSettings {
   billing: WorkspaceBilling;
 }
 
+export interface VariableRegistryEntry {
+  prefix: string;
+  family: string;
+  status: "active" | "registry_missing" | string;
+  note?: string | null;
+}
+
 export interface MetrixSeed {
   schema_version: string;
   generated_at: string;
@@ -421,4 +498,6 @@ export interface MetrixSeed {
   manager_account: ManagerAccount;
   ad_accounts: AdAccount[];
   workspace_settings?: WorkspaceSettings;
+  /** Data-layer truth about variable families, incl. explicit registry_missing (ST_/AW_/CTA_). */
+  variable_registry?: VariableRegistryEntry[];
 }

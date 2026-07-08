@@ -5,6 +5,8 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type MetrixSeedBundleVariableRegistryItem = { [key: string]: unknown };
+
 export type MetrixSeedBundleAppDefaults = { [key: string]: unknown };
 
 export type MetrixSeedBundleManagerAccount = { [key: string]: unknown };
@@ -19,6 +21,9 @@ export type MetrixSeedBundleWorkspaceSettings = { [key: string]: unknown };
 export interface MetrixSeedBundle {
   schema_version: string;
   generated_at?: string;
+  integrity_note?: string;
+  /** Data-layer truth about variable families, including explicit registry_missing entries (ST_/AW_/CTA_ known gap). */
+  variable_registry?: MetrixSeedBundleVariableRegistryItem[];
   app_defaults?: MetrixSeedBundleAppDefaults;
   manager_account: MetrixSeedBundleManagerAccount;
   ad_accounts: MetrixSeedBundleAdAccountsItem[];
@@ -43,9 +48,79 @@ export interface WaitlistSignupResult {
   email: string;
 }
 
+export type WaitlistEntryStatus = typeof WaitlistEntryStatus[keyof typeof WaitlistEntryStatus];
+
+
+export const WaitlistEntryStatus = {
+  pending: 'pending',
+  approved: 'approved',
+} as const;
+
 export interface WaitlistEntry {
+  id: number;
   email: string;
+  status: WaitlistEntryStatus;
+  approved_at?: string | null;
   joined_at: string;
+}
+
+export type WaitlistApprovalResultStatus = typeof WaitlistApprovalResultStatus[keyof typeof WaitlistApprovalResultStatus];
+
+
+export const WaitlistApprovalResultStatus = {
+  approved: 'approved',
+  already_approved: 'already_approved',
+} as const;
+
+export interface WaitlistApprovalResult {
+  status: WaitlistApprovalResultStatus;
+  email: string;
+  /** True when the temporary-password email was delivered to the provider. */
+  email_sent: boolean;
+  /** Present only when the email could not be sent, so the admin can share the temporary password manually. */
+  temp_password?: string;
+}
+
+export interface AuthLoginInput {
+  email: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  password: string;
+}
+
+export interface AuthUser {
+  email: string;
+  must_change_password: boolean;
+}
+
+export interface AuthUserResult {
+  user: AuthUser;
+}
+
+export type AuthLogoutResultStatus = typeof AuthLogoutResultStatus[keyof typeof AuthLogoutResultStatus];
+
+
+export const AuthLogoutResultStatus = {
+  logged_out: 'logged_out',
+} as const;
+
+export interface AuthLogoutResult {
+  status: AuthLogoutResultStatus;
+}
+
+export interface AuthChangePasswordInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  current_password: string;
+  /**
+     * @minLength 8
+     * @maxLength 200
+     */
+  new_password: string;
 }
 
 export interface WaitlistEntriesResult {
@@ -135,6 +210,57 @@ export interface NotificationPrefsUpdateInput {
 export interface NotificationPrefsResult {
   channels: ChannelPref[];
   events: EventPref[];
+}
+
+export type RequestAccessInputBusinessType = typeof RequestAccessInputBusinessType[keyof typeof RequestAccessInputBusinessType];
+
+
+export const RequestAccessInputBusinessType = {
+  Agency: 'Agency',
+  Consultant: 'Consultant',
+  Freelancer: 'Freelancer',
+} as const;
+
+export interface RequestAccessInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  full_name: string;
+  email: string;
+  /**
+     * @minLength 5
+     * @maxLength 40
+     */
+  phone: string;
+  business_type: RequestAccessInputBusinessType;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  industry: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  avg_monthly_ad_spend: string;
+  /** @maxLength 300 */
+  website?: string;
+  /** @maxLength 300 */
+  linkedin?: string;
+}
+
+export type RequestAccessResultStatus = typeof RequestAccessResultStatus[keyof typeof RequestAccessResultStatus];
+
+
+export const RequestAccessResultStatus = {
+  received: 'received',
+  already_requested: 'already_requested',
+} as const;
+
+export interface RequestAccessResult {
+  status: RequestAccessResultStatus;
+  email: string;
 }
 
 export interface ApiError {

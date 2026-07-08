@@ -1,15 +1,17 @@
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { ChevronRight, Bell, CheckCircle2 } from "lucide-react";
+import { ChevronRight, Bell, CheckCircle2, LogOut } from "lucide-react";
 import { useAccount } from "@/contexts/AccountContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { navTree } from "@/navigation/navTree";
 
 // ─── Derive breadcrumb from navTree ────────────────────────────────────
 
-type BreadcrumbEntry = { label: string };
+type BreadcrumbEntry = { label: string; to?: string };
 
-function buildBreadcrumbs(location: string, leadLabel: string, isManager: boolean): BreadcrumbEntry[] {
-  const crumbs: BreadcrumbEntry[] = [{ label: leadLabel }];
+// Exported for tests (src/navigation/__tests__/breadcrumbs.test.ts).
+export function buildBreadcrumbs(location: string, leadLabel: string, isManager: boolean): BreadcrumbEntry[] {
+  const crumbs: BreadcrumbEntry[] = [{ label: leadLabel, to: "/" }];
 
   if (location === "/" || location === "") {
     crumbs.push({ label: isManager ? "Agency Overview" : "Account Overview" });
@@ -26,14 +28,14 @@ function buildBreadcrumbs(location: string, leadLabel: string, isManager: boolea
     }
     if (!section.children?.length && section.to) {
       if (location === section.to || location.startsWith(section.to + "/")) {
-        crumbs.push({ label: section.label });
+        crumbs.push({ label: section.label, to: section.to });
         return crumbs;
       }
     }
     for (const child of section.children ?? []) {
       if (location === child.to || location.startsWith(child.to + "/")) {
-        crumbs.push({ label: section.label });
-        crumbs.push({ label: child.label });
+        crumbs.push({ label: section.label, to: section.children![0]!.to });
+        crumbs.push({ label: child.label, to: child.to });
         return crumbs;
       }
     }
@@ -47,6 +49,7 @@ function buildBreadcrumbs(location: string, leadLabel: string, isManager: boolea
 export function Topbar() {
   const [location] = useLocation();
   const { manager, selectedAccountType, activeAdAccount } = useAccount();
+  const { user, logout } = useAuth();
 
   const isManager = selectedAccountType === "manager";
   const leadLabel = isManager ? manager.name : activeAdAccount?.name ?? manager.name;
@@ -65,9 +68,21 @@ export function Topbar() {
           return (
             <span key={i} className="flex items-center min-w-0">
               <ChevronRight className="w-3 h-3 text-muted-foreground/50 shrink-0 mx-0.5" />
-              <span className={cn("text-[12px] truncate", isLast ? "text-foreground font-medium" : "text-muted-foreground/60")}>
-                {crumb.label}
-              </span>
+              {!isLast && crumb.to ? (
+                <Link
+                  href={crumb.to}
+                  className="text-[12px] truncate text-muted-foreground/60 hover:text-foreground focus-visible:text-foreground rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  {crumb.label}
+                </Link>
+              ) : (
+                <span
+                  aria-current={isLast ? "page" : undefined}
+                  className={cn("text-[12px] truncate", isLast ? "text-foreground font-medium" : "text-muted-foreground/60")}
+                >
+                  {crumb.label}
+                </span>
+              )}
             </span>
           );
         })}
@@ -105,6 +120,15 @@ export function Topbar() {
           className="w-7 h-7 rounded flex items-center justify-center bg-primary/15 border border-primary/20 text-primary hover:bg-primary/20 transition-colors"
         >
           <span className="text-[10px] font-bold leading-none">{initials}</span>
+        </button>
+        <button
+          aria-label={user ? `Sign out (${user.email})` : "Sign out"}
+          title={user ? `Sign out (${user.email})` : "Sign out"}
+          onClick={() => void logout()}
+          className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+          data-testid="button-signout"
+        >
+          <LogOut className="w-3.5 h-3.5" />
         </button>
       </div>
     </header>

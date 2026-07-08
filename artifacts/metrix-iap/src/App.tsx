@@ -3,6 +3,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { MetrixDataProvider } from "@/contexts/MetrixDataContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { LoginPage } from "@/pages/auth/LoginPage";
+import { ChangePasswordPage } from "@/pages/auth/ChangePasswordPage";
+import { Loader2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 
 // Seed-hydrated Metrix pages (manager → ad-account hierarchy)
@@ -119,18 +123,39 @@ export function Router() {
   );
 }
 
+function AuthGate() {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!user) return <LoginPage />;
+  if (user.must_change_password) return <ChangePasswordPage />;
+
+  return (
+    <MetrixDataProvider>
+      <AccountProvider>
+        <AppShell>
+          <Router />
+        </AppShell>
+      </AccountProvider>
+    </MetrixDataProvider>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <MetrixDataProvider>
-            <AccountProvider>
-              <AppShell>
-                <Router />
-              </AppShell>
-            </AccountProvider>
-          </MetrixDataProvider>
+          <AuthProvider>
+            <AuthGate />
+          </AuthProvider>
         </WouterRouter>
         <Toaster />
       </TooltipProvider>

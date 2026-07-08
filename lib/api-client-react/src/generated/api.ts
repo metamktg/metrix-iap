@@ -21,12 +21,19 @@ import type {
 
 import type {
   ApiError,
+  AuthChangePasswordInput,
+  AuthLoginInput,
+  AuthLogoutResult,
+  AuthUserResult,
   HealthStatus,
   ListAgentWaitlistParams,
   MetrixSeedBundle,
   NotificationPrefsResult,
   NotificationPrefsUpdateInput,
+  RequestAccessInput,
+  RequestAccessResult,
   RevokeWorkspaceInviteResult,
+  WaitlistApprovalResult,
   WaitlistEntriesResult,
   WaitlistSignupInput,
   WaitlistSignupResult,
@@ -72,7 +79,7 @@ export const getGetMetrixSeedUrl = () => {
 }
 
 /**
- * Returns the full Metrix seed bundle (manager account, ad accounts, app defaults) served from the backend.
+ * Returns the full Metrix seed bundle (manager account, ad accounts, app defaults) served from the backend. Requires a logged-in session.
  * @summary Get the Metrix IAP seed bundle
  */
 export const getMetrixSeed = async ( options?: RequestInit): Promise<MetrixSeedBundle> => {
@@ -97,7 +104,7 @@ export const getGetMetrixSeedQueryKey = () => {
     }
 
 
-export const getGetMetrixSeedQueryOptions = <TData = Awaited<ReturnType<typeof getMetrixSeed>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMetrixSeed>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetMetrixSeedQueryOptions = <TData = Awaited<ReturnType<typeof getMetrixSeed>>, TError = ErrorType<ApiError>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMetrixSeed>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -116,14 +123,14 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetMetrixSeedQueryResult = NonNullable<Awaited<ReturnType<typeof getMetrixSeed>>>
-export type GetMetrixSeedQueryError = ErrorType<unknown>
+export type GetMetrixSeedQueryError = ErrorType<ApiError>
 
 
 /**
  * @summary Get the Metrix IAP seed bundle
  */
 
-export function useGetMetrixSeed<TData = Awaited<ReturnType<typeof getMetrixSeed>>, TError = ErrorType<unknown>>(
+export function useGetMetrixSeed<TData = Awaited<ReturnType<typeof getMetrixSeed>>, TError = ErrorType<ApiError>>(
   options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMetrixSeed>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
@@ -297,6 +304,368 @@ export function useListAgentWaitlist<TData = Awaited<ReturnType<typeof listAgent
 
 
 
+export const getApproveAgentWaitlistEntryUrl = (entryId: number,) => {
+
+
+
+
+  return `/api/metrix/agent-waitlist/${entryId}/approve`
+}
+
+/**
+ * Creates (or resets) a user account with a temporary password for the waitlisted email, marks the entry approved, and emails the temporary password to the user. When the email provider is not configured, the temporary password is returned to the admin instead. Requires an admin bearer key.
+ * @summary Approve a waitlist entry and provision a user account
+ */
+export const approveAgentWaitlistEntry = async (entryId: number, options?: RequestInit): Promise<WaitlistApprovalResult> => {
+
+  return customFetch<WaitlistApprovalResult>(getApproveAgentWaitlistEntryUrl(entryId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getApproveAgentWaitlistEntryMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveAgentWaitlistEntry>>, TError,{entryId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof approveAgentWaitlistEntry>>, TError,{entryId: number}, TContext> => {
+
+const mutationKey = ['approveAgentWaitlistEntry'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approveAgentWaitlistEntry>>, {entryId: number}> = (props) => {
+          const {entryId} = props ?? {};
+
+          return  approveAgentWaitlistEntry(entryId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApproveAgentWaitlistEntryMutationResult = NonNullable<Awaited<ReturnType<typeof approveAgentWaitlistEntry>>>
+
+    export type ApproveAgentWaitlistEntryMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Approve a waitlist entry and provision a user account
+ */
+export const useApproveAgentWaitlistEntry = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveAgentWaitlistEntry>>, TError,{entryId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof approveAgentWaitlistEntry>>,
+        TError,
+        {entryId: number},
+        TContext
+      > => {
+      return useMutation(getApproveAgentWaitlistEntryMutationOptions(options));
+    }
+
+export const getAuthLoginUrl = () => {
+
+
+
+
+  return `/api/metrix/auth/login`
+}
+
+/**
+ * Verifies credentials and sets an httpOnly session cookie. Returns the authenticated user, including whether a password change is required before using the app.
+ * @summary Log in with email and password
+ */
+export const authLogin = async (authLoginInput: AuthLoginInput, options?: RequestInit): Promise<AuthUserResult> => {
+
+  return customFetch<AuthUserResult>(getAuthLoginUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(authLoginInput)
+  }
+);}
+
+
+
+
+export const getAuthLoginMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authLogin>>, TError,{data: BodyType<AuthLoginInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof authLogin>>, TError,{data: BodyType<AuthLoginInput>}, TContext> => {
+
+const mutationKey = ['authLogin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof authLogin>>, {data: BodyType<AuthLoginInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  authLogin(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AuthLoginMutationResult = NonNullable<Awaited<ReturnType<typeof authLogin>>>
+    export type AuthLoginMutationBody = BodyType<AuthLoginInput>
+    export type AuthLoginMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Log in with email and password
+ */
+export const useAuthLogin = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authLogin>>, TError,{data: BodyType<AuthLoginInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof authLogin>>,
+        TError,
+        {data: BodyType<AuthLoginInput>},
+        TContext
+      > => {
+      return useMutation(getAuthLoginMutationOptions(options));
+    }
+
+export const getAuthLogoutUrl = () => {
+
+
+
+
+  return `/api/metrix/auth/logout`
+}
+
+/**
+ * Destroys the current session and clears the session cookie.
+ * @summary Log out
+ */
+export const authLogout = async ( options?: RequestInit): Promise<AuthLogoutResult> => {
+
+  return customFetch<AuthLogoutResult>(getAuthLogoutUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAuthLogoutMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authLogout>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof authLogout>>, TError,void, TContext> => {
+
+const mutationKey = ['authLogout'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof authLogout>>, void> = () => {
+
+
+          return  authLogout(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AuthLogoutMutationResult = NonNullable<Awaited<ReturnType<typeof authLogout>>>
+
+    export type AuthLogoutMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Log out
+ */
+export const useAuthLogout = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authLogout>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof authLogout>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getAuthLogoutMutationOptions(options));
+    }
+
+export const getAuthMeUrl = () => {
+
+
+
+
+  return `/api/metrix/auth/me`
+}
+
+/**
+ * Returns the user attached to the current session cookie, or 401 when not logged in.
+ * @summary Get the current authenticated user
+ */
+export const authMe = async ( options?: RequestInit): Promise<AuthUserResult> => {
+
+  return customFetch<AuthUserResult>(getAuthMeUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAuthMeQueryKey = () => {
+    return [
+    `/api/metrix/auth/me`
+    ] as const;
+    }
+
+
+export const getAuthMeQueryOptions = <TData = Awaited<ReturnType<typeof authMe>>, TError = ErrorType<ApiError>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof authMe>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAuthMeQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof authMe>>> = ({ signal }) => authMe({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof authMe>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AuthMeQueryResult = NonNullable<Awaited<ReturnType<typeof authMe>>>
+export type AuthMeQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Get the current authenticated user
+ */
+
+export function useAuthMe<TData = Awaited<ReturnType<typeof authMe>>, TError = ErrorType<ApiError>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof authMe>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAuthMeQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAuthChangePasswordUrl = () => {
+
+
+
+
+  return `/api/metrix/auth/change-password`
+}
+
+/**
+ * Verifies the current password and replaces it. Clears the must-change-password flag and revokes all other sessions for the user.
+ * @summary Change the current user's password
+ */
+export const authChangePassword = async (authChangePasswordInput: AuthChangePasswordInput, options?: RequestInit): Promise<AuthUserResult> => {
+
+  return customFetch<AuthUserResult>(getAuthChangePasswordUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(authChangePasswordInput)
+  }
+);}
+
+
+
+
+export const getAuthChangePasswordMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authChangePassword>>, TError,{data: BodyType<AuthChangePasswordInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof authChangePassword>>, TError,{data: BodyType<AuthChangePasswordInput>}, TContext> => {
+
+const mutationKey = ['authChangePassword'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof authChangePassword>>, {data: BodyType<AuthChangePasswordInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  authChangePassword(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AuthChangePasswordMutationResult = NonNullable<Awaited<ReturnType<typeof authChangePassword>>>
+    export type AuthChangePasswordMutationBody = BodyType<AuthChangePasswordInput>
+    export type AuthChangePasswordMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Change the current user's password
+ */
+export const useAuthChangePassword = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authChangePassword>>, TError,{data: BodyType<AuthChangePasswordInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof authChangePassword>>,
+        TError,
+        {data: BodyType<AuthChangePasswordInput>},
+        TContext
+      > => {
+      return useMutation(getAuthChangePasswordMutationOptions(options));
+    }
+
 export const getListWorkspaceInvitesUrl = (workspaceId: string,) => {
 
 
@@ -306,7 +675,7 @@ export const getListWorkspaceInvitesUrl = (workspaceId: string,) => {
 }
 
 /**
- * Returns invites created for this workspace, newest first.
+ * Returns invites created for this workspace, newest first. Requires a logged-in session with access to the workspace.
  * @summary List pending workspace invites
  */
 export const listWorkspaceInvites = async (workspaceId: string, options?: RequestInit): Promise<WorkspaceInvitesResult> => {
@@ -331,7 +700,7 @@ export const getListWorkspaceInvitesQueryKey = (workspaceId: string,) => {
     }
 
 
-export const getListWorkspaceInvitesQueryOptions = <TData = Awaited<ReturnType<typeof listWorkspaceInvites>>, TError = ErrorType<unknown>>(workspaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWorkspaceInvites>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getListWorkspaceInvitesQueryOptions = <TData = Awaited<ReturnType<typeof listWorkspaceInvites>>, TError = ErrorType<ApiError>>(workspaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWorkspaceInvites>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -350,14 +719,14 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type ListWorkspaceInvitesQueryResult = NonNullable<Awaited<ReturnType<typeof listWorkspaceInvites>>>
-export type ListWorkspaceInvitesQueryError = ErrorType<unknown>
+export type ListWorkspaceInvitesQueryError = ErrorType<ApiError>
 
 
 /**
  * @summary List pending workspace invites
  */
 
-export function useListWorkspaceInvites<TData = Awaited<ReturnType<typeof listWorkspaceInvites>>, TError = ErrorType<unknown>>(
+export function useListWorkspaceInvites<TData = Awaited<ReturnType<typeof listWorkspaceInvites>>, TError = ErrorType<ApiError>>(
  workspaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWorkspaceInvites>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
@@ -384,7 +753,7 @@ export const getCreateWorkspaceInviteUrl = (workspaceId: string,) => {
 }
 
 /**
- * Creates a pending invite for the given email and role. Idempotent per workspace and email.
+ * Creates a pending invite for the given email and role. Idempotent per workspace and email. Requires a logged-in session with access to the workspace.
  * @summary Invite a member to the workspace
  */
 export const createWorkspaceInvite = async (workspaceId: string,
@@ -457,7 +826,7 @@ export const getRevokeWorkspaceInviteUrl = (workspaceId: string,
 }
 
 /**
- * Deletes the pending invite, freeing its seat.
+ * Deletes the pending invite, freeing its seat. Requires a logged-in session with access to the workspace.
  * @summary Revoke a pending workspace invite
  */
 export const revokeWorkspaceInvite = async (workspaceId: string,
@@ -530,7 +899,7 @@ export const getResendWorkspaceInviteUrl = (workspaceId: string,
 }
 
 /**
- * Bumps the invite's created_at timestamp to now and returns the updated invite.
+ * Bumps the invite's created_at timestamp to now and returns the updated invite. Requires a logged-in session with access to the workspace.
  * @summary Resend a pending workspace invite
  */
 export const resendWorkspaceInvite = async (workspaceId: string,
@@ -602,7 +971,7 @@ export const getGetNotificationPrefsUrl = (workspaceId: string,) => {
 }
 
 /**
- * Returns persisted channel and event preference overrides for this workspace. Anything not listed falls back to seed defaults on the client.
+ * Returns persisted channel and event preference overrides for this workspace. Anything not listed falls back to seed defaults on the client. Requires a logged-in session with access to the workspace.
  * @summary Get workspace notification preference overrides
  */
 export const getNotificationPrefs = async (workspaceId: string, options?: RequestInit): Promise<NotificationPrefsResult> => {
@@ -627,7 +996,7 @@ export const getGetNotificationPrefsQueryKey = (workspaceId: string,) => {
     }
 
 
-export const getGetNotificationPrefsQueryOptions = <TData = Awaited<ReturnType<typeof getNotificationPrefs>>, TError = ErrorType<unknown>>(workspaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNotificationPrefs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetNotificationPrefsQueryOptions = <TData = Awaited<ReturnType<typeof getNotificationPrefs>>, TError = ErrorType<ApiError>>(workspaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNotificationPrefs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -646,14 +1015,14 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetNotificationPrefsQueryResult = NonNullable<Awaited<ReturnType<typeof getNotificationPrefs>>>
-export type GetNotificationPrefsQueryError = ErrorType<unknown>
+export type GetNotificationPrefsQueryError = ErrorType<ApiError>
 
 
 /**
  * @summary Get workspace notification preference overrides
  */
 
-export function useGetNotificationPrefs<TData = Awaited<ReturnType<typeof getNotificationPrefs>>, TError = ErrorType<unknown>>(
+export function useGetNotificationPrefs<TData = Awaited<ReturnType<typeof getNotificationPrefs>>, TError = ErrorType<ApiError>>(
  workspaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNotificationPrefs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
@@ -680,7 +1049,7 @@ export const getUpdateNotificationPrefsUrl = (workspaceId: string,) => {
 }
 
 /**
- * Upserts channel and/or event preference overrides for this workspace and returns the full set of persisted overrides.
+ * Upserts channel and/or event preference overrides for this workspace and returns the full set of persisted overrides. Requires a logged-in session with access to the workspace.
  * @summary Update workspace notification preferences
  */
 export const updateNotificationPrefs = async (workspaceId: string,
@@ -741,6 +1110,77 @@ export const useUpdateNotificationPrefs = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getUpdateNotificationPrefsMutationOptions(options));
+    }
+
+export const getSubmitRequestAccessUrl = () => {
+
+
+
+
+  return `/api/metrix/request-access`
+}
+
+/**
+ * Stores a qualified access request from the public marketing site and triggers an internal notification email. Never exposes any login capability.
+ * @summary Submit a Metrix access request
+ */
+export const submitRequestAccess = async (requestAccessInput: RequestAccessInput, options?: RequestInit): Promise<RequestAccessResult> => {
+
+  return customFetch<RequestAccessResult>(getSubmitRequestAccessUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(requestAccessInput)
+  }
+);}
+
+
+
+
+export const getSubmitRequestAccessMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitRequestAccess>>, TError,{data: BodyType<RequestAccessInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitRequestAccess>>, TError,{data: BodyType<RequestAccessInput>}, TContext> => {
+
+const mutationKey = ['submitRequestAccess'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitRequestAccess>>, {data: BodyType<RequestAccessInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  submitRequestAccess(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitRequestAccessMutationResult = NonNullable<Awaited<ReturnType<typeof submitRequestAccess>>>
+    export type SubmitRequestAccessMutationBody = BodyType<RequestAccessInput>
+    export type SubmitRequestAccessMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Submit a Metrix access request
+ */
+export const useSubmitRequestAccess = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitRequestAccess>>, TError,{data: BodyType<RequestAccessInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitRequestAccess>>,
+        TError,
+        {data: BodyType<RequestAccessInput>},
+        TContext
+      > => {
+      return useMutation(getSubmitRequestAccessMutationOptions(options));
     }
 
 export const getHealthCheckUrl = () => {

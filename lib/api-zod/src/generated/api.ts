@@ -9,12 +9,14 @@ import * as zod from 'zod';
 
 
 /**
- * Returns the full Metrix seed bundle (manager account, ad accounts, app defaults) served from the backend.
+ * Returns the full Metrix seed bundle (manager account, ad accounts, app defaults) served from the backend. Requires a logged-in session.
  * @summary Get the Metrix IAP seed bundle
  */
 export const GetMetrixSeedResponse = zod.object({
   "schema_version": zod.string(),
   "generated_at": zod.string().optional(),
+  "integrity_note": zod.string().optional(),
+  "variable_registry": zod.array(zod.record(zod.string(), zod.unknown())).optional().describe('Data-layer truth about variable families, including explicit registry_missing entries (ST_\/AW_\/CTA_ known gap).'),
   "app_defaults": zod.record(zod.string(), zod.unknown()).optional(),
   "manager_account": zod.record(zod.string(), zod.unknown()),
   "ad_accounts": zod.array(zod.record(zod.string(), zod.unknown())),
@@ -55,7 +57,10 @@ export const ListAgentWaitlistQueryParams = zod.object({
 
 export const ListAgentWaitlistResponse = zod.object({
   "entries": zod.array(zod.object({
+  "id": zod.number(),
   "email": zod.string(),
+  "status": zod.enum(['pending', 'approved']),
+  "approved_at": zod.string().nullish(),
   "joined_at": zod.string()
 })),
   "total": zod.number()
@@ -63,7 +68,92 @@ export const ListAgentWaitlistResponse = zod.object({
 
 
 /**
- * Returns invites created for this workspace, newest first.
+ * Creates (or resets) a user account with a temporary password for the waitlisted email, marks the entry approved, and emails the temporary password to the user. When the email provider is not configured, the temporary password is returned to the admin instead. Requires an admin bearer key.
+ * @summary Approve a waitlist entry and provision a user account
+ */
+
+
+
+export const ApproveAgentWaitlistEntryParams = zod.object({
+  "entryId": zod.coerce.number().min(1).describe('Waitlist entry identifier.')
+})
+
+export const ApproveAgentWaitlistEntryResponse = zod.object({
+  "status": zod.enum(['approved', 'already_approved']),
+  "email": zod.string(),
+  "email_sent": zod.boolean().describe('True when the temporary-password email was delivered to the provider.'),
+  "temp_password": zod.string().optional().describe('Present only when the email could not be sent, so the admin can share the temporary password manually.')
+})
+
+
+/**
+ * Verifies credentials and sets an httpOnly session cookie. Returns the authenticated user, including whether a password change is required before using the app.
+ * @summary Log in with email and password
+ */
+export const authLoginBodyPasswordMax = 200;
+
+
+
+export const AuthLoginBody = zod.object({
+  "email": zod.string().email(),
+  "password": zod.string().min(1).max(authLoginBodyPasswordMax)
+})
+
+export const AuthLoginResponse = zod.object({
+  "user": zod.object({
+  "email": zod.string(),
+  "must_change_password": zod.boolean()
+})
+})
+
+
+/**
+ * Destroys the current session and clears the session cookie.
+ * @summary Log out
+ */
+export const AuthLogoutResponse = zod.object({
+  "status": zod.enum(['logged_out'])
+})
+
+
+/**
+ * Returns the user attached to the current session cookie, or 401 when not logged in.
+ * @summary Get the current authenticated user
+ */
+export const AuthMeResponse = zod.object({
+  "user": zod.object({
+  "email": zod.string(),
+  "must_change_password": zod.boolean()
+})
+})
+
+
+/**
+ * Verifies the current password and replaces it. Clears the must-change-password flag and revokes all other sessions for the user.
+ * @summary Change the current user's password
+ */
+export const authChangePasswordBodyCurrentPasswordMax = 200;
+
+export const authChangePasswordBodyNewPasswordMin = 8;
+export const authChangePasswordBodyNewPasswordMax = 200;
+
+
+
+export const AuthChangePasswordBody = zod.object({
+  "current_password": zod.string().min(1).max(authChangePasswordBodyCurrentPasswordMax),
+  "new_password": zod.string().min(authChangePasswordBodyNewPasswordMin).max(authChangePasswordBodyNewPasswordMax)
+})
+
+export const AuthChangePasswordResponse = zod.object({
+  "user": zod.object({
+  "email": zod.string(),
+  "must_change_password": zod.boolean()
+})
+})
+
+
+/**
+ * Returns invites created for this workspace, newest first. Requires a logged-in session with access to the workspace.
  * @summary List pending workspace invites
  */
 
@@ -85,7 +175,7 @@ export const ListWorkspaceInvitesResponse = zod.object({
 
 
 /**
- * Creates a pending invite for the given email and role. Idempotent per workspace and email.
+ * Creates a pending invite for the given email and role. Idempotent per workspace and email. Requires a logged-in session with access to the workspace.
  * @summary Invite a member to the workspace
  */
 
@@ -113,7 +203,7 @@ export const CreateWorkspaceInviteResponse = zod.object({
 
 
 /**
- * Deletes the pending invite, freeing its seat.
+ * Deletes the pending invite, freeing its seat. Requires a logged-in session with access to the workspace.
  * @summary Revoke a pending workspace invite
  */
 
@@ -131,7 +221,7 @@ export const RevokeWorkspaceInviteResponse = zod.object({
 
 
 /**
- * Bumps the invite's created_at timestamp to now and returns the updated invite.
+ * Bumps the invite's created_at timestamp to now and returns the updated invite. Requires a logged-in session with access to the workspace.
  * @summary Resend a pending workspace invite
  */
 
@@ -156,7 +246,7 @@ export const ResendWorkspaceInviteResponse = zod.object({
 
 
 /**
- * Returns persisted channel and event preference overrides for this workspace. Anything not listed falls back to seed defaults on the client.
+ * Returns persisted channel and event preference overrides for this workspace. Anything not listed falls back to seed defaults on the client. Requires a logged-in session with access to the workspace.
  * @summary Get workspace notification preference overrides
  */
 
@@ -184,7 +274,7 @@ export const GetNotificationPrefsResponse = zod.object({
 
 
 /**
- * Upserts channel and/or event preference overrides for this workspace and returns the full set of persisted overrides.
+ * Upserts channel and/or event preference overrides for this workspace and returns the full set of persisted overrides. Requires a logged-in session with access to the workspace.
  * @summary Update workspace notification preferences
  */
 
@@ -224,6 +314,42 @@ export const UpdateNotificationPrefsResponse = zod.object({
   "email": zod.boolean(),
   "in_app": zod.boolean()
 }))
+})
+
+
+/**
+ * Stores a qualified access request from the public marketing site and triggers an internal notification email. Never exposes any login capability.
+ * @summary Submit a Metrix access request
+ */
+export const submitRequestAccessBodyFullNameMax = 200;
+
+export const submitRequestAccessBodyPhoneMin = 5;
+export const submitRequestAccessBodyPhoneMax = 40;
+
+export const submitRequestAccessBodyIndustryMax = 200;
+
+export const submitRequestAccessBodyAvgMonthlyAdSpendMax = 100;
+
+export const submitRequestAccessBodyWebsiteMax = 300;
+
+export const submitRequestAccessBodyLinkedinMax = 300;
+
+
+
+export const SubmitRequestAccessBody = zod.object({
+  "full_name": zod.string().min(1).max(submitRequestAccessBodyFullNameMax),
+  "email": zod.string().email(),
+  "phone": zod.string().min(submitRequestAccessBodyPhoneMin).max(submitRequestAccessBodyPhoneMax),
+  "business_type": zod.enum(['Agency', 'Consultant', 'Freelancer']),
+  "industry": zod.string().min(1).max(submitRequestAccessBodyIndustryMax),
+  "avg_monthly_ad_spend": zod.string().min(1).max(submitRequestAccessBodyAvgMonthlyAdSpendMax),
+  "website": zod.string().max(submitRequestAccessBodyWebsiteMax).optional(),
+  "linkedin": zod.string().max(submitRequestAccessBodyLinkedinMax).optional()
+})
+
+export const SubmitRequestAccessResponse = zod.object({
+  "status": zod.enum(['received', 'already_requested']),
+  "email": zod.string()
 })
 
 

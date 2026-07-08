@@ -5,8 +5,12 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { WaitlistEntryStatus } from './waitlistEntryStatus';
 
 export interface WaitlistEntry {
+  id: number;
   email: string;
+  status: WaitlistEntryStatus;
+  approved_at?: string | null;
   joined_at: string;
 }

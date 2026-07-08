@@ -1,14 +1,16 @@
 ---
-name: Metrix IAP data sources — live seed vs legacy scaffolding
-description: Which data system actually renders in Metrix IAP, and which is bundled-but-dead
+name: Metrix IAP data sources — Supabase-backed seed vs legacy scaffolding
+description: Where Metrix IAP's rendered data actually comes from, and which bundled code is legacy
 ---
 
-# Metrix IAP has two parallel data systems; only one renders
+# Metrix IAP data flow: Supabase → API assembly → seed adapter
 
-**Live/rendered data:** `src/lib/data/metrixSeedAdapter.ts`, which reads `src/data/seeds/metrix_bookster_seed_bundle_v1.json`. All account-scoped views (Overview, Listen, Analysis, Strategy, Brief Builder, Report Builder, MST) hydrate from its getters (`getManagerOverview`, `getAdAccounts`, `getAnalysisData`, etc.). Account status model here is `"configured"` / `"unconfigured"` (Bookster configured, SKOV Pet unconfigured).
+**Live/rendered data:** the frontend hydrates from `GET /api/metrix/seed`, which the API server assembles at request time from Supabase tables (supabase-js queries in the api-server's seed-assembly module, ~30s in-memory cache). The endpoint fails loudly with 503 if Supabase is unreachable — there is deliberately NO static fallback. The client still narrows the bundle with `src/lib/data/seedTypes.ts` + `metrixSeedAdapter.ts` getters; account status model is `"configured"` / `"unconfigured"` (Bookster configured, SKOV Pet unconfigured).
 
-**Legacy scaffolding — bundled but never rendered:** `src/lib/mock/generate.ts` (workspace-based generator, status model `"Connected"|"Manual CSV Mode"|"API Sync Coming Soon"`, contains "Meta Marketing Agency" strings). It IS transitively bundled: `mock/generate` → `mock-data.ts` → `WorkspaceContext.tsx` → `WorkspaceProvider` (mounted in `App.tsx`). It does NOT reach the DOM because the workspace onboarding/switcher UI never mounts on live routes (`isOnWorkspaceRoute` stays false).
+**Source of truth for content:** Supabase Postgres (secret `SUPABASE_DB_URL`, session-pooler URI). Schema + idempotent importer live in `scripts/src/metrix-supabase/`; raw Bookster IAP loop package files in `scripts/data/metrix/`. Re-run with `pnpm --filter @workspace/scripts run import:metrix`.
 
-**Why it matters:** When auditing for forbidden brand/CRM terms, grepping `src` will hit `generate.ts` — those are false positives for *rendered* UI, but do not call the file "dead code": it is bundled, just unrendered. The correct statement is "bundled but unrendered legacy scaffolding."
+**Honest pending states:** `optimization_loop` is `null` (typed `OptimizationLoop | null`) and Creative Scan/Crossmap surfaces are empty until those loop stages run; `iap.loop_status` records per-stage complete/pending. UI renders PendingState for these — do not fabricate data to fill them.
 
-**How to apply:** For any data or copy that must actually appear in the app, edit the seed JSON + `metrixSeedAdapter.ts`, not `generate.ts`. Treat `generate.ts`/`mock-data.ts`/`WorkspaceContext.tsx` as removable legacy unless a task explicitly revives workspace onboarding.
+**Legacy scaffolding — bundled but never rendered:** `src/lib/mock/generate.ts` → `mock-data.ts` → `WorkspaceContext.tsx` chain is transitively bundled but never reaches the DOM (workspace onboarding UI never mounts on live routes). Treat as removable legacy.
+
+**How to apply:** To change rendered data, change the Supabase rows (importer/schema) or the api-server assembly — not seed JSON (the old static bundle now lives only as raw source data in `scripts/data/metrix/`) and not `generate.ts`.
