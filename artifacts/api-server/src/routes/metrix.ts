@@ -5,9 +5,19 @@ import {
   JoinAgentWaitlistResponse,
   ListAgentWaitlistQueryParams,
   ListAgentWaitlistResponse,
+  CreateWorkspaceInviteBody,
+  CreateWorkspaceInviteResponse,
+  ListWorkspaceInvitesResponse,
+  UpdateNotificationPrefsBody,
+  UpdateNotificationPrefsResponse,
 } from "@workspace/api-zod";
-import { db, agentWaitlistTable } from "@workspace/db";
-import { count, desc } from "drizzle-orm";
+import {
+  db,
+  agentWaitlistTable,
+  workspaceInvitesTable,
+  workspaceNotificationPrefsTable,
+} from "@workspace/db";
+import { and, count, desc, eq, sql } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { waitlistRateLimit } from "../middlewares/waitlistRateLimit";
 import { isDisposableEmailDomain } from "../lib/disposableEmailDomains";
@@ -77,6 +87,159 @@ router.get("/metrix/agent-waitlist", requireAdmin, async (req, res) => {
     total,
   });
   res.json(data);
+});
+
+const inviteRowToApi = (row: {
+  id: number;
+  email: string;
+  role: string;
+  status: string;
+  createdAt: Date;
+}) => ({
+  id: row.id,
+  email: row.email,
+  role: row.role,
+  status: row.status,
+  created_at: row.createdAt.toISOString(),
+});
+
+router.get("/metrix/workspaces/:workspaceId/invites", async (req, res) => {
+  const workspaceId = req.params.workspaceId;
+  const rows = await db
+    .select()
+    .from(workspaceInvitesTable)
+    .where(eq(workspaceInvitesTable.workspaceId, workspaceId))
+    .orderBy(desc(workspaceInvitesTable.createdAt), desc(workspaceInvitesTable.id));
+
+  const data = ListWorkspaceInvitesResponse.parse({
+    invites: rows.map(inviteRowToApi),
+  });
+  res.json(data);
+});
+
+router.post("/metrix/workspaces/:workspaceId/invites", async (req, res) => {
+  const workspaceId = req.params.workspaceId;
+  const parsed = CreateWorkspaceInviteBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "A valid email and role are required." });
+    return;
+  }
+  const email = parsed.data.email.trim().toLowerCase();
+  const role = parsed.data.role;
+
+  const inserted = await db
+    .insert(workspaceInvitesTable)
+    .values({ workspaceId, email, role, status: "invited" })
+    .onConflictDoNothing({
+      target: [workspaceInvitesTable.workspaceId, workspaceInvitesTable.email],
+    })
+    .returning();
+
+  if (inserted.length > 0) {
+    const data = CreateWorkspaceInviteResponse.parse({
+      status: "created",
+      invite: inviteRowToApi(inserted[0]),
+    });
+    res.json(data);
+    return;
+  }
+
+  const [existing] = await db
+    .select()
+    .from(workspaceInvitesTable)
+    .where(
+      and(
+        eq(workspaceInvitesTable.workspaceId, workspaceId),
+        eq(workspaceInvitesTable.email, email),
+      ),
+    )
+    .limit(1);
+
+  const data = CreateWorkspaceInviteResponse.parse({
+    status: "already_invited",
+    invite: inviteRowToApi(existing),
+  });
+  res.json(data);
+});
+
+const prefRowsToApi = (
+  rows: {
+    kind: string;
+    key: string;
+    enabled: boolean | null;
+    email: boolean | null;
+    inApp: boolean | null;
+  }[],
+) => ({
+  channels: rows
+    .filter((r) => r.kind === "channel")
+    .map((r) => ({ id: r.key, enabled: r.enabled ?? false })),
+  events: rows
+    .filter((r) => r.kind === "event")
+    .map((r) => ({ id: r.key, email: r.email ?? false, in_app: r.inApp ?? false })),
+});
+
+router.get("/metrix/workspaces/:workspaceId/notification-prefs", async (req, res) => {
+  const workspaceId = req.params.workspaceId;
+  const rows = await db
+    .select()
+    .from(workspaceNotificationPrefsTable)
+    .where(eq(workspaceNotificationPrefsTable.workspaceId, workspaceId));
+
+  res.json(UpdateNotificationPrefsResponse.parse(prefRowsToApi(rows)));
+});
+
+router.put("/metrix/workspaces/:workspaceId/notification-prefs", async (req, res) => {
+  const workspaceId = req.params.workspaceId;
+  const parsed = UpdateNotificationPrefsBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "Invalid notification preference payload." });
+    return;
+  }
+
+  const channelValues = (parsed.data.channels ?? []).map((c) => ({
+    workspaceId,
+    kind: "channel" as const,
+    key: c.id,
+    enabled: c.enabled,
+    email: null,
+    inApp: null,
+  }));
+  const eventValues = (parsed.data.events ?? []).map((e) => ({
+    workspaceId,
+    kind: "event" as const,
+    key: e.id,
+    enabled: null,
+    email: e.email,
+    inApp: e.in_app,
+  }));
+  const values = [...channelValues, ...eventValues];
+
+  if (values.length > 0) {
+    await db
+      .insert(workspaceNotificationPrefsTable)
+      .values(values)
+      .onConflictDoUpdate({
+        target: [
+          workspaceNotificationPrefsTable.workspaceId,
+          workspaceNotificationPrefsTable.kind,
+          workspaceNotificationPrefsTable.key,
+        ],
+        set: {
+          enabled: sql`excluded.enabled`,
+          email: sql`excluded.email`,
+          inApp: sql`excluded.in_app`,
+          updatedAt: new Date(),
+        },
+      });
+  }
+
+  const rows = await db
+    .select()
+    .from(workspaceNotificationPrefsTable)
+    .where(eq(workspaceNotificationPrefsTable.workspaceId, workspaceId));
+
+  res.json(UpdateNotificationPrefsResponse.parse(prefRowsToApi(rows)));
 });
 
 export default router;

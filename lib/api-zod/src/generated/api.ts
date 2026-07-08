@@ -63,6 +63,128 @@ export const ListAgentWaitlistResponse = zod.object({
 
 
 /**
+ * Returns invites created for this workspace, newest first.
+ * @summary List pending workspace invites
+ */
+
+
+
+export const ListWorkspaceInvitesParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.')
+})
+
+export const ListWorkspaceInvitesResponse = zod.object({
+  "invites": zod.array(zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "role": zod.string(),
+  "status": zod.string(),
+  "created_at": zod.string()
+}))
+})
+
+
+/**
+ * Creates a pending invite for the given email and role. Idempotent per workspace and email.
+ * @summary Invite a member to the workspace
+ */
+
+
+
+export const CreateWorkspaceInviteParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.')
+})
+
+export const CreateWorkspaceInviteBody = zod.object({
+  "email": zod.string().email(),
+  "role": zod.enum(['analyst', 'client_viewer'])
+})
+
+export const CreateWorkspaceInviteResponse = zod.object({
+  "status": zod.enum(['created', 'already_invited']),
+  "invite": zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "role": zod.string(),
+  "status": zod.string(),
+  "created_at": zod.string()
+})
+})
+
+
+/**
+ * Returns persisted channel and event preference overrides for this workspace. Anything not listed falls back to seed defaults on the client.
+ * @summary Get workspace notification preference overrides
+ */
+
+
+
+export const GetNotificationPrefsParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.')
+})
+
+
+
+
+
+export const GetNotificationPrefsResponse = zod.object({
+  "channels": zod.array(zod.object({
+  "id": zod.string().min(1),
+  "enabled": zod.boolean()
+})),
+  "events": zod.array(zod.object({
+  "id": zod.string().min(1),
+  "email": zod.boolean(),
+  "in_app": zod.boolean()
+}))
+})
+
+
+/**
+ * Upserts channel and/or event preference overrides for this workspace and returns the full set of persisted overrides.
+ * @summary Update workspace notification preferences
+ */
+
+
+
+export const UpdateNotificationPrefsParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.')
+})
+
+
+
+
+
+export const UpdateNotificationPrefsBody = zod.object({
+  "channels": zod.array(zod.object({
+  "id": zod.string().min(1),
+  "enabled": zod.boolean()
+})).optional(),
+  "events": zod.array(zod.object({
+  "id": zod.string().min(1),
+  "email": zod.boolean(),
+  "in_app": zod.boolean()
+})).optional()
+})
+
+
+
+
+
+export const UpdateNotificationPrefsResponse = zod.object({
+  "channels": zod.array(zod.object({
+  "id": zod.string().min(1),
+  "enabled": zod.boolean()
+})),
+  "events": zod.array(zod.object({
+  "id": zod.string().min(1),
+  "email": zod.boolean(),
+  "in_app": zod.boolean()
+}))
+})
+
+
+/**
  * Returns server health status
  * @summary Health check
  */

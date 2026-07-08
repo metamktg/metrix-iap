@@ -5,3 +5,4 @@
 - [Metrix IAP account scoping](metrix-iap-account-scoping.md) — manager aggregates totals only; all modules scope to one ad account via useScopedAdAccountId(), unconfigured→UnconfiguredState.
 - [Metrix seed OpenAPI schema](metrix-seed-openapi-schema.md) — new top-level seed keys get silently stripped by the API unless declared in the MetrixSeedBundle OpenAPI schema; Orval zod ignores additionalProperties.
 - [Stale lib declarations](stale-lib-declarations.md) — bogus type errors in untouched files (e.g. instanceof not narrowing) mean stale lib .d.ts; run `pnpm run typecheck:libs` before debugging.
+- [Metrix settings persistence](metrix-settings-persistence.md) — seed stays read-only; DB rows are per-workspace overrides merged onto seed defaults client-side.

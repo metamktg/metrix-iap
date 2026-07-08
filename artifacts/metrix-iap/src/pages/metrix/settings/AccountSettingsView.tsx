@@ -2,10 +2,12 @@
 // Account-scoped settings: data connection, white-label, data isolation,
 // plus the workspace-wide Metrix Agent waitlist admin section.
 
+import { useState } from "react";
 import { useScopedAdAccountId, useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getReportBuilder } from "@/lib/data/metrixSeedAdapter";
 import { ModuleHeader, ScopeBanner, SectionCard, CaveatNote, PendingState } from "../shared";
+import { ConnectMetaDialog, ManualImportDialog } from "../ConnectAccountDialogs";
 import { AgentWaitlistSection } from "./AgentWaitlistSection";
 import { cn } from "@/lib/utils";
 import { Plug, FileUp, Palette, ShieldCheck, CheckCircle2, Circle } from "lucide-react";
@@ -17,6 +19,8 @@ export function AccountSettingsView() {
   const adAccountId = useScopedAdAccountId();
   const { manager } = useAccount();
   const account = getAdAccount(seed, adAccountId);
+  const [connectOpen, setConnectOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   if (!account) {
     return (
@@ -49,7 +53,11 @@ export function AccountSettingsView() {
                 <div className="text-[10px] text-muted-foreground/70">{configured ? `${account.platform} · connected` : "Not connected"}</div>
               </div>
               {!configured && (
-                <button className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-[11px] font-medium text-primary hover:bg-primary/25 transition-colors">
+                <button
+                  onClick={() => setConnectOpen(true)}
+                  className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-[11px] font-medium text-primary hover:bg-primary/25 transition-colors"
+                  data-testid="button-connect-account"
+                >
                   <Plug className="w-3 h-3" /> Connect
                 </button>
               )}
@@ -60,7 +68,11 @@ export function AccountSettingsView() {
                 <div className="text-[12px] font-medium text-foreground">Manual import</div>
                 <div className="text-[10px] text-muted-foreground/70">Upload exported performance data</div>
               </div>
-              <button className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors">
+              <button
+                onClick={() => setImportOpen(true)}
+                className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+                data-testid="button-add-import"
+              >
                 <FileUp className="w-3 h-3" /> Add import
               </button>
             </div>
@@ -101,6 +113,9 @@ export function AccountSettingsView() {
           Account ID · {account.id}
         </div>
       </div>
+
+      <ConnectMetaDialog account={account} open={connectOpen} onOpenChange={setConnectOpen} />
+      <ManualImportDialog account={account} open={importOpen} onOpenChange={setImportOpen} />
     </div>
   );
 }

@@ -7,6 +7,8 @@
  */
 
 export * from './apiError';
+export * from './channelPref';
+export * from './eventPref';
 export * from './healthStatus';
 export * from './listAgentWaitlistParams';
 export * from './metrixSeedBundle';
@@ -14,8 +16,16 @@ export * from './metrixSeedBundleAdAccountsItem';
 export * from './metrixSeedBundleAppDefaults';
 export * from './metrixSeedBundleManagerAccount';
 export * from './metrixSeedBundleWorkspaceSettings';
+export * from './notificationPrefsResult';
+export * from './notificationPrefsUpdateInput';
 export * from './waitlistEntriesResult';
 export * from './waitlistEntry';
 export * from './waitlistSignupInput';
 export * from './waitlistSignupResult';
 export * from './waitlistSignupResultStatus';
+export * from './workspaceInvite';
+export * from './workspaceInviteInput';
+export * from './workspaceInviteInputRole';
+export * from './workspaceInviteResult';
+export * from './workspaceInviteResultStatus';
+export * from './workspaceInvitesResult';

@@ -53,6 +53,67 @@ export interface WaitlistEntriesResult {
   total: number;
 }
 
+export type WorkspaceInviteInputRole = typeof WorkspaceInviteInputRole[keyof typeof WorkspaceInviteInputRole];
+
+
+export const WorkspaceInviteInputRole = {
+  analyst: 'analyst',
+  client_viewer: 'client_viewer',
+} as const;
+
+export interface WorkspaceInviteInput {
+  email: string;
+  role: WorkspaceInviteInputRole;
+}
+
+export interface WorkspaceInvite {
+  id: number;
+  email: string;
+  role: string;
+  status: string;
+  created_at: string;
+}
+
+export type WorkspaceInviteResultStatus = typeof WorkspaceInviteResultStatus[keyof typeof WorkspaceInviteResultStatus];
+
+
+export const WorkspaceInviteResultStatus = {
+  created: 'created',
+  already_invited: 'already_invited',
+} as const;
+
+export interface WorkspaceInviteResult {
+  status: WorkspaceInviteResultStatus;
+  invite: WorkspaceInvite;
+}
+
+export interface WorkspaceInvitesResult {
+  invites: WorkspaceInvite[];
+}
+
+export interface ChannelPref {
+  /** @minLength 1 */
+  id: string;
+  enabled: boolean;
+}
+
+export interface EventPref {
+  /** @minLength 1 */
+  id: string;
+  email: boolean;
+  in_app: boolean;
+}
+
+export interface NotificationPrefsUpdateInput {
+  channels?: ChannelPref[];
+  events?: EventPref[];
+}
+
+export interface NotificationPrefsResult {
+  channels: ChannelPref[];
+  events: EventPref[];
+}
+
 export interface ApiError {
   message: string;
 }

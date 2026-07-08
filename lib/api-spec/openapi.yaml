@@ -89,6 +89,96 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/workspaces/{workspaceId}/invites:
+    parameters:
+      - name: workspaceId
+        in: path
+        required: true
+        description: Workspace (manager account) identifier.
+        schema:
+          type: string
+          minLength: 1
+    get:
+      operationId: listWorkspaceInvites
+      tags: [metrix]
+      summary: List pending workspace invites
+      description: Returns invites created for this workspace, newest first.
+      responses:
+        "200":
+          description: Workspace invites
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkspaceInvitesResult"
+    post:
+      operationId: createWorkspaceInvite
+      tags: [metrix]
+      summary: Invite a member to the workspace
+      description: Creates a pending invite for the given email and role. Idempotent per workspace and email.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkspaceInviteInput"
+      responses:
+        "200":
+          description: Invite result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkspaceInviteResult"
+        "400":
+          description: Invalid email or role
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/workspaces/{workspaceId}/notification-prefs:
+    parameters:
+      - name: workspaceId
+        in: path
+        required: true
+        description: Workspace (manager account) identifier.
+        schema:
+          type: string
+          minLength: 1
+    get:
+      operationId: getNotificationPrefs
+      tags: [metrix]
+      summary: Get workspace notification preference overrides
+      description: Returns persisted channel and event preference overrides for this workspace. Anything not listed falls back to seed defaults on the client.
+      responses:
+        "200":
+          description: Notification preference overrides
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationPrefsResult"
+    put:
+      operationId: updateNotificationPrefs
+      tags: [metrix]
+      summary: Update workspace notification preferences
+      description: Upserts channel and/or event preference overrides for this workspace and returns the full set of persisted overrides.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationPrefsUpdateInput"
+      responses:
+        "200":
+          description: Notification preference overrides after the update
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationPrefsResult"
+        "400":
+          description: Invalid preference payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /healthz:
     get:
       operationId: healthCheck
@@ -177,6 +267,107 @@ components:
       required:
         - entries
         - total
+    WorkspaceInviteInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [analyst, client_viewer]
+      required:
+        - email
+        - role
+    WorkspaceInvite:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        role:
+          type: string
+        status:
+          type: string
+        created_at:
+          type: string
+      required:
+        - id
+        - email
+        - role
+        - status
+        - created_at
+    WorkspaceInviteResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [created, already_invited]
+        invite:
+          $ref: "#/components/schemas/WorkspaceInvite"
+      required:
+        - status
+        - invite
+    WorkspaceInvitesResult:
+      type: object
+      properties:
+        invites:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkspaceInvite"
+      required:
+        - invites
+    ChannelPref:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+        enabled:
+          type: boolean
+      required:
+        - id
+        - enabled
+    EventPref:
+      type: object
+      properties:
+        id:
+          type: string
+          minLength: 1
+        email:
+          type: boolean
+        in_app:
+          type: boolean
+      required:
+        - id
+        - email
+        - in_app
+    NotificationPrefsUpdateInput:
+      type: object
+      properties:
+        channels:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChannelPref"
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/EventPref"
+    NotificationPrefsResult:
+      type: object
+      properties:
+        channels:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChannelPref"
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/EventPref"
+      required:
+        - channels
+        - events
     ApiError:
       type: object
       properties:
