@@ -134,6 +134,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Workspace seat limit reached
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/workspaces/{workspaceId}/invites/{inviteId}:
     parameters:
       - name: workspaceId

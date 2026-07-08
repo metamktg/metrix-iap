@@ -37,10 +37,14 @@ function InviteMemberDialog({
   workspaceId,
   open,
   onOpenChange,
+  atSeatLimit,
+  seatLimit,
 }: {
   workspaceId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  atSeatLimit: boolean;
+  seatLimit: number;
 }) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<WorkspaceInviteInputRole>("analyst");
@@ -60,7 +64,7 @@ function InviteMemberDialog({
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     const trimmed = email.trim();
-    if (!trimmed || isPending) return;
+    if (!trimmed || isPending || atSeatLimit) return;
     setFeedback(null);
     mutate(
       { workspaceId, data: { email: trimmed, role } },
@@ -75,8 +79,15 @@ function InviteMemberDialog({
             handleOpenChange(false);
           }
         },
-        onError: () => {
-          setFeedback("Could not send the invite. Check the email address and try again.");
+        onError: (error) => {
+          const serverMessage =
+            error?.data && typeof error.data === "object" && "message" in error.data
+              ? String((error.data as { message: unknown }).message)
+              : null;
+          setFeedback(
+            serverMessage ??
+              "Could not send the invite. Check the email address and try again.",
+          );
         },
       },
     );
@@ -136,6 +147,13 @@ function InviteMemberDialog({
             </div>
           </div>
 
+          {atSeatLimit && (
+            <div className="text-[11px] text-amber-400/90" data-testid="text-seat-limit-warning">
+              This workspace is full: all {seatLimit} seats are in use. Remove a member or cancel a
+              pending invite before inviting someone new.
+            </div>
+          )}
+
           {feedback && (
             <div className="text-[11px] text-amber-400/90" data-testid="text-invite-feedback">
               {feedback}
@@ -152,7 +170,7 @@ function InviteMemberDialog({
             </button>
             <button
               type="submit"
-              disabled={!email.trim() || isPending}
+              disabled={!email.trim() || isPending || atSeatLimit}
               className="flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary/15 border border-primary/30 text-[12px] font-medium text-primary hover:bg-primary/25 transition-colors disabled:opacity-40 disabled:pointer-events-none"
               data-testid="button-send-invite"
             >
@@ -285,6 +303,7 @@ export function TeamAccessView() {
     (inv) => !seedEmails.has(inv.email.toLowerCase()),
   );
   const seatsUsed = team.members.length + pendingInvites.length;
+  const atSeatLimit = seatsUsed >= team.seat_limit;
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
@@ -368,7 +387,13 @@ export function TeamAccessView() {
         </SectionCard>
       </div>
 
-      <InviteMemberDialog workspaceId={manager.id} open={inviteOpen} onOpenChange={setInviteOpen} />
+      <InviteMemberDialog
+        workspaceId={manager.id}
+        open={inviteOpen}
+        onOpenChange={setInviteOpen}
+        atSeatLimit={atSeatLimit}
+        seatLimit={team.seat_limit}
+      />
     </div>
   );
 }

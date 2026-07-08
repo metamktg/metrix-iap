@@ -130,6 +130,18 @@ router.get("/metrix/workspaces/:workspaceId/invites", async (req, res) => {
   res.json(data);
 });
 
+const workspaceTeam = (
+  seedBundle as {
+    workspace_settings?: {
+      team?: { seat_limit?: number; members?: { email: string }[] };
+    };
+  }
+).workspace_settings?.team;
+const SEED_MEMBER_EMAILS = new Set(
+  (workspaceTeam?.members ?? []).map((m) => m.email.toLowerCase()),
+);
+const SEAT_LIMIT = workspaceTeam?.seat_limit ?? null;
+
 router.post("/metrix/workspaces/:workspaceId/invites", async (req, res) => {
   const workspaceId = req.params.workspaceId;
   const parsed = CreateWorkspaceInviteBody.safeParse(req.body);
@@ -139,6 +151,49 @@ router.post("/metrix/workspaces/:workspaceId/invites", async (req, res) => {
   }
   const email = parsed.data.email.trim().toLowerCase();
   const role = parsed.data.role;
+
+  const [existingInvite] = await db
+    .select()
+    .from(workspaceInvitesTable)
+    .where(
+      and(
+        eq(workspaceInvitesTable.workspaceId, workspaceId),
+        eq(workspaceInvitesTable.email, email),
+      ),
+    )
+    .limit(1);
+
+  if (existingInvite) {
+    const data = CreateWorkspaceInviteResponse.parse({
+      status: "already_invited",
+      invite: inviteRowToApi(existingInvite),
+    });
+    res.json(data);
+    return;
+  }
+
+  if (SEAT_LIMIT !== null) {
+    const pendingRows = await db
+      .select({ email: workspaceInvitesTable.email })
+      .from(workspaceInvitesTable)
+      .where(
+        and(
+          eq(workspaceInvitesTable.workspaceId, workspaceId),
+          eq(workspaceInvitesTable.status, "invited"),
+        ),
+      );
+    const pendingCount = pendingRows.filter(
+      (row) => !SEED_MEMBER_EMAILS.has(row.email.toLowerCase()),
+    ).length;
+    const seatsUsed = SEED_MEMBER_EMAILS.size + pendingCount;
+
+    if (seatsUsed >= SEAT_LIMIT) {
+      res.status(409).json({
+        message: `This workspace is full: all ${SEAT_LIMIT} seats are in use. Remove a member or cancel a pending invite before inviting someone new.`,
+      });
+      return;
+    }
+  }
 
   const inserted = await db
     .insert(workspaceInvitesTable)
