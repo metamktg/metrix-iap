@@ -9,6 +9,8 @@ import {
 import { db, agentWaitlistTable } from "@workspace/db";
 import { count, desc } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
+import { waitlistRateLimit } from "../middlewares/waitlistRateLimit";
+import { isDisposableEmailDomain } from "../lib/disposableEmailDomains";
 import seedBundle from "../data/metrix_seed_bundle.json" with { type: "json" };
 
 const router: IRouter = Router();
@@ -18,13 +20,20 @@ router.get("/metrix/seed", (_req, res) => {
   res.json(data);
 });
 
-router.post("/metrix/agent-waitlist", async (req, res) => {
+router.post("/metrix/agent-waitlist", waitlistRateLimit, async (req, res) => {
   const parsed = JoinAgentWaitlistBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ message: "A valid email address is required." });
     return;
   }
   const email = parsed.data.email.trim().toLowerCase();
+
+  if (isDisposableEmailDomain(email)) {
+    res.status(400).json({
+      message: "Please use a permanent email address to join the waitlist.",
+    });
+    return;
+  }
 
   const inserted = await db
     .insert(agentWaitlistTable)
