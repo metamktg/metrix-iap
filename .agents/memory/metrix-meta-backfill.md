@@ -11,3 +11,5 @@ description: How real creatives + Ads Manager deep links flow in once raw Meta e
 - **How to apply:** any new surface linking to Meta must take the link context from the seed adapter (`getCreativeLinkContext`), and asset + deep link must come from the same ad row so the link matches the creative shown.
 - Verified deep-link format (July 2026): `https://adsmanager.facebook.com/adsmanager/manage/ads?act=<numeric-id>&selected_ad_ids=<AD_ID>`.
 - The importer can run live from this environment (`SUPABASE_DB_URL` is set); it's idempotent and logs unmatched ad names instead of failing.
+- Pipeline dress-rehearsed end-to-end with a synthetic export (July 2026): matched/unmatched logging, `act_` stripping, seed exposure, card images, modal, and deep-link URL all verified, then reverted (re-running the importer without the file restores NULLs). Only the real export file is missing.
+- Verification recipe without browser login: creative cards on IAP Library / Concept Map / Brief Builder are drawer-gated (0 imgs at initial render is normal); use `/app/analysis/library?focus=<cell>` to open the drawer, and the Ads Manager button exists only inside the expanded card dialog.
