@@ -24,12 +24,22 @@ import type {
   AuthChangePasswordInput,
   AuthLoginInput,
   AuthLogoutResult,
+  AuthRequestPasswordResetInput,
+  AuthRequestPasswordResetResult,
+  AuthResetPasswordInput,
+  AuthResetPasswordResult,
   AuthUserResult,
+  GeneratedReportCreateInput,
+  GeneratedReportCreateResult,
+  GeneratedReportDeleteResult,
+  GeneratedReportsResult,
   HealthStatus,
   ListAgentWaitlistParams,
   MetrixSeedBundle,
   NotificationPrefsResult,
   NotificationPrefsUpdateInput,
+  ReportSettingsResult,
+  ReportSettingsUpdateInput,
   RequestAccessInput,
   RequestAccessResult,
   RevokeWorkspaceInviteResult,
@@ -40,7 +50,8 @@ import type {
   WorkspaceInviteInput,
   WorkspaceInviteResendResult,
   WorkspaceInviteResult,
-  WorkspaceInvitesResult
+  WorkspaceInvitesResult,
+  WorkspaceMembersResult
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -666,6 +677,148 @@ export const useAuthChangePassword = <TError = ErrorType<ApiError>,
       return useMutation(getAuthChangePasswordMutationOptions(options));
     }
 
+export const getAuthRequestPasswordResetUrl = () => {
+
+
+
+
+  return `/api/metrix/auth/request-password-reset`
+}
+
+/**
+ * Always responds neutrally whether or not an account exists for the email (no account enumeration). When an account exists, a single-use reset link (valid ~1 hour) is emailed via the configured provider.
+ * @summary Request a password reset link
+ */
+export const authRequestPasswordReset = async (authRequestPasswordResetInput: AuthRequestPasswordResetInput, options?: RequestInit): Promise<AuthRequestPasswordResetResult> => {
+
+  return customFetch<AuthRequestPasswordResetResult>(getAuthRequestPasswordResetUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(authRequestPasswordResetInput)
+  }
+);}
+
+
+
+
+export const getAuthRequestPasswordResetMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authRequestPasswordReset>>, TError,{data: BodyType<AuthRequestPasswordResetInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof authRequestPasswordReset>>, TError,{data: BodyType<AuthRequestPasswordResetInput>}, TContext> => {
+
+const mutationKey = ['authRequestPasswordReset'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof authRequestPasswordReset>>, {data: BodyType<AuthRequestPasswordResetInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  authRequestPasswordReset(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AuthRequestPasswordResetMutationResult = NonNullable<Awaited<ReturnType<typeof authRequestPasswordReset>>>
+    export type AuthRequestPasswordResetMutationBody = BodyType<AuthRequestPasswordResetInput>
+    export type AuthRequestPasswordResetMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Request a password reset link
+ */
+export const useAuthRequestPasswordReset = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authRequestPasswordReset>>, TError,{data: BodyType<AuthRequestPasswordResetInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof authRequestPasswordReset>>,
+        TError,
+        {data: BodyType<AuthRequestPasswordResetInput>},
+        TContext
+      > => {
+      return useMutation(getAuthRequestPasswordResetMutationOptions(options));
+    }
+
+export const getAuthResetPasswordUrl = () => {
+
+
+
+
+  return `/api/metrix/auth/reset-password`
+}
+
+/**
+ * Consumes a single-use reset token from the emailed link and sets a new password. On success, every existing session for the user is revoked; the user must log in with the new password.
+ * @summary Complete a password reset with a token
+ */
+export const authResetPassword = async (authResetPasswordInput: AuthResetPasswordInput, options?: RequestInit): Promise<AuthResetPasswordResult> => {
+
+  return customFetch<AuthResetPasswordResult>(getAuthResetPasswordUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(authResetPasswordInput)
+  }
+);}
+
+
+
+
+export const getAuthResetPasswordMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authResetPassword>>, TError,{data: BodyType<AuthResetPasswordInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof authResetPassword>>, TError,{data: BodyType<AuthResetPasswordInput>}, TContext> => {
+
+const mutationKey = ['authResetPassword'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof authResetPassword>>, {data: BodyType<AuthResetPasswordInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  authResetPassword(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AuthResetPasswordMutationResult = NonNullable<Awaited<ReturnType<typeof authResetPassword>>>
+    export type AuthResetPasswordMutationBody = BodyType<AuthResetPasswordInput>
+    export type AuthResetPasswordMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Complete a password reset with a token
+ */
+export const useAuthResetPassword = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authResetPassword>>, TError,{data: BodyType<AuthResetPasswordInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof authResetPassword>>,
+        TError,
+        {data: BodyType<AuthResetPasswordInput>},
+        TContext
+      > => {
+      return useMutation(getAuthResetPasswordMutationOptions(options));
+    }
+
 export const getListWorkspaceInvitesUrl = (workspaceId: string,) => {
 
 
@@ -962,6 +1115,84 @@ export const useResendWorkspaceInvite = <TError = ErrorType<ApiError>,
       return useMutation(getResendWorkspaceInviteMutationOptions(options));
     }
 
+export const getListWorkspaceMembersUrl = (workspaceId: string,) => {
+
+
+
+
+  return `/api/metrix/workspaces/${workspaceId}/members`
+}
+
+/**
+ * Returns provisioned user accounts (real logins) for this workspace, newest first. Requires a logged-in session with access to the workspace.
+ * @summary List real workspace member accounts
+ */
+export const listWorkspaceMembers = async (workspaceId: string, options?: RequestInit): Promise<WorkspaceMembersResult> => {
+
+  return customFetch<WorkspaceMembersResult>(getListWorkspaceMembersUrl(workspaceId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListWorkspaceMembersQueryKey = (workspaceId: string,) => {
+    return [
+    `/api/metrix/workspaces/${workspaceId}/members`
+    ] as const;
+    }
+
+
+export const getListWorkspaceMembersQueryOptions = <TData = Awaited<ReturnType<typeof listWorkspaceMembers>>, TError = ErrorType<ApiError>>(workspaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWorkspaceMembers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListWorkspaceMembersQueryKey(workspaceId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listWorkspaceMembers>>> = ({ signal }) => listWorkspaceMembers(workspaceId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: workspaceId !== null && workspaceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listWorkspaceMembers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListWorkspaceMembersQueryResult = NonNullable<Awaited<ReturnType<typeof listWorkspaceMembers>>>
+export type ListWorkspaceMembersQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary List real workspace member accounts
+ */
+
+export function useListWorkspaceMembers<TData = Awaited<ReturnType<typeof listWorkspaceMembers>>, TError = ErrorType<ApiError>>(
+ workspaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWorkspaceMembers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListWorkspaceMembersQueryOptions(workspaceId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getGetNotificationPrefsUrl = (workspaceId: string,) => {
 
 
@@ -1181,6 +1412,379 @@ export const useSubmitRequestAccess = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getSubmitRequestAccessMutationOptions(options));
+    }
+
+export const getGetReportSettingsUrl = (workspaceId: string,) => {
+
+
+
+
+  return `/api/metrix/workspaces/${workspaceId}/report-settings`
+}
+
+/**
+ * Returns persisted Report Builder defaults for this workspace. Any null field falls back to the seed's report_builder defaults on the client. Requires a logged-in session with access to the workspace.
+ * @summary Get workspace report-builder setting overrides
+ */
+export const getReportSettings = async (workspaceId: string, options?: RequestInit): Promise<ReportSettingsResult> => {
+
+  return customFetch<ReportSettingsResult>(getGetReportSettingsUrl(workspaceId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetReportSettingsQueryKey = (workspaceId: string,) => {
+    return [
+    `/api/metrix/workspaces/${workspaceId}/report-settings`
+    ] as const;
+    }
+
+
+export const getGetReportSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getReportSettings>>, TError = ErrorType<ApiError>>(workspaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getReportSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetReportSettingsQueryKey(workspaceId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getReportSettings>>> = ({ signal }) => getReportSettings(workspaceId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: workspaceId !== null && workspaceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getReportSettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetReportSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getReportSettings>>>
+export type GetReportSettingsQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Get workspace report-builder setting overrides
+ */
+
+export function useGetReportSettings<TData = Awaited<ReturnType<typeof getReportSettings>>, TError = ErrorType<ApiError>>(
+ workspaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getReportSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetReportSettingsQueryOptions(workspaceId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateReportSettingsUrl = (workspaceId: string,) => {
+
+
+
+
+  return `/api/metrix/workspaces/${workspaceId}/report-settings`
+}
+
+/**
+ * Upserts Report Builder default overrides for this workspace and returns the persisted values. Requires a logged-in session with access to the workspace.
+ * @summary Update workspace report-builder settings
+ */
+export const updateReportSettings = async (workspaceId: string,
+    reportSettingsUpdateInput: ReportSettingsUpdateInput, options?: RequestInit): Promise<ReportSettingsResult> => {
+
+  return customFetch<ReportSettingsResult>(getUpdateReportSettingsUrl(workspaceId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(reportSettingsUpdateInput)
+  }
+);}
+
+
+
+
+export const getUpdateReportSettingsMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateReportSettings>>, TError,{workspaceId: string;data: BodyType<ReportSettingsUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateReportSettings>>, TError,{workspaceId: string;data: BodyType<ReportSettingsUpdateInput>}, TContext> => {
+
+const mutationKey = ['updateReportSettings'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateReportSettings>>, {workspaceId: string;data: BodyType<ReportSettingsUpdateInput>}> = (props) => {
+          const {workspaceId,data} = props ?? {};
+
+          return  updateReportSettings(workspaceId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateReportSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof updateReportSettings>>>
+    export type UpdateReportSettingsMutationBody = BodyType<ReportSettingsUpdateInput>
+    export type UpdateReportSettingsMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Update workspace report-builder settings
+ */
+export const useUpdateReportSettings = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateReportSettings>>, TError,{workspaceId: string;data: BodyType<ReportSettingsUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateReportSettings>>,
+        TError,
+        {workspaceId: string;data: BodyType<ReportSettingsUpdateInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateReportSettingsMutationOptions(options));
+    }
+
+export const getListWorkspaceReportsUrl = (workspaceId: string,) => {
+
+
+
+
+  return `/api/metrix/workspaces/${workspaceId}/reports`
+}
+
+/**
+ * Returns generated report documents (with their content snapshot) for the workspace, newest first. Clients scope to an ad account by filtering on ad_account_id. Requires a logged-in session with access to the workspace.
+ * @summary List generated reports for the workspace
+ */
+export const listWorkspaceReports = async (workspaceId: string, options?: RequestInit): Promise<GeneratedReportsResult> => {
+
+  return customFetch<GeneratedReportsResult>(getListWorkspaceReportsUrl(workspaceId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListWorkspaceReportsQueryKey = (workspaceId: string,) => {
+    return [
+    `/api/metrix/workspaces/${workspaceId}/reports`
+    ] as const;
+    }
+
+
+export const getListWorkspaceReportsQueryOptions = <TData = Awaited<ReturnType<typeof listWorkspaceReports>>, TError = ErrorType<ApiError>>(workspaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWorkspaceReports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListWorkspaceReportsQueryKey(workspaceId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listWorkspaceReports>>> = ({ signal }) => listWorkspaceReports(workspaceId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: workspaceId !== null && workspaceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listWorkspaceReports>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListWorkspaceReportsQueryResult = NonNullable<Awaited<ReturnType<typeof listWorkspaceReports>>>
+export type ListWorkspaceReportsQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary List generated reports for the workspace
+ */
+
+export function useListWorkspaceReports<TData = Awaited<ReturnType<typeof listWorkspaceReports>>, TError = ErrorType<ApiError>>(
+ workspaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWorkspaceReports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListWorkspaceReportsQueryOptions(workspaceId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateWorkspaceReportUrl = (workspaceId: string,) => {
+
+
+
+
+  return `/api/metrix/workspaces/${workspaceId}/reports`
+}
+
+/**
+ * Persists a generated report snapshot (composed sections and metadata) so it appears in Report History and can be re-downloaded from Exports exactly as generated. Requires a logged-in session with access to the workspace.
+ * @summary Store a generated report document
+ */
+export const createWorkspaceReport = async (workspaceId: string,
+    generatedReportCreateInput: GeneratedReportCreateInput, options?: RequestInit): Promise<GeneratedReportCreateResult> => {
+
+  return customFetch<GeneratedReportCreateResult>(getCreateWorkspaceReportUrl(workspaceId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(generatedReportCreateInput)
+  }
+);}
+
+
+
+
+export const getCreateWorkspaceReportMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createWorkspaceReport>>, TError,{workspaceId: string;data: BodyType<GeneratedReportCreateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createWorkspaceReport>>, TError,{workspaceId: string;data: BodyType<GeneratedReportCreateInput>}, TContext> => {
+
+const mutationKey = ['createWorkspaceReport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createWorkspaceReport>>, {workspaceId: string;data: BodyType<GeneratedReportCreateInput>}> = (props) => {
+          const {workspaceId,data} = props ?? {};
+
+          return  createWorkspaceReport(workspaceId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateWorkspaceReportMutationResult = NonNullable<Awaited<ReturnType<typeof createWorkspaceReport>>>
+    export type CreateWorkspaceReportMutationBody = BodyType<GeneratedReportCreateInput>
+    export type CreateWorkspaceReportMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Store a generated report document
+ */
+export const useCreateWorkspaceReport = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createWorkspaceReport>>, TError,{workspaceId: string;data: BodyType<GeneratedReportCreateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createWorkspaceReport>>,
+        TError,
+        {workspaceId: string;data: BodyType<GeneratedReportCreateInput>},
+        TContext
+      > => {
+      return useMutation(getCreateWorkspaceReportMutationOptions(options));
+    }
+
+export const getDeleteWorkspaceReportUrl = (workspaceId: string,
+    reportId: number,) => {
+
+
+
+
+  return `/api/metrix/workspaces/${workspaceId}/reports/${reportId}`
+}
+
+/**
+ * Permanently deletes a generated report document (and its stored snapshot) from Report History. Only in-app generated reports can be deleted; seed history entries live in the seed bundle and are not addressable here. Requires a logged-in session with access to the workspace.
+ * @summary Delete a generated report
+ */
+export const deleteWorkspaceReport = async (workspaceId: string,
+    reportId: number, options?: RequestInit): Promise<GeneratedReportDeleteResult> => {
+
+  return customFetch<GeneratedReportDeleteResult>(getDeleteWorkspaceReportUrl(workspaceId,reportId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteWorkspaceReportMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWorkspaceReport>>, TError,{workspaceId: string;reportId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteWorkspaceReport>>, TError,{workspaceId: string;reportId: number}, TContext> => {
+
+const mutationKey = ['deleteWorkspaceReport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteWorkspaceReport>>, {workspaceId: string;reportId: number}> = (props) => {
+          const {workspaceId,reportId} = props ?? {};
+
+          return  deleteWorkspaceReport(workspaceId,reportId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteWorkspaceReportMutationResult = NonNullable<Awaited<ReturnType<typeof deleteWorkspaceReport>>>
+
+    export type DeleteWorkspaceReportMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Delete a generated report
+ */
+export const useDeleteWorkspaceReport = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWorkspaceReport>>, TError,{workspaceId: string;reportId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteWorkspaceReport>>,
+        TError,
+        {workspaceId: string;reportId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteWorkspaceReportMutationOptions(options));
     }
 
 export const getHealthCheckUrl = () => {

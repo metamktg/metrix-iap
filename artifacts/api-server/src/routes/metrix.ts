@@ -8,6 +8,7 @@ import {
   CreateWorkspaceInviteBody,
   CreateWorkspaceInviteResponse,
   ListWorkspaceInvitesResponse,
+  ListWorkspaceMembersResponse,
   RevokeWorkspaceInviteResponse,
   ResendWorkspaceInviteResponse,
   UpdateNotificationPrefsBody,
@@ -15,6 +16,12 @@ import {
   SubmitRequestAccessBody,
   SubmitRequestAccessResponse,
   ApproveAgentWaitlistEntryResponse,
+  UpdateReportSettingsBody,
+  UpdateReportSettingsResponse,
+  CreateWorkspaceReportBody,
+  CreateWorkspaceReportResponse,
+  ListWorkspaceReportsResponse,
+  DeleteWorkspaceReportResponse,
 } from "@workspace/api-zod";
 import {
   db,
@@ -22,6 +29,10 @@ import {
   usersTable,
   workspaceInvitesTable,
   workspaceNotificationPrefsTable,
+  workspaceReportSettingsTable,
+  workspaceReportsTable,
+  type WorkspaceReportSettings,
+  type WorkspaceReport,
 } from "@workspace/db";
 import { and, count, desc, eq, sql } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
@@ -33,6 +44,7 @@ import { isDisposableEmailDomain } from "../lib/disposableEmailDomains";
 import { getMetrixSeedFromSupabase } from "../lib/metrixSeedAssembly";
 import { getSupabase } from "../lib/supabase";
 import { notifyRequestAccess } from "../lib/requestAccessNotification";
+import { getAppBaseUrl } from "../lib/appUrl";
 
 const router: IRouter = Router();
 
@@ -248,7 +260,7 @@ router.post(
       .set({ status: "approved", approvedAt: new Date() })
       .where(eq(agentWaitlistTable.id, entry.id));
 
-    const appUrl = getAppLoginUrl();
+    const appUrl = getAppBaseUrl();
     const emailResult = await sendApprovalEmail(
       entry.email,
       tempPassword,
@@ -267,12 +279,6 @@ router.post(
     res.json(data);
   },
 );
-
-function getAppLoginUrl(): string {
-  const domains = process.env["REPLIT_DOMAINS"];
-  const domain = domains?.split(",")[0]?.trim();
-  return domain ? `https://${domain}/` : "https://app.metrix.ad/";
-}
 
 const inviteRowToApi = (row: {
   id: number;
@@ -314,6 +320,31 @@ const requireWorkspaceAccess = async (
     });
   }
 };
+
+// Real provisioned user accounts (this deployment is single-workspace, so
+// every user row belongs to this workspace). "invited" = provisioned but the
+// member hasn't completed their first login yet.
+router.get("/metrix/workspaces/:workspaceId/members", requireAuth, requireWorkspaceAccess, async (req, res) => {
+  const rows = await db
+    .select({
+      email: usersTable.email,
+      mustChangePassword: usersTable.mustChangePassword,
+      createdAt: usersTable.createdAt,
+      lastLoginAt: usersTable.lastLoginAt,
+    })
+    .from(usersTable)
+    .orderBy(desc(usersTable.createdAt), desc(usersTable.id));
+
+  const data = ListWorkspaceMembersResponse.parse({
+    members: rows.map((row) => ({
+      email: row.email,
+      status: row.mustChangePassword && !row.lastLoginAt ? "invited" : "active",
+      created_at: row.createdAt.toISOString(),
+      last_login_at: row.lastLoginAt ? row.lastLoginAt.toISOString() : null,
+    })),
+  });
+  res.json(data);
+});
 
 router.get("/metrix/workspaces/:workspaceId/invites", requireAuth, requireWorkspaceAccess, async (req, res) => {
   const workspaceId = String(req.params.workspaceId);
@@ -599,5 +630,176 @@ router.put("/metrix/workspaces/:workspaceId/notification-prefs", requireAuth, re
 
   res.json(UpdateNotificationPrefsResponse.parse(prefRowsToApi(rows)));
 });
+
+// ─── Report Builder settings (per-workspace overrides) ────────────────
+// Singleton row per workspace; null columns fall back to seed defaults
+// on the client.
+
+const reportSettingsRowToApi = (row: WorkspaceReportSettings | undefined) => ({
+  default_branding: row?.defaultBranding ?? null,
+  default_format: row?.defaultFormat ?? null,
+  default_mode: row?.defaultMode ?? null,
+  schedule_enabled: row?.scheduleEnabled ?? null,
+  schedule_cadence: row?.scheduleCadence ?? null,
+  schedule_recipients: row?.scheduleRecipients ?? null,
+});
+
+router.get("/metrix/workspaces/:workspaceId/report-settings", requireAuth, requireWorkspaceAccess, async (req, res) => {
+  const workspaceId = String(req.params.workspaceId);
+  const rows = await db
+    .select()
+    .from(workspaceReportSettingsTable)
+    .where(eq(workspaceReportSettingsTable.workspaceId, workspaceId))
+    .limit(1);
+
+  res.json(UpdateReportSettingsResponse.parse(reportSettingsRowToApi(rows[0])));
+});
+
+router.put("/metrix/workspaces/:workspaceId/report-settings", requireAuth, requireWorkspaceAccess, async (req, res) => {
+  const workspaceId = String(req.params.workspaceId);
+  const parsed = UpdateReportSettingsBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "Invalid report settings payload." });
+    return;
+  }
+
+  const b = parsed.data;
+  // Only overwrite columns the client actually sent; omitted keys keep
+  // their stored value, explicit nulls clear the override.
+  const patch: Partial<typeof workspaceReportSettingsTable.$inferInsert> = {};
+  if ("default_branding" in b) patch.defaultBranding = b.default_branding ?? null;
+  if ("default_format" in b) patch.defaultFormat = b.default_format ?? null;
+  if ("default_mode" in b) patch.defaultMode = b.default_mode ?? null;
+  if ("schedule_enabled" in b) patch.scheduleEnabled = b.schedule_enabled ?? null;
+  if ("schedule_cadence" in b) patch.scheduleCadence = b.schedule_cadence ?? null;
+  if ("schedule_recipients" in b) patch.scheduleRecipients = b.schedule_recipients ?? null;
+
+  const [row] = await db
+    .insert(workspaceReportSettingsTable)
+    .values({ workspaceId, ...patch })
+    .onConflictDoUpdate({
+      target: [workspaceReportSettingsTable.workspaceId],
+      set: { ...patch, updatedAt: new Date() },
+    })
+    .returning();
+
+  res.json(UpdateReportSettingsResponse.parse(reportSettingsRowToApi(row)));
+});
+
+// ─── Generated reports ────────────────────────────────────────────────
+// Each generated report stores a full document snapshot (model_json) so
+// Report History and Exports can re-download exactly what was generated,
+// independent of later data changes.
+
+const reportRowToApi = (row: WorkspaceReport) => ({
+  id: row.id,
+  ad_account_id: row.adAccountId,
+  title: row.title,
+  mode: row.mode,
+  branding: row.branding,
+  export_format: row.exportFormat,
+  section_count: row.sectionCount,
+  range_start: row.rangeStart ?? null,
+  range_end: row.rangeEnd ?? null,
+  range_source: row.rangeIsOverride ?? null,
+  summary: row.summary,
+  model_json: row.modelJson,
+  generated_at: row.generatedAt.toISOString(),
+});
+
+router.get("/metrix/workspaces/:workspaceId/reports", requireAuth, requireWorkspaceAccess, async (req, res) => {
+  const workspaceId = String(req.params.workspaceId);
+  const rows = await db
+    .select()
+    .from(workspaceReportsTable)
+    .where(eq(workspaceReportsTable.workspaceId, workspaceId))
+    .orderBy(desc(workspaceReportsTable.generatedAt), desc(workspaceReportsTable.id));
+
+  res.json(ListWorkspaceReportsResponse.parse({ reports: rows.map(reportRowToApi) }));
+});
+
+router.post("/metrix/workspaces/:workspaceId/reports", requireAuth, requireWorkspaceAccess, async (req, res) => {
+  const workspaceId = String(req.params.workspaceId);
+  const parsed = CreateWorkspaceReportBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "Invalid generated report payload." });
+    return;
+  }
+  const b = parsed.data;
+
+  // The snapshot must be a well-formed report document, not arbitrary JSON:
+  // an object with a non-empty sections array of titled sections.
+  let model: unknown;
+  try {
+    model = JSON.parse(b.model_json);
+  } catch {
+    res.status(400).json({ message: "Report snapshot is not valid JSON." });
+    return;
+  }
+  const sections = (model as { sections?: unknown })?.sections;
+  const validSections =
+    Array.isArray(sections) &&
+    sections.length > 0 &&
+    sections.every(
+      (s) => typeof s === "object" && s !== null && typeof (s as { title?: unknown }).title === "string",
+    );
+  if (!validSections) {
+    res.status(400).json({ message: "Report snapshot must contain at least one titled section." });
+    return;
+  }
+
+  const [row] = await db
+    .insert(workspaceReportsTable)
+    .values({
+      workspaceId,
+      adAccountId: b.ad_account_id,
+      title: b.title,
+      mode: b.mode,
+      branding: b.branding,
+      exportFormat: b.export_format,
+      sectionCount: b.section_count,
+      rangeStart: b.range_start ?? null,
+      rangeEnd: b.range_end ?? null,
+      rangeIsOverride: b.range_source ?? null,
+      summary: b.summary,
+      modelJson: b.model_json,
+    })
+    .returning();
+
+  res.json(
+    CreateWorkspaceReportResponse.parse({ status: "created", report: reportRowToApi(row) }),
+  );
+});
+
+router.delete(
+  "/metrix/workspaces/:workspaceId/reports/:reportId",
+  requireAuth,
+  requireWorkspaceAccess,
+  async (req, res) => {
+    const workspaceId = String(req.params.workspaceId);
+    const reportId = Number(String(req.params.reportId));
+    if (!Number.isInteger(reportId) || reportId <= 0) {
+      res.status(404).json({ message: "Report not found in this workspace." });
+      return;
+    }
+
+    const deleted = await db
+      .delete(workspaceReportsTable)
+      .where(
+        and(
+          eq(workspaceReportsTable.workspaceId, workspaceId),
+          eq(workspaceReportsTable.id, reportId),
+        ),
+      )
+      .returning({ id: workspaceReportsTable.id });
+
+    if (deleted.length === 0) {
+      res.status(404).json({ message: "Report not found in this workspace." });
+      return;
+    }
+
+    res.json(DeleteWorkspaceReportResponse.parse({ status: "deleted", id: deleted[0].id }));
+  },
+);
 
 export default router;

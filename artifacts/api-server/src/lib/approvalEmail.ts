@@ -37,9 +37,15 @@ export async function sendApprovalEmail(
   const from =
     process.env["REQUEST_ACCESS_FROM_EMAIL"] ?? "Metrix <onboarding@resend.dev>";
 
+  const logoUrl = `${appUrl}metrix-logo.png`;
+
   const html = `
     <div style="font-family:sans-serif;font-size:14px;color:#222;max-width:520px;">
-      <h2 style="margin-bottom:8px;">Your Metrix access is approved</h2>
+      <div style="margin-bottom:16px;">
+        <img src="${escapeHtml(logoUrl)}" alt="Metrix" width="28" height="28" style="vertical-align:middle;border:0;" />
+        <span style="font-size:16px;font-weight:700;letter-spacing:-0.02em;vertical-align:middle;margin-left:8px;">Metrix</span>
+      </div>
+      <h2 style="margin:0 0 8px;">Your Metrix access is approved</h2>
       <p>Welcome to Metrix. Your account has been created for
         <strong>${escapeHtml(email)}</strong>.</p>
       <p>Sign in with this temporary password:</p>

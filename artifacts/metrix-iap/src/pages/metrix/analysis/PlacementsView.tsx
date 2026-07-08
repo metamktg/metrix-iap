@@ -9,7 +9,9 @@ import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, fmtUSD, fmtNum,
+  RangeScopeBar, NoDataInRangeState,
 } from "../shared";
+import { useDateRange } from "@/contexts/DateRangeContext";
 import { PlacementTable } from "./tables";
 import { LayoutGrid } from "lucide-react";
 
@@ -20,6 +22,7 @@ export function PlacementsView() {
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
   const analysis = getAnalysisData(seed, adAccountId);
+  const { rangeHasData } = useDateRange();
 
   const rollup = useMemo(() => {
     const all = [...(analysis?.v3_placement_signal ?? []), ...(analysis?.c4e_placement_signal ?? [])];
@@ -65,7 +68,12 @@ export function PlacementsView() {
               table="v3_placement_signal, c4e_placement_signal"
             />
             <ScopeBanner account={acct} />
+            <RangeScopeBar grainNote="Placement signal aggregates each run's full flight window — this import has no daily grain." />
 
+            {!rangeHasData ? (
+              <NoDataInRangeState what="placement data" />
+            ) : (
+            <>
             <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
               <MetricTile label="Placements" value={fmtNum(rollup.length)} />
               <MetricTile label="Placement spend" value={fmtUSD(totalSpend, 0)} />
@@ -108,6 +116,8 @@ export function PlacementsView() {
                 )}
               </SectionCard>
             </div>
+            </>
+            )}
           </div>
         );
       }}

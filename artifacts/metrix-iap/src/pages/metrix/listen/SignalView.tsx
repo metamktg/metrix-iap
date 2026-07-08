@@ -10,7 +10,9 @@ import { getAdAccount, getListenSignals } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ConfidenceBadge, ModuleTabs, ModuleScopeGate,
   PendingState, MetricTile, ImpactBadge, ScopeBadge, CrossLink, useFocusParam,
+  RangeScopeBar, NoDataInRangeState,
 } from "../shared";
+import { useDateRange } from "@/contexts/DateRangeContext";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { Radio, ArrowRight } from "lucide-react";
 import type { SignalCard } from "@/lib/data/seedTypes";
@@ -27,6 +29,7 @@ export function SignalView() {
   const [tab, setTab] = useState<string>("all");
   const focus = useFocusParam();
   const [detail, setDetail] = useState<SignalCard | null>(null);
+  const { rangeHasData } = useDateRange();
 
   const signals = getListenSignals(seed, adAccountId);
 
@@ -60,7 +63,12 @@ export function SignalView() {
               table="signal_cards"
             />
             <ScopeBanner account={acct} />
+            <RangeScopeBar grainNote="Signals derive from the account's full flight window — this import has no daily grain." />
 
+            {!rangeHasData ? (
+              <NoDataInRangeState what="signals" />
+            ) : (
+            <>
             <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
               <MetricTile label="Active signals" value={String(signals.length)} />
               <MetricTile label="High impact" value={String(highCount)} sub={highCount > 0 ? "needs review" : "none flagged"} />
@@ -101,6 +109,8 @@ export function SignalView() {
                 </div>
               )}
             </div>
+            </>
+            )}
 
             {detail && (
               <InfoDrawer

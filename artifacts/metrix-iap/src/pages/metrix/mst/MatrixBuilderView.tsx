@@ -2,13 +2,17 @@
 // The 4×4 concept × shared-variable historical matrix for the account.
 // Diagonal roles highlight the primary (↘) and counter (↗) test paths.
 
+import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
-import { getAdAccount, getMST } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, ScopeBanner, ModuleScopeGate, CaveatNote, PendingState, CrossLink, readableVariables } from "../shared";
+import { getAdAccount, getMST, getAnalysisData, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
+import { ModuleHeader, ScopeBanner, ModuleScopeGate, CaveatNote, PendingState, CrossLink, readableVariables, RangeScopeBar, NoDataInRangeState } from "../shared";
+import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
+import { useMstRangeScope } from "@/lib/date-scope";
+import { TilePerformanceModal } from "@/components/creative/TilePerformanceModal";
 import { cn } from "@/lib/utils";
 import { Grid3x3 } from "lucide-react";
-import type { MSTMatrix } from "@/lib/data/seedTypes";
+import type { MSTMatrix, MSTMatrixCell } from "@/lib/data/seedTypes";
 
 const SECTION = "MST · 07";
 
@@ -19,7 +23,7 @@ const ROW_COLOR: Record<string, string> = {
   "var(--purple)": "border-purple-400/30 bg-purple-400/[0.04]",
 };
 
-export function MatrixGrid({ matrix }: { matrix: MSTMatrix }) {
+export function MatrixGrid({ matrix, onCellClick }: { matrix: MSTMatrix; onCellClick?: (cell: MSTMatrixCell) => void }) {
   const cellOf = (col: string, row: string) => matrix.cells.find((c) => c.column_id === col && c.row_id === row);
   return (
     <div className="overflow-x-auto">
@@ -43,14 +47,18 @@ export function MatrixGrid({ matrix }: { matrix: MSTMatrix }) {
               {matrix.columns.map((col) => {
                 const cell = cellOf(col.id, row.id);
                 const diag = cell?.diagonal_role;
+                const Tag = cell && onCellClick ? "button" : "div";
                 return (
-                  <div
+                  <Tag
                     key={col.id + row.id}
+                    onClick={cell && onCellClick ? () => onCellClick(cell) : undefined}
+                    aria-label={cell && onCellClick ? `Open performance for ${cell.cell_id}` : undefined}
                     className={cn(
-                      "m-0.5 p-2.5 rounded-lg border bg-white/[0.02] min-h-[112px]",
+                      "m-0.5 p-2.5 rounded-lg border bg-white/[0.02] min-h-[112px] text-left",
                       diag === "diag_down" && "border-primary/40 ring-1 ring-primary/15",
                       diag === "diag_up" && "border-teal-400/40 ring-1 ring-teal-400/15",
-                      !diag && "border-border/40"
+                      !diag && "border-border/40",
+                      cell && onCellClick && "cursor-pointer hover:bg-white/[0.05] hover:border-primary/40 transition-colors"
                     )}
                   >
                     {cell ? (
@@ -63,7 +71,7 @@ export function MatrixGrid({ matrix }: { matrix: MSTMatrix }) {
                     ) : (
                       <div className="text-[11px] text-muted-foreground/60">—</div>
                     )}
-                  </div>
+                  </Tag>
                 );
               })}
             </div>
@@ -78,6 +86,12 @@ export function MatrixBuilderView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
+  const { rangeHasData, range } = useDateRange();
+  const [activeCell, setActiveCell] = useState<MSTMatrixCell | null>(null);
+  const { mstRange, mstInRange } = useMstRangeScope(
+    getMST(seed, adAccountId),
+    getAnalysisData(seed, adAccountId)
+  );
 
   return (
     <ModuleScopeGate section={SECTION} title="Matrix Builder" account={account}>
@@ -105,15 +119,39 @@ export function MatrixBuilderView() {
               table="historical_matrix_4x4"
             />
             <ScopeBanner account={acct} />
-            <div className="px-6 py-5 space-y-4">
-              <CaveatNote text={mst.render_policy} />
-              <MatrixGrid matrix={matrix} />
-              <div className="flex items-center gap-4 text-[11px] text-muted-foreground/75 flex-wrap">
-                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded border border-primary/40 ring-1 ring-primary/15 inline-block" /> Primary diagonal (↘)</span>
-                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded border border-teal-400/40 ring-1 ring-teal-400/15 inline-block" /> Counter diagonal (↗)</span>
-                <span className="ml-auto"><CrossLink to="/app/mst/crossmap" label="See crossmap results" /></span>
+            <RangeScopeBar grainNote="The matrix is a historical structure; tile pop-ups show each cell's full flight-window performance — this import has no daily grain." />
+            {!rangeHasData || !mstInRange ? (
+              <NoDataInRangeState
+                what="MST data"
+                detail={
+                  !mstInRange && mstRange && range
+                    ? `The selected range (${formatIsoRange(range)}) does not overlap this account's MST data window (${formatIsoRange(mstRange)}).`
+                    : undefined
+                }
+              />
+            ) : (
+              <div className="px-6 py-5 space-y-4">
+                <CaveatNote text={mst.render_policy} />
+                <MatrixGrid matrix={matrix} onCellClick={setActiveCell} />
+                <div className="flex items-center gap-4 text-[11px] text-muted-foreground/75 flex-wrap">
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded border border-primary/40 ring-1 ring-primary/15 inline-block" /> Primary diagonal (↘)</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded border border-teal-400/40 ring-1 ring-teal-400/15 inline-block" /> Counter diagonal (↗)</span>
+                  <span className="text-muted-foreground/60">Click any tile for granular performance</span>
+                  <span className="ml-auto"><CrossLink to="/app/mst/crossmap" label="See crossmap results" /></span>
+                </div>
               </div>
-            </div>
+            )}
+            {activeCell && (
+              <TilePerformanceModal
+                open
+                onClose={() => setActiveCell(null)}
+                cellId={activeCell.cell_id}
+                matrixCell={activeCell}
+                analysis={getAnalysisData(seed, adAccountId)}
+                mst={mst}
+                {...getCreativeLinkContext(seed, adAccountId)}
+              />
+            )}
           </div>
         );
       }}

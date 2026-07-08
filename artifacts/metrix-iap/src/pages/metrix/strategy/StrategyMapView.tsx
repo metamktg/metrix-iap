@@ -2,15 +2,21 @@
 // Maps each message pillar to the creative cells that validated it, the
 // variable stack it carries, and the hypotheses it feeds.
 
+import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getStrategyData, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState,
   CrossLink, readableVariables, fmtUSD, fmtNum,
+  RangeScopeBar, NoDataInRangeState,
 } from "../shared";
+import { useDateRange } from "@/contexts/DateRangeContext";
+import { useCellRangeScope } from "@/lib/date-scope";
+import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/SegmentGridModal";
 import { cn } from "@/lib/utils";
 import { Map, ArrowDown } from "lucide-react";
+import type { MessagePillar } from "@/lib/data/seedTypes";
 
 const SECTION = "Strategy · 04";
 
@@ -25,6 +31,9 @@ export function StrategyMapView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
+  const [segmentPillar, setSegmentPillar] = useState<MessagePillar | null>(null);
+  const { rangeHasData } = useDateRange();
+  const { inRangeCell } = useCellRangeScope(getAnalysisData(seed, adAccountId));
 
   return (
     <ModuleScopeGate section={SECTION} title="Strategy Map" account={account}>
@@ -46,9 +55,10 @@ export function StrategyMapView() {
         const pillars = strategy.message_pillars;
         const hypotheses = strategy.active_hypotheses;
 
-        // Evidence rollup: spend/results across the cells that validated a pillar.
+        // Evidence rollup: spend/results across the cells that validated a
+        // pillar, restricted to cells whose flight overlaps the date range.
         const cellEvidence = (cellIds: string[]) => {
-          const rows = (analysis?.performance_by_cell ?? []).filter((r) => cellIds.includes(r.cell_id));
+          const rows = (analysis?.performance_by_cell ?? []).filter((r) => cellIds.includes(r.cell_id) && inRangeCell(r.cell_id));
           return {
             spend: rows.reduce((n, r) => n + r["Amount spent (USD)"], 0),
             results: rows.reduce((n, r) => n + r.Results, 0),
@@ -74,7 +84,12 @@ export function StrategyMapView() {
               table="message_pillars, active_hypotheses, performance_by_cell"
             />
             <ScopeBanner account={acct} />
+            <RangeScopeBar grainNote="Pillar evidence aggregates each cell's full flight window — this import has no daily grain." />
 
+            {!rangeHasData ? (
+              <NoDataInRangeState what="strategy map data" />
+            ) : (
+            <>
             <div className="px-6 py-5 space-y-4 max-w-5xl">
               {pillars.map((p, i) => {
                 const evidence = cellEvidence(p.source_cells);
@@ -90,6 +105,11 @@ export function StrategyMapView() {
                       {evidence.spend > 0 && (
                         <span className="text-[11px] text-muted-foreground/80 tabular-nums ml-1">
                           {fmtUSD(evidence.spend, 0)} spend · {fmtNum(evidence.results)} results
+                        </span>
+                      )}
+                      {analysis && p.source_cells.length > 0 && (
+                        <span className="ml-auto">
+                          <SegmentDrilldownButton onClick={() => setSegmentPillar(p)} />
                         </span>
                       )}
                     </div>
@@ -156,6 +176,19 @@ export function StrategyMapView() {
                 <CrossLink to="/app/briefs/builder" label="Draft briefs from pillars" />
               </div>
             </div>
+            </>
+            )}
+
+            {segmentPillar && analysis && (
+              <SegmentGridModal
+                open
+                onClose={() => setSegmentPillar(null)}
+                kicker={`Pillar · ${segmentPillar.id}`}
+                title={segmentPillar.label}
+                analysis={analysis}
+                cellIds={segmentPillar.source_cells}
+              />
+            )}
           </div>
         );
       }}

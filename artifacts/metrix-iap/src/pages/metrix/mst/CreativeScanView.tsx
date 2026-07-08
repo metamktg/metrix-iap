@@ -6,8 +6,12 @@
 import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
-import { getAdAccount, getMST } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, ScopeBanner, ModuleScopeGate, ModuleTabs, CaveatNote, PendingState, readableVariables } from "../shared";
+import { getAdAccount, getMST, getAnalysisData, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
+import { ModuleHeader, ScopeBanner, ModuleScopeGate, ModuleTabs, CaveatNote, PendingState, readableVariables, RangeScopeBar, NoDataInRangeState, CrossLink } from "../shared";
+import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
+import { useMstRangeScope } from "@/lib/date-scope";
+import { CreativeCard } from "@/components/creative/CreativeCard";
+import { cardFromCell } from "@/lib/creative-assembly";
 import { Library, Tags } from "lucide-react";
 
 const SECTION = "MST · 07";
@@ -17,6 +21,11 @@ export function CreativeScanView() {
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
   const [tab, setTab] = useState<string>("library");
+  const { rangeHasData, range } = useDateRange();
+  const { mstRange, mstInRange } = useMstRangeScope(
+    getMST(seed, adAccountId),
+    getAnalysisData(seed, adAccountId)
+  );
 
   return (
     <ModuleScopeGate section={SECTION} title="Creative Scan" account={account}>
@@ -73,29 +82,35 @@ export function CreativeScanView() {
               active={tab}
               onChange={setTab}
             />
+            <RangeScopeBar grainNote="Scanned concepts and their variables reflect the full imported library — this import has no daily grain." />
 
+            {!rangeHasData || !mstInRange ? (
+              <NoDataInRangeState
+                what="scanned creatives"
+                detail={
+                  !mstInRange && mstRange && range
+                    ? `The selected range (${formatIsoRange(range)}) does not overlap this account's MST data window (${formatIsoRange(mstRange)}).`
+                    : undefined
+                }
+              />
+            ) : (
             <div className="px-6 py-5 space-y-4">
               <CaveatNote text={mst.render_policy} />
 
               {tab === "library" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
                   {library.map((c) => (
-                    <div key={c.cell_id + c.book2_concept_name} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col">
-                      <div className="flex items-center justify-between gap-2 mb-1.5">
-                        <span className="text-[10px] font-mono text-muted-foreground/75 border border-border/40 px-1.5 py-0.5 rounded leading-none">{c.cell_id}{c.stage ? ` · ${c.stage}` : ""}</span>
-                        {c.mapping_confidence && <span className="text-[10px] font-semibold uppercase tracking-wide text-emerald-400 border border-emerald-400/20 bg-emerald-400/10 px-1.5 py-0.5 rounded leading-none">{c.mapping_confidence} confidence</span>}
-                      </div>
-                      <p className="text-[13px] font-semibold text-foreground leading-tight">{c.book2_concept_name}</p>
-                      <p className="text-[12px] text-foreground/85 mt-1.5">{c.primary_message}</p>
-                      {c.secondary_message && <p className="text-[11px] text-muted-foreground/80 mt-0.5">{c.secondary_message}</p>}
-                      <p className="text-[11px] text-muted-foreground/70 mt-2 leading-snug">{c.visual_system}</p>
-                      {c.iap_read && <p className="text-[11px] text-primary/90 mt-2 leading-snug border-t border-border/20 pt-2">{c.iap_read}</p>}
-                      <div className="mt-2.5 pt-2.5 border-t border-border/20 flex flex-wrap gap-1">
-                        {[c.hook_variable, c.tone_variable, c.framework_variable, c.concept_variable, c.proof_variable, c.cta_variable].filter(Boolean).map((v, i) => (
-                          <span key={i} className="text-[10px] text-foreground/80 border border-border/40 bg-white/[0.03] px-1.5 py-0.5 rounded leading-none">{readableVariables(v)}</span>
-                        ))}
-                      </div>
-                    </div>
+                    <CreativeCard
+                      key={c.cell_id + c.book2_concept_name}
+                      data={cardFromCell(c.cell_id, {
+                        perfRows: getAnalysisData(seed, adAccountId)?.performance_by_cell,
+                        mst,
+                        ...getCreativeLinkContext(seed, adAccountId),
+                      })}
+                      expandFooter={
+                        <CrossLink to={`/app/analysis/library?focus=${c.cell_id}`} label="Open in IAP Library" />
+                      }
+                    />
                   ))}
                 </div>
               )}
@@ -129,6 +144,7 @@ export function CreativeScanView() {
                 )
               )}
             </div>
+            )}
           </div>
         );
       }}

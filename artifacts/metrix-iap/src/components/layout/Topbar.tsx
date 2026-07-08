@@ -4,6 +4,8 @@ import { ChevronRight, Bell, CheckCircle2, LogOut } from "lucide-react";
 import { useAccount } from "@/contexts/AccountContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { navTree } from "@/navigation/navTree";
+import { BrandLogo } from "@/components/brand/BrandMark";
+import { DateRangePicker } from "./DateRangePicker";
 
 // ─── Derive breadcrumb from navTree ────────────────────────────────────
 
@@ -62,7 +64,7 @@ export function Topbar() {
     <header className="h-11 flex items-center gap-3 px-4 shrink-0 mx-topbar">
       {/* Breadcrumb */}
       <nav aria-label="Breadcrumb" className="flex items-center gap-0 flex-1 min-w-0">
-        <span className="text-[11px] font-mono text-muted-foreground/60 shrink-0 pr-1">MX</span>
+        <BrandLogo className="w-4 h-4 shrink-0 mr-1" />
         {crumbs.map((crumb, i) => {
           const isLast = i === crumbs.length - 1;
           return (
@@ -87,6 +89,9 @@ export function Topbar() {
           );
         })}
       </nav>
+
+      {/* Global date range */}
+      <DateRangePicker />
 
       {/* Status */}
       {isManager ? (

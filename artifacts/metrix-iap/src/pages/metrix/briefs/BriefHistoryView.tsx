@@ -7,7 +7,9 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getBriefBuilder, getStrategyData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile, CrossLink,
+  RangeScopeBar, NoDataInRangeState,
 } from "../shared";
+import { useDateRange } from "@/contexts/DateRangeContext";
 import { FileClock, FileText } from "lucide-react";
 
 const SECTION = "Creative Briefs · 05";
@@ -24,6 +26,7 @@ export function BriefHistoryView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
+  const { rangeHasData } = useDateRange();
 
   return (
     <ModuleScopeGate section={SECTION} title="History" account={account}>
@@ -45,7 +48,12 @@ export function BriefHistoryView() {
               table="draft_briefs"
             />
             <ScopeBanner account={acct} />
+            <RangeScopeBar grainNote="Brief history derives from the account's full flight window — this import has no daily grain." />
 
+            {!rangeHasData ? (
+              <NoDataInRangeState what="brief history" />
+            ) : (
+            <>
             <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
               <MetricTile label="Total briefs" value={String(briefs.length)} />
               <MetricTile label="Drafts" value={String(drafts)} />
@@ -81,6 +89,8 @@ export function BriefHistoryView() {
                 </div>
               )}
             </div>
+            </>
+            )}
           </div>
         );
       }}

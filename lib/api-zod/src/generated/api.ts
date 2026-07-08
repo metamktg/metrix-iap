@@ -153,6 +153,40 @@ export const AuthChangePasswordResponse = zod.object({
 
 
 /**
+ * Always responds neutrally whether or not an account exists for the email (no account enumeration). When an account exists, a single-use reset link (valid ~1 hour) is emailed via the configured provider.
+ * @summary Request a password reset link
+ */
+export const AuthRequestPasswordResetBody = zod.object({
+  "email": zod.string().email()
+})
+
+export const AuthRequestPasswordResetResponse = zod.object({
+  "status": zod.enum(['ok'])
+})
+
+
+/**
+ * Consumes a single-use reset token from the emailed link and sets a new password. On success, every existing session for the user is revoked; the user must log in with the new password.
+ * @summary Complete a password reset with a token
+ */
+export const authResetPasswordBodyTokenMax = 200;
+
+export const authResetPasswordBodyNewPasswordMin = 8;
+export const authResetPasswordBodyNewPasswordMax = 200;
+
+
+
+export const AuthResetPasswordBody = zod.object({
+  "token": zod.string().min(1).max(authResetPasswordBodyTokenMax),
+  "new_password": zod.string().min(authResetPasswordBodyNewPasswordMin).max(authResetPasswordBodyNewPasswordMax)
+})
+
+export const AuthResetPasswordResponse = zod.object({
+  "status": zod.enum(['reset'])
+})
+
+
+/**
  * Returns invites created for this workspace, newest first. Requires a logged-in session with access to the workspace.
  * @summary List pending workspace invites
  */
@@ -242,6 +276,27 @@ export const ResendWorkspaceInviteResponse = zod.object({
   "status": zod.string(),
   "created_at": zod.string()
 })
+})
+
+
+/**
+ * Returns provisioned user accounts (real logins) for this workspace, newest first. Requires a logged-in session with access to the workspace.
+ * @summary List real workspace member accounts
+ */
+
+
+
+export const ListWorkspaceMembersParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.')
+})
+
+export const ListWorkspaceMembersResponse = zod.object({
+  "members": zod.array(zod.object({
+  "email": zod.string(),
+  "status": zod.enum(['active', 'invited']).describe('invited = provisioned but has not completed first login yet.'),
+  "created_at": zod.string(),
+  "last_login_at": zod.string().nullable()
+}))
 })
 
 
@@ -350,6 +405,162 @@ export const SubmitRequestAccessBody = zod.object({
 export const SubmitRequestAccessResponse = zod.object({
   "status": zod.enum(['received', 'already_requested']),
   "email": zod.string()
+})
+
+
+/**
+ * Returns persisted Report Builder defaults for this workspace. Any null field falls back to the seed's report_builder defaults on the client. Requires a logged-in session with access to the workspace.
+ * @summary Get workspace report-builder setting overrides
+ */
+
+
+
+export const GetReportSettingsParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.')
+})
+
+export const GetReportSettingsResponse = zod.object({
+  "default_branding": zod.string().nullable(),
+  "default_format": zod.string().nullable(),
+  "default_mode": zod.string().nullable(),
+  "schedule_enabled": zod.boolean().nullable(),
+  "schedule_cadence": zod.string().nullable(),
+  "schedule_recipients": zod.string().nullable()
+})
+
+
+/**
+ * Upserts Report Builder default overrides for this workspace and returns the persisted values. Requires a logged-in session with access to the workspace.
+ * @summary Update workspace report-builder settings
+ */
+
+
+
+export const UpdateReportSettingsParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.')
+})
+
+export const UpdateReportSettingsBody = zod.object({
+  "default_branding": zod.enum(['metrix', 'white_label']).nullish(),
+  "default_format": zod.enum(['pdf', 'google_doc', 'html']).nullish(),
+  "default_mode": zod.enum(['internal', 'client']).nullish(),
+  "schedule_enabled": zod.boolean().nullish(),
+  "schedule_cadence": zod.enum(['weekly', 'monthly']).nullish(),
+  "schedule_recipients": zod.string().nullish().describe('Comma-separated recipient emails for scheduled sends.')
+})
+
+export const UpdateReportSettingsResponse = zod.object({
+  "default_branding": zod.string().nullable(),
+  "default_format": zod.string().nullable(),
+  "default_mode": zod.string().nullable(),
+  "schedule_enabled": zod.boolean().nullable(),
+  "schedule_cadence": zod.string().nullable(),
+  "schedule_recipients": zod.string().nullable()
+})
+
+
+/**
+ * Returns generated report documents (with their content snapshot) for the workspace, newest first. Clients scope to an ad account by filtering on ad_account_id. Requires a logged-in session with access to the workspace.
+ * @summary List generated reports for the workspace
+ */
+
+
+
+export const ListWorkspaceReportsParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.')
+})
+
+export const ListWorkspaceReportsResponse = zod.object({
+  "reports": zod.array(zod.object({
+  "id": zod.number(),
+  "ad_account_id": zod.string(),
+  "title": zod.string(),
+  "mode": zod.string(),
+  "branding": zod.string(),
+  "export_format": zod.string(),
+  "section_count": zod.number(),
+  "range_start": zod.string().nullable(),
+  "range_end": zod.string().nullable(),
+  "range_source": zod.string().nullable(),
+  "summary": zod.string(),
+  "model_json": zod.string(),
+  "generated_at": zod.string()
+}))
+})
+
+
+/**
+ * Persists a generated report snapshot (composed sections and metadata) so it appears in Report History and can be re-downloaded from Exports exactly as generated. Requires a logged-in session with access to the workspace.
+ * @summary Store a generated report document
+ */
+
+
+
+export const CreateWorkspaceReportParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.')
+})
+
+export const createWorkspaceReportBodyAdAccountIdMax = 200;
+
+export const createWorkspaceReportBodyTitleMax = 300;
+
+
+export const createWorkspaceReportBodySummaryMax = 1000;
+
+export const createWorkspaceReportBodyModelJsonMin = 2;
+export const createWorkspaceReportBodyModelJsonMax = 2000000;
+
+
+
+export const CreateWorkspaceReportBody = zod.object({
+  "ad_account_id": zod.string().min(1).max(createWorkspaceReportBodyAdAccountIdMax),
+  "title": zod.string().min(1).max(createWorkspaceReportBodyTitleMax),
+  "mode": zod.enum(['internal', 'client']),
+  "branding": zod.enum(['metrix', 'white_label']),
+  "export_format": zod.enum(['pdf', 'google_doc', 'html']),
+  "section_count": zod.number().min(1),
+  "range_start": zod.string().nullish().describe('ISO date the report window starts; null when no data window existed.'),
+  "range_end": zod.string().nullish(),
+  "range_source": zod.enum(['override', 'global']).nullish().describe('Whether the window was a per-report override or inherited from the global range.'),
+  "summary": zod.string().min(1).max(createWorkspaceReportBodySummaryMax),
+  "model_json": zod.string().min(createWorkspaceReportBodyModelJsonMin).max(createWorkspaceReportBodyModelJsonMax).describe('JSON-serialized report document snapshot (sections and blocks) captured at generation time.')
+})
+
+export const CreateWorkspaceReportResponse = zod.object({
+  "status": zod.enum(['created']),
+  "report": zod.object({
+  "id": zod.number(),
+  "ad_account_id": zod.string(),
+  "title": zod.string(),
+  "mode": zod.string(),
+  "branding": zod.string(),
+  "export_format": zod.string(),
+  "section_count": zod.number(),
+  "range_start": zod.string().nullable(),
+  "range_end": zod.string().nullable(),
+  "range_source": zod.string().nullable(),
+  "summary": zod.string(),
+  "model_json": zod.string(),
+  "generated_at": zod.string()
+})
+})
+
+
+/**
+ * Permanently deletes a generated report document (and its stored snapshot) from Report History. Only in-app generated reports can be deleted; seed history entries live in the seed bundle and are not addressable here. Requires a logged-in session with access to the workspace.
+ * @summary Delete a generated report
+ */
+
+
+
+export const DeleteWorkspaceReportParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.'),
+  "reportId": zod.coerce.number().describe('Generated report identifier.')
+})
+
+export const DeleteWorkspaceReportResponse = zod.object({
+  "status": zod.enum(['deleted']),
+  "id": zod.number()
 })
 
 

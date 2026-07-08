@@ -7,6 +7,7 @@
     "hello": "tsx ./src/hello.ts",
     "check:metrix-settings-api": "tsx ./src/check-metrix-settings-api.ts",
     "smoke:api-server": "tsx ./src/smoke-api-server.ts",
+    "smoke:metrix-iap-build": "tsx ./src/smoke-metrix-iap-build.ts",
     "import:metrix": "tsx ./src/metrix-supabase/import.ts",
     "create:user": "tsx ./src/create-user.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"

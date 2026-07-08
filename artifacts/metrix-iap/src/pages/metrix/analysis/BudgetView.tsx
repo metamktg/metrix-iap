@@ -10,7 +10,10 @@ import { useMetricSelection } from "@/lib/metric-selection";
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
   CaveatNote, MetricSelectionBar, SectionCard, fmtUSD, fmtNum, fmtPct, eventLabel,
+  RangeScopeBar, NoDataInRangeState,
 } from "../shared";
+import { useDateRange } from "@/contexts/DateRangeContext";
+import { useCellRangeScope } from "@/lib/date-scope";
 import { PlacementTable } from "./tables";
 import { Wallet } from "lucide-react";
 
@@ -27,6 +30,8 @@ export function BudgetView() {
     [summary]
   );
   const { selected, toggle, isSelected } = useMetricSelection(adAccountId ?? "none", allEvents);
+  const { rangeHasData } = useDateRange();
+  const { inRangeCell } = useCellRangeScope(getAnalysisData(seed, adAccountId));
 
   return (
     <ModuleScopeGate section={SECTION} title="Budget" account={account}>
@@ -53,6 +58,7 @@ export function BudgetView() {
         const conceptSpend = new Map<string, number>();
         for (const r of a?.performance_by_cell ?? []) {
           if (!selected.includes(r["Result type"])) continue;
+          if (!inRangeCell(r.cell_id)) continue;
           conceptSpend.set(r.book2_concept_name, (conceptSpend.get(r.book2_concept_name) ?? 0) + r["Amount spent (USD)"]);
         }
         const conceptRows = Array.from(conceptSpend.entries()).sort((x, y) => y[1] - x[1]);
@@ -68,7 +74,12 @@ export function BudgetView() {
             />
             <ScopeBanner account={acct} />
             <MetricSelectionBar events={allEvents} isSelected={isSelected} onToggle={toggle} />
+            <RangeScopeBar grainNote="Budget figures aggregate the account's full flight window — this import has no daily grain." />
 
+            {!rangeHasData ? (
+              <NoDataInRangeState what="budget data" />
+            ) : (
+            <>
             <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
               <MetricTile label="Total spend" value={fmtUSD(summary.total_spend_usd, 0)} />
               <MetricTile label="Impressions" value={fmtNum(summary.total_impressions)} />
@@ -146,6 +157,8 @@ export function BudgetView() {
                 </SectionCard>
               )}
             </div>
+            </>
+            )}
           </div>
         );
       }}

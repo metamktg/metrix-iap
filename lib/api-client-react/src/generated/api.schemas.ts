@@ -123,6 +123,45 @@ export interface AuthChangePasswordInput {
   new_password: string;
 }
 
+export interface AuthRequestPasswordResetInput {
+  email: string;
+}
+
+export type AuthRequestPasswordResetResultStatus = typeof AuthRequestPasswordResetResultStatus[keyof typeof AuthRequestPasswordResetResultStatus];
+
+
+export const AuthRequestPasswordResetResultStatus = {
+  ok: 'ok',
+} as const;
+
+export interface AuthRequestPasswordResetResult {
+  status: AuthRequestPasswordResetResultStatus;
+}
+
+export interface AuthResetPasswordInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  token: string;
+  /**
+     * @minLength 8
+     * @maxLength 200
+     */
+  new_password: string;
+}
+
+export type AuthResetPasswordResultStatus = typeof AuthResetPasswordResultStatus[keyof typeof AuthResetPasswordResultStatus];
+
+
+export const AuthResetPasswordResultStatus = {
+  reset: 'reset',
+} as const;
+
+export interface AuthResetPasswordResult {
+  status: AuthResetPasswordResultStatus;
+}
+
 export interface WaitlistEntriesResult {
   entries: WaitlistEntry[];
   total: number;
@@ -189,6 +228,29 @@ export interface WorkspaceInvitesResult {
   invites: WorkspaceInvite[];
 }
 
+/**
+ * invited = provisioned but has not completed first login yet.
+ */
+export type WorkspaceMemberStatus = typeof WorkspaceMemberStatus[keyof typeof WorkspaceMemberStatus];
+
+
+export const WorkspaceMemberStatus = {
+  active: 'active',
+  invited: 'invited',
+} as const;
+
+export interface WorkspaceMember {
+  email: string;
+  /** invited = provisioned but has not completed first login yet. */
+  status: WorkspaceMemberStatus;
+  created_at: string;
+  last_login_at: string | null;
+}
+
+export interface WorkspaceMembersResult {
+  members: WorkspaceMember[];
+}
+
 export interface ChannelPref {
   /** @minLength 1 */
   id: string;
@@ -200,6 +262,58 @@ export interface EventPref {
   id: string;
   email: boolean;
   in_app: boolean;
+}
+
+export type ReportSettingsUpdateInputDefaultBranding = typeof ReportSettingsUpdateInputDefaultBranding[keyof typeof ReportSettingsUpdateInputDefaultBranding] | null;
+
+
+export const ReportSettingsUpdateInputDefaultBranding = {
+  metrix: 'metrix',
+  white_label: 'white_label',
+} as const;
+
+export type ReportSettingsUpdateInputDefaultFormat = typeof ReportSettingsUpdateInputDefaultFormat[keyof typeof ReportSettingsUpdateInputDefaultFormat] | null;
+
+
+export const ReportSettingsUpdateInputDefaultFormat = {
+  pdf: 'pdf',
+  google_doc: 'google_doc',
+  html: 'html',
+} as const;
+
+export type ReportSettingsUpdateInputDefaultMode = typeof ReportSettingsUpdateInputDefaultMode[keyof typeof ReportSettingsUpdateInputDefaultMode] | null;
+
+
+export const ReportSettingsUpdateInputDefaultMode = {
+  internal: 'internal',
+  client: 'client',
+} as const;
+
+export type ReportSettingsUpdateInputScheduleCadence = typeof ReportSettingsUpdateInputScheduleCadence[keyof typeof ReportSettingsUpdateInputScheduleCadence] | null;
+
+
+export const ReportSettingsUpdateInputScheduleCadence = {
+  weekly: 'weekly',
+  monthly: 'monthly',
+} as const;
+
+export interface ReportSettingsUpdateInput {
+  default_branding?: ReportSettingsUpdateInputDefaultBranding;
+  default_format?: ReportSettingsUpdateInputDefaultFormat;
+  default_mode?: ReportSettingsUpdateInputDefaultMode;
+  schedule_enabled?: boolean | null;
+  schedule_cadence?: ReportSettingsUpdateInputScheduleCadence;
+  /** Comma-separated recipient emails for scheduled sends. */
+  schedule_recipients?: string | null;
+}
+
+export interface ReportSettingsResult {
+  default_branding: string | null;
+  default_format: string | null;
+  default_mode: string | null;
+  schedule_enabled: boolean | null;
+  schedule_cadence: string | null;
+  schedule_recipients: string | null;
 }
 
 export interface NotificationPrefsUpdateInput {
@@ -261,6 +375,120 @@ export const RequestAccessResultStatus = {
 export interface RequestAccessResult {
   status: RequestAccessResultStatus;
   email: string;
+}
+
+export type GeneratedReportCreateInputMode = typeof GeneratedReportCreateInputMode[keyof typeof GeneratedReportCreateInputMode];
+
+
+export const GeneratedReportCreateInputMode = {
+  internal: 'internal',
+  client: 'client',
+} as const;
+
+export type GeneratedReportCreateInputBranding = typeof GeneratedReportCreateInputBranding[keyof typeof GeneratedReportCreateInputBranding];
+
+
+export const GeneratedReportCreateInputBranding = {
+  metrix: 'metrix',
+  white_label: 'white_label',
+} as const;
+
+export type GeneratedReportCreateInputExportFormat = typeof GeneratedReportCreateInputExportFormat[keyof typeof GeneratedReportCreateInputExportFormat];
+
+
+export const GeneratedReportCreateInputExportFormat = {
+  pdf: 'pdf',
+  google_doc: 'google_doc',
+  html: 'html',
+} as const;
+
+/**
+ * Whether the window was a per-report override or inherited from the global range.
+ */
+export type GeneratedReportCreateInputRangeSource = typeof GeneratedReportCreateInputRangeSource[keyof typeof GeneratedReportCreateInputRangeSource] | null;
+
+
+export const GeneratedReportCreateInputRangeSource = {
+  override: 'override',
+  global: 'global',
+} as const;
+
+export interface GeneratedReportCreateInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  ad_account_id: string;
+  /**
+     * @minLength 1
+     * @maxLength 300
+     */
+  title: string;
+  mode: GeneratedReportCreateInputMode;
+  branding: GeneratedReportCreateInputBranding;
+  export_format: GeneratedReportCreateInputExportFormat;
+  /** @minimum 1 */
+  section_count: number;
+  /** ISO date the report window starts; null when no data window existed. */
+  range_start?: string | null;
+  range_end?: string | null;
+  /** Whether the window was a per-report override or inherited from the global range. */
+  range_source?: GeneratedReportCreateInputRangeSource;
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  summary: string;
+  /**
+     * JSON-serialized report document snapshot (sections and blocks) captured at generation time.
+     * @minLength 2
+     * @maxLength 2000000
+     */
+  model_json: string;
+}
+
+export interface GeneratedReport {
+  id: number;
+  ad_account_id: string;
+  title: string;
+  mode: string;
+  branding: string;
+  export_format: string;
+  section_count: number;
+  range_start: string | null;
+  range_end: string | null;
+  range_source: string | null;
+  summary: string;
+  model_json: string;
+  generated_at: string;
+}
+
+export type GeneratedReportCreateResultStatus = typeof GeneratedReportCreateResultStatus[keyof typeof GeneratedReportCreateResultStatus];
+
+
+export const GeneratedReportCreateResultStatus = {
+  created: 'created',
+} as const;
+
+export interface GeneratedReportCreateResult {
+  status: GeneratedReportCreateResultStatus;
+  report: GeneratedReport;
+}
+
+export type GeneratedReportDeleteResultStatus = typeof GeneratedReportDeleteResultStatus[keyof typeof GeneratedReportDeleteResultStatus];
+
+
+export const GeneratedReportDeleteResultStatus = {
+  deleted: 'deleted',
+} as const;
+
+export interface GeneratedReportDeleteResult {
+  status: GeneratedReportDeleteResultStatus;
+  id: number;
+}
+
+export interface GeneratedReportsResult {
+  reports: GeneratedReport[];
 }
 
 export interface ApiError {

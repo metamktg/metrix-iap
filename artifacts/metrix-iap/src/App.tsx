@@ -1,4 +1,4 @@
-import { Switch, Route, Redirect, Router as WouterRouter } from "wouter";
+import { Switch, Route, Redirect, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,11 +6,14 @@ import { MetrixDataProvider } from "@/contexts/MetrixDataContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { ChangePasswordPage } from "@/pages/auth/ChangePasswordPage";
+import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage";
+import { ResetPasswordPage } from "@/pages/auth/ResetPasswordPage";
 import { Loader2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 
 // Seed-hydrated Metrix pages (manager → ad-account hierarchy)
 import { AccountProvider } from "@/contexts/AccountContext";
+import { DateRangeProvider } from "@/contexts/DateRangeContext";
 import { Overview } from "@/pages/metrix/Overview";
 import { SignalView } from "@/pages/metrix/listen/SignalView";
 import { AlertsView } from "@/pages/metrix/listen/AlertsView";
@@ -29,6 +32,7 @@ import { BriefHistoryView } from "@/pages/metrix/briefs/BriefHistoryView";
 import { NewReportView } from "@/pages/metrix/reports/NewReportView";
 import { ReportHistoryView } from "@/pages/metrix/reports/ReportHistoryView";
 import { ExportsView } from "@/pages/metrix/reports/ExportsView";
+import { ReportSettingsView } from "@/pages/metrix/reports/ReportSettingsView";
 import { ConceptMapView } from "@/pages/metrix/mst/ConceptMapView";
 import { MatrixBuilderView } from "@/pages/metrix/mst/MatrixBuilderView";
 import { CreativeScanView } from "@/pages/metrix/mst/CreativeScanView";
@@ -88,6 +92,7 @@ export function Router() {
       <Route path="/app/reports/new"     component={NewReportView} />
       <Route path="/app/reports/history" component={ReportHistoryView} />
       <Route path="/app/reports/exports" component={ExportsView} />
+      <Route path="/app/reports/settings" component={ReportSettingsView} />
 
       {/* ── 07 MST ────────────────────────────────────────────────────── */}
       <Route path="/app/mst/concept-map"   component={ConceptMapView} />
@@ -125,6 +130,12 @@ export function Router() {
 
 function AuthGate() {
   const { user, isLoading } = useAuth();
+  const [location, navigate] = useLocation();
+
+  // The emailed reset link must work regardless of session state.
+  if (location === "/reset-password") {
+    return <ResetPasswordPage onBackToLogin={() => navigate("/", { replace: true })} />;
+  }
 
   if (isLoading) {
     return (
@@ -134,15 +145,22 @@ function AuthGate() {
     );
   }
 
-  if (!user) return <LoginPage />;
+  if (!user) {
+    if (location === "/forgot-password") {
+      return <ForgotPasswordPage onBack={() => navigate("/", { replace: true })} />;
+    }
+    return <LoginPage />;
+  }
   if (user.must_change_password) return <ChangePasswordPage />;
 
   return (
     <MetrixDataProvider>
       <AccountProvider>
-        <AppShell>
-          <Router />
-        </AppShell>
+        <DateRangeProvider>
+          <AppShell>
+            <Router />
+          </AppShell>
+        </DateRangeProvider>
       </AccountProvider>
     </MetrixDataProvider>
   );

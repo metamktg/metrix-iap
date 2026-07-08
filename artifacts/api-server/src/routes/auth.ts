@@ -6,8 +6,12 @@ import {
   AuthLogoutResponse,
   AuthChangePasswordBody,
   AuthChangePasswordResponse,
+  AuthRequestPasswordResetBody,
+  AuthRequestPasswordResetResponse,
+  AuthResetPasswordBody,
+  AuthResetPasswordResponse,
 } from "@workspace/api-zod";
-import { db, usersTable } from "@workspace/db";
+import { db, usersTable, userSessionsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { hashPassword, verifyPassword } from "../lib/passwords";
 import {
@@ -18,6 +22,12 @@ import {
   setSessionCookie,
   clearSessionCookie,
 } from "../lib/sessions";
+import {
+  createPasswordResetToken,
+  consumePasswordResetToken,
+} from "../lib/passwordResets";
+import { sendPasswordResetEmail } from "../lib/passwordResetEmail";
+import { getAppBaseUrl } from "../lib/appUrl";
 import { requireAuth } from "../middlewares/requireAuth";
 import { loginRateLimit } from "../middlewares/loginRateLimit";
 
@@ -121,6 +131,85 @@ router.post("/metrix/auth/change-password", requireAuth, async (req, res) => {
     res.json(data);
   } catch (err) {
     req.log.error({ err }, "Password change failed");
+    res.status(503).json({ message: "Authentication service unavailable." });
+  }
+});
+
+router.post(
+  "/metrix/auth/request-password-reset",
+  loginRateLimit,
+  async (req, res) => {
+    const parsed = AuthRequestPasswordResetBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ message: "A valid email address is required." });
+      return;
+    }
+    const email = parsed.data.email.trim().toLowerCase();
+    const neutral = AuthRequestPasswordResetResponse.parse({ status: "ok" });
+
+    try {
+      const [user] = await db
+        .select({ id: usersTable.id, email: usersTable.email })
+        .from(usersTable)
+        .where(eq(usersTable.email, email))
+        .limit(1);
+
+      if (!user) {
+        // Neutral response: never reveal whether an account exists.
+        req.log.info({ email }, "password reset requested for unknown email");
+        res.json(neutral);
+        return;
+      }
+
+      const { token } = await createPasswordResetToken(user.id);
+      const appBaseUrl = getAppBaseUrl();
+      const resetUrl = `${appBaseUrl}reset-password?token=${token}`;
+      // Fire-and-forget: delivery outcome must not change the response.
+      void sendPasswordResetEmail(user.email, resetUrl, appBaseUrl, req.log);
+
+      res.json(neutral);
+    } catch (err) {
+      req.log.error({ err }, "Password reset request failed");
+      res.status(503).json({ message: "Authentication service unavailable." });
+    }
+  },
+);
+
+router.post("/metrix/auth/reset-password", loginRateLimit, async (req, res) => {
+  const parsed = AuthResetPasswordBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({
+      message: "A reset token and a new password of at least 8 characters are required.",
+    });
+    return;
+  }
+
+  try {
+    const resetToken = await consumePasswordResetToken(parsed.data.token);
+    if (!resetToken) {
+      res.status(400).json({
+        message:
+          "This reset link is invalid, expired, or has already been used. Request a new one from the login page.",
+      });
+      return;
+    }
+
+    const passwordHash = await hashPassword(parsed.data.new_password);
+    await db
+      .update(usersTable)
+      .set({ passwordHash, mustChangePassword: false })
+      .where(eq(usersTable.id, resetToken.userId));
+
+    // Revoke every existing session — the user logs in fresh with the new
+    // password (mirrors change-password session revocation).
+    await db
+      .delete(userSessionsTable)
+      .where(eq(userSessionsTable.userId, resetToken.userId));
+
+    req.log.info({ userId: resetToken.userId }, "password reset completed");
+    res.json(AuthResetPasswordResponse.parse({ status: "reset" }));
+  } catch (err) {
+    req.log.error({ err }, "Password reset failed");
     res.status(503).json({ message: "Authentication service unavailable." });
   }
 });

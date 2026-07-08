@@ -9,7 +9,9 @@ import { getAdAccount, getStrategyData, getBriefBuilder } from "@/lib/data/metri
 import {
   ModuleHeader, ScopeBanner, ModuleTabs, ModuleScopeGate, PendingState,
   MetricTile, CrossLink, useFocusParam,
+  RangeScopeBar, NoDataInRangeState,
 } from "../shared";
+import { useDateRange } from "@/contexts/DateRangeContext";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { cn } from "@/lib/utils";
 import { Layers, FlaskConical, AlertTriangle, ArrowRight } from "lucide-react";
@@ -36,6 +38,7 @@ export function HypothesisQueueView() {
   const [tab, setTab] = useState<Tab>("queue");
   const focus = useFocusParam();
   const [detail, setDetail] = useState<ActiveHypothesis | null>(null);
+  const { rangeHasData } = useDateRange();
 
   const s = getStrategyData(seed, adAccountId);
 
@@ -82,7 +85,12 @@ export function HypothesisQueueView() {
               table="active_hypotheses, message_pillars"
             />
             <ScopeBanner account={acct} />
+            <RangeScopeBar grainNote="Hypotheses derive from the account's full flight window — this import has no daily grain." />
 
+            {!rangeHasData ? (
+              <NoDataInRangeState what="hypothesis data" />
+            ) : (
+            <>
             <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
               <MetricTile label="In queue" value={String(hyps.length)} />
               <MetricTile label="Ready for briefs" value={String(ready.length)} />
@@ -167,6 +175,8 @@ export function HypothesisQueueView() {
                 )
               )}
             </div>
+            </>
+            )}
 
             {detail && (
               <InfoDrawer

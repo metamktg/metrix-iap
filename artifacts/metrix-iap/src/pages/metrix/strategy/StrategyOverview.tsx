@@ -8,7 +8,9 @@ import { getAdAccount, getStrategyData, getBriefBuilder } from "@/lib/data/metri
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CrossLink, fmtNum,
+  RangeScopeBar, NoDataInRangeState,
 } from "../shared";
+import { useDateRange } from "@/contexts/DateRangeContext";
 import { Compass, Map, Users, ListChecks } from "lucide-react";
 
 const SECTION = "Strategy · 04";
@@ -17,6 +19,7 @@ export function StrategyOverview() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
+  const { rangeHasData } = useDateRange();
 
   return (
     <ModuleScopeGate section={SECTION} title="Strategy Overview" account={account}>
@@ -72,7 +75,12 @@ export function StrategyOverview() {
               table="message_pillars, active_hypotheses"
             />
             <ScopeBanner account={acct} />
+            <RangeScopeBar grainNote="Strategy derives from the account's full flight window — this import has no daily grain." />
 
+            {!rangeHasData ? (
+              <NoDataInRangeState what="strategy data" />
+            ) : (
+            <>
             <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
               <MetricTile label="Message pillars" value={fmtNum(pillars.length)} />
               <MetricTile label="Active hypotheses" value={fmtNum(hypotheses.length)} />
@@ -114,6 +122,8 @@ export function StrategyOverview() {
                 </div>
               </SectionCard>
             </div>
+            </>
+            )}
           </div>
         );
       }}

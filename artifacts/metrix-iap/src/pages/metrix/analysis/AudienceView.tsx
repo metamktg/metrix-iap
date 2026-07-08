@@ -9,7 +9,9 @@ import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, fmtUSD, fmtNum, fmtPct,
+  RangeScopeBar, NoDataInRangeState,
 } from "../shared";
+import { useDateRange } from "@/contexts/DateRangeContext";
 import { DemographicTable } from "./tables";
 import { Users } from "lucide-react";
 
@@ -20,6 +22,7 @@ export function AudienceView() {
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
   const analysis = getAnalysisData(seed, adAccountId);
+  const { rangeHasData } = useDateRange();
 
   const segments = useMemo(() => {
     const rows = analysis?.demographic_registration_signal ?? [];
@@ -65,7 +68,12 @@ export function AudienceView() {
               table="demographic_registration_signal"
             />
             <ScopeBanner account={acct} />
+            <RangeScopeBar grainNote="Demographic signal aggregates each cell's full flight window — this import has no daily grain." />
 
+            {!rangeHasData ? (
+              <NoDataInRangeState what="audience data" />
+            ) : (
+            <>
             <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
               <MetricTile label="Segments" value={fmtNum(segments.length)} />
               <MetricTile label="Signal spend" value={fmtUSD(totalSpend, 0)} />
@@ -99,6 +107,8 @@ export function AudienceView() {
                 <DemographicTable rows={rows} />
               </SectionCard>
             </div>
+            </>
+            )}
           </div>
         );
       }}

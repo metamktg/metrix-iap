@@ -3,7 +3,7 @@
 // HTML rendering contains the expected, escaped content.
 
 import { describe, it, expect } from "vitest";
-import { buildReportModel, renderReportHtml } from "./reportExport";
+import { buildReportModel, renderReportHtml, serializeReportModel, parseReportModel } from "./reportExport";
 import type { MetrixSeed } from "./data/seedTypes";
 
 const SECTIONS = [
@@ -208,6 +208,58 @@ describe("buildReportModel", () => {
 
   it("returns null for unknown or unconfigured accounts", () => {
     expect(buildReportModel(makeSeed(), "nope", "internal")).toBeNull();
+  });
+});
+
+describe("serializeReportModel / parseReportModel", () => {
+  it("round-trips a built model exactly, reviving generatedAt as a Date", () => {
+    const model = buildReportModel(makeSeed(), "bookster", "internal", {
+      windowLabel: "Jun 1 – Jun 30, 2026",
+    })!;
+    const parsed = parseReportModel(serializeReportModel(model));
+    expect(parsed).not.toBeNull();
+    expect(parsed!.generatedAt).toBeInstanceOf(Date);
+    expect(parsed!.generatedAt.getTime()).toBe(model.generatedAt.getTime());
+    expect(parsed!.windowLabel).toBe("Jun 1 – Jun 30, 2026");
+    // Everything except the revived Date must be structurally identical.
+    expect({ ...parsed!, generatedAt: null }).toEqual({ ...model, generatedAt: null });
+  });
+
+  it("preserves a null windowLabel through the round-trip", () => {
+    const model = buildReportModel(makeSeed(), "bookster", "client")!;
+    expect(model.windowLabel).toBeNull();
+    const parsed = parseReportModel(serializeReportModel(model))!;
+    expect(parsed.windowLabel).toBeNull();
+    expect(parsed.mode).toBe("client");
+  });
+
+  it("is stable: re-serializing a parsed snapshot yields the same JSON", () => {
+    const model = buildReportModel(makeSeed(), "bookster", "internal", { windowLabel: "June 2026" })!;
+    const json = serializeReportModel(model);
+    expect(serializeReportModel(parseReportModel(json)!)).toBe(json);
+  });
+
+  it("a parsed snapshot renders the same HTML as the original model", () => {
+    const model = buildReportModel(makeSeed(), "bookster", "internal", { windowLabel: "June 2026" })!;
+    const parsed = parseReportModel(serializeReportModel(model))!;
+    expect(renderReportHtml(parsed)).toBe(renderReportHtml(model));
+  });
+
+  it("returns null for malformed JSON", () => {
+    expect(parseReportModel("{not json at all")).toBeNull();
+    expect(parseReportModel("")).toBeNull();
+  });
+
+  it("returns null for JSON that is not a report snapshot", () => {
+    expect(parseReportModel("null")).toBeNull();
+    expect(parseReportModel('"just a string"')).toBeNull();
+    expect(parseReportModel("[]")).toBeNull();
+    expect(parseReportModel('{"docTitle":"x"}')).toBeNull(); // no sections array
+  });
+
+  it("returns null when generatedAt cannot be revived", () => {
+    expect(parseReportModel('{"sections":[],"generatedAt":"not-a-date"}')).toBeNull();
+    expect(parseReportModel('{"sections":[]}')).toBeNull();
   });
 });
 

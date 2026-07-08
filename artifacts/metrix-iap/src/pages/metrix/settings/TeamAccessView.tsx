@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   useListWorkspaceInvites,
+  useListWorkspaceMembers,
   useCreateWorkspaceInvite,
   useRevokeWorkspaceInvite,
   useResendWorkspaceInvite,
@@ -287,6 +288,7 @@ export function TeamAccessView() {
   const ws = getWorkspaceSettings(seed);
   const [inviteOpen, setInviteOpen] = useState(false);
   const { data: invitesData } = useListWorkspaceInvites(manager.id);
+  const { data: membersData } = useListWorkspaceMembers(manager.id);
 
   if (!ws) {
     return (
@@ -298,11 +300,45 @@ export function TeamAccessView() {
   }
 
   const { team } = ws;
+
+  // Real provisioned accounts from the auth database take precedence over the
+  // seed roster; seed members without a real account remain listed as roster
+  // entries so the workspace's intended team stays visible.
+  const realMembers = membersData?.members ?? [];
+  const realByEmail = new Map(realMembers.map((m) => [m.email.toLowerCase(), m]));
   const seedEmails = new Set(team.members.map((m) => m.email.toLowerCase()));
+
+  const memberRows = [
+    ...team.members.map((m) => {
+      const real = realByEmail.get(m.email.toLowerCase());
+      return {
+        key: m.id,
+        name: m.name,
+        email: m.email,
+        role: m.role,
+        invited: real ? real.status === "invited" : m.status === "invited",
+        lastActive: real ? real.last_login_at : m.last_active,
+        hasAccount: Boolean(real),
+      };
+    }),
+    ...realMembers
+      .filter((m) => !seedEmails.has(m.email.toLowerCase()))
+      .map((m) => ({
+        key: `user-${m.email}`,
+        name: m.email.split("@")[0],
+        email: m.email,
+        role: "member",
+        invited: m.status === "invited",
+        lastActive: m.last_login_at,
+        hasAccount: true,
+      })),
+  ];
+
+  const memberEmails = new Set(memberRows.map((m) => m.email.toLowerCase()));
   const pendingInvites = (invitesData?.invites ?? []).filter(
-    (inv) => !seedEmails.has(inv.email.toLowerCase()),
+    (inv) => !memberEmails.has(inv.email.toLowerCase()),
   );
-  const seatsUsed = team.members.length + pendingInvites.length;
+  const seatsUsed = memberRows.length + pendingInvites.length;
   const atSeatLimit = seatsUsed >= team.seat_limit;
 
   return (
@@ -334,14 +370,16 @@ export function TeamAccessView() {
               <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70 font-medium text-right w-24">Last active</span>
             </div>
             <div className="divide-y divide-border/20">
-              {team.members.map((m) => (
-                <div key={m.id} className="grid grid-cols-[1fr_auto_auto] gap-3 px-3 py-2.5 items-center">
+              {memberRows.map((m) => (
+                <div key={m.key} className="grid grid-cols-[1fr_auto_auto] gap-3 px-3 py-2.5 items-center" data-testid={`row-member-${m.email}`}>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-[12px] font-medium text-foreground truncate">{m.name}</span>
-                      {m.status === "invited" && (
+                      {m.invited ? (
                         <span className="text-[9px] font-semibold uppercase tracking-wide text-amber-400 border border-amber-400/25 bg-amber-400/10 px-1.5 py-0.5 rounded leading-none">Invited</span>
-                      )}
+                      ) : m.hasAccount ? (
+                        <span className="text-[9px] font-semibold uppercase tracking-wide text-emerald-400 border border-emerald-400/25 bg-emerald-400/10 px-1.5 py-0.5 rounded leading-none">Active</span>
+                      ) : null}
                     </div>
                     <div className="text-[10px] text-muted-foreground/70 truncate">{m.email}</div>
                   </div>
@@ -352,8 +390,8 @@ export function TeamAccessView() {
                     {m.role}
                   </span>
                   <span className="text-[10px] font-mono text-muted-foreground/70 text-right w-24">
-                    {m.last_active
-                      ? new Date(m.last_active).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+                    {m.lastActive
+                      ? new Date(m.lastActive).toLocaleDateString(undefined, { month: "short", day: "numeric" })
                       : "—"}
                   </span>
                 </div>

@@ -4,13 +4,16 @@
 
 import { useState, type FormEvent } from "react";
 import { Loader2, ArrowRight, CheckCircle2 } from "lucide-react";
+import { useLocation } from "wouter";
 import { joinAgentWaitlist, ApiError } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { AuthBrandHeader } from "@/components/brand/BrandMark";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function LoginPage() {
   const { login } = useAuth();
+  const [, navigate] = useLocation();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -59,13 +62,7 @@ export function LoginPage() {
     <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm space-y-8">
         {/* Brand */}
-        <div className="text-center space-y-1.5">
-          <div className="text-[13px] font-mono text-muted-foreground/60 tracking-widest">MX</div>
-          <h1 className="text-xl font-semibold text-foreground">Metrix</h1>
-          <p className="text-[12px] text-muted-foreground">
-            Sign in to your workspace
-          </p>
-        </div>
+        <AuthBrandHeader subtitle="Sign in to your workspace" />
 
         {/* Login */}
         <form onSubmit={handleLogin} className="space-y-3" data-testid="form-login">
@@ -86,9 +83,19 @@ export function LoginPage() {
             />
           </div>
           <div className="space-y-1.5">
-            <label htmlFor="login-password" className="text-[11px] font-medium text-muted-foreground">
-              Password
-            </label>
+            <div className="flex items-center justify-between">
+              <label htmlFor="login-password" className="text-[11px] font-medium text-muted-foreground">
+                Password
+              </label>
+              <button
+                type="button"
+                onClick={() => navigate("/forgot-password")}
+                className="text-[11px] text-muted-foreground/70 hover:text-foreground transition-colors"
+                data-testid="link-forgot-password"
+              >
+                Forgot password?
+              </button>
+            </div>
             <input
               id="login-password"
               type="password"

@@ -220,6 +220,68 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/auth/request-password-reset:
+    post:
+      operationId: authRequestPasswordReset
+      tags: [metrix]
+      summary: Request a password reset link
+      description: Always responds neutrally whether or not an account exists for the email (no account enumeration). When an account exists, a single-use reset link (valid ~1 hour) is emailed via the configured provider.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthRequestPasswordResetInput"
+      responses:
+        "200":
+          description: Neutral acknowledgement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthRequestPasswordResetResult"
+        "400":
+          description: Invalid email format
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/auth/reset-password:
+    post:
+      operationId: authResetPassword
+      tags: [metrix]
+      summary: Complete a password reset with a token
+      description: Consumes a single-use reset token from the emailed link and sets a new password. On success, every existing session for the user is revoked; the user must log in with the new password.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthResetPasswordInput"
+      responses:
+        "200":
+          description: Password reset
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResetPasswordResult"
+        "400":
+          description: Invalid, expired, or already-used token, or invalid new password
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/workspaces/{workspaceId}/invites:
     parameters:
       - name: workspaceId
@@ -395,6 +457,41 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/workspaces/{workspaceId}/members:
+    parameters:
+      - name: workspaceId
+        in: path
+        required: true
+        description: Workspace (manager account) identifier.
+        schema:
+          type: string
+          minLength: 1
+    get:
+      operationId: listWorkspaceMembers
+      tags: [metrix]
+      summary: List real workspace member accounts
+      description: Returns provisioned user accounts (real logins) for this workspace, newest first. Requires a logged-in session with access to the workspace.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Workspace members
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkspaceMembersResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this workspace
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/workspaces/{workspaceId}/notification-prefs:
     parameters:
       - name: workspaceId
@@ -495,6 +592,187 @@ paths:
                 $ref: "#/components/schemas/ApiError"
         "503":
           description: Request store unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/workspaces/{workspaceId}/report-settings:
+    parameters:
+      - name: workspaceId
+        in: path
+        required: true
+        description: Workspace (manager account) identifier.
+        schema:
+          type: string
+          minLength: 1
+    get:
+      operationId: getReportSettings
+      tags: [metrix]
+      summary: Get workspace report-builder setting overrides
+      description: Returns persisted Report Builder defaults for this workspace. Any null field falls back to the seed's report_builder defaults on the client. Requires a logged-in session with access to the workspace.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Report settings overrides
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportSettingsResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this workspace
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    put:
+      operationId: updateReportSettings
+      tags: [metrix]
+      summary: Update workspace report-builder settings
+      description: Upserts Report Builder default overrides for this workspace and returns the persisted values. Requires a logged-in session with access to the workspace.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportSettingsUpdateInput"
+      responses:
+        "200":
+          description: Report settings after the update
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportSettingsResult"
+        "400":
+          description: Invalid report settings payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/workspaces/{workspaceId}/reports:
+    parameters:
+      - name: workspaceId
+        in: path
+        required: true
+        description: Workspace (manager account) identifier.
+        schema:
+          type: string
+          minLength: 1
+    get:
+      operationId: listWorkspaceReports
+      tags: [metrix]
+      summary: List generated reports for the workspace
+      description: Returns generated report documents (with their content snapshot) for the workspace, newest first. Clients scope to an ad account by filtering on ad_account_id. Requires a logged-in session with access to the workspace.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Generated reports
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneratedReportsResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this workspace
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    post:
+      operationId: createWorkspaceReport
+      tags: [metrix]
+      summary: Store a generated report document
+      description: Persists a generated report snapshot (composed sections and metadata) so it appears in Report History and can be re-downloaded from Exports exactly as generated. Requires a logged-in session with access to the workspace.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GeneratedReportCreateInput"
+      responses:
+        "200":
+          description: Stored generated report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneratedReportCreateResult"
+        "400":
+          description: Invalid report payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this workspace
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/workspaces/{workspaceId}/reports/{reportId}:
+    parameters:
+      - name: workspaceId
+        in: path
+        required: true
+        description: Workspace (manager account) identifier.
+        schema:
+          type: string
+          minLength: 1
+      - name: reportId
+        in: path
+        required: true
+        description: Generated report identifier.
+        schema:
+          type: integer
+    delete:
+      operationId: deleteWorkspaceReport
+      tags: [metrix]
+      summary: Delete a generated report
+      description: Permanently deletes a generated report document (and its stored snapshot) from Report History. Only in-app generated reports can be deleted; seed history entries live in the seed bundle and are not addressable here. Requires a logged-in session with access to the workspace.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Report deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneratedReportDeleteResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this workspace
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Report not found in this workspace
           content:
             application/json:
               schema:
@@ -668,6 +946,44 @@ components:
       required:
         - current_password
         - new_password
+    AuthRequestPasswordResetInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+      required:
+        - email
+    AuthRequestPasswordResetResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok]
+      required:
+        - status
+    AuthResetPasswordInput:
+      type: object
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 200
+        new_password:
+          type: string
+          minLength: 8
+          maxLength: 200
+      required:
+        - token
+        - new_password
+    AuthResetPasswordResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [reset]
+      required:
+        - status
     WaitlistEntriesResult:
       type: object
       properties:
@@ -750,6 +1066,34 @@ components:
             $ref: "#/components/schemas/WorkspaceInvite"
       required:
         - invites
+    WorkspaceMember:
+      type: object
+      properties:
+        email:
+          type: string
+        status:
+          type: string
+          enum: [active, invited]
+          description: invited = provisioned but has not completed first login yet.
+        created_at:
+          type: string
+        last_login_at:
+          type: string
+          nullable: true
+      required:
+        - email
+        - status
+        - created_at
+        - last_login_at
+    WorkspaceMembersResult:
+      type: object
+      properties:
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkspaceMember"
+      required:
+        - members
     ChannelPref:
       type: object
       properties:
@@ -775,6 +1119,60 @@ components:
         - id
         - email
         - in_app
+    ReportSettingsUpdateInput:
+      type: object
+      properties:
+        default_branding:
+          type: string
+          enum: [metrix, white_label]
+          nullable: true
+        default_format:
+          type: string
+          enum: [pdf, google_doc, html]
+          nullable: true
+        default_mode:
+          type: string
+          enum: [internal, client]
+          nullable: true
+        schedule_enabled:
+          type: boolean
+          nullable: true
+        schedule_cadence:
+          type: string
+          enum: [weekly, monthly]
+          nullable: true
+        schedule_recipients:
+          type: string
+          nullable: true
+          description: Comma-separated recipient emails for scheduled sends.
+    ReportSettingsResult:
+      type: object
+      properties:
+        default_branding:
+          type: string
+          nullable: true
+        default_format:
+          type: string
+          nullable: true
+        default_mode:
+          type: string
+          nullable: true
+        schedule_enabled:
+          type: boolean
+          nullable: true
+        schedule_cadence:
+          type: string
+          nullable: true
+        schedule_recipients:
+          type: string
+          nullable: true
+      required:
+        - default_branding
+        - default_format
+        - default_mode
+        - schedule_enabled
+        - schedule_cadence
+        - schedule_recipients
     NotificationPrefsUpdateInput:
       type: object
       properties:
@@ -849,6 +1247,136 @@ components:
       required:
         - status
         - email
+    GeneratedReportCreateInput:
+      type: object
+      properties:
+        ad_account_id:
+          type: string
+          minLength: 1
+          maxLength: 200
+        title:
+          type: string
+          minLength: 1
+          maxLength: 300
+        mode:
+          type: string
+          enum: [internal, client]
+        branding:
+          type: string
+          enum: [metrix, white_label]
+        export_format:
+          type: string
+          enum: [pdf, google_doc, html]
+        section_count:
+          type: integer
+          minimum: 1
+        range_start:
+          type: string
+          nullable: true
+          description: ISO date the report window starts; null when no data window existed.
+        range_end:
+          type: string
+          nullable: true
+        range_source:
+          type: string
+          enum: [override, global]
+          nullable: true
+          description: Whether the window was a per-report override or inherited from the global range.
+        summary:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        model_json:
+          type: string
+          minLength: 2
+          maxLength: 2000000
+          description: JSON-serialized report document snapshot (sections and blocks) captured at generation time.
+      required:
+        - ad_account_id
+        - title
+        - mode
+        - branding
+        - export_format
+        - section_count
+        - summary
+        - model_json
+    GeneratedReport:
+      type: object
+      properties:
+        id:
+          type: integer
+        ad_account_id:
+          type: string
+        title:
+          type: string
+        mode:
+          type: string
+        branding:
+          type: string
+        export_format:
+          type: string
+        section_count:
+          type: integer
+        range_start:
+          type: string
+          nullable: true
+        range_end:
+          type: string
+          nullable: true
+        range_source:
+          type: string
+          nullable: true
+        summary:
+          type: string
+        model_json:
+          type: string
+        generated_at:
+          type: string
+      required:
+        - id
+        - ad_account_id
+        - title
+        - mode
+        - branding
+        - export_format
+        - section_count
+        - range_start
+        - range_end
+        - range_source
+        - summary
+        - model_json
+        - generated_at
+    GeneratedReportCreateResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [created]
+        report:
+          $ref: "#/components/schemas/GeneratedReport"
+      required:
+        - status
+        - report
+    GeneratedReportDeleteResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [deleted]
+        id:
+          type: integer
+      required:
+        - status
+        - id
+    GeneratedReportsResult:
+      type: object
+      properties:
+        reports:
+          type: array
+          items:
+            $ref: "#/components/schemas/GeneratedReport"
+      required:
+        - reports
     ApiError:
       type: object
       properties:

@@ -6,13 +6,20 @@
 import { useState, useEffect, useMemo } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
-import { getAdAccount, getAnalysisData, getStrategyData, getCampaignSummary } from "@/lib/data/metrixSeedAdapter";
+import { getAdAccount, getAnalysisData, getStrategyData, getCampaignSummary, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
 import { useMetricSelection } from "@/lib/metric-selection";
 import {
   ModuleHeader, ScopeBanner, ModuleTabs, ModuleScopeGate, PendingState,
   MetricTile, CaveatNote, MetricSelectionBar, CrossLink, useFocusParam,
   readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel,
+  RangeScopeBar, NoDataInRangeState,
 } from "../shared";
+import { useDateRange } from "@/contexts/DateRangeContext";
+import { useCellRangeScope } from "@/lib/date-scope";
+import { getMST } from "@/lib/data/metrixSeedAdapter";
+import { CreativeCard } from "@/components/creative/CreativeCard";
+import { cardFromCell } from "@/lib/creative-assembly";
+import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/SegmentGridModal";
 import { CellTable, VariableTable } from "./tables";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import type { CellPerformanceRow } from "@/lib/data/seedTypes";
@@ -38,6 +45,8 @@ export function IapLibraryView() {
   const [tab, setTab] = useState<Tab>("cells");
   const focus = useFocusParam();
   const [detail, setDetail] = useState<CellPerformanceRow | null>(null);
+  const [segmentsOpen, setSegmentsOpen] = useState(false);
+  const { rangeHasData } = useDateRange();
 
   const a = getAnalysisData(seed, adAccountId);
   const summary = getCampaignSummary(seed, adAccountId);
@@ -48,6 +57,7 @@ export function IapLibraryView() {
     [summary]
   );
   const { selected, toggle, isSelected } = useMetricSelection(adAccountId ?? "none", allEvents);
+  const { filterCells } = useCellRangeScope(a);
 
   // Deep-link: ?focus=<cell_id> opens the drawer on that cell
   useEffect(() => {
@@ -75,9 +85,11 @@ export function IapLibraryView() {
         const filterRows = <T extends { "Result type": string }>(rows: T[]) =>
           rows.filter((r) => selected.includes(r["Result type"]));
 
-        const cells = filterRows(a.performance_by_cell);
+        // Metric selection first, then the global date range: cells whose
+        // concept flight window misses the selected range are excluded.
+        const cells = filterCells(filterRows(a.performance_by_cell));
         const variables = filterRows(a.v3_variable_performance);
-        const topCells = filterRows(a.top_checkout_cells);
+        const topCells = filterCells(filterRows(a.top_checkout_cells));
         const topVariables = filterRows(a.top_checkout_variables);
 
         const totalSpend = cells.reduce((s, r) => s + r["Amount spent (USD)"], 0);
@@ -103,7 +115,12 @@ export function IapLibraryView() {
             />
             <ScopeBanner account={acct} />
             <MetricSelectionBar events={allEvents} isSelected={isSelected} onToggle={toggle} />
+            <RangeScopeBar grainNote="Cell and variable metrics aggregate each creative's full flight window — this import has no daily grain." />
 
+            {!rangeHasData ? (
+              <NoDataInRangeState what="creative performance" />
+            ) : (
+            <>
             <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
               <MetricTile label="Creative cells" value={String(uniqueCells)} />
               <MetricTile label="Spend (selected)" value={fmtUSD(totalSpend, 0)} />
@@ -137,6 +154,8 @@ export function IapLibraryView() {
                 variables.length ? <VariableTable rows={variables} /> : <PendingState title="No variables in selection" message="Adjust the metric selection to see variable performance." />
               )}
             </div>
+            </>
+            )}
 
             {detail && (
               <InfoDrawer
@@ -144,7 +163,8 @@ export function IapLibraryView() {
                 title={detail.book2_concept_name}
                 onClose={() => setDetail(null)}
                 footer={
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <SegmentDrilldownButton onClick={() => setSegmentsOpen(true)} />
                     <CrossLink to="/app/strategy/hypotheses" label="Open Hypothesis Queue" />
                     <CrossLink to="/app/briefs/builder" label="Open Brief Builder" />
                     <CrossLink to="/app/mst" label="View in MST" />
@@ -189,7 +209,29 @@ export function IapLibraryView() {
                     <span className="font-mono text-[10px] text-muted-foreground/60">{detail.legacy_library_match}</span>
                   </DrawerField>
                 )}
+                <DrawerField label="Creative">
+                  <div className="max-w-[220px]">
+                    <CreativeCard
+                      data={cardFromCell(detail.cell_id, {
+                        perfRows: a.performance_by_cell,
+                        mst: getMST(seed, adAccountId),
+                        ...getCreativeLinkContext(seed, adAccountId),
+                      })}
+                    />
+                  </div>
+                </DrawerField>
               </InfoDrawer>
+            )}
+
+            {detail && (
+              <SegmentGridModal
+                open={segmentsOpen}
+                onClose={() => setSegmentsOpen(false)}
+                kicker={`Creative cell · ${detail.cell_id}`}
+                title={detail.book2_concept_name}
+                analysis={a}
+                cellIds={[detail.cell_id]}
+              />
             )}
           </div>
         );
