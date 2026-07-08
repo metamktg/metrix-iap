@@ -23,6 +23,8 @@ export * from './generatedReportCreateInputMode';
 export * from './generatedReportCreateInputRangeSource';
 export * from './generatedReportCreateResult';
 export * from './generatedReportCreateResultStatus';
+export * from './generatedReportDeleteResult';
+export * from './generatedReportDeleteResultStatus';
 export * from './generatedReportsResult';
 export * from './healthStatus';
 export * from './listAgentWaitlistParams';

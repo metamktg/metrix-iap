@@ -21,6 +21,7 @@ import {
   CreateWorkspaceReportBody,
   CreateWorkspaceReportResponse,
   ListWorkspaceReportsResponse,
+  DeleteWorkspaceReportResponse,
 } from "@workspace/api-zod";
 import {
   db,
@@ -774,5 +775,36 @@ router.post("/metrix/workspaces/:workspaceId/reports", requireAuth, requireWorks
     CreateWorkspaceReportResponse.parse({ status: "created", report: reportRowToApi(row) }),
   );
 });
+
+router.delete(
+  "/metrix/workspaces/:workspaceId/reports/:reportId",
+  requireAuth,
+  requireWorkspaceAccess,
+  async (req, res) => {
+    const workspaceId = String(req.params.workspaceId);
+    const reportId = Number(String(req.params.reportId));
+    if (!Number.isInteger(reportId) || reportId <= 0) {
+      res.status(404).json({ message: "Report not found in this workspace." });
+      return;
+    }
+
+    const deleted = await db
+      .delete(workspaceReportsTable)
+      .where(
+        and(
+          eq(workspaceReportsTable.workspaceId, workspaceId),
+          eq(workspaceReportsTable.id, reportId),
+        ),
+      )
+      .returning({ id: workspaceReportsTable.id });
+
+    if (deleted.length === 0) {
+      res.status(404).json({ message: "Report not found in this workspace." });
+      return;
+    }
+
+    res.json(DeleteWorkspaceReportResponse.parse({ status: "deleted", id: deleted[0].id }));
+  },
+);
 
 export default router;

@@ -436,6 +436,18 @@ export interface GeneratedReportCreateResult {
   report: GeneratedReport;
 }
 
+export type GeneratedReportDeleteResultStatus = typeof GeneratedReportDeleteResultStatus[keyof typeof GeneratedReportDeleteResultStatus];
+
+
+export const GeneratedReportDeleteResultStatus = {
+  deleted: 'deleted',
+} as const;
+
+export interface GeneratedReportDeleteResult {
+  status: GeneratedReportDeleteResultStatus;
+  id: number;
+}
+
 export interface GeneratedReportsResult {
   reports: GeneratedReport[];
 }

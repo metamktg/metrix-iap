@@ -668,6 +668,53 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/workspaces/{workspaceId}/reports/{reportId}:
+    parameters:
+      - name: workspaceId
+        in: path
+        required: true
+        description: Workspace (manager account) identifier.
+        schema:
+          type: string
+          minLength: 1
+      - name: reportId
+        in: path
+        required: true
+        description: Generated report identifier.
+        schema:
+          type: integer
+    delete:
+      operationId: deleteWorkspaceReport
+      tags: [metrix]
+      summary: Delete a generated report
+      description: Permanently deletes a generated report document (and its stored snapshot) from Report History. Only in-app generated reports can be deleted; seed history entries live in the seed bundle and are not addressable here. Requires a logged-in session with access to the workspace.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Report deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneratedReportDeleteResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this workspace
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Report not found in this workspace
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /healthz:
     get:
       operationId: healthCheck
@@ -1210,6 +1257,17 @@ components:
       required:
         - status
         - report
+    GeneratedReportDeleteResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [deleted]
+        id:
+          type: integer
+      required:
+        - status
+        - id
     GeneratedReportsResult:
       type: object
       properties:

@@ -513,6 +513,24 @@ export const CreateWorkspaceReportResponse = zod.object({
 
 
 /**
+ * Permanently deletes a generated report document (and its stored snapshot) from Report History. Only in-app generated reports can be deleted; seed history entries live in the seed bundle and are not addressable here. Requires a logged-in session with access to the workspace.
+ * @summary Delete a generated report
+ */
+
+
+
+export const DeleteWorkspaceReportParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.'),
+  "reportId": zod.coerce.number().describe('Generated report identifier.')
+})
+
+export const DeleteWorkspaceReportResponse = zod.object({
+  "status": zod.enum(['deleted']),
+  "id": zod.number()
+})
+
+
+/**
  * Returns server health status
  * @summary Health check
  */

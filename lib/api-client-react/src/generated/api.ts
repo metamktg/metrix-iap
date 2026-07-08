@@ -27,6 +27,7 @@ import type {
   AuthUserResult,
   GeneratedReportCreateInput,
   GeneratedReportCreateResult,
+  GeneratedReportDeleteResult,
   GeneratedReportsResult,
   HealthStatus,
   ListAgentWaitlistParams,
@@ -1565,6 +1566,79 @@ export const useCreateWorkspaceReport = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getCreateWorkspaceReportMutationOptions(options));
+    }
+
+export const getDeleteWorkspaceReportUrl = (workspaceId: string,
+    reportId: number,) => {
+
+
+
+
+  return `/api/metrix/workspaces/${workspaceId}/reports/${reportId}`
+}
+
+/**
+ * Permanently deletes a generated report document (and its stored snapshot) from Report History. Only in-app generated reports can be deleted; seed history entries live in the seed bundle and are not addressable here. Requires a logged-in session with access to the workspace.
+ * @summary Delete a generated report
+ */
+export const deleteWorkspaceReport = async (workspaceId: string,
+    reportId: number, options?: RequestInit): Promise<GeneratedReportDeleteResult> => {
+
+  return customFetch<GeneratedReportDeleteResult>(getDeleteWorkspaceReportUrl(workspaceId,reportId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteWorkspaceReportMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWorkspaceReport>>, TError,{workspaceId: string;reportId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteWorkspaceReport>>, TError,{workspaceId: string;reportId: number}, TContext> => {
+
+const mutationKey = ['deleteWorkspaceReport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteWorkspaceReport>>, {workspaceId: string;reportId: number}> = (props) => {
+          const {workspaceId,reportId} = props ?? {};
+
+          return  deleteWorkspaceReport(workspaceId,reportId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteWorkspaceReportMutationResult = NonNullable<Awaited<ReturnType<typeof deleteWorkspaceReport>>>
+
+    export type DeleteWorkspaceReportMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Delete a generated report
+ */
+export const useDeleteWorkspaceReport = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWorkspaceReport>>, TError,{workspaceId: string;reportId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteWorkspaceReport>>,
+        TError,
+        {workspaceId: string;reportId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteWorkspaceReportMutationOptions(options));
     }
 
 export const getHealthCheckUrl = () => {

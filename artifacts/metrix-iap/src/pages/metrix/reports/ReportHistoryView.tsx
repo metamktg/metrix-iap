@@ -11,8 +11,24 @@ import { buildReportModel, downloadReportExport, parseReportModel, type Branding
 import { ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile, CrossLink, fmtNum } from "../shared";
 import { FORMAT_LABEL } from "./NewReportView";
 import { cn } from "@/lib/utils";
-import { History, FileText, Building2, Users, FileDown, Check, Loader2 } from "lucide-react";
-import { useListWorkspaceReports } from "@workspace/api-client-react";
+import { History, FileText, Building2, Users, FileDown, Check, Loader2, Trash2 } from "lucide-react";
+import {
+  useListWorkspaceReports,
+  useDeleteWorkspaceReport,
+  getListWorkspaceReportsQueryKey,
+} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const SECTION = "Reports · 06";
 
@@ -32,6 +48,8 @@ interface HistoryEntry {
   status: string;
   /** Stored document snapshot — present for reports generated in-app. */
   modelJson: string | null;
+  /** Raw DB id — present only for in-app generated reports (deletable). */
+  reportId: number | null;
 }
 
 export function ReportHistoryView() {
@@ -42,6 +60,33 @@ export function ReportHistoryView() {
   const { data: generatedData } = useListWorkspaceReports(manager.id);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [doneId, setDoneId] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<HistoryEntry | null>(null);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const { mutate: deleteReport, isPending: deleting } = useDeleteWorkspaceReport({
+    mutation: {
+      onSuccess: async (_result, vars) => {
+        await queryClient.invalidateQueries({
+          queryKey: getListWorkspaceReportsQueryKey(manager.id),
+        });
+        const title = confirmDelete?.reportId === vars.reportId ? confirmDelete.title : "Report";
+        setConfirmDelete(null);
+        toast({
+          title: "Report deleted",
+          description: `"${title}" was removed from Report History.`,
+        });
+      },
+      onError: () => {
+        setConfirmDelete(null);
+        toast({
+          variant: "destructive",
+          title: "Couldn't delete the report",
+          description: "The report was not deleted. Please try again.",
+        });
+      },
+    },
+  });
 
   async function download(entry: HistoryEntry, format: string) {
     if (busyId) return;
@@ -83,6 +128,7 @@ export function ReportHistoryView() {
             export_format: r.export_format,
             status: "exported",
             modelJson: r.model_json,
+            reportId: r.id,
           })),
           ...seedHistory.map((h) => ({
             id: h.id,
@@ -95,6 +141,7 @@ export function ReportHistoryView() {
             export_format: h.export_format ?? null,
             status: h.status,
             modelJson: null,
+            reportId: null,
           })),
         ];
 
@@ -183,9 +230,48 @@ export function ReportHistoryView() {
                         {doneId === r.id ? "Downloaded" : `Download ${FORMAT_LABEL[r.export_format] ?? r.export_format}`}
                       </button>
                     )}
+                    {r.reportId && (
+                      <button
+                        onClick={() => setConfirmDelete(r)}
+                        disabled={deleting}
+                        aria-label={`Delete report "${r.title}"`}
+                        title="Delete report"
+                        className="flex items-center justify-center h-8 w-8 rounded-md border border-border/50 text-muted-foreground hover:text-red-400 hover:border-red-400/30 hover:bg-red-400/5 shrink-0 transition-colors disabled:opacity-60"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
+
+              <AlertDialog open={confirmDelete !== null} onOpenChange={(open) => !open && !deleting && setConfirmDelete(null)}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete this report?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {confirmDelete
+                        ? `"${confirmDelete.title}" and its stored snapshot will be permanently removed from Report History and Exports. This can't be undone.`
+                        : ""}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      disabled={deleting}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (confirmDelete?.reportId) {
+                          deleteReport({ workspaceId: manager.id, reportId: confirmDelete.reportId });
+                        }
+                      }}
+                      className="bg-red-500/90 hover:bg-red-500 text-white"
+                    >
+                      {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Delete report"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
 
               <div className="flex items-center gap-4 pt-1">
                 <CrossLink to="/app/reports/new" label="Compose a new report" />
