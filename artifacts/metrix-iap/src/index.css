@@ -75,10 +75,11 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
-   METRIX IAP — Dark Premium Interface
-   Always dark. BG #050A14, Panel #0A1A33, Border #1E3A5F
-   Blue #1F7BFF, Cyan #76E3FF, Gold #F6B83F (priority only)
-   Success #23C483, Danger #FF4D5E
+   METRIX IAP — Dark Command-Center Cockpit
+   Deep navy/black layered background, glassmorphism cards,
+   electric blue #155dff / cyan #16d9ff intelligence layer.
+   BG deep #020711 · BG main #050b18 · Text #f5f8ff
+   Success #35d96f · Danger #ff4f61 · Warning #f7c948
    ═══════════════════════════════════════════════════════════ */
 
 :root {
@@ -88,75 +89,109 @@
   --elevate-1: rgba(255,255,255, .04);
   --elevate-2: rgba(255,255,255, .09);
 
-  /* Background #050A14 → hsl(222, 61%, 5%) */
-  --background: 222 61% 5%;
-  /* Foreground / text → near white */
-  --foreground: 210 20% 93%;
-  /* Border #1E3A5F → hsl(212, 52%, 24%) */
-  --border: 212 52% 24%;
+  /* ── Metrix raw cockpit tokens (spec) ── */
+  --mx-bg-deep: #020711;
+  --mx-bg-main: #050b18;
+  --mx-bg-panel: rgba(8, 18, 38, 0.82);
+  --mx-bg-card: rgba(9, 24, 50, 0.72);
+  --mx-bg-card-hover: rgba(12, 34, 70, 0.86);
 
-  /* Card = panel #0A1A33 → hsl(221, 66%, 12%) */
-  --card: 221 66% 12%;
-  --card-foreground: 210 20% 93%;
-  --card-border: 212 52% 24%;
+  --mx-border-soft: rgba(86, 140, 255, 0.18);
+  --mx-border-medium: rgba(71, 163, 255, 0.32);
+  --mx-border-strong: rgba(0, 188, 255, 0.55);
 
-  /* Sidebar = slightly darker than card */
-  --sidebar: 222 61% 5%;
-  --sidebar-foreground: 210 20% 93%;
-  --sidebar-border: 212 52% 24%;
-  --sidebar-primary: 214 100% 56%;
-  --sidebar-primary-foreground: 210 20% 97%;
-  --sidebar-accent: 221 55% 16%;
-  --sidebar-accent-foreground: 210 20% 90%;
-  --sidebar-ring: 214 100% 56%;
+  --mx-blue: #155dff;
+  --mx-blue-bright: #1f8fff;
+  --mx-cyan: #16d9ff;
+  --mx-cyan-soft: #62e6ff;
+  --mx-indigo: #183bff;
+
+  --mx-text-main: #f5f8ff;
+  --mx-text-muted: #9ba8bc;
+  --mx-text-soft: #c6d2e5;
+  --mx-text-faint: #6f7c91;
+
+  --mx-success: #35d96f;
+  --mx-danger: #ff4f61;
+  --mx-warning: #f7c948;
+
+  --mx-shadow-blue: 0 0 28px rgba(0, 128, 255, 0.28);
+  --mx-shadow-cyan: 0 0 36px rgba(22, 217, 255, 0.24);
+
+  --mx-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --mx-fast: 140ms var(--mx-ease);
+  --mx-med: 220ms var(--mx-ease);
+
+  /* ── Semantic tokens (HSL channels) mapped to the spec palette ── */
+  /* Background #050b18 */
+  --background: 221 66% 6%;
+  /* Foreground #f5f8ff */
+  --foreground: 222 100% 97%;
+  /* Border ≈ rgba(86,140,255,.18) blended over bg */
+  --border: 221 53% 20%;
+
+  /* Card = glass navy panel */
+  --card: 218 65% 10%;
+  --card-foreground: 222 100% 97%;
+  --card-border: 221 53% 20%;
+
+  /* Sidebar = deepest layer #020711 */
+  --sidebar: 220 79% 4%;
+  --sidebar-foreground: 222 100% 97%;
+  --sidebar-border: 221 53% 18%;
+  --sidebar-primary: 222 100% 54%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 218 55% 16%;
+  --sidebar-accent-foreground: 217 37% 88%;
+  --sidebar-ring: 222 100% 54%;
 
   /* Popover */
-  --popover: 221 66% 10%;
-  --popover-foreground: 210 20% 93%;
-  --popover-border: 212 52% 24%;
+  --popover: 219 65% 9%;
+  --popover-foreground: 222 100% 97%;
+  --popover-border: 221 53% 22%;
 
-  /* Primary = Metrix blue #1F7BFF → hsl(214, 100%, 56%) */
-  --primary: 214 100% 56%;
-  --primary-foreground: 210 20% 97%;
+  /* Primary = Metrix electric blue #155dff */
+  --primary: 222 100% 54%;
+  --primary-foreground: 0 0% 100%;
 
-  /* Secondary = subtle panel surface */
-  --secondary: 221 55% 16%;
-  --secondary-foreground: 210 20% 85%;
+  /* Secondary = subtle glass surface */
+  --secondary: 218 55% 15%;
+  --secondary-foreground: 217 37% 84%;
 
-  /* Muted = dimmed text/surface */
-  --muted: 220 40% 18%;
-  --muted-foreground: 210 15% 55%;
+  /* Muted — text lifted for contrast (#9ba8bc) */
+  --muted: 219 45% 16%;
+  --muted-foreground: 216 20% 67%;
 
   /* Accent = slightly elevated panel */
-  --accent: 221 55% 18%;
-  --accent-foreground: 210 20% 90%;
+  --accent: 218 55% 17%;
+  --accent-foreground: 217 37% 88%;
 
-  /* Destructive = danger red #FF4D5E → hsl(355, 100%, 65%) */
-  --destructive: 355 100% 65%;
-  --destructive-foreground: 210 20% 97%;
+  /* Destructive = controlled red #ff4f61 */
+  --destructive: 354 100% 65%;
+  --destructive-foreground: 0 0% 100%;
 
-  --input: 212 52% 30%;
-  --ring: 214 100% 56%;
+  --input: 221 50% 26%;
+  --ring: 222 100% 54%;
 
-  /* Charts */
-  --chart-1: 214 100% 56%;
-  --chart-2: 194 100% 73%;
-  --chart-3: 38 90% 60%;
-  --chart-4: 155 69% 45%;
-  --chart-5: 355 100% 65%;
+  /* Charts — cyan/blue for revenue, warm hues sparingly */
+  --chart-1: 222 100% 54%;
+  --chart-2: 190 100% 54%;
+  --chart-3: 44 92% 63%;
+  --chart-4: 141 68% 53%;
+  --chart-5: 354 100% 65%;
 
   /* Metrix brand tokens */
-  --metrix-blue: 214 100% 56%;
-  --metrix-cyan: 194 100% 73%;
-  --metrix-gold: 38 90% 60%;
-  --metrix-success: 155 69% 45%;
-  --metrix-danger: 355 100% 65%;
-  --metrix-panel: 221 66% 12%;
+  --metrix-blue: 222 100% 54%;
+  --metrix-cyan: 190 100% 69%;
+  --metrix-gold: 44 92% 63%;
+  --metrix-success: 141 68% 53%;
+  --metrix-danger: 354 100% 65%;
+  --metrix-panel: 218 65% 10%;
 
-  --app-font-sans: 'Inter', system-ui, sans-serif;
+  --app-font-sans: 'Inter', 'Manrope', system-ui, sans-serif;
   --app-font-serif: Georgia, serif;
-  --app-font-mono: 'JetBrains Mono', 'Menlo', monospace;
-  --radius: 0.375rem;
+  --app-font-mono: 'IBM Plex Mono', 'SFMono-Regular', 'Menlo', Consolas, monospace;
+  --radius: 0.5rem;
 
   --shadow-2xs: 0 1px 2px 0 rgba(0,0,0,0.4);
   --shadow-xs: 0 1px 3px 0 rgba(0,0,0,0.5);
@@ -193,46 +228,46 @@
   --elevate-1: rgba(255,255,255, .04);
   --elevate-2: rgba(255,255,255, .09);
 
-  --background: 222 61% 5%;
-  --foreground: 210 20% 93%;
-  --border: 212 52% 24%;
-  --card: 221 66% 12%;
-  --card-foreground: 210 20% 93%;
-  --card-border: 212 52% 24%;
-  --sidebar: 222 61% 5%;
-  --sidebar-foreground: 210 20% 93%;
-  --sidebar-border: 212 52% 24%;
-  --sidebar-primary: 214 100% 56%;
-  --sidebar-primary-foreground: 210 20% 97%;
-  --sidebar-accent: 221 55% 16%;
-  --sidebar-accent-foreground: 210 20% 90%;
-  --sidebar-ring: 214 100% 56%;
-  --popover: 221 66% 10%;
-  --popover-foreground: 210 20% 93%;
-  --popover-border: 212 52% 24%;
-  --primary: 214 100% 56%;
-  --primary-foreground: 210 20% 97%;
-  --secondary: 221 55% 16%;
-  --secondary-foreground: 210 20% 85%;
-  --muted: 220 40% 18%;
-  --muted-foreground: 210 15% 55%;
-  --accent: 221 55% 18%;
-  --accent-foreground: 210 20% 90%;
-  --destructive: 355 100% 65%;
-  --destructive-foreground: 210 20% 97%;
-  --input: 212 52% 30%;
-  --ring: 214 100% 56%;
-  --chart-1: 214 100% 56%;
-  --chart-2: 194 100% 73%;
-  --chart-3: 38 90% 60%;
-  --chart-4: 155 69% 45%;
-  --chart-5: 355 100% 65%;
-  --metrix-blue: 214 100% 56%;
-  --metrix-cyan: 194 100% 73%;
-  --metrix-gold: 38 90% 60%;
-  --metrix-success: 155 69% 45%;
-  --metrix-danger: 355 100% 65%;
-  --metrix-panel: 221 66% 12%;
+  --background: 221 66% 6%;
+  --foreground: 222 100% 97%;
+  --border: 221 53% 20%;
+  --card: 218 65% 10%;
+  --card-foreground: 222 100% 97%;
+  --card-border: 221 53% 20%;
+  --sidebar: 220 79% 4%;
+  --sidebar-foreground: 222 100% 97%;
+  --sidebar-border: 221 53% 18%;
+  --sidebar-primary: 222 100% 54%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 218 55% 16%;
+  --sidebar-accent-foreground: 217 37% 88%;
+  --sidebar-ring: 222 100% 54%;
+  --popover: 219 65% 9%;
+  --popover-foreground: 222 100% 97%;
+  --popover-border: 221 53% 22%;
+  --primary: 222 100% 54%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 218 55% 15%;
+  --secondary-foreground: 217 37% 84%;
+  --muted: 219 45% 16%;
+  --muted-foreground: 216 20% 67%;
+  --accent: 218 55% 17%;
+  --accent-foreground: 217 37% 88%;
+  --destructive: 354 100% 65%;
+  --destructive-foreground: 0 0% 100%;
+  --input: 221 50% 26%;
+  --ring: 222 100% 54%;
+  --chart-1: 222 100% 54%;
+  --chart-2: 190 100% 54%;
+  --chart-3: 44 92% 63%;
+  --chart-4: 141 68% 53%;
+  --chart-5: 354 100% 65%;
+  --metrix-blue: 222 100% 54%;
+  --metrix-cyan: 190 100% 69%;
+  --metrix-gold: 44 92% 63%;
+  --metrix-success: 141 68% 53%;
+  --metrix-danger: 354 100% 65%;
+  --metrix-panel: 218 65% 10%;
 
   --shadow-2xs: 0 1px 2px 0 rgba(0,0,0,0.5);
   --shadow-xs: 0 1px 3px 0 rgba(0,0,0,0.6);
@@ -249,9 +284,38 @@
     @apply border-border;
   }
 
+  html {
+    background: var(--mx-bg-deep);
+  }
+
   html, body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply text-foreground font-sans antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Layered dark command-center background */
+  body {
+    background:
+      radial-gradient(circle at 52% 8%, rgba(0, 119, 255, 0.18), transparent 32%),
+      radial-gradient(circle at 86% 18%, rgba(22, 217, 255, 0.08), transparent 26%),
+      linear-gradient(180deg, #020711 0%, #050b18 48%, #020711 100%);
+    color: var(--mx-text-main);
+  }
+
+  /* Faint precision grid overlay, masked toward center */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(circle at center, black 0%, transparent 76%);
+    -webkit-mask-image: radial-gradient(circle at center, black 0%, transparent 76%);
+    opacity: 0.35;
+    z-index: 0;
   }
 
   /* Scrollbar styling for dark interface */
@@ -263,11 +327,183 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: hsl(212 52% 24%);
+    background: rgba(86, 140, 255, 0.24);
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(212 52% 32%);
+    background: rgba(86, 140, 255, 0.38);
+  }
+}
+
+@layer components {
+  /* App shell background — layered cockpit gradient */
+  .mx-app-bg {
+    background:
+      radial-gradient(circle at 52% 8%, rgba(0, 119, 255, 0.18), transparent 32%),
+      radial-gradient(circle at 86% 18%, rgba(22, 217, 255, 0.08), transparent 26%),
+      linear-gradient(180deg, #020711 0%, #050b18 48%, #020711 100%);
+  }
+
+  /* Sidebar — dark glass panel */
+  .mx-sidebar {
+    background: linear-gradient(180deg, rgba(8, 17, 36, 0.92), rgba(3, 8, 18, 0.96));
+    border-right: 1px solid var(--mx-border-soft);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.05),
+      12px 0 40px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(22px);
+  }
+
+  /* Topbar — translucent glass strip */
+  .mx-topbar {
+    background: linear-gradient(180deg, rgba(6, 14, 30, 0.88), rgba(4, 10, 22, 0.82));
+    border-bottom: 1px solid var(--mx-border-soft);
+    backdrop-filter: blur(18px);
+  }
+
+  /* Premium glass card */
+  .mx-card {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--mx-border-soft);
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(10, 28, 58, 0.78), rgba(5, 13, 29, 0.84));
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.045),
+      inset 0 0 0 1px rgba(255,255,255,0.015),
+      0 18px 50px rgba(0, 0, 0, 0.34),
+      0 0 38px rgba(0, 104, 255, 0.08);
+    backdrop-filter: blur(18px);
+    transition: transform var(--mx-fast), border-color var(--mx-fast), box-shadow var(--mx-fast), background var(--mx-fast);
+  }
+
+  .mx-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 18% 0%, rgba(0, 188, 255, 0.18), transparent 34%),
+      linear-gradient(90deg, rgba(255,255,255,0.035), transparent 40%);
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  .mx-card:hover {
+    transform: translateY(-1px);
+    border-color: var(--mx-border-medium);
+    background: linear-gradient(180deg, rgba(12, 35, 75, 0.86), rgba(5, 15, 34, 0.9));
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.07),
+      0 22px 64px rgba(0, 0, 0, 0.44),
+      0 0 42px rgba(0, 133, 255, 0.16);
+  }
+
+  /* Nested mini glass card (opportunities, sub-rows) */
+  .mx-card-nested {
+    border: 1px solid rgba(95, 150, 255, 0.16);
+    border-radius: 11px;
+    background: linear-gradient(180deg, rgba(12, 28, 55, 0.68), rgba(7, 16, 34, 0.76));
+    transition: border-color var(--mx-fast), background var(--mx-fast), box-shadow var(--mx-fast);
+  }
+  .mx-card-nested:hover {
+    border-color: var(--mx-border-medium);
+    background: linear-gradient(180deg, rgba(14, 33, 66, 0.78), rgba(8, 18, 38, 0.84));
+  }
+
+  /* Active nav item — electric blue/cyan gradient with glow */
+  .mx-nav-active {
+    color: #ffffff !important;
+    background: linear-gradient(135deg, rgba(21, 93, 255, 0.96), rgba(22, 217, 255, 0.72)) !important;
+    border: 1px solid rgba(120, 210, 255, 0.58);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.24),
+      0 0 24px rgba(0, 133, 255, 0.42);
+    text-shadow: 0 1px 6px rgba(2, 20, 46, 0.45);
+  }
+
+  /* Child-row active — subtler blue tint with left rail glow */
+  .mx-nav-child-active {
+    color: #ffffff !important;
+    background: linear-gradient(90deg, rgba(21, 93, 255, 0.28), rgba(21, 93, 255, 0.08)) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+
+  /* Section label — small uppercase, wide tracking, cyan-tinted */
+  .mx-section-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #9fdcff;
+  }
+
+  /* Primary CTA button — blue gradient, thin cyan rim, subtle glow */
+  .mx-primary-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(118, 198, 255, 0.54);
+    color: #ffffff;
+    font-weight: 700;
+    background: linear-gradient(135deg, #155dff 0%, #1145e8 56%, #16bfff 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.22),
+      0 0 24px rgba(21, 93, 255, 0.42);
+    transition: transform var(--mx-fast), box-shadow var(--mx-fast), filter var(--mx-fast);
+  }
+  .mx-primary-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.06);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.26),
+      0 0 32px rgba(21, 93, 255, 0.55);
+  }
+
+  /* Secondary button — dark glass with blue border */
+  .mx-secondary-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 8px;
+    border: 1px solid var(--mx-border-medium);
+    color: var(--mx-text-soft);
+    font-weight: 600;
+    background: linear-gradient(180deg, rgba(12, 28, 55, 0.6), rgba(7, 16, 34, 0.7));
+    transition: transform var(--mx-fast), border-color var(--mx-fast), color var(--mx-fast), box-shadow var(--mx-fast);
+  }
+  .mx-secondary-btn:hover {
+    transform: translateY(-1px);
+    border-color: var(--mx-border-strong);
+    color: #ffffff;
+    box-shadow: 0 0 18px rgba(0, 133, 255, 0.2);
+  }
+
+  /* Score ring — glowing blue circular metric */
+  .mx-score-ring {
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    border: 2px solid var(--mx-blue-bright);
+    box-shadow: 0 0 16px rgba(21, 93, 255, 0.38);
+    color: #ffffff;
+    font-weight: 800;
+  }
+
+  /* Glow accents */
+  .mx-glow-blue { box-shadow: var(--mx-shadow-blue); }
+  .mx-glow-cyan { box-shadow: var(--mx-shadow-cyan); }
+  .mx-logo-glow {
+    filter: drop-shadow(0 0 10px rgba(22, 217, 255, 0.55));
+  }
+
+  /* Hero glow field behind engine visuals */
+  .mx-hero-field {
+    background:
+      radial-gradient(circle at 54% 40%, rgba(0, 136, 255, 0.22), transparent 44%),
+      linear-gradient(180deg, rgba(8, 26, 58, 0.55), rgba(4, 11, 26, 0.2));
   }
 }
 
@@ -353,66 +589,66 @@
   /* Confidence label chips */
   .confidence-high {
     @apply text-xs font-medium px-1.5 py-0.5 rounded;
-    background: hsl(155 69% 45% / 0.15);
-    color: hsl(155 69% 60%);
-    border: 1px solid hsl(155 69% 45% / 0.3);
+    background: hsl(141 68% 53% / 0.15);
+    color: hsl(141 68% 62%);
+    border: 1px solid hsl(141 68% 53% / 0.3);
   }
   .confidence-medium {
     @apply text-xs font-medium px-1.5 py-0.5 rounded;
-    background: hsl(214 100% 56% / 0.15);
-    color: hsl(214 100% 70%);
-    border: 1px solid hsl(214 100% 56% / 0.3);
+    background: hsl(222 100% 54% / 0.15);
+    color: hsl(216 100% 72%);
+    border: 1px solid hsl(222 100% 54% / 0.3);
   }
   .confidence-validation {
     @apply text-xs font-medium px-1.5 py-0.5 rounded;
-    background: hsl(38 90% 60% / 0.15);
-    color: hsl(38 90% 70%);
-    border: 1px solid hsl(38 90% 60% / 0.3);
+    background: hsl(44 92% 63% / 0.15);
+    color: hsl(44 92% 70%);
+    border: 1px solid hsl(44 92% 63% / 0.3);
   }
   .confidence-insufficient {
     @apply text-xs font-medium px-1.5 py-0.5 rounded;
-    background: hsl(210 15% 55% / 0.15);
-    color: hsl(210 15% 60%);
-    border: 1px solid hsl(210 15% 55% / 0.3);
+    background: hsl(216 20% 60% / 0.15);
+    color: hsl(216 20% 65%);
+    border: 1px solid hsl(216 20% 60% / 0.3);
   }
 
   /* Tier badges */
   .tier-1 {
     @apply text-xs font-bold px-1.5 py-0.5 rounded;
-    background: hsl(155 69% 45% / 0.15);
-    color: hsl(155 69% 60%);
-    border: 1px solid hsl(155 69% 45% / 0.3);
+    background: hsl(141 68% 53% / 0.15);
+    color: hsl(141 68% 62%);
+    border: 1px solid hsl(141 68% 53% / 0.3);
   }
   .tier-2 {
     @apply text-xs font-bold px-1.5 py-0.5 rounded;
-    background: hsl(214 100% 56% / 0.15);
-    color: hsl(214 100% 70%);
-    border: 1px solid hsl(214 100% 56% / 0.3);
+    background: hsl(222 100% 54% / 0.15);
+    color: hsl(216 100% 72%);
+    border: 1px solid hsl(222 100% 54% / 0.3);
   }
   .tier-3 {
     @apply text-xs font-bold px-1.5 py-0.5 rounded;
-    background: hsl(38 90% 60% / 0.15);
-    color: hsl(38 90% 70%);
-    border: 1px solid hsl(38 90% 60% / 0.3);
+    background: hsl(44 92% 63% / 0.15);
+    color: hsl(44 92% 70%);
+    border: 1px solid hsl(44 92% 63% / 0.3);
   }
   .tier-4 {
     @apply text-xs font-bold px-1.5 py-0.5 rounded;
-    background: hsl(355 100% 65% / 0.15);
-    color: hsl(355 100% 72%);
-    border: 1px solid hsl(355 100% 65% / 0.3);
+    background: hsl(354 100% 65% / 0.15);
+    color: hsl(354 100% 72%);
+    border: 1px solid hsl(354 100% 65% / 0.3);
   }
 
   /* Variable code badges */
   .var-badge {
     @apply text-xs font-mono px-1.5 py-0.5 rounded;
-    background: hsl(221 55% 16%);
-    color: hsl(194 100% 73%);
-    border: 1px solid hsl(212 52% 24%);
+    background: hsl(218 55% 15%);
+    color: hsl(190 100% 69%);
+    border: 1px solid hsl(221 53% 22%);
     letter-spacing: 0.02em;
   }
 
   /* Priority glow for gold elements */
   .priority-glow {
-    box-shadow: 0 0 12px hsl(38 90% 60% / 0.3);
+    box-shadow: 0 0 12px hsl(44 92% 63% / 0.3);
   }
 }

@@ -1,4 +1,5 @@
 - [Metrix IAP closed-loop linkage](metrix-iap-closed-loop.md) — cross-entity back-refs (Ad/Concept/Brief) filled at gen time by linkClosedLoop() IIFE, not per-render.
+- [Verify subagent edits](verify-subagent-edits.md) — subagents can report success while edits never land; check git diff before trusting their summary.
 - [Metrix IAP data sources](metrix-iap-data-sources.md) — live UI renders from metrixSeedAdapter+seed JSON; mock/generate.ts is bundled-but-unrendered legacy, not dead code.
 - [Vite Babel JSX generics](vite-babel-jsx-generics.md) — `<Comp<T>>` type-checks in tsc but Babel parse-errors at build; widen call-site state instead of explicit JSX generic.
 - [Metrix IAP account scoping](metrix-iap-account-scoping.md) — manager aggregates totals only; all modules scope to one ad account via useScopedAdAccountId(), unconfigured→UnconfiguredState.
