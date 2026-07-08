@@ -7,7 +7,7 @@
 // production data.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, cleanup } from "@testing-library/react";
+import { render, cleanup, fireEvent, screen } from "@testing-library/react";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -118,6 +118,41 @@ describe("Manager selected", () => {
     const { container } = renderView(SignalView);
     expect(container.textContent).toContain("No ad account selected");
     expect(container.textContent).not.toContain("Scoped to ad account");
+  });
+});
+
+describe("Unconfigured-state actions (SKOV Pet)", () => {
+  it("Connect Meta Ad Account opens the guided connect flow", () => {
+    select("ad_account", "skov_pet");
+    renderView(SignalView);
+    fireEvent.click(screen.getByRole("button", { name: /Connect Meta Ad Account/i }));
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.textContent).toContain("Guided preview");
+    expect(dialog.textContent).toContain("Authorize with Meta");
+    expect(dialog.textContent).toContain("no data is generated");
+  });
+
+  it("connect flow ends in a pending state without configuring the account", () => {
+    select("ad_account", "skov_pet");
+    renderView(SignalView);
+    fireEvent.click(screen.getByRole("button", { name: /Connect Meta Ad Account/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Continue with Meta/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Link SKOV Pet/i }));
+    expect(screen.getByRole("dialog").textContent).toContain("Connection pending");
+    fireEvent.click(screen.getByRole("button", { name: /^Done$/i }));
+    // Account must remain unconfigured — no performance data appears.
+    expect(document.body.textContent).toContain("Connect Meta Ad Account");
+    expect(document.body.textContent).not.toContain("Bookster");
+  });
+
+  it("Add Manual Import opens the manual import entry point", () => {
+    select("ad_account", "skov_pet");
+    renderView(SignalView);
+    fireEvent.click(screen.getByRole("button", { name: /Add Manual Import/i }));
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.textContent).toContain("Add Manual Import");
+    expect(dialog.textContent).toContain("Performance export (CSV)");
+    expect(dialog.textContent).toContain("no performance data is generated");
   });
 });
 

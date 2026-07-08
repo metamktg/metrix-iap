@@ -1,7 +1,9 @@
 // ─── Shared building blocks for seed-hydrated Metrix pages ────────────
 
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useLocation, useSearch } from "wouter";
+import { ConnectMetaDialog, ManualImportDialog } from "./ConnectAccountDialogs";
 import { Plug, FileUp, Clock, Database, Info, ArrowRight, CheckSquare, Square } from "lucide-react";
 import { DataSourceBadge } from "@/components/ui/DataSourceBadge";
 import { resolveVariableLabel } from "@/lib/variable-registry";
@@ -124,6 +126,8 @@ export function CaveatNote({ text }: { text: string }) {
 
 export function UnconfiguredState({ account }: { account: AdAccount }) {
   const s = account.overview_state;
+  const [connectOpen, setConnectOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   return (
     <div className="flex-1 flex items-center justify-center py-20 px-6">
       <div className="max-w-md text-center space-y-5">
@@ -137,10 +141,16 @@ export function UnconfiguredState({ account }: { account: AdAccount }) {
           </p>
         </div>
         <div className="flex items-center justify-center gap-2">
-          <button className="flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary/15 border border-primary/30 text-[12px] font-medium text-primary hover:bg-primary/25 transition-colors">
+          <button
+            onClick={() => setConnectOpen(true)}
+            className="flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary/15 border border-primary/30 text-[12px] font-medium text-primary hover:bg-primary/25 transition-colors"
+          >
             <Plug className="w-3.5 h-3.5" /> {s?.primary_action ?? "Connect Meta Ad Account"}
           </button>
-          <button className="flex items-center gap-1.5 h-9 px-4 rounded-md border border-border/50 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors">
+          <button
+            onClick={() => setImportOpen(true)}
+            className="flex items-center gap-1.5 h-9 px-4 rounded-md border border-border/50 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+          >
             <FileUp className="w-3.5 h-3.5" /> {s?.secondary_action ?? "Add Manual Import"}
           </button>
         </div>
@@ -148,6 +158,8 @@ export function UnconfiguredState({ account }: { account: AdAccount }) {
           No performance, analysis, or report data is shown until this account is configured.
         </p>
       </div>
+      <ConnectMetaDialog account={account} open={connectOpen} onOpenChange={setConnectOpen} />
+      <ManualImportDialog account={account} open={importOpen} onOpenChange={setImportOpen} />
     </div>
   );
 }
