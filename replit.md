@@ -66,7 +66,8 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Resend sandbox sender (`onboarding@resend.dev`, used when `REQUEST_ACCESS_FROM_EMAIL` is unset) only delivers to the Resend account owner's inbox (meta@metamktgagency.com). Sends to any other recipient are rejected with 403 — so approval emails and reset emails to other users will NOT arrive until a domain is verified at resend.com/domains and `REQUEST_ACCESS_FROM_EMAIL` is set to a sender on that domain.
+- If password reset requests 503 with `relation "password_reset_tokens" does not exist`, run `pnpm --filter @workspace/db run push` — the Replit Postgres schema hasn't been pushed in that environment.
 
 ## Pointers
 
