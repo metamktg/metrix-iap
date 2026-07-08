@@ -10,3 +10,7 @@ Writing a generic React component call with explicit type args in JSX — `<Modu
 **Why:** Babel's JSX parser does not support the `<Comp<T>>` syntax that TypeScript's own parser does. Two different parsers, two different grammars.
 
 **How to apply:** When a generic component's prop inference fails (e.g. `onChange={setState}` where the dispatch type won't unify), do NOT reach for `<Comp<T>>`. Instead widen the call-site state so inference resolves on its own — e.g. `useState<string>(...)` instead of `useState<SomeUnion>(...)` — and drop the explicit JSX generic. The generic function *declaration* (`function Comp<T extends string>(...)`) is fine; only the JSX *call* with explicit args breaks.
+
+## Related: `Dispatch<SetStateAction<T>>` poisons generic inference
+
+Passing `onChange={setTab}` to a generic component (`function Comp<T extends string>({ onChange }: { onChange: (id: T) => void })`) makes TS infer `T = string` and fail, because `Dispatch<SetStateAction<Tab>>`'s param is `Tab | ((prev: Tab) => Tab)`. Fix at the call site with a plain lambda: `onChange={(id) => setTab(id)}` — inference then resolves `T` from the other props and the lambda is context-typed. No explicit JSX generic needed.

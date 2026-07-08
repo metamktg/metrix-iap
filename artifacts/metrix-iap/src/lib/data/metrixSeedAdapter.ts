@@ -1,10 +1,10 @@
 // ─── Metrix seed adapter ──────────────────────────────────────────────
-// Single source of truth for reading the Bookster seed bundle.
-// Every module reads through here, scoped to an ad account id.
+// Pure read helpers over the seed bundle fetched from the backend API.
+// Every module reads through here, scoped to an ad account id. The seed
+// comes from MetrixDataContext (useMetrixSeed) — never imported directly.
 // No fabrication: missing data returns null / undefined and callers render
 // pending / unconfigured states.
 
-import rawSeed from "@/data/seeds/metrix_bookster_seed_bundle_v1.json";
 import type {
   MetrixSeed,
   ManagerAccount,
@@ -20,42 +20,40 @@ import type {
   CampaignSummary,
 } from "./seedTypes";
 
-const seed = rawSeed as unknown as MetrixSeed;
-
 // ─── App defaults ─────────────────────────────────────────────────────
 
-export function getAppDefaults() {
+export function getAppDefaults(seed: MetrixSeed) {
   return seed.app_defaults;
 }
 
-export function getForbiddenTerms(): string[] {
+export function getForbiddenTerms(seed: MetrixSeed): string[] {
   return seed.app_defaults.forbidden_ui_terms;
 }
 
 // ─── Manager ──────────────────────────────────────────────────────────
 
-export function getManagerOverview(): ManagerAccount {
+export function getManagerOverview(seed: MetrixSeed): ManagerAccount {
   return seed.manager_account;
 }
 
 // ─── Ad accounts ──────────────────────────────────────────────────────
 
-export function getAdAccounts(): AdAccount[] {
+export function getAdAccounts(seed: MetrixSeed): AdAccount[] {
   return seed.ad_accounts;
 }
 
-export function getAdAccount(adAccountId: string | null | undefined): AdAccount | null {
+export function getAdAccount(seed: MetrixSeed, adAccountId: string | null | undefined): AdAccount | null {
   if (!adAccountId) return null;
   return seed.ad_accounts.find((a) => a.id === adAccountId) ?? null;
 }
 
-export function isConfigured(adAccountId: string | null | undefined): boolean {
-  return getAdAccount(adAccountId)?.status === "configured";
+export function isConfigured(seed: MetrixSeed, adAccountId: string | null | undefined): boolean {
+  return getAdAccount(seed, adAccountId)?.status === "configured";
 }
 
 /** Overview payload for a single ad account. Null iap means unconfigured. */
-export function getAdAccountOverview(adAccountId: string | null | undefined) {
-  const acct = getAdAccount(adAccountId);
+export function getAdAccountOverview(seed: MetrixSeed, adAccountId: string | null | undefined) {
+  const acct = getAdAccount(seed, adAccountId);
   if (!acct) return null;
   return {
     account: acct,
@@ -69,38 +67,38 @@ export function getAdAccountOverview(adAccountId: string | null | undefined) {
 
 // ─── Per-module getters (scoped) ──────────────────────────────────────
 
-export function getCoreControls(adAccountId: string | null): CoreReanalysisRead | null {
-  return getAdAccount(adAccountId)?.iap?.core_reanalysis_read ?? null;
+export function getCoreControls(seed: MetrixSeed, adAccountId: string | null): CoreReanalysisRead | null {
+  return getAdAccount(seed, adAccountId)?.iap?.core_reanalysis_read ?? null;
 }
 
-export function getCampaignSummary(adAccountId: string | null): CampaignSummary | null {
-  return getAdAccount(adAccountId)?.iap?.campaign_summary ?? null;
+export function getCampaignSummary(seed: MetrixSeed, adAccountId: string | null): CampaignSummary | null {
+  return getAdAccount(seed, adAccountId)?.iap?.campaign_summary ?? null;
 }
 
-export function getListenSignals(adAccountId: string | null): SignalCard[] {
-  return getAdAccount(adAccountId)?.listen?.signal_cards ?? [];
+export function getListenSignals(seed: MetrixSeed, adAccountId: string | null): SignalCard[] {
+  return getAdAccount(seed, adAccountId)?.listen?.signal_cards ?? [];
 }
 
-export function getAnalysisData(adAccountId: string | null): AnalysisData | null {
-  return getAdAccount(adAccountId)?.iap?.analysis ?? null;
+export function getAnalysisData(seed: MetrixSeed, adAccountId: string | null): AnalysisData | null {
+  return getAdAccount(seed, adAccountId)?.iap?.analysis ?? null;
 }
 
-export function getStrategyData(adAccountId: string | null): StrategyData | null {
-  return getAdAccount(adAccountId)?.iap?.strategy ?? null;
+export function getStrategyData(seed: MetrixSeed, adAccountId: string | null): StrategyData | null {
+  return getAdAccount(seed, adAccountId)?.iap?.strategy ?? null;
 }
 
-export function getBriefBuilder(adAccountId: string | null): BriefBuilder | null {
-  return getAdAccount(adAccountId)?.iap?.brief_builder ?? null;
+export function getBriefBuilder(seed: MetrixSeed, adAccountId: string | null): BriefBuilder | null {
+  return getAdAccount(seed, adAccountId)?.iap?.brief_builder ?? null;
 }
 
-export function getReportBuilder(adAccountId: string | null): ReportBuilder | null {
-  return getAdAccount(adAccountId)?.iap?.report_builder ?? null;
+export function getReportBuilder(seed: MetrixSeed, adAccountId: string | null): ReportBuilder | null {
+  return getAdAccount(seed, adAccountId)?.iap?.report_builder ?? null;
 }
 
-export function getOptimizationLoop(adAccountId: string | null): OptimizationLoop | null {
-  return getAdAccount(adAccountId)?.iap?.optimization_loop ?? null;
+export function getOptimizationLoop(seed: MetrixSeed, adAccountId: string | null): OptimizationLoop | null {
+  return getAdAccount(seed, adAccountId)?.iap?.optimization_loop ?? null;
 }
 
-export function getMST(adAccountId: string | null): MST | null {
-  return getAdAccount(adAccountId)?.mst ?? null;
+export function getMST(seed: MetrixSeed, adAccountId: string | null): MST | null {
+  return getAdAccount(seed, adAccountId)?.mst ?? null;
 }

@@ -1,7 +1,8 @@
 // ─── Shared building blocks for seed-hydrated Metrix pages ────────────
 
 import { cn } from "@/lib/utils";
-import { Plug, FileUp, Clock, Database, Info } from "lucide-react";
+import { useLocation, useSearch } from "wouter";
+import { Plug, FileUp, Clock, Database, Info, ArrowRight, CheckSquare, Square } from "lucide-react";
 import { DataSourceBadge } from "@/components/ui/DataSourceBadge";
 import { resolveVariableLabel } from "@/lib/variable-registry";
 import type { AdAccount } from "@/lib/data/seedTypes";
@@ -207,6 +208,138 @@ export function ModuleTabs<T extends string>({
         </button>
       ))}
     </div>
+  );
+}
+
+// ─── Module scope gate ────────────────────────────────────────────────
+// Standard gating for account-scoped subpages: no account selected →
+// pending state; unconfigured account → connect state; else children.
+// Children are a render function so gated content is never evaluated
+// (and can never leak another account's data) when the gate blocks.
+
+export function ModuleScopeGate({
+  section,
+  title,
+  account,
+  children,
+}: {
+  section: string;
+  title: string;
+  account: AdAccount | null;
+  children: () => React.ReactNode;
+}) {
+  if (!account) {
+    return (
+      <div className="flex-1 flex flex-col">
+        <ModuleHeader section={section} title={title} />
+        <PendingState title="No ad account selected" message="Choose an ad account to view this module." />
+      </div>
+    );
+  }
+  if (account.status !== "configured") {
+    return (
+      <div className="flex-1 flex flex-col">
+        <ModuleHeader section={section} title={title} />
+        <UnconfiguredState account={account} />
+      </div>
+    );
+  }
+  return <>{children()}</>;
+}
+
+// ─── Cross-module link ────────────────────────────────────────────────
+
+export function CrossLink({ to, label }: { to: string; label: string }) {
+  const [, navigate] = useLocation();
+  return (
+    <button
+      onClick={() => navigate(to)}
+      className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors"
+    >
+      {label}
+      <ArrowRight className="w-3 h-3" />
+    </button>
+  );
+}
+
+// ─── Focus deep-link param (?focus=<id>) ──────────────────────────────
+
+export function useFocusParam(): string | null {
+  const search = useSearch();
+  const params = new URLSearchParams(search);
+  return params.get("focus");
+}
+
+// ─── Metric selection bar ─────────────────────────────────────────────
+// Result-event metric selection used to filter Analysis views.
+
+export function MetricSelectionBar({
+  events,
+  isSelected,
+  onToggle,
+}: {
+  events: string[];
+  isSelected: (event: string) => boolean;
+  onToggle: (event: string) => void;
+}) {
+  return (
+    <div className="flex items-center gap-2 flex-wrap px-6 py-2.5 border-b border-border/30 bg-white/[0.01]">
+      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/40">
+        Metric selection
+      </span>
+      {events.map((e) => {
+        const on = isSelected(e);
+        return (
+          <button
+            key={e}
+            onClick={() => onToggle(e)}
+            aria-pressed={on}
+            className={cn(
+              "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-[11px] font-medium transition-colors",
+              on
+                ? "border-primary/30 bg-primary/10 text-primary"
+                : "border-border/40 text-muted-foreground/60 hover:text-foreground hover:bg-white/[0.03]"
+            )}
+          >
+            {on ? <CheckSquare className="w-3 h-3" /> : <Square className="w-3 h-3" />}
+            {eventLabel(e)}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Impact / scope badge styles (shared across Listen + decks) ───────
+
+export const IMPACT_STYLE: Record<string, string> = {
+  high: "bg-red-400/10 text-red-300 border-red-400/20",
+  medium: "bg-amber-400/10 text-amber-300 border-amber-400/20",
+  low: "bg-muted text-muted-foreground/60 border-border/40",
+  setup: "bg-primary/10 text-primary border-primary/20",
+};
+
+export const SCOPE_STYLE: Record<string, string> = {
+  creative: "bg-amber-500/10 text-amber-300 border-amber-500/20",
+  funnel: "bg-teal-500/10 text-teal-300 border-teal-500/20",
+  placement: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
+  mst: "bg-purple-500/10 text-purple-300 border-purple-500/20",
+  ad_account: "bg-primary/10 text-primary border-primary/20",
+};
+
+export function ImpactBadge({ impact }: { impact: string }) {
+  return (
+    <span className={cn("text-[9px] font-semibold border px-1.5 py-0.5 rounded uppercase tracking-wide leading-none", IMPACT_STYLE[impact] ?? IMPACT_STYLE.low)}>
+      {impact} impact
+    </span>
+  );
+}
+
+export function ScopeBadge({ scope }: { scope: string }) {
+  return (
+    <span className={cn("text-[9px] font-semibold border px-1.5 py-0.5 rounded uppercase tracking-wide leading-none", SCOPE_STYLE[scope] ?? "bg-muted text-muted-foreground/60 border-border/40")}>
+      {scope}
+    </span>
   );
 }
 

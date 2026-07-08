@@ -4,6 +4,7 @@
 
 import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
+import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getReportBuilder } from "@/lib/data/metrixSeedAdapter";
 import { ModuleHeader, ScopeBanner, SectionCard, ModuleTabs, CaveatNote, UnconfiguredState, PendingState } from "./shared";
 import { cn } from "@/lib/utils";
@@ -19,8 +20,9 @@ type Tab = "preview" | "branding";
 type Mode = "internal" | "client";
 
 export function ReportBuilderView() {
+  const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
-  const account = getAdAccount(adAccountId);
+  const account = getAdAccount(seed, adAccountId);
   const [tab, setTab] = useState<string>("preview");
   const [mode, setMode] = useState<Mode>("internal");
 
@@ -41,7 +43,7 @@ export function ReportBuilderView() {
     );
   }
 
-  const rb = getReportBuilder(adAccountId);
+  const rb = getReportBuilder(seed, adAccountId);
   if (!rb) {
     return (
       <div className="flex-1 flex flex-col">

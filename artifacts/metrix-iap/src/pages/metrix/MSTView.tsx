@@ -4,6 +4,7 @@
 
 import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
+import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getMST } from "@/lib/data/metrixSeedAdapter";
 import { ModuleHeader, ScopeBanner, CaveatNote, UnconfiguredState, PendingState, readableVariables } from "./shared";
 import { cn } from "@/lib/utils";
@@ -78,8 +79,9 @@ function Matrix({ matrix }: { matrix: MSTMatrix }) {
 type View = "matrix" | "library" | "variables";
 
 export function MSTView() {
+  const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
-  const account = getAdAccount(adAccountId);
+  const account = getAdAccount(seed, adAccountId);
   const [view, setView] = useState<View>("matrix");
 
   if (!account) {
@@ -99,7 +101,7 @@ export function MSTView() {
     );
   }
 
-  const mst = getMST(adAccountId);
+  const mst = getMST(seed, adAccountId);
   if (!mst || mst.status !== "active") {
     return (
       <div className="flex-1 flex flex-col">

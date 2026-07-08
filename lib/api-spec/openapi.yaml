@@ -10,7 +10,47 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: metrix
+    description: Metrix IAP data operations
 paths:
+  /metrix/seed:
+    get:
+      operationId: getMetrixSeed
+      tags: [metrix]
+      summary: Get the Metrix IAP seed bundle
+      description: Returns the full Metrix seed bundle (manager account, ad accounts, app defaults) served from the backend.
+      responses:
+        "200":
+          description: The seed bundle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetrixSeedBundle"
+  /metrix/agent-waitlist:
+    post:
+      operationId: joinAgentWaitlist
+      tags: [metrix]
+      summary: Join the Metrix Agent waitlist
+      description: Stores an email address on the Metrix Agent waitlist.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WaitlistSignupInput"
+      responses:
+        "200":
+          description: Waitlist signup result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaitlistSignupResult"
+        "400":
+          description: Invalid email
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /healthz:
     get:
       operationId: healthCheck
@@ -26,6 +66,56 @@ paths:
                 $ref: "#/components/schemas/HealthStatus"
 components:
   schemas:
+    MetrixSeedBundle:
+      type: object
+      description: Full Metrix IAP seed bundle. Nested account payloads are intentionally loosely typed; the client narrows them with its own seed types.
+      additionalProperties: true
+      properties:
+        schema_version:
+          type: string
+        generated_at:
+          type: string
+        app_defaults:
+          type: object
+          additionalProperties: true
+        manager_account:
+          type: object
+          additionalProperties: true
+        ad_accounts:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required:
+        - schema_version
+        - manager_account
+        - ad_accounts
+    WaitlistSignupInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+      required:
+        - email
+    WaitlistSignupResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [joined, already_joined]
+        email:
+          type: string
+      required:
+        - status
+        - email
+    ApiError:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
     HealthStatus:
       type: object
       properties:

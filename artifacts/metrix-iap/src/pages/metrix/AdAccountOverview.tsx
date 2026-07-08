@@ -8,6 +8,7 @@ import { useMemo } from "react";
 import { useLocation } from "wouter";
 import { ShieldCheck, KeyRound, Radio, BarChart3, Layers, FileText, Grid3x3, Zap, ArrowRight } from "lucide-react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
+import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import {
   getAdAccount, getListenSignals, getAnalysisData, getStrategyData,
   getReportBuilder, getMST,
@@ -22,9 +23,10 @@ import { cn } from "@/lib/utils";
 const IMPACT_RANK: Record<string, number> = { high: 3, medium: 2, low: 1, setup: 0 };
 
 export function AdAccountOverview() {
+  const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const [, navigate] = useLocation();
-  const account = getAdAccount(adAccountId);
+  const account = getAdAccount(seed, adAccountId);
 
   const optLoop = account?.iap?.optimization_loop ?? null;
   const deckCards: DeckCard[] = useMemo(
@@ -65,11 +67,11 @@ export function AdAccountOverview() {
   const events = Object.entries(cs.bottom_line_totals);
 
   // ── Derived (real-data) summaries ──────────────────────────────────
-  const signals = getListenSignals(adAccountId);
-  const analysis = getAnalysisData(adAccountId);
-  const strategy = getStrategyData(adAccountId);
-  const report = getReportBuilder(adAccountId);
-  const mst = getMST(adAccountId);
+  const signals = getListenSignals(seed, adAccountId);
+  const analysis = getAnalysisData(seed, adAccountId);
+  const strategy = getStrategyData(seed, adAccountId);
+  const report = getReportBuilder(seed, adAccountId);
+  const mst = getMST(seed, adAccountId);
 
   const cellCount = analysis?.performance_by_cell.length ?? 0;
   const variableCount = analysis?.v3_variable_performance.length ?? 0;
@@ -87,9 +89,9 @@ export function AdAccountOverview() {
 
   type Layer = { name: string; count: number; unit: string; ready: boolean; to: string; Icon: React.ComponentType<{ className?: string }> };
   const layers: Layer[] = [
-    { name: "Listen", count: signals.length, unit: signals.length === 1 ? "signal" : "signals", ready: signals.length > 0, to: "/app/listen", Icon: Radio },
-    { name: "Analysis", count: cellCount + variableCount, unit: "cells + variables", ready: (cellCount + variableCount) > 0, to: "/app/analysis", Icon: BarChart3 },
-    { name: "Strategy", count: pillarCount + hypothesisCount, unit: "pillars + hypotheses", ready: (pillarCount + hypothesisCount) > 0, to: "/app/strategy", Icon: Layers },
+    { name: "Listen", count: signals.length, unit: signals.length === 1 ? "signal" : "signals", ready: signals.length > 0, to: "/app/listen/signal", Icon: Radio },
+    { name: "Analysis", count: cellCount + variableCount, unit: "cells + variables", ready: (cellCount + variableCount) > 0, to: "/app/analysis/library", Icon: BarChart3 },
+    { name: "Strategy", count: pillarCount + hypothesisCount, unit: "pillars + hypotheses", ready: (pillarCount + hypothesisCount) > 0, to: "/app/strategy/hypotheses", Icon: Layers },
     { name: "Report Builder", count: sectionCount, unit: sectionCount === 1 ? "section" : "sections", ready: sectionCount > 0, to: "/app/report-builder", Icon: FileText },
     { name: "MST", count: matrixCellCount, unit: "matrix cells", ready: mstActive && matrixCellCount > 0, to: "/app/mst", Icon: Grid3x3 },
   ];

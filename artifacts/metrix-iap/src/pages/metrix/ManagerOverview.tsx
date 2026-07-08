@@ -7,6 +7,7 @@
 import { useLocation } from "wouter";
 import { CheckCircle2, Plug, TrendingUp, Plus, ArrowRight } from "lucide-react";
 import { useAccount } from "@/contexts/AccountContext";
+import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getManagerOverview } from "@/lib/data/metrixSeedAdapter";
 import { ModuleHeader, MetricTile, SectionCard, ConfidenceBadge, fmtUSD, fmtNum, fmtPct, eventLabel } from "./shared";
 import { cn } from "@/lib/utils";
@@ -35,8 +36,9 @@ function Badge({ text, cls }: { text: string; cls: string }) {
 
 export function ManagerOverview() {
   const { manager, adAccounts, selectAdAccount } = useAccount();
+  const seed = useMetrixSeed();
   const [, navigate] = useLocation();
-  const data = getManagerOverview();
+  const data = getManagerOverview(seed);
   const totals = data.bottom_line_totals;
   const events = Object.entries(totals.result_totals_by_event);
 
