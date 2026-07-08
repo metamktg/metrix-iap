@@ -25,6 +25,9 @@ import type {
   AuthLoginInput,
   AuthLogoutResult,
   AuthUserResult,
+  GeneratedReportCreateInput,
+  GeneratedReportCreateResult,
+  GeneratedReportsResult,
   HealthStatus,
   ListAgentWaitlistParams,
   MetrixSeedBundle,
@@ -1412,6 +1415,156 @@ export const useUpdateReportSettings = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getUpdateReportSettingsMutationOptions(options));
+    }
+
+export const getListWorkspaceReportsUrl = (workspaceId: string,) => {
+
+
+
+
+  return `/api/metrix/workspaces/${workspaceId}/reports`
+}
+
+/**
+ * Returns generated report documents (with their content snapshot) for the workspace, newest first. Clients scope to an ad account by filtering on ad_account_id. Requires a logged-in session with access to the workspace.
+ * @summary List generated reports for the workspace
+ */
+export const listWorkspaceReports = async (workspaceId: string, options?: RequestInit): Promise<GeneratedReportsResult> => {
+
+  return customFetch<GeneratedReportsResult>(getListWorkspaceReportsUrl(workspaceId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListWorkspaceReportsQueryKey = (workspaceId: string,) => {
+    return [
+    `/api/metrix/workspaces/${workspaceId}/reports`
+    ] as const;
+    }
+
+
+export const getListWorkspaceReportsQueryOptions = <TData = Awaited<ReturnType<typeof listWorkspaceReports>>, TError = ErrorType<ApiError>>(workspaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWorkspaceReports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListWorkspaceReportsQueryKey(workspaceId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listWorkspaceReports>>> = ({ signal }) => listWorkspaceReports(workspaceId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: workspaceId !== null && workspaceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listWorkspaceReports>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListWorkspaceReportsQueryResult = NonNullable<Awaited<ReturnType<typeof listWorkspaceReports>>>
+export type ListWorkspaceReportsQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary List generated reports for the workspace
+ */
+
+export function useListWorkspaceReports<TData = Awaited<ReturnType<typeof listWorkspaceReports>>, TError = ErrorType<ApiError>>(
+ workspaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWorkspaceReports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListWorkspaceReportsQueryOptions(workspaceId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateWorkspaceReportUrl = (workspaceId: string,) => {
+
+
+
+
+  return `/api/metrix/workspaces/${workspaceId}/reports`
+}
+
+/**
+ * Persists a generated report snapshot (composed sections and metadata) so it appears in Report History and can be re-downloaded from Exports exactly as generated. Requires a logged-in session with access to the workspace.
+ * @summary Store a generated report document
+ */
+export const createWorkspaceReport = async (workspaceId: string,
+    generatedReportCreateInput: GeneratedReportCreateInput, options?: RequestInit): Promise<GeneratedReportCreateResult> => {
+
+  return customFetch<GeneratedReportCreateResult>(getCreateWorkspaceReportUrl(workspaceId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(generatedReportCreateInput)
+  }
+);}
+
+
+
+
+export const getCreateWorkspaceReportMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createWorkspaceReport>>, TError,{workspaceId: string;data: BodyType<GeneratedReportCreateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createWorkspaceReport>>, TError,{workspaceId: string;data: BodyType<GeneratedReportCreateInput>}, TContext> => {
+
+const mutationKey = ['createWorkspaceReport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createWorkspaceReport>>, {workspaceId: string;data: BodyType<GeneratedReportCreateInput>}> = (props) => {
+          const {workspaceId,data} = props ?? {};
+
+          return  createWorkspaceReport(workspaceId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateWorkspaceReportMutationResult = NonNullable<Awaited<ReturnType<typeof createWorkspaceReport>>>
+    export type CreateWorkspaceReportMutationBody = BodyType<GeneratedReportCreateInput>
+    export type CreateWorkspaceReportMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Store a generated report document
+ */
+export const useCreateWorkspaceReport = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createWorkspaceReport>>, TError,{workspaceId: string;data: BodyType<GeneratedReportCreateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createWorkspaceReport>>,
+        TError,
+        {workspaceId: string;data: BodyType<GeneratedReportCreateInput>},
+        TContext
+      > => {
+      return useMutation(getCreateWorkspaceReportMutationOptions(options));
     }
 
 export const getHealthCheckUrl = () => {

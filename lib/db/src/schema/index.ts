@@ -4,3 +4,4 @@ export * from "./workspaceInvites";
 export * from "./workspaceNotificationPrefs";
 export * from "./users";
 export * from "./workspaceReportSettings";
+export * from "./workspaceReports";

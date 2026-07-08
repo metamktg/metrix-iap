@@ -338,6 +338,108 @@ export interface RequestAccessResult {
   email: string;
 }
 
+export type GeneratedReportCreateInputMode = typeof GeneratedReportCreateInputMode[keyof typeof GeneratedReportCreateInputMode];
+
+
+export const GeneratedReportCreateInputMode = {
+  internal: 'internal',
+  client: 'client',
+} as const;
+
+export type GeneratedReportCreateInputBranding = typeof GeneratedReportCreateInputBranding[keyof typeof GeneratedReportCreateInputBranding];
+
+
+export const GeneratedReportCreateInputBranding = {
+  metrix: 'metrix',
+  white_label: 'white_label',
+} as const;
+
+export type GeneratedReportCreateInputExportFormat = typeof GeneratedReportCreateInputExportFormat[keyof typeof GeneratedReportCreateInputExportFormat];
+
+
+export const GeneratedReportCreateInputExportFormat = {
+  pdf: 'pdf',
+  google_doc: 'google_doc',
+  html: 'html',
+} as const;
+
+/**
+ * Whether the window was a per-report override or inherited from the global range.
+ */
+export type GeneratedReportCreateInputRangeSource = typeof GeneratedReportCreateInputRangeSource[keyof typeof GeneratedReportCreateInputRangeSource] | null;
+
+
+export const GeneratedReportCreateInputRangeSource = {
+  override: 'override',
+  global: 'global',
+} as const;
+
+export interface GeneratedReportCreateInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  ad_account_id: string;
+  /**
+     * @minLength 1
+     * @maxLength 300
+     */
+  title: string;
+  mode: GeneratedReportCreateInputMode;
+  branding: GeneratedReportCreateInputBranding;
+  export_format: GeneratedReportCreateInputExportFormat;
+  /** @minimum 1 */
+  section_count: number;
+  /** ISO date the report window starts; null when no data window existed. */
+  range_start?: string | null;
+  range_end?: string | null;
+  /** Whether the window was a per-report override or inherited from the global range. */
+  range_source?: GeneratedReportCreateInputRangeSource;
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  summary: string;
+  /**
+     * JSON-serialized report document snapshot (sections and blocks) captured at generation time.
+     * @minLength 2
+     * @maxLength 2000000
+     */
+  model_json: string;
+}
+
+export interface GeneratedReport {
+  id: number;
+  ad_account_id: string;
+  title: string;
+  mode: string;
+  branding: string;
+  export_format: string;
+  section_count: number;
+  range_start: string | null;
+  range_end: string | null;
+  range_source: string | null;
+  summary: string;
+  model_json: string;
+  generated_at: string;
+}
+
+export type GeneratedReportCreateResultStatus = typeof GeneratedReportCreateResultStatus[keyof typeof GeneratedReportCreateResultStatus];
+
+
+export const GeneratedReportCreateResultStatus = {
+  created: 'created',
+} as const;
+
+export interface GeneratedReportCreateResult {
+  status: GeneratedReportCreateResultStatus;
+  report: GeneratedReport;
+}
+
+export interface GeneratedReportsResult {
+  reports: GeneratedReport[];
+}
+
 export interface ApiError {
   message: string;
 }

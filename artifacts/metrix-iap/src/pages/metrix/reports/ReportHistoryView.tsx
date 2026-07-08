@@ -4,14 +4,15 @@
 // re-downloaded as real files, composed from current seed data.
 
 import { useState } from "react";
-import { useScopedAdAccountId } from "@/contexts/AccountContext";
+import { useAccount, useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getReportHistory } from "@/lib/data/metrixSeedAdapter";
-import { buildReportModel, downloadReportExport, type BrandingMode } from "@/lib/reportExport";
+import { buildReportModel, downloadReportExport, parseReportModel, type BrandingMode } from "@/lib/reportExport";
 import { ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile, CrossLink, fmtNum } from "../shared";
 import { FORMAT_LABEL } from "./NewReportView";
 import { cn } from "@/lib/utils";
 import { History, FileText, Building2, Users, FileDown, Check, Loader2 } from "lucide-react";
+import { useListWorkspaceReports } from "@workspace/api-client-react";
 
 const SECTION = "Reports · 06";
 
@@ -19,22 +20,45 @@ function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
+interface HistoryEntry {
+  id: string;
+  title: string;
+  summary: string;
+  generated_at: string;
+  mode: string;
+  branding: string;
+  section_count: number;
+  export_format: string | null;
+  status: string;
+  /** Stored document snapshot — present for reports generated in-app. */
+  modelJson: string | null;
+}
+
 export function ReportHistoryView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
+  const { manager } = useAccount();
+  const { data: generatedData } = useListWorkspaceReports(manager.id);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [doneId, setDoneId] = useState<string | null>(null);
 
-  async function download(id: string, format: string, mode: BrandingMode, docTitle: string, sectionCount: number) {
+  async function download(entry: HistoryEntry, format: string) {
     if (busyId) return;
-    const model = buildReportModel(seed, adAccountId!, mode, { docTitle, sectionCount });
+    // Generated reports re-download their stored snapshot; seed history
+    // entries are re-composed from current data (no snapshot exists).
+    const model = entry.modelJson
+      ? parseReportModel(entry.modelJson)
+      : buildReportModel(seed, adAccountId!, (entry.mode === "client" ? "client" : "internal") as BrandingMode, {
+          docTitle: entry.title,
+          sectionCount: entry.section_count,
+        });
     if (!model) return;
-    setBusyId(id);
+    setBusyId(entry.id);
     setDoneId(null);
     try {
       await downloadReportExport(format, model);
-      setDoneId(id);
+      setDoneId(entry.id);
     } finally {
       setBusyId(null);
     }
@@ -44,7 +68,35 @@ export function ReportHistoryView() {
     <ModuleScopeGate section={SECTION} title="Report History" account={account}>
       {() => {
         const acct = account!;
-        const history = getReportHistory(seed, adAccountId);
+        const seedHistory = getReportHistory(seed, adAccountId);
+        const generated = (generatedData?.reports ?? []).filter((r) => r.ad_account_id === adAccountId);
+
+        const history: HistoryEntry[] = [
+          ...generated.map((r) => ({
+            id: `gen-${r.id}`,
+            title: r.title,
+            summary: r.summary,
+            generated_at: r.generated_at,
+            mode: r.mode,
+            branding: r.branding,
+            section_count: r.section_count,
+            export_format: r.export_format,
+            status: "exported",
+            modelJson: r.model_json,
+          })),
+          ...seedHistory.map((h) => ({
+            id: h.id,
+            title: h.title,
+            summary: h.summary,
+            generated_at: h.generated_at,
+            mode: h.mode,
+            branding: h.branding,
+            section_count: h.section_count,
+            export_format: h.export_format ?? null,
+            status: h.status,
+            modelJson: null,
+          })),
+        ];
 
         if (history.length === 0) {
           return (
@@ -112,7 +164,7 @@ export function ReportHistoryView() {
                     </div>
                     {r.status === "exported" && r.export_format && (
                       <button
-                        onClick={() => download(r.id, r.export_format!, r.mode === "client" ? "client" : "internal", r.title, r.section_count)}
+                        onClick={() => download(r, r.export_format!)}
                         disabled={busyId !== null}
                         className={cn(
                           "flex items-center gap-1.5 h-8 px-3 rounded-md border text-[11px] font-medium shrink-0 transition-colors disabled:opacity-60",

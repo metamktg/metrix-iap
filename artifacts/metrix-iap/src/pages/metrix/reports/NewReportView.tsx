@@ -3,14 +3,23 @@
 // Sub-tabs: Report preview (Internal vs Client mode) | Branding & export.
 
 import { useState } from "react";
-import { useScopedAdAccountId } from "@/contexts/AccountContext";
+import { useAccount, useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getReportBuilder } from "@/lib/data/metrixSeedAdapter";
-import { buildReportModel, downloadReportExport } from "@/lib/reportExport";
+import { buildReportModel, downloadReportExport, serializeReportModel, parseReportModel } from "@/lib/reportExport";
 import { ModuleHeader, ScopeBanner, ModuleScopeGate, SectionCard, ModuleTabs, CaveatNote, PendingState, CrossLink } from "../shared";
 import { useDateRange, formatIsoRange, isoMin, isoMax, type IsoRange } from "@/contexts/DateRangeContext";
 import { cn } from "@/lib/utils";
-import { FileText, FileDown, Palette, Check, Eye, Building2, Users, Loader2, CalendarRange } from "lucide-react";
+import { FileText, FileDown, Palette, Check, Eye, Building2, Users, Loader2, CalendarRange, Sparkles } from "lucide-react";
+import {
+  useGetReportSettings,
+  useCreateWorkspaceReport,
+  getListWorkspaceReportsQueryKey,
+  type GeneratedReportCreateInput,
+} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
 
 const SECTION = "Reports · 06";
 
@@ -27,10 +36,17 @@ export function NewReportView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
+  const { manager } = useAccount();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [tab, setTab] = useState<string>("preview");
   const [mode, setMode] = useState<Mode>("internal");
   const [exporting, setExporting] = useState<string | null>(null);
   const [exported, setExported] = useState<string | null>(null);
+  // Section selection: all template sections are included by default;
+  // unchecking removes them from the generated document only.
+  const [excludedSections, setExcludedSections] = useState<Set<string>>(new Set());
+  const [generatedOk, setGeneratedOk] = useState(false);
 
   // Report window: inherits the global date range by default; a per-report
   // override applies to this report composition only (never the global filter).
@@ -38,9 +54,81 @@ export function NewReportView() {
   const [override, setOverride] = useState<IsoRange | null>(null);
   const reportRange = override ?? globalRange;
 
+  const { data: settings } = useGetReportSettings(manager.id);
+  const { mutate: createReport, isPending: generating } = useCreateWorkspaceReport({
+    mutation: {
+      onSuccess: async (result) => {
+        await queryClient.invalidateQueries({
+          queryKey: getListWorkspaceReportsQueryKey(manager.id),
+        });
+        setGeneratedOk(true);
+        const model = parseReportModel(result.report.model_json);
+        if (model) {
+          await downloadReportExport(result.report.export_format, model);
+        }
+        toast({
+          title: "Report generated",
+          description: `"${result.report.title}" was saved to Report History and downloaded as ${FORMAT_LABEL[result.report.export_format] ?? result.report.export_format}.`,
+        });
+      },
+      onError: () => {
+        toast({
+          variant: "destructive",
+          title: "Couldn't generate the report",
+          description: "The report was not saved. Please try again.",
+        });
+      },
+    },
+  });
+
+  function toggleSection(title: string) {
+    setGeneratedOk(false);
+    setExcludedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(title)) next.delete(title);
+      else next.add(title);
+      return next;
+    });
+  }
+
+  function handleGenerate(rbSections: string[], defaultFormat: string) {
+    if (generating || !adAccountId) return;
+    const selected = rbSections.filter((s) => !excludedSections.has(s));
+    if (selected.length === 0) return;
+    const windowLabel = reportRange ? formatIsoRange(reportRange) : null;
+    const model = buildReportModel(seed, adAccountId, mode, {
+      selectedSections: selected,
+      windowLabel,
+    });
+    if (!model) return;
+    const branding = mode === "internal" ? "metrix" : "white_label";
+    const summary = `${selected.length} of ${rbSections.length} sections · ${
+      windowLabel ? `window ${windowLabel}` : "no data window"
+    }${override ? " (override)" : ""} · ${mode === "internal" ? "internal" : "client-facing"} delivery.`;
+    const body: GeneratedReportCreateInput = {
+      ad_account_id: adAccountId,
+      title: model.docTitle,
+      mode,
+      branding,
+      export_format: (["pdf", "google_doc", "html"].includes(defaultFormat)
+        ? defaultFormat
+        : "pdf") as GeneratedReportCreateInput["export_format"],
+      section_count: selected.length,
+      range_start: reportRange?.start ?? null,
+      range_end: reportRange?.end ?? null,
+      range_source: reportRange ? (override ? "override" : "global") : null,
+      summary,
+      model_json: serializeReportModel(model),
+    };
+    setGeneratedOk(false);
+    createReport({ workspaceId: manager.id, data: body });
+  }
+
   async function handleExport(format: string) {
     if (exporting) return;
-    const model = buildReportModel(seed, adAccountId!, mode);
+    const model = buildReportModel(seed, adAccountId!, mode, {
+      windowLabel: reportRange ? formatIsoRange(reportRange) : null,
+    });
     if (!model) return;
     setExporting(format);
     setExported(null);
@@ -190,14 +278,27 @@ export function NewReportView() {
                     </div>
 
                     <div className="px-6 py-5">
-                      <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-3">Contents · {rb.report_sections.length} sections</div>
+                      <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-3">
+                        Contents · {rb.report_sections.length - excludedSections.size} of {rb.report_sections.length} sections included
+                      </div>
                       <ol className="space-y-1.5">
-                        {rb.report_sections.map((s, i) => (
-                          <li key={s} className="flex items-center gap-3 py-2 border-b border-border/15 last:border-b-0">
-                            <span className="w-6 h-6 rounded-md bg-white/[0.04] border border-border/40 flex items-center justify-center text-[10px] font-mono text-muted-foreground/70 shrink-0">{String(i + 1).padStart(2, "0")}</span>
-                            <span className="text-[12px] font-medium text-foreground">{s}</span>
-                          </li>
-                        ))}
+                        {rb.report_sections.map((s, i) => {
+                          const included = !excludedSections.has(s);
+                          return (
+                            <li key={s} className="flex items-center gap-3 py-2 border-b border-border/15 last:border-b-0">
+                              <span className="w-6 h-6 rounded-md bg-white/[0.04] border border-border/40 flex items-center justify-center text-[10px] font-mono text-muted-foreground/70 shrink-0">{String(i + 1).padStart(2, "0")}</span>
+                              <label className="flex items-center gap-2.5 cursor-pointer select-none flex-1 min-w-0">
+                                <input
+                                  type="checkbox"
+                                  checked={included}
+                                  onChange={() => toggleSection(s)}
+                                  className="w-3.5 h-3.5 rounded border-border/60 bg-white/[0.04] accent-[hsl(var(--primary))] shrink-0"
+                                />
+                                <span className={cn("text-[12px] font-medium", included ? "text-foreground" : "text-muted-foreground/50 line-through")}>{s}</span>
+                              </label>
+                            </li>
+                          );
+                        })}
                       </ol>
                     </div>
                   </div>
@@ -205,6 +306,32 @@ export function NewReportView() {
                   <p className="text-[11px] text-muted-foreground/70">
                     Preview reflects section order and branding only. Section content is composed from the account's analysis and strategy — no independent analysis is run here.
                   </p>
+
+                  {/* Generate: persists a snapshot to Report History + downloads it */}
+                  <div className="rounded-lg border border-border/40 bg-white/[0.02] px-4 py-3.5">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <button
+                        onClick={() => handleGenerate(rb.report_sections, settings?.default_format ?? rb.export_formats[0] ?? "pdf")}
+                        disabled={generating || rb.report_sections.length - excludedSections.size === 0}
+                        className="inline-flex items-center gap-2 h-9 px-4 rounded-md bg-primary text-primary-foreground text-[12px] font-semibold transition-opacity hover:opacity-90 disabled:opacity-50"
+                      >
+                        {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                        {generating ? "Generating…" : "Generate report"}
+                      </button>
+                      <span className="text-[10px] text-muted-foreground/70">
+                        Saves the composed document to Report History and downloads it as {FORMAT_LABEL[settings?.default_format ?? rb.export_formats[0] ?? "pdf"] ?? "PDF"}.
+                      </span>
+                    </div>
+                    {rb.report_sections.length - excludedSections.size === 0 && (
+                      <p className="mt-2 text-[10px] text-amber-400/90">Include at least one section to generate a report.</p>
+                    )}
+                    {generatedOk && (
+                      <p className="mt-2 text-[11px] text-emerald-400 flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5" /> Report saved.
+                        <Link to="/app/reports/history" className="underline underline-offset-2 hover:text-emerald-300">View it in Report History</Link>
+                      </p>
+                    )}
+                  </div>
 
                   <CrossLink to="/app/reports/history" label="See previously generated reports" />
                 </>

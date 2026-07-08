@@ -18,6 +18,9 @@ import {
   ApproveAgentWaitlistEntryResponse,
   UpdateReportSettingsBody,
   UpdateReportSettingsResponse,
+  CreateWorkspaceReportBody,
+  CreateWorkspaceReportResponse,
+  ListWorkspaceReportsResponse,
 } from "@workspace/api-zod";
 import {
   db,
@@ -26,7 +29,9 @@ import {
   workspaceInvitesTable,
   workspaceNotificationPrefsTable,
   workspaceReportSettingsTable,
+  workspaceReportsTable,
   type WorkspaceReportSettings,
+  type WorkspaceReport,
 } from "@workspace/db";
 import { and, count, desc, eq, sql } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
@@ -683,6 +688,91 @@ router.put("/metrix/workspaces/:workspaceId/report-settings", requireAuth, requi
     .returning();
 
   res.json(UpdateReportSettingsResponse.parse(reportSettingsRowToApi(row)));
+});
+
+// ─── Generated reports ────────────────────────────────────────────────
+// Each generated report stores a full document snapshot (model_json) so
+// Report History and Exports can re-download exactly what was generated,
+// independent of later data changes.
+
+const reportRowToApi = (row: WorkspaceReport) => ({
+  id: row.id,
+  ad_account_id: row.adAccountId,
+  title: row.title,
+  mode: row.mode,
+  branding: row.branding,
+  export_format: row.exportFormat,
+  section_count: row.sectionCount,
+  range_start: row.rangeStart ?? null,
+  range_end: row.rangeEnd ?? null,
+  range_source: row.rangeIsOverride ?? null,
+  summary: row.summary,
+  model_json: row.modelJson,
+  generated_at: row.generatedAt.toISOString(),
+});
+
+router.get("/metrix/workspaces/:workspaceId/reports", requireAuth, requireWorkspaceAccess, async (req, res) => {
+  const workspaceId = String(req.params.workspaceId);
+  const rows = await db
+    .select()
+    .from(workspaceReportsTable)
+    .where(eq(workspaceReportsTable.workspaceId, workspaceId))
+    .orderBy(desc(workspaceReportsTable.generatedAt), desc(workspaceReportsTable.id));
+
+  res.json(ListWorkspaceReportsResponse.parse({ reports: rows.map(reportRowToApi) }));
+});
+
+router.post("/metrix/workspaces/:workspaceId/reports", requireAuth, requireWorkspaceAccess, async (req, res) => {
+  const workspaceId = String(req.params.workspaceId);
+  const parsed = CreateWorkspaceReportBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "Invalid generated report payload." });
+    return;
+  }
+  const b = parsed.data;
+
+  // The snapshot must be a well-formed report document, not arbitrary JSON:
+  // an object with a non-empty sections array of titled sections.
+  let model: unknown;
+  try {
+    model = JSON.parse(b.model_json);
+  } catch {
+    res.status(400).json({ message: "Report snapshot is not valid JSON." });
+    return;
+  }
+  const sections = (model as { sections?: unknown })?.sections;
+  const validSections =
+    Array.isArray(sections) &&
+    sections.length > 0 &&
+    sections.every(
+      (s) => typeof s === "object" && s !== null && typeof (s as { title?: unknown }).title === "string",
+    );
+  if (!validSections) {
+    res.status(400).json({ message: "Report snapshot must contain at least one titled section." });
+    return;
+  }
+
+  const [row] = await db
+    .insert(workspaceReportsTable)
+    .values({
+      workspaceId,
+      adAccountId: b.ad_account_id,
+      title: b.title,
+      mode: b.mode,
+      branding: b.branding,
+      exportFormat: b.export_format,
+      sectionCount: b.section_count,
+      rangeStart: b.range_start ?? null,
+      rangeEnd: b.range_end ?? null,
+      rangeIsOverride: b.range_source ?? null,
+      summary: b.summary,
+      modelJson: b.model_json,
+    })
+    .returning();
+
+  res.json(
+    CreateWorkspaceReportResponse.parse({ status: "created", report: reportRowToApi(row) }),
+  );
 });
 
 export default router;

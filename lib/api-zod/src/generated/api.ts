@@ -426,6 +426,93 @@ export const UpdateReportSettingsResponse = zod.object({
 
 
 /**
+ * Returns generated report documents (with their content snapshot) for the workspace, newest first. Clients scope to an ad account by filtering on ad_account_id. Requires a logged-in session with access to the workspace.
+ * @summary List generated reports for the workspace
+ */
+
+
+
+export const ListWorkspaceReportsParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.')
+})
+
+export const ListWorkspaceReportsResponse = zod.object({
+  "reports": zod.array(zod.object({
+  "id": zod.number(),
+  "ad_account_id": zod.string(),
+  "title": zod.string(),
+  "mode": zod.string(),
+  "branding": zod.string(),
+  "export_format": zod.string(),
+  "section_count": zod.number(),
+  "range_start": zod.string().nullable(),
+  "range_end": zod.string().nullable(),
+  "range_source": zod.string().nullable(),
+  "summary": zod.string(),
+  "model_json": zod.string(),
+  "generated_at": zod.string()
+}))
+})
+
+
+/**
+ * Persists a generated report snapshot (composed sections and metadata) so it appears in Report History and can be re-downloaded from Exports exactly as generated. Requires a logged-in session with access to the workspace.
+ * @summary Store a generated report document
+ */
+
+
+
+export const CreateWorkspaceReportParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.')
+})
+
+export const createWorkspaceReportBodyAdAccountIdMax = 200;
+
+export const createWorkspaceReportBodyTitleMax = 300;
+
+
+export const createWorkspaceReportBodySummaryMax = 1000;
+
+export const createWorkspaceReportBodyModelJsonMin = 2;
+export const createWorkspaceReportBodyModelJsonMax = 2000000;
+
+
+
+export const CreateWorkspaceReportBody = zod.object({
+  "ad_account_id": zod.string().min(1).max(createWorkspaceReportBodyAdAccountIdMax),
+  "title": zod.string().min(1).max(createWorkspaceReportBodyTitleMax),
+  "mode": zod.enum(['internal', 'client']),
+  "branding": zod.enum(['metrix', 'white_label']),
+  "export_format": zod.enum(['pdf', 'google_doc', 'html']),
+  "section_count": zod.number().min(1),
+  "range_start": zod.string().nullish().describe('ISO date the report window starts; null when no data window existed.'),
+  "range_end": zod.string().nullish(),
+  "range_source": zod.enum(['override', 'global']).nullish().describe('Whether the window was a per-report override or inherited from the global range.'),
+  "summary": zod.string().min(1).max(createWorkspaceReportBodySummaryMax),
+  "model_json": zod.string().min(createWorkspaceReportBodyModelJsonMin).max(createWorkspaceReportBodyModelJsonMax).describe('JSON-serialized report document snapshot (sections and blocks) captured at generation time.')
+})
+
+export const CreateWorkspaceReportResponse = zod.object({
+  "status": zod.enum(['created']),
+  "report": zod.object({
+  "id": zod.number(),
+  "ad_account_id": zod.string(),
+  "title": zod.string(),
+  "mode": zod.string(),
+  "branding": zod.string(),
+  "export_format": zod.string(),
+  "section_count": zod.number(),
+  "range_start": zod.string().nullable(),
+  "range_end": zod.string().nullable(),
+  "range_source": zod.string().nullable(),
+  "summary": zod.string(),
+  "model_json": zod.string(),
+  "generated_at": zod.string()
+})
+})
+
+
+/**
  * Returns server health status
  * @summary Health check
  */

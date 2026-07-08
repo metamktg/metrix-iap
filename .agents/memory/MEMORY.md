@@ -9,3 +9,4 @@
 - [Metrix settings persistence](metrix-settings-persistence.md) — seed stays read-only; DB rows are per-workspace overrides merged onto seed defaults client-side.
 - [Metrix IAP test seed fixture](metrix-iap-test-seed-fixture.md) — tests render against a checked-in seed snapshot; refresh from the live seed endpoint when schema changes; views need DateRangeProvider in wrappers.
 - [Metrix Meta ad backfill](metrix-meta-backfill.md) — Ads Manager links need the numeric meta_ad_account_id, never the internal account id; asset + deep link must come from the same ad row.
+- [Express 5 params + middleware typing](express5-params-middleware-typing.md) — adding middleware args widens req.params to string|string[]; coerce with String() or Drizzle overloads break.

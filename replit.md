@@ -52,6 +52,7 @@ _Replace the heading above with the project's name, and this line with one sente
 - `optimization_loop` is `null` and Creative Scan surfaces are empty until those IAP loop stages actually run; `loop_status` records per-stage complete/pending. UI shows honest pending states — never fabricate data.
 - `ads.creative_asset_url` and `ads.meta_ad_id` are nullable, backfilled by dropping a `meta_ads_export.json` in `scripts/data/metrix/` and re-running the importer. The seed exposes the per-account ad registry (`ad_accounts[].ads`) + `meta_ad_account_id`; the client resolves the primary ad per creative cell (`primaryAdForCell` in `creative-assembly.ts`) so CreativeCard shows the real asset (placeholder fallback on error) and "View in Ads Manager" enables only when both `meta_ad_id` and the numeric Meta account id exist. Ads Manager deep links use the numeric Meta account id — never the internal account id.
 - Waitlist + request-access stay on Replit Postgres (Drizzle); Supabase is only for Metrix IAP data.
+- Generated reports (`workspace_reports`, Replit Postgres) store a full `model_json` document snapshot at generate time; History/Exports downloads reproduce the snapshot exactly. Direct format-download buttons stay download-only (no persistence). Report window has no daily grain — it's labeling metadata only; sections summarize full flight.
 
 ## Product
 
