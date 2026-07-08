@@ -4,3 +4,4 @@
 - [Vite Babel JSX generics](vite-babel-jsx-generics.md) — `<Comp<T>>` type-checks in tsc but Babel parse-errors at build; widen call-site state instead of explicit JSX generic.
 - [Metrix IAP account scoping](metrix-iap-account-scoping.md) — manager aggregates totals only; all modules scope to one ad account via useScopedAdAccountId(), unconfigured→UnconfiguredState.
 - [Metrix seed OpenAPI schema](metrix-seed-openapi-schema.md) — new top-level seed keys get silently stripped by the API unless declared in the MetrixSeedBundle OpenAPI schema; Orval zod ignores additionalProperties.
+- [Stale lib declarations](stale-lib-declarations.md) — bogus type errors in untouched files (e.g. instanceof not narrowing) mean stale lib .d.ts; run `pnpm run typecheck:libs` before debugging.
