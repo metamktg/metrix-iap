@@ -18,10 +18,7 @@ export function AppShell({ children }: AppShellProps) {
     isOnWorkspaceRoute && workspaceNeedsOnboarding(currentWorkspace.id);
 
   return (
-    <div
-      className="flex h-screen w-screen overflow-hidden"
-      style={{ background: "hsl(222 61% 5%)" }}
-    >
+    <div className="flex h-screen w-screen overflow-hidden mx-app-bg">
       <Sidebar />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">

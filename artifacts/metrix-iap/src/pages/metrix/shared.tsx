@@ -82,9 +82,9 @@ export function ModuleHeader({
     <div className="px-6 py-5 border-b border-border/40">
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
-          <span className="text-[10px] font-mono text-muted-foreground/40 uppercase tracking-widest block mb-1">{section}</span>
-          <h1 className="text-[18px] font-semibold text-foreground leading-tight">{title}</h1>
-          {subtitle && <p className="text-[12px] text-muted-foreground/60 mt-0.5">{subtitle}</p>}
+          <span className="mx-section-label block mb-1 !text-[10px]">{section}</span>
+          <h1 className="text-[20px] font-bold text-foreground leading-tight tracking-[-0.02em]">{title}</h1>
+          {subtitle && <p className="text-[12px] text-muted-foreground/75 mt-0.5">{subtitle}</p>}
         </div>
         <div className="shrink-0 pt-1 flex items-center gap-2">
           {right}
@@ -167,10 +167,12 @@ export function PendingState({ title, message, icon: Icon = Clock }: { title: st
 
 export function MetricTile({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
-      <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-1.5">{label}</div>
-      <div className="text-[20px] font-semibold text-foreground tabular-nums leading-none">{value}</div>
-      {sub && <div className="text-[10px] text-muted-foreground/50 mt-1.5">{sub}</div>}
+    <div className="mx-card p-4">
+      <div className="relative">
+        <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-2">{label}</div>
+        <div className="text-[26px] font-bold text-foreground tabular-nums leading-none tracking-[-0.035em]">{value}</div>
+        {sub && <div className="text-[10px] text-muted-foreground/60 mt-2">{sub}</div>}
+      </div>
     </div>
   );
 }
@@ -224,18 +226,18 @@ export function SectionCard({
   right?: React.ReactNode;
 }) {
   return (
-    <section className="rounded-xl border border-border/40 bg-white/[0.015] overflow-hidden">
-      <div className="flex items-start gap-3 px-4 py-3 border-b border-border/30">
+    <section className="mx-card overflow-hidden">
+      <div className="relative flex items-start gap-3 px-4 py-3 border-b border-[rgba(120,170,255,0.12)]">
         <div className="flex-1 min-w-0">
           <h3 className="text-[13px] font-semibold text-foreground leading-tight">{title}</h3>
-          {desc && <p className="text-[11px] text-muted-foreground/55 mt-0.5 leading-tight">{desc}</p>}
+          {desc && <p className="text-[11px] text-muted-foreground/70 mt-0.5 leading-tight">{desc}</p>}
         </div>
         <div className="shrink-0 flex items-center gap-2">
           {right}
           {table && <DataSourceBadge table={table} collapsible />}
         </div>
       </div>
-      <div className="p-4">{children}</div>
+      <div className="relative p-4">{children}</div>
     </section>
   );
 }

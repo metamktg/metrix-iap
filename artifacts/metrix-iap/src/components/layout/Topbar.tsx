@@ -53,7 +53,7 @@ export function Topbar() {
   const initials = leadLabel.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 
   return (
-    <header className="h-11 flex items-center gap-3 px-4 border-b border-border/50 bg-background/95 backdrop-blur-sm shrink-0">
+    <header className="h-11 flex items-center gap-3 px-4 shrink-0 mx-topbar">
       {/* Breadcrumb */}
       <nav aria-label="Breadcrumb" className="flex items-center gap-0 flex-1 min-w-0">
         <span className="text-[11px] font-mono text-muted-foreground/40 shrink-0 pr-1">MX</span>

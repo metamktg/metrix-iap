@@ -77,8 +77,8 @@ function ChildRow({ child, count }: { child: NavChild; count: number | null }) {
         className={cn(
           "flex items-center gap-1.5 pl-3 pr-2 h-8 rounded-r text-[12px] transition-colors",
           active
-            ? "text-foreground font-medium bg-primary/8"
-            : "text-muted-foreground/65 hover:text-foreground/80 hover:bg-white/[0.04]"
+            ? "font-medium mx-nav-child-active"
+            : "text-muted-foreground/65 hover:text-foreground/80 hover:bg-[rgba(20,55,110,0.4)]"
         )}
       >
         <span className="flex-1 truncate leading-tight">{child.label}</span>
@@ -182,10 +182,10 @@ function LeafSection({
         onClick={(e) => navigate(to, e)}
         aria-current={active ? "page" : undefined}
         className={cn(
-          "flex items-center gap-2 px-3 h-9 rounded text-[11px] font-semibold uppercase tracking-widest transition-colors",
+          "flex items-center gap-2 px-3 h-9 rounded-lg text-[11px] font-semibold uppercase tracking-widest transition-colors",
           active
-            ? "bg-primary/8 text-foreground"
-            : "text-muted-foreground/50 hover:text-muted-foreground/80 hover:bg-white/[0.04]"
+            ? "mx-nav-active"
+            : "text-muted-foreground/50 hover:text-foreground hover:bg-[rgba(20,55,110,0.5)]"
         )}
       >
         <span className="w-4 shrink-0 text-[8px] font-mono text-muted-foreground/35 tabular-nums">
@@ -210,8 +210,7 @@ export function Sidebar() {
 
   return (
     <aside
-      className="flex flex-col w-[216px] shrink-0 h-full border-r border-border/50 overflow-hidden"
-      style={{ background: "hsl(222 61% 5%)" }}
+      className="flex flex-col w-[216px] shrink-0 h-full overflow-hidden mx-sidebar"
       aria-label="Workspace sidebar"
     >
       {/* Logo */}
@@ -220,7 +219,7 @@ export function Sidebar() {
           <img
             src={`${import.meta.env.BASE_URL}metrix-logo.png`}
             alt="Metrix"
-            className="w-5 h-5 object-contain shrink-0"
+            className="w-5 h-5 object-contain shrink-0 mx-logo-glow"
           />
           <span className="text-[13px] font-bold tracking-tight text-foreground">METRIX</span>
           <span className="text-[9px] font-mono text-muted-foreground/60 border border-border/50 px-1.5 py-0.5 rounded leading-none ml-0.5">
