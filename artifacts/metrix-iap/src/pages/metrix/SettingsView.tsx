@@ -6,27 +6,111 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getReportBuilder } from "@/lib/data/metrixSeedAdapter";
 import { ModuleHeader, ScopeBanner, SectionCard, CaveatNote, PendingState } from "./shared";
 import { cn } from "@/lib/utils";
-import { Plug, FileUp, Palette, ShieldCheck, CheckCircle2, Circle, Users, Download, Loader2 } from "lucide-react";
-import { listAgentWaitlist, getListAgentWaitlistQueryKey } from "@workspace/api-client-react";
-import { useInfiniteQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { Plug, FileUp, Palette, ShieldCheck, CheckCircle2, Circle, Users, Download, Loader2, Lock } from "lucide-react";
+import { listAgentWaitlist, getListAgentWaitlistQueryKey, ApiError } from "@workspace/api-client-react";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useState, type FormEvent } from "react";
 
 const WAITLIST_PAGE_SIZE = 50;
 const WAITLIST_EXPORT_PAGE_SIZE = 200;
+const ADMIN_KEY_STORAGE = "metrix-admin-key";
 
 function AgentWaitlistSection() {
   const [isExporting, setIsExporting] = useState(false);
+  const [adminKey, setAdminKey] = useState<string | null>(
+    () => sessionStorage.getItem(ADMIN_KEY_STORAGE),
+  );
+  const [keyInput, setKeyInput] = useState("");
+  const [lastKeyRejected, setLastKeyRejected] = useState(false);
+  const queryClient = useQueryClient();
 
-  const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
+  const authHeaders = adminKey ? { authorization: `Bearer ${adminKey}` } : undefined;
+
+  const { data, isLoading, isError, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryKey: [...getListAgentWaitlistQueryKey(), "infinite", WAITLIST_PAGE_SIZE],
     queryFn: ({ pageParam, signal }) =>
-      listAgentWaitlist({ limit: WAITLIST_PAGE_SIZE, offset: pageParam }, { signal }),
+      listAgentWaitlist(
+        { limit: WAITLIST_PAGE_SIZE, offset: pageParam },
+        { signal, headers: authHeaders },
+      ),
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
       const loaded = allPages.reduce((sum, page) => sum + page.entries.length, 0);
       return loaded < lastPage.total && lastPage.entries.length > 0 ? loaded : undefined;
     },
+    enabled: adminKey !== null,
+    retry: false,
   });
+
+  const isUnauthorized = error instanceof ApiError && error.status === 401;
+
+  const handleUnlock = (e: FormEvent) => {
+    e.preventDefault();
+    const trimmed = keyInput.trim();
+    if (!trimmed) return;
+    sessionStorage.setItem(ADMIN_KEY_STORAGE, trimmed);
+    setAdminKey(trimmed);
+    setKeyInput("");
+    setLastKeyRejected(false);
+    void queryClient.resetQueries({ queryKey: getListAgentWaitlistQueryKey() });
+  };
+
+  const handleLock = () => {
+    sessionStorage.removeItem(ADMIN_KEY_STORAGE);
+    setAdminKey(null);
+    setKeyInput("");
+    setLastKeyRejected(false);
+    queryClient.removeQueries({ queryKey: getListAgentWaitlistQueryKey() });
+  };
+
+  if (isUnauthorized && adminKey !== null && !lastKeyRejected) {
+    sessionStorage.removeItem(ADMIN_KEY_STORAGE);
+    setAdminKey(null);
+    setLastKeyRejected(true);
+  }
+
+  if (adminKey === null || isUnauthorized) {
+    return (
+      <SectionCard
+        title="Metrix Agent waitlist"
+        desc="Waitlist signups contain personal emails and are restricted to admins."
+      >
+        <div className="p-3 rounded-lg border border-border/30 bg-white/[0.02] space-y-2.5" data-testid="panel-waitlist-locked">
+          <div className="flex items-center gap-2.5">
+            <Lock className="w-4 h-4 text-muted-foreground/50 shrink-0" />
+            <div className="text-[12px] font-medium text-foreground">Admin access required</div>
+          </div>
+          {lastKeyRejected && (
+            <div className="text-[11px] text-red-400/80" data-testid="text-waitlist-unauthorized">
+              That admin key was not accepted. Check the key and try again.
+            </div>
+          )}
+          <form onSubmit={handleUnlock} className="flex items-center gap-2">
+            <input
+              type="password"
+              value={keyInput}
+              onChange={(e) => setKeyInput(e.target.value)}
+              placeholder="Enter admin key"
+              autoComplete="off"
+              className="flex-1 h-8 px-2.5 rounded-md bg-white/[0.03] border border-border/40 text-[12px] text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/40"
+              data-testid="input-admin-key"
+            />
+            <button
+              type="submit"
+              disabled={!keyInput.trim()}
+              className="h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-[11px] font-medium text-primary hover:bg-primary/25 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+              data-testid="button-unlock-waitlist"
+            >
+              Unlock
+            </button>
+          </form>
+          <div className="text-[10px] text-muted-foreground/50">
+            The admin key is set by the app owner via the ADMIN_API_KEY secret.
+          </div>
+        </div>
+      </SectionCard>
+    );
+  }
 
   const entries = data?.pages.flatMap((page) => page.entries) ?? [];
   const total = data?.pages[data.pages.length - 1]?.total ?? 0;
@@ -38,7 +122,10 @@ function AgentWaitlistSection() {
       const all: { email: string; joined_at: string }[] = [];
       let offset = 0;
       for (;;) {
-        const page = await listAgentWaitlist({ limit: WAITLIST_EXPORT_PAGE_SIZE, offset });
+        const page = await listAgentWaitlist(
+          { limit: WAITLIST_EXPORT_PAGE_SIZE, offset },
+          { headers: authHeaders },
+        );
         all.push(...page.entries);
         offset += page.entries.length;
         if (page.entries.length === 0 || offset >= page.total) break;
@@ -65,15 +152,24 @@ function AgentWaitlistSection() {
       title="Metrix Agent waitlist"
       desc="Emails collected from the Metrix Agent waitlist signup, newest first."
       right={
-        <button
-          onClick={handleExport}
-          disabled={isExporting || total === 0}
-          className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-40 disabled:pointer-events-none"
-          data-testid="button-export-waitlist"
-        >
-          {isExporting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
-          {isExporting ? "Exporting…" : "Export CSV"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExport}
+            disabled={isExporting || total === 0}
+            className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+            data-testid="button-export-waitlist"
+          >
+            {isExporting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+            {isExporting ? "Exporting…" : "Export CSV"}
+          </button>
+          <button
+            onClick={handleLock}
+            className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+            data-testid="button-lock-waitlist"
+          >
+            <Lock className="w-3 h-3" /> Lock
+          </button>
+        </div>
       }
     >
       {isLoading ? (

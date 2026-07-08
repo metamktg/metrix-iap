@@ -221,7 +221,7 @@ export const getListAgentWaitlistUrl = (params?: ListAgentWaitlistParams,) => {
 }
 
 /**
- * Returns a page of waitlist entries (email and joined date), newest first. Use limit/offset to page through results; total reflects the full count.
+ * Returns a page of waitlist entries (email and joined date), newest first. Use limit/offset to page through results; total reflects the full count. Requires an admin bearer key.
  * @summary List Metrix Agent waitlist signups
  */
 export const listAgentWaitlist = async (params?: ListAgentWaitlistParams, options?: RequestInit): Promise<WaitlistEntriesResult> => {
@@ -246,7 +246,7 @@ export const getListAgentWaitlistQueryKey = (params?: ListAgentWaitlistParams,) 
     }
 
 
-export const getListAgentWaitlistQueryOptions = <TData = Awaited<ReturnType<typeof listAgentWaitlist>>, TError = ErrorType<unknown>>(params?: ListAgentWaitlistParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgentWaitlist>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getListAgentWaitlistQueryOptions = <TData = Awaited<ReturnType<typeof listAgentWaitlist>>, TError = ErrorType<ApiError>>(params?: ListAgentWaitlistParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgentWaitlist>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -265,14 +265,14 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type ListAgentWaitlistQueryResult = NonNullable<Awaited<ReturnType<typeof listAgentWaitlist>>>
-export type ListAgentWaitlistQueryError = ErrorType<unknown>
+export type ListAgentWaitlistQueryError = ErrorType<ApiError>
 
 
 /**
  * @summary List Metrix Agent waitlist signups
  */
 
-export function useListAgentWaitlist<TData = Awaited<ReturnType<typeof listAgentWaitlist>>, TError = ErrorType<unknown>>(
+export function useListAgentWaitlist<TData = Awaited<ReturnType<typeof listAgentWaitlist>>, TError = ErrorType<ApiError>>(
  params?: ListAgentWaitlistParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgentWaitlist>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {

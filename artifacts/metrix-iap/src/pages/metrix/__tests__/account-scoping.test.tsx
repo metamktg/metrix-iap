@@ -27,6 +27,7 @@ vi.mock("@/contexts/MetrixDataContext", () => ({
   MetrixDataProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AccountProvider } from "@/contexts/AccountContext";
 import { SignalView } from "../listen/SignalView";
 import { AlertsView } from "../listen/AlertsView";
@@ -70,10 +71,15 @@ function select(type: "manager" | "ad_account", adAccountId: string | null) {
 }
 
 function renderView(View: React.ComponentType) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, enabled: false } },
+  });
   return render(
-    <AccountProvider>
-      <View />
-    </AccountProvider>
+    <QueryClientProvider client={queryClient}>
+      <AccountProvider>
+        <View />
+      </AccountProvider>
+    </QueryClientProvider>
   );
 }
 

@@ -36,7 +36,7 @@ export const JoinAgentWaitlistResponse = zod.object({
 
 
 /**
- * Returns a page of waitlist entries (email and joined date), newest first. Use limit/offset to page through results; total reflects the full count.
+ * Returns a page of waitlist entries (email and joined date), newest first. Use limit/offset to page through results; total reflects the full count. Requires an admin bearer key.
  * @summary List Metrix Agent waitlist signups
  */
 export const listAgentWaitlistQueryLimitDefault = 50;

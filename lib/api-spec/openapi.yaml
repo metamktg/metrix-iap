@@ -55,7 +55,9 @@ paths:
       operationId: listAgentWaitlist
       tags: [metrix]
       summary: List Metrix Agent waitlist signups
-      description: Returns a page of waitlist entries (email and joined date), newest first. Use limit/offset to page through results; total reflects the full count.
+      description: Returns a page of waitlist entries (email and joined date), newest first. Use limit/offset to page through results; total reflects the full count. Requires an admin bearer key.
+      security:
+        - adminKey: []
       parameters:
         - name: limit
           in: query
@@ -81,6 +83,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WaitlistEntriesResult"
+        "401":
+          description: Missing or invalid admin key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /healthz:
     get:
       operationId: healthCheck
@@ -95,6 +103,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
 components:
+  securitySchemes:
+    adminKey:
+      type: http
+      scheme: bearer
+      description: Static admin key configured via the ADMIN_API_KEY secret.
   schemas:
     MetrixSeedBundle:
       type: object

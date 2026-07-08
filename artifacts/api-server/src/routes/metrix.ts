@@ -8,6 +8,7 @@ import {
 } from "@workspace/api-zod";
 import { db, agentWaitlistTable } from "@workspace/db";
 import { count, desc } from "drizzle-orm";
+import { requireAdmin } from "../middlewares/requireAdmin";
 import seedBundle from "../data/metrix_seed_bundle.json" with { type: "json" };
 
 const router: IRouter = Router();
@@ -38,7 +39,7 @@ router.post("/metrix/agent-waitlist", async (req, res) => {
   res.json(data);
 });
 
-router.get("/metrix/agent-waitlist", async (req, res) => {
+router.get("/metrix/agent-waitlist", requireAdmin, async (req, res) => {
   const parsedQuery = ListAgentWaitlistQueryParams.safeParse(req.query);
   if (!parsedQuery.success) {
     res.status(400).json({ message: "Invalid limit/offset query parameters." });
