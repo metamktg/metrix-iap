@@ -44,6 +44,7 @@ import { isDisposableEmailDomain } from "../lib/disposableEmailDomains";
 import { getMetrixSeedFromSupabase } from "../lib/metrixSeedAssembly";
 import { getSupabase } from "../lib/supabase";
 import { notifyRequestAccess } from "../lib/requestAccessNotification";
+import { getAppBaseUrl } from "../lib/appUrl";
 
 const router: IRouter = Router();
 
@@ -259,7 +260,7 @@ router.post(
       .set({ status: "approved", approvedAt: new Date() })
       .where(eq(agentWaitlistTable.id, entry.id));
 
-    const appUrl = getAppLoginUrl();
+    const appUrl = getAppBaseUrl();
     const emailResult = await sendApprovalEmail(
       entry.email,
       tempPassword,
@@ -278,12 +279,6 @@ router.post(
     res.json(data);
   },
 );
-
-function getAppLoginUrl(): string {
-  const domains = process.env["REPLIT_DOMAINS"];
-  const domain = domains?.split(",")[0]?.trim();
-  return domain ? `https://${domain}/` : "https://app.metrix.ad/";
-}
 
 const inviteRowToApi = (row: {
   id: number;

@@ -9,16 +9,16 @@ const escapeHtml = (value: string): string =>
     .replaceAll("'", "&#39;");
 
 /**
- * Send the approval email containing a temporary password.
+ * Send the password reset email containing the single-use reset link.
  *
  * Returns "sent", "skipped" (RESEND_API_KEY not configured), or "failed"
- * (provider error). Never throws: the caller decides how to surface the
- * temporary password when the email cannot be delivered.
+ * (provider error). Never throws: the request-reset endpoint always responds
+ * neutrally regardless of delivery outcome.
  */
-export async function sendApprovalEmail(
+export async function sendPasswordResetEmail(
   email: string,
-  tempPassword: string,
-  appUrl: string,
+  resetUrl: string,
+  appBaseUrl: string,
   log: {
     info: (obj: object, msg: string) => void;
     warn: (obj: object, msg: string) => void;
@@ -29,15 +29,14 @@ export async function sendApprovalEmail(
   if (!apiKey) {
     log.warn(
       { email },
-      "RESEND_API_KEY not set — approval email skipped (temp password returned to admin)",
+      "RESEND_API_KEY not set — password reset email skipped (reset link not delivered)",
     );
     return "skipped";
   }
 
   const from =
     process.env["REQUEST_ACCESS_FROM_EMAIL"] ?? "Metrix <onboarding@resend.dev>";
-
-  const logoUrl = `${appUrl}metrix-logo.png`;
+  const logoUrl = `${appBaseUrl}metrix-logo.png`;
 
   const html = `
     <div style="font-family:sans-serif;font-size:14px;color:#222;max-width:520px;">
@@ -45,14 +44,14 @@ export async function sendApprovalEmail(
         <img src="${escapeHtml(logoUrl)}" alt="Metrix" width="28" height="28" style="vertical-align:middle;border:0;" />
         <span style="font-size:16px;font-weight:700;letter-spacing:-0.02em;vertical-align:middle;margin-left:8px;">Metrix</span>
       </div>
-      <h2 style="margin:0 0 8px;">Your Metrix access is approved</h2>
-      <p>Welcome to Metrix. Your account has been created for
+      <h2 style="margin:0 0 8px;">Reset your Metrix password</h2>
+      <p>We received a request to reset the password for
         <strong>${escapeHtml(email)}</strong>.</p>
-      <p>Sign in with this temporary password:</p>
-      <p style="font-family:monospace;font-size:18px;letter-spacing:1px;background:#f4f4f5;border:1px solid #e4e4e7;border-radius:6px;padding:10px 14px;display:inline-block;">${escapeHtml(tempPassword)}</p>
-      <p>You will be asked to choose a new password the first time you log in.</p>
-      <p><a href="${escapeHtml(appUrl)}" style="color:#4f46e5;">Log in to Metrix</a></p>
-      <p style="color:#777;font-size:12px;margin-top:24px;">If you did not request access to Metrix, you can ignore this email.</p>
+      <p style="margin:20px 0;">
+        <a href="${escapeHtml(resetUrl)}" style="background:#4f46e5;color:#ffffff;text-decoration:none;padding:10px 18px;border-radius:6px;font-weight:600;display:inline-block;">Choose a new password</a>
+      </p>
+      <p>This link works once and expires in 1 hour.</p>
+      <p style="color:#777;font-size:12px;margin-top:24px;">If you didn't request a password reset, you can safely ignore this email — your password will not change.</p>
     </div>`;
 
   try {
@@ -65,7 +64,7 @@ export async function sendApprovalEmail(
       body: JSON.stringify({
         from,
         to: [email],
-        subject: "Your Metrix access is approved",
+        subject: "Reset your Metrix password",
         html,
       }),
     });
@@ -74,15 +73,15 @@ export async function sendApprovalEmail(
       const body = await response.text();
       log.error(
         { status: response.status, body, email },
-        "Resend rejected approval email",
+        "Resend rejected password reset email",
       );
       return "failed";
     }
 
-    log.info({ email }, "approval email sent");
+    log.info({ email }, "password reset email sent");
     return "sent";
   } catch (err) {
-    log.error({ err, email }, "Failed to send approval email");
+    log.error({ err, email }, "Failed to send password reset email");
     return "failed";
   }
 }

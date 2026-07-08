@@ -1,4 +1,4 @@
-import { Switch, Route, Redirect, Router as WouterRouter } from "wouter";
+import { Switch, Route, Redirect, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,6 +6,8 @@ import { MetrixDataProvider } from "@/contexts/MetrixDataContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { ChangePasswordPage } from "@/pages/auth/ChangePasswordPage";
+import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage";
+import { ResetPasswordPage } from "@/pages/auth/ResetPasswordPage";
 import { Loader2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 
@@ -128,6 +130,12 @@ export function Router() {
 
 function AuthGate() {
   const { user, isLoading } = useAuth();
+  const [location, navigate] = useLocation();
+
+  // The emailed reset link must work regardless of session state.
+  if (location === "/reset-password") {
+    return <ResetPasswordPage onBackToLogin={() => navigate("/", { replace: true })} />;
+  }
 
   if (isLoading) {
     return (
@@ -137,7 +145,12 @@ function AuthGate() {
     );
   }
 
-  if (!user) return <LoginPage />;
+  if (!user) {
+    if (location === "/forgot-password") {
+      return <ForgotPasswordPage onBack={() => navigate("/", { replace: true })} />;
+    }
+    return <LoginPage />;
+  }
   if (user.must_change_password) return <ChangePasswordPage />;
 
   return (

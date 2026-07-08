@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { COPY, BOOK_DEMO_URL } from "../content";
 import { RequestAccessForm } from "../components/RequestAccessForm";
+import { BrandMark } from "../components/BrandMark";
 import { Shield, Activity, GitMerge } from "lucide-react";
 
 export default function Home() {
@@ -8,10 +9,7 @@ export default function Home() {
     <div className="min-h-screen w-full flex flex-col items-center">
       {/* Navbar */}
       <header className="w-full px-6 py-4 flex justify-between items-center mx-topbar fixed top-0 z-50">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold mx-glow-blue">M</div>
-          <span className="font-bold text-xl tracking-tight text-white">Metrix</span>
-        </div>
+        <BrandMark />
         <div className="flex gap-4 items-center">
           <a href={BOOK_DEMO_URL} target="_blank" rel="noreferrer" className="mx-secondary-btn px-4 py-2 text-sm hidden md:inline-flex">
             {COPY.form.secondaryButton}

@@ -123,6 +123,45 @@ export interface AuthChangePasswordInput {
   new_password: string;
 }
 
+export interface AuthRequestPasswordResetInput {
+  email: string;
+}
+
+export type AuthRequestPasswordResetResultStatus = typeof AuthRequestPasswordResetResultStatus[keyof typeof AuthRequestPasswordResetResultStatus];
+
+
+export const AuthRequestPasswordResetResultStatus = {
+  ok: 'ok',
+} as const;
+
+export interface AuthRequestPasswordResetResult {
+  status: AuthRequestPasswordResetResultStatus;
+}
+
+export interface AuthResetPasswordInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  token: string;
+  /**
+     * @minLength 8
+     * @maxLength 200
+     */
+  new_password: string;
+}
+
+export type AuthResetPasswordResultStatus = typeof AuthResetPasswordResultStatus[keyof typeof AuthResetPasswordResultStatus];
+
+
+export const AuthResetPasswordResultStatus = {
+  reset: 'reset',
+} as const;
+
+export interface AuthResetPasswordResult {
+  status: AuthResetPasswordResultStatus;
+}
+
 export interface WaitlistEntriesResult {
   entries: WaitlistEntry[];
   total: number;

@@ -220,6 +220,68 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/auth/request-password-reset:
+    post:
+      operationId: authRequestPasswordReset
+      tags: [metrix]
+      summary: Request a password reset link
+      description: Always responds neutrally whether or not an account exists for the email (no account enumeration). When an account exists, a single-use reset link (valid ~1 hour) is emailed via the configured provider.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthRequestPasswordResetInput"
+      responses:
+        "200":
+          description: Neutral acknowledgement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthRequestPasswordResetResult"
+        "400":
+          description: Invalid email format
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/auth/reset-password:
+    post:
+      operationId: authResetPassword
+      tags: [metrix]
+      summary: Complete a password reset with a token
+      description: Consumes a single-use reset token from the emailed link and sets a new password. On success, every existing session for the user is revoked; the user must log in with the new password.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthResetPasswordInput"
+      responses:
+        "200":
+          description: Password reset
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResetPasswordResult"
+        "400":
+          description: Invalid, expired, or already-used token, or invalid new password
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/workspaces/{workspaceId}/invites:
     parameters:
       - name: workspaceId
@@ -884,6 +946,44 @@ components:
       required:
         - current_password
         - new_password
+    AuthRequestPasswordResetInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+      required:
+        - email
+    AuthRequestPasswordResetResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok]
+      required:
+        - status
+    AuthResetPasswordInput:
+      type: object
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 200
+        new_password:
+          type: string
+          minLength: 8
+          maxLength: 200
+      required:
+        - token
+        - new_password
+    AuthResetPasswordResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [reset]
+      required:
+        - status
     WaitlistEntriesResult:
       type: object
       properties:

@@ -153,6 +153,40 @@ export const AuthChangePasswordResponse = zod.object({
 
 
 /**
+ * Always responds neutrally whether or not an account exists for the email (no account enumeration). When an account exists, a single-use reset link (valid ~1 hour) is emailed via the configured provider.
+ * @summary Request a password reset link
+ */
+export const AuthRequestPasswordResetBody = zod.object({
+  "email": zod.string().email()
+})
+
+export const AuthRequestPasswordResetResponse = zod.object({
+  "status": zod.enum(['ok'])
+})
+
+
+/**
+ * Consumes a single-use reset token from the emailed link and sets a new password. On success, every existing session for the user is revoked; the user must log in with the new password.
+ * @summary Complete a password reset with a token
+ */
+export const authResetPasswordBodyTokenMax = 200;
+
+export const authResetPasswordBodyNewPasswordMin = 8;
+export const authResetPasswordBodyNewPasswordMax = 200;
+
+
+
+export const AuthResetPasswordBody = zod.object({
+  "token": zod.string().min(1).max(authResetPasswordBodyTokenMax),
+  "new_password": zod.string().min(authResetPasswordBodyNewPasswordMin).max(authResetPasswordBodyNewPasswordMax)
+})
+
+export const AuthResetPasswordResponse = zod.object({
+  "status": zod.enum(['reset'])
+})
+
+
+/**
  * Returns invites created for this workspace, newest first. Requires a logged-in session with access to the workspace.
  * @summary List pending workspace invites
  */

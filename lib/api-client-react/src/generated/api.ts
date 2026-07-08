@@ -24,6 +24,10 @@ import type {
   AuthChangePasswordInput,
   AuthLoginInput,
   AuthLogoutResult,
+  AuthRequestPasswordResetInput,
+  AuthRequestPasswordResetResult,
+  AuthResetPasswordInput,
+  AuthResetPasswordResult,
   AuthUserResult,
   GeneratedReportCreateInput,
   GeneratedReportCreateResult,
@@ -671,6 +675,148 @@ export const useAuthChangePassword = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getAuthChangePasswordMutationOptions(options));
+    }
+
+export const getAuthRequestPasswordResetUrl = () => {
+
+
+
+
+  return `/api/metrix/auth/request-password-reset`
+}
+
+/**
+ * Always responds neutrally whether or not an account exists for the email (no account enumeration). When an account exists, a single-use reset link (valid ~1 hour) is emailed via the configured provider.
+ * @summary Request a password reset link
+ */
+export const authRequestPasswordReset = async (authRequestPasswordResetInput: AuthRequestPasswordResetInput, options?: RequestInit): Promise<AuthRequestPasswordResetResult> => {
+
+  return customFetch<AuthRequestPasswordResetResult>(getAuthRequestPasswordResetUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(authRequestPasswordResetInput)
+  }
+);}
+
+
+
+
+export const getAuthRequestPasswordResetMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authRequestPasswordReset>>, TError,{data: BodyType<AuthRequestPasswordResetInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof authRequestPasswordReset>>, TError,{data: BodyType<AuthRequestPasswordResetInput>}, TContext> => {
+
+const mutationKey = ['authRequestPasswordReset'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof authRequestPasswordReset>>, {data: BodyType<AuthRequestPasswordResetInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  authRequestPasswordReset(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AuthRequestPasswordResetMutationResult = NonNullable<Awaited<ReturnType<typeof authRequestPasswordReset>>>
+    export type AuthRequestPasswordResetMutationBody = BodyType<AuthRequestPasswordResetInput>
+    export type AuthRequestPasswordResetMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Request a password reset link
+ */
+export const useAuthRequestPasswordReset = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authRequestPasswordReset>>, TError,{data: BodyType<AuthRequestPasswordResetInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof authRequestPasswordReset>>,
+        TError,
+        {data: BodyType<AuthRequestPasswordResetInput>},
+        TContext
+      > => {
+      return useMutation(getAuthRequestPasswordResetMutationOptions(options));
+    }
+
+export const getAuthResetPasswordUrl = () => {
+
+
+
+
+  return `/api/metrix/auth/reset-password`
+}
+
+/**
+ * Consumes a single-use reset token from the emailed link and sets a new password. On success, every existing session for the user is revoked; the user must log in with the new password.
+ * @summary Complete a password reset with a token
+ */
+export const authResetPassword = async (authResetPasswordInput: AuthResetPasswordInput, options?: RequestInit): Promise<AuthResetPasswordResult> => {
+
+  return customFetch<AuthResetPasswordResult>(getAuthResetPasswordUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(authResetPasswordInput)
+  }
+);}
+
+
+
+
+export const getAuthResetPasswordMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authResetPassword>>, TError,{data: BodyType<AuthResetPasswordInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof authResetPassword>>, TError,{data: BodyType<AuthResetPasswordInput>}, TContext> => {
+
+const mutationKey = ['authResetPassword'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof authResetPassword>>, {data: BodyType<AuthResetPasswordInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  authResetPassword(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AuthResetPasswordMutationResult = NonNullable<Awaited<ReturnType<typeof authResetPassword>>>
+    export type AuthResetPasswordMutationBody = BodyType<AuthResetPasswordInput>
+    export type AuthResetPasswordMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Complete a password reset with a token
+ */
+export const useAuthResetPassword = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authResetPassword>>, TError,{data: BodyType<AuthResetPasswordInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof authResetPassword>>,
+        TError,
+        {data: BodyType<AuthResetPasswordInput>},
+        TContext
+      > => {
+      return useMutation(getAuthResetPasswordMutationOptions(options));
     }
 
 export const getListWorkspaceInvitesUrl = (workspaceId: string,) => {

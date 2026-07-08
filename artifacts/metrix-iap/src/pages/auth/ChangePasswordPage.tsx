@@ -1,9 +1,10 @@
 // ─── Forced password change (first login with a temporary password) ────
 
 import { useState, type FormEvent } from "react";
-import { Loader2, KeyRound } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { ApiError } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { BrandLogo } from "@/components/brand/BrandMark";
 
 export function ChangePasswordPage() {
   const { user, changePassword, logout } = useAuth();
@@ -44,9 +45,7 @@ export function ChangePasswordPage() {
     <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-1.5">
-          <div className="mx-auto w-9 h-9 rounded-lg bg-primary/15 border border-primary/20 flex items-center justify-center">
-            <KeyRound className="w-4 h-4 text-primary" />
-          </div>
+          <BrandLogo className="w-10 h-10 mx-auto" />
           <h1 className="text-lg font-semibold text-foreground">Choose a new password</h1>
           <p className="text-[12px] text-muted-foreground">
             You signed in with a temporary password{user ? ` as ${user.email}` : ""}. Set

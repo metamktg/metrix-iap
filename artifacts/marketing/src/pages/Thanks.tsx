@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { CheckCircle2, ArrowRight } from "lucide-react";
 import { COPY, BOOK_DEMO_URL } from "../content";
+import { BrandMark } from "../components/BrandMark";
 
 export default function Thanks() {
   const [location] = useLocation();
@@ -13,9 +14,8 @@ export default function Thanks() {
     <div className="min-h-screen w-full flex flex-col items-center mx-app-bg text-white">
       {/* Navbar */}
       <header className="w-full px-6 py-4 flex justify-between items-center mx-topbar fixed top-0 z-50">
-        <Link href="/" className="flex items-center gap-2 cursor-pointer">
-          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold mx-glow-blue">M</div>
-          <span className="font-bold text-xl tracking-tight text-white">Metrix</span>
+        <Link href="/" className="cursor-pointer">
+          <BrandMark />
         </Link>
       </header>
 
