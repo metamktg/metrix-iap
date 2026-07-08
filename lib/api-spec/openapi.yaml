@@ -134,6 +134,74 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/workspaces/{workspaceId}/invites/{inviteId}:
+    parameters:
+      - name: workspaceId
+        in: path
+        required: true
+        description: Workspace (manager account) identifier.
+        schema:
+          type: string
+          minLength: 1
+      - name: inviteId
+        in: path
+        required: true
+        description: Invite identifier.
+        schema:
+          type: integer
+          minimum: 1
+    delete:
+      operationId: revokeWorkspaceInvite
+      tags: [metrix]
+      summary: Revoke a pending workspace invite
+      description: Deletes the pending invite, freeing its seat.
+      responses:
+        "200":
+          description: Invite revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevokeWorkspaceInviteResult"
+        "404":
+          description: Invite not found for this workspace
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/workspaces/{workspaceId}/invites/{inviteId}/resend:
+    parameters:
+      - name: workspaceId
+        in: path
+        required: true
+        description: Workspace (manager account) identifier.
+        schema:
+          type: string
+          minLength: 1
+      - name: inviteId
+        in: path
+        required: true
+        description: Invite identifier.
+        schema:
+          type: integer
+          minimum: 1
+    post:
+      operationId: resendWorkspaceInvite
+      tags: [metrix]
+      summary: Resend a pending workspace invite
+      description: Bumps the invite's created_at timestamp to now and returns the updated invite.
+      responses:
+        "200":
+          description: Invite resent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkspaceInviteResendResult"
+        "404":
+          description: Invite not found for this workspace
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/workspaces/{workspaceId}/notification-prefs:
     parameters:
       - name: workspaceId
@@ -304,6 +372,25 @@ components:
         status:
           type: string
           enum: [created, already_invited]
+        invite:
+          $ref: "#/components/schemas/WorkspaceInvite"
+      required:
+        - status
+        - invite
+    RevokeWorkspaceInviteResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [revoked]
+      required:
+        - status
+    WorkspaceInviteResendResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [resent]
         invite:
           $ref: "#/components/schemas/WorkspaceInvite"
       required:

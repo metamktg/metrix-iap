@@ -8,7 +8,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getWorkspaceSettings } from "@/lib/data/metrixSeedAdapter";
 import { ModuleHeader, SectionCard, PendingState, CaveatNote } from "../shared";
 import { cn } from "@/lib/utils";
-import { Users, UserPlus, ShieldCheck, Loader2 } from "lucide-react";
+import { Users, UserPlus, ShieldCheck, Loader2, X, RotateCw } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +19,8 @@ import {
 import {
   useListWorkspaceInvites,
   useCreateWorkspaceInvite,
+  useRevokeWorkspaceInvite,
+  useResendWorkspaceInvite,
   getListWorkspaceInvitesQueryKey,
 } from "@workspace/api-client-react";
 import type { WorkspaceInviteInputRole } from "@workspace/api-client-react";
@@ -164,6 +166,103 @@ function InviteMemberDialog({
   );
 }
 
+function PendingInviteRow({
+  workspaceId,
+  invite,
+}: {
+  workspaceId: string;
+  invite: { id: number; email: string; role: string; created_at: string };
+}) {
+  const queryClient = useQueryClient();
+  const [error, setError] = useState<string | null>(null);
+  const [resent, setResent] = useState(false);
+  const { mutate: revoke, isPending: isRevoking } = useRevokeWorkspaceInvite();
+  const { mutate: resend, isPending: isResending } = useResendWorkspaceInvite();
+
+  const invalidateInvites = () =>
+    queryClient.invalidateQueries({
+      queryKey: getListWorkspaceInvitesQueryKey(workspaceId),
+    });
+
+  const handleRevoke = () => {
+    if (isRevoking || isResending) return;
+    setError(null);
+    revoke(
+      { workspaceId, inviteId: invite.id },
+      {
+        onSuccess: () => void invalidateInvites(),
+        onError: () => setError("Could not revoke the invite. Try again."),
+      },
+    );
+  };
+
+  const handleResend = () => {
+    if (isRevoking || isResending) return;
+    setError(null);
+    resend(
+      { workspaceId, inviteId: invite.id },
+      {
+        onSuccess: () => {
+          setResent(true);
+          void invalidateInvites();
+        },
+        onError: () => setError("Could not resend the invite. Try again."),
+      },
+    );
+  };
+
+  return (
+    <div
+      className="grid grid-cols-[1fr_auto_auto] gap-3 px-3 py-2.5 items-center"
+      data-testid={`row-invite-${invite.email}`}
+    >
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-[12px] font-medium text-foreground truncate">{invite.email}</span>
+          <span className="text-[9px] font-semibold uppercase tracking-wide text-amber-400 border border-amber-400/25 bg-amber-400/10 px-1.5 py-0.5 rounded leading-none">Invited</span>
+        </div>
+        <div className="text-[10px] text-muted-foreground/70 truncate">
+          {error ? (
+            <span className="text-red-400/90" data-testid={`text-invite-error-${invite.email}`}>{error}</span>
+          ) : (
+            <>
+              {resent ? "Resent" : "Invited"}{" "}
+              {new Date(invite.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+            </>
+          )}
+        </div>
+      </div>
+      <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none text-foreground/75 border-border/40 bg-white/[0.03]">
+        {invite.role}
+      </span>
+      <div className="flex items-center justify-end gap-1.5">
+        <button
+          type="button"
+          onClick={handleResend}
+          disabled={isRevoking || isResending}
+          title="Resend invite"
+          className="flex items-center gap-1 h-6 px-2 rounded border border-border/40 bg-white/[0.02] text-[10px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/[0.05] transition-colors disabled:opacity-40 disabled:pointer-events-none"
+          data-testid={`button-resend-invite-${invite.email}`}
+        >
+          {isResending ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCw className="w-3 h-3" />}
+          Resend
+        </button>
+        <button
+          type="button"
+          onClick={handleRevoke}
+          disabled={isRevoking || isResending}
+          title="Revoke invite"
+          className="flex items-center gap-1 h-6 px-2 rounded border border-red-400/25 bg-red-400/[0.06] text-[10px] font-medium text-red-400/90 hover:bg-red-400/[0.12] transition-colors disabled:opacity-40 disabled:pointer-events-none"
+          data-testid={`button-revoke-invite-${invite.email}`}
+        >
+          {isRevoking ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
+          Revoke
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function TeamAccessView() {
   const seed = useMetrixSeed();
   const { manager } = useAccount();
@@ -241,21 +340,7 @@ export function TeamAccessView() {
                 </div>
               ))}
               {pendingInvites.map((inv) => (
-                <div key={`invite-${inv.id}`} className="grid grid-cols-[1fr_auto_auto] gap-3 px-3 py-2.5 items-center" data-testid={`row-invite-${inv.email}`}>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[12px] font-medium text-foreground truncate">{inv.email}</span>
-                      <span className="text-[9px] font-semibold uppercase tracking-wide text-amber-400 border border-amber-400/25 bg-amber-400/10 px-1.5 py-0.5 rounded leading-none">Invited</span>
-                    </div>
-                    <div className="text-[10px] text-muted-foreground/70 truncate">
-                      Invited {new Date(inv.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none text-foreground/75 border-border/40 bg-white/[0.03]">
-                    {inv.role}
-                  </span>
-                  <span className="text-[10px] font-mono text-muted-foreground/70 text-right w-24">—</span>
-                </div>
+                <PendingInviteRow key={`invite-${inv.id}`} workspaceId={manager.id} invite={inv} />
               ))}
             </div>
           </div>

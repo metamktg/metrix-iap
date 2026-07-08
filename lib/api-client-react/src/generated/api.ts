@@ -26,10 +26,12 @@ import type {
   MetrixSeedBundle,
   NotificationPrefsResult,
   NotificationPrefsUpdateInput,
+  RevokeWorkspaceInviteResult,
   WaitlistEntriesResult,
   WaitlistSignupInput,
   WaitlistSignupResult,
   WorkspaceInviteInput,
+  WorkspaceInviteResendResult,
   WorkspaceInviteResult,
   WorkspaceInvitesResult
 } from './api.schemas';
@@ -443,6 +445,152 @@ export const useCreateWorkspaceInvite = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getCreateWorkspaceInviteMutationOptions(options));
+    }
+
+export const getRevokeWorkspaceInviteUrl = (workspaceId: string,
+    inviteId: number,) => {
+
+
+
+
+  return `/api/metrix/workspaces/${workspaceId}/invites/${inviteId}`
+}
+
+/**
+ * Deletes the pending invite, freeing its seat.
+ * @summary Revoke a pending workspace invite
+ */
+export const revokeWorkspaceInvite = async (workspaceId: string,
+    inviteId: number, options?: RequestInit): Promise<RevokeWorkspaceInviteResult> => {
+
+  return customFetch<RevokeWorkspaceInviteResult>(getRevokeWorkspaceInviteUrl(workspaceId,inviteId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRevokeWorkspaceInviteMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeWorkspaceInvite>>, TError,{workspaceId: string;inviteId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokeWorkspaceInvite>>, TError,{workspaceId: string;inviteId: number}, TContext> => {
+
+const mutationKey = ['revokeWorkspaceInvite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeWorkspaceInvite>>, {workspaceId: string;inviteId: number}> = (props) => {
+          const {workspaceId,inviteId} = props ?? {};
+
+          return  revokeWorkspaceInvite(workspaceId,inviteId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokeWorkspaceInviteMutationResult = NonNullable<Awaited<ReturnType<typeof revokeWorkspaceInvite>>>
+
+    export type RevokeWorkspaceInviteMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Revoke a pending workspace invite
+ */
+export const useRevokeWorkspaceInvite = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeWorkspaceInvite>>, TError,{workspaceId: string;inviteId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revokeWorkspaceInvite>>,
+        TError,
+        {workspaceId: string;inviteId: number},
+        TContext
+      > => {
+      return useMutation(getRevokeWorkspaceInviteMutationOptions(options));
+    }
+
+export const getResendWorkspaceInviteUrl = (workspaceId: string,
+    inviteId: number,) => {
+
+
+
+
+  return `/api/metrix/workspaces/${workspaceId}/invites/${inviteId}/resend`
+}
+
+/**
+ * Bumps the invite's created_at timestamp to now and returns the updated invite.
+ * @summary Resend a pending workspace invite
+ */
+export const resendWorkspaceInvite = async (workspaceId: string,
+    inviteId: number, options?: RequestInit): Promise<WorkspaceInviteResendResult> => {
+
+  return customFetch<WorkspaceInviteResendResult>(getResendWorkspaceInviteUrl(workspaceId,inviteId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getResendWorkspaceInviteMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendWorkspaceInvite>>, TError,{workspaceId: string;inviteId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resendWorkspaceInvite>>, TError,{workspaceId: string;inviteId: number}, TContext> => {
+
+const mutationKey = ['resendWorkspaceInvite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resendWorkspaceInvite>>, {workspaceId: string;inviteId: number}> = (props) => {
+          const {workspaceId,inviteId} = props ?? {};
+
+          return  resendWorkspaceInvite(workspaceId,inviteId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResendWorkspaceInviteMutationResult = NonNullable<Awaited<ReturnType<typeof resendWorkspaceInvite>>>
+
+    export type ResendWorkspaceInviteMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Resend a pending workspace invite
+ */
+export const useResendWorkspaceInvite = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendWorkspaceInvite>>, TError,{workspaceId: string;inviteId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof resendWorkspaceInvite>>,
+        TError,
+        {workspaceId: string;inviteId: number},
+        TContext
+      > => {
+      return useMutation(getResendWorkspaceInviteMutationOptions(options));
     }
 
 export const getGetNotificationPrefsUrl = (workspaceId: string,) => {

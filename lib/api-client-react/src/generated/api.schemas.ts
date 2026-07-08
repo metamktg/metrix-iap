@@ -87,6 +87,29 @@ export interface WorkspaceInviteResult {
   invite: WorkspaceInvite;
 }
 
+export type RevokeWorkspaceInviteResultStatus = typeof RevokeWorkspaceInviteResultStatus[keyof typeof RevokeWorkspaceInviteResultStatus];
+
+
+export const RevokeWorkspaceInviteResultStatus = {
+  revoked: 'revoked',
+} as const;
+
+export interface RevokeWorkspaceInviteResult {
+  status: RevokeWorkspaceInviteResultStatus;
+}
+
+export type WorkspaceInviteResendResultStatus = typeof WorkspaceInviteResendResultStatus[keyof typeof WorkspaceInviteResendResultStatus];
+
+
+export const WorkspaceInviteResendResultStatus = {
+  resent: 'resent',
+} as const;
+
+export interface WorkspaceInviteResendResult {
+  status: WorkspaceInviteResendResultStatus;
+  invite: WorkspaceInvite;
+}
+
 export interface WorkspaceInvitesResult {
   invites: WorkspaceInvite[];
 }

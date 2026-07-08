@@ -113,6 +113,49 @@ export const CreateWorkspaceInviteResponse = zod.object({
 
 
 /**
+ * Deletes the pending invite, freeing its seat.
+ * @summary Revoke a pending workspace invite
+ */
+
+
+
+
+export const RevokeWorkspaceInviteParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.'),
+  "inviteId": zod.coerce.number().min(1).describe('Invite identifier.')
+})
+
+export const RevokeWorkspaceInviteResponse = zod.object({
+  "status": zod.enum(['revoked'])
+})
+
+
+/**
+ * Bumps the invite's created_at timestamp to now and returns the updated invite.
+ * @summary Resend a pending workspace invite
+ */
+
+
+
+
+export const ResendWorkspaceInviteParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.'),
+  "inviteId": zod.coerce.number().min(1).describe('Invite identifier.')
+})
+
+export const ResendWorkspaceInviteResponse = zod.object({
+  "status": zod.enum(['resent']),
+  "invite": zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "role": zod.string(),
+  "status": zod.string(),
+  "created_at": zod.string()
+})
+})
+
+
+/**
  * Returns persisted channel and event preference overrides for this workspace. Anything not listed falls back to seed defaults on the client.
  * @summary Get workspace notification preference overrides
  */

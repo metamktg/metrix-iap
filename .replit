@@ -27,3 +27,15 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_l9AOy2hiDMd7BbVB3T_x5w_X7JyPLZ-"
 
 [nix]
 channel = "stable-25_05"
+
+[[ports]]
+localPort = 8080
+externalPort = 8080
+
+[[ports]]
+localPort = 8081
+externalPort = 8081
+
+[[ports]]
+localPort = 19673
+externalPort = 80

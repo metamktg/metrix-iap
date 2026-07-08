@@ -8,6 +8,8 @@ import {
   CreateWorkspaceInviteBody,
   CreateWorkspaceInviteResponse,
   ListWorkspaceInvitesResponse,
+  RevokeWorkspaceInviteResponse,
+  ResendWorkspaceInviteResponse,
   UpdateNotificationPrefsBody,
   UpdateNotificationPrefsResponse,
 } from "@workspace/api-zod";
@@ -161,6 +163,75 @@ router.post("/metrix/workspaces/:workspaceId/invites", async (req, res) => {
   });
   res.json(data);
 });
+
+const parseInviteId = (raw: string): number | null => {
+  const id = Number(raw);
+  return Number.isInteger(id) && id > 0 ? id : null;
+};
+
+router.delete(
+  "/metrix/workspaces/:workspaceId/invites/:inviteId",
+  async (req, res) => {
+    const workspaceId = req.params.workspaceId;
+    const inviteId = parseInviteId(req.params.inviteId);
+    if (inviteId === null) {
+      res.status(404).json({ message: "Invite not found." });
+      return;
+    }
+
+    const deleted = await db
+      .delete(workspaceInvitesTable)
+      .where(
+        and(
+          eq(workspaceInvitesTable.workspaceId, workspaceId),
+          eq(workspaceInvitesTable.id, inviteId),
+        ),
+      )
+      .returning({ id: workspaceInvitesTable.id });
+
+    if (deleted.length === 0) {
+      res.status(404).json({ message: "Invite not found." });
+      return;
+    }
+
+    const data = RevokeWorkspaceInviteResponse.parse({ status: "revoked" });
+    res.json(data);
+  },
+);
+
+router.post(
+  "/metrix/workspaces/:workspaceId/invites/:inviteId/resend",
+  async (req, res) => {
+    const workspaceId = req.params.workspaceId;
+    const inviteId = parseInviteId(req.params.inviteId);
+    if (inviteId === null) {
+      res.status(404).json({ message: "Invite not found." });
+      return;
+    }
+
+    const updated = await db
+      .update(workspaceInvitesTable)
+      .set({ createdAt: sql`now()` })
+      .where(
+        and(
+          eq(workspaceInvitesTable.workspaceId, workspaceId),
+          eq(workspaceInvitesTable.id, inviteId),
+        ),
+      )
+      .returning();
+
+    if (updated.length === 0) {
+      res.status(404).json({ message: "Invite not found." });
+      return;
+    }
+
+    const data = ResendWorkspaceInviteResponse.parse({
+      status: "resent",
+      invite: inviteRowToApi(updated[0]),
+    });
+    res.json(data);
+  },
+);
 
 const prefRowsToApi = (
   rows: {
