@@ -6,7 +6,7 @@
 import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
-import { getAdAccount, getAnalysisData, getStrategyData } from "@/lib/data/metrixSeedAdapter";
+import { getAdAccount, getAnalysisData, getStrategyData, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
   CrossLink, fmtUSD, fmtNum, eventLabel,
@@ -198,7 +198,7 @@ export function ConceptMapView() {
                         data={cardFromCell(cid, {
                           perfRows: a.performance_by_cell,
                           mst: getMST(seed, adAccountId),
-                          adAccountId,
+                          ...getCreativeLinkContext(seed, adAccountId),
                         })}
                       />
                     ))}

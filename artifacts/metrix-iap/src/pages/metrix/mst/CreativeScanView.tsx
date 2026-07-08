@@ -6,7 +6,7 @@
 import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
-import { getAdAccount, getMST, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
+import { getAdAccount, getMST, getAnalysisData, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
 import { ModuleHeader, ScopeBanner, ModuleScopeGate, ModuleTabs, CaveatNote, PendingState, readableVariables, RangeScopeBar, NoDataInRangeState, CrossLink } from "../shared";
 import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
 import { useMstRangeScope } from "@/lib/date-scope";
@@ -105,7 +105,7 @@ export function CreativeScanView() {
                       data={cardFromCell(c.cell_id, {
                         perfRows: getAnalysisData(seed, adAccountId)?.performance_by_cell,
                         mst,
-                        adAccountId,
+                        ...getCreativeLinkContext(seed, adAccountId),
                       })}
                       expandFooter={
                         <CrossLink to={`/app/analysis/library?focus=${c.cell_id}`} label="Open in IAP Library" />

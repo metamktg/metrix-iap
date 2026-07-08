@@ -9,6 +9,7 @@ import type {
   MetrixSeed,
   ManagerAccount,
   AdAccount,
+  AdRecord,
   AnalysisData,
   StrategyData,
   BriefBuilder,
@@ -64,6 +65,27 @@ export function getAdAccountOverview(seed: MetrixSeed, adAccountId: string | nul
     campaignSummary: acct.iap?.campaign_summary ?? null,
     optimizationLoop: acct.iap?.optimization_loop ?? null,
     overviewState: acct.overview_state ?? null,
+  };
+}
+
+/** Ad-level registry for an account (empty until the seed carries it). */
+export function getAds(seed: MetrixSeed, adAccountId: string | null | undefined): AdRecord[] {
+  return getAdAccount(seed, adAccountId)?.ads ?? [];
+}
+
+/**
+ * Context needed to render creative assets and Ads Manager deep links.
+ * `metaAdAccountId` is the numeric Meta account id (null until backfilled)
+ * — NOT the internal account id, which cannot form a valid deep link.
+ */
+export function getCreativeLinkContext(
+  seed: MetrixSeed,
+  adAccountId: string | null | undefined
+): { ads: AdRecord[]; metaAdAccountId: string | null } {
+  const acct = getAdAccount(seed, adAccountId);
+  return {
+    ads: acct?.ads ?? [],
+    metaAdAccountId: acct?.meta_ad_account_id ?? null,
   };
 }
 

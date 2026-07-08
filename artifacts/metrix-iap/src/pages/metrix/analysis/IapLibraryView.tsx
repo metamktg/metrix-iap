@@ -6,7 +6,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
-import { getAdAccount, getAnalysisData, getStrategyData, getCampaignSummary } from "@/lib/data/metrixSeedAdapter";
+import { getAdAccount, getAnalysisData, getStrategyData, getCampaignSummary, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
 import { useMetricSelection } from "@/lib/metric-selection";
 import {
   ModuleHeader, ScopeBanner, ModuleTabs, ModuleScopeGate, PendingState,
@@ -215,7 +215,7 @@ export function IapLibraryView() {
                       data={cardFromCell(detail.cell_id, {
                         perfRows: a.performance_by_cell,
                         mst: getMST(seed, adAccountId),
-                        adAccountId,
+                        ...getCreativeLinkContext(seed, adAccountId),
                       })}
                     />
                   </div>

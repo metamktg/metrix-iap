@@ -8,7 +8,7 @@
 import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Grid3x3 } from "lucide-react";
-import type { AnalysisData, MST, MSTMatrixCell } from "@/lib/data/seedTypes";
+import type { AdRecord, AnalysisData, MST, MSTMatrixCell } from "@/lib/data/seedTypes";
 import { cardFromCell, cardFromMatrixCell, libraryCellById } from "@/lib/creative-assembly";
 import { CreativeCard, VariableTagChips } from "./CreativeCard";
 import { AdsManagerButton } from "./AdsManagerLink";
@@ -44,7 +44,8 @@ export function TilePerformanceModal({
   matrixCell,
   analysis,
   mst,
-  adAccountId,
+  ads,
+  metaAdAccountId,
 }: {
   open: boolean;
   onClose: () => void;
@@ -53,7 +54,10 @@ export function TilePerformanceModal({
   matrixCell?: MSTMatrixCell | null;
   analysis: AnalysisData | null;
   mst: MST | null;
-  adAccountId: string | null;
+  /** Ad registry for the account (seed `ads`). */
+  ads?: AdRecord[];
+  /** Numeric Meta ad account id for deep links — null until backfilled. */
+  metaAdAccountId?: string | null;
 }) {
   const [segmentsOpen, setSegmentsOpen] = useState(false);
 
@@ -73,8 +77,8 @@ export function TilePerformanceModal({
   }, [perf]);
 
   const card = matrixCell
-    ? cardFromMatrixCell(matrixCell, { perfRows: analysis?.performance_by_cell, mst, adAccountId })
-    : cardFromCell(cellId, { perfRows: analysis?.performance_by_cell, mst, adAccountId });
+    ? cardFromMatrixCell(matrixCell, { perfRows: analysis?.performance_by_cell, mst, ads, metaAdAccountId })
+    : cardFromCell(cellId, { perfRows: analysis?.performance_by_cell, mst, ads, metaAdAccountId });
 
   const ran = perf.length > 0;
   const title = card.title;

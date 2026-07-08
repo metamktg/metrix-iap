@@ -5,7 +5,7 @@
 import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
-import { getAdAccount, getMST, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
+import { getAdAccount, getMST, getAnalysisData, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, CaveatNote, PendingState, MetricTile,
   CrossLink, readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel,
@@ -181,7 +181,7 @@ export function CrossmapResultsView() {
                 matrixCell={activeCell}
                 analysis={analysis}
                 mst={mst}
-                adAccountId={adAccountId}
+                {...getCreativeLinkContext(seed, adAccountId)}
               />
             )}
           </div>

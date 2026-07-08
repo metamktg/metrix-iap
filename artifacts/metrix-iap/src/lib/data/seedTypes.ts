@@ -350,6 +350,26 @@ export interface MST {
   source_artifacts?: string[];
 }
 
+// ─── Ads registry ─────────────────────────────────────────────────────
+
+/**
+ * Ad-level registry row. `meta_ad_id` and `creative_asset_url` are null
+ * until raw Meta exports are backfilled via the importer; the UI renders
+ * honest pending states while they are missing.
+ */
+export interface AdRecord {
+  ad_name: string;
+  book?: string | null;
+  cell?: string | null;
+  concept?: string | null;
+  variation?: string | null;
+  test_id?: string | null;
+  meta_ad_id?: string | null;
+  creative_asset_url?: string | null;
+  asset_filename?: string | null;
+  asset_servable?: boolean;
+}
+
 // ─── Ad account ───────────────────────────────────────────────────────
 
 export interface LoopStageStatus {
@@ -399,6 +419,10 @@ export interface AdAccount {
   platform: string;
   facebook_page_dp_url?: string | null;
   source_status?: string;
+  /** Numeric Meta ad account id (no "act_" prefix) for Ads Manager deep links. Null until a raw Meta export supplies it. */
+  meta_ad_account_id?: string | null;
+  /** Ad-level registry (ad_name → cell/concept + nullable meta_ad_id / creative_asset_url). */
+  ads?: AdRecord[];
   overview_state?: AdAccountOverviewState;
   iap?: IAPData | null;
   mst?: MST;

@@ -1,9 +1,10 @@
 // ─── Foreplay-style creative card ─────────────────────────────────────
 // Used anywhere a specific ad / creative concept is referenced: dominant
 // visual, copy beneath, compact stat strip, variable tag chips, click to
-// expand. No creative assets exist in this import (ads.creative_asset_url
-// is null for every ad), so the visual is a labeled placeholder keyed to
-// the concept code — never a broken image.
+// expand. Renders the real creative when ads.creative_asset_url has been
+// backfilled from a raw Meta export; otherwise (including on image load
+// error) it falls back to a labeled placeholder keyed to the concept
+// code — never a broken image.
 
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -29,7 +30,7 @@ export interface CreativeCardData {
   primaryText?: string | null;
   secondaryText?: string | null;
   cta?: string | null;
-  /** Real asset URL when available. Null in the current import. */
+  /** Real asset URL when ads.creative_asset_url has been backfilled; null → placeholder. */
   assetUrl?: string | null;
   /** e.g. "1122:1402" from the library metadata. */
   aspectRatio?: string | null;
@@ -40,7 +41,9 @@ export interface CreativeCardData {
   stats?: CreativeCardStats;
   iapRead?: string | null;
   stage?: string | null;
+  /** Meta ad id (ads.meta_ad_id) — enables the Ads Manager link when set with adAccountId. */
   metaAdId?: string | null;
+  /** Numeric Meta ad account id (meta_ad_account_id) — NOT the internal account id. */
   adAccountId?: string | null;
 }
 

@@ -17,7 +17,7 @@
 // Usage: SUPABASE_DB_URL=postgres://... pnpm --filter @workspace/scripts run import:metrix
 // ═══════════════════════════════════════════════════════════════════════
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
@@ -80,6 +80,50 @@ const num = (v: unknown): number | null =>
   v === null || v === undefined || v === "" || Number.isNaN(v as number) ? null : Number(v);
 const str = (v: unknown): string | null => (v === null || v === undefined ? null : String(v));
 
+// ── Optional raw Meta export (ad-id / creative-asset backfill) ─────────
+// When Meta exports with real ad ids arrive, drop a meta_ads_export.json
+// into scripts/data/metrix/ shaped like:
+//   {
+//     "meta_ad_account_id": "1234567890",          // numeric, "act_" prefix ok
+//     "ads": [
+//       { "ad_name": "<exact ad_name from the package>",
+//         "meta_ad_id": "23851234567890123",
+//         "creative_asset_url": "https://..." }    // optional per ad
+//     ]
+//   }
+// The importer backfills ads.meta_ad_id / ads.creative_asset_url (and
+// ad_accounts.meta_ad_account_id) from it. Absent file → columns stay NULL.
+const META_EXPORT_FILE = "meta_ads_export.json";
+
+interface MetaAdBackfill {
+  metaAdId: string | null;
+  creativeAssetUrl: string | null;
+}
+
+function loadMetaAdsExport(): {
+  metaAdAccountId: string | null;
+  byAdName: Map<string, MetaAdBackfill>;
+} {
+  const byAdName = new Map<string, MetaAdBackfill>();
+  if (!existsSync(join(DATA_DIR, META_EXPORT_FILE))) {
+    console.log(`No ${META_EXPORT_FILE} found — meta_ad_id / creative_asset_url stay NULL (expected until raw Meta exports arrive).`);
+    return { metaAdAccountId: null, byAdName };
+  }
+  const doc = readJson(META_EXPORT_FILE);
+  const metaAdAccountId = str(doc.meta_ad_account_id)?.replace(/^act_/, "") ?? null;
+  for (const a of doc.ads ?? []) {
+    const adName = str(a.ad_name);
+    if (!adName) continue;
+    const metaAdId = str(a.meta_ad_id);
+    const creativeAssetUrl = str(a.creative_asset_url);
+    if (!metaAdId && !creativeAssetUrl) continue;
+    byAdName.set(adName, { metaAdId, creativeAssetUrl });
+  }
+  console.log(`Loaded ${META_EXPORT_FILE}: ${byAdName.size} ads with meta_ad_id/creative_asset_url` +
+    (metaAdAccountId ? `, ad account ${metaAdAccountId}` : ", no meta_ad_account_id (deep links stay pending)"));
+  return { metaAdAccountId, byAdName };
+}
+
 async function main() {
   const dbUrl = process.env.SUPABASE_DB_URL;
   if (!dbUrl) {
@@ -100,6 +144,7 @@ async function main() {
   const copyCsv = parseCsv(
     readFileSync(join(DATA_DIR, "Bookster_IAP_Local_Client_Library_v1_2_-_COPY_LIBRARY.csv"), "utf8"),
   );
+  const metaExport = loadMetaAdsExport();
 
   const q = (text: string, values?: unknown[]) => client.query(text, values);
 
@@ -133,12 +178,13 @@ async function main() {
     // ── Ad accounts ────────────────────────────────────────────────────
     const skov = seed.ad_accounts.find((a: any) => a.id === "skov_pet");
     await q(
-      `insert into ad_accounts (id, name, status, platform, source_status, facebook_page_dp_url, overview_state)
-       values ($1,$2,$3,$4,$5,$6,$7)
+      `insert into ad_accounts (id, name, status, platform, source_status, facebook_page_dp_url, overview_state, meta_ad_account_id)
+       values ($1,$2,$3,$4,$5,$6,$7,$8)
        on conflict (id) do update set name=excluded.name, status=excluded.status, platform=excluded.platform,
          source_status=excluded.source_status, facebook_page_dp_url=excluded.facebook_page_dp_url,
-         overview_state=excluded.overview_state`,
-      [ACCOUNT_ID, "Bookster", "configured", "Meta Ads", "imported_from_iap_loop_package", null, null],
+         overview_state=excluded.overview_state, meta_ad_account_id=excluded.meta_ad_account_id`,
+      [ACCOUNT_ID, "Bookster", "configured", "Meta Ads", "imported_from_iap_loop_package", null, null,
+        metaExport.metaAdAccountId],
     );
     await q(
       `insert into ad_accounts (id, name, status, platform, source_status, facebook_page_dp_url, overview_state)
@@ -166,8 +212,9 @@ async function main() {
     }
 
     // Ads registry: union of performance ad_names and library-mapped ad names.
-    // meta_ad_id / creative_asset_url stay NULL — confirmed absent from all
-    // source files. asset_path is a non-servable local path (asset_servable=false).
+    // meta_ad_id / creative_asset_url are NULL unless meta_ads_export.json
+    // supplies them (they are absent from all IAP loop package files).
+    // asset_path is a non-servable local path.
     const adRows = new Map<string, any>();
     for (const r of bundle.copy_performance) {
       if (!adRows.has(r.ad_name)) {
@@ -189,14 +236,27 @@ async function main() {
         adRows.set(adName, existing);
       }
     }
+    let backfilledIds = 0;
+    let backfilledAssets = 0;
     for (const [adName, a] of adRows) {
+      const backfill = metaExport.byAdName.get(adName) ?? null;
+      if (backfill?.metaAdId) backfilledIds++;
+      if (backfill?.creativeAssetUrl) backfilledAssets++;
       await q(
         `insert into ads (account_id, ad_name, book, cell, concept, variation, test_id,
            meta_ad_id, creative_asset_url, asset_filename, asset_path, asset_servable)
-         values ($1,$2,$3,$4,$5,$6,$7,null,null,$8,$9,false)`,
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
         [ACCOUNT_ID, adName, a.book, a.cell, a.concept, a.variation, a.test_id,
-          a.asset_filename, a.asset_path],
+          backfill?.metaAdId ?? null, backfill?.creativeAssetUrl ?? null,
+          a.asset_filename, a.asset_path, Boolean(backfill?.creativeAssetUrl)],
       );
+    }
+    if (metaExport.byAdName.size > 0) {
+      const unmatched = [...metaExport.byAdName.keys()].filter((n) => !adRows.has(n));
+      console.log(`Meta export backfill: ${backfilledIds} ads got meta_ad_id, ${backfilledAssets} got creative_asset_url.`);
+      if (unmatched.length > 0) {
+        console.warn(`Meta export contains ${unmatched.length} ad_name(s) not present in the package (ignored): ${unmatched.slice(0, 10).join(", ")}${unmatched.length > 10 ? ", …" : ""}`);
+      }
     }
 
     // ── Bundle Prep: aggregate breakdowns (stamped with the bundle window;

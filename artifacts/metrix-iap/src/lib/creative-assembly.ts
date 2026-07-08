@@ -1,11 +1,13 @@
 // ─── Creative card assembly ───────────────────────────────────────────
 // Builds CreativeCardData from seed structures. The MST local library
 // carries the creative context (copy, visual system, variable stack);
-// performance_by_cell carries the numbers. No meta ad ids exist in this
-// import, so metaAdId stays null and the Ads Manager link renders pending.
+// performance_by_cell carries the numbers; the ads registry carries the
+// per-ad meta_ad_id / creative_asset_url once raw Meta exports are
+// backfilled. Until then those fields are null and the card renders the
+// labeled placeholder + pending Ads Manager state.
 
 import type { CreativeCardData } from "@/components/creative/CreativeCard";
-import type { CellPerformanceRow, MST, MSTLibraryCell, MSTMatrixCell } from "@/lib/data/seedTypes";
+import type { AdRecord, CellPerformanceRow, MST, MSTLibraryCell, MSTMatrixCell } from "@/lib/data/seedTypes";
 
 export function libraryCellById(mst: MST | null | undefined, cellId: string): MSTLibraryCell | null {
   return mst?.local_book2_library?.find((c) => c.cell_id === cellId) ?? null;
@@ -44,17 +46,41 @@ export function primaryPerfRow(rows: CellPerformanceRow[], cellId: string): Cell
   );
 }
 
-export function cardFromCell(
-  cellId: string,
-  opts: {
-    perfRows?: CellPerformanceRow[];
-    mst?: MST | null;
-    adAccountId?: string | null;
-    fallbackTitle?: string;
-  }
-): CreativeCardData {
+/**
+ * Primary ad registry row for a cell. Asset and deep link come from the
+ * same ad so the "View in Ads Manager" link always points at the creative
+ * being shown. Preference order: ad with both creative_asset_url and
+ * meta_ad_id → ad with an asset → ad with a meta id → null (placeholder +
+ * pending link).
+ */
+export function primaryAdForCell(ads: AdRecord[] | undefined, cellId: string): AdRecord | null {
+  const matches = (ads ?? []).filter((a) => a.cell === cellId);
+  if (!matches.length) return null;
+  return (
+    matches.find((a) => a.creative_asset_url && a.meta_ad_id) ??
+    matches.find((a) => a.creative_asset_url) ??
+    matches.find((a) => a.meta_ad_id) ??
+    null
+  );
+}
+
+export interface CardAssemblyOpts {
+  perfRows?: CellPerformanceRow[];
+  mst?: MST | null;
+  /** Ad registry for the account (seed `ads`); source of asset URLs and Meta ad ids. */
+  ads?: AdRecord[];
+  /**
+   * Numeric Meta ad account id (seed `meta_ad_account_id`) — required for
+   * Ads Manager deep links. This is NOT the internal account id.
+   */
+  metaAdAccountId?: string | null;
+  fallbackTitle?: string;
+}
+
+export function cardFromCell(cellId: string, opts: CardAssemblyOpts): CreativeCardData {
   const lib = libraryCellById(opts.mst, cellId);
   const perf = opts.perfRows ? primaryPerfRow(opts.perfRows, cellId) : null;
+  const ad = primaryAdForCell(opts.ads, cellId);
 
   const tags = lib ? tagsFromLibraryCell(lib) : perf ? tagsFromPerfRow(perf) : [];
 
@@ -68,7 +94,7 @@ export function cardFromCell(
     primaryText: lib?.primary_message ?? null,
     secondaryText: lib?.secondary_message ?? null,
     cta: lib?.cta ?? null,
-    assetUrl: null, // ads.creative_asset_url is null across this import
+    assetUrl: ad?.creative_asset_url ?? null,
     aspectRatio: lib?.aspect_ratio ?? null,
     visualSystem: lib?.visual_system ?? null,
     assetFormat: (lib as { asset_format?: string } | null)?.asset_format ?? null,
@@ -83,15 +109,12 @@ export function cardFromCell(
       : undefined,
     iapRead: lib?.iap_read ?? perf?.iap_read ?? null,
     stage: lib?.stage ?? perf?.stage ?? null,
-    metaAdId: null,
-    adAccountId: opts.adAccountId ?? null,
+    metaAdId: ad?.meta_ad_id ?? null,
+    adAccountId: opts.metaAdAccountId ?? null,
   };
 }
 
-export function cardFromMatrixCell(
-  cell: MSTMatrixCell,
-  opts: { perfRows?: CellPerformanceRow[]; mst?: MST | null; adAccountId?: string | null }
-): CreativeCardData {
+export function cardFromMatrixCell(cell: MSTMatrixCell, opts: CardAssemblyOpts): CreativeCardData {
   const base = cardFromCell(cell.concept_code, {
     ...opts,
     fallbackTitle: cell.plain_text.headline ?? cell.concept_code,

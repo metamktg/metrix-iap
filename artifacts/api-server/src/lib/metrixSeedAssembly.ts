@@ -89,6 +89,7 @@ export async function assembleMetrixSeed(): Promise<Row> {
     variableRegistry,
     conceptIntelligence,
     failurePatterns,
+    adsRegistry,
   ] = await Promise.all([
     selectAll("app_config"),
     selectAll("ad_accounts", (q) => q.order("id")),
@@ -112,6 +113,7 @@ export async function assembleMetrixSeed(): Promise<Row> {
     selectAll("variable_registry", (q) => q.order("status").order("prefix")),
     selectAll("concept_intelligence", (q) => q.eq("account_id", BOOKSTER).order("book").order("concept_code")),
     selectAll("failure_patterns", (q) => q.eq("account_id", BOOKSTER).order("id")),
+    selectAll("ads", (q) => q.eq("account_id", BOOKSTER).order("ad_name")),
   ]);
 
   if (adAccounts.length === 0 || adPerformance.length === 0) {
@@ -326,6 +328,24 @@ export async function assembleMetrixSeed(): Promise<Row> {
     platform: boosterRow?.["platform"] ?? "Meta Ads",
     facebook_page_dp_url: boosterRow?.["facebook_page_dp_url"] ?? null,
     source_status: boosterRow?.["source_status"] ?? undefined,
+    // Numeric Meta ad account id (no "act_" prefix) for Ads Manager deep
+    // links. Null until a raw Meta export supplies it via the importer.
+    meta_ad_account_id: boosterRow?.["meta_ad_account_id"] ?? null,
+    // Ad registry: ad_name → cell/concept plus meta_ad_id and
+    // creative_asset_url once backfilled. Nullable fields stay null in the
+    // current import — the client renders honest pending states for them.
+    ads: adsRegistry.map((r) => ({
+      ad_name: r["ad_name"],
+      book: r["book"] ?? null,
+      cell: r["cell"] ?? null,
+      concept: r["concept"] ?? null,
+      variation: r["variation"] ?? null,
+      test_id: r["test_id"] ?? null,
+      meta_ad_id: r["meta_ad_id"] ?? null,
+      creative_asset_url: r["creative_asset_url"] ?? null,
+      asset_filename: r["asset_filename"] ?? null,
+      asset_servable: r["asset_servable"] === true,
+    })),
     iap: {
       metadata,
       core_reanalysis_read: coreRead,

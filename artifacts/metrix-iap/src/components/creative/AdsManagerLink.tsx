@@ -1,11 +1,12 @@
-// ─── "View in Ads Manager" deep-link scaffolding ──────────────────────
-// Built at ad level, but rendered disabled/pending until the raw exports
-// carry a real Meta ad id (ads.meta_ad_id is nullable and currently null
-// for every imported ad — no deep link can be resolved yet).
+// ─── "View in Ads Manager" deep link ──────────────────────────────────
+// Enables automatically when both ads.meta_ad_id and the account's
+// meta_ad_account_id have been backfilled from a raw Meta export;
+// renders disabled/pending otherwise.
 //
-// URL format (verified against Meta Ads Manager, July 2026):
+// URL format (re-verified against Meta Ads Manager docs, July 2026):
 //   https://adsmanager.facebook.com/adsmanager/manage/ads?act=<AD_ACCOUNT_NUMERIC_ID>&selected_ad_ids=<AD_ID>
-// The act= param takes the numeric ad account id without the "act_" prefix.
+// The act= param takes the numeric ad account id without the "act_"
+// prefix (the prefix is stripped defensively if present).
 
 import { ExternalLink } from "lucide-react";
 import {
@@ -24,8 +25,9 @@ export function AdsManagerButton({
   adAccountId,
   compact = false,
 }: {
-  /** Meta ad id when known. Currently always null/undefined — no ad ids exist in this import. */
+  /** Meta ad id when known (ads.meta_ad_id, null until backfilled). */
   metaAdId?: string | null;
+  /** Numeric Meta ad account id (meta_ad_account_id, null until backfilled). */
   adAccountId?: string | null;
   compact?: boolean;
 }) {

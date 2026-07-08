@@ -17,8 +17,14 @@ create table if not exists ad_accounts (
   source_status text,
   facebook_page_dp_url text,
   overview_state jsonb,
+  -- Numeric Meta ad account id (no "act_" prefix) for Ads Manager deep
+  -- links. Nullable until a raw Meta export supplies it.
+  meta_ad_account_id text,
   created_at timestamptz not null default now()
 );
+
+-- Idempotent backfill for databases created before meta_ad_account_id existed.
+alter table ad_accounts add column if not exists meta_ad_account_id text;
 
 -- Ad-level registry. `meta_ad_id` and `creative_asset_url` are nullable by
 -- design: no Meta ad_id exists anywhere in the current package (only

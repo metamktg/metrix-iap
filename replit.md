@@ -9,7 +9,7 @@ _Replace the heading above with the project's name, and this line with one sente
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- `pnpm --filter @workspace/scripts run import:metrix` — (re)apply Metrix Supabase schema and import the Bookster IAP loop package (idempotent)
+- `pnpm --filter @workspace/scripts run import:metrix` — (re)apply Metrix Supabase schema and import the Bookster IAP loop package (idempotent). If `scripts/data/metrix/meta_ads_export.json` exists (`{meta_ad_account_id, ads: [{ad_name, meta_ad_id, creative_asset_url}]}`), it backfills `ad_accounts.meta_ad_account_id` + `ads.meta_ad_id`/`creative_asset_url` and logs unmatched ad names.
 - Required env: `DATABASE_URL` — Replit Postgres connection string (waitlist)
 - Required secret: `SUPABASE_DB_URL` — Supabase session-pooler Postgres URI (Metrix data importer)
 - Required env: `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` — used by the API server to read Metrix data via supabase-js
@@ -48,7 +48,7 @@ _Replace the heading above with the project's name, and this line with one sente
 
 - Metrix app data lives in Supabase Postgres (per ad account, date-stamped rows); the API server assembles a seed-compatible bundle from ~28 tables at request time (30s cache) and returns 503 if Supabase is down — no static fallback by design.
 - `optimization_loop` is `null` and Creative Scan surfaces are empty until those IAP loop stages actually run; `loop_status` records per-stage complete/pending. UI shows honest pending states — never fabricate data.
-- `ads.creative_asset_url` and `ads.meta_ad_id` are nullable, keyed for future asset backfill.
+- `ads.creative_asset_url` and `ads.meta_ad_id` are nullable, backfilled by dropping a `meta_ads_export.json` in `scripts/data/metrix/` and re-running the importer. The seed exposes the per-account ad registry (`ad_accounts[].ads`) + `meta_ad_account_id`; the client resolves the primary ad per creative cell (`primaryAdForCell` in `creative-assembly.ts`) so CreativeCard shows the real asset (placeholder fallback on error) and "View in Ads Manager" enables only when both `meta_ad_id` and the numeric Meta account id exist. Ads Manager deep links use the numeric Meta account id — never the internal account id.
 - Waitlist + request-access stay on Replit Postgres (Drizzle); Supabase is only for Metrix IAP data.
 
 ## Product

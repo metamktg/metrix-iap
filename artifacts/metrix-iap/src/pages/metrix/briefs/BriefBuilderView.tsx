@@ -6,7 +6,7 @@
 import { useState, useEffect } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
-import { getAdAccount, getBriefBuilder, getStrategyData, getAnalysisData, getMST } from "@/lib/data/metrixSeedAdapter";
+import { getAdAccount, getBriefBuilder, getStrategyData, getAnalysisData, getMST, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ModuleTabs, ModuleScopeGate, PendingState,
   MetricTile, CaveatNote, CrossLink, useFocusParam,
@@ -200,7 +200,7 @@ export function BriefBuilderView() {
                           data={cardFromCell(c, {
                             perfRows: analysis.performance_by_cell,
                             mst,
-                            adAccountId,
+                            ...getCreativeLinkContext(seed, adAccountId),
                           })}
                         />
                       ))}
