@@ -26,6 +26,8 @@ import type {
   MetrixSeedBundle,
   NotificationPrefsResult,
   NotificationPrefsUpdateInput,
+  RequestAccessInput,
+  RequestAccessResult,
   RevokeWorkspaceInviteResult,
   WaitlistEntriesResult,
   WaitlistSignupInput,
@@ -741,6 +743,77 @@ export const useUpdateNotificationPrefs = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getUpdateNotificationPrefsMutationOptions(options));
+    }
+
+export const getSubmitRequestAccessUrl = () => {
+
+
+
+
+  return `/api/metrix/request-access`
+}
+
+/**
+ * Stores a qualified access request from the public marketing site and triggers an internal notification email. Never exposes any login capability.
+ * @summary Submit a Metrix access request
+ */
+export const submitRequestAccess = async (requestAccessInput: RequestAccessInput, options?: RequestInit): Promise<RequestAccessResult> => {
+
+  return customFetch<RequestAccessResult>(getSubmitRequestAccessUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(requestAccessInput)
+  }
+);}
+
+
+
+
+export const getSubmitRequestAccessMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitRequestAccess>>, TError,{data: BodyType<RequestAccessInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitRequestAccess>>, TError,{data: BodyType<RequestAccessInput>}, TContext> => {
+
+const mutationKey = ['submitRequestAccess'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitRequestAccess>>, {data: BodyType<RequestAccessInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  submitRequestAccess(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitRequestAccessMutationResult = NonNullable<Awaited<ReturnType<typeof submitRequestAccess>>>
+    export type SubmitRequestAccessMutationBody = BodyType<RequestAccessInput>
+    export type SubmitRequestAccessMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Submit a Metrix access request
+ */
+export const useSubmitRequestAccess = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitRequestAccess>>, TError,{data: BodyType<RequestAccessInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitRequestAccess>>,
+        TError,
+        {data: BodyType<RequestAccessInput>},
+        TContext
+      > => {
+      return useMutation(getSubmitRequestAccessMutationOptions(options));
     }
 
 export const getHealthCheckUrl = () => {

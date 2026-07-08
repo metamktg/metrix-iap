@@ -12,6 +12,8 @@ import {
   ResendWorkspaceInviteResponse,
   UpdateNotificationPrefsBody,
   UpdateNotificationPrefsResponse,
+  SubmitRequestAccessBody,
+  SubmitRequestAccessResponse,
 } from "@workspace/api-zod";
 import {
   db,
@@ -24,6 +26,8 @@ import { requireAdmin } from "../middlewares/requireAdmin";
 import { waitlistRateLimit } from "../middlewares/waitlistRateLimit";
 import { isDisposableEmailDomain } from "../lib/disposableEmailDomains";
 import { getMetrixSeedFromSupabase } from "../lib/metrixSeedAssembly";
+import { getSupabase } from "../lib/supabase";
+import { notifyRequestAccess } from "../lib/requestAccessNotification";
 
 const router: IRouter = Router();
 
@@ -68,6 +72,81 @@ router.post("/metrix/agent-waitlist", waitlistRateLimit, async (req, res) => {
     status: inserted.length > 0 ? "joined" : "already_joined",
     email,
   });
+  res.json(data);
+});
+
+router.post("/metrix/request-access", waitlistRateLimit, async (req, res) => {
+  const parsed = SubmitRequestAccessBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({
+      message:
+        "Please fill in all required fields with valid values (name, email, phone, business type, industry, and ad spend).",
+    });
+    return;
+  }
+
+  const email = parsed.data.email.trim().toLowerCase();
+  if (isDisposableEmailDomain(email)) {
+    res.status(400).json({
+      message: "Please use a permanent business email address.",
+    });
+    return;
+  }
+
+  const submission = {
+    full_name: parsed.data.full_name.trim(),
+    email,
+    phone: parsed.data.phone.trim(),
+    business_type: parsed.data.business_type,
+    industry: parsed.data.industry.trim(),
+    avg_monthly_ad_spend: parsed.data.avg_monthly_ad_spend.trim(),
+    website: parsed.data.website?.trim() || undefined,
+    linkedin: parsed.data.linkedin?.trim() || undefined,
+  };
+
+  let supabase;
+  try {
+    supabase = getSupabase();
+  } catch (err) {
+    req.log.error({ err }, "Supabase not configured for request-access");
+    res.status(503).json({
+      message: "We couldn't save your request right now. Please try again shortly.",
+    });
+    return;
+  }
+
+  const { error } = await supabase.from("request_access").insert({
+    full_name: submission.full_name,
+    email: submission.email,
+    phone: submission.phone,
+    business_type: submission.business_type,
+    industry: submission.industry,
+    avg_monthly_ad_spend: submission.avg_monthly_ad_spend,
+    website: submission.website ?? null,
+    linkedin: submission.linkedin ?? null,
+  });
+
+  if (error) {
+    // 23505 = unique violation on lower(email): request already on file.
+    if (error.code === "23505") {
+      const data = SubmitRequestAccessResponse.parse({
+        status: "already_requested",
+        email,
+      });
+      res.json(data);
+      return;
+    }
+    req.log.error({ error }, "Failed to store request-access submission");
+    res.status(503).json({
+      message: "We couldn't save your request right now. Please try again shortly.",
+    });
+    return;
+  }
+
+  // Fire the internal notification; never block or fail the submission on it.
+  void notifyRequestAccess(submission, req.log);
+
+  const data = SubmitRequestAccessResponse.parse({ status: "received", email });
   res.json(data);
 });
 

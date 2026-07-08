@@ -253,6 +253,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/request-access:
+    post:
+      operationId: submitRequestAccess
+      tags: [metrix]
+      summary: Submit a Metrix access request
+      description: Stores a qualified access request from the public marketing site and triggers an internal notification email. Never exposes any login capability.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestAccessInput"
+      responses:
+        "200":
+          description: Access request result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestAccessResult"
+        "400":
+          description: Invalid or incomplete request fields
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "503":
+          description: Request store unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /healthz:
     get:
       operationId: healthCheck
@@ -469,6 +500,55 @@ components:
       required:
         - channels
         - events
+    RequestAccessInput:
+      type: object
+      properties:
+        full_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+          minLength: 5
+          maxLength: 40
+        business_type:
+          type: string
+          enum: [Agency, Consultant, Freelancer]
+        industry:
+          type: string
+          minLength: 1
+          maxLength: 200
+        avg_monthly_ad_spend:
+          type: string
+          minLength: 1
+          maxLength: 100
+        website:
+          type: string
+          maxLength: 300
+        linkedin:
+          type: string
+          maxLength: 300
+      required:
+        - full_name
+        - email
+        - phone
+        - business_type
+        - industry
+        - avg_monthly_ad_spend
+    RequestAccessResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [received, already_requested]
+        email:
+          type: string
+      required:
+        - status
+        - email
     ApiError:
       type: object
       properties:

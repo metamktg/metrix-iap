@@ -14,6 +14,7 @@ _Replace the heading above with the project's name, and this line with one sente
 - Required secret: `SUPABASE_DB_URL` — Supabase session-pooler Postgres URI (Metrix data importer)
 - Required env: `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` — used by the API server to read Metrix data via supabase-js
 - Optional secret: `ADMIN_API_KEY` — admin bearer key gating GET /api/metrix/agent-waitlist (waitlist emails). Endpoint fails closed (401) when unset; admins enter the key in Settings → Metrix Agent waitlist.
+- Optional secret: `RESEND_API_KEY` — enables the request-access notification email to meta@metamktgagency.com (Resend REST API). When unset, submissions are still stored in Supabase and the server logs an explicit "notification skipped" warning. Optional: `REQUEST_ACCESS_FROM_EMAIL` to override the Resend from-address (defaults to onboarding@resend.dev sandbox sender).
 
 ## Stack
 
@@ -27,7 +28,8 @@ _Replace the heading above with the project's name, and this line with one sente
 ## Where things live
 
 - `artifacts/metrix-iap/` — Metrix IAP web app (React + Vite); seed types in `src/lib/data/seedTypes.ts`, adapter in `src/lib/data/metrixSeedAdapter.ts`
-- `artifacts/api-server/` — Express API; Metrix seed assembly in `src/lib/metrixSeedAssembly.ts` (Supabase → seed bundle), route in `src/routes/metrix.ts`
+- `artifacts/api-server/` — Express API; Metrix seed assembly in `src/lib/metrixSeedAssembly.ts` (Supabase → seed bundle), route in `src/routes/metrix.ts`; request-access notification in `src/lib/requestAccessNotification.ts`
+- `artifacts/marketing/` — public Metrix marketing site (React + Vite, served at `/www/`); all copy + `BOOK_DEMO_URL` Calendly placeholder centralized in `src/content.ts`
 - `scripts/src/metrix-supabase/` — `schema.sql` (Supabase table definitions) + `import.ts` (idempotent importer)
 - `scripts/data/metrix/` — raw Bookster IAP loop package files (source data for the importer)
 - `lib/api-spec/openapi.yaml` — API contract; regenerate hooks/schemas with codegen after editing

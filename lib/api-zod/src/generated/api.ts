@@ -230,6 +230,42 @@ export const UpdateNotificationPrefsResponse = zod.object({
 
 
 /**
+ * Stores a qualified access request from the public marketing site and triggers an internal notification email. Never exposes any login capability.
+ * @summary Submit a Metrix access request
+ */
+export const submitRequestAccessBodyFullNameMax = 200;
+
+export const submitRequestAccessBodyPhoneMin = 5;
+export const submitRequestAccessBodyPhoneMax = 40;
+
+export const submitRequestAccessBodyIndustryMax = 200;
+
+export const submitRequestAccessBodyAvgMonthlyAdSpendMax = 100;
+
+export const submitRequestAccessBodyWebsiteMax = 300;
+
+export const submitRequestAccessBodyLinkedinMax = 300;
+
+
+
+export const SubmitRequestAccessBody = zod.object({
+  "full_name": zod.string().min(1).max(submitRequestAccessBodyFullNameMax),
+  "email": zod.string().email(),
+  "phone": zod.string().min(submitRequestAccessBodyPhoneMin).max(submitRequestAccessBodyPhoneMax),
+  "business_type": zod.enum(['Agency', 'Consultant', 'Freelancer']),
+  "industry": zod.string().min(1).max(submitRequestAccessBodyIndustryMax),
+  "avg_monthly_ad_spend": zod.string().min(1).max(submitRequestAccessBodyAvgMonthlyAdSpendMax),
+  "website": zod.string().max(submitRequestAccessBodyWebsiteMax).optional(),
+  "linkedin": zod.string().max(submitRequestAccessBodyLinkedinMax).optional()
+})
+
+export const SubmitRequestAccessResponse = zod.object({
+  "status": zod.enum(['received', 'already_requested']),
+  "email": zod.string()
+})
+
+
+/**
  * Returns server health status
  * @summary Health check
  */

@@ -142,6 +142,57 @@ export interface NotificationPrefsResult {
   events: EventPref[];
 }
 
+export type RequestAccessInputBusinessType = typeof RequestAccessInputBusinessType[keyof typeof RequestAccessInputBusinessType];
+
+
+export const RequestAccessInputBusinessType = {
+  Agency: 'Agency',
+  Consultant: 'Consultant',
+  Freelancer: 'Freelancer',
+} as const;
+
+export interface RequestAccessInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  full_name: string;
+  email: string;
+  /**
+     * @minLength 5
+     * @maxLength 40
+     */
+  phone: string;
+  business_type: RequestAccessInputBusinessType;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  industry: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  avg_monthly_ad_spend: string;
+  /** @maxLength 300 */
+  website?: string;
+  /** @maxLength 300 */
+  linkedin?: string;
+}
+
+export type RequestAccessResultStatus = typeof RequestAccessResultStatus[keyof typeof RequestAccessResultStatus];
+
+
+export const RequestAccessResultStatus = {
+  received: 'received',
+  already_requested: 'already_requested',
+} as const;
+
+export interface RequestAccessResult {
+  status: RequestAccessResultStatus;
+  email: string;
+}
+
 export interface ApiError {
   message: string;
 }
