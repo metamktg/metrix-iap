@@ -98,7 +98,14 @@ export function ReportHistoryView() {
           docTitle: entry.title,
           sectionCount: entry.section_count,
         });
-    if (!model) return;
+    if (!model) {
+      toast({
+        variant: "destructive",
+        title: "Couldn't download the report",
+        description: "This report's saved copy can't be read — try generating it again.",
+      });
+      return;
+    }
     setBusyId(entry.id);
     setDoneId(null);
     try {

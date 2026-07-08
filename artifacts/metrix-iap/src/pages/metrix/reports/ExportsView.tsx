@@ -12,6 +12,7 @@ import { FORMAT_LABEL } from "./NewReportView";
 import { cn } from "@/lib/utils";
 import { FileDown, FileText, Check, Loader2 } from "lucide-react";
 import { useListWorkspaceReports } from "@workspace/api-client-react";
+import { useToast } from "@/hooks/use-toast";
 
 const SECTION = "Reports · 06";
 
@@ -38,6 +39,7 @@ export function ExportsView() {
   const { data: generatedData } = useListWorkspaceReports(manager.id);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [doneKey, setDoneKey] = useState<string | null>(null);
+  const { toast } = useToast();
 
   async function download(key: string, format: string, mode: BrandingMode, opts?: { docTitle?: string; sectionCount?: number }) {
     if (busyKey) return;
@@ -61,7 +63,14 @@ export function ExportsView() {
     const model = d.modelJson
       ? parseReportModel(d.modelJson)
       : buildReportModel(seed, adAccountId!, mode, { docTitle: d.title, sectionCount: d.section_count });
-    if (!model) return;
+    if (!model) {
+      toast({
+        variant: "destructive",
+        title: "Couldn't download the report",
+        description: "This report's saved copy can't be read — try generating it again.",
+      });
+      return;
+    }
     setBusyKey(d.key);
     setDoneKey(null);
     try {

@@ -68,11 +68,17 @@ export function NewReportView() {
         const model = parseReportModel(result.report.model_json);
         if (model) {
           await downloadReportExport(result.report.export_format, model);
+          toast({
+            title: "Report generated",
+            description: `"${result.report.title}" was saved to Report History and downloaded as ${FORMAT_LABEL[result.report.export_format] ?? result.report.export_format}.`,
+          });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Report saved, but the download failed",
+            description: `"${result.report.title}" was saved to Report History, but its saved copy can't be read — try generating it again.`,
+          });
         }
-        toast({
-          title: "Report generated",
-          description: `"${result.report.title}" was saved to Report History and downloaded as ${FORMAT_LABEL[result.report.export_format] ?? result.report.export_format}.`,
-        });
       },
       onError: () => {
         toast({

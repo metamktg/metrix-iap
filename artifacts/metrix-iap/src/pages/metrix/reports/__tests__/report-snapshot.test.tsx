@@ -36,6 +36,12 @@ vi.mock("@/lib/reportExport", async (importOriginal) => {
   return { ...actual, downloadReportExport: vi.fn().mockResolvedValue(undefined) };
 });
 
+const toastMock = vi.hoisted(() => vi.fn());
+vi.mock("@/hooks/use-toast", () => ({
+  useToast: () => ({ toast: toastMock }),
+  toast: toastMock,
+}));
+
 const mutateMock = vi.fn();
 let createReportOptions: {
   mutation?: { onSuccess?: (result: unknown) => Promise<void> | void };
@@ -125,6 +131,7 @@ beforeEach(() => {
   window.history.replaceState({}, "", "/");
   mutateMock.mockClear();
   downloadMock.mockClear();
+  toastMock.mockClear();
   createReportOptions = null;
   listedReports = [];
 });
@@ -245,7 +252,7 @@ describe("ReportHistoryView · snapshot downloads", () => {
     expect(model.accountName).toBe("Bookster");
   });
 
-  it("does not crash or download when a stored snapshot is malformed", async () => {
+  it("shows an error toast instead of downloading when a stored snapshot is malformed", async () => {
     listedReports = [
       {
         id: 9,
@@ -265,8 +272,14 @@ describe("ReportHistoryView · snapshot downloads", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Download HTML/i }));
 
-    // parseReportModel returns null → download is skipped, no crash.
-    await new Promise((r) => setTimeout(r, 20));
+    // parseReportModel returns null → download is skipped, user is told why.
+    await waitFor(() => expect(toastMock).toHaveBeenCalledTimes(1));
+    expect(toastMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variant: "destructive",
+        description: expect.stringMatching(/can't be read/i),
+      })
+    );
     expect(downloadMock).not.toHaveBeenCalled();
   });
 });
