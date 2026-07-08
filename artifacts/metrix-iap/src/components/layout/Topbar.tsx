@@ -8,7 +8,8 @@ import { navTree } from "@/navigation/navTree";
 
 type BreadcrumbEntry = { label: string };
 
-function buildBreadcrumbs(location: string, leadLabel: string, isManager: boolean): BreadcrumbEntry[] {
+// Exported for tests (src/navigation/__tests__/breadcrumbs.test.ts).
+export function buildBreadcrumbs(location: string, leadLabel: string, isManager: boolean): BreadcrumbEntry[] {
   const crumbs: BreadcrumbEntry[] = [{ label: leadLabel }];
 
   if (location === "/" || location === "") {
