@@ -15,6 +15,16 @@ _Replace the heading above with the project's name, and this line with one sente
 - Required env: `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` — used by the API server to read Metrix data via supabase-js
 - Optional secret: `ADMIN_API_KEY` — admin bearer key gating GET /api/metrix/agent-waitlist (waitlist emails). Endpoint fails closed (401) when unset; admins enter the key in Settings → Metrix Agent waitlist.
 - Optional secret: `RESEND_API_KEY` — enables the request-access notification email to meta@metamktgagency.com (Resend REST API). When unset, submissions are still stored in Supabase and the server logs an explicit "notification skipped" warning. Optional: `REQUEST_ACCESS_FROM_EMAIL` to override the Resend from-address (defaults to onboarding@resend.dev sandbox sender).
+- `pnpm --filter @workspace/scripts run create:user -- --email x@y.com [--password ...] [--must-change]` — create or reset a Metrix IAP user account (prints a generated temp password if none given)
+
+## Auth (Metrix IAP)
+
+- Custom email/password auth: bcryptjs (12 rounds) + DB-backed sessions (`user_sessions`, sha256-hashed 32-byte tokens, 30-day expiry) in an httpOnly `metrix_session` cookie (SameSite=Lax). Routes: `/api/metrix/auth/{login,logout,me,change-password}`.
+- Unauthenticated visitors to the IAP app see a login landing page with a Join-Waitlist form and a link to the marketing site (`/www/`).
+- Admin flow: Settings → Metrix Agent waitlist (gated by `ADMIN_API_KEY` bearer key entered in the UI) shows entries with status badges and an Approve button. Approving provisions a user with a temp password and `must_change_password=true`, then emails the password via Resend (`RESEND_API_KEY`). If email can't be sent, the temp password is returned in the approve response and shown to the admin with a copy button — share it manually.
+- First login with a temp password forces a password-change screen; changing the password revokes all other sessions.
+- `/api/metrix/seed` and all `/api/metrix/workspaces/:workspaceId/*` routes require a session; workspace routes additionally verify `workspaceId` matches the seed's manager account id (single-workspace deployment) and return 403 otherwise.
+- Login rate limit: 20 attempts / 10 min per IP+email.
 
 ## Stack
 

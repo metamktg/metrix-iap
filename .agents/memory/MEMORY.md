@@ -1,4 +1,5 @@
 - [Metrix IAP closed-loop linkage](metrix-iap-closed-loop.md) — cross-entity back-refs (Ad/Concept/Brief) filled at gen time by linkClosedLoop() IIFE, not per-render.
+- [Metrix IAP custom auth](metrix-auth.md) — custom bcrypt+cookie auth by user choice; workspace routes need seed-manager-id check (not just login); spec must mirror auth (401/403) on gated routes.
 - [Verify subagent edits](verify-subagent-edits.md) — subagents can report success while edits never land; check git diff before trusting their summary.
 - [Metrix IAP data sources](metrix-iap-data-sources.md) — rendered data now comes from Supabase via the API seed endpoint (no static fallback); mock/generate.ts is bundled-but-unrendered legacy.
 - [Vite Babel JSX generics](vite-babel-jsx-generics.md) — `<Comp<T>>` type-checks in tsc but Babel parse-errors at build; widen call-site state instead of explicit JSX generic.

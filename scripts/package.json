@@ -8,6 +8,7 @@
     "check:metrix-settings-api": "tsx ./src/check-metrix-settings-api.ts",
     "smoke:api-server": "tsx ./src/smoke-api-server.ts",
     "import:metrix": "tsx ./src/metrix-supabase/import.ts",
+    "create:user": "tsx ./src/create-user.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
@@ -16,6 +17,9 @@
     "tsx": "catalog:"
   },
   "dependencies": {
+    "@workspace/db": "workspace:*",
+    "bcryptjs": "^3.0.3",
+    "drizzle-orm": "catalog:",
     "pg": "^8.22.0"
   }
 }

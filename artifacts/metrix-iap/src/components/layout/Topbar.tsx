@@ -1,7 +1,8 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { ChevronRight, Bell, CheckCircle2 } from "lucide-react";
+import { ChevronRight, Bell, CheckCircle2, LogOut } from "lucide-react";
 import { useAccount } from "@/contexts/AccountContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { navTree } from "@/navigation/navTree";
 
 // ─── Derive breadcrumb from navTree ────────────────────────────────────
@@ -48,6 +49,7 @@ export function buildBreadcrumbs(location: string, leadLabel: string, isManager:
 export function Topbar() {
   const [location] = useLocation();
   const { manager, selectedAccountType, activeAdAccount } = useAccount();
+  const { user, logout } = useAuth();
 
   const isManager = selectedAccountType === "manager";
   const leadLabel = isManager ? manager.name : activeAdAccount?.name ?? manager.name;
@@ -118,6 +120,15 @@ export function Topbar() {
           className="w-7 h-7 rounded flex items-center justify-center bg-primary/15 border border-primary/20 text-primary hover:bg-primary/20 transition-colors"
         >
           <span className="text-[10px] font-bold leading-none">{initials}</span>
+        </button>
+        <button
+          aria-label={user ? `Sign out (${user.email})` : "Sign out"}
+          title={user ? `Sign out (${user.email})` : "Sign out"}
+          onClick={() => void logout()}
+          className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+          data-testid="button-signout"
+        >
+          <LogOut className="w-3.5 h-3.5" />
         </button>
       </div>
     </header>

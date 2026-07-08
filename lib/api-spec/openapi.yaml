@@ -18,7 +18,9 @@ paths:
       operationId: getMetrixSeed
       tags: [metrix]
       summary: Get the Metrix IAP seed bundle
-      description: Returns the full Metrix seed bundle (manager account, ad accounts, app defaults) served from the backend.
+      description: Returns the full Metrix seed bundle (manager account, ad accounts, app defaults) served from the backend. Requires a logged-in session.
+      security:
+        - cookieAuth: []
       responses:
         "200":
           description: The seed bundle
@@ -26,6 +28,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MetrixSeedBundle"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/agent-waitlist:
     post:
       operationId: joinAgentWaitlist
@@ -89,6 +97,129 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/agent-waitlist/{entryId}/approve:
+    parameters:
+      - name: entryId
+        in: path
+        required: true
+        description: Waitlist entry identifier.
+        schema:
+          type: integer
+          minimum: 1
+    post:
+      operationId: approveAgentWaitlistEntry
+      tags: [metrix]
+      summary: Approve a waitlist entry and provision a user account
+      description: Creates (or resets) a user account with a temporary password for the waitlisted email, marks the entry approved, and emails the temporary password to the user. When the email provider is not configured, the temporary password is returned to the admin instead. Requires an admin bearer key.
+      security:
+        - adminKey: []
+      responses:
+        "200":
+          description: Approval result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaitlistApprovalResult"
+        "401":
+          description: Missing or invalid admin key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Waitlist entry not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/auth/login:
+    post:
+      operationId: authLogin
+      tags: [metrix]
+      summary: Log in with email and password
+      description: Verifies credentials and sets an httpOnly session cookie. Returns the authenticated user, including whether a password change is required before using the app.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthLoginInput"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUserResult"
+        "401":
+          description: Invalid email or password
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/auth/logout:
+    post:
+      operationId: authLogout
+      tags: [metrix]
+      summary: Log out
+      description: Destroys the current session and clears the session cookie.
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthLogoutResult"
+  /metrix/auth/me:
+    get:
+      operationId: authMe
+      tags: [metrix]
+      summary: Get the current authenticated user
+      description: Returns the user attached to the current session cookie, or 401 when not logged in.
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUserResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/auth/change-password:
+    post:
+      operationId: authChangePassword
+      tags: [metrix]
+      summary: Change the current user's password
+      description: Verifies the current password and replaces it. Clears the must-change-password flag and revokes all other sessions for the user.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthChangePasswordInput"
+      responses:
+        "200":
+          description: Password changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUserResult"
+        "400":
+          description: Invalid new password or wrong current password
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/workspaces/{workspaceId}/invites:
     parameters:
       - name: workspaceId
@@ -102,7 +233,9 @@ paths:
       operationId: listWorkspaceInvites
       tags: [metrix]
       summary: List pending workspace invites
-      description: Returns invites created for this workspace, newest first.
+      description: Returns invites created for this workspace, newest first. Requires a logged-in session with access to the workspace.
+      security:
+        - cookieAuth: []
       responses:
         "200":
           description: Workspace invites
@@ -110,11 +243,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WorkspaceInvitesResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this workspace
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
     post:
       operationId: createWorkspaceInvite
       tags: [metrix]
       summary: Invite a member to the workspace
-      description: Creates a pending invite for the given email and role. Idempotent per workspace and email.
+      description: Creates a pending invite for the given email and role. Idempotent per workspace and email. Requires a logged-in session with access to the workspace.
+      security:
+        - cookieAuth: []
       requestBody:
         required: true
         content:
@@ -128,6 +275,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WorkspaceInviteResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this workspace
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "400":
           description: Invalid email or role
           content:
@@ -160,7 +319,9 @@ paths:
       operationId: revokeWorkspaceInvite
       tags: [metrix]
       summary: Revoke a pending workspace invite
-      description: Deletes the pending invite, freeing its seat.
+      description: Deletes the pending invite, freeing its seat. Requires a logged-in session with access to the workspace.
+      security:
+        - cookieAuth: []
       responses:
         "200":
           description: Invite revoked
@@ -168,6 +329,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RevokeWorkspaceInviteResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this workspace
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "404":
           description: Invite not found for this workspace
           content:
@@ -194,7 +367,9 @@ paths:
       operationId: resendWorkspaceInvite
       tags: [metrix]
       summary: Resend a pending workspace invite
-      description: Bumps the invite's created_at timestamp to now and returns the updated invite.
+      description: Bumps the invite's created_at timestamp to now and returns the updated invite. Requires a logged-in session with access to the workspace.
+      security:
+        - cookieAuth: []
       responses:
         "200":
           description: Invite resent
@@ -202,6 +377,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WorkspaceInviteResendResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this workspace
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "404":
           description: Invite not found for this workspace
           content:
@@ -221,7 +408,9 @@ paths:
       operationId: getNotificationPrefs
       tags: [metrix]
       summary: Get workspace notification preference overrides
-      description: Returns persisted channel and event preference overrides for this workspace. Anything not listed falls back to seed defaults on the client.
+      description: Returns persisted channel and event preference overrides for this workspace. Anything not listed falls back to seed defaults on the client. Requires a logged-in session with access to the workspace.
+      security:
+        - cookieAuth: []
       responses:
         "200":
           description: Notification preference overrides
@@ -229,11 +418,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/NotificationPrefsResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this workspace
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
     put:
       operationId: updateNotificationPrefs
       tags: [metrix]
       summary: Update workspace notification preferences
-      description: Upserts channel and/or event preference overrides for this workspace and returns the full set of persisted overrides.
+      description: Upserts channel and/or event preference overrides for this workspace and returns the full set of persisted overrides. Requires a logged-in session with access to the workspace.
+      security:
+        - cookieAuth: []
       requestBody:
         required: true
         content:
@@ -247,6 +450,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/NotificationPrefsResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this workspace
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "400":
           description: Invalid preference payload
           content:
@@ -303,6 +518,11 @@ components:
       type: http
       scheme: bearer
       description: Static admin key configured via the ADMIN_API_KEY secret.
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: metrix_session
+      description: httpOnly session cookie set by /metrix/auth/login.
   schemas:
     MetrixSeedBundle:
       type: object
@@ -361,13 +581,93 @@ components:
     WaitlistEntry:
       type: object
       properties:
+        id:
+          type: integer
         email:
           type: string
+        status:
+          type: string
+          enum: [pending, approved]
+        approved_at:
+          type: string
+          nullable: true
         joined_at:
           type: string
       required:
+        - id
         - email
+        - status
         - joined_at
+    WaitlistApprovalResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [approved, already_approved]
+        email:
+          type: string
+        email_sent:
+          type: boolean
+          description: True when the temporary-password email was delivered to the provider.
+        temp_password:
+          type: string
+          description: Present only when the email could not be sent, so the admin can share the temporary password manually.
+      required:
+        - status
+        - email
+        - email_sent
+    AuthLoginInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+        - email
+        - password
+    AuthUser:
+      type: object
+      properties:
+        email:
+          type: string
+        must_change_password:
+          type: boolean
+      required:
+        - email
+        - must_change_password
+    AuthUserResult:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/AuthUser"
+      required:
+        - user
+    AuthLogoutResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [logged_out]
+      required:
+        - status
+    AuthChangePasswordInput:
+      type: object
+      properties:
+        current_password:
+          type: string
+          minLength: 1
+          maxLength: 200
+        new_password:
+          type: string
+          minLength: 8
+          maxLength: 200
+      required:
+        - current_password
+        - new_password
     WaitlistEntriesResult:
       type: object
       properties:

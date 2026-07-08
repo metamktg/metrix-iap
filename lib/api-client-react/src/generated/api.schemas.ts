@@ -48,9 +48,79 @@ export interface WaitlistSignupResult {
   email: string;
 }
 
+export type WaitlistEntryStatus = typeof WaitlistEntryStatus[keyof typeof WaitlistEntryStatus];
+
+
+export const WaitlistEntryStatus = {
+  pending: 'pending',
+  approved: 'approved',
+} as const;
+
 export interface WaitlistEntry {
+  id: number;
   email: string;
+  status: WaitlistEntryStatus;
+  approved_at?: string | null;
   joined_at: string;
+}
+
+export type WaitlistApprovalResultStatus = typeof WaitlistApprovalResultStatus[keyof typeof WaitlistApprovalResultStatus];
+
+
+export const WaitlistApprovalResultStatus = {
+  approved: 'approved',
+  already_approved: 'already_approved',
+} as const;
+
+export interface WaitlistApprovalResult {
+  status: WaitlistApprovalResultStatus;
+  email: string;
+  /** True when the temporary-password email was delivered to the provider. */
+  email_sent: boolean;
+  /** Present only when the email could not be sent, so the admin can share the temporary password manually. */
+  temp_password?: string;
+}
+
+export interface AuthLoginInput {
+  email: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  password: string;
+}
+
+export interface AuthUser {
+  email: string;
+  must_change_password: boolean;
+}
+
+export interface AuthUserResult {
+  user: AuthUser;
+}
+
+export type AuthLogoutResultStatus = typeof AuthLogoutResultStatus[keyof typeof AuthLogoutResultStatus];
+
+
+export const AuthLogoutResultStatus = {
+  logged_out: 'logged_out',
+} as const;
+
+export interface AuthLogoutResult {
+  status: AuthLogoutResultStatus;
+}
+
+export interface AuthChangePasswordInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  current_password: string;
+  /**
+     * @minLength 8
+     * @maxLength 200
+     */
+  new_password: string;
 }
 
 export interface WaitlistEntriesResult {
