@@ -101,6 +101,34 @@ describe("child pages show section + child labels", () => {
   }
 });
 
+describe("crumb link targets", () => {
+  it("the lead crumb always links to /", () => {
+    expect(buildBreadcrumbs("/app/listen/signal", LEAD, false)[0]?.to).toBe("/");
+    expect(buildBreadcrumbs("/", LEAD, true)[0]?.to).toBe("/");
+  });
+
+  it("section crumbs on child pages link to the section's first child route", () => {
+    for (const section of navTree) {
+      for (const child of section.children ?? []) {
+        const crumbs = buildBreadcrumbs(child.to, LEAD, false);
+        expect(crumbs[1]?.to).toBe(section.children![0]!.to);
+      }
+    }
+  });
+
+  it("leaf section crumbs link to their own route", () => {
+    const leaf = navTree.find((s) => !s.children?.length && s.to && s.to !== "/");
+    expect(leaf).toBeDefined();
+    const crumbs = buildBreadcrumbs(leaf!.to!, LEAD, false);
+    expect(crumbs[1]?.to).toBe(leaf!.to);
+  });
+
+  it("overview crumbs (root and matchPaths) have no link target", () => {
+    expect(buildBreadcrumbs("/", LEAD, false)[1]?.to).toBeUndefined();
+    expect(buildBreadcrumbs("/app/account", LEAD, false)[1]?.to).toBeUndefined();
+  });
+});
+
 describe("unknown paths fall back to the lead label only", () => {
   it("a bogus path yields just the account name", () => {
     expect(labels("/app/definitely-not-a-real-page")).toEqual([LEAD]);

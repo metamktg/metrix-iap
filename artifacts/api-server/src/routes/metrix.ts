@@ -130,17 +130,23 @@ router.get("/metrix/workspaces/:workspaceId/invites", async (req, res) => {
   res.json(data);
 });
 
-const workspaceTeam = (
-  seedBundle as {
+const getWorkspaceTeamFromSeed = async (): Promise<{
+  memberEmails: Set<string>;
+  seatLimit: number | null;
+}> => {
+  const bundle = (await getMetrixSeedFromSupabase()) as {
     workspace_settings?: {
       team?: { seat_limit?: number; members?: { email: string }[] };
     };
-  }
-).workspace_settings?.team;
-const SEED_MEMBER_EMAILS = new Set(
-  (workspaceTeam?.members ?? []).map((m) => m.email.toLowerCase()),
-);
-const SEAT_LIMIT = workspaceTeam?.seat_limit ?? null;
+  };
+  const team = bundle.workspace_settings?.team;
+  return {
+    memberEmails: new Set(
+      (team?.members ?? []).map((m) => m.email.toLowerCase()),
+    ),
+    seatLimit: team?.seat_limit ?? null,
+  };
+};
 
 router.post("/metrix/workspaces/:workspaceId/invites", async (req, res) => {
   const workspaceId = req.params.workspaceId;
@@ -172,7 +178,19 @@ router.post("/metrix/workspaces/:workspaceId/invites", async (req, res) => {
     return;
   }
 
-  if (SEAT_LIMIT !== null) {
+  let team: Awaited<ReturnType<typeof getWorkspaceTeamFromSeed>>;
+  try {
+    team = await getWorkspaceTeamFromSeed();
+  } catch (err) {
+    req.log.error({ err }, "Failed to load workspace team from Metrix seed");
+    res.status(503).json({
+      message:
+        "Couldn't verify available seats because the Metrix data layer is unavailable. Try again shortly.",
+    });
+    return;
+  }
+
+  if (team.seatLimit !== null) {
     const pendingRows = await db
       .select({ email: workspaceInvitesTable.email })
       .from(workspaceInvitesTable)
@@ -183,13 +201,13 @@ router.post("/metrix/workspaces/:workspaceId/invites", async (req, res) => {
         ),
       );
     const pendingCount = pendingRows.filter(
-      (row) => !SEED_MEMBER_EMAILS.has(row.email.toLowerCase()),
+      (row) => !team.memberEmails.has(row.email.toLowerCase()),
     ).length;
-    const seatsUsed = SEED_MEMBER_EMAILS.size + pendingCount;
+    const seatsUsed = team.memberEmails.size + pendingCount;
 
-    if (seatsUsed >= SEAT_LIMIT) {
+    if (seatsUsed >= team.seatLimit) {
       res.status(409).json({
-        message: `This workspace is full: all ${SEAT_LIMIT} seats are in use. Remove a member or cancel a pending invite before inviting someone new.`,
+        message: `This workspace is full: all ${team.seatLimit} seats are in use. Remove a member or cancel a pending invite before inviting someone new.`,
       });
       return;
     }
