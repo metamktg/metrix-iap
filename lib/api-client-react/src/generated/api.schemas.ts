@@ -189,6 +189,29 @@ export interface WorkspaceInvitesResult {
   invites: WorkspaceInvite[];
 }
 
+/**
+ * invited = provisioned but has not completed first login yet.
+ */
+export type WorkspaceMemberStatus = typeof WorkspaceMemberStatus[keyof typeof WorkspaceMemberStatus];
+
+
+export const WorkspaceMemberStatus = {
+  active: 'active',
+  invited: 'invited',
+} as const;
+
+export interface WorkspaceMember {
+  email: string;
+  /** invited = provisioned but has not completed first login yet. */
+  status: WorkspaceMemberStatus;
+  created_at: string;
+  last_login_at: string | null;
+}
+
+export interface WorkspaceMembersResult {
+  members: WorkspaceMember[];
+}
+
 export interface ChannelPref {
   /** @minLength 1 */
   id: string;

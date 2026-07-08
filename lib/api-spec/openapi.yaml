@@ -395,6 +395,41 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/workspaces/{workspaceId}/members:
+    parameters:
+      - name: workspaceId
+        in: path
+        required: true
+        description: Workspace (manager account) identifier.
+        schema:
+          type: string
+          minLength: 1
+    get:
+      operationId: listWorkspaceMembers
+      tags: [metrix]
+      summary: List real workspace member accounts
+      description: Returns provisioned user accounts (real logins) for this workspace, newest first. Requires a logged-in session with access to the workspace.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Workspace members
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkspaceMembersResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this workspace
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/workspaces/{workspaceId}/notification-prefs:
     parameters:
       - name: workspaceId
@@ -512,7 +547,9 @@ paths:
       operationId: getReportSettings
       tags: [metrix]
       summary: Get workspace report-builder setting overrides
-      description: Returns persisted Report Builder defaults for this workspace. Any null field falls back to the seed's report_builder defaults on the client.
+      description: Returns persisted Report Builder defaults for this workspace. Any null field falls back to the seed's report_builder defaults on the client. Requires a logged-in session with access to the workspace.
+      security:
+        - cookieAuth: []
       responses:
         "200":
           description: Report settings overrides
@@ -520,11 +557,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ReportSettingsResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this workspace
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
     put:
       operationId: updateReportSettings
       tags: [metrix]
       summary: Update workspace report-builder settings
-      description: Upserts Report Builder default overrides for this workspace and returns the persisted values.
+      description: Upserts Report Builder default overrides for this workspace and returns the persisted values. Requires a logged-in session with access to the workspace.
+      security:
+        - cookieAuth: []
       requestBody:
         required: true
         content:
@@ -795,6 +846,34 @@ components:
             $ref: "#/components/schemas/WorkspaceInvite"
       required:
         - invites
+    WorkspaceMember:
+      type: object
+      properties:
+        email:
+          type: string
+        status:
+          type: string
+          enum: [active, invited]
+          description: invited = provisioned but has not completed first login yet.
+        created_at:
+          type: string
+        last_login_at:
+          type: string
+          nullable: true
+      required:
+        - email
+        - status
+        - created_at
+        - last_login_at
+    WorkspaceMembersResult:
+      type: object
+      properties:
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkspaceMember"
+      required:
+        - members
     ChannelPref:
       type: object
       properties:

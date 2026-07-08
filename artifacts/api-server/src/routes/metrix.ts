@@ -8,6 +8,7 @@ import {
   CreateWorkspaceInviteBody,
   CreateWorkspaceInviteResponse,
   ListWorkspaceInvitesResponse,
+  ListWorkspaceMembersResponse,
   RevokeWorkspaceInviteResponse,
   ResendWorkspaceInviteResponse,
   UpdateNotificationPrefsBody,
@@ -319,6 +320,31 @@ const requireWorkspaceAccess = async (
   }
 };
 
+// Real provisioned user accounts (this deployment is single-workspace, so
+// every user row belongs to this workspace). "invited" = provisioned but the
+// member hasn't completed their first login yet.
+router.get("/metrix/workspaces/:workspaceId/members", requireAuth, requireWorkspaceAccess, async (req, res) => {
+  const rows = await db
+    .select({
+      email: usersTable.email,
+      mustChangePassword: usersTable.mustChangePassword,
+      createdAt: usersTable.createdAt,
+      lastLoginAt: usersTable.lastLoginAt,
+    })
+    .from(usersTable)
+    .orderBy(desc(usersTable.createdAt), desc(usersTable.id));
+
+  const data = ListWorkspaceMembersResponse.parse({
+    members: rows.map((row) => ({
+      email: row.email,
+      status: row.mustChangePassword && !row.lastLoginAt ? "invited" : "active",
+      created_at: row.createdAt.toISOString(),
+      last_login_at: row.lastLoginAt ? row.lastLoginAt.toISOString() : null,
+    })),
+  });
+  res.json(data);
+});
+
 router.get("/metrix/workspaces/:workspaceId/invites", requireAuth, requireWorkspaceAccess, async (req, res) => {
   const workspaceId = String(req.params.workspaceId);
   const rows = await db
@@ -617,8 +643,8 @@ const reportSettingsRowToApi = (row: WorkspaceReportSettings | undefined) => ({
   schedule_recipients: row?.scheduleRecipients ?? null,
 });
 
-router.get("/metrix/workspaces/:workspaceId/report-settings", async (req, res) => {
-  const workspaceId = req.params.workspaceId;
+router.get("/metrix/workspaces/:workspaceId/report-settings", requireAuth, requireWorkspaceAccess, async (req, res) => {
+  const workspaceId = String(req.params.workspaceId);
   const rows = await db
     .select()
     .from(workspaceReportSettingsTable)
@@ -628,8 +654,8 @@ router.get("/metrix/workspaces/:workspaceId/report-settings", async (req, res) =
   res.json(UpdateReportSettingsResponse.parse(reportSettingsRowToApi(rows[0])));
 });
 
-router.put("/metrix/workspaces/:workspaceId/report-settings", async (req, res) => {
-  const workspaceId = req.params.workspaceId;
+router.put("/metrix/workspaces/:workspaceId/report-settings", requireAuth, requireWorkspaceAccess, async (req, res) => {
+  const workspaceId = String(req.params.workspaceId);
   const parsed = UpdateReportSettingsBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ message: "Invalid report settings payload." });

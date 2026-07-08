@@ -8,6 +8,7 @@ import { memoryLocation } from "wouter/memory-location";
 
 import { AccountProvider } from "@/contexts/AccountContext";
 import { DateRangeProvider } from "@/contexts/DateRangeContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { Router as AppRouter } from "@/App";
 
 export const NOT_FOUND_TEXT = "This route does not exist.";
@@ -30,11 +31,13 @@ export function renderAt(initialPath: string) {
   const result = render(
     <QueryClientProvider client={queryClient}>
       <WouterRouter hook={location.hook}>
-        <AccountProvider>
-          <DateRangeProvider>
-            <AppRouter />
-          </DateRangeProvider>
-        </AccountProvider>
+        <AuthProvider>
+          <AccountProvider>
+            <DateRangeProvider>
+              <AppRouter />
+            </DateRangeProvider>
+          </AccountProvider>
+        </AuthProvider>
       </WouterRouter>
     </QueryClientProvider>
   );

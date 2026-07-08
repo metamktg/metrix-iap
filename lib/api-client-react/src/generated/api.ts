@@ -42,7 +42,8 @@ import type {
   WorkspaceInviteInput,
   WorkspaceInviteResendResult,
   WorkspaceInviteResult,
-  WorkspaceInvitesResult
+  WorkspaceInvitesResult,
+  WorkspaceMembersResult
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -964,6 +965,84 @@ export const useResendWorkspaceInvite = <TError = ErrorType<ApiError>,
       return useMutation(getResendWorkspaceInviteMutationOptions(options));
     }
 
+export const getListWorkspaceMembersUrl = (workspaceId: string,) => {
+
+
+
+
+  return `/api/metrix/workspaces/${workspaceId}/members`
+}
+
+/**
+ * Returns provisioned user accounts (real logins) for this workspace, newest first. Requires a logged-in session with access to the workspace.
+ * @summary List real workspace member accounts
+ */
+export const listWorkspaceMembers = async (workspaceId: string, options?: RequestInit): Promise<WorkspaceMembersResult> => {
+
+  return customFetch<WorkspaceMembersResult>(getListWorkspaceMembersUrl(workspaceId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListWorkspaceMembersQueryKey = (workspaceId: string,) => {
+    return [
+    `/api/metrix/workspaces/${workspaceId}/members`
+    ] as const;
+    }
+
+
+export const getListWorkspaceMembersQueryOptions = <TData = Awaited<ReturnType<typeof listWorkspaceMembers>>, TError = ErrorType<ApiError>>(workspaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWorkspaceMembers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListWorkspaceMembersQueryKey(workspaceId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listWorkspaceMembers>>> = ({ signal }) => listWorkspaceMembers(workspaceId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: workspaceId !== null && workspaceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listWorkspaceMembers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListWorkspaceMembersQueryResult = NonNullable<Awaited<ReturnType<typeof listWorkspaceMembers>>>
+export type ListWorkspaceMembersQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary List real workspace member accounts
+ */
+
+export function useListWorkspaceMembers<TData = Awaited<ReturnType<typeof listWorkspaceMembers>>, TError = ErrorType<ApiError>>(
+ workspaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWorkspaceMembers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListWorkspaceMembersQueryOptions(workspaceId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getGetNotificationPrefsUrl = (workspaceId: string,) => {
 
 
@@ -1194,7 +1273,7 @@ export const getGetReportSettingsUrl = (workspaceId: string,) => {
 }
 
 /**
- * Returns persisted Report Builder defaults for this workspace. Any null field falls back to the seed's report_builder defaults on the client.
+ * Returns persisted Report Builder defaults for this workspace. Any null field falls back to the seed's report_builder defaults on the client. Requires a logged-in session with access to the workspace.
  * @summary Get workspace report-builder setting overrides
  */
 export const getReportSettings = async (workspaceId: string, options?: RequestInit): Promise<ReportSettingsResult> => {
@@ -1219,7 +1298,7 @@ export const getGetReportSettingsQueryKey = (workspaceId: string,) => {
     }
 
 
-export const getGetReportSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getReportSettings>>, TError = ErrorType<unknown>>(workspaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getReportSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetReportSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getReportSettings>>, TError = ErrorType<ApiError>>(workspaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getReportSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -1238,14 +1317,14 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetReportSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getReportSettings>>>
-export type GetReportSettingsQueryError = ErrorType<unknown>
+export type GetReportSettingsQueryError = ErrorType<ApiError>
 
 
 /**
  * @summary Get workspace report-builder setting overrides
  */
 
-export function useGetReportSettings<TData = Awaited<ReturnType<typeof getReportSettings>>, TError = ErrorType<unknown>>(
+export function useGetReportSettings<TData = Awaited<ReturnType<typeof getReportSettings>>, TError = ErrorType<ApiError>>(
  workspaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getReportSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
@@ -1272,7 +1351,7 @@ export const getUpdateReportSettingsUrl = (workspaceId: string,) => {
 }
 
 /**
- * Upserts Report Builder default overrides for this workspace and returns the persisted values.
+ * Upserts Report Builder default overrides for this workspace and returns the persisted values. Requires a logged-in session with access to the workspace.
  * @summary Update workspace report-builder settings
  */
 export const updateReportSettings = async (workspaceId: string,

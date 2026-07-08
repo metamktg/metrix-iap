@@ -15,7 +15,7 @@ _Replace the heading above with the project's name, and this line with one sente
 - Required env: `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` — used by the API server to read Metrix data via supabase-js
 - Optional secret: `ADMIN_API_KEY` — admin bearer key gating GET /api/metrix/agent-waitlist (waitlist emails). Endpoint fails closed (401) when unset; admins enter the key in Settings → Metrix Agent waitlist.
 - Optional secret: `RESEND_API_KEY` — enables the request-access notification email to meta@metamktgagency.com (Resend REST API). When unset, submissions are still stored in Supabase and the server logs an explicit "notification skipped" warning. Optional: `REQUEST_ACCESS_FROM_EMAIL` to override the Resend from-address (defaults to onboarding@resend.dev sandbox sender).
-- `pnpm --filter @workspace/scripts run create:user -- --email x@y.com [--password ...] [--must-change]` — create or reset a Metrix IAP user account (prints a generated temp password if none given)
+- `pnpm --filter @workspace/scripts run create:user x@y.com [password]` — create or reset a Metrix IAP user account (positional args; prints a generated temp password if none given; always forces a password change on first login)
 
 ## Auth (Metrix IAP)
 
@@ -24,6 +24,8 @@ _Replace the heading above with the project's name, and this line with one sente
 - Admin flow: Settings → Metrix Agent waitlist (gated by `ADMIN_API_KEY` bearer key entered in the UI) shows entries with status badges and an Approve button. Approving provisions a user with a temp password and `must_change_password=true`, then emails the password via Resend (`RESEND_API_KEY`). If email can't be sent, the temp password is returned in the approve response and shown to the admin with a copy button — share it manually.
 - First login with a temp password forces a password-change screen; changing the password revokes all other sessions.
 - `/api/metrix/seed` and all `/api/metrix/workspaces/:workspaceId/*` routes require a session; workspace routes additionally verify `workspaceId` matches the seed's manager account id (single-workspace deployment) and return 403 otherwise.
+- Settings → Team & Access shows real provisioned accounts (`GET /workspaces/:id/members` over the `users` table, single-workspace) merged over the seed roster; real accounts get Active/Invited badges and real last-login dates.
+- Sign out lives in the Topbar and in Settings → Account ("Your session" card).
 - Login rate limit: 20 attempts / 10 min per IP+email.
 
 ## Stack

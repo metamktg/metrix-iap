@@ -5,14 +5,53 @@
 import { useState } from "react";
 import { useScopedAdAccountId, useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { getAdAccount, getReportBuilder } from "@/lib/data/metrixSeedAdapter";
 import { ModuleHeader, ScopeBanner, SectionCard, CaveatNote, PendingState } from "../shared";
 import { ConnectMetaDialog, ManualImportDialog } from "../ConnectAccountDialogs";
 import { AgentWaitlistSection } from "./AgentWaitlistSection";
 import { cn } from "@/lib/utils";
-import { Plug, FileUp, Palette, ShieldCheck, CheckCircle2, Circle } from "lucide-react";
+import { Plug, FileUp, Palette, ShieldCheck, CheckCircle2, Circle, UserCircle2, LogOut, Loader2 } from "lucide-react";
 
 const SECTION = "Settings · 09";
+
+function SessionSection() {
+  const { user, logout } = useAuth();
+  const [signingOut, setSigningOut] = useState(false);
+
+  if (!user) return null;
+
+  const handleSignOut = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      await logout();
+    } finally {
+      setSigningOut(false);
+    }
+  };
+
+  return (
+    <SectionCard title="Your session" desc="The account you're currently signed in with.">
+      <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
+        <UserCircle2 className="w-4 h-4 text-primary shrink-0" />
+        <div className="flex-1 min-w-0">
+          <div className="text-[12px] font-medium text-foreground truncate" data-testid="text-session-email">{user.email}</div>
+          <div className="text-[10px] text-muted-foreground/70">Signed in</div>
+        </div>
+        <button
+          onClick={handleSignOut}
+          disabled={signingOut}
+          className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-50"
+          data-testid="button-sign-out"
+        >
+          {signingOut ? <Loader2 className="w-3 h-3 animate-spin" /> : <LogOut className="w-3 h-3" />}
+          Sign out
+        </button>
+      </div>
+    </SectionCard>
+  );
+}
 
 export function AccountSettingsView() {
   const seed = useMetrixSeed();
@@ -28,6 +67,7 @@ export function AccountSettingsView() {
         <ModuleHeader section={SECTION} title="Account" />
         <PendingState title="No ad account selected" message="Choose an ad account to manage its settings." />
         <div className="px-6 py-5 space-y-5 max-w-3xl">
+          <SessionSection />
           <AgentWaitlistSection />
         </div>
       </div>
@@ -43,6 +83,9 @@ export function AccountSettingsView() {
       <ScopeBanner account={account} />
 
       <div className="px-6 py-5 space-y-5 max-w-3xl">
+        {/* Session */}
+        <SessionSection />
+
         {/* Data connection */}
         <SectionCard title="Data connection" desc="Meta ad account connection and manual import status.">
           <div className="space-y-2.5">

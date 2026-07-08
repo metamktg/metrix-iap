@@ -246,6 +246,27 @@ export const ResendWorkspaceInviteResponse = zod.object({
 
 
 /**
+ * Returns provisioned user accounts (real logins) for this workspace, newest first. Requires a logged-in session with access to the workspace.
+ * @summary List real workspace member accounts
+ */
+
+
+
+export const ListWorkspaceMembersParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.')
+})
+
+export const ListWorkspaceMembersResponse = zod.object({
+  "members": zod.array(zod.object({
+  "email": zod.string(),
+  "status": zod.enum(['active', 'invited']).describe('invited = provisioned but has not completed first login yet.'),
+  "created_at": zod.string(),
+  "last_login_at": zod.string().nullable()
+}))
+})
+
+
+/**
  * Returns persisted channel and event preference overrides for this workspace. Anything not listed falls back to seed defaults on the client. Requires a logged-in session with access to the workspace.
  * @summary Get workspace notification preference overrides
  */
@@ -354,7 +375,7 @@ export const SubmitRequestAccessResponse = zod.object({
 
 
 /**
- * Returns persisted Report Builder defaults for this workspace. Any null field falls back to the seed's report_builder defaults on the client.
+ * Returns persisted Report Builder defaults for this workspace. Any null field falls back to the seed's report_builder defaults on the client. Requires a logged-in session with access to the workspace.
  * @summary Get workspace report-builder setting overrides
  */
 
@@ -375,7 +396,7 @@ export const GetReportSettingsResponse = zod.object({
 
 
 /**
- * Upserts Report Builder default overrides for this workspace and returns the persisted values.
+ * Upserts Report Builder default overrides for this workspace and returns the persisted values. Requires a logged-in session with access to the workspace.
  * @summary Update workspace report-builder settings
  */
 

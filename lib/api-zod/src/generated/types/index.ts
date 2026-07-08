@@ -53,3 +53,6 @@ export * from './workspaceInviteResendResultStatus';
 export * from './workspaceInviteResult';
 export * from './workspaceInviteResultStatus';
 export * from './workspaceInvitesResult';
+export * from './workspaceMember';
+export * from './workspaceMembersResult';
+export * from './workspaceMemberStatus';
