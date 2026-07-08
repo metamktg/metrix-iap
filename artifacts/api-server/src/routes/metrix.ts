@@ -3,8 +3,10 @@ import {
   GetMetrixSeedResponse,
   JoinAgentWaitlistBody,
   JoinAgentWaitlistResponse,
+  ListAgentWaitlistResponse,
 } from "@workspace/api-zod";
 import { db, agentWaitlistTable } from "@workspace/db";
+import { desc } from "drizzle-orm";
 import seedBundle from "../data/metrix_seed_bundle.json" with { type: "json" };
 
 const router: IRouter = Router();
@@ -31,6 +33,25 @@ router.post("/metrix/agent-waitlist", async (req, res) => {
   const data = JoinAgentWaitlistResponse.parse({
     status: inserted.length > 0 ? "joined" : "already_joined",
     email,
+  });
+  res.json(data);
+});
+
+router.get("/metrix/agent-waitlist", async (_req, res) => {
+  const rows = await db
+    .select({
+      email: agentWaitlistTable.email,
+      createdAt: agentWaitlistTable.createdAt,
+    })
+    .from(agentWaitlistTable)
+    .orderBy(desc(agentWaitlistTable.createdAt));
+
+  const data = ListAgentWaitlistResponse.parse({
+    entries: rows.map((row) => ({
+      email: row.email,
+      joined_at: row.createdAt.toISOString(),
+    })),
+    total: rows.length,
   });
   res.json(data);
 });

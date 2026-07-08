@@ -40,6 +40,16 @@ export interface WaitlistSignupResult {
   email: string;
 }
 
+export interface WaitlistEntry {
+  email: string;
+  joined_at: string;
+}
+
+export interface WaitlistEntriesResult {
+  entries: WaitlistEntry[];
+  total: number;
+}
+
 export interface ApiError {
   message: string;
 }

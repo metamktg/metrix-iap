@@ -36,6 +36,19 @@ export const JoinAgentWaitlistResponse = zod.object({
 
 
 /**
+ * Returns all waitlist entries (email and joined date), newest first.
+ * @summary List Metrix Agent waitlist signups
+ */
+export const ListAgentWaitlistResponse = zod.object({
+  "entries": zod.array(zod.object({
+  "email": zod.string(),
+  "joined_at": zod.string()
+})),
+  "total": zod.number()
+})
+
+
+/**
  * Returns server health status
  * @summary Health check
  */

@@ -23,6 +23,7 @@ import type {
   ApiError,
   HealthStatus,
   MetrixSeedBundle,
+  WaitlistEntriesResult,
   WaitlistSignupInput,
   WaitlistSignupResult
 } from './api.schemas';
@@ -202,6 +203,84 @@ export const useJoinAgentWaitlist = <TError = ErrorType<ApiError>,
       > => {
       return useMutation(getJoinAgentWaitlistMutationOptions(options));
     }
+
+export const getListAgentWaitlistUrl = () => {
+
+
+
+
+  return `/api/metrix/agent-waitlist`
+}
+
+/**
+ * Returns all waitlist entries (email and joined date), newest first.
+ * @summary List Metrix Agent waitlist signups
+ */
+export const listAgentWaitlist = async ( options?: RequestInit): Promise<WaitlistEntriesResult> => {
+
+  return customFetch<WaitlistEntriesResult>(getListAgentWaitlistUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAgentWaitlistQueryKey = () => {
+    return [
+    `/api/metrix/agent-waitlist`
+    ] as const;
+    }
+
+
+export const getListAgentWaitlistQueryOptions = <TData = Awaited<ReturnType<typeof listAgentWaitlist>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgentWaitlist>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAgentWaitlistQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAgentWaitlist>>> = ({ signal }) => listAgentWaitlist({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAgentWaitlist>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAgentWaitlistQueryResult = NonNullable<Awaited<ReturnType<typeof listAgentWaitlist>>>
+export type ListAgentWaitlistQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List Metrix Agent waitlist signups
+ */
+
+export function useListAgentWaitlist<TData = Awaited<ReturnType<typeof listAgentWaitlist>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgentWaitlist>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAgentWaitlistQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getHealthCheckUrl = () => {
 

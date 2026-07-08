@@ -12,6 +12,8 @@ export * from './metrixSeedBundle';
 export * from './metrixSeedBundleAdAccountsItem';
 export * from './metrixSeedBundleAppDefaults';
 export * from './metrixSeedBundleManagerAccount';
+export * from './waitlistEntriesResult';
+export * from './waitlistEntry';
 export * from './waitlistSignupInput';
 export * from './waitlistSignupResult';
 export * from './waitlistSignupResultStatus';

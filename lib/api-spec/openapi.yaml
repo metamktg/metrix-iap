@@ -51,6 +51,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+    get:
+      operationId: listAgentWaitlist
+      tags: [metrix]
+      summary: List Metrix Agent waitlist signups
+      description: Returns all waitlist entries (email and joined date), newest first.
+      responses:
+        "200":
+          description: Waitlist entries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaitlistEntriesResult"
   /healthz:
     get:
       operationId: healthCheck
@@ -109,6 +121,28 @@ components:
       required:
         - status
         - email
+    WaitlistEntry:
+      type: object
+      properties:
+        email:
+          type: string
+        joined_at:
+          type: string
+      required:
+        - email
+        - joined_at
+    WaitlistEntriesResult:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/WaitlistEntry"
+        total:
+          type: integer
+      required:
+        - entries
+        - total
     ApiError:
       type: object
       properties:
