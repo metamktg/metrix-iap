@@ -6,9 +6,10 @@ import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getReportBuilder } from "@/lib/data/metrixSeedAdapter";
+import { buildReportModel, downloadReportExport } from "@/lib/reportExport";
 import { ModuleHeader, ScopeBanner, ModuleScopeGate, SectionCard, ModuleTabs, CaveatNote, PendingState, CrossLink } from "../shared";
 import { cn } from "@/lib/utils";
-import { FileText, FileDown, Palette, Check, Eye, Building2, Users } from "lucide-react";
+import { FileText, FileDown, Palette, Check, Eye, Building2, Users, Loader2 } from "lucide-react";
 
 const SECTION = "Reports · 06";
 
@@ -27,6 +28,22 @@ export function NewReportView() {
   const account = getAdAccount(seed, adAccountId);
   const [tab, setTab] = useState<string>("preview");
   const [mode, setMode] = useState<Mode>("internal");
+  const [exporting, setExporting] = useState<string | null>(null);
+  const [exported, setExported] = useState<string | null>(null);
+
+  async function handleExport(format: string) {
+    if (exporting) return;
+    const model = buildReportModel(seed, adAccountId!, mode);
+    if (!model) return;
+    setExporting(format);
+    setExported(null);
+    try {
+      await downloadReportExport(format, model);
+      setExported(format);
+    } finally {
+      setExporting(null);
+    }
+  }
 
   return (
     <ModuleScopeGate section={SECTION} title="New Report" account={account}>
@@ -142,11 +159,32 @@ export function NewReportView() {
                   <SectionCard title="Export" desc="Deliver the composed report in the client's preferred format.">
                     <div className="flex items-center gap-2 flex-wrap">
                       {rb.export_formats.map((f) => (
-                        <button key={f} className="flex items-center gap-1.5 h-9 px-3.5 rounded-md border border-border/50 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors">
-                          <FileDown className="w-3.5 h-3.5" /> {FORMAT_LABEL[f] ?? f}
+                        <button
+                          key={f}
+                          onClick={() => handleExport(f)}
+                          disabled={exporting !== null}
+                          className={cn(
+                            "flex items-center gap-1.5 h-9 px-3.5 rounded-md border text-[12px] font-medium transition-colors disabled:opacity-60",
+                            exported === f
+                              ? "border-emerald-400/30 text-emerald-400 bg-emerald-400/5"
+                              : "border-border/50 text-muted-foreground hover:text-foreground hover:bg-white/5"
+                          )}
+                        >
+                          {exporting === f ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : exported === f ? (
+                            <Check className="w-3.5 h-3.5" />
+                          ) : (
+                            <FileDown className="w-3.5 h-3.5" />
+                          )}
+                          {FORMAT_LABEL[f] ?? f}
+                          {exported === f && <span className="text-[10px] font-normal text-emerald-400/80">downloaded</span>}
                         </button>
                       ))}
                     </div>
+                    <p className="mt-2.5 text-[10px] text-muted-foreground/70">
+                      Exports use the current preview mode: {mode === "internal" ? "Internal dashboard (Metrix branding)" : `Client-facing (white-labeled for ${acct.name})`}.
+                    </p>
                     <div className="mt-3">
                       <CrossLink to="/app/reports/exports" label="Manage export formats & destinations" />
                     </div>

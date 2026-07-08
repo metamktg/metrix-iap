@@ -1,14 +1,17 @@
 // ─── Reports · Report History ─────────────────────────────────────────
 // Previously generated reports for this account: when they ran, how they
-// were branded, and whether they were exported.
+// were branded, and whether they were exported. Exported entries can be
+// re-downloaded as real files, composed from current seed data.
 
+import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getReportHistory } from "@/lib/data/metrixSeedAdapter";
+import { buildReportModel, downloadReportExport, type BrandingMode } from "@/lib/reportExport";
 import { ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile, CrossLink, fmtNum } from "../shared";
 import { FORMAT_LABEL } from "./NewReportView";
 import { cn } from "@/lib/utils";
-import { History, FileText, Building2, Users } from "lucide-react";
+import { History, FileText, Building2, Users, FileDown, Check, Loader2 } from "lucide-react";
 
 const SECTION = "Reports · 06";
 
@@ -20,6 +23,22 @@ export function ReportHistoryView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [doneId, setDoneId] = useState<string | null>(null);
+
+  async function download(id: string, format: string, mode: BrandingMode, docTitle: string, sectionCount: number) {
+    if (busyId) return;
+    const model = buildReportModel(seed, adAccountId!, mode, { docTitle, sectionCount });
+    if (!model) return;
+    setBusyId(id);
+    setDoneId(null);
+    try {
+      await downloadReportExport(format, model);
+      setDoneId(id);
+    } finally {
+      setBusyId(null);
+    }
+  }
 
   return (
     <ModuleScopeGate section={SECTION} title="Report History" account={account}>
@@ -91,6 +110,27 @@ export function ReportHistoryView() {
                         {r.export_format && <span className="uppercase">{FORMAT_LABEL[r.export_format] ?? r.export_format}</span>}
                       </div>
                     </div>
+                    {r.status === "exported" && r.export_format && (
+                      <button
+                        onClick={() => download(r.id, r.export_format!, r.mode === "client" ? "client" : "internal", r.title, r.section_count)}
+                        disabled={busyId !== null}
+                        className={cn(
+                          "flex items-center gap-1.5 h-8 px-3 rounded-md border text-[11px] font-medium shrink-0 transition-colors disabled:opacity-60",
+                          doneId === r.id
+                            ? "border-emerald-400/30 text-emerald-400 bg-emerald-400/5"
+                            : "border-border/50 text-muted-foreground hover:text-foreground hover:bg-white/5"
+                        )}
+                      >
+                        {busyId === r.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : doneId === r.id ? (
+                          <Check className="w-3.5 h-3.5" />
+                        ) : (
+                          <FileDown className="w-3.5 h-3.5" />
+                        )}
+                        {doneId === r.id ? "Downloaded" : `Download ${FORMAT_LABEL[r.export_format] ?? r.export_format}`}
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
