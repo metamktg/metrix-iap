@@ -9,7 +9,10 @@ import { getAdAccount, getMST, getAnalysisData } from "@/lib/data/metrixSeedAdap
 import {
   ModuleHeader, ScopeBanner, ModuleTabs, ModuleScopeGate, PendingState,
   MetricTile, CrossLink, readableVariables,
+  RangeScopeBar, NoDataInRangeState,
 } from "../shared";
+import { useDateRange } from "@/contexts/DateRangeContext";
+import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/SegmentGridModal";
 import { DemographicTable } from "../analysis/tables";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { Users } from "lucide-react";
@@ -25,6 +28,8 @@ export function AvatarsView() {
   const account = getAdAccount(seed, adAccountId);
   const [tab, setTab] = useState<Tab>("avatars");
   const [detail, setDetail] = useState<{ column: MSTMatrixColumn; cells: MSTMatrixCell[] } | null>(null);
+  const [segmentsOpen, setSegmentsOpen] = useState(false);
+  const { rangeHasData } = useDateRange();
 
   return (
     <ModuleScopeGate section={SECTION} title="Avatars" account={account}>
@@ -32,7 +37,8 @@ export function AvatarsView() {
         const acct = account!;
         const mst = getMST(seed, adAccountId);
         const matrix = mst?.historical_matrix_4x4;
-        const demo = getAnalysisData(seed, adAccountId)?.demographic_registration_signal ?? [];
+        const analysis = getAnalysisData(seed, adAccountId);
+        const demo = analysis?.demographic_registration_signal ?? [];
 
         if (!matrix) {
           return (
@@ -60,7 +66,12 @@ export function AvatarsView() {
               table="historical_matrix_4x4, demographic_registration_signal"
             />
             <ScopeBanner account={acct} />
+            <RangeScopeBar grainNote="Avatars come from the historical matrix; audience signal aggregates full flight windows — this import has no daily grain." />
 
+            {!rangeHasData ? (
+              <NoDataInRangeState what="avatar data" />
+            ) : (
+            <>
             <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
               <MetricTile label="Avatars" value={String(matrix.columns.length)} />
               <MetricTile label="Message angles" value={String(matrix.cells.length)} sub="matrix cells across avatars" />
@@ -117,6 +128,8 @@ export function AvatarsView() {
                 )
               )}
             </div>
+            </>
+            )}
 
             {detail && (
               <InfoDrawer
@@ -124,7 +137,8 @@ export function AvatarsView() {
                 title={detail.column.name.replace(/\n/g, " ")}
                 onClose={() => setDetail(null)}
                 footer={
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 flex-wrap">
+                    {analysis && <SegmentDrilldownButton onClick={() => setSegmentsOpen(true)} />}
                     <CrossLink to="/app/mst" label="Open MST matrix" />
                     <CrossLink to="/app/briefs/builder" label="Open Brief Builder" />
                   </div>
@@ -144,6 +158,17 @@ export function AvatarsView() {
                   </DrawerField>
                 ))}
               </InfoDrawer>
+            )}
+
+            {detail && analysis && (
+              <SegmentGridModal
+                open={segmentsOpen}
+                onClose={() => setSegmentsOpen(false)}
+                kicker={`Avatar · ${detail.column.icp}`}
+                title={detail.column.name.replace(/\n/g, " ")}
+                analysis={analysis}
+                cellIds={detail.cells.map((c) => c.cell_id)}
+              />
             )}
           </div>
         );

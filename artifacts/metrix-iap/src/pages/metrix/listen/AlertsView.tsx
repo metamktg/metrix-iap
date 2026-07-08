@@ -11,7 +11,9 @@ import {
 import {
   ModuleHeader, ScopeBanner, ConfidenceBadge, ModuleScopeGate,
   PendingState, MetricTile, ImpactBadge, ScopeBadge, CrossLink,
+  RangeScopeBar, NoDataInRangeState,
 } from "../shared";
+import { useDateRange } from "@/contexts/DateRangeContext";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { AlertTriangle, BellOff, Database } from "lucide-react";
 import type { SignalCard } from "@/lib/data/seedTypes";
@@ -23,6 +25,7 @@ export function AlertsView() {
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
   const [detail, setDetail] = useState<SignalCard | null>(null);
+  const { rangeHasData } = useDateRange();
 
   return (
     <ModuleScopeGate section={SECTION} title="Alerts" account={account}>
@@ -48,7 +51,12 @@ export function AlertsView() {
               table="signal_cards, data_caveats"
             />
             <ScopeBanner account={acct} />
+            <RangeScopeBar grainNote="Alerts derive from the account's full flight window — this import has no daily grain." />
 
+            {!rangeHasData ? (
+              <NoDataInRangeState what="alerts" />
+            ) : (
+            <>
             <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
               <MetricTile label="Active alerts" value={String(total)} />
               <MetricTile label="High-impact signals" value={String(highSignals.length)} />
@@ -104,6 +112,8 @@ export function AlertsView() {
                 </>
               )}
             </div>
+            </>
+            )}
 
             {detail && (
               <InfoDrawer

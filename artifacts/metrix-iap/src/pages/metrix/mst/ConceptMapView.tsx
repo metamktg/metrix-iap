@@ -13,6 +13,13 @@ import {
 } from "../shared";
 import { VariableCodeChips } from "../analysis/tables";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
+import { useDateRange } from "@/contexts/DateRangeContext";
+import { useCellRangeScope } from "@/lib/date-scope";
+import { RangeScopeBar, NoDataInRangeState } from "../shared";
+import { getMST } from "@/lib/data/metrixSeedAdapter";
+import { CreativeCard } from "@/components/creative/CreativeCard";
+import { cardFromCell } from "@/lib/creative-assembly";
+import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/SegmentGridModal";
 import { Network, Layers } from "lucide-react";
 import type { CellPerformanceRow } from "@/lib/data/seedTypes";
 
@@ -31,6 +38,9 @@ export function ConceptMapView() {
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
   const [detail, setDetail] = useState<ConceptGroup | null>(null);
+  const [segmentsOpen, setSegmentsOpen] = useState(false);
+  const { rangeHasData } = useDateRange();
+  const { filterCells } = useCellRangeScope(getAnalysisData(seed, adAccountId));
 
   return (
     <ModuleScopeGate section={SECTION} title="Concept Map" account={account}>
@@ -49,8 +59,11 @@ export function ConceptMapView() {
           );
         }
 
+        // Only cells whose concept flight overlaps the selected range.
+        const rowsInRange = filterCells(a.performance_by_cell);
+
         const groupsMap = new Map<string, ConceptGroup>();
-        for (const r of a.performance_by_cell) {
+        for (const r of rowsInRange) {
           const g = groupsMap.get(r.book2_concept_name) ?? {
             name: r.book2_concept_name, cells: [], spend: 0, results: 0, cellIds: [],
           };
@@ -78,10 +91,15 @@ export function ConceptMapView() {
               table="performance_by_cell, message_pillars"
             />
             <ScopeBanner account={acct} />
+            <RangeScopeBar grainNote="Concept groups aggregate each cell's full flight window — this import has no daily grain." />
 
+            {!rangeHasData ? (
+              <NoDataInRangeState what="concept data" />
+            ) : (
+            <>
             <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
               <MetricTile label="Concepts" value={String(groups.length)} />
-              <MetricTile label="Creative cells" value={String(new Set(a.performance_by_cell.map((r) => r.cell_id)).size)} />
+              <MetricTile label="Creative cells" value={String(new Set(rowsInRange.map((r) => r.cell_id)).size)} />
               <MetricTile label="Strategy pillars" value={String(pillars.length)} />
               <MetricTile label="Concepts feeding pillars" value={String(linkedConcepts)} />
             </div>
@@ -124,6 +142,8 @@ export function ConceptMapView() {
                 );
               })}
             </div>
+            </>
+            )}
 
             {detail && (
               <InfoDrawer
@@ -131,7 +151,8 @@ export function ConceptMapView() {
                 title={detail.name}
                 onClose={() => setDetail(null)}
                 footer={
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <SegmentDrilldownButton onClick={() => setSegmentsOpen(true)} />
                     <CrossLink to={`/app/analysis/library?focus=${detail.cellIds[0]}`} label="Open in IAP Library" />
                     <CrossLink to="/app/strategy/hypotheses" label="Open Hypothesis Queue" />
                   </div>
@@ -169,7 +190,32 @@ export function ConceptMapView() {
                       <p className="mt-1 text-[11px] text-muted-foreground/70">{p.why_it_matters}</p>
                     </DrawerField>
                   ))}
+                <DrawerField label="Creatives">
+                  <div className="grid grid-cols-2 gap-2">
+                    {detail.cellIds.map((cid) => (
+                      <CreativeCard
+                        key={cid}
+                        data={cardFromCell(cid, {
+                          perfRows: a.performance_by_cell,
+                          mst: getMST(seed, adAccountId),
+                          adAccountId,
+                        })}
+                      />
+                    ))}
+                  </div>
+                </DrawerField>
               </InfoDrawer>
+            )}
+
+            {detail && (
+              <SegmentGridModal
+                open={segmentsOpen}
+                onClose={() => setSegmentsOpen(false)}
+                kicker={`Concept · ${detail.cellIds.join(", ")}`}
+                title={detail.name}
+                analysis={a}
+                cellIds={detail.cellIds}
+              />
             )}
           </div>
         );

@@ -15,6 +15,8 @@ import {
   SubmitRequestAccessBody,
   SubmitRequestAccessResponse,
   ApproveAgentWaitlistEntryResponse,
+  UpdateReportSettingsBody,
+  UpdateReportSettingsResponse,
 } from "@workspace/api-zod";
 import {
   db,
@@ -22,6 +24,8 @@ import {
   usersTable,
   workspaceInvitesTable,
   workspaceNotificationPrefsTable,
+  workspaceReportSettingsTable,
+  type WorkspaceReportSettings,
 } from "@workspace/db";
 import { and, count, desc, eq, sql } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
@@ -598,6 +602,61 @@ router.put("/metrix/workspaces/:workspaceId/notification-prefs", requireAuth, re
     .where(eq(workspaceNotificationPrefsTable.workspaceId, workspaceId));
 
   res.json(UpdateNotificationPrefsResponse.parse(prefRowsToApi(rows)));
+});
+
+// ─── Report Builder settings (per-workspace overrides) ────────────────
+// Singleton row per workspace; null columns fall back to seed defaults
+// on the client.
+
+const reportSettingsRowToApi = (row: WorkspaceReportSettings | undefined) => ({
+  default_branding: row?.defaultBranding ?? null,
+  default_format: row?.defaultFormat ?? null,
+  default_mode: row?.defaultMode ?? null,
+  schedule_enabled: row?.scheduleEnabled ?? null,
+  schedule_cadence: row?.scheduleCadence ?? null,
+  schedule_recipients: row?.scheduleRecipients ?? null,
+});
+
+router.get("/metrix/workspaces/:workspaceId/report-settings", async (req, res) => {
+  const workspaceId = req.params.workspaceId;
+  const rows = await db
+    .select()
+    .from(workspaceReportSettingsTable)
+    .where(eq(workspaceReportSettingsTable.workspaceId, workspaceId))
+    .limit(1);
+
+  res.json(UpdateReportSettingsResponse.parse(reportSettingsRowToApi(rows[0])));
+});
+
+router.put("/metrix/workspaces/:workspaceId/report-settings", async (req, res) => {
+  const workspaceId = req.params.workspaceId;
+  const parsed = UpdateReportSettingsBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "Invalid report settings payload." });
+    return;
+  }
+
+  const b = parsed.data;
+  // Only overwrite columns the client actually sent; omitted keys keep
+  // their stored value, explicit nulls clear the override.
+  const patch: Partial<typeof workspaceReportSettingsTable.$inferInsert> = {};
+  if ("default_branding" in b) patch.defaultBranding = b.default_branding ?? null;
+  if ("default_format" in b) patch.defaultFormat = b.default_format ?? null;
+  if ("default_mode" in b) patch.defaultMode = b.default_mode ?? null;
+  if ("schedule_enabled" in b) patch.scheduleEnabled = b.schedule_enabled ?? null;
+  if ("schedule_cadence" in b) patch.scheduleCadence = b.schedule_cadence ?? null;
+  if ("schedule_recipients" in b) patch.scheduleRecipients = b.schedule_recipients ?? null;
+
+  const [row] = await db
+    .insert(workspaceReportSettingsTable)
+    .values({ workspaceId, ...patch })
+    .onConflictDoUpdate({
+      target: [workspaceReportSettingsTable.workspaceId],
+      set: { ...patch, updatedAt: new Date() },
+    })
+    .returning();
+
+  res.json(UpdateReportSettingsResponse.parse(reportSettingsRowToApi(row)));
 });
 
 export default router;

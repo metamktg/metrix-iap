@@ -7,3 +7,4 @@
 - [Metrix seed OpenAPI schema](metrix-seed-openapi-schema.md) — new top-level seed keys get silently stripped by the API unless declared in the MetrixSeedBundle OpenAPI schema; Orval zod ignores additionalProperties.
 - [Stale lib declarations](stale-lib-declarations.md) — bogus type errors in untouched files (e.g. instanceof not narrowing) mean stale lib .d.ts; run `pnpm run typecheck:libs` before debugging.
 - [Metrix settings persistence](metrix-settings-persistence.md) — seed stays read-only; DB rows are per-workspace overrides merged onto seed defaults client-side.
+- [Metrix IAP test seed fixture](metrix-iap-test-seed-fixture.md) — tests render against a checked-in seed snapshot; refresh from the live seed endpoint when schema changes; views need DateRangeProvider in wrappers.

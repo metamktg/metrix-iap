@@ -499,6 +499,51 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/workspaces/{workspaceId}/report-settings:
+    parameters:
+      - name: workspaceId
+        in: path
+        required: true
+        description: Workspace (manager account) identifier.
+        schema:
+          type: string
+          minLength: 1
+    get:
+      operationId: getReportSettings
+      tags: [metrix]
+      summary: Get workspace report-builder setting overrides
+      description: Returns persisted Report Builder defaults for this workspace. Any null field falls back to the seed's report_builder defaults on the client.
+      responses:
+        "200":
+          description: Report settings overrides
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportSettingsResult"
+    put:
+      operationId: updateReportSettings
+      tags: [metrix]
+      summary: Update workspace report-builder settings
+      description: Upserts Report Builder default overrides for this workspace and returns the persisted values.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportSettingsUpdateInput"
+      responses:
+        "200":
+          description: Report settings after the update
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportSettingsResult"
+        "400":
+          description: Invalid report settings payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /healthz:
     get:
       operationId: healthCheck
@@ -775,6 +820,60 @@ components:
         - id
         - email
         - in_app
+    ReportSettingsUpdateInput:
+      type: object
+      properties:
+        default_branding:
+          type: string
+          enum: [metrix, white_label]
+          nullable: true
+        default_format:
+          type: string
+          enum: [pdf, google_doc, html]
+          nullable: true
+        default_mode:
+          type: string
+          enum: [internal, client]
+          nullable: true
+        schedule_enabled:
+          type: boolean
+          nullable: true
+        schedule_cadence:
+          type: string
+          enum: [weekly, monthly]
+          nullable: true
+        schedule_recipients:
+          type: string
+          nullable: true
+          description: Comma-separated recipient emails for scheduled sends.
+    ReportSettingsResult:
+      type: object
+      properties:
+        default_branding:
+          type: string
+          nullable: true
+        default_format:
+          type: string
+          nullable: true
+        default_mode:
+          type: string
+          nullable: true
+        schedule_enabled:
+          type: boolean
+          nullable: true
+        schedule_cadence:
+          type: string
+          nullable: true
+        schedule_recipients:
+          type: string
+          nullable: true
+      required:
+        - default_branding
+        - default_format
+        - default_mode
+        - schedule_enabled
+        - schedule_cadence
+        - schedule_recipients
     NotificationPrefsUpdateInput:
       type: object
       properties:

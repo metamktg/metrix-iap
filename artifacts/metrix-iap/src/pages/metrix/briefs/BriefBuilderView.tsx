@@ -6,11 +6,15 @@
 import { useState, useEffect } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
-import { getAdAccount, getBriefBuilder, getStrategyData } from "@/lib/data/metrixSeedAdapter";
+import { getAdAccount, getBriefBuilder, getStrategyData, getAnalysisData, getMST } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ModuleTabs, ModuleScopeGate, PendingState,
   MetricTile, CaveatNote, CrossLink, useFocusParam,
+  RangeScopeBar, NoDataInRangeState,
 } from "../shared";
+import { useDateRange } from "@/contexts/DateRangeContext";
+import { CreativeCard } from "@/components/creative/CreativeCard";
+import { cardFromCell } from "@/lib/creative-assembly";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { FileText, Sparkles, Video, Users } from "lucide-react";
 import type { DraftBrief } from "@/lib/data/seedTypes";
@@ -39,6 +43,7 @@ export function BriefBuilderView() {
   const [tab, setTab] = useState<FormatTab>("static");
   const focus = useFocusParam();
   const [detail, setDetail] = useState<DraftBrief | null>(null);
+  const { rangeHasData } = useDateRange();
 
   const bb = getBriefBuilder(seed, adAccountId);
 
@@ -60,6 +65,8 @@ export function BriefBuilderView() {
         const acct = account!;
         const briefs = bb?.draft_briefs ?? [];
         const strategy = getStrategyData(seed, adAccountId);
+        const analysis = getAnalysisData(seed, adAccountId);
+        const mst = getMST(seed, adAccountId);
         const pillarOf = (id: string) => strategy?.message_pillars.find((p) => p.id === id);
 
         const byFormat = (f: FormatTab) => briefs.filter((b) => formatOf(b.asset_type) === f);
@@ -81,7 +88,12 @@ export function BriefBuilderView() {
               table="draft_briefs, message_pillars"
             />
             <ScopeBanner account={acct} />
+            <RangeScopeBar grainNote="Briefs derive from the account's full flight window — this import has no daily grain." />
 
+            {!rangeHasData ? (
+              <NoDataInRangeState what="draft briefs" />
+            ) : (
+            <>
             <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
               <MetricTile label="Draft briefs" value={String(briefs.length)} />
               <MetricTile label="Pillars covered" value={String(pillarsCovered)} sub={`of ${strategy?.message_pillars.length ?? 0} message pillars`} />
@@ -144,6 +156,8 @@ export function BriefBuilderView() {
                 </div>
               )}
             </div>
+            </>
+            )}
 
             {detail && (
               <InfoDrawer
@@ -173,6 +187,22 @@ export function BriefBuilderView() {
                     <div className="mt-2 flex items-center gap-2">
                       {pillarOf(detail.source_pillar)!.source_cells.map((c) => (
                         <CrossLink key={c} to={`/app/analysis/library?focus=${c}`} label={`Cell ${c}`} />
+                      ))}
+                    </div>
+                  </DrawerField>
+                )}
+                {analysis && pillarOf(detail.source_pillar) && pillarOf(detail.source_pillar)!.source_cells.length > 0 && (
+                  <DrawerField label="Source creatives">
+                    <div className="grid grid-cols-2 gap-2">
+                      {pillarOf(detail.source_pillar)!.source_cells.map((c) => (
+                        <CreativeCard
+                          key={c}
+                          data={cardFromCell(c, {
+                            perfRows: analysis.performance_by_cell,
+                            mst,
+                            adAccountId,
+                          })}
+                        />
                       ))}
                     </div>
                   </DrawerField>

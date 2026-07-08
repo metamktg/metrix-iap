@@ -190,6 +190,12 @@ export const navTree: NavSection[] = [
         to: "/app/reports/exports",
         dataSource: "report_history, export_formats",
       },
+      {
+        id: "reports-settings",
+        label: "Settings",
+        to: "/app/reports/settings",
+        dataSource: "report_builder defaults + workspace overrides",
+      },
     ],
   },
   {

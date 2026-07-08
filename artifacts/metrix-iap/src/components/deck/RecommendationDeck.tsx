@@ -17,6 +17,7 @@ import {
   ClipboardList,
   Slash,
   Layers,
+  LayoutGrid,
   CheckCircle2,
   AlertTriangle,
 } from "lucide-react";
@@ -71,11 +72,13 @@ function DetailDrawer({
   onClose,
   onApprove,
   onReject,
+  onSegments,
 }: {
   card: DeckCard;
   onClose: () => void;
   onApprove: () => void;
   onReject: () => void;
+  onSegments?: (card: DeckCard) => void;
 }) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -126,6 +129,21 @@ function DetailDrawer({
             <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Confidence</label>
             <p className="text-[12px] text-foreground/80 capitalize">{card.confidence}</p>
           </div>
+
+          {onSegments && (
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Evidence segments</label>
+              <div>
+                <button
+                  onClick={() => onSegments(card)}
+                  className="inline-flex items-center gap-1.5 text-[11px] font-medium text-primary border border-primary/30 bg-primary/10 hover:bg-primary/15 rounded-md px-2.5 py-1.5 transition-colors"
+                >
+                  <LayoutGrid className="w-3 h-3" />
+                  Avatar × placement drill-down
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="flex items-start gap-2 p-3 rounded-lg border border-amber-400/15 bg-amber-400/[0.04]">
             <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
@@ -295,10 +313,13 @@ export function RecommendationDeck({
   scopeId,
   cards,
   emptyLabel = "All recommendations reviewed",
+  onSegments,
 }: {
   scopeId: string;
   cards: DeckCard[];
   emptyLabel?: string;
+  /** When provided, each card exposes an avatar × placement drill-down. */
+  onSegments?: (card: DeckCard) => void;
 }) {
   useDecisions();
   const [tab, setTab] = useState<TabId>("deck");
@@ -425,6 +446,18 @@ export function RecommendationDeck({
               <span>↑ / space details</span>
               <span>{pending.length} left</span>
             </div>
+
+            {onSegments && (
+              <div className="flex justify-center mt-3">
+                <button
+                  onClick={() => onSegments(pending[0])}
+                  className="inline-flex items-center gap-1.5 text-[11px] font-medium text-primary/90 hover:text-primary border border-primary/25 bg-primary/[0.06] hover:bg-primary/10 rounded-md px-2.5 py-1.5 transition-colors"
+                >
+                  <LayoutGrid className="w-3 h-3" />
+                  Avatar × placement for this card
+                </button>
+              </div>
+            )}
           </div>
         )
       )}
@@ -438,6 +471,7 @@ export function RecommendationDeck({
           onClose={() => setDetailId(null)}
           onApprove={() => { approve(detailCard.id); setDetailId(null); }}
           onReject={() => { reject(detailCard.id); setDetailId(null); }}
+          onSegments={onSegments}
         />
       )}
     </div>

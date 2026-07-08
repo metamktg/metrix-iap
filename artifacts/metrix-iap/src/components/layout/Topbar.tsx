@@ -4,6 +4,7 @@ import { ChevronRight, Bell, CheckCircle2, LogOut } from "lucide-react";
 import { useAccount } from "@/contexts/AccountContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { navTree } from "@/navigation/navTree";
+import { DateRangePicker } from "./DateRangePicker";
 
 // ─── Derive breadcrumb from navTree ────────────────────────────────────
 
@@ -87,6 +88,9 @@ export function Topbar() {
           );
         })}
       </nav>
+
+      {/* Global date range */}
+      <DateRangePicker />
 
       {/* Status */}
       {isManager ? (

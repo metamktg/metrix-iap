@@ -8,7 +8,10 @@ import { getAdAccount, getAnalysisData, getCampaignSummary, getCoreControls } fr
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
   CaveatNote, SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct,
+  RangeScopeBar, NoDataInRangeState,
 } from "../shared";
+import { useDateRange } from "@/contexts/DateRangeContext";
+import { useCellRangeScope, sumInRange } from "@/lib/date-scope";
 import { LineChart, Library, Users, LayoutGrid, Wallet } from "lucide-react";
 
 const SECTION = "Analysis · 03";
@@ -17,13 +20,16 @@ export function AnalysisOverview() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
+  const { rangeHasData } = useDateRange();
+  const analysis = getAnalysisData(seed, adAccountId);
+  const { range, narrowed, filterCells } = useCellRangeScope(analysis);
 
   return (
     <ModuleScopeGate section={SECTION} title="Analysis Overview" account={account}>
       {() => {
         const acct = account!;
         const summary = getCampaignSummary(seed, adAccountId);
-        const a = getAnalysisData(seed, adAccountId);
+        const a = analysis;
         const controls = getCoreControls(seed, adAccountId);
 
         if (!summary || !a) {
@@ -36,13 +42,30 @@ export function AnalysisOverview() {
           );
         }
 
+        // Range-scoped totals from the dated concept rollup. When the user
+        // narrows the range, tiles reflect only concepts whose flight
+        // window overlaps it — no per-day interpolation, whole flights.
+        const rollup = a.concept_rollup ?? [];
+        const rollupDates = (r: (typeof rollup)[number]) => ({ start: r.date_start, end: r.date_end });
+        const scoped = narrowed
+          ? {
+              spend: sumInRange(rollup, range, rollupDates, (r) => r.spend),
+              linkClicks: sumInRange(rollup, range, rollupDates, (r) => r.link_clicks),
+              results: sumInRange(rollup, range, rollupDates, (r) => r.results),
+              concepts: rollup.filter((r) => range && r.date_start && r.date_end && !(r.date_end < range.start || r.date_start > range.end)).length,
+            }
+          : null;
+        const cellRowsInRange = filterCells(a.performance_by_cell).length;
+
         const subpages = [
           {
             to: "/app/analysis/library",
             label: "IAP Library",
             Icon: Library,
             desc: "Cell and variable performance across the account.",
-            stat: `${a.performance_by_cell.length} cell rows · ${a.v3_variable_performance.length} variable rows`,
+            stat: narrowed
+              ? `${cellRowsInRange} cell rows in range · ${a.v3_variable_performance.length} variable rows`
+              : `${a.performance_by_cell.length} cell rows · ${a.v3_variable_performance.length} variable rows`,
           },
           {
             to: "/app/analysis/audience",
@@ -76,12 +99,28 @@ export function AnalysisOverview() {
               table="campaign_summary, performance_by_cell"
             />
             <ScopeBanner account={acct} />
+            <RangeScopeBar grainNote="Campaign totals cover the account's full flight window — this import has no daily grain." />
 
+            {!rangeHasData ? (
+              <NoDataInRangeState what="analysis data" />
+            ) : (
+            <>
             <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
-              <MetricTile label="Total spend" value={fmtUSD(summary.total_spend_usd, 0)} />
-              <MetricTile label="Impressions" value={fmtNum(summary.total_impressions)} />
-              <MetricTile label="Link clicks" value={fmtNum(summary.total_link_clicks)} />
-              <MetricTile label="Link CTR" value={fmtPct(summary.overall_link_ctr_pct)} />
+              {scoped ? (
+                <>
+                  <MetricTile label="Spend (in range)" value={fmtUSD(scoped.spend, 0)} sub="concept flights overlapping range" />
+                  <MetricTile label="Link clicks (in range)" value={fmtNum(scoped.linkClicks)} />
+                  <MetricTile label="Results (in range)" value={fmtNum(scoped.results)} />
+                  <MetricTile label="Concept flights" value={String(scoped.concepts)} sub="overlapping selected range" />
+                </>
+              ) : (
+                <>
+                  <MetricTile label="Total spend" value={fmtUSD(summary.total_spend_usd, 0)} />
+                  <MetricTile label="Impressions" value={fmtNum(summary.total_impressions)} />
+                  <MetricTile label="Link clicks" value={fmtNum(summary.total_link_clicks)} />
+                  <MetricTile label="Link CTR" value={fmtPct(summary.overall_link_ctr_pct)} />
+                </>
+              )}
             </div>
 
             <div className="px-6 py-5 space-y-4 max-w-5xl">
@@ -122,6 +161,8 @@ export function AnalysisOverview() {
                 </div>
               </SectionCard>
             </div>
+            </>
+            )}
           </div>
         );
       }}

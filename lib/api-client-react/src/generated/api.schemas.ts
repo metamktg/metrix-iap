@@ -202,6 +202,58 @@ export interface EventPref {
   in_app: boolean;
 }
 
+export type ReportSettingsUpdateInputDefaultBranding = typeof ReportSettingsUpdateInputDefaultBranding[keyof typeof ReportSettingsUpdateInputDefaultBranding] | null;
+
+
+export const ReportSettingsUpdateInputDefaultBranding = {
+  metrix: 'metrix',
+  white_label: 'white_label',
+} as const;
+
+export type ReportSettingsUpdateInputDefaultFormat = typeof ReportSettingsUpdateInputDefaultFormat[keyof typeof ReportSettingsUpdateInputDefaultFormat] | null;
+
+
+export const ReportSettingsUpdateInputDefaultFormat = {
+  pdf: 'pdf',
+  google_doc: 'google_doc',
+  html: 'html',
+} as const;
+
+export type ReportSettingsUpdateInputDefaultMode = typeof ReportSettingsUpdateInputDefaultMode[keyof typeof ReportSettingsUpdateInputDefaultMode] | null;
+
+
+export const ReportSettingsUpdateInputDefaultMode = {
+  internal: 'internal',
+  client: 'client',
+} as const;
+
+export type ReportSettingsUpdateInputScheduleCadence = typeof ReportSettingsUpdateInputScheduleCadence[keyof typeof ReportSettingsUpdateInputScheduleCadence] | null;
+
+
+export const ReportSettingsUpdateInputScheduleCadence = {
+  weekly: 'weekly',
+  monthly: 'monthly',
+} as const;
+
+export interface ReportSettingsUpdateInput {
+  default_branding?: ReportSettingsUpdateInputDefaultBranding;
+  default_format?: ReportSettingsUpdateInputDefaultFormat;
+  default_mode?: ReportSettingsUpdateInputDefaultMode;
+  schedule_enabled?: boolean | null;
+  schedule_cadence?: ReportSettingsUpdateInputScheduleCadence;
+  /** Comma-separated recipient emails for scheduled sends. */
+  schedule_recipients?: string | null;
+}
+
+export interface ReportSettingsResult {
+  default_branding: string | null;
+  default_format: string | null;
+  default_mode: string | null;
+  schedule_enabled: boolean | null;
+  schedule_cadence: string | null;
+  schedule_recipients: string | null;
+}
+
 export interface NotificationPrefsUpdateInput {
   channels?: ChannelPref[];
   events?: EventPref[];

@@ -8,8 +8,9 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getReportBuilder } from "@/lib/data/metrixSeedAdapter";
 import { buildReportModel, downloadReportExport } from "@/lib/reportExport";
 import { ModuleHeader, ScopeBanner, ModuleScopeGate, SectionCard, ModuleTabs, CaveatNote, PendingState, CrossLink } from "../shared";
+import { useDateRange, formatIsoRange, isoMin, isoMax, type IsoRange } from "@/contexts/DateRangeContext";
 import { cn } from "@/lib/utils";
-import { FileText, FileDown, Palette, Check, Eye, Building2, Users, Loader2 } from "lucide-react";
+import { FileText, FileDown, Palette, Check, Eye, Building2, Users, Loader2, CalendarRange } from "lucide-react";
 
 const SECTION = "Reports · 06";
 
@@ -30,6 +31,12 @@ export function NewReportView() {
   const [mode, setMode] = useState<Mode>("internal");
   const [exporting, setExporting] = useState<string | null>(null);
   const [exported, setExported] = useState<string | null>(null);
+
+  // Report window: inherits the global date range by default; a per-report
+  // override applies to this report composition only (never the global filter).
+  const { range: globalRange, bounds, rangeLabel } = useDateRange();
+  const [override, setOverride] = useState<IsoRange | null>(null);
+  const reportRange = override ?? globalRange;
 
   async function handleExport(format: string) {
     if (exporting) return;
@@ -84,6 +91,71 @@ export function NewReportView() {
             <div className="px-6 py-5 space-y-5 max-w-4xl">
               {tab === "preview" && (
                 <>
+                  {/* Report window: inherit global range, allow per-report override */}
+                  <div className="rounded-lg border border-border/40 bg-white/[0.02] px-4 py-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />
+                      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Report window</span>
+                      {reportRange ? (
+                        <span className="text-[11px] font-medium text-foreground/80 tabular-nums">{formatIsoRange(reportRange)}</span>
+                      ) : (
+                        <span className="text-[11px] text-muted-foreground/60">No data window available</span>
+                      )}
+                      {override ? (
+                        <span className="text-[9px] font-semibold uppercase tracking-wide text-primary border border-primary/25 bg-primary/10 px-1.5 py-0.5 rounded leading-none">Override</span>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground/60">inherited from the global date range ({rangeLabel})</span>
+                      )}
+                    </div>
+                    {bounds && (
+                      <div className="flex items-center gap-2 flex-wrap mt-2.5">
+                        <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground/70">
+                          From
+                          <input
+                            type="date"
+                            min={bounds.start}
+                            max={bounds.end}
+                            value={override?.start ?? reportRange?.start ?? bounds.start}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              if (!v) return;
+                              const end = override?.end ?? reportRange?.end ?? bounds.end;
+                              setOverride({ start: isoMin(v, end), end: isoMax(v, end) });
+                            }}
+                            className="h-7 rounded border border-border/50 bg-white/[0.03] px-2 text-[11px] text-foreground tabular-nums [color-scheme:dark]"
+                          />
+                        </label>
+                        <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground/70">
+                          To
+                          <input
+                            type="date"
+                            min={bounds.start}
+                            max={bounds.end}
+                            value={override?.end ?? reportRange?.end ?? bounds.end}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              if (!v) return;
+                              const start = override?.start ?? reportRange?.start ?? bounds.start;
+                              setOverride({ start: isoMin(start, v), end: isoMax(start, v) });
+                            }}
+                            className="h-7 rounded border border-border/50 bg-white/[0.03] px-2 text-[11px] text-foreground tabular-nums [color-scheme:dark]"
+                          />
+                        </label>
+                        {override && (
+                          <button
+                            onClick={() => setOverride(null)}
+                            className="text-[10px] font-medium text-primary/80 hover:text-primary transition-colors"
+                          >
+                            Reset to global range
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    <p className="mt-2 text-[10px] text-muted-foreground/60">
+                      Overriding the window here affects this report only — the global date filter is untouched. Sections still summarize each item's full flight; this import has no daily grain.
+                    </p>
+                  </div>
+
                   {/* Mode toggle */}
                   <div className="flex items-center gap-1 rounded-md border border-border/40 p-0.5 w-fit">
                     <button
@@ -112,6 +184,9 @@ export function NewReportView() {
                       </div>
                       <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Creative Signal Report</div>
                       <h2 className="text-[18px] font-semibold text-foreground mt-1">{acct.name} · {acct.platform}</h2>
+                      {reportRange && (
+                        <div className="text-[11px] text-muted-foreground/70 tabular-nums mt-1">{formatIsoRange(reportRange)}</div>
+                      )}
                     </div>
 
                     <div className="px-6 py-5">

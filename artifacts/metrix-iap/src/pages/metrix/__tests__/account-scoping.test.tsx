@@ -17,7 +17,7 @@ const seed = JSON.parse(
   fs.readFileSync(
     path.resolve(
       path.dirname(fileURLToPath(import.meta.url)),
-      "../../../../../api-server/src/data/metrix_seed_bundle.json"
+      "../../../test-fixtures/metrix_seed_bundle.json"
     ),
     "utf-8"
   )
@@ -29,6 +29,7 @@ vi.mock("@/contexts/MetrixDataContext", () => ({
 }));
 
 import { AccountProvider } from "@/contexts/AccountContext";
+import { DateRangeProvider } from "@/contexts/DateRangeContext";
 import { SignalView } from "../listen/SignalView";
 import { AlertsView } from "../listen/AlertsView";
 import { RecommendationsView } from "../listen/RecommendationsView";
@@ -97,7 +98,9 @@ function renderView(View: React.ComponentType) {
   return render(
     <QueryClientProvider client={queryClient}>
       <AccountProvider>
-        <View />
+        <DateRangeProvider>
+          <View />
+        </DateRangeProvider>
       </AccountProvider>
     </QueryClientProvider>
   );

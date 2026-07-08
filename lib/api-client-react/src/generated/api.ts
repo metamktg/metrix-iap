@@ -30,6 +30,8 @@ import type {
   MetrixSeedBundle,
   NotificationPrefsResult,
   NotificationPrefsUpdateInput,
+  ReportSettingsResult,
+  ReportSettingsUpdateInput,
   RequestAccessInput,
   RequestAccessResult,
   RevokeWorkspaceInviteResult,
@@ -1181,6 +1183,156 @@ export const useSubmitRequestAccess = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getSubmitRequestAccessMutationOptions(options));
+    }
+
+export const getGetReportSettingsUrl = (workspaceId: string,) => {
+
+
+
+
+  return `/api/metrix/workspaces/${workspaceId}/report-settings`
+}
+
+/**
+ * Returns persisted Report Builder defaults for this workspace. Any null field falls back to the seed's report_builder defaults on the client.
+ * @summary Get workspace report-builder setting overrides
+ */
+export const getReportSettings = async (workspaceId: string, options?: RequestInit): Promise<ReportSettingsResult> => {
+
+  return customFetch<ReportSettingsResult>(getGetReportSettingsUrl(workspaceId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetReportSettingsQueryKey = (workspaceId: string,) => {
+    return [
+    `/api/metrix/workspaces/${workspaceId}/report-settings`
+    ] as const;
+    }
+
+
+export const getGetReportSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getReportSettings>>, TError = ErrorType<unknown>>(workspaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getReportSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetReportSettingsQueryKey(workspaceId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getReportSettings>>> = ({ signal }) => getReportSettings(workspaceId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: workspaceId !== null && workspaceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getReportSettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetReportSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getReportSettings>>>
+export type GetReportSettingsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get workspace report-builder setting overrides
+ */
+
+export function useGetReportSettings<TData = Awaited<ReturnType<typeof getReportSettings>>, TError = ErrorType<unknown>>(
+ workspaceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getReportSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetReportSettingsQueryOptions(workspaceId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateReportSettingsUrl = (workspaceId: string,) => {
+
+
+
+
+  return `/api/metrix/workspaces/${workspaceId}/report-settings`
+}
+
+/**
+ * Upserts Report Builder default overrides for this workspace and returns the persisted values.
+ * @summary Update workspace report-builder settings
+ */
+export const updateReportSettings = async (workspaceId: string,
+    reportSettingsUpdateInput: ReportSettingsUpdateInput, options?: RequestInit): Promise<ReportSettingsResult> => {
+
+  return customFetch<ReportSettingsResult>(getUpdateReportSettingsUrl(workspaceId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(reportSettingsUpdateInput)
+  }
+);}
+
+
+
+
+export const getUpdateReportSettingsMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateReportSettings>>, TError,{workspaceId: string;data: BodyType<ReportSettingsUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateReportSettings>>, TError,{workspaceId: string;data: BodyType<ReportSettingsUpdateInput>}, TContext> => {
+
+const mutationKey = ['updateReportSettings'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateReportSettings>>, {workspaceId: string;data: BodyType<ReportSettingsUpdateInput>}> = (props) => {
+          const {workspaceId,data} = props ?? {};
+
+          return  updateReportSettings(workspaceId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateReportSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof updateReportSettings>>>
+    export type UpdateReportSettingsMutationBody = BodyType<ReportSettingsUpdateInput>
+    export type UpdateReportSettingsMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Update workspace report-builder settings
+ */
+export const useUpdateReportSettings = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateReportSettings>>, TError,{workspaceId: string;data: BodyType<ReportSettingsUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateReportSettings>>,
+        TError,
+        {workspaceId: string;data: BodyType<ReportSettingsUpdateInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateReportSettingsMutationOptions(options));
     }
 
 export const getHealthCheckUrl = () => {

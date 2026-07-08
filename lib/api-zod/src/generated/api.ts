@@ -354,6 +354,57 @@ export const SubmitRequestAccessResponse = zod.object({
 
 
 /**
+ * Returns persisted Report Builder defaults for this workspace. Any null field falls back to the seed's report_builder defaults on the client.
+ * @summary Get workspace report-builder setting overrides
+ */
+
+
+
+export const GetReportSettingsParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.')
+})
+
+export const GetReportSettingsResponse = zod.object({
+  "default_branding": zod.string().nullable(),
+  "default_format": zod.string().nullable(),
+  "default_mode": zod.string().nullable(),
+  "schedule_enabled": zod.boolean().nullable(),
+  "schedule_cadence": zod.string().nullable(),
+  "schedule_recipients": zod.string().nullable()
+})
+
+
+/**
+ * Upserts Report Builder default overrides for this workspace and returns the persisted values.
+ * @summary Update workspace report-builder settings
+ */
+
+
+
+export const UpdateReportSettingsParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.')
+})
+
+export const UpdateReportSettingsBody = zod.object({
+  "default_branding": zod.enum(['metrix', 'white_label']).nullish(),
+  "default_format": zod.enum(['pdf', 'google_doc', 'html']).nullish(),
+  "default_mode": zod.enum(['internal', 'client']).nullish(),
+  "schedule_enabled": zod.boolean().nullish(),
+  "schedule_cadence": zod.enum(['weekly', 'monthly']).nullish(),
+  "schedule_recipients": zod.string().nullish().describe('Comma-separated recipient emails for scheduled sends.')
+})
+
+export const UpdateReportSettingsResponse = zod.object({
+  "default_branding": zod.string().nullable(),
+  "default_format": zod.string().nullable(),
+  "default_mode": zod.string().nullable(),
+  "schedule_enabled": zod.boolean().nullable(),
+  "schedule_cadence": zod.string().nullable(),
+  "schedule_recipients": zod.string().nullable()
+})
+
+
+/**
  * Returns server health status
  * @summary Health check
  */

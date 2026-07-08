@@ -11,6 +11,7 @@ import { AppShell } from "@/components/layout/AppShell";
 
 // Seed-hydrated Metrix pages (manager → ad-account hierarchy)
 import { AccountProvider } from "@/contexts/AccountContext";
+import { DateRangeProvider } from "@/contexts/DateRangeContext";
 import { Overview } from "@/pages/metrix/Overview";
 import { SignalView } from "@/pages/metrix/listen/SignalView";
 import { AlertsView } from "@/pages/metrix/listen/AlertsView";
@@ -29,6 +30,7 @@ import { BriefHistoryView } from "@/pages/metrix/briefs/BriefHistoryView";
 import { NewReportView } from "@/pages/metrix/reports/NewReportView";
 import { ReportHistoryView } from "@/pages/metrix/reports/ReportHistoryView";
 import { ExportsView } from "@/pages/metrix/reports/ExportsView";
+import { ReportSettingsView } from "@/pages/metrix/reports/ReportSettingsView";
 import { ConceptMapView } from "@/pages/metrix/mst/ConceptMapView";
 import { MatrixBuilderView } from "@/pages/metrix/mst/MatrixBuilderView";
 import { CreativeScanView } from "@/pages/metrix/mst/CreativeScanView";
@@ -88,6 +90,7 @@ export function Router() {
       <Route path="/app/reports/new"     component={NewReportView} />
       <Route path="/app/reports/history" component={ReportHistoryView} />
       <Route path="/app/reports/exports" component={ExportsView} />
+      <Route path="/app/reports/settings" component={ReportSettingsView} />
 
       {/* ── 07 MST ────────────────────────────────────────────────────── */}
       <Route path="/app/mst/concept-map"   component={ConceptMapView} />
@@ -140,9 +143,11 @@ function AuthGate() {
   return (
     <MetrixDataProvider>
       <AccountProvider>
-        <AppShell>
-          <Router />
-        </AppShell>
+        <DateRangeProvider>
+          <AppShell>
+            <Router />
+          </AppShell>
+        </DateRangeProvider>
       </AccountProvider>
     </MetrixDataProvider>
   );

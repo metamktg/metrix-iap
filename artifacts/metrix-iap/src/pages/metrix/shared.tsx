@@ -4,7 +4,8 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useLocation, useSearch } from "wouter";
 import { ConnectMetaDialog, ManualImportDialog } from "./ConnectAccountDialogs";
-import { Plug, FileUp, Clock, Database, Info, ArrowRight, CheckSquare, Square } from "lucide-react";
+import { Plug, FileUp, Clock, Database, Info, ArrowRight, CheckSquare, Square, CalendarRange, CalendarX2 } from "lucide-react";
+import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
 import { DataSourceBadge } from "@/components/ui/DataSourceBadge";
 import { resolveVariableLabel } from "@/lib/variable-registry";
 import type { AdAccount } from "@/lib/data/seedTypes";
@@ -107,6 +108,53 @@ export function ScopeBanner({ account }: { account: AdAccount }) {
       <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Scoped to ad account</span>
       <span className="text-[11px] font-medium text-foreground/80">{account.name}</span>
       <span className="text-[9px] font-mono text-muted-foreground/60">{account.platform}</span>
+    </div>
+  );
+}
+
+// ─── Date-range scope bar ─────────────────────────────────────────────
+// Standard strip under the scope banner: shows the active global range,
+// and is explicit about grain — flight-window aggregates, no daily rows.
+
+export function RangeScopeBar({ grainNote }: { grainNote?: string }) {
+  const { range, bounds, preset, compare, compareRange } = useDateRange();
+  if (!range || !bounds) return null;
+  const narrowed = preset !== "all";
+  return (
+    <div className="flex items-center gap-2 flex-wrap px-6 py-2 border-b border-border/30 bg-white/[0.01]">
+      <CalendarRange className="w-3 h-3 text-muted-foreground/60 shrink-0" />
+      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Date range</span>
+      <span className="text-[11px] font-medium text-foreground/80 tabular-nums">{formatIsoRange(range)}</span>
+      {compare && compareRange && (
+        <span className="text-[10px] text-primary/80 tabular-nums">vs {formatIsoRange(compareRange)}</span>
+      )}
+      {narrowed && (
+        <span className="text-[10px] text-muted-foreground/60">
+          {grainNote ?? "Items are included when their flight window overlaps this range; metrics cover each item's full flight — this import has no daily grain."}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/** Explicit empty state when the selected range has no overlap with this module's data. */
+export function NoDataInRangeState({ what, detail }: { what: string; detail?: string }) {
+  const { range, setPreset } = useDateRange();
+  return (
+    <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+      <div className="w-10 h-10 rounded-xl border border-border/40 bg-white/[0.03] flex items-center justify-center">
+        <CalendarX2 className="w-4 h-4 text-muted-foreground/60" />
+      </div>
+      <p className="text-[13px] font-medium text-foreground/60">No {what} in this range</p>
+      <p className="text-[11px] text-muted-foreground/60 max-w-xs">
+        {detail ?? (range ? `The selected range (${formatIsoRange(range)}) is outside this data's available window.` : "No dated data is available.")}
+      </p>
+      <button
+        onClick={() => setPreset("all")}
+        className="text-[11px] font-medium text-primary border border-primary/30 bg-primary/10 hover:bg-primary/15 rounded-md px-3 py-1.5 transition-colors"
+      >
+        Show all available data
+      </button>
     </div>
   );
 }
