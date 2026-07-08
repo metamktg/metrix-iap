@@ -8,6 +8,7 @@
 
 export * from './apiError';
 export * from './healthStatus';
+export * from './listAgentWaitlistParams';
 export * from './metrixSeedBundle';
 export * from './metrixSeedBundleAdAccountsItem';
 export * from './metrixSeedBundleAppDefaults';

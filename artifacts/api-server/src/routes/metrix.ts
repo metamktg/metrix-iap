@@ -3,10 +3,11 @@ import {
   GetMetrixSeedResponse,
   JoinAgentWaitlistBody,
   JoinAgentWaitlistResponse,
+  ListAgentWaitlistQueryParams,
   ListAgentWaitlistResponse,
 } from "@workspace/api-zod";
 import { db, agentWaitlistTable } from "@workspace/db";
-import { desc } from "drizzle-orm";
+import { count, desc } from "drizzle-orm";
 import seedBundle from "../data/metrix_seed_bundle.json" with { type: "json" };
 
 const router: IRouter = Router();
@@ -37,21 +38,33 @@ router.post("/metrix/agent-waitlist", async (req, res) => {
   res.json(data);
 });
 
-router.get("/metrix/agent-waitlist", async (_req, res) => {
-  const rows = await db
-    .select({
-      email: agentWaitlistTable.email,
-      createdAt: agentWaitlistTable.createdAt,
-    })
-    .from(agentWaitlistTable)
-    .orderBy(desc(agentWaitlistTable.createdAt));
+router.get("/metrix/agent-waitlist", async (req, res) => {
+  const parsedQuery = ListAgentWaitlistQueryParams.safeParse(req.query);
+  if (!parsedQuery.success) {
+    res.status(400).json({ message: "Invalid limit/offset query parameters." });
+    return;
+  }
+  const { limit, offset } = parsedQuery.data;
+
+  const [rows, [{ total }]] = await Promise.all([
+    db
+      .select({
+        email: agentWaitlistTable.email,
+        createdAt: agentWaitlistTable.createdAt,
+      })
+      .from(agentWaitlistTable)
+      .orderBy(desc(agentWaitlistTable.createdAt), desc(agentWaitlistTable.id))
+      .limit(limit)
+      .offset(offset),
+    db.select({ total: count() }).from(agentWaitlistTable),
+  ]);
 
   const data = ListAgentWaitlistResponse.parse({
     entries: rows.map((row) => ({
       email: row.email,
       joined_at: row.createdAt.toISOString(),
     })),
-    total: rows.length,
+    total,
   });
   res.json(data);
 });

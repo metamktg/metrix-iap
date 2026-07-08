@@ -22,6 +22,7 @@ import type {
 import type {
   ApiError,
   HealthStatus,
+  ListAgentWaitlistParams,
   MetrixSeedBundle,
   WaitlistEntriesResult,
   WaitlistSignupInput,
@@ -204,21 +205,28 @@ export const useJoinAgentWaitlist = <TError = ErrorType<ApiError>,
       return useMutation(getJoinAgentWaitlistMutationOptions(options));
     }
 
-export const getListAgentWaitlistUrl = () => {
+export const getListAgentWaitlistUrl = (params?: ListAgentWaitlistParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/metrix/agent-waitlist`
+  return stringifiedParams.length > 0 ? `/api/metrix/agent-waitlist?${stringifiedParams}` : `/api/metrix/agent-waitlist`
 }
 
 /**
- * Returns all waitlist entries (email and joined date), newest first.
+ * Returns a page of waitlist entries (email and joined date), newest first. Use limit/offset to page through results; total reflects the full count.
  * @summary List Metrix Agent waitlist signups
  */
-export const listAgentWaitlist = async ( options?: RequestInit): Promise<WaitlistEntriesResult> => {
+export const listAgentWaitlist = async (params?: ListAgentWaitlistParams, options?: RequestInit): Promise<WaitlistEntriesResult> => {
 
-  return customFetch<WaitlistEntriesResult>(getListAgentWaitlistUrl(),
+  return customFetch<WaitlistEntriesResult>(getListAgentWaitlistUrl(params),
   {
     ...options,
     method: 'GET'
@@ -231,23 +239,23 @@ export const listAgentWaitlist = async ( options?: RequestInit): Promise<Waitlis
 
 
 
-export const getListAgentWaitlistQueryKey = () => {
+export const getListAgentWaitlistQueryKey = (params?: ListAgentWaitlistParams,) => {
     return [
-    `/api/metrix/agent-waitlist`
+    `/api/metrix/agent-waitlist`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getListAgentWaitlistQueryOptions = <TData = Awaited<ReturnType<typeof listAgentWaitlist>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgentWaitlist>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getListAgentWaitlistQueryOptions = <TData = Awaited<ReturnType<typeof listAgentWaitlist>>, TError = ErrorType<unknown>>(params?: ListAgentWaitlistParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgentWaitlist>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListAgentWaitlistQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getListAgentWaitlistQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAgentWaitlist>>> = ({ signal }) => listAgentWaitlist({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAgentWaitlist>>> = ({ signal }) => listAgentWaitlist(params, { signal, ...requestOptions });
 
 
 
@@ -265,11 +273,11 @@ export type ListAgentWaitlistQueryError = ErrorType<unknown>
  */
 
 export function useListAgentWaitlist<TData = Awaited<ReturnType<typeof listAgentWaitlist>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgentWaitlist>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params?: ListAgentWaitlistParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgentWaitlist>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getListAgentWaitlistQueryOptions(options)
+  const queryOptions = getListAgentWaitlistQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

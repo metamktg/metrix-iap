@@ -36,9 +36,22 @@ export const JoinAgentWaitlistResponse = zod.object({
 
 
 /**
- * Returns all waitlist entries (email and joined date), newest first.
+ * Returns a page of waitlist entries (email and joined date), newest first. Use limit/offset to page through results; total reflects the full count.
  * @summary List Metrix Agent waitlist signups
  */
+export const listAgentWaitlistQueryLimitDefault = 50;
+export const listAgentWaitlistQueryLimitMax = 200;
+
+export const listAgentWaitlistQueryOffsetDefault = 0;
+export const listAgentWaitlistQueryOffsetMin = 0;
+
+
+
+export const ListAgentWaitlistQueryParams = zod.object({
+  "limit": zod.coerce.number().min(1).max(listAgentWaitlistQueryLimitMax).default(listAgentWaitlistQueryLimitDefault).describe('Maximum number of entries to return (default 50, max 200).'),
+  "offset": zod.coerce.number().min(listAgentWaitlistQueryOffsetMin).default(listAgentWaitlistQueryOffsetDefault).describe('Number of entries to skip from the newest entry (default 0).')
+})
+
 export const ListAgentWaitlistResponse = zod.object({
   "entries": zod.array(zod.object({
   "email": zod.string(),

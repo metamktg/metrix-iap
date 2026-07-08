@@ -6,25 +6,58 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getReportBuilder } from "@/lib/data/metrixSeedAdapter";
 import { ModuleHeader, ScopeBanner, SectionCard, CaveatNote, PendingState } from "./shared";
 import { cn } from "@/lib/utils";
-import { Plug, FileUp, Palette, ShieldCheck, CheckCircle2, Circle, Users, Download } from "lucide-react";
-import { useListAgentWaitlist } from "@workspace/api-client-react";
+import { Plug, FileUp, Palette, ShieldCheck, CheckCircle2, Circle, Users, Download, Loader2 } from "lucide-react";
+import { listAgentWaitlist, getListAgentWaitlistQueryKey } from "@workspace/api-client-react";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { useState } from "react";
+
+const WAITLIST_PAGE_SIZE = 50;
+const WAITLIST_EXPORT_PAGE_SIZE = 200;
 
 function AgentWaitlistSection() {
-  const { data, isLoading, isError } = useListAgentWaitlist();
+  const [isExporting, setIsExporting] = useState(false);
 
-  const handleExport = () => {
-    if (!data || data.entries.length === 0) return;
-    const escapeCsv = (value: string) =>
-      /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
-    const header = "email,joined_at";
-    const lines = data.entries.map((e) => `${escapeCsv(e.email)},${e.joined_at}`);
-    const blob = new Blob([[header, ...lines].join("\n")], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "metrix-agent-waitlist.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+  const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
+    queryKey: [...getListAgentWaitlistQueryKey(), "infinite", WAITLIST_PAGE_SIZE],
+    queryFn: ({ pageParam, signal }) =>
+      listAgentWaitlist({ limit: WAITLIST_PAGE_SIZE, offset: pageParam }, { signal }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => {
+      const loaded = allPages.reduce((sum, page) => sum + page.entries.length, 0);
+      return loaded < lastPage.total && lastPage.entries.length > 0 ? loaded : undefined;
+    },
+  });
+
+  const entries = data?.pages.flatMap((page) => page.entries) ?? [];
+  const total = data?.pages[data.pages.length - 1]?.total ?? 0;
+
+  const handleExport = async () => {
+    if (isExporting || total === 0) return;
+    setIsExporting(true);
+    try {
+      const all: { email: string; joined_at: string }[] = [];
+      let offset = 0;
+      for (;;) {
+        const page = await listAgentWaitlist({ limit: WAITLIST_EXPORT_PAGE_SIZE, offset });
+        all.push(...page.entries);
+        offset += page.entries.length;
+        if (page.entries.length === 0 || offset >= page.total) break;
+      }
+      if (all.length === 0) return;
+      const escapeCsv = (value: string) =>
+        /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+      const header = "email,joined_at";
+      const lines = all.map((e) => `${escapeCsv(e.email)},${e.joined_at}`);
+      const blob = new Blob([[header, ...lines].join("\n")], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "metrix-agent-waitlist.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -34,11 +67,12 @@ function AgentWaitlistSection() {
       right={
         <button
           onClick={handleExport}
-          disabled={!data || data.entries.length === 0}
+          disabled={isExporting || total === 0}
           className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-40 disabled:pointer-events-none"
           data-testid="button-export-waitlist"
         >
-          <Download className="w-3 h-3" /> Export CSV
+          {isExporting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+          {isExporting ? "Exporting…" : "Export CSV"}
         </button>
       }
     >
@@ -46,7 +80,7 @@ function AgentWaitlistSection() {
         <div className="text-[11px] text-muted-foreground/60 p-3">Loading waitlist…</div>
       ) : isError ? (
         <div className="text-[11px] text-red-400/80 p-3">Could not load waitlist signups. Check that the API server is running.</div>
-      ) : !data || data.entries.length === 0 ? (
+      ) : entries.length === 0 ? (
         <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
           <Users className="w-4 h-4 text-muted-foreground/50 shrink-0" />
           <div className="text-[11px] text-muted-foreground/60">No waitlist signups yet.</div>
@@ -58,7 +92,7 @@ function AgentWaitlistSection() {
             <span className="text-[10px] uppercase tracking-wide text-muted-foreground/50 font-medium">Joined</span>
           </div>
           <div className="max-h-64 overflow-y-auto divide-y divide-border/20">
-            {data.entries.map((entry) => (
+            {entries.map((entry) => (
               <div key={entry.email} className="flex items-center justify-between px-3 py-2" data-testid={`row-waitlist-${entry.email}`}>
                 <span className="text-[12px] text-foreground truncate mr-3">{entry.email}</span>
                 <span className="text-[10px] font-mono text-muted-foreground/50 shrink-0">
@@ -66,9 +100,27 @@ function AgentWaitlistSection() {
                 </span>
               </div>
             ))}
+            {hasNextPage && (
+              <div className="p-2">
+                <button
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                  className="w-full flex items-center justify-center gap-1.5 h-8 rounded-md border border-border/40 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                  data-testid="button-load-more-waitlist"
+                >
+                  {isFetchingNextPage ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" /> Loading…
+                    </>
+                  ) : (
+                    <>Load more ({total - entries.length} remaining)</>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
           <div className="px-3 py-2 border-t border-border/30 text-[10px] text-muted-foreground/50">
-            {data.total} signup{data.total === 1 ? "" : "s"}
+            Showing {entries.length} of {total} signup{total === 1 ? "" : "s"}
           </div>
         </div>
       )}

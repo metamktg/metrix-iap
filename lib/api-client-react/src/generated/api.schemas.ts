@@ -58,3 +58,17 @@ export interface HealthStatus {
   status: string;
 }
 
+export type ListAgentWaitlistParams = {
+/**
+ * Maximum number of entries to return (default 50, max 200).
+ * @minimum 1
+ * @maximum 200
+ */
+limit?: number;
+/**
+ * Number of entries to skip from the newest entry (default 0).
+ * @minimum 0
+ */
+offset?: number;
+};
+

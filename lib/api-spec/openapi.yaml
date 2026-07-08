@@ -55,7 +55,25 @@ paths:
       operationId: listAgentWaitlist
       tags: [metrix]
       summary: List Metrix Agent waitlist signups
-      description: Returns all waitlist entries (email and joined date), newest first.
+      description: Returns a page of waitlist entries (email and joined date), newest first. Use limit/offset to page through results; total reflects the full count.
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of entries to return (default 50, max 200).
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: offset
+          in: query
+          required: false
+          description: Number of entries to skip from the newest entry (default 0).
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
       responses:
         "200":
           description: Waitlist entries
