@@ -47,6 +47,9 @@ export function NewReportView() {
   // unchecking removes them from the generated document only.
   const [excludedSections, setExcludedSections] = useState<Set<string>>(new Set());
   const [generatedOk, setGeneratedOk] = useState(false);
+  // Per-report format override: null = follow the workspace default from
+  // Report Settings. Choosing here never changes the saved default.
+  const [formatOverride, setFormatOverride] = useState<string | null>(null);
 
   // Report window: inherits the global date range by default; a per-report
   // override applies to this report composition only (never the global filter).
@@ -91,7 +94,7 @@ export function NewReportView() {
     });
   }
 
-  function handleGenerate(rbSections: string[], defaultFormat: string) {
+  function handleGenerate(rbSections: string[], chosenFormat: string) {
     if (generating || !adAccountId) return;
     const selected = rbSections.filter((s) => !excludedSections.has(s));
     if (selected.length === 0) return;
@@ -110,8 +113,8 @@ export function NewReportView() {
       title: model.docTitle,
       mode,
       branding,
-      export_format: (["pdf", "google_doc", "html"].includes(defaultFormat)
-        ? defaultFormat
+      export_format: (["pdf", "google_doc", "html"].includes(chosenFormat)
+        ? chosenFormat
         : "pdf") as GeneratedReportCreateInput["export_format"],
       section_count: selected.length,
       range_start: reportRange?.start ?? null,
@@ -309,19 +312,55 @@ export function NewReportView() {
 
                   {/* Generate: persists a snapshot to Report History + downloads it */}
                   <div className="rounded-lg border border-border/40 bg-white/[0.02] px-4 py-3.5">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <button
-                        onClick={() => handleGenerate(rb.report_sections, settings?.default_format ?? rb.export_formats[0] ?? "pdf")}
-                        disabled={generating || rb.report_sections.length - excludedSections.size === 0}
-                        className="inline-flex items-center gap-2 h-9 px-4 rounded-md bg-primary text-primary-foreground text-[12px] font-semibold transition-opacity hover:opacity-90 disabled:opacity-50"
-                      >
-                        {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                        {generating ? "Generating…" : "Generate report"}
-                      </button>
-                      <span className="text-[10px] text-muted-foreground/70">
-                        Saves the composed document to Report History and downloads it as {FORMAT_LABEL[settings?.default_format ?? rb.export_formats[0] ?? "pdf"] ?? "PDF"}.
-                      </span>
-                    </div>
+                    {(() => {
+                      const defaultFormat = settings?.default_format ?? rb.export_formats[0] ?? "pdf";
+                      const chosenFormat =
+                        formatOverride && rb.export_formats.includes(formatOverride)
+                          ? formatOverride
+                          : defaultFormat;
+                      return (
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <button
+                            onClick={() => handleGenerate(rb.report_sections, chosenFormat)}
+                            disabled={generating || rb.report_sections.length - excludedSections.size === 0}
+                            className="inline-flex items-center gap-2 h-9 px-4 rounded-md bg-primary text-primary-foreground text-[12px] font-semibold transition-opacity hover:opacity-90 disabled:opacity-50"
+                          >
+                            {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                            {generating ? "Generating…" : "Generate report"}
+                          </button>
+                          <div
+                            role="radiogroup"
+                            aria-label="Download format"
+                            className="flex items-center gap-1 rounded-md border border-border/40 p-0.5"
+                          >
+                            {rb.export_formats.map((f) => (
+                              <button
+                                key={f}
+                                role="radio"
+                                aria-checked={chosenFormat === f}
+                                onClick={() => setFormatOverride(f)}
+                                disabled={generating}
+                                className={cn(
+                                  "flex items-center gap-1 h-7 px-2.5 rounded text-[11px] font-medium transition-colors disabled:opacity-60",
+                                  chosenFormat === f
+                                    ? "bg-white/[0.06] text-foreground"
+                                    : "text-muted-foreground/70 hover:text-foreground"
+                                )}
+                              >
+                                {FORMAT_LABEL[f] ?? f}
+                                {f === defaultFormat && (
+                                  <span className="text-[9px] font-normal text-muted-foreground/60">default</span>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                          <span className="text-[10px] text-muted-foreground/70">
+                            Saves the composed document to Report History and downloads it as {FORMAT_LABEL[chosenFormat] ?? chosenFormat}.
+                            {chosenFormat !== defaultFormat && " Your default in Report Settings is unchanged."}
+                          </span>
+                        </div>
+                      );
+                    })()}
                     {rb.report_sections.length - excludedSections.size === 0 && (
                       <p className="mt-2 text-[10px] text-amber-400/90">Include at least one section to generate a report.</p>
                     )}
