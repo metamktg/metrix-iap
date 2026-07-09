@@ -1,0 +1,265 @@
+// ─── Metric diagnostic modal ───────────────────────────────────────────
+// Opened by tapping a customizable overview metric tile. Shows the
+// blended top-line stat for that metric, then reuses the avatar ×
+// placement segment-grid pattern (SegmentGridModal) for the breakdown,
+// plus the top IAP library concepts driving the metric with a link
+// through to the concept/MST view. Metrics with no underlying data show
+// an honest pending state — never a fabricated number.
+
+import { useMemo, useState } from "react";
+import { useLocation } from "wouter";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Gauge, ArrowRight, Info } from "lucide-react";
+import type { AnalysisData, CellPerformanceRow, MST } from "@/lib/data/seedTypes";
+import type { MetricDef } from "@/lib/data/metricsCatalog";
+import { fmtUSD, fmtNum } from "@/pages/metrix/shared";
+import { SegmentGridModal, SegmentDrilldownButton } from "./SegmentGridModal";
+
+function conceptMetricValue(row: CellPerformanceRow, metric: MetricDef): number {
+  if (metric.isResultEvent) return row.Results;
+  switch (metric.id) {
+    case "spend":
+      return row["Amount spent (USD)"];
+    case "impressions":
+      return row.Impressions;
+    case "reach":
+      return row.Reach;
+    case "clicks_all":
+      return row["Clicks (all)"];
+    case "link_clicks":
+      return row["Link clicks"];
+    case "link_ctr":
+      return row.CTR_link_pct;
+    case "cpa_blended":
+      return row.CPA_result ?? 0;
+    default:
+      return row["Amount spent (USD)"];
+  }
+}
+
+interface ConceptDriver {
+  cellId: string;
+  name: string;
+  value: number;
+  metricDisplay: string;
+  spend: number;
+  impressions: number;
+  results: number;
+}
+
+function formatConceptMetricValue(value: number, metric: MetricDef): string {
+  if (metric.isResultEvent) return fmtNum(value);
+  switch (metric.id) {
+    case "spend":
+      return fmtUSD(value, 0);
+    case "impressions":
+    case "reach":
+    case "clicks_all":
+    case "link_clicks":
+      return fmtNum(value);
+    case "link_ctr":
+      return `${value.toFixed(2)}%`;
+    case "cpa_blended":
+    default:
+      return fmtUSD(value);
+  }
+}
+
+/** Metrics that are already rates/ratios — summing per-row values would double count; recompute from totals instead. */
+const RATE_METRIC_IDS = new Set(["link_ctr", "cpa_blended"]);
+
+/** All cell ids that back a metric — the FULL population, not just the top-N shown in the concepts list. */
+function allCellIdsForMetric(rows: CellPerformanceRow[], metric: MetricDef): string[] {
+  const scoped = metric.isResultEvent ? rows.filter((r) => r["Result type"] === metric.eventKey) : rows;
+  return Array.from(new Set(scoped.map((r) => r.cell_id)));
+}
+
+function topConceptsForMetric(rows: CellPerformanceRow[], metric: MetricDef, max = 5): ConceptDriver[] {
+  const scoped = metric.isResultEvent ? rows.filter((r) => r["Result type"] === metric.eventKey) : rows;
+  const isRate = RATE_METRIC_IDS.has(metric.id);
+  const map = new Map<string, { cellId: string; name: string; raw: number; spend: number; impressions: number; results: number; linkClicks: number }>();
+  for (const r of scoped) {
+    const value = conceptMetricValue(r, metric);
+    const prev = map.get(r.cell_id);
+    if (prev) {
+      prev.raw += isRate ? 0 : value;
+      prev.spend += r["Amount spent (USD)"];
+      prev.impressions += r.Impressions;
+      prev.results += r.Results;
+      prev.linkClicks += r["Link clicks"];
+    } else {
+      map.set(r.cell_id, {
+        cellId: r.cell_id,
+        name: r.book2_concept_name,
+        raw: isRate ? 0 : value,
+        spend: r["Amount spent (USD)"],
+        impressions: r.Impressions,
+        results: r.Results,
+        linkClicks: r["Link clicks"],
+      });
+    }
+  }
+  return Array.from(map.values())
+    .map((c) => {
+      let value = c.raw;
+      if (metric.id === "cpa_blended") value = c.results > 0 ? c.spend / c.results : 0;
+      if (metric.id === "link_ctr") value = c.impressions > 0 ? (c.linkClicks / c.impressions) * 100 : 0;
+      return {
+        cellId: c.cellId,
+        name: c.name,
+        value,
+        metricDisplay: formatConceptMetricValue(value, metric),
+        spend: c.spend,
+        impressions: c.impressions,
+        results: c.results,
+      };
+    })
+    .sort((a, b) => (metric.id === "cpa_blended" ? a.value - b.value : b.value - a.value) || b.spend - a.spend)
+    .slice(0, max);
+}
+
+export function MetricDiagnosticModal({
+  open,
+  onClose,
+  metric,
+  analysis,
+  scope,
+}: {
+  open: boolean;
+  onClose: () => void;
+  metric: MetricDef | null;
+  analysis: AnalysisData | null;
+  mst?: MST | null;
+  /** Manager scope stays top-line-only, consistent with the manager aggregation rule. */
+  scope: "account" | "manager";
+}) {
+  const [segmentsOpen, setSegmentsOpen] = useState(false);
+  const [, navigate] = useLocation();
+
+  const concepts = useMemo(
+    () => (analysis && metric ? topConceptsForMetric(analysis.performance_by_cell, metric) : []),
+    [analysis, metric]
+  );
+  const allDrivingCellIds = useMemo(
+    () => (analysis && metric?.isResultEvent ? allCellIdsForMetric(analysis.performance_by_cell, metric) : []),
+    [analysis, metric]
+  );
+
+  if (!metric) return null;
+  const hasData = metric.value != null;
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+        <DialogContent className="max-w-2xl bg-[hsl(222_61%_6%)] border-border/50 max-h-[85vh] overflow-y-auto">
+          <DialogHeader className="text-left space-y-1">
+            <div className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest">
+              Metric diagnostic
+            </div>
+            <DialogTitle className="text-[15px] font-semibold text-foreground">{metric.label}</DialogTitle>
+            <DialogDescription className="text-[11px] text-muted-foreground/70 leading-relaxed">
+              {scope === "account"
+                ? "Blended top-line value, avatar × placement breakdown, and the IAP library concepts driving this metric for this account."
+                : "Blended top-line value across all connected accounts. Open an account for the avatar/placement breakdown and concept drivers — manager-level analysis doesn't aggregate below bottom-line totals."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {!hasData ? (
+            <div className="py-8 text-center space-y-2">
+              <div className="w-10 h-10 mx-auto rounded-xl border border-border/40 bg-white/[0.03] flex items-center justify-center">
+                <Gauge className="w-4 h-4 text-muted-foreground/60" />
+              </div>
+              <p className="text-[13px] font-medium text-foreground/60">No data for this metric yet</p>
+              <p className="text-[11px] text-muted-foreground/60 max-w-sm mx-auto">
+                {metric.label} has no underlying rows for this account/date range in the current import.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-primary/20 bg-primary/[0.04] p-4">
+                <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-1">
+                  Blended top-line
+                </div>
+                <div className="text-[28px] font-bold text-foreground tabular-nums leading-none tracking-[-0.03em]">
+                  {metric.formatted}
+                </div>
+              </div>
+
+              {scope === "account" && analysis && !metric.isResultEvent && (
+                <div className="flex items-center gap-2">
+                  <SegmentDrilldownButton onClick={() => setSegmentsOpen(true)} label="Avatar × placement breakdown" />
+                </div>
+              )}
+
+              {scope === "account" && analysis && metric.isResultEvent && (
+                <div className="flex items-start gap-2 text-[11px] text-muted-foreground/70 leading-relaxed rounded-lg border border-border/30 bg-white/[0.02] p-3">
+                  <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                  <span>
+                    Avatar × placement breakdown isn't available for "{metric.label}" — the demographic and
+                    placement exports don't carry a result-type column, so segment rows can't be honestly
+                    scoped to this event (they'd otherwise mix in every other result type). The concept list
+                    below is still event-scoped, using each creative cell's own result-type data.
+                  </span>
+                </div>
+              )}
+
+              {scope === "account" && (
+                <div className="space-y-1.5">
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">
+                    Top IAP library concepts driving this metric
+                  </p>
+                  {concepts.length === 0 ? (
+                    <p className="text-[11px] text-muted-foreground/60 py-2">
+                      No creative-cell rows back this metric{metric.isResultEvent ? ` for "${metric.label}"` : ""} in this import.
+                    </p>
+                  ) : (
+                    <div className="rounded-lg border border-border/40 overflow-hidden">
+                      {concepts.map((c) => (
+                        <button
+                          key={c.cellId}
+                          onClick={() => navigate(`/app/analysis/library?focus=${encodeURIComponent(c.cellId)}`)}
+                          className="w-full flex items-center justify-between gap-3 px-3 py-2 border-b border-border/20 last:border-b-0 hover:bg-white/[0.02] transition-colors text-left"
+                        >
+                          <div className="min-w-0">
+                            <div className="text-[11px] font-medium text-foreground truncate">{c.name}</div>
+                            <div className="text-[9px] font-mono text-muted-foreground/60 mt-0.5">{c.cellId}</div>
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <div className="text-[11px] font-semibold text-foreground tabular-nums">{c.metricDisplay}</div>
+                            <div className="text-[9px] text-muted-foreground/60">
+                              {fmtUSD(c.spend, 0)} · {fmtNum(c.results)} results
+                            </div>
+                          </div>
+                          <ArrowRight className="w-3 h-3 text-primary/60 shrink-0" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {scope === "manager" && (
+            <div className="flex items-start gap-2 text-[10px] text-muted-foreground/60 leading-relaxed pt-1 border-t border-border/30">
+              <Info className="w-3 h-3 shrink-0 mt-0.5" />
+              <span>Only bottom-line totals aggregate across accounts. Open an ad account for full metric diagnostics.</span>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {scope === "account" && analysis && (
+        <SegmentGridModal
+          open={segmentsOpen}
+          onClose={() => setSegmentsOpen(false)}
+          kicker={`Metric · ${metric.label}`}
+          title={metric.label}
+          analysis={analysis}
+          cellIds={metric.isResultEvent ? allDrivingCellIds : null}
+          metric={metric}
+        />
+      )}
+    </>
+  );
+}

@@ -4,14 +4,18 @@
 // No Optimization Loop at manager level — recommendations are READ-ONLY,
 // labeled with their source account. Deeper action lives inside each account.
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { CheckCircle2, Plug, TrendingUp, Plus, ArrowRight } from "lucide-react";
 import { useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getManagerOverview } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, MetricTile, SectionCard, ConfidenceBadge, fmtUSD, fmtNum, fmtPct, eventLabel } from "./shared";
+import { ModuleHeader, MetricTile, SectionCard, ConfidenceBadge, fmtUSD, fmtNum, eventLabel } from "./shared";
 import { AddAccountDialog } from "./AddAccountDialog";
 import { cn } from "@/lib/utils";
+import { buildMetricCatalog, metricSourceFromManagerTotals, metricById } from "@/lib/data/metricsCatalog";
+import { useMetricSelection } from "@/hooks/useMetricSelection";
+import { MetricPickerButton } from "@/components/creative/MetricPicker";
+import { MetricDiagnosticModal } from "@/components/creative/MetricDiagnosticModal";
 
 const IMPACT_STYLE: Record<string, string> = {
   high: "bg-red-400/10 text-red-300 border-red-400/20",
@@ -46,6 +50,12 @@ export function ManagerOverview() {
   // Map account_id → display name so each rec shows its source account.
   const accountName = (id: string) =>
     adAccounts.find((a) => a.id === id)?.name ?? id;
+
+  const metricCatalog = useMemo(() => buildMetricCatalog(metricSourceFromManagerTotals(totals)), [totals]);
+  const availableMetricIds = useMemo(() => metricCatalog.map((m) => m.id), [metricCatalog]);
+  const { selected: selectedMetricIds, toggle, move, reset } = useMetricSelection(availableMetricIds);
+  const [openMetricId, setOpenMetricId] = useState<string | null>(null);
+  const openMetric = openMetricId ? metricById(metricCatalog, openMetricId) : null;
 
   // Onboarding: no ad accounts granted/connected yet — show a focused
   // first-run state instead of an empty dashboard.
@@ -99,12 +109,20 @@ export function ManagerOverview() {
       <div className="px-6 py-5 space-y-6 max-w-6xl">
         {/* Bottom-line totals */}
         <div>
-          <h2 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-3">Bottom-line totals</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60">Bottom-line totals</h2>
+            <MetricPickerButton catalog={metricCatalog} selected={selectedMetricIds} onToggle={toggle} onMove={move} onReset={reset} />
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <MetricTile label="Total spend" value={fmtUSD(totals.spend_usd)} />
-            <MetricTile label="Impressions" value={fmtNum(totals.impressions)} />
-            <MetricTile label="Link clicks" value={fmtNum(totals.link_clicks)} />
-            <MetricTile label="Link CTR" value={fmtPct(totals.link_ctr_pct)} />
+            {selectedMetricIds.map((id) => {
+              const m = metricById(metricCatalog, id);
+              if (!m) return null;
+              return (
+                <button key={id} onClick={() => setOpenMetricId(id)} className="text-left">
+                  <MetricTile label={m.label} value={m.formatted} />
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -204,6 +222,13 @@ export function ManagerOverview() {
         </SectionCard>
       </div>
       <AddAccountDialog open={addOpen} onOpenChange={setAddOpen} />
+      <MetricDiagnosticModal
+        open={openMetric != null}
+        onClose={() => setOpenMetricId(null)}
+        metric={openMetric}
+        analysis={null}
+        scope="manager"
+      />
     </div>
   );
 }

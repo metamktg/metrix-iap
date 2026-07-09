@@ -89,6 +89,8 @@ _Replace the heading above with the project's name, and this line with one sente
 
 _Describe the high-level user-facing capabilities of this app once they exist._
 
+- Customizable overview metric tiles (July 2026): "Account totals" (AdAccountOverview) and "Bottom-line totals" (ManagerOverview) tile rows are catalog-driven (`src/lib/data/metricsCatalog.ts`) and user-customizable — a picker (`MetricPicker.tsx`) lets users toggle/reorder which metrics show, persisted per-browser via `useMetricSelection` (localStorage, shared key across both pages, no server persistence). In-scope metrics: Spend, Impressions, Reach, Clicks (all), Link clicks, Link CTR, CPA (blended), and each result-event count. Tapping a tile opens `MetricDiagnosticModal`: blended top-line stat, avatar × placement breakdown (reuses `SegmentGridModal`, account scope only), and top IAP library concepts driving that metric linking to `/app/analysis/library`. Manager scope shows top-line only (no cross-account drill-down, consistent with the existing manager aggregation rule). Out of scope by design: ROAS/purchase value/unique clicks (no underlying data fields).
+
 ## User preferences
 
 _Populate as you build — explicit user instructions worth remembering across sessions._
