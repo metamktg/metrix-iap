@@ -590,6 +590,44 @@ create index if not exists generation_runs_account_idx on generation_runs (accou
 create unique index if not exists generation_runs_one_running
   on generation_runs (account_id, kind) where status = 'running';
 
+-- Staged raw manual-upload files (July 2026 rework): two required CSVs
+-- matching the exact IAP_DEMOGRAPHIC_TEXT_SIGNAL / IAP_DEVICE_PLACEMENT_
+-- PLATFORM_SIGNAL Meta pivot export templates (same classes the live Meta
+-- OAuth report pulls use — see iapCsvSpec.ts), plus individually-staged
+-- creative asset files (never a ZIP). Content is stored raw; nothing is
+-- parsed into performance data at upload time. `ad_names` holds the
+-- user-edited ad-name mapping for creative_asset rows (multiple names
+-- allowed per creative).
+create table if not exists manual_imports (
+  id uuid primary key default gen_random_uuid(),
+  account_id text not null references ad_accounts(id),
+  kind text not null check (kind in ('performance_demo_csv', 'performance_placement_csv', 'creative_asset')),
+  filename text not null,
+  content_type text,
+  content bytea not null,
+  size_bytes integer not null,
+  ad_names text[] not null default '{}',
+  uploaded_by_user_id integer,
+  uploaded_by_email text,
+  status text not null default 'staged' check (status in ('staged', 'processed', 'rejected')),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists manual_imports_account_kind_idx on manual_imports (account_id, kind);
+
+-- Idempotent backfill for databases created before this rework.
+alter table manual_imports add column if not exists content_type text;
+alter table manual_imports add column if not exists ad_names text[] not null default '{}';
+
+-- Generic bucket for Ecommerce/Service/App-specific metrics observed in a
+-- manual CSV upload. Keyed by slugified Meta column name; absent metrics
+-- are simply missing keys — never fabricated as 0/null.
+alter table ad_performance add column if not exists extra_metrics jsonb;
+alter table demographic_performance add column if not exists extra_metrics jsonb;
+alter table placement_performance add column if not exists extra_metrics jsonb;
+alter table platform_performance add column if not exists extra_metrics jsonb;
+alter table device_performance add column if not exists extra_metrics jsonb;
+
 -- Manual-upload analysis runs (July 2026): parses staged manual_imports
 -- performance CSVs into ad_performance rows for a MANUALLY selected date
 -- window. Never triggered automatically by an upload — only by an explicit

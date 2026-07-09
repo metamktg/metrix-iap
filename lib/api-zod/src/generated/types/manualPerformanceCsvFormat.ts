@@ -5,9 +5,9 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { ManualPerformanceCsvColumn } from './manualPerformanceCsvColumn';
+import type { IapCsvClassFormat } from './iapCsvClassFormat';
 
 export interface ManualPerformanceCsvFormat {
-  columns: ManualPerformanceCsvColumn[];
-  sample_csv: string;
+  demographic: IapCsvClassFormat;
+  device_placement: IapCsvClassFormat;
 }

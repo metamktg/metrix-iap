@@ -12,7 +12,7 @@ import {
   startManualAnalysis,
   type DateRangePreset,
 } from "../lib/analysisEngine";
-import { MANUAL_PERFORMANCE_CSV_COLUMNS, buildSampleManualPerformanceCsv } from "../lib/manualPerformanceCsv";
+import { buildIapCsvClassFormat } from "../lib/iapCsvSpec";
 
 const router: IRouter = Router();
 
@@ -39,13 +39,8 @@ async function guardAccess(req: any, res: any, accountId: string): Promise<boole
 
 router.get("/metrix/manual-performance-csv-format", requireAuth, (_req, res) => {
   res.json({
-    columns: MANUAL_PERFORMANCE_CSV_COLUMNS.map((c) => ({
-      label: c.label,
-      required: c.required,
-      description: c.description,
-      aliases: c.aliases,
-    })),
-    sample_csv: buildSampleManualPerformanceCsv(),
+    demographic: buildIapCsvClassFormat("demographic"),
+    device_placement: buildIapCsvClassFormat("device_placement"),
   });
 });
 
