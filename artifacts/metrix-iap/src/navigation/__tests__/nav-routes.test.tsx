@@ -22,6 +22,7 @@ import { PRE_LOGIN_ROUTE_PATHS } from "../preLoginRoutes";
 import {
   renderAt,
   renderAuthGateAt,
+  renderAuthedAt,
   seedAccountSession,
   NOT_FOUND_TEXT,
 } from "./harness";
@@ -80,6 +81,18 @@ describe("legacy redirects land on their new targets", () => {
       expect(container.textContent).not.toContain(NOT_FOUND_TEXT);
     });
   }
+});
+
+// The forgot-password screen only exists for logged-out visitors. A signed-in
+// user opening that link (old email, bookmark) must be redirected to a real
+// in-app destination — never fall through to the 404 page.
+describe("a signed-in user visiting /forgot-password is redirected", () => {
+  it("/forgot-password → /app/settings/account, not the 404 page", () => {
+    const { container, location } = renderAuthedAt("/forgot-password");
+    expect(location.history.at(-1)).toBe("/app/settings/account");
+    expect(container.textContent).not.toContain(NOT_FOUND_TEXT);
+    expect(container.textContent?.trim().length).toBeGreaterThan(0);
+  });
 });
 
 describe("unknown paths still 404", () => {

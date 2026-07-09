@@ -13,6 +13,7 @@ import {
 import { requireAuth } from "../middlewares/requireAuth";
 import { getSupabase } from "../lib/supabase";
 import { getAppBaseUrl } from "../lib/appUrl";
+import { invalidateMetrixSeedCache } from "../lib/metrixSeedAssembly";
 import {
   createOauthState,
   verifyOauthState,
@@ -370,6 +371,38 @@ router.post("/metrix/meta/select-account", requireAuth, async (req, res) => {
     const cleanup = await supabase.from("meta_oauth_pending").delete().eq("user_id", userId);
     if (cleanup.error) {
       req.log.warn({ err: cleanup.error.message }, "Failed to clear pending Meta token");
+    }
+
+    // Register the account in the ad_accounts registry so the seed bundle
+    // (and the app's account switcher) knows it exists. Insert-only: never
+    // clobber an existing row's status/name (a later analysis run may have
+    // marked it configured). Status stays "unconfigured" — honest pending
+    // state until real IAP analysis data exists for this account_id.
+    const numericMetaId = adAccountId.replace(/^act_/, "");
+    const register = await supabase.from("ad_accounts").upsert(
+      {
+        id: adAccountId,
+        name: chosen.name ?? adAccountId,
+        status: "unconfigured",
+        platform: "Meta Ads",
+        source_status: "live_meta_connection",
+        meta_ad_account_id: numericMetaId,
+        overview_state: {
+          title: "Analysis not run yet",
+          description:
+            "This ad account is connected via Meta. No IAP analysis has run for it yet, so no performance or strategy data is shown. Data appears after the first analysis run completes.",
+          primary_action: "Run Meta Reports",
+          secondary_action: "Add Manual Import",
+        },
+      },
+      { onConflict: "id", ignoreDuplicates: true },
+    );
+    if (register.error) {
+      // Non-fatal: connection is saved; registry sync can be retried on the
+      // next selection. Logged loudly so it never fails silently.
+      req.log.error({ err: register.error.message }, "Failed to register ad account in ad_accounts registry");
+    } else {
+      invalidateMetrixSeedCache();
     }
 
     req.log.info({ adAccountId }, "Meta ad account connected");
