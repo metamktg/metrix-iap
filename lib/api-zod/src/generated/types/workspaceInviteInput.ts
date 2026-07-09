@@ -10,4 +10,10 @@ import type { WorkspaceInviteInputRole } from './workspaceInviteInputRole';
 export interface WorkspaceInviteInput {
   email: string;
   role: WorkspaceInviteInputRole;
+  /** Can invite/remove members and assign asset access. */
+  manage_team?: boolean;
+  /** Can see manager-level totals/rollups across all ad accounts, independent of individual account grants. */
+  view_agency_rollups?: boolean;
+  /** Ad accounts to grant access to immediately, applied when the account is provisioned. */
+  ad_account_ids?: string[];
 }

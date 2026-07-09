@@ -1349,6 +1349,60 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/workspaces/{workspaceId}/members/{email}/permissions:
+    parameters:
+      - name: workspaceId
+        in: path
+        required: true
+        description: Workspace (manager account) identifier.
+        schema:
+          type: string
+          minLength: 1
+      - name: email
+        in: path
+        required: true
+        description: Member's email address (URL-encoded).
+        schema:
+          type: string
+          minLength: 1
+    patch:
+      operationId: updateMemberPermissions
+      tags: [metrix]
+      summary: Update a member's master-level permissions
+      description: Sets the member's manage_team and view_agency_rollups flags. Manage-team-only; requires a logged-in session with access to the workspace.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMemberPermissionsInput"
+      responses:
+        "200":
+          description: Updated permissions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateMemberPermissionsResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this workspace, or lacks manage-team permission
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Member not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/workspaces/{workspaceId}/members:
     parameters:
       - name: workspaceId
@@ -2671,10 +2725,18 @@ components:
           type: string
           enum: [admin, member]
           description: admin sees every ad account (agency team); member sees only accounts they have been granted.
+        manage_team:
+          type: boolean
+          description: Can invite/remove members and assign asset access. Always true for admin.
+        view_agency_rollups:
+          type: boolean
+          description: Can see manager-level totals/rollups across all ad accounts. Always true for admin.
       required:
         - email
         - must_change_password
         - role
+        - manage_team
+        - view_agency_rollups
     AuthUserResult:
       type: object
       properties:
@@ -2763,6 +2825,20 @@ components:
         role:
           type: string
           enum: [analyst, client_viewer]
+        manage_team:
+          type: boolean
+          default: false
+          description: Can invite/remove members and assign asset access.
+        view_agency_rollups:
+          type: boolean
+          default: false
+          description: Can see manager-level totals/rollups across all ad accounts, independent of individual account grants.
+        ad_account_ids:
+          type: array
+          default: []
+          items:
+            type: string
+          description: Ad accounts to grant access to immediately, applied when the account is provisioned.
       required:
         - email
         - role
@@ -2777,6 +2853,14 @@ components:
           type: string
         status:
           type: string
+        manage_team:
+          type: boolean
+        view_agency_rollups:
+          type: boolean
+        ad_account_ids:
+          type: array
+          items:
+            type: string
         created_at:
           type: string
       required:
@@ -2784,6 +2868,9 @@ components:
         - email
         - role
         - status
+        - manage_team
+        - view_agency_rollups
+        - ad_account_ids
         - created_at
     WorkspaceInviteResult:
       type: object
@@ -2793,6 +2880,15 @@ components:
           enum: [created, already_invited]
         invite:
           $ref: "#/components/schemas/WorkspaceInvite"
+        email_sent:
+          type: boolean
+          description: Whether the invite email with temp password could be delivered. Only present for newly created invites.
+        temp_password:
+          type: string
+          description: Present only when the email could not be sent, so the admin can share it manually.
+        email_error:
+          type: string
+          description: Present only when the email could not be sent — explains why.
       required:
         - status
         - invite
@@ -2812,6 +2908,15 @@ components:
           enum: [resent]
         invite:
           $ref: "#/components/schemas/WorkspaceInvite"
+        email_sent:
+          type: boolean
+          description: Whether the fresh temp-password email could be delivered.
+        temp_password:
+          type: string
+          description: Present only when the email could not be sent, so the admin can share it manually.
+        email_error:
+          type: string
+          description: Present only when the email could not be sent — explains why.
       required:
         - status
         - invite
@@ -2833,6 +2938,15 @@ components:
           type: string
           enum: [active, invited]
           description: invited = provisioned but has not completed first login yet.
+        role:
+          type: string
+          enum: [admin, member]
+        manage_team:
+          type: boolean
+          description: Always true for admin, regardless of the stored flag.
+        view_agency_rollups:
+          type: boolean
+          description: Always true for admin, regardless of the stored flag.
         created_at:
           type: string
         last_login_at:
@@ -2841,6 +2955,9 @@ components:
       required:
         - email
         - status
+        - role
+        - manage_team
+        - view_agency_rollups
         - created_at
         - last_login_at
     WorkspaceMembersResult:
@@ -2852,6 +2969,30 @@ components:
             $ref: "#/components/schemas/WorkspaceMember"
       required:
         - members
+    UpdateMemberPermissionsInput:
+      type: object
+      properties:
+        manage_team:
+          type: boolean
+        view_agency_rollups:
+          type: boolean
+      required:
+        - manage_team
+        - view_agency_rollups
+    UpdateMemberPermissionsResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [updated]
+        manage_team:
+          type: boolean
+        view_agency_rollups:
+          type: boolean
+      required:
+        - status
+        - manage_team
+        - view_agency_rollups
     GrantMemberAdAccountInput:
       type: object
       properties:

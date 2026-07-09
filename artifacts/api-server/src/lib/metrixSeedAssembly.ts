@@ -776,12 +776,24 @@ export function invalidateMetrixSeedCache(): void {
 
 const TOTAL_FIELDS = ["spend", "reach", "impressions", "results", "clicks_all", "link_clicks"] as const;
 
-export function composeSeedForUser(bundle: Row, allowed: Set<string> | "all"): Row {
+export function composeSeedForUser(
+  bundle: Row,
+  allowed: Set<string> | "all",
+  options?: { viewAgencyRollups?: boolean },
+): Row {
   if (allowed === "all") return bundle;
 
   const accounts = ((bundle["ad_accounts"] as Row[]) ?? []).filter((a) =>
     allowed.has(String(a["id"])),
   );
+
+  // A member with view_agency_rollups sees manager-level totals across ALL
+  // accounts (not just their own grants) — the master permission is
+  // specifically about seeing the agency-wide picture, independent of which
+  // individual ad accounts they've been granted for drill-down access.
+  if (options?.viewAgencyRollups) {
+    return { ...bundle, ad_accounts: accounts };
+  }
 
   const byEvent: Record<string, Row> = {};
   let totalSpend = 0;

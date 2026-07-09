@@ -67,7 +67,13 @@ export function renderAt(initialPath: string) {
 // a sensible in-app destination, never the 404 page.
 export function renderAuthedAt(
   initialPath: string,
-  user: AuthUser = { email: "user@example.com", must_change_password: false, role: "admin" }
+  user: AuthUser = {
+    email: "user@example.com",
+    must_change_password: false,
+    role: "admin",
+    manage_team: true,
+    view_agency_rollups: true,
+  }
 ) {
   const location = memoryLocation({ path: initialPath, record: true });
   const queryClient = new QueryClient({

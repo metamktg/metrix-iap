@@ -12,4 +12,8 @@ export interface AuthUser {
   must_change_password: boolean;
   /** admin sees every ad account (agency team); member sees only accounts they have been granted. */
   role: AuthUserRole;
+  /** Can invite/remove members and assign asset access. Always true for admin. */
+  manage_team: boolean;
+  /** Can see manager-level totals/rollups across all ad accounts. Always true for admin. */
+  view_agency_rollups: boolean;
 }
