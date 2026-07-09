@@ -1,4 +1,5 @@
 - [Metrix IAP closed-loop linkage](metrix-iap-closed-loop.md) — cross-entity back-refs (Ad/Concept/Brief) filled at gen time by linkClosedLoop() IIFE, not per-render.
+- [Supabase RLS testing](supabase-rls-testing.md) — rolled-back-txn tests need savepoints around expected failures; gates must be triggers (BYPASSRLS skips RLS, not triggers); drizzle push hangs non-TTY.
 - [Dev vs prod database split](dev-vs-prod-databases.md) — Replit Postgres is separate per environment, Supabase is shared; check which env before diagnosing "missing data".
 - [Admin approval lifecycle](admin-approval-lifecycle.md) — pending-only state transitions; multi-store approvals mark status before provisioning so failures never report success.
 - [Metrix IAP custom auth](metrix-auth.md) — custom bcrypt+cookie auth by user choice; workspace routes need seed-manager-id check (not just login); spec must mirror auth (401/403) on gated routes.

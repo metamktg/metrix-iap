@@ -97,6 +97,20 @@ describe("METRIX official schema — Phase 0 security", () => {
     }
   }
 
+  /**
+   * Expect a statement to fail, without aborting the surrounding transaction
+   * (wraps it in a savepoint and rolls back to it after the failure).
+   */
+  async function expectQueryRejects(
+    sql: string,
+    params: unknown[],
+    matcher: RegExp,
+  ): Promise<void> {
+    await client.query("savepoint expect_fail");
+    await expect(client.query(sql, params)).rejects.toThrow(matcher);
+    await client.query("rollback to savepoint expect_fail");
+  }
+
   /** Impersonate a Supabase `authenticated` user inside the current tx. */
   async function actAs(userId: string): Promise<void> {
     await client.query(
@@ -263,14 +277,13 @@ describe("METRIX official schema — Phase 0 security", () => {
         [cardId],
       );
       expect(viewerUpdate.rowCount).toBe(0);
-      await expect(
-        client.query(
-          `insert into intelligence_cards
-             (client_id, card_type, title, summary, confidence_grade, contract_version, schema_version)
-           values ($1, 'signal', 'viewer insert', 'x', 'LOW', 'v1', 'v1')`,
-          [t.clientId],
-        ),
-      ).rejects.toThrow(/row-level security/i);
+      await expectQueryRejects(
+        `insert into intelligence_cards
+           (client_id, card_type, title, summary, confidence_grade, contract_version, schema_version)
+         values ($1, 'signal', 'viewer insert', 'x', 'LOW', 'v1', 'v1')`,
+        [t.clientId],
+        /row-level security/i,
+      );
 
       await actAsService();
       await actAs(t.operatorId);
@@ -321,17 +334,73 @@ describe("METRIX official schema — Phase 0 security", () => {
     });
   });
 
+  it("anon role sees nothing and cannot write", async () => {
+    await inRolledBackTx(async () => {
+      const t = await seedTenancy();
+      await insertCard(t.clientId, "invisible to anon");
+      await client.query(
+        `select set_config('request.jwt.claims', '{"role":"anon"}', true)`,
+      );
+      await client.query(`set local role anon`);
+
+      // Either RLS filters everything (0 rows) or the grant itself is
+      // missing (permission denied) — both are a full deny.
+      try {
+        const rows = await client.query(`select id from intelligence_cards`);
+        expect(rows.rows.length).toBe(0);
+      } catch (err) {
+        expect(String(err)).toMatch(/permission denied/i);
+        await client.query("rollback to savepoint expect_fail").catch(() => {});
+      }
+
+      await expectQueryRejects(
+        `insert into alert_rules (client_id, metric) values ($1, 'cpa')`,
+        [t.clientId],
+        /row-level security|permission denied/i,
+      );
+    });
+  });
+
+  it("authenticated users cannot write config-as-data tables", async () => {
+    await inRolledBackTx(async () => {
+      const t = await seedTenancy();
+      await actAs(t.operatorId);
+
+      await expectQueryRejects(
+        `insert into cohort_definitions
+           (cohort_key, label, terminal_metric, terminal_metric_direction, required_metric_block, schema_version)
+         values ('test_hack', 'x', 'cpa', 'lower_is_better', 'blk', 'v1')`,
+        [],
+        /row-level security/i,
+      );
+      await expectQueryRejects(
+        `insert into global_variable_registry (variable_code, variable_family, label, definition)
+         values ('CN_TestHack', 'CN', 'x', 'x')`,
+        [],
+        /row-level security/i,
+      );
+      // Updates with no policy are silently filtered to 0 rows.
+      const upd = await client.query(
+        `update global_variable_registry set label = 'hacked' where variable_family = 'CN'`,
+      );
+      expect(upd.rowCount).toBe(0);
+      const updCohorts = await client.query(
+        `update cohort_definitions set label = 'hacked'`,
+      );
+      expect(updCohorts.rowCount).toBe(0);
+    });
+  });
+
   // --- 3–5. Hard schema constraints ------------------------------------------
 
   it("rejects ROAS alert rules (no-ROAS-v1 constraint)", async () => {
     await inRolledBackTx(async () => {
       const t = await seedTenancy();
-      await expect(
-        client.query(
-          `insert into alert_rules (client_id, metric) values ($1, 'roas')`,
-          [t.clientId],
-        ),
-      ).rejects.toThrow(/check constraint/i);
+      await expectQueryRejects(
+        `insert into alert_rules (client_id, metric) values ($1, 'roas')`,
+        [t.clientId],
+        /check constraint/i,
+      );
       // sanity: non-roas metric is fine
       await client.query(
         `insert into alert_rules (client_id, metric) values ($1, 'cpa')`,
@@ -369,13 +438,12 @@ describe("METRIX official schema — Phase 0 security", () => {
   it("rejects manual creative intake with fewer than 5 assets", async () => {
     await inRolledBackTx(async () => {
       const t = await seedTenancy();
-      await expect(
-        client.query(
-          `insert into onboarding_creative_intake (client_id, intake_method, uploaded_asset_count)
-           values ($1, 'manual_upload', 3)`,
-          [t.clientId],
-        ),
-      ).rejects.toThrow(/check constraint/i);
+      await expectQueryRejects(
+        `insert into onboarding_creative_intake (client_id, intake_method, uploaded_asset_count)
+         values ($1, 'manual_upload', 3)`,
+        [t.clientId],
+        /check constraint/i,
+      );
       await client.query(
         `insert into onboarding_creative_intake (client_id, intake_method, uploaded_asset_count)
          values ($1, 'manual_upload', 5)`,
@@ -461,6 +529,67 @@ describe("METRIX official schema — Phase 0 security", () => {
           [t.clientId, cardId, rightPurposeWrongObject.rows[0].id],
         ),
       ).rejects.toThrow(/is for/i);
+    });
+  });
+
+  it("re-validates the learning gate on UPDATE — cannot repoint a row to an unapproved object", async () => {
+    await inRolledBackTx(async () => {
+      const t = await seedTenancy();
+      const approvedCard = await insertCard(t.clientId, "Approved source");
+      const unapprovedCard = await insertCard(t.clientId, "Unapproved source");
+      await client.query(
+        `insert into approval_events (analysis_run_id, object_type, object_id, approver_id, approved_for)
+         values ($1, 'intelligence_card', $2, $3, 'learning_registry')`,
+        [t.runId, approvedCard, t.operatorId],
+      );
+      const lr = await client.query(
+        `insert into learning_registry
+           (client_id, source_object_type, source_object_id, learning_summary, contract_version, schema_version)
+         values ($1, 'intelligence_card', $2, 'ok', 'v1', 'v1') returning id`,
+        [t.clientId, approvedCard],
+      );
+      // Table owner bypasses RLS but the trigger re-fires on UPDATE.
+      await expectQueryRejects(
+        `update learning_registry set source_object_id = $2, approval_event_id = null where id = $1`,
+        [lr.rows[0].id, unapprovedCard],
+        /approval|blocked/i,
+      );
+    });
+  });
+
+  it("rejects learning writes that cite an approval belonging to another client", async () => {
+    await inRolledBackTx(async () => {
+      const t = await seedTenancy();
+      const runB = await client.query(
+        `insert into analysis_runs (client_id, engine_version) values ($1, 'test') returning id`,
+        [t.otherClientId],
+      );
+      const cardB = await insertCard(t.otherClientId, "Client B card");
+      const approvalB = await client.query(
+        `insert into approval_events (analysis_run_id, object_type, object_id, approver_id, approved_for)
+         values ($1, 'intelligence_card', $2, $3, 'learning_registry') returning id`,
+        [runB.rows[0].id, cardB, t.outsiderId],
+      );
+
+      // Explicit citation of the foreign approval → tenant mismatch.
+      await expectQueryRejects(
+        `insert into learning_registry
+           (client_id, source_object_type, source_object_id, learning_summary,
+            contract_version, schema_version, approval_event_id)
+         values ($1, 'intelligence_card', $2, 'x', 'v1', 'v1', $3)`,
+        [t.clientId, cardB, approvalB.rows[0].id],
+        /different client/i,
+      );
+
+      // Fallback lookup only matches same-tenant approvals → blocked.
+      await expectQueryRejects(
+        `insert into learning_registry
+           (client_id, source_object_type, source_object_id, learning_summary,
+            contract_version, schema_version)
+         values ($1, 'intelligence_card', $2, 'x', 'v1', 'v1')`,
+        [t.clientId, cardB],
+        /blocked/i,
+      );
     });
   });
 
