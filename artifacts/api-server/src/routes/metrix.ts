@@ -345,6 +345,38 @@ router.post(
   },
 );
 
+// TEMPORARY one-off admin action: set an exact password for a user without
+// forcing a change on next login. Used once to hand a real member their
+// intended password while Resend can't deliver to non-owner inboxes yet.
+// Remove this route once it's no longer needed.
+router.post(
+  "/metrix/admin/users/:userId/set-password",
+  requireAdmin,
+  async (req, res) => {
+    const user = await findAdminUser(String(req.params.userId));
+    if (!user) {
+      res.status(404).json({ message: "User not found." });
+      return;
+    }
+    const password = typeof req.body?.password === "string" ? req.body.password : "";
+    if (password.length < 8 || password.length > 200) {
+      res.status(400).json({ message: "password must be 8-200 characters." });
+      return;
+    }
+
+    const passwordHash = await hashPassword(password);
+    await db
+      .update(usersTable)
+      .set({ passwordHash, mustChangePassword: false })
+      .where(eq(usersTable.id, user.id));
+    await destroyAllSessions(user.id);
+    await deletePasswordResetTokensForUser(user.id);
+    req.log.info({ email: user.email }, "admin set an exact password for user (one-off)");
+
+    res.json({ status: "password_set", email: user.email });
+  },
+);
+
 router.post(
   "/metrix/admin/users/:userId/send-password-reset",
   requireAdmin,
