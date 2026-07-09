@@ -491,6 +491,142 @@ export interface GeneratedReportsResult {
   reports: GeneratedReport[];
 }
 
+export type MetaConnectedAccountTokenStatus = typeof MetaConnectedAccountTokenStatus[keyof typeof MetaConnectedAccountTokenStatus];
+
+
+export const MetaConnectedAccountTokenStatus = {
+  active: 'active',
+  expiring: 'expiring',
+  expired: 'expired',
+} as const;
+
+export interface MetaConnectedAccount {
+  ad_account_id: string;
+  account_name?: string | null;
+  currency?: string | null;
+  timezone?: string | null;
+  connected_at: string;
+  token_expires_at?: string | null;
+  token_status: MetaConnectedAccountTokenStatus;
+  status: string;
+}
+
+export type MetaReportPullStatusReportClass = typeof MetaReportPullStatusReportClass[keyof typeof MetaReportPullStatusReportClass];
+
+
+export const MetaReportPullStatusReportClass = {
+  IAP_DEMOGRAPHIC_TEXT_SIGNAL: 'IAP_DEMOGRAPHIC_TEXT_SIGNAL',
+  IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL: 'IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL',
+} as const;
+
+export type MetaReportPullStatusStatus = typeof MetaReportPullStatusStatus[keyof typeof MetaReportPullStatusStatus];
+
+
+export const MetaReportPullStatusStatus = {
+  success: 'success',
+  error: 'error',
+} as const;
+
+export interface MetaReportPullStatus {
+  report_class: MetaReportPullStatusReportClass;
+  status: MetaReportPullStatusStatus;
+  fetched_at: string;
+  date_range_start: string;
+  date_range_end: string;
+  row_count: number;
+  error_message?: string | null;
+}
+
+export interface MetaConnectionStatus {
+  connected: boolean;
+  /** True when OAuth completed but no ad account has been selected yet. */
+  pending_selection: boolean;
+  pilot_mode: boolean;
+  account?: MetaConnectedAccount | null;
+  reports: MetaReportPullStatus[];
+}
+
+export type MetaDisconnectResultStatus = typeof MetaDisconnectResultStatus[keyof typeof MetaDisconnectResultStatus];
+
+
+export const MetaDisconnectResultStatus = {
+  disconnected: 'disconnected',
+} as const;
+
+export interface MetaDisconnectResult {
+  status: MetaDisconnectResultStatus;
+}
+
+export interface MetaOauthUrlResult {
+  url: string;
+}
+
+export interface MetaAdAccount {
+  /** Meta ad account id (act_ prefixed). */
+  id: string;
+  name?: string | null;
+  account_status?: number | null;
+  currency?: string | null;
+  timezone_name?: string | null;
+}
+
+export interface MetaAdAccountsResult {
+  accounts: MetaAdAccount[];
+  pilot_mode: boolean;
+  pilot_required_account_id?: string | null;
+  /** Present only in pilot mode; false marks the pilot validation as failed. */
+  pilot_required_account_present?: boolean | null;
+}
+
+export interface SelectMetaAdAccountInput {
+  /** @minLength 1 */
+  ad_account_id: string;
+}
+
+export interface SelectMetaAdAccountResult {
+  account: MetaConnectedAccount;
+}
+
+export interface RunMetaReportsResult {
+  date_range_start: string;
+  date_range_end: string;
+  pulls: MetaReportPullStatus[];
+}
+
+export type MetaReportRowDimensions = { [key: string]: unknown };
+
+export type MetaReportRowMetrics = { [key: string]: unknown };
+
+export interface MetaReportRow {
+  id: string;
+  report_class: string;
+  date?: string | null;
+  campaign_id?: string | null;
+  campaign_name?: string | null;
+  adset_id?: string | null;
+  adset_name?: string | null;
+  ad_id?: string | null;
+  ad_name?: string | null;
+  dimensions: MetaReportRowDimensions;
+  metrics: MetaReportRowMetrics;
+}
+
+/**
+ * Debug object showing mapped, missing, derived, and unavailable template metrics for this pull.
+ */
+export type MetaReportRowsResultMetricMappingStatus = { [key: string]: unknown } | null;
+
+export interface MetaReportRowsResult {
+  rows: MetaReportRow[];
+  total: number;
+  report_class: string;
+  fetched_at: string;
+  date_range_start: string;
+  date_range_end: string;
+  /** Debug object showing mapped, missing, derived, and unavailable template metrics for this pull. */
+  metric_mapping_status?: MetaReportRowsResultMetricMappingStatus;
+}
+
 export interface ApiError {
   message: string;
 }
@@ -512,4 +648,25 @@ limit?: number;
  */
 offset?: number;
 };
+
+export type ListMetaReportRowsParams = {
+report_class: ListMetaReportRowsReportClass;
+/**
+ * @minimum 1
+ * @maximum 1000
+ */
+limit?: number;
+/**
+ * @minimum 0
+ */
+offset?: number;
+};
+
+export type ListMetaReportRowsReportClass = typeof ListMetaReportRowsReportClass[keyof typeof ListMetaReportRowsReportClass];
+
+
+export const ListMetaReportRowsReportClass = {
+  IAP_DEMOGRAPHIC_TEXT_SIGNAL: 'IAP_DEMOGRAPHIC_TEXT_SIGNAL',
+  IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL: 'IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL',
+} as const;
 

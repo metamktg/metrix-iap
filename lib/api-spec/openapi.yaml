@@ -777,6 +777,228 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/meta/connection:
+    get:
+      operationId: getMetaConnection
+      tags: [metrix]
+      summary: Get the current user's Meta ad account connection status
+      description: Returns whether the logged-in user has connected a Meta ad account, pending-selection state after OAuth, and the latest report pull status per report class.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Connection status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetaConnectionStatus"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      operationId: disconnectMetaAccount
+      tags: [metrix]
+      summary: Disconnect the user's Meta ad account
+      description: Removes the stored connection and any pending OAuth token for the logged-in user. Stored report pulls and rows are kept.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Disconnected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetaDisconnectResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/meta/oauth-url:
+    get:
+      operationId: getMetaOauthUrl
+      tags: [metrix]
+      summary: Get the Meta OAuth dialog URL
+      description: Builds the Facebook OAuth dialog URL (scope ads_read only) with a signed state parameter for the logged-in user. The browser should navigate to the returned URL.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: OAuth URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetaOauthUrlResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "503":
+          description: Meta app credentials not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/meta/adaccounts:
+    get:
+      operationId: listMetaAdAccounts
+      tags: [metrix]
+      summary: List ad accounts available to the connected Meta user
+      description: Calls Meta /me/adaccounts with the user's OAuth token (pending or connected) and returns the accounts for selection. In pilot mode, flags whether the required pilot ad account is present.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Available ad accounts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetaAdAccountsResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: No Meta OAuth token available; connect first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "502":
+          description: Meta API error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/meta/select-account:
+    post:
+      operationId: selectMetaAdAccount
+      tags: [metrix]
+      summary: Select and save a Meta ad account
+      description: Validates the chosen ad account against /me/adaccounts, then persists the connection (encrypted token, account metadata) for the logged-in user.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SelectMetaAdAccountInput"
+      responses:
+        "200":
+          description: Connection saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SelectMetaAdAccountResult"
+        "400":
+          description: Invalid ad account id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: No Meta OAuth token available; connect first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "502":
+          description: Meta API error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/meta/run-reports:
+    post:
+      operationId: runMetaReports
+      tags: [metrix]
+      summary: Run both IAP report pulls for the connected ad account
+      description: Pulls IAP_DEMOGRAPHIC_TEXT_SIGNAL and IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL insights (same last_30d range) for the user's connected ad account, normalizes rows into report_rows, and stores token-sanitized raw pages. Reports are stored separately per class; partial failure is reported per class.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Pull results per report class
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunMetaReportsResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: No connected ad account, or token expired — reconnect required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/meta/report-rows:
+    get:
+      operationId: listMetaReportRows
+      tags: [metrix]
+      summary: List normalized report rows for the connected ad account
+      description: Returns normalized rows from the most recent successful pull of the given report class for the logged-in user's connected ad account.
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: report_class
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [IAP_DEMOGRAPHIC_TEXT_SIGNAL, IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL]
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 200
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: Normalized report rows
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetaReportRowsResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: No successful pull exists for this report class
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /healthz:
     get:
       operationId: healthCheck
@@ -1377,6 +1599,237 @@ components:
             $ref: "#/components/schemas/GeneratedReport"
       required:
         - reports
+    MetaConnectedAccount:
+      type: object
+      properties:
+        ad_account_id:
+          type: string
+        account_name:
+          type: string
+          nullable: true
+        currency:
+          type: string
+          nullable: true
+        timezone:
+          type: string
+          nullable: true
+        connected_at:
+          type: string
+        token_expires_at:
+          type: string
+          nullable: true
+        token_status:
+          type: string
+          enum: [active, expiring, expired]
+        status:
+          type: string
+      required:
+        - ad_account_id
+        - connected_at
+        - token_status
+        - status
+    MetaReportPullStatus:
+      type: object
+      properties:
+        report_class:
+          type: string
+          enum: [IAP_DEMOGRAPHIC_TEXT_SIGNAL, IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL]
+        status:
+          type: string
+          enum: [success, error]
+        fetched_at:
+          type: string
+        date_range_start:
+          type: string
+        date_range_end:
+          type: string
+        row_count:
+          type: integer
+        error_message:
+          type: string
+          nullable: true
+      required:
+        - report_class
+        - status
+        - fetched_at
+        - date_range_start
+        - date_range_end
+        - row_count
+    MetaConnectionStatus:
+      type: object
+      properties:
+        connected:
+          type: boolean
+        pending_selection:
+          type: boolean
+          description: True when OAuth completed but no ad account has been selected yet.
+        pilot_mode:
+          type: boolean
+        account:
+          oneOf:
+            - $ref: "#/components/schemas/MetaConnectedAccount"
+            - type: "null"
+        reports:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetaReportPullStatus"
+      required:
+        - connected
+        - pending_selection
+        - pilot_mode
+        - reports
+    MetaDisconnectResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [disconnected]
+      required:
+        - status
+    MetaOauthUrlResult:
+      type: object
+      properties:
+        url:
+          type: string
+      required:
+        - url
+    MetaAdAccount:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Meta ad account id (act_ prefixed).
+        name:
+          type: string
+          nullable: true
+        account_status:
+          type: integer
+          nullable: true
+        currency:
+          type: string
+          nullable: true
+        timezone_name:
+          type: string
+          nullable: true
+      required:
+        - id
+    MetaAdAccountsResult:
+      type: object
+      properties:
+        accounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetaAdAccount"
+        pilot_mode:
+          type: boolean
+        pilot_required_account_id:
+          type: string
+          nullable: true
+        pilot_required_account_present:
+          type: boolean
+          nullable: true
+          description: Present only in pilot mode; false marks the pilot validation as failed.
+      required:
+        - accounts
+        - pilot_mode
+    SelectMetaAdAccountInput:
+      type: object
+      properties:
+        ad_account_id:
+          type: string
+          minLength: 1
+      required:
+        - ad_account_id
+    SelectMetaAdAccountResult:
+      type: object
+      properties:
+        account:
+          $ref: "#/components/schemas/MetaConnectedAccount"
+      required:
+        - account
+    RunMetaReportsResult:
+      type: object
+      properties:
+        date_range_start:
+          type: string
+        date_range_end:
+          type: string
+        pulls:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetaReportPullStatus"
+      required:
+        - date_range_start
+        - date_range_end
+        - pulls
+    MetaReportRow:
+      type: object
+      properties:
+        id:
+          type: string
+        report_class:
+          type: string
+        date:
+          type: string
+          nullable: true
+        campaign_id:
+          type: string
+          nullable: true
+        campaign_name:
+          type: string
+          nullable: true
+        adset_id:
+          type: string
+          nullable: true
+        adset_name:
+          type: string
+          nullable: true
+        ad_id:
+          type: string
+          nullable: true
+        ad_name:
+          type: string
+          nullable: true
+        dimensions:
+          type: object
+          additionalProperties: true
+        metrics:
+          type: object
+          additionalProperties: true
+      required:
+        - id
+        - report_class
+        - dimensions
+        - metrics
+    MetaReportRowsResult:
+      type: object
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetaReportRow"
+        total:
+          type: integer
+        report_class:
+          type: string
+        fetched_at:
+          type: string
+        date_range_start:
+          type: string
+        date_range_end:
+          type: string
+        metric_mapping_status:
+          type: object
+          additionalProperties: true
+          description: Debug object showing mapped, missing, derived, and unavailable template metrics for this pull.
+          nullable: true
+      required:
+        - rows
+        - total
+        - report_class
+        - fetched_at
+        - date_range_start
+        - date_range_end
     ApiError:
       type: object
       properties:

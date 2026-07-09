@@ -9,6 +9,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccounts } from "@/lib/data/metrixSeedAdapter";
 import { ModuleHeader, SectionCard } from "../shared";
 import { ConnectMetaDialog, ManualImportDialog } from "../ConnectAccountDialogs";
+import { MetaLiveConnection } from "./MetaLiveConnection";
 import { cn } from "@/lib/utils";
 import { Plug, FileUp, CheckCircle2, Circle } from "lucide-react";
 import type { AdAccount } from "@/lib/data/seedTypes";

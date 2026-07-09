@@ -565,6 +565,157 @@ export const DeleteWorkspaceReportResponse = zod.object({
 
 
 /**
+ * Returns whether the logged-in user has connected a Meta ad account, pending-selection state after OAuth, and the latest report pull status per report class.
+ * @summary Get the current user's Meta ad account connection status
+ */
+export const GetMetaConnectionResponse = zod.object({
+  "connected": zod.boolean(),
+  "pending_selection": zod.boolean().describe('True when OAuth completed but no ad account has been selected yet.'),
+  "pilot_mode": zod.boolean(),
+  "account": zod.union([zod.object({
+  "ad_account_id": zod.string(),
+  "account_name": zod.string().nullish(),
+  "currency": zod.string().nullish(),
+  "timezone": zod.string().nullish(),
+  "connected_at": zod.string(),
+  "token_expires_at": zod.string().nullish(),
+  "token_status": zod.enum(['active', 'expiring', 'expired']),
+  "status": zod.string()
+}),zod.null()]).optional(),
+  "reports": zod.array(zod.object({
+  "report_class": zod.enum(['IAP_DEMOGRAPHIC_TEXT_SIGNAL', 'IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL']),
+  "status": zod.enum(['success', 'error']),
+  "fetched_at": zod.string(),
+  "date_range_start": zod.string(),
+  "date_range_end": zod.string(),
+  "row_count": zod.number(),
+  "error_message": zod.string().nullish()
+}))
+})
+
+
+/**
+ * Removes the stored connection and any pending OAuth token for the logged-in user. Stored report pulls and rows are kept.
+ * @summary Disconnect the user's Meta ad account
+ */
+export const DisconnectMetaAccountResponse = zod.object({
+  "status": zod.enum(['disconnected'])
+})
+
+
+/**
+ * Builds the Facebook OAuth dialog URL (scope ads_read only) with a signed state parameter for the logged-in user. The browser should navigate to the returned URL.
+ * @summary Get the Meta OAuth dialog URL
+ */
+export const GetMetaOauthUrlResponse = zod.object({
+  "url": zod.string()
+})
+
+
+/**
+ * Calls Meta /me/adaccounts with the user's OAuth token (pending or connected) and returns the accounts for selection. In pilot mode, flags whether the required pilot ad account is present.
+ * @summary List ad accounts available to the connected Meta user
+ */
+export const ListMetaAdAccountsResponse = zod.object({
+  "accounts": zod.array(zod.object({
+  "id": zod.string().describe('Meta ad account id (act_ prefixed).'),
+  "name": zod.string().nullish(),
+  "account_status": zod.number().nullish(),
+  "currency": zod.string().nullish(),
+  "timezone_name": zod.string().nullish()
+})),
+  "pilot_mode": zod.boolean(),
+  "pilot_required_account_id": zod.string().nullish(),
+  "pilot_required_account_present": zod.boolean().nullish().describe('Present only in pilot mode; false marks the pilot validation as failed.')
+})
+
+
+/**
+ * Validates the chosen ad account against /me/adaccounts, then persists the connection (encrypted token, account metadata) for the logged-in user.
+ * @summary Select and save a Meta ad account
+ */
+
+
+
+export const SelectMetaAdAccountBody = zod.object({
+  "ad_account_id": zod.string().min(1)
+})
+
+export const SelectMetaAdAccountResponse = zod.object({
+  "account": zod.object({
+  "ad_account_id": zod.string(),
+  "account_name": zod.string().nullish(),
+  "currency": zod.string().nullish(),
+  "timezone": zod.string().nullish(),
+  "connected_at": zod.string(),
+  "token_expires_at": zod.string().nullish(),
+  "token_status": zod.enum(['active', 'expiring', 'expired']),
+  "status": zod.string()
+})
+})
+
+
+/**
+ * Pulls IAP_DEMOGRAPHIC_TEXT_SIGNAL and IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL insights (same last_30d range) for the user's connected ad account, normalizes rows into report_rows, and stores token-sanitized raw pages. Reports are stored separately per class; partial failure is reported per class.
+ * @summary Run both IAP report pulls for the connected ad account
+ */
+export const RunMetaReportsResponse = zod.object({
+  "date_range_start": zod.string(),
+  "date_range_end": zod.string(),
+  "pulls": zod.array(zod.object({
+  "report_class": zod.enum(['IAP_DEMOGRAPHIC_TEXT_SIGNAL', 'IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL']),
+  "status": zod.enum(['success', 'error']),
+  "fetched_at": zod.string(),
+  "date_range_start": zod.string(),
+  "date_range_end": zod.string(),
+  "row_count": zod.number(),
+  "error_message": zod.string().nullish()
+}))
+})
+
+
+/**
+ * Returns normalized rows from the most recent successful pull of the given report class for the logged-in user's connected ad account.
+ * @summary List normalized report rows for the connected ad account
+ */
+export const listMetaReportRowsQueryLimitDefault = 200;
+export const listMetaReportRowsQueryLimitMax = 1000;
+
+export const listMetaReportRowsQueryOffsetDefault = 0;
+export const listMetaReportRowsQueryOffsetMin = 0;
+
+
+
+export const ListMetaReportRowsQueryParams = zod.object({
+  "report_class": zod.enum(['IAP_DEMOGRAPHIC_TEXT_SIGNAL', 'IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL']),
+  "limit": zod.coerce.number().min(1).max(listMetaReportRowsQueryLimitMax).default(listMetaReportRowsQueryLimitDefault),
+  "offset": zod.coerce.number().min(listMetaReportRowsQueryOffsetMin).default(listMetaReportRowsQueryOffsetDefault)
+})
+
+export const ListMetaReportRowsResponse = zod.object({
+  "rows": zod.array(zod.object({
+  "id": zod.string(),
+  "report_class": zod.string(),
+  "date": zod.string().nullish(),
+  "campaign_id": zod.string().nullish(),
+  "campaign_name": zod.string().nullish(),
+  "adset_id": zod.string().nullish(),
+  "adset_name": zod.string().nullish(),
+  "ad_id": zod.string().nullish(),
+  "ad_name": zod.string().nullish(),
+  "dimensions": zod.record(zod.string(), zod.unknown()),
+  "metrics": zod.record(zod.string(), zod.unknown())
+})),
+  "total": zod.number(),
+  "report_class": zod.string(),
+  "fetched_at": zod.string(),
+  "date_range_start": zod.string(),
+  "date_range_end": zod.string(),
+  "metric_mapping_status": zod.record(zod.string(), zod.unknown()).nullish().describe('Debug object showing mapped, missing, derived, and unavailable template metrics for this pull.')
+})
+
+
+/**
  * Returns server health status
  * @summary Health check
  */
