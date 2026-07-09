@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { reconcileAgencyAdminAccess } from "./lib/agencyAccessSafeguard";
 
 const rawPort = process.env["PORT"];
 
@@ -22,4 +23,11 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+});
+
+// Never fail silently: reconcile agency admin access on every boot so a
+// missed promotion or an emptied grants table surfaces immediately in
+// logs instead of showing up as "the app is broken" reports.
+reconcileAgencyAdminAccess(logger).catch((err) => {
+  logger.error({ err }, "Agency access safeguard failed to run");
 });

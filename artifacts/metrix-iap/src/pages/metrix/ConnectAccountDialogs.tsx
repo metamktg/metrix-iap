@@ -36,6 +36,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import type { AdAccount } from "@/lib/data/seedTypes";
+import { RequiredFormatPanel, AnalysisControls } from "./ManualAnalysisControls";
 
 export function PrimaryBtn({
   onClick,
@@ -232,6 +233,7 @@ export function ManualUploadPanel({
 
   return (
     <div className="space-y-3">
+      <RequiredFormatPanel />
       <div className="space-y-2">
         {IMPORT_KINDS.map(({ id, Icon, title, desc }) => (
           <button
@@ -360,6 +362,9 @@ export function ManualImportDialog({
           </DialogDescription>
         </DialogHeader>
         <ManualUploadPanel accountId={account.id} />
+        <div className="pt-3 mt-3 border-t border-border/40">
+          <AnalysisControls accountId={account.id} />
+        </div>
       </DialogContent>
     </Dialog>
   );

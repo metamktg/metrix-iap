@@ -89,6 +89,7 @@ create table if not exists ad_performance (
   cvr_link_pct numeric,
   cpm numeric,
   confidence text,
+  manual_analysis_run_id uuid references manual_analysis_runs(id) on delete cascade,
   unique (account_id, ad_name, campaign_name, result_type, date_start, date_end)
 );
 
@@ -588,3 +589,30 @@ create index if not exists generation_runs_account_idx on generation_runs (accou
 -- race between simultaneous generate POSTs (insert fails 23505 → 409).
 create unique index if not exists generation_runs_one_running
   on generation_runs (account_id, kind) where status = 'running';
+
+-- Manual-upload analysis runs (July 2026): parses staged manual_imports
+-- performance CSVs into ad_performance rows for a MANUALLY selected date
+-- window. Never triggered automatically by an upload — only by an explicit
+-- POST from the user. Mirrors the generation_runs honesty pattern: insert
+-- 'running', flip to 'success' only after all rows commit; failures delete
+-- partial ad_performance rows for the run and record 'error'.
+create table if not exists manual_analysis_runs (
+  id uuid primary key default gen_random_uuid(),
+  account_id text not null references ad_accounts(id),
+  status text not null default 'running' check (status in ('running', 'success', 'error')),
+  date_range text not null check (date_range in ('7d', '14d', '30d', 'all')),
+  date_start date,
+  date_end date,
+  rows_ingested integer,
+  imports_used integer,
+  error_message text,
+  created_by text,
+  started_at timestamptz not null default now(),
+  finished_at timestamptz
+);
+
+create index if not exists manual_analysis_runs_account_idx
+  on manual_analysis_runs (account_id, started_at desc);
+
+create unique index if not exists manual_analysis_runs_one_running
+  on manual_analysis_runs (account_id) where status = 'running';

@@ -76,6 +76,69 @@ export const StageManualImportResponse = zod.object({
 
 
 /**
+ * Returns the required/optional columns (with accepted header aliases and descriptions) for the "Performance export (CSV)" manual upload kind, plus a valid sample CSV. Used by the upload UI to show users exactly what to export.
+ * @summary Required column format for the manual performance CSV upload
+ */
+export const GetManualPerformanceCsvFormatResponse = zod.object({
+  "columns": zod.array(zod.object({
+  "label": zod.string(),
+  "required": zod.boolean(),
+  "description": zod.string(),
+  "aliases": zod.array(zod.string())
+})),
+  "sample_csv": zod.string()
+})
+
+
+/**
+ * Parses the account's staged performance_csv manual imports into performance data for the selected date window (7d/14d/30d/all — anchored to the latest date found in the uploaded data, not wall-clock time). Never runs automatically on upload — only from this explicit call. Returns 202 with the run id immediately; poll the latest-run endpoint for the outcome, including the exact date range analyzed. Requires access to the account.
+ * @summary Manually run analysis over an account's staged performance CSVs
+ */
+
+
+
+export const StartManualAnalysisRunParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
+})
+
+export const StartManualAnalysisRunBody = zod.object({
+  "date_range": zod.enum(['7d', '14d', '30d', 'all']).describe('Date window to analyze, anchored to the latest date found in the uploaded data (not wall-clock time). \"all\" analyzes every uploaded date.')
+})
+
+export const StartManualAnalysisRunResponse = zod.object({
+  "run_id": zod.string()
+})
+
+
+/**
+ * Returns the most recent manual analysis run for the account, or null when none exists. Runs stuck in 'running' past the staleness cutoff are honestly flipped to 'error'. Requires access to the account.
+ * @summary Latest manual analysis run for an account
+ */
+
+
+
+export const GetLatestAnalysisRunParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
+})
+
+export const GetLatestAnalysisRunResponse = zod.object({
+  "run": zod.object({
+  "id": zod.string(),
+  "account_id": zod.string(),
+  "status": zod.enum(['running', 'success', 'error']),
+  "date_range": zod.enum(['7d', '14d', '30d', 'all']),
+  "date_start": zod.string().nullish().describe('Resolved start date actually covered by this run (from the data itself).'),
+  "date_end": zod.string().nullish().describe('Resolved end date actually covered by this run (from the data itself).'),
+  "rows_ingested": zod.number().nullish(),
+  "imports_used": zod.number().nullish(),
+  "error_message": zod.string().nullish(),
+  "started_at": zod.string(),
+  "finished_at": zod.string().nullish()
+}).nullable()
+})
+
+
+/**
  * Starts an in-app Metrix engine run that generates message pillars and testing hypotheses grounded in the account's real analysis rows. Returns 202 with the run id immediately; poll the latest-run endpoint for the outcome. Generated rows carry source='generated' and never touch imported rows. Requires access to the account.
  * @summary Generate strategy (pillars + hypotheses) from the account's analysis data
  */
