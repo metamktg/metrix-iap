@@ -4,7 +4,7 @@
 // Unconfigured → connect state. All readiness/counts are derived from real
 // seed data (presence + item counts) — never fabricated.
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { ShieldCheck, KeyRound, Radio, BarChart3, Layers, FileText, Grid3x3, Zap, ArrowRight } from "lucide-react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
@@ -16,10 +16,14 @@ import {
 import { RecommendationDeck, actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
 import {
   ModuleHeader, ScopeBanner, MetricTile, SectionCard, CaveatNote,
-  UnconfiguredState, PendingState, fmtUSD, fmtNum, fmtPct, eventLabel, resultTerm,
+  UnconfiguredState, PendingState, fmtUSD, fmtNum, eventLabel, resultTerm,
 } from "./shared";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
 import { cn } from "@/lib/utils";
+import { buildMetricCatalog, metricSourceFromCampaignSummary, metricById } from "@/lib/data/metricsCatalog";
+import { useMetricSelection } from "@/hooks/useMetricSelection";
+import { MetricPickerButton } from "@/components/creative/MetricPicker";
+import { MetricDiagnosticModal } from "@/components/creative/MetricDiagnosticModal";
 
 const IMPACT_RANK: Record<string, number> = { high: 3, medium: 2, low: 1, setup: 0 };
 
@@ -93,6 +97,12 @@ export function AdAccountOverview() {
     (a, b) => (IMPACT_RANK[b.impact] ?? 0) - (IMPACT_RANK[a.impact] ?? 0)
   )[0];
 
+  const metricCatalog = useMemo(() => buildMetricCatalog(metricSourceFromCampaignSummary(cs)), [cs]);
+  const availableMetricIds = useMemo(() => metricCatalog.map((m) => m.id), [metricCatalog]);
+  const { selected: selectedMetricIds, toggle, move, reset } = useMetricSelection(availableMetricIds);
+  const [openMetricId, setOpenMetricId] = useState<string | null>(null);
+  const openMetric = openMetricId ? metricById(metricCatalog, openMetricId) : null;
+
   type Layer = { name: string; count: number; unit: string; ready: boolean; to: string; Icon: React.ComponentType<{ className?: string }> };
   const layers: Layer[] = [
     { name: "Listen", count: signals.length, unit: signals.length === 1 ? "signal" : "signals", ready: signals.length > 0, to: "/app/listen/signal", Icon: Radio },
@@ -115,12 +125,20 @@ export function AdAccountOverview() {
       <div className="px-6 py-5 space-y-6 max-w-6xl">
         {/* Health / totals */}
         <div>
-          <h2 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-3">Account totals</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60">Account totals</h2>
+            <MetricPickerButton catalog={metricCatalog} selected={selectedMetricIds} onToggle={toggle} onMove={move} onReset={reset} />
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <MetricTile label="Total spend" value={fmtUSD(cs.total_spend_usd)} />
-            <MetricTile label="Impressions" value={fmtNum(cs.total_impressions)} />
-            <MetricTile label="Link clicks" value={fmtNum(cs.total_link_clicks)} />
-            <MetricTile label="Link CTR" value={fmtPct(cs.overall_link_ctr_pct)} />
+            {selectedMetricIds.map((id) => {
+              const m = metricById(metricCatalog, id);
+              if (!m) return null;
+              return (
+                <button key={id} onClick={() => setOpenMetricId(id)} className="text-left">
+                  <MetricTile label={m.label} value={m.formatted} />
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -252,6 +270,15 @@ export function AdAccountOverview() {
           )}
         </SectionCard>
       </div>
+
+      <MetricDiagnosticModal
+        open={openMetric != null}
+        onClose={() => setOpenMetricId(null)}
+        metric={openMetric}
+        analysis={analysis}
+        mst={mst}
+        scope="account"
+      />
     </div>
   );
 }
