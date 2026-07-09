@@ -69,7 +69,7 @@ router.post("/metrix/auth/login", loginRateLimit, async (req, res) => {
     setSessionCookie(req, res, token, expiresAt);
 
     const data = AuthLoginResponse.parse({
-      user: { email: user.email, must_change_password: user.mustChangePassword },
+      user: { email: user.email, must_change_password: user.mustChangePassword, role: user.role },
     });
     res.json(data);
   } catch (err) {
@@ -94,7 +94,7 @@ router.post("/metrix/auth/logout", async (req, res) => {
 router.get("/metrix/auth/me", requireAuth, (req, res) => {
   const user = req.authUser!;
   const data = AuthMeResponse.parse({
-    user: { email: user.email, must_change_password: user.mustChangePassword },
+    user: { email: user.email, must_change_password: user.mustChangePassword, role: user.role },
   });
   res.json(data);
 });
@@ -132,7 +132,7 @@ router.post("/metrix/auth/change-password", requireAuth, async (req, res) => {
     await destroyOtherSessions(user.id, req.sessionToken!);
 
     const data = AuthChangePasswordResponse.parse({
-      user: { email: user.email, must_change_password: false },
+      user: { email: user.email, must_change_password: false, role: user.role },
     });
     res.json(data);
   } catch (err) {

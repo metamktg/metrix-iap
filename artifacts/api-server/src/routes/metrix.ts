@@ -36,11 +36,16 @@ import {
   AdminSendPasswordResetResponse,
   AdminRevokeUserResponse,
   AdminRestoreUserResponse,
+  CreateManualAdAccountBody,
+  CreateManualAdAccountResponse,
+  StageManualImportBody,
+  StageManualImportResponse,
 } from "@workspace/api-zod";
 import {
   db,
   agentWaitlistTable,
   usersTable,
+  userAdAccountsTable,
   workspaceInvitesTable,
   workspaceNotificationPrefsTable,
   workspaceReportSettingsTable,
@@ -63,7 +68,12 @@ import {
 } from "../lib/passwordResets";
 import { destroyAllSessions } from "../lib/sessions";
 import { isDisposableEmailDomain } from "../lib/disposableEmailDomains";
-import { getMetrixSeedFromSupabase } from "../lib/metrixSeedAssembly";
+import {
+  getMetrixSeedFromSupabase,
+  composeSeedForUser,
+  invalidateMetrixSeedCache,
+} from "../lib/metrixSeedAssembly";
+import { randomBytes } from "node:crypto";
 import { getSupabase } from "../lib/supabase";
 import { notifyRequestAccess } from "../lib/requestAccessNotification";
 import { getAppBaseUrl } from "../lib/appUrl";
@@ -203,6 +213,7 @@ router.get("/metrix/admin/users", requireAdmin, async (req, res) => {
     .select({
       id: usersTable.id,
       email: usersTable.email,
+      role: usersTable.role,
       mustChangePassword: usersTable.mustChangePassword,
       createdAt: usersTable.createdAt,
       lastLoginAt: usersTable.lastLoginAt,
@@ -217,6 +228,7 @@ router.get("/metrix/admin/users", requireAdmin, async (req, res) => {
         id: u.id,
         email: u.email,
         status: adminUserStatus(u),
+        role: u.role,
         must_change_password: u.mustChangePassword,
         created_at: u.createdAt.toISOString(),
         last_login_at: u.lastLoginAt ? u.lastLoginAt.toISOString() : null,
@@ -379,7 +391,19 @@ router.post(
 
 router.get("/metrix/seed", requireAuth, async (req, res) => {
   try {
-    const bundle = await getMetrixSeedFromSupabase();
+    const user = req.authUser!;
+    let bundle = await getMetrixSeedFromSupabase();
+    if (user.role !== "admin") {
+      // Members see only accounts they have been granted. The per-user view
+      // is derived fresh on every request (never cached) so a new grant is
+      // visible immediately. An empty grant set is valid: ad_accounts []
+      // renders the onboarding path client-side.
+      const grants = await db
+        .select({ adAccountId: userAdAccountsTable.adAccountId })
+        .from(userAdAccountsTable)
+        .where(eq(userAdAccountsTable.userId, user.id));
+      bundle = composeSeedForUser(bundle, new Set(grants.map((g) => g.adAccountId)));
+    }
     const data = GetMetrixSeedResponse.parse(bundle);
     res.json(data);
   } catch (err) {
@@ -389,6 +413,175 @@ router.get("/metrix/seed", requireAuth, async (req, res) => {
     res.status(503).json({
       message:
         err instanceof Error ? err.message : "Metrix data layer is unavailable.",
+    });
+  }
+});
+
+// ─── Ad account creation & manual report staging ──────────────────────
+
+async function userHasAccountAccess(userId: number, accountId: string): Promise<boolean> {
+  const rows = await db
+    .select({ id: userAdAccountsTable.id })
+    .from(userAdAccountsTable)
+    .where(
+      and(
+        eq(userAdAccountsTable.userId, userId),
+        eq(userAdAccountsTable.adAccountId, accountId),
+      ),
+    )
+    .limit(1);
+  return rows.length > 0;
+}
+
+router.post("/metrix/accounts", requireAuth, async (req, res) => {
+  const parsed = CreateManualAdAccountBody.safeParse(req.body);
+  const name = parsed.success ? parsed.data.name.trim() : "";
+  if (!parsed.success || name.length < 2) {
+    res.status(400).json({ message: "An account name of at least 2 characters is required." });
+    return;
+  }
+  const user = req.authUser!;
+
+  try {
+    const supabase = getSupabase();
+    const lookup = await supabase
+      .from("ad_accounts")
+      .select("id, name")
+      .ilike("name", name)
+      .limit(1);
+    if (lookup.error) throw new Error(lookup.error.message);
+    if (lookup.data && lookup.data.length > 0) {
+      res.status(409).json({
+        message: `An ad account named "${lookup.data[0]!["name"]}" already exists.`,
+      });
+      return;
+    }
+
+    // Manual accounts get a "manual_" id — NEVER an act_ prefix, which is
+    // reserved for real Meta ad account ids.
+    const accountId = `manual_${randomBytes(9).toString("base64url")}`;
+    const insert = await supabase.from("ad_accounts").insert({
+      id: accountId,
+      name,
+      status: "unconfigured",
+      platform: "Meta Ads",
+      source_status: "manual_reports",
+      overview_state: {
+        title: "Analysis not run yet",
+        description:
+          "This ad account was created for manual report uploads. Upload exported Meta reports; performance and strategy data appears after the first analysis run processes them.",
+        primary_action: "Upload Reports",
+        secondary_action: "Connect Meta",
+      },
+    });
+    if (insert.error) throw new Error(insert.error.message);
+
+    // Grant the creator access (idempotent) — for members this is what
+    // makes the new account visible in their filtered seed.
+    await db
+      .insert(userAdAccountsTable)
+      .values({ userId: user.id, adAccountId: accountId })
+      .onConflictDoNothing();
+    invalidateMetrixSeedCache();
+
+    req.log.info({ accountId, name }, "Manual ad account created");
+    res.json(
+      CreateManualAdAccountResponse.parse({
+        account_id: accountId,
+        name,
+        status: "unconfigured",
+      }),
+    );
+  } catch (err) {
+    req.log.error({ err }, "Failed to create manual ad account");
+    res.status(502).json({
+      message: err instanceof Error ? err.message : "Could not create the ad account.",
+    });
+  }
+});
+
+const MAX_MANUAL_IMPORT_BYTES = 8 * 1024 * 1024;
+const BASE64_RE = /^[A-Za-z0-9+/\-_]+={0,2}$/;
+
+router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (req, res) => {
+  const accountId = String(req.params["accountId"]);
+  const parsed = StageManualImportBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({
+      message: "A file kind (performance_csv or creative_library), filename, and base64 content are required.",
+    });
+    return;
+  }
+  const user = req.authUser!;
+
+  try {
+    if (user.role !== "admin" && !(await userHasAccountAccess(user.id, accountId))) {
+      res.status(403).json({ message: "You don't have access to this ad account." });
+      return;
+    }
+
+    const supabase = getSupabase();
+    const account = await supabase
+      .from("ad_accounts")
+      .select("id")
+      .eq("id", accountId)
+      .limit(1);
+    if (account.error) throw new Error(account.error.message);
+    if (!account.data || account.data.length === 0) {
+      res.status(404).json({ message: "Ad account not found." });
+      return;
+    }
+
+    const b64 = parsed.data.content_base64.replace(/\s/g, "");
+    if (!BASE64_RE.test(b64)) {
+      res.status(400).json({ message: "File content is not valid base64." });
+      return;
+    }
+    const content = Buffer.from(b64, "base64");
+    if (content.length === 0) {
+      res.status(400).json({ message: "The uploaded file is empty." });
+      return;
+    }
+    if (content.length > MAX_MANUAL_IMPORT_BYTES) {
+      res.status(413).json({ message: "File is too large — the limit is 8 MB." });
+      return;
+    }
+
+    // Staged only: the file is stored raw for the analysis pipeline. It is
+    // never parsed into performance data at upload time — no fabricated
+    // numbers appear in the app from an upload alone.
+    const insert = await supabase
+      .from("manual_imports")
+      .insert({
+        account_id: accountId,
+        kind: parsed.data.kind,
+        filename: parsed.data.filename,
+        content: `\\x${content.toString("hex")}`,
+        size_bytes: content.length,
+        uploaded_by_user_id: user.id,
+        uploaded_by_email: user.email,
+      })
+      .select("id")
+      .single();
+    if (insert.error) throw new Error(insert.error.message);
+
+    req.log.info(
+      { accountId, kind: parsed.data.kind, filename: parsed.data.filename, sizeBytes: content.length },
+      "Manual import staged",
+    );
+    res.json(
+      StageManualImportResponse.parse({
+        status: "staged",
+        import_id: String(insert.data["id"]),
+        filename: parsed.data.filename,
+        size_bytes: content.length,
+        note: "File staged for the analysis pipeline. Performance data appears only after an analysis run processes it — nothing is parsed or fabricated at upload time.",
+      }),
+    );
+  } catch (err) {
+    req.log.error({ err }, "Failed to stage manual import");
+    res.status(502).json({
+      message: err instanceof Error ? err.message : "Could not stage the uploaded file.",
     });
   }
 });
@@ -853,10 +1046,20 @@ const requireWorkspaceAccess = async (
   }
 };
 
+// Team-management endpoints (member roster + invites) are admin-only:
+// members must never see the full client roster or manage invites.
+const requireAdminRole = (req: Request, res: Response, next: NextFunction): void => {
+  if (req.authUser?.role !== "admin") {
+    res.status(403).json({ message: "Admin access required." });
+    return;
+  }
+  next();
+};
+
 // Real provisioned user accounts (this deployment is single-workspace, so
 // every user row belongs to this workspace). "invited" = provisioned but the
 // member hasn't completed their first login yet.
-router.get("/metrix/workspaces/:workspaceId/members", requireAuth, requireWorkspaceAccess, async (req, res) => {
+router.get("/metrix/workspaces/:workspaceId/members", requireAuth, requireWorkspaceAccess, requireAdminRole, async (req, res) => {
   const rows = await db
     .select({
       email: usersTable.email,
@@ -878,7 +1081,7 @@ router.get("/metrix/workspaces/:workspaceId/members", requireAuth, requireWorksp
   res.json(data);
 });
 
-router.get("/metrix/workspaces/:workspaceId/invites", requireAuth, requireWorkspaceAccess, async (req, res) => {
+router.get("/metrix/workspaces/:workspaceId/invites", requireAuth, requireWorkspaceAccess, requireAdminRole, async (req, res) => {
   const workspaceId = String(req.params.workspaceId);
   const rows = await db
     .select()
@@ -910,7 +1113,7 @@ const getWorkspaceTeamFromSeed = async (): Promise<{
   };
 };
 
-router.post("/metrix/workspaces/:workspaceId/invites", requireAuth, requireWorkspaceAccess, async (req, res) => {
+router.post("/metrix/workspaces/:workspaceId/invites", requireAuth, requireWorkspaceAccess, requireAdminRole, async (req, res) => {
   const workspaceId = String(req.params.workspaceId);
   const parsed = CreateWorkspaceInviteBody.safeParse(req.body);
   if (!parsed.success) {
@@ -1019,6 +1222,7 @@ router.delete(
   "/metrix/workspaces/:workspaceId/invites/:inviteId",
   requireAuth,
   requireWorkspaceAccess,
+  requireAdminRole,
   async (req, res) => {
     const workspaceId = String(req.params.workspaceId);
     const inviteId = parseInviteId(String(req.params.inviteId));
@@ -1051,6 +1255,7 @@ router.post(
   "/metrix/workspaces/:workspaceId/invites/:inviteId/resend",
   requireAuth,
   requireWorkspaceAccess,
+  requireAdminRole,
   async (req, res) => {
     const workspaceId = String(req.params.workspaceId);
     const inviteId = parseInviteId(String(req.params.inviteId));
@@ -1241,10 +1446,20 @@ const reportRowToApi = (row: WorkspaceReport) => ({
 
 router.get("/metrix/workspaces/:workspaceId/reports", requireAuth, requireWorkspaceAccess, async (req, res) => {
   const workspaceId = String(req.params.workspaceId);
+  const user = req.authUser!;
+  // Members see only reports they generated themselves; admins see all
+  // (including legacy rows with no creator recorded).
+  const where =
+    user.role === "admin"
+      ? eq(workspaceReportsTable.workspaceId, workspaceId)
+      : and(
+          eq(workspaceReportsTable.workspaceId, workspaceId),
+          eq(workspaceReportsTable.createdByUserId, user.id),
+        );
   const rows = await db
     .select()
     .from(workspaceReportsTable)
-    .where(eq(workspaceReportsTable.workspaceId, workspaceId))
+    .where(where)
     .orderBy(desc(workspaceReportsTable.generatedAt), desc(workspaceReportsTable.id));
 
   res.json(ListWorkspaceReportsResponse.parse({ reports: rows.map(reportRowToApi) }));
@@ -1295,6 +1510,7 @@ router.post("/metrix/workspaces/:workspaceId/reports", requireAuth, requireWorks
       rangeIsOverride: b.range_source ?? null,
       summary: b.summary,
       modelJson: b.model_json,
+      createdByUserId: req.authUser!.id,
     })
     .returning();
 
@@ -1314,15 +1530,26 @@ router.delete(
       res.status(404).json({ message: "Report not found in this workspace." });
       return;
     }
+    const user = req.authUser!;
+
+    // Members can delete only their own reports; admins can delete any.
+    // A member hitting someone else's report gets the same 404 as a
+    // missing row — no existence leak.
+    const deleteWhere =
+      user.role === "admin"
+        ? and(
+            eq(workspaceReportsTable.workspaceId, workspaceId),
+            eq(workspaceReportsTable.id, reportId),
+          )
+        : and(
+            eq(workspaceReportsTable.workspaceId, workspaceId),
+            eq(workspaceReportsTable.id, reportId),
+            eq(workspaceReportsTable.createdByUserId, user.id),
+          );
 
     const deleted = await db
       .delete(workspaceReportsTable)
-      .where(
-        and(
-          eq(workspaceReportsTable.workspaceId, workspaceId),
-          eq(workspaceReportsTable.id, reportId),
-        ),
-      )
+      .where(deleteWhere)
       .returning({ id: workspaceReportsTable.id });
 
     if (deleted.length === 0) {

@@ -9,4 +9,6 @@ The metrix-iap vitest suites (nav routes, account scoping) render views against 
 
 **How to apply:** if the seed bundle schema changes (new top-level keys, renamed tables), refresh the fixture from the live endpoint: `curl localhost:80/api/metrix/seed` (API server workflow must be running) and overwrite the fixture file. Also: any view using `useDateRange` requires `DateRangeProvider` in test render wrappers (harness.tsx and per-test renderView helpers), nested inside AccountProvider with MetrixDataContext mocked.
 
+Refreshing the fixture can break tests that never mentioned the changed data: seed content growth (e.g. seed report-history entries appearing) turns previously-unique `getByRole` queries ambiguous. When a refresh breaks an unrelated test, scope the query with `within(card)` on the row's container instead of reverting the fixture.
+
 Testing gotchas in this suite: jest-dom matchers (`toBeVisible`, `toBeInTheDocument`, `toHaveAttribute`) are NOT installed — use plain assertions (`getAttribute`, `classList.contains`). Radix dropdown triggers don't open on `fireEvent.click` alone in jsdom — dispatch a bubbling `pointerdown` PointerEvent first. Vitest 4 here rejects `--reporter=basic`/`dot`; use the default reporter, and redirect output to a file (bare `vitest run` in the agent shell can exit −1 with no output).

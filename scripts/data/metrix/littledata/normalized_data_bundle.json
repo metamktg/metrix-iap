@@ -1,0 +1,341 @@
+{
+  "bundle_metadata": {
+    "account_id": "1202182091204847",
+    "date_range": {
+      "start": "2026-05-03",
+      "end": "2026-06-26"
+    },
+    "currency": "USD",
+    "objective": "Website purchases",
+    "attribution_windows": {
+      "standard": "7-day click, 1-day view, 1-day engaged-view ($648.60 spend, 39.3%)",
+      "incremental": "Incremental attribution ($1,003.09 spend, 60.7%)"
+    },
+    "source_files": [
+      "IAP-DEMO-1202182091204847.csv (2026-07-09 re-export IAP-DEMOGRAPHIC-MAIN, 5,503 rows: ad x day x gender x age x primary text, WITH funnel columns)",
+      "IAP-DEVICE-1202182091204847.csv (2026-07-09 re-export IAP-DEVICE-MAIN, 279 rows: platform x placement x conversion device, conversion-based tracking)"
+    ],
+    "source_metadata": {
+      "original_metric_columns": [
+        "Reach",
+        "Impressions",
+        "Frequency",
+        "Results",
+        "Amount spent (USD)",
+        "Cost per result"
+      ],
+      "funnel_columns_added_2026_07_09": [
+        "Link clicks",
+        "Clicks (all)",
+        "Adds to cart",
+        "Checkouts initiated",
+        "Purchases",
+        "Purchases conversion value",
+        "Attribution setting"
+      ],
+      "device_export_tracking_change": "The IAP-DEVICE re-export switched from impression-based delivery breakdown (spend/impressions per segment, previously all blank) to conversion-based tracking: funnel actions attributed to the converting device; spend/impressions are not device-attributable and are empty by design. Reporting window 2026-01-01 to 2026-07-09 (wider than the demographic export)."
+    }
+  },
+  "account_totals": {
+    "spend": 1651.69,
+    "impressions": 59308,
+    "purchases": 2,
+    "blended_cpa": 825.85,
+    "link_clicks": 1150,
+    "clicks_all": 1590,
+    "add_to_cart": 70,
+    "initiate_checkout": 1,
+    "revenue": 300.0,
+    "roas": 0.18
+  },
+  "quality_flags": [
+    {
+      "flag": "CONVERSION_DEVICE_UNATTRIBUTED",
+      "severity": "high",
+      "detail": "In the conversion-based IAP-DEVICE export, every purchase (2), add to cart (70/71) and checkout (1) reports under conversion device '0' (unknown). Device-level purchase attribution is unavailable in this account; only link clicks split by device (iphone 932, android_smartphone 211, ipad 73, desktop 70, android_tablet 10, other 2)."
+    },
+    {
+      "flag": "DEVICE_EXPORT_WINDOW_MISMATCH",
+      "severity": "medium",
+      "detail": "The IAP-DEVICE export covers 2026-01-01 to 2026-07-09 (1,298 link clicks) while the demographic export covers 2026-05-03 to 2026-06-26 (1,150 link clicks). Cross-export comparisons are directional only — never reconcile clicks across the two files."
+    },
+    {
+      "flag": "MIXED_ATTRIBUTION",
+      "severity": "high",
+      "detail": "61% of spend reports under Incremental attribution, which systematically reports fewer conversions than standard 7DC/1DV. The 2-purchase count is likely an undercount of platform-attributable purchases. Cross-check against Shopify/LittleData server-side numbers before judging creatives dead."
+    },
+    {
+      "flag": "PRE_SIGNAL_VOLUME",
+      "severity": "high",
+      "detail": "2 reported purchases on $1,651.69. No segment reaches medium confidence. All creative-level reads are validation_required or insufficient."
+    },
+    {
+      "flag": "ACCOUNT_RESTRUCTURE_MID_PERIOD",
+      "severity": "medium",
+      "detail": "'Duplicate' campaign copies and universal not_delivering status indicate a restructure during the window; learnings were split across duplicated entities."
+    },
+    {
+      "flag": "COPY_FRAGMENTATION",
+      "severity": "medium",
+      "detail": "Blue Shirt UGC ran 29 copy variants on $53.73; 9 Image + Discount ran 15 variants on $364.86. Spend per variant is too thin to isolate copy effects."
+    }
+  ],
+  "ad_level_performance": [
+    {
+      "ad_name": "9 Image + Discount",
+      "spend": 364.86,
+      "purchases": 0,
+      "impressions": 11797,
+      "confidence": "validation_required"
+    },
+    {
+      "ad_name": "Music Row Static - Pride",
+      "spend": 233.55,
+      "purchases": 0,
+      "impressions": 6476,
+      "confidence": "validation_required"
+    },
+    {
+      "ad_name": "Multiple Pieces",
+      "spend": 172.38,
+      "purchases": 1,
+      "impressions": 11249,
+      "confidence": "validation_required"
+    },
+    {
+      "ad_name": "1 Image Static - Best Sellers",
+      "spend": 149.59,
+      "purchases": 0,
+      "impressions": 6707,
+      "confidence": "validation_required"
+    },
+    {
+      "ad_name": "Good quality ad",
+      "spend": 127.33,
+      "purchases": 0,
+      "impressions": 3286,
+      "confidence": "validation_required"
+    },
+    {
+      "ad_name": "1 Print Static",
+      "spend": 107.24,
+      "purchases": 1,
+      "impressions": 3160,
+      "confidence": "validation_required"
+    },
+    {
+      "ad_name": "6 Images",
+      "spend": 82.65,
+      "purchases": 0,
+      "impressions": 3925,
+      "confidence": "validation_required"
+    },
+    {
+      "ad_name": "Blue Shirt UGC",
+      "spend": 53.73,
+      "purchases": 0,
+      "impressions": 1102,
+      "confidence": "validation_required"
+    },
+    {
+      "ad_name": "3 Prints on bed",
+      "spend": 49.86,
+      "purchases": 0,
+      "impressions": 1365,
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "Avatar - Gift 3",
+      "spend": 42.98,
+      "purchases": 0,
+      "impressions": 1043,
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "Free Shipping Ad",
+      "spend": 31.05,
+      "purchases": 0,
+      "impressions": 807,
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "2 Print Static",
+      "spend": 22.83,
+      "purchases": 0,
+      "impressions": 707,
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "Letter 3",
+      "spend": 21.37,
+      "purchases": 0,
+      "impressions": 544,
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "5 Images + Copy",
+      "spend": 18.45,
+      "purchases": 0,
+      "impressions": 515,
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "1 Image",
+      "spend": 16.17,
+      "purchases": 0,
+      "impressions": 747,
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "2 Image Static - Best Sellers Copy",
+      "spend": 14.07,
+      "purchases": 0,
+      "impressions": 801,
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "Maddie Holding",
+      "spend": 13.37,
+      "purchases": 0,
+      "impressions": 525,
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "Music Row Static - In Stock",
+      "spend": 12.24,
+      "purchases": 0,
+      "impressions": 286,
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "40 Year Old Women - Hometown Pride",
+      "spend": 11.63,
+      "purchases": 0,
+      "impressions": 486,
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "2 Print + Dads Gift",
+      "spend": 11.62,
+      "purchases": 0,
+      "impressions": 387,
+      "confidence": "insufficient"
+    }
+  ],
+  "demographic_performance": [
+    {
+      "gender": "male",
+      "age": "55-64",
+      "spend": 295.71,
+      "purchases": 0,
+      "impressions": 8443
+    },
+    {
+      "gender": "male",
+      "age": "65+",
+      "spend": 221.09,
+      "purchases": 0,
+      "impressions": 6118
+    },
+    {
+      "gender": "male",
+      "age": "45-54",
+      "spend": 216.49,
+      "purchases": 0,
+      "impressions": 7684
+    },
+    {
+      "gender": "male",
+      "age": "35-44",
+      "spend": 183.43,
+      "purchases": 0,
+      "impressions": 8086
+    },
+    {
+      "gender": "female",
+      "age": "65+",
+      "spend": 169.9,
+      "purchases": 0,
+      "impressions": 4556
+    },
+    {
+      "gender": "female",
+      "age": "55-64",
+      "spend": 156.66,
+      "purchases": 1,
+      "impressions": 4897
+    },
+    {
+      "gender": "female",
+      "age": "45-54",
+      "spend": 141.86,
+      "purchases": 0,
+      "impressions": 4986
+    },
+    {
+      "gender": "male",
+      "age": "25-34",
+      "spend": 123.7,
+      "purchases": 1,
+      "impressions": 6835
+    },
+    {
+      "gender": "female",
+      "age": "35-44",
+      "spend": 64.52,
+      "purchases": 0,
+      "impressions": 3270
+    },
+    {
+      "gender": "female",
+      "age": "25-34",
+      "spend": 38.0,
+      "purchases": 0,
+      "impressions": 2196
+    },
+    {
+      "gender": "male",
+      "age": "18-24",
+      "spend": 17.84,
+      "purchases": 0,
+      "impressions": 1104
+    },
+    {
+      "gender": "female",
+      "age": "18-24",
+      "spend": 7.94,
+      "purchases": 0,
+      "impressions": 438
+    },
+    {
+      "gender": "unknown",
+      "age": "65+",
+      "spend": 6.05,
+      "purchases": 0,
+      "impressions": 228
+    },
+    {
+      "gender": "unknown",
+      "age": "45-54",
+      "spend": 3.78,
+      "purchases": 0,
+      "impressions": 152
+    }
+  ],
+  "purchase_events": [
+    {
+      "ad_name": "1 Print Static",
+      "concept": "Concept 2 - Best Gift",
+      "date": "2026-06-21",
+      "segment": "male 25-34",
+      "attribution": "7DC/1DV"
+    },
+    {
+      "ad_name": "Multiple Pieces",
+      "concept": "Broad_Pack1",
+      "date": "2026-05-06",
+      "segment": "female 55-64",
+      "attribution": "Incremental"
+    }
+  ]
+}

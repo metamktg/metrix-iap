@@ -153,6 +153,30 @@ create table if not exists device_performance (
   unique (account_id, device, date_start, date_end)
 );
 
+-- ── Conversion-based tracking columns (July 2026 Meta export change) ──
+-- Meta's device breakdown switched from impression-based delivery
+-- reporting to conversion-based tracking: device/platform/placement rows
+-- can now carry funnel actions (link clicks, adds to cart, checkouts
+-- initiated, purchases) with NO spend/impressions — delivery metrics are
+-- not device-attributable under conversion tracking. tracking_basis
+-- distinguishes row semantics: 'delivery' = legacy impression-based rows
+-- (spend/impressions per segment), 'conversion' = conversion-based rows
+-- (funnel actions per conversion device/placement/platform). NULL is
+-- read as 'delivery' (all pre-change rows).
+alter table device_performance add column if not exists link_clicks bigint;
+alter table device_performance add column if not exists adds_to_cart bigint;
+alter table device_performance add column if not exists checkouts_initiated bigint;
+alter table device_performance add column if not exists purchases bigint;
+alter table device_performance add column if not exists tracking_basis text;
+alter table placement_performance add column if not exists adds_to_cart bigint;
+alter table placement_performance add column if not exists checkouts_initiated bigint;
+alter table placement_performance add column if not exists purchases bigint;
+alter table placement_performance add column if not exists tracking_basis text;
+alter table platform_performance add column if not exists adds_to_cart bigint;
+alter table platform_performance add column if not exists checkouts_initiated bigint;
+alter table platform_performance add column if not exists purchases bigint;
+alter table platform_performance add column if not exists tracking_basis text;
+
 create table if not exists concept_performance (
   id bigint generated always as identity primary key,
   account_id text not null references ad_accounts(id),
@@ -169,6 +193,11 @@ create table if not exists concept_performance (
   mapped_in_library boolean not null default false,  -- C5/C6/C7 stay false: unmapped, not validated MST cells
   unique (account_id, book, concept)
 );
+
+-- LittleData (single-book DTC account) has no book dimension on concepts;
+-- book stays NULL for its rows. Idempotent: drop not null is a no-op if
+-- already nullable.
+alter table concept_performance alter column book drop not null;
 
 create table if not exists campaign_windows (
   id bigint generated always as identity primary key,
@@ -213,6 +242,9 @@ create table if not exists concept_intelligence (
   now_what text,
   unique (account_id, book, concept_code)
 );
+
+-- Same LittleData single-book relaxation as concept_performance.
+alter table concept_intelligence alter column book drop not null;
 
 create table if not exists ad_traffic_quality (
   id bigint generated always as identity primary key,
