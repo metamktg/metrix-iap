@@ -133,6 +133,115 @@ export interface WaitlistApprovalResult {
   email_sent: boolean;
   /** Present only when the email could not be sent, so the admin can share the temporary password manually. */
   temp_password?: string;
+  /** Present only when the email could not be sent — explains why (e.g. sandbox sender limitation) and how to fix it. */
+  email_error?: string;
+}
+
+/**
+ * missing_key = no RESEND_API_KEY, delivery disabled; sandbox = sandbox sender, delivery only to the Resend account owner; configured = custom verified sender.
+ */
+export type AdminEmailStatusMode = typeof AdminEmailStatusMode[keyof typeof AdminEmailStatusMode];
+
+
+export const AdminEmailStatusMode = {
+  missing_key: 'missing_key',
+  sandbox: 'sandbox',
+  configured: 'configured',
+} as const;
+
+/**
+ * Which environment this server (and its user database) is — approvals only create accounts in the environment where they are performed.
+ */
+export type AdminEmailStatusEnvironment = typeof AdminEmailStatusEnvironment[keyof typeof AdminEmailStatusEnvironment];
+
+
+export const AdminEmailStatusEnvironment = {
+  development: 'development',
+  production: 'production',
+} as const;
+
+export interface AdminEmailStatus {
+  /** missing_key = no RESEND_API_KEY, delivery disabled; sandbox = sandbox sender, delivery only to the Resend account owner; configured = custom verified sender. */
+  mode: AdminEmailStatusMode;
+  /** The from-address outbound email uses. */
+  from: string;
+  /** Which environment this server (and its user database) is — approvals only create accounts in the environment where they are performed. */
+  environment: AdminEmailStatusEnvironment;
+}
+
+/**
+ * invited = provisioned but never logged in; disabled = access revoked.
+ */
+export type AdminUserStatus = typeof AdminUserStatus[keyof typeof AdminUserStatus];
+
+
+export const AdminUserStatus = {
+  active: 'active',
+  invited: 'invited',
+  disabled: 'disabled',
+} as const;
+
+export interface AdminUser {
+  id: number;
+  email: string;
+  /** invited = provisioned but never logged in; disabled = access revoked. */
+  status: AdminUserStatus;
+  must_change_password: boolean;
+  created_at: string;
+  last_login_at?: string | null;
+  disabled_at?: string | null;
+}
+
+export interface AdminUsersResult {
+  users: AdminUser[];
+  total: number;
+}
+
+export type AdminResendTempPasswordResultStatus = typeof AdminResendTempPasswordResultStatus[keyof typeof AdminResendTempPasswordResultStatus];
+
+
+export const AdminResendTempPasswordResultStatus = {
+  resent: 'resent',
+} as const;
+
+export interface AdminResendTempPasswordResult {
+  status: AdminResendTempPasswordResultStatus;
+  email: string;
+  email_sent: boolean;
+  /** Present only when the email could not be sent, so the admin can share the temporary password manually. */
+  temp_password?: string;
+  /** Present only when the email could not be sent — explains why and how to fix it. */
+  email_error?: string;
+}
+
+export type AdminSendPasswordResetResultStatus = typeof AdminSendPasswordResetResultStatus[keyof typeof AdminSendPasswordResetResultStatus];
+
+
+export const AdminSendPasswordResetResultStatus = {
+  reset_link_created: 'reset_link_created',
+} as const;
+
+export interface AdminSendPasswordResetResult {
+  status: AdminSendPasswordResetResultStatus;
+  email: string;
+  email_sent: boolean;
+  /** Present only when the email could not be sent, so the admin can share the single-use reset link manually. Expires in 1 hour. */
+  reset_url?: string;
+  /** Present only when the email could not be sent — explains why and how to fix it. */
+  email_error?: string;
+}
+
+export type AdminUserActionResultStatus = typeof AdminUserActionResultStatus[keyof typeof AdminUserActionResultStatus];
+
+
+export const AdminUserActionResultStatus = {
+  revoked: 'revoked',
+  restored: 'restored',
+} as const;
+
+export interface AdminUserActionResult {
+  status: AdminUserActionResultStatus;
+  email: string;
 }
 
 export interface AuthLoginInput {

@@ -82,7 +82,8 @@ export const ApproveAgentWaitlistEntryResponse = zod.object({
   "status": zod.enum(['approved', 'already_approved']),
   "email": zod.string(),
   "email_sent": zod.boolean().describe('True when the temporary-password email was delivered to the provider.'),
-  "temp_password": zod.string().optional().describe('Present only when the email could not be sent, so the admin can share the temporary password manually.')
+  "temp_password": zod.string().optional().describe('Present only when the email could not be sent, so the admin can share the temporary password manually.'),
+  "email_error": zod.string().optional().describe('Present only when the email could not be sent — explains why (e.g. sandbox sender limitation) and how to fix it.')
 })
 
 
@@ -137,6 +138,109 @@ export const AdminLogoutResponse = zod.object({
 
 
 /**
+ * Reports whether outbound email is fully configured, limited to the sandbox sender (delivery only to the Resend account owner), or disabled because no API key is set. Also reports which environment (development or production) this server is running in, since each environment has its own user database. Requires admin access.
+ * @summary Report the email delivery configuration
+ */
+export const GetAdminEmailStatusResponse = zod.object({
+  "mode": zod.enum(['missing_key', 'sandbox', 'configured']).describe('missing_key = no RESEND_API_KEY, delivery disabled; sandbox = sandbox sender, delivery only to the Resend account owner; configured = custom verified sender.'),
+  "from": zod.string().describe('The from-address outbound email uses.'),
+  "environment": zod.enum(['development', 'production']).describe('Which environment this server (and its user database) is — approvals only create accounts in the environment where they are performed.')
+})
+
+
+/**
+ * Returns all provisioned user accounts with their status (active, invited, or disabled), newest first. Requires admin access.
+ * @summary List provisioned user accounts
+ */
+export const ListAdminUsersResponse = zod.object({
+  "users": zod.array(zod.object({
+  "id": zod.number(),
+  "email": zod.string(),
+  "status": zod.enum(['active', 'invited', 'disabled']).describe('invited = provisioned but never logged in; disabled = access revoked.'),
+  "must_change_password": zod.boolean(),
+  "created_at": zod.string(),
+  "last_login_at": zod.string().nullish(),
+  "disabled_at": zod.string().nullish()
+})),
+  "total": zod.number()
+})
+
+
+/**
+ * Generates a fresh temporary password, forces a password change on next login, revokes all of the user's sessions, and emails the new temporary password. When the email cannot be delivered, the temporary password is returned so the admin can share it manually. Refuses (409) for disabled accounts — restore access first. Requires admin access.
+ * @summary Issue a new temporary password and email it
+ */
+
+
+
+export const AdminResendTempPasswordParams = zod.object({
+  "userId": zod.coerce.number().min(1).describe('User account identifier.')
+})
+
+export const AdminResendTempPasswordResponse = zod.object({
+  "status": zod.enum(['resent']),
+  "email": zod.string(),
+  "email_sent": zod.boolean(),
+  "temp_password": zod.string().optional().describe('Present only when the email could not be sent, so the admin can share the temporary password manually.'),
+  "email_error": zod.string().optional().describe('Present only when the email could not be sent — explains why and how to fix it.')
+})
+
+
+/**
+ * Creates a single-use, 1-hour password reset link and emails it to the user. Their current password keeps working until the link is used. When the email cannot be delivered, the link is returned so the admin can share it manually. Refuses (409) for disabled accounts. Requires admin access.
+ * @summary Send the user a password reset link
+ */
+
+
+
+export const AdminSendPasswordResetParams = zod.object({
+  "userId": zod.coerce.number().min(1).describe('User account identifier.')
+})
+
+export const AdminSendPasswordResetResponse = zod.object({
+  "status": zod.enum(['reset_link_created']),
+  "email": zod.string(),
+  "email_sent": zod.boolean(),
+  "reset_url": zod.string().optional().describe('Present only when the email could not be sent, so the admin can share the single-use reset link manually. Expires in 1 hour.'),
+  "email_error": zod.string().optional().describe('Present only when the email could not be sent — explains why and how to fix it.')
+})
+
+
+/**
+ * Disables the account and immediately destroys all of its sessions. The user can no longer log in, use existing sessions, or reset their password. Reversible via restore or re-approval. Requires admin access.
+ * @summary Revoke a user's access
+ */
+
+
+
+export const AdminRevokeUserParams = zod.object({
+  "userId": zod.coerce.number().min(1).describe('User account identifier.')
+})
+
+export const AdminRevokeUserResponse = zod.object({
+  "status": zod.enum(['revoked', 'restored']),
+  "email": zod.string()
+})
+
+
+/**
+ * Re-enables a disabled account. The user's existing password keeps working (sessions were destroyed at revoke time, so they must log in again). Requires admin access.
+ * @summary Restore a revoked user's access
+ */
+
+
+
+export const AdminRestoreUserParams = zod.object({
+  "userId": zod.coerce.number().min(1).describe('User account identifier.')
+})
+
+export const AdminRestoreUserResponse = zod.object({
+  "status": zod.enum(['revoked', 'restored']),
+  "email": zod.string()
+})
+
+
+/**
  * Creates (or resets) a user account with a temporary password for the requester, marks the request approved, and emails the temporary password. When the email provider is not configured, the temporary password is returned to the admin instead. Requires admin access.
  * @summary Approve an access request and provision a user account
  */
@@ -148,7 +252,8 @@ export const ApproveRequestAccessEntryResponse = zod.object({
   "status": zod.enum(['approved', 'already_approved']),
   "email": zod.string(),
   "email_sent": zod.boolean().describe('True when the temporary-password email was delivered to the provider.'),
-  "temp_password": zod.string().optional().describe('Present only when the email could not be sent, so the admin can share the temporary password manually.')
+  "temp_password": zod.string().optional().describe('Present only when the email could not be sent, so the admin can share the temporary password manually.'),
+  "email_error": zod.string().optional().describe('Present only when the email could not be sent — explains why (e.g. sandbox sender limitation) and how to fix it.')
 })
 
 

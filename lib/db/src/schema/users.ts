@@ -20,6 +20,10 @@ export const usersTable = pgTable("users", {
     .notNull()
     .defaultNow(),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+  // Set when an admin revokes access. Disabled users cannot log in, their
+  // sessions are rejected, and password resets are silently skipped.
+  // Cleared on explicit re-approval or admin restore.
+  disabledAt: timestamp("disabled_at", { withTimezone: true }),
 });
 
 export const userSessionsTable = pgTable("user_sessions", {

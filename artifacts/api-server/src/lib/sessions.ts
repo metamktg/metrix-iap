@@ -40,7 +40,17 @@ export async function getUserForSessionToken(token: string): Promise<User | null
       ),
     )
     .limit(1);
-  return rows[0]?.user ?? null;
+  const user = rows[0]?.user ?? null;
+  // Revoked users are treated as having no valid session anywhere.
+  if (user?.disabledAt) return null;
+  return user;
+}
+
+/** Revoke every session for a user (access revoked / credentials rotated). */
+export async function destroyAllSessions(userId: number): Promise<void> {
+  await db
+    .delete(userSessionsTable)
+    .where(eq(userSessionsTable.userId, userId));
 }
 
 export async function destroySession(token: string): Promise<void> {

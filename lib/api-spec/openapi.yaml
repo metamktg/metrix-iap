@@ -220,6 +220,200 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdminSessionStatus"
+  /metrix/admin/email-status:
+    get:
+      operationId: getAdminEmailStatus
+      tags: [metrix]
+      summary: Report the email delivery configuration
+      description: Reports whether outbound email is fully configured, limited to the sandbox sender (delivery only to the Resend account owner), or disabled because no API key is set. Also reports which environment (development or production) this server is running in, since each environment has its own user database. Requires admin access.
+      security:
+        - adminKey: []
+      responses:
+        "200":
+          description: Email delivery status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminEmailStatus"
+        "401":
+          description: Missing or invalid admin credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/admin/users:
+    get:
+      operationId: listAdminUsers
+      tags: [metrix]
+      summary: List provisioned user accounts
+      description: Returns all provisioned user accounts with their status (active, invited, or disabled), newest first. Requires admin access.
+      security:
+        - adminKey: []
+      responses:
+        "200":
+          description: Provisioned users
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUsersResult"
+        "401":
+          description: Missing or invalid admin credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/admin/users/{userId}/resend-temp-password:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        description: User account identifier.
+        schema:
+          type: integer
+          minimum: 1
+    post:
+      operationId: adminResendTempPassword
+      tags: [metrix]
+      summary: Issue a new temporary password and email it
+      description: Generates a fresh temporary password, forces a password change on next login, revokes all of the user's sessions, and emails the new temporary password. When the email cannot be delivered, the temporary password is returned so the admin can share it manually. Refuses (409) for disabled accounts — restore access first. Requires admin access.
+      security:
+        - adminKey: []
+      responses:
+        "200":
+          description: Resend result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminResendTempPasswordResult"
+        "401":
+          description: Missing or invalid admin credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Account is disabled — restore access first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/admin/users/{userId}/send-password-reset:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        description: User account identifier.
+        schema:
+          type: integer
+          minimum: 1
+    post:
+      operationId: adminSendPasswordReset
+      tags: [metrix]
+      summary: Send the user a password reset link
+      description: Creates a single-use, 1-hour password reset link and emails it to the user. Their current password keeps working until the link is used. When the email cannot be delivered, the link is returned so the admin can share it manually. Refuses (409) for disabled accounts. Requires admin access.
+      security:
+        - adminKey: []
+      responses:
+        "200":
+          description: Reset link result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSendPasswordResetResult"
+        "401":
+          description: Missing or invalid admin credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Account is disabled — restore access first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/admin/users/{userId}/revoke:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        description: User account identifier.
+        schema:
+          type: integer
+          minimum: 1
+    post:
+      operationId: adminRevokeUser
+      tags: [metrix]
+      summary: Revoke a user's access
+      description: Disables the account and immediately destroys all of its sessions. The user can no longer log in, use existing sessions, or reset their password. Reversible via restore or re-approval. Requires admin access.
+      security:
+        - adminKey: []
+      responses:
+        "200":
+          description: Revoke result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserActionResult"
+        "401":
+          description: Missing or invalid admin credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/admin/users/{userId}/restore:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        description: User account identifier.
+        schema:
+          type: integer
+          minimum: 1
+    post:
+      operationId: adminRestoreUser
+      tags: [metrix]
+      summary: Restore a revoked user's access
+      description: Re-enables a disabled account. The user's existing password keeps working (sessions were destroyed at revoke time, so they must log in again). Requires admin access.
+      security:
+        - adminKey: []
+      responses:
+        "200":
+          description: Restore result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserActionResult"
+        "401":
+          description: Missing or invalid admin credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/request-access/{requestId}/approve:
     parameters:
       - name: requestId
@@ -1371,10 +1565,121 @@ components:
         temp_password:
           type: string
           description: Present only when the email could not be sent, so the admin can share the temporary password manually.
+        email_error:
+          type: string
+          description: Present only when the email could not be sent — explains why (e.g. sandbox sender limitation) and how to fix it.
       required:
         - status
         - email
         - email_sent
+    AdminEmailStatus:
+      type: object
+      properties:
+        mode:
+          type: string
+          enum: [missing_key, sandbox, configured]
+          description: missing_key = no RESEND_API_KEY, delivery disabled; sandbox = sandbox sender, delivery only to the Resend account owner; configured = custom verified sender.
+        from:
+          type: string
+          description: The from-address outbound email uses.
+        environment:
+          type: string
+          enum: [development, production]
+          description: Which environment this server (and its user database) is — approvals only create accounts in the environment where they are performed.
+      required:
+        - mode
+        - from
+        - environment
+    AdminUser:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        status:
+          type: string
+          enum: [active, invited, disabled]
+          description: invited = provisioned but never logged in; disabled = access revoked.
+        must_change_password:
+          type: boolean
+        created_at:
+          type: string
+        last_login_at:
+          type: string
+          nullable: true
+        disabled_at:
+          type: string
+          nullable: true
+      required:
+        - id
+        - email
+        - status
+        - must_change_password
+        - created_at
+    AdminUsersResult:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminUser"
+        total:
+          type: integer
+      required:
+        - users
+        - total
+    AdminResendTempPasswordResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [resent]
+        email:
+          type: string
+        email_sent:
+          type: boolean
+        temp_password:
+          type: string
+          description: Present only when the email could not be sent, so the admin can share the temporary password manually.
+        email_error:
+          type: string
+          description: Present only when the email could not be sent — explains why and how to fix it.
+      required:
+        - status
+        - email
+        - email_sent
+    AdminSendPasswordResetResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [reset_link_created]
+        email:
+          type: string
+        email_sent:
+          type: boolean
+        reset_url:
+          type: string
+          description: Present only when the email could not be sent, so the admin can share the single-use reset link manually. Expires in 1 hour.
+        email_error:
+          type: string
+          description: Present only when the email could not be sent — explains why and how to fix it.
+      required:
+        - status
+        - email
+        - email_sent
+    AdminUserActionResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [revoked, restored]
+        email:
+          type: string
+      required:
+        - status
+        - email
     AuthLoginInput:
       type: object
       properties:

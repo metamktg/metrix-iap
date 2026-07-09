@@ -18,10 +18,17 @@ import {
   useListRequestAccessEntries,
   useApproveRequestAccessEntry,
   useRejectRequestAccessEntry,
+  useGetAdminEmailStatus,
+  useListAdminUsers,
+  useAdminResendTempPassword,
+  useAdminSendPasswordReset,
+  useAdminRevokeUser,
+  useAdminRestoreUser,
 } from "@workspace/api-client-react";
 import type {
   RequestAccessEntry,
   WaitlistEntry,
+  AdminUser,
 } from "@workspace/api-client-react";
 import { AuthBrandHeader } from "@/components/brand/BrandMark";
 import {
@@ -38,6 +45,11 @@ import {
   Briefcase,
   DollarSign,
   Factory,
+  AlertTriangle,
+  KeyRound,
+  Link2,
+  UserX,
+  UserCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -86,6 +98,7 @@ type ApproveOutcome = {
   email: string;
   email_sent: boolean;
   temp_password?: string;
+  email_error?: string;
 };
 
 function ApproveResultNote({ outcome }: { outcome: ApproveOutcome }) {
@@ -114,6 +127,11 @@ function ApproveResultNote({ outcome }: { outcome: ApproveOutcome }) {
           </code>
           <CopyButton value={outcome.temp_password} />
         </div>
+        {outcome.email_error && (
+          <div className="text-[10px] text-muted-foreground" data-testid="text-email-error">
+            {outcome.email_error}
+          </div>
+        )}
       </div>
     );
   }
@@ -175,6 +193,357 @@ function formatDate(iso: string): string {
   return Number.isNaN(d.getTime())
     ? iso
     : d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
+// ─── Email delivery status banner ──────────────────────────────────────
+
+function EmailStatusBanner() {
+  const status = useGetAdminEmailStatus();
+  if (!status.data) return null;
+  const { mode, from, environment } = status.data;
+
+  if (mode === "configured") {
+    return (
+      <div
+        className="flex items-center gap-2 rounded-md border border-emerald-400/20 bg-emerald-400/5 px-3 py-2"
+        data-testid="banner-email-status"
+      >
+        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+        <div className="text-[11px] text-muted-foreground">
+          Email delivery is configured (sending as <span className="text-foreground">{from}</span>).
+          {" "}Environment: <span className="text-foreground">{environment}</span> — approvals create
+          accounts in this environment only.
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="flex items-start gap-2 rounded-md border border-amber-400/25 bg-amber-400/5 px-3 py-2"
+      data-testid="banner-email-status"
+    >
+      <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+      <div className="text-[11px] text-muted-foreground space-y-0.5">
+        {mode === "missing_key" ? (
+          <div>
+            <span className="text-amber-400 font-medium">Email delivery is disabled</span> — no
+            email API key is set. Temporary passwords and reset links will be shown here for you
+            to share manually.
+          </div>
+        ) : (
+          <div>
+            <span className="text-amber-400 font-medium">Email delivery is in sandbox mode</span>
+            {" "}— the sandbox sender ({from}) only delivers to the email account owner's inbox.
+            Emails to anyone else will fail, and their credentials will be shown here instead.
+            To fix: verify a domain at resend.com/domains and set REQUEST_ACCESS_FROM_EMAIL to a
+            sender on that domain.
+          </div>
+        )}
+        <div>
+          Environment: <span className="text-foreground">{environment}</span> — approvals create
+          accounts in this environment only. Approving here does <span className="text-foreground">not</span>{" "}
+          create the account in {environment === "development" ? "production" : "development"}.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Provisioned users section ─────────────────────────────────────────
+
+function UserStatusBadge({ status }: { status: AdminUser["status"] }) {
+  const cls =
+    status === "active"
+      ? "text-emerald-400 border-emerald-400/25 bg-emerald-400/10"
+      : status === "disabled"
+        ? "text-red-400 border-red-400/25 bg-red-400/10"
+        : "text-sky-400 border-sky-400/25 bg-sky-400/10";
+  return (
+    <span
+      className={cn(
+        "text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none shrink-0",
+        cls,
+      )}
+      data-testid={`badge-user-status-${status}`}
+    >
+      {status}
+    </span>
+  );
+}
+
+type UserActionOutcome =
+  | { kind: "temp_password"; email_sent: boolean; value?: string; email_error?: string }
+  | { kind: "reset_link"; email_sent: boolean; value?: string; email_error?: string };
+
+function UserActionNote({ outcome, email }: { outcome: UserActionOutcome; email: string }) {
+  const noun = outcome.kind === "temp_password" ? "temporary password" : "reset link";
+  if (outcome.email_sent) {
+    return (
+      <div
+        className="flex items-center gap-1.5 text-[11px] text-emerald-400"
+        data-testid="text-user-action-emailed"
+      >
+        <CheckCircle2 className="w-3.5 h-3.5" /> New {noun} emailed to {email}
+      </div>
+    );
+  }
+  return (
+    <div
+      className="space-y-1 rounded-md border border-amber-400/25 bg-amber-400/5 p-2"
+      data-testid="panel-user-action-fallback"
+    >
+      <div className="text-[11px] text-amber-400">
+        Email could not be sent — share this {noun} with {email} manually
+        {outcome.kind === "reset_link" ? " (expires in 1 hour)" : ""}:
+      </div>
+      {outcome.value && (
+        <div className="flex items-center gap-2 min-w-0">
+          <code className="text-[11px] font-mono text-foreground bg-white/[0.05] px-1.5 py-0.5 rounded truncate">
+            {outcome.value}
+          </code>
+          <CopyButton value={outcome.value} />
+        </div>
+      )}
+      {outcome.email_error && (
+        <div className="text-[10px] text-muted-foreground" data-testid="text-user-action-email-error">
+          {outcome.email_error}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }) {
+  const resend = useAdminResendTempPassword();
+  const sendReset = useAdminSendPasswordReset();
+  const revoke = useAdminRevokeUser();
+  const restore = useAdminRestoreUser();
+  const [outcome, setOutcome] = useState<UserActionOutcome | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [confirmRevoke, setConfirmRevoke] = useState(false);
+
+  const busy =
+    resend.isPending || sendReset.isPending || revoke.isPending || restore.isPending;
+  const disabled = user.status === "disabled";
+
+  const actionBtn =
+    "flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-[10px] font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none";
+
+  return (
+    <div
+      className="rounded-lg border border-border/30 bg-white/[0.02] p-3 space-y-2"
+      data-testid={`row-user-${user.id}`}
+    >
+      <div className="flex items-center gap-3 flex-wrap">
+        <Mail className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <div className="text-[12px] font-medium text-foreground truncate">{user.email}</div>
+          <div className="text-[10px] text-muted-foreground/60">
+            Created {formatDate(user.created_at)}
+            {user.last_login_at
+              ? ` · Last login ${formatDate(user.last_login_at)}`
+              : " · Never logged in"}
+            {user.must_change_password && !disabled ? " · Must change password" : ""}
+          </div>
+        </div>
+        <UserStatusBadge status={user.status} />
+      </div>
+
+      <div className="flex items-center gap-2 flex-wrap">
+        {!disabled && (
+          <>
+            <button
+              onClick={() => {
+                setError(null);
+                setOutcome(null);
+                resend.mutate(
+                  { userId: user.id },
+                  {
+                    onSuccess: (res) => {
+                      setOutcome({
+                        kind: "temp_password",
+                        email_sent: res.email_sent,
+                        value: res.temp_password,
+                        email_error: res.email_error,
+                      });
+                      onChanged();
+                    },
+                    onError: () =>
+                      setError("Could not issue a new temporary password. Please try again."),
+                  },
+                );
+              }}
+              disabled={busy}
+              className={cn(
+                actionBtn,
+                "border-border/50 text-muted-foreground hover:text-foreground hover:bg-white/5",
+              )}
+              data-testid={`button-resend-temp-${user.id}`}
+            >
+              {resend.isPending ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <KeyRound className="w-3 h-3" />
+              )}
+              New temp password
+            </button>
+            <button
+              onClick={() => {
+                setError(null);
+                setOutcome(null);
+                sendReset.mutate(
+                  { userId: user.id },
+                  {
+                    onSuccess: (res) => {
+                      setOutcome({
+                        kind: "reset_link",
+                        email_sent: res.email_sent,
+                        value: res.reset_url,
+                        email_error: res.email_error,
+                      });
+                      onChanged();
+                    },
+                    onError: () => setError("Could not create a reset link. Please try again."),
+                  },
+                );
+              }}
+              disabled={busy}
+              className={cn(
+                actionBtn,
+                "border-border/50 text-muted-foreground hover:text-foreground hover:bg-white/5",
+              )}
+              data-testid={`button-send-reset-${user.id}`}
+            >
+              {sendReset.isPending ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <Link2 className="w-3 h-3" />
+              )}
+              Send reset link
+            </button>
+            {confirmRevoke ? (
+              <span className="flex items-center gap-1.5">
+                <span className="text-[10px] text-red-400">Revoke access and sign them out?</span>
+                <button
+                  onClick={() => {
+                    setConfirmRevoke(false);
+                    setError(null);
+                    setOutcome(null);
+                    revoke.mutate(
+                      { userId: user.id },
+                      {
+                        onSuccess: () => onChanged(),
+                        onError: () => setError("Could not revoke access. Please try again."),
+                      },
+                    );
+                  }}
+                  disabled={busy}
+                  className={cn(actionBtn, "border-red-500/30 bg-red-500/15 text-red-400 hover:bg-red-500/25")}
+                  data-testid={`button-revoke-confirm-${user.id}`}
+                >
+                  {revoke.isPending ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <UserX className="w-3 h-3" />
+                  )}
+                  Yes, revoke
+                </button>
+                <button
+                  onClick={() => setConfirmRevoke(false)}
+                  disabled={busy}
+                  className={cn(actionBtn, "border-border/50 text-muted-foreground hover:text-foreground")}
+                  data-testid={`button-revoke-cancel-${user.id}`}
+                >
+                  Cancel
+                </button>
+              </span>
+            ) : (
+              <button
+                onClick={() => setConfirmRevoke(true)}
+                disabled={busy}
+                className={cn(
+                  actionBtn,
+                  "border-red-500/25 text-red-400/90 hover:bg-red-500/10",
+                )}
+                data-testid={`button-revoke-${user.id}`}
+              >
+                <UserX className="w-3 h-3" />
+                Revoke access
+              </button>
+            )}
+          </>
+        )}
+        {disabled && (
+          <button
+            onClick={() => {
+              setError(null);
+              setOutcome(null);
+              restore.mutate(
+                { userId: user.id },
+                {
+                  onSuccess: () => onChanged(),
+                  onError: () => setError("Could not restore access. Please try again."),
+                },
+              );
+            }}
+            disabled={busy}
+            className={cn(
+              actionBtn,
+              "border-emerald-500/30 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25",
+            )}
+            data-testid={`button-restore-${user.id}`}
+          >
+            {restore.isPending ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              <UserCheck className="w-3 h-3" />
+            )}
+            Restore access
+          </button>
+        )}
+      </div>
+
+      {outcome && <UserActionNote outcome={outcome} email={user.email} />}
+      {error && <div className="text-[11px] text-red-400/90">{error}</div>}
+    </div>
+  );
+}
+
+function UsersSection() {
+  const users = useListAdminUsers();
+  const list = users.data?.users ?? [];
+
+  return (
+    <section className="space-y-3">
+      <div className="flex items-baseline justify-between">
+        <h2 className="text-[13px] font-semibold text-foreground">Provisioned users</h2>
+        <span className="text-[11px] text-muted-foreground">
+          {users.data?.total ?? 0} total
+        </span>
+      </div>
+      {users.isLoading ? (
+        <div className="flex items-center gap-2 text-[11px] text-muted-foreground py-6">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading users…
+        </div>
+      ) : users.isError ? (
+        <div className="text-[11px] text-red-400/90 py-4">
+          Could not load users. Refresh to try again.
+        </div>
+      ) : list.length === 0 ? (
+        <div className="text-[11px] text-muted-foreground/70 py-4">
+          No provisioned users yet — approve a request or waitlist entry to create the first
+          account.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {list.map((user) => (
+            <UserRow key={user.id} user={user} onChanged={() => void users.refetch()} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
 }
 
 // ─── Access-request card (full form data) ─────────────────────────────
@@ -430,6 +799,8 @@ function AdminConsole({ onLogout }: { onLogout: () => void }) {
           </button>
         </div>
 
+        <EmailStatusBanner />
+
         <section className="space-y-3">
           <div className="flex items-baseline justify-between">
             <h2 className="text-[13px] font-semibold text-foreground">Access requests</h2>
@@ -493,6 +864,8 @@ function AdminConsole({ onLogout }: { onLogout: () => void }) {
             </div>
           )}
         </section>
+
+        <UsersSection />
       </div>
     </div>
   );
