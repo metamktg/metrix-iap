@@ -5,8 +5,11 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { AuthUserRole } from './authUserRole';
 
 export interface AuthUser {
   email: string;
   must_change_password: boolean;
+  /** admin sees every ad account (agency team); member sees only accounts they have been granted. */
+  role: AuthUserRole;
 }

@@ -12,6 +12,9 @@ export const usersTable = pgTable("users", {
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   mustChangePassword: boolean("must_change_password").notNull().default(true),
+  // Access role: 'admin' sees every ad account (agency team); 'member' sees
+  // only accounts granted in user_ad_accounts. New users default to member.
+  role: text("role").notNull().default("member"),
   // Mirror of this user in Supabase auth.users (uuid). The official METRIX
   // schema FKs reviewer/approver/editor columns to auth.users(id), so every
   // provisioned user is mirrored there at approval time (login stays custom).
