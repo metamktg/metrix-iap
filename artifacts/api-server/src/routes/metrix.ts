@@ -47,6 +47,7 @@ import { requireAdmin } from "../middlewares/requireAdmin";
 import { requireAuth } from "../middlewares/requireAuth";
 import { waitlistRateLimit } from "../middlewares/waitlistRateLimit";
 import { hashPassword, generateTempPassword } from "../lib/passwords";
+import { ensureSupabaseAuthUser } from "@workspace/auth-mirror";
 import { sendApprovalEmail } from "../lib/approvalEmail";
 import { isDisposableEmailDomain } from "../lib/disposableEmailDomains";
 import { getMetrixSeedFromSupabase } from "../lib/metrixSeedAssembly";
@@ -138,6 +139,20 @@ async function provisionApprovedUser(
     await db
       .insert(usersTable)
       .values({ email, passwordHash, mustChangePassword: true });
+  }
+
+  // Mirror into Supabase Auth so official-schema reviewer/approver FKs
+  // (auth.users) can reference this user. Non-fatal: approval still succeeds
+  // if Supabase is unreachable; `pnpm --filter @workspace/scripts run
+  // mirror:auth-users` repairs any gaps.
+  try {
+    const mirror = await ensureSupabaseAuthUser(email);
+    await db
+      .update(usersTable)
+      .set({ supabaseUserId: mirror.supabaseUserId })
+      .where(eq(usersTable.email, email));
+  } catch (err) {
+    log.error({ err, email }, "Supabase Auth mirror failed for approved user");
   }
 
   const emailResult = await sendApprovalEmail(email, tempPassword, getAppBaseUrl(), log);

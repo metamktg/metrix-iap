@@ -11,6 +11,7 @@ import { randomInt } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { ensureSupabaseAuthUser } from "@workspace/auth-mirror";
 
 const ALPHABET = "abcdefghjkmnpqrstuvwxyzACDEFGHJKLMNPQRSTUVWXYZ2345679";
 
@@ -54,6 +55,22 @@ async function main() {
       .insert(usersTable)
       .values({ email, passwordHash, mustChangePassword: true });
     console.log(`Created user ${email}.`);
+  }
+
+  // Mirror into Supabase Auth (official METRIX schema FKs reference
+  // auth.users). Non-fatal: run mirror:auth-users later to repair gaps.
+  try {
+    const mirror = await ensureSupabaseAuthUser(email);
+    await db
+      .update(usersTable)
+      .set({ supabaseUserId: mirror.supabaseUserId })
+      .where(eq(usersTable.email, email));
+    console.log(
+      `Supabase Auth mirror: ${mirror.created ? "created" : "already existed"} (${mirror.supabaseUserId}).`,
+    );
+  } catch (err) {
+    console.error("WARNING: Supabase Auth mirror failed:", err);
+    console.error("Run `pnpm --filter @workspace/scripts run mirror:auth-users` to repair.");
   }
 
   console.log(`Temporary password: ${password}`);

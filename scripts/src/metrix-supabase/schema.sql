@@ -289,8 +289,10 @@ create table if not exists testing_hypotheses (
 );
 
 -- ── Brief Builder output (creative_briefs.json) ───────────────────────
+-- NOTE: named imported_creative_briefs (renamed July 2026) — the name
+-- creative_briefs belongs to the official METRIX schema (supabase/migrations).
 
-create table if not exists creative_briefs (
+create table if not exists imported_creative_briefs (
   id bigint generated always as identity primary key,
   account_id text not null references ad_accounts(id),
   brief_id text not null,

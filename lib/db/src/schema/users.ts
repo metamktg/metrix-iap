@@ -12,6 +12,10 @@ export const usersTable = pgTable("users", {
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   mustChangePassword: boolean("must_change_password").notNull().default(true),
+  // Mirror of this user in Supabase auth.users (uuid). The official METRIX
+  // schema FKs reviewer/approver/editor columns to auth.users(id), so every
+  // provisioned user is mirrored there at approval time (login stays custom).
+  supabaseUserId: text("supabase_user_id").unique(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
