@@ -1,6 +1,8 @@
 // ─── Settings · Team & Access ─────────────────────────────────────────
 // Workspace-wide: members, roles, and the account-level access policy.
-// Invites persist via the API and merge with the seed member list.
+// "Add member" is single-step: role, master permissions, and initial
+// ad-account grants are all set before the invite is sent, and the account
+// is provisioned immediately (no separate "accept invite" flow exists).
 
 import { useState, type FormEvent } from "react";
 import { useAccount } from "@/contexts/AccountContext";
@@ -9,7 +11,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getWorkspaceSettings } from "@/lib/data/metrixSeedAdapter";
 import { ModuleHeader, SectionCard, PendingState, CaveatNote } from "../shared";
 import { cn } from "@/lib/utils";
-import { Users, UserPlus, ShieldCheck, Loader2, X, RotateCw, Plus, ChevronDown } from "lucide-react";
+import { Users, UserPlus, ShieldCheck, Loader2, X, RotateCw, Plus, ChevronDown, Check } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -26,7 +28,9 @@ import {
   useListMemberAdAccounts,
   useGrantMemberAdAccount,
   useRevokeMemberAdAccount,
+  useUpdateMemberPermissions,
   getListWorkspaceInvitesQueryKey,
+  getListWorkspaceMembersQueryKey,
   getListMemberAdAccountsQueryKey,
 } from "@workspace/api-client-react";
 import type { WorkspaceInviteInputRole } from "@workspace/api-client-react";
@@ -40,32 +44,108 @@ const INVITE_ROLES: { id: WorkspaceInviteInputRole; label: string }[] = [
   { id: "client_viewer", label: "Client Viewer" },
 ];
 
-function InviteMemberDialog({
+// Used whenever the seed has no `workspace_settings` block (every live,
+// Supabase-backed workspace — only the static demo seed populates it). The
+// real roster/permissions always come from the auth DB via
+// useListWorkspaceMembers/useListWorkspaceInvites, so this is just static
+// copy plus a generous default seat limit — never a source of truth.
+const DEFAULT_TEAM_ROLES = [
+  { id: "owner", label: "Owner", description: "Full admin access: manages team, billing, and every ad account." },
+  { id: "analyst", label: "Analyst", description: "Can be granted specific ad accounts to analyze and build reports for." },
+  { id: "client_viewer", label: "Client Viewer", description: "Read-only access to the ad accounts they're granted." },
+];
+const DEFAULT_ACCESS_POLICY =
+  "Admins see every ad account. Members see only the ad accounts an admin explicitly grants them, plus the reports they generate.";
+const DEFAULT_SEAT_LIMIT = 20;
+
+function PermissionToggleRow({
+  label,
+  description,
+  checked,
+  onChange,
+  disabled,
+  testId,
+}: {
+  label: string;
+  description: string;
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  disabled?: boolean;
+  testId: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      disabled={disabled}
+      className={cn(
+        "w-full flex items-start gap-2.5 p-2.5 rounded-md border text-left transition-colors disabled:opacity-40 disabled:pointer-events-none",
+        checked
+          ? "border-primary/30 bg-primary/[0.06]"
+          : "border-border/40 bg-white/[0.02] hover:bg-white/[0.04]",
+      )}
+      data-testid={testId}
+    >
+      <div
+        className={cn(
+          "w-4 h-4 rounded shrink-0 mt-0.5 border flex items-center justify-center",
+          checked ? "border-primary bg-primary/20 text-primary" : "border-border/50",
+        )}
+      >
+        {checked && <Check className="w-2.5 h-2.5" />}
+      </div>
+      <div className="min-w-0">
+        <div className="text-[11px] font-medium text-foreground">{label}</div>
+        <div className="text-[10px] text-muted-foreground/70 leading-relaxed">{description}</div>
+      </div>
+    </button>
+  );
+}
+
+function AddMemberDialog({
   workspaceId,
   open,
   onOpenChange,
   atSeatLimit,
   seatLimit,
+  adAccounts,
 }: {
   workspaceId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   atSeatLimit: boolean;
   seatLimit: number;
+  adAccounts: AdAccount[];
 }) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<WorkspaceInviteInputRole>("analyst");
+  const [manageTeam, setManageTeam] = useState(false);
+  const [viewAgencyRollups, setViewAgencyRollups] = useState(false);
+  const [grantedAccountIds, setGrantedAccountIds] = useState<string[]>([]);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [successNotice, setSuccessNotice] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const { mutate, isPending } = useCreateWorkspaceInvite();
 
+  const reset = () => {
+    setEmail("");
+    setRole("analyst");
+    setManageTeam(false);
+    setViewAgencyRollups(false);
+    setGrantedAccountIds([]);
+    setFeedback(null);
+    setSuccessNotice(null);
+  };
+
   const handleOpenChange = (o: boolean) => {
     onOpenChange(o);
-    if (!o) {
-      setEmail("");
-      setRole("analyst");
-      setFeedback(null);
-    }
+    if (!o) reset();
+  };
+
+  const toggleAccount = (id: string) => {
+    setGrantedAccountIds((prev) =>
+      prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id],
+    );
   };
 
   const handleSubmit = (e: FormEvent) => {
@@ -73,18 +153,37 @@ function InviteMemberDialog({
     const trimmed = email.trim();
     if (!trimmed || isPending || atSeatLimit) return;
     setFeedback(null);
+    setSuccessNotice(null);
     mutate(
-      { workspaceId, data: { email: trimmed, role } },
+      {
+        workspaceId,
+        data: {
+          email: trimmed,
+          role,
+          manage_team: manageTeam,
+          view_agency_rollups: viewAgencyRollups,
+          ad_account_ids: grantedAccountIds,
+        },
+      },
       {
         onSuccess: (result) => {
           void queryClient.invalidateQueries({
             queryKey: getListWorkspaceInvitesQueryKey(workspaceId),
           });
+          void queryClient.invalidateQueries({
+            queryKey: getListWorkspaceMembersQueryKey(workspaceId),
+          });
           if (result.status === "already_invited") {
             setFeedback(`${result.invite.email} already has a pending invite.`);
-          } else {
-            handleOpenChange(false);
+            return;
           }
+          if (result.email_sent === false && result.temp_password) {
+            setSuccessNotice(
+              `Account created. Email delivery failed — share this temporary password manually: ${result.temp_password}`,
+            );
+            return;
+          }
+          handleOpenChange(false);
         },
         onError: (error) => {
           const serverMessage =
@@ -92,8 +191,7 @@ function InviteMemberDialog({
               ? String((error.data as { message: unknown }).message)
               : null;
           setFeedback(
-            serverMessage ??
-              "Could not send the invite. Check the email address and try again.",
+            serverMessage ?? "Could not add this member. Check the email address and try again.",
           );
         },
       },
@@ -102,19 +200,19 @@ function InviteMemberDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center mb-1">
             <UserPlus className="w-4 h-4 text-primary" />
           </div>
-          <DialogTitle className="text-[16px]">Invite member</DialogTitle>
+          <DialogTitle className="text-[16px]">Add member</DialogTitle>
           <DialogDescription className="text-[12px] leading-relaxed">
-            Send a pending invite to join this workspace. The invite persists until the member
-            accepts.
+            Set permissions and account access, then send the invite — the account is provisioned
+            immediately with a temp password.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-3.5">
           <div className="space-y-1.5">
             <label htmlFor="invite-email" className="text-[11px] font-medium text-foreground/80">
               Email address
@@ -154,10 +252,55 @@ function InviteMemberDialog({
             </div>
           </div>
 
+          <div className="space-y-1.5">
+            <span className="text-[11px] font-medium text-foreground/80">Permissions</span>
+            <div className="space-y-1.5">
+              <PermissionToggleRow
+                label="Manage team"
+                description="Can add/remove members and change their permissions and account access."
+                checked={manageTeam}
+                onChange={setManageTeam}
+                testId="toggle-invite-manage-team"
+              />
+              <PermissionToggleRow
+                label="View agency rollups"
+                description="Can see manager-level totals across all ad accounts, not just their own grants."
+                checked={viewAgencyRollups}
+                onChange={setViewAgencyRollups}
+                testId="toggle-invite-view-agency-rollups"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <span className="text-[11px] font-medium text-foreground/80">Ad account access</span>
+            {adAccounts.length === 0 ? (
+              <p className="text-[10px] text-muted-foreground/60">No ad accounts available yet.</p>
+            ) : (
+              <div className="max-h-36 overflow-y-auto rounded-md border border-border/40 divide-y divide-border/20">
+                {adAccounts.map((a) => (
+                  <label
+                    key={a.id}
+                    className="flex items-center gap-2 px-2.5 py-2 text-[11px] text-foreground/85 cursor-pointer hover:bg-white/[0.03]"
+                    data-testid={`checkbox-invite-account-${a.id}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={grantedAccountIds.includes(a.id)}
+                      onChange={() => toggleAccount(a.id)}
+                      className="w-3.5 h-3.5 accent-primary"
+                    />
+                    {a.name}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+
           {atSeatLimit && (
             <div className="text-[11px] text-amber-400/90" data-testid="text-seat-limit-warning">
               This workspace is full: all {seatLimit} seats are in use. Remove a member or cancel a
-              pending invite before inviting someone new.
+              pending invite before adding someone new.
             </div>
           )}
 
@@ -167,23 +310,31 @@ function InviteMemberDialog({
             </div>
           )}
 
+          {successNotice && (
+            <div className="text-[11px] text-emerald-400/90" data-testid="text-invite-success">
+              {successNotice}
+            </div>
+          )}
+
           <div className="flex items-center justify-end gap-2 pt-1">
             <button
               type="button"
               onClick={() => handleOpenChange(false)}
               className="h-9 px-4 rounded-md border border-border/50 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
             >
-              Cancel
+              {successNotice ? "Close" : "Cancel"}
             </button>
-            <button
-              type="submit"
-              disabled={!email.trim() || isPending || atSeatLimit}
-              className="flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary/15 border border-primary/30 text-[12px] font-medium text-primary hover:bg-primary/25 transition-colors disabled:opacity-40 disabled:pointer-events-none"
-              data-testid="button-send-invite"
-            >
-              {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserPlus className="w-3.5 h-3.5" />}
-              {isPending ? "Inviting…" : "Send invite"}
-            </button>
+            {!successNotice && (
+              <button
+                type="submit"
+                disabled={!email.trim() || isPending || atSeatLimit}
+                className="flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary/15 border border-primary/30 text-[12px] font-medium text-primary hover:bg-primary/25 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                data-testid="button-send-invite"
+              >
+                {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserPlus className="w-3.5 h-3.5" />}
+                {isPending ? "Adding…" : "Add member"}
+              </button>
+            )}
           </div>
         </form>
       </DialogContent>
@@ -284,6 +435,75 @@ function PendingInviteRow({
           Revoke
         </button>
       </div>
+    </div>
+  );
+}
+
+function MemberPermissionsCell({
+  workspaceId,
+  email,
+  manageTeam,
+  viewAgencyRollups,
+}: {
+  workspaceId: string;
+  email: string;
+  manageTeam: boolean;
+  viewAgencyRollups: boolean;
+}) {
+  const queryClient = useQueryClient();
+  const [error, setError] = useState<string | null>(null);
+  const { mutate, isPending } = useUpdateMemberPermissions();
+
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: getListWorkspaceMembersQueryKey(workspaceId) });
+
+  const handleToggle = (next: { manage_team: boolean; view_agency_rollups: boolean }) => {
+    if (isPending) return;
+    setError(null);
+    mutate(
+      { workspaceId, email, data: next },
+      {
+        onSuccess: () => void invalidate(),
+        onError: () => setError("Could not update permissions. Try again."),
+      },
+    );
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5" data-testid={`cell-permissions-${email}`}>
+      <button
+        type="button"
+        disabled={isPending}
+        onClick={() => handleToggle({ manage_team: !manageTeam, view_agency_rollups: viewAgencyRollups })}
+        className={cn(
+          "h-5 px-1.5 rounded border text-[10px] font-medium transition-colors disabled:opacity-40",
+          manageTeam
+            ? "border-primary/30 bg-primary/[0.08] text-primary"
+            : "border-border/40 bg-white/[0.02] text-muted-foreground hover:text-foreground",
+        )}
+        data-testid={`toggle-manage-team-${email}`}
+      >
+        Manage team
+      </button>
+      <button
+        type="button"
+        disabled={isPending}
+        onClick={() => handleToggle({ manage_team: manageTeam, view_agency_rollups: !viewAgencyRollups })}
+        className={cn(
+          "h-5 px-1.5 rounded border text-[10px] font-medium transition-colors disabled:opacity-40",
+          viewAgencyRollups
+            ? "border-primary/30 bg-primary/[0.08] text-primary"
+            : "border-border/40 bg-white/[0.02] text-muted-foreground hover:text-foreground",
+        )}
+        data-testid={`toggle-view-agency-rollups-${email}`}
+      >
+        View rollups
+      </button>
+      {error && (
+        <span className="text-[10px] text-red-400/90 w-full" data-testid={`text-permissions-error-${email}`}>
+          {error}
+        </span>
+      )}
     </div>
   );
 }
@@ -422,14 +642,15 @@ function MemberAdAccountsCell({
 export function TeamAccessView() {
   const { user } = useAuth();
 
-  // Team management is admin-only (the API rejects members with 403).
-  if (user?.role !== "admin") {
+  // Team management requires the manage_team master permission (admins
+  // always qualify; the API enforces the same rule server-side).
+  if (user?.role !== "admin" && !user?.manage_team) {
     return (
       <div className="flex-1 flex flex-col">
         <ModuleHeader section={SECTION} title="Team & Access" />
         <PendingState
-          title="Admin access required"
-          message="Team management is available to workspace admins only. Ask a workspace admin if you need a change to your access."
+          title="Access required"
+          message="Team management is available to admins and members with the Manage team permission. Ask a workspace admin if you need a change to your access."
           icon={ShieldCheck}
         />
       </div>
@@ -447,16 +668,16 @@ function TeamAccessViewInner() {
   const { data: invitesData } = useListWorkspaceInvites(manager.id);
   const { data: membersData } = useListWorkspaceMembers(manager.id);
 
-  if (!ws) {
-    return (
-      <div className="flex-1 flex flex-col">
-        <ModuleHeader section={SECTION} title="Team & Access" />
-        <PendingState title="No workspace settings" message="Team and access settings are not available for this workspace yet." icon={Users} />
-      </div>
-    );
-  }
-
-  const { team } = ws;
+  // The real roster (members/invites) always comes from the auth DB, not the
+  // seed — `workspace_settings` only exists on the static demo seed. Live
+  // workspaces fall back to static role copy + a default seat limit so the
+  // page still works instead of showing an empty "not available" state.
+  const team = ws?.team ?? {
+    seat_limit: DEFAULT_SEAT_LIMIT,
+    members: [],
+    roles: DEFAULT_TEAM_ROLES,
+    access_policy: DEFAULT_ACCESS_POLICY,
+  };
 
   // Real provisioned accounts from the auth database take precedence over the
   // seed roster; seed members without a real account remain listed as roster
@@ -476,6 +697,9 @@ function TeamAccessViewInner() {
         invited: real ? real.status === "invited" : m.status === "invited",
         lastActive: real ? real.last_login_at : m.last_active,
         hasAccount: Boolean(real),
+        manageTeam: real ? real.manage_team : m.role === "owner",
+        viewAgencyRollups: real ? real.view_agency_rollups : m.role === "owner",
+        isAdmin: real ? real.role === "admin" : m.role === "owner",
       };
     }),
     ...realMembers
@@ -488,6 +712,9 @@ function TeamAccessViewInner() {
         invited: m.status === "invited",
         lastActive: m.last_login_at,
         hasAccount: true,
+        manageTeam: m.manage_team,
+        viewAgencyRollups: m.view_agency_rollups,
+        isAdmin: m.role === "admin",
       })),
   ];
 
@@ -510,7 +737,7 @@ function TeamAccessViewInner() {
             className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-[11px] font-medium text-primary hover:bg-primary/25 transition-colors"
             data-testid="button-invite-member"
           >
-            <UserPlus className="w-3 h-3" /> Invite member
+            <UserPlus className="w-3 h-3" /> Add member
           </button>
         }
       />
@@ -553,10 +780,18 @@ function TeamAccessViewInner() {
                       : "—"}
                   </span>
                 </div>
-                {m.role !== "owner" && (
-                  <div className="pl-0">
+                {!m.isAdmin && (
+                  <div className="pl-0 space-y-1.5">
                     {m.hasAccount ? (
-                      <MemberAdAccountsCell workspaceId={manager.id} email={m.email} adAccounts={seed.ad_accounts} />
+                      <>
+                        <MemberPermissionsCell
+                          workspaceId={manager.id}
+                          email={m.email}
+                          manageTeam={m.manageTeam}
+                          viewAgencyRollups={m.viewAgencyRollups}
+                        />
+                        <MemberAdAccountsCell workspaceId={manager.id} email={m.email} adAccounts={seed.ad_accounts} />
+                      </>
                     ) : (
                       <span className="text-[10px] text-muted-foreground/60">
                         Account access can be granted once this member signs in for the first time.
@@ -595,12 +830,13 @@ function TeamAccessViewInner() {
         </SectionCard>
       </div>
 
-      <InviteMemberDialog
+      <AddMemberDialog
         workspaceId={manager.id}
         open={inviteOpen}
         onOpenChange={setInviteOpen}
         atSeatLimit={atSeatLimit}
         seatLimit={team.seat_limit}
+        adAccounts={seed.ad_accounts}
       />
     </div>
   );

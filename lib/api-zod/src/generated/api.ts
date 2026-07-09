@@ -564,7 +564,9 @@ export const AuthLoginResponse = zod.object({
   "user": zod.object({
   "email": zod.string(),
   "must_change_password": zod.boolean(),
-  "role": zod.enum(['admin', 'member']).describe('admin sees every ad account (agency team); member sees only accounts they have been granted.')
+  "role": zod.enum(['admin', 'member']).describe('admin sees every ad account (agency team); member sees only accounts they have been granted.'),
+  "manage_team": zod.boolean().describe('Can invite\/remove members and assign asset access. Always true for admin.'),
+  "view_agency_rollups": zod.boolean().describe('Can see manager-level totals\/rollups across all ad accounts. Always true for admin.')
 })
 })
 
@@ -586,7 +588,9 @@ export const AuthMeResponse = zod.object({
   "user": zod.object({
   "email": zod.string(),
   "must_change_password": zod.boolean(),
-  "role": zod.enum(['admin', 'member']).describe('admin sees every ad account (agency team); member sees only accounts they have been granted.')
+  "role": zod.enum(['admin', 'member']).describe('admin sees every ad account (agency team); member sees only accounts they have been granted.'),
+  "manage_team": zod.boolean().describe('Can invite\/remove members and assign asset access. Always true for admin.'),
+  "view_agency_rollups": zod.boolean().describe('Can see manager-level totals\/rollups across all ad accounts. Always true for admin.')
 })
 })
 
@@ -611,7 +615,9 @@ export const AuthChangePasswordResponse = zod.object({
   "user": zod.object({
   "email": zod.string(),
   "must_change_password": zod.boolean(),
-  "role": zod.enum(['admin', 'member']).describe('admin sees every ad account (agency team); member sees only accounts they have been granted.')
+  "role": zod.enum(['admin', 'member']).describe('admin sees every ad account (agency team); member sees only accounts they have been granted.'),
+  "manage_team": zod.boolean().describe('Can invite\/remove members and assign asset access. Always true for admin.'),
+  "view_agency_rollups": zod.boolean().describe('Can see manager-level totals\/rollups across all ad accounts. Always true for admin.')
 })
 })
 
@@ -667,6 +673,9 @@ export const ListWorkspaceInvitesResponse = zod.object({
   "email": zod.string(),
   "role": zod.string(),
   "status": zod.string(),
+  "manage_team": zod.boolean(),
+  "view_agency_rollups": zod.boolean(),
+  "ad_account_ids": zod.array(zod.string()),
   "created_at": zod.string()
 }))
 })
@@ -683,9 +692,16 @@ export const CreateWorkspaceInviteParams = zod.object({
   "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.')
 })
 
+export const createWorkspaceInviteBodyManageTeamDefault = false;
+export const createWorkspaceInviteBodyViewAgencyRollupsDefault = false;
+export const createWorkspaceInviteBodyAdAccountIdsDefault = [];
+
 export const CreateWorkspaceInviteBody = zod.object({
   "email": zod.string().email(),
-  "role": zod.enum(['analyst', 'client_viewer'])
+  "role": zod.enum(['analyst', 'client_viewer']),
+  "manage_team": zod.boolean().default(createWorkspaceInviteBodyManageTeamDefault).describe('Can invite\/remove members and assign asset access.'),
+  "view_agency_rollups": zod.boolean().default(createWorkspaceInviteBodyViewAgencyRollupsDefault).describe('Can see manager-level totals\/rollups across all ad accounts, independent of individual account grants.'),
+  "ad_account_ids": zod.array(zod.string()).default(createWorkspaceInviteBodyAdAccountIdsDefault).describe('Ad accounts to grant access to immediately, applied when the account is provisioned.')
 })
 
 export const CreateWorkspaceInviteResponse = zod.object({
@@ -695,8 +711,14 @@ export const CreateWorkspaceInviteResponse = zod.object({
   "email": zod.string(),
   "role": zod.string(),
   "status": zod.string(),
+  "manage_team": zod.boolean(),
+  "view_agency_rollups": zod.boolean(),
+  "ad_account_ids": zod.array(zod.string()),
   "created_at": zod.string()
-})
+}),
+  "email_sent": zod.boolean().optional().describe('Whether the invite email with temp password could be delivered. Only present for newly created invites.'),
+  "temp_password": zod.string().optional().describe('Present only when the email could not be sent, so the admin can share it manually.'),
+  "email_error": zod.string().optional().describe('Present only when the email could not be sent — explains why.')
 })
 
 
@@ -738,8 +760,39 @@ export const ResendWorkspaceInviteResponse = zod.object({
   "email": zod.string(),
   "role": zod.string(),
   "status": zod.string(),
+  "manage_team": zod.boolean(),
+  "view_agency_rollups": zod.boolean(),
+  "ad_account_ids": zod.array(zod.string()),
   "created_at": zod.string()
+}),
+  "email_sent": zod.boolean().optional().describe('Whether the fresh temp-password email could be delivered.'),
+  "temp_password": zod.string().optional().describe('Present only when the email could not be sent, so the admin can share it manually.'),
+  "email_error": zod.string().optional().describe('Present only when the email could not be sent — explains why.')
 })
+
+
+/**
+ * Sets the member's manage_team and view_agency_rollups flags. Manage-team-only; requires a logged-in session with access to the workspace.
+ * @summary Update a member's master-level permissions
+ */
+
+
+
+
+export const UpdateMemberPermissionsParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.'),
+  "email": zod.coerce.string().min(1).describe('Member\'s email address (URL-encoded).')
+})
+
+export const UpdateMemberPermissionsBody = zod.object({
+  "manage_team": zod.boolean(),
+  "view_agency_rollups": zod.boolean()
+})
+
+export const UpdateMemberPermissionsResponse = zod.object({
+  "status": zod.enum(['updated']),
+  "manage_team": zod.boolean(),
+  "view_agency_rollups": zod.boolean()
 })
 
 
@@ -758,6 +811,9 @@ export const ListWorkspaceMembersResponse = zod.object({
   "members": zod.array(zod.object({
   "email": zod.string(),
   "status": zod.enum(['active', 'invited']).describe('invited = provisioned but has not completed first login yet.'),
+  "role": zod.enum(['admin', 'member']),
+  "manage_team": zod.boolean().describe('Always true for admin, regardless of the stored flag.'),
+  "view_agency_rollups": zod.boolean().describe('Always true for admin, regardless of the stored flag.'),
   "created_at": zod.string(),
   "last_login_at": zod.string().nullable()
 }))

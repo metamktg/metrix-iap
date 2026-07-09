@@ -11,6 +11,8 @@ import {
   ListWorkspaceMembersResponse,
   RevokeWorkspaceInviteResponse,
   ResendWorkspaceInviteResponse,
+  UpdateMemberPermissionsBody,
+  UpdateMemberPermissionsResponse,
   UpdateNotificationPrefsBody,
   UpdateNotificationPrefsResponse,
   SubmitRequestAccessBody,
@@ -152,7 +154,8 @@ router.delete("/metrix/admin/session", (req, res) => {
 async function provisionApprovedUser(
   email: string,
   log: Logger,
-): Promise<{ email_sent: boolean; temp_password?: string; email_error?: string }> {
+  extra?: { canManageTeam?: boolean; canViewAgencyRollups?: boolean },
+): Promise<{ email_sent: boolean; temp_password?: string; email_error?: string; userId: number }> {
   const tempPassword = generateTempPassword();
   const passwordHash = await hashPassword(tempPassword);
 
@@ -167,7 +170,14 @@ async function provisionApprovedUser(
   // meta@metamktgagency.com with an empty view after per-user scoping
   // shipped. See agencyAccessSafeguard.ts for the durable reconciliation.
   const role = isAgencyAdminEmail(email) ? "admin" : undefined;
+  const permissionFields = {
+    ...(extra?.canManageTeam !== undefined ? { canManageTeam: extra.canManageTeam } : {}),
+    ...(extra?.canViewAgencyRollups !== undefined
+      ? { canViewAgencyRollups: extra.canViewAgencyRollups }
+      : {}),
+  };
 
+  let userId: number;
   if (existingUser) {
     // Explicit approval is an unambiguous grant: it also restores a
     // previously revoked account.
@@ -178,12 +188,22 @@ async function provisionApprovedUser(
         mustChangePassword: true,
         disabledAt: null,
         ...(role ? { role } : {}),
+        ...permissionFields,
       })
       .where(eq(usersTable.id, existingUser.id));
+    userId = existingUser.id;
   } else {
-    await db
+    const [created] = await db
       .insert(usersTable)
-      .values({ email, passwordHash, mustChangePassword: true, ...(role ? { role } : {}) });
+      .values({
+        email,
+        passwordHash,
+        mustChangePassword: true,
+        ...(role ? { role } : {}),
+        ...permissionFields,
+      })
+      .returning({ id: usersTable.id });
+    userId = created!.id;
   }
 
   // Mirror into Supabase Auth so official-schema reviewer/approver FKs
@@ -204,6 +224,7 @@ async function provisionApprovedUser(
   const sent = emailResult.status === "sent";
   return {
     email_sent: sent,
+    userId,
     ...(sent
       ? {}
       : { temp_password: tempPassword, email_error: emailResult.reason }),
@@ -422,7 +443,9 @@ router.get("/metrix/seed", requireAuth, async (req, res) => {
         .select({ adAccountId: userAdAccountsTable.adAccountId })
         .from(userAdAccountsTable)
         .where(eq(userAdAccountsTable.userId, user.id));
-      bundle = composeSeedForUser(bundle, new Set(grants.map((g) => g.adAccountId)));
+      bundle = composeSeedForUser(bundle, new Set(grants.map((g) => g.adAccountId)), {
+        viewAgencyRollups: user.canViewAgencyRollups,
+      });
     }
     const data = GetMetrixSeedResponse.parse(bundle);
     res.json(data);
@@ -1306,12 +1329,18 @@ const inviteRowToApi = (row: {
   email: string;
   role: string;
   status: string;
+  canManageTeam: boolean;
+  canViewAgencyRollups: boolean;
+  adAccountIds: unknown;
   createdAt: Date;
 }) => ({
   id: row.id,
   email: row.email,
   role: row.role,
   status: row.status,
+  manage_team: row.canManageTeam,
+  view_agency_rollups: row.canViewAgencyRollups,
+  ad_account_ids: Array.isArray(row.adAccountIds) ? (row.adAccountIds as string[]) : [],
   created_at: row.createdAt.toISOString(),
 });
 
@@ -1342,11 +1371,13 @@ const requireWorkspaceAccess = async (
   }
 };
 
-// Team-management endpoints (member roster + invites) are admin-only:
-// members must never see the full client roster or manage invites.
-const requireAdminRole = (req: Request, res: Response, next: NextFunction): void => {
-  if (req.authUser?.role !== "admin") {
-    res.status(403).json({ message: "Admin access required." });
+// Team-management endpoints (member roster + invites) require the explicit
+// "manage team" master-level permission. Agency `admin` accounts always
+// qualify, independent of the stored can_manage_team flag.
+const requireManageTeam = (req: Request, res: Response, next: NextFunction): void => {
+  const user = req.authUser;
+  if (user?.role !== "admin" && !user?.canManageTeam) {
+    res.status(403).json({ message: "You don't have permission to manage the team." });
     return;
   }
   next();
@@ -1355,11 +1386,14 @@ const requireAdminRole = (req: Request, res: Response, next: NextFunction): void
 // Real provisioned user accounts (this deployment is single-workspace, so
 // every user row belongs to this workspace). "invited" = provisioned but the
 // member hasn't completed their first login yet.
-router.get("/metrix/workspaces/:workspaceId/members", requireAuth, requireWorkspaceAccess, requireAdminRole, async (req, res) => {
+router.get("/metrix/workspaces/:workspaceId/members", requireAuth, requireWorkspaceAccess, requireManageTeam, async (req, res) => {
   const rows = await db
     .select({
       email: usersTable.email,
+      role: usersTable.role,
       mustChangePassword: usersTable.mustChangePassword,
+      canManageTeam: usersTable.canManageTeam,
+      canViewAgencyRollups: usersTable.canViewAgencyRollups,
       createdAt: usersTable.createdAt,
       lastLoginAt: usersTable.lastLoginAt,
     })
@@ -1370,12 +1404,57 @@ router.get("/metrix/workspaces/:workspaceId/members", requireAuth, requireWorksp
     members: rows.map((row) => ({
       email: row.email,
       status: row.mustChangePassword && !row.lastLoginAt ? "invited" : "active",
+      role: row.role === "admin" ? "admin" : "member",
+      manage_team: row.role === "admin" || row.canManageTeam,
+      view_agency_rollups: row.role === "admin" || row.canViewAgencyRollups,
       created_at: row.createdAt.toISOString(),
       last_login_at: row.lastLoginAt ? row.lastLoginAt.toISOString() : null,
     })),
   });
   res.json(data);
 });
+
+router.patch(
+  "/metrix/workspaces/:workspaceId/members/:email/permissions",
+  requireAuth,
+  requireWorkspaceAccess,
+  requireManageTeam,
+  async (req, res) => {
+    const email = decodeURIComponent(String(req.params.email)).toLowerCase();
+    const parsed = UpdateMemberPermissionsBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ message: "manage_team and view_agency_rollups are required." });
+      return;
+    }
+
+    const [target] = await db
+      .select({ id: usersTable.id, role: usersTable.role })
+      .from(usersTable)
+      .where(eq(usersTable.email, email))
+      .limit(1);
+    if (!target) {
+      res.status(404).json({ message: "Member not found." });
+      return;
+    }
+
+    await db
+      .update(usersTable)
+      .set({
+        canManageTeam: parsed.data.manage_team,
+        canViewAgencyRollups: parsed.data.view_agency_rollups,
+      })
+      .where(eq(usersTable.id, target.id));
+
+    const isAdmin = target.role === "admin";
+    res.json(
+      UpdateMemberPermissionsResponse.parse({
+        status: "updated",
+        manage_team: isAdmin || parsed.data.manage_team,
+        view_agency_rollups: isAdmin || parsed.data.view_agency_rollups,
+      }),
+    );
+  },
+);
 
 // Per-member ad-account grants. The target user just needs to exist as a
 // real account (this deployment is single-workspace, so any provisioned
@@ -1393,7 +1472,7 @@ router.get(
   "/metrix/workspaces/:workspaceId/members/:email/ad-accounts",
   requireAuth,
   requireWorkspaceAccess,
-  requireAdminRole,
+  requireManageTeam,
   async (req, res) => {
     const email = decodeURIComponent(String(req.params.email)).toLowerCase();
     const [target] = await db
@@ -1414,7 +1493,7 @@ router.post(
   "/metrix/workspaces/:workspaceId/members/:email/ad-accounts",
   requireAuth,
   requireWorkspaceAccess,
-  requireAdminRole,
+  requireManageTeam,
   async (req, res) => {
     const email = decodeURIComponent(String(req.params.email)).toLowerCase();
     const parsed = GrantMemberAdAccountBody.safeParse(req.body);
@@ -1467,7 +1546,7 @@ router.delete(
   "/metrix/workspaces/:workspaceId/members/:email/ad-accounts/:adAccountId",
   requireAuth,
   requireWorkspaceAccess,
-  requireAdminRole,
+  requireManageTeam,
   async (req, res) => {
     const email = decodeURIComponent(String(req.params.email)).toLowerCase();
     const adAccountId = decodeURIComponent(String(req.params.adAccountId));
@@ -1496,7 +1575,7 @@ router.delete(
   },
 );
 
-router.get("/metrix/workspaces/:workspaceId/invites", requireAuth, requireWorkspaceAccess, requireAdminRole, async (req, res) => {
+router.get("/metrix/workspaces/:workspaceId/invites", requireAuth, requireWorkspaceAccess, requireManageTeam, async (req, res) => {
   const workspaceId = String(req.params.workspaceId);
   const rows = await db
     .select()
@@ -1528,7 +1607,7 @@ const getWorkspaceTeamFromSeed = async (): Promise<{
   };
 };
 
-router.post("/metrix/workspaces/:workspaceId/invites", requireAuth, requireWorkspaceAccess, requireAdminRole, async (req, res) => {
+router.post("/metrix/workspaces/:workspaceId/invites", requireAuth, requireWorkspaceAccess, requireManageTeam, async (req, res) => {
   const workspaceId = String(req.params.workspaceId);
   const parsed = CreateWorkspaceInviteBody.safeParse(req.body);
   if (!parsed.success) {
@@ -1537,6 +1616,28 @@ router.post("/metrix/workspaces/:workspaceId/invites", requireAuth, requireWorks
   }
   const email = parsed.data.email.trim().toLowerCase();
   const role = parsed.data.role;
+  const manageTeam = parsed.data.manage_team;
+  const viewAgencyRollups = parsed.data.view_agency_rollups;
+  const adAccountIds = parsed.data.ad_account_ids;
+
+  // Provisioning now happens immediately at invite time, so treat an email
+  // that already has an active (logged-in) account as a hard stop rather
+  // than silently re-provisioning it — that would reset their password and
+  // overwrite their permissions/grants out from under them. Adjusting an
+  // existing member's permissions/access goes through the permissions and
+  // ad-account endpoints instead.
+  const [existingActiveUser] = await db
+    .select({ id: usersTable.id, lastLoginAt: usersTable.lastLoginAt })
+    .from(usersTable)
+    .where(eq(usersTable.email, email))
+    .limit(1);
+  if (existingActiveUser?.lastLoginAt) {
+    res.status(409).json({
+      message:
+        "This person already has an active account. Use their row in the member list to change permissions or account access instead of re-inviting them.",
+    });
+    return;
+  }
 
   const [existingInvite] = await db
     .select()
@@ -1595,16 +1696,50 @@ router.post("/metrix/workspaces/:workspaceId/invites", requireAuth, requireWorks
 
   const inserted = await db
     .insert(workspaceInvitesTable)
-    .values({ workspaceId, email, role, status: "invited" })
+    .values({
+      workspaceId,
+      email,
+      role,
+      status: "invited",
+      canManageTeam: manageTeam,
+      canViewAgencyRollups: viewAgencyRollups,
+      adAccountIds,
+    })
     .onConflictDoNothing({
       target: [workspaceInvitesTable.workspaceId, workspaceInvitesTable.email],
     })
     .returning();
 
   if (inserted.length > 0) {
+    // Single-step invite: the account is provisioned immediately (temp
+    // password + email) rather than deferred to a later "acceptance" step,
+    // which this codebase has never had. Grants apply as soon as the row
+    // exists so the member's first login already has the right access.
+    let provisioned: Awaited<ReturnType<typeof provisionApprovedUser>>;
+    try {
+      provisioned = await provisionApprovedUser(email, req.log, {
+        canManageTeam: manageTeam,
+        canViewAgencyRollups: viewAgencyRollups,
+      });
+    } catch (err) {
+      req.log.error({ err, email }, "Failed to provision invited member account");
+      res.status(500).json({ message: "The invite was recorded but the account couldn't be provisioned. Try resending it." });
+      return;
+    }
+
+    if (adAccountIds.length > 0) {
+      await db
+        .insert(userAdAccountsTable)
+        .values(adAccountIds.map((adAccountId) => ({ userId: provisioned.userId, adAccountId })))
+        .onConflictDoNothing();
+    }
+
     const data = CreateWorkspaceInviteResponse.parse({
       status: "created",
       invite: inviteRowToApi(inserted[0]),
+      email_sent: provisioned.email_sent,
+      ...(provisioned.temp_password ? { temp_password: provisioned.temp_password } : {}),
+      ...(provisioned.email_error ? { email_error: provisioned.email_error } : {}),
     });
     res.json(data);
     return;
@@ -1637,7 +1772,7 @@ router.delete(
   "/metrix/workspaces/:workspaceId/invites/:inviteId",
   requireAuth,
   requireWorkspaceAccess,
-  requireAdminRole,
+  requireManageTeam,
   async (req, res) => {
     const workspaceId = String(req.params.workspaceId);
     const inviteId = parseInviteId(String(req.params.inviteId));
@@ -1654,11 +1789,35 @@ router.delete(
           eq(workspaceInvitesTable.id, inviteId),
         ),
       )
-      .returning({ id: workspaceInvitesTable.id });
+      .returning({ id: workspaceInvitesTable.id, email: workspaceInvitesTable.email, status: workspaceInvitesTable.status });
 
     if (deleted.length === 0) {
       res.status(404).json({ message: "Invite not found." });
       return;
+    }
+
+    // Invites now provision the account immediately (no separate accept
+    // step), so revoking one must also lock out the account it created —
+    // otherwise a "revoked" invitee could still log in with their temp
+    // password. Only lock out accounts that never completed first login;
+    // an already-active member who happens to share an invite row is
+    // managed through the admin disable/restore flow instead.
+    const invite = deleted[0]!;
+    if (invite.status === "invited") {
+      const [invitedUser] = await db
+        .select({ id: usersTable.id, lastLoginAt: usersTable.lastLoginAt })
+        .from(usersTable)
+        .where(eq(usersTable.email, invite.email))
+        .limit(1);
+      if (invitedUser && !invitedUser.lastLoginAt) {
+        await db
+          .update(usersTable)
+          .set({ disabledAt: new Date() })
+          .where(eq(usersTable.id, invitedUser.id));
+        await destroyAllSessions(invitedUser.id);
+        await deletePasswordResetTokensForUser(invitedUser.id);
+        req.log.info({ email: invite.email }, "revoked invite disabled the provisioned account");
+      }
     }
 
     const data = RevokeWorkspaceInviteResponse.parse({ status: "revoked" });
@@ -1670,7 +1829,7 @@ router.post(
   "/metrix/workspaces/:workspaceId/invites/:inviteId/resend",
   requireAuth,
   requireWorkspaceAccess,
-  requireAdminRole,
+  requireManageTeam,
   async (req, res) => {
     const workspaceId = String(req.params.workspaceId);
     const inviteId = parseInviteId(String(req.params.inviteId));
@@ -1695,9 +1854,29 @@ router.post(
       return;
     }
 
+    // The account is provisioned at invite-creation time, so "resend" means
+    // re-issuing a fresh temp password + email for that already-existing
+    // account (same as admin resend-temp-password), not re-creating a row.
+    let provisioned: Awaited<ReturnType<typeof provisionApprovedUser>> | undefined;
+    try {
+      provisioned = await provisionApprovedUser(updated[0]!.email, req.log, {
+        canManageTeam: updated[0]!.canManageTeam,
+        canViewAgencyRollups: updated[0]!.canViewAgencyRollups,
+      });
+    } catch (err) {
+      req.log.error({ err, email: updated[0]!.email }, "Failed to resend invite credentials");
+    }
+
     const data = ResendWorkspaceInviteResponse.parse({
       status: "resent",
       invite: inviteRowToApi(updated[0]),
+      ...(provisioned
+        ? {
+            email_sent: provisioned.email_sent,
+            ...(provisioned.temp_password ? { temp_password: provisioned.temp_password } : {}),
+            ...(provisioned.email_error ? { email_error: provisioned.email_error } : {}),
+          }
+        : { email_sent: false, email_error: "Failed to provision account." }),
     });
     res.json(data);
   },

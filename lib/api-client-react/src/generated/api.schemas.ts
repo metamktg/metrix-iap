@@ -493,6 +493,10 @@ export interface AuthUser {
   must_change_password: boolean;
   /** admin sees every ad account (agency team); member sees only accounts they have been granted. */
   role: AuthUserRole;
+  /** Can invite/remove members and assign asset access. Always true for admin. */
+  manage_team: boolean;
+  /** Can see manager-level totals/rollups across all ad accounts. Always true for admin. */
+  view_agency_rollups: boolean;
 }
 
 export interface AuthUserResult {
@@ -578,6 +582,12 @@ export const WorkspaceInviteInputRole = {
 export interface WorkspaceInviteInput {
   email: string;
   role: WorkspaceInviteInputRole;
+  /** Can invite/remove members and assign asset access. */
+  manage_team?: boolean;
+  /** Can see manager-level totals/rollups across all ad accounts, independent of individual account grants. */
+  view_agency_rollups?: boolean;
+  /** Ad accounts to grant access to immediately, applied when the account is provisioned. */
+  ad_account_ids?: string[];
 }
 
 export interface WorkspaceInvite {
@@ -585,6 +595,9 @@ export interface WorkspaceInvite {
   email: string;
   role: string;
   status: string;
+  manage_team: boolean;
+  view_agency_rollups: boolean;
+  ad_account_ids: string[];
   created_at: string;
 }
 
@@ -599,6 +612,12 @@ export const WorkspaceInviteResultStatus = {
 export interface WorkspaceInviteResult {
   status: WorkspaceInviteResultStatus;
   invite: WorkspaceInvite;
+  /** Whether the invite email with temp password could be delivered. Only present for newly created invites. */
+  email_sent?: boolean;
+  /** Present only when the email could not be sent, so the admin can share it manually. */
+  temp_password?: string;
+  /** Present only when the email could not be sent — explains why. */
+  email_error?: string;
 }
 
 export type RevokeWorkspaceInviteResultStatus = typeof RevokeWorkspaceInviteResultStatus[keyof typeof RevokeWorkspaceInviteResultStatus];
@@ -622,6 +641,12 @@ export const WorkspaceInviteResendResultStatus = {
 export interface WorkspaceInviteResendResult {
   status: WorkspaceInviteResendResultStatus;
   invite: WorkspaceInvite;
+  /** Whether the fresh temp-password email could be delivered. */
+  email_sent?: boolean;
+  /** Present only when the email could not be sent, so the admin can share it manually. */
+  temp_password?: string;
+  /** Present only when the email could not be sent — explains why. */
+  email_error?: string;
 }
 
 export interface WorkspaceInvitesResult {
@@ -639,16 +664,47 @@ export const WorkspaceMemberStatus = {
   invited: 'invited',
 } as const;
 
+export type WorkspaceMemberRole = typeof WorkspaceMemberRole[keyof typeof WorkspaceMemberRole];
+
+
+export const WorkspaceMemberRole = {
+  admin: 'admin',
+  member: 'member',
+} as const;
+
 export interface WorkspaceMember {
   email: string;
   /** invited = provisioned but has not completed first login yet. */
   status: WorkspaceMemberStatus;
+  role: WorkspaceMemberRole;
+  /** Always true for admin, regardless of the stored flag. */
+  manage_team: boolean;
+  /** Always true for admin, regardless of the stored flag. */
+  view_agency_rollups: boolean;
   created_at: string;
   last_login_at: string | null;
 }
 
 export interface WorkspaceMembersResult {
   members: WorkspaceMember[];
+}
+
+export interface UpdateMemberPermissionsInput {
+  manage_team: boolean;
+  view_agency_rollups: boolean;
+}
+
+export type UpdateMemberPermissionsResultStatus = typeof UpdateMemberPermissionsResultStatus[keyof typeof UpdateMemberPermissionsResultStatus];
+
+
+export const UpdateMemberPermissionsResultStatus = {
+  updated: 'updated',
+} as const;
+
+export interface UpdateMemberPermissionsResult {
+  status: UpdateMemberPermissionsResultStatus;
+  manage_team: boolean;
+  view_agency_rollups: boolean;
 }
 
 export interface GrantMemberAdAccountInput {

@@ -11,4 +11,10 @@ import type { WorkspaceInviteResendResultStatus } from './workspaceInviteResendR
 export interface WorkspaceInviteResendResult {
   status: WorkspaceInviteResendResultStatus;
   invite: WorkspaceInvite;
+  /** Whether the fresh temp-password email could be delivered. */
+  email_sent?: boolean;
+  /** Present only when the email could not be sent, so the admin can share it manually. */
+  temp_password?: string;
+  /** Present only when the email could not be sent — explains why. */
+  email_error?: string;
 }

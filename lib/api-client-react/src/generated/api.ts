@@ -74,6 +74,8 @@ import type {
   StartAnalysisInput,
   StartGenerationResult,
   UpdateManualImportAdNamesInput,
+  UpdateMemberPermissionsInput,
+  UpdateMemberPermissionsResult,
   WaitlistApprovalResult,
   WaitlistEntriesResult,
   WaitlistRejectResult,
@@ -2920,6 +2922,80 @@ export const useResendWorkspaceInvite = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getResendWorkspaceInviteMutationOptions(options));
+    }
+
+export const getUpdateMemberPermissionsUrl = (workspaceId: string,
+    email: string,) => {
+
+
+
+
+  return `/api/metrix/workspaces/${workspaceId}/members/${email}/permissions`
+}
+
+/**
+ * Sets the member's manage_team and view_agency_rollups flags. Manage-team-only; requires a logged-in session with access to the workspace.
+ * @summary Update a member's master-level permissions
+ */
+export const updateMemberPermissions = async (workspaceId: string,
+    email: string,
+    updateMemberPermissionsInput: UpdateMemberPermissionsInput, options?: RequestInit): Promise<UpdateMemberPermissionsResult> => {
+
+  return customFetch<UpdateMemberPermissionsResult>(getUpdateMemberPermissionsUrl(workspaceId,email),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateMemberPermissionsInput)
+  }
+);}
+
+
+
+
+export const getUpdateMemberPermissionsMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMemberPermissions>>, TError,{workspaceId: string;email: string;data: BodyType<UpdateMemberPermissionsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateMemberPermissions>>, TError,{workspaceId: string;email: string;data: BodyType<UpdateMemberPermissionsInput>}, TContext> => {
+
+const mutationKey = ['updateMemberPermissions'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateMemberPermissions>>, {workspaceId: string;email: string;data: BodyType<UpdateMemberPermissionsInput>}> = (props) => {
+          const {workspaceId,email,data} = props ?? {};
+
+          return  updateMemberPermissions(workspaceId,email,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateMemberPermissionsMutationResult = NonNullable<Awaited<ReturnType<typeof updateMemberPermissions>>>
+    export type UpdateMemberPermissionsMutationBody = BodyType<UpdateMemberPermissionsInput>
+    export type UpdateMemberPermissionsMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Update a member's master-level permissions
+ */
+export const useUpdateMemberPermissions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMemberPermissions>>, TError,{workspaceId: string;email: string;data: BodyType<UpdateMemberPermissionsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateMemberPermissions>>,
+        TError,
+        {workspaceId: string;email: string;data: BodyType<UpdateMemberPermissionsInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateMemberPermissionsMutationOptions(options));
     }
 
 export const getListWorkspaceMembersUrl = (workspaceId: string,) => {

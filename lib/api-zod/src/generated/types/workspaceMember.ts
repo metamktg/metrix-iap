@@ -5,12 +5,18 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { WorkspaceMemberRole } from './workspaceMemberRole';
 import type { WorkspaceMemberStatus } from './workspaceMemberStatus';
 
 export interface WorkspaceMember {
   email: string;
   /** invited = provisioned but has not completed first login yet. */
   status: WorkspaceMemberStatus;
+  role: WorkspaceMemberRole;
+  /** Always true for admin, regardless of the stored flag. */
+  manage_team: boolean;
+  /** Always true for admin, regardless of the stored flag. */
+  view_agency_rollups: boolean;
   created_at: string;
   last_login_at: string | null;
 }
