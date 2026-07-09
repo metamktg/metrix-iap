@@ -95,6 +95,7 @@ export function cardFromCell(cellId: string, opts: CardAssemblyOpts): CreativeCa
     secondaryText: lib?.secondary_message ?? null,
     cta: lib?.cta ?? null,
     assetUrl: ad?.creative_asset_url ?? null,
+    assetFilename: ad?.asset_filename ?? null,
     aspectRatio: lib?.aspect_ratio ?? null,
     visualSystem: lib?.visual_system ?? null,
     assetFormat: (lib as { asset_format?: string } | null)?.asset_format ?? null,

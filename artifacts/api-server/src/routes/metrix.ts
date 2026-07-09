@@ -844,8 +844,31 @@ router.get("/metrix/accounts/:accountId/manual-imports/:importId/file", requireA
     const rawContent = row["content"] as string;
     const hex = rawContent.startsWith("\\x") ? rawContent.slice(2) : rawContent;
     const buf = Buffer.from(hex, "hex");
-    res.setHeader("Content-Type", row["content_type"] ?? "application/octet-stream");
+    const contentType = (row["content_type"] as string | null) ?? "application/octet-stream";
+    res.setHeader("Content-Type", contentType);
     res.setHeader("Cache-Control", "private, max-age=60");
+
+    // Video elements (Safari in particular) require Range/206 support to
+    // play at all, not just to seek — without this, video creatives can
+    // silently fail to load even though the plain GET works fine.
+    res.setHeader("Accept-Ranges", "bytes");
+    const rangeHeader = req.headers.range;
+    if (rangeHeader && contentType.startsWith("video/")) {
+      const match = /^bytes=(\d*)-(\d*)$/.exec(rangeHeader);
+      const total = buf.length;
+      const start = match?.[1] ? parseInt(match[1], 10) : 0;
+      const end = match?.[2] ? parseInt(match[2], 10) : total - 1;
+      if (Number.isNaN(start) || Number.isNaN(end) || start > end || end >= total) {
+        res.setHeader("Content-Range", `bytes */${total}`);
+        res.status(416).end();
+        return;
+      }
+      res.status(206);
+      res.setHeader("Content-Range", `bytes ${start}-${end}/${total}`);
+      res.setHeader("Content-Length", String(end - start + 1));
+      res.send(buf.subarray(start, end + 1));
+      return;
+    }
     res.send(buf);
   } catch (err) {
     req.log.error({ err, accountId, importId }, "Failed to fetch manual import file");
