@@ -44,6 +44,20 @@ const INVITE_ROLES: { id: WorkspaceInviteInputRole; label: string }[] = [
   { id: "client_viewer", label: "Client Viewer" },
 ];
 
+// Used whenever the seed has no `workspace_settings` block (every live,
+// Supabase-backed workspace — only the static demo seed populates it). The
+// real roster/permissions always come from the auth DB via
+// useListWorkspaceMembers/useListWorkspaceInvites, so this is just static
+// copy plus a generous default seat limit — never a source of truth.
+const DEFAULT_TEAM_ROLES = [
+  { id: "owner", label: "Owner", description: "Full admin access: manages team, billing, and every ad account." },
+  { id: "analyst", label: "Analyst", description: "Can be granted specific ad accounts to analyze and build reports for." },
+  { id: "client_viewer", label: "Client Viewer", description: "Read-only access to the ad accounts they're granted." },
+];
+const DEFAULT_ACCESS_POLICY =
+  "Admins see every ad account. Members see only the ad accounts an admin explicitly grants them, plus the reports they generate.";
+const DEFAULT_SEAT_LIMIT = 20;
+
 function PermissionToggleRow({
   label,
   description,
@@ -654,16 +668,16 @@ function TeamAccessViewInner() {
   const { data: invitesData } = useListWorkspaceInvites(manager.id);
   const { data: membersData } = useListWorkspaceMembers(manager.id);
 
-  if (!ws) {
-    return (
-      <div className="flex-1 flex flex-col">
-        <ModuleHeader section={SECTION} title="Team & Access" />
-        <PendingState title="No workspace settings" message="Team and access settings are not available for this workspace yet." icon={Users} />
-      </div>
-    );
-  }
-
-  const { team } = ws;
+  // The real roster (members/invites) always comes from the auth DB, not the
+  // seed — `workspace_settings` only exists on the static demo seed. Live
+  // workspaces fall back to static role copy + a default seat limit so the
+  // page still works instead of showing an empty "not available" state.
+  const team = ws?.team ?? {
+    seat_limit: DEFAULT_SEAT_LIMIT,
+    members: [],
+    roles: DEFAULT_TEAM_ROLES,
+    access_policy: DEFAULT_ACCESS_POLICY,
+  };
 
   // Real provisioned accounts from the auth database take precedence over the
   // seed roster; seed members without a real account remain listed as roster
