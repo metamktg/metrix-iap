@@ -35,6 +35,12 @@ import type {
   GeneratedReportsResult,
   HealthStatus,
   ListAgentWaitlistParams,
+  ListMetaReportRowsParams,
+  MetaAdAccountsResult,
+  MetaConnectionStatus,
+  MetaDisconnectResult,
+  MetaOauthUrlResult,
+  MetaReportRowsResult,
   MetrixSeedBundle,
   NotificationPrefsResult,
   NotificationPrefsUpdateInput,
@@ -43,6 +49,9 @@ import type {
   RequestAccessInput,
   RequestAccessResult,
   RevokeWorkspaceInviteResult,
+  RunMetaReportsResult,
+  SelectMetaAdAccountInput,
+  SelectMetaAdAccountResult,
   WaitlistApprovalResult,
   WaitlistEntriesResult,
   WaitlistSignupInput,
@@ -1786,6 +1795,538 @@ export const useDeleteWorkspaceReport = <TError = ErrorType<ApiError>,
       > => {
       return useMutation(getDeleteWorkspaceReportMutationOptions(options));
     }
+
+export const getGetMetaConnectionUrl = () => {
+
+
+
+
+  return `/api/metrix/meta/connection`
+}
+
+/**
+ * Returns whether the logged-in user has connected a Meta ad account, pending-selection state after OAuth, and the latest report pull status per report class.
+ * @summary Get the current user's Meta ad account connection status
+ */
+export const getMetaConnection = async ( options?: RequestInit): Promise<MetaConnectionStatus> => {
+
+  return customFetch<MetaConnectionStatus>(getGetMetaConnectionUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMetaConnectionQueryKey = () => {
+    return [
+    `/api/metrix/meta/connection`
+    ] as const;
+    }
+
+
+export const getGetMetaConnectionQueryOptions = <TData = Awaited<ReturnType<typeof getMetaConnection>>, TError = ErrorType<ApiError>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMetaConnection>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMetaConnectionQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMetaConnection>>> = ({ signal }) => getMetaConnection({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMetaConnection>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMetaConnectionQueryResult = NonNullable<Awaited<ReturnType<typeof getMetaConnection>>>
+export type GetMetaConnectionQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Get the current user's Meta ad account connection status
+ */
+
+export function useGetMetaConnection<TData = Awaited<ReturnType<typeof getMetaConnection>>, TError = ErrorType<ApiError>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMetaConnection>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMetaConnectionQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDisconnectMetaAccountUrl = () => {
+
+
+
+
+  return `/api/metrix/meta/connection`
+}
+
+/**
+ * Removes the stored connection and any pending OAuth token for the logged-in user. Stored report pulls and rows are kept.
+ * @summary Disconnect the user's Meta ad account
+ */
+export const disconnectMetaAccount = async ( options?: RequestInit): Promise<MetaDisconnectResult> => {
+
+  return customFetch<MetaDisconnectResult>(getDisconnectMetaAccountUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDisconnectMetaAccountMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disconnectMetaAccount>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof disconnectMetaAccount>>, TError,void, TContext> => {
+
+const mutationKey = ['disconnectMetaAccount'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof disconnectMetaAccount>>, void> = () => {
+
+
+          return  disconnectMetaAccount(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DisconnectMetaAccountMutationResult = NonNullable<Awaited<ReturnType<typeof disconnectMetaAccount>>>
+
+    export type DisconnectMetaAccountMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Disconnect the user's Meta ad account
+ */
+export const useDisconnectMetaAccount = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disconnectMetaAccount>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof disconnectMetaAccount>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getDisconnectMetaAccountMutationOptions(options));
+    }
+
+export const getGetMetaOauthUrlUrl = () => {
+
+
+
+
+  return `/api/metrix/meta/oauth-url`
+}
+
+/**
+ * Builds the Facebook OAuth dialog URL (scope ads_read only) with a signed state parameter for the logged-in user. The browser should navigate to the returned URL.
+ * @summary Get the Meta OAuth dialog URL
+ */
+export const getMetaOauthUrl = async ( options?: RequestInit): Promise<MetaOauthUrlResult> => {
+
+  return customFetch<MetaOauthUrlResult>(getGetMetaOauthUrlUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMetaOauthUrlQueryKey = () => {
+    return [
+    `/api/metrix/meta/oauth-url`
+    ] as const;
+    }
+
+
+export const getGetMetaOauthUrlQueryOptions = <TData = Awaited<ReturnType<typeof getMetaOauthUrl>>, TError = ErrorType<ApiError>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMetaOauthUrl>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMetaOauthUrlQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMetaOauthUrl>>> = ({ signal }) => getMetaOauthUrl({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMetaOauthUrl>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMetaOauthUrlQueryResult = NonNullable<Awaited<ReturnType<typeof getMetaOauthUrl>>>
+export type GetMetaOauthUrlQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Get the Meta OAuth dialog URL
+ */
+
+export function useGetMetaOauthUrl<TData = Awaited<ReturnType<typeof getMetaOauthUrl>>, TError = ErrorType<ApiError>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMetaOauthUrl>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMetaOauthUrlQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListMetaAdAccountsUrl = () => {
+
+
+
+
+  return `/api/metrix/meta/adaccounts`
+}
+
+/**
+ * Calls Meta /me/adaccounts with the user's OAuth token (pending or connected) and returns the accounts for selection. In pilot mode, flags whether the required pilot ad account is present.
+ * @summary List ad accounts available to the connected Meta user
+ */
+export const listMetaAdAccounts = async ( options?: RequestInit): Promise<MetaAdAccountsResult> => {
+
+  return customFetch<MetaAdAccountsResult>(getListMetaAdAccountsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMetaAdAccountsQueryKey = () => {
+    return [
+    `/api/metrix/meta/adaccounts`
+    ] as const;
+    }
+
+
+export const getListMetaAdAccountsQueryOptions = <TData = Awaited<ReturnType<typeof listMetaAdAccounts>>, TError = ErrorType<ApiError>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMetaAdAccounts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMetaAdAccountsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMetaAdAccounts>>> = ({ signal }) => listMetaAdAccounts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMetaAdAccounts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMetaAdAccountsQueryResult = NonNullable<Awaited<ReturnType<typeof listMetaAdAccounts>>>
+export type ListMetaAdAccountsQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary List ad accounts available to the connected Meta user
+ */
+
+export function useListMetaAdAccounts<TData = Awaited<ReturnType<typeof listMetaAdAccounts>>, TError = ErrorType<ApiError>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMetaAdAccounts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMetaAdAccountsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSelectMetaAdAccountUrl = () => {
+
+
+
+
+  return `/api/metrix/meta/select-account`
+}
+
+/**
+ * Validates the chosen ad account against /me/adaccounts, then persists the connection (encrypted token, account metadata) for the logged-in user.
+ * @summary Select and save a Meta ad account
+ */
+export const selectMetaAdAccount = async (selectMetaAdAccountInput: SelectMetaAdAccountInput, options?: RequestInit): Promise<SelectMetaAdAccountResult> => {
+
+  return customFetch<SelectMetaAdAccountResult>(getSelectMetaAdAccountUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(selectMetaAdAccountInput)
+  }
+);}
+
+
+
+
+export const getSelectMetaAdAccountMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof selectMetaAdAccount>>, TError,{data: BodyType<SelectMetaAdAccountInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof selectMetaAdAccount>>, TError,{data: BodyType<SelectMetaAdAccountInput>}, TContext> => {
+
+const mutationKey = ['selectMetaAdAccount'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof selectMetaAdAccount>>, {data: BodyType<SelectMetaAdAccountInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  selectMetaAdAccount(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SelectMetaAdAccountMutationResult = NonNullable<Awaited<ReturnType<typeof selectMetaAdAccount>>>
+    export type SelectMetaAdAccountMutationBody = BodyType<SelectMetaAdAccountInput>
+    export type SelectMetaAdAccountMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Select and save a Meta ad account
+ */
+export const useSelectMetaAdAccount = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof selectMetaAdAccount>>, TError,{data: BodyType<SelectMetaAdAccountInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof selectMetaAdAccount>>,
+        TError,
+        {data: BodyType<SelectMetaAdAccountInput>},
+        TContext
+      > => {
+      return useMutation(getSelectMetaAdAccountMutationOptions(options));
+    }
+
+export const getRunMetaReportsUrl = () => {
+
+
+
+
+  return `/api/metrix/meta/run-reports`
+}
+
+/**
+ * Pulls IAP_DEMOGRAPHIC_TEXT_SIGNAL and IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL insights (same last_30d range) for the user's connected ad account, normalizes rows into report_rows, and stores token-sanitized raw pages. Reports are stored separately per class; partial failure is reported per class.
+ * @summary Run both IAP report pulls for the connected ad account
+ */
+export const runMetaReports = async ( options?: RequestInit): Promise<RunMetaReportsResult> => {
+
+  return customFetch<RunMetaReportsResult>(getRunMetaReportsUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRunMetaReportsMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runMetaReports>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof runMetaReports>>, TError,void, TContext> => {
+
+const mutationKey = ['runMetaReports'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof runMetaReports>>, void> = () => {
+
+
+          return  runMetaReports(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RunMetaReportsMutationResult = NonNullable<Awaited<ReturnType<typeof runMetaReports>>>
+
+    export type RunMetaReportsMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Run both IAP report pulls for the connected ad account
+ */
+export const useRunMetaReports = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runMetaReports>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof runMetaReports>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRunMetaReportsMutationOptions(options));
+    }
+
+export const getListMetaReportRowsUrl = (params: ListMetaReportRowsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/metrix/meta/report-rows?${stringifiedParams}` : `/api/metrix/meta/report-rows`
+}
+
+/**
+ * Returns normalized rows from the most recent successful pull of the given report class for the logged-in user's connected ad account.
+ * @summary List normalized report rows for the connected ad account
+ */
+export const listMetaReportRows = async (params: ListMetaReportRowsParams, options?: RequestInit): Promise<MetaReportRowsResult> => {
+
+  return customFetch<MetaReportRowsResult>(getListMetaReportRowsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMetaReportRowsQueryKey = (params?: ListMetaReportRowsParams,) => {
+    return [
+    `/api/metrix/meta/report-rows`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListMetaReportRowsQueryOptions = <TData = Awaited<ReturnType<typeof listMetaReportRows>>, TError = ErrorType<ApiError>>(params: ListMetaReportRowsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMetaReportRows>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMetaReportRowsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMetaReportRows>>> = ({ signal }) => listMetaReportRows(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMetaReportRows>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMetaReportRowsQueryResult = NonNullable<Awaited<ReturnType<typeof listMetaReportRows>>>
+export type ListMetaReportRowsQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary List normalized report rows for the connected ad account
+ */
+
+export function useListMetaReportRows<TData = Awaited<ReturnType<typeof listMetaReportRows>>, TError = ErrorType<ApiError>>(
+ params: ListMetaReportRowsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMetaReportRows>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMetaReportRowsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getHealthCheckUrl = () => {
 

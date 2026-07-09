@@ -446,3 +446,74 @@ create unique index if not exists request_access_email_idx on request_access (lo
 create index if not exists ad_performance_account_dates_idx on ad_performance (account_id, date_start, date_end);
 create index if not exists ad_performance_result_type_idx on ad_performance (account_id, result_type);
 create index if not exists concept_performance_account_idx on concept_performance (account_id, book);
+
+-- ═══════════════════════════════════════════════════════════════════════
+-- Meta ad account connection + IAP report pulls (pilot onboarding flow).
+-- user_id is text: Metrix auth users live in Replit Postgres with integer
+-- ids; we store them stringified here (cross-database reference, no FK).
+-- access_token_encrypted is AES-256-GCM ciphertext (TOKEN_ENCRYPTION_KEY,
+-- server-side only). Raw Meta responses are token-sanitized before storage.
+-- ═══════════════════════════════════════════════════════════════════════
+
+-- Staging row holding the encrypted long-lived user token between the OAuth
+-- callback and the user's ad-account selection. Deleted on select/disconnect.
+create table if not exists meta_oauth_pending (
+  user_id text primary key,
+  access_token_encrypted text not null,
+  token_expires_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists connected_ad_accounts (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null,
+  ad_account_id text not null,
+  account_name text,
+  currency text,
+  timezone text,
+  access_token_encrypted text not null,
+  token_expires_at timestamptz,
+  connected_at timestamptz not null default now(),
+  status text not null default 'active',
+  unique (user_id, ad_account_id)
+);
+
+create table if not exists report_pulls (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null,
+  ad_account_id text not null,
+  report_class text not null check (report_class in ('IAP_DEMOGRAPHIC_TEXT_SIGNAL', 'IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL')),
+  date_range_start date not null,
+  date_range_end date not null,
+  raw_response jsonb,
+  raw_pages jsonb,
+  fetched_at timestamptz not null default now(),
+  status text not null default 'success',
+  error_message text,
+  metric_mapping_status jsonb
+);
+
+alter table report_pulls add column if not exists metric_mapping_status jsonb;
+
+create index if not exists report_pulls_user_account_idx on report_pulls (user_id, ad_account_id, report_class, fetched_at desc);
+
+create table if not exists report_rows (
+  id uuid primary key default gen_random_uuid(),
+  report_pull_id uuid not null references report_pulls(id) on delete cascade,
+  user_id text not null,
+  ad_account_id text not null,
+  campaign_id text,
+  campaign_name text,
+  adset_id text,
+  adset_name text,
+  ad_id text,
+  ad_name text,
+  date date,
+  dimensions jsonb not null,
+  metrics jsonb not null,
+  report_class text not null check (report_class in ('IAP_DEMOGRAPHIC_TEXT_SIGNAL', 'IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL')),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists report_rows_pull_idx on report_rows (report_pull_id);
+create index if not exists report_rows_user_account_class_date_idx on report_rows (user_id, ad_account_id, report_class, date);
