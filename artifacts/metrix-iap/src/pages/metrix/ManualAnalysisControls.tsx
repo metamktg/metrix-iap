@@ -54,17 +54,30 @@ function RunAnalysisBtn({
   );
 }
 
-export function RequiredFormatPanel() {
+export type IapCsvClassKey = "demographic" | "device_placement";
+
+const CSV_CLASS_TITLES: Record<IapCsvClassKey, string> = {
+  demographic: "Demographics CSV",
+  device_placement: "Placements CSV",
+};
+
+/**
+ * Shows the exact breakdown + metric columns one CSV class must contain,
+ * straight from the server-side spec, plus a downloadable sample CSV.
+ * Used once per required CSV (Demographics, Placements) in the upload flow.
+ */
+export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) {
   const { data, isLoading } = useGetManualPerformanceCsvFormat();
   const [open, setOpen] = useState(false);
+  const classData = data?.[csvClass];
 
   const downloadSample = () => {
-    if (!data?.sample_csv) return;
-    const blob = new Blob([data.sample_csv], { type: "text/csv" });
+    if (!classData?.sample_csv) return;
+    const blob = new Blob([classData.sample_csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "metrix-performance-sample.csv";
+    a.download = `metrix-${csvClass}-sample.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -82,38 +95,42 @@ export function RequiredFormatPanel() {
         )}
         <FileText className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
         <span className="text-[12px] font-medium text-foreground">
-          Required CSV columns for performance uploads
+          Required columns — {CSV_CLASS_TITLES[csvClass]}
+          {classData?.report_name ? ` (${classData.report_name})` : ""}
         </span>
       </button>
       {open && (
         <div className="px-3 pb-3 space-y-2">
-          {isLoading || !data ? (
+          {isLoading || !classData ? (
             <p className="text-[11px] text-muted-foreground/60">Loading format spec…</p>
           ) : (
             <>
+              <div className="rounded-md border border-border/30 p-2">
+                <div className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/60 mb-1">
+                  Breakdown columns
+                </div>
+                <p className="text-[11px] text-foreground/80 leading-relaxed">
+                  {classData.breakdown_columns.join(", ")}
+                </p>
+              </div>
               <div className="rounded-md border border-border/30 divide-y divide-border/30">
-                {data.columns.map((c) => (
-                  <div key={c.label} className="flex items-start gap-2 p-2">
+                {classData.metric_groups.map((g) => (
+                  <div key={g.name} className="flex items-start gap-2 p-2">
                     <span
                       className={cn(
                         "shrink-0 text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded",
-                        c.required
+                        g.required
                           ? "bg-primary/15 text-primary border border-primary/25"
                           : "bg-white/[0.04] text-muted-foreground/70 border border-border/30"
                       )}
                     >
-                      {c.required ? "Required" : "Optional"}
+                      {g.required ? "Required" : "Optional"}
                     </span>
                     <div className="min-w-0">
-                      <div className="text-[11px] font-medium text-foreground">{c.label}</div>
+                      <div className="text-[11px] font-medium text-foreground">{g.name}</div>
                       <p className="text-[10px] text-muted-foreground/60 leading-relaxed mt-0.5">
-                        {c.description}
+                        {g.columns.join(", ")}
                       </p>
-                      {c.aliases.length > 0 && (
-                        <p className="text-[9px] text-muted-foreground/50 mt-0.5">
-                          Also accepted: {c.aliases.join(", ")}
-                        </p>
-                      )}
                     </div>
                   </div>
                 ))}

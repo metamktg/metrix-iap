@@ -45,8 +45,8 @@ export const CreateManualAdAccountResponse = zod.object({
 
 
 /**
- * Stores an uploaded report file (performance CSV or creative library ZIP) as a staged import for the account. Files are staged for the analysis pipeline — they are never parsed into performance data at upload time (no fabricated data). Requires access to the account.
- * @summary Stage a manual report upload for an ad account
+ * Stores an uploaded file as a staged import for the account. Two performance CSV kinds are required (performance_demo_csv, performance_placement_csv — matching the exact IAP_DEMOGRAPHIC_TEXT_SIGNAL / IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL Meta pivot export templates) plus any number of individually-staged creative_asset files (never a ZIP). Files are staged for the analysis pipeline — they are never parsed into performance data at upload time (no fabricated data). Requires access to the account.
+ * @summary Stage a manual report or creative upload for an ad account
  */
 
 
@@ -61,9 +61,11 @@ export const stageManualImportBodyFilenameMax = 255;
 
 
 export const StageManualImportBody = zod.object({
-  "kind": zod.enum(['performance_csv', 'creative_library']),
+  "kind": zod.enum(['performance_demo_csv', 'performance_placement_csv', 'creative_asset']),
   "filename": zod.string().min(1).max(stageManualImportBodyFilenameMax),
-  "content_base64": zod.string().min(1).describe('Base64-encoded file content. Max 8 MB decoded.')
+  "content_type": zod.string().optional().describe('Original MIME type of the uploaded file, if known.'),
+  "content_base64": zod.string().min(1).describe('Base64-encoded file content. Max 8 MB decoded.'),
+  "ad_names": zod.array(zod.string()).optional().describe('For creative_asset uploads only — the ad name(s) this creative is mapped to.')
 })
 
 export const StageManualImportResponse = zod.object({
@@ -76,17 +78,102 @@ export const StageManualImportResponse = zod.object({
 
 
 /**
- * Returns the required/optional columns (with accepted header aliases and descriptions) for the "Performance export (CSV)" manual upload kind, plus a valid sample CSV. Used by the upload UI to show users exactly what to export.
- * @summary Required column format for the manual performance CSV upload
+ * Returns every staged manual import (both performance CSV kinds and creative assets) for the account, newest first. Requires access to the account.
+ * @summary List staged manual imports for an ad account
+ */
+
+
+
+export const ListManualImportsParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
+})
+
+export const ListManualImportsResponse = zod.object({
+  "imports": zod.array(zod.object({
+  "id": zod.string(),
+  "account_id": zod.string(),
+  "kind": zod.enum(['performance_demo_csv', 'performance_placement_csv', 'creative_asset']),
+  "filename": zod.string(),
+  "content_type": zod.string().nullish(),
+  "size_bytes": zod.number(),
+  "ad_names": zod.array(zod.string()),
+  "status": zod.enum(['staged', 'processed', 'rejected']),
+  "created_at": zod.string()
+}))
+})
+
+
+/**
+ * Updates the ad_names mapping for a staged creative_asset import (the ad(s) this creative file represents). Only valid for creative_asset imports.
+ * @summary Edit the ad-name mapping for a staged creative asset
+ */
+
+
+
+
+export const UpdateManualImportAdNamesParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.'),
+  "importId": zod.coerce.string().min(1).describe('Manual import identifier.')
+})
+
+export const UpdateManualImportAdNamesBody = zod.object({
+  "ad_names": zod.array(zod.string())
+})
+
+export const UpdateManualImportAdNamesResponse = zod.object({
+  "id": zod.string(),
+  "account_id": zod.string(),
+  "kind": zod.enum(['performance_demo_csv', 'performance_placement_csv', 'creative_asset']),
+  "filename": zod.string(),
+  "content_type": zod.string().nullish(),
+  "size_bytes": zod.number(),
+  "ad_names": zod.array(zod.string()),
+  "status": zod.enum(['staged', 'processed', 'rejected']),
+  "created_at": zod.string()
+})
+
+
+/**
+ * Deletes a staged manual import (performance CSV or creative asset) before it has been consumed by an analysis run. Requires access to the account.
+ * @summary Remove a staged manual import
+ */
+
+
+
+
+export const DeleteManualImportParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.'),
+  "importId": zod.coerce.string().min(1).describe('Manual import identifier.')
+})
+
+export const DeleteManualImportResponse = zod.void()
+
+
+/**
+ * Returns the exact breakdown + metric column requirements for both required CSV classes (IAP_DEMOGRAPHIC_TEXT_SIGNAL and IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL), each with Base metrics (required) plus Ecommerce/Service/App metric groups (optional, never fabricated when absent), and a valid sample CSV per class. Used by the upload UI to show users exactly what to export from Meta Ads Manager.
+ * @summary Required template format for the two manual performance CSV uploads
  */
 export const GetManualPerformanceCsvFormatResponse = zod.object({
-  "columns": zod.array(zod.object({
-  "label": zod.string(),
+  "demographic": zod.object({
+  "report_name": zod.string().describe('Exact Meta pivot report template name this CSV must match.'),
+  "breakdown_columns": zod.array(zod.string()),
+  "metric_groups": zod.array(zod.object({
+  "name": zod.string(),
   "required": zod.boolean(),
-  "description": zod.string(),
-  "aliases": zod.array(zod.string())
+  "columns": zod.array(zod.string())
 })),
   "sample_csv": zod.string()
+}),
+  "device_placement": zod.object({
+  "report_name": zod.string().describe('Exact Meta pivot report template name this CSV must match.'),
+  "breakdown_columns": zod.array(zod.string()),
+  "metric_groups": zod.array(zod.object({
+  "name": zod.string(),
+  "required": zod.boolean(),
+  "columns": zod.array(zod.string())
+})),
+  "sample_csv": zod.string()
+})
 })
 
 

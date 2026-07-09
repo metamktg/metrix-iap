@@ -85,8 +85,8 @@ paths:
     post:
       operationId: stageManualImport
       tags: [metrix]
-      summary: Stage a manual report upload for an ad account
-      description: Stores an uploaded report file (performance CSV or creative library ZIP) as a staged import for the account. Files are staged for the analysis pipeline — they are never parsed into performance data at upload time (no fabricated data). Requires access to the account.
+      summary: Stage a manual report or creative upload for an ad account
+      description: Stores an uploaded file as a staged import for the account. Two performance CSV kinds are required (performance_demo_csv, performance_placement_csv — matching the exact IAP_DEMOGRAPHIC_TEXT_SIGNAL / IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL Meta pivot export templates) plus any number of individually-staged creative_asset files (never a ZIP). Files are staged for the analysis pipeline — they are never parsed into performance data at upload time (no fabricated data). Requires access to the account.
       security:
         - cookieAuth: []
       requestBody:
@@ -132,17 +132,137 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
-  /metrix/manual-performance-csv-format:
     get:
-      operationId: getManualPerformanceCsvFormat
+      operationId: listManualImports
       tags: [metrix]
-      summary: Required column format for the manual performance CSV upload
-      description: Returns the required/optional columns (with accepted header aliases and descriptions) for the "Performance export (CSV)" manual upload kind, plus a valid sample CSV. Used by the upload UI to show users exactly what to export.
+      summary: List staged manual imports for an ad account
+      description: Returns every staged manual import (both performance CSV kinds and creative assets) for the account, newest first. Requires access to the account.
       security:
         - cookieAuth: []
       responses:
         "200":
-          description: Column format spec
+          description: Staged imports
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListManualImportsResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/manual-imports/{importId}:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+      - name: importId
+        in: path
+        required: true
+        description: Manual import identifier.
+        schema:
+          type: string
+          minLength: 1
+    patch:
+      operationId: updateManualImportAdNames
+      tags: [metrix]
+      summary: Edit the ad-name mapping for a staged creative asset
+      description: Updates the ad_names mapping for a staged creative_asset import (the ad(s) this creative file represents). Only valid for creative_asset imports.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateManualImportAdNamesInput"
+      responses:
+        "200":
+          description: Updated import
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManualImport"
+        "400":
+          description: Invalid input, or import is not a creative_asset
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Account or import not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      operationId: deleteManualImport
+      tags: [metrix]
+      summary: Remove a staged manual import
+      description: Deletes a staged manual import (performance CSV or creative asset) before it has been consumed by an analysis run. Requires access to the account.
+      security:
+        - cookieAuth: []
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Account or import not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/manual-performance-csv-format:
+    get:
+      operationId: getManualPerformanceCsvFormat
+      tags: [metrix]
+      summary: Required template format for the two manual performance CSV uploads
+      description: Returns the exact breakdown + metric column requirements for both required CSV classes (IAP_DEMOGRAPHIC_TEXT_SIGNAL and IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL), each with Base metrics (required) plus Ecommerce/Service/App metric groups (optional, never fabricated when absent), and a valid sample CSV per class. Used by the upload UI to show users exactly what to export from Meta Ads Manager.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Column format spec for both CSV classes
           content:
             application/json:
               schema:
@@ -2098,15 +2218,23 @@ components:
       properties:
         kind:
           type: string
-          enum: [performance_csv, creative_library]
+          enum: [performance_demo_csv, performance_placement_csv, creative_asset]
         filename:
           type: string
           minLength: 1
           maxLength: 255
+        content_type:
+          type: string
+          description: Original MIME type of the uploaded file, if known.
         content_base64:
           type: string
           description: Base64-encoded file content. Max 8 MB decoded.
           minLength: 1
+        ad_names:
+          type: array
+          description: For creative_asset uploads only — the ad name(s) this creative is mapped to.
+          items:
+            type: string
       required:
         - kind
         - filename
@@ -2132,36 +2260,105 @@ components:
         - filename
         - size_bytes
         - note
-    ManualPerformanceCsvColumn:
+    ManualImport:
       type: object
       properties:
-        label:
+        id:
           type: string
-        required:
-          type: boolean
-        description:
+        account_id:
           type: string
-        aliases:
+        kind:
+          type: string
+          enum: [performance_demo_csv, performance_placement_csv, creative_asset]
+        filename:
+          type: string
+        content_type:
+          type: string
+          nullable: true
+        size_bytes:
+          type: integer
+        ad_names:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [staged, processed, rejected]
+        created_at:
+          type: string
+      required:
+        - id
+        - account_id
+        - kind
+        - filename
+        - size_bytes
+        - ad_names
+        - status
+        - created_at
+    ListManualImportsResult:
+      type: object
+      properties:
+        imports:
+          type: array
+          items:
+            $ref: "#/components/schemas/ManualImport"
+      required:
+        - imports
+    UpdateManualImportAdNamesInput:
+      type: object
+      properties:
+        ad_names:
           type: array
           items:
             type: string
       required:
-        - label
-        - required
-        - description
-        - aliases
-    ManualPerformanceCsvFormat:
+        - ad_names
+    IapCsvColumnGroup:
       type: object
       properties:
+        name:
+          type: string
+        required:
+          type: boolean
         columns:
           type: array
           items:
-            $ref: "#/components/schemas/ManualPerformanceCsvColumn"
+            type: string
+      required:
+        - name
+        - required
+        - columns
+    IapCsvClassFormat:
+      type: object
+      properties:
+        report_name:
+          type: string
+          description: Exact Meta pivot report template name this CSV must match.
+        breakdown_columns:
+          type: array
+          items:
+            type: string
+        metric_groups:
+          type: array
+          items:
+            $ref: "#/components/schemas/IapCsvColumnGroup"
         sample_csv:
           type: string
       required:
-        - columns
+        - report_name
+        - breakdown_columns
+        - metric_groups
         - sample_csv
+    ManualPerformanceCsvFormat:
+      type: object
+      properties:
+        demographic:
+          $ref: "#/components/schemas/IapCsvClassFormat"
+        device_placement:
+          $ref: "#/components/schemas/IapCsvClassFormat"
+      required:
+        - demographic
+        - device_placement
     StartAnalysisInput:
       type: object
       properties:

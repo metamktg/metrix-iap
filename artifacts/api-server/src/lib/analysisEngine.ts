@@ -1,28 +1,30 @@
 // ─── Manual-upload analysis engine ─────────────────────────────────────
-// Turns staged manual_imports (performance_csv) rows into ad_performance
-// rows for a MANUALLY selected date window. Never runs automatically on
-// upload — only via an explicit POST from the user (see routes/metrixAnalysis.ts).
+// Turns the two staged manual_imports CSVs (performance_demo_csv +
+// performance_placement_csv, matching the IAP_DEMOGRAPHIC_TEXT_SIGNAL /
+// IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL Meta pivot export templates) into
+// ad_performance / demographic_performance / placement_performance /
+// platform_performance / device_performance rows for a MANUALLY selected
+// date window. Never runs automatically on upload — only via an explicit
+// POST from the user (see routes/metrixAnalysis.ts).
 //
 // Honesty rules (mirror the generation_runs pattern):
 //   - A manual_analysis_runs row is inserted as 'running' and flips to
-//     'success' only after every ad_performance row has committed.
-//   - On any failure, partial ad_performance rows this run wrote are
-//     deleted and the run is marked 'error' — no dishonest success states.
-//   - Re-running replaces this manual account's ad_performance rows within
-//     the selected window (full refresh, not merge) — manual accounts are
-//     never touched by the offline importer, so this is always safe.
-//   - The resolved date_start/date_end (from the data itself, not "today")
-//     are recorded on the run so the report states exactly which dates
-//     were analyzed.
+//     'success' only after every output row has committed.
+//   - On any failure, partial output rows this run wrote are deleted and
+//     the run is marked 'error' — no dishonest success states.
+//   - Re-running replaces this manual account's rows within the selected
+//     window (full refresh, not merge) — manual accounts are never touched
+//     by the offline importer, so this is always safe.
+//   - Ecommerce/Service/App metric columns are only ever written when
+//     present in the uploaded CSV's header — never fabricated or zeroed.
+//   - BOTH the demographic and device/placement/platform CSVs must be
+//     staged before a run can start — the two exports are required, not
+//     optional alternatives.
 
 import { getSupabase } from "./supabase";
 import { invalidateMetrixSeedCache } from "./metrixSeedAssembly";
 import { logger } from "./logger";
-import {
-  parseManualPerformanceCsv,
-  ManualCsvFormatError,
-  type ManualPerformanceRow,
-} from "./manualPerformanceCsv";
+import { parseIapCsv, IapCsvFormatError, type IapCsvRow } from "./iapCsvParser";
 
 export const STALE_ANALYSIS_RUN_MS = 10 * 60 * 1000;
 
@@ -145,11 +147,14 @@ async function finishRun(
   if (error) throw new Error(error.message);
 }
 
-/** Deletes ad_performance rows this specific run wrote (partial-output cleanup on failure/staleness). */
+/** Deletes every output table's rows this specific run wrote (partial-output cleanup on failure/staleness). */
 async function deleteRunOutputs(runId: string): Promise<void> {
   const supabase = getSupabase();
   const { error } = await supabase.from("ad_performance").delete().eq("manual_analysis_run_id", runId);
   if (error) throw new Error(error.message);
+  // Demographic/placement/platform/device tables are windowed full-refresh
+  // (no run-id FK — see below), so their cleanup happens via the same
+  // date-window delete used on (re)run, not a run-id filter.
 }
 
 function withinRange(date: string, dateRange: DateRangePreset, maxDate: string): boolean {
@@ -161,11 +166,83 @@ function withinRange(date: string, dateRange: DateRangePreset, maxDate: string):
   return d >= cutoff && d <= max;
 }
 
+function decodeStagedContent(hexOrRaw: string): string {
+  const hex = hexOrRaw.replace(/^\\x/, "");
+  return Buffer.from(hex, "hex").toString("utf8");
+}
+
+function num(v: number | string | null | undefined): number | null {
+  return typeof v === "number" ? v : null;
+}
+
+function sumOptional(a: number | null, b: number | null): number | null {
+  if (a === null && b === null) return null;
+  return (a ?? 0) + (b ?? 0);
+}
+
+type AggBucket = {
+  spend: number | null;
+  impressions: number | null;
+  reach: number | null;
+  clicksAll: number | null;
+  linkClicks: number | null;
+  results: number | null;
+  resultType: string | null;
+  addsToCart: number | null;
+  checkoutsInitiated: number | null;
+  purchases: number | null;
+  extra: Record<string, number>;
+};
+
+function emptyBucket(): AggBucket {
+  return {
+    spend: null,
+    impressions: null,
+    reach: null,
+    clicksAll: null,
+    linkClicks: null,
+    results: null,
+    resultType: null,
+    addsToCart: null,
+    checkoutsInitiated: null,
+    purchases: null,
+    extra: {},
+  };
+}
+
+function accumulate(bucket: AggBucket, row: IapCsvRow): void {
+  bucket.spend = sumOptional(bucket.spend, num(row.base["amount_spent"]));
+  bucket.impressions = sumOptional(bucket.impressions, num(row.base["impressions"]));
+  bucket.reach = sumOptional(bucket.reach, num(row.base["reach"]));
+  bucket.clicksAll = sumOptional(bucket.clicksAll, num(row.base["clicks_all"]));
+  bucket.linkClicks = sumOptional(bucket.linkClicks, num(row.base["link_clicks"]));
+  bucket.results = sumOptional(bucket.results, num(row.base["results"]));
+  if (bucket.resultType === null && typeof row.base["result_type"] === "string") {
+    bucket.resultType = row.base["result_type"];
+  }
+  bucket.addsToCart = sumOptional(bucket.addsToCart, num(row.extra["adds_to_cart"]));
+  bucket.checkoutsInitiated = sumOptional(bucket.checkoutsInitiated, num(row.extra["checkouts_initiated"]));
+  bucket.purchases = sumOptional(bucket.purchases, num(row.extra["purchases"]));
+  for (const [k, v] of Object.entries(row.extra)) {
+    if (typeof v !== "number") continue;
+    bucket.extra[k] = (bucket.extra[k] ?? 0) + v;
+  }
+}
+
+function derivedRates(spend: number | null, impressions: number | null, linkClicks: number | null, results: number | null) {
+  return {
+    cpa: results !== null && results > 0 && spend !== null ? spend / results : null,
+    ctr_link_pct: linkClicks !== null && impressions !== null && impressions > 0 ? (linkClicks / impressions) * 100 : null,
+    cvr_link_pct: linkClicks !== null && linkClicks > 0 && results !== null ? (results / linkClicks) * 100 : null,
+    cpm: impressions !== null && impressions > 0 && spend !== null ? (spend / impressions) * 1000 : null,
+  };
+}
+
 /**
- * Validates prerequisites (a manual account with at least one staged
- * performance_csv import) and starts an analysis run. Returns the run id
- * immediately; parsing continues in the background and the run row
- * records the outcome.
+ * Validates prerequisites (a manual account with BOTH the demographic and
+ * device/placement/platform CSVs staged) and starts an analysis run.
+ * Returns the run id immediately; parsing continues in the background and
+ * the run row records the outcome.
  */
 export async function startManualAnalysis(
   accountId: string,
@@ -180,11 +257,18 @@ export async function startManualAnalysis(
     .from("manual_imports")
     .select("id, filename, content, kind")
     .eq("account_id", accountId)
-    .eq("kind", "performance_csv");
+    .in("kind", ["performance_demo_csv", "performance_placement_csv"]);
   if (importsErr) throw new Error(importsErr.message);
-  if (!imports || imports.length === 0) {
+
+  const demoImports = (imports ?? []).filter((i) => i["kind"] === "performance_demo_csv");
+  const placementImports = (imports ?? []).filter((i) => i["kind"] === "performance_placement_csv");
+  if (demoImports.length === 0 || placementImports.length === 0) {
+    const missing = [
+      demoImports.length === 0 ? "Demographics export" : null,
+      placementImports.length === 0 ? "Placements export" : null,
+    ].filter(Boolean);
     throw new AnalysisError(
-      "No performance CSV has been staged for this account yet. Upload one before running analysis.",
+      `Both reports are required before running analysis. Missing: ${missing.join(" and ")}.`,
       422,
     );
   }
@@ -193,69 +277,229 @@ export async function startManualAnalysis(
 
   void (async () => {
     try {
-      // Parse every staged performance CSV; a single malformed file fails
-      // the whole run with an actionable message naming the file.
-      const allRows: ManualPerformanceRow[] = [];
-      for (const imp of imports) {
-        const hex = String(imp["content"]).replace(/^\\x/, "");
-        const text = Buffer.from(hex, "hex").toString("utf8");
+      const demoRows: IapCsvRow[] = [];
+      for (const imp of demoImports) {
+        const text = decodeStagedContent(String(imp["content"]));
         try {
-          allRows.push(...parseManualPerformanceCsv(text));
+          demoRows.push(...parseIapCsv(text, "demographic").rows);
         } catch (err) {
-          const detail = err instanceof ManualCsvFormatError ? err.message : String(err);
-          throw new AnalysisError(`"${imp["filename"]}": ${detail}`, 422);
+          const detail = err instanceof IapCsvFormatError ? err.message : String(err);
+          throw new AnalysisError(`Demographics file "${imp["filename"]}": ${detail}`, 422);
+        }
+      }
+      const placementRows: IapCsvRow[] = [];
+      for (const imp of placementImports) {
+        const text = decodeStagedContent(String(imp["content"]));
+        try {
+          placementRows.push(...parseIapCsv(text, "device_placement").rows);
+        } catch (err) {
+          const detail = err instanceof IapCsvFormatError ? err.message : String(err);
+          throw new AnalysisError(`Placements file "${imp["filename"]}": ${detail}`, 422);
         }
       }
 
-      const maxDate = allRows.reduce((max, r) => (r.date > max ? r.date : max), allRows[0]!.date);
-      const scoped = allRows.filter((r) => withinRange(r.date, dateRange, maxDate));
-      if (scoped.length === 0) {
+      const allDates = [
+        ...demoRows.map((r) => r.breakdowns["Date"]!),
+        ...placementRows.map((r) => r.breakdowns["Date"]!),
+      ];
+      const maxDate = allDates.reduce((max, d) => (d > max ? d : max), allDates[0]!);
+
+      const scopedDemo = demoRows.filter((r) => withinRange(r.breakdowns["Date"]!, dateRange, maxDate));
+      const scopedPlacement = placementRows.filter((r) => withinRange(r.breakdowns["Date"]!, dateRange, maxDate));
+      if (scopedDemo.length === 0 || scopedPlacement.length === 0) {
         throw new AnalysisError(
           `No rows fall within the selected "${dateRange}" window (latest data is ${maxDate}). Try "all" or a wider range.`,
           422,
         );
       }
-      const dateStart = scoped.reduce((min, r) => (r.date < min ? r.date : min), scoped[0]!.date);
-      const dateEnd = scoped.reduce((max, r) => (r.date > max ? r.date : max), scoped[0]!.date);
 
-      // Full refresh of this manual account's ad_performance within the
+      const scopedDates = [
+        ...scopedDemo.map((r) => r.breakdowns["Date"]!),
+        ...scopedPlacement.map((r) => r.breakdowns["Date"]!),
+      ];
+      const dateStart = scopedDates.reduce((min, d) => (d < min ? d : min), scopedDates[0]!);
+      const dateEnd = scopedDates.reduce((max, d) => (d > max ? d : max), scopedDates[0]!);
+
+      // ── Ad-level rows (ad_performance): aggregate the placement export
+      // across its device/platform/placement dimensions to a per-ad/day row.
+      const adBuckets = new Map<string, AggBucket & { campaign: string; adSet: string; adName: string; resultType: string; date: string }>();
+      for (const row of scopedPlacement) {
+        const campaign = row.breakdowns["Campaign name"]!;
+        const adSet = row.breakdowns["Ad set name"] ?? "";
+        const adName = row.breakdowns["Ad name"]!;
+        const resultType = (row.base["result_type"] as string) || "Results";
+        const date = row.breakdowns["Date"]!;
+        const key = [campaign, adName, resultType, date].join("\u0001");
+        if (!adBuckets.has(key)) {
+          adBuckets.set(key, { ...emptyBucket(), campaign, adSet, adName, resultType, date });
+        }
+        accumulate(adBuckets.get(key)!, row);
+      }
+
+      // ── Demographic rows: aggregate demo export by gender/age/day.
+      const demoBuckets = new Map<string, AggBucket & { gender: string; age: string; date: string }>();
+      for (const row of scopedDemo) {
+        const gender = row.breakdowns["Gender"]!;
+        const age = row.breakdowns["Age"]!;
+        const date = row.breakdowns["Date"]!;
+        const key = [gender, age, date].join("\u0001");
+        if (!demoBuckets.has(key)) demoBuckets.set(key, { ...emptyBucket(), gender, age, date });
+        accumulate(demoBuckets.get(key)!, row);
+      }
+
+      // ── Device/placement/platform rows: aggregate placement export by
+      // each dimension independently, across ads, per day.
+      const deviceBuckets = new Map<string, AggBucket & { device: string; date: string }>();
+      const placementBuckets = new Map<string, AggBucket & { placement: string; date: string }>();
+      const platformBuckets = new Map<string, AggBucket & { platform: string; date: string }>();
+      for (const row of scopedPlacement) {
+        const date = row.breakdowns["Date"]!;
+        const device = row.breakdowns["Impression device"]!;
+        const placement = row.breakdowns["Placement"]!;
+        const platform = row.breakdowns["Platform"]!;
+
+        const dKey = [device, date].join("\u0001");
+        if (!deviceBuckets.has(dKey)) deviceBuckets.set(dKey, { ...emptyBucket(), device, date });
+        accumulate(deviceBuckets.get(dKey)!, row);
+
+        const pKey = [placement, date].join("\u0001");
+        if (!placementBuckets.has(pKey)) placementBuckets.set(pKey, { ...emptyBucket(), placement, date });
+        accumulate(placementBuckets.get(pKey)!, row);
+
+        const plKey = [platform, date].join("\u0001");
+        if (!platformBuckets.has(plKey)) platformBuckets.set(plKey, { ...emptyBucket(), platform, date });
+        accumulate(platformBuckets.get(plKey)!, row);
+      }
+
+      // Full refresh of this manual account's output rows within the
       // selected window — safe because manual accounts are never written
       // to by the offline importer.
-      const del = await supabase
+      const del1 = await supabase
         .from("ad_performance")
         .delete()
         .eq("account_id", accountId)
         .gte("date_start", dateStart)
         .lte("date_end", dateEnd);
-      if (del.error) throw new Error(del.error.message);
-
-      const insertRows = scoped.map((r) => ({
-        account_id: accountId,
-        campaign_name: r.campaign_name,
-        ad_set_name: r.ad_set_name,
-        ad_name: r.ad_name,
-        result_type: r.result_type,
-        date_start: r.date,
-        date_end: r.date,
-        spend: r.spend,
-        impressions: r.impressions,
-        reach: r.reach,
-        clicks_all: r.clicks_all,
-        link_clicks: r.link_clicks,
-        results: r.results,
-        cpa: r.cpa,
-        ctr_link_pct: r.ctr_link_pct,
-        cvr_link_pct: r.cvr_link_pct,
-        cpm: r.cpm,
-        manual_analysis_run_id: runId,
-      }));
-
-      // Chunk inserts to stay well under request size limits.
-      const CHUNK = 500;
-      for (let i = 0; i < insertRows.length; i += CHUNK) {
-        const ins = await supabase.from("ad_performance").insert(insertRows.slice(i, i + CHUNK));
-        if (ins.error) throw new Error(ins.error.message);
+      if (del1.error) throw new Error(del1.error.message);
+      for (const table of [
+        "demographic_performance",
+        "placement_performance",
+        "platform_performance",
+        "device_performance",
+      ]) {
+        const del = await supabase
+          .from(table)
+          .delete()
+          .eq("account_id", accountId)
+          .gte("date_start", dateStart)
+          .lte("date_end", dateEnd);
+        if (del.error) throw new Error(del.error.message);
       }
+
+      const CHUNK = 500;
+      const insertChunked = async (table: string, rows: Record<string, any>[]) => {
+        for (let i = 0; i < rows.length; i += CHUNK) {
+          const ins = await supabase.from(table).insert(rows.slice(i, i + CHUNK));
+          if (ins.error) throw new Error(ins.error.message);
+        }
+      };
+
+      const adRows = Array.from(adBuckets.values()).map((b) => ({
+        account_id: accountId,
+        campaign_name: b.campaign,
+        ad_set_name: b.adSet || null,
+        ad_name: b.adName,
+        result_type: b.resultType,
+        date_start: b.date,
+        date_end: b.date,
+        spend: b.spend,
+        impressions: b.impressions,
+        reach: b.reach,
+        clicks_all: b.clicksAll,
+        link_clicks: b.linkClicks,
+        results: b.results,
+        ...derivedRates(b.spend, b.impressions, b.linkClicks, b.results),
+        manual_analysis_run_id: runId,
+        extra_metrics: Object.keys(b.extra).length > 0 ? b.extra : null,
+      }));
+      await insertChunked("ad_performance", adRows);
+
+      const demographicRows = Array.from(demoBuckets.values()).map((b) => ({
+        account_id: accountId,
+        gender: b.gender,
+        age: b.age,
+        date_start: b.date,
+        date_end: b.date,
+        spend: b.spend,
+        link_clicks: b.linkClicks,
+        results: b.results,
+        cpa: derivedRates(b.spend, b.impressions, b.linkClicks, b.results).cpa,
+        cvr_link_pct: derivedRates(b.spend, b.impressions, b.linkClicks, b.results).cvr_link_pct,
+        extra_metrics: Object.keys(b.extra).length > 0 ? b.extra : null,
+      }));
+      await insertChunked("demographic_performance", demographicRows);
+
+      const trackingBasis = (b: { addsToCart: number | null; checkoutsInitiated: number | null; purchases: number | null; spend: number | null; impressions: number | null }) =>
+        b.spend === null && b.impressions === null && (b.addsToCart !== null || b.checkoutsInitiated !== null || b.purchases !== null)
+          ? "conversion"
+          : "delivery";
+
+      const placementRowsOut = Array.from(placementBuckets.values()).map((b) => ({
+        account_id: accountId,
+        placement: b.placement,
+        date_start: b.date,
+        date_end: b.date,
+        spend: b.spend,
+        impressions: b.impressions,
+        link_clicks: b.linkClicks,
+        results: b.results,
+        cpa: derivedRates(b.spend, b.impressions, b.linkClicks, b.results).cpa,
+        cvr_link_pct: derivedRates(b.spend, b.impressions, b.linkClicks, b.results).cvr_link_pct,
+        adds_to_cart: b.addsToCart,
+        checkouts_initiated: b.checkoutsInitiated,
+        purchases: b.purchases,
+        tracking_basis: trackingBasis(b),
+        extra_metrics: Object.keys(b.extra).length > 0 ? b.extra : null,
+      }));
+      await insertChunked("placement_performance", placementRowsOut);
+
+      const platformRowsOut = Array.from(platformBuckets.values()).map((b) => ({
+        account_id: accountId,
+        platform: b.platform,
+        date_start: b.date,
+        date_end: b.date,
+        spend: b.spend,
+        impressions: b.impressions,
+        link_clicks: b.linkClicks,
+        results: b.results,
+        cpa: derivedRates(b.spend, b.impressions, b.linkClicks, b.results).cpa,
+        adds_to_cart: b.addsToCart,
+        checkouts_initiated: b.checkoutsInitiated,
+        purchases: b.purchases,
+        tracking_basis: trackingBasis(b),
+        extra_metrics: Object.keys(b.extra).length > 0 ? b.extra : null,
+      }));
+      await insertChunked("platform_performance", platformRowsOut);
+
+      const deviceRowsOut = Array.from(deviceBuckets.values()).map((b) => ({
+        account_id: accountId,
+        device: b.device,
+        date_start: b.date,
+        date_end: b.date,
+        spend: b.spend,
+        impressions: b.impressions,
+        results: b.results,
+        cpa: derivedRates(b.spend, b.impressions, b.linkClicks, b.results).cpa,
+        link_clicks: b.linkClicks,
+        adds_to_cart: b.addsToCart,
+        checkouts_initiated: b.checkoutsInitiated,
+        purchases: b.purchases,
+        tracking_basis: trackingBasis(b),
+        extra_metrics: Object.keys(b.extra).length > 0 ? b.extra : null,
+      }));
+      await insertChunked("device_performance", deviceRowsOut);
+
+      const totalRows = adRows.length + demographicRows.length + placementRowsOut.length + platformRowsOut.length + deviceRowsOut.length;
 
       await supabase
         .from("ad_accounts")
@@ -263,7 +507,7 @@ export async function startManualAnalysis(
           status: "configured",
           overview_state: {
             title: "Analysis complete",
-            description: `Manual analysis processed ${scoped.length} row(s) from ${imports.length} file(s), covering ${dateStart} to ${dateEnd} (${dateRange === "all" ? "all uploaded dates" : dateRange} window). Re-run analysis after uploading new reports.`,
+            description: `Manual analysis processed ${totalRows} row(s) from ${imports!.length} file(s), covering ${dateStart} to ${dateEnd} (${dateRange === "all" ? "all uploaded dates" : dateRange} window). Re-run analysis after uploading new reports.`,
           },
         })
         .eq("id", accountId);
@@ -271,11 +515,11 @@ export async function startManualAnalysis(
       await finishRun(runId, "success", {
         dateStart,
         dateEnd,
-        rowsIngested: scoped.length,
-        importsUsed: imports.length,
+        rowsIngested: totalRows,
+        importsUsed: imports!.length,
       });
       invalidateMetrixSeedCache();
-      logger.info({ accountId, runId, rows: scoped.length, dateStart, dateEnd }, "Manual analysis run succeeded");
+      logger.info({ accountId, runId, rows: totalRows, dateStart, dateEnd }, "Manual analysis run succeeded");
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       logger.error({ err, accountId, runId }, "Manual analysis run failed");

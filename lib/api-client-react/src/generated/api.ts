@@ -46,7 +46,9 @@ import type {
   LatestAnalysisRunResult,
   LatestGenerationRunResult,
   ListAgentWaitlistParams,
+  ListManualImportsResult,
   ListMetaReportRowsParams,
+  ManualImport,
   ManualImportInput,
   ManualImportResult,
   ManualPerformanceCsvFormat,
@@ -69,6 +71,7 @@ import type {
   SelectMetaAdAccountResult,
   StartAnalysisInput,
   StartGenerationResult,
+  UpdateManualImportAdNamesInput,
   WaitlistApprovalResult,
   WaitlistEntriesResult,
   WaitlistRejectResult,
@@ -266,8 +269,8 @@ export const getStageManualImportUrl = (accountId: string,) => {
 }
 
 /**
- * Stores an uploaded report file (performance CSV or creative library ZIP) as a staged import for the account. Files are staged for the analysis pipeline — they are never parsed into performance data at upload time (no fabricated data). Requires access to the account.
- * @summary Stage a manual report upload for an ad account
+ * Stores an uploaded file as a staged import for the account. Two performance CSV kinds are required (performance_demo_csv, performance_placement_csv — matching the exact IAP_DEMOGRAPHIC_TEXT_SIGNAL / IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL Meta pivot export templates) plus any number of individually-staged creative_asset files (never a ZIP). Files are staged for the analysis pipeline — they are never parsed into performance data at upload time (no fabricated data). Requires access to the account.
+ * @summary Stage a manual report or creative upload for an ad account
  */
 export const stageManualImport = async (accountId: string,
     manualImportInput: ManualImportInput, options?: RequestInit): Promise<ManualImportResult> => {
@@ -316,7 +319,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type StageManualImportMutationError = ErrorType<ApiError>
 
     /**
- * @summary Stage a manual report upload for an ad account
+ * @summary Stage a manual report or creative upload for an ad account
  */
 export const useStageManualImport = <TError = ErrorType<ApiError>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stageManualImport>>, TError,{accountId: string;data: BodyType<ManualImportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -329,6 +332,231 @@ export const useStageManualImport = <TError = ErrorType<ApiError>,
       return useMutation(getStageManualImportMutationOptions(options));
     }
 
+export const getListManualImportsUrl = (accountId: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/manual-imports`
+}
+
+/**
+ * Returns every staged manual import (both performance CSV kinds and creative assets) for the account, newest first. Requires access to the account.
+ * @summary List staged manual imports for an ad account
+ */
+export const listManualImports = async (accountId: string, options?: RequestInit): Promise<ListManualImportsResult> => {
+
+  return customFetch<ListManualImportsResult>(getListManualImportsUrl(accountId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListManualImportsQueryKey = (accountId: string,) => {
+    return [
+    `/api/metrix/accounts/${accountId}/manual-imports`
+    ] as const;
+    }
+
+
+export const getListManualImportsQueryOptions = <TData = Awaited<ReturnType<typeof listManualImports>>, TError = ErrorType<ApiError>>(accountId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listManualImports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListManualImportsQueryKey(accountId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listManualImports>>> = ({ signal }) => listManualImports(accountId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: accountId !== null && accountId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listManualImports>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListManualImportsQueryResult = NonNullable<Awaited<ReturnType<typeof listManualImports>>>
+export type ListManualImportsQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary List staged manual imports for an ad account
+ */
+
+export function useListManualImports<TData = Awaited<ReturnType<typeof listManualImports>>, TError = ErrorType<ApiError>>(
+ accountId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listManualImports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListManualImportsQueryOptions(accountId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateManualImportAdNamesUrl = (accountId: string,
+    importId: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/manual-imports/${importId}`
+}
+
+/**
+ * Updates the ad_names mapping for a staged creative_asset import (the ad(s) this creative file represents). Only valid for creative_asset imports.
+ * @summary Edit the ad-name mapping for a staged creative asset
+ */
+export const updateManualImportAdNames = async (accountId: string,
+    importId: string,
+    updateManualImportAdNamesInput: UpdateManualImportAdNamesInput, options?: RequestInit): Promise<ManualImport> => {
+
+  return customFetch<ManualImport>(getUpdateManualImportAdNamesUrl(accountId,importId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateManualImportAdNamesInput)
+  }
+);}
+
+
+
+
+export const getUpdateManualImportAdNamesMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateManualImportAdNames>>, TError,{accountId: string;importId: string;data: BodyType<UpdateManualImportAdNamesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateManualImportAdNames>>, TError,{accountId: string;importId: string;data: BodyType<UpdateManualImportAdNamesInput>}, TContext> => {
+
+const mutationKey = ['updateManualImportAdNames'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateManualImportAdNames>>, {accountId: string;importId: string;data: BodyType<UpdateManualImportAdNamesInput>}> = (props) => {
+          const {accountId,importId,data} = props ?? {};
+
+          return  updateManualImportAdNames(accountId,importId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateManualImportAdNamesMutationResult = NonNullable<Awaited<ReturnType<typeof updateManualImportAdNames>>>
+    export type UpdateManualImportAdNamesMutationBody = BodyType<UpdateManualImportAdNamesInput>
+    export type UpdateManualImportAdNamesMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Edit the ad-name mapping for a staged creative asset
+ */
+export const useUpdateManualImportAdNames = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateManualImportAdNames>>, TError,{accountId: string;importId: string;data: BodyType<UpdateManualImportAdNamesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateManualImportAdNames>>,
+        TError,
+        {accountId: string;importId: string;data: BodyType<UpdateManualImportAdNamesInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateManualImportAdNamesMutationOptions(options));
+    }
+
+export const getDeleteManualImportUrl = (accountId: string,
+    importId: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/manual-imports/${importId}`
+}
+
+/**
+ * Deletes a staged manual import (performance CSV or creative asset) before it has been consumed by an analysis run. Requires access to the account.
+ * @summary Remove a staged manual import
+ */
+export const deleteManualImport = async (accountId: string,
+    importId: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteManualImportUrl(accountId,importId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteManualImportMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteManualImport>>, TError,{accountId: string;importId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteManualImport>>, TError,{accountId: string;importId: string}, TContext> => {
+
+const mutationKey = ['deleteManualImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteManualImport>>, {accountId: string;importId: string}> = (props) => {
+          const {accountId,importId} = props ?? {};
+
+          return  deleteManualImport(accountId,importId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteManualImportMutationResult = NonNullable<Awaited<ReturnType<typeof deleteManualImport>>>
+
+    export type DeleteManualImportMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Remove a staged manual import
+ */
+export const useDeleteManualImport = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteManualImport>>, TError,{accountId: string;importId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteManualImport>>,
+        TError,
+        {accountId: string;importId: string},
+        TContext
+      > => {
+      return useMutation(getDeleteManualImportMutationOptions(options));
+    }
+
 export const getGetManualPerformanceCsvFormatUrl = () => {
 
 
@@ -338,8 +566,8 @@ export const getGetManualPerformanceCsvFormatUrl = () => {
 }
 
 /**
- * Returns the required/optional columns (with accepted header aliases and descriptions) for the "Performance export (CSV)" manual upload kind, plus a valid sample CSV. Used by the upload UI to show users exactly what to export.
- * @summary Required column format for the manual performance CSV upload
+ * Returns the exact breakdown + metric column requirements for both required CSV classes (IAP_DEMOGRAPHIC_TEXT_SIGNAL and IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL), each with Base metrics (required) plus Ecommerce/Service/App metric groups (optional, never fabricated when absent), and a valid sample CSV per class. Used by the upload UI to show users exactly what to export from Meta Ads Manager.
+ * @summary Required template format for the two manual performance CSV uploads
  */
 export const getManualPerformanceCsvFormat = async ( options?: RequestInit): Promise<ManualPerformanceCsvFormat> => {
 
@@ -386,7 +614,7 @@ export type GetManualPerformanceCsvFormatQueryError = ErrorType<ApiError>
 
 
 /**
- * @summary Required column format for the manual performance CSV upload
+ * @summary Required template format for the two manual performance CSV uploads
  */
 
 export function useGetManualPerformanceCsvFormat<TData = Awaited<ReturnType<typeof getManualPerformanceCsvFormat>>, TError = ErrorType<ApiError>>(

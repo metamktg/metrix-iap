@@ -14,9 +14,13 @@ export interface ManualImportInput {
      * @maxLength 255
      */
   filename: string;
+  /** Original MIME type of the uploaded file, if known. */
+  content_type?: string;
   /**
      * Base64-encoded file content. Max 8 MB decoded.
      * @minLength 1
      */
   content_base64: string;
+  /** For creative_asset uploads only — the ad name(s) this creative is mapped to. */
+  ad_names?: string[];
 }

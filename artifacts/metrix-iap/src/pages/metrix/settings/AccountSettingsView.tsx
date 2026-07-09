@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getAdAccount, getReportBuilder } from "@/lib/data/metrixSeedAdapter";
 import { ModuleHeader, ScopeBanner, SectionCard, CaveatNote, PendingState, useFocusParam } from "../shared";
 import { ConnectMetaDialog, ManualImportDialog } from "../ConnectAccountDialogs";
+import { AnalysisControls } from "../ManualAnalysisControls";
 import { AgentWaitlistSection } from "./AgentWaitlistSection";
 import { cn } from "@/lib/utils";
 import { Plug, FileUp, Palette, ShieldCheck, CheckCircle2, Circle, UserCircle2, LogOut, Loader2, KeyRound } from "lucide-react";
@@ -280,6 +281,12 @@ export function AccountSettingsView() {
               </button>
             </div>
           </div>
+        </SectionCard>
+
+        {/* Analysis — the only place a date range is chosen, and analysis is
+            only ever triggered by this explicit button. */}
+        <SectionCard title="Run analysis" desc="Pick a date range and explicitly analyze the staged manual uploads. Never runs automatically.">
+          <AnalysisControls accountId={account.id} />
         </SectionCard>
 
         {/* White-label */}

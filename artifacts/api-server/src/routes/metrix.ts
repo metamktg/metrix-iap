@@ -40,6 +40,9 @@ import {
   CreateManualAdAccountResponse,
   StageManualImportBody,
   StageManualImportResponse,
+  ListManualImportsResponse,
+  UpdateManualImportAdNamesBody,
+  UpdateManualImportAdNamesResponse,
 } from "@workspace/api-zod";
 import {
   db,
@@ -544,6 +547,11 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
       return;
     }
 
+    if (parsed.data.kind !== "creative_asset" && parsed.data.ad_names && parsed.data.ad_names.length > 0) {
+      res.status(400).json({ message: "ad_names is only valid for creative_asset uploads." });
+      return;
+    }
+
     const b64 = parsed.data.content_base64.replace(/\s/g, "");
     if (!BASE64_RE.test(b64)) {
       res.status(400).json({ message: "File content is not valid base64." });
@@ -568,8 +576,10 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
         account_id: accountId,
         kind: parsed.data.kind,
         filename: parsed.data.filename,
+        content_type: parsed.data.content_type ?? null,
         content: `\\x${content.toString("hex")}`,
         size_bytes: content.length,
+        ad_names: parsed.data.kind === "creative_asset" ? (parsed.data.ad_names ?? []) : [],
         uploaded_by_user_id: user.id,
         uploaded_by_email: user.email,
       })
@@ -594,6 +604,140 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
     req.log.error({ err }, "Failed to stage manual import");
     res.status(502).json({
       message: err instanceof Error ? err.message : "Could not stage the uploaded file.",
+    });
+  }
+});
+
+router.get("/metrix/accounts/:accountId/manual-imports", requireAuth, async (req, res) => {
+  const accountId = String(req.params["accountId"]);
+  const user = req.authUser!;
+  try {
+    if (user.role !== "admin" && !(await userHasAccountAccess(user.id, accountId))) {
+      res.status(403).json({ message: "You don't have access to this ad account." });
+      return;
+    }
+    const supabase = getSupabase();
+    const account = await supabase.from("ad_accounts").select("id").eq("id", accountId).limit(1);
+    if (account.error) throw new Error(account.error.message);
+    if (!account.data || account.data.length === 0) {
+      res.status(404).json({ message: "Ad account not found." });
+      return;
+    }
+    const { data, error } = await supabase
+      .from("manual_imports")
+      .select("id, account_id, kind, filename, content_type, size_bytes, ad_names, status, created_at")
+      .eq("account_id", accountId)
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    res.json(
+      ListManualImportsResponse.parse({
+        imports: (data ?? []).map((r) => ({
+          id: String(r["id"]),
+          account_id: String(r["account_id"]),
+          kind: r["kind"],
+          filename: r["filename"],
+          content_type: r["content_type"] ?? null,
+          size_bytes: r["size_bytes"],
+          ad_names: r["ad_names"] ?? [],
+          status: r["status"],
+          created_at: String(r["created_at"]),
+        })),
+      }),
+    );
+  } catch (err) {
+    req.log.error({ err, accountId }, "Failed to list manual imports");
+    res.status(502).json({
+      message: err instanceof Error ? err.message : "Could not list staged imports.",
+    });
+  }
+});
+
+router.patch("/metrix/accounts/:accountId/manual-imports/:importId", requireAuth, async (req, res) => {
+  const accountId = String(req.params["accountId"]);
+  const importId = String(req.params["importId"]);
+  const parsed = UpdateManualImportAdNamesBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "ad_names must be an array of strings." });
+    return;
+  }
+  const user = req.authUser!;
+  try {
+    if (user.role !== "admin" && !(await userHasAccountAccess(user.id, accountId))) {
+      res.status(403).json({ message: "You don't have access to this ad account." });
+      return;
+    }
+    const supabase = getSupabase();
+    const existing = await supabase
+      .from("manual_imports")
+      .select("id, kind")
+      .eq("id", importId)
+      .eq("account_id", accountId)
+      .limit(1);
+    if (existing.error) throw new Error(existing.error.message);
+    if (!existing.data || existing.data.length === 0) {
+      res.status(404).json({ message: "Staged import not found." });
+      return;
+    }
+    if (existing.data[0]!["kind"] !== "creative_asset") {
+      res.status(400).json({ message: "Only creative asset uploads have an editable ad-name mapping." });
+      return;
+    }
+    const { data, error } = await supabase
+      .from("manual_imports")
+      .update({ ad_names: parsed.data.ad_names })
+      .eq("id", importId)
+      .select("id, account_id, kind, filename, content_type, size_bytes, ad_names, status, created_at")
+      .single();
+    if (error) throw new Error(error.message);
+    res.json(
+      UpdateManualImportAdNamesResponse.parse({
+        id: String(data["id"]),
+        account_id: String(data["account_id"]),
+        kind: data["kind"],
+        filename: data["filename"],
+        content_type: data["content_type"] ?? null,
+        size_bytes: data["size_bytes"],
+        ad_names: data["ad_names"] ?? [],
+        status: data["status"],
+        created_at: String(data["created_at"]),
+      }),
+    );
+  } catch (err) {
+    req.log.error({ err, accountId, importId }, "Failed to update manual import ad names");
+    res.status(502).json({
+      message: err instanceof Error ? err.message : "Could not update the ad-name mapping.",
+    });
+  }
+});
+
+router.delete("/metrix/accounts/:accountId/manual-imports/:importId", requireAuth, async (req, res) => {
+  const accountId = String(req.params["accountId"]);
+  const importId = String(req.params["importId"]);
+  const user = req.authUser!;
+  try {
+    if (user.role !== "admin" && !(await userHasAccountAccess(user.id, accountId))) {
+      res.status(403).json({ message: "You don't have access to this ad account." });
+      return;
+    }
+    const supabase = getSupabase();
+    const existing = await supabase
+      .from("manual_imports")
+      .select("id")
+      .eq("id", importId)
+      .eq("account_id", accountId)
+      .limit(1);
+    if (existing.error) throw new Error(existing.error.message);
+    if (!existing.data || existing.data.length === 0) {
+      res.status(404).json({ message: "Staged import not found." });
+      return;
+    }
+    const del = await supabase.from("manual_imports").delete().eq("id", importId);
+    if (del.error) throw new Error(del.error.message);
+    res.status(204).end();
+  } catch (err) {
+    req.log.error({ err, accountId, importId }, "Failed to delete manual import");
+    res.status(502).json({
+      message: err instanceof Error ? err.message : "Could not delete the staged import.",
     });
   }
 });

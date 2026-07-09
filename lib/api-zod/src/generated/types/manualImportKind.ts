@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ManualImportInputKind = typeof ManualImportInputKind[keyof typeof ManualImportInputKind];
+export type ManualImportKind = typeof ManualImportKind[keyof typeof ManualImportKind];
 
 
-export const ManualImportInputKind = {
+export const ManualImportKind = {
   performance_demo_csv: 'performance_demo_csv',
   performance_placement_csv: 'performance_placement_csv',
   creative_asset: 'creative_asset',

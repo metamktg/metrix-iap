@@ -6,9 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface ManualPerformanceCsvColumn {
-  label: string;
+export interface IapCsvColumnGroup {
+  name: string;
   required: boolean;
-  description: string;
-  aliases: string[];
+  columns: string[];
 }

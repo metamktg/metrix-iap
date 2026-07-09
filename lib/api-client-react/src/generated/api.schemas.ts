@@ -288,8 +288,9 @@ export type ManualImportInputKind = typeof ManualImportInputKind[keyof typeof Ma
 
 
 export const ManualImportInputKind = {
-  performance_csv: 'performance_csv',
-  creative_library: 'creative_library',
+  performance_demo_csv: 'performance_demo_csv',
+  performance_placement_csv: 'performance_placement_csv',
+  creative_asset: 'creative_asset',
 } as const;
 
 export interface ManualImportInput {
@@ -299,11 +300,15 @@ export interface ManualImportInput {
      * @maxLength 255
      */
   filename: string;
+  /** Original MIME type of the uploaded file, if known. */
+  content_type?: string;
   /**
      * Base64-encoded file content. Max 8 MB decoded.
      * @minLength 1
      */
   content_base64: string;
+  /** For creative_asset uploads only — the ad name(s) this creative is mapped to. */
+  ad_names?: string[];
 }
 
 export type ManualImportResultStatus = typeof ManualImportResultStatus[keyof typeof ManualImportResultStatus];
@@ -322,16 +327,61 @@ export interface ManualImportResult {
   note: string;
 }
 
-export interface ManualPerformanceCsvColumn {
-  label: string;
+export type ManualImportKind = typeof ManualImportKind[keyof typeof ManualImportKind];
+
+
+export const ManualImportKind = {
+  performance_demo_csv: 'performance_demo_csv',
+  performance_placement_csv: 'performance_placement_csv',
+  creative_asset: 'creative_asset',
+} as const;
+
+export type ManualImportStatus = typeof ManualImportStatus[keyof typeof ManualImportStatus];
+
+
+export const ManualImportStatus = {
+  staged: 'staged',
+  processed: 'processed',
+  rejected: 'rejected',
+} as const;
+
+export interface ManualImport {
+  id: string;
+  account_id: string;
+  kind: ManualImportKind;
+  filename: string;
+  content_type?: string | null;
+  size_bytes: number;
+  ad_names: string[];
+  status: ManualImportStatus;
+  created_at: string;
+}
+
+export interface ListManualImportsResult {
+  imports: ManualImport[];
+}
+
+export interface UpdateManualImportAdNamesInput {
+  ad_names: string[];
+}
+
+export interface IapCsvColumnGroup {
+  name: string;
   required: boolean;
-  description: string;
-  aliases: string[];
+  columns: string[];
+}
+
+export interface IapCsvClassFormat {
+  /** Exact Meta pivot report template name this CSV must match. */
+  report_name: string;
+  breakdown_columns: string[];
+  metric_groups: IapCsvColumnGroup[];
+  sample_csv: string;
 }
 
 export interface ManualPerformanceCsvFormat {
-  columns: ManualPerformanceCsvColumn[];
-  sample_csv: string;
+  demographic: IapCsvClassFormat;
+  device_placement: IapCsvClassFormat;
 }
 
 /**

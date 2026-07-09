@@ -232,7 +232,7 @@ export const navTree: NavSection[] = [
   {
     id: "agent",
     number: "08",
-    label: "Metrix Agent",
+    label: "Agent",
     to: "/app/agent",
     badgeKey: "agent",
     placeholder: true,
