@@ -57,7 +57,10 @@ import { ensureSupabaseAuthUser } from "@workspace/auth-mirror";
 import { sendApprovalEmail } from "../lib/approvalEmail";
 import { sendPasswordResetEmail } from "../lib/passwordResetEmail";
 import { getEmailConfig } from "../lib/email";
-import { createPasswordResetToken } from "../lib/passwordResets";
+import {
+  createPasswordResetToken,
+  deletePasswordResetTokensForUser,
+} from "../lib/passwordResets";
 import { destroyAllSessions } from "../lib/sessions";
 import { isDisposableEmailDomain } from "../lib/disposableEmailDomains";
 import { getMetrixSeedFromSupabase } from "../lib/metrixSeedAssembly";
@@ -261,8 +264,10 @@ router.post(
       .update(usersTable)
       .set({ passwordHash, mustChangePassword: true })
       .where(eq(usersTable.id, user.id));
-    // Old credentials are dead; any open sessions go with them.
+    // Old credentials are dead; open sessions and outstanding reset links
+    // go with them.
     await destroyAllSessions(user.id);
+    await deletePasswordResetTokensForUser(user.id);
 
     const emailResult = await sendApprovalEmail(
       user.email,
@@ -338,8 +343,10 @@ router.post(
         .set({ disabledAt: new Date() })
         .where(eq(usersTable.id, user.id));
     }
-    // Always destroy sessions, even if already disabled — belt and braces.
+    // Always destroy sessions and outstanding reset links, even if already
+    // disabled — a pre-revoke reset link must not survive a later restore.
     await destroyAllSessions(user.id);
+    await deletePasswordResetTokensForUser(user.id);
     req.log.info({ email: user.email }, "admin revoked user access");
 
     res.json(
