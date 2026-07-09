@@ -58,3 +58,25 @@ export function renderAt(initialPath: string) {
   );
   return { ...result, location };
 }
+
+// Always mounts AuthGate at the given path, regardless of whether the path
+// is in AUTH_GATE_PATHS — exactly what a logged-out visitor experiences.
+// Used to verify each PRE_LOGIN_ROUTE_PATHS entry is actually wired to a
+// dedicated screen: an unwired path falls through to the plain login page,
+// which this helper lets tests detect by comparing against a login baseline.
+export function renderAuthGateAt(initialPath: string) {
+  const location = memoryLocation({ path: initialPath, record: true });
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, enabled: false } },
+  });
+  const result = render(
+    <QueryClientProvider client={queryClient}>
+      <WouterRouter hook={location.hook}>
+        <AuthProvider>
+          <AuthGate />
+        </AuthProvider>
+      </WouterRouter>
+    </QueryClientProvider>
+  );
+  return { ...result, location };
+}

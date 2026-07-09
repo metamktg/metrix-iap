@@ -18,7 +18,13 @@ vi.mock("@/contexts/MetrixDataContext", async () => {
 });
 
 import { navTree } from "../navTree";
-import { renderAt, seedAccountSession, NOT_FOUND_TEXT } from "./harness";
+import { PRE_LOGIN_ROUTE_PATHS } from "../preLoginRoutes";
+import {
+  renderAt,
+  renderAuthGateAt,
+  seedAccountSession,
+  NOT_FOUND_TEXT,
+} from "./harness";
 
 // Every path the sidebar can link to (sections + children + matchPaths).
 const navPaths: { label: string; to: string }[] = navTree.flatMap((section) => [
@@ -81,4 +87,35 @@ describe("unknown paths still 404", () => {
     const { container } = renderAt("/app/definitely-not-a-real-page");
     expect(container.textContent).toContain(NOT_FOUND_TEXT);
   });
+});
+
+// Guards against the reverse drift: a path added to PRE_LOGIN_ROUTE_PATHS
+// but never wired to a screen in AuthGate silently falls through to the
+// plain login page for logged-out visitors. Each pre-login path must render
+// something distinct from the login baseline, so an unwired path fails loudly.
+describe("every PRE_LOGIN_ROUTE_PATHS entry renders its own screen, not the login page", () => {
+  // A path AuthGate has no branch for — this is exactly what an unwired
+  // pre-login route looks like to a logged-out visitor: the login page.
+  function loginBaselineText(): string {
+    const { container, unmount } = renderAuthGateAt(
+      "/definitely-not-a-wired-pre-login-path"
+    );
+    const text = container.textContent ?? "";
+    unmount();
+    return text;
+  }
+
+  it("the login baseline itself renders non-empty content", () => {
+    expect(loginBaselineText().trim().length).toBeGreaterThan(0);
+  });
+
+  for (const path of PRE_LOGIN_ROUTE_PATHS) {
+    it(`${path} renders a screen distinct from the login page`, () => {
+      const baseline = loginBaselineText();
+      const { container } = renderAuthGateAt(path);
+      const text = container.textContent ?? "";
+      expect(text.trim().length).toBeGreaterThan(0);
+      expect(text).not.toBe(baseline);
+    });
+  }
 });
