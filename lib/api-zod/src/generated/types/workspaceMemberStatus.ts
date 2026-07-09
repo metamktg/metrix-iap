@@ -7,7 +7,7 @@
  */
 
 /**
- * invited = provisioned but has not completed first login yet.
+ * invited = provisioned but has not completed first login yet; disabled = access revoked.
  */
 export type WorkspaceMemberStatus = typeof WorkspaceMemberStatus[keyof typeof WorkspaceMemberStatus];
 
@@ -15,4 +15,5 @@ export type WorkspaceMemberStatus = typeof WorkspaceMemberStatus[keyof typeof Wo
 export const WorkspaceMemberStatus = {
   active: 'active',
   invited: 'invited',
+  disabled: 'disabled',
 } as const;

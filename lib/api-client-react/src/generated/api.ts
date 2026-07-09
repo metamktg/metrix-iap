@@ -76,6 +76,8 @@ import type {
   UpdateManualImportAdNamesInput,
   UpdateMemberPermissionsInput,
   UpdateMemberPermissionsResult,
+  UpdateMemberStatusInput,
+  UpdateMemberStatusResult,
   WaitlistApprovalResult,
   WaitlistEntriesResult,
   WaitlistRejectResult,
@@ -85,6 +87,7 @@ import type {
   WorkspaceInviteResendResult,
   WorkspaceInviteResult,
   WorkspaceInvitesResult,
+  WorkspaceMemberResendTempPasswordResult,
   WorkspaceMembersResult
 } from './api.schemas';
 
@@ -2996,6 +2999,153 @@ export const useUpdateMemberPermissions = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getUpdateMemberPermissionsMutationOptions(options));
+    }
+
+export const getResendMemberTempPasswordUrl = (workspaceId: string,
+    email: string,) => {
+
+
+
+
+  return `/api/metrix/workspaces/${workspaceId}/members/${email}/resend-temp-password`
+}
+
+/**
+ * Generates a new temp password, invalidates the member's sessions and outstanding reset links, and emails it. Manage-team-only; requires a logged-in session with access to the workspace.
+ * @summary Issue a fresh temp password for a member
+ */
+export const resendMemberTempPassword = async (workspaceId: string,
+    email: string, options?: RequestInit): Promise<WorkspaceMemberResendTempPasswordResult> => {
+
+  return customFetch<WorkspaceMemberResendTempPasswordResult>(getResendMemberTempPasswordUrl(workspaceId,email),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getResendMemberTempPasswordMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendMemberTempPassword>>, TError,{workspaceId: string;email: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resendMemberTempPassword>>, TError,{workspaceId: string;email: string}, TContext> => {
+
+const mutationKey = ['resendMemberTempPassword'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resendMemberTempPassword>>, {workspaceId: string;email: string}> = (props) => {
+          const {workspaceId,email} = props ?? {};
+
+          return  resendMemberTempPassword(workspaceId,email,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResendMemberTempPasswordMutationResult = NonNullable<Awaited<ReturnType<typeof resendMemberTempPassword>>>
+
+    export type ResendMemberTempPasswordMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Issue a fresh temp password for a member
+ */
+export const useResendMemberTempPassword = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendMemberTempPassword>>, TError,{workspaceId: string;email: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof resendMemberTempPassword>>,
+        TError,
+        {workspaceId: string;email: string},
+        TContext
+      > => {
+      return useMutation(getResendMemberTempPasswordMutationOptions(options));
+    }
+
+export const getUpdateMemberStatusUrl = (workspaceId: string,
+    email: string,) => {
+
+
+
+
+  return `/api/metrix/workspaces/${workspaceId}/members/${email}/status`
+}
+
+/**
+ * Disabling revokes all sessions and rejects future logins with a generic message; restoring re-enables login. Manage-team-only; requires a logged-in session with access to the workspace. Cannot disable your own account or a designated agency admin account.
+ * @summary Disable or restore a member's access
+ */
+export const updateMemberStatus = async (workspaceId: string,
+    email: string,
+    updateMemberStatusInput: UpdateMemberStatusInput, options?: RequestInit): Promise<UpdateMemberStatusResult> => {
+
+  return customFetch<UpdateMemberStatusResult>(getUpdateMemberStatusUrl(workspaceId,email),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateMemberStatusInput)
+  }
+);}
+
+
+
+
+export const getUpdateMemberStatusMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMemberStatus>>, TError,{workspaceId: string;email: string;data: BodyType<UpdateMemberStatusInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateMemberStatus>>, TError,{workspaceId: string;email: string;data: BodyType<UpdateMemberStatusInput>}, TContext> => {
+
+const mutationKey = ['updateMemberStatus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateMemberStatus>>, {workspaceId: string;email: string;data: BodyType<UpdateMemberStatusInput>}> = (props) => {
+          const {workspaceId,email,data} = props ?? {};
+
+          return  updateMemberStatus(workspaceId,email,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateMemberStatusMutationResult = NonNullable<Awaited<ReturnType<typeof updateMemberStatus>>>
+    export type UpdateMemberStatusMutationBody = BodyType<UpdateMemberStatusInput>
+    export type UpdateMemberStatusMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Disable or restore a member's access
+ */
+export const useUpdateMemberStatus = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMemberStatus>>, TError,{workspaceId: string;email: string;data: BodyType<UpdateMemberStatusInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateMemberStatus>>,
+        TError,
+        {workspaceId: string;email: string;data: BodyType<UpdateMemberStatusInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateMemberStatusMutationOptions(options));
     }
 
 export const getListWorkspaceMembersUrl = (workspaceId: string,) => {

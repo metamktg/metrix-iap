@@ -654,7 +654,7 @@ export interface WorkspaceInvitesResult {
 }
 
 /**
- * invited = provisioned but has not completed first login yet.
+ * invited = provisioned but has not completed first login yet; disabled = access revoked.
  */
 export type WorkspaceMemberStatus = typeof WorkspaceMemberStatus[keyof typeof WorkspaceMemberStatus];
 
@@ -662,6 +662,7 @@ export type WorkspaceMemberStatus = typeof WorkspaceMemberStatus[keyof typeof Wo
 export const WorkspaceMemberStatus = {
   active: 'active',
   invited: 'invited',
+  disabled: 'disabled',
 } as const;
 
 export type WorkspaceMemberRole = typeof WorkspaceMemberRole[keyof typeof WorkspaceMemberRole];
@@ -674,7 +675,7 @@ export const WorkspaceMemberRole = {
 
 export interface WorkspaceMember {
   email: string;
-  /** invited = provisioned but has not completed first login yet. */
+  /** invited = provisioned but has not completed first login yet; disabled = access revoked. */
   status: WorkspaceMemberStatus;
   role: WorkspaceMemberRole;
   /** Always true for admin, regardless of the stored flag. */
@@ -705,6 +706,49 @@ export interface UpdateMemberPermissionsResult {
   status: UpdateMemberPermissionsResultStatus;
   manage_team: boolean;
   view_agency_rollups: boolean;
+}
+
+export type WorkspaceMemberResendTempPasswordResultStatus = typeof WorkspaceMemberResendTempPasswordResultStatus[keyof typeof WorkspaceMemberResendTempPasswordResultStatus];
+
+
+export const WorkspaceMemberResendTempPasswordResultStatus = {
+  resent: 'resent',
+} as const;
+
+export interface WorkspaceMemberResendTempPasswordResult {
+  status: WorkspaceMemberResendTempPasswordResultStatus;
+  email: string;
+  /** Whether the fresh temp-password email could be delivered. */
+  email_sent: boolean;
+  /** Present only when the email could not be sent, so the admin can share it manually. */
+  temp_password?: string;
+  /** Present only when the email could not be sent — explains why. */
+  email_error?: string;
+}
+
+export type UpdateMemberStatusInputStatus = typeof UpdateMemberStatusInputStatus[keyof typeof UpdateMemberStatusInputStatus];
+
+
+export const UpdateMemberStatusInputStatus = {
+  active: 'active',
+  disabled: 'disabled',
+} as const;
+
+export interface UpdateMemberStatusInput {
+  status: UpdateMemberStatusInputStatus;
+}
+
+export type UpdateMemberStatusResultStatus = typeof UpdateMemberStatusResultStatus[keyof typeof UpdateMemberStatusResultStatus];
+
+
+export const UpdateMemberStatusResultStatus = {
+  active: 'active',
+  disabled: 'disabled',
+} as const;
+
+export interface UpdateMemberStatusResult {
+  status: UpdateMemberStatusResultStatus;
+  email: string;
 }
 
 export interface GrantMemberAdAccountInput {

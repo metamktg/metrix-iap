@@ -10,7 +10,7 @@ import type { WorkspaceMemberStatus } from './workspaceMemberStatus';
 
 export interface WorkspaceMember {
   email: string;
-  /** invited = provisioned but has not completed first login yet. */
+  /** invited = provisioned but has not completed first login yet; disabled = access revoked. */
   status: WorkspaceMemberStatus;
   role: WorkspaceMemberRole;
   /** Always true for admin, regardless of the stored flag. */
