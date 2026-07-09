@@ -164,6 +164,13 @@ export function AuthGate() {
   }
   if (user.must_change_password) return <ChangePasswordPage />;
 
+  // A signed-in user opening the forgot-password link (old email, bookmark)
+  // has no use for that screen — send them to their account settings, where
+  // the password can actually be changed, instead of the in-app 404.
+  if (location === FORGOT_PASSWORD_PATH) {
+    return <Redirect to="/app/settings/account" replace />;
+  }
+
   return (
     <MetrixDataProvider>
       <AccountProvider>

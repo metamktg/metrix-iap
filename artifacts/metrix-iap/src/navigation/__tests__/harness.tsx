@@ -5,6 +5,7 @@ import { render } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Router as WouterRouter } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
+import { getAuthMeQueryKey, type AuthUser } from "@workspace/api-client-react";
 
 import { AccountProvider } from "@/contexts/AccountContext";
 import { DateRangeProvider } from "@/contexts/DateRangeContext";
@@ -52,6 +53,32 @@ export function renderAt(initialPath: string) {
               </DateRangeProvider>
             </AccountProvider>
           )}
+        </AuthProvider>
+      </WouterRouter>
+    </QueryClientProvider>
+  );
+  return { ...result, location };
+}
+
+// Mounts AuthGate with a *signed-in* user: the auth/me query cache is
+// pre-seeded so AuthProvider resolves to an authenticated session without
+// any network. This simulates a logged-in visitor opening a pre-login link
+// (e.g. /forgot-password from an old email) — AuthGate must route them to
+// a sensible in-app destination, never the 404 page.
+export function renderAuthedAt(
+  initialPath: string,
+  user: AuthUser = { email: "user@example.com", must_change_password: false }
+) {
+  const location = memoryLocation({ path: initialPath, record: true });
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, enabled: false } },
+  });
+  queryClient.setQueryData(getAuthMeQueryKey(), user);
+  const result = render(
+    <QueryClientProvider client={queryClient}>
+      <WouterRouter hook={location.hook}>
+        <AuthProvider>
+          <AuthGate />
         </AuthProvider>
       </WouterRouter>
     </QueryClientProvider>
