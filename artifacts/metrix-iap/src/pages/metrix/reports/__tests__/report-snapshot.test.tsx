@@ -8,7 +8,7 @@
 // Uses the checked-in seed fixture served by the API in production.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
+import { render, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import fs from "node:fs";
 import path from "node:path";
@@ -241,7 +241,12 @@ describe("ReportHistoryView · snapshot downloads", () => {
     selectBookster();
     renderView(ReportHistoryView);
 
-    fireEvent.click(screen.getByRole("button", { name: /Download PDF/i }));
+    // Seed-history rows render their own download buttons — scope to this
+    // report's card so the query stays unambiguous.
+    const card = screen
+      .getByText("Legacy Report Without Snapshot")
+      .closest("div.flex.items-start") as HTMLElement;
+    fireEvent.click(within(card).getByRole("button", { name: /Download PDF/i }));
 
     await waitFor(() => expect(downloadMock).toHaveBeenCalledTimes(1));
     const [format, model] = downloadMock.mock.calls[0] as [string, ReportModel];

@@ -14,6 +14,17 @@
 //   metrix_seed_bundle.json       — app-level documents (defaults, cards,
 //                                   MST matrix, report config, skov state)
 //
+// Second account (scripts/data/metrix/littledata/): LittleData / City Street
+// Print Brand. Claude analysis package (normalized_data_bundle.json +
+// campaign_intelligence.json + local_client_library.json) plus a manual
+// data upload (IAP-DEMO CSV, full ad×gender×age×day export that sums
+// exactly to the account totals) and the strategy_map / brief_builder
+// stage outputs (strategic_map.json, creative_briefs.json,
+// mst_foundation.json). bundle_prep, analysis_core, strategy_map and
+// brief_builder are complete; creative_scan + optimization_loop stay
+// honestly pending (the initial MST test grid is defined in brief LD-B001
+// but no creative has been produced or scanned yet).
+//
 // Usage: SUPABASE_DB_URL=postgres://... pnpm --filter @workspace/scripts run import:metrix
 // ═══════════════════════════════════════════════════════════════════════
 
@@ -28,6 +39,9 @@ const DATA_DIR = join(__dirname, "../../data/metrix");
 const ACCOUNT_ID = "bookster";
 const WINDOW_START = "2026-05-02";
 const WINDOW_END = "2026-07-07";
+
+const LD_ACCOUNT_ID = "littledata";
+const LD_DIR = join(DATA_DIR, "littledata");
 
 function readJson(file: string): any {
   // normalized_data_bundle.json contains bare NaN tokens (source-run artifact);
@@ -124,6 +138,835 @@ function loadMetaAdsExport(): {
   return { metaAdAccountId, byAdName };
 }
 
+// ═══ LittleData (City Street Print Brand) — second configured account ═══
+// Claude analysis package + manual CSV uploads + strategy/brief stage
+// outputs. The account has no BOOK/campaign/cell taxonomy (each ad is its
+// own cell, book NULL). Ad-level rows come from the IAP-DEMO CSV (all 54
+// ads, sums exactly to account totals — the importer asserts this and
+// fails loudly on drift). The 2026-07-09 re-export added funnel columns
+// (Link clicks, Clicks (all), Adds to cart, Checkouts initiated,
+// Purchases, Purchases conversion value) — click-depth metrics are now
+// real values. The IAP-DEVICE re-export switched from impression-based
+// delivery breakdown to CONVERSION-BASED tracking: rows are placement ×
+// platform × conversion device carrying funnel actions only; spend and
+// impressions are not device-attributable and stay NULL
+// (tracking_basis='conversion' on those rows). Reach is a unique-people
+// metric and is NOT summable across segment rows — it stays NULL, never
+// a fabricated sum. library_cell_performance stays limited to the ads
+// the analysis package actually mapped (concept evidence exists only
+// there). Deliberately NOT written: signal_cards, report_builder.
+type Q = (text: string, values?: unknown[]) => Promise<pg.QueryResult>;
+
+const ldConceptCode = (v: unknown): string | null => {
+  const m = /^LD-CN-[A-Z0-9-]+/.exec(String(v ?? ""));
+  return m ? m[0] : null;
+};
+
+const LD_DEMO_CSV = "IAP-DEMO-1202182091204847.csv";
+const LD_DEVICE_CSV = "IAP-DEVICE-1202182091204847.csv";
+
+interface LdSegmentAgg {
+  gender: string;
+  age: string;
+  spend: number;
+  impressions: number;
+  results: number;
+  linkClicks: number;
+  clicksAll: number;
+  addsToCart: number;
+  checkoutsInitiated: number;
+  purchases: number;
+  purchaseValue: number;
+}
+
+interface LdCsvAdAgg {
+  adName: string;
+  spend: number;
+  impressions: number;
+  results: number;
+  linkClicks: number;
+  clicksAll: number;
+  addsToCart: number;
+  checkoutsInitiated: number;
+  purchases: number;
+  purchaseValue: number;
+  adIds: Set<string>;
+  campaigns: Set<string>;
+  adSets: Set<string>;
+  segments: Map<string, LdSegmentAgg>;
+}
+
+// Parse the manually uploaded IAP-DEMO CSV (ad × day × gender × age ×
+// primary-text rows; the 2026-07-09 re-export added funnel columns) into
+// per-ad and per-segment aggregates. Returns exact sums — the caller
+// asserts them against the package's authoritative account totals.
+function parseLdDemoCsv(raw: string): {
+  ads: Map<string, LdCsvAdAgg>;
+  accountSegments: Map<string, LdSegmentAgg>;
+  rowCount: number;
+  dayRange: { first: string; last: string };
+  spendByAttribution: Map<string, number>;
+} {
+  const table = parseCsv(raw.replace(/^\uFEFF/, ""));
+  const header = table[0];
+  const col = (name: string): number => {
+    const idx = header.indexOf(name);
+    if (idx === -1) throw new Error(`LittleData demo CSV missing expected column "${name}"`);
+    return idx;
+  };
+  const cCampaign = col("Campaign name");
+  const cAdSet = col("Ad set name");
+  const cAdName = col("Ad name");
+  const cAdId = col("Ad ID");
+  const cDay = col("Day");
+  const cGender = col("Gender");
+  const cAge = col("Age");
+  const cImpressions = col("Impressions");
+  const cResults = col("Results");
+  const cSpend = col("Amount spent (USD)");
+  // Funnel columns (present since the 2026-07-09 re-export — their
+  // absence means an old-format file landed: fail loudly via col()).
+  const cLinkClicks = col("Link clicks");
+  const cClicksAll = col("Clicks (all)");
+  const cAtc = col("Adds to cart");
+  const cCheckouts = col("Checkouts initiated");
+  const cPurchases = col("Purchases");
+  const cPurchValue = col("Purchases conversion value");
+  const cAttribution = col("Attribution setting");
+
+  const ads = new Map<string, LdCsvAdAgg>();
+  const accountSegments = new Map<string, LdSegmentAgg>();
+  const spendByAttribution = new Map<string, number>();
+  let rowCount = 0;
+  let first = "";
+  let last = "";
+  for (const row of table.slice(1)) {
+    const adName = row[cAdName]?.trim();
+    if (!adName) continue;
+    rowCount++;
+    const day = row[cDay] ?? "";
+    if (!first || day < first) first = day;
+    if (!last || day > last) last = day;
+    const gender = row[cGender] || "unknown";
+    const age = row[cAge] || "Unknown";
+    const spend = Number(row[cSpend] || 0);
+    const impressions = Number(row[cImpressions] || 0);
+    const results = Number(row[cResults] || 0);
+    const linkClicks = Number(row[cLinkClicks] || 0);
+    const clicksAll = Number(row[cClicksAll] || 0);
+    const addsToCart = Number(row[cAtc] || 0);
+    const checkoutsInitiated = Number(row[cCheckouts] || 0);
+    const purchases = Number(row[cPurchases] || 0);
+    const purchaseValue = Number(row[cPurchValue] || 0);
+    const attribution = row[cAttribution]?.trim() || "unknown";
+    spendByAttribution.set(attribution, (spendByAttribution.get(attribution) ?? 0) + spend);
+
+    let ad = ads.get(adName);
+    if (!ad) {
+      ad = {
+        adName, spend: 0, impressions: 0, results: 0,
+        linkClicks: 0, clicksAll: 0, addsToCart: 0, checkoutsInitiated: 0, purchases: 0, purchaseValue: 0,
+        adIds: new Set(), campaigns: new Set(), adSets: new Set(), segments: new Map(),
+      };
+      ads.set(adName, ad);
+    }
+    ad.spend += spend;
+    ad.impressions += impressions;
+    ad.results += results;
+    ad.linkClicks += linkClicks;
+    ad.clicksAll += clicksAll;
+    ad.addsToCart += addsToCart;
+    ad.checkoutsInitiated += checkoutsInitiated;
+    ad.purchases += purchases;
+    ad.purchaseValue += purchaseValue;
+    if (row[cAdId]) ad.adIds.add(row[cAdId]);
+    if (row[cCampaign]) ad.campaigns.add(row[cCampaign]);
+    if (row[cAdSet]) ad.adSets.add(row[cAdSet]);
+
+    const segKey = `${gender}|${age}`;
+    for (const bucket of [ad.segments, accountSegments]) {
+      let seg = bucket.get(segKey);
+      if (!seg) {
+        seg = {
+          gender, age, spend: 0, impressions: 0, results: 0,
+          linkClicks: 0, clicksAll: 0, addsToCart: 0, checkoutsInitiated: 0, purchases: 0, purchaseValue: 0,
+        };
+        bucket.set(segKey, seg);
+      }
+      seg.spend += spend;
+      seg.impressions += impressions;
+      seg.results += results;
+      seg.linkClicks += linkClicks;
+      seg.clicksAll += clicksAll;
+      seg.addsToCart += addsToCart;
+      seg.checkoutsInitiated += checkoutsInitiated;
+      seg.purchases += purchases;
+      seg.purchaseValue += purchaseValue;
+    }
+  }
+  return { ads, accountSegments, rowCount, dayRange: { first, last }, spendByAttribution };
+}
+
+interface LdConversionAgg {
+  key: string;
+  linkClicks: number;
+  addsToCart: number;
+  checkoutsInitiated: number;
+  purchases: number;
+  purchaseValue: number;
+}
+
+// Parse the IAP-DEVICE re-export (placement × platform × CONVERSION
+// device rows). Conversion-based tracking: rows carry funnel actions
+// attributed to the converting device — spend/impressions are empty by
+// design (delivery metrics are not device-attributable). The parser
+// asserts that emptiness: if delivery metrics show up, Meta changed the
+// export semantics again and the mapping must be re-reviewed.
+function parseLdDeviceCsv(raw: string): {
+  devices: Map<string, LdConversionAgg>;
+  platforms: Map<string, LdConversionAgg>;
+  placements: Map<string, LdConversionAgg>;
+  rowCount: number;
+  window: { start: string; end: string };
+} {
+  const table = parseCsv(raw.replace(/^\uFEFF/, ""));
+  const header = table[0];
+  const col = (name: string): number => {
+    const idx = header.indexOf(name);
+    if (idx === -1) throw new Error(`LittleData device CSV missing expected column "${name}"`);
+    return idx;
+  };
+  const cPlatform = col("Platform");
+  const cPlacement = col("Placement");
+  const cDevice = col("Conversion device");
+  const cLinkClicks = col("Link clicks");
+  const cAtc = col("Adds to cart");
+  const cCheckouts = col("Checkouts initiated");
+  const cPurchases = col("Purchases");
+  const cPurchValue = col("Purchases conversion value");
+  const cSpend = col("Amount spent (USD)");
+  const cImpressions = col("Impressions");
+  const cStart = col("Reporting starts");
+  const cEnd = col("Reporting ends");
+
+  const devices = new Map<string, LdConversionAgg>();
+  const platforms = new Map<string, LdConversionAgg>();
+  const placements = new Map<string, LdConversionAgg>();
+  let rowCount = 0;
+  let start = "";
+  let end = "";
+  let deliverySpend = 0;
+  let deliveryImpressions = 0;
+  const bump = (bucket: Map<string, LdConversionAgg>, key: string, row: string[]) => {
+    let agg = bucket.get(key);
+    if (!agg) {
+      agg = { key, linkClicks: 0, addsToCart: 0, checkoutsInitiated: 0, purchases: 0, purchaseValue: 0 };
+      bucket.set(key, agg);
+    }
+    agg.linkClicks += Number(row[cLinkClicks] || 0);
+    agg.addsToCart += Number(row[cAtc] || 0);
+    agg.checkoutsInitiated += Number(row[cCheckouts] || 0);
+    agg.purchases += Number(row[cPurchases] || 0);
+    agg.purchaseValue += Number(row[cPurchValue] || 0);
+  };
+  for (const row of table.slice(1)) {
+    const platform = row[cPlatform]?.trim();
+    if (!platform) continue;
+    rowCount++;
+    // Meta reports '0' when the converting device is unknown — normalize
+    // to 'unknown' (documented in the manual_uploads column mapping).
+    const device = (row[cDevice]?.trim() || "unknown") === "0" ? "unknown" : row[cDevice]!.trim();
+    const placement = row[cPlacement]?.trim() || "unknown";
+    deliverySpend += Number(row[cSpend] || 0);
+    deliveryImpressions += Number(row[cImpressions] || 0);
+    const s = row[cStart] ?? "";
+    const e = row[cEnd] ?? "";
+    if (s && (!start || s < start)) start = s;
+    if (e && (!end || e > end)) end = e;
+    bump(devices, device, row);
+    bump(platforms, platform, row);
+    bump(placements, placement, row);
+  }
+  if (deliverySpend > 0 || deliveryImpressions > 0) {
+    throw new Error(
+      `LittleData device CSV carries delivery metrics ($${deliverySpend} / ${deliveryImpressions} imp) — ` +
+      `expected conversion-based tracking (funnel actions only). Export semantics changed; re-review the column mapping before importing.`,
+    );
+  }
+  return { devices, platforms, placements, rowCount, window: { start, end } };
+}
+
+const round2 = (v: number): number => Math.round(v * 100) / 100;
+
+async function importLittleData(q: Q): Promise<number> {
+  const required = [
+    "normalized_data_bundle.json", "campaign_intelligence.json", "local_client_library.json",
+    "strategic_map.json", "creative_briefs.json", "mst_foundation.json",
+    LD_DEMO_CSV, LD_DEVICE_CSV,
+  ];
+  const missing = required.filter((f) => !existsSync(join(LD_DIR, f)));
+  if (missing.length > 0) {
+    throw new Error(`LittleData package incomplete — missing ${missing.join(", ")} in ${LD_DIR}`);
+  }
+  const readLd = (file: string): any =>
+    JSON.parse(readFileSync(join(LD_DIR, file), "utf8").replace(/\bNaN\b/g, "null"));
+  const bundle = readLd("normalized_data_bundle.json");
+  const intelligence = readLd("campaign_intelligence.json");
+  const library = readLd("local_client_library.json");
+  const ldStrategy = readLd("strategic_map.json");
+  const ldBriefs = readLd("creative_briefs.json");
+  const ldMst = readLd("mst_foundation.json");
+
+  const windowStart: string = bundle.bundle_metadata.date_range.start;
+  const windowEnd: string = bundle.bundle_metadata.date_range.end;
+  const resultType: string = str(bundle.bundle_metadata.objective) ?? "Website purchases";
+  const metaAdAccountId = str(bundle.bundle_metadata.account_id)?.replace(/^act_/, "") ?? null;
+
+  // ── Manual upload: parse + verify the IAP-DEMO CSV ──────────────────
+  const csv = parseLdDemoCsv(readFileSync(join(LD_DIR, LD_DEMO_CSV), "utf8"));
+  const csvAds = [...csv.ads.values()].sort((a, b) => b.spend - a.spend);
+  const csvSpend = round2(csvAds.reduce((s, a) => s + a.spend, 0));
+  const csvImpressions = csvAds.reduce((s, a) => s + a.impressions, 0);
+  const csvResults = csvAds.reduce((s, a) => s + a.results, 0);
+  const csvLinkClicks = csvAds.reduce((s, a) => s + a.linkClicks, 0);
+  const csvClicksAll = csvAds.reduce((s, a) => s + a.clicksAll, 0);
+  const csvAtc = csvAds.reduce((s, a) => s + a.addsToCart, 0);
+  const csvCheckouts = csvAds.reduce((s, a) => s + a.checkoutsInitiated, 0);
+  const csvPurchases = csvAds.reduce((s, a) => s + a.purchases, 0);
+  const csvPurchaseValue = round2(csvAds.reduce((s, a) => s + a.purchaseValue, 0));
+  const totals = bundle.account_totals ?? {};
+  if (Math.abs(csvSpend - Number(totals.spend)) > 0.01 ||
+      csvImpressions !== Number(totals.impressions) ||
+      csvResults !== Number(totals.purchases)) {
+    throw new Error(
+      `LittleData demo CSV does not reconcile with account_totals — CSV $${csvSpend} / ${csvImpressions} imp / ${csvResults} purchases ` +
+      `vs package $${totals.spend} / ${totals.impressions} imp / ${totals.purchases} purchases. Refusing to import unverified data.`,
+    );
+  }
+  // Funnel columns (2026-07-09 re-export) must reconcile too — the
+  // bundle's account_totals are the authoritative record of the export.
+  if (csvLinkClicks !== Number(totals.link_clicks) ||
+      csvAtc !== Number(totals.add_to_cart) ||
+      csvCheckouts !== Number(totals.initiate_checkout) ||
+      Math.abs(csvPurchaseValue - Number(totals.revenue)) > 0.01) {
+    throw new Error(
+      `LittleData demo CSV funnel columns do not reconcile with account_totals — CSV ${csvLinkClicks} lc / ${csvAtc} ATC / ` +
+      `${csvCheckouts} IC / $${csvPurchaseValue} revenue vs package ${totals.link_clicks} / ${totals.add_to_cart} / ` +
+      `${totals.initiate_checkout} / $${totals.revenue}. Refusing to import unverified data.`,
+    );
+  }
+  // The export carries purchases twice (Results under result type
+  // "Website purchases", and the Purchases column) — they must agree.
+  if (csvPurchases !== csvResults) {
+    throw new Error(
+      `LittleData demo CSV internal mismatch — Results sum ${csvResults} vs Purchases column sum ${csvPurchases}.`,
+    );
+  }
+  const bundleAdNames = (bundle.ad_level_performance ?? []).map((r: any) => String(r.ad_name));
+  const missingFromCsv = bundleAdNames.filter((name: string) => !csv.ads.has(name));
+  if (missingFromCsv.length > 0) {
+    throw new Error(`LittleData demo CSV is missing package ads: ${missingFromCsv.join(", ")}`);
+  }
+  console.log(
+    `LittleData manual upload verified: ${csv.rowCount} CSV rows, ${csvAds.length} ads, ` +
+    `$${csvSpend} / ${csvImpressions} imp / ${csvLinkClicks} link clicks / ${csvAtc} ATC / ${csvResults} purchases ` +
+    `($${csvPurchaseValue}) — matches account totals exactly.`,
+  );
+
+  // ── Manual upload: parse + verify the IAP-DEVICE CSV (conversion) ───
+  const deviceCsv = parseLdDeviceCsv(readFileSync(join(LD_DIR, LD_DEVICE_CSV), "utf8"));
+  const devPurchases = [...deviceCsv.devices.values()].reduce((s, d) => s + d.purchases, 0);
+  const devCheckouts = [...deviceCsv.devices.values()].reduce((s, d) => s + d.checkoutsInitiated, 0);
+  const devLinkClicks = [...deviceCsv.devices.values()].reduce((s, d) => s + d.linkClicks, 0);
+  // Purchases/checkouts must agree with the demographic export. Link
+  // clicks intentionally NOT asserted: the device export covers a wider
+  // reporting window (2026-01-01 → 2026-07-09 vs the demo's day range),
+  // so cross-export click comparisons are directional only.
+  if (devPurchases !== csvPurchases || devCheckouts !== csvCheckouts) {
+    throw new Error(
+      `LittleData device CSV does not reconcile with the demographic export — device ${devPurchases} purchases / ` +
+      `${devCheckouts} checkouts vs demo ${csvPurchases} / ${csvCheckouts}. Refusing to import unverified data.`,
+    );
+  }
+  console.log(
+    `LittleData device upload verified: ${deviceCsv.rowCount} rows (conversion-based tracking, window ` +
+    `${deviceCsv.window.start} → ${deviceCsv.window.end}), ${devLinkClicks} link clicks across ` +
+    `${deviceCsv.devices.size} conversion devices / ${deviceCsv.platforms.size} platforms / ${deviceCsv.placements.size} placements; ` +
+    `${devPurchases} purchases + ${devCheckouts} checkouts match the demographic export.`,
+  );
+
+  const cpaOf = (spend: number | null, purchases: number | null): number | null =>
+    spend !== null && purchases !== null && purchases > 0
+      ? Math.round((spend / purchases) * 100) / 100
+      : null;
+  // Percent/rate helpers — null (never 0) when the denominator is absent.
+  const pctOf = (numerator: number, denominator: number): number | null =>
+    denominator > 0 ? Math.round((numerator / denominator) * 100 * 10000) / 10000 : null;
+  const cpmOf = (spend: number, impressions: number): number | null =>
+    impressions > 0 ? round2((spend / impressions) * 1000) : null;
+
+  // ── Ad account ──────────────────────────────────────────────────────
+  await q(
+    `insert into ad_accounts (id, name, status, platform, source_status, facebook_page_dp_url, overview_state, meta_ad_account_id)
+     values ($1,$2,$3,$4,$5,$6,$7,$8)
+     on conflict (id) do update set name=excluded.name, status=excluded.status, platform=excluded.platform,
+       source_status=excluded.source_status, facebook_page_dp_url=excluded.facebook_page_dp_url,
+       overview_state=excluded.overview_state, meta_ad_account_id=excluded.meta_ad_account_id`,
+    [LD_ACCOUNT_ID, "City Street Print Brand", "configured", "Meta Ads",
+      "imported_from_claude_analysis_package", null, null, metaAdAccountId],
+  );
+
+  const conceptsByCode = new Map<string, any>();
+  for (const c of library.local_concepts ?? []) conceptsByCode.set(c.code, c);
+  const creativeByAd = new Map<string, any>();
+  for (const c of library.creative_id_map ?? []) creativeByAd.set(c.ad_name, c);
+  const bundleByAd = new Map<string, any>();
+  for (const r of bundle.ad_level_performance ?? []) bundleByAd.set(String(r.ad_name), r);
+
+  // ── Manual upload: ad_performance + ads for ALL CSV ads ─────────────
+  // The CSV is the ad-level source of truth (sums exactly to account
+  // totals, verified above). Package rows enrich with analysis confidence;
+  // the library maps concepts where the analysis actually mapped them.
+  let adPerfCount = 0;
+  for (const a of csvAds) {
+    const map = creativeByAd.get(a.adName) ?? null;
+    const stack = map?.variable_stack ?? {};
+    const conceptCode = ldConceptCode(stack.CN);
+    const bundleRow = bundleByAd.get(a.adName) ?? null;
+    const spend = round2(a.spend);
+    const purchases = a.results;
+    // Analysis-core confidence where the package scored the ad; otherwise
+    // the analysis threshold: sub-$50 creatives are "insufficient".
+    const confidence = str(bundleRow?.confidence) ?? (spend < 50 ? "insufficient" : "validation_required");
+    const campaignName = a.campaigns.size > 0 ? [...a.campaigns].sort().join(" + ") : null;
+    const adSetName = a.adSets.size > 0 ? [...a.adSets].sort().join(" + ") : null;
+    // Meta ad id only when the ad name maps to exactly one Meta ad —
+    // 23 of 54 names are reused across campaigns (multiple ids): NULL.
+    const metaAdId = a.adIds.size === 1 ? [...a.adIds][0] : null;
+    // Funnel columns are real since the 2026-07-09 re-export. Reach stays
+    // NULL — it is a unique-people metric and summing segment rows would
+    // fabricate a number.
+    await q(
+      `insert into ad_performance (account_id, book, campaign_name, ad_set_name, ad_name, cell, concept,
+         variation, test_id, result_type, date_start, date_end, spend, impressions, reach, clicks_all,
+         link_clicks, results, cpa, ctr_link_pct, cvr_link_pct, cpm, confidence)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)`,
+      [LD_ACCOUNT_ID, null, campaignName, adSetName, a.adName, a.adName, conceptCode, null, null, resultType,
+        windowStart, windowEnd, spend, a.impressions, null, a.clicksAll, a.linkClicks, purchases,
+        cpaOf(spend, purchases), pctOf(a.linkClicks, a.impressions), pctOf(purchases, a.linkClicks),
+        cpmOf(spend, a.impressions), confidence],
+    );
+    adPerfCount++;
+
+    await q(
+      `insert into ads (account_id, ad_name, book, cell, concept, variation, test_id,
+         meta_ad_id, creative_asset_url, asset_filename, asset_path, asset_servable)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+      [LD_ACCOUNT_ID, a.adName, null, a.adName, conceptCode, null, null,
+        metaAdId, null, map ? str(map.asset) : null, null, false],
+    );
+  }
+
+  // ── Per-ad library cells — only ads the analysis package mapped ─────
+  for (const r of bundle.ad_level_performance ?? []) {
+    const map = creativeByAd.get(r.ad_name) ?? null;
+    const stack = map?.variable_stack ?? {};
+    const conceptCode = ldConceptCode(stack.CN);
+    const concept = conceptCode ? conceptsByCode.get(conceptCode) : null;
+    const spend = num(r.spend);
+    const purchases = num(r.purchases);
+
+    const iapRead = [
+      `Confidence: ${r.confidence}. Pre-signal window — ${bundle.account_totals.purchases} account purchases on $${bundle.account_totals.spend} total spend; no winner/loser calls yet.`,
+      concept?.evidence ? `Concept evidence: ${concept.evidence}.` : null,
+    ].filter(Boolean).join(" ");
+    // Click-depth values come from the manual CSV (authoritative, funnel
+    // columns present since the 2026-07-09 re-export). Every package ad
+    // is asserted present in the CSV above.
+    const csvAd = csv.ads.get(String(r.ad_name))!;
+    const cellPayload: Record<string, unknown> = {
+      cell_id: r.ad_name,
+      "Result type": resultType,
+      "Amount spent (USD)": spend,
+      Reach: null,
+      Impressions: num(r.impressions),
+      Results: purchases,
+      "Clicks (all)": csvAd.clicksAll,
+      "Link clicks": csvAd.linkClicks,
+      CPA_result: cpaOf(spend, purchases),
+      CTR_link_pct: pctOf(csvAd.linkClicks, csvAd.impressions),
+      Result_per_link_click_pct: pctOf(csvAd.results, csvAd.linkClicks),
+      book2_concept_name: concept?.name ?? r.ad_name,
+      iap_read: iapRead,
+    };
+    if (stack.HK) cellPayload["hook_variable"] = str(stack.HK);
+    if (stack.TN) cellPayload["tone_variable"] = str(stack.TN);
+    if (stack.FW) cellPayload["framework_variable"] = str(stack.FW);
+    if (conceptCode) cellPayload["concept_variable"] = conceptCode;
+    if (stack.HP) cellPayload["pain_proof_variable"] = str(stack.HP);
+    if (stack.PR) cellPayload["proof_variable"] = str(stack.PR);
+    if (stack.CTA) cellPayload["cta_variable"] = str(stack.CTA);
+    await q(
+      `insert into library_cell_performance (account_id, cell_id, result_type, date_start, date_end, payload)
+       values ($1,$2,$3,$4,$5,$6)`,
+      [LD_ACCOUNT_ID, r.ad_name, resultType, windowStart, windowEnd, JSON.stringify(cellPayload)],
+    );
+  }
+
+  // ── Demographics — full gender × age aggregates from the manual CSV ─
+  // (replaces the package's coarse top-segment table; sums verified above)
+  const accountSegments = [...csv.accountSegments.values()].sort((a, b) => b.spend - a.spend);
+  let dIdx = 0;
+  const demoSignalRow = (cellId: string, adName: string, seg: LdSegmentAgg) => ({
+    cell_id: cellId,
+    "Ad name": adName,
+    Age: seg.age,
+    Gender: seg.gender,
+    "Result type": resultType,
+    "Amount spent (USD)": round2(seg.spend),
+    Reach: null,
+    Impressions: seg.impressions,
+    Results: seg.results,
+    "Clicks (all)": seg.clicksAll,
+    "Link clicks": seg.linkClicks,
+    CPA_result: cpaOf(round2(seg.spend), seg.results),
+    CTR_link_pct: pctOf(seg.linkClicks, seg.impressions),
+    Result_per_link_click_pct: pctOf(seg.results, seg.linkClicks),
+  });
+  for (const seg of accountSegments) {
+    const spend = round2(seg.spend);
+    await q(
+      `insert into demographic_performance (account_id, gender, age, date_start, date_end, spend,
+         link_clicks, results, cpa, cvr_link_pct, confidence)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+      [LD_ACCOUNT_ID, seg.gender, seg.age, windowStart, windowEnd, spend, seg.linkClicks, seg.results,
+        cpaOf(spend, seg.results), pctOf(seg.results, seg.linkClicks), "validation_required"],
+    );
+    await q(
+      `insert into demographic_signal (account_id, cell_id, ad_name, age, gender, date_start, date_end, row_index, payload)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+      [LD_ACCOUNT_ID, "ACCOUNT", "All ads (manual demographic upload)", seg.age, seg.gender,
+        windowStart, windowEnd, dIdx++,
+        JSON.stringify(demoSignalRow("ACCOUNT", "All ads (manual demographic upload)", seg))],
+    );
+  }
+  // Per-ad demographic signal for the ads with a readable sample: top-10
+  // by spend plus every ad with a purchase (both purchase ads are top-10
+  // in this window, asserted nowhere — the union keeps it honest).
+  const signalAds = new Set<string>([
+    ...csvAds.slice(0, 10).map((a) => a.adName),
+    ...csvAds.filter((a) => a.results > 0).map((a) => a.adName),
+  ]);
+  for (const a of csvAds) {
+    if (!signalAds.has(a.adName)) continue;
+    const segs = [...a.segments.values()].sort((x, y) => y.spend - x.spend);
+    for (const seg of segs) {
+      await q(
+        `insert into demographic_signal (account_id, cell_id, ad_name, age, gender, date_start, date_end, row_index, payload)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+        [LD_ACCOUNT_ID, a.adName, a.adName, seg.age, seg.gender,
+          windowStart, windowEnd, dIdx++, JSON.stringify(demoSignalRow(a.adName, a.adName, seg))],
+      );
+    }
+  }
+
+  // ── Device / platform / placement — conversion-based tracking ───────
+  // The IAP-DEVICE re-export attributes funnel actions to the CONVERTING
+  // device/platform/placement; spend and impressions are not
+  // device-attributable and stay NULL (never 0). results mirrors the
+  // purchases count (result type "Website purchases"); cpa is NULL by
+  // construction (no attributable spend). Window comes from the device
+  // export itself (wider than the demographic day range — recorded in
+  // manual_uploads provenance).
+  const convRows = (bucket: Map<string, LdConversionAgg>) =>
+    [...bucket.values()].sort((a, b) => b.linkClicks - a.linkClicks);
+  for (const d of convRows(deviceCsv.devices)) {
+    await q(
+      `insert into device_performance (account_id, device, date_start, date_end, spend, impressions,
+         results, cpa, confidence, link_clicks, adds_to_cart, checkouts_initiated, purchases, tracking_basis)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+      [LD_ACCOUNT_ID, d.key, deviceCsv.window.start, deviceCsv.window.end, null, null,
+        d.purchases, null, "validation_required", d.linkClicks, d.addsToCart, d.checkoutsInitiated,
+        d.purchases, "conversion"],
+    );
+  }
+  for (const p of convRows(deviceCsv.platforms)) {
+    await q(
+      `insert into platform_performance (account_id, platform, date_start, date_end, spend, impressions,
+         link_clicks, results, cpa, confidence, adds_to_cart, checkouts_initiated, purchases, tracking_basis)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+      [LD_ACCOUNT_ID, p.key, deviceCsv.window.start, deviceCsv.window.end, null, null,
+        p.linkClicks, p.purchases, null, "validation_required", p.addsToCart, p.checkoutsInitiated,
+        p.purchases, "conversion"],
+    );
+  }
+  for (const p of convRows(deviceCsv.placements)) {
+    await q(
+      `insert into placement_performance (account_id, placement, date_start, date_end, spend, impressions,
+         link_clicks, results, cpa, cvr_link_pct, confidence, adds_to_cart, checkouts_initiated, purchases, tracking_basis)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+      [LD_ACCOUNT_ID, p.key, deviceCsv.window.start, deviceCsv.window.end, null, null,
+        p.linkClicks, p.purchases, null, pctOf(p.purchases, p.linkClicks), "validation_required",
+        p.addsToCart, p.checkoutsInitiated, p.purchases, "conversion"],
+    );
+  }
+  console.log(
+    `LittleData conversion-tracking rows written: ${deviceCsv.devices.size} devices, ` +
+    `${deviceCsv.platforms.size} platforms, ${deviceCsv.placements.size} placements (tracking_basis='conversion').`,
+  );
+
+  // ── Concepts (book NULL — this account has no book taxonomy) ────────
+  for (const c of library.local_concepts ?? []) {
+    let spend = 0;
+    let purchases = 0;
+    let mappedAds = 0;
+    for (const ad of library.creative_id_map ?? []) {
+      if (ldConceptCode(ad.variable_stack?.CN) === c.code) {
+        spend += Number(ad.spend ?? 0);
+        purchases += Number(ad.purchases ?? 0);
+        mappedAds++;
+      }
+    }
+    spend = Math.round(spend * 100) / 100;
+    const confidence = /insufficient/i.test(String(c.evidence ?? "")) ? "insufficient" : "validation_required";
+    await q(
+      `insert into concept_performance (account_id, book, concept, date_start, date_end, spend,
+         link_clicks, results, cpa, cvr_link_pct, confidence, mapped_in_library)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+      [LD_ACCOUNT_ID, null, c.code, windowStart, windowEnd, mappedAds > 0 ? spend : null, null,
+        mappedAds > 0 ? purchases : null, cpaOf(spend, purchases), null, confidence, true],
+    );
+    await q(
+      `insert into concept_intelligence (account_id, book, concept_code, mapped_in_library, spend,
+         link_clicks, results, cpa, buying_intent_score, performance_lift_vs_baseline, performance_tier,
+         confidence_level, what, why, so_what, now_what)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
+      [LD_ACCOUNT_ID, null, c.code, true, mappedAds > 0 ? spend : null, null,
+        mappedAds > 0 ? purchases : null, cpaOf(spend, purchases), null, null, null, confidence,
+        str(c.definition), str(c.evidence), null, null],
+    );
+  }
+
+  // ── Data-quality gap surface ─────────────────────────────────────────
+  for (const f of bundle.quality_flags ?? []) {
+    await q(`insert into data_quality_flags (account_id, kind, payload) values ($1,'quality_flag',$2)`,
+      [LD_ACCOUNT_ID, JSON.stringify({ note: `${f.flag} (${f.severity}): ${f.detail}`, ...f })]);
+  }
+  const attribution = bundle.bundle_metadata.attribution_windows ?? {};
+  await q(`insert into data_quality_flags (account_id, kind, payload) values ($1,'attribution_window',$2)`,
+    [LD_ACCOUNT_ID, JSON.stringify({
+      note: `Mixed attribution — standard: ${attribution.standard}; incremental: ${attribution.incremental}`,
+      ...attribution,
+    })]);
+
+  // ── Analysis Core: failure patterns (from library.failed_patterns) ──
+  for (const p of library.failed_patterns ?? []) {
+    await q(
+      `insert into failure_patterns (account_id, segment_type, campaign, spend, engagement_present, diagnosis, wasted_spend, payload)
+       values ($1,$2,$3,$4,$5,$6,$7,$8)`,
+      [LD_ACCOUNT_ID, "creative_pattern", null, null, null, str(p.pattern), null, JSON.stringify(p)],
+    );
+  }
+
+  // ── Strategy Map stage output (littledata/strategic_map.json) ───────
+  for (const p of ldStrategy.icp_profiles ?? []) {
+    await q(
+      `insert into icp_profiles (account_id, profile_id, profile_name, confidence_level, payload)
+       values ($1,$2,$3,$4,$5)`,
+      [LD_ACCOUNT_ID, p.profile_id, str(p.profile_name), str(p.confidence_level), JSON.stringify(p)],
+    );
+  }
+  for (const p of ldStrategy.message_pillars ?? []) {
+    await q(
+      `insert into message_pillars (account_id, pillar_id, pillar_name, payload) values ($1,$2,$3,$4)`,
+      [LD_ACCOUNT_ID, p.pillar_id, str(p.pillar_name), JSON.stringify(p)],
+    );
+  }
+  for (const v of ldStrategy.variable_combinations ?? []) {
+    await q(
+      `insert into variable_combinations (account_id, combination, context, cpa, cvr_pct, confidence, recommendation)
+       values ($1,$2,$3,$4,$5,$6,$7) on conflict (account_id, combination) do nothing`,
+      [LD_ACCOUNT_ID, v.combination, str(v.context), num(v.cpa), num(v.cvr_pct), str(v.confidence), str(v.recommendation)],
+    );
+  }
+  for (const h of ldStrategy.testing_hypotheses ?? []) {
+    await q(
+      `insert into testing_hypotheses (account_id, hypothesis_id, statement, control_ref, test_variant,
+         isolated_variable, sample_requirement, duration, success_criteria, risk, expected_impact, failure_plan, priority)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+      [LD_ACCOUNT_ID, h.hypothesis_id, str(h.statement), str(h.control), str(h.test_variant),
+        str(h.isolated_variable), str(h.sample_requirement), str(h.duration), str(h.success_criteria),
+        str(h.risk), str(h.expected_impact), str(h.failure_plan), str(h.priority)],
+    );
+  }
+
+  // ── Brief Builder stage output (littledata/creative_briefs.json) ────
+  // book stays NULL — this account has no BOOK taxonomy.
+  for (const b of ldBriefs.briefs ?? []) {
+    const meta = b.brief_metadata ?? {};
+    await q(
+      `insert into imported_creative_briefs (account_id, brief_id, mode, book, asset_type, priority, confidence, payload)
+       values ($1,$2,$3,$4,$5,$6,$7,$8)`,
+      [LD_ACCOUNT_ID, meta.brief_id, str(meta.mode), null,
+        str(meta.asset_type), str(meta.priority), str(meta.confidence), JSON.stringify(b)],
+    );
+  }
+
+  // ── Local library cells (retro-mapped historical ads) ───────────────
+  let ldCellIdx = 0;
+  for (const cell of ldMst.local_library_cells ?? []) {
+    await q(
+      `insert into library_cells (account_id, cell_id, concept_id, asset_filename, asset_path,
+         qa_mapping_status, mapping_confidence, row_index, payload)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+      [LD_ACCOUNT_ID, cell.cell_id, str(cell.concept_id), str(cell.asset_filename), str(cell.asset_path),
+        str(cell.qa_mapping_status), str(cell.mapping_confidence), ldCellIdx++, JSON.stringify(cell)],
+    );
+  }
+
+  // ── Document modules ─────────────────────────────────────────────────
+  const ldModules: Array<[string, unknown]> = [
+    ["iap_metadata", {
+      client_id: library.client_id,
+      client_name: library.client_name,
+      library_version: library.library_version,
+      source_files: library.source_files,
+      global_variables_used: library.global_variables_used,
+      product_context: library.product_context,
+      bundle_metadata: bundle.bundle_metadata,
+      // Authoritative account-level totals from the bundle-prep export.
+      // Since the manual CSV upload, the ad-level table covers 100% of
+      // this spend (asserted at import) — seed assembly's coverage caveat
+      // resolves itself because the sums now match. The 2026-07-09
+      // re-export added funnel totals (link_clicks / add_to_cart /
+      // initiate_checkout / revenue) — also asserted against the CSV.
+      account_totals: { ...bundle.account_totals, result_type: resultType },
+      loop_run: intelligence.report_metadata,
+      source_package: `LittleData Claude analysis package (City Street Print Brand, ${windowStart} → ${windowEnd})`,
+      manual_uploads: [
+        {
+          file: LD_DEMO_CSV,
+          original_export: "IAP-DEMOGRAPHIC-MAIN-1202182091204847.csv",
+          kind: "meta_export_demographic_breakdown",
+          uploaded: "2026-07-09",
+          replaces: "The initial May-window export without funnel columns — the re-export requested by analysis_core, delivered 2026-07-09.",
+          grain: "ad × day × gender × age × primary text",
+          rows_parsed: csv.rowCount,
+          ads: csvAds.length,
+          day_range: csv.dayRange,
+          new_columns: [
+            "Link clicks", "Clicks (all)", "Adds to cart", "Checkouts initiated",
+            "Purchases", "Purchases conversion value", "Attribution setting", "Text",
+          ],
+          column_mapping: {
+            "Link clicks": "ad_performance.link_clicks + demographic_performance.link_clicks + library cell payloads (summed per ad / per gender×age segment)",
+            "Clicks (all)": "ad_performance.clicks_all + signal payloads",
+            "Purchases": "cross-checked against Results (asserted equal at import); stored as ad_performance.results",
+            "Adds to cart / Checkouts initiated / Purchases conversion value": "account-level totals (account_totals.add_to_cart / initiate_checkout / revenue) — no per-ad funnel table below link clicks",
+            "Reach": "NOT summable across segment rows (unique-people metric) — left NULL, never summed",
+            "Text": "primary-text dimension acknowledged; per-variant copy reads not stored (COPY_FRAGMENTATION: spend per variant too thin)",
+            "Attribution setting": "spend split recorded below for the mixed-attribution caveat",
+          },
+          attribution_spend_split: [...csv.spendByAttribution.entries()]
+            .sort((a, b) => b[1] - a[1])
+            .map(([setting, spend]) => ({
+              setting,
+              spend: round2(spend),
+              share_pct: round2((spend / csvSpend) * 100),
+            })),
+          verification: `Sums to $${csvSpend} / ${csvImpressions} impressions / ${csvLinkClicks} link clicks / ${csvClicksAll} clicks (all) / ${csvAtc} ATC / ${csvCheckouts} checkouts / ${csvResults} purchases ($${csvPurchaseValue}) — matches the package account totals exactly (asserted at import).`,
+        },
+        {
+          file: LD_DEVICE_CSV,
+          original_export: "IAP-DEVICE-MAIN-1202182091204847.csv",
+          kind: "meta_export_conversion_device_breakdown",
+          uploaded: "2026-07-09",
+          replaces: "The delivery-based device/placement export whose metric columns were all empty (no rows were ever written from it).",
+          grain: "platform × placement × conversion device",
+          rows_parsed: deviceCsv.rowCount,
+          window: deviceCsv.window,
+          tracking_change: "Impression-based delivery breakdown → conversion-based tracking: funnel actions (link clicks, ATC, checkouts, purchases) are attributed to the CONVERTING device; spend/impressions are not device-attributable and stay NULL in device/platform/placement_performance (tracking_basis='conversion').",
+          column_mapping: {
+            "Conversion device": "device_performance.device — Meta reports '0' when the converting device is unknown; normalized to 'unknown'",
+            "Link clicks / Adds to cart / Checkouts initiated / Purchases": "device/platform/placement_performance funnel columns (link_clicks, adds_to_cart, checkouts_initiated, purchases), tracking_basis='conversion'",
+          },
+          caveats: [
+            `Reporting window ${deviceCsv.window.start} → ${deviceCsv.window.end} is wider than the demographic export's day range (${csv.dayRange.first} → ${csv.dayRange.last}) — cross-export click comparisons are directional only (${devLinkClicks} vs ${csvLinkClicks} link clicks).`,
+            "Every purchase, ATC and checkout reports under conversion device 'unknown' — device-level purchase attribution is unavailable in this account; only link clicks split by device.",
+          ],
+          verification: `${devPurchases} purchases and ${devCheckouts} checkouts match the demographic export (asserted at import); delivery metrics asserted empty (conversion-based export).`,
+        },
+      ],
+    }],
+    ["core_reanalysis_read", {
+      primary_control: "No control established — pre-signal account",
+      primary_control_read: str(intelligence.executive_summary?.verdict) ??
+        "Pre-signal account; no decision-grade creative reads yet.",
+      registration_control: null,
+      registration_control_read: null,
+      data_caveat: "61% of spend reports under Incremental attribution (systematically undercounts platform-attributable purchases). The 2026-07-09 re-export added funnel columns — link clicks, clicks, ATC, checkouts and revenue are now real values. Device tracking is conversion-based: spend/impressions are not device-attributable, and every recorded purchase reports an unknown conversion device.",
+    }],
+    ["analysis_core_summary", {
+      report_metadata: intelligence.report_metadata,
+      executive_summary: intelligence.executive_summary,
+      performance_tables: intelligence.performance_tables,
+      winning_creative_formula: intelligence.winning_creative_formula,
+      messaging_theme_categorization: intelligence.messaging_theme_categorization,
+      optimization_priorities: intelligence.optimization_priorities,
+      actionable_recommendations: intelligence.actionable_recommendations,
+      creative_development_roadmap: intelligence.creative_development_roadmap,
+      budget_allocation_guidance: intelligence.budget_allocation_guidance,
+      insight_confidence: intelligence.insight_confidence,
+      purchase_events: bundle.purchase_events,
+      winning_patterns: library.winning_patterns,
+      failed_patterns: library.failed_patterns,
+      active_hypotheses: library.active_hypotheses,
+      evidence_notes: library.evidence_notes,
+    }],
+    ["scaling_playbook", ldStrategy.scaling_playbook ?? null],
+    ["mst", {
+      status: str(ldMst.status) ?? "active",
+      render_policy: str(ldMst.render_policy),
+      historical_matrix_4x4: ldMst.historical_matrix_4x4 ?? null,
+      source_artifacts: ldMst.source_artifacts ?? [],
+    }],
+  ];
+  for (const [module, payload] of ldModules) {
+    await q(
+      `insert into account_modules (account_id, module, payload) values ($1,$2,$3)
+       on conflict (account_id, module) do update set payload = excluded.payload`,
+      [LD_ACCOUNT_ID, module, JSON.stringify(payload)],
+    );
+  }
+
+  // ── Loop stage bookkeeping — 4 of 6 stages ran ───────────────────────
+  const ldRuns: Array<[string, string, string | null, string | null]> = [
+    ["bundle_prep", "complete", "littledata/normalized_data_bundle.json",
+      "Includes the 2026-07-09 manual re-uploads: IAP-DEMO CSV with funnel columns (all 54 ads; reconciles exactly with account totals) and the conversion-device IAP-DEVICE CSV (placement × platform × conversion device)."],
+    ["analysis_core", "complete", "littledata/campaign_intelligence.json",
+      "The 2026-07-09 re-export delivered the funnel columns this stage requested — click-depth metrics (CTR/CVR, ATC, checkouts, revenue) are now computed from real data; device tracking is conversion-based."],
+    ["strategy_map", "complete", "littledata/strategic_map.json",
+      "Built from the manual-upload window — 3 ICPs, 5 message pillars, 3 testing hypotheses, retro-mapped 3×3 MST foundation. All reads validation_required (pre-signal account)."],
+    ["brief_builder", "complete", "littledata/creative_briefs.json",
+      "Initial MST brief LD-B001 (gift-moment 3×3 hook × staging grid). Awaiting creative production."],
+    ["creative_scan", "pending", null,
+      "Not yet run — the initial MST test grid is defined in brief LD-B001, but no creative has been produced or scanned yet."],
+    ["optimization_loop", "pending", null,
+      "Not yet run — golden-formula output requires the LD-B001 test cycle to produce scanned creative and reads first."],
+  ];
+  for (const [stage, status, source, note] of ldRuns) {
+    await q(
+      `insert into iap_runs (account_id, stage, status, window_start, window_end, generated_at, source_file, note)
+       values ($1,$2,$3,$4,$5,$6,$7,$8)`,
+      [LD_ACCOUNT_ID, stage, status, windowStart, windowEnd,
+        status === "complete" ? (str(intelligence.report_metadata?.generated) ?? null) : null,
+        source, note],
+    );
+  }
+
+  return adPerfCount;
+}
+
 async function main() {
   const dbUrl = process.env.SUPABASE_DB_URL;
   if (!dbUrl) {
@@ -168,7 +1011,7 @@ async function main() {
       "account_modules", "iap_runs", "ads",
     ];
     for (const t of dataTables) {
-      await q(`delete from ${t} where account_id = $1`, [ACCOUNT_ID]);
+      await q(`delete from ${t} where account_id = any($1)`, [[ACCOUNT_ID, LD_ACCOUNT_ID]]);
     }
     await q(`delete from signal_cards`); // manager cards have no bookster-only account scoping guarantee
     await q(`delete from account_modules where account_id = 'skov_pet'`);
@@ -585,12 +1428,21 @@ async function main() {
       );
     }
 
+    // ── LittleData second account (same transaction) ──────────────────
+    const ldAdPerfCount = await importLittleData(q);
+    console.log(`LittleData: imported ${ldAdPerfCount} ad_performance rows for account '${LD_ACCOUNT_ID}'.`);
+
     await q("commit");
 
     // ── Report ─────────────────────────────────────────────────────────
     const counts = await client.query(`
       select 'ad_performance' t, count(*) n from ad_performance where account_id='bookster'
       union all select 'ads', count(*) from ads where account_id='bookster'
+      union all select 'ad_performance (littledata)', count(*) from ad_performance where account_id='littledata'
+      union all select 'ads (littledata)', count(*) from ads where account_id='littledata'
+      union all select 'library_cell_performance (littledata)', count(*) from library_cell_performance where account_id='littledata'
+      union all select 'concept_performance (littledata)', count(*) from concept_performance where account_id='littledata'
+      union all select 'iap_runs (littledata)', count(*) from iap_runs where account_id='littledata'
       union all select 'demographic_performance', count(*) from demographic_performance
       union all select 'placement_performance', count(*) from placement_performance
       union all select 'platform_performance', count(*) from platform_performance

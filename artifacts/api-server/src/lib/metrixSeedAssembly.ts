@@ -97,6 +97,9 @@ export type AccountTables = {
   variablePerformance: Map<string, Row[]>;
   demographicSignal: Map<string, Row[]>;
   placementSignal: Map<string, Row[]>;
+  devicePerformance: Map<string, Row[]>;
+  platformPerformance: Map<string, Row[]>;
+  placementPerformance: Map<string, Row[]>;
   messagePillars: Map<string, Row[]>;
   testingHypotheses: Map<string, Row[]>;
   icpProfiles: Map<string, Row[]>;
@@ -116,6 +119,33 @@ const modulesFor = (accountModules: Row[], accountId: string): Map<string, any> 
     if (m["account_id"] === accountId) map.set(m["module"], m["payload"]);
   }
   return map;
+};
+
+const zeroEventTotals = (): Row => ({
+  spend: 0,
+  reach: 0,
+  impressions: 0,
+  results: 0,
+  clicks_all: 0,
+  link_clicks: 0,
+});
+
+/**
+ * Replace ad-level per-event sums with authoritative account-level totals
+ * (bundle-prep `account_totals` carried in the iap_metadata module).
+ * Only safe when the account's rows report a single result_type matching
+ * the override — otherwise account-wide numbers would double-count into
+ * one event, so the row sums are kept untouched.
+ */
+const overrideEventTotals = (byEvent: Record<string, Row>, ov: Row | null | undefined): void => {
+  if (!ov || typeof ov["result_type"] !== "string") return;
+  const event = ov["result_type"] as string;
+  const events = Object.keys(byEvent);
+  if (events.length > 1 || (events.length === 1 && events[0] !== event)) return;
+  byEvent[event] ??= zeroEventTotals();
+  if (ov["spend"] != null) byEvent[event]["spend"] = Number(ov["spend"]);
+  if (ov["impressions"] != null) byEvent[event]["impressions"] = Number(ov["impressions"]);
+  if (ov["purchases"] != null) byEvent[event]["results"] = Number(ov["purchases"]);
 };
 
 // ─── generic per-account assembly ─────────────────────────────────────
@@ -153,6 +183,9 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
   const variablePerformance = forAccount(t.variablePerformance, accountId);
   const demographicSignal = forAccount(t.demographicSignal, accountId);
   const placementSignal = forAccount(t.placementSignal, accountId);
+  const devicePerformance = forAccount(t.devicePerformance, accountId);
+  const platformPerformance = forAccount(t.platformPerformance, accountId);
+  const placementPerformance = forAccount(t.placementPerformance, accountId);
   const messagePillars = forAccount(t.messagePillars, accountId);
   const testingHypotheses = forAccount(t.testingHypotheses, accountId);
   const icpProfiles = forAccount(t.icpProfiles, accountId);
@@ -181,11 +214,25 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
     totalImpressions += Number(r["impressions"] ?? 0);
     totalLinkClicks += Number(r["link_clicks"] ?? 0);
   }
+  // ── Account-level totals override (bundle-prep exports) ─────────────
+  // Some import packages carry authoritative account-level totals that
+  // exceed the ad-level table (ads absent from that export still spent).
+  // When iap_metadata.account_totals is present, report those as the
+  // account totals — with the ad-level coverage spelled out in the data
+  // caveat below, never silently and never via fabricated rows.
+  const metadata = (modules.get("iap_metadata") ?? {}) as Row;
+  const accountTotals = (metadata["account_totals"] ?? null) as Row | null;
+  overrideEventTotals(byEvent, accountTotals);
+  const effectiveSpend =
+    accountTotals?.["spend"] != null ? Number(accountTotals["spend"]) : totalSpend;
+  const effectiveImpressions =
+    accountTotals?.["impressions"] != null ? Number(accountTotals["impressions"]) : totalImpressions;
+
   for (const event of Object.keys(byEvent)) {
     const tot = byEvent[event]!;
     tot["spend"] = round(tot["spend"]);
   }
-  const linkCtrPct = totalImpressions > 0 ? round((totalLinkClicks / totalImpressions) * 100, 4) : 0;
+  const linkCtrPct = effectiveImpressions > 0 ? round((totalLinkClicks / effectiveImpressions) * 100, 4) : 0;
 
   const windowStart = adPerformance.reduce(
     (min, r) => (r["date_start"] < min ? r["date_start"] : min),
@@ -211,12 +258,52 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
         String(a["variable_id"]).localeCompare(String(b["variable_id"])),
     );
 
+  // ── Conversion-based device/platform/placement signal ───────────────
+  // Rows with tracking_basis='conversion' come from Meta's conversion-
+  // device export: funnel actions attributed to the converting device.
+  // Spend/impressions are NULL by design (not device-attributable), so
+  // no CPA/CTR exist on this surface. Delivery-based rows (tracking_basis
+  // NULL) are not surfaced here — different semantics, never mixed.
+  const conversionRows = (rows: Row[], key: string) =>
+    rows
+      .filter((r) => r["tracking_basis"] === "conversion")
+      .map((r) => ({
+        [key]: r[key],
+        date_start: r["date_start"],
+        date_end: r["date_end"],
+        link_clicks: r["link_clicks"] === null ? null : Number(r["link_clicks"]),
+        adds_to_cart: r["adds_to_cart"] === null ? null : Number(r["adds_to_cart"]),
+        checkouts_initiated: r["checkouts_initiated"] === null ? null : Number(r["checkouts_initiated"]),
+        purchases: r["purchases"] === null ? null : Number(r["purchases"]),
+        confidence: r["confidence"],
+      }))
+      .sort((a, b) => Number(b.link_clicks ?? 0) - Number(a.link_clicks ?? 0));
+  const conversionDevices = conversionRows(devicePerformance, "device");
+  const conversionPlatforms = conversionRows(platformPerformance, "platform");
+  const conversionPlacements = conversionRows(placementPerformance, "placement");
+  const conversionTrackingSignal =
+    conversionDevices.length + conversionPlatforms.length + conversionPlacements.length > 0
+      ? {
+          tracking_basis: "conversion",
+          window_start: conversionDevices[0]?.date_start ?? conversionPlatforms[0]?.date_start ?? null,
+          window_end: conversionDevices[0]?.date_end ?? conversionPlatforms[0]?.date_end ?? null,
+          note:
+            "Conversion-based tracking: funnel actions are attributed to the converting device/platform/placement. " +
+            "Spend and impressions are not device-attributable under this tracking, so no CPA/CTR exist here. " +
+            "The export window may differ from the account's campaign window — treat cross-surface comparisons as directional.",
+          devices: conversionDevices,
+          platforms: conversionPlatforms,
+          placements: conversionPlacements,
+        }
+      : null;
+
   const analysis = {
     performance_by_cell: performanceByCell,
     v3_variable_performance: variablePerf,
     demographic_registration_signal: demographicSignal.map((r) => r["payload"]),
     v3_placement_signal: placementSignal.filter((r) => r["signal_scope"] === "v3").map((r) => r["payload"]),
     c4e_placement_signal: placementSignal.filter((r) => r["signal_scope"] === "c4e").map((r) => r["payload"]),
+    ...(conversionTrackingSignal ? { conversion_tracking_signal: conversionTrackingSignal } : {}),
     top_checkout_cells: topCheckoutCells,
     top_checkout_variables: topCheckoutVariables,
     // Cross-book concept view from the normalized bundle (new, real data)
@@ -331,15 +418,20 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
 
   const coreRead = modules.get("core_reanalysis_read") ?? null;
   const mstDoc = modules.get("mst") ?? {};
-  const metadata = modules.get("iap_metadata") ?? {};
   const analysisCoreSummary = modules.get("analysis_core_summary") ?? null;
 
   // Which books this account's imported window covers (e.g. BOOK0, BOOK2).
   const books = [...new Set(adPerformance.map((r) => String(r["book"] ?? "")).filter(Boolean))].sort();
   const acrossClause = books.length > 0 ? ` across ${humanJoin(books)}` : "";
-  const dataCaveat =
-    `Totals cover the full imported window ${windowStart} → ${windowEnd}${acrossClause}. ` +
-    `${coreRead?.["data_caveat"] ?? ""}`.trim();
+  // When account-level totals exceed the ad-level table, say so explicitly.
+  const coverageNote =
+    accountTotals && round(effectiveSpend) !== round(totalSpend)
+      ? ` Account totals come from the account-level export; the ad-level table covers $${round(totalSpend)} of the $${round(effectiveSpend)} account spend — the remainder sits on ads absent from the ad-level export.`
+      : "";
+  const dataCaveat = (
+    `Totals cover the full imported window ${windowStart} → ${windowEnd}${acrossClause}.${coverageNote} ` +
+    `${coreRead?.["data_caveat"] ?? ""}`
+  ).trim();
 
   return {
     id: accountId,
@@ -371,8 +463,8 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
       core_reanalysis_read: coreRead,
       campaign_summary: {
         bottom_line_totals: byEvent,
-        total_spend_usd: round(totalSpend),
-        total_impressions: totalImpressions,
+        total_spend_usd: round(effectiveSpend),
+        total_impressions: effectiveImpressions,
         total_link_clicks: totalLinkClicks,
         overall_link_ctr_pct: linkCtrPct,
         data_caveat: dataCaveat,
@@ -462,6 +554,9 @@ export async function assembleMetrixSeed(): Promise<Row> {
     variablePerformanceAll,
     demographicSignalAll,
     placementSignalAll,
+    devicePerformanceAll,
+    platformPerformanceAll,
+    placementPerformanceAll,
     messagePillarsAll,
     testingHypothesesAll,
     icpProfilesAll,
@@ -486,6 +581,9 @@ export async function assembleMetrixSeed(): Promise<Row> {
     selectAll("variable_performance", (q) => q.order("id")),
     selectAll("demographic_signal", (q) => q.order("row_index")),
     selectAll("placement_signal", (q) => q.order("signal_scope").order("row_index")),
+    selectAll("device_performance", (q) => q.order("id")),
+    selectAll("platform_performance", (q) => q.order("id")),
+    selectAll("placement_performance", (q) => q.order("id")),
     selectAll("message_pillars", (q) => q.order("id")),
     selectAll("testing_hypotheses", (q) => q.order("hypothesis_id")),
     selectAll("icp_profiles", (q) => q.order("id")),
@@ -514,6 +612,9 @@ export async function assembleMetrixSeed(): Promise<Row> {
     variablePerformance: groupByAccount(variablePerformanceAll),
     demographicSignal: groupByAccount(demographicSignalAll),
     placementSignal: groupByAccount(placementSignalAll),
+    devicePerformance: groupByAccount(devicePerformanceAll),
+    platformPerformance: groupByAccount(platformPerformanceAll),
+    placementPerformance: groupByAccount(placementPerformanceAll),
     messagePillars: groupByAccount(messagePillarsAll),
     testingHypotheses: groupByAccount(testingHypothesesAll),
     icpProfiles: groupByAccount(icpProfilesAll),
@@ -533,22 +634,46 @@ export async function assembleMetrixSeed(): Promise<Row> {
   const accountObjects = adAccounts.map((account) => buildAccountObject(account, tables));
 
   // ── Manager totals across ALL accounts with real performance rows ───
+  // Blended per account so the same account-level totals override used in
+  // buildAccountObject applies here too — manager totals always equal the
+  // sum of the per-account totals shown in the app.
   const byEvent: Record<string, Row> = {};
   let totalSpend = 0;
   let totalImpressions = 0;
   let totalLinkClicks = 0;
-  for (const r of adPerformanceAll) {
-    const event = r["result_type"] as string;
-    byEvent[event] ??= { spend: 0, reach: 0, impressions: 0, results: 0, clicks_all: 0, link_clicks: 0 };
-    byEvent[event]["spend"] += Number(r["spend"] ?? 0);
-    byEvent[event]["reach"] += Number(r["reach"] ?? 0);
-    byEvent[event]["impressions"] += Number(r["impressions"] ?? 0);
-    byEvent[event]["results"] += Number(r["results"] ?? 0);
-    byEvent[event]["clicks_all"] += Number(r["clicks_all"] ?? 0);
-    byEvent[event]["link_clicks"] += Number(r["link_clicks"] ?? 0);
-    totalSpend += Number(r["spend"] ?? 0);
-    totalImpressions += Number(r["impressions"] ?? 0);
-    totalLinkClicks += Number(r["link_clicks"] ?? 0);
+  for (const account of adAccounts) {
+    const accountId = String(account["id"]);
+    const local: Record<string, Row> = {};
+    let rowSpend = 0;
+    let rowImpressions = 0;
+    for (const r of tables.adPerformance.get(accountId) ?? []) {
+      const event = r["result_type"] as string;
+      local[event] ??= zeroEventTotals();
+      local[event]["spend"] += Number(r["spend"] ?? 0);
+      local[event]["reach"] += Number(r["reach"] ?? 0);
+      local[event]["impressions"] += Number(r["impressions"] ?? 0);
+      local[event]["results"] += Number(r["results"] ?? 0);
+      local[event]["clicks_all"] += Number(r["clicks_all"] ?? 0);
+      local[event]["link_clicks"] += Number(r["link_clicks"] ?? 0);
+      rowSpend += Number(r["spend"] ?? 0);
+      rowImpressions += Number(r["impressions"] ?? 0);
+      totalLinkClicks += Number(r["link_clicks"] ?? 0);
+    }
+    const modules = modulesFor(accountModules, accountId);
+    const accountTotals = ((modules.get("iap_metadata") ?? {}) as Row)["account_totals"] as
+      | Row
+      | null
+      | undefined;
+    overrideEventTotals(local, accountTotals);
+    for (const [event, tvals] of Object.entries(local)) {
+      byEvent[event] ??= zeroEventTotals();
+      for (const key of Object.keys(tvals)) {
+        byEvent[event]![key] += Number(tvals[key] ?? 0);
+      }
+    }
+    totalSpend += accountTotals?.["spend"] != null ? Number(accountTotals["spend"]) : rowSpend;
+    totalImpressions +=
+      accountTotals?.["impressions"] != null ? Number(accountTotals["impressions"]) : rowImpressions;
   }
   for (const event of Object.keys(byEvent)) {
     const t = byEvent[event]!;
