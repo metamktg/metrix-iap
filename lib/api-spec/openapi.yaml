@@ -132,6 +132,162 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/agent-waitlist/{entryId}/reject:
+    parameters:
+      - name: entryId
+        in: path
+        required: true
+        description: Waitlist entry identifier.
+        schema:
+          type: integer
+          minimum: 1
+    post:
+      operationId: rejectAgentWaitlistEntry
+      tags: [metrix]
+      summary: Reject a waitlist entry
+      description: Marks a pending waitlist entry as rejected. Rejected entries never receive an account. Requires admin access.
+      security:
+        - adminKey: []
+      responses:
+        "200":
+          description: Rejection result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaitlistRejectResult"
+        "401":
+          description: Missing or invalid admin credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Waitlist entry not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/admin/session:
+    post:
+      operationId: adminLogin
+      tags: [metrix]
+      summary: Log in to the admin panel with the admin password
+      description: Verifies the admin panel password and sets a short-lived httpOnly admin cookie. Fails closed when the admin password is not configured on the server.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLoginInput"
+      responses:
+        "200":
+          description: Admin session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSessionStatus"
+        "401":
+          description: Wrong password or admin access not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "429":
+          description: Too many attempts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    get:
+      operationId: getAdminSession
+      tags: [metrix]
+      summary: Check whether an admin session is active
+      responses:
+        "200":
+          description: Admin session status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSessionStatus"
+    delete:
+      operationId: adminLogout
+      tags: [metrix]
+      summary: End the admin session
+      responses:
+        "200":
+          description: Admin session ended
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSessionStatus"
+  /metrix/request-access/{requestId}/approve:
+    parameters:
+      - name: requestId
+        in: path
+        required: true
+        description: Access request identifier (UUID).
+        schema:
+          type: string
+    post:
+      operationId: approveRequestAccessEntry
+      tags: [metrix]
+      summary: Approve an access request and provision a user account
+      description: Creates (or resets) a user account with a temporary password for the requester, marks the request approved, and emails the temporary password. When the email provider is not configured, the temporary password is returned to the admin instead. Requires admin access.
+      security:
+        - adminKey: []
+      responses:
+        "200":
+          description: Approval result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaitlistApprovalResult"
+        "401":
+          description: Missing or invalid admin credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Access request not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/request-access/{requestId}/reject:
+    parameters:
+      - name: requestId
+        in: path
+        required: true
+        description: Access request identifier (UUID).
+        schema:
+          type: string
+    post:
+      operationId: rejectRequestAccessEntry
+      tags: [metrix]
+      summary: Reject an access request
+      description: Marks a pending access request as rejected. Requires admin access.
+      security:
+        - adminKey: []
+      responses:
+        "200":
+          description: Rejection result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaitlistRejectResult"
+        "401":
+          description: Missing or invalid admin credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Access request not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/auth/login:
     post:
       operationId: authLogin
@@ -586,6 +742,32 @@ paths:
                 $ref: "#/components/schemas/RequestAccessResult"
         "400":
           description: Invalid or incomplete request fields
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "503":
+          description: Request store unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    get:
+      operationId: listRequestAccessEntries
+      tags: [metrix]
+      summary: List Metrix access requests
+      description: Returns all access-request submissions with their full form data, newest first. Requires admin access.
+      security:
+        - adminKey: []
+      responses:
+        "200":
+          description: Access requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestAccessEntriesResult"
+        "401":
+          description: Missing or invalid admin credentials
           content:
             application/json:
               schema:
@@ -1087,7 +1269,7 @@ components:
           type: string
         status:
           type: string
-          enum: [pending, approved]
+          enum: [pending, approved, rejected]
         approved_at:
           type: string
           nullable: true
@@ -1098,6 +1280,83 @@ components:
         - email
         - status
         - joined_at
+    WaitlistRejectResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [rejected, already_rejected]
+        email:
+          type: string
+      required:
+        - status
+        - email
+    AdminLoginInput:
+      type: object
+      properties:
+        password:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+        - password
+    AdminSessionStatus:
+      type: object
+      properties:
+        authenticated:
+          type: boolean
+      required:
+        - authenticated
+    RequestAccessEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        full_name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        business_type:
+          type: string
+          nullable: true
+        industry:
+          type: string
+          nullable: true
+        avg_monthly_ad_spend:
+          type: string
+          nullable: true
+        website:
+          type: string
+          nullable: true
+        linkedin:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+        created_at:
+          type: string
+      required:
+        - id
+        - full_name
+        - email
+        - status
+        - created_at
+    RequestAccessEntriesResult:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/RequestAccessEntry"
+        total:
+          type: integer
+      required:
+        - entries
+        - total
     WaitlistApprovalResult:
       type: object
       properties:

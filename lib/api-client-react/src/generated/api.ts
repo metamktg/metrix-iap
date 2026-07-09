@@ -20,6 +20,8 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AdminLoginInput,
+  AdminSessionStatus,
   ApiError,
   AuthChangePasswordInput,
   AuthLoginInput,
@@ -46,6 +48,7 @@ import type {
   NotificationPrefsUpdateInput,
   ReportSettingsResult,
   ReportSettingsUpdateInput,
+  RequestAccessEntriesResult,
   RequestAccessInput,
   RequestAccessResult,
   RevokeWorkspaceInviteResult,
@@ -54,6 +57,7 @@ import type {
   SelectMetaAdAccountResult,
   WaitlistApprovalResult,
   WaitlistEntriesResult,
+  WaitlistRejectResult,
   WaitlistSignupInput,
   WaitlistSignupResult,
   WorkspaceInviteInput,
@@ -393,6 +397,437 @@ export const useApproveAgentWaitlistEntry = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getApproveAgentWaitlistEntryMutationOptions(options));
+    }
+
+export const getRejectAgentWaitlistEntryUrl = (entryId: number,) => {
+
+
+
+
+  return `/api/metrix/agent-waitlist/${entryId}/reject`
+}
+
+/**
+ * Marks a pending waitlist entry as rejected. Rejected entries never receive an account. Requires admin access.
+ * @summary Reject a waitlist entry
+ */
+export const rejectAgentWaitlistEntry = async (entryId: number, options?: RequestInit): Promise<WaitlistRejectResult> => {
+
+  return customFetch<WaitlistRejectResult>(getRejectAgentWaitlistEntryUrl(entryId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRejectAgentWaitlistEntryMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectAgentWaitlistEntry>>, TError,{entryId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof rejectAgentWaitlistEntry>>, TError,{entryId: number}, TContext> => {
+
+const mutationKey = ['rejectAgentWaitlistEntry'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rejectAgentWaitlistEntry>>, {entryId: number}> = (props) => {
+          const {entryId} = props ?? {};
+
+          return  rejectAgentWaitlistEntry(entryId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RejectAgentWaitlistEntryMutationResult = NonNullable<Awaited<ReturnType<typeof rejectAgentWaitlistEntry>>>
+
+    export type RejectAgentWaitlistEntryMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Reject a waitlist entry
+ */
+export const useRejectAgentWaitlistEntry = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectAgentWaitlistEntry>>, TError,{entryId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof rejectAgentWaitlistEntry>>,
+        TError,
+        {entryId: number},
+        TContext
+      > => {
+      return useMutation(getRejectAgentWaitlistEntryMutationOptions(options));
+    }
+
+export const getAdminLoginUrl = () => {
+
+
+
+
+  return `/api/metrix/admin/session`
+}
+
+/**
+ * Verifies the admin panel password and sets a short-lived httpOnly admin cookie. Fails closed when the admin password is not configured on the server.
+ * @summary Log in to the admin panel with the admin password
+ */
+export const adminLogin = async (adminLoginInput: AdminLoginInput, options?: RequestInit): Promise<AdminSessionStatus> => {
+
+  return customFetch<AdminSessionStatus>(getAdminLoginUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminLoginInput)
+  }
+);}
+
+
+
+
+export const getAdminLoginMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminLogin>>, TError,{data: BodyType<AdminLoginInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminLogin>>, TError,{data: BodyType<AdminLoginInput>}, TContext> => {
+
+const mutationKey = ['adminLogin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminLogin>>, {data: BodyType<AdminLoginInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminLogin(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminLoginMutationResult = NonNullable<Awaited<ReturnType<typeof adminLogin>>>
+    export type AdminLoginMutationBody = BodyType<AdminLoginInput>
+    export type AdminLoginMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Log in to the admin panel with the admin password
+ */
+export const useAdminLogin = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminLogin>>, TError,{data: BodyType<AdminLoginInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminLogin>>,
+        TError,
+        {data: BodyType<AdminLoginInput>},
+        TContext
+      > => {
+      return useMutation(getAdminLoginMutationOptions(options));
+    }
+
+export const getGetAdminSessionUrl = () => {
+
+
+
+
+  return `/api/metrix/admin/session`
+}
+
+/**
+ * @summary Check whether an admin session is active
+ */
+export const getAdminSession = async ( options?: RequestInit): Promise<AdminSessionStatus> => {
+
+  return customFetch<AdminSessionStatus>(getGetAdminSessionUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminSessionQueryKey = () => {
+    return [
+    `/api/metrix/admin/session`
+    ] as const;
+    }
+
+
+export const getGetAdminSessionQueryOptions = <TData = Awaited<ReturnType<typeof getAdminSession>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminSessionQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminSession>>> = ({ signal }) => getAdminSession({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminSession>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminSessionQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminSession>>>
+export type GetAdminSessionQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Check whether an admin session is active
+ */
+
+export function useGetAdminSession<TData = Awaited<ReturnType<typeof getAdminSession>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminSessionQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminLogoutUrl = () => {
+
+
+
+
+  return `/api/metrix/admin/session`
+}
+
+/**
+ * @summary End the admin session
+ */
+export const adminLogout = async ( options?: RequestInit): Promise<AdminSessionStatus> => {
+
+  return customFetch<AdminSessionStatus>(getAdminLogoutUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getAdminLogoutMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminLogout>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminLogout>>, TError,void, TContext> => {
+
+const mutationKey = ['adminLogout'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminLogout>>, void> = () => {
+
+
+          return  adminLogout(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminLogoutMutationResult = NonNullable<Awaited<ReturnType<typeof adminLogout>>>
+
+    export type AdminLogoutMutationError = ErrorType<unknown>
+
+    /**
+ * @summary End the admin session
+ */
+export const useAdminLogout = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminLogout>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminLogout>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getAdminLogoutMutationOptions(options));
+    }
+
+export const getApproveRequestAccessEntryUrl = (requestId: string,) => {
+
+
+
+
+  return `/api/metrix/request-access/${requestId}/approve`
+}
+
+/**
+ * Creates (or resets) a user account with a temporary password for the requester, marks the request approved, and emails the temporary password. When the email provider is not configured, the temporary password is returned to the admin instead. Requires admin access.
+ * @summary Approve an access request and provision a user account
+ */
+export const approveRequestAccessEntry = async (requestId: string, options?: RequestInit): Promise<WaitlistApprovalResult> => {
+
+  return customFetch<WaitlistApprovalResult>(getApproveRequestAccessEntryUrl(requestId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getApproveRequestAccessEntryMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveRequestAccessEntry>>, TError,{requestId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof approveRequestAccessEntry>>, TError,{requestId: string}, TContext> => {
+
+const mutationKey = ['approveRequestAccessEntry'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approveRequestAccessEntry>>, {requestId: string}> = (props) => {
+          const {requestId} = props ?? {};
+
+          return  approveRequestAccessEntry(requestId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApproveRequestAccessEntryMutationResult = NonNullable<Awaited<ReturnType<typeof approveRequestAccessEntry>>>
+
+    export type ApproveRequestAccessEntryMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Approve an access request and provision a user account
+ */
+export const useApproveRequestAccessEntry = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveRequestAccessEntry>>, TError,{requestId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof approveRequestAccessEntry>>,
+        TError,
+        {requestId: string},
+        TContext
+      > => {
+      return useMutation(getApproveRequestAccessEntryMutationOptions(options));
+    }
+
+export const getRejectRequestAccessEntryUrl = (requestId: string,) => {
+
+
+
+
+  return `/api/metrix/request-access/${requestId}/reject`
+}
+
+/**
+ * Marks a pending access request as rejected. Requires admin access.
+ * @summary Reject an access request
+ */
+export const rejectRequestAccessEntry = async (requestId: string, options?: RequestInit): Promise<WaitlistRejectResult> => {
+
+  return customFetch<WaitlistRejectResult>(getRejectRequestAccessEntryUrl(requestId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRejectRequestAccessEntryMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectRequestAccessEntry>>, TError,{requestId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof rejectRequestAccessEntry>>, TError,{requestId: string}, TContext> => {
+
+const mutationKey = ['rejectRequestAccessEntry'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rejectRequestAccessEntry>>, {requestId: string}> = (props) => {
+          const {requestId} = props ?? {};
+
+          return  rejectRequestAccessEntry(requestId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RejectRequestAccessEntryMutationResult = NonNullable<Awaited<ReturnType<typeof rejectRequestAccessEntry>>>
+
+    export type RejectRequestAccessEntryMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Reject an access request
+ */
+export const useRejectRequestAccessEntry = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectRequestAccessEntry>>, TError,{requestId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof rejectRequestAccessEntry>>,
+        TError,
+        {requestId: string},
+        TContext
+      > => {
+      return useMutation(getRejectRequestAccessEntryMutationOptions(options));
     }
 
 export const getAuthLoginUrl = () => {
@@ -1422,6 +1857,84 @@ export const useSubmitRequestAccess = <TError = ErrorType<ApiError>,
       > => {
       return useMutation(getSubmitRequestAccessMutationOptions(options));
     }
+
+export const getListRequestAccessEntriesUrl = () => {
+
+
+
+
+  return `/api/metrix/request-access`
+}
+
+/**
+ * Returns all access-request submissions with their full form data, newest first. Requires admin access.
+ * @summary List Metrix access requests
+ */
+export const listRequestAccessEntries = async ( options?: RequestInit): Promise<RequestAccessEntriesResult> => {
+
+  return customFetch<RequestAccessEntriesResult>(getListRequestAccessEntriesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListRequestAccessEntriesQueryKey = () => {
+    return [
+    `/api/metrix/request-access`
+    ] as const;
+    }
+
+
+export const getListRequestAccessEntriesQueryOptions = <TData = Awaited<ReturnType<typeof listRequestAccessEntries>>, TError = ErrorType<ApiError>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRequestAccessEntries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListRequestAccessEntriesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRequestAccessEntries>>> = ({ signal }) => listRequestAccessEntries({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRequestAccessEntries>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListRequestAccessEntriesQueryResult = NonNullable<Awaited<ReturnType<typeof listRequestAccessEntries>>>
+export type ListRequestAccessEntriesQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary List Metrix access requests
+ */
+
+export function useListRequestAccessEntries<TData = Awaited<ReturnType<typeof listRequestAccessEntries>>, TError = ErrorType<ApiError>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRequestAccessEntries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListRequestAccessEntriesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetReportSettingsUrl = (workspaceId: string,) => {
 

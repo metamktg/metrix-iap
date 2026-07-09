@@ -59,7 +59,7 @@ export const ListAgentWaitlistResponse = zod.object({
   "entries": zod.array(zod.object({
   "id": zod.number(),
   "email": zod.string(),
-  "status": zod.enum(['pending', 'approved']),
+  "status": zod.enum(['pending', 'approved', 'rejected']),
   "approved_at": zod.string().nullish(),
   "joined_at": zod.string()
 })),
@@ -83,6 +83,86 @@ export const ApproveAgentWaitlistEntryResponse = zod.object({
   "email": zod.string(),
   "email_sent": zod.boolean().describe('True when the temporary-password email was delivered to the provider.'),
   "temp_password": zod.string().optional().describe('Present only when the email could not be sent, so the admin can share the temporary password manually.')
+})
+
+
+/**
+ * Marks a pending waitlist entry as rejected. Rejected entries never receive an account. Requires admin access.
+ * @summary Reject a waitlist entry
+ */
+
+
+
+export const RejectAgentWaitlistEntryParams = zod.object({
+  "entryId": zod.coerce.number().min(1).describe('Waitlist entry identifier.')
+})
+
+export const RejectAgentWaitlistEntryResponse = zod.object({
+  "status": zod.enum(['rejected', 'already_rejected']),
+  "email": zod.string()
+})
+
+
+/**
+ * Verifies the admin panel password and sets a short-lived httpOnly admin cookie. Fails closed when the admin password is not configured on the server.
+ * @summary Log in to the admin panel with the admin password
+ */
+export const adminLoginBodyPasswordMax = 200;
+
+
+
+export const AdminLoginBody = zod.object({
+  "password": zod.string().min(1).max(adminLoginBodyPasswordMax)
+})
+
+export const AdminLoginResponse = zod.object({
+  "authenticated": zod.boolean()
+})
+
+
+/**
+ * @summary Check whether an admin session is active
+ */
+export const GetAdminSessionResponse = zod.object({
+  "authenticated": zod.boolean()
+})
+
+
+/**
+ * @summary End the admin session
+ */
+export const AdminLogoutResponse = zod.object({
+  "authenticated": zod.boolean()
+})
+
+
+/**
+ * Creates (or resets) a user account with a temporary password for the requester, marks the request approved, and emails the temporary password. When the email provider is not configured, the temporary password is returned to the admin instead. Requires admin access.
+ * @summary Approve an access request and provision a user account
+ */
+export const ApproveRequestAccessEntryParams = zod.object({
+  "requestId": zod.coerce.string().describe('Access request identifier (UUID).')
+})
+
+export const ApproveRequestAccessEntryResponse = zod.object({
+  "status": zod.enum(['approved', 'already_approved']),
+  "email": zod.string(),
+  "email_sent": zod.boolean().describe('True when the temporary-password email was delivered to the provider.'),
+  "temp_password": zod.string().optional().describe('Present only when the email could not be sent, so the admin can share the temporary password manually.')
+})
+
+
+/**
+ * Marks a pending access request as rejected. Requires admin access.
+ * @summary Reject an access request
+ */
+export const RejectRequestAccessEntryParams = zod.object({
+  "requestId": zod.coerce.string().describe('Access request identifier (UUID).')
+})
+
+export const RejectRequestAccessEntryResponse = zod.object({
+  "status": zod.enum(['rejected', 'already_rejected']),
+  "email": zod.string()
 })
 
 
@@ -405,6 +485,28 @@ export const SubmitRequestAccessBody = zod.object({
 export const SubmitRequestAccessResponse = zod.object({
   "status": zod.enum(['received', 'already_requested']),
   "email": zod.string()
+})
+
+
+/**
+ * Returns all access-request submissions with their full form data, newest first. Requires admin access.
+ * @summary List Metrix access requests
+ */
+export const ListRequestAccessEntriesResponse = zod.object({
+  "entries": zod.array(zod.object({
+  "id": zod.string(),
+  "full_name": zod.string(),
+  "email": zod.string(),
+  "phone": zod.string().nullish(),
+  "business_type": zod.string().nullish(),
+  "industry": zod.string().nullish(),
+  "avg_monthly_ad_spend": zod.string().nullish(),
+  "website": zod.string().nullish(),
+  "linkedin": zod.string().nullish(),
+  "status": zod.enum(['pending', 'approved', 'rejected']),
+  "created_at": zod.string()
+})),
+  "total": zod.number()
 })
 
 

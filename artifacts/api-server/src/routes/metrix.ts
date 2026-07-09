@@ -16,6 +16,14 @@ import {
   SubmitRequestAccessBody,
   SubmitRequestAccessResponse,
   ApproveAgentWaitlistEntryResponse,
+  RejectAgentWaitlistEntryResponse,
+  AdminLoginBody,
+  AdminLoginResponse,
+  GetAdminSessionResponse,
+  AdminLogoutResponse,
+  ListRequestAccessEntriesResponse,
+  ApproveRequestAccessEntryResponse,
+  RejectRequestAccessEntryResponse,
   UpdateReportSettingsBody,
   UpdateReportSettingsResponse,
   CreateWorkspaceReportBody,
@@ -45,8 +53,99 @@ import { getMetrixSeedFromSupabase } from "../lib/metrixSeedAssembly";
 import { getSupabase } from "../lib/supabase";
 import { notifyRequestAccess } from "../lib/requestAccessNotification";
 import { getAppBaseUrl } from "../lib/appUrl";
+import {
+  createAdminToken,
+  hasAdminSession,
+  setAdminCookie,
+  clearAdminCookie,
+  safeCompare,
+} from "../lib/adminPanelSession";
+import rateLimit from "express-rate-limit";
+import type { Logger } from "pino";
 
 const router: IRouter = Router();
+
+// ─── Admin panel session (password-protected /admin page) ─────────────
+
+const adminLoginRateLimit = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  handler: (req, res) => {
+    req.log?.warn({ ip: req.ip }, "admin login rate limit exceeded");
+    res.status(429).json({ message: "Too many attempts. Please try again shortly." });
+  },
+});
+
+router.post("/metrix/admin/session", adminLoginRateLimit, (req, res) => {
+  const parsed = AdminLoginBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(401).json({ message: "Incorrect admin password." });
+    return;
+  }
+
+  const configured = process.env.ADMIN_PANEL_PASSWORD;
+  if (!configured) {
+    // Fail closed: nobody can log in until the secret is set.
+    req.log.warn("Admin login attempted but ADMIN_PANEL_PASSWORD is not configured");
+    res.status(401).json({ message: "Admin access is not configured on this server." });
+    return;
+  }
+
+  if (!safeCompare(parsed.data.password, configured)) {
+    req.log.warn({ ip: req.ip }, "Admin login failed: wrong password");
+    res.status(401).json({ message: "Incorrect admin password." });
+    return;
+  }
+
+  setAdminCookie(req, res, createAdminToken());
+  res.json(AdminLoginResponse.parse({ authenticated: true }));
+});
+
+router.get("/metrix/admin/session", (req, res) => {
+  res.json(GetAdminSessionResponse.parse({ authenticated: hasAdminSession(req) }));
+});
+
+router.delete("/metrix/admin/session", (req, res) => {
+  clearAdminCookie(req, res);
+  res.json(AdminLogoutResponse.parse({ authenticated: false }));
+});
+
+// Provision (or reset) a user account with a temp password and email it.
+// Shared by waitlist approval and access-request approval. The temp password
+// is only returned when the email could not be delivered, so the admin can
+// share it manually — otherwise it never leaves the email channel.
+async function provisionApprovedUser(
+  email: string,
+  log: Logger,
+): Promise<{ email_sent: boolean; temp_password?: string }> {
+  const tempPassword = generateTempPassword();
+  const passwordHash = await hashPassword(tempPassword);
+
+  const [existingUser] = await db
+    .select({ id: usersTable.id })
+    .from(usersTable)
+    .where(eq(usersTable.email, email))
+    .limit(1);
+
+  if (existingUser) {
+    await db
+      .update(usersTable)
+      .set({ passwordHash, mustChangePassword: true })
+      .where(eq(usersTable.id, existingUser.id));
+  } else {
+    await db
+      .insert(usersTable)
+      .values({ email, passwordHash, mustChangePassword: true });
+  }
+
+  const emailResult = await sendApprovalEmail(email, tempPassword, getAppBaseUrl(), log);
+  return {
+    email_sent: emailResult === "sent",
+    ...(emailResult === "sent" ? {} : { temp_password: tempPassword }),
+  };
+}
 
 router.get("/metrix/seed", requireAuth, async (req, res) => {
   try {
@@ -241,42 +340,245 @@ router.post(
       return;
     }
 
-    const tempPassword = generateTempPassword();
-    const passwordHash = await hashPassword(tempPassword);
-
-    if (existingUser) {
-      await db
-        .update(usersTable)
-        .set({ passwordHash, mustChangePassword: true })
-        .where(eq(usersTable.id, existingUser.id));
-    } else {
-      await db
-        .insert(usersTable)
-        .values({ email: entry.email, passwordHash, mustChangePassword: true });
+    // Strict lifecycle: a rejected entry stays rejected — no silent revival.
+    if (entry.status === "rejected") {
+      res.status(409).json({ message: "This entry was rejected and cannot be approved." });
+      return;
     }
+
+    const provisioned = await provisionApprovedUser(entry.email, req.log);
 
     await db
       .update(agentWaitlistTable)
       .set({ status: "approved", approvedAt: new Date() })
       .where(eq(agentWaitlistTable.id, entry.id));
 
-    const appUrl = getAppBaseUrl();
-    const emailResult = await sendApprovalEmail(
-      entry.email,
-      tempPassword,
-      appUrl,
-      req.log,
-    );
-
     const data = ApproveAgentWaitlistEntryResponse.parse({
       status: "approved",
       email: entry.email,
-      email_sent: emailResult === "sent",
-      // Only surface the temp password to the admin when the email could not
-      // be delivered — otherwise it must never leave the email channel.
-      ...(emailResult === "sent" ? {} : { temp_password: tempPassword }),
+      ...provisioned,
     });
     res.json(data);
+  },
+);
+
+router.post(
+  "/metrix/agent-waitlist/:entryId/reject",
+  requireAdmin,
+  async (req, res) => {
+    const entryId = Number.parseInt(String(req.params.entryId), 10);
+    if (!Number.isInteger(entryId) || entryId < 1) {
+      res.status(404).json({ message: "Waitlist entry not found." });
+      return;
+    }
+
+    const [entry] = await db
+      .select()
+      .from(agentWaitlistTable)
+      .where(eq(agentWaitlistTable.id, entryId))
+      .limit(1);
+
+    if (!entry) {
+      res.status(404).json({ message: "Waitlist entry not found." });
+      return;
+    }
+
+    if (entry.status === "rejected") {
+      res.json(
+        RejectAgentWaitlistEntryResponse.parse({
+          status: "already_rejected",
+          email: entry.email,
+        }),
+      );
+      return;
+    }
+
+    // Strict lifecycle: an approved entry (account already provisioned)
+    // cannot be flipped to rejected from here.
+    if (entry.status === "approved") {
+      res.status(409).json({ message: "This entry was already approved and cannot be rejected." });
+      return;
+    }
+
+    await db
+      .update(agentWaitlistTable)
+      .set({ status: "rejected" })
+      .where(eq(agentWaitlistTable.id, entry.id));
+
+    req.log.info({ entryId: entry.id }, "Waitlist entry rejected");
+    res.json(
+      RejectAgentWaitlistEntryResponse.parse({
+        status: "rejected",
+        email: entry.email,
+      }),
+    );
+  },
+);
+
+// ─── Access requests (admin) ──────────────────────────────────────────
+
+type RequestAccessRow = {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  business_type: string | null;
+  industry: string | null;
+  avg_monthly_ad_spend: string | null;
+  website: string | null;
+  linkedin: string | null;
+  status: string;
+  created_at: string;
+};
+
+router.get("/metrix/request-access", requireAdmin, async (req, res) => {
+  try {
+    const supabase = getSupabase();
+    const { data: rows, error } = await supabase
+      .from("request_access")
+      .select(
+        "id, full_name, email, phone, business_type, industry, avg_monthly_ad_spend, website, linkedin, status, created_at",
+      )
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+
+    const entries = ((rows ?? []) as RequestAccessRow[]).map((row) => ({
+      ...row,
+      status: row.status === "approved" || row.status === "rejected" ? row.status : "pending",
+    }));
+    res.json(ListRequestAccessEntriesResponse.parse({ entries, total: entries.length }));
+  } catch (err) {
+    req.log.error({ err }, "Failed to list access requests");
+    res.status(503).json({ message: "Could not load access requests." });
+  }
+});
+
+async function findRequestAccessRow(requestId: string): Promise<RequestAccessRow | null> {
+  const supabase = getSupabase();
+  const { data: rows, error } = await supabase
+    .from("request_access")
+    .select(
+      "id, full_name, email, phone, business_type, industry, avg_monthly_ad_spend, website, linkedin, status, created_at",
+    )
+    .eq("id", requestId)
+    .limit(1);
+  if (error) throw new Error(error.message);
+  return ((rows ?? []) as RequestAccessRow[])[0] ?? null;
+}
+
+router.post(
+  "/metrix/request-access/:requestId/approve",
+  requireAdmin,
+  async (req, res) => {
+    const requestId = String(req.params.requestId);
+    try {
+      const entry = await findRequestAccessRow(requestId);
+      if (!entry) {
+        res.status(404).json({ message: "Access request not found." });
+        return;
+      }
+
+      const email = entry.email.trim().toLowerCase();
+      const [existingUser] = await db
+        .select({ id: usersTable.id })
+        .from(usersTable)
+        .where(eq(usersTable.email, email))
+        .limit(1);
+
+      if (entry.status === "approved" && existingUser) {
+        res.json(
+          ApproveRequestAccessEntryResponse.parse({
+            status: "already_approved",
+            email,
+            email_sent: false,
+          }),
+        );
+        return;
+      }
+
+      // Strict lifecycle: a rejected request stays rejected.
+      if (entry.status === "rejected") {
+        res.status(409).json({ message: "This request was rejected and cannot be approved." });
+        return;
+      }
+
+      // Mark the request approved BEFORE provisioning credentials. If this
+      // update fails we bail out without touching any account, so a retry is
+      // always safe. If provisioning then fails, the thrown error surfaces as
+      // a 503 below and the already_approved+existingUser guard above won't
+      // trigger (no user row yet) — so a retry re-runs provisioning.
+      const supabase = getSupabase();
+      const upd = await supabase
+        .from("request_access")
+        .update({ status: "approved" })
+        .eq("id", entry.id);
+      if (upd.error) throw new Error(upd.error.message);
+
+      const provisioned = await provisionApprovedUser(email, req.log);
+
+      res.json(
+        ApproveRequestAccessEntryResponse.parse({
+          status: "approved",
+          email,
+          ...provisioned,
+        }),
+      );
+    } catch (err) {
+      req.log.error({ err }, "Failed to approve access request");
+      res.status(503).json({ message: "Could not approve the access request." });
+    }
+  },
+);
+
+router.post(
+  "/metrix/request-access/:requestId/reject",
+  requireAdmin,
+  async (req, res) => {
+    const requestId = String(req.params.requestId);
+    try {
+      const entry = await findRequestAccessRow(requestId);
+      if (!entry) {
+        res.status(404).json({ message: "Access request not found." });
+        return;
+      }
+
+      if (entry.status === "rejected") {
+        res.json(
+          RejectRequestAccessEntryResponse.parse({
+            status: "already_rejected",
+            email: entry.email,
+          }),
+        );
+        return;
+      }
+
+      // Strict lifecycle: an approved request (account provisioned) cannot
+      // be flipped to rejected from here.
+      if (entry.status === "approved") {
+        res
+          .status(409)
+          .json({ message: "This request was already approved and cannot be rejected." });
+        return;
+      }
+
+      const supabase = getSupabase();
+      const upd = await supabase
+        .from("request_access")
+        .update({ status: "rejected" })
+        .eq("id", entry.id);
+      if (upd.error) throw new Error(upd.error.message);
+
+      req.log.info({ requestId: entry.id }, "Access request rejected");
+      res.json(
+        RejectRequestAccessEntryResponse.parse({
+          status: "rejected",
+          email: entry.email,
+        }),
+      );
+    } catch (err) {
+      req.log.error({ err }, "Failed to reject access request");
+      res.status(503).json({ message: "Could not reject the access request." });
+    }
   },
 );
 

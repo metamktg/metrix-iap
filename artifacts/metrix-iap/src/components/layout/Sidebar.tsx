@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { ChevronDown, Database } from "lucide-react";
 import { AccountSwitcher } from "./AccountSwitcher";
 import { DataSourceBadgeToggle } from "@/components/ui/DataSourceBadge";
-import { navTree } from "@/navigation/navTree";
+import { navTree, sectionLandingRoute } from "@/navigation/navTree";
 import { useNavBadges } from "@/navigation/useNavBadges";
 import type { NavSection, NavChild } from "@/navigation/navTree";
 
@@ -46,6 +46,8 @@ function matchesExtraPaths(section: NavSection, location: string): boolean {
 function isSectionActive(section: NavSection, location: string): boolean {
   if (matchesExtraPaths(section, location)) return true;
   if (section.to) return location === section.to || location.startsWith(section.to + "/");
+  const landing = sectionLandingRoute(section);
+  if (landing && isChildActive(landing, location)) return true;
   return (section.children ?? []).some(c => isChildActive(c.to, location));
 }
 
@@ -76,12 +78,12 @@ function ChildRow({ child, count }: { child: NavChild; count: number | null }) {
           "flex items-center gap-1.5 pl-3 pr-2 h-8 rounded-r text-[12px] transition-colors",
           active
             ? "font-medium mx-nav-child-active"
-            : "text-muted-foreground/65 hover:text-foreground/80 hover:bg-[rgba(20,55,110,0.4)]"
+            : "text-foreground/70 hover:text-foreground hover:bg-[rgba(20,55,110,0.4)]"
         )}
       >
         <span className="flex-1 truncate leading-tight">{child.label}</span>
         {child.placeholder && !active && (
-          <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/60 border border-border/25 px-1 py-0.5 rounded leading-none shrink-0">
+          <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/80 border border-border/40 px-1 py-0.5 rounded leading-none shrink-0">
             Soon
           </span>
         )}
@@ -107,6 +109,8 @@ function ExpandableSection({
 }) {
   const [location] = useLocation();
   const sectionActive = isSectionActive(section, location);
+  const landing = sectionLandingRoute(section);
+  const landingActive = landing != null && isChildActive(landing, location);
   const [open, setOpen] = useState(sectionActive);
   const controlsId = useId();
 
@@ -117,29 +121,59 @@ function ExpandableSection({
 
   return (
     <li>
-      <button
-        type="button"
-        aria-expanded={open}
-        aria-controls={controlsId}
-        onClick={() => setOpen(v => !v)}
+      <div
         className={cn(
-          "w-full flex items-center gap-2 px-3 h-9 rounded text-[11px] font-semibold uppercase tracking-widest transition-colors select-none",
-          sectionActive
-            ? "text-foreground/90"
-            : "text-muted-foreground/70 hover:text-muted-foreground/80"
+          "flex items-center rounded text-[11px] font-semibold uppercase tracking-widest transition-colors select-none",
+          landingActive
+            ? "mx-nav-active"
+            : sectionActive
+              ? "text-foreground"
+              : "text-foreground/75 hover:text-foreground hover:bg-[rgba(20,55,110,0.4)]"
         )}
       >
-        <span className="w-4 shrink-0 text-[8px] font-mono text-muted-foreground/60 tabular-nums">
-          {section.number}
-        </span>
-        <span className="flex-1 text-left">{section.label}</span>
-        <ChevronDown
+        <a
+          href={landing ?? "#"}
+          aria-current={landingActive ? "page" : undefined}
+          onClick={(e) => {
+            if (!landing) {
+              e.preventDefault();
+              setOpen(v => !v);
+              return;
+            }
+            navigate(landing, e);
+            setOpen(true);
+          }}
+          className="flex-1 min-w-0 flex items-center gap-2 pl-3 pr-1 h-9"
+        >
+          <span className={cn(
+            "w-4 shrink-0 text-[8px] font-mono tabular-nums",
+            landingActive ? "text-white/80" : "text-muted-foreground/80"
+          )}>
+            {section.number}
+          </span>
+          <span className="flex-1 text-left truncate">{section.label}</span>
+        </a>
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={controlsId}
+          aria-label={`${open ? "Collapse" : "Expand"} ${section.label} section`}
+          onClick={() => setOpen(v => !v)}
           className={cn(
-            "w-3 h-3 shrink-0 text-muted-foreground/60 transition-transform duration-200",
-            open && "rotate-180"
+            "shrink-0 h-9 w-7 flex items-center justify-center rounded transition-colors",
+            landingActive
+              ? "text-white/80 hover:text-white"
+              : "text-muted-foreground/80 hover:text-foreground"
           )}
-        />
-      </button>
+        >
+          <ChevronDown
+            className={cn(
+              "w-3 h-3 transition-transform duration-200",
+              open && "rotate-180"
+            )}
+          />
+        </button>
+      </div>
 
       <ul
         id={controlsId}
@@ -187,15 +221,18 @@ function LeafSection({
           "flex items-center gap-2 px-3 h-9 rounded-lg text-[11px] font-semibold uppercase tracking-widest transition-colors",
           active
             ? "mx-nav-active"
-            : "text-muted-foreground/70 hover:text-foreground hover:bg-[rgba(20,55,110,0.5)]"
+            : "text-foreground/75 hover:text-foreground hover:bg-[rgba(20,55,110,0.5)]"
         )}
       >
-        <span className="w-4 shrink-0 text-[8px] font-mono text-muted-foreground/60 tabular-nums">
+        <span className={cn(
+          "w-4 shrink-0 text-[8px] font-mono tabular-nums",
+          active ? "text-white/80" : "text-muted-foreground/80"
+        )}>
           {section.number}
         </span>
         <span className="flex-1">{section.label}</span>
         {section.placeholder && (
-          <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/60 border border-border/25 px-1 py-0.5 rounded leading-none shrink-0 normal-case">
+          <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/80 border border-border/40 px-1 py-0.5 rounded leading-none shrink-0 normal-case">
             Soon
           </span>
         )}

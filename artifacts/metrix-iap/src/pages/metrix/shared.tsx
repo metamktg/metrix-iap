@@ -4,6 +4,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useLocation, useSearch } from "wouter";
 import { ConnectMetaDialog, ManualImportDialog } from "./ConnectAccountDialogs";
+import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
 import { Plug, FileUp, Clock, Database, Info, ArrowRight, CheckSquare, Square, CalendarRange, CalendarX2 } from "lucide-react";
 import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
 import { DataSourceBadge } from "@/components/ui/DataSourceBadge";
@@ -205,6 +206,12 @@ export function UnconfiguredState({ account }: { account: AdAccount }) {
         <p className="text-[10px] text-muted-foreground/60 leading-relaxed">
           No performance, analysis, or report data is shown until this account is configured.
         </p>
+        <div className="pt-1 space-y-2">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+            Or view a different account
+          </p>
+          <InlineAccountPicker label="Switch ad account" excludeAccountId={account.id} />
+        </div>
       </div>
       <ConnectMetaDialog account={account} open={connectOpen} onOpenChange={setConnectOpen} />
       <ManualImportDialog account={account} open={importOpen} onOpenChange={setImportOpen} />
@@ -212,7 +219,7 @@ export function UnconfiguredState({ account }: { account: AdAccount }) {
   );
 }
 
-export function PendingState({ title, message, icon: Icon = Clock }: { title: string; message: string; icon?: React.ComponentType<{ className?: string }> }) {
+export function PendingState({ title, message, icon: Icon = Clock, action }: { title: string; message: string; icon?: React.ComponentType<{ className?: string }>; action?: React.ReactNode }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
       <div className="w-10 h-10 rounded-xl border border-border/40 bg-white/[0.03] flex items-center justify-center">
@@ -220,6 +227,7 @@ export function PendingState({ title, message, icon: Icon = Clock }: { title: st
       </div>
       <p className="text-[13px] font-medium text-foreground/60">{title}</p>
       <p className="text-[11px] text-muted-foreground/60 max-w-xs">{message}</p>
+      {action && <div className="pt-1">{action}</div>}
     </div>
   );
 }
@@ -292,7 +300,11 @@ export function ModuleScopeGate({
     return (
       <div className="flex-1 flex flex-col">
         <ModuleHeader section={section} title={title} />
-        <PendingState title="No ad account selected" message="Choose an ad account to view this module." />
+        <PendingState
+          title="No ad account selected"
+          message="Choose an ad account to view this module."
+          action={<InlineAccountPicker />}
+        />
       </div>
     );
   }

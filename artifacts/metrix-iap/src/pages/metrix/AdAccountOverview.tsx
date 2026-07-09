@@ -18,6 +18,7 @@ import {
   ModuleHeader, ScopeBanner, MetricTile, SectionCard, CaveatNote,
   UnconfiguredState, PendingState, fmtUSD, fmtNum, fmtPct, eventLabel,
 } from "./shared";
+import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
 import { cn } from "@/lib/utils";
 
 const IMPACT_RANK: Record<string, number> = { high: 3, medium: 2, low: 1, setup: 0 };
@@ -48,7 +49,11 @@ export function AdAccountOverview() {
     return (
       <div className="flex-1 flex flex-col">
         <ModuleHeader section="Ad Account · 01" title="Ad Account Overview" subtitle="Select an ad account to begin." />
-        <PendingState title="No ad account selected" message="Choose an ad account from the switcher to view its overview." />
+        <PendingState
+          title="No ad account selected"
+          message="Choose an ad account to view its overview."
+          action={<InlineAccountPicker />}
+        />
       </div>
     );
   }

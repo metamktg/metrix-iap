@@ -1,4 +1,5 @@
 - [Metrix IAP closed-loop linkage](metrix-iap-closed-loop.md) — cross-entity back-refs (Ad/Concept/Brief) filled at gen time by linkClosedLoop() IIFE, not per-render.
+- [Admin approval lifecycle](admin-approval-lifecycle.md) — pending-only state transitions; multi-store approvals mark status before provisioning so failures never report success.
 - [Metrix IAP custom auth](metrix-auth.md) — custom bcrypt+cookie auth by user choice; workspace routes need seed-manager-id check (not just login); spec must mirror auth (401/403) on gated routes.
 - [Verify subagent edits](verify-subagent-edits.md) — subagents can report success while edits never land; check git diff before trusting their summary.
 - [Metrix IAP data sources](metrix-iap-data-sources.md) — rendered data now comes from Supabase via the API seed endpoint (no static fallback); mock/generate.ts is bundled-but-unrendered legacy.
