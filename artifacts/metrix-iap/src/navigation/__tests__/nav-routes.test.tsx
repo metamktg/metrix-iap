@@ -87,9 +87,9 @@ describe("legacy redirects land on their new targets", () => {
 // user opening that link (old email, bookmark) must be redirected to a real
 // in-app destination — never fall through to the 404 page.
 describe("a signed-in user visiting /forgot-password is redirected", () => {
-  it("/forgot-password → /app/settings/account, not the 404 page", () => {
+  it("/forgot-password → /app/settings/account?focus=password, not the 404 page", () => {
     const { container, location } = renderAuthedAt("/forgot-password");
-    expect(location.history.at(-1)).toBe("/app/settings/account");
+    expect(location.history.at(-1)).toBe("/app/settings/account?focus=password");
     expect(container.textContent).not.toContain(NOT_FOUND_TEXT);
     expect(container.textContent?.trim().length).toBeGreaterThan(0);
   });

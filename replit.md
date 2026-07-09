@@ -29,7 +29,7 @@ _Replace the heading above with the project's name, and this line with one sente
 - Brand: shared logo components — IAP `src/components/brand/BrandMark.tsx` (BrandLogo + AuthBrandHeader), marketing `src/components/BrandMark.tsx`; auth screens, Topbar, marketing header, and both email templates use the real `metrix-logo.png` (emails hot-link the hosted asset via app base URL).
 - `/api/metrix/seed` and all `/api/metrix/workspaces/:workspaceId/*` routes require a session; workspace routes additionally verify `workspaceId` matches the seed's manager account id (single-workspace deployment) and return 403 otherwise.
 - Settings → Team & Access shows real provisioned accounts (`GET /workspaces/:id/members` over the `users` table, single-workspace) merged over the seed roster; real accounts get Active/Invited badges and real last-login dates.
-- Sign out lives in the Topbar and in Settings → Account ("Your session" card).
+- Sign out lives in the Topbar and in Settings → Account ("Your session" card). Settings → Account also has a "Password" card (change password while signed in; revokes other sessions). A signed-in user hitting `/forgot-password` is redirected to `/app/settings/account?focus=password`, which scrolls to and briefly highlights that card (the `?focus=` deep-link convention; param is consumed on arrival).
 - Login rate limit: 20 attempts / 10 min per IP+email.
 
 ## Stack
