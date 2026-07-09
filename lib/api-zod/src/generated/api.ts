@@ -797,6 +797,51 @@ export const UpdateMemberPermissionsResponse = zod.object({
 
 
 /**
+ * Generates a new temp password, invalidates the member's sessions and outstanding reset links, and emails it. Manage-team-only; requires a logged-in session with access to the workspace.
+ * @summary Issue a fresh temp password for a member
+ */
+
+
+
+
+export const ResendMemberTempPasswordParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.'),
+  "email": zod.coerce.string().min(1).describe('Member\'s email address (URL-encoded).')
+})
+
+export const ResendMemberTempPasswordResponse = zod.object({
+  "status": zod.enum(['resent']),
+  "email": zod.string(),
+  "email_sent": zod.boolean().describe('Whether the fresh temp-password email could be delivered.'),
+  "temp_password": zod.string().optional().describe('Present only when the email could not be sent, so the admin can share it manually.'),
+  "email_error": zod.string().optional().describe('Present only when the email could not be sent — explains why.')
+})
+
+
+/**
+ * Disabling revokes all sessions and rejects future logins with a generic message; restoring re-enables login. Manage-team-only; requires a logged-in session with access to the workspace. Cannot disable your own account or a designated agency admin account.
+ * @summary Disable or restore a member's access
+ */
+
+
+
+
+export const UpdateMemberStatusParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.'),
+  "email": zod.coerce.string().min(1).describe('Member\'s email address (URL-encoded).')
+})
+
+export const UpdateMemberStatusBody = zod.object({
+  "status": zod.enum(['active', 'disabled'])
+})
+
+export const UpdateMemberStatusResponse = zod.object({
+  "status": zod.enum(['active', 'disabled']),
+  "email": zod.string()
+})
+
+
+/**
  * Returns provisioned user accounts (real logins) for this workspace, newest first. Requires a logged-in session with access to the workspace.
  * @summary List real workspace member accounts
  */
@@ -810,7 +855,7 @@ export const ListWorkspaceMembersParams = zod.object({
 export const ListWorkspaceMembersResponse = zod.object({
   "members": zod.array(zod.object({
   "email": zod.string(),
-  "status": zod.enum(['active', 'invited']).describe('invited = provisioned but has not completed first login yet.'),
+  "status": zod.enum(['active', 'invited', 'disabled']).describe('invited = provisioned but has not completed first login yet; disabled = access revoked.'),
   "role": zod.enum(['admin', 'member']),
   "manage_team": zod.boolean().describe('Always true for admin, regardless of the stored flag.'),
   "view_agency_rollups": zod.boolean().describe('Always true for admin, regardless of the stored flag.'),

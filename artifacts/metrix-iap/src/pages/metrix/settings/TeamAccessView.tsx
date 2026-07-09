@@ -29,6 +29,8 @@ import {
   useGrantMemberAdAccount,
   useRevokeMemberAdAccount,
   useUpdateMemberPermissions,
+  useResendMemberTempPassword,
+  useUpdateMemberStatus,
   getListWorkspaceInvitesQueryKey,
   getListWorkspaceMembersQueryKey,
   getListMemberAdAccountsQueryKey,
@@ -639,6 +641,120 @@ function MemberAdAccountsCell({
   );
 }
 
+function MemberActionsCell({
+  workspaceId,
+  email,
+  disabled,
+}: {
+  workspaceId: string;
+  email: string;
+  disabled: boolean;
+}) {
+  const queryClient = useQueryClient();
+  const [error, setError] = useState<string | null>(null);
+  const [resent, setResent] = useState(false);
+  const [tempPassword, setTempPassword] = useState<string | null>(null);
+  const { mutate: resend, isPending: isResending } = useResendMemberTempPassword();
+  const { mutate: setStatus, isPending: isUpdatingStatus } = useUpdateMemberStatus();
+  const busy = isResending || isUpdatingStatus;
+
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: getListWorkspaceMembersQueryKey(workspaceId) });
+
+  const handleResend = () => {
+    if (busy) return;
+    setError(null);
+    setTempPassword(null);
+    resend(
+      { workspaceId, email },
+      {
+        onSuccess: (data) => {
+          setResent(true);
+          if (!data.email_sent && data.temp_password) setTempPassword(data.temp_password);
+          void invalidate();
+        },
+        onError: () => setError("Could not send a new temp password. Try again."),
+      },
+    );
+  };
+
+  const handleStatusChange = (next: "active" | "disabled") => {
+    if (busy) return;
+    if (next === "disabled" && !window.confirm(`Remove ${email}'s access to this workspace?`)) return;
+    setError(null);
+    setStatus(
+      { workspaceId, email, data: { status: next } },
+      {
+        onSuccess: () => void invalidate(),
+        onError: () =>
+          setError(
+            next === "disabled"
+              ? "Could not remove this member. Try again."
+              : "Could not restore this member. Try again.",
+          ),
+      },
+    );
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5" data-testid={`cell-actions-${email}`}>
+      {!disabled && (
+        <button
+          type="button"
+          onClick={handleResend}
+          disabled={busy}
+          title="Send a new temp password"
+          className="flex items-center gap-1 h-6 px-2 rounded border border-border/40 bg-white/[0.02] text-[10px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/[0.05] transition-colors disabled:opacity-40 disabled:pointer-events-none"
+          data-testid={`button-resend-temp-password-${email}`}
+        >
+          {isResending ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCw className="w-3 h-3" />}
+          Resend temp password
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={() => handleStatusChange(disabled ? "active" : "disabled")}
+        disabled={busy}
+        title={disabled ? "Restore access" : "Remove access"}
+        className={cn(
+          "flex items-center gap-1 h-6 px-2 rounded border text-[10px] font-medium transition-colors disabled:opacity-40 disabled:pointer-events-none",
+          disabled
+            ? "border-emerald-400/25 bg-emerald-400/[0.06] text-emerald-400/90 hover:bg-emerald-400/[0.12]"
+            : "border-red-400/25 bg-red-400/[0.06] text-red-400/90 hover:bg-red-400/[0.12]",
+        )}
+        data-testid={disabled ? `button-restore-member-${email}` : `button-remove-member-${email}`}
+      >
+        {isUpdatingStatus ? (
+          <Loader2 className="w-3 h-3 animate-spin" />
+        ) : disabled ? (
+          <Check className="w-3 h-3" />
+        ) : (
+          <X className="w-3 h-3" />
+        )}
+        {disabled ? "Restore" : "Remove"}
+      </button>
+      {tempPassword && (
+        <span
+          className="text-[10px] text-amber-400/90 font-mono w-full"
+          data-testid={`text-temp-password-${email}`}
+        >
+          Email didn't send — temp password: {tempPassword}
+        </span>
+      )}
+      {resent && !tempPassword && !error && (
+        <span className="text-[10px] text-emerald-400/90 w-full" data-testid={`text-resend-success-${email}`}>
+          New temp password sent.
+        </span>
+      )}
+      {error && (
+        <span className="text-[10px] text-red-400/90 w-full" data-testid={`text-actions-error-${email}`}>
+          {error}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export function TeamAccessView() {
   const { user } = useAuth();
 
@@ -665,6 +781,7 @@ function TeamAccessViewInner() {
   const { manager } = useAccount();
   const ws = getWorkspaceSettings(seed);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const { user } = useAuth();
   const { data: invitesData } = useListWorkspaceInvites(manager.id);
   const { data: membersData } = useListWorkspaceMembers(manager.id);
 
@@ -695,6 +812,7 @@ function TeamAccessViewInner() {
         email: m.email,
         role: m.role,
         invited: real ? real.status === "invited" : m.status === "invited",
+        disabled: real ? real.status === "disabled" : false,
         lastActive: real ? real.last_login_at : m.last_active,
         hasAccount: Boolean(real),
         manageTeam: real ? real.manage_team : m.role === "owner",
@@ -710,6 +828,7 @@ function TeamAccessViewInner() {
         email: m.email,
         role: "member",
         invited: m.status === "invited",
+        disabled: m.status === "disabled",
         lastActive: m.last_login_at,
         hasAccount: true,
         manageTeam: m.manage_team,
@@ -760,7 +879,9 @@ function TeamAccessViewInner() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-[12px] font-medium text-foreground truncate">{m.name}</span>
-                      {m.invited ? (
+                      {m.disabled ? (
+                        <span className="text-[9px] font-semibold uppercase tracking-wide text-red-400 border border-red-400/25 bg-red-400/10 px-1.5 py-0.5 rounded leading-none">Removed</span>
+                      ) : m.invited ? (
                         <span className="text-[9px] font-semibold uppercase tracking-wide text-amber-400 border border-amber-400/25 bg-amber-400/10 px-1.5 py-0.5 rounded leading-none">Invited</span>
                       ) : m.hasAccount ? (
                         <span className="text-[9px] font-semibold uppercase tracking-wide text-emerald-400 border border-emerald-400/25 bg-emerald-400/10 px-1.5 py-0.5 rounded leading-none">Active</span>
@@ -797,6 +918,11 @@ function TeamAccessViewInner() {
                         Account access can be granted once this member signs in for the first time.
                       </span>
                     )}
+                  </div>
+                )}
+                {m.hasAccount && m.email.toLowerCase() !== user?.email.toLowerCase() && (
+                  <div className="pl-0">
+                    <MemberActionsCell workspaceId={manager.id} email={m.email} disabled={m.disabled} />
                   </div>
                 )}
                 </div>

@@ -1403,6 +1403,120 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/workspaces/{workspaceId}/members/{email}/resend-temp-password:
+    parameters:
+      - name: workspaceId
+        in: path
+        required: true
+        description: Workspace (manager account) identifier.
+        schema:
+          type: string
+          minLength: 1
+      - name: email
+        in: path
+        required: true
+        description: Member's email address (URL-encoded).
+        schema:
+          type: string
+          minLength: 1
+    post:
+      operationId: resendMemberTempPassword
+      tags: [metrix]
+      summary: Issue a fresh temp password for a member
+      description: Generates a new temp password, invalidates the member's sessions and outstanding reset links, and emails it. Manage-team-only; requires a logged-in session with access to the workspace.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Temp password reissued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkspaceMemberResendTempPasswordResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this workspace, or lacks manage-team permission
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Member not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Member account is disabled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/workspaces/{workspaceId}/members/{email}/status:
+    parameters:
+      - name: workspaceId
+        in: path
+        required: true
+        description: Workspace (manager account) identifier.
+        schema:
+          type: string
+          minLength: 1
+      - name: email
+        in: path
+        required: true
+        description: Member's email address (URL-encoded).
+        schema:
+          type: string
+          minLength: 1
+    patch:
+      operationId: updateMemberStatus
+      tags: [metrix]
+      summary: Disable or restore a member's access
+      description: Disabling revokes all sessions and rejects future logins with a generic message; restoring re-enables login. Manage-team-only; requires a logged-in session with access to the workspace. Cannot disable your own account or a designated agency admin account.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMemberStatusInput"
+      responses:
+        "200":
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateMemberStatusResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this workspace, lacks manage-team permission, or the target is protected (self or agency admin)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Member not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Disabling would leave the workspace with zero admins
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/workspaces/{workspaceId}/members:
     parameters:
       - name: workspaceId
@@ -2936,8 +3050,8 @@ components:
           type: string
         status:
           type: string
-          enum: [active, invited]
-          description: invited = provisioned but has not completed first login yet.
+          enum: [active, invited, disabled]
+          description: invited = provisioned but has not completed first login yet; disabled = access revoked.
         role:
           type: string
           enum: [admin, member]
@@ -2993,6 +3107,46 @@ components:
         - status
         - manage_team
         - view_agency_rollups
+    WorkspaceMemberResendTempPasswordResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [resent]
+        email:
+          type: string
+        email_sent:
+          type: boolean
+          description: Whether the fresh temp-password email could be delivered.
+        temp_password:
+          type: string
+          description: Present only when the email could not be sent, so the admin can share it manually.
+        email_error:
+          type: string
+          description: Present only when the email could not be sent — explains why.
+      required:
+        - status
+        - email
+        - email_sent
+    UpdateMemberStatusInput:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [active, disabled]
+      required:
+        - status
+    UpdateMemberStatusResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [active, disabled]
+        email:
+          type: string
+      required:
+        - status
+        - email
     GrantMemberAdAccountInput:
       type: object
       properties:

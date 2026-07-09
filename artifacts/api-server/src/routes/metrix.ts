@@ -49,6 +49,9 @@ import {
   GrantMemberAdAccountResponse,
   ListMemberAdAccountsResponse,
   RevokeMemberAdAccountResponse,
+  ResendMemberTempPasswordResponse,
+  UpdateMemberStatusBody,
+  UpdateMemberStatusResponse,
 } from "@workspace/api-zod";
 import {
   db,
@@ -1396,6 +1399,7 @@ router.get("/metrix/workspaces/:workspaceId/members", requireAuth, requireWorksp
       canViewAgencyRollups: usersTable.canViewAgencyRollups,
       createdAt: usersTable.createdAt,
       lastLoginAt: usersTable.lastLoginAt,
+      disabledAt: usersTable.disabledAt,
     })
     .from(usersTable)
     .orderBy(desc(usersTable.createdAt), desc(usersTable.id));
@@ -1403,7 +1407,11 @@ router.get("/metrix/workspaces/:workspaceId/members", requireAuth, requireWorksp
   const data = ListWorkspaceMembersResponse.parse({
     members: rows.map((row) => ({
       email: row.email,
-      status: row.mustChangePassword && !row.lastLoginAt ? "invited" : "active",
+      status: row.disabledAt
+        ? "disabled"
+        : row.mustChangePassword && !row.lastLoginAt
+          ? "invited"
+          : "active",
       role: row.role === "admin" ? "admin" : "member",
       manage_team: row.role === "admin" || row.canManageTeam,
       view_agency_rollups: row.role === "admin" || row.canViewAgencyRollups,
@@ -1413,6 +1421,118 @@ router.get("/metrix/workspaces/:workspaceId/members", requireAuth, requireWorksp
   });
   res.json(data);
 });
+
+router.post(
+  "/metrix/workspaces/:workspaceId/members/:email/resend-temp-password",
+  requireAuth,
+  requireWorkspaceAccess,
+  requireManageTeam,
+  async (req, res) => {
+    const email = decodeURIComponent(String(req.params.email)).toLowerCase();
+    const [target] = await db
+      .select({ id: usersTable.id, email: usersTable.email, disabledAt: usersTable.disabledAt })
+      .from(usersTable)
+      .where(eq(usersTable.email, email))
+      .limit(1);
+    if (!target) {
+      res.status(404).json({ message: "Member not found." });
+      return;
+    }
+    if (target.disabledAt) {
+      res.status(409).json({
+        message: "This account is disabled. Restore access before sending new credentials.",
+      });
+      return;
+    }
+
+    const tempPassword = generateTempPassword();
+    const passwordHash = await hashPassword(tempPassword);
+    await db
+      .update(usersTable)
+      .set({ passwordHash, mustChangePassword: true })
+      .where(eq(usersTable.id, target.id));
+    await destroyAllSessions(target.id);
+    await deletePasswordResetTokensForUser(target.id);
+
+    const emailResult = await sendApprovalEmail(
+      target.email,
+      tempPassword,
+      getAppBaseUrl(),
+      req.log,
+    );
+    const sent = emailResult.status === "sent";
+    res.json(
+      ResendMemberTempPasswordResponse.parse({
+        status: "resent",
+        email: target.email,
+        email_sent: sent,
+        ...(sent ? {} : { temp_password: tempPassword, email_error: emailResult.reason }),
+      }),
+    );
+  },
+);
+
+router.patch(
+  "/metrix/workspaces/:workspaceId/members/:email/status",
+  requireAuth,
+  requireWorkspaceAccess,
+  requireManageTeam,
+  async (req, res) => {
+    const email = decodeURIComponent(String(req.params.email)).toLowerCase();
+    const parsed = UpdateMemberStatusBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ message: "status must be 'active' or 'disabled'." });
+      return;
+    }
+
+    if (parsed.data.status === "disabled") {
+      if (req.authUser && email === req.authUser.email.toLowerCase()) {
+        res.status(403).json({ message: "You can't remove your own access." });
+        return;
+      }
+      if (isAgencyAdminEmail(email)) {
+        res.status(403).json({ message: "This account is protected and can't be removed." });
+        return;
+      }
+    }
+
+    const [target] = await db
+      .select({ id: usersTable.id, email: usersTable.email, role: usersTable.role })
+      .from(usersTable)
+      .where(eq(usersTable.email, email))
+      .limit(1);
+    if (!target) {
+      res.status(404).json({ message: "Member not found." });
+      return;
+    }
+
+    if (parsed.data.status === "disabled" && target.role === "admin") {
+      const [adminRow] = await db
+        .select({ total: count() })
+        .from(usersTable)
+        .where(and(eq(usersTable.role, "admin"), sql`${usersTable.disabledAt} is null`));
+      if (Number(adminRow?.total ?? 0) <= 1) {
+        res.status(409).json({ message: "Can't remove the workspace's only admin." });
+        return;
+      }
+    }
+
+    await db
+      .update(usersTable)
+      .set({ disabledAt: parsed.data.status === "disabled" ? new Date() : null })
+      .where(eq(usersTable.id, target.id));
+
+    if (parsed.data.status === "disabled") {
+      await destroyAllSessions(target.id);
+      await deletePasswordResetTokensForUser(target.id);
+      req.log.info({ email: target.email }, "member access removed via team management");
+    } else {
+      req.log.info({ email: target.email }, "member access restored via team management");
+    }
+
+    res.json(UpdateMemberStatusResponse.parse({ status: parsed.data.status, email: target.email }));
+  },
+);
 
 router.patch(
   "/metrix/workspaces/:workspaceId/members/:email/permissions",
