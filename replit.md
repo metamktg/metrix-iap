@@ -17,6 +17,8 @@ _Replace the heading above with the project's name, and this line with one sente
 - Optional secret: `ADMIN_API_KEY` — admin bearer key gating GET /api/metrix/agent-waitlist (waitlist emails). Endpoint fails closed (401) when unset; admins enter the key in Settings → Metrix Agent waitlist.
 - Optional secret: `RESEND_API_KEY` — enables the request-access notification email to meta@metamktgagency.com (Resend REST API). When unset, submissions are still stored in Supabase and the server logs an explicit "notification skipped" warning. Optional: `REQUEST_ACCESS_FROM_EMAIL` to override the Resend from-address (defaults to onboarding@resend.dev sandbox sender).
 - `pnpm --filter @workspace/scripts run create:user x@y.com [password]` — create or reset a Metrix IAP user account (positional args; prints a generated temp password if none given; always forces a password change on first login)
+- `pnpm --filter @workspace/scripts run migrate:metrix-official` — apply the official METRIX 22-table schema to Supabase (`supabase/migrations/` + `supabase/seed/` apply-once with sha256 checksums tracked in `_metrix_migrations`, drift aborts; `supabase/policies/` re-applied every run). Preflight aborts if the legacy `creative_briefs` compat view still exists.
+- `pnpm --filter @workspace/scripts run mirror:auth-users` — backfill all Replit Postgres users into Supabase Auth (idempotent; fills `users.supabase_user_id`)
 
 ## Auth (Metrix IAP)
 
@@ -31,6 +33,16 @@ _Replace the heading above with the project's name, and this line with one sente
 - Settings → Team & Access shows real provisioned accounts (`GET /workspaces/:id/members` over the `users` table, single-workspace) merged over the seed roster; real accounts get Active/Invited badges and real last-login dates.
 - Sign out lives in the Topbar and in Settings → Account ("Your session" card). Settings → Account also has a "Password" card (change password while signed in; revokes other sessions). A signed-in user hitting `/forgot-password` is redirected to `/app/settings/account?focus=password`, which scrolls to and briefly highlights that card (the `?focus=` deep-link convention; param is consumed on arrival).
 - Login rate limit: 20 attempts / 10 min per IP+email.
+
+## METRIX official schema (Phase 0, July 2026)
+
+- The official 22-table METRIX schema (identity/cohorts/runs/outputs/intake/alerts/review/learning + registries) is deployed to live Supabase via `migrate:metrix-official`. Migrations are immutable once applied (checksum drift aborts); policies are idempotent and re-applied every run — evolve security by editing `supabase/policies/20260709000100_rls_all_tables.sql` and re-running the migrator.
+- The legacy importer table `creative_briefs` was renamed `imported_creative_briefs` (official schema owns the `creative_briefs` name); all importer/seed-assembly code reads the new name.
+- RLS on all 22 tables: security-definer tenancy helpers over `client_memberships`/`org_members`; members read their clients, owner/operator write, viewer read-only; audit tables (`review_events`, `human_edits`, `approval_events`) append-only; config-as-data tables (`cohort_definitions`, `global_variable_registry`, etc.) read-only to authenticated. `anon` is fully denied.
+- Learning gate: `learning_registry` writes require an `approval_events` row with `approved_for='learning_registry'` for the exact source object, enforced by a BEFORE INSERT OR UPDATE trigger (fires even for BYPASSRLS roles like service_role). The approval must be run-scoped and its run's client must match the learning row's client (tenant-only learning in v1).
+- Hard DB constraints: no ROAS alert rules, BSIL suggestions campaign/ad_set scope only, manual creative intake ≥ 5 assets.
+- Auth mirroring: approving a user (admin panel or `create:user`) also provisions a Supabase Auth user via `@workspace/auth-mirror` (GoTrue admin API, idempotent, non-fatal on failure) and stores the id in `users.supabase_user_id` — these rows exist only as FK targets for `reviewer_id`/`editor_id`/`approver_id`; login remains the custom Replit-Postgres session auth.
+- Security tests: `artifacts/api-server/src/lib/__tests__/metrixOfficialSecurity.test.ts` (17 tests, rolled-back transactions against live Supabase, role impersonation via `set local role` + `request.jwt.claims`). They fail loudly if the official schema isn't deployed.
 
 ## Stack
 

@@ -399,29 +399,47 @@ begin
         new.approval_event_id, gate.object_type, gate.object_id,
         new.source_object_type, new.source_object_id;
     end if;
-    return new;
+  else
+    select * into gate
+    from approval_events ae
+    where ae.approved_for = 'learning_registry'
+      and ae.object_type = new.source_object_type
+      and ae.object_id = new.source_object_id
+      and ae.analysis_run_id is not null
+      and public.metrix_client_id_of_run(ae.analysis_run_id) = new.client_id
+    order by ae.created_at desc
+    limit 1;
+
+    if not found then
+      raise exception
+        'learning_registry write blocked: no run-scoped approval_events row with approved_for=learning_registry for %/% in client % — explicit human approval is required before anything feeds IAP_OPTIMIZATION_LOOP',
+        new.source_object_type, new.source_object_id, new.client_id;
+    end if;
+
+    new.approval_event_id := gate.id;
   end if;
 
-  select * into gate
-  from approval_events ae
-  where ae.approved_for = 'learning_registry'
-    and ae.object_type = new.source_object_type
-    and ae.object_id = new.source_object_id
-  order by ae.created_at desc
-  limit 1;
-
-  if not found then
+  -- Tenant-match check (learning is tenant-only in v1, Blueprint §11.4):
+  -- the approval must be run-scoped so its client can be verified, and that
+  -- client must match the learning row's client.
+  if gate.analysis_run_id is null then
     raise exception
-      'learning_registry insert blocked: no approval_events row with approved_for=learning_registry for %/% — explicit human approval is required before anything feeds IAP_OPTIMIZATION_LOOP',
-      new.source_object_type, new.source_object_id;
+      'learning_registry: approval event % is not run-scoped (analysis_run_id is null) — its tenant cannot be verified',
+      gate.id;
+  end if;
+  if public.metrix_client_id_of_run(gate.analysis_run_id) is distinct from new.client_id then
+    raise exception
+      'learning_registry: approval event % belongs to a different client than % — cross-client learning writes are not allowed in v1',
+      gate.id, new.client_id;
   end if;
 
-  new.approval_event_id := gate.id;
   return new;
 end;
 $$;
 
+-- Fires on UPDATE as well: roles with BYPASSRLS skip policies but not
+-- triggers, so a post-insert mutation of the gated columns re-validates.
 drop trigger if exists trg_learning_registry_gate on learning_registry;
 create trigger trg_learning_registry_gate
-  before insert on learning_registry
+  before insert or update on learning_registry
   for each row execute function public.metrix_enforce_learning_gate();
