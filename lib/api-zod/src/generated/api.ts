@@ -150,6 +150,22 @@ export const DeleteManualImportResponse = zod.void()
 
 
 /**
+ * Streams the raw file content staged for this import, with its original content type. Used as the `src` of an `<img>`/`<video>` tag directly — not a JSON response. Requires access to the account.
+ * @summary Fetch the raw bytes of a staged manual import (creative asset)
+ */
+
+
+
+
+export const GetManualImportFileParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.'),
+  "importId": zod.coerce.string().min(1).describe('Manual import identifier.')
+})
+
+export const GetManualImportFileResponse = zod.unknown()
+
+
+/**
  * Returns the exact breakdown + metric column requirements for both required CSV classes (IAP_DEMOGRAPHIC_TEXT_SIGNAL and IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL), each with Base metrics (required) plus Ecommerce/Service/App metric groups (optional, never fabricated when absent), and a valid sample CSV per class. Used by the upload UI to show users exactly what to export from Meta Ads Manager.
  * @summary Required template format for the two manual performance CSV uploads
  */

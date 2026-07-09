@@ -252,6 +252,55 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/manual-imports/{importId}/file:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+      - name: importId
+        in: path
+        required: true
+        description: Manual import identifier.
+        schema:
+          type: string
+          minLength: 1
+    get:
+      operationId: getManualImportFile
+      tags: [metrix]
+      summary: Fetch the raw bytes of a staged manual import (creative asset)
+      description: Streams the raw file content staged for this import, with its original content type. Used as the `src` of an `<img>`/`<video>` tag directly — not a JSON response. Requires access to the account.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Raw file bytes
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Account or import not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/manual-performance-csv-format:
     get:
       operationId: getManualPerformanceCsvFormat

@@ -448,6 +448,52 @@ export async function userHasAccountAccess(userId: number, accountId: string): P
   return rows.length > 0;
 }
 
+function manualImportFileUrl(accountId: string, importId: string): string {
+  return `${getAppBaseUrl()}api/metrix/accounts/${accountId}/manual-imports/${importId}/file`;
+}
+
+/**
+ * Links a staged creative_asset import to real ad rows in `ads` so the
+ * uploaded file becomes visible everywhere creatives render (CreativeCard,
+ * primaryAdForCell), not just inside the upload dialog. Only ever UPDATEs
+ * existing `ads` rows matched by (account_id, ad_name) — never inserts a
+ * fabricated ad. Names removed from the mapping are unlinked only if they
+ * still point at this exact import's URL (so we never clobber a different
+ * import's mapping).
+ */
+async function syncCreativeAssetLinks(
+  accountId: string,
+  importId: string,
+  filename: string,
+  previousAdNames: string[],
+  nextAdNames: string[],
+): Promise<void> {
+  const supabase = getSupabase();
+  const fileUrl = manualImportFileUrl(accountId, importId);
+
+  const removed = previousAdNames.filter((n) => !nextAdNames.includes(n));
+  if (removed.length > 0) {
+    const clear = await supabase
+      .from("ads")
+      .update({ creative_asset_url: null, asset_filename: null, asset_servable: false })
+      .eq("account_id", accountId)
+      .in("ad_name", removed)
+      .eq("creative_asset_url", fileUrl);
+    if (clear.error) throw new Error(clear.error.message);
+  }
+
+  if (nextAdNames.length > 0) {
+    const link = await supabase
+      .from("ads")
+      .update({ creative_asset_url: fileUrl, asset_filename: filename, asset_servable: true })
+      .eq("account_id", accountId)
+      .in("ad_name", nextAdNames);
+    if (link.error) throw new Error(link.error.message);
+  }
+
+  invalidateMetrixSeedCache();
+}
+
 router.post("/metrix/accounts", requireAuth, async (req, res) => {
   const parsed = CreateManualAdAccountBody.safeParse(req.body);
   const name = parsed.success ? parsed.data.name.trim() : "";
@@ -587,6 +633,11 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
       .single();
     if (insert.error) throw new Error(insert.error.message);
 
+    const importId = String(insert.data["id"]);
+    if (parsed.data.kind === "creative_asset" && (parsed.data.ad_names?.length ?? 0) > 0) {
+      await syncCreativeAssetLinks(accountId, importId, parsed.data.filename, [], parsed.data.ad_names!);
+    }
+
     req.log.info(
       { accountId, kind: parsed.data.kind, filename: parsed.data.filename, sizeBytes: content.length },
       "Manual import staged",
@@ -669,7 +720,7 @@ router.patch("/metrix/accounts/:accountId/manual-imports/:importId", requireAuth
     const supabase = getSupabase();
     const existing = await supabase
       .from("manual_imports")
-      .select("id, kind")
+      .select("id, kind, filename, ad_names")
       .eq("id", importId)
       .eq("account_id", accountId)
       .limit(1);
@@ -682,6 +733,7 @@ router.patch("/metrix/accounts/:accountId/manual-imports/:importId", requireAuth
       res.status(400).json({ message: "Only creative asset uploads have an editable ad-name mapping." });
       return;
     }
+    const previousAdNames: string[] = existing.data[0]!["ad_names"] ?? [];
     const { data, error } = await supabase
       .from("manual_imports")
       .update({ ad_names: parsed.data.ad_names })
@@ -689,6 +741,15 @@ router.patch("/metrix/accounts/:accountId/manual-imports/:importId", requireAuth
       .select("id, account_id, kind, filename, content_type, size_bytes, ad_names, status, created_at")
       .single();
     if (error) throw new Error(error.message);
+
+    await syncCreativeAssetLinks(
+      accountId,
+      importId,
+      existing.data[0]!["filename"],
+      previousAdNames,
+      parsed.data.ad_names,
+    );
+
     res.json(
       UpdateManualImportAdNamesResponse.parse({
         id: String(data["id"]),
@@ -722,7 +783,7 @@ router.delete("/metrix/accounts/:accountId/manual-imports/:importId", requireAut
     const supabase = getSupabase();
     const existing = await supabase
       .from("manual_imports")
-      .select("id")
+      .select("id, kind, ad_names")
       .eq("id", importId)
       .eq("account_id", accountId)
       .limit(1);
@@ -731,6 +792,12 @@ router.delete("/metrix/accounts/:accountId/manual-imports/:importId", requireAut
       res.status(404).json({ message: "Staged import not found." });
       return;
     }
+    if (existing.data[0]!["kind"] === "creative_asset") {
+      const adNames: string[] = existing.data[0]!["ad_names"] ?? [];
+      if (adNames.length > 0) {
+        await syncCreativeAssetLinks(accountId, importId, "", adNames, []);
+      }
+    }
     const del = await supabase.from("manual_imports").delete().eq("id", importId);
     if (del.error) throw new Error(del.error.message);
     res.status(204).end();
@@ -738,6 +805,42 @@ router.delete("/metrix/accounts/:accountId/manual-imports/:importId", requireAut
     req.log.error({ err, accountId, importId }, "Failed to delete manual import");
     res.status(502).json({
       message: err instanceof Error ? err.message : "Could not delete the staged import.",
+    });
+  }
+});
+
+router.get("/metrix/accounts/:accountId/manual-imports/:importId/file", requireAuth, async (req, res) => {
+  const accountId = String(req.params["accountId"]);
+  const importId = String(req.params["importId"]);
+  const user = req.authUser!;
+  try {
+    if (user.role !== "admin" && !(await userHasAccountAccess(user.id, accountId))) {
+      res.status(403).json({ message: "You don't have access to this ad account." });
+      return;
+    }
+    const supabase = getSupabase();
+    const existing = await supabase
+      .from("manual_imports")
+      .select("id, content_type, content")
+      .eq("id", importId)
+      .eq("account_id", accountId)
+      .limit(1);
+    if (existing.error) throw new Error(existing.error.message);
+    if (!existing.data || existing.data.length === 0) {
+      res.status(404).json({ message: "Staged import not found." });
+      return;
+    }
+    const row = existing.data[0]!;
+    const rawContent = row["content"] as string;
+    const hex = rawContent.startsWith("\\x") ? rawContent.slice(2) : rawContent;
+    const buf = Buffer.from(hex, "hex");
+    res.setHeader("Content-Type", row["content_type"] ?? "application/octet-stream");
+    res.setHeader("Cache-Control", "private, max-age=60");
+    res.send(buf);
+  } catch (err) {
+    req.log.error({ err, accountId, importId }, "Failed to fetch manual import file");
+    res.status(502).json({
+      message: err instanceof Error ? err.message : "Could not fetch the staged file.",
     });
   }
 });

@@ -557,6 +557,89 @@ export const useDeleteManualImport = <TError = ErrorType<ApiError>,
       return useMutation(getDeleteManualImportMutationOptions(options));
     }
 
+export const getGetManualImportFileUrl = (accountId: string,
+    importId: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/manual-imports/${importId}/file`
+}
+
+/**
+ * Streams the raw file content staged for this import, with its original content type. Used as the `src` of an `<img>`/`<video>` tag directly — not a JSON response. Requires access to the account.
+ * @summary Fetch the raw bytes of a staged manual import (creative asset)
+ */
+export const getManualImportFile = async (accountId: string,
+    importId: string, options?: RequestInit): Promise<Blob> => {
+
+  return customFetch<Blob>(getGetManualImportFileUrl(accountId,importId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetManualImportFileQueryKey = (accountId: string,
+    importId: string,) => {
+    return [
+    `/api/metrix/accounts/${accountId}/manual-imports/${importId}/file`
+    ] as const;
+    }
+
+
+export const getGetManualImportFileQueryOptions = <TData = Awaited<ReturnType<typeof getManualImportFile>>, TError = ErrorType<ApiError>>(accountId: string,
+    importId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getManualImportFile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetManualImportFileQueryKey(accountId,importId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getManualImportFile>>> = ({ signal }) => getManualImportFile(accountId,importId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: accountId !== null && accountId !== undefined && importId !== null && importId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getManualImportFile>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetManualImportFileQueryResult = NonNullable<Awaited<ReturnType<typeof getManualImportFile>>>
+export type GetManualImportFileQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Fetch the raw bytes of a staged manual import (creative asset)
+ */
+
+export function useGetManualImportFile<TData = Awaited<ReturnType<typeof getManualImportFile>>, TError = ErrorType<ApiError>>(
+ accountId: string,
+    importId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getManualImportFile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetManualImportFileQueryOptions(accountId,importId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getGetManualPerformanceCsvFormatUrl = () => {
 
 
