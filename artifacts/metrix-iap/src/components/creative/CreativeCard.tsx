@@ -32,6 +32,8 @@ export interface CreativeCardData {
   cta?: string | null;
   /** Real asset URL when ads.creative_asset_url has been backfilled; null → placeholder. */
   assetUrl?: string | null;
+  /** Original filename (ads.asset_filename) — used to detect video vs image assets by extension. */
+  assetFilename?: string | null;
   /** e.g. "1122:1402" from the library metadata. */
   aspectRatio?: string | null;
   visualSystem?: string | null;
@@ -96,9 +98,32 @@ function PlaceholderVisual({ code, format, className }: { code: string; format?:
   );
 }
 
+const VIDEO_EXTENSIONS = new Set(["mp4", "mov", "m4v", "webm", "avi", "mkv"]);
+
+/** Detects video assets from the filename or URL extension so they render in a <video> tag, never an <img> (which silently fails to load video and falls back to a placeholder). */
+function isVideoAsset(assetUrl: string, assetFilename?: string | null): boolean {
+  const candidate = assetFilename || assetUrl;
+  const match = /\.([a-zA-Z0-9]+)(?:[?#]|$)/.exec(candidate);
+  const ext = match?.[1]?.toLowerCase();
+  return ext != null && VIDEO_EXTENSIONS.has(ext);
+}
+
 function CreativeVisual({ data, className }: { data: CreativeCardData; className?: string }) {
   const [broken, setBroken] = useState(false);
   if (data.assetUrl && !broken) {
+    if (isVideoAsset(data.assetUrl, data.assetFilename)) {
+      return (
+        <video
+          src={data.assetUrl}
+          className={cn("w-full h-full object-cover", className)}
+          muted
+          loop
+          playsInline
+          autoPlay
+          onError={() => setBroken(true)}
+        />
+      );
+    }
     return (
       <img
         src={data.assetUrl}
