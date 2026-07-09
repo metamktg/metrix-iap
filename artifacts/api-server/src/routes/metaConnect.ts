@@ -11,6 +11,7 @@ import {
   ListMetaReportRowsResponse,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
+import { db, userAdAccountsTable } from "@workspace/db";
 import { getSupabase } from "../lib/supabase";
 import { getAppBaseUrl } from "../lib/appUrl";
 import { invalidateMetrixSeedCache } from "../lib/metrixSeedAssembly";
@@ -403,6 +404,20 @@ router.post("/metrix/meta/select-account", requireAuth, async (req, res) => {
       req.log.error({ err: register.error.message }, "Failed to register ad account in ad_accounts registry");
     } else {
       invalidateMetrixSeedCache();
+    }
+
+    // Grant the selecting user access to this account (idempotent). Admins
+    // see every account anyway; for members this is what makes the account
+    // they just connected visible in their filtered seed.
+    try {
+      await db
+        .insert(userAdAccountsTable)
+        .values({ userId: req.authUser!.id, adAccountId })
+        .onConflictDoNothing();
+    } catch (grantErr) {
+      // Non-fatal for admins (they see everything); loud because a member
+      // hitting this would not see the account they just connected.
+      req.log.error({ err: grantErr, adAccountId }, "Failed to grant user access to selected ad account");
     }
 
     req.log.info({ adAccountId }, "Meta ad account connected");

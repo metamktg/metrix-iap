@@ -733,3 +733,71 @@ export async function getMetrixSeedFromSupabase(): Promise<Row> {
 export function invalidateMetrixSeedCache(): void {
   cached = null;
 }
+
+// ─── per-user authorization view ──────────────────────────────────────
+// Members see only the ad accounts they have been granted; admins see
+// everything ("all" bypasses filtering entirely). The full bundle stays
+// cached once; this derives a per-user view WITHOUT mutating the cached
+// object. Manager totals are re-summed from the visible accounts'
+// campaign summaries (which already reflect any account-level totals
+// overrides), so a member's manager blend never leaks numbers from
+// accounts they cannot see. An empty grant set is a valid state: the
+// client gets ad_accounts: [] and renders onboarding — never an error.
+
+const TOTAL_FIELDS = ["spend", "reach", "impressions", "results", "clicks_all", "link_clicks"] as const;
+
+export function composeSeedForUser(bundle: Row, allowed: Set<string> | "all"): Row {
+  if (allowed === "all") return bundle;
+
+  const accounts = ((bundle["ad_accounts"] as Row[]) ?? []).filter((a) =>
+    allowed.has(String(a["id"])),
+  );
+
+  const byEvent: Record<string, Row> = {};
+  let totalSpend = 0;
+  let totalImpressions = 0;
+  let totalLinkClicks = 0;
+  for (const account of accounts) {
+    const summary = (account["iap"] as Row | null)?.["campaign_summary"] as Row | undefined;
+    if (!summary) continue;
+    totalSpend += Number(summary["total_spend_usd"] ?? 0);
+    totalImpressions += Number(summary["total_impressions"] ?? 0);
+    totalLinkClicks += Number(summary["total_link_clicks"] ?? 0);
+    const accountByEvent = (summary["bottom_line_totals"] ?? {}) as Record<string, Row>;
+    for (const [event, totals] of Object.entries(accountByEvent)) {
+      const target = (byEvent[event] ??= {
+        spend: 0, reach: 0, impressions: 0, results: 0, clicks_all: 0, link_clicks: 0,
+      });
+      for (const field of TOTAL_FIELDS) {
+        target[field] = Number(target[field] ?? 0) + Number(totals?.[field] ?? 0);
+      }
+    }
+  }
+  for (const event of Object.keys(byEvent)) {
+    byEvent[event]!["spend"] = round(byEvent[event]!["spend"]);
+  }
+
+  const manager = (bundle["manager_account"] ?? {}) as Row;
+  const configured = accounts.filter((a) => a["status"] === "configured").length;
+  const managerCards = ((manager["recommendation_cards"] as Row[]) ?? []).filter(
+    (c) => c["account_id"] != null && allowed.has(String(c["account_id"])),
+  );
+
+  return {
+    ...bundle,
+    manager_account: {
+      ...manager,
+      configured_ad_accounts: configured,
+      unconfigured_ad_accounts: accounts.length - configured,
+      bottom_line_totals: {
+        spend_usd: round(totalSpend),
+        impressions: totalImpressions,
+        link_clicks: totalLinkClicks,
+        link_ctr_pct: totalImpressions > 0 ? round((totalLinkClicks / totalImpressions) * 100, 4) : 0,
+        result_totals_by_event: byEvent,
+      },
+      recommendation_cards: managerCards,
+    },
+    ad_accounts: accounts,
+  };
+}
