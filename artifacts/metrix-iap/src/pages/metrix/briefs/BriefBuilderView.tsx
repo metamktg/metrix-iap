@@ -13,6 +13,9 @@ import {
   RangeScopeBar, NoDataInRangeState,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
+import {
+  useGenerationRun, GenerateButton, ProvenanceBadge, GenerationErrorNote,
+} from "@/components/generation/GenerationControls";
 import { CreativeCard } from "@/components/creative/CreativeCard";
 import { cardFromCell } from "@/lib/creative-assembly";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
@@ -44,6 +47,7 @@ export function BriefBuilderView() {
   const focus = useFocusParam();
   const [detail, setDetail] = useState<DraftBrief | null>(null);
   const { rangeHasData } = useDateRange();
+  const generation = useGenerationRun(adAccountId, "briefs");
 
   const bb = getBriefBuilder(seed, adAccountId);
 
@@ -72,6 +76,7 @@ export function BriefBuilderView() {
         const byFormat = (f: FormatTab) => briefs.filter((b) => formatOf(b.asset_type) === f);
         const shown = byFormat(tab);
         const pillarsCovered = new Set(briefs.map((b) => b.source_pillar)).size;
+        const hasPillars = (strategy?.message_pillars.length ?? 0) > 0;
 
         const TABS: { id: FormatTab; label: string; count: number; Icon: React.ComponentType<{ className?: string }> }[] = [
           { id: "static", label: "Static", count: byFormat("static").length, Icon: FileText },
@@ -86,9 +91,27 @@ export function BriefBuilderView() {
               title="Brief Builder"
               subtitle="Creative briefs generated from strategy message pillars, by asset format."
               table="draft_briefs, message_pillars"
+              right={
+                <div className="flex items-center gap-2">
+                  <ProvenanceBadge provenance={bb?.provenance} />
+                  {hasPillars && (
+                    <GenerateButton
+                      onClick={generation.start}
+                      isRunning={generation.isRunning}
+                      label={bb?.provenance === "generated" ? "Regenerate briefs" : "Generate from strategy"}
+                      runningLabel="Generating…"
+                    />
+                  )}
+                </div>
+              }
             />
             <ScopeBanner account={acct} />
             <RangeScopeBar grainNote="Briefs derive from the account's full flight window — this import has no daily grain." />
+            {generation.lastError && (
+              <div className="px-6 pt-4">
+                <GenerationErrorNote message={generation.lastError} />
+              </div>
+            )}
 
             {!rangeHasData ? (
               <NoDataInRangeState what="draft briefs" />
@@ -109,15 +132,29 @@ export function BriefBuilderView() {
               {bb?.source_policy && <CaveatNote text={bb.source_policy} />}
 
               {shown.length === 0 ? (
-                <PendingState
-                  title={`No ${tab === "ugc" ? "UGC" : tab} briefs yet`}
-                  message={
-                    tab === "static"
-                      ? "Draft briefs appear here once strategy pillars are ready."
-                      : `No source-backed ${tab === "ugc" ? "UGC" : "video"} briefs exist for this account yet. Briefs are only generated from validated strategy — nothing is fabricated.`
-                  }
-                  icon={tab === "video" ? Video : tab === "ugc" ? Users : FileText}
-                />
+                <div className="space-y-4">
+                  <PendingState
+                    title={`No ${tab === "ugc" ? "UGC" : tab} briefs yet`}
+                    message={
+                      tab === "static"
+                        ? hasPillars
+                          ? "No draft briefs for this account yet — generate a set from its strategy pillars."
+                          : "Draft briefs appear here once strategy pillars are ready."
+                        : `No source-backed ${tab === "ugc" ? "UGC" : "video"} briefs exist for this account yet. Briefs are only generated from validated strategy — nothing is fabricated.`
+                    }
+                    icon={tab === "video" ? Video : tab === "ugc" ? Users : FileText}
+                  />
+                  {tab === "static" && hasPillars && briefs.length === 0 && (
+                    <div className="text-center">
+                      <GenerateButton
+                        onClick={generation.start}
+                        isRunning={generation.isRunning}
+                        label="Generate briefs from strategy"
+                        runningLabel="Generating briefs…"
+                      />
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {shown.map((b) => (

@@ -132,6 +132,160 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/generate/strategy:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+    post:
+      operationId: generateAccountStrategy
+      tags: [metrix]
+      summary: Generate strategy (pillars + hypotheses) from the account's analysis data
+      description: Starts an in-app Metrix engine run that generates message pillars and testing hypotheses grounded in the account's real analysis rows. Returns 202 with the run id immediately; poll the latest-run endpoint for the outcome. Generated rows carry source='generated' and never touch imported rows. Requires access to the account.
+      security:
+        - cookieAuth: []
+      responses:
+        "202":
+          description: Generation run started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StartGenerationResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: A generation run is already in progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "422":
+          description: Prerequisites missing (no analysis data)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/generate/briefs:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+    post:
+      operationId: generateAccountBriefs
+      tags: [metrix]
+      summary: Generate draft creative briefs from the account's stored strategy pillars
+      description: Starts an in-app Metrix engine run that generates draft briefs from the account's stored strategy pillars (generated set preferred, else imported). Returns 202 with the run id immediately; poll the latest-run endpoint for the outcome. Requires access to the account.
+      security:
+        - cookieAuth: []
+      responses:
+        "202":
+          description: Generation run started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StartGenerationResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: A generation run is already in progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "422":
+          description: Prerequisites missing (no strategy pillars)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/generation-runs/{kind}/latest:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+      - name: kind
+        in: path
+        required: true
+        description: Generation kind.
+        schema:
+          type: string
+          enum: [strategy, briefs]
+    get:
+      operationId: getLatestGenerationRun
+      tags: [metrix]
+      summary: Latest generation run for an account and kind
+      description: Returns the most recent generation run for the account and kind (strategy or briefs), or null when none exists. Runs stuck in 'running' past the staleness cutoff are honestly flipped to 'error'. Requires access to the account.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Latest run (or null)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LatestGenerationRunResult"
+        "400":
+          description: Invalid kind
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/agent-waitlist:
     post:
       operationId: joinAgentWaitlist
@@ -1857,6 +2011,52 @@ components:
         - filename
         - size_bytes
         - note
+    StartGenerationResult:
+      type: object
+      properties:
+        run_id:
+          type: string
+      required:
+        - run_id
+    GenerationRun:
+      type: object
+      properties:
+        id:
+          type: string
+        account_id:
+          type: string
+        kind:
+          type: string
+          enum: [strategy, briefs]
+        status:
+          type: string
+          enum: [running, success, error]
+        error_message:
+          type: string
+          nullable: true
+        model:
+          type: string
+          nullable: true
+        started_at:
+          type: string
+        finished_at:
+          type: string
+          nullable: true
+      required:
+        - id
+        - account_id
+        - kind
+        - status
+        - started_at
+    LatestGenerationRunResult:
+      type: object
+      properties:
+        run:
+          allOf:
+            - $ref: "#/components/schemas/GenerationRun"
+          nullable: true
+      required:
+        - run
     AuthUser:
       type: object
       properties:

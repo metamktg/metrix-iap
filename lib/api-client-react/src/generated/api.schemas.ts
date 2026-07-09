@@ -322,6 +322,42 @@ export interface ManualImportResult {
   note: string;
 }
 
+export interface StartGenerationResult {
+  run_id: string;
+}
+
+export type GenerationRunKind = typeof GenerationRunKind[keyof typeof GenerationRunKind];
+
+
+export const GenerationRunKind = {
+  strategy: 'strategy',
+  briefs: 'briefs',
+} as const;
+
+export type GenerationRunStatus = typeof GenerationRunStatus[keyof typeof GenerationRunStatus];
+
+
+export const GenerationRunStatus = {
+  running: 'running',
+  success: 'success',
+  error: 'error',
+} as const;
+
+export interface GenerationRun {
+  id: string;
+  account_id: string;
+  kind: GenerationRunKind;
+  status: GenerationRunStatus;
+  error_message?: string | null;
+  model?: string | null;
+  started_at: string;
+  finished_at?: string | null;
+}
+
+export interface LatestGenerationRunResult {
+  run: GenerationRun | null;
+}
+
 /**
  * admin sees every ad account (agency team); member sees only accounts they have been granted.
  */

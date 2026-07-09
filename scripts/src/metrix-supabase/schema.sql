@@ -551,3 +551,40 @@ create table if not exists report_rows (
 
 create index if not exists report_rows_pull_idx on report_rows (report_pull_id);
 create index if not exists report_rows_user_account_class_date_idx on report_rows (user_id, ad_account_id, report_class, date);
+
+-- ── In-app generation (strategy from analysis, briefs from strategy) ──
+-- Provenance: importer rows keep source='imported'; rows written by the
+-- in-app Metrix generation engine carry source='generated' plus the run id.
+-- Regeneration replaces only prior generated rows — imported rows are
+-- never touched by the engine.
+
+alter table message_pillars add column if not exists source text not null default 'imported';
+alter table message_pillars add column if not exists generation_run_id uuid;
+alter table testing_hypotheses add column if not exists source text not null default 'imported';
+alter table testing_hypotheses add column if not exists generation_run_id uuid;
+alter table imported_creative_briefs add column if not exists source text not null default 'imported';
+alter table imported_creative_briefs add column if not exists generation_run_id uuid;
+
+-- One row per in-app generation attempt. Inserted as 'running'; flips to
+-- 'success' only after every output row has committed (report-pull
+-- pattern — no dishonest success states). Failures delete partial output
+-- rows and record the error. Runs stuck 'running' past a staleness cutoff
+-- are treated as errors (in-process jobs die with the server).
+create table if not exists generation_runs (
+  id uuid primary key default gen_random_uuid(),
+  account_id text not null references ad_accounts(id),
+  kind text not null check (kind in ('strategy', 'briefs')),
+  status text not null default 'running' check (status in ('running', 'success', 'error')),
+  error_message text,
+  model text,
+  created_by text,
+  started_at timestamptz not null default now(),
+  finished_at timestamptz
+);
+
+create index if not exists generation_runs_account_idx on generation_runs (account_id, kind, started_at desc);
+
+-- At most one running run per account+kind: closes the read-then-insert
+-- race between simultaneous generate POSTs (insert fails 23505 → 409).
+create unique index if not exists generation_runs_one_running
+  on generation_runs (account_id, kind) where status = 'running';

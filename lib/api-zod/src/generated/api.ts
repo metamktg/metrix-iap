@@ -76,6 +76,64 @@ export const StageManualImportResponse = zod.object({
 
 
 /**
+ * Starts an in-app Metrix engine run that generates message pillars and testing hypotheses grounded in the account's real analysis rows. Returns 202 with the run id immediately; poll the latest-run endpoint for the outcome. Generated rows carry source='generated' and never touch imported rows. Requires access to the account.
+ * @summary Generate strategy (pillars + hypotheses) from the account's analysis data
+ */
+
+
+
+export const GenerateAccountStrategyParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
+})
+
+export const GenerateAccountStrategyResponse = zod.object({
+  "run_id": zod.string()
+})
+
+
+/**
+ * Starts an in-app Metrix engine run that generates draft briefs from the account's stored strategy pillars (generated set preferred, else imported). Returns 202 with the run id immediately; poll the latest-run endpoint for the outcome. Requires access to the account.
+ * @summary Generate draft creative briefs from the account's stored strategy pillars
+ */
+
+
+
+export const GenerateAccountBriefsParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
+})
+
+export const GenerateAccountBriefsResponse = zod.object({
+  "run_id": zod.string()
+})
+
+
+/**
+ * Returns the most recent generation run for the account and kind (strategy or briefs), or null when none exists. Runs stuck in 'running' past the staleness cutoff are honestly flipped to 'error'. Requires access to the account.
+ * @summary Latest generation run for an account and kind
+ */
+
+
+
+export const GetLatestGenerationRunParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.'),
+  "kind": zod.enum(['strategy', 'briefs']).describe('Generation kind.')
+})
+
+export const GetLatestGenerationRunResponse = zod.object({
+  "run": zod.object({
+  "id": zod.string(),
+  "account_id": zod.string(),
+  "kind": zod.enum(['strategy', 'briefs']),
+  "status": zod.enum(['running', 'success', 'error']),
+  "error_message": zod.string().nullish(),
+  "model": zod.string().nullish(),
+  "started_at": zod.string(),
+  "finished_at": zod.string().nullish()
+}).nullable()
+})
+
+
+/**
  * Stores an email address on the Metrix Agent waitlist.
  * @summary Join the Metrix Agent waitlist
  */

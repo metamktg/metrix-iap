@@ -43,6 +43,7 @@ import type {
   GeneratedReportDeleteResult,
   GeneratedReportsResult,
   HealthStatus,
+  LatestGenerationRunResult,
   ListAgentWaitlistParams,
   ListMetaReportRowsParams,
   ManualImportInput,
@@ -64,6 +65,7 @@ import type {
   RunMetaReportsResult,
   SelectMetaAdAccountInput,
   SelectMetaAdAccountResult,
+  StartGenerationResult,
   WaitlistApprovalResult,
   WaitlistEntriesResult,
   WaitlistRejectResult,
@@ -323,6 +325,231 @@ export const useStageManualImport = <TError = ErrorType<ApiError>,
       > => {
       return useMutation(getStageManualImportMutationOptions(options));
     }
+
+export const getGenerateAccountStrategyUrl = (accountId: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/generate/strategy`
+}
+
+/**
+ * Starts an in-app Metrix engine run that generates message pillars and testing hypotheses grounded in the account's real analysis rows. Returns 202 with the run id immediately; poll the latest-run endpoint for the outcome. Generated rows carry source='generated' and never touch imported rows. Requires access to the account.
+ * @summary Generate strategy (pillars + hypotheses) from the account's analysis data
+ */
+export const generateAccountStrategy = async (accountId: string, options?: RequestInit): Promise<StartGenerationResult> => {
+
+  return customFetch<StartGenerationResult>(getGenerateAccountStrategyUrl(accountId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getGenerateAccountStrategyMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateAccountStrategy>>, TError,{accountId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateAccountStrategy>>, TError,{accountId: string}, TContext> => {
+
+const mutationKey = ['generateAccountStrategy'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateAccountStrategy>>, {accountId: string}> = (props) => {
+          const {accountId} = props ?? {};
+
+          return  generateAccountStrategy(accountId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GenerateAccountStrategyMutationResult = NonNullable<Awaited<ReturnType<typeof generateAccountStrategy>>>
+
+    export type GenerateAccountStrategyMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Generate strategy (pillars + hypotheses) from the account's analysis data
+ */
+export const useGenerateAccountStrategy = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateAccountStrategy>>, TError,{accountId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof generateAccountStrategy>>,
+        TError,
+        {accountId: string},
+        TContext
+      > => {
+      return useMutation(getGenerateAccountStrategyMutationOptions(options));
+    }
+
+export const getGenerateAccountBriefsUrl = (accountId: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/generate/briefs`
+}
+
+/**
+ * Starts an in-app Metrix engine run that generates draft briefs from the account's stored strategy pillars (generated set preferred, else imported). Returns 202 with the run id immediately; poll the latest-run endpoint for the outcome. Requires access to the account.
+ * @summary Generate draft creative briefs from the account's stored strategy pillars
+ */
+export const generateAccountBriefs = async (accountId: string, options?: RequestInit): Promise<StartGenerationResult> => {
+
+  return customFetch<StartGenerationResult>(getGenerateAccountBriefsUrl(accountId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getGenerateAccountBriefsMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateAccountBriefs>>, TError,{accountId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateAccountBriefs>>, TError,{accountId: string}, TContext> => {
+
+const mutationKey = ['generateAccountBriefs'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateAccountBriefs>>, {accountId: string}> = (props) => {
+          const {accountId} = props ?? {};
+
+          return  generateAccountBriefs(accountId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GenerateAccountBriefsMutationResult = NonNullable<Awaited<ReturnType<typeof generateAccountBriefs>>>
+
+    export type GenerateAccountBriefsMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Generate draft creative briefs from the account's stored strategy pillars
+ */
+export const useGenerateAccountBriefs = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateAccountBriefs>>, TError,{accountId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof generateAccountBriefs>>,
+        TError,
+        {accountId: string},
+        TContext
+      > => {
+      return useMutation(getGenerateAccountBriefsMutationOptions(options));
+    }
+
+export const getGetLatestGenerationRunUrl = (accountId: string,
+    kind: 'strategy' | 'briefs',) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/generation-runs/${kind}/latest`
+}
+
+/**
+ * Returns the most recent generation run for the account and kind (strategy or briefs), or null when none exists. Runs stuck in 'running' past the staleness cutoff are honestly flipped to 'error'. Requires access to the account.
+ * @summary Latest generation run for an account and kind
+ */
+export const getLatestGenerationRun = async (accountId: string,
+    kind: 'strategy' | 'briefs', options?: RequestInit): Promise<LatestGenerationRunResult> => {
+
+  return customFetch<LatestGenerationRunResult>(getGetLatestGenerationRunUrl(accountId,kind),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetLatestGenerationRunQueryKey = (accountId: string,
+    kind: 'strategy' | 'briefs',) => {
+    return [
+    `/api/metrix/accounts/${accountId}/generation-runs/${kind}/latest`
+    ] as const;
+    }
+
+
+export const getGetLatestGenerationRunQueryOptions = <TData = Awaited<ReturnType<typeof getLatestGenerationRun>>, TError = ErrorType<ApiError>>(accountId: string,
+    kind: 'strategy' | 'briefs', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLatestGenerationRun>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetLatestGenerationRunQueryKey(accountId,kind);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLatestGenerationRun>>> = ({ signal }) => getLatestGenerationRun(accountId,kind, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: accountId !== null && accountId !== undefined && kind !== null && kind !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLatestGenerationRun>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetLatestGenerationRunQueryResult = NonNullable<Awaited<ReturnType<typeof getLatestGenerationRun>>>
+export type GetLatestGenerationRunQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Latest generation run for an account and kind
+ */
+
+export function useGetLatestGenerationRun<TData = Awaited<ReturnType<typeof getLatestGenerationRun>>, TError = ErrorType<ApiError>>(
+ accountId: string,
+    kind: 'strategy' | 'briefs', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLatestGenerationRun>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetLatestGenerationRunQueryOptions(accountId,kind,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getJoinAgentWaitlistUrl = () => {
 

@@ -323,13 +323,32 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
   };
 
   // ── Strategy (mapped from the real Strategy Map output) ─────────────
+  // Provenance: when the in-app Metrix engine has generated a strategy
+  // for this account (source='generated' rows), that set is rendered and
+  // the imported set is set aside — never merged (duplicate pillars) and
+  // never deleted (importer rows stay untouched). Provenance is surfaced
+  // so the UI can badge generated output honestly.
+  const generatedPillars = messagePillars.filter((r) => r["source"] === "generated");
+  const activePillars = generatedPillars.length > 0 ? generatedPillars : messagePillars;
+  const generatedHypotheses = testingHypotheses.filter((r) => r["source"] === "generated");
+  const activeHypotheses =
+    generatedPillars.length > 0 && generatedHypotheses.length > 0
+      ? generatedHypotheses
+      : generatedPillars.length > 0
+        ? []
+        : testingHypotheses;
+  const strategyProvenance = generatedPillars.length > 0 ? "generated" : "imported";
   const strategy = {
-    message_pillars: messagePillars.map((row) => {
+    provenance: strategyProvenance,
+    message_pillars: activePillars.map((row) => {
       const p = row["payload"] as Row;
+      const payloadCells = Array.isArray(p["source_cells"])
+        ? (p["source_cells"] as string[]).filter((c) => typeof c === "string" && c.length > 0)
+        : [];
       return {
         id: p["pillar_id"],
         label: p["pillar_name"],
-        source_cells: conceptRefsFromIcps(p["target_icps"]),
+        source_cells: payloadCells.length > 0 ? payloadCells : conceptRefsFromIcps(p["target_icps"]),
         plain_descriptor: p["strategic_purpose"] ?? "",
         why_it_matters: p["performance_evidence"] ?? "",
         variable_stack: parseVariableStack(p["messaging_framework"]),
@@ -339,9 +358,10 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
         placement_strategy: p["placement_strategy"],
         scaling_guidance: p["scaling_guidance"],
         target_icps: p["target_icps"],
+        origin: row["source"] ?? "imported",
       };
     }),
-    active_hypotheses: testingHypotheses.map((h) => ({
+    active_hypotheses: activeHypotheses.map((h) => ({
       id: h["hypothesis_id"],
       label: h["statement"] ?? "",
       source: h["control_ref"] ?? "",
@@ -351,6 +371,7 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
       isolated_variable: h["isolated_variable"],
       success_criteria: h["success_criteria"],
       expected_impact: h["expected_impact"],
+      origin: h["source"] ?? "imported",
     })),
     icp_profiles: icpProfiles.map((r) => r["payload"]),
     variable_combinations: variableCombinations.map((v) => ({
@@ -365,10 +386,18 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
   };
 
   // ── Brief builder (real Brief Builder output) ───────────────────────
+  // Same provenance rule as strategy: an in-app generated brief set is
+  // rendered in place of the imported set (never merged, imported rows
+  // never touched).
+  const generatedBriefs = creativeBriefs.filter((r) => r["source"] === "generated");
+  const activeBriefs = generatedBriefs.length > 0 ? generatedBriefs : creativeBriefs;
   const briefBuilder = {
+    provenance: generatedBriefs.length > 0 ? "generated" : "imported",
     source_policy:
-      "Briefs are the real Brief Builder stage output of the IAP loop run, generated from strategy_map ICPs and pillars.",
-    draft_briefs: creativeBriefs.map((row) => {
+      generatedBriefs.length > 0
+        ? "Briefs were generated in-app by the Metrix engine from this account's stored strategy pillars. Review before production use."
+        : "Briefs are the real Brief Builder stage output of the IAP loop run, generated from strategy_map ICPs and pillars.",
+    draft_briefs: activeBriefs.map((row) => {
       const b = row["payload"] as Row;
       const meta = (b["brief_metadata"] ?? {}) as Row;
       const foundation = (b["strategic_foundation"] ?? {}) as Row;
@@ -385,6 +414,7 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
         voice: meta["voice"],
         confidence: meta["confidence"],
         full_brief: b,
+        origin: row["source"] ?? "imported",
       };
     }),
   };

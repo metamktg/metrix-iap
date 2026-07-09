@@ -11,6 +11,9 @@ import {
   RangeScopeBar, NoDataInRangeState,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
+import {
+  useGenerationRun, GenerateButton, ProvenanceBadge, GenerationErrorNote,
+} from "@/components/generation/GenerationControls";
 import { Compass, Map, Users, ListChecks } from "lucide-react";
 
 const SECTION = "Strategy · 04";
@@ -20,6 +23,7 @@ export function StrategyOverview() {
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
   const { rangeHasData } = useDateRange();
+  const generation = useGenerationRun(adAccountId, "strategy");
 
   return (
     <ModuleScopeGate section={SECTION} title="Strategy Overview" account={account}>
@@ -27,6 +31,7 @@ export function StrategyOverview() {
         const acct = account!;
         const strategy = getStrategyData(seed, adAccountId);
         const briefs = getBriefBuilder(seed, adAccountId);
+        const hasAnalysis = (getAdAccount(seed, adAccountId)?.iap ?? null) !== null;
 
         if (!strategy || strategy.message_pillars.length === 0) {
           return (
@@ -34,6 +39,21 @@ export function StrategyOverview() {
               <ModuleHeader section={SECTION} title="Strategy Overview" />
               <ScopeBanner account={acct} />
               <PendingState title="No strategy yet" message="Strategy pillars derive from validated analysis reads." icon={Compass} />
+              <div className="px-6 pb-6 space-y-3 max-w-lg mx-auto w-full text-center">
+                <GenerationErrorNote message={generation.lastError} />
+                {hasAnalysis ? (
+                  <GenerateButton
+                    onClick={generation.start}
+                    isRunning={generation.isRunning}
+                    label="Generate strategy from analysis"
+                    runningLabel="Generating strategy…"
+                  />
+                ) : (
+                  <p className="text-[11px] text-muted-foreground/70">
+                    Strategy generation needs analysis data — run the analysis pipeline for this account first.
+                  </p>
+                )}
+              </div>
             </div>
           );
         }
@@ -73,9 +93,27 @@ export function StrategyOverview() {
               title="Strategy Overview"
               subtitle="The account's message strategy at a glance: pillars, hypotheses, and where they lead."
               table="message_pillars, active_hypotheses"
+              right={
+                <div className="flex items-center gap-2">
+                  <ProvenanceBadge provenance={strategy.provenance} />
+                  {hasAnalysis && (
+                    <GenerateButton
+                      onClick={generation.start}
+                      isRunning={generation.isRunning}
+                      label={strategy.provenance === "generated" ? "Regenerate strategy" : "Generate from analysis"}
+                      runningLabel="Generating…"
+                    />
+                  )}
+                </div>
+              }
             />
             <ScopeBanner account={acct} />
             <RangeScopeBar grainNote="Strategy derives from the account's full flight window — this import has no daily grain." />
+            {generation.lastError && (
+              <div className="px-6 pt-4">
+                <GenerationErrorNote message={generation.lastError} />
+              </div>
+            )}
 
             {!rangeHasData ? (
               <NoDataInRangeState what="strategy data" />
