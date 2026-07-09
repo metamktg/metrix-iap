@@ -50,6 +50,19 @@ export async function createPasswordResetToken(userId: number): Promise<{
 }
 
 /**
+ * Delete ALL reset tokens for a user, consumed or not. Called when access is
+ * revoked or credentials are rotated — a pre-existing reset link must not
+ * survive either event (e.g. remain redeemable after a later restore).
+ */
+export async function deletePasswordResetTokensForUser(
+  userId: number,
+): Promise<void> {
+  await db
+    .delete(passwordResetTokensTable)
+    .where(eq(passwordResetTokensTable.userId, userId));
+}
+
+/**
  * Atomically consume a reset token: marks it used and returns the row only if
  * it exists, is unexpired, and has not been used before. Returns null otherwise.
  */
