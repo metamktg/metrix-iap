@@ -12,12 +12,14 @@
     "create:user": "tsx ./src/create-user.ts",
     "mirror:auth-users": "tsx ./src/metrix-official/mirror-auth-users.ts",
     "migrate:metrix-official": "tsx ./src/metrix-official/migrate.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --config vitest.config.ts"
   },
   "devDependencies": {
     "@types/node": "catalog:",
     "@types/pg": "^8.20.0",
-    "tsx": "catalog:"
+    "tsx": "catalog:",
+    "vitest": "^4.1.10"
   },
   "dependencies": {
     "@workspace/auth-mirror": "workspace:*",

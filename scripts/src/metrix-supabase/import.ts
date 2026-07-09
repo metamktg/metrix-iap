@@ -33,6 +33,14 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 
+import {
+  META_EXPORT_FILE,
+  exportAccountMismatchError,
+  loadMetaAdsExport,
+  resolveLdMetaAdId,
+  unmatchedExportAdNames,
+} from "./metaAdsExport";
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = join(__dirname, "../../data/metrix");
 
@@ -95,54 +103,8 @@ const num = (v: unknown): number | null =>
 const str = (v: unknown): string | null => (v === null || v === undefined ? null : String(v));
 
 // ── Optional raw Meta export (ad-id / creative-asset backfill) ─────────
-// When Meta exports with real ad ids arrive, drop a meta_ads_export.json
-// shaped like:
-//   {
-//     "meta_ad_account_id": "1234567890",          // numeric, "act_" prefix ok
-//     "ads": [
-//       { "ad_name": "<exact ad_name from the package>",
-//         "meta_ad_id": "23851234567890123",
-//         "creative_asset_url": "https://..." }    // optional per ad
-//     ]
-//   }
-// Location is per-account: scripts/data/metrix/meta_ads_export.json for
-// Bookster, scripts/data/metrix/littledata/meta_ads_export.json for
-// LittleData. The importer backfills ads.meta_ad_id /
-// ads.creative_asset_url (and ad_accounts.meta_ad_account_id) from it.
-// Absent file → columns stay NULL.
-const META_EXPORT_FILE = "meta_ads_export.json";
-
-interface MetaAdBackfill {
-  metaAdId: string | null;
-  creativeAssetUrl: string | null;
-}
-
-interface MetaAdsExport {
-  metaAdAccountId: string | null;
-  byAdName: Map<string, MetaAdBackfill>;
-}
-
-function loadMetaAdsExport(dir: string, label: string): MetaAdsExport {
-  const byAdName = new Map<string, MetaAdBackfill>();
-  const path = join(dir, META_EXPORT_FILE);
-  if (!existsSync(path)) {
-    console.log(`No ${META_EXPORT_FILE} for ${label} — meta_ad_id / creative_asset_url stay NULL where no other source exists (expected until raw Meta exports arrive).`);
-    return { metaAdAccountId: null, byAdName };
-  }
-  const doc = JSON.parse(readFileSync(path, "utf8").replace(/\bNaN\b/g, "null"));
-  const metaAdAccountId = str(doc.meta_ad_account_id)?.replace(/^act_/, "") ?? null;
-  for (const a of doc.ads ?? []) {
-    const adName = str(a.ad_name);
-    if (!adName) continue;
-    const metaAdId = str(a.meta_ad_id);
-    const creativeAssetUrl = str(a.creative_asset_url);
-    if (!metaAdId && !creativeAssetUrl) continue;
-    byAdName.set(adName, { metaAdId, creativeAssetUrl });
-  }
-  console.log(`Loaded ${META_EXPORT_FILE} (${label}): ${byAdName.size} ads with meta_ad_id/creative_asset_url` +
-    (metaAdAccountId ? `, ad account ${metaAdAccountId}` : ", no meta_ad_account_id (deep links stay pending)"));
-  return { metaAdAccountId, byAdName };
-}
+// Parsing + validation rules live in metaAdsExport.ts (pure, unit-tested
+// without a live Supabase connection).
 
 // ═══ LittleData (City Street Print Brand) — second configured account ═══
 // Claude analysis package + manual CSV uploads + strategy/brief stage
@@ -434,13 +396,8 @@ async function importLittleData(q: Q): Promise<number> {
   // Meta account id — if the export names a different account, that's
   // drift: abort rather than deep-link into the wrong Ads Manager account.
   const ldMetaExport = loadMetaAdsExport(LD_DIR, LD_ACCOUNT_ID);
-  if (ldMetaExport.metaAdAccountId && metaAdAccountId &&
-      ldMetaExport.metaAdAccountId !== metaAdAccountId) {
-    throw new Error(
-      `LittleData ${META_EXPORT_FILE} names Meta ad account ${ldMetaExport.metaAdAccountId} but the ` +
-      `analysis package is for account ${metaAdAccountId}. Refusing to import mismatched export.`,
-    );
-  }
+  const mismatch = exportAccountMismatchError(ldMetaExport.metaAdAccountId, metaAdAccountId, "LittleData");
+  if (mismatch) throw new Error(mismatch);
 
   // ── Manual upload: parse + verify the IAP-DEMO CSV ──────────────────
   const csv = parseLdDemoCsv(readFileSync(join(LD_DIR, LD_DEMO_CSV), "utf8"));
@@ -568,17 +525,14 @@ async function importLittleData(q: Q): Promise<number> {
     // fall back to the CSV rule (unique id only, else NULL; 23 of 54
     // names are reused across campaigns).
     const backfill = ldMetaExport.byAdName.get(a.adName) ?? null;
-    let metaAdId = a.adIds.size === 1 ? [...a.adIds][0] : null;
-    if (backfill?.metaAdId) {
-      if (a.adIds.has(backfill.metaAdId)) {
-        metaAdId = backfill.metaAdId;
-        ldBackfilledIds++;
-      } else {
-        console.warn(
-          `LittleData ${META_EXPORT_FILE}: meta_ad_id ${backfill.metaAdId} for "${a.adName}" is not among the ` +
-          `CSV-observed Ad IDs (${[...a.adIds].join(", ")}) — ignoring the export id for this ad.`,
-        );
-      }
+    const resolved = resolveLdMetaAdId(a.adIds, backfill?.metaAdId);
+    const metaAdId = resolved.metaAdId;
+    if (resolved.source === "export") ldBackfilledIds++;
+    if (resolved.ignoredExportId) {
+      console.warn(
+        `LittleData ${META_EXPORT_FILE}: meta_ad_id ${resolved.ignoredExportId} for "${a.adName}" is not among the ` +
+        `CSV-observed Ad IDs (${[...a.adIds].join(", ")}) — ignoring the export id for this ad.`,
+      );
     }
     const creativeAssetUrl = backfill?.creativeAssetUrl ?? null;
     if (creativeAssetUrl) ldBackfilledAssets++;
@@ -606,7 +560,7 @@ async function importLittleData(q: Q): Promise<number> {
     );
   }
   if (ldMetaExport.byAdName.size > 0) {
-    const unmatched = [...ldMetaExport.byAdName.keys()].filter((n) => !csv.ads.has(n));
+    const unmatched = unmatchedExportAdNames(ldMetaExport.byAdName.keys(), (n) => csv.ads.has(n));
     console.log(`LittleData meta export backfill: ${ldBackfilledIds} ads got meta_ad_id from the export, ${ldBackfilledAssets} got creative_asset_url.`);
     if (unmatched.length > 0) {
       console.warn(`LittleData ${META_EXPORT_FILE} contains ${unmatched.length} ad_name(s) not present in the CSV (ignored): ${unmatched.slice(0, 10).join(", ")}${unmatched.length > 10 ? ", …" : ""}`);
