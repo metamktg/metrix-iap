@@ -20,7 +20,7 @@ export const SESSION_KEY = "metrix_active_account_v1";
 // mounts the real AuthGate instead — with the auth query disabled the
 // gate resolves to the unauthenticated branch, exactly like a logged-out
 // visitor hitting the link.
-export const AUTH_GATE_PATHS = new Set(["/forgot-password", "/reset-password"]);
+export const AUTH_GATE_PATHS = new Set(["/forgot-password", "/reset-password", "/admin"]);
 
 export function seedAccountSession() {
   sessionStorage.clear();

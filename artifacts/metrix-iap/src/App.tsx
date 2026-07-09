@@ -8,6 +8,7 @@ import { LoginPage } from "@/pages/auth/LoginPage";
 import { ChangePasswordPage } from "@/pages/auth/ChangePasswordPage";
 import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage";
 import { ResetPasswordPage } from "@/pages/auth/ResetPasswordPage";
+import { AdminWaitlistPage } from "@/pages/admin/AdminWaitlistPage";
 import { Loader2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 
@@ -135,6 +136,11 @@ export function AuthGate() {
   // The emailed reset link must work regardless of session state.
   if (location === "/reset-password") {
     return <ResetPasswordPage onBackToLogin={() => navigate("/", { replace: true })} />;
+  }
+
+  // The admin console has its own password gate — independent of user auth.
+  if (location === "/admin") {
+    return <AdminWaitlistPage />;
   }
 
   if (isLoading) {

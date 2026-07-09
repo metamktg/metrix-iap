@@ -54,6 +54,7 @@ export type WaitlistEntryStatus = typeof WaitlistEntryStatus[keyof typeof Waitli
 export const WaitlistEntryStatus = {
   pending: 'pending',
   approved: 'approved',
+  rejected: 'rejected',
 } as const;
 
 export interface WaitlistEntry {
@@ -62,6 +63,59 @@ export interface WaitlistEntry {
   status: WaitlistEntryStatus;
   approved_at?: string | null;
   joined_at: string;
+}
+
+export type WaitlistRejectResultStatus = typeof WaitlistRejectResultStatus[keyof typeof WaitlistRejectResultStatus];
+
+
+export const WaitlistRejectResultStatus = {
+  rejected: 'rejected',
+  already_rejected: 'already_rejected',
+} as const;
+
+export interface WaitlistRejectResult {
+  status: WaitlistRejectResultStatus;
+  email: string;
+}
+
+export interface AdminLoginInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  password: string;
+}
+
+export interface AdminSessionStatus {
+  authenticated: boolean;
+}
+
+export type RequestAccessEntryStatus = typeof RequestAccessEntryStatus[keyof typeof RequestAccessEntryStatus];
+
+
+export const RequestAccessEntryStatus = {
+  pending: 'pending',
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
+export interface RequestAccessEntry {
+  id: string;
+  full_name: string;
+  email: string;
+  phone?: string | null;
+  business_type?: string | null;
+  industry?: string | null;
+  avg_monthly_ad_spend?: string | null;
+  website?: string | null;
+  linkedin?: string | null;
+  status: RequestAccessEntryStatus;
+  created_at: string;
+}
+
+export interface RequestAccessEntriesResult {
+  entries: RequestAccessEntry[];
+  total: number;
 }
 
 export type WaitlistApprovalResultStatus = typeof WaitlistApprovalResultStatus[keyof typeof WaitlistApprovalResultStatus];

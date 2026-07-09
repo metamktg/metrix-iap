@@ -1,0 +1,521 @@
+// ─── /admin — password-protected waitlist & access-request console ─────
+// Standalone admin page (no user login needed). Gated by the
+// ADMIN_PANEL_PASSWORD secret: POST /metrix/admin/session sets a 12-hour
+// httpOnly admin cookie. Shows both lists — full access-request form
+// submissions (Supabase) and plain waitlist emails (Replit Postgres) —
+// with approve / reject actions. Approving provisions an account with a
+// temporary password and emails it; when email delivery is unavailable
+// the temp password is shown here with a copy button instead.
+
+import { useMemo, useState, type FormEvent } from "react";
+import {
+  useGetAdminSession,
+  useAdminLogin,
+  useAdminLogout,
+  useListAgentWaitlist,
+  useApproveAgentWaitlistEntry,
+  useRejectAgentWaitlistEntry,
+  useListRequestAccessEntries,
+  useApproveRequestAccessEntry,
+  useRejectRequestAccessEntry,
+} from "@workspace/api-client-react";
+import type {
+  RequestAccessEntry,
+  WaitlistEntry,
+} from "@workspace/api-client-react";
+import { AuthBrandHeader } from "@/components/brand/BrandMark";
+import {
+  Loader2,
+  LogOut,
+  CheckCircle2,
+  XCircle,
+  Copy,
+  Check,
+  Mail,
+  Globe,
+  Linkedin,
+  Phone,
+  Briefcase,
+  DollarSign,
+  Factory,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const INPUT_CLS =
+  "w-full h-9 px-3 rounded-md bg-white/[0.03] border border-border/40 text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40";
+
+function StatusBadge({ status }: { status: string }) {
+  const cls =
+    status === "approved"
+      ? "text-emerald-400 border-emerald-400/25 bg-emerald-400/10"
+      : status === "rejected"
+        ? "text-red-400 border-red-400/25 bg-red-400/10"
+        : "text-amber-400 border-amber-400/25 bg-amber-400/10";
+  return (
+    <span
+      className={cn(
+        "text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none shrink-0",
+        cls,
+      )}
+      data-testid={`badge-status-${status}`}
+    >
+      {status}
+    </span>
+  );
+}
+
+function CopyButton({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      onClick={() => {
+        void navigator.clipboard.writeText(value);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      }}
+      className="inline-flex items-center gap-1 text-[10px] text-primary hover:text-primary/80 transition-colors"
+      data-testid="button-copy-temp-password"
+    >
+      {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+      {copied ? "Copied" : "Copy"}
+    </button>
+  );
+}
+
+type ApproveOutcome = {
+  email: string;
+  email_sent: boolean;
+  temp_password?: string;
+};
+
+function ApproveResultNote({ outcome }: { outcome: ApproveOutcome }) {
+  if (outcome.email_sent) {
+    return (
+      <div
+        className="flex items-center gap-1.5 text-[11px] text-emerald-400"
+        data-testid="text-approve-emailed"
+      >
+        <CheckCircle2 className="w-3.5 h-3.5" /> Temporary password emailed to {outcome.email}
+      </div>
+    );
+  }
+  if (outcome.temp_password) {
+    return (
+      <div
+        className="space-y-1 rounded-md border border-amber-400/25 bg-amber-400/5 p-2"
+        data-testid="panel-temp-password"
+      >
+        <div className="text-[11px] text-amber-400">
+          Email could not be sent — share this temporary password with {outcome.email} manually:
+        </div>
+        <div className="flex items-center gap-2">
+          <code className="text-[12px] font-mono text-foreground bg-white/[0.05] px-1.5 py-0.5 rounded">
+            {outcome.temp_password}
+          </code>
+          <CopyButton value={outcome.temp_password} />
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="text-[11px] text-muted-foreground" data-testid="text-already-approved">
+      Already approved.
+    </div>
+  );
+}
+
+function ActionButtons({
+  status,
+  onApprove,
+  onReject,
+  busy,
+  idKey,
+}: {
+  status: string;
+  onApprove: () => void;
+  onReject: () => void;
+  busy: "approve" | "reject" | null;
+  idKey: string;
+}) {
+  if (status !== "pending") return null;
+  return (
+    <div className="flex items-center gap-2 shrink-0">
+      <button
+        onClick={onApprove}
+        disabled={busy !== null}
+        className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-[11px] font-medium text-emerald-400 hover:bg-emerald-500/25 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+        data-testid={`button-approve-${idKey}`}
+      >
+        {busy === "approve" ? (
+          <Loader2 className="w-3 h-3 animate-spin" />
+        ) : (
+          <CheckCircle2 className="w-3 h-3" />
+        )}
+        Approve
+      </button>
+      <button
+        onClick={onReject}
+        disabled={busy !== null}
+        className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-red-500/10 border border-red-500/25 text-[11px] font-medium text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+        data-testid={`button-reject-${idKey}`}
+      >
+        {busy === "reject" ? (
+          <Loader2 className="w-3 h-3 animate-spin" />
+        ) : (
+          <XCircle className="w-3 h-3" />
+        )}
+        Reject
+      </button>
+    </div>
+  );
+}
+
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime())
+    ? iso
+    : d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
+// ─── Access-request card (full form data) ─────────────────────────────
+
+function RequestCard({ entry, onChanged }: { entry: RequestAccessEntry; onChanged: () => void }) {
+  const approve = useApproveRequestAccessEntry();
+  const reject = useRejectRequestAccessEntry();
+  const [outcome, setOutcome] = useState<ApproveOutcome | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const busy = approve.isPending ? "approve" : reject.isPending ? "reject" : null;
+
+  const detail: Array<{ icon: typeof Phone; label: string; value: string | null | undefined }> = [
+    { icon: Phone, label: "Phone", value: entry.phone },
+    { icon: Briefcase, label: "Business type", value: entry.business_type },
+    { icon: Factory, label: "Industry", value: entry.industry },
+    { icon: DollarSign, label: "Avg monthly ad spend", value: entry.avg_monthly_ad_spend },
+    { icon: Globe, label: "Website", value: entry.website },
+    { icon: Linkedin, label: "LinkedIn", value: entry.linkedin },
+  ];
+
+  return (
+    <div
+      className="rounded-lg border border-border/30 bg-white/[0.02] p-4 space-y-3"
+      data-testid={`card-request-${entry.id}`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-[13px] font-semibold text-foreground truncate">
+            {entry.full_name}
+          </div>
+          <div className="text-[11px] text-muted-foreground truncate">{entry.email}</div>
+          <div className="text-[10px] text-muted-foreground/60 mt-0.5">
+            Requested {formatDate(entry.created_at)}
+          </div>
+        </div>
+        <StatusBadge status={entry.status} />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
+        {detail
+          .filter((d) => d.value)
+          .map((d) => (
+            <div key={d.label} className="flex items-center gap-1.5 min-w-0">
+              <d.icon className="w-3 h-3 text-muted-foreground/50 shrink-0" />
+              <span className="text-[10px] text-muted-foreground/70 shrink-0">{d.label}:</span>
+              <span className="text-[11px] text-foreground truncate">{d.value}</span>
+            </div>
+          ))}
+      </div>
+
+      {outcome && <ApproveResultNote outcome={outcome} />}
+      {error && <div className="text-[11px] text-red-400/90">{error}</div>}
+
+      <ActionButtons
+        status={outcome ? "handled" : entry.status}
+        idKey={`request-${entry.id}`}
+        busy={busy}
+        onApprove={() => {
+          setError(null);
+          approve.mutate(
+            { requestId: entry.id },
+            {
+              onSuccess: (res) => {
+                setOutcome(res);
+                onChanged();
+              },
+              onError: () => setError("Could not approve this request. Please try again."),
+            },
+          );
+        }}
+        onReject={() => {
+          setError(null);
+          reject.mutate(
+            { requestId: entry.id },
+            {
+              onSuccess: () => onChanged(),
+              onError: () => setError("Could not reject this request. Please try again."),
+            },
+          );
+        }}
+      />
+    </div>
+  );
+}
+
+// ─── Waitlist email row ────────────────────────────────────────────────
+
+function WaitlistRow({ entry, onChanged }: { entry: WaitlistEntry; onChanged: () => void }) {
+  const approve = useApproveAgentWaitlistEntry();
+  const reject = useRejectAgentWaitlistEntry();
+  const [outcome, setOutcome] = useState<ApproveOutcome | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const busy = approve.isPending ? "approve" : reject.isPending ? "reject" : null;
+
+  return (
+    <div
+      className="rounded-lg border border-border/30 bg-white/[0.02] p-3 space-y-2"
+      data-testid={`row-waitlist-${entry.id}`}
+    >
+      <div className="flex items-center gap-3">
+        <Mail className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <div className="text-[12px] font-medium text-foreground truncate">{entry.email}</div>
+          <div className="text-[10px] text-muted-foreground/60">
+            Joined {formatDate(entry.joined_at)}
+          </div>
+        </div>
+        <StatusBadge status={entry.status} />
+        <ActionButtons
+          status={outcome ? "handled" : entry.status}
+          idKey={`waitlist-${entry.id}`}
+          busy={busy}
+          onApprove={() => {
+            setError(null);
+            approve.mutate(
+              { entryId: entry.id },
+              {
+                onSuccess: (res) => {
+                  setOutcome(res);
+                  onChanged();
+                },
+                onError: () => setError("Could not approve this entry. Please try again."),
+              },
+            );
+          }}
+          onReject={() => {
+            setError(null);
+            reject.mutate(
+              { entryId: entry.id },
+              {
+                onSuccess: () => onChanged(),
+                onError: () => setError("Could not reject this entry. Please try again."),
+              },
+            );
+          }}
+        />
+      </div>
+      {outcome && <ApproveResultNote outcome={outcome} />}
+      {error && <div className="text-[11px] text-red-400/90">{error}</div>}
+    </div>
+  );
+}
+
+// ─── Login gate ─────────────────────────────────────────────────────────
+
+function AdminLoginForm({ onSuccess }: { onSuccess: () => void }) {
+  const login = useAdminLogin();
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (login.isPending || !password) return;
+    setError(null);
+    login.mutate(
+      { data: { password } },
+      {
+        onSuccess,
+        onError: (err) => {
+          const status = (err as { status?: number }).status;
+          setError(
+            status === 429
+              ? "Too many attempts. Please wait a few minutes and try again."
+              : "Incorrect password.",
+          );
+        },
+      },
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-sm space-y-8">
+        <AuthBrandHeader subtitle="Admin console" />
+        <form onSubmit={submit} className="space-y-3" data-testid="form-admin-login">
+          <div className="space-y-1.5">
+            <label
+              htmlFor="admin-password"
+              className="text-[11px] font-medium text-muted-foreground"
+            >
+              Admin password
+            </label>
+            <input
+              id="admin-password"
+              type="password"
+              required
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••••••"
+              className={INPUT_CLS}
+              data-testid="input-admin-password"
+            />
+          </div>
+          {error && (
+            <div className="text-[11px] text-red-400/90" data-testid="text-admin-login-error">
+              {error}
+            </div>
+          )}
+          <button
+            type="submit"
+            disabled={login.isPending || !password}
+            className="w-full h-9 rounded-md bg-primary text-primary-foreground text-[12px] font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-1.5"
+            data-testid="button-admin-login"
+          >
+            {login.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+            Enter admin console
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── Console ────────────────────────────────────────────────────────────
+
+function AdminConsole({ onLogout }: { onLogout: () => void }) {
+  const logout = useAdminLogout();
+  const requests = useListRequestAccessEntries();
+  const waitlist = useListAgentWaitlist({ limit: 200, offset: 0 });
+
+  const requestEntries = requests.data?.entries ?? [];
+  const waitlistEntries = waitlist.data?.entries ?? [];
+
+  const pendingRequests = useMemo(
+    () => requestEntries.filter((e) => e.status === "pending").length,
+    [requestEntries],
+  );
+  const pendingWaitlist = useMemo(
+    () => waitlistEntries.filter((e) => e.status === "pending").length,
+    [waitlistEntries],
+  );
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-[16px] font-semibold text-foreground">Waitlist admin</h1>
+            <p className="text-[11px] text-muted-foreground">
+              Review access requests and waitlist signups. Approving creates an account and
+              emails a temporary password.
+            </p>
+          </div>
+          <button
+            onClick={() =>
+              logout.mutate(undefined, { onSuccess: onLogout, onError: onLogout })
+            }
+            className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+            data-testid="button-admin-logout"
+          >
+            <LogOut className="w-3 h-3" /> Sign out
+          </button>
+        </div>
+
+        <section className="space-y-3">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-[13px] font-semibold text-foreground">Access requests</h2>
+            <span className="text-[11px] text-muted-foreground">
+              {requestEntries.length} total · {pendingRequests} pending
+            </span>
+          </div>
+          {requests.isLoading ? (
+            <div className="flex items-center gap-2 text-[11px] text-muted-foreground py-6">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading access requests…
+            </div>
+          ) : requests.isError ? (
+            <div className="text-[11px] text-red-400/90 py-4">
+              Could not load access requests. Refresh to try again.
+            </div>
+          ) : requestEntries.length === 0 ? (
+            <div className="text-[11px] text-muted-foreground/70 py-4">
+              No access requests yet.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {requestEntries.map((entry) => (
+                <RequestCard
+                  key={entry.id}
+                  entry={entry}
+                  onChanged={() => void requests.refetch()}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="space-y-3">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-[13px] font-semibold text-foreground">Waitlist emails</h2>
+            <span className="text-[11px] text-muted-foreground">
+              {waitlist.data?.total ?? 0} total · {pendingWaitlist} pending
+            </span>
+          </div>
+          {waitlist.isLoading ? (
+            <div className="flex items-center gap-2 text-[11px] text-muted-foreground py-6">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading waitlist…
+            </div>
+          ) : waitlist.isError ? (
+            <div className="text-[11px] text-red-400/90 py-4">
+              Could not load the waitlist. Refresh to try again.
+            </div>
+          ) : waitlistEntries.length === 0 ? (
+            <div className="text-[11px] text-muted-foreground/70 py-4">
+              No waitlist signups yet.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {waitlistEntries.map((entry) => (
+                <WaitlistRow
+                  key={entry.id}
+                  entry={entry}
+                  onChanged={() => void waitlist.refetch()}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+    </div>
+  );
+}
+
+// ─── Page ───────────────────────────────────────────────────────────────
+
+export function AdminWaitlistPage() {
+  // Default queryClient options (staleTime: Infinity, retry: false) are fine
+  // here — we explicitly refetch() after login/logout.
+  const session = useGetAdminSession();
+
+  if (session.isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!session.data?.authenticated) {
+    return <AdminLoginForm onSuccess={() => void session.refetch()} />;
+  }
+
+  return <AdminConsole onLogout={() => void session.refetch()} />;
+}

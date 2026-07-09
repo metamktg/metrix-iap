@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type WaitlistEntryStatus = typeof WaitlistEntryStatus[keyof typeof WaitlistEntryStatus];
+export type RequestAccessEntryStatus = typeof RequestAccessEntryStatus[keyof typeof RequestAccessEntryStatus];
 
 
-export const WaitlistEntryStatus = {
+export const RequestAccessEntryStatus = {
   pending: 'pending',
   approved: 'approved',
   rejected: 'rejected',

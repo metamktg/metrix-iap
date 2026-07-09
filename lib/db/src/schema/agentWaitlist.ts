@@ -5,7 +5,7 @@ import { z } from "zod/v4";
 export const agentWaitlistTable = pgTable("agent_waitlist", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
-  status: text("status", { enum: ["pending", "approved"] })
+  status: text("status", { enum: ["pending", "approved", "rejected"] })
     .notNull()
     .default("pending"),
   approvedAt: timestamp("approved_at", { withTimezone: true }),
