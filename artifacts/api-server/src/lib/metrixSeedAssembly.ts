@@ -1,7 +1,11 @@
 // ─── Metrix seed assembly ─────────────────────────────────────────────
 // Builds the seed-shaped bundle served by GET /metrix/seed from Supabase
-// tables (imported from the real Bookster IAP loop package). No static
-// fallback: if Supabase is unreachable or empty, the route fails loudly.
+// tables. Account-aware: every row in `ad_accounts` is assembled
+// generically from tables filtered by its account_id — nothing is
+// hardcoded to a single account. Accounts with real performance data get
+// the full IAP object; accounts without it get an honest pending shape
+// (iap: null). No static fallback: if Supabase is unreachable or empty,
+// the route fails loudly.
 //
 // Loop stages without real data behind them are honest:
 //   - optimization_loop → null (stage never ran)
@@ -12,8 +16,6 @@
 import { getSupabase } from "./supabase";
 
 type Row = Record<string, any>;
-
-const BOOKSTER = "bookster";
 
 // ─── helpers ──────────────────────────────────────────────────────────
 
@@ -32,6 +34,20 @@ async function selectAll(table: string, build?: (q: any) => any): Promise<Row[]>
   }
   return data ?? [];
 }
+
+/** Group rows by account_id, preserving the fetch order within each group. */
+export function groupByAccount(rows: Row[]): Map<string, Row[]> {
+  const map = new Map<string, Row[]>();
+  for (const r of rows) {
+    const id = String(r["account_id"] ?? "");
+    if (!map.has(id)) map.set(id, []);
+    map.get(id)!.push(r);
+  }
+  return map;
+}
+
+const forAccount = (grouped: Map<string, Row[]>, accountId: string): Row[] =>
+  grouped.get(accountId) ?? [];
 
 /** messaging_framework like "FW_BAB + HK_Benefit + HP_Time" → variable_stack */
 function parseVariableStack(framework: string | null | undefined): Record<string, string> {
@@ -63,76 +79,91 @@ function conceptRefsFromIcps(targetIcps: string[] | undefined): string[] {
   return [...refs];
 }
 
-// ─── assembly ─────────────────────────────────────────────────────────
+/** ["BOOK0","BOOK2"] → "BOOK0 and BOOK2"; ["A","B","C"] → "A, B and C" */
+function humanJoin(items: string[]): string {
+  if (items.length <= 1) return items[0] ?? "";
+  return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+}
 
-export async function assembleMetrixSeed(): Promise<Row> {
-  const [
-    appConfig,
-    adAccounts,
-    accountModules,
-    signalCards,
-    adPerformance,
-    conceptPerformance,
-    campaignWindows,
-    dataQualityFlags,
-    libraryCells,
-    libraryCellPerformance,
-    variablePerformance,
-    demographicSignal,
-    placementSignal,
-    messagePillars,
-    testingHypotheses,
-    icpProfiles,
-    variableCombinations,
-    creativeBriefs,
-    iapRuns,
-    variableRegistry,
-    conceptIntelligence,
-    failurePatterns,
-    adsRegistry,
-  ] = await Promise.all([
-    selectAll("app_config"),
-    selectAll("ad_accounts", (q) => q.order("id")),
-    selectAll("account_modules"),
-    selectAll("signal_cards", (q) => q.order("id")),
-    selectAll("ad_performance", (q) => q.eq("account_id", BOOKSTER)),
-    selectAll("concept_performance", (q) => q.eq("account_id", BOOKSTER).order("book").order("concept")),
-    selectAll("campaign_windows", (q) => q.eq("account_id", BOOKSTER).order("date_start")),
-    selectAll("data_quality_flags", (q) => q.eq("account_id", BOOKSTER).order("id")),
-    selectAll("library_cells", (q) => q.eq("account_id", BOOKSTER).order("row_index")),
-    selectAll("library_cell_performance", (q) => q.eq("account_id", BOOKSTER).order("id")),
-    selectAll("variable_performance", (q) => q.eq("account_id", BOOKSTER).order("id")),
-    selectAll("demographic_signal", (q) => q.eq("account_id", BOOKSTER).order("row_index")),
-    selectAll("placement_signal", (q) => q.eq("account_id", BOOKSTER).order("signal_scope").order("row_index")),
-    selectAll("message_pillars", (q) => q.eq("account_id", BOOKSTER).order("id")),
-    selectAll("testing_hypotheses", (q) => q.eq("account_id", BOOKSTER).order("hypothesis_id")),
-    selectAll("icp_profiles", (q) => q.eq("account_id", BOOKSTER).order("id")),
-    selectAll("variable_combinations", (q) => q.eq("account_id", BOOKSTER).order("id")),
-    selectAll("creative_briefs", (q) => q.eq("account_id", BOOKSTER).order("brief_id")),
-    selectAll("iap_runs", (q) => q.eq("account_id", BOOKSTER)),
-    selectAll("variable_registry", (q) => q.order("status").order("prefix")),
-    selectAll("concept_intelligence", (q) => q.eq("account_id", BOOKSTER).order("book").order("concept_code")),
-    selectAll("failure_patterns", (q) => q.eq("account_id", BOOKSTER).order("id")),
-    selectAll("ads", (q) => q.eq("account_id", BOOKSTER).order("ad_name")),
-  ]);
+// ─── per-account tables (everything keyed by account_id) ─────────────
 
-  if (adAccounts.length === 0 || adPerformance.length === 0) {
-    throw new Error(
-      "Supabase holds no imported Metrix data yet. Run: pnpm --filter @workspace/scripts run import:metrix",
-    );
+export type AccountTables = {
+  adPerformance: Map<string, Row[]>;
+  conceptPerformance: Map<string, Row[]>;
+  campaignWindows: Map<string, Row[]>;
+  dataQualityFlags: Map<string, Row[]>;
+  libraryCells: Map<string, Row[]>;
+  libraryCellPerformance: Map<string, Row[]>;
+  variablePerformance: Map<string, Row[]>;
+  demographicSignal: Map<string, Row[]>;
+  placementSignal: Map<string, Row[]>;
+  messagePillars: Map<string, Row[]>;
+  testingHypotheses: Map<string, Row[]>;
+  icpProfiles: Map<string, Row[]>;
+  variableCombinations: Map<string, Row[]>;
+  creativeBriefs: Map<string, Row[]>;
+  iapRuns: Map<string, Row[]>;
+  conceptIntelligence: Map<string, Row[]>;
+  failurePatterns: Map<string, Row[]>;
+  adsRegistry: Map<string, Row[]>;
+  accountModules: Row[];
+  signalCards: Row[];
+};
+
+const modulesFor = (accountModules: Row[], accountId: string): Map<string, any> => {
+  const map = new Map<string, any>();
+  for (const m of accountModules) {
+    if (m["account_id"] === accountId) map.set(m["module"], m["payload"]);
+  }
+  return map;
+};
+
+// ─── generic per-account assembly ─────────────────────────────────────
+
+/**
+ * Build the seed-shaped ad-account object for ANY account id.
+ * Accounts with real ad_performance rows get the full IAP object;
+ * accounts without get the honest pending shape (iap: null).
+ */
+export function buildAccountObject(account: Row, t: AccountTables): Row {
+  const accountId = String(account["id"]);
+  const modules = modulesFor(t.accountModules, accountId);
+  const adPerformance = forAccount(t.adPerformance, accountId);
+
+  // ── No performance data yet → honest pending/unconfigured shape ─────
+  if (adPerformance.length === 0) {
+    return {
+      id: accountId,
+      name: account["name"] ?? accountId,
+      status: account["status"] ?? "unconfigured",
+      platform: account["platform"] ?? "Meta Ads",
+      ...(account["overview_state"] ? { overview_state: account["overview_state"] } : {}),
+      ...(account["meta_ad_account_id"] ? { meta_ad_account_id: account["meta_ad_account_id"] } : {}),
+      iap: null,
+      mst: modules.get("mst") ?? { status: "not_available" },
+    };
   }
 
-  const config = new Map(appConfig.map((r) => [r["key"], r["value"]]));
-  const modulesFor = (accountId: string) => {
-    const map = new Map<string, any>();
-    for (const m of accountModules) {
-      if (m["account_id"] === accountId) map.set(m["module"], m["payload"]);
-    }
-    return map;
-  };
-  const boosterModules = modulesFor(BOOKSTER);
+  // ── Full assembly from this account's rows ──────────────────────────
+  const conceptPerformance = forAccount(t.conceptPerformance, accountId);
+  const campaignWindows = forAccount(t.campaignWindows, accountId);
+  const dataQualityFlags = forAccount(t.dataQualityFlags, accountId);
+  const libraryCells = forAccount(t.libraryCells, accountId);
+  const libraryCellPerformance = forAccount(t.libraryCellPerformance, accountId);
+  const variablePerformance = forAccount(t.variablePerformance, accountId);
+  const demographicSignal = forAccount(t.demographicSignal, accountId);
+  const placementSignal = forAccount(t.placementSignal, accountId);
+  const messagePillars = forAccount(t.messagePillars, accountId);
+  const testingHypotheses = forAccount(t.testingHypotheses, accountId);
+  const icpProfiles = forAccount(t.icpProfiles, accountId);
+  const variableCombinations = forAccount(t.variableCombinations, accountId);
+  const creativeBriefs = forAccount(t.creativeBriefs, accountId);
+  const iapRuns = forAccount(t.iapRuns, accountId);
+  const conceptIntelligence = forAccount(t.conceptIntelligence, accountId);
+  const failurePatterns = forAccount(t.failurePatterns, accountId);
+  const adsRegistry = forAccount(t.adsRegistry, accountId);
 
-  // ── Totals computed from real date-stamped rows (BOOK0 + BOOK2) ─────
+  // ── Totals computed from real date-stamped rows ─────────────────────
   const byEvent: Record<string, Row> = {};
   let totalSpend = 0;
   let totalImpressions = 0;
@@ -151,8 +182,8 @@ export async function assembleMetrixSeed(): Promise<Row> {
     totalLinkClicks += Number(r["link_clicks"] ?? 0);
   }
   for (const event of Object.keys(byEvent)) {
-    const t = byEvent[event]!;
-    t["spend"] = round(t["spend"]);
+    const tot = byEvent[event]!;
+    tot["spend"] = round(tot["spend"]);
   }
   const linkCtrPct = totalImpressions > 0 ? round((totalLinkClicks / totalImpressions) * 100, 4) : 0;
 
@@ -243,7 +274,7 @@ export async function assembleMetrixSeed(): Promise<Row> {
       confidence: v["confidence"],
       recommendation: v["recommendation"],
     })),
-    scaling_playbook: boosterModules.get("scaling_playbook") ?? null,
+    scaling_playbook: modules.get("scaling_playbook") ?? null,
   };
 
   // ── Brief builder (real Brief Builder output) ───────────────────────
@@ -271,21 +302,10 @@ export async function assembleMetrixSeed(): Promise<Row> {
     }),
   };
 
-  // ── Cards ────────────────────────────────────────────────────────────
-  const cardShape = (c: Row) => ({
-    id: c["card_id"],
-    account_id: c["account_id"],
-    scope: c["scope"],
-    title: c["title"],
-    rationale: c["rationale"],
-    impact: c["impact"],
-    confidence: c["confidence"],
-    source_path: c["source_path"] ?? undefined,
-    recommended_action: c["recommended_action"],
-    ...(c["manager_card_descriptor"] ? { manager_card_descriptor: c["manager_card_descriptor"] } : {}),
-  });
-  const listenCards = signalCards.filter((c) => c["surface"] === "listen").map(cardShape);
-  const managerCards = signalCards.filter((c) => c["surface"] === "manager_overview").map(cardShape);
+  // ── Listen cards (account-scoped) ────────────────────────────────────
+  const listenCards = t.signalCards
+    .filter((c) => c["surface"] === "listen" && c["account_id"] === accountId)
+    .map(cardShape);
 
   // ── Loop stage status (honest pending states) ───────────────────────
   const stageOrder = [
@@ -309,28 +329,28 @@ export async function assembleMetrixSeed(): Promise<Row> {
       note: r["note"],
     }));
 
-  // ── Accounts ─────────────────────────────────────────────────────────
-  const boosterRow = adAccounts.find((a) => a["id"] === BOOKSTER);
-  const skovRow = adAccounts.find((a) => a["id"] === "skov_pet");
-  const coreRead = boosterModules.get("core_reanalysis_read") ?? null;
-  const mstDoc = boosterModules.get("mst") ?? {};
-  const metadata = boosterModules.get("iap_metadata") ?? {};
-  const analysisCoreSummary = boosterModules.get("analysis_core_summary") ?? null;
+  const coreRead = modules.get("core_reanalysis_read") ?? null;
+  const mstDoc = modules.get("mst") ?? {};
+  const metadata = modules.get("iap_metadata") ?? {};
+  const analysisCoreSummary = modules.get("analysis_core_summary") ?? null;
 
+  // Which books this account's imported window covers (e.g. BOOK0, BOOK2).
+  const books = [...new Set(adPerformance.map((r) => String(r["book"] ?? "")).filter(Boolean))].sort();
+  const acrossClause = books.length > 0 ? ` across ${humanJoin(books)}` : "";
   const dataCaveat =
-    `Totals cover the full imported window ${windowStart} → ${windowEnd} across BOOK0 and BOOK2. ` +
+    `Totals cover the full imported window ${windowStart} → ${windowEnd}${acrossClause}. ` +
     `${coreRead?.["data_caveat"] ?? ""}`.trim();
 
-  const bookster = {
-    id: BOOKSTER,
-    name: boosterRow?.["name"] ?? "Bookster",
-    status: boosterRow?.["status"] ?? "configured",
-    platform: boosterRow?.["platform"] ?? "Meta Ads",
-    facebook_page_dp_url: boosterRow?.["facebook_page_dp_url"] ?? null,
-    source_status: boosterRow?.["source_status"] ?? undefined,
+  return {
+    id: accountId,
+    name: account["name"] ?? accountId,
+    status: account["status"] ?? "configured",
+    platform: account["platform"] ?? "Meta Ads",
+    facebook_page_dp_url: account["facebook_page_dp_url"] ?? null,
+    source_status: account["source_status"] ?? undefined,
     // Numeric Meta ad account id (no "act_" prefix) for Ads Manager deep
     // links. Null until a raw Meta export supplies it via the importer.
-    meta_ad_account_id: boosterRow?.["meta_ad_account_id"] ?? null,
+    meta_ad_account_id: account["meta_ad_account_id"] ?? null,
     // Ad registry: ad_name → cell/concept plus meta_ad_id and
     // creative_asset_url once backfilled. Nullable fields stay null in the
     // current import — the client renders honest pending states for them.
@@ -371,7 +391,7 @@ export async function assembleMetrixSeed(): Promise<Row> {
       analysis,
       strategy,
       brief_builder: briefBuilder,
-      report_builder: boosterModules.get("report_builder") ?? null,
+      report_builder: modules.get("report_builder") ?? null,
       // Optimization Loop stage has not run — no golden formula exists yet.
       optimization_loop: null,
       intelligence: {
@@ -407,18 +427,136 @@ export async function assembleMetrixSeed(): Promise<Row> {
     },
     listen: { signal_cards: listenCards },
   };
+}
 
-  const skovModules = modulesFor("skov_pet");
-  const skov = {
-    id: "skov_pet",
-    name: skovRow?.["name"] ?? "SKOV Pet",
-    status: skovRow?.["status"] ?? "unconfigured",
-    platform: skovRow?.["platform"] ?? "Meta Ads",
-    overview_state: skovRow?.["overview_state"] ?? null,
-    iap: null,
-    mst: skovModules.get("mst") ?? { status: "not_available" },
+// ── Cards ────────────────────────────────────────────────────────────
+const cardShape = (c: Row) => ({
+  id: c["card_id"],
+  account_id: c["account_id"],
+  scope: c["scope"],
+  title: c["title"],
+  rationale: c["rationale"],
+  impact: c["impact"],
+  confidence: c["confidence"],
+  source_path: c["source_path"] ?? undefined,
+  recommended_action: c["recommended_action"],
+  ...(c["manager_card_descriptor"] ? { manager_card_descriptor: c["manager_card_descriptor"] } : {}),
+});
+
+// ─── assembly ─────────────────────────────────────────────────────────
+
+export async function assembleMetrixSeed(): Promise<Row> {
+  // One fetch per table (account-agnostic), grouped by account_id in
+  // memory — query count stays constant no matter how many accounts exist.
+  const [
+    appConfig,
+    adAccounts,
+    accountModules,
+    signalCards,
+    adPerformanceAll,
+    conceptPerformanceAll,
+    campaignWindowsAll,
+    dataQualityFlagsAll,
+    libraryCellsAll,
+    libraryCellPerformanceAll,
+    variablePerformanceAll,
+    demographicSignalAll,
+    placementSignalAll,
+    messagePillarsAll,
+    testingHypothesesAll,
+    icpProfilesAll,
+    variableCombinationsAll,
+    creativeBriefsAll,
+    iapRunsAll,
+    variableRegistry,
+    conceptIntelligenceAll,
+    failurePatternsAll,
+    adsRegistryAll,
+  ] = await Promise.all([
+    selectAll("app_config"),
+    selectAll("ad_accounts", (q) => q.order("id")),
+    selectAll("account_modules"),
+    selectAll("signal_cards", (q) => q.order("id")),
+    selectAll("ad_performance"),
+    selectAll("concept_performance", (q) => q.order("book").order("concept")),
+    selectAll("campaign_windows", (q) => q.order("date_start")),
+    selectAll("data_quality_flags", (q) => q.order("id")),
+    selectAll("library_cells", (q) => q.order("row_index")),
+    selectAll("library_cell_performance", (q) => q.order("id")),
+    selectAll("variable_performance", (q) => q.order("id")),
+    selectAll("demographic_signal", (q) => q.order("row_index")),
+    selectAll("placement_signal", (q) => q.order("signal_scope").order("row_index")),
+    selectAll("message_pillars", (q) => q.order("id")),
+    selectAll("testing_hypotheses", (q) => q.order("hypothesis_id")),
+    selectAll("icp_profiles", (q) => q.order("id")),
+    selectAll("variable_combinations", (q) => q.order("id")),
+    selectAll("creative_briefs", (q) => q.order("brief_id")),
+    selectAll("iap_runs"),
+    selectAll("variable_registry", (q) => q.order("status").order("prefix")),
+    selectAll("concept_intelligence", (q) => q.order("book").order("concept_code")),
+    selectAll("failure_patterns", (q) => q.order("id")),
+    selectAll("ads", (q) => q.order("ad_name")),
+  ]);
+
+  if (adAccounts.length === 0 || adPerformanceAll.length === 0) {
+    throw new Error(
+      "Supabase holds no imported Metrix data yet. Run: pnpm --filter @workspace/scripts run import:metrix",
+    );
+  }
+
+  const tables: AccountTables = {
+    adPerformance: groupByAccount(adPerformanceAll),
+    conceptPerformance: groupByAccount(conceptPerformanceAll),
+    campaignWindows: groupByAccount(campaignWindowsAll),
+    dataQualityFlags: groupByAccount(dataQualityFlagsAll),
+    libraryCells: groupByAccount(libraryCellsAll),
+    libraryCellPerformance: groupByAccount(libraryCellPerformanceAll),
+    variablePerformance: groupByAccount(variablePerformanceAll),
+    demographicSignal: groupByAccount(demographicSignalAll),
+    placementSignal: groupByAccount(placementSignalAll),
+    messagePillars: groupByAccount(messagePillarsAll),
+    testingHypotheses: groupByAccount(testingHypothesesAll),
+    icpProfiles: groupByAccount(icpProfilesAll),
+    variableCombinations: groupByAccount(variableCombinationsAll),
+    creativeBriefs: groupByAccount(creativeBriefsAll),
+    iapRuns: groupByAccount(iapRunsAll),
+    conceptIntelligence: groupByAccount(conceptIntelligenceAll),
+    failurePatterns: groupByAccount(failurePatternsAll),
+    adsRegistry: groupByAccount(adsRegistryAll),
+    accountModules,
+    signalCards,
   };
 
+  const config = new Map(appConfig.map((r) => [r["key"], r["value"]]));
+
+  // ── Every registered account, assembled generically ─────────────────
+  const accountObjects = adAccounts.map((account) => buildAccountObject(account, tables));
+
+  // ── Manager totals across ALL accounts with real performance rows ───
+  const byEvent: Record<string, Row> = {};
+  let totalSpend = 0;
+  let totalImpressions = 0;
+  let totalLinkClicks = 0;
+  for (const r of adPerformanceAll) {
+    const event = r["result_type"] as string;
+    byEvent[event] ??= { spend: 0, reach: 0, impressions: 0, results: 0, clicks_all: 0, link_clicks: 0 };
+    byEvent[event]["spend"] += Number(r["spend"] ?? 0);
+    byEvent[event]["reach"] += Number(r["reach"] ?? 0);
+    byEvent[event]["impressions"] += Number(r["impressions"] ?? 0);
+    byEvent[event]["results"] += Number(r["results"] ?? 0);
+    byEvent[event]["clicks_all"] += Number(r["clicks_all"] ?? 0);
+    byEvent[event]["link_clicks"] += Number(r["link_clicks"] ?? 0);
+    totalSpend += Number(r["spend"] ?? 0);
+    totalImpressions += Number(r["impressions"] ?? 0);
+    totalLinkClicks += Number(r["link_clicks"] ?? 0);
+  }
+  for (const event of Object.keys(byEvent)) {
+    const t = byEvent[event]!;
+    t["spend"] = round(t["spend"]);
+  }
+  const linkCtrPct = totalImpressions > 0 ? round((totalLinkClicks / totalImpressions) * 100, 4) : 0;
+
+  const managerCards = signalCards.filter((c) => c["surface"] === "manager_overview").map(cardShape);
   const managerMeta = (config.get("manager_account_meta") ?? {}) as Row;
   const configured = adAccounts.filter((a) => a["status"] === "configured").length;
 
@@ -445,7 +583,7 @@ export async function assembleMetrixSeed(): Promise<Row> {
       },
       recommendation_cards: managerCards,
     },
-    ad_accounts: [bookster, skov],
+    ad_accounts: accountObjects,
     variable_registry: variableRegistry.map((r) => ({
       prefix: r["prefix"],
       family: r["family"],
@@ -464,4 +602,9 @@ export async function getMetrixSeedFromSupabase(): Promise<Row> {
   const data = await assembleMetrixSeed();
   cached = { at: Date.now(), data };
   return data;
+}
+
+/** Drop the cached bundle (e.g. after a new account is registered). */
+export function invalidateMetrixSeedCache(): void {
+  cached = null;
 }
