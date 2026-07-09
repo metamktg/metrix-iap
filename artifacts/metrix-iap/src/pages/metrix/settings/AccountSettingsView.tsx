@@ -9,11 +9,11 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAdAccount, getReportBuilder } from "@/lib/data/metrixSeedAdapter";
 import { ModuleHeader, ScopeBanner, SectionCard, CaveatNote, PendingState, useFocusParam } from "../shared";
-import { ConnectMetaDialog, ManualImportDialog } from "../ConnectAccountDialogs";
+import { ConnectMetaDialog, ManualImportDialog, CreativeLibraryDialog } from "../ConnectAccountDialogs";
 import { AnalysisControls } from "../ManualAnalysisControls";
 import { AgentWaitlistSection } from "./AgentWaitlistSection";
 import { cn } from "@/lib/utils";
-import { Plug, FileUp, Palette, ShieldCheck, CheckCircle2, Circle, UserCircle2, LogOut, Loader2, KeyRound } from "lucide-react";
+import { Plug, FileUp, Palette, ShieldCheck, CheckCircle2, Circle, UserCircle2, LogOut, Loader2, KeyRound, Images } from "lucide-react";
 
 const SECTION = "Settings · 09";
 
@@ -217,6 +217,7 @@ export function AccountSettingsView() {
   const account = getAdAccount(seed, adAccountId);
   const [connectOpen, setConnectOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [creativeLibraryOpen, setCreativeLibraryOpen] = useState(false);
 
   if (!account) {
     return (
@@ -280,6 +281,24 @@ export function AccountSettingsView() {
                 <FileUp className="w-3 h-3" /> Add import
               </button>
             </div>
+            {configured && (
+              <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
+                <Images className="w-4 h-4 text-muted-foreground/85 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[12px] font-medium text-foreground">Creative library</div>
+                  <div className="text-[10px] text-muted-foreground/85">
+                    Add creative files after the fact, mapped to existing ads — no CSV re-upload needed
+                  </div>
+                </div>
+                <button
+                  onClick={() => setCreativeLibraryOpen(true)}
+                  className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+                  data-testid="button-upload-creatives"
+                >
+                  <Images className="w-3 h-3" /> Upload creatives
+                </button>
+              </div>
+            )}
           </div>
         </SectionCard>
 
@@ -326,6 +345,7 @@ export function AccountSettingsView() {
 
       <ConnectMetaDialog account={account} open={connectOpen} onOpenChange={setConnectOpen} />
       <ManualImportDialog account={account} open={importOpen} onOpenChange={setImportOpen} />
+      <CreativeLibraryDialog account={account} open={creativeLibraryOpen} onOpenChange={setCreativeLibraryOpen} />
     </div>
   );
 }
