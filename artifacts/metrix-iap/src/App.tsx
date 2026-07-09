@@ -128,7 +128,7 @@ export function Router() {
   );
 }
 
-function AuthGate() {
+export function AuthGate() {
   const { user, isLoading } = useAuth();
   const [location, navigate] = useLocation();
 

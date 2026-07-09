@@ -9,10 +9,18 @@ import { memoryLocation } from "wouter/memory-location";
 import { AccountProvider } from "@/contexts/AccountContext";
 import { DateRangeProvider } from "@/contexts/DateRangeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { Router as AppRouter } from "@/App";
+import { Router as AppRouter, AuthGate } from "@/App";
 
 export const NOT_FOUND_TEXT = "This route does not exist.";
 export const SESSION_KEY = "metrix_active_account_v1";
+
+// Routes handled by AuthGate *outside* the authenticated app Router
+// (App.tsx renders these before mounting <Router />). Rendering them
+// through AppRouter would falsely land on the 404 view, so the harness
+// mounts the real AuthGate instead — with the auth query disabled the
+// gate resolves to the unauthenticated branch, exactly like a logged-out
+// visitor hitting the link.
+export const AUTH_GATE_PATHS = new Set(["/forgot-password", "/reset-password"]);
 
 export function seedAccountSession() {
   sessionStorage.clear();
@@ -32,11 +40,15 @@ export function renderAt(initialPath: string) {
     <QueryClientProvider client={queryClient}>
       <WouterRouter hook={location.hook}>
         <AuthProvider>
-          <AccountProvider>
-            <DateRangeProvider>
-              <AppRouter />
-            </DateRangeProvider>
-          </AccountProvider>
+          {AUTH_GATE_PATHS.has(initialPath) ? (
+            <AuthGate />
+          ) : (
+            <AccountProvider>
+              <DateRangeProvider>
+                <AppRouter />
+              </DateRangeProvider>
+            </AccountProvider>
+          )}
         </AuthProvider>
       </WouterRouter>
     </QueryClientProvider>
