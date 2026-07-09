@@ -16,7 +16,7 @@ import {
 import { RecommendationDeck, actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
 import {
   ModuleHeader, ScopeBanner, MetricTile, SectionCard, CaveatNote,
-  UnconfiguredState, PendingState, fmtUSD, fmtNum, fmtPct, eventLabel,
+  UnconfiguredState, PendingState, fmtUSD, fmtNum, fmtPct, eventLabel, resultTerm,
 } from "./shared";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
 import { cn } from "@/lib/utils";
@@ -70,6 +70,7 @@ export function AdAccountOverview() {
   const core = account.iap.core_reanalysis_read;
   const cs = account.iap.campaign_summary;
   const events = Object.entries(cs.bottom_line_totals);
+  const term = resultTerm(account);
 
   // ── Derived (real-data) summaries ──────────────────────────────────
   const signals = getListenSignals(seed, adAccountId);
@@ -218,19 +219,21 @@ export function AdAccountOverview() {
             <div className="rounded-lg border border-emerald-400/15 bg-emerald-400/[0.03] p-3.5">
               <div className="flex items-center gap-1.5 mb-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="text-[11px] font-semibold text-foreground">Checkout-depth control</span>
+                <span className="text-[11px] font-semibold text-foreground">Primary control</span>
               </div>
               <p className="text-[12px] text-foreground/80 leading-relaxed">{core.primary_control_read}</p>
               <p className="text-[9px] font-mono text-muted-foreground/60 mt-2">{core.primary_control}</p>
             </div>
-            <div className="rounded-lg border border-blue-400/15 bg-blue-400/[0.03] p-3.5">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <KeyRound className="w-3.5 h-3.5 text-blue-300" />
-                <span className="text-[11px] font-semibold text-foreground">Registration control</span>
+            {core.registration_control && (
+              <div className="rounded-lg border border-blue-400/15 bg-blue-400/[0.03] p-3.5">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <KeyRound className="w-3.5 h-3.5 text-blue-300" />
+                  <span className="text-[11px] font-semibold text-foreground">{term.Singular} control</span>
+                </div>
+                <p className="text-[12px] text-foreground/80 leading-relaxed">{core.registration_control_read}</p>
+                <p className="text-[9px] font-mono text-muted-foreground/60 mt-2">{core.registration_control}</p>
               </div>
-              <p className="text-[12px] text-foreground/80 leading-relaxed">{core.registration_control_read}</p>
-              <p className="text-[9px] font-mono text-muted-foreground/60 mt-2">{core.registration_control}</p>
-            </div>
+            )}
           </div>
           <div className="mt-3">
             <CaveatNote text={core.data_caveat} />

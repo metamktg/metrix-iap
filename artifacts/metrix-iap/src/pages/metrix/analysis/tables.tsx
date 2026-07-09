@@ -3,7 +3,7 @@
 
 import { cn } from "@/lib/utils";
 import { readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel } from "../shared";
-import type { CellPerformanceRow, VariablePerformanceRow, DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
+import type { CellPerformanceRow, VariablePerformanceRow, DemographicRow, PlacementRow, ConversionFunnelRow } from "@/lib/data/seedTypes";
 
 export function Th({ children, right }: { children: React.ReactNode; right?: boolean }) {
   return <th className={cn("text-[9px] font-mono uppercase tracking-widest text-muted-foreground/60 font-semibold px-2.5 py-2", right ? "text-right" : "text-left")}>{children}</th>;
@@ -171,6 +171,40 @@ export function PlacementTable({ rows }: { rows: PlacementRow[] }) {
             <Td right>{fmtUSD(r["Amount spent (USD)"])}</Td>
             <Td right>{fmtNum(r.Results)}</Td>
             <Td right>{r.CPA != null ? fmtUSD(r.CPA) : "—"}</Td>
+          </tr>
+        ))}
+      </tbody>
+    </TableShell>
+  );
+}
+
+/**
+ * Conversion-attributed funnel table (device/platform/placement pivots).
+ * No spend/CPA columns by design — spend is not attributable under
+ * conversion-based tracking.
+ */
+export function ConversionFunnelTable({ rows, labelHeader }: { rows: (ConversionFunnelRow & { label: string })[]; labelHeader: string }) {
+  return (
+    <TableShell>
+      <thead className="sticky top-0 bg-[hsl(222_55%_7%)] z-10">
+        <tr className="border-b border-border/40">
+          <Th>{labelHeader}</Th>
+          <Th right>Link clicks</Th>
+          <Th right>Adds to cart</Th>
+          <Th right>Checkouts initiated</Th>
+          <Th right>Purchases</Th>
+          <Th>Confidence</Th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r, i) => (
+          <tr key={r.label + i} className="border-b border-border/20 hover:bg-white/[0.02]">
+            <Td className="font-medium text-foreground capitalize">{r.label}</Td>
+            <Td right>{r.link_clicks != null ? fmtNum(r.link_clicks) : "—"}</Td>
+            <Td right>{r.adds_to_cart != null ? fmtNum(r.adds_to_cart) : "—"}</Td>
+            <Td right>{r.checkouts_initiated != null ? fmtNum(r.checkouts_initiated) : "—"}</Td>
+            <Td right>{r.purchases != null ? fmtNum(r.purchases) : "—"}</Td>
+            <Td>{r.confidence ? <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/60">{r.confidence.replace(/_/g, " ")}</span> : "—"}</Td>
           </tr>
         ))}
       </tbody>

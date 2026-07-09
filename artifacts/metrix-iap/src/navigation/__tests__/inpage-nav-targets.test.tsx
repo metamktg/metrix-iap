@@ -96,8 +96,8 @@ describe("scanner sanity", () => {
 
   it("catches known in-page targets outside the sidebar", () => {
     const paths = targets.map((t) => t.to);
-    // ManagerOverview "connect account" card + AccountSwitcher shortcut
-    expect(paths).toContain("/app/settings");
+    // AddAccountDialog / ConnectAccountDialogs "Meta connection" path
+    expect(paths).toContain("/app/settings/integrations");
     // AdAccountOverview "View in MST" button
     expect(paths).toContain("/app/mst");
     // CrossLink template-literal targets (query stripped)

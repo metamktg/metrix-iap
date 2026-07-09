@@ -116,6 +116,32 @@ export interface PlacementRow {
   CTR_link_pct?: number;
 }
 
+/**
+ * Conversion-based funnel row (Meta conversion-device export): funnel
+ * actions attributed to the converting device/platform/placement.
+ * Spend/impressions are not attributable under this tracking basis, so
+ * no CPA/CTR exist on this surface by design.
+ */
+export interface ConversionFunnelRow {
+  date_start: string;
+  date_end: string;
+  link_clicks: number | null;
+  adds_to_cart: number | null;
+  checkouts_initiated: number | null;
+  purchases: number | null;
+  confidence: string | null;
+}
+
+export interface ConversionTrackingSignal {
+  tracking_basis: "conversion";
+  window_start: string | null;
+  window_end: string | null;
+  note: string;
+  devices: (ConversionFunnelRow & { device: string })[];
+  platforms: (ConversionFunnelRow & { platform: string })[];
+  placements: (ConversionFunnelRow & { placement: string })[];
+}
+
 export interface ConceptRollupRow {
   book: string;
   concept: string;
@@ -140,6 +166,8 @@ export interface AnalysisData {
   top_checkout_variables: VariablePerformanceRow[];
   /** Cross-book (BOOK0 + BOOK2) concept view from the normalized bundle. */
   concept_rollup?: ConceptRollupRow[];
+  /** Conversion-attributed device/platform/placement funnel signal (present when the account's import carried a conversion-device export). */
+  conversion_tracking_signal?: ConversionTrackingSignal | null;
 }
 
 // ─── Strategy / Brief ─────────────────────────────────────────────────
@@ -156,6 +184,8 @@ export interface MessagePillar {
   placement_strategy?: string;
   scaling_guidance?: string;
   target_icps?: string[];
+  /** 'generated' when produced by the in-app Metrix engine, else imported. */
+  origin?: string;
 }
 
 export interface ActiveHypothesis {
@@ -168,9 +198,13 @@ export interface ActiveHypothesis {
   isolated_variable?: string;
   success_criteria?: string;
   expected_impact?: string;
+  /** 'generated' when produced by the in-app Metrix engine, else imported. */
+  origin?: string;
 }
 
 export interface StrategyData {
+  /** 'generated' when the rendered set came from the in-app engine, 'imported' otherwise. */
+  provenance?: string;
   message_pillars: MessagePillar[];
   active_hypotheses: ActiveHypothesis[];
   /** Full ICP profiles from the real Strategy Map loop output. */
@@ -192,9 +226,13 @@ export interface DraftBrief {
   confidence?: string;
   /** Full Brief Builder loop output document for this brief. */
   full_brief?: Record<string, unknown>;
+  /** 'generated' when produced by the in-app Metrix engine, else imported. */
+  origin?: string;
 }
 
 export interface BriefBuilder {
+  /** 'generated' when the rendered set came from the in-app engine, 'imported' otherwise. */
+  provenance?: string;
   source_policy: string;
   draft_briefs: DraftBrief[];
 }
@@ -238,8 +276,9 @@ export interface OptimizationLoop {
 export interface CoreReanalysisRead {
   primary_control: string;
   primary_control_read: string;
-  registration_control: string;
-  registration_control_read: string;
+  // Null for accounts whose analysis has no secondary result control yet.
+  registration_control: string | null;
+  registration_control_read: string | null;
   data_caveat: string;
 }
 

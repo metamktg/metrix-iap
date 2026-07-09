@@ -178,7 +178,7 @@ export function SegmentGridModal({
         <div className="flex items-start gap-2 text-[10px] text-muted-foreground/60 leading-relaxed">
           <Info className="w-3 h-3 shrink-0 mt-0.5" />
           <span>
-            Avatar rows: demographic registration signal{cellIds ? ` scoped to ${cellIds.join(", ")}` : " for the whole account"}.
+            Avatar rows: demographic audience signal{cellIds ? ` scoped to ${cellIds.join(", ")}` : " for the whole account"}.
             Placement columns: account-level placement signal. Joint cells populate automatically
             when an export with combined demographic × placement breakdowns is imported.
           </span>

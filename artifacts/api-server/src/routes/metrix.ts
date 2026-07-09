@@ -419,7 +419,7 @@ router.get("/metrix/seed", requireAuth, async (req, res) => {
 
 // ─── Ad account creation & manual report staging ──────────────────────
 
-async function userHasAccountAccess(userId: number, accountId: string): Promise<boolean> {
+export async function userHasAccountAccess(userId: number, accountId: string): Promise<boolean> {
   const rows = await db
     .select({ id: userAdAccountsTable.id })
     .from(userAdAccountsTable)

@@ -138,21 +138,25 @@ export function BudgetView() {
                 )}
               </SectionCard>
 
-              {a && (
+              {a && (a.v3_placement_signal.length > 0 || a.c4e_placement_signal.length > 0) && (
                 <SectionCard
                   title="Placement spend"
                   desc="Spend and results by placement across analysis runs."
                   table="v3_placement_signal, c4e_placement_signal"
                 >
                   <div className="space-y-5">
-                    <div>
-                      <h4 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">V3 placement signal</h4>
-                      <PlacementTable rows={a.v3_placement_signal} />
-                    </div>
-                    <div>
-                      <h4 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">C4E placement signal</h4>
-                      <PlacementTable rows={a.c4e_placement_signal} />
-                    </div>
+                    {a.v3_placement_signal.length > 0 && (
+                      <div>
+                        <h4 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">V3 placement signal</h4>
+                        <PlacementTable rows={a.v3_placement_signal} />
+                      </div>
+                    )}
+                    {a.c4e_placement_signal.length > 0 && (
+                      <div>
+                        <h4 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">C4E placement signal</h4>
+                        <PlacementTable rows={a.c4e_placement_signal} />
+                      </div>
+                    )}
                   </div>
                 </SectionCard>
               )}
