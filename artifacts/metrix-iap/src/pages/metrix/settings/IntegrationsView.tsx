@@ -4,6 +4,7 @@
 // Connect / Add import open the guided flows from ConnectAccountDialogs.
 
 import { useState } from "react";
+import { useGetMetaConnection } from "@workspace/api-client-react";
 import { useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccounts } from "@/lib/data/metrixSeedAdapter";
@@ -24,6 +25,11 @@ export function IntegrationsView() {
   const [connectAccount, setConnectAccount] = useState<AdAccount | null>(null);
   const [importAccount, setImportAccount] = useState<AdAccount | null>(null);
 
+  // Once a live Meta connection exists, the workspace's demo integration
+  // panels are hidden entirely — live and demo data are never shown together.
+  const liveConnection = useGetMetaConnection();
+  const hasLiveConnection = liveConnection.data?.connected === true;
+
   const defaultImportAccount = accounts.find((a) => a.status !== "configured") ?? accounts[0] ?? null;
 
   return (
@@ -37,6 +43,8 @@ export function IntegrationsView() {
       <div className="px-6 py-5 space-y-5 max-w-3xl">
         <MetaLiveConnection />
 
+        {!hasLiveConnection && (
+        <>
         <SectionCard title="Meta ad accounts" desc="Each ad account connects independently; data never crosses accounts.">
           <div className="space-y-2.5">
             {accounts.map((a) => {
@@ -92,6 +100,8 @@ export function IntegrationsView() {
             </button>
           </div>
         </SectionCard>
+        </>
+        )}
       </div>
 
       {connectAccount && (
