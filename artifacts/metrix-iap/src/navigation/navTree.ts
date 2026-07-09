@@ -39,10 +39,19 @@ export type NavSection = {
   matchPaths?: string[];
   // Expandable section: renders children list
   children?: NavChild[];
+  // Landing route for an expandable section header (e.g. the section's
+  // Overview page). Falls back to the first child's route when unset.
+  landing?: string;
   badgeKey?: NavBadgeKey;
   dataSource?: string;
   placeholder?: boolean;
 };
+
+/** Route an expandable section header navigates to on click. */
+export function sectionLandingRoute(section: NavSection): string | null {
+  if (section.landing) return section.landing;
+  return section.children?.[0]?.to ?? null;
+}
 
 export const navTree: NavSection[] = [
   {
@@ -83,13 +92,8 @@ export const navTree: NavSection[] = [
     id: "analysis",
     number: "03",
     label: "Analysis",
+    landing: "/app/analysis/overview",
     children: [
-      {
-        id: "analysis-overview",
-        label: "Overview",
-        to: "/app/analysis/overview",
-        dataSource: "performance_by_cell, campaign_summary",
-      },
       {
         id: "analysis-library",
         label: "IAP Library",
@@ -120,13 +124,8 @@ export const navTree: NavSection[] = [
     id: "strategy",
     number: "04",
     label: "Strategy",
+    landing: "/app/strategy/overview",
     children: [
-      {
-        id: "strategy-overview",
-        label: "Overview",
-        to: "/app/strategy/overview",
-        dataSource: "message_pillars, active_hypotheses",
-      },
       {
         id: "strategy-map",
         label: "Strategy Map",
