@@ -58,6 +58,7 @@ import { requireAdmin } from "../middlewares/requireAdmin";
 import { requireAuth } from "../middlewares/requireAuth";
 import { waitlistRateLimit } from "../middlewares/waitlistRateLimit";
 import { hashPassword, generateTempPassword } from "../lib/passwords";
+import { isAgencyAdminEmail } from "../lib/agencyAccessSafeguard";
 import { ensureSupabaseAuthUser } from "@workspace/auth-mirror";
 import { sendApprovalEmail } from "../lib/approvalEmail";
 import { sendPasswordResetEmail } from "../lib/passwordResetEmail";
@@ -153,17 +154,28 @@ async function provisionApprovedUser(
     .where(eq(usersTable.email, email))
     .limit(1);
 
+  // Designated agency accounts must always have full ad-account visibility
+  // — provisioning them as a scoped "member" is what stranded
+  // meta@metamktgagency.com with an empty view after per-user scoping
+  // shipped. See agencyAccessSafeguard.ts for the durable reconciliation.
+  const role = isAgencyAdminEmail(email) ? "admin" : undefined;
+
   if (existingUser) {
     // Explicit approval is an unambiguous grant: it also restores a
     // previously revoked account.
     await db
       .update(usersTable)
-      .set({ passwordHash, mustChangePassword: true, disabledAt: null })
+      .set({
+        passwordHash,
+        mustChangePassword: true,
+        disabledAt: null,
+        ...(role ? { role } : {}),
+      })
       .where(eq(usersTable.id, existingUser.id));
   } else {
     await db
       .insert(usersTable)
-      .values({ email, passwordHash, mustChangePassword: true });
+      .values({ email, passwordHash, mustChangePassword: true, ...(role ? { role } : {}) });
   }
 
   // Mirror into Supabase Auth so official-schema reviewer/approver FKs

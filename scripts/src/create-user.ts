@@ -13,6 +13,19 @@ import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { ensureSupabaseAuthUser } from "@workspace/auth-mirror";
 
+// Kept in sync with artifacts/api-server/src/lib/agencyAccessSafeguard.ts —
+// this script bypasses the API server, so it needs its own copy of the
+// "agency accounts must always be admin" rule to avoid re-introducing a
+// scoped agency login.
+const DEFAULT_AGENCY_ADMIN_EMAILS = ["meta@metamktgagency.com"];
+function isAgencyAdminEmail(email: string): boolean {
+  const raw = process.env["AGENCY_ADMIN_EMAILS"];
+  const fromEnv = raw
+    ? raw.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean)
+    : [];
+  return [...DEFAULT_AGENCY_ADMIN_EMAILS, ...fromEnv].includes(email.trim().toLowerCase());
+}
+
 const ALPHABET = "abcdefghjkmnpqrstuvwxyzACDEFGHJKLMNPQRSTUVWXYZ2345679";
 
 function generatePassword(length = 14): string {
@@ -37,6 +50,7 @@ async function main() {
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
+  const role = isAgencyAdminEmail(email) ? "admin" : undefined;
 
   const [existing] = await db
     .select({ id: usersTable.id })
@@ -47,14 +61,17 @@ async function main() {
   if (existing) {
     await db
       .update(usersTable)
-      .set({ passwordHash, mustChangePassword: true })
+      .set({ passwordHash, mustChangePassword: true, ...(role ? { role } : {}) })
       .where(eq(usersTable.id, existing.id));
     console.log(`Reset password for existing user ${email}.`);
   } else {
     await db
       .insert(usersTable)
-      .values({ email, passwordHash, mustChangePassword: true });
+      .values({ email, passwordHash, mustChangePassword: true, ...(role ? { role } : {}) });
     console.log(`Created user ${email}.`);
+  }
+  if (role) {
+    console.log(`${email} is a designated agency account — provisioned as admin.`);
   }
 
   // Mirror into Supabase Auth (official METRIX schema FKs reference
