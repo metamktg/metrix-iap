@@ -60,6 +60,8 @@ import {
   X,
   ChevronDown,
   ListChecks,
+  Hash,
+  Sparkles,
 } from "lucide-react";
 import type { AdAccount } from "@/lib/data/seedTypes";
 import { RequiredFormatPanel, type IapCsvClassKey } from "./ManualAnalysisControls";
@@ -253,31 +255,133 @@ function normalizeForMatch(value: string): string {
     .trim();
 }
 
+export type AdNameMatch = {
+  name: string;
+  /** "id" = a shared concept/creative ID code uniquely identified the ad (high confidence). "fuzzy" = closest filename similarity (substring/token/edit-distance based). */
+  method: "id" | "fuzzy";
+};
+
+/** Regexes for concept/creative ID codes commonly embedded in ad/creative filenames (e.g. "CR1234", "CR-1234", or a UUID). Punctuation between letters/digits is stripped before comparison so "CR-1234" and "CR_1234" are treated as the same code. */
+// Note: uses [a-z0-9] lookaround rather than \b, because "_" is a word
+// character in regex — a code like "CR1234" immediately followed by "_"
+// (e.g. "CR1234_final.mp4") would otherwise fail to match at the trailing
+// boundary since digit->underscore isn't a \b transition.
+const ID_CODE_PATTERNS: readonly RegExp[] = [
+  /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi,
+  /(?<![a-z0-9])[a-z]{1,4}[-_]?\d{3,8}(?![a-z0-9])/gi,
+];
+
+/** Extracts normalized ID/creative code tokens from a filename or ad name (lowercased, separators stripped). Codes shorter than 4 chars after stripping are ignored — too common to be a reliable identifier. */
+function extractIdCodes(value: string): string[] {
+  const base = value.replace(/\.[^/.]+$/, "").toLowerCase();
+  const codes = new Set<string>();
+  for (const pattern of ID_CODE_PATTERNS) {
+    for (const match of base.matchAll(pattern)) {
+      const normalized = match[0].replace(/[-_]/g, "");
+      if (normalized.length >= 4) codes.add(normalized);
+    }
+  }
+  return Array.from(codes);
+}
+
+/** Dice's (bigram overlap) coefficient — robust to typos/minor edits, 0..1. */
+function diceCoefficient(a: string, b: string): number {
+  if (a === b) return 1;
+  if (a.length < 2 || b.length < 2) return 0;
+  const bigrams = (s: string): string[] => {
+    const arr: string[] = [];
+    for (let i = 0; i < s.length - 1; i++) arr.push(s.substring(i, i + 2));
+    return arr;
+  };
+  const bigramsA = bigrams(a);
+  const remaining = new Map<string, number>();
+  for (const bg of bigrams(b)) remaining.set(bg, (remaining.get(bg) ?? 0) + 1);
+  let matches = 0;
+  for (const bg of bigramsA) {
+    const count = remaining.get(bg) ?? 0;
+    if (count > 0) {
+      matches++;
+      remaining.set(bg, count - 1);
+    }
+  }
+  return (2 * matches) / (bigramsA.length + bigrams(b).length);
+}
+
+/** Word-level Jaccard similarity — robust to reordered tokens (e.g. "v1_UGC_Testimonial" vs "UGC Testimonial v1"). */
+function tokenSetSimilarity(a: string, b: string): number {
+  const tokensA = new Set(a.split(" ").filter(Boolean));
+  const tokensB = new Set(b.split(" ").filter(Boolean));
+  if (tokensA.size === 0 || tokensB.size === 0) return 0;
+  let intersection = 0;
+  for (const token of tokensA) if (tokensB.has(token)) intersection++;
+  const union = new Set([...tokensA, ...tokensB]).size;
+  return intersection / union;
+}
+
+/** Below this combined similarity score, a fuzzy suggestion is considered too unreliable — left unmapped rather than guessed. */
+const FUZZY_MATCH_THRESHOLD = 0.55;
+
 /**
  * Suggests the best ad-name match for an uploaded filename against a set
- * of known/available ad names. Tries an exact normalized match first,
- * then falls back to a substring match in either direction — filenames
- * often carry extra tokens (dates, sizes, "_final") around the ad name.
+ * of known/available ad names, in two passes:
+ *  1. ID/creative code match — a code (e.g. "CR1234", a UUID) embedded in
+ *     the filename that appears in exactly ONE candidate's name is a
+ *     high-confidence match. A code shared by 2+ candidates is ambiguous
+ *     and is skipped (never guessed).
+ *  2. Fuzzy fallback — exact normalized match, substring containment, or
+ *     the best combined bigram/token-overlap similarity score. Scores
+ *     below FUZZY_MATCH_THRESHOLD are left unmapped rather than guessed.
  */
-function suggestAdNameMatch(filename: string, candidates: Iterable<string>): string | null {
+function suggestAdNameMatch(filename: string, candidates: Iterable<string>): AdNameMatch | null {
+  const candidateList = Array.from(candidates);
+  if (candidateList.length === 0) return null;
+
   const normalizedFile = normalizeForMatch(filename);
   if (!normalizedFile) return null;
 
-  let bestSubstring: { name: string; score: number } | null = null;
-  for (const candidate of candidates) {
-    const normalizedCandidate = normalizeForMatch(candidate);
-    if (!normalizedCandidate) continue;
-    if (normalizedCandidate === normalizedFile) return candidate;
-
-    if (normalizedFile.includes(normalizedCandidate) || normalizedCandidate.includes(normalizedFile)) {
-      // Prefer the longer overlapping candidate name — a closer match to the filename.
-      const score = normalizedCandidate.length;
-      if (!bestSubstring || score > bestSubstring.score) {
-        bestSubstring = { name: candidate, score };
+  const fileCodes = extractIdCodes(filename);
+  if (fileCodes.length > 0) {
+    const ownersByCode = new Map<string, Set<string>>();
+    for (const candidate of candidateList) {
+      for (const code of extractIdCodes(candidate)) {
+        if (!ownersByCode.has(code)) ownersByCode.set(code, new Set());
+        ownersByCode.get(code)!.add(candidate);
+      }
+    }
+    for (const code of fileCodes) {
+      const owners = ownersByCode.get(code);
+      if (owners && owners.size === 1) {
+        return { name: [...owners][0]!, method: "id" };
       }
     }
   }
-  return bestSubstring?.name ?? null;
+
+  let best: { name: string; score: number } | null = null;
+  for (const candidate of candidateList) {
+    const normalizedCandidate = normalizeForMatch(candidate);
+    if (!normalizedCandidate) continue;
+    if (normalizedCandidate === normalizedFile) return { name: candidate, method: "fuzzy" };
+
+    let score: number;
+    if (normalizedFile.includes(normalizedCandidate) || normalizedCandidate.includes(normalizedFile)) {
+      // Substring containment is a strong signal — filenames often carry extra
+      // tokens (dates, sizes, "_final") around the ad name. Weight by how much
+      // of the longer string the overlap covers so a near-full match beats a
+      // short/coincidental substring.
+      const overlapRatio =
+        Math.min(normalizedFile.length, normalizedCandidate.length) /
+        Math.max(normalizedFile.length, normalizedCandidate.length);
+      score = 0.75 + 0.2 * overlapRatio;
+    } else {
+      score = Math.max(diceCoefficient(normalizedFile, normalizedCandidate), tokenSetSimilarity(normalizedFile, normalizedCandidate));
+    }
+    if (!best || score > best.score) best = { name: candidate, score };
+  }
+
+  if (best && best.score >= FUZZY_MATCH_THRESHOLD) {
+    return { name: best.name, method: "fuzzy" };
+  }
+  return null;
 }
 
 const CSV_SLOTS: { kind: "performance_demo_csv" | "performance_placement_csv"; csvClass: IapCsvClassKey; title: string; desc: string }[] = [
@@ -510,6 +614,23 @@ function AdNameDropdownPicker({
   );
 }
 
+/** Small badge explaining why an ad-name suggestion was made. Only shown while the current mapping still equals the auto-suggested value — overriding it (dropdown/free-text) drops the badge automatically. */
+function MatchMethodBadge({ match, adNames }: { match?: AdNameMatch; adNames: string[] }) {
+  if (!match || adNames.length !== 1 || adNames[0] !== match.name) return null;
+  const isId = match.method === "id";
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 text-[9px] font-medium px-1.5 py-0.5 rounded shrink-0",
+        isId ? "bg-primary/10 text-primary" : "bg-white/[0.06] text-muted-foreground/85"
+      )}
+    >
+      {isId ? <Hash className="w-2.5 h-2.5" /> : <Sparkles className="w-2.5 h-2.5" />}
+      {isId ? "Matched by ID code" : "Matched by filename similarity"}
+    </span>
+  );
+}
+
 function CreativeThumbnail({ accountId, asset }: { accountId: string; asset: ManualImport }) {
   const [broken, setBroken] = useState(false);
   const fileUrl = `/api/metrix/accounts/${accountId}/manual-imports/${asset.id}/file`;
@@ -552,6 +673,7 @@ function CreativeAdNamesEditor({
   knownAdNames,
   availableAdNames,
   autoFocusPicker,
+  suggestedMatch,
   onSaved,
 }: {
   accountId: string;
@@ -561,6 +683,8 @@ function CreativeAdNamesEditor({
   availableAdNames?: string[];
   /** Auto-open the picker popover on mount (newly staged, unmapped file). */
   autoFocusPicker?: boolean;
+  /** How the current mapping was auto-suggested at stage time, if it still matches the saved value (cleared once the user overrides it). */
+  suggestedMatch?: AdNameMatch;
   onSaved: () => void;
 }) {
   const [editingFree, setEditingFree] = useState(false);
@@ -597,7 +721,7 @@ function CreativeAdNamesEditor({
       </div>
 
       {hasRegistry ? (
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <AdNameDropdownPicker
             availableAdNames={availableAdNames!}
             selected={asset.ad_names}
@@ -605,6 +729,7 @@ function CreativeAdNamesEditor({
             defaultOpen={autoFocusPicker && asset.ad_names.length === 0}
           />
           {asset.ad_names.length > 0 && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
+          <MatchMethodBadge match={suggestedMatch} adNames={asset.ad_names} />
         </div>
       ) : editingFree ? (
         <div className="flex items-center gap-1.5">
@@ -637,10 +762,11 @@ function CreativeAdNamesEditor({
           </button>
         </div>
       ) : (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <div className="text-[10px] text-muted-foreground/85 flex-1">
             {asset.ad_names.length > 0 ? `Mapped to: ${asset.ad_names.join(", ")}` : "No ad name mapped yet"}
           </div>
+          <MatchMethodBadge match={suggestedMatch} adNames={asset.ad_names} />
           <button
             onClick={() => { setValue(asset.ad_names.join(", ")); setEditingFree(true); }}
             className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-muted-foreground/80 hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
@@ -683,6 +809,7 @@ function CreativeUploadSection({
   const [currentFile, setCurrentFile] = useState<string | null>(null);
   const [currentPct, setCurrentPct] = useState(0);
   const [justStagedIds, setJustStagedIds] = useState<Set<string>>(new Set());
+  const [matchInfoById, setMatchInfoById] = useState<Map<string, AdNameMatch>>(new Map());
   const fileRef = useRef<HTMLInputElement>(null);
   const deleteMutation = useDeleteManualImport();
 
@@ -716,7 +843,7 @@ function CreativeUploadSection({
 
       try {
         const content_base64 = await fileToBase64(file);
-        const matchedName = suggestAdNameMatch(file.name, matchCandidates);
+        const match = suggestAdNameMatch(file.name, matchCandidates);
         const staged = await stageManualImportWithProgress(
           accountId,
           {
@@ -724,11 +851,18 @@ function CreativeUploadSection({
             filename: file.name,
             content_type: file.type || undefined,
             content_base64,
-            ad_names: matchedName ? [matchedName] : [],
+            ad_names: match ? [match.name] : [],
           },
           setCurrentPct
         );
         newlyStaged.push(staged.import_id);
+        if (match) {
+          setMatchInfoById((prev) => {
+            const next = new Map(prev);
+            next.set(staged.import_id, match);
+            return next;
+          });
+        }
       } catch (err) {
         failures.push(`${file.name}: ${err instanceof Error ? err.message : "Upload failed."}`);
       }
@@ -814,6 +948,7 @@ function CreativeUploadSection({
                   knownAdNames={knownAdNames}
                   availableAdNames={availableAdNames}
                   autoFocusPicker={justStagedIds.has(asset.id)}
+                  suggestedMatch={matchInfoById.get(asset.id)}
                   onSaved={onChanged}
                 />
               </div>
