@@ -322,6 +322,75 @@ export interface ManualImportResult {
   note: string;
 }
 
+export interface ManualPerformanceCsvColumn {
+  label: string;
+  required: boolean;
+  description: string;
+  aliases: string[];
+}
+
+export interface ManualPerformanceCsvFormat {
+  columns: ManualPerformanceCsvColumn[];
+  sample_csv: string;
+}
+
+/**
+ * Date window to analyze, anchored to the latest date found in the uploaded data (not wall-clock time). "all" analyzes every uploaded date.
+ */
+export type StartAnalysisInputDateRange = typeof StartAnalysisInputDateRange[keyof typeof StartAnalysisInputDateRange];
+
+
+export const StartAnalysisInputDateRange = {
+  '7d': '7d',
+  '14d': '14d',
+  '30d': '30d',
+  all: 'all',
+} as const;
+
+export interface StartAnalysisInput {
+  /** Date window to analyze, anchored to the latest date found in the uploaded data (not wall-clock time). "all" analyzes every uploaded date. */
+  date_range: StartAnalysisInputDateRange;
+}
+
+export type AnalysisRunStatus = typeof AnalysisRunStatus[keyof typeof AnalysisRunStatus];
+
+
+export const AnalysisRunStatus = {
+  running: 'running',
+  success: 'success',
+  error: 'error',
+} as const;
+
+export type AnalysisRunDateRange = typeof AnalysisRunDateRange[keyof typeof AnalysisRunDateRange];
+
+
+export const AnalysisRunDateRange = {
+  '7d': '7d',
+  '14d': '14d',
+  '30d': '30d',
+  all: 'all',
+} as const;
+
+export interface AnalysisRun {
+  id: string;
+  account_id: string;
+  status: AnalysisRunStatus;
+  date_range: AnalysisRunDateRange;
+  /** Resolved start date actually covered by this run (from the data itself). */
+  date_start?: string | null;
+  /** Resolved end date actually covered by this run (from the data itself). */
+  date_end?: string | null;
+  rows_ingested?: number | null;
+  imports_used?: number | null;
+  error_message?: string | null;
+  started_at: string;
+  finished_at?: string | null;
+}
+
+export interface LatestAnalysisRunResult {
+  run: AnalysisRun | null;
+}
+
 export interface StartGenerationResult {
   run_id: string;
 }

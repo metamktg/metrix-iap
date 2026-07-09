@@ -17,3 +17,4 @@
 - [Wouter hash deep-links break tests](wouter-hash-deeplinks.md) — use the ?focus= param convention for in-app deep-links, never a #hash; hashes 404 under the memory-location test harness.
 - [Orval Params-type name collision](orval-params-collision.md) — prefer path segments over query params for operation discriminators; mixed path+query params can collide on generated Params names.
 - [Metrix result terminology](metrix-result-terminology.md) — derive the account's result noun from analysis cell rows' Result type, never bottom-line totals (installs dominate totals and mislabel).
+- [Metrix manual analysis runs](metrix-manual-analysis-runs.md) — date presets anchor to MAX(date) in uploaded data, not wall clock; avoid circular imports between sibling component files (silent HMR-only failure).

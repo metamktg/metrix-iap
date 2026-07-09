@@ -132,6 +132,127 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/manual-performance-csv-format:
+    get:
+      operationId: getManualPerformanceCsvFormat
+      tags: [metrix]
+      summary: Required column format for the manual performance CSV upload
+      description: Returns the required/optional columns (with accepted header aliases and descriptions) for the "Performance export (CSV)" manual upload kind, plus a valid sample CSV. Used by the upload UI to show users exactly what to export.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Column format spec
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManualPerformanceCsvFormat"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/analysis-runs:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+    post:
+      operationId: startManualAnalysisRun
+      tags: [metrix]
+      summary: Manually run analysis over an account's staged performance CSVs
+      description: Parses the account's staged performance_csv manual imports into performance data for the selected date window (7d/14d/30d/all — anchored to the latest date found in the uploaded data, not wall-clock time). Never runs automatically on upload — only from this explicit call. Returns 202 with the run id immediately; poll the latest-run endpoint for the outcome, including the exact date range analyzed. Requires access to the account.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartAnalysisInput"
+      responses:
+        "202":
+          description: Analysis run started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StartGenerationResult"
+        "400":
+          description: Invalid date_range
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: An analysis run is already in progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "422":
+          description: Prerequisites missing (no staged performance CSV, or none in range)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/analysis-runs/latest:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+    get:
+      operationId: getLatestAnalysisRun
+      tags: [metrix]
+      summary: Latest manual analysis run for an account
+      description: Returns the most recent manual analysis run for the account, or null when none exists. Runs stuck in 'running' past the staleness cutoff are honestly flipped to 'error'. Requires access to the account.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Latest run (or null)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LatestAnalysisRunResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/accounts/{accountId}/generate/strategy:
     parameters:
       - name: accountId
@@ -2011,6 +2132,95 @@ components:
         - filename
         - size_bytes
         - note
+    ManualPerformanceCsvColumn:
+      type: object
+      properties:
+        label:
+          type: string
+        required:
+          type: boolean
+        description:
+          type: string
+        aliases:
+          type: array
+          items:
+            type: string
+      required:
+        - label
+        - required
+        - description
+        - aliases
+    ManualPerformanceCsvFormat:
+      type: object
+      properties:
+        columns:
+          type: array
+          items:
+            $ref: "#/components/schemas/ManualPerformanceCsvColumn"
+        sample_csv:
+          type: string
+      required:
+        - columns
+        - sample_csv
+    StartAnalysisInput:
+      type: object
+      properties:
+        date_range:
+          type: string
+          enum: [7d, 14d, 30d, all]
+          description: Date window to analyze, anchored to the latest date found in the uploaded data (not wall-clock time). "all" analyzes every uploaded date.
+      required:
+        - date_range
+    AnalysisRun:
+      type: object
+      properties:
+        id:
+          type: string
+        account_id:
+          type: string
+        status:
+          type: string
+          enum: [running, success, error]
+        date_range:
+          type: string
+          enum: [7d, 14d, 30d, all]
+        date_start:
+          type: string
+          nullable: true
+          description: Resolved start date actually covered by this run (from the data itself).
+        date_end:
+          type: string
+          nullable: true
+          description: Resolved end date actually covered by this run (from the data itself).
+        rows_ingested:
+          type: integer
+          nullable: true
+        imports_used:
+          type: integer
+          nullable: true
+        error_message:
+          type: string
+          nullable: true
+        started_at:
+          type: string
+        finished_at:
+          type: string
+          nullable: true
+      required:
+        - id
+        - account_id
+        - status
+        - date_range
+        - started_at
+    LatestAnalysisRunResult:
+      type: object
+      properties:
+        run:
+          allOf:
+            - $ref: "#/components/schemas/AnalysisRun"
+          nullable: true
+      required:
+        - run
     StartGenerationResult:
       type: object
       properties:

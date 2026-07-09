@@ -43,11 +43,13 @@ import type {
   GeneratedReportDeleteResult,
   GeneratedReportsResult,
   HealthStatus,
+  LatestAnalysisRunResult,
   LatestGenerationRunResult,
   ListAgentWaitlistParams,
   ListMetaReportRowsParams,
   ManualImportInput,
   ManualImportResult,
+  ManualPerformanceCsvFormat,
   MetaAdAccountsResult,
   MetaConnectionStatus,
   MetaDisconnectResult,
@@ -65,6 +67,7 @@ import type {
   RunMetaReportsResult,
   SelectMetaAdAccountInput,
   SelectMetaAdAccountResult,
+  StartAnalysisInput,
   StartGenerationResult,
   WaitlistApprovalResult,
   WaitlistEntriesResult,
@@ -325,6 +328,234 @@ export const useStageManualImport = <TError = ErrorType<ApiError>,
       > => {
       return useMutation(getStageManualImportMutationOptions(options));
     }
+
+export const getGetManualPerformanceCsvFormatUrl = () => {
+
+
+
+
+  return `/api/metrix/manual-performance-csv-format`
+}
+
+/**
+ * Returns the required/optional columns (with accepted header aliases and descriptions) for the "Performance export (CSV)" manual upload kind, plus a valid sample CSV. Used by the upload UI to show users exactly what to export.
+ * @summary Required column format for the manual performance CSV upload
+ */
+export const getManualPerformanceCsvFormat = async ( options?: RequestInit): Promise<ManualPerformanceCsvFormat> => {
+
+  return customFetch<ManualPerformanceCsvFormat>(getGetManualPerformanceCsvFormatUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetManualPerformanceCsvFormatQueryKey = () => {
+    return [
+    `/api/metrix/manual-performance-csv-format`
+    ] as const;
+    }
+
+
+export const getGetManualPerformanceCsvFormatQueryOptions = <TData = Awaited<ReturnType<typeof getManualPerformanceCsvFormat>>, TError = ErrorType<ApiError>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getManualPerformanceCsvFormat>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetManualPerformanceCsvFormatQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getManualPerformanceCsvFormat>>> = ({ signal }) => getManualPerformanceCsvFormat({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getManualPerformanceCsvFormat>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetManualPerformanceCsvFormatQueryResult = NonNullable<Awaited<ReturnType<typeof getManualPerformanceCsvFormat>>>
+export type GetManualPerformanceCsvFormatQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Required column format for the manual performance CSV upload
+ */
+
+export function useGetManualPerformanceCsvFormat<TData = Awaited<ReturnType<typeof getManualPerformanceCsvFormat>>, TError = ErrorType<ApiError>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getManualPerformanceCsvFormat>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetManualPerformanceCsvFormatQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getStartManualAnalysisRunUrl = (accountId: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/analysis-runs`
+}
+
+/**
+ * Parses the account's staged performance_csv manual imports into performance data for the selected date window (7d/14d/30d/all — anchored to the latest date found in the uploaded data, not wall-clock time). Never runs automatically on upload — only from this explicit call. Returns 202 with the run id immediately; poll the latest-run endpoint for the outcome, including the exact date range analyzed. Requires access to the account.
+ * @summary Manually run analysis over an account's staged performance CSVs
+ */
+export const startManualAnalysisRun = async (accountId: string,
+    startAnalysisInput: StartAnalysisInput, options?: RequestInit): Promise<StartGenerationResult> => {
+
+  return customFetch<StartGenerationResult>(getStartManualAnalysisRunUrl(accountId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(startAnalysisInput)
+  }
+);}
+
+
+
+
+export const getStartManualAnalysisRunMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startManualAnalysisRun>>, TError,{accountId: string;data: BodyType<StartAnalysisInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startManualAnalysisRun>>, TError,{accountId: string;data: BodyType<StartAnalysisInput>}, TContext> => {
+
+const mutationKey = ['startManualAnalysisRun'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startManualAnalysisRun>>, {accountId: string;data: BodyType<StartAnalysisInput>}> = (props) => {
+          const {accountId,data} = props ?? {};
+
+          return  startManualAnalysisRun(accountId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartManualAnalysisRunMutationResult = NonNullable<Awaited<ReturnType<typeof startManualAnalysisRun>>>
+    export type StartManualAnalysisRunMutationBody = BodyType<StartAnalysisInput>
+    export type StartManualAnalysisRunMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Manually run analysis over an account's staged performance CSVs
+ */
+export const useStartManualAnalysisRun = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startManualAnalysisRun>>, TError,{accountId: string;data: BodyType<StartAnalysisInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startManualAnalysisRun>>,
+        TError,
+        {accountId: string;data: BodyType<StartAnalysisInput>},
+        TContext
+      > => {
+      return useMutation(getStartManualAnalysisRunMutationOptions(options));
+    }
+
+export const getGetLatestAnalysisRunUrl = (accountId: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/analysis-runs/latest`
+}
+
+/**
+ * Returns the most recent manual analysis run for the account, or null when none exists. Runs stuck in 'running' past the staleness cutoff are honestly flipped to 'error'. Requires access to the account.
+ * @summary Latest manual analysis run for an account
+ */
+export const getLatestAnalysisRun = async (accountId: string, options?: RequestInit): Promise<LatestAnalysisRunResult> => {
+
+  return customFetch<LatestAnalysisRunResult>(getGetLatestAnalysisRunUrl(accountId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetLatestAnalysisRunQueryKey = (accountId: string,) => {
+    return [
+    `/api/metrix/accounts/${accountId}/analysis-runs/latest`
+    ] as const;
+    }
+
+
+export const getGetLatestAnalysisRunQueryOptions = <TData = Awaited<ReturnType<typeof getLatestAnalysisRun>>, TError = ErrorType<ApiError>>(accountId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLatestAnalysisRun>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetLatestAnalysisRunQueryKey(accountId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLatestAnalysisRun>>> = ({ signal }) => getLatestAnalysisRun(accountId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: accountId !== null && accountId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLatestAnalysisRun>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetLatestAnalysisRunQueryResult = NonNullable<Awaited<ReturnType<typeof getLatestAnalysisRun>>>
+export type GetLatestAnalysisRunQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Latest manual analysis run for an account
+ */
+
+export function useGetLatestAnalysisRun<TData = Awaited<ReturnType<typeof getLatestAnalysisRun>>, TError = ErrorType<ApiError>>(
+ accountId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLatestAnalysisRun>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetLatestAnalysisRunQueryOptions(accountId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGenerateAccountStrategyUrl = (accountId: string,) => {
 
