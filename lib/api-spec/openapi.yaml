@@ -1384,6 +1384,153 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/workspaces/{workspaceId}/members/{email}/ad-accounts:
+    parameters:
+      - name: workspaceId
+        in: path
+        required: true
+        description: Workspace (manager account) identifier.
+        schema:
+          type: string
+          minLength: 1
+      - name: email
+        in: path
+        required: true
+        description: Member's email address (URL-encoded).
+        schema:
+          type: string
+          minLength: 1
+    get:
+      operationId: listMemberAdAccounts
+      tags: [metrix]
+      summary: List a member's granted ad accounts
+      description: Returns the ad account ids this member has been granted access to. Admin-only; requires a logged-in session with access to the workspace.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Member ad-account grants
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemberAdAccountsResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this workspace, or not an admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Member not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    post:
+      operationId: grantMemberAdAccount
+      tags: [metrix]
+      summary: Grant a member access to an ad account
+      description: Adds a user_ad_accounts grant for the member. Idempotent. Admin-only; requires a logged-in session with access to the workspace.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GrantMemberAdAccountInput"
+      responses:
+        "200":
+          description: Grant result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemberAdAccountsResult"
+        "400":
+          description: Unknown ad account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this workspace, or not an admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Member not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/workspaces/{workspaceId}/members/{email}/ad-accounts/{adAccountId}:
+    parameters:
+      - name: workspaceId
+        in: path
+        required: true
+        description: Workspace (manager account) identifier.
+        schema:
+          type: string
+          minLength: 1
+      - name: email
+        in: path
+        required: true
+        description: Member's email address (URL-encoded).
+        schema:
+          type: string
+          minLength: 1
+      - name: adAccountId
+        in: path
+        required: true
+        description: Ad account identifier (URL-encoded).
+        schema:
+          type: string
+          minLength: 1
+    delete:
+      operationId: revokeMemberAdAccount
+      tags: [metrix]
+      summary: Revoke a member's access to an ad account
+      description: Removes the user_ad_accounts grant for the member, if present. Admin-only; requires a logged-in session with access to the workspace.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Revoke result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemberAdAccountsResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this workspace, or not an admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Member not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/workspaces/{workspaceId}/notification-prefs:
     parameters:
       - name: workspaceId
@@ -2705,6 +2852,23 @@ components:
             $ref: "#/components/schemas/WorkspaceMember"
       required:
         - members
+    GrantMemberAdAccountInput:
+      type: object
+      properties:
+        ad_account_id:
+          type: string
+          minLength: 1
+      required:
+        - ad_account_id
+    MemberAdAccountsResult:
+      type: object
+      properties:
+        ad_account_ids:
+          type: array
+          items:
+            type: string
+      required:
+        - ad_account_ids
     ChannelPref:
       type: object
       properties:

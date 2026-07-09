@@ -20,3 +20,4 @@
 - [Metrix manual analysis runs](metrix-manual-analysis-runs.md) — date presets anchor to MAX(date) in uploaded data, not wall clock; avoid circular imports between sibling component files (silent HMR-only failure).
 - [Supabase bytea file serving](supabase-bytea-file-serving.md) — PostgREST returns bytea as hex string with `\x` prefix on read, same as insert; strip prefix before Buffer.from(hex).
 - [In-process route testing](in-process-route-testing.md) — boot the real app with app.listen(0) + fetch to test routes gated by real DB/Supabase middleware, don't mock it.
+- [API server dev script rebuilds on restart](api-server-dev-rebuild.md) — the API server's dev workflow does a full esbuild+start, not HMR; new/changed routes 404 until the workflow is restarted.

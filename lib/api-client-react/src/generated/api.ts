@@ -42,6 +42,7 @@ import type {
   GeneratedReportCreateResult,
   GeneratedReportDeleteResult,
   GeneratedReportsResult,
+  GrantMemberAdAccountInput,
   HealthStatus,
   LatestAnalysisRunResult,
   LatestGenerationRunResult,
@@ -52,6 +53,7 @@ import type {
   ManualImportInput,
   ManualImportResult,
   ManualPerformanceCsvFormat,
+  MemberAdAccountsResult,
   MetaAdAccountsResult,
   MetaConnectionStatus,
   MetaDisconnectResult,
@@ -2997,6 +2999,238 @@ export function useListWorkspaceMembers<TData = Awaited<ReturnType<typeof listWo
 
 
 
+
+export const getListMemberAdAccountsUrl = (workspaceId: string,
+    email: string,) => {
+
+
+
+
+  return `/api/metrix/workspaces/${workspaceId}/members/${email}/ad-accounts`
+}
+
+/**
+ * Returns the ad account ids this member has been granted access to. Admin-only; requires a logged-in session with access to the workspace.
+ * @summary List a member's granted ad accounts
+ */
+export const listMemberAdAccounts = async (workspaceId: string,
+    email: string, options?: RequestInit): Promise<MemberAdAccountsResult> => {
+
+  return customFetch<MemberAdAccountsResult>(getListMemberAdAccountsUrl(workspaceId,email),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMemberAdAccountsQueryKey = (workspaceId: string,
+    email: string,) => {
+    return [
+    `/api/metrix/workspaces/${workspaceId}/members/${email}/ad-accounts`
+    ] as const;
+    }
+
+
+export const getListMemberAdAccountsQueryOptions = <TData = Awaited<ReturnType<typeof listMemberAdAccounts>>, TError = ErrorType<ApiError>>(workspaceId: string,
+    email: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMemberAdAccounts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMemberAdAccountsQueryKey(workspaceId,email);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMemberAdAccounts>>> = ({ signal }) => listMemberAdAccounts(workspaceId,email, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: workspaceId !== null && workspaceId !== undefined && email !== null && email !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMemberAdAccounts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMemberAdAccountsQueryResult = NonNullable<Awaited<ReturnType<typeof listMemberAdAccounts>>>
+export type ListMemberAdAccountsQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary List a member's granted ad accounts
+ */
+
+export function useListMemberAdAccounts<TData = Awaited<ReturnType<typeof listMemberAdAccounts>>, TError = ErrorType<ApiError>>(
+ workspaceId: string,
+    email: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMemberAdAccounts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMemberAdAccountsQueryOptions(workspaceId,email,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGrantMemberAdAccountUrl = (workspaceId: string,
+    email: string,) => {
+
+
+
+
+  return `/api/metrix/workspaces/${workspaceId}/members/${email}/ad-accounts`
+}
+
+/**
+ * Adds a user_ad_accounts grant for the member. Idempotent. Admin-only; requires a logged-in session with access to the workspace.
+ * @summary Grant a member access to an ad account
+ */
+export const grantMemberAdAccount = async (workspaceId: string,
+    email: string,
+    grantMemberAdAccountInput: GrantMemberAdAccountInput, options?: RequestInit): Promise<MemberAdAccountsResult> => {
+
+  return customFetch<MemberAdAccountsResult>(getGrantMemberAdAccountUrl(workspaceId,email),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(grantMemberAdAccountInput)
+  }
+);}
+
+
+
+
+export const getGrantMemberAdAccountMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof grantMemberAdAccount>>, TError,{workspaceId: string;email: string;data: BodyType<GrantMemberAdAccountInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof grantMemberAdAccount>>, TError,{workspaceId: string;email: string;data: BodyType<GrantMemberAdAccountInput>}, TContext> => {
+
+const mutationKey = ['grantMemberAdAccount'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof grantMemberAdAccount>>, {workspaceId: string;email: string;data: BodyType<GrantMemberAdAccountInput>}> = (props) => {
+          const {workspaceId,email,data} = props ?? {};
+
+          return  grantMemberAdAccount(workspaceId,email,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GrantMemberAdAccountMutationResult = NonNullable<Awaited<ReturnType<typeof grantMemberAdAccount>>>
+    export type GrantMemberAdAccountMutationBody = BodyType<GrantMemberAdAccountInput>
+    export type GrantMemberAdAccountMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Grant a member access to an ad account
+ */
+export const useGrantMemberAdAccount = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof grantMemberAdAccount>>, TError,{workspaceId: string;email: string;data: BodyType<GrantMemberAdAccountInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof grantMemberAdAccount>>,
+        TError,
+        {workspaceId: string;email: string;data: BodyType<GrantMemberAdAccountInput>},
+        TContext
+      > => {
+      return useMutation(getGrantMemberAdAccountMutationOptions(options));
+    }
+
+export const getRevokeMemberAdAccountUrl = (workspaceId: string,
+    email: string,
+    adAccountId: string,) => {
+
+
+
+
+  return `/api/metrix/workspaces/${workspaceId}/members/${email}/ad-accounts/${adAccountId}`
+}
+
+/**
+ * Removes the user_ad_accounts grant for the member, if present. Admin-only; requires a logged-in session with access to the workspace.
+ * @summary Revoke a member's access to an ad account
+ */
+export const revokeMemberAdAccount = async (workspaceId: string,
+    email: string,
+    adAccountId: string, options?: RequestInit): Promise<MemberAdAccountsResult> => {
+
+  return customFetch<MemberAdAccountsResult>(getRevokeMemberAdAccountUrl(workspaceId,email,adAccountId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRevokeMemberAdAccountMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeMemberAdAccount>>, TError,{workspaceId: string;email: string;adAccountId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokeMemberAdAccount>>, TError,{workspaceId: string;email: string;adAccountId: string}, TContext> => {
+
+const mutationKey = ['revokeMemberAdAccount'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeMemberAdAccount>>, {workspaceId: string;email: string;adAccountId: string}> = (props) => {
+          const {workspaceId,email,adAccountId} = props ?? {};
+
+          return  revokeMemberAdAccount(workspaceId,email,adAccountId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokeMemberAdAccountMutationResult = NonNullable<Awaited<ReturnType<typeof revokeMemberAdAccount>>>
+
+    export type RevokeMemberAdAccountMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Revoke a member's access to an ad account
+ */
+export const useRevokeMemberAdAccount = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeMemberAdAccount>>, TError,{workspaceId: string;email: string;adAccountId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revokeMemberAdAccount>>,
+        TError,
+        {workspaceId: string;email: string;adAccountId: string},
+        TContext
+      > => {
+      return useMutation(getRevokeMemberAdAccountMutationOptions(options));
+    }
 
 export const getGetNotificationPrefsUrl = (workspaceId: string,) => {
 

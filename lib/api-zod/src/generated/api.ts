@@ -765,6 +765,69 @@ export const ListWorkspaceMembersResponse = zod.object({
 
 
 /**
+ * Returns the ad account ids this member has been granted access to. Admin-only; requires a logged-in session with access to the workspace.
+ * @summary List a member's granted ad accounts
+ */
+
+
+
+
+export const ListMemberAdAccountsParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.'),
+  "email": zod.coerce.string().min(1).describe('Member\'s email address (URL-encoded).')
+})
+
+export const ListMemberAdAccountsResponse = zod.object({
+  "ad_account_ids": zod.array(zod.string())
+})
+
+
+/**
+ * Adds a user_ad_accounts grant for the member. Idempotent. Admin-only; requires a logged-in session with access to the workspace.
+ * @summary Grant a member access to an ad account
+ */
+
+
+
+
+export const GrantMemberAdAccountParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.'),
+  "email": zod.coerce.string().min(1).describe('Member\'s email address (URL-encoded).')
+})
+
+
+
+
+export const GrantMemberAdAccountBody = zod.object({
+  "ad_account_id": zod.string().min(1)
+})
+
+export const GrantMemberAdAccountResponse = zod.object({
+  "ad_account_ids": zod.array(zod.string())
+})
+
+
+/**
+ * Removes the user_ad_accounts grant for the member, if present. Admin-only; requires a logged-in session with access to the workspace.
+ * @summary Revoke a member's access to an ad account
+ */
+
+
+
+
+
+export const RevokeMemberAdAccountParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.'),
+  "email": zod.coerce.string().min(1).describe('Member\'s email address (URL-encoded).'),
+  "adAccountId": zod.coerce.string().min(1).describe('Ad account identifier (URL-encoded).')
+})
+
+export const RevokeMemberAdAccountResponse = zod.object({
+  "ad_account_ids": zod.array(zod.string())
+})
+
+
+/**
  * Returns persisted channel and event preference overrides for this workspace. Anything not listed falls back to seed defaults on the client. Requires a logged-in session with access to the workspace.
  * @summary Get workspace notification preference overrides
  */

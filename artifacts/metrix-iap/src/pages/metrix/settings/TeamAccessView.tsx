@@ -9,7 +9,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getWorkspaceSettings } from "@/lib/data/metrixSeedAdapter";
 import { ModuleHeader, SectionCard, PendingState, CaveatNote } from "../shared";
 import { cn } from "@/lib/utils";
-import { Users, UserPlus, ShieldCheck, Loader2, X, RotateCw } from "lucide-react";
+import { Users, UserPlus, ShieldCheck, Loader2, X, RotateCw, Plus, ChevronDown } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -23,10 +23,15 @@ import {
   useCreateWorkspaceInvite,
   useRevokeWorkspaceInvite,
   useResendWorkspaceInvite,
+  useListMemberAdAccounts,
+  useGrantMemberAdAccount,
+  useRevokeMemberAdAccount,
   getListWorkspaceInvitesQueryKey,
+  getListMemberAdAccountsQueryKey,
 } from "@workspace/api-client-react";
 import type { WorkspaceInviteInputRole } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import type { AdAccount } from "@/lib/data/seedTypes";
 
 const SECTION = "Settings · 09";
 
@@ -283,6 +288,137 @@ function PendingInviteRow({
   );
 }
 
+function MemberAdAccountsCell({
+  workspaceId,
+  email,
+  adAccounts,
+}: {
+  workspaceId: string;
+  email: string;
+  adAccounts: AdAccount[];
+}) {
+  const queryClient = useQueryClient();
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { data, isLoading } = useListMemberAdAccounts(workspaceId, email);
+  const { mutate: grant, isPending: isGranting } = useGrantMemberAdAccount();
+  const { mutate: revoke, isPending: isRevoking } = useRevokeMemberAdAccount();
+
+  const invalidate = () =>
+    queryClient.invalidateQueries({
+      queryKey: getListMemberAdAccountsQueryKey(workspaceId, email),
+    });
+
+  const grantedIds = new Set(data?.ad_account_ids ?? []);
+  const grantedAccounts = adAccounts.filter((a) => grantedIds.has(a.id));
+  const availableAccounts = adAccounts.filter((a) => !grantedIds.has(a.id));
+  const busy = isGranting || isRevoking;
+
+  const handleGrant = (adAccountId: string) => {
+    if (busy) return;
+    setError(null);
+    grant(
+      { workspaceId, email, data: { ad_account_id: adAccountId } },
+      {
+        onSuccess: () => {
+          setPickerOpen(false);
+          void invalidate();
+        },
+        onError: () => setError("Could not grant access. Try again."),
+      },
+    );
+  };
+
+  const handleRevoke = (adAccountId: string) => {
+    if (busy) return;
+    setError(null);
+    revoke(
+      { workspaceId, email, adAccountId },
+      {
+        onSuccess: () => void invalidate(),
+        onError: () => setError("Could not revoke access. Try again."),
+      },
+    );
+  };
+
+  if (isLoading) {
+    return <span className="text-[10px] text-muted-foreground/60">Loading…</span>;
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5" data-testid={`cell-account-access-${email}`}>
+      {grantedAccounts.length === 0 && !pickerOpen && (
+        <span className="text-[10px] text-muted-foreground/60" data-testid={`text-no-access-${email}`}>
+          No account access yet
+        </span>
+      )}
+      {grantedAccounts.map((a) => (
+        <span
+          key={a.id}
+          className="flex items-center gap-1 h-5 pl-2 pr-1 rounded border border-border/40 bg-white/[0.03] text-[10px] text-foreground/80"
+          data-testid={`chip-account-${email}-${a.id}`}
+        >
+          {a.name}
+          <button
+            type="button"
+            onClick={() => handleRevoke(a.id)}
+            disabled={busy}
+            title={`Revoke access to ${a.name}`}
+            className="text-muted-foreground/60 hover:text-red-400/90 disabled:opacity-40 disabled:pointer-events-none"
+            data-testid={`button-revoke-account-${email}-${a.id}`}
+          >
+            {isRevoking ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <X className="w-2.5 h-2.5" />}
+          </button>
+        </span>
+      ))}
+
+      {pickerOpen ? (
+        <div className="relative">
+          <select
+            autoFocus
+            defaultValue=""
+            disabled={busy || availableAccounts.length === 0}
+            onChange={(e) => {
+              if (e.target.value) handleGrant(e.target.value);
+            }}
+            onBlur={() => setPickerOpen(false)}
+            className="h-6 pl-2 pr-6 rounded border border-primary/30 bg-white/[0.03] text-[10px] text-foreground focus:outline-none appearance-none"
+            data-testid={`select-grant-account-${email}`}
+          >
+            <option value="" disabled>
+              {availableAccounts.length === 0 ? "No more accounts" : "Choose account…"}
+            </option>
+            {availableAccounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="w-2.5 h-2.5 absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground/60 pointer-events-none" />
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setPickerOpen(true)}
+          disabled={busy}
+          title="Grant access to an ad account"
+          className="flex items-center gap-1 h-5 px-1.5 rounded border border-dashed border-border/40 text-[10px] text-muted-foreground hover:text-foreground hover:border-border/70 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+          data-testid={`button-add-account-${email}`}
+        >
+          {isGranting ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Plus className="w-2.5 h-2.5" />}
+          Add
+        </button>
+      )}
+
+      {error && (
+        <span className="text-[10px] text-red-400/90 w-full" data-testid={`text-account-access-error-${email}`}>
+          {error}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export function TeamAccessView() {
   const { user } = useAuth();
 
@@ -392,7 +528,8 @@ function TeamAccessViewInner() {
             </div>
             <div className="divide-y divide-border/20">
               {memberRows.map((m) => (
-                <div key={m.key} className="grid grid-cols-[1fr_auto_auto] gap-3 px-3 py-2.5 items-center" data-testid={`row-member-${m.email}`}>
+                <div key={m.key} className="px-3 py-2.5 space-y-2" data-testid={`row-member-${m.email}`}>
+                <div className="grid grid-cols-[1fr_auto_auto] gap-3 items-center">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-[12px] font-medium text-foreground truncate">{m.name}</span>
@@ -415,6 +552,18 @@ function TeamAccessViewInner() {
                       ? new Date(m.lastActive).toLocaleDateString(undefined, { month: "short", day: "numeric" })
                       : "—"}
                   </span>
+                </div>
+                {m.role !== "owner" && (
+                  <div className="pl-0">
+                    {m.hasAccount ? (
+                      <MemberAdAccountsCell workspaceId={manager.id} email={m.email} adAccounts={seed.ad_accounts} />
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground/60">
+                        Account access can be granted once this member signs in for the first time.
+                      </span>
+                    )}
+                  </div>
+                )}
                 </div>
               ))}
               {pendingInvites.map((inv) => (
