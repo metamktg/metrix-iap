@@ -11,6 +11,9 @@ export const workspaceReportsTable = pgTable(
     id: serial("id").primaryKey(),
     workspaceId: text("workspace_id").notNull(),
     adAccountId: text("ad_account_id").notNull(),
+    // Who generated the report. Members only see (and delete) their own
+    // reports; admins see all. Nullable for reports predating this column.
+    createdByUserId: integer("created_by_user_id"),
     title: text("title").notNull(),
     mode: text("mode").notNull(), // "internal" | "client"
     branding: text("branding").notNull(), // "metrix" | "white_label"

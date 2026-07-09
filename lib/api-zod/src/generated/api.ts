@@ -25,6 +25,57 @@ export const GetMetrixSeedResponse = zod.object({
 
 
 /**
+ * Creates a new unconfigured ad account backed by manual report uploads (no live platform connection). The creating user is granted access to the account. The account stays in an honest pending state until the analysis pipeline runs.
+ * @summary Create a manual ad account
+ */
+export const createManualAdAccountBodyNameMin = 2;
+export const createManualAdAccountBodyNameMax = 120;
+
+
+
+export const CreateManualAdAccountBody = zod.object({
+  "name": zod.string().min(createManualAdAccountBodyNameMin).max(createManualAdAccountBodyNameMax).describe('Display name for the ad account (e.g. the client or brand name).')
+})
+
+export const CreateManualAdAccountResponse = zod.object({
+  "account_id": zod.string(),
+  "name": zod.string(),
+  "status": zod.enum(['unconfigured'])
+})
+
+
+/**
+ * Stores an uploaded report file (performance CSV or creative library ZIP) as a staged import for the account. Files are staged for the analysis pipeline — they are never parsed into performance data at upload time (no fabricated data). Requires access to the account.
+ * @summary Stage a manual report upload for an ad account
+ */
+
+
+
+export const StageManualImportParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
+})
+
+export const stageManualImportBodyFilenameMax = 255;
+
+
+
+
+export const StageManualImportBody = zod.object({
+  "kind": zod.enum(['performance_csv', 'creative_library']),
+  "filename": zod.string().min(1).max(stageManualImportBodyFilenameMax),
+  "content_base64": zod.string().min(1).describe('Base64-encoded file content. Max 8 MB decoded.')
+})
+
+export const StageManualImportResponse = zod.object({
+  "status": zod.enum(['staged']),
+  "import_id": zod.string(),
+  "filename": zod.string(),
+  "size_bytes": zod.number(),
+  "note": zod.string().describe('Honest processing note (staged for analysis, not parsed into performance data).')
+})
+
+
+/**
  * Stores an email address on the Metrix Agent waitlist.
  * @summary Join the Metrix Agent waitlist
  */
@@ -157,6 +208,7 @@ export const ListAdminUsersResponse = zod.object({
   "id": zod.number(),
   "email": zod.string(),
   "status": zod.enum(['active', 'invited', 'disabled']).describe('invited = provisioned but never logged in; disabled = access revoked.'),
+  "role": zod.enum(['admin', 'member']).optional(),
   "must_change_password": zod.boolean(),
   "created_at": zod.string(),
   "last_login_at": zod.string().nullish(),
@@ -287,7 +339,8 @@ export const AuthLoginBody = zod.object({
 export const AuthLoginResponse = zod.object({
   "user": zod.object({
   "email": zod.string(),
-  "must_change_password": zod.boolean()
+  "must_change_password": zod.boolean(),
+  "role": zod.enum(['admin', 'member']).describe('admin sees every ad account (agency team); member sees only accounts they have been granted.')
 })
 })
 
@@ -308,7 +361,8 @@ export const AuthLogoutResponse = zod.object({
 export const AuthMeResponse = zod.object({
   "user": zod.object({
   "email": zod.string(),
-  "must_change_password": zod.boolean()
+  "must_change_password": zod.boolean(),
+  "role": zod.enum(['admin', 'member']).describe('admin sees every ad account (agency team); member sees only accounts they have been granted.')
 })
 })
 
@@ -332,7 +386,8 @@ export const AuthChangePasswordBody = zod.object({
 export const AuthChangePasswordResponse = zod.object({
   "user": zod.object({
   "email": zod.string(),
-  "must_change_password": zod.boolean()
+  "must_change_password": zod.boolean(),
+  "role": zod.enum(['admin', 'member']).describe('admin sees every ad account (agency team); member sees only accounts they have been granted.')
 })
 })
 

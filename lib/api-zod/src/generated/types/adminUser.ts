@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { AdminUserRole } from './adminUserRole';
 import type { AdminUserStatus } from './adminUserStatus';
 
 export interface AdminUser {
@@ -12,6 +13,7 @@ export interface AdminUser {
   email: string;
   /** invited = provisioned but never logged in; disabled = access revoked. */
   status: AdminUserStatus;
+  role?: AdminUserRole;
   must_change_password: boolean;
   created_at: string;
   last_login_at?: string | null;

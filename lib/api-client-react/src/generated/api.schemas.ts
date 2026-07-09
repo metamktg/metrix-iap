@@ -181,11 +181,20 @@ export const AdminUserStatus = {
   disabled: 'disabled',
 } as const;
 
+export type AdminUserRole = typeof AdminUserRole[keyof typeof AdminUserRole];
+
+
+export const AdminUserRole = {
+  admin: 'admin',
+  member: 'member',
+} as const;
+
 export interface AdminUser {
   id: number;
   email: string;
   /** invited = provisioned but never logged in; disabled = access revoked. */
   status: AdminUserStatus;
+  role?: AdminUserRole;
   must_change_password: boolean;
   created_at: string;
   last_login_at?: string | null;
@@ -253,9 +262,82 @@ export interface AuthLoginInput {
   password: string;
 }
 
+export interface CreateAdAccountInput {
+  /**
+     * Display name for the ad account (e.g. the client or brand name).
+     * @minLength 2
+     * @maxLength 120
+     */
+  name: string;
+}
+
+export type CreateAdAccountResultStatus = typeof CreateAdAccountResultStatus[keyof typeof CreateAdAccountResultStatus];
+
+
+export const CreateAdAccountResultStatus = {
+  unconfigured: 'unconfigured',
+} as const;
+
+export interface CreateAdAccountResult {
+  account_id: string;
+  name: string;
+  status: CreateAdAccountResultStatus;
+}
+
+export type ManualImportInputKind = typeof ManualImportInputKind[keyof typeof ManualImportInputKind];
+
+
+export const ManualImportInputKind = {
+  performance_csv: 'performance_csv',
+  creative_library: 'creative_library',
+} as const;
+
+export interface ManualImportInput {
+  kind: ManualImportInputKind;
+  /**
+     * @minLength 1
+     * @maxLength 255
+     */
+  filename: string;
+  /**
+     * Base64-encoded file content. Max 8 MB decoded.
+     * @minLength 1
+     */
+  content_base64: string;
+}
+
+export type ManualImportResultStatus = typeof ManualImportResultStatus[keyof typeof ManualImportResultStatus];
+
+
+export const ManualImportResultStatus = {
+  staged: 'staged',
+} as const;
+
+export interface ManualImportResult {
+  status: ManualImportResultStatus;
+  import_id: string;
+  filename: string;
+  size_bytes: number;
+  /** Honest processing note (staged for analysis, not parsed into performance data). */
+  note: string;
+}
+
+/**
+ * admin sees every ad account (agency team); member sees only accounts they have been granted.
+ */
+export type AuthUserRole = typeof AuthUserRole[keyof typeof AuthUserRole];
+
+
+export const AuthUserRole = {
+  admin: 'admin',
+  member: 'member',
+} as const;
+
 export interface AuthUser {
   email: string;
   must_change_password: boolean;
+  /** admin sees every ad account (agency team); member sees only accounts they have been granted. */
+  role: AuthUserRole;
 }
 
 export interface AuthUserResult {

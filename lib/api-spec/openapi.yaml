@@ -34,6 +34,104 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/accounts:
+    post:
+      operationId: createManualAdAccount
+      tags: [metrix]
+      summary: Create a manual ad account
+      description: Creates a new unconfigured ad account backed by manual report uploads (no live platform connection). The creating user is granted access to the account. The account stays in an honest pending state until the analysis pipeline runs.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAdAccountInput"
+      responses:
+        "200":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateAdAccountResult"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: An account with this name already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/manual-imports:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+    post:
+      operationId: stageManualImport
+      tags: [metrix]
+      summary: Stage a manual report upload for an ad account
+      description: Stores an uploaded report file (performance CSV or creative library ZIP) as a staged import for the account. Files are staged for the analysis pipeline — they are never parsed into performance data at upload time (no fabricated data). Requires access to the account.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ManualImportInput"
+      responses:
+        "200":
+          description: Import staged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManualImportResult"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "413":
+          description: File too large
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/agent-waitlist:
     post:
       operationId: joinAgentWaitlist
@@ -1601,6 +1699,9 @@ components:
           type: string
           enum: [active, invited, disabled]
           description: invited = provisioned but never logged in; disabled = access revoked.
+        role:
+          type: string
+          enum: [admin, member]
         must_change_password:
           type: boolean
         created_at:
@@ -1693,6 +1794,69 @@ components:
       required:
         - email
         - password
+    CreateAdAccountInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 120
+          description: Display name for the ad account (e.g. the client or brand name).
+      required:
+        - name
+    CreateAdAccountResult:
+      type: object
+      properties:
+        account_id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum: [unconfigured]
+      required:
+        - account_id
+        - name
+        - status
+    ManualImportInput:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum: [performance_csv, creative_library]
+        filename:
+          type: string
+          minLength: 1
+          maxLength: 255
+        content_base64:
+          type: string
+          description: Base64-encoded file content. Max 8 MB decoded.
+          minLength: 1
+      required:
+        - kind
+        - filename
+        - content_base64
+    ManualImportResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [staged]
+        import_id:
+          type: string
+        filename:
+          type: string
+        size_bytes:
+          type: integer
+        note:
+          type: string
+          description: Honest processing note (staged for analysis, not parsed into performance data).
+      required:
+        - status
+        - import_id
+        - filename
+        - size_bytes
+        - note
     AuthUser:
       type: object
       properties:
@@ -1700,9 +1864,14 @@ components:
           type: string
         must_change_password:
           type: boolean
+        role:
+          type: string
+          enum: [admin, member]
+          description: admin sees every ad account (agency team); member sees only accounts they have been granted.
       required:
         - email
         - must_change_password
+        - role
     AuthUserResult:
       type: object
       properties:

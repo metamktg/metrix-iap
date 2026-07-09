@@ -36,6 +36,8 @@ import type {
   AuthResetPasswordInput,
   AuthResetPasswordResult,
   AuthUserResult,
+  CreateAdAccountInput,
+  CreateAdAccountResult,
   GeneratedReportCreateInput,
   GeneratedReportCreateResult,
   GeneratedReportDeleteResult,
@@ -43,6 +45,8 @@ import type {
   HealthStatus,
   ListAgentWaitlistParams,
   ListMetaReportRowsParams,
+  ManualImportInput,
+  ManualImportResult,
   MetaAdAccountsResult,
   MetaConnectionStatus,
   MetaDisconnectResult,
@@ -176,6 +180,149 @@ export function useGetMetrixSeed<TData = Awaited<ReturnType<typeof getMetrixSeed
 
 
 
+
+export const getCreateManualAdAccountUrl = () => {
+
+
+
+
+  return `/api/metrix/accounts`
+}
+
+/**
+ * Creates a new unconfigured ad account backed by manual report uploads (no live platform connection). The creating user is granted access to the account. The account stays in an honest pending state until the analysis pipeline runs.
+ * @summary Create a manual ad account
+ */
+export const createManualAdAccount = async (createAdAccountInput: CreateAdAccountInput, options?: RequestInit): Promise<CreateAdAccountResult> => {
+
+  return customFetch<CreateAdAccountResult>(getCreateManualAdAccountUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createAdAccountInput)
+  }
+);}
+
+
+
+
+export const getCreateManualAdAccountMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createManualAdAccount>>, TError,{data: BodyType<CreateAdAccountInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createManualAdAccount>>, TError,{data: BodyType<CreateAdAccountInput>}, TContext> => {
+
+const mutationKey = ['createManualAdAccount'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createManualAdAccount>>, {data: BodyType<CreateAdAccountInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createManualAdAccount(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateManualAdAccountMutationResult = NonNullable<Awaited<ReturnType<typeof createManualAdAccount>>>
+    export type CreateManualAdAccountMutationBody = BodyType<CreateAdAccountInput>
+    export type CreateManualAdAccountMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Create a manual ad account
+ */
+export const useCreateManualAdAccount = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createManualAdAccount>>, TError,{data: BodyType<CreateAdAccountInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createManualAdAccount>>,
+        TError,
+        {data: BodyType<CreateAdAccountInput>},
+        TContext
+      > => {
+      return useMutation(getCreateManualAdAccountMutationOptions(options));
+    }
+
+export const getStageManualImportUrl = (accountId: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/manual-imports`
+}
+
+/**
+ * Stores an uploaded report file (performance CSV or creative library ZIP) as a staged import for the account. Files are staged for the analysis pipeline — they are never parsed into performance data at upload time (no fabricated data). Requires access to the account.
+ * @summary Stage a manual report upload for an ad account
+ */
+export const stageManualImport = async (accountId: string,
+    manualImportInput: ManualImportInput, options?: RequestInit): Promise<ManualImportResult> => {
+
+  return customFetch<ManualImportResult>(getStageManualImportUrl(accountId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(manualImportInput)
+  }
+);}
+
+
+
+
+export const getStageManualImportMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stageManualImport>>, TError,{accountId: string;data: BodyType<ManualImportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof stageManualImport>>, TError,{accountId: string;data: BodyType<ManualImportInput>}, TContext> => {
+
+const mutationKey = ['stageManualImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof stageManualImport>>, {accountId: string;data: BodyType<ManualImportInput>}> = (props) => {
+          const {accountId,data} = props ?? {};
+
+          return  stageManualImport(accountId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StageManualImportMutationResult = NonNullable<Awaited<ReturnType<typeof stageManualImport>>>
+    export type StageManualImportMutationBody = BodyType<ManualImportInput>
+    export type StageManualImportMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Stage a manual report upload for an ad account
+ */
+export const useStageManualImport = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stageManualImport>>, TError,{accountId: string;data: BodyType<ManualImportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof stageManualImport>>,
+        TError,
+        {accountId: string;data: BodyType<ManualImportInput>},
+        TContext
+      > => {
+      return useMutation(getStageManualImportMutationOptions(options));
+    }
 
 export const getJoinAgentWaitlistUrl = () => {
 
