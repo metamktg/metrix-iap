@@ -490,7 +490,7 @@ export async function assembleMetrixSeed(): Promise<Row> {
     selectAll("testing_hypotheses", (q) => q.order("hypothesis_id")),
     selectAll("icp_profiles", (q) => q.order("id")),
     selectAll("variable_combinations", (q) => q.order("id")),
-    selectAll("creative_briefs", (q) => q.order("brief_id")),
+    selectAll("imported_creative_briefs", (q) => q.order("brief_id")),
     selectAll("iap_runs"),
     selectAll("variable_registry", (q) => q.order("status").order("prefix")),
     selectAll("concept_intelligence", (q) => q.order("book").order("concept_code")),

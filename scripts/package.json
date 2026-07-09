@@ -10,6 +10,8 @@
     "smoke:metrix-iap-build": "tsx ./src/smoke-metrix-iap-build.ts",
     "import:metrix": "tsx ./src/metrix-supabase/import.ts",
     "create:user": "tsx ./src/create-user.ts",
+    "mirror:auth-users": "tsx ./src/metrix-official/mirror-auth-users.ts",
+    "migrate:metrix-official": "tsx ./src/metrix-official/migrate.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
@@ -18,6 +20,7 @@
     "tsx": "catalog:"
   },
   "dependencies": {
+    "@workspace/auth-mirror": "workspace:*",
     "@workspace/db": "workspace:*",
     "bcryptjs": "^3.0.3",
     "drizzle-orm": "catalog:",

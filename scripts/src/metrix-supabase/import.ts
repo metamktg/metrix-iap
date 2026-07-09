@@ -162,7 +162,7 @@ async function main() {
       "platform_performance", "device_performance", "concept_performance",
       "campaign_windows", "data_quality_flags", "concept_intelligence",
       "ad_traffic_quality", "failure_patterns", "icp_profiles", "message_pillars",
-      "variable_combinations", "testing_hypotheses", "creative_briefs",
+      "variable_combinations", "testing_hypotheses", "imported_creative_briefs",
       "library_cells", "library_cell_performance", "variable_performance",
       "demographic_signal", "placement_signal", "copy_library", "signal_cards",
       "account_modules", "iap_runs", "ads",
@@ -408,7 +408,7 @@ async function main() {
     for (const b of briefs.briefs ?? []) {
       const meta = b.brief_metadata ?? {};
       await q(
-        `insert into creative_briefs (account_id, brief_id, mode, book, asset_type, priority, confidence, payload)
+        `insert into imported_creative_briefs (account_id, brief_id, mode, book, asset_type, priority, confidence, payload)
          values ($1,$2,$3,$4,$5,$6,$7,$8)`,
         [ACCOUNT_ID, meta.brief_id, str(meta.mode), String(meta.brief_id ?? "").startsWith("BOOK2") ? "BOOK2" : "BOOK0",
           str(meta.asset_type), str(meta.priority), str(meta.confidence), JSON.stringify(b)],
@@ -602,7 +602,7 @@ async function main() {
       union all select 'icp_profiles', count(*) from icp_profiles
       union all select 'message_pillars', count(*) from message_pillars
       union all select 'testing_hypotheses', count(*) from testing_hypotheses
-      union all select 'creative_briefs', count(*) from creative_briefs
+      union all select 'imported_creative_briefs', count(*) from imported_creative_briefs
       union all select 'library_cells', count(*) from library_cells
       union all select 'library_cell_performance', count(*) from library_cell_performance
       union all select 'variable_performance', count(*) from variable_performance

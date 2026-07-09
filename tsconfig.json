@@ -7,6 +7,9 @@
       "path": "./lib/db"
     },
     {
+      "path": "./lib/auth-mirror"
+    },
+    {
       "path": "./lib/api-client-react"
     },
     {

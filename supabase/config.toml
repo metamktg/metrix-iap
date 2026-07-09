@@ -1,0 +1,4 @@
+# Supabase CLI config — set project_id after `supabase link`
+# Migrations: supabase/migrations/ (schema DDL, run in filename order)
+# Seeds:      supabase/seed/ (run after migrations)
+project_id = "REPLACE_WITH_PROJECT_REF"
