@@ -15,3 +15,4 @@
 - [Metrix conversion-device tracking](metrix-conversion-device-tracking.md) — conversion-based pivots have no spend/impressions by design; tracking_basis column separates them from delivery rows; never compare across bases/windows.
 - [Express 5 params + middleware typing](express5-params-middleware-typing.md) — adding middleware args widens req.params to string|string[]; coerce with String() or Drizzle overloads break.
 - [Wouter hash deep-links break tests](wouter-hash-deeplinks.md) — use the ?focus= param convention for in-app deep-links, never a #hash; hashes 404 under the memory-location test harness.
+- [Metrix result terminology](metrix-result-terminology.md) — derive the account's result noun from analysis cell rows' Result type, never bottom-line totals (installs dominate totals and mislabel).

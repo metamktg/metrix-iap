@@ -7,7 +7,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAnalysisData, getCampaignSummary, getCoreControls } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
-  CaveatNote, SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct,
+  CaveatNote, SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
   RangeScopeBar, NoDataInRangeState,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
@@ -28,6 +28,7 @@ export function AnalysisOverview() {
     <ModuleScopeGate section={SECTION} title="Analysis Overview" account={account}>
       {() => {
         const acct = account!;
+        const term = resultTerm(acct);
         const summary = getCampaignSummary(seed, adAccountId);
         const a = analysis;
         const controls = getCoreControls(seed, adAccountId);
@@ -71,7 +72,7 @@ export function AnalysisOverview() {
             to: "/app/analysis/audience",
             label: "Audience",
             Icon: Users,
-            desc: "Demographic registration signal by age and gender.",
+            desc: `Demographic ${term.singular} signal by age and gender.`,
             stat: `${a.demographic_registration_signal.length} demographic rows`,
           },
           {
@@ -134,11 +135,13 @@ export function AnalysisOverview() {
                       <p className="text-[13px] font-semibold text-foreground">{controls.primary_control}</p>
                       <p className="text-[11px] text-muted-foreground/80 mt-1.5 leading-relaxed">{controls.primary_control_read}</p>
                     </div>
-                    <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                      <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5">Registration control</div>
-                      <p className="text-[13px] font-semibold text-foreground">{controls.registration_control}</p>
-                      <p className="text-[11px] text-muted-foreground/80 mt-1.5 leading-relaxed">{controls.registration_control_read}</p>
-                    </div>
+                    {controls.registration_control && (
+                      <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
+                        <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5">{term.Singular} control</div>
+                        <p className="text-[13px] font-semibold text-foreground">{controls.registration_control}</p>
+                        <p className="text-[11px] text-muted-foreground/80 mt-1.5 leading-relaxed">{controls.registration_control_read}</p>
+                      </div>
+                    )}
                   </div>
                 </SectionCard>
               )}

@@ -190,10 +190,13 @@ function buildSectionBlocks(sectionTitle: string, seed: MetrixSeed, adAccountId:
 
   if (t.includes("core control")) {
     if (!core) return [];
-    return [
+    const blocks: ReportBlock[] = [
       { kind: "text", text: `${core.primary_control} — ${core.primary_control_read}` },
-      { kind: "text", text: `${core.registration_control} — ${core.registration_control_read}` },
     ];
+    if (core.registration_control) {
+      blocks.push({ kind: "text", text: `${core.registration_control} — ${core.registration_control_read}` });
+    }
+    return blocks;
   }
 
   if (t.includes("cell performance") || t.includes("creative cell")) {

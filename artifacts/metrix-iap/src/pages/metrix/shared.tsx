@@ -41,11 +41,90 @@ export function fmtPct(n: number | null | undefined, digits = 2): string {
 export const EVENT_LABEL: Record<string, string> = {
   "Website registrations completed": "Registrations completed",
   "Website trials started": "Trials started",
+  "Website purchases": "Purchases",
   onb_initiate_checkout: "Checkouts initiated",
 };
 
 export function eventLabel(key: string): string {
   return EVENT_LABEL[key] ?? key;
+}
+
+// ─── Account result terminology ───────────────────────────────────────
+// Each account converts on a different result event (registrations,
+// purchases, trials, …). UI copy derives the noun from the account's own
+// data instead of hardcoding any one client's result type.
+
+export interface ResultTerm {
+  /** e.g. "registration" */ singular: string;
+  /** e.g. "registrations" */ plural: string;
+  /** e.g. "Registration" */ Singular: string;
+  /** e.g. "Registrations" */ Plural: string;
+}
+
+const RESULT_NOUNS: Array<[RegExp, string, string]> = [
+  [/registration/i, "registration", "registrations"],
+  [/purchase/i, "purchase", "purchases"],
+  [/trial/i, "trial", "trials"],
+  [/checkout/i, "checkout", "checkouts"],
+  [/lead/i, "lead", "leads"],
+  [/subscri/i, "subscription", "subscriptions"],
+  [/install/i, "install", "installs"],
+  [/sign.?up/i, "sign-up", "sign-ups"],
+];
+
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/**
+ * Derive the account's result noun from its own analysis data: the
+ * dominant "Result type" across creative-cell rows (what the analysis
+ * actually measured), falling back to the bottom-line totals event with
+ * the most results, then the campaign windows' declared result type.
+ * Falls back to the neutral "result".
+ */
+export function resultTerm(account: AdAccount | null | undefined): ResultTerm {
+  const iap = account?.iap;
+  let dominant: string | null = null;
+
+  // 1. What the analysis measured: cell rows keyed by result type,
+  //    ranked by result volume (row count breaks ties).
+  const byType = new Map<string, { results: number; rows: number }>();
+  for (const row of iap?.analysis?.performance_by_cell ?? []) {
+    const type = row["Result type"];
+    if (!type) continue;
+    const agg = byType.get(type) ?? { results: 0, rows: 0 };
+    agg.results += Number(row.Results ?? 0);
+    agg.rows += 1;
+    byType.set(type, agg);
+  }
+  let best = { results: -1, rows: -1 };
+  for (const [type, agg] of byType) {
+    if (agg.results > best.results || (agg.results === best.results && agg.rows > best.rows)) {
+      best = agg;
+      dominant = type;
+    }
+  }
+
+  // 2. Bottom-line totals event with the most results.
+  if (!dominant) {
+    let max = -1;
+    for (const [key, totals] of Object.entries(iap?.campaign_summary?.bottom_line_totals ?? {})) {
+      const n = Number(totals?.results ?? 0);
+      if (n > max) {
+        max = n;
+        dominant = key;
+      }
+    }
+  }
+
+  // 3. Declared campaign result type.
+  if (!dominant) {
+    dominant = iap?.campaign_summary?.campaign_windows?.find((w) => w.result_type)?.result_type ?? null;
+  }
+
+  const match = dominant ? RESULT_NOUNS.find(([re]) => re.test(dominant)) : undefined;
+  const singular = match?.[1] ?? "result";
+  const plural = match?.[2] ?? "results";
+  return { singular, plural, Singular: capitalize(singular), Plural: capitalize(plural) };
 }
 
 // ─── Confidence badge ─────────────────────────────────────────────────

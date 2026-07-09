@@ -1,6 +1,6 @@
 // ─── Analysis · Placements ────────────────────────────────────────────
-// Placement delivery signal across both analysis runs (V3 registrations
-// and C4E checkout events), with per-placement rollups.
+// Placement delivery signal across the account's analysis runs, with
+// per-placement rollups. Run copy derives from the account's result event.
 
 import { useMemo } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
@@ -8,7 +8,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
-  SectionCard, fmtUSD, fmtNum,
+  SectionCard, fmtUSD, fmtNum, resultTerm,
   RangeScopeBar, NoDataInRangeState,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
@@ -41,6 +41,7 @@ export function PlacementsView() {
     <ModuleScopeGate section={SECTION} title="Placements" account={account}>
       {() => {
         const acct = account!;
+        const term = resultTerm(acct);
         const v3 = analysis?.v3_placement_signal ?? [];
         const c4e = analysis?.c4e_placement_signal ?? [];
 
@@ -100,7 +101,7 @@ export function PlacementsView() {
                 </div>
               </SectionCard>
 
-              <SectionCard title="V3 placement signal" desc="Placement performance for the registration-focused run." table="v3_placement_signal">
+              <SectionCard title="V3 placement signal" desc={`Placement performance for the ${term.singular}-focused run.`} table="v3_placement_signal">
                 {v3.length === 0 ? (
                   <PendingState title="No V3 rows" message="This run produced no placement rows." icon={LayoutGrid} />
                 ) : (

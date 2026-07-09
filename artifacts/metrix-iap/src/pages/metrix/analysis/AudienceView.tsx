@@ -1,6 +1,7 @@
 // ─── Analysis · Audience ──────────────────────────────────────────────
-// Demographic registration signal: who converts, by age band and gender,
-// with per-segment rollups and the full underlying rows.
+// Demographic conversion signal: who converts, by age band and gender,
+// with per-segment rollups and the full underlying rows. Result copy
+// derives from the account's own result event — never hardcoded.
 
 import { useMemo } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
@@ -8,7 +9,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
-  SectionCard, fmtUSD, fmtNum, fmtPct,
+  SectionCard, fmtUSD, fmtNum, fmtPct, resultTerm,
   RangeScopeBar, NoDataInRangeState,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
@@ -42,6 +43,7 @@ export function AudienceView() {
     <ModuleScopeGate section={SECTION} title="Audience" account={account}>
       {() => {
         const acct = account!;
+        const term = resultTerm(acct);
         const rows = analysis?.demographic_registration_signal ?? [];
 
         if (rows.length === 0) {
@@ -49,7 +51,7 @@ export function AudienceView() {
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Audience" />
               <ScopeBanner account={acct} />
-              <PendingState title="No demographic signal" message="The audience read appears once demographic registration data exists." icon={Users} />
+              <PendingState title="No demographic signal" message="The audience read appears once demographic result data exists." icon={Users} />
             </div>
           );
         }
@@ -64,7 +66,7 @@ export function AudienceView() {
             <ModuleHeader
               section={SECTION}
               title="Audience"
-              subtitle="Who registers: the demographic registration signal by age band and gender."
+              subtitle={`Who converts: the demographic ${term.singular} signal by age band and gender.`}
               table="demographic_registration_signal"
             />
             <ScopeBanner account={acct} />
@@ -77,12 +79,12 @@ export function AudienceView() {
             <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
               <MetricTile label="Segments" value={fmtNum(segments.length)} />
               <MetricTile label="Signal spend" value={fmtUSD(totalSpend, 0)} />
-              <MetricTile label="Registrations" value={fmtNum(totalResults)} />
-              <MetricTile label="Top segment" value={top ? `${top.gender === "female" ? "F" : top.gender === "male" ? "M" : top.gender} ${top.age}` : "—"} sub={top ? `${fmtNum(top.results)} registrations` : undefined} />
+              <MetricTile label={term.Plural} value={fmtNum(totalResults)} />
+              <MetricTile label="Top segment" value={top ? `${top.gender === "female" ? "F" : top.gender === "male" ? "M" : top.gender} ${top.age}` : "—"} sub={top ? `${fmtNum(top.results)} ${term.plural}` : undefined} />
             </div>
 
             <div className="px-6 py-5 space-y-4 max-w-5xl">
-              <SectionCard title="Registrations by segment" desc="Aggregated across all creative cells in the signal." table="demographic_registration_signal">
+              <SectionCard title={`${term.Plural} by segment`} desc="Aggregated across all creative cells in the signal." table="demographic_registration_signal">
                 <div className="space-y-2.5">
                   {segments.map((s) => {
                     const cpa = s.results > 0 ? s.spend / s.results : null;
@@ -103,7 +105,7 @@ export function AudienceView() {
                 </div>
               </SectionCard>
 
-              <SectionCard title="Underlying rows" desc="Every demographic registration row behind the rollup, by creative cell." table="demographic_registration_signal">
+              <SectionCard title="Underlying rows" desc="Every demographic signal row behind the rollup, by creative cell." table="demographic_registration_signal">
                 <DemographicTable rows={rows} />
               </SectionCard>
             </div>

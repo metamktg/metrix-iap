@@ -133,7 +133,9 @@ export function IapLibraryView() {
             </div>
 
             <div className="px-6 py-5 space-y-4">
-              <CaveatNote text="V3 checkout results were not populated by age/gender. Demographic checkout claims remain directional based on spend and click quality, not result counts." />
+              {(a.top_checkout_cells.length > 0 || a.top_checkout_variables.length > 0) && (
+                <CaveatNote text="V3 checkout results were not populated by age/gender. Demographic checkout claims remain directional based on spend and click quality, not result counts." />
+              )}
 
               {tab === "cells" && (
                 cells.length ? <CellTable rows={cells} onRowClick={setDetail} /> : <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." />
@@ -142,11 +144,11 @@ export function IapLibraryView() {
                 <div className="space-y-5">
                   <div>
                     <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Top checkout cells</h3>
-                    {topCells.length ? <CellTable rows={topCells} onRowClick={setDetail} /> : <PendingState title="No ranked cells" message="No checkout-ranked cells in the current metric selection." />}
+                    {topCells.length ? <CellTable rows={topCells} onRowClick={setDetail} /> : <PendingState title="No ranked cells" message="No ranked cells in the current metric selection." />}
                   </div>
                   <div>
                     <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Top checkout variables</h3>
-                    {topVariables.length ? <VariableTable rows={topVariables} /> : <PendingState title="No ranked variables" message="No checkout-ranked variables in the current metric selection." />}
+                    {topVariables.length ? <VariableTable rows={topVariables} /> : <PendingState title="No ranked variables" message="No ranked variables in the current metric selection." />}
                   </div>
                 </div>
               )}

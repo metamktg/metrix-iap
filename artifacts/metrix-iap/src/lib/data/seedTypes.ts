@@ -238,8 +238,9 @@ export interface OptimizationLoop {
 export interface CoreReanalysisRead {
   primary_control: string;
   primary_control_read: string;
-  registration_control: string;
-  registration_control_read: string;
+  // Null for accounts whose analysis has no secondary result control yet.
+  registration_control: string | null;
+  registration_control_read: string | null;
   data_caveat: string;
 }
 

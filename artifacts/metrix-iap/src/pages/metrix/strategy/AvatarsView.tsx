@@ -1,6 +1,6 @@
 // ─── Strategy · Avatars ───────────────────────────────────────────────
 // Audience avatars (ICP columns from the historical MST matrix) plus the
-// demographic registration signal for the active ad account.
+// demographic conversion signal for the active ad account.
 
 import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
@@ -8,7 +8,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getMST, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ModuleTabs, ModuleScopeGate, PendingState,
-  MetricTile, CrossLink, readableVariables,
+  MetricTile, CrossLink, readableVariables, resultTerm,
   RangeScopeBar, NoDataInRangeState,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
@@ -35,6 +35,7 @@ export function AvatarsView() {
     <ModuleScopeGate section={SECTION} title="Avatars" account={account}>
       {() => {
         const acct = account!;
+        const term = resultTerm(acct);
         const mst = getMST(seed, adAccountId);
         const matrix = mst?.historical_matrix_4x4;
         const analysis = getAnalysisData(seed, adAccountId);
@@ -76,7 +77,7 @@ export function AvatarsView() {
               <MetricTile label="Avatars" value={String(matrix.columns.length)} />
               <MetricTile label="Message angles" value={String(matrix.cells.length)} sub="matrix cells across avatars" />
               <MetricTile label="Shared rows" value={String(matrix.rows.length)} />
-              <MetricTile label="Audience rows" value={String(demo.length)} sub="registration signal" />
+              <MetricTile label="Audience rows" value={String(demo.length)} sub={`${term.singular} signal`} />
             </div>
 
             <div className="mt-4">
@@ -124,7 +125,7 @@ export function AvatarsView() {
                 demo.length ? (
                   <DemographicTable rows={demo} />
                 ) : (
-                  <PendingState title="No audience signal" message="Demographic registration signal appears once analysis is available." icon={Users} />
+                  <PendingState title="No audience signal" message={`Demographic ${term.singular} signal appears once analysis is available.`} icon={Users} />
                 )
               )}
             </div>
