@@ -49,8 +49,14 @@ router.post("/metrix/auth/login", loginRateLimit, async (req, res) => {
       .limit(1);
 
     const ok = await verifyPassword(parsed.data.password, user?.passwordHash ?? null);
-    if (!user || !ok) {
-      req.log.warn({ email }, "failed login attempt");
+    if (!user || !ok || user.disabledAt) {
+      // Disabled accounts get the same generic message — an explicit
+      // "access revoked" reply would enable account enumeration.
+      if (user?.disabledAt) {
+        req.log.warn({ email }, "login attempt on disabled account");
+      } else {
+        req.log.warn({ email }, "failed login attempt");
+      }
       res.status(401).json({ message: "Invalid email or password." });
       return;
     }
@@ -149,14 +155,22 @@ router.post(
 
     try {
       const [user] = await db
-        .select({ id: usersTable.id, email: usersTable.email })
+        .select({
+          id: usersTable.id,
+          email: usersTable.email,
+          disabledAt: usersTable.disabledAt,
+        })
         .from(usersTable)
         .where(eq(usersTable.email, email))
         .limit(1);
 
-      if (!user) {
-        // Neutral response: never reveal whether an account exists.
-        req.log.info({ email }, "password reset requested for unknown email");
+      if (!user || user.disabledAt) {
+        // Neutral response: never reveal whether an account exists (or that
+        // it has been disabled).
+        req.log.info(
+          { email, disabled: Boolean(user?.disabledAt) },
+          "password reset requested for unknown or disabled account",
+        );
         res.json(neutral);
         return;
       }
@@ -187,6 +201,24 @@ router.post("/metrix/auth/reset-password", loginRateLimit, async (req, res) => {
   try {
     const resetToken = await consumePasswordResetToken(parsed.data.token);
     if (!resetToken) {
+      res.status(400).json({
+        message:
+          "This reset link is invalid, expired, or has already been used. Request a new one from the login page.",
+      });
+      return;
+    }
+
+    // A revoked user holding an unexpired token must not be able to reset.
+    const [tokenUser] = await db
+      .select({ disabledAt: usersTable.disabledAt })
+      .from(usersTable)
+      .where(eq(usersTable.id, resetToken.userId))
+      .limit(1);
+    if (!tokenUser || tokenUser.disabledAt) {
+      req.log.warn(
+        { userId: resetToken.userId },
+        "password reset blocked for disabled account",
+      );
       res.status(400).json({
         message:
           "This reset link is invalid, expired, or has already been used. Request a new one from the login page.",

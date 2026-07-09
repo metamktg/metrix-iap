@@ -1,42 +1,22 @@
-const RESEND_ENDPOINT = "https://api.resend.com/emails";
-
-const escapeHtml = (value: string): string =>
-  value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
+import {
+  sendEmail,
+  escapeHtml,
+  type EmailDeliveryResult,
+  type EmailLogger,
+} from "./email";
 
 /**
  * Send the approval email containing a temporary password.
  *
- * Returns "sent", "skipped" (RESEND_API_KEY not configured), or "failed"
- * (provider error). Never throws: the caller decides how to surface the
- * temporary password when the email cannot be delivered.
+ * Never throws: the caller decides how to surface the temporary password
+ * when the email cannot be delivered (admin copy-button fallback).
  */
 export async function sendApprovalEmail(
   email: string,
   tempPassword: string,
   appUrl: string,
-  log: {
-    info: (obj: object, msg: string) => void;
-    warn: (obj: object, msg: string) => void;
-    error: (obj: object, msg: string) => void;
-  },
-): Promise<"sent" | "skipped" | "failed"> {
-  const apiKey = process.env["RESEND_API_KEY"];
-  if (!apiKey) {
-    log.warn(
-      { email },
-      "RESEND_API_KEY not set — approval email skipped (temp password returned to admin)",
-    );
-    return "skipped";
-  }
-
-  const from =
-    process.env["REQUEST_ACCESS_FROM_EMAIL"] ?? "Metrix <onboarding@resend.dev>";
-
+  log: EmailLogger,
+): Promise<EmailDeliveryResult> {
   const logoUrl = `${appUrl}metrix-logo.png`;
 
   const html = `
@@ -55,34 +35,11 @@ export async function sendApprovalEmail(
       <p style="color:#777;font-size:12px;margin-top:24px;">If you did not request access to Metrix, you can ignore this email.</p>
     </div>`;
 
-  try {
-    const response = await fetch(RESEND_ENDPOINT, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from,
-        to: [email],
-        subject: "Your Metrix access is approved",
-        html,
-      }),
-    });
-
-    if (!response.ok) {
-      const body = await response.text();
-      log.error(
-        { status: response.status, body, email },
-        "Resend rejected approval email",
-      );
-      return "failed";
-    }
-
-    log.info({ email }, "approval email sent");
-    return "sent";
-  } catch (err) {
-    log.error({ err, email }, "Failed to send approval email");
-    return "failed";
-  }
+  return sendEmail({
+    to: email,
+    subject: "Your Metrix access is approved",
+    html,
+    kind: "approval email",
+    log,
+  });
 }

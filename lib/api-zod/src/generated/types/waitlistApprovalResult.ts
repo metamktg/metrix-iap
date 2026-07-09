@@ -14,4 +14,6 @@ export interface WaitlistApprovalResult {
   email_sent: boolean;
   /** Present only when the email could not be sent, so the admin can share the temporary password manually. */
   temp_password?: string;
+  /** Present only when the email could not be sent — explains why (e.g. sandbox sender limitation) and how to fix it. */
+  email_error?: string;
 }

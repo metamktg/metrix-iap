@@ -30,6 +30,12 @@ import {
   CreateWorkspaceReportResponse,
   ListWorkspaceReportsResponse,
   DeleteWorkspaceReportResponse,
+  GetAdminEmailStatusResponse,
+  ListAdminUsersResponse,
+  AdminResendTempPasswordResponse,
+  AdminSendPasswordResetResponse,
+  AdminRevokeUserResponse,
+  AdminRestoreUserResponse,
 } from "@workspace/api-zod";
 import {
   db,
@@ -49,6 +55,10 @@ import { waitlistRateLimit } from "../middlewares/waitlistRateLimit";
 import { hashPassword, generateTempPassword } from "../lib/passwords";
 import { ensureSupabaseAuthUser } from "@workspace/auth-mirror";
 import { sendApprovalEmail } from "../lib/approvalEmail";
+import { sendPasswordResetEmail } from "../lib/passwordResetEmail";
+import { getEmailConfig } from "../lib/email";
+import { createPasswordResetToken } from "../lib/passwordResets";
+import { destroyAllSessions } from "../lib/sessions";
 import { isDisposableEmailDomain } from "../lib/disposableEmailDomains";
 import { getMetrixSeedFromSupabase } from "../lib/metrixSeedAssembly";
 import { getSupabase } from "../lib/supabase";
@@ -120,7 +130,7 @@ router.delete("/metrix/admin/session", (req, res) => {
 async function provisionApprovedUser(
   email: string,
   log: Logger,
-): Promise<{ email_sent: boolean; temp_password?: string }> {
+): Promise<{ email_sent: boolean; temp_password?: string; email_error?: string }> {
   const tempPassword = generateTempPassword();
   const passwordHash = await hashPassword(tempPassword);
 
@@ -131,9 +141,11 @@ async function provisionApprovedUser(
     .limit(1);
 
   if (existingUser) {
+    // Explicit approval is an unambiguous grant: it also restores a
+    // previously revoked account.
     await db
       .update(usersTable)
-      .set({ passwordHash, mustChangePassword: true })
+      .set({ passwordHash, mustChangePassword: true, disabledAt: null })
       .where(eq(usersTable.id, existingUser.id));
   } else {
     await db
@@ -156,11 +168,207 @@ async function provisionApprovedUser(
   }
 
   const emailResult = await sendApprovalEmail(email, tempPassword, getAppBaseUrl(), log);
+  const sent = emailResult.status === "sent";
   return {
-    email_sent: emailResult === "sent",
-    ...(emailResult === "sent" ? {} : { temp_password: tempPassword }),
+    email_sent: sent,
+    ...(sent
+      ? {}
+      : { temp_password: tempPassword, email_error: emailResult.reason }),
   };
 }
+
+// ─── Admin user management ─────────────────────────────────────────────
+
+router.get("/metrix/admin/email-status", requireAdmin, (req, res) => {
+  const { mode, from } = getEmailConfig();
+  const environment = process.env["REPLIT_DEPLOYMENT"]
+    ? "production"
+    : "development";
+  res.json(GetAdminEmailStatusResponse.parse({ mode, from, environment }));
+});
+
+function adminUserStatus(user: {
+  disabledAt: Date | null;
+  lastLoginAt: Date | null;
+}): "active" | "invited" | "disabled" {
+  if (user.disabledAt) return "disabled";
+  return user.lastLoginAt ? "active" : "invited";
+}
+
+router.get("/metrix/admin/users", requireAdmin, async (req, res) => {
+  const rows = await db
+    .select({
+      id: usersTable.id,
+      email: usersTable.email,
+      mustChangePassword: usersTable.mustChangePassword,
+      createdAt: usersTable.createdAt,
+      lastLoginAt: usersTable.lastLoginAt,
+      disabledAt: usersTable.disabledAt,
+    })
+    .from(usersTable)
+    .orderBy(desc(usersTable.createdAt));
+
+  res.json(
+    ListAdminUsersResponse.parse({
+      users: rows.map((u) => ({
+        id: u.id,
+        email: u.email,
+        status: adminUserStatus(u),
+        must_change_password: u.mustChangePassword,
+        created_at: u.createdAt.toISOString(),
+        last_login_at: u.lastLoginAt ? u.lastLoginAt.toISOString() : null,
+        disabled_at: u.disabledAt ? u.disabledAt.toISOString() : null,
+      })),
+      total: rows.length,
+    }),
+  );
+});
+
+async function findAdminUser(userIdRaw: string) {
+  const userId = Number(userIdRaw);
+  if (!Number.isInteger(userId) || userId < 1) return null;
+  const [user] = await db
+    .select({
+      id: usersTable.id,
+      email: usersTable.email,
+      disabledAt: usersTable.disabledAt,
+    })
+    .from(usersTable)
+    .where(eq(usersTable.id, userId))
+    .limit(1);
+  return user ?? null;
+}
+
+router.post(
+  "/metrix/admin/users/:userId/resend-temp-password",
+  requireAdmin,
+  async (req, res) => {
+    const user = await findAdminUser(String(req.params.userId));
+    if (!user) {
+      res.status(404).json({ message: "User not found." });
+      return;
+    }
+    if (user.disabledAt) {
+      res.status(409).json({
+        message: "This account is disabled. Restore access before sending new credentials.",
+      });
+      return;
+    }
+
+    const tempPassword = generateTempPassword();
+    const passwordHash = await hashPassword(tempPassword);
+    await db
+      .update(usersTable)
+      .set({ passwordHash, mustChangePassword: true })
+      .where(eq(usersTable.id, user.id));
+    // Old credentials are dead; any open sessions go with them.
+    await destroyAllSessions(user.id);
+
+    const emailResult = await sendApprovalEmail(
+      user.email,
+      tempPassword,
+      getAppBaseUrl(),
+      req.log,
+    );
+    const sent = emailResult.status === "sent";
+    res.json(
+      AdminResendTempPasswordResponse.parse({
+        status: "resent",
+        email: user.email,
+        email_sent: sent,
+        ...(sent
+          ? {}
+          : { temp_password: tempPassword, email_error: emailResult.reason }),
+      }),
+    );
+  },
+);
+
+router.post(
+  "/metrix/admin/users/:userId/send-password-reset",
+  requireAdmin,
+  async (req, res) => {
+    const user = await findAdminUser(String(req.params.userId));
+    if (!user) {
+      res.status(404).json({ message: "User not found." });
+      return;
+    }
+    if (user.disabledAt) {
+      res.status(409).json({
+        message: "This account is disabled. Restore access before sending a reset link.",
+      });
+      return;
+    }
+
+    const { token } = await createPasswordResetToken(user.id);
+    const resetUrl = `${getAppBaseUrl()}reset-password?token=${token}`;
+    const emailResult = await sendPasswordResetEmail(
+      user.email,
+      resetUrl,
+      getAppBaseUrl(),
+      req.log,
+    );
+    const sent = emailResult.status === "sent";
+    res.json(
+      AdminSendPasswordResetResponse.parse({
+        status: "reset_link_created",
+        email: user.email,
+        email_sent: sent,
+        ...(sent
+          ? {}
+          : { reset_url: resetUrl, email_error: emailResult.reason }),
+      }),
+    );
+  },
+);
+
+router.post(
+  "/metrix/admin/users/:userId/revoke",
+  requireAdmin,
+  async (req, res) => {
+    const user = await findAdminUser(String(req.params.userId));
+    if (!user) {
+      res.status(404).json({ message: "User not found." });
+      return;
+    }
+
+    if (!user.disabledAt) {
+      await db
+        .update(usersTable)
+        .set({ disabledAt: new Date() })
+        .where(eq(usersTable.id, user.id));
+    }
+    // Always destroy sessions, even if already disabled — belt and braces.
+    await destroyAllSessions(user.id);
+    req.log.info({ email: user.email }, "admin revoked user access");
+
+    res.json(
+      AdminRevokeUserResponse.parse({ status: "revoked", email: user.email }),
+    );
+  },
+);
+
+router.post(
+  "/metrix/admin/users/:userId/restore",
+  requireAdmin,
+  async (req, res) => {
+    const user = await findAdminUser(String(req.params.userId));
+    if (!user) {
+      res.status(404).json({ message: "User not found." });
+      return;
+    }
+
+    await db
+      .update(usersTable)
+      .set({ disabledAt: null })
+      .where(eq(usersTable.id, user.id));
+    req.log.info({ email: user.email }, "admin restored user access");
+
+    res.json(
+      AdminRestoreUserResponse.parse({ status: "restored", email: user.email }),
+    );
+  },
+);
 
 router.get("/metrix/seed", requireAuth, async (req, res) => {
   try {

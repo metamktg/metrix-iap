@@ -20,8 +20,13 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AdminEmailStatus,
   AdminLoginInput,
+  AdminResendTempPasswordResult,
+  AdminSendPasswordResetResult,
   AdminSessionStatus,
+  AdminUserActionResult,
+  AdminUsersResult,
   ApiError,
   AuthChangePasswordInput,
   AuthLoginInput,
@@ -686,6 +691,446 @@ export const useAdminLogout = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getAdminLogoutMutationOptions(options));
+    }
+
+export const getGetAdminEmailStatusUrl = () => {
+
+
+
+
+  return `/api/metrix/admin/email-status`
+}
+
+/**
+ * Reports whether outbound email is fully configured, limited to the sandbox sender (delivery only to the Resend account owner), or disabled because no API key is set. Also reports which environment (development or production) this server is running in, since each environment has its own user database. Requires admin access.
+ * @summary Report the email delivery configuration
+ */
+export const getAdminEmailStatus = async ( options?: RequestInit): Promise<AdminEmailStatus> => {
+
+  return customFetch<AdminEmailStatus>(getGetAdminEmailStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminEmailStatusQueryKey = () => {
+    return [
+    `/api/metrix/admin/email-status`
+    ] as const;
+    }
+
+
+export const getGetAdminEmailStatusQueryOptions = <TData = Awaited<ReturnType<typeof getAdminEmailStatus>>, TError = ErrorType<ApiError>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminEmailStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminEmailStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminEmailStatus>>> = ({ signal }) => getAdminEmailStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminEmailStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminEmailStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminEmailStatus>>>
+export type GetAdminEmailStatusQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Report the email delivery configuration
+ */
+
+export function useGetAdminEmailStatus<TData = Awaited<ReturnType<typeof getAdminEmailStatus>>, TError = ErrorType<ApiError>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminEmailStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminEmailStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListAdminUsersUrl = () => {
+
+
+
+
+  return `/api/metrix/admin/users`
+}
+
+/**
+ * Returns all provisioned user accounts with their status (active, invited, or disabled), newest first. Requires admin access.
+ * @summary List provisioned user accounts
+ */
+export const listAdminUsers = async ( options?: RequestInit): Promise<AdminUsersResult> => {
+
+  return customFetch<AdminUsersResult>(getListAdminUsersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminUsersQueryKey = () => {
+    return [
+    `/api/metrix/admin/users`
+    ] as const;
+    }
+
+
+export const getListAdminUsersQueryOptions = <TData = Awaited<ReturnType<typeof listAdminUsers>>, TError = ErrorType<ApiError>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminUsers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminUsersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminUsers>>> = ({ signal }) => listAdminUsers({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminUsers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminUsersQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminUsers>>>
+export type ListAdminUsersQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary List provisioned user accounts
+ */
+
+export function useListAdminUsers<TData = Awaited<ReturnType<typeof listAdminUsers>>, TError = ErrorType<ApiError>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminUsers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminUsersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminResendTempPasswordUrl = (userId: number,) => {
+
+
+
+
+  return `/api/metrix/admin/users/${userId}/resend-temp-password`
+}
+
+/**
+ * Generates a fresh temporary password, forces a password change on next login, revokes all of the user's sessions, and emails the new temporary password. When the email cannot be delivered, the temporary password is returned so the admin can share it manually. Refuses (409) for disabled accounts — restore access first. Requires admin access.
+ * @summary Issue a new temporary password and email it
+ */
+export const adminResendTempPassword = async (userId: number, options?: RequestInit): Promise<AdminResendTempPasswordResult> => {
+
+  return customFetch<AdminResendTempPasswordResult>(getAdminResendTempPasswordUrl(userId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAdminResendTempPasswordMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminResendTempPassword>>, TError,{userId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminResendTempPassword>>, TError,{userId: number}, TContext> => {
+
+const mutationKey = ['adminResendTempPassword'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminResendTempPassword>>, {userId: number}> = (props) => {
+          const {userId} = props ?? {};
+
+          return  adminResendTempPassword(userId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminResendTempPasswordMutationResult = NonNullable<Awaited<ReturnType<typeof adminResendTempPassword>>>
+
+    export type AdminResendTempPasswordMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Issue a new temporary password and email it
+ */
+export const useAdminResendTempPassword = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminResendTempPassword>>, TError,{userId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminResendTempPassword>>,
+        TError,
+        {userId: number},
+        TContext
+      > => {
+      return useMutation(getAdminResendTempPasswordMutationOptions(options));
+    }
+
+export const getAdminSendPasswordResetUrl = (userId: number,) => {
+
+
+
+
+  return `/api/metrix/admin/users/${userId}/send-password-reset`
+}
+
+/**
+ * Creates a single-use, 1-hour password reset link and emails it to the user. Their current password keeps working until the link is used. When the email cannot be delivered, the link is returned so the admin can share it manually. Refuses (409) for disabled accounts. Requires admin access.
+ * @summary Send the user a password reset link
+ */
+export const adminSendPasswordReset = async (userId: number, options?: RequestInit): Promise<AdminSendPasswordResetResult> => {
+
+  return customFetch<AdminSendPasswordResetResult>(getAdminSendPasswordResetUrl(userId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAdminSendPasswordResetMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminSendPasswordReset>>, TError,{userId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminSendPasswordReset>>, TError,{userId: number}, TContext> => {
+
+const mutationKey = ['adminSendPasswordReset'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminSendPasswordReset>>, {userId: number}> = (props) => {
+          const {userId} = props ?? {};
+
+          return  adminSendPasswordReset(userId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminSendPasswordResetMutationResult = NonNullable<Awaited<ReturnType<typeof adminSendPasswordReset>>>
+
+    export type AdminSendPasswordResetMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Send the user a password reset link
+ */
+export const useAdminSendPasswordReset = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminSendPasswordReset>>, TError,{userId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminSendPasswordReset>>,
+        TError,
+        {userId: number},
+        TContext
+      > => {
+      return useMutation(getAdminSendPasswordResetMutationOptions(options));
+    }
+
+export const getAdminRevokeUserUrl = (userId: number,) => {
+
+
+
+
+  return `/api/metrix/admin/users/${userId}/revoke`
+}
+
+/**
+ * Disables the account and immediately destroys all of its sessions. The user can no longer log in, use existing sessions, or reset their password. Reversible via restore or re-approval. Requires admin access.
+ * @summary Revoke a user's access
+ */
+export const adminRevokeUser = async (userId: number, options?: RequestInit): Promise<AdminUserActionResult> => {
+
+  return customFetch<AdminUserActionResult>(getAdminRevokeUserUrl(userId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAdminRevokeUserMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRevokeUser>>, TError,{userId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminRevokeUser>>, TError,{userId: number}, TContext> => {
+
+const mutationKey = ['adminRevokeUser'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminRevokeUser>>, {userId: number}> = (props) => {
+          const {userId} = props ?? {};
+
+          return  adminRevokeUser(userId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminRevokeUserMutationResult = NonNullable<Awaited<ReturnType<typeof adminRevokeUser>>>
+
+    export type AdminRevokeUserMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Revoke a user's access
+ */
+export const useAdminRevokeUser = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRevokeUser>>, TError,{userId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminRevokeUser>>,
+        TError,
+        {userId: number},
+        TContext
+      > => {
+      return useMutation(getAdminRevokeUserMutationOptions(options));
+    }
+
+export const getAdminRestoreUserUrl = (userId: number,) => {
+
+
+
+
+  return `/api/metrix/admin/users/${userId}/restore`
+}
+
+/**
+ * Re-enables a disabled account. The user's existing password keeps working (sessions were destroyed at revoke time, so they must log in again). Requires admin access.
+ * @summary Restore a revoked user's access
+ */
+export const adminRestoreUser = async (userId: number, options?: RequestInit): Promise<AdminUserActionResult> => {
+
+  return customFetch<AdminUserActionResult>(getAdminRestoreUserUrl(userId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAdminRestoreUserMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRestoreUser>>, TError,{userId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminRestoreUser>>, TError,{userId: number}, TContext> => {
+
+const mutationKey = ['adminRestoreUser'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminRestoreUser>>, {userId: number}> = (props) => {
+          const {userId} = props ?? {};
+
+          return  adminRestoreUser(userId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminRestoreUserMutationResult = NonNullable<Awaited<ReturnType<typeof adminRestoreUser>>>
+
+    export type AdminRestoreUserMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Restore a revoked user's access
+ */
+export const useAdminRestoreUser = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRestoreUser>>, TError,{userId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminRestoreUser>>,
+        TError,
+        {userId: number},
+        TContext
+      > => {
+      return useMutation(getAdminRestoreUserMutationOptions(options));
     }
 
 export const getApproveRequestAccessEntryUrl = (requestId: string,) => {

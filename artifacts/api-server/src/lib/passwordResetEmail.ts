@@ -1,41 +1,22 @@
-const RESEND_ENDPOINT = "https://api.resend.com/emails";
-
-const escapeHtml = (value: string): string =>
-  value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
+import {
+  sendEmail,
+  escapeHtml,
+  type EmailDeliveryResult,
+  type EmailLogger,
+} from "./email";
 
 /**
  * Send the password reset email containing the single-use reset link.
  *
- * Returns "sent", "skipped" (RESEND_API_KEY not configured), or "failed"
- * (provider error). Never throws: the request-reset endpoint always responds
- * neutrally regardless of delivery outcome.
+ * Never throws: the request-reset endpoint always responds neutrally
+ * regardless of delivery outcome.
  */
 export async function sendPasswordResetEmail(
   email: string,
   resetUrl: string,
   appBaseUrl: string,
-  log: {
-    info: (obj: object, msg: string) => void;
-    warn: (obj: object, msg: string) => void;
-    error: (obj: object, msg: string) => void;
-  },
-): Promise<"sent" | "skipped" | "failed"> {
-  const apiKey = process.env["RESEND_API_KEY"];
-  if (!apiKey) {
-    log.warn(
-      { email },
-      "RESEND_API_KEY not set — password reset email skipped (reset link not delivered)",
-    );
-    return "skipped";
-  }
-
-  const from =
-    process.env["REQUEST_ACCESS_FROM_EMAIL"] ?? "Metrix <onboarding@resend.dev>";
+  log: EmailLogger,
+): Promise<EmailDeliveryResult> {
   const logoUrl = `${appBaseUrl}metrix-logo.png`;
 
   const html = `
@@ -54,34 +35,11 @@ export async function sendPasswordResetEmail(
       <p style="color:#777;font-size:12px;margin-top:24px;">If you didn't request a password reset, you can safely ignore this email — your password will not change.</p>
     </div>`;
 
-  try {
-    const response = await fetch(RESEND_ENDPOINT, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from,
-        to: [email],
-        subject: "Reset your Metrix password",
-        html,
-      }),
-    });
-
-    if (!response.ok) {
-      const body = await response.text();
-      log.error(
-        { status: response.status, body, email },
-        "Resend rejected password reset email",
-      );
-      return "failed";
-    }
-
-    log.info({ email }, "password reset email sent");
-    return "sent";
-  } catch (err) {
-    log.error({ err, email }, "Failed to send password reset email");
-    return "failed";
-  }
+  return sendEmail({
+    to: email,
+    subject: "Reset your Metrix password",
+    html,
+    kind: "password reset email",
+    log,
+  });
 }
