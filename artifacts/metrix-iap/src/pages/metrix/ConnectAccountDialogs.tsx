@@ -281,10 +281,14 @@ function CsvSlotUpload({
           <button
             onClick={() => void handleRemove()}
             disabled={deleteMutation.isPending}
-            className="shrink-0 p-1 rounded text-muted-foreground/80 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+            className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-muted-foreground/80 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             aria-label={`Remove ${staged.filename}`}
           >
-            <Trash2 className="w-3 h-3" />
+            {deleteMutation.isPending ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              <Trash2 className="w-3 h-3" />
+            )}
           </button>
         </div>
       ) : (
@@ -298,7 +302,7 @@ function CsvSlotUpload({
           />
           <button
             onClick={() => fileRef.current?.click()}
-            className="w-full flex flex-col items-center gap-1.5 p-4 rounded-lg border border-dashed border-border/60 hover:border-primary/40 hover:bg-white/[0.02] transition-colors"
+            className="w-full flex flex-col items-center gap-1.5 p-4 rounded-lg border border-dashed border-border/60 hover:border-primary/40 hover:bg-white/[0.02] transition-colors cursor-pointer"
           >
             <Upload className="w-4 h-4 text-muted-foreground/85" />
             {file ? (
@@ -364,7 +368,7 @@ function AdNameDropdownPicker({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
-          className="flex items-center gap-1.5 h-7 px-2.5 rounded bg-white/[0.03] border border-border/50 text-[11px] text-foreground hover:border-primary/40 transition-colors"
+          className="flex items-center gap-1.5 h-7 px-2.5 rounded bg-white/[0.03] border border-border/50 text-[11px] text-foreground hover:border-primary/40 transition-colors cursor-pointer"
           aria-label="Pick ad name(s) from existing analysis"
         >
           <ListChecks className="w-3 h-3 text-muted-foreground/85" />
@@ -511,14 +515,18 @@ function CreativeAdNamesEditor({
           <button
             onClick={() => void handleFreeSave()}
             disabled={updateMutation.isPending}
-            className="shrink-0 p-1 rounded text-emerald-400 hover:bg-emerald-400/10 transition-colors"
+            className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-emerald-400 hover:bg-emerald-400/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             aria-label="Save"
           >
-            <Check className="w-3.5 h-3.5" />
+            {updateMutation.isPending ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Check className="w-3.5 h-3.5" />
+            )}
           </button>
           <button
             onClick={() => { setValue(asset.ad_names.join(", ")); setEditingFree(false); }}
-            className="shrink-0 p-1 rounded text-muted-foreground/80 hover:bg-white/5 transition-colors"
+            className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-muted-foreground/80 hover:bg-white/5 transition-colors cursor-pointer"
             aria-label="Cancel"
           >
             <X className="w-3.5 h-3.5" />
@@ -531,7 +539,7 @@ function CreativeAdNamesEditor({
           </div>
           <button
             onClick={() => { setValue(asset.ad_names.join(", ")); setEditingFree(true); }}
-            className="shrink-0 p-1 rounded text-muted-foreground/80 hover:text-primary hover:bg-primary/10 transition-colors"
+            className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-muted-foreground/80 hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
             aria-label="Edit ad name mapping"
           >
             <Pencil className="w-3 h-3" />
@@ -642,7 +650,7 @@ function CreativeUploadSection({
       <button
         onClick={() => fileRef.current?.click()}
         disabled={pendingCount > 0}
-        className="w-full flex flex-col items-center gap-1.5 p-4 rounded-lg border border-dashed border-border/60 hover:border-primary/40 hover:bg-white/[0.02] transition-colors disabled:opacity-60"
+        className="w-full flex flex-col items-center gap-1.5 p-4 rounded-lg border border-dashed border-border/60 hover:border-primary/40 hover:bg-white/[0.02] transition-colors disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
       >
         <Upload className="w-4 h-4 text-muted-foreground/85" />
         {pendingCount > 0 ? (
@@ -685,10 +693,15 @@ function CreativeUploadSection({
               </div>
               <button
                 onClick={async () => { await deleteMutation.mutateAsync({ accountId, importId: asset.id }); onChanged(); }}
-                className="shrink-0 mt-2 p-1 rounded text-muted-foreground/80 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                disabled={deleteMutation.isPending}
+                className="shrink-0 mt-2 w-7 h-7 flex items-center justify-center rounded text-muted-foreground/80 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 aria-label={`Remove ${asset.filename}`}
               >
-                <Trash2 className="w-3 h-3" />
+                {deleteMutation.isPending ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Trash2 className="w-3 h-3" />
+                )}
               </button>
             </div>
           ))}
