@@ -11,6 +11,11 @@ import { ResetPasswordPage } from "@/pages/auth/ResetPasswordPage";
 import { AdminWaitlistPage } from "@/pages/admin/AdminWaitlistPage";
 import { Loader2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
+import {
+  RESET_PASSWORD_PATH,
+  FORGOT_PASSWORD_PATH,
+  ADMIN_PATH,
+} from "@/navigation/preLoginRoutes";
 
 // Seed-hydrated Metrix pages (manager → ad-account hierarchy)
 import { AccountProvider } from "@/contexts/AccountContext";
@@ -134,12 +139,12 @@ export function AuthGate() {
   const [location, navigate] = useLocation();
 
   // The emailed reset link must work regardless of session state.
-  if (location === "/reset-password") {
+  if (location === RESET_PASSWORD_PATH) {
     return <ResetPasswordPage onBackToLogin={() => navigate("/", { replace: true })} />;
   }
 
   // The admin console has its own password gate — independent of user auth.
-  if (location === "/admin") {
+  if (location === ADMIN_PATH) {
     return <AdminWaitlistPage />;
   }
 
@@ -152,7 +157,7 @@ export function AuthGate() {
   }
 
   if (!user) {
-    if (location === "/forgot-password") {
+    if (location === FORGOT_PASSWORD_PATH) {
       return <ForgotPasswordPage onBack={() => navigate("/", { replace: true })} />;
     }
     return <LoginPage />;
