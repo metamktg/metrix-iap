@@ -63,6 +63,7 @@ import {
 } from "lucide-react";
 import type { AdAccount } from "@/lib/data/seedTypes";
 import { RequiredFormatPanel, type IapCsvClassKey } from "./ManualAnalysisControls";
+import type { ManualImportInput, ManualImportResult } from "@workspace/api-client-react";
 
 export function PrimaryBtn({
   onClick,
@@ -190,6 +191,95 @@ async function fileToBase64(file: File): Promise<string> {
   return btoa(binary);
 }
 
+/**
+ * Stages a manual import over XMLHttpRequest (instead of the generated
+ * fetch-based hook) so we get real byte-level upload progress — `fetch`
+ * has no upload-progress event, which is why the previous UI could only
+ * show an indeterminate spinner regardless of file size.
+ */
+function stageManualImportWithProgress(
+  accountId: string,
+  data: ManualImportInput,
+  onProgress?: (pct: number) => void
+): Promise<ManualImportResult> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `/api/metrix/accounts/${accountId}/manual-imports`, true);
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.withCredentials = true;
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
+
+    xhr.onload = () => {
+      let parsed: unknown = null;
+      try {
+        parsed = xhr.responseText ? JSON.parse(xhr.responseText) : null;
+      } catch {
+        // ignore parse failures, handled below via status check
+      }
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress?.(100);
+        resolve(parsed as ManualImportResult);
+      } else {
+        const message =
+          (parsed && typeof parsed === "object" && "message" in parsed
+            ? String((parsed as { message?: unknown }).message)
+            : null) ?? `Upload failed (HTTP ${xhr.status})`;
+        reject(new Error(message));
+      }
+    };
+    xhr.onerror = () => reject(new Error("Upload failed. Check your connection and try again."));
+    xhr.onabort = () => reject(new Error("Upload cancelled."));
+
+    xhr.send(JSON.stringify(data));
+  });
+}
+
+/**
+ * Normalizes a filename or ad name for auto-mapping comparisons: strips
+ * the extension, lowercases, and collapses separators (- _ . whitespace)
+ * to single spaces so "Summer_Sale-v2.mp4" and "Summer Sale v2" line up.
+ */
+function normalizeForMatch(value: string): string {
+  return value
+    .replace(/\.[^/.]+$/, "")
+    .toLowerCase()
+    .replace(/[-_.]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Suggests the best ad-name match for an uploaded filename against a set
+ * of known/available ad names. Tries an exact normalized match first,
+ * then falls back to a substring match in either direction — filenames
+ * often carry extra tokens (dates, sizes, "_final") around the ad name.
+ */
+function suggestAdNameMatch(filename: string, candidates: Iterable<string>): string | null {
+  const normalizedFile = normalizeForMatch(filename);
+  if (!normalizedFile) return null;
+
+  let bestSubstring: { name: string; score: number } | null = null;
+  for (const candidate of candidates) {
+    const normalizedCandidate = normalizeForMatch(candidate);
+    if (!normalizedCandidate) continue;
+    if (normalizedCandidate === normalizedFile) return candidate;
+
+    if (normalizedFile.includes(normalizedCandidate) || normalizedCandidate.includes(normalizedFile)) {
+      // Prefer the longer overlapping candidate name — a closer match to the filename.
+      const score = normalizedCandidate.length;
+      if (!bestSubstring || score > bestSubstring.score) {
+        bestSubstring = { name: candidate, score };
+      }
+    }
+  }
+  return bestSubstring?.name ?? null;
+}
+
 const CSV_SLOTS: { kind: "performance_demo_csv" | "performance_placement_csv"; csvClass: IapCsvClassKey; title: string; desc: string }[] = [
   {
     kind: "performance_demo_csv",
@@ -204,6 +294,25 @@ const CSV_SLOTS: { kind: "performance_demo_csv" | "performance_placement_csv"; c
     desc: "Exact export of the IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL pivot template (device/platform/placement breakdowns).",
   },
 ];
+
+function UploadProgressBar({ pct, label }: { pct: number; label: string }) {
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between text-[10px] text-muted-foreground/85">
+        <span className="flex items-center gap-1.5 truncate">
+          <Loader2 className="w-3 h-3 animate-spin shrink-0" /> {label}
+        </span>
+        <span className="shrink-0 tabular-nums">{pct}%</span>
+      </div>
+      <div className="h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden">
+        <div
+          className="h-full rounded-full bg-primary transition-[width] duration-150 ease-out"
+          style={{ width: `${Math.min(100, Math.max(pct > 0 ? 4 : 0, pct))}%` }}
+        />
+      </div>
+    </div>
+  );
+}
 
 function CsvSlotUpload({
   accountId,
@@ -226,8 +335,8 @@ function CsvSlotUpload({
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [uploadPct, setUploadPct] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const stageMutation = useStageManualImport();
   const deleteMutation = useDeleteManualImport();
 
   const handleStage = async () => {
@@ -237,21 +346,21 @@ function CsvSlotUpload({
       setError("File is too large — the limit is 8 MB.");
       return;
     }
+    setUploadPct(0);
     try {
       const content_base64 = await fileToBase64(file);
-      await stageMutation.mutateAsync({
+      await stageManualImportWithProgress(
         accountId,
-        data: { kind, filename: file.name, content_type: file.type || undefined, content_base64 },
-      });
+        { kind, filename: file.name, content_type: file.type || undefined, content_base64 },
+        setUploadPct
+      );
       setFile(null);
       if (fileRef.current) fileRef.current.value = "";
       onStaged();
     } catch (err) {
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : "Upload failed. Check your connection and try again."
-      );
+      setError(err instanceof Error ? err.message : "Upload failed. Check your connection and try again.");
+    } finally {
+      setUploadPct(null);
     }
   };
 
@@ -313,19 +422,14 @@ function CsvSlotUpload({
               <span className="text-[11px] text-muted-foreground/80">Choose a .csv file (max 8 MB)</span>
             )}
           </button>
-          {file && (
+          {file && uploadPct === null && (
             <div className="flex items-center justify-end">
-              <PrimaryBtn onClick={() => void handleStage()} disabled={stageMutation.isPending}>
-                {stageMutation.isPending ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading…
-                  </>
-                ) : (
-                  <>Stage {title}</>
-                )}
+              <PrimaryBtn onClick={() => void handleStage()}>
+                <>Stage {title}</>
               </PrimaryBtn>
             </div>
           )}
+          {uploadPct !== null && <UploadProgressBar pct={uploadPct} label={`Uploading ${file?.name ?? title}…`} />}
         </>
       )}
 
@@ -573,57 +677,72 @@ function CreativeUploadSection({
   availableAdNames?: string[];
   onChanged: () => void;
 }) {
-  const [error, setError] = useState<string | null>(null);
-  const [pendingCount, setPendingCount] = useState(0);
+  const [errors, setErrors] = useState<string[]>([]);
+  const [queueTotal, setQueueTotal] = useState(0);
+  const [queueIndex, setQueueIndex] = useState(0);
+  const [currentFile, setCurrentFile] = useState<string | null>(null);
+  const [currentPct, setCurrentPct] = useState(0);
   const [justStagedIds, setJustStagedIds] = useState<Set<string>>(new Set());
   const fileRef = useRef<HTMLInputElement>(null);
-  const stageMutation = useStageManualImport();
   const deleteMutation = useDeleteManualImport();
 
   const creativeAssets = imports.filter((i) => i.kind === "creative_asset");
   const registryNames = useMemo(() => new Set(availableAdNames ?? []), [availableAdNames]);
+  const matchCandidates = registryNames.size > 0 ? registryNames : knownAdNames;
   const mappedCount = creativeAssets.filter((a) => a.ad_names.length > 0).length;
+  const isUploading = queueTotal > 0;
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    setError(null);
-    setPendingCount(files.length);
+    setErrors([]);
+    const fileList = Array.from(files);
+    setQueueTotal(fileList.length);
     const newlyStaged: string[] = [];
-    try {
-      for (const file of Array.from(files)) {
-        if (file.size > MAX_UPLOAD_BYTES) {
-          setError(`${file.name} is too large — the limit is 8 MB.`);
-          continue;
-        }
+    const failures: string[] = [];
+
+    // Each file is staged independently so one bad/oversized file in a
+    // multi-file selection doesn't block the rest from uploading — the
+    // previous implementation aborted the whole batch on the first error.
+    for (let i = 0; i < fileList.length; i++) {
+      const file = fileList[i];
+      setQueueIndex(i + 1);
+      setCurrentFile(file.name);
+      setCurrentPct(0);
+
+      if (file.size > MAX_UPLOAD_BYTES) {
+        failures.push(`${file.name} is too large — the limit is 8 MB.`);
+        continue;
+      }
+
+      try {
         const content_base64 = await fileToBase64(file);
-        const inferredName = file.name.replace(/\.[^/.]+$/, "");
-        const matchSet = registryNames.size > 0 ? registryNames : knownAdNames;
-        const staged = await stageMutation.mutateAsync({
+        const matchedName = suggestAdNameMatch(file.name, matchCandidates);
+        const staged = await stageManualImportWithProgress(
           accountId,
-          data: {
+          {
             kind: "creative_asset",
             filename: file.name,
             content_type: file.type || undefined,
             content_base64,
-            ad_names: matchSet.has(inferredName) ? [inferredName] : [],
+            ad_names: matchedName ? [matchedName] : [],
           },
-        });
+          setCurrentPct
+        );
         newlyStaged.push(staged.import_id);
+      } catch (err) {
+        failures.push(`${file.name}: ${err instanceof Error ? err.message : "Upload failed."}`);
       }
-      if (newlyStaged.length > 0) {
-        setJustStagedIds((prev) => new Set([...prev, ...newlyStaged]));
-      }
-      onChanged();
-    } catch (err) {
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : "One or more uploads failed. Check your connection and try again."
-      );
-    } finally {
-      setPendingCount(0);
-      if (fileRef.current) fileRef.current.value = "";
     }
+
+    if (newlyStaged.length > 0) {
+      setJustStagedIds((prev) => new Set([...prev, ...newlyStaged]));
+      onChanged();
+    }
+    setErrors(failures);
+    setQueueTotal(0);
+    setQueueIndex(0);
+    setCurrentFile(null);
+    if (fileRef.current) fileRef.current.value = "";
   };
 
   return (
@@ -649,23 +768,30 @@ function CreativeUploadSection({
       />
       <button
         onClick={() => fileRef.current?.click()}
-        disabled={pendingCount > 0}
+        disabled={isUploading}
         className="w-full flex flex-col items-center gap-1.5 p-4 rounded-lg border border-dashed border-border/60 hover:border-primary/40 hover:bg-white/[0.02] transition-colors disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
       >
         <Upload className="w-4 h-4 text-muted-foreground/85" />
-        {pendingCount > 0 ? (
-          <span className="text-[11px] text-muted-foreground/80 flex items-center gap-1.5">
-            <Loader2 className="w-3 h-3 animate-spin" /> Uploading {pendingCount} file(s)…
-          </span>
-        ) : (
+        {!isUploading && (
           <span className="text-[11px] text-muted-foreground/80">Choose one or more creative files (max 8 MB each)</span>
         )}
       </button>
 
-      {error && (
+      {isUploading && currentFile && (
+        <UploadProgressBar
+          pct={currentPct}
+          label={queueTotal > 1 ? `File ${queueIndex} of ${queueTotal} — ${currentFile}` : currentFile}
+        />
+      )}
+
+      {errors.length > 0 && (
         <div className="flex items-start gap-2 p-2.5 rounded-lg border border-red-400/25 bg-red-400/[0.06]">
           <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
-          <p className="text-[11px] text-red-300 leading-relaxed">{error}</p>
+          <div className="text-[11px] text-red-300 leading-relaxed space-y-0.5">
+            {errors.map((msg, i) => (
+              <p key={i}>{msg}</p>
+            ))}
+          </div>
         </div>
       )}
 
