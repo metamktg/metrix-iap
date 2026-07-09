@@ -2599,6 +2599,10 @@ components:
           description: For creative_asset uploads only — the ad name(s) this creative is mapped to.
           items:
             type: string
+        match_method:
+          type: string
+          description: How ad_names was auto-suggested at stage time (id code vs filename similarity), if at all.
+          enum: [id, fuzzy]
       required:
         - kind
         - filename
@@ -2645,6 +2649,11 @@ components:
           type: array
           items:
             type: string
+        match_method:
+          type: string
+          description: How ad_names was auto-suggested at stage time (id code vs filename similarity), if it still matches the saved mapping. Cleared once the mapping is overridden.
+          nullable: true
+          enum: [id, fuzzy]
         status:
           type: string
           enum: [staged, processed, rejected]
@@ -2675,6 +2684,11 @@ components:
           type: array
           items:
             type: string
+        match_method:
+          type: string
+          description: How ad_names was auto-suggested, if this update is re-saving an unmodified suggestion. Omit or leave unset for a manual override — the server does not infer this.
+          nullable: true
+          enum: [id, fuzzy]
       required:
         - ad_names
     IapCsvColumnGroup:

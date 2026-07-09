@@ -5,7 +5,10 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { UpdateManualImportAdNamesInputMatchMethod } from './updateManualImportAdNamesInputMatchMethod';
 
 export interface UpdateManualImportAdNamesInput {
   ad_names: string[];
+  /** How ad_names was auto-suggested, if this update is re-saving an unmodified suggestion. Omit or leave unset for a manual override — the server does not infer this. */
+  match_method?: UpdateManualImportAdNamesInputMatchMethod;
 }

@@ -472,10 +472,10 @@ function AdNameDropdownPicker({
   );
 }
 
-/** Small badge explaining why an ad-name suggestion was made. Only shown while the current mapping still equals the auto-suggested value — overriding it (dropdown/free-text) drops the badge automatically. */
-function MatchMethodBadge({ match, adNames }: { match?: AdNameMatch; adNames: string[] }) {
-  if (!match || adNames.length !== 1 || adNames[0] !== match.name) return null;
-  const isId = match.method === "id";
+/** Small badge explaining why an ad-name suggestion was made. Only shown while the current mapping still equals the auto-suggested value — overriding it (dropdown/free-text) drops the badge automatically. Reads the persisted `match_method` on the import so it survives navigation/reload, not just the current session. */
+function MatchMethodBadge({ method }: { method?: "id" | "fuzzy" | null }) {
+  if (!method) return null;
+  const isId = method === "id";
   return (
     <span
       className={cn(
@@ -531,7 +531,6 @@ function CreativeAdNamesEditor({
   knownAdNames,
   availableAdNames,
   autoFocusPicker,
-  suggestedMatch,
   onSaved,
 }: {
   accountId: string;
@@ -541,8 +540,6 @@ function CreativeAdNamesEditor({
   availableAdNames?: string[];
   /** Auto-open the picker popover on mount (newly staged, unmapped file). */
   autoFocusPicker?: boolean;
-  /** How the current mapping was auto-suggested at stage time, if it still matches the saved value (cleared once the user overrides it). */
-  suggestedMatch?: AdNameMatch;
   onSaved: () => void;
 }) {
   const [editingFree, setEditingFree] = useState(false);
@@ -553,6 +550,9 @@ function CreativeAdNamesEditor({
   const parsedNames = editingFree ? value.split(",").map((s) => s.trim()).filter(Boolean) : asset.ad_names;
   const mismatch = !hasRegistry && parsedNames.length > 0 && parsedNames.some((n) => !knownAdNames.has(n));
 
+  // Any manual override (dropdown pick or free-text edit) omits match_method
+  // from the request, which clears the persisted reason server-side — it
+  // should never keep claiming an auto-match once the user has picked.
   const handleDropdownChange = async (names: string[]) => {
     await updateMutation.mutateAsync({ accountId, importId: asset.id, data: { ad_names: names } });
     onSaved();
@@ -587,7 +587,7 @@ function CreativeAdNamesEditor({
             defaultOpen={autoFocusPicker && asset.ad_names.length === 0}
           />
           {asset.ad_names.length > 0 && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
-          <MatchMethodBadge match={suggestedMatch} adNames={asset.ad_names} />
+          <MatchMethodBadge method={asset.match_method} />
         </div>
       ) : editingFree ? (
         <div className="flex items-center gap-1.5">
@@ -624,7 +624,7 @@ function CreativeAdNamesEditor({
           <div className="text-[10px] text-muted-foreground/85 flex-1">
             {asset.ad_names.length > 0 ? `Mapped to: ${asset.ad_names.join(", ")}` : "No ad name mapped yet"}
           </div>
-          <MatchMethodBadge match={suggestedMatch} adNames={asset.ad_names} />
+          <MatchMethodBadge method={asset.match_method} />
           <button
             onClick={() => { setValue(asset.ad_names.join(", ")); setEditingFree(true); }}
             className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-muted-foreground/80 hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
@@ -667,7 +667,6 @@ function CreativeUploadSection({
   const [currentFile, setCurrentFile] = useState<string | null>(null);
   const [currentPct, setCurrentPct] = useState(0);
   const [justStagedIds, setJustStagedIds] = useState<Set<string>>(new Set());
-  const [matchInfoById, setMatchInfoById] = useState<Map<string, AdNameMatch>>(new Map());
   const fileRef = useRef<HTMLInputElement>(null);
   const deleteMutation = useDeleteManualImport();
 
@@ -710,17 +709,11 @@ function CreativeUploadSection({
             content_type: file.type || undefined,
             content_base64,
             ad_names: match ? [match.name] : [],
+            match_method: match?.method,
           },
           setCurrentPct
         );
         newlyStaged.push(staged.import_id);
-        if (match) {
-          setMatchInfoById((prev) => {
-            const next = new Map(prev);
-            next.set(staged.import_id, match);
-            return next;
-          });
-        }
       } catch (err) {
         failures.push(`${file.name}: ${err instanceof Error ? err.message : "Upload failed."}`);
       }
@@ -806,7 +799,6 @@ function CreativeUploadSection({
                   knownAdNames={knownAdNames}
                   availableAdNames={availableAdNames}
                   autoFocusPicker={justStagedIds.has(asset.id)}
-                  suggestedMatch={matchInfoById.get(asset.id)}
                   onSaved={onChanged}
                 />
               </div>

@@ -65,7 +65,8 @@ export const StageManualImportBody = zod.object({
   "filename": zod.string().min(1).max(stageManualImportBodyFilenameMax),
   "content_type": zod.string().optional().describe('Original MIME type of the uploaded file, if known.'),
   "content_base64": zod.string().min(1).describe('Base64-encoded file content. Max 8 MB decoded.'),
-  "ad_names": zod.array(zod.string()).optional().describe('For creative_asset uploads only — the ad name(s) this creative is mapped to.')
+  "ad_names": zod.array(zod.string()).optional().describe('For creative_asset uploads only — the ad name(s) this creative is mapped to.'),
+  "match_method": zod.enum(['id', 'fuzzy']).optional().describe('How ad_names was auto-suggested at stage time (id code vs filename similarity), if at all.')
 })
 
 export const StageManualImportResponse = zod.object({
@@ -97,6 +98,7 @@ export const ListManualImportsResponse = zod.object({
   "content_type": zod.string().nullish(),
   "size_bytes": zod.number(),
   "ad_names": zod.array(zod.string()),
+  "match_method": zod.enum(['id', 'fuzzy']).nullish().describe('How ad_names was auto-suggested at stage time (id code vs filename similarity), if it still matches the saved mapping. Cleared once the mapping is overridden.'),
   "status": zod.enum(['staged', 'processed', 'rejected']),
   "created_at": zod.string()
 }))
@@ -117,7 +119,8 @@ export const UpdateManualImportAdNamesParams = zod.object({
 })
 
 export const UpdateManualImportAdNamesBody = zod.object({
-  "ad_names": zod.array(zod.string())
+  "ad_names": zod.array(zod.string()),
+  "match_method": zod.enum(['id', 'fuzzy']).nullish().describe('How ad_names was auto-suggested, if this update is re-saving an unmodified suggestion. Omit or leave unset for a manual override — the server does not infer this.')
 })
 
 export const UpdateManualImportAdNamesResponse = zod.object({
@@ -128,6 +131,7 @@ export const UpdateManualImportAdNamesResponse = zod.object({
   "content_type": zod.string().nullish(),
   "size_bytes": zod.number(),
   "ad_names": zod.array(zod.string()),
+  "match_method": zod.enum(['id', 'fuzzy']).nullish().describe('How ad_names was auto-suggested at stage time (id code vs filename similarity), if it still matches the saved mapping. Cleared once the mapping is overridden.'),
   "status": zod.enum(['staged', 'processed', 'rejected']),
   "created_at": zod.string()
 })

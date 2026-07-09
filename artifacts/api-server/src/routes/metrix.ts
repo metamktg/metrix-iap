@@ -666,6 +666,7 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
         content: `\\x${content.toString("hex")}`,
         size_bytes: content.length,
         ad_names: parsed.data.kind === "creative_asset" ? (parsed.data.ad_names ?? []) : [],
+        match_method: parsed.data.kind === "creative_asset" ? (parsed.data.match_method ?? null) : null,
         uploaded_by_user_id: user.id,
         uploaded_by_email: user.email,
       })
@@ -716,7 +717,7 @@ router.get("/metrix/accounts/:accountId/manual-imports", requireAuth, async (req
     }
     const { data, error } = await supabase
       .from("manual_imports")
-      .select("id, account_id, kind, filename, content_type, size_bytes, ad_names, status, created_at")
+      .select("id, account_id, kind, filename, content_type, size_bytes, ad_names, match_method, status, created_at")
       .eq("account_id", accountId)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
@@ -730,6 +731,7 @@ router.get("/metrix/accounts/:accountId/manual-imports", requireAuth, async (req
           content_type: r["content_type"] ?? null,
           size_bytes: r["size_bytes"],
           ad_names: r["ad_names"] ?? [],
+          match_method: r["match_method"] ?? null,
           status: r["status"],
           created_at: String(r["created_at"]),
         })),
@@ -774,11 +776,15 @@ router.patch("/metrix/accounts/:accountId/manual-imports/:importId", requireAuth
       return;
     }
     const previousAdNames: string[] = existing.data[0]!["ad_names"] ?? [];
+    // match_method is only ever persisted when the caller explicitly passes
+    // it back unmodified (still equal to the auto-suggested value) — any
+    // other save (dropdown pick, free-text edit) omits it, which clears the
+    // stored reason so it never lies about a manually-picked mapping.
     const { data, error } = await supabase
       .from("manual_imports")
-      .update({ ad_names: parsed.data.ad_names })
+      .update({ ad_names: parsed.data.ad_names, match_method: parsed.data.match_method ?? null })
       .eq("id", importId)
-      .select("id, account_id, kind, filename, content_type, size_bytes, ad_names, status, created_at")
+      .select("id, account_id, kind, filename, content_type, size_bytes, ad_names, match_method, status, created_at")
       .single();
     if (error) throw new Error(error.message);
 
@@ -799,6 +805,7 @@ router.patch("/metrix/accounts/:accountId/manual-imports/:importId", requireAuth
         content_type: data["content_type"] ?? null,
         size_bytes: data["size_bytes"],
         ad_names: data["ad_names"] ?? [],
+        match_method: data["match_method"] ?? null,
         status: data["status"],
         created_at: String(data["created_at"]),
       }),
