@@ -166,9 +166,11 @@ export function AuthGate() {
 
   // A signed-in user opening the forgot-password link (old email, bookmark)
   // has no use for that screen — send them to their account settings, where
-  // the password can actually be changed, instead of the in-app 404.
+  // the password can actually be changed, instead of the in-app 404. The
+  // ?focus=password param (the app's focus deep-link convention) tells that
+  // page to scroll to / highlight the password card.
   if (location === FORGOT_PASSWORD_PATH) {
-    return <Redirect to="/app/settings/account" replace />;
+    return <Redirect to="/app/settings/account?focus=password" replace />;
   }
 
   return (

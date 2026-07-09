@@ -2,16 +2,17 @@
 // Account-scoped settings: data connection, white-label, data isolation,
 // plus the workspace-wide Metrix Agent waitlist admin section.
 
-import { useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { ApiError } from "@workspace/api-client-react";
 import { useScopedAdAccountId, useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAdAccount, getReportBuilder } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, ScopeBanner, SectionCard, CaveatNote, PendingState } from "../shared";
+import { ModuleHeader, ScopeBanner, SectionCard, CaveatNote, PendingState, useFocusParam } from "../shared";
 import { ConnectMetaDialog, ManualImportDialog } from "../ConnectAccountDialogs";
 import { AgentWaitlistSection } from "./AgentWaitlistSection";
 import { cn } from "@/lib/utils";
-import { Plug, FileUp, Palette, ShieldCheck, CheckCircle2, Circle, UserCircle2, LogOut, Loader2 } from "lucide-react";
+import { Plug, FileUp, Palette, ShieldCheck, CheckCircle2, Circle, UserCircle2, LogOut, Loader2, KeyRound } from "lucide-react";
 
 const SECTION = "Settings · 09";
 
@@ -53,6 +54,161 @@ function SessionSection() {
   );
 }
 
+const inputClass =
+  "w-full h-9 px-3 rounded-md bg-white/[0.03] border border-border/40 text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40";
+
+function PasswordSection() {
+  const { changePassword } = useAuth();
+  const focus = useFocusParam();
+  const cardRef = useRef<HTMLDivElement>(null);
+  // Latch the arrival state: the URL param is cleared right away (so
+  // refreshes behave like normal visits), which would otherwise flip the
+  // hook value mid-highlight.
+  const arrivedFocused = useRef(focus === "password");
+  const [highlighted, setHighlighted] = useState(false);
+
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Arriving from a /forgot-password redirect: the URL carries
+  // ?focus=password, so scroll this card into view and briefly highlight
+  // it. Normal visits (no param) are unchanged.
+  useEffect(() => {
+    if (!arrivedFocused.current) return;
+    // Drop only the focus param — other params (e.g. account scope) stay.
+    const params = new URLSearchParams(window.location.search);
+    params.delete("focus");
+    const rest = params.toString();
+    window.history.replaceState(null, "", window.location.pathname + (rest ? `?${rest}` : ""));
+    const t1 = setTimeout(() => {
+      cardRef.current?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      setHighlighted(true);
+    }, 100);
+    const t2 = setTimeout(() => setHighlighted(false), 3000);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, []);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (isSubmitting) return;
+    setError(null);
+    setSuccess(false);
+    if (newPassword.length < 8) {
+      setError("New password must be at least 8 characters long.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError("New passwords do not match.");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await changePassword(currentPassword, newPassword);
+      setSuccess(true);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 400) {
+        setError(err.message || "Could not change password. Check your current password.");
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div
+      ref={cardRef}
+      id="password"
+      className={cn(
+        "rounded-xl transition-shadow duration-500",
+        highlighted && "ring-2 ring-primary/60 shadow-[0_0_24px_rgba(120,170,255,0.25)]",
+      )}
+      data-testid="section-password"
+    >
+      <SectionCard title="Password" desc="Change the password you use to sign in. Changing it signs you out everywhere else.">
+        <form onSubmit={handleSubmit} className="space-y-3 max-w-sm" data-testid="form-account-change-password">
+          <div className="space-y-1.5">
+            <label htmlFor="account-current-password" className="text-[11px] font-medium text-muted-foreground">
+              Current password
+            </label>
+            <input
+              id="account-current-password"
+              type="password"
+              required
+              autoComplete="current-password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              className={inputClass}
+              data-testid="input-account-current-password"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="account-new-password" className="text-[11px] font-medium text-muted-foreground">
+              New password <span className="text-muted-foreground/60">(min. 8 characters)</span>
+            </label>
+            <input
+              id="account-new-password"
+              type="password"
+              required
+              minLength={8}
+              autoComplete="new-password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className={inputClass}
+              data-testid="input-account-new-password"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="account-confirm-password" className="text-[11px] font-medium text-muted-foreground">
+              Confirm new password
+            </label>
+            <input
+              id="account-confirm-password"
+              type="password"
+              required
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className={inputClass}
+              data-testid="input-account-confirm-password"
+            />
+          </div>
+          {error && (
+            <div className="text-[11px] text-red-400/90" data-testid="text-account-change-password-error">
+              {error}
+            </div>
+          )}
+          {success && (
+            <div className="flex items-center gap-1.5 text-[11px] text-emerald-400/90" data-testid="text-account-change-password-success">
+              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> Password updated. Other sessions have been signed out.
+            </div>
+          )}
+          <button
+            type="submit"
+            disabled={isSubmitting || !currentPassword || !newPassword || !confirmPassword}
+            className="flex items-center justify-center gap-1.5 h-9 px-4 rounded-md bg-primary text-primary-foreground text-[12px] font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+            data-testid="button-account-change-password"
+          >
+            {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5" />}
+            {isSubmitting ? "Saving…" : "Update password"}
+          </button>
+        </form>
+      </SectionCard>
+    </div>
+  );
+}
+
 export function AccountSettingsView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
@@ -68,6 +224,7 @@ export function AccountSettingsView() {
         <PendingState title="No ad account selected" message="Choose an ad account to manage its settings." />
         <div className="px-6 py-5 space-y-5 max-w-3xl">
           <SessionSection />
+          <PasswordSection />
           <AgentWaitlistSection />
         </div>
       </div>
@@ -85,6 +242,9 @@ export function AccountSettingsView() {
       <div className="px-6 py-5 space-y-5 max-w-3xl">
         {/* Session */}
         <SessionSection />
+
+        {/* Password */}
+        <PasswordSection />
 
         {/* Data connection */}
         <SectionCard title="Data connection" desc="Meta ad account connection and manual import status.">
