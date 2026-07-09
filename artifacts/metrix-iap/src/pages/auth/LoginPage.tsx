@@ -1,15 +1,14 @@
 // ─── Login landing page ────────────────────────────────────────────────
-// Shown to unauthenticated visitors: sign in, join the waitlist, or visit
-// the marketing site.
+// Shown to unauthenticated visitors: sign in, or request access via the
+// full sign-up form on the marketing site (no quick email-only waitlist
+// here — everyone goes through the proper request-access form).
 
 import { useState, type FormEvent } from "react";
-import { Loader2, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Loader2, ArrowRight } from "lucide-react";
 import { useLocation } from "wouter";
-import { joinAgentWaitlist, ApiError } from "@workspace/api-client-react";
+import { ApiError } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthBrandHeader } from "@/components/brand/BrandMark";
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -19,11 +18,6 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-
-  const [waitlistEmail, setWaitlistEmail] = useState("");
-  const [waitlistState, setWaitlistState] = useState<
-    "idle" | "submitting" | "joined" | "already" | "error"
-  >("idle");
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
@@ -42,19 +36,6 @@ export function LoginPage() {
       }
     } finally {
       setIsLoggingIn(false);
-    }
-  };
-
-  const handleJoinWaitlist = async (e: FormEvent) => {
-    e.preventDefault();
-    const trimmed = waitlistEmail.trim();
-    if (!EMAIL_RE.test(trimmed) || waitlistState === "submitting") return;
-    setWaitlistState("submitting");
-    try {
-      const result = await joinAgentWaitlist({ email: trimmed });
-      setWaitlistState(result.status === "already_joined" ? "already" : "joined");
-    } catch {
-      setWaitlistState("error");
     }
   };
 
@@ -133,49 +114,15 @@ export function LoginPage() {
           <div className="flex-1 h-px bg-border/40" />
         </div>
 
-        {/* Waitlist */}
+        {/* Request access — full sign-up form lives on the marketing site */}
         <div className="space-y-2.5">
-          {waitlistState === "joined" || waitlistState === "already" ? (
-            <div
-              className="flex items-start gap-2.5 p-3 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.06]"
-              data-testid="text-waitlist-success"
-            >
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-              <div className="text-[12px] text-foreground">
-                {waitlistState === "already"
-                  ? "You're already on the waitlist. We'll email you when your access is approved."
-                  : "You're on the waitlist. We'll email you a temporary password once your access is approved."}
-              </div>
-            </div>
-          ) : (
-            <form onSubmit={handleJoinWaitlist} className="flex items-center gap-2" data-testid="form-waitlist">
-              <input
-                type="email"
-                value={waitlistEmail}
-                onChange={(e) => setWaitlistEmail(e.target.value)}
-                placeholder="you@company.com"
-                autoComplete="email"
-                className="flex-1 h-9 px-3 rounded-md bg-white/[0.03] border border-border/40 text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40"
-                data-testid="input-waitlist-email"
-              />
-              <button
-                type="submit"
-                disabled={waitlistState === "submitting" || !EMAIL_RE.test(waitlistEmail.trim())}
-                className="h-9 px-3.5 rounded-md border border-primary/30 bg-primary/10 text-[12px] font-medium text-primary hover:bg-primary/20 transition-colors disabled:opacity-50 disabled:pointer-events-none flex items-center gap-1.5 shrink-0"
-                data-testid="button-join-waitlist"
-              >
-                {waitlistState === "submitting" ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : null}
-                Join waitlist
-              </button>
-            </form>
-          )}
-          {waitlistState === "error" && (
-            <div className="text-[11px] text-red-400/90" data-testid="text-waitlist-error">
-              Couldn't join the waitlist right now. Please try again shortly.
-            </div>
-          )}
+          <a
+            href="/www/#request-access"
+            className="w-full h-9 rounded-md border border-primary/30 bg-primary/10 text-[12px] font-medium text-primary hover:bg-primary/20 transition-colors flex items-center justify-center gap-1.5"
+            data-testid="link-request-access"
+          >
+            Request access <ArrowRight className="w-3.5 h-3.5" />
+          </a>
           <p className="text-[11px] text-muted-foreground/70 text-center">
             Access is approved by the Metrix team. Approved users receive a temporary
             password by email.

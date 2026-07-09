@@ -1,0 +1,13 @@
+---
+name: Dev vs prod database split
+description: Which datastores are shared vs separate between the dev workspace and the published app — key to diagnosing "missing data" reports.
+---
+
+# Dev vs prod database split
+
+- **Replit Postgres is NOT shared**: the dev workspace and the published deployment (app.metrix.ad) each have their own Replit Postgres database. Tables like `agent_waitlist`, `users`, `user_sessions`, `workspace_reports` have independent contents per environment.
+- **Supabase IS shared**: both environments point at the same Supabase project (`request_access`, Metrix IAP data, Meta connection tables).
+
+**Why:** User reported waitlist emails "not entering the database" — submissions on prod were fine; they were checking the dev environment's admin console, which reads the dev Replit Postgres DB.
+
+**How to apply:** When data "isn't saving," first ask which environment the submission happened in vs. where it's being checked. Verify prod Replit Postgres rows with the database skill's `executeSql({ environment: "production" })` read-only query before assuming a bug. Supabase-backed data never has this split.

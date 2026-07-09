@@ -1,10 +1,23 @@
-import { Link } from "wouter";
+import { useEffect } from "react";
 import { COPY, BOOK_DEMO_URL } from "../content";
 import { RequestAccessForm } from "../components/RequestAccessForm";
 import { BrandMark } from "../components/BrandMark";
 import { Shield, Activity, GitMerge } from "lucide-react";
 
 export default function Home() {
+  // The browser's native hash jump fires before React renders, so handle
+  // #request-access (and any other hash) ourselves after mount.
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (!hash) return;
+    const el = document.getElementById(hash.slice(1));
+    if (el) {
+      requestAnimationFrame(() => {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+  }, []);
+
   return (
     <div className="min-h-screen w-full flex flex-col items-center">
       {/* Navbar */}

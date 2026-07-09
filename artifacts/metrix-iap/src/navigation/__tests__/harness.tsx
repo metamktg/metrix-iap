@@ -10,6 +10,7 @@ import { AccountProvider } from "@/contexts/AccountContext";
 import { DateRangeProvider } from "@/contexts/DateRangeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { Router as AppRouter, AuthGate } from "@/App";
+import { PRE_LOGIN_ROUTE_PATHS } from "@/navigation/preLoginRoutes";
 
 export const NOT_FOUND_TEXT = "This route does not exist.";
 export const SESSION_KEY = "metrix_active_account_v1";
@@ -19,8 +20,10 @@ export const SESSION_KEY = "metrix_active_account_v1";
 // through AppRouter would falsely land on the 404 view, so the harness
 // mounts the real AuthGate instead — with the auth query disabled the
 // gate resolves to the unauthenticated branch, exactly like a logged-out
-// visitor hitting the link.
-export const AUTH_GATE_PATHS = new Set(["/forgot-password", "/reset-password", "/admin"]);
+// visitor hitting the link. The path list is the shared constant from
+// src/navigation/preLoginRoutes.ts — the same one AuthGate consumes —
+// so a new pre-login route added there is picked up here automatically.
+export const AUTH_GATE_PATHS = PRE_LOGIN_ROUTE_PATHS;
 
 export function seedAccountSession() {
   sessionStorage.clear();
@@ -49,6 +52,28 @@ export function renderAt(initialPath: string) {
               </DateRangeProvider>
             </AccountProvider>
           )}
+        </AuthProvider>
+      </WouterRouter>
+    </QueryClientProvider>
+  );
+  return { ...result, location };
+}
+
+// Always mounts AuthGate at the given path, regardless of whether the path
+// is in AUTH_GATE_PATHS — exactly what a logged-out visitor experiences.
+// Used to verify each PRE_LOGIN_ROUTE_PATHS entry is actually wired to a
+// dedicated screen: an unwired path falls through to the plain login page,
+// which this helper lets tests detect by comparing against a login baseline.
+export function renderAuthGateAt(initialPath: string) {
+  const location = memoryLocation({ path: initialPath, record: true });
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, enabled: false } },
+  });
+  const result = render(
+    <QueryClientProvider client={queryClient}>
+      <WouterRouter hook={location.hook}>
+        <AuthProvider>
+          <AuthGate />
         </AuthProvider>
       </WouterRouter>
     </QueryClientProvider>
