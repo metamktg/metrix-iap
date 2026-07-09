@@ -19,6 +19,7 @@ import {
 } from "@workspace/api-client-react";
 import type {
   MetaAdAccount,
+  MetaConnectedAccount,
   MetaReportPullStatus,
   MetaReportRow,
 } from "@workspace/api-client-react";
@@ -362,7 +363,7 @@ function ConnectedPanel({
   disconnecting,
   onReportsRan,
 }: {
-  account: NonNullable<ReturnType<typeof useGetMetaConnection>["data"]>["account"] & object;
+  account: MetaConnectedAccount;
   reports: MetaReportPullStatus[];
   onDisconnect: () => void;
   disconnecting: boolean;

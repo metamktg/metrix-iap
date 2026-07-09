@@ -35,6 +35,8 @@ export function IntegrationsView() {
       />
 
       <div className="px-6 py-5 space-y-5 max-w-3xl">
+        <MetaLiveConnection />
+
         <SectionCard title="Meta ad accounts" desc="Each ad account connects independently; data never crosses accounts.">
           <div className="space-y-2.5">
             {accounts.map((a) => {
