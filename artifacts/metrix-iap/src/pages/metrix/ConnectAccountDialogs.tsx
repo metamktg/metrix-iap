@@ -10,7 +10,7 @@
 // only to the explicit "Run analysis" step (see AnalysisControls),
 // which is surfaced from the account setup screen, not this dialog.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -30,6 +30,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import {
   Plug,
@@ -49,6 +58,8 @@ import {
   Pencil,
   Check,
   X,
+  ChevronDown,
+  ListChecks,
 } from "lucide-react";
 import type { AdAccount } from "@/lib/data/seedTypes";
 import { RequiredFormatPanel, type IapCsvClassKey } from "./ManualAnalysisControls";
@@ -324,28 +335,100 @@ function CsvSlotUpload({
   );
 }
 
+/**
+ * Searchable, checkbox-driven multi-select over ad names that already
+ * exist in this account's IAP analysis (`account.ads` registry). Picking
+ * from the real list rather than typing eliminates mapping typos.
+ */
+function AdNameDropdownPicker({
+  availableAdNames,
+  selected,
+  onChange,
+}: {
+  availableAdNames: string[];
+  selected: string[];
+  onChange: (names: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const toggle = (name: string) => {
+    onChange(
+      selected.includes(name) ? selected.filter((n) => n !== name) : [...selected, name]
+    );
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          className="flex items-center gap-1.5 h-7 px-2.5 rounded bg-white/[0.03] border border-border/50 text-[11px] text-foreground hover:border-primary/40 transition-colors"
+          aria-label="Pick ad name(s) from existing analysis"
+        >
+          <ListChecks className="w-3 h-3 text-muted-foreground/85" />
+          {selected.length > 0 ? `${selected.length} ad${selected.length > 1 ? "s" : ""} selected` : "Pick ad name(s)…"}
+          <ChevronDown className="w-3 h-3 text-muted-foreground/80" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Search ad names…" value={search} onValueChange={setSearch} />
+          <CommandList>
+            <CommandEmpty>No matching ad names.</CommandEmpty>
+            <CommandGroup>
+              {availableAdNames.map((name) => {
+                const isSelected = selected.includes(name);
+                return (
+                  <CommandItem key={name} value={name} onSelect={() => toggle(name)} className="cursor-pointer">
+                    <div
+                      className={cn(
+                        "w-3.5 h-3.5 rounded-sm border flex items-center justify-center shrink-0",
+                        isSelected ? "bg-primary border-primary" : "border-border/60"
+                      )}
+                    >
+                      {isSelected && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+                    </div>
+                    <span className="truncate">{name}</span>
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function CreativeAdNamesEditor({
   accountId,
   asset,
   knownAdNames,
+  availableAdNames,
   onSaved,
 }: {
   accountId: string;
   asset: ManualImport;
   knownAdNames: Set<string>;
+  /** Real ad names from this account's analysis (`account.ads`). When present, mapping is dropdown-only — no free typing. */
+  availableAdNames?: string[];
   onSaved: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(asset.ad_names.join(", "));
+  const [pickedNames, setPickedNames] = useState<string[]>(asset.ad_names);
   const updateMutation = useUpdateManualImportAdNames();
+  const hasRegistry = Boolean(availableAdNames && availableAdNames.length > 0);
 
   const parsedNames = editing
-    ? value.split(",").map((s) => s.trim()).filter(Boolean)
+    ? hasRegistry
+      ? pickedNames
+      : value.split(",").map((s) => s.trim()).filter(Boolean)
     : asset.ad_names;
-  const mismatch = parsedNames.length > 0 && parsedNames.some((n) => !knownAdNames.has(n));
+  const mismatch = !hasRegistry && parsedNames.length > 0 && parsedNames.some((n) => !knownAdNames.has(n));
 
-  const handleSave = async () => {
-    const ad_names = value.split(",").map((s) => s.trim()).filter(Boolean);
+  const handleSave = async (namesOverride?: string[]) => {
+    const ad_names = namesOverride ?? (hasRegistry ? pickedNames : value.split(",").map((s) => s.trim()).filter(Boolean));
     await updateMutation.mutateAsync({ accountId, importId: asset.id, data: { ad_names } });
     setEditing(false);
     onSaved();
@@ -357,7 +440,7 @@ function CreativeAdNamesEditor({
         <span className="text-[11px] text-foreground/80 truncate flex-1">{asset.filename}</span>
         {!editing && (
           <button
-            onClick={() => { setValue(asset.ad_names.join(", ")); setEditing(true); }}
+            onClick={() => { setValue(asset.ad_names.join(", ")); setPickedNames(asset.ad_names); setEditing(true); }}
             className="shrink-0 p-1 rounded text-muted-foreground/80 hover:text-primary hover:bg-primary/10 transition-colors"
             aria-label="Edit ad name mapping"
           >
@@ -366,30 +449,55 @@ function CreativeAdNamesEditor({
         )}
       </div>
       {editing ? (
-        <div className="flex items-center gap-1.5">
-          <input
-            autoFocus
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            placeholder="Ad name(s), comma-separated"
-            className="flex-1 h-7 px-2 rounded bg-white/[0.03] border border-border/50 text-[11px] text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40"
-          />
-          <button
-            onClick={() => void handleSave()}
-            disabled={updateMutation.isPending}
-            className="shrink-0 p-1 rounded text-emerald-400 hover:bg-emerald-400/10 transition-colors"
-            aria-label="Save"
-          >
-            <Check className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={() => setEditing(false)}
-            className="shrink-0 p-1 rounded text-muted-foreground/80 hover:bg-white/5 transition-colors"
-            aria-label="Cancel"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
+        hasRegistry ? (
+          <div className="flex items-center gap-1.5">
+            <AdNameDropdownPicker
+              availableAdNames={availableAdNames!}
+              selected={pickedNames}
+              onChange={setPickedNames}
+            />
+            <button
+              onClick={() => void handleSave(pickedNames)}
+              disabled={updateMutation.isPending}
+              className="shrink-0 p-1 rounded text-emerald-400 hover:bg-emerald-400/10 transition-colors"
+              aria-label="Save"
+            >
+              <Check className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setEditing(false)}
+              className="shrink-0 p-1 rounded text-muted-foreground/80 hover:bg-white/5 transition-colors"
+              aria-label="Cancel"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5">
+            <input
+              autoFocus
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder="Ad name(s), comma-separated"
+              className="flex-1 h-7 px-2 rounded bg-white/[0.03] border border-border/50 text-[11px] text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40"
+            />
+            <button
+              onClick={() => void handleSave()}
+              disabled={updateMutation.isPending}
+              className="shrink-0 p-1 rounded text-emerald-400 hover:bg-emerald-400/10 transition-colors"
+              aria-label="Save"
+            >
+              <Check className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setEditing(false)}
+              className="shrink-0 p-1 rounded text-muted-foreground/80 hover:bg-white/5 transition-colors"
+              aria-label="Cancel"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )
       ) : (
         <div className="text-[10px] text-muted-foreground/85">
           {asset.ad_names.length > 0 ? `Mapped to: ${asset.ad_names.join(", ")}` : "No ad name mapped yet"}
@@ -412,11 +520,14 @@ function CreativeUploadSection({
   accountId,
   imports,
   knownAdNames,
+  availableAdNames,
   onChanged,
 }: {
   accountId: string;
   imports: ManualImport[];
   knownAdNames: Set<string>;
+  /** Real ad names from this account's analysis (`account.ads`), when it exists. Drives filename auto-mapping + dropdown mapping. */
+  availableAdNames?: string[];
   onChanged: () => void;
 }) {
   const [error, setError] = useState<string | null>(null);
@@ -426,6 +537,7 @@ function CreativeUploadSection({
   const deleteMutation = useDeleteManualImport();
 
   const creativeAssets = imports.filter((i) => i.kind === "creative_asset");
+  const registryNames = useMemo(() => new Set(availableAdNames ?? []), [availableAdNames]);
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -439,6 +551,7 @@ function CreativeUploadSection({
         }
         const content_base64 = await fileToBase64(file);
         const inferredName = file.name.replace(/\.[^/.]+$/, "");
+        const matchSet = registryNames.size > 0 ? registryNames : knownAdNames;
         await stageMutation.mutateAsync({
           accountId,
           data: {
@@ -446,7 +559,7 @@ function CreativeUploadSection({
             filename: file.name,
             content_type: file.type || undefined,
             content_base64,
-            ad_names: knownAdNames.has(inferredName) ? [inferredName] : [],
+            ad_names: matchSet.has(inferredName) ? [inferredName] : [],
           },
         });
       }
@@ -515,6 +628,7 @@ function CreativeUploadSection({
                   accountId={accountId}
                   asset={asset}
                   knownAdNames={knownAdNames}
+                  availableAdNames={availableAdNames}
                   onSaved={onChanged}
                 />
               </div>
@@ -540,7 +654,7 @@ function CreativeUploadSection({
  * No date range lives here — that's a separate, explicit "Run analysis"
  * step from the account setup screen.
  */
-export function ManualUploadPanel({ accountId }: { accountId: string }) {
+export function ManualUploadPanel({ accountId, availableAdNames }: { accountId: string; availableAdNames?: string[] }) {
   const [step, setStep] = useState<"upload" | "review">("upload");
   const { data, refetch } = useListManualImports(accountId);
   const queryClient = useQueryClient();
@@ -619,7 +733,13 @@ export function ManualUploadPanel({ accountId }: { accountId: string }) {
         />
       ))}
 
-      <CreativeUploadSection accountId={accountId} imports={imports} knownAdNames={knownAdNames} onChanged={refresh} />
+      <CreativeUploadSection
+        accountId={accountId}
+        imports={imports}
+        knownAdNames={knownAdNames}
+        availableAdNames={availableAdNames}
+        onChanged={refresh}
+      />
 
       <div className="flex items-center justify-between pt-1 border-t border-border/30 mt-1">
         <p className="text-[10px] text-muted-foreground/75 leading-relaxed max-w-[60%]">
@@ -631,6 +751,95 @@ export function ManualUploadPanel({ accountId }: { accountId: string }) {
         </PrimaryBtn>
       </div>
     </div>
+  );
+}
+
+// ─── Upload creatives (after the fact, for an already-analyzed account) ──
+// A dedicated, own-interface flow for adding creative files to an account
+// whose CSVs are already staged/analyzed — no CSV re-upload required.
+// Ad-name mapping is dropdown-only against the account's real ads registry
+// (`account.ads`), so there's no way to mistype a mapping.
+
+export function CreativeLibraryPanel({
+  accountId,
+  availableAdNames,
+}: {
+  accountId: string;
+  availableAdNames: string[];
+}) {
+  const { data, refetch } = useListManualImports(accountId);
+  const queryClient = useQueryClient();
+  const imports = data?.imports ?? [];
+  const creativeAssets = imports.filter((i) => i.kind === "creative_asset");
+
+  const refresh = () => {
+    void refetch();
+    void queryClient.invalidateQueries({ queryKey: getListManualImportsQueryKey(accountId) });
+  };
+
+  const knownAdNames = new Set(creativeAssets.flatMap((a) => a.ad_names));
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-start gap-2.5 p-3 rounded-lg border border-primary/20 bg-primary/[0.04]">
+        <ListChecks className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+        <p className="text-[11px] text-foreground/80 leading-relaxed">
+          Map each file to an ad from this account's existing analysis using the dropdown below —
+          no typing, so there's no risk of a mismatched name.
+        </p>
+      </div>
+      <CreativeUploadSection
+        accountId={accountId}
+        imports={imports}
+        knownAdNames={knownAdNames}
+        availableAdNames={availableAdNames}
+        onChanged={refresh}
+      />
+    </div>
+  );
+}
+
+export function CreativeLibraryDialog({
+  account,
+  open,
+  onOpenChange,
+}: {
+  account: AdAccount;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const queryClient = useQueryClient();
+  const availableAdNames = useMemo(
+    () => Array.from(new Set((account.ads ?? []).map((a) => a.ad_name))).sort(),
+    [account.ads]
+  );
+
+  const handleOpenChange = (o: boolean) => {
+    onOpenChange(o);
+    if (!o) {
+      queryClient.invalidateQueries({ queryKey: getGetMetrixSeedQueryKey() });
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center">
+              <Images className="w-4 h-4 text-primary" />
+            </div>
+          </div>
+          <DialogTitle className="text-[16px]">Upload Creatives</DialogTitle>
+          <DialogDescription className="text-[12px] leading-relaxed">
+            Add creative files to{" "}
+            <span className="text-foreground/80 font-medium">{account.name}</span> after the fact —
+            they render immediately and map to ads already in its IAP analysis.
+          </DialogDescription>
+        </DialogHeader>
+        <CreativeLibraryPanel accountId={account.id} availableAdNames={availableAdNames} />
+      </DialogContent>
+    </Dialog>
   );
 }
 
