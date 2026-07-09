@@ -39,7 +39,7 @@ function SessionSection() {
         <UserCircle2 className="w-4 h-4 text-primary shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="text-[12px] font-medium text-foreground truncate" data-testid="text-session-email">{user.email}</div>
-          <div className="text-[10px] text-muted-foreground/70">Signed in</div>
+          <div className="text-[10px] text-muted-foreground/85">Signed in</div>
         </div>
         <button
           onClick={handleSignOut}
@@ -56,7 +56,7 @@ function SessionSection() {
 }
 
 const inputClass =
-  "w-full h-9 px-3 rounded-md bg-white/[0.03] border border-border/40 text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40";
+  "w-full h-9 px-3 rounded-md bg-white/[0.03] border border-border/40 text-[13px] text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40";
 
 function PasswordSection() {
   const { changePassword } = useAuth();
@@ -156,7 +156,7 @@ function PasswordSection() {
           </div>
           <div className="space-y-1.5">
             <label htmlFor="account-new-password" className="text-[11px] font-medium text-muted-foreground">
-              New password <span className="text-muted-foreground/60">(min. 8 characters)</span>
+              New password <span className="text-muted-foreground/80">(min. 8 characters)</span>
             </label>
             <input
               id="account-new-password"
@@ -251,10 +251,10 @@ export function AccountSettingsView() {
         <SectionCard title="Data connection" desc="Meta ad account connection and manual import status.">
           <div className="space-y-2.5">
             <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
-              {configured ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> : <Circle className="w-4 h-4 text-muted-foreground/60 shrink-0" />}
+              {configured ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> : <Circle className="w-4 h-4 text-muted-foreground/80 shrink-0" />}
               <div className="flex-1 min-w-0">
                 <div className="text-[12px] font-medium text-foreground">Meta ad account</div>
-                <div className="text-[10px] text-muted-foreground/70">{configured ? `${account.platform} · connected` : "Not connected"}</div>
+                <div className="text-[10px] text-muted-foreground/85">{configured ? `${account.platform} · connected` : "Not connected"}</div>
               </div>
               {!configured && (
                 <button
@@ -267,10 +267,10 @@ export function AccountSettingsView() {
               )}
             </div>
             <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
-              <FileUp className="w-4 h-4 text-muted-foreground/70 shrink-0" />
+              <FileUp className="w-4 h-4 text-muted-foreground/85 shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="text-[12px] font-medium text-foreground">Manual import</div>
-                <div className="text-[10px] text-muted-foreground/70">Upload exported performance data</div>
+                <div className="text-[10px] text-muted-foreground/85">Upload exported performance data</div>
               </div>
               <button
                 onClick={() => setImportOpen(true)}
@@ -296,7 +296,7 @@ export function AccountSettingsView() {
               <Palette className="w-4 h-4 text-primary shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="text-[12px] font-medium text-foreground capitalize">{rb.default_branding} branding</div>
-                <div className="text-[10px] text-muted-foreground/70">White-label {rb.white_label_supported ? "supported" : "unavailable"} · formats: {rb.export_formats.join(", ")}</div>
+                <div className="text-[10px] text-muted-foreground/85">White-label {rb.white_label_supported ? "supported" : "unavailable"} · formats: {rb.export_formats.join(", ")}</div>
               </div>
             </div>
             <div className="mt-2.5">
@@ -319,7 +319,7 @@ export function AccountSettingsView() {
         {/* Metrix Agent waitlist (admin, manager-wide) */}
         <AgentWaitlistSection />
 
-        <div className={cn("text-[10px] font-mono text-muted-foreground/60", "px-1")}>
+        <div className={cn("text-[10px] font-mono text-muted-foreground/80", "px-1")}>
           Account ID · {account.id}
         </div>
       </div>

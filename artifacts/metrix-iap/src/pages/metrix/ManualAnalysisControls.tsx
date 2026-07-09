@@ -89,11 +89,11 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
         className="w-full flex items-center gap-2 p-3 text-left hover:bg-white/[0.02] transition-colors"
       >
         {open ? (
-          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
+          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/85 shrink-0" />
         ) : (
-          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
+          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/85 shrink-0" />
         )}
-        <FileText className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
+        <FileText className="w-3.5 h-3.5 text-muted-foreground/85 shrink-0" />
         <span className="text-[12px] font-medium text-foreground">
           Required columns — {CSV_CLASS_TITLES[csvClass]}
           {classData?.report_name ? ` (${classData.report_name})` : ""}
@@ -102,11 +102,11 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
       {open && (
         <div className="px-3 pb-3 space-y-2">
           {isLoading || !classData ? (
-            <p className="text-[11px] text-muted-foreground/60">Loading format spec…</p>
+            <p className="text-[11px] text-muted-foreground/80">Loading format spec…</p>
           ) : (
             <>
               <div className="rounded-md border border-border/30 p-2">
-                <div className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/60 mb-1">
+                <div className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/80 mb-1">
                   Breakdown columns
                 </div>
                 <p className="text-[11px] text-foreground/80 leading-relaxed">
@@ -121,14 +121,14 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
                         "shrink-0 text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded",
                         g.required
                           ? "bg-primary/15 text-primary border border-primary/25"
-                          : "bg-white/[0.04] text-muted-foreground/70 border border-border/30"
+                          : "bg-white/[0.04] text-muted-foreground/85 border border-border/30"
                       )}
                     >
                       {g.required ? "Required" : "Optional"}
                     </span>
                     <div className="min-w-0">
                       <div className="text-[11px] font-medium text-foreground">{g.name}</div>
-                      <p className="text-[10px] text-muted-foreground/60 leading-relaxed mt-0.5">
+                      <p className="text-[10px] text-muted-foreground/80 leading-relaxed mt-0.5">
                         {g.columns.join(", ")}
                       </p>
                     </div>
@@ -230,7 +230,7 @@ export function AnalysisControls({ accountId }: { accountId: string }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
+        <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/85 shrink-0" />
         <span className="text-[11px] font-medium text-foreground">Date range to analyze</span>
       </div>
       <div className="grid grid-cols-2 gap-1.5">
@@ -243,7 +243,7 @@ export function AnalysisControls({ accountId }: { accountId: string }) {
               "h-8 px-2 rounded-md border text-[11px] font-medium transition-colors",
               dateRange === r.id
                 ? "border-primary/40 bg-primary/[0.08] text-primary"
-                : "border-border/40 bg-white/[0.02] text-muted-foreground/70 hover:bg-white/[0.04]",
+                : "border-border/40 bg-white/[0.02] text-muted-foreground/85 hover:bg-white/[0.04]",
               isRunning && "opacity-50 cursor-not-allowed"
             )}
           >
@@ -259,7 +259,7 @@ export function AnalysisControls({ accountId }: { accountId: string }) {
           <div className="flex items-center gap-2 min-w-0">
             <StatusBadge run={run} />
             {run.status === "success" && run.date_start && run.date_end && (
-              <span className="text-[10px] text-muted-foreground/60 truncate">
+              <span className="text-[10px] text-muted-foreground/80 truncate">
                 Covers {run.date_start} → {run.date_end} ({run.rows_ingested ?? 0} rows)
               </span>
             )}
@@ -268,7 +268,7 @@ export function AnalysisControls({ accountId }: { accountId: string }) {
             )}
           </div>
         ) : (
-          <span className="text-[10px] text-muted-foreground/50">No analysis has been run yet.</span>
+          <span className="text-[10px] text-muted-foreground/75">No analysis has been run yet.</span>
         )}
         <RunAnalysisBtn onClick={handleRun} disabled={isRunning || startMutation.isPending}>
           {isRunning || startMutation.isPending ? (
@@ -282,7 +282,7 @@ export function AnalysisControls({ accountId }: { accountId: string }) {
           )}
         </RunAnalysisBtn>
       </div>
-      <p className="text-[10px] text-muted-foreground/50 leading-relaxed">
+      <p className="text-[10px] text-muted-foreground/75 leading-relaxed">
         Analysis only runs when you press this button. It reads your staged uploads and reports
         the exact dates found in the data for the selected range — it will never run on its own.
       </p>

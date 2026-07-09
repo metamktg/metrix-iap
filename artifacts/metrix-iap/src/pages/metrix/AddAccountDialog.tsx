@@ -125,12 +125,12 @@ export function AddAccountDialog({
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-[13px] font-semibold text-foreground">Connect Meta Ad Account</div>
-                  <p className="text-[11px] text-muted-foreground/70 leading-relaxed mt-0.5">
+                  <p className="text-[11px] text-muted-foreground/85 leading-relaxed mt-0.5">
                     Authorize read-only access with Meta and link a live ad account. Data pulls
                     run against the real Meta API.
                   </p>
                 </div>
-                <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0 mt-0.5" />
+                <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/80 shrink-0 mt-0.5" />
               </button>
 
               <button
@@ -142,12 +142,12 @@ export function AddAccountDialog({
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-[13px] font-semibold text-foreground">Upload manual reports</div>
-                  <p className="text-[11px] text-muted-foreground/70 leading-relaxed mt-0.5">
+                  <p className="text-[11px] text-muted-foreground/85 leading-relaxed mt-0.5">
                     Create an account without a live connection and stage exported Meta reports
                     for the analysis pipeline.
                   </p>
                 </div>
-                <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0 mt-0.5" />
+                <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/80 shrink-0 mt-0.5" />
               </button>
             </div>
           </>
@@ -178,7 +178,7 @@ export function AddAccountDialog({
                 maxLength={120}
                 className={cn(
                   "w-full h-10 px-3 rounded-md bg-white/[0.03] border text-[13px] text-foreground",
-                  "placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1",
+                  "placeholder:text-muted-foreground/75 focus:outline-none focus:ring-1",
                   error ? "border-red-400/40 focus:ring-red-400/40" : "border-border/50 focus:ring-primary/40 focus:border-primary/40"
                 )}
               />
