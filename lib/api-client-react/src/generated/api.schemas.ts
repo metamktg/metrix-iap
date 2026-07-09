@@ -651,6 +651,15 @@ export interface WorkspaceMembersResult {
   members: WorkspaceMember[];
 }
 
+export interface GrantMemberAdAccountInput {
+  /** @minLength 1 */
+  ad_account_id: string;
+}
+
+export interface MemberAdAccountsResult {
+  ad_account_ids: string[];
+}
+
 export interface ChannelPref {
   /** @minLength 1 */
   id: string;

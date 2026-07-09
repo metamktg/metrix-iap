@@ -43,6 +43,10 @@ import {
   ListManualImportsResponse,
   UpdateManualImportAdNamesBody,
   UpdateManualImportAdNamesResponse,
+  GrantMemberAdAccountBody,
+  GrantMemberAdAccountResponse,
+  ListMemberAdAccountsResponse,
+  RevokeMemberAdAccountResponse,
 } from "@workspace/api-zod";
 import {
   db,
@@ -1372,6 +1376,125 @@ router.get("/metrix/workspaces/:workspaceId/members", requireAuth, requireWorksp
   });
   res.json(data);
 });
+
+// Per-member ad-account grants. The target user just needs to exist as a
+// real account (this deployment is single-workspace, so any provisioned
+// user is implicitly a member); the target ad account must exist in the
+// current Metrix seed.
+const grantsForUser = async (userId: number): Promise<string[]> => {
+  const rows = await db
+    .select({ adAccountId: userAdAccountsTable.adAccountId })
+    .from(userAdAccountsTable)
+    .where(eq(userAdAccountsTable.userId, userId));
+  return rows.map((r) => r.adAccountId);
+};
+
+router.get(
+  "/metrix/workspaces/:workspaceId/members/:email/ad-accounts",
+  requireAuth,
+  requireWorkspaceAccess,
+  requireAdminRole,
+  async (req, res) => {
+    const email = decodeURIComponent(String(req.params.email)).toLowerCase();
+    const [target] = await db
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(eq(usersTable.email, email))
+      .limit(1);
+    if (!target) {
+      res.status(404).json({ message: "Member not found." });
+      return;
+    }
+    const ad_account_ids = await grantsForUser(target.id);
+    res.json(ListMemberAdAccountsResponse.parse({ ad_account_ids }));
+  },
+);
+
+router.post(
+  "/metrix/workspaces/:workspaceId/members/:email/ad-accounts",
+  requireAuth,
+  requireWorkspaceAccess,
+  requireAdminRole,
+  async (req, res) => {
+    const email = decodeURIComponent(String(req.params.email)).toLowerCase();
+    const parsed = GrantMemberAdAccountBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ message: "An ad account id is required." });
+      return;
+    }
+
+    const [target] = await db
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(eq(usersTable.email, email))
+      .limit(1);
+    if (!target) {
+      res.status(404).json({ message: "Member not found." });
+      return;
+    }
+
+    let bundle: { ad_accounts?: { id: string }[] };
+    try {
+      bundle = (await getMetrixSeedFromSupabase()) as { ad_accounts?: { id: string }[] };
+    } catch (err) {
+      req.log.error({ err }, "Failed to load Metrix seed while granting ad account access");
+      res.status(503).json({
+        message: "Couldn't verify the ad account because the Metrix data layer is unavailable.",
+      });
+      return;
+    }
+    const accountExists = (bundle.ad_accounts ?? []).some(
+      (a) => a.id === parsed.data.ad_account_id,
+    );
+    if (!accountExists) {
+      res.status(400).json({ message: "Unknown ad account." });
+      return;
+    }
+
+    await db
+      .insert(userAdAccountsTable)
+      .values({ userId: target.id, adAccountId: parsed.data.ad_account_id })
+      .onConflictDoNothing({
+        target: [userAdAccountsTable.userId, userAdAccountsTable.adAccountId],
+      });
+
+    const ad_account_ids = await grantsForUser(target.id);
+    res.json(GrantMemberAdAccountResponse.parse({ status: "granted", ad_account_ids }));
+  },
+);
+
+router.delete(
+  "/metrix/workspaces/:workspaceId/members/:email/ad-accounts/:adAccountId",
+  requireAuth,
+  requireWorkspaceAccess,
+  requireAdminRole,
+  async (req, res) => {
+    const email = decodeURIComponent(String(req.params.email)).toLowerCase();
+    const adAccountId = decodeURIComponent(String(req.params.adAccountId));
+
+    const [target] = await db
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(eq(usersTable.email, email))
+      .limit(1);
+    if (!target) {
+      res.status(404).json({ message: "Member not found." });
+      return;
+    }
+
+    await db
+      .delete(userAdAccountsTable)
+      .where(
+        and(
+          eq(userAdAccountsTable.userId, target.id),
+          eq(userAdAccountsTable.adAccountId, adAccountId),
+        ),
+      );
+
+    const ad_account_ids = await grantsForUser(target.id);
+    res.json(RevokeMemberAdAccountResponse.parse({ status: "revoked", ad_account_ids }));
+  },
+);
 
 router.get("/metrix/workspaces/:workspaceId/invites", requireAuth, requireWorkspaceAccess, requireAdminRole, async (req, res) => {
   const workspaceId = String(req.params.workspaceId);
