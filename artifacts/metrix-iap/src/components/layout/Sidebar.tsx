@@ -6,6 +6,7 @@ import { AccountSwitcher } from "./AccountSwitcher";
 import { DataSourceBadgeToggle } from "@/components/ui/DataSourceBadge";
 import { navTree, sectionLandingRoute } from "@/navigation/navTree";
 import { useNavBadges } from "@/navigation/useNavBadges";
+import { useAuth } from "@/contexts/AuthContext";
 import type { NavSection, NavChild } from "@/navigation/navTree";
 
 // ─── Badge pill ────────────────────────────────────────────────────────
@@ -251,6 +252,18 @@ function LeafSection({
 
 export function Sidebar() {
   const badgeCounts = useNavBadges();
+  const { user } = useAuth();
+
+  // Team & Access is admin-only (the API 403s members); hide it from the nav
+  // for non-admin users so there are no dead links.
+  const isAdmin = user?.role === "admin";
+  const visibleTree = isAdmin
+    ? navTree
+    : navTree.map((section) =>
+        section.children?.length
+          ? { ...section, children: section.children.filter((c) => c.id !== "settings-team") }
+          : section
+      );
 
   return (
     <aside
@@ -286,7 +299,7 @@ export function Sidebar() {
         aria-label="Main workspace navigation"
       >
         <ol className="space-y-0.5 list-none p-0 m-0">
-          {navTree.map((section) =>
+          {visibleTree.map((section) =>
             section.children?.length ? (
               <ExpandableSection
                 key={section.id}

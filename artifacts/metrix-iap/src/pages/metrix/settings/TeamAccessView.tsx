@@ -4,6 +4,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useAccount } from "@/contexts/AccountContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getWorkspaceSettings } from "@/lib/data/metrixSeedAdapter";
 import { ModuleHeader, SectionCard, PendingState, CaveatNote } from "../shared";
@@ -283,6 +284,26 @@ function PendingInviteRow({
 }
 
 export function TeamAccessView() {
+  const { user } = useAuth();
+
+  // Team management is admin-only (the API rejects members with 403).
+  if (user?.role !== "admin") {
+    return (
+      <div className="flex-1 flex flex-col">
+        <ModuleHeader section={SECTION} title="Team & Access" />
+        <PendingState
+          title="Admin access required"
+          message="Team management is available to workspace admins only. Ask a workspace admin if you need a change to your access."
+          icon={ShieldCheck}
+        />
+      </div>
+    );
+  }
+
+  return <TeamAccessViewInner />;
+}
+
+function TeamAccessViewInner() {
   const seed = useMetrixSeed();
   const { manager } = useAccount();
   const ws = getWorkspaceSettings(seed);
