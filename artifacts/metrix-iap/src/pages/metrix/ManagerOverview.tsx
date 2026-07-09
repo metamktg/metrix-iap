@@ -4,12 +4,13 @@
 // No Optimization Loop at manager level — recommendations are READ-ONLY,
 // labeled with their source account. Deeper action lives inside each account.
 
-import { useLocation } from "wouter";
+import { useState } from "react";
 import { CheckCircle2, Plug, TrendingUp, Plus, ArrowRight } from "lucide-react";
 import { useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getManagerOverview } from "@/lib/data/metrixSeedAdapter";
 import { ModuleHeader, MetricTile, SectionCard, ConfidenceBadge, fmtUSD, fmtNum, fmtPct, eventLabel } from "./shared";
+import { AddAccountDialog } from "./AddAccountDialog";
 import { cn } from "@/lib/utils";
 
 const IMPACT_STYLE: Record<string, string> = {
@@ -37,7 +38,7 @@ function Badge({ text, cls }: { text: string; cls: string }) {
 export function ManagerOverview() {
   const { manager, adAccounts, selectAdAccount } = useAccount();
   const seed = useMetrixSeed();
-  const [, navigate] = useLocation();
+  const [addOpen, setAddOpen] = useState(false);
   const data = getManagerOverview(seed);
   const totals = data.bottom_line_totals;
   const events = Object.entries(totals.result_totals_by_event);
@@ -45,6 +46,42 @@ export function ManagerOverview() {
   // Map account_id → display name so each rec shows its source account.
   const accountName = (id: string) =>
     adAccounts.find((a) => a.id === id)?.name ?? id;
+
+  // Onboarding: no ad accounts granted/connected yet — show a focused
+  // first-run state instead of an empty dashboard.
+  if (adAccounts.length === 0) {
+    return (
+      <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
+        <ModuleHeader
+          section="Metrix Manager · Agency Overview"
+          title={manager.name}
+          subtitle="No ad accounts yet. Add your first account to unlock the intelligence platform."
+        />
+        <div className="flex-1 flex items-center justify-center px-6 py-12">
+          <div className="max-w-md w-full text-center space-y-5">
+            <div className="w-12 h-12 rounded-xl border border-primary/25 bg-primary/10 flex items-center justify-center mx-auto">
+              <Plug className="w-5 h-5 text-primary" />
+            </div>
+            <div className="space-y-1.5">
+              <h2 className="text-[16px] font-semibold text-foreground">Add your first ad account</h2>
+              <p className="text-[12px] text-muted-foreground/70 leading-relaxed">
+                Connect a live Meta ad account, or create a manual account and upload exported
+                reports. Every Metrix module scopes to a single ad account — analysis surfaces
+                stay honestly pending until real data is processed.
+              </p>
+            </div>
+            <button
+              onClick={() => setAddOpen(true)}
+              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary/15 border border-primary/30 text-primary text-[12px] font-medium hover:bg-primary/25 transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" /> Add Ad Account
+            </button>
+          </div>
+        </div>
+        <AddAccountDialog open={addOpen} onOpenChange={setAddOpen} />
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
@@ -114,7 +151,7 @@ export function ManagerOverview() {
 
             {/* Add / Connect Ad Account entry point */}
             <button
-              onClick={() => navigate("/app/settings")}
+              onClick={() => setAddOpen(true)}
               className="flex items-center gap-3 p-3.5 rounded-lg border border-dashed border-border/50 bg-transparent hover:border-primary/40 hover:bg-primary/[0.03] transition-colors text-left"
             >
               <div className="w-9 h-9 rounded-lg border border-dashed border-border/50 flex items-center justify-center shrink-0">
@@ -166,6 +203,7 @@ export function ManagerOverview() {
           )}
         </SectionCard>
       </div>
+      <AddAccountDialog open={addOpen} onOpenChange={setAddOpen} />
     </div>
   );
 }

@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAccount } from "@/contexts/AccountContext";
-import { useLocation } from "wouter";
+import { AddAccountDialog } from "@/pages/metrix/AddAccountDialog";
 
 const STATUS_DOT: Record<string, string> = {
   configured: "bg-emerald-500",
@@ -19,8 +19,8 @@ const STATUS_DOT: Record<string, string> = {
 
 export function AccountSwitcher() {
   const { manager, adAccounts, selectedAccountType, activeAdAccountId, selectManager, selectAdAccount } = useAccount();
-  const [, navigate] = useLocation();
   const [open, setOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
 
   const isManager = selectedAccountType === "manager";
   const active = adAccounts.find((a) => a.id === activeAdAccountId) ?? null;
@@ -106,7 +106,13 @@ export function AccountSwitcher() {
         <DropdownMenuSeparator className="my-1 bg-border/30" />
         <DropdownMenuItem
           className="flex items-center gap-2 px-2 py-1.5 cursor-pointer rounded-sm h-8 text-muted-foreground/60"
-          onClick={() => { setOpen(false); navigate("/app/settings"); }}
+          onSelect={(e) => {
+            // Defer opening the dialog until the dropdown has fully closed —
+            // avoids the Radix dropdown→dialog focus/pointer-events trap.
+            e.preventDefault();
+            setOpen(false);
+            setTimeout(() => setAddOpen(true), 0);
+          }}
         >
           <div className="w-5 h-5 rounded border border-dashed border-border/40 flex items-center justify-center shrink-0">
             <Plus className="w-2.5 h-2.5" />
@@ -115,6 +121,7 @@ export function AccountSwitcher() {
           <Plug className="w-2.5 h-2.5 ml-auto text-muted-foreground/60" />
         </DropdownMenuItem>
       </DropdownMenuContent>
+      <AddAccountDialog open={addOpen} onOpenChange={setAddOpen} />
     </DropdownMenu>
   );
 }
