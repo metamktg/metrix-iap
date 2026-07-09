@@ -80,6 +80,7 @@ import {
 import { randomBytes } from "node:crypto";
 import { getSupabase } from "../lib/supabase";
 import { notifyRequestAccess } from "../lib/requestAccessNotification";
+import { logger } from "../lib/logger";
 import { getAppBaseUrl } from "../lib/appUrl";
 import {
   createAdminToken,
@@ -487,8 +488,17 @@ async function syncCreativeAssetLinks(
       .from("ads")
       .update({ creative_asset_url: fileUrl, asset_filename: filename, asset_servable: true })
       .eq("account_id", accountId)
-      .in("ad_name", nextAdNames);
+      .in("ad_name", nextAdNames)
+      .select("ad_name");
     if (link.error) throw new Error(link.error.message);
+    const matched = new Set((link.data ?? []).map((r) => r["ad_name"] as string));
+    const unmatched = nextAdNames.filter((n) => !matched.has(n));
+    if (unmatched.length > 0) {
+      logger.warn(
+        { accountId, importId, unmatched },
+        "syncCreativeAssetLinks: ad name(s) had no matching ads row — asset staged but not linked",
+      );
+    }
   }
 
   invalidateMetrixSeedCache();
