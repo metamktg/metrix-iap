@@ -344,12 +344,14 @@ function AdNameDropdownPicker({
   availableAdNames,
   selected,
   onChange,
+  defaultOpen,
 }: {
   availableAdNames: string[];
   selected: string[];
   onChange: (names: string[]) => void;
+  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(Boolean(defaultOpen));
   const [search, setSearch] = useState("");
 
   const toggle = (name: string) => {
@@ -400,11 +402,48 @@ function AdNameDropdownPicker({
   );
 }
 
+function CreativeThumbnail({ accountId, asset }: { accountId: string; asset: ManualImport }) {
+  const [broken, setBroken] = useState(false);
+  const fileUrl = `/api/metrix/accounts/${accountId}/manual-imports/${asset.id}/file`;
+  const isVideo = (asset.content_type ?? "").startsWith("video/");
+
+  if (broken) {
+    return (
+      <div className="w-10 h-10 rounded-md border border-border/40 bg-white/[0.03] flex items-center justify-center shrink-0">
+        <Images className="w-4 h-4 text-muted-foreground/60" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-10 h-10 rounded-md border border-border/40 bg-black/20 overflow-hidden shrink-0 flex items-center justify-center">
+      {isVideo ? (
+        <video src={fileUrl} className="w-full h-full object-cover" muted onError={() => setBroken(true)} />
+      ) : (
+        <img
+          src={fileUrl}
+          alt={asset.filename}
+          className="w-full h-full object-cover"
+          onError={() => setBroken(true)}
+        />
+      )}
+    </div>
+  );
+}
+
+/**
+ * Ad-name mapping editor. When a real ad registry exists, the dropdown is
+ * always visible and saves immediately on every toggle — no separate
+ * edit/confirm step, since that extra click was the source of "nothing
+ * happened after I picked a name" confusion. Free-typed fallback (no
+ * registry) keeps an explicit save since it needs a moment to type.
+ */
 function CreativeAdNamesEditor({
   accountId,
   asset,
   knownAdNames,
   availableAdNames,
+  autoFocusPicker,
   onSaved,
 }: {
   accountId: string;
@@ -412,95 +451,91 @@ function CreativeAdNamesEditor({
   knownAdNames: Set<string>;
   /** Real ad names from this account's analysis (`account.ads`). When present, mapping is dropdown-only — no free typing. */
   availableAdNames?: string[];
+  /** Auto-open the picker popover on mount (newly staged, unmapped file). */
+  autoFocusPicker?: boolean;
   onSaved: () => void;
 }) {
-  const [editing, setEditing] = useState(false);
+  const [editingFree, setEditingFree] = useState(false);
   const [value, setValue] = useState(asset.ad_names.join(", "));
-  const [pickedNames, setPickedNames] = useState<string[]>(asset.ad_names);
   const updateMutation = useUpdateManualImportAdNames();
   const hasRegistry = Boolean(availableAdNames && availableAdNames.length > 0);
 
-  const parsedNames = editing
-    ? hasRegistry
-      ? pickedNames
-      : value.split(",").map((s) => s.trim()).filter(Boolean)
-    : asset.ad_names;
+  const parsedNames = editingFree ? value.split(",").map((s) => s.trim()).filter(Boolean) : asset.ad_names;
   const mismatch = !hasRegistry && parsedNames.length > 0 && parsedNames.some((n) => !knownAdNames.has(n));
 
-  const handleSave = async (namesOverride?: string[]) => {
-    const ad_names = namesOverride ?? (hasRegistry ? pickedNames : value.split(",").map((s) => s.trim()).filter(Boolean));
+  const handleDropdownChange = async (names: string[]) => {
+    await updateMutation.mutateAsync({ accountId, importId: asset.id, data: { ad_names: names } });
+    onSaved();
+  };
+
+  const handleFreeSave = async () => {
+    const ad_names = value.split(",").map((s) => s.trim()).filter(Boolean);
     await updateMutation.mutateAsync({ accountId, importId: asset.id, data: { ad_names } });
-    setEditing(false);
+    setEditingFree(false);
     onSaved();
   };
 
   return (
-    <div className="p-2 rounded-md border border-border/30 bg-white/[0.02] space-y-1.5">
+    <div
+      className={cn(
+        "p-2 rounded-md border bg-white/[0.02] space-y-1.5",
+        asset.ad_names.length > 0 ? "border-border/30" : "border-amber-400/30 bg-amber-400/[0.03]"
+      )}
+    >
       <div className="flex items-center gap-2">
+        <CreativeThumbnail accountId={accountId} asset={asset} />
         <span className="text-[11px] text-foreground/80 truncate flex-1">{asset.filename}</span>
-        {!editing && (
+        {updateMutation.isPending && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground/70 shrink-0" />}
+      </div>
+
+      {hasRegistry ? (
+        <div className="flex items-center gap-1.5">
+          <AdNameDropdownPicker
+            availableAdNames={availableAdNames!}
+            selected={asset.ad_names}
+            onChange={(names) => void handleDropdownChange(names)}
+            defaultOpen={autoFocusPicker && asset.ad_names.length === 0}
+          />
+          {asset.ad_names.length > 0 && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
+        </div>
+      ) : editingFree ? (
+        <div className="flex items-center gap-1.5">
+          <input
+            autoFocus
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") void handleFreeSave(); }}
+            placeholder="Ad name(s), comma-separated"
+            className="flex-1 h-7 px-2 rounded bg-white/[0.03] border border-border/50 text-[11px] text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40"
+          />
           <button
-            onClick={() => { setValue(asset.ad_names.join(", ")); setPickedNames(asset.ad_names); setEditing(true); }}
+            onClick={() => void handleFreeSave()}
+            disabled={updateMutation.isPending}
+            className="shrink-0 p-1 rounded text-emerald-400 hover:bg-emerald-400/10 transition-colors"
+            aria-label="Save"
+          >
+            <Check className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => { setValue(asset.ad_names.join(", ")); setEditingFree(false); }}
+            className="shrink-0 p-1 rounded text-muted-foreground/80 hover:bg-white/5 transition-colors"
+            aria-label="Cancel"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <div className="text-[10px] text-muted-foreground/85 flex-1">
+            {asset.ad_names.length > 0 ? `Mapped to: ${asset.ad_names.join(", ")}` : "No ad name mapped yet"}
+          </div>
+          <button
+            onClick={() => { setValue(asset.ad_names.join(", ")); setEditingFree(true); }}
             className="shrink-0 p-1 rounded text-muted-foreground/80 hover:text-primary hover:bg-primary/10 transition-colors"
             aria-label="Edit ad name mapping"
           >
             <Pencil className="w-3 h-3" />
           </button>
-        )}
-      </div>
-      {editing ? (
-        hasRegistry ? (
-          <div className="flex items-center gap-1.5">
-            <AdNameDropdownPicker
-              availableAdNames={availableAdNames!}
-              selected={pickedNames}
-              onChange={setPickedNames}
-            />
-            <button
-              onClick={() => void handleSave(pickedNames)}
-              disabled={updateMutation.isPending}
-              className="shrink-0 p-1 rounded text-emerald-400 hover:bg-emerald-400/10 transition-colors"
-              aria-label="Save"
-            >
-              <Check className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => setEditing(false)}
-              className="shrink-0 p-1 rounded text-muted-foreground/80 hover:bg-white/5 transition-colors"
-              aria-label="Cancel"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-1.5">
-            <input
-              autoFocus
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              placeholder="Ad name(s), comma-separated"
-              className="flex-1 h-7 px-2 rounded bg-white/[0.03] border border-border/50 text-[11px] text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40"
-            />
-            <button
-              onClick={() => void handleSave()}
-              disabled={updateMutation.isPending}
-              className="shrink-0 p-1 rounded text-emerald-400 hover:bg-emerald-400/10 transition-colors"
-              aria-label="Save"
-            >
-              <Check className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => setEditing(false)}
-              className="shrink-0 p-1 rounded text-muted-foreground/80 hover:bg-white/5 transition-colors"
-              aria-label="Cancel"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )
-      ) : (
-        <div className="text-[10px] text-muted-foreground/85">
-          {asset.ad_names.length > 0 ? `Mapped to: ${asset.ad_names.join(", ")}` : "No ad name mapped yet"}
         </div>
       )}
       {mismatch && (
@@ -532,17 +567,20 @@ function CreativeUploadSection({
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
+  const [justStagedIds, setJustStagedIds] = useState<Set<string>>(new Set());
   const fileRef = useRef<HTMLInputElement>(null);
   const stageMutation = useStageManualImport();
   const deleteMutation = useDeleteManualImport();
 
   const creativeAssets = imports.filter((i) => i.kind === "creative_asset");
   const registryNames = useMemo(() => new Set(availableAdNames ?? []), [availableAdNames]);
+  const mappedCount = creativeAssets.filter((a) => a.ad_names.length > 0).length;
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setError(null);
     setPendingCount(files.length);
+    const newlyStaged: string[] = [];
     try {
       for (const file of Array.from(files)) {
         if (file.size > MAX_UPLOAD_BYTES) {
@@ -552,7 +590,7 @@ function CreativeUploadSection({
         const content_base64 = await fileToBase64(file);
         const inferredName = file.name.replace(/\.[^/.]+$/, "");
         const matchSet = registryNames.size > 0 ? registryNames : knownAdNames;
-        await stageMutation.mutateAsync({
+        const staged = await stageMutation.mutateAsync({
           accountId,
           data: {
             kind: "creative_asset",
@@ -562,6 +600,10 @@ function CreativeUploadSection({
             ad_names: matchSet.has(inferredName) ? [inferredName] : [],
           },
         });
+        newlyStaged.push(staged.import_id);
+      }
+      if (newlyStaged.length > 0) {
+        setJustStagedIds((prev) => new Set([...prev, ...newlyStaged]));
       }
       onChanged();
     } catch (err) {
@@ -621,6 +663,14 @@ function CreativeUploadSection({
 
       {creativeAssets.length > 0 && (
         <div className="space-y-1.5">
+          <div className="flex items-center justify-between px-0.5">
+            <span className="text-[10px] font-medium text-muted-foreground/85">
+              {mappedCount} of {creativeAssets.length} mapped
+            </span>
+            {mappedCount < creativeAssets.length && (
+              <span className="text-[10px] text-amber-400/90">Pick an ad name for each highlighted file below</span>
+            )}
+          </div>
           {creativeAssets.map((asset) => (
             <div key={asset.id} className="flex items-start gap-2">
               <div className="flex-1 min-w-0">
@@ -629,6 +679,7 @@ function CreativeUploadSection({
                   asset={asset}
                   knownAdNames={knownAdNames}
                   availableAdNames={availableAdNames}
+                  autoFocusPicker={justStagedIds.has(asset.id)}
                   onSaved={onChanged}
                 />
               </div>
@@ -763,14 +814,17 @@ export function ManualUploadPanel({ accountId, availableAdNames }: { accountId: 
 export function CreativeLibraryPanel({
   accountId,
   availableAdNames,
+  onDone,
 }: {
   accountId: string;
   availableAdNames: string[];
+  onDone?: () => void;
 }) {
   const { data, refetch } = useListManualImports(accountId);
   const queryClient = useQueryClient();
   const imports = data?.imports ?? [];
   const creativeAssets = imports.filter((i) => i.kind === "creative_asset");
+  const mappedCount = creativeAssets.filter((a) => a.ad_names.length > 0).length;
 
   const refresh = () => {
     void refetch();
@@ -785,7 +839,7 @@ export function CreativeLibraryPanel({
         <ListChecks className="w-4 h-4 text-primary shrink-0 mt-0.5" />
         <p className="text-[11px] text-foreground/80 leading-relaxed">
           Map each file to an ad from this account's existing analysis using the dropdown below —
-          no typing, so there's no risk of a mismatched name.
+          mappings save immediately, no separate confirm step.
         </p>
       </div>
       <CreativeUploadSection
@@ -795,6 +849,18 @@ export function CreativeLibraryPanel({
         availableAdNames={availableAdNames}
         onChanged={refresh}
       />
+      {onDone && (
+        <div className="flex items-center justify-between pt-2 border-t border-border/30">
+          <span className="text-[11px] text-muted-foreground/85">
+            {creativeAssets.length > 0
+              ? `${mappedCount} of ${creativeAssets.length} files mapped`
+              : "No files staged yet"}
+          </span>
+          <PrimaryBtn onClick={onDone}>
+            <CheckCircle2 className="w-3.5 h-3.5" /> Done
+          </PrimaryBtn>
+        </div>
+      )}
     </div>
   );
 }
@@ -837,7 +903,11 @@ export function CreativeLibraryDialog({
             they render immediately and map to ads already in its IAP analysis.
           </DialogDescription>
         </DialogHeader>
-        <CreativeLibraryPanel accountId={account.id} availableAdNames={availableAdNames} />
+        <CreativeLibraryPanel
+          accountId={account.id}
+          availableAdNames={availableAdNames}
+          onDone={() => handleOpenChange(false)}
+        />
       </DialogContent>
     </Dialog>
   );
