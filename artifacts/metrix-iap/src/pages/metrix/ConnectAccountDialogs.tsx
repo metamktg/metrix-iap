@@ -69,7 +69,7 @@ export function PrimaryBtn({
       className={cn(
         "flex items-center gap-1.5 h-9 px-4 rounded-md border text-[12px] font-medium transition-colors",
         disabled
-          ? "border-border/40 text-muted-foreground/60 cursor-not-allowed"
+          ? "border-border/40 text-muted-foreground/80 cursor-not-allowed"
           : "bg-primary/15 border-primary/30 text-primary hover:bg-primary/25"
       )}
     >
@@ -142,7 +142,7 @@ export function ConnectMetaDialog({
               <Icon className="w-4 h-4 text-primary/80 shrink-0 mt-0.5" />
               <div className="min-w-0">
                 <div className="text-[12px] font-semibold text-foreground">{title}</div>
-                <p className="text-[11px] text-muted-foreground/70 leading-relaxed mt-0.5">{desc}</p>
+                <p className="text-[11px] text-muted-foreground/85 leading-relaxed mt-0.5">{desc}</p>
               </div>
             </div>
           ))}
@@ -253,10 +253,10 @@ function CsvSlotUpload({
   return (
     <div className="space-y-2">
       <div className="flex items-start gap-3 p-3 rounded-lg border border-border/40 bg-white/[0.02]">
-        <FileSpreadsheet className={cn("w-4 h-4 shrink-0 mt-0.5", staged ? "text-emerald-400" : "text-muted-foreground/70")} />
+        <FileSpreadsheet className={cn("w-4 h-4 shrink-0 mt-0.5", staged ? "text-emerald-400" : "text-muted-foreground/85")} />
         <div className="min-w-0 flex-1">
           <div className="text-[12px] font-semibold text-foreground">{title} <span className="text-red-400/80 font-normal">*required</span></div>
-          <p className="text-[11px] text-muted-foreground/70 leading-relaxed mt-0.5">{desc}</p>
+          <p className="text-[11px] text-muted-foreground/85 leading-relaxed mt-0.5">{desc}</p>
         </div>
       </div>
 
@@ -270,7 +270,7 @@ function CsvSlotUpload({
           <button
             onClick={() => void handleRemove()}
             disabled={deleteMutation.isPending}
-            className="shrink-0 p-1 rounded text-muted-foreground/60 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+            className="shrink-0 p-1 rounded text-muted-foreground/80 hover:text-red-400 hover:bg-red-400/10 transition-colors"
             aria-label={`Remove ${staged.filename}`}
           >
             <Trash2 className="w-3 h-3" />
@@ -289,13 +289,13 @@ function CsvSlotUpload({
             onClick={() => fileRef.current?.click()}
             className="w-full flex flex-col items-center gap-1.5 p-4 rounded-lg border border-dashed border-border/60 hover:border-primary/40 hover:bg-white/[0.02] transition-colors"
           >
-            <Upload className="w-4 h-4 text-muted-foreground/70" />
+            <Upload className="w-4 h-4 text-muted-foreground/85" />
             {file ? (
               <span className="text-[12px] font-medium text-foreground">
-                {file.name} <span className="text-muted-foreground/60 font-normal">({(file.size / 1024).toFixed(0)} KB)</span>
+                {file.name} <span className="text-muted-foreground/80 font-normal">({(file.size / 1024).toFixed(0)} KB)</span>
               </span>
             ) : (
-              <span className="text-[11px] text-muted-foreground/60">Choose a .csv file (max 8 MB)</span>
+              <span className="text-[11px] text-muted-foreground/80">Choose a .csv file (max 8 MB)</span>
             )}
           </button>
           {file && (
@@ -358,7 +358,7 @@ function CreativeAdNamesEditor({
         {!editing && (
           <button
             onClick={() => { setValue(asset.ad_names.join(", ")); setEditing(true); }}
-            className="shrink-0 p-1 rounded text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition-colors"
+            className="shrink-0 p-1 rounded text-muted-foreground/80 hover:text-primary hover:bg-primary/10 transition-colors"
             aria-label="Edit ad name mapping"
           >
             <Pencil className="w-3 h-3" />
@@ -372,7 +372,7 @@ function CreativeAdNamesEditor({
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder="Ad name(s), comma-separated"
-            className="flex-1 h-7 px-2 rounded bg-white/[0.03] border border-border/50 text-[11px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40"
+            className="flex-1 h-7 px-2 rounded bg-white/[0.03] border border-border/50 text-[11px] text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40"
           />
           <button
             onClick={() => void handleSave()}
@@ -384,14 +384,14 @@ function CreativeAdNamesEditor({
           </button>
           <button
             onClick={() => setEditing(false)}
-            className="shrink-0 p-1 rounded text-muted-foreground/60 hover:bg-white/5 transition-colors"
+            className="shrink-0 p-1 rounded text-muted-foreground/80 hover:bg-white/5 transition-colors"
             aria-label="Cancel"
           >
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
       ) : (
-        <div className="text-[10px] text-muted-foreground/70">
+        <div className="text-[10px] text-muted-foreground/85">
           {asset.ad_names.length > 0 ? `Mapped to: ${asset.ad_names.join(", ")}` : "No ad name mapped yet"}
         </div>
       )}
@@ -466,10 +466,10 @@ function CreativeUploadSection({
   return (
     <div className="space-y-2">
       <div className="flex items-start gap-3 p-3 rounded-lg border border-border/40 bg-white/[0.02]">
-        <Images className="w-4 h-4 text-muted-foreground/70 shrink-0 mt-0.5" />
+        <Images className="w-4 h-4 text-muted-foreground/85 shrink-0 mt-0.5" />
         <div className="min-w-0 flex-1">
-          <div className="text-[12px] font-semibold text-foreground">Creative library <span className="text-muted-foreground/60 font-normal">(optional)</span></div>
-          <p className="text-[11px] text-muted-foreground/70 leading-relaxed mt-0.5">
+          <div className="text-[12px] font-semibold text-foreground">Creative library <span className="text-muted-foreground/80 font-normal">(optional)</span></div>
+          <p className="text-[11px] text-muted-foreground/85 leading-relaxed mt-0.5">
             Stage individual ad creative files (images/videos) so they render immediately. Map each
             file to the ad name(s) it represents — filenames matching an ad name are pre-mapped.
           </p>
@@ -489,13 +489,13 @@ function CreativeUploadSection({
         disabled={pendingCount > 0}
         className="w-full flex flex-col items-center gap-1.5 p-4 rounded-lg border border-dashed border-border/60 hover:border-primary/40 hover:bg-white/[0.02] transition-colors disabled:opacity-60"
       >
-        <Upload className="w-4 h-4 text-muted-foreground/70" />
+        <Upload className="w-4 h-4 text-muted-foreground/85" />
         {pendingCount > 0 ? (
-          <span className="text-[11px] text-muted-foreground/60 flex items-center gap-1.5">
+          <span className="text-[11px] text-muted-foreground/80 flex items-center gap-1.5">
             <Loader2 className="w-3 h-3 animate-spin" /> Uploading {pendingCount} file(s)…
           </span>
         ) : (
-          <span className="text-[11px] text-muted-foreground/60">Choose one or more creative files (max 8 MB each)</span>
+          <span className="text-[11px] text-muted-foreground/80">Choose one or more creative files (max 8 MB each)</span>
         )}
       </button>
 
@@ -520,7 +520,7 @@ function CreativeUploadSection({
               </div>
               <button
                 onClick={async () => { await deleteMutation.mutateAsync({ accountId, importId: asset.id }); onChanged(); }}
-                className="shrink-0 mt-2 p-1 rounded text-muted-foreground/60 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                className="shrink-0 mt-2 p-1 rounded text-muted-foreground/80 hover:text-red-400 hover:bg-red-400/10 transition-colors"
                 aria-label={`Remove ${asset.filename}`}
               >
                 <Trash2 className="w-3 h-3" />
@@ -578,18 +578,18 @@ export function ManualUploadPanel({ accountId }: { accountId: string }) {
             {creativeAssets.length > 0 ? (
               creativeAssets.map((a) => (
                 <div key={a.id} className="flex items-center gap-2 text-[11px]">
-                  <Images className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
+                  <Images className="w-3.5 h-3.5 text-muted-foreground/85 shrink-0" />
                   <span className="text-foreground/80 truncate">{a.filename}</span>
-                  <span className="text-muted-foreground/60 truncate">
+                  <span className="text-muted-foreground/80 truncate">
                     {a.ad_names.length > 0 ? `→ ${a.ad_names.join(", ")}` : "→ unmapped"}
                   </span>
                 </div>
               ))
             ) : (
-              <div className="text-[11px] text-muted-foreground/60">No creative files staged.</div>
+              <div className="text-[11px] text-muted-foreground/80">No creative files staged.</div>
             )}
           </div>
-          <p className="text-[10px] text-muted-foreground/50 leading-relaxed pt-1 border-t border-border/30">
+          <p className="text-[10px] text-muted-foreground/75 leading-relaxed pt-1 border-t border-border/30">
             Nothing has been parsed into performance data yet. Go to the account's setup screen to
             pick a date range and explicitly run analysis over these staged files.
           </p>
@@ -622,7 +622,7 @@ export function ManualUploadPanel({ accountId }: { accountId: string }) {
       <CreativeUploadSection accountId={accountId} imports={imports} knownAdNames={knownAdNames} onChanged={refresh} />
 
       <div className="flex items-center justify-between pt-1 border-t border-border/30 mt-1">
-        <p className="text-[10px] text-muted-foreground/50 leading-relaxed max-w-[60%]">
+        <p className="text-[10px] text-muted-foreground/75 leading-relaxed max-w-[60%]">
           Both CSVs are required before you can continue. Files are stored raw until an analysis
           run explicitly processes them.
         </p>
