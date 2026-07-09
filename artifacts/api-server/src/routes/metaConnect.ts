@@ -421,6 +421,10 @@ router.post("/metrix/meta/run-reports", requireAuth, async (req, res) => {
     // separately — never merged before storage.
     for (const reportClass of REPORT_CLASSES) {
       const fetchedAt = new Date().toISOString();
+      // One pull row per class per run. It starts as "running" and is only
+      // flipped to "success" after every row chunk has been written, so a
+      // mid-write failure can never leave a dishonest "success" pull behind.
+      let pullId: string | null = null;
       try {
         const { rows: rawRows, sanitizedPages } = await fetchInsights(
           connection.ad_account_id,
@@ -441,13 +445,13 @@ router.post("/metrix/meta/run-reports", requireAuth, async (req, res) => {
             raw_response: sanitizeMetaPayload({ pages: sanitizedPages.length }),
             raw_pages: sanitizedPages,
             fetched_at: fetchedAt,
-            status: "success",
+            status: "running",
             metric_mapping_status: mappingStatus,
           })
           .select("id")
           .limit(1);
         if (pullError) throw new Error(pullError.message);
-        const pullId = (pullData![0] as { id: string }).id;
+        pullId = (pullData![0] as { id: string }).id;
 
         // Insert rows in chunks to stay under payload limits.
         const CHUNK = 500;
@@ -471,6 +475,12 @@ router.post("/metrix/meta/run-reports", requireAuth, async (req, res) => {
           if (ins.error) throw new Error(ins.error.message);
         }
 
+        const done = await supabase
+          .from("report_pulls")
+          .update({ status: "success" })
+          .eq("id", pullId);
+        if (done.error) throw new Error(done.error.message);
+
         req.log.info(
           { reportClass, rowCount: normalized.length },
           "Meta report pull completed",
@@ -487,18 +497,35 @@ router.post("/metrix/meta/run-reports", requireAuth, async (req, res) => {
       } catch (err) {
         const message = err instanceof Error ? err.message : "Report pull failed.";
         req.log.error({ err, reportClass }, "Meta report pull failed");
-        const failIns = await supabase.from("report_pulls").insert({
-          user_id: userId,
-          ad_account_id: connection.ad_account_id,
-          report_class: reportClass,
-          date_range_start: range.start,
-          date_range_end: range.end,
-          fetched_at: fetchedAt,
-          status: "error",
-          error_message: message,
-        });
-        if (failIns.error) {
-          req.log.error({ err: failIns.error.message }, "Failed to record failed pull");
+
+        if (pullId) {
+          // Mark the existing pull as failed and drop any partial rows so
+          // nothing incomplete can ever be served.
+          const cleanup = await supabase.from("report_rows").delete().eq("report_pull_id", pullId);
+          if (cleanup.error) {
+            req.log.error({ err: cleanup.error.message }, "Failed to remove partial report rows");
+          }
+          const mark = await supabase
+            .from("report_pulls")
+            .update({ status: "error", error_message: message })
+            .eq("id", pullId);
+          if (mark.error) {
+            req.log.error({ err: mark.error.message }, "Failed to mark pull as failed");
+          }
+        } else {
+          const failIns = await supabase.from("report_pulls").insert({
+            user_id: userId,
+            ad_account_id: connection.ad_account_id,
+            report_class: reportClass,
+            date_range_start: range.start,
+            date_range_end: range.end,
+            fetched_at: fetchedAt,
+            status: "error",
+            error_message: message,
+          });
+          if (failIns.error) {
+            req.log.error({ err: failIns.error.message }, "Failed to record failed pull");
+          }
         }
         pulls.push({
           report_class: reportClass,
