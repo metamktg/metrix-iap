@@ -4,7 +4,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "hello": "tsx ./src/hello.ts",
     "check:metrix-settings-api": "tsx ./src/check-metrix-settings-api.ts",
     "smoke:api-server": "tsx ./src/smoke-api-server.ts",
     "smoke:metrix-iap-build": "tsx ./src/smoke-metrix-iap-build.ts",
