@@ -57,6 +57,9 @@ const GeneratedPillar = z.object({
 const GeneratedHypothesis = z.object({
   statement: z.string().min(1),
   control_ref: z.string().default(""),
+  /** 1-based index into the pillars array identifying the pillar this
+   * hypothesis tests. Omitted/out-of-range → left unlinked (never guessed). */
+  pillar_index: z.number().int().optional(),
   test_variant: z.string().optional(),
   isolated_variable: z.string().optional(),
   success_criteria: z.string().optional(),
@@ -264,6 +267,7 @@ function strategyPrompt(evidence: Row, cellIds: Set<string>, icpIds: Set<string>
     `- target_icps: only profile ids from this list (or empty): ${JSON.stringify([...icpIds])}`,
     "- messaging_framework: combine variable_id values that appear in variable_performance, joined with ' + ' (e.g. \"HK_Benefit + FW_BAB\"). If variable-level evidence is absent, describe the framework in plain words instead.",
     "- Each hypothesis isolates ONE variable, names its control (control_ref may reference a cell id or pillar name), and has a measurable success_criteria.",
+    "- pillar_index: the 1-based position of the pillar (in the pillars array above) that this hypothesis tests. Set it only when the hypothesis clearly extends ONE pillar; omit it when it doesn't map cleanly to a single pillar (do NOT guess).",
     "- priority: one of high | medium | low.",
     "- Be honest about weak evidence: mark low-confidence recommendations as such inside the text.",
     "",
@@ -288,6 +292,7 @@ function strategyPrompt(evidence: Row, cellIds: Set<string>, icpIds: Set<string>
           {
             statement: "string",
             control_ref: "string",
+            pillar_index: 1,
             test_variant: "string",
             isolated_variable: "string",
             success_criteria: "string",
@@ -546,20 +551,28 @@ export async function startStrategyGeneration(accountId: string, createdBy: stri
       if (pillarInsert.error) throw new Error(pillarInsert.error.message);
 
       const hypInsert = await supabase.from("testing_hypotheses").insert(
-        output.hypotheses.map((h, i) => ({
-          account_id: accountId,
-          hypothesis_id: `GEN_HYP_${runTag}_${i + 1}`,
-          statement: h.statement,
-          control_ref: h.control_ref,
-          test_variant: h.test_variant ?? null,
-          isolated_variable: h.isolated_variable ?? null,
-          success_criteria: h.success_criteria ?? null,
-          risk: h.risk ?? null,
-          expected_impact: h.expected_impact ?? null,
-          priority: h.priority,
-          source: "generated",
-          generation_run_id: runId,
-        })),
+        output.hypotheses.map((h, i) => {
+          // Resolve the explicit pillar link from the model's 1-based index.
+          // Out-of-range/absent → null (unlinked), never a guessed link.
+          const idx = h.pillar_index;
+          const pillarId =
+            idx && idx >= 1 && idx <= pillars.length ? pillars[idx - 1]!.pillar_id : null;
+          return {
+            account_id: accountId,
+            hypothesis_id: `GEN_HYP_${runTag}_${i + 1}`,
+            statement: h.statement,
+            control_ref: h.control_ref,
+            pillar_id: pillarId,
+            test_variant: h.test_variant ?? null,
+            isolated_variable: h.isolated_variable ?? null,
+            success_criteria: h.success_criteria ?? null,
+            risk: h.risk ?? null,
+            expected_impact: h.expected_impact ?? null,
+            priority: h.priority,
+            source: "generated",
+            generation_run_id: runId,
+          };
+        }),
       );
       if (hypInsert.error) throw new Error(hypInsert.error.message);
 

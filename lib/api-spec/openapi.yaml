@@ -2601,8 +2601,8 @@ components:
             type: string
         match_method:
           type: string
-          description: How ad_names was auto-suggested at stage time (id code vs filename similarity), if at all.
-          enum: [id, fuzzy]
+          description: How ad_names was auto-suggested at stage time (id code, confident filename similarity, or low-confidence closest guess), if at all.
+          enum: [id, fuzzy, guess]
       required:
         - kind
         - filename
@@ -2651,9 +2651,9 @@ components:
             type: string
         match_method:
           type: string
-          description: How ad_names was auto-suggested at stage time (id code vs filename similarity), if it still matches the saved mapping. Cleared once the mapping is overridden.
+          description: How ad_names was auto-suggested at stage time (id code, confident filename similarity, or low-confidence closest guess), if it still matches the saved mapping. Cleared once the mapping is overridden.
           nullable: true
-          enum: [id, fuzzy]
+          enum: [id, fuzzy, guess]
         status:
           type: string
           enum: [staged, processed, rejected]
@@ -2686,9 +2686,9 @@ components:
             type: string
         match_method:
           type: string
-          description: How ad_names was auto-suggested, if this update is re-saving an unmodified suggestion. Omit or leave unset for a manual override — the server does not infer this.
+          description: How ad_names was auto-suggested (id code, confident filename similarity, or low-confidence closest guess), if this update is re-saving an unmodified suggestion. Omit or leave unset for a manual override — the server does not infer this.
           nullable: true
-          enum: [id, fuzzy]
+          enum: [id, fuzzy, guess]
       required:
         - ad_names
     IapCsvColumnGroup:

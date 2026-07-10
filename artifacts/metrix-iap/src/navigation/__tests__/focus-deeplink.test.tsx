@@ -119,7 +119,7 @@ describe("Hypothesis Queue ?focus=<hypothesis id>", () => {
     );
     const header = drawerHeader(container);
     expect(header).not.toBeNull();
-    within(header!).getByText("Hypothesis");
+    within(header!).getByText(`Hypothesis · ${hypothesis.id}`);
     within(header!).getByText(hypothesis.label);
   });
 

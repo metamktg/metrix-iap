@@ -193,6 +193,10 @@ export interface ActiveHypothesis {
   label: string;
   source: string;
   status: string;
+  /** Explicit id of the message pillar this hypothesis tests. Absent when
+   * the source data carries no link — such hypotheses stay honestly
+   * unattached rather than being inferred from text. */
+  pillar_id?: string;
   risk?: string;
   test_variant?: string;
   isolated_variable?: string;
@@ -202,15 +206,56 @@ export interface ActiveHypothesis {
   origin?: string;
 }
 
+/** Full ICP profile from the real Strategy Map loop output. */
+export interface ICPProfile {
+  profile_id: string;
+  profile_name: string;
+  demographic_foundation?: string;
+  psychographic_profile?: string;
+  behavioral_signals?: string;
+  funnel_entry_point?: string;
+  performance_data?: {
+    spend?: number | null;
+    cpa?: number | null;
+    cvr_link_pct?: number | null;
+    confidence?: string | null;
+  } | null;
+  message_resonance?: string;
+  strategic_recommendation?: string;
+  confidence_level?: string;
+  [k: string]: unknown;
+}
+
+/** Winning/losing variable stack read from the Strategy Map loop output. */
+export interface VariableCombination {
+  combination: string;
+  context?: string | null;
+  cpa?: number | null;
+  cvr_pct?: number | null;
+  confidence?: string | null;
+  recommendation?: string | null;
+}
+
+/** Scaling playbook buckets from the Strategy Map loop output. */
+export interface ScalingPlaybook {
+  scale_now?: string[];
+  optimize?: string[];
+  validate?: string[];
+  explore?: string[];
+  avoid_combinations?: string[];
+  budget_reallocation_note?: string;
+  [k: string]: unknown;
+}
+
 export interface StrategyData {
   /** 'generated' when the rendered set came from the in-app engine, 'imported' otherwise. */
   provenance?: string;
   message_pillars: MessagePillar[];
   active_hypotheses: ActiveHypothesis[];
   /** Full ICP profiles from the real Strategy Map loop output. */
-  icp_profiles?: Record<string, unknown>[];
-  variable_combinations?: Record<string, unknown>[];
-  scaling_playbook?: Record<string, unknown> | null;
+  icp_profiles?: ICPProfile[];
+  variable_combinations?: VariableCombination[];
+  scaling_playbook?: ScalingPlaybook | null;
 }
 
 export interface DraftBrief {
@@ -349,6 +394,13 @@ export interface MSTMatrixColumn {
   id: string;
   name: string;
   icp: string;
+  /**
+   * Strategy ICP profile ids this avatar column maps to, derived at the
+   * data layer (seed assembly) from strategist-authored matrix-mode
+   * creative briefs — never a client-side guess. Absent/empty when no
+   * brief links this avatar to an ICP profile (unmapped → no link shown).
+   */
+  matched_profile_ids?: string[];
 }
 
 export interface MSTMatrixRow {

@@ -7,7 +7,7 @@
  */
 
 /**
- * How ad_names was auto-suggested at stage time (id code vs filename similarity), if at all.
+ * How ad_names was auto-suggested at stage time (id code, confident filename similarity, or low-confidence closest guess), if at all.
  */
 export type ManualImportInputMatchMethod = typeof ManualImportInputMatchMethod[keyof typeof ManualImportInputMatchMethod];
 
@@ -15,4 +15,5 @@ export type ManualImportInputMatchMethod = typeof ManualImportInputMatchMethod[k
 export const ManualImportInputMatchMethod = {
   id: 'id',
   fuzzy: 'fuzzy',
+  guess: 'guess',
 } as const;

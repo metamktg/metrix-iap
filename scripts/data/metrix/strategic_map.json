@@ -170,6 +170,7 @@
     },
     {
       "hypothesis_id": "HYP_003",
+      "pillar_id": "PILLAR_MaleEfficiencyTest",
       "statement": "We believe that a dedicated Male 55-64 / Male 35-44 creative will outperform current overflow-driven CPA because these segments already convert best in the account without any purpose-built message.",
       "control": "Current broad targeting (no dedicated creative)",
       "test_variant": "New rational-tone, efficiency-led static",

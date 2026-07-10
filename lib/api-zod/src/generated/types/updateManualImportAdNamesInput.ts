@@ -9,6 +9,6 @@ import type { UpdateManualImportAdNamesInputMatchMethod } from './updateManualIm
 
 export interface UpdateManualImportAdNamesInput {
   ad_names: string[];
-  /** How ad_names was auto-suggested, if this update is re-saving an unmodified suggestion. Omit or leave unset for a manual override — the server does not infer this. */
+  /** How ad_names was auto-suggested (id code, confident filename similarity, or low-confidence closest guess), if this update is re-saving an unmodified suggestion. Omit or leave unset for a manual override — the server does not infer this. */
   match_method?: UpdateManualImportAdNamesInputMatchMethod;
 }

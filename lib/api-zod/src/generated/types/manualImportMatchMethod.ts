@@ -7,7 +7,7 @@
  */
 
 /**
- * How ad_names was auto-suggested at stage time (id code vs filename similarity), if it still matches the saved mapping. Cleared once the mapping is overridden.
+ * How ad_names was auto-suggested at stage time (id code, confident filename similarity, or low-confidence closest guess), if it still matches the saved mapping. Cleared once the mapping is overridden.
  */
 export type ManualImportMatchMethod = typeof ManualImportMatchMethod[keyof typeof ManualImportMatchMethod] | null;
 
@@ -15,4 +15,5 @@ export type ManualImportMatchMethod = typeof ManualImportMatchMethod[keyof typeo
 export const ManualImportMatchMethod = {
   id: 'id',
   fuzzy: 'fuzzy',
+  guess: 'guess',
 } as const;
