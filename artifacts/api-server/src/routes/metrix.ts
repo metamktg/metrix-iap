@@ -32,6 +32,8 @@ import {
   CreateWorkspaceReportResponse,
   ListWorkspaceReportsResponse,
   DeleteWorkspaceReportResponse,
+  BatchDeleteWorkspaceReportsBody,
+  BatchDeleteWorkspaceReportsResponse,
   GetAdminEmailStatusResponse,
   ListAdminUsersResponse,
   AdminResendTempPasswordResponse,
@@ -65,7 +67,7 @@ import {
   type WorkspaceReportSettings,
   type WorkspaceReport,
 } from "@workspace/db";
-import { and, count, desc, eq, sql } from "drizzle-orm";
+import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { requireAuth } from "../middlewares/requireAuth";
 import { waitlistRateLimit } from "../middlewares/waitlistRateLimit";
@@ -2279,6 +2281,62 @@ router.delete(
     }
 
     res.json(DeleteWorkspaceReportResponse.parse({ status: "deleted", id: deleted[0].id }));
+  },
+);
+
+router.post(
+  "/metrix/workspaces/:workspaceId/reports/batch-delete",
+  requireAuth,
+  requireWorkspaceAccess,
+  async (req, res) => {
+    const workspaceId = String(req.params.workspaceId);
+    const parsed = BatchDeleteWorkspaceReportsBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ message: "Provide at least one report id to delete." });
+      return;
+    }
+
+    // De-dupe and keep only positive integer ids; anything else can't match a row.
+    const ids = Array.from(new Set(parsed.data.report_ids)).filter(
+      (id) => Number.isInteger(id) && id > 0,
+    );
+    if (ids.length === 0) {
+      res.json(
+        BatchDeleteWorkspaceReportsResponse.parse({ status: "deleted", deleted_ids: [], deleted_count: 0 }),
+      );
+      return;
+    }
+
+    const user = req.authUser!;
+
+    // Members can delete only their own reports; admins can delete any in the
+    // workspace. Ids that don't match a deletable row are silently dropped —
+    // no existence leak, matching the single-delete semantics.
+    const deleteWhere =
+      user.role === "admin"
+        ? and(
+            eq(workspaceReportsTable.workspaceId, workspaceId),
+            inArray(workspaceReportsTable.id, ids),
+          )
+        : and(
+            eq(workspaceReportsTable.workspaceId, workspaceId),
+            inArray(workspaceReportsTable.id, ids),
+            eq(workspaceReportsTable.createdByUserId, user.id),
+          );
+
+    const deleted = await db
+      .delete(workspaceReportsTable)
+      .where(deleteWhere)
+      .returning({ id: workspaceReportsTable.id });
+
+    const deletedIds = deleted.map((r) => r.id);
+    res.json(
+      BatchDeleteWorkspaceReportsResponse.parse({
+        status: "deleted",
+        deleted_ids: deletedIds,
+        deleted_count: deletedIds.length,
+      }),
+    );
   },
 );
 

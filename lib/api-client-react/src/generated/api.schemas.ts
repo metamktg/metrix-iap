@@ -1042,6 +1042,29 @@ export interface GeneratedReportsResult {
   reports: GeneratedReport[];
 }
 
+export interface GeneratedReportsBatchDeleteInput {
+  /**
+     * Ids of the generated reports to delete. Must contain at least one id.
+     * @minItems 1
+     * @maxItems 200
+     */
+  report_ids: number[];
+}
+
+export type GeneratedReportsBatchDeleteResultStatus = typeof GeneratedReportsBatchDeleteResultStatus[keyof typeof GeneratedReportsBatchDeleteResultStatus];
+
+
+export const GeneratedReportsBatchDeleteResultStatus = {
+  deleted: 'deleted',
+} as const;
+
+export interface GeneratedReportsBatchDeleteResult {
+  status: GeneratedReportsBatchDeleteResultStatus;
+  /** Ids that were actually deleted (subset of the requested ids). */
+  deleted_ids: number[];
+  deleted_count: number;
+}
+
 export type MetaConnectedAccountTokenStatus = typeof MetaConnectedAccountTokenStatus[keyof typeof MetaConnectedAccountTokenStatus];
 
 

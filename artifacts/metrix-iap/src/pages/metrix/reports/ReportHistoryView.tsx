@@ -11,14 +11,16 @@ import { buildReportModel, downloadReportExport, parseReportModel, type Branding
 import { ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile, CrossLink, fmtNum } from "../shared";
 import { FORMAT_LABEL } from "./NewReportView";
 import { cn } from "@/lib/utils";
-import { History, FileText, Building2, Users, FileDown, Check, Loader2, Trash2 } from "lucide-react";
+import { History, FileText, Building2, Users, FileDown, Check, Loader2, Trash2, X } from "lucide-react";
 import {
   useListWorkspaceReports,
   useDeleteWorkspaceReport,
+  useBatchDeleteWorkspaceReports,
   getListWorkspaceReportsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -61,6 +63,9 @@ export function ReportHistoryView() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [doneId, setDoneId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<HistoryEntry | null>(null);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -87,6 +92,46 @@ export function ReportHistoryView() {
       },
     },
   });
+
+  const { mutate: batchDeleteReports, isPending: batchDeleting } = useBatchDeleteWorkspaceReports({
+    mutation: {
+      onSuccess: async (result) => {
+        await queryClient.invalidateQueries({
+          queryKey: getListWorkspaceReportsQueryKey(manager.id),
+        });
+        setConfirmBulkDelete(false);
+        setSelectMode(false);
+        setSelectedIds(new Set());
+        const n = result.deleted_count;
+        toast({
+          title: n === 1 ? "Report deleted" : "Reports deleted",
+          description: `${fmtNum(n)} ${n === 1 ? "report was" : "reports were"} removed from Report History.`,
+        });
+      },
+      onError: () => {
+        setConfirmBulkDelete(false);
+        toast({
+          variant: "destructive",
+          title: "Couldn't delete the reports",
+          description: "No reports were deleted. Please try again.",
+        });
+      },
+    },
+  });
+
+  function toggleSelected(reportId: number) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(reportId)) next.delete(reportId);
+      else next.add(reportId);
+      return next;
+    });
+  }
+
+  function exitSelectMode() {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  }
 
   async function download(entry: HistoryEntry, format: string) {
     if (busyId) return;
@@ -184,10 +229,81 @@ export function ReportHistoryView() {
               <MetricTile label="Drafts" value={fmtNum(history.length - exported)} />
             </div>
 
+            {(() => {
+              const deletableCount = sorted.filter((r) => r.reportId).length;
+              if (deletableCount === 0) return null;
+              return (
+                <div className="px-6 pt-5 max-w-3xl flex items-center justify-between gap-3 flex-wrap">
+                  {selectMode ? (
+                    <>
+                      <span className="text-[12px] text-muted-foreground">
+                        {selectedIds.size === 0
+                          ? "Select reports to delete"
+                          : `${fmtNum(selectedIds.size)} selected`}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={exitSelectMode}
+                          disabled={batchDeleting}
+                          className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-60"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => setConfirmBulkDelete(true)}
+                          disabled={selectedIds.size === 0 || batchDeleting}
+                          className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-red-400/30 text-[11px] font-medium text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-40"
+                        >
+                          {batchDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                          Delete selected
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => setSelectMode(true)}
+                      className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors ml-auto"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      Select
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
+
             <div className="px-6 py-5 space-y-3 max-w-3xl">
-              {sorted.map((r) => (
-                <div key={r.id} className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
+              {sorted.map((r) => {
+                const selectable = selectMode && r.reportId != null;
+                const isSelected = r.reportId != null && selectedIds.has(r.reportId);
+                return (
+                <div
+                  key={r.id}
+                  onClick={selectable ? () => toggleSelected(r.reportId!) : undefined}
+                  className={cn(
+                    "rounded-xl border p-4 transition-colors",
+                    isSelected
+                      ? "border-red-400/40 bg-red-400/[0.06]"
+                      : "border-border/40 bg-white/[0.02]",
+                    selectable && "cursor-pointer hover:border-border/70",
+                  )}
+                >
                   <div className="flex items-start gap-3">
+                    {selectMode && (
+                      <div className="flex items-center h-9 shrink-0">
+                        {r.reportId != null ? (
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => toggleSelected(r.reportId!)}
+                            onClick={(e) => e.stopPropagation()}
+                            aria-label={`Select report "${r.title}"`}
+                          />
+                        ) : (
+                          <div className="w-4 h-4" title="Seed reports can't be deleted" />
+                        )}
+                      </div>
+                    )}
                     <div className="w-9 h-9 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center shrink-0">
                       <FileText className="w-4 h-4 text-muted-foreground/70" />
                     </div>
@@ -250,7 +366,8 @@ export function ReportHistoryView() {
                     )}
                   </div>
                 </div>
-              ))}
+                );
+              })}
 
               <AlertDialog open={confirmDelete !== null} onOpenChange={(open) => !open && !deleting && setConfirmDelete(null)}>
                 <AlertDialogContent>
@@ -275,6 +392,43 @@ export function ReportHistoryView() {
                       className="bg-red-500/90 hover:bg-red-500 text-white"
                     >
                       {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Delete report"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+
+              <AlertDialog open={confirmBulkDelete} onOpenChange={(open) => !open && !batchDeleting && setConfirmBulkDelete(false)}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Delete {fmtNum(selectedIds.size)} {selectedIds.size === 1 ? "report" : "reports"}?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {selectedIds.size === 1
+                        ? "The selected report and its stored snapshot will be permanently removed from Report History and Exports. This can't be undone."
+                        : `The ${fmtNum(selectedIds.size)} selected reports and their stored snapshots will be permanently removed from Report History and Exports. This can't be undone.`}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={batchDeleting}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      disabled={batchDeleting || selectedIds.size === 0}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (selectedIds.size > 0) {
+                          batchDeleteReports({
+                            workspaceId: manager.id,
+                            data: { report_ids: Array.from(selectedIds) },
+                          });
+                        }
+                      }}
+                      className="bg-red-500/90 hover:bg-red-500 text-white"
+                    >
+                      {batchDeleting ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        `Delete ${fmtNum(selectedIds.size)} ${selectedIds.size === 1 ? "report" : "reports"}`
+                      )}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
