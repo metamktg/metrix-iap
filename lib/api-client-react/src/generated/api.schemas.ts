@@ -294,7 +294,7 @@ export const ManualImportInputKind = {
 } as const;
 
 /**
- * How ad_names was auto-suggested at stage time (id code vs filename similarity), if at all.
+ * How ad_names was auto-suggested at stage time (id code, confident filename similarity, or low-confidence closest guess), if at all.
  */
 export type ManualImportInputMatchMethod = typeof ManualImportInputMatchMethod[keyof typeof ManualImportInputMatchMethod];
 
@@ -302,6 +302,7 @@ export type ManualImportInputMatchMethod = typeof ManualImportInputMatchMethod[k
 export const ManualImportInputMatchMethod = {
   id: 'id',
   fuzzy: 'fuzzy',
+  guess: 'guess',
 } as const;
 
 export interface ManualImportInput {
@@ -320,7 +321,7 @@ export interface ManualImportInput {
   content_base64: string;
   /** For creative_asset uploads only — the ad name(s) this creative is mapped to. */
   ad_names?: string[];
-  /** How ad_names was auto-suggested at stage time (id code vs filename similarity), if at all. */
+  /** How ad_names was auto-suggested at stage time (id code, confident filename similarity, or low-confidence closest guess), if at all. */
   match_method?: ManualImportInputMatchMethod;
 }
 
@@ -350,7 +351,7 @@ export const ManualImportKind = {
 } as const;
 
 /**
- * How ad_names was auto-suggested at stage time (id code vs filename similarity), if it still matches the saved mapping. Cleared once the mapping is overridden.
+ * How ad_names was auto-suggested at stage time (id code, confident filename similarity, or low-confidence closest guess), if it still matches the saved mapping. Cleared once the mapping is overridden.
  */
 export type ManualImportMatchMethod = typeof ManualImportMatchMethod[keyof typeof ManualImportMatchMethod] | null;
 
@@ -358,6 +359,7 @@ export type ManualImportMatchMethod = typeof ManualImportMatchMethod[keyof typeo
 export const ManualImportMatchMethod = {
   id: 'id',
   fuzzy: 'fuzzy',
+  guess: 'guess',
 } as const;
 
 export type ManualImportStatus = typeof ManualImportStatus[keyof typeof ManualImportStatus];
@@ -377,7 +379,7 @@ export interface ManualImport {
   content_type?: string | null;
   size_bytes: number;
   ad_names: string[];
-  /** How ad_names was auto-suggested at stage time (id code vs filename similarity), if it still matches the saved mapping. Cleared once the mapping is overridden. */
+  /** How ad_names was auto-suggested at stage time (id code, confident filename similarity, or low-confidence closest guess), if it still matches the saved mapping. Cleared once the mapping is overridden. */
   match_method?: ManualImportMatchMethod;
   status: ManualImportStatus;
   created_at: string;
@@ -388,7 +390,7 @@ export interface ListManualImportsResult {
 }
 
 /**
- * How ad_names was auto-suggested, if this update is re-saving an unmodified suggestion. Omit or leave unset for a manual override — the server does not infer this.
+ * How ad_names was auto-suggested (id code, confident filename similarity, or low-confidence closest guess), if this update is re-saving an unmodified suggestion. Omit or leave unset for a manual override — the server does not infer this.
  */
 export type UpdateManualImportAdNamesInputMatchMethod = typeof UpdateManualImportAdNamesInputMatchMethod[keyof typeof UpdateManualImportAdNamesInputMatchMethod] | null;
 
@@ -396,11 +398,12 @@ export type UpdateManualImportAdNamesInputMatchMethod = typeof UpdateManualImpor
 export const UpdateManualImportAdNamesInputMatchMethod = {
   id: 'id',
   fuzzy: 'fuzzy',
+  guess: 'guess',
 } as const;
 
 export interface UpdateManualImportAdNamesInput {
   ad_names: string[];
-  /** How ad_names was auto-suggested, if this update is re-saving an unmodified suggestion. Omit or leave unset for a manual override — the server does not infer this. */
+  /** How ad_names was auto-suggested (id code, confident filename similarity, or low-confidence closest guess), if this update is re-saving an unmodified suggestion. Omit or leave unset for a manual override — the server does not infer this. */
   match_method?: UpdateManualImportAdNamesInputMatchMethod;
 }
 

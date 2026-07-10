@@ -4,8 +4,14 @@
 
 export type AdNameMatch = {
   name: string;
-  /** "id" = a shared concept/creative ID code uniquely identified the ad (high confidence). "fuzzy" = closest filename similarity (substring/token/edit-distance based). */
-  method: "id" | "fuzzy";
+  /**
+   * How confident the auto-suggestion is:
+   *  - "id"    = a shared concept/creative ID code uniquely identified the ad (high confidence).
+   *  - "fuzzy" = strong filename similarity (substring/token/edit-distance) at or above FUZZY_MATCH_THRESHOLD.
+   *  - "guess" = the closest ("most logical") candidate, but below the confident threshold — pre-mapped so the
+   *              user starts from the best option instead of nothing, and flagged in the UI as a guess to review.
+   */
+  method: "id" | "fuzzy" | "guess";
 };
 
 /**
@@ -79,8 +85,16 @@ export function tokenSetSimilarity(a: string, b: string): number {
   return intersection / union;
 }
 
-/** Below this combined similarity score, a fuzzy suggestion is considered too unreliable — left unmapped rather than guessed. */
+/** At or above this combined similarity score, a suggestion is confident ("fuzzy"). */
 export const FUZZY_MATCH_THRESHOLD = 0.55;
+
+/**
+ * Floor for a low-confidence "guess". Between this and FUZZY_MATCH_THRESHOLD the
+ * closest candidate is still pre-mapped (the "most logical" ad name) but flagged
+ * for review. Below this the filename shares essentially no signal with any ad
+ * name, so it stays unmapped rather than mapping pure noise.
+ */
+export const GUESS_MATCH_THRESHOLD = 0.2;
 
 /**
  * Suggests the best ad-name match for an uploaded filename against a set
@@ -90,8 +104,11 @@ export const FUZZY_MATCH_THRESHOLD = 0.55;
  *     high-confidence match. A code shared by 2+ candidates is ambiguous
  *     and is skipped (never guessed).
  *  2. Fuzzy fallback — exact normalized match, substring containment, or
- *     the best combined bigram/token-overlap similarity score. Scores
- *     below FUZZY_MATCH_THRESHOLD are left unmapped rather than guessed.
+ *     the best combined bigram/token-overlap similarity score. At/above
+ *     FUZZY_MATCH_THRESHOLD it is a confident "fuzzy" match; between
+ *     GUESS_MATCH_THRESHOLD and that it is still returned as the "most
+ *     logical" candidate but flagged "guess" for review; below the guess
+ *     floor there is no real signal, so it is left unmapped.
  */
 export function suggestAdNameMatch(filename: string, candidates: Iterable<string>): AdNameMatch | null {
   const candidateList = Array.from(candidates);
@@ -139,8 +156,9 @@ export function suggestAdNameMatch(filename: string, candidates: Iterable<string
     if (!best || score > best.score) best = { name: candidate, score };
   }
 
-  if (best && best.score >= FUZZY_MATCH_THRESHOLD) {
-    return { name: best.name, method: "fuzzy" };
+  if (best) {
+    if (best.score >= FUZZY_MATCH_THRESHOLD) return { name: best.name, method: "fuzzy" };
+    if (best.score >= GUESS_MATCH_THRESHOLD) return { name: best.name, method: "guess" };
   }
   return null;
 }

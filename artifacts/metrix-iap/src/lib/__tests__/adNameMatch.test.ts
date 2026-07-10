@@ -45,15 +45,33 @@ describe("suggestAdNameMatch", () => {
     expect(result).toEqual({ name: "Concept A [CR-1234]", method: "id" });
   });
 
-  it("returns null when an ID code is shared by 2+ candidates (ambiguous)", () => {
+  it("falls back to a low-confidence guess when an ID code is ambiguous (shared by 2+ candidates)", () => {
+    // The ID pass never guesses when a code is shared, but the closest
+    // candidate by filename similarity is still pre-mapped as a "guess"
+    // (flagged for review) rather than left empty.
     const result = suggestAdNameMatch("creative-CR1234-final.mp4", [
       "Concept A [CR1234]",
       "Concept B [CR1234 remix]",
     ]);
-    expect(result).toBeNull();
+    expect(result?.method).toBe("guess");
+    expect(["Concept A [CR1234]", "Concept B [CR1234 remix]"]).toContain(result?.name);
   });
 
-  it("returns null for completely unrelated filenames", () => {
+  it("pre-maps to the closest ('most logical') candidate as a low-confidence guess", () => {
+    // Below the confident fuzzy threshold but sharing real signal ("holiday",
+    // "v3") — the user gets the best option pre-selected and flagged to review,
+    // rather than starting from an empty mapping.
+    const result = suggestAdNameMatch("holiday_v3_1080x1080.mp4", [
+      "Holiday Bundle v3",
+      "Winter Promo v1",
+    ]);
+    expect(result?.name).toBe("Holiday Bundle v3");
+    expect(result?.method).toBe("guess");
+  });
+
+  it("returns null for completely unrelated filenames (no logical match)", () => {
+    // Genuinely no shared signal — mapping this to any ad name would be noise,
+    // not a "most logical" guess, so it stays unmapped.
     const result = suggestAdNameMatch("random_footage_xyz789.mov", [
       "Summer Sale v2",
       "Winter Promo v1",

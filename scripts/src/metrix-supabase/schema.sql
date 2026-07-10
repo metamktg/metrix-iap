@@ -620,11 +620,33 @@ alter table manual_imports add column if not exists content_type text;
 alter table manual_imports add column if not exists ad_names text[] not null default '{}';
 
 -- Persists how the ad-name mapping was auto-suggested at stage time (id
--- code vs filename similarity) so the "Matched by…" badge survives reload
--- instead of only living in client component state. Cleared whenever the
--- mapping is overridden (dropdown or free-text), so it never lies about a
+-- code, confident filename similarity "fuzzy", or low-confidence closest
+-- "guess") so the "Matched by…" badge survives reload instead of only
+-- living in client component state. Cleared whenever the mapping is
+-- overridden (dropdown or free-text), so it never lies about a
 -- manually-picked mapping.
-alter table manual_imports add column if not exists match_method text check (match_method in ('id', 'fuzzy'));
+alter table manual_imports add column if not exists match_method text;
+
+-- (Re)apply the check idempotently. `add column if not exists` above won't
+-- widen a pre-existing id/fuzzy-only constraint, so drop any existing
+-- match_method check and re-add the current allowed set. This lets the new
+-- low-confidence "guess" tier persist on DBs provisioned before it existed.
+do $$
+declare cname text;
+begin
+  for cname in
+    select conname
+    from pg_constraint
+    where conrelid = 'manual_imports'::regclass
+      and contype = 'c'
+      and pg_get_constraintdef(oid) ilike '%match_method%'
+  loop
+    execute format('alter table manual_imports drop constraint %I', cname);
+  end loop;
+  alter table manual_imports
+    add constraint manual_imports_match_method_check
+    check (match_method in ('id', 'fuzzy', 'guess'));
+end $$;
 
 -- Generic bucket for Ecommerce/Service/App-specific metrics observed in a
 -- manual CSV upload. Keyed by slugified Meta column name; absent metrics

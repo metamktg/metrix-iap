@@ -24,6 +24,6 @@ export interface ManualImportInput {
   content_base64: string;
   /** For creative_asset uploads only — the ad name(s) this creative is mapped to. */
   ad_names?: string[];
-  /** How ad_names was auto-suggested at stage time (id code vs filename similarity), if at all. */
+  /** How ad_names was auto-suggested at stage time (id code, confident filename similarity, or low-confidence closest guess), if at all. */
   match_method?: ManualImportInputMatchMethod;
 }

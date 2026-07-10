@@ -182,10 +182,11 @@ describe("Unconfigured-state actions (SKOV Pet)", () => {
     fireEvent.click(screen.getByRole("button", { name: /Add Manual Import/i }));
     const dialog = screen.getByRole("dialog");
     expect(dialog.textContent).toContain("Add Manual Import");
-    expect(dialog.textContent).toContain("Performance export (CSV)");
+    expect(dialog.textContent).toContain("Demographics CSV");
+    expect(dialog.textContent).toContain("Placements CSV");
     // Files are staged raw for the analysis pipeline — never parsed into
     // performance data at upload time.
-    expect(dialog.textContent).toContain("never at upload time");
+    expect(dialog.textContent).toContain("stored raw until an analysis run");
   });
 });
 

@@ -473,18 +473,23 @@ function AdNameDropdownPicker({
 }
 
 /** Small badge explaining why an ad-name suggestion was made. Only shown while the current mapping still equals the auto-suggested value — overriding it (dropdown/free-text) drops the badge automatically. Reads the persisted `match_method` on the import so it survives navigation/reload, not just the current session. */
-function MatchMethodBadge({ method }: { method?: "id" | "fuzzy" | null }) {
+function MatchMethodBadge({ method }: { method?: "id" | "fuzzy" | "guess" | null }) {
   if (!method) return null;
-  const isId = method === "id";
+  const config = {
+    id: { icon: Hash, label: "Matched by ID code", className: "bg-primary/10 text-primary" },
+    fuzzy: { icon: Sparkles, label: "Matched by filename similarity", className: "bg-white/[0.06] text-muted-foreground/85" },
+    guess: { icon: Sparkles, label: "Best guess — please review", className: "bg-amber-400/10 text-amber-300" },
+  }[method];
+  const Icon = config.icon;
   return (
     <span
       className={cn(
         "inline-flex items-center gap-1 text-[9px] font-medium px-1.5 py-0.5 rounded shrink-0",
-        isId ? "bg-primary/10 text-primary" : "bg-white/[0.06] text-muted-foreground/85"
+        config.className
       )}
     >
-      {isId ? <Hash className="w-2.5 h-2.5" /> : <Sparkles className="w-2.5 h-2.5" />}
-      {isId ? "Matched by ID code" : "Matched by filename similarity"}
+      <Icon className="w-2.5 h-2.5" />
+      {config.label}
     </span>
   );
 }
