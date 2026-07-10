@@ -1,3 +1,4 @@
+- [Metrix MST / IAP Matrix methodology](metrix-mst-methodology.md) — MST=Metrix Sprint Test; Concept×Angle matrix rules + real-cardinality honesty; matrix grid vs generated briefs are distinct surfaces; generated cell codes must align to the historical grid, not fetch order.
 - [Metrix IAP closed-loop linkage](metrix-iap-closed-loop.md) — cross-entity back-refs (Ad/Concept/Brief) filled at gen time by linkClosedLoop() IIFE, not per-render.
 - [Supabase RLS testing](supabase-rls-testing.md) — rolled-back-txn tests need savepoints around expected failures; gates must be triggers (BYPASSRLS skips RLS, not triggers); drizzle push hangs non-TTY.
 - [Dev vs prod database split](dev-vs-prod-databases.md) — Replit Postgres is separate per environment, Supabase is shared; check which env before diagnosing "missing data".

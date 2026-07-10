@@ -433,6 +433,100 @@ describe("buildAccountObject", () => {
     ).toBe(true);
   });
 
+  it("links matrix-mode briefs regardless of the account's ICP id scheme (not just ICP_*)", () => {
+    // LittleData profiles are LD-ICP-*; a hardcoded ICP_ prefix would have
+    // silently dropped every link. The join must trust validProfileIds only.
+    const accountId = "ld_scheme";
+    const t = emptyTables();
+    t.adPerformance = groupByAccount([perfRow(accountId)]);
+    t.icpProfiles = groupByAccount([
+      { account_id: accountId, payload: { profile_id: "LD-ICP-GIFTBUYER-YOUNG" } },
+      { account_id: accountId, payload: { profile_id: "LD-ICP-CITY-LOYALIST" } },
+    ]);
+    t.accountModules = [
+      {
+        account_id: accountId,
+        module: "mst",
+        payload: {
+          status: "active",
+          historical_matrix_4x4: { columns: [{ id: "C1" }, { id: "C3" }] },
+        },
+      },
+    ];
+    t.creativeBriefs = groupByAccount([
+      {
+        account_id: accountId,
+        payload: {
+          brief_metadata: { mode: "matrix" },
+          testing_framework: { matrix_position: "C1A — gift-moment story" },
+          strategic_foundation: { target_icp: "LD-ICP-GIFTBUYER-YOUNG" },
+        },
+      },
+      {
+        account_id: accountId,
+        payload: {
+          brief_metadata: { mode: "matrix" },
+          testing_framework: { matrix_position: "C3B — city pride" },
+          strategic_foundation: { target_icp: "LD-ICP-CITY-LOYALIST" },
+        },
+      },
+    ]);
+    const obj = buildAccountObject(
+      { id: accountId, name: "LD Scheme", status: "configured" },
+      t,
+    );
+    const columns = obj["mst"]["historical_matrix_4x4"]["columns"] as Row[];
+    const byId = Object.fromEntries(columns.map((c) => [c["id"], c]));
+    expect(byId["C1"]["matched_profile_ids"]).toEqual(["LD-ICP-GIFTBUYER-YOUNG"]);
+    expect(byId["C3"]["matched_profile_ids"]).toEqual(["LD-ICP-CITY-LOYALIST"]);
+  });
+
+  it("drops a matrix link whose target ICP disagrees with the grid column's declared icp", () => {
+    // Defense in depth: even if a cell code is mis-numbered, a link must never
+    // attach to a grid column that declares a different icp.
+    const accountId = "ld_guard";
+    const t = emptyTables();
+    t.adPerformance = groupByAccount([perfRow(accountId)]);
+    t.icpProfiles = groupByAccount([
+      { account_id: accountId, payload: { profile_id: "LD-ICP-GIFTBUYER-YOUNG" } },
+      { account_id: accountId, payload: { profile_id: "LD-ICP-CITY-LOYALIST" } },
+    ]);
+    t.accountModules = [
+      {
+        account_id: accountId,
+        module: "mst",
+        payload: {
+          status: "active",
+          historical_matrix_4x4: {
+            columns: [
+              { id: "C1", icp: "LD-ICP-GIFTBUYER-YOUNG" },
+              { id: "C2", icp: "LD-ICP-CITY-LOYALIST" },
+            ],
+          },
+        },
+      },
+    ];
+    t.creativeBriefs = groupByAccount([
+      {
+        account_id: accountId,
+        payload: {
+          brief_metadata: { mode: "matrix" },
+          // Cell code says C1 but targets C2's ICP — must be rejected.
+          testing_framework: { matrix_position: "C1A — mislabeled" },
+          strategic_foundation: { target_icp: "LD-ICP-CITY-LOYALIST" },
+        },
+      },
+    ]);
+    const obj = buildAccountObject(
+      { id: accountId, name: "LD Guard", status: "configured" },
+      t,
+    );
+    const columns = obj["mst"]["historical_matrix_4x4"]["columns"] as Row[];
+    const byId = Object.fromEntries(columns.map((c) => [c["id"], c]));
+    expect(byId["C1"]["matched_profile_ids"]).toBeUndefined();
+    expect(byId["C2"]["matched_profile_ids"]).toBeUndefined();
+  });
+
   it("scopes listen signal cards to the account", () => {
     const t = emptyTables();
     t.adPerformance = groupByAccount([perfRow("acct_a")]);

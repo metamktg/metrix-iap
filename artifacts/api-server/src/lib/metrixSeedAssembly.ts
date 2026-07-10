@@ -452,15 +452,17 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
   const analysisCoreSummary = modules.get("analysis_core_summary") ?? null;
 
   // ── Avatar ↔ ICP profile mapping (matrix column → strategy profile) ──
-  // The matrix avatar columns (CN_ICP_* ids) and the strategy ICP profiles
-  // (ICP_BOOK*_* ids) use disjoint id schemes, so they cannot be joined by
-  // key. The only strategist-authored bridge is a matrix-mode creative
-  // brief, which carries BOTH a matrix cell position (its leading token is
-  // the avatar column id, e.g. "C2B" → "C2") and a target ICP profile.
-  // We only trust matrix-mode briefs (general-mode briefs use free-text
-  // positions) and only keep profile ids that actually exist for this
-  // account. Unmatched avatars get no field, so the client shows no link
-  // rather than fabricating a join.
+  // Historically the matrix avatar columns and the strategy ICP profiles
+  // could use disjoint id schemes, so they cannot be joined by key. The
+  // strategist-authored bridge is a matrix-mode creative brief, which carries
+  // BOTH a matrix cell position (its leading token is the avatar column id,
+  // e.g. "C2B" → "C2") and a target ICP profile. We only trust matrix-mode
+  // briefs (general-mode briefs use free-text positions) and only keep
+  // profile ids that actually exist for this account. As defense in depth,
+  // when a grid column declares its own `icp`, we additionally drop any link
+  // that disagrees with it — so a mis-numbered cell code can never surface a
+  // wrong avatar↔ICP link. Unmatched avatars get no field, so the client
+  // shows no link rather than fabricating a join.
   const validProfileIds = new Set(
     icpProfiles
       .map((r) => (r["payload"] as Row | undefined)?.["profile_id"])
@@ -475,8 +477,10 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
     const sf = (b["strategic_foundation"] ?? {}) as Row;
     const colMatch = String(tf["matrix_position"] ?? "").match(/^(C\d+)/);
     const profileId = String(sf["target_icp"] ?? "").trim().split(/\s+/)[0] ?? "";
-    if (!colMatch || !profileId.startsWith("ICP_")) continue;
-    if (!validProfileIds.has(profileId)) continue;
+    // Trust only ids that actually exist for this account — this is
+    // id-scheme-agnostic (ICP_BOOK*_*, LD-ICP-*, etc.), never a hardcoded
+    // prefix. An unmatched or free-text position simply yields no link.
+    if (!colMatch || !validProfileIds.has(profileId)) continue;
     const colId = colMatch[1]!;
     if (!columnProfileLinks.has(colId)) columnProfileLinks.set(colId, new Set());
     columnProfileLinks.get(colId)!.add(profileId);
@@ -488,9 +492,11 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
           ...rawMatrix,
           columns: (rawMatrix["columns"] as Row[]).map((col) => {
             const links = columnProfileLinks.get(String(col["id"] ?? ""));
-            return links && links.size > 0
-              ? { ...col, matched_profile_ids: [...links].sort() }
-              : col;
+            const colIcp = typeof col["icp"] === "string" ? (col["icp"] as string) : "";
+            // If the grid column declares its own ICP, only keep links that
+            // agree with it (defense in depth against a mis-numbered cell code).
+            const matched = links ? [...links].filter((id) => !colIcp || id === colIcp).sort() : [];
+            return matched.length > 0 ? { ...col, matched_profile_ids: matched } : col;
           }),
         }
       : rawMatrix;
