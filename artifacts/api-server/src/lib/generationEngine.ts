@@ -76,21 +76,47 @@ const GeneratedStrategy = z.object({
 const GeneratedBrief = z.object({
   asset_type: z.string().min(1),
   priority: z.string().default("high"),
-  mode: z.string().default("general"),
+  // Matrix-mode is the standard IAP output; general-mode is the fallback
+  // used only when the account has no ICP columns to build a matrix from.
+  mode: z.string().default("matrix"),
   voice: z.string().optional(),
   confidence: z.string().optional(),
+  // ── strategic foundation ──
   message_pillar: z.string().min(1),
   data_insight: z.string().min(1),
+  /** Singular ICP profile id this concept column targets (validated; a
+   * hallucinated id is blanked, never fabricated into a link). */
+  target_icp: z.string().optional(),
+  /** Client-specific concept code for the column (e.g. CN_ICP_*). */
+  concept_code: z.string().optional(),
   angle_stack: z.string().min(1),
-  headline_directions: z.array(z.string()).optional(),
-  copy_directions: z.array(z.string()).optional(),
-  visual_direction: z.string().optional(),
-  cta_guidance: z.string().optional(),
-  target_icps: z.array(z.string()).optional(),
+  performance_benchmark: z.string().optional(),
+  // ── testing framework (matrix layer) ──
+  /** Cell code leading with the column+row, e.g. "C1A — gift-moment story". */
+  matrix_position: z.string().optional(),
+  /** The ONE variable this cell isolates within its row. */
+  isolated_variable: z.string().optional(),
+  hypothesis: z.string().optional(),
+  control_reference: z.string().optional(),
+  success_criteria: z.string().optional(),
+  learning_objective: z.string().optional(),
+  // ── creative specifications ──
+  format: z.string().optional(),
+  dimensions: z.string().optional(),
+  placement: z.string().optional(),
+  production_requirements: z.string().optional(),
+  // ── copy architecture ──
+  hook: z.string().optional(),
+  problem_or_value_setup: z.string().optional(),
+  product_solution: z.string().optional(),
+  proof: z.string().optional(),
+  cta: z.string().optional(),
 });
 
 const GeneratedBriefs = z.object({
-  briefs: z.array(GeneratedBrief).min(2).max(8),
+  // Up to a full 4×4 (16). Real accounts populate to their true cardinality
+  // (e.g. a 3-ICP account produces up to a 3×3 = 9 cells) — never padded.
+  briefs: z.array(GeneratedBrief).min(2).max(16),
 });
 
 // ─── Supabase helpers ─────────────────────────────────────────────────
@@ -257,17 +283,51 @@ async function generateValidated<T>(prompt: string, schema: z.ZodType<T>): Promi
 
 // ─── prompts ──────────────────────────────────────────────────────────
 
+// The canonical global variable taxonomy shared by every MST-layer prompt.
+// Kept as one source of truth so strategy pillars and brief angle_stacks use
+// the SAME prefixes (this mirrors the frontend variable-registry taxonomy).
+const IAP_VARIABLE_TAXONOMY = [
+  "IAP GLOBAL VARIABLE TAXONOMY (use these prefixes; combine several with ' + '):",
+  "- CN_ Concept/format angle: e.g. CN_Testimonial, CN_FounderStory, CN_ProductDemo, CN_Comparison, CN_ValueStack, CN_Lifestyle, CN_PainFirst, CN_SocialProof, CN_UGC.",
+  "- FW_ Copy framework: FW_PAS, FW_AIDA, FW_FAB, FW_BAB, FW_StoryBrand, FW_Direct.",
+  "- TN_ Tonality: TN_Emotional, TN_Rational, TN_Relatable, TN_Playful, TN_Assertive, TN_Aspirational, TN_Warm, TN_Urgent.",
+  "- ST_ Funnel stage: ST_TOFU, ST_MOFU, ST_BOFU.",
+  "- AW_ Awareness: AW_Unaware, AW_ProblemAware, AW_SolutionAware, AW_MostAware.",
+  "- HP_ Pain/hurdle: HP_Time, HP_Money, HP_Confidence, HP_Overwhelm (or a short plain pain phrase).",
+  "- PR_ Proof: PR_Testimonial, PR_Expert, PR_DataDriven, PR_SocialProof, PR_VisualDemo, PR_UGC.",
+  "- HK_ Hook: HK_Problem, HK_Benefit, HK_Curiosity, HK_Shock, HK_Story, HK_SocialProof.",
+  "Client-specific concept codes (CN_ICP_*, CN_Design_*, CN_CTA_*) may be layered when the account library defines them.",
+].join("\n");
+
+// The IAP Matrix construction rules the brief layer must obey.
+const IAP_MATRIX_METHODOLOGY = [
+  "IAP MATRIX METHODOLOGY (Metrix Sprint Test — the scientific testing layer):",
+  "- The matrix is a Concept × Angle grid. COLUMNS = concepts, exactly ONE per real ICP/avatar (never a messaging theme). ROWS = angles.",
+  "- Golden rule of variable isolation: a variable's effect is only readable when it appears in MULTIPLE cells combined with DIFFERENT other variables. Distribute every key variable across 2+ cells; never let a decisive variable appear only once.",
+  "- Column consistency: all cells in a column share that concept's fixed variables (its ICP, design system, CTA family).",
+  "- Row consistency: all cells in a row share EXACTLY ONE angle variable (e.g. one shared tonality OR one shared framework) — everything else varies. Do NOT make a whole row identical.",
+  "- Diagonals (only when the grid is square and at least 3×3): the top-left→bottom-right diagonal shares exactly ONE strategic variable; the bottom-left→top-right diagonal shares exactly ONE different counterbalance variable.",
+  "- Cell codes: columns are C1..Cn in the exact order the COLUMNS list is given; rows are A, B, C…; a cell code is <Column><Row> (e.g. C1A, C2B).",
+  "- HONESTY: build the grid at the account's REAL cardinality using ONLY the ICP columns provided. Never invent an extra avatar/column or a baseless row just to reach 4×4. Fewer, well-isolated cells beat a padded grid.",
+  "- Andromeda execution context: assume BROAD targeting, ABO budgeting, and Advantage+ auto-placements. Prefer distinct concepts over near-duplicates and behavioral/psychographic angles over demographic micro-targeting. CTR / thumbstop are the earliest signals; CPA needs volume before a verdict.",
+].join("\n");
+
 function strategyPrompt(evidence: Row, cellIds: Set<string>, icpIds: Set<string>): string {
   return [
-    "You are the METRIX strategy engine. From the ad-account analysis evidence below, produce message pillars and testing hypotheses for the next creative cycle.",
+    "You are the METRIX strategy engine. From the ad-account analysis evidence below, produce message pillars and testing hypotheses for the next IAP creative cycle (Metrix Sprint Test).",
+    "",
+    IAP_VARIABLE_TAXONOMY,
+    "",
+    IAP_MATRIX_METHODOLOGY,
     "",
     "STRICT RULES:",
     "- Ground every claim in the evidence. Quote real numbers (results, CPA, CVR, funnel counts) in performance_evidence. NEVER invent metrics.",
     `- source_cells: only ids from this list (or empty): ${JSON.stringify([...cellIds])}`,
-    `- target_icps: only profile ids from this list (or empty): ${JSON.stringify([...icpIds])}`,
-    "- messaging_framework: combine variable_id values that appear in variable_performance, joined with ' + ' (e.g. \"HK_Benefit + FW_BAB\"). If variable-level evidence is absent, describe the framework in plain words instead.",
-    "- Each hypothesis isolates ONE variable, names its control (control_ref may reference a cell id or pillar name), and has a measurable success_criteria.",
+    `- target_icps: only profile ids from this list (or empty): ${JSON.stringify([...icpIds])}. Each pillar should map to the ICP(s) whose concept column will carry it.`,
+    "- messaging_framework: combine taxonomy variable ids (see above) that appear in variable_performance, joined with ' + ' (e.g. \"HK_Benefit + FW_BAB\"). If variable-level evidence is absent, still use the taxonomy prefixes to name the intended combination.",
+    "- Each hypothesis isolates EXACTLY ONE variable, names its control (control_ref may reference a cell id or pillar name), and has a measurable success_criteria. In isolated_variable, name the single taxonomy variable under test AND state how it will be distributed across the matrix (which cells hold it constant vs vary it) so its effect is readable.",
     "- pillar_index: the 1-based position of the pillar (in the pillars array above) that this hypothesis tests. Set it only when the hypothesis clearly extends ONE pillar; omit it when it doesn't map cleanly to a single pillar (do NOT guess).",
+    "- placement_strategy / scaling_guidance: reflect the Andromeda execution context (broad targeting, ABO, Advantage+ placements) rather than narrow demographic targeting.",
     "- priority: one of high | medium | low.",
     "- Be honest about weak evidence: mark low-confidence recommendations as such inside the text.",
     "",
@@ -313,7 +373,10 @@ function strategyPrompt(evidence: Row, cellIds: Set<string>, icpIds: Set<string>
   ].join("\n");
 }
 
-function briefsPrompt(pillars: Row[], evidence: Row): string {
+/** A concept column for the matrix: one per real ICP, in stable order. */
+type BriefColumn = { column_id: string; profile_id: string; profile_name: string };
+
+function briefsPrompt(pillars: Row[], evidence: Row, columns: BriefColumn[]): string {
   const pillarSummaries = pillars.map((row) => {
     const p = (row["payload"] ?? {}) as Row;
     return {
@@ -325,16 +388,39 @@ function briefsPrompt(pillars: Row[], evidence: Row): string {
       target_icps: p["target_icps"],
     };
   });
+  const hasMatrix = columns.length > 0;
+  const rowCap = hasMatrix ? Math.min(4, Math.max(2, pillarSummaries.length)) : 0;
+  const cellCap = hasMatrix ? columns.length * rowCap : 0;
+
+  const matrixRules = hasMatrix
+    ? [
+        `- COLUMNS (concepts, in order): ${JSON.stringify(columns)}. Assign each brief to one column via its column_id; set target_icp to that column's profile_id.`,
+        `- Build a Concept × Angle matrix: ${columns.length} concept column(s) × up to ${rowCap} angle row(s) = up to ${cellCap} cells. Produce ONE brief per cell you can ground; skip cells with no strategic basis rather than padding.`,
+        "- mode: \"matrix\" for every brief. matrix_position MUST lead with the cell code then a short label, e.g. \"C1A — gift-moment story hook\".",
+        "- Obey the matrix rules above: each ROW shares exactly ONE angle variable across its columns; distribute each decisive variable across 2+ cells; if the grid is square and ≥3×3, use the two diagonals for the strategic + counterbalance variables.",
+        "- isolated_variable: name the ONE taxonomy variable this cell's row holds constant (what the row is testing).",
+        "- concept_code: a client concept code for the column (CN_ICP_* / CN_* style) when the evidence implies one; otherwise a short concept name.",
+      ]
+    : [
+        "- No ICP columns are available for this account, so a matrix cannot be built honestly. Set mode: \"general\" and omit matrix_position/target_icp. Produce 3-6 briefs covering the different pillars and asset types.",
+      ];
+
   return [
-    "You are the METRIX brief builder. From the stored strategy pillars and supporting analysis evidence below, produce draft creative briefs.",
+    "You are the METRIX brief builder. From the stored strategy pillars and supporting analysis evidence below, produce the next set of creative briefs as an IAP Matrix (Metrix Sprint Test).",
+    "",
+    IAP_VARIABLE_TAXONOMY,
+    "",
+    IAP_MATRIX_METHODOLOGY,
     "",
     "STRICT RULES:",
     `- message_pillar MUST be one of these pillar ids: ${JSON.stringify(pillarSummaries.map((p) => p.pillar_id))}`,
     "- data_insight must restate the pillar's real performance evidence (real numbers only — never invent metrics).",
-    "- angle_stack: variable ids joined with ' + ' when variable evidence exists, plain-language angles otherwise.",
-    "- asset_type: one of static | video | carousel | ugc.",
-    "- priority: one of high | medium | low. mode: matrix | general.",
-    "- Each brief must be executable by a designer/editor without further data access.",
+    "- angle_stack: taxonomy variable ids joined with ' + ' (e.g. \"CN_Lifestyle + FW_BAB + TN_Emotional + HK_Story\"); use plain-language angles only when no variable fits.",
+    "- asset_type: one of static | video | carousel | ugc. priority: one of high | medium | low.",
+    ...matrixRules,
+    "- copy_architecture: fill hook, problem_or_value_setup, product_solution, proof, cta so a designer can execute the cell without further data access.",
+    "- creative_specifications: give format and (when known) dimensions, placement, production_requirements. Reflect broad/Advantage+ placements, not narrow targeting.",
+    "- success_criteria must be measurable; learning_objective states what the cell teaches.",
     "",
     "Return ONLY a raw JSON object (no markdown fences, no prose) with this exact shape:",
     JSON.stringify(
@@ -348,12 +434,25 @@ function briefsPrompt(pillars: Row[], evidence: Row): string {
             confidence: "optional string",
             message_pillar: "pillar_id from the list",
             data_insight: "string citing real numbers",
-            angle_stack: "VAR_A + VAR_B",
-            headline_directions: ["string"],
-            copy_directions: ["string"],
-            visual_direction: "string",
-            cta_guidance: "string",
-            target_icps: ["profile_id"],
+            target_icp: "profile_id of this column's ICP (matrix mode)",
+            concept_code: "CN_* concept code or short concept name",
+            angle_stack: "CN_A + FW_B + TN_C + HK_D",
+            performance_benchmark: "optional string citing the real baseline to beat",
+            matrix_position: "C1A — short label (matrix mode)",
+            isolated_variable: "the ONE variable this cell's row isolates",
+            hypothesis: "optional hypothesis id or statement",
+            control_reference: "optional control cell/pillar",
+            success_criteria: "measurable criteria",
+            learning_objective: "what this cell teaches",
+            format: "e.g. Static · Feed",
+            dimensions: "optional e.g. 1080x1350",
+            placement: "optional",
+            production_requirements: "optional",
+            hook: "copy hook",
+            problem_or_value_setup: "problem agitation or value setup",
+            product_solution: "the product solution",
+            proof: "proof element",
+            cta: "call to action",
           },
         ],
       },
@@ -361,7 +460,9 @@ function briefsPrompt(pillars: Row[], evidence: Row): string {
       2,
     ),
     "",
-    "Produce 3-6 briefs covering different pillars/asset types.",
+    hasMatrix
+      ? `Produce up to ${cellCap} briefs — one per grounded matrix cell.`
+      : "Produce 3-6 briefs covering different pillars/asset types.",
     "",
     "PILLARS:",
     JSON.stringify(pillarSummaries),
@@ -615,19 +716,77 @@ export async function startBriefsGeneration(accountId: string, createdBy: string
       422,
     );
   }
-  const { evidence } = await buildStrategyEvidence(accountId, String(account["name"] ?? accountId)).catch(() => ({
+  const { evidence, icpIds } = await buildStrategyEvidence(accountId, String(account["name"] ?? accountId)).catch(() => ({
     evidence: { note: "No analysis evidence available — briefs are grounded in the stored pillars only." } as Row,
     cellIds: new Set<string>(),
     icpIds: new Set<string>(),
   }));
   const runId = await startRun(accountId, "briefs", createdBy);
   const pillarIds = new Set(pillars.map((p) => String(p["pillar_id"])));
+
+  // Concept columns = one per real ICP profile, in a stable order. Column
+  // NUMBERING must line up with the account's historical MST grid, because
+  // the seed assembly applies the cell codes we generate (C1..Cn) to THAT
+  // fixed grid. Postgres row order for icp_profiles is unspecified, so we
+  // seed ordering + column ids from the grid's own columns[].{id,icp} and
+  // only fall back to a sorted profile list when no grid exists.
+  const mstModules = await rowsFor("account_modules", accountId, (q) => q.eq("module", "mst")).catch(
+    () => [] as Row[],
+  );
+  const gridColumns = (() => {
+    const grid = (mstModules[0]?.["payload"] as Row | undefined)?.["historical_matrix_4x4"] as
+      | Row
+      | undefined;
+    return grid && Array.isArray(grid["columns"]) ? (grid["columns"] as Row[]) : [];
+  })();
+
+  const icpProfiles = Array.isArray(evidence["icp_profiles"]) ? (evidence["icp_profiles"] as Row[]) : [];
+  const profileById = new Map(
+    icpProfiles
+      .map((p) => [String(p["profile_id"] ?? ""), p] as const)
+      .filter(([id]) => id.length > 0),
+  );
+  const nameFor = (id: string) => String(profileById.get(id)?.["profile_name"] ?? id);
+
+  let columns: BriefColumn[];
+  if (gridColumns.length > 0) {
+    const used = new Set<string>();
+    columns = gridColumns
+      .map((c) => ({
+        column_id: String(c["id"] ?? ""),
+        profile_id: String(c["icp"] ?? ""),
+        profile_name: String(c["name"] ?? "").replace(/\s+/g, " ").trim() || nameFor(String(c["icp"] ?? "")),
+      }))
+      .filter((c) => {
+        const ok =
+          c.column_id.length > 0 && c.profile_id.length > 0 && profileById.has(c.profile_id) && !used.has(c.profile_id);
+        if (ok) used.add(c.profile_id);
+        return ok;
+      });
+    // Real ICPs absent from the historical grid still deserve a column, given
+    // fresh non-colliding ids (past the grid's max C-number) so they can be
+    // tested; they just won't link to a historical grid column, which is honest.
+    const maxIdx = columns.reduce((m, c) => {
+      const n = Number(c.column_id.match(/^C(\d+)$/)?.[1] ?? 0);
+      return Number.isFinite(n) && n > m ? n : m;
+    }, 0);
+    let next = maxIdx + 1;
+    for (const id of [...profileById.keys()].sort()) {
+      if (used.has(id)) continue;
+      columns.push({ column_id: `C${next++}`, profile_id: id, profile_name: nameFor(id) });
+    }
+  } else {
+    columns = [...profileById.keys()]
+      .sort()
+      .map((id, i) => ({ column_id: `C${i + 1}`, profile_id: id, profile_name: nameFor(id) }));
+  }
+  const validProfileIds = new Set(columns.map((c) => c.profile_id));
   // Run-scope generated ids so ids from different runs never collide.
   const runTag = runId.slice(0, 8);
 
   void (async () => {
     try {
-      const output = await generateValidated(briefsPrompt(pillars, evidence), GeneratedBriefs);
+      const output = await generateValidated(briefsPrompt(pillars, evidence, columns), GeneratedBriefs);
 
       const invalid = output.briefs.filter((b) => !pillarIds.has(b.message_pillar));
       if (invalid.length > 0) {
@@ -642,6 +801,11 @@ export async function startBriefsGeneration(accountId: string, createdBy: string
       const insert = await supabase.from("imported_creative_briefs").insert(
         output.briefs.map((b, i) => {
           const briefId = `GEN_BRIEF_${runTag}_${i + 1}`;
+          // Drop a hallucinated ICP rather than fabricate a column↔ICP link;
+          // trust only ids that actually exist for this account.
+          const targetIcp = b.target_icp && (validProfileIds.has(b.target_icp) || icpIds.has(b.target_icp))
+            ? b.target_icp
+            : "";
           return {
             account_id: accountId,
             brief_id: briefId,
@@ -665,14 +829,31 @@ export async function startBriefsGeneration(accountId: string, createdBy: string
               strategic_foundation: {
                 message_pillar: b.message_pillar,
                 data_insight: b.data_insight,
+                target_icp: targetIcp,
+                concept_code: b.concept_code ?? null,
                 angle_stack: b.angle_stack,
-                target_icps: b.target_icps ?? [],
+                performance_benchmark: b.performance_benchmark ?? null,
               },
-              creative_direction: {
-                headline_directions: b.headline_directions ?? [],
-                copy_directions: b.copy_directions ?? [],
-                visual_direction: b.visual_direction ?? null,
-                cta_guidance: b.cta_guidance ?? null,
+              testing_framework: {
+                matrix_position: b.matrix_position ?? null,
+                isolated_variable: b.isolated_variable ?? null,
+                hypothesis: b.hypothesis ?? null,
+                control_reference: b.control_reference ?? null,
+                success_criteria: b.success_criteria ?? null,
+                learning_objective: b.learning_objective ?? null,
+              },
+              creative_specifications: {
+                format: b.format ?? b.asset_type ?? null,
+                dimensions: b.dimensions ?? null,
+                placement: b.placement ?? null,
+                production_requirements: b.production_requirements ?? null,
+              },
+              copy_architecture: {
+                hook: b.hook ?? null,
+                problem_agitation_or_value_setup: b.problem_or_value_setup ?? null,
+                product_solution: b.product_solution ?? null,
+                proof: b.proof ?? null,
+                cta: b.cta ?? null,
               },
             },
             source: "generated",
