@@ -672,6 +672,7 @@ function CreativeUploadSection({
   onChanged: () => void;
 }) {
   const [errors, setErrors] = useState<string[]>([]);
+  const [linkNotices, setLinkNotices] = useState<string[]>([]);
   const [queueTotal, setQueueTotal] = useState(0);
   const [queueIndex, setQueueIndex] = useState(0);
   const [currentFile, setCurrentFile] = useState<string | null>(null);
@@ -689,10 +690,12 @@ function CreativeUploadSection({
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setErrors([]);
+    setLinkNotices([]);
     const fileList = Array.from(files);
     setQueueTotal(fileList.length);
     const newlyStaged: string[] = [];
     const failures: string[] = [];
+    const notices: string[] = [];
 
     // Each file is staged independently so one bad/oversized file in a
     // multi-file selection doesn't block the rest from uploading — the
@@ -724,6 +727,12 @@ function CreativeUploadSection({
           setCurrentPct
         );
         newlyStaged.push(staged.import_id);
+        const unmatched = staged.link_result?.unmatched ?? [];
+        if (unmatched.length > 0) {
+          notices.push(
+            `${file.name}: staged, but ad name${unmatched.length > 1 ? "s" : ""} “${unmatched.join(", ")}” didn't match a live ad yet — remap below or it will link once analysis runs.`,
+          );
+        }
       } catch (err) {
         failures.push(`${file.name}: ${err instanceof Error ? err.message : "Upload failed."}`);
       }
@@ -734,6 +743,7 @@ function CreativeUploadSection({
       onChanged();
     }
     setErrors(failures);
+    setLinkNotices(notices);
     setQueueTotal(0);
     setQueueIndex(0);
     setCurrentFile(null);
@@ -784,6 +794,17 @@ function CreativeUploadSection({
           <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
           <div className="text-[11px] text-red-300 leading-relaxed space-y-0.5">
             {errors.map((msg, i) => (
+              <p key={i}>{msg}</p>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {linkNotices.length > 0 && (
+        <div className="flex items-start gap-2 p-2.5 rounded-lg border border-amber-400/25 bg-amber-400/[0.06]">
+          <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+          <div className="text-[11px] text-amber-300 leading-relaxed space-y-0.5">
+            {linkNotices.map((msg, i) => (
               <p key={i}>{msg}</p>
             ))}
           </div>

@@ -67,7 +67,7 @@ import {
   type WorkspaceReportSettings,
   type WorkspaceReport,
 } from "@workspace/db";
-import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, count, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { requireAuth } from "../middlewares/requireAuth";
 import { waitlistRateLimit } from "../middlewares/waitlistRateLimit";
@@ -90,6 +90,14 @@ import {
 } from "../lib/metrixSeedAssembly";
 import { randomBytes } from "node:crypto";
 import { getSupabase } from "../lib/supabase";
+import { parseIapCsv, IapCsvFormatError } from "../lib/iapCsvParser";
+import type { IapCsvClass } from "../lib/iapCsvSpec";
+import {
+  detectCreativeAssetKind,
+  creativeAssetTypeMismatch,
+  resolveCreativeLinkResult,
+  type CreativeLinkResult,
+} from "../lib/creativeAssetType";
 import { notifyRequestAccess } from "../lib/requestAccessNotification";
 import { logger } from "../lib/logger";
 import { getAppBaseUrl } from "../lib/appUrl";
@@ -500,7 +508,7 @@ async function syncCreativeAssetLinks(
   filename: string,
   previousAdNames: string[],
   nextAdNames: string[],
-): Promise<void> {
+): Promise<CreativeLinkResult> {
   const supabase = getSupabase();
   const fileUrl = manualImportFileUrl(accountId, importId);
 
@@ -515,6 +523,7 @@ async function syncCreativeAssetLinks(
     if (clear.error) throw new Error(clear.error.message);
   }
 
+  const result: CreativeLinkResult = { matched: [], unmatched: [] };
   if (nextAdNames.length > 0) {
     const link = await supabase
       .from("ads")
@@ -523,17 +532,22 @@ async function syncCreativeAssetLinks(
       .in("ad_name", nextAdNames)
       .select("ad_name");
     if (link.error) throw new Error(link.error.message);
-    const matched = new Set((link.data ?? []).map((r) => r["ad_name"] as string));
-    const unmatched = nextAdNames.filter((n) => !matched.has(n));
-    if (unmatched.length > 0) {
+    const linked = resolveCreativeLinkResult(
+      nextAdNames,
+      (link.data ?? []).map((r) => r["ad_name"] as string),
+    );
+    result.matched = linked.matched;
+    result.unmatched = linked.unmatched;
+    if (result.unmatched.length > 0) {
       logger.warn(
-        { accountId, importId, unmatched },
+        { accountId, importId, unmatched: result.unmatched },
         "syncCreativeAssetLinks: ad name(s) had no matching ads row — asset staged but not linked",
       );
     }
   }
 
   invalidateMetrixSeedCache();
+  return result;
 }
 
 router.post("/metrix/accounts", requireAuth, async (req, res) => {
@@ -580,11 +594,32 @@ router.post("/metrix/accounts", requireAuth, async (req, res) => {
     if (insert.error) throw new Error(insert.error.message);
 
     // Grant the creator access (idempotent) — for members this is what
-    // makes the new account visible in their filtered seed.
-    await db
-      .insert(userAdAccountsTable)
-      .values({ userId: user.id, adAccountId: accountId })
-      .onConflictDoNothing();
+    // makes the new account visible in their filtered seed. The account row
+    // lives in Supabase and the grant lives in Replit Postgres, so there is
+    // no shared transaction; if the grant fails we compensate by deleting the
+    // just-created account row so a half-failure never strands an ungranted,
+    // orphaned account that nobody can see or manage.
+    try {
+      await db
+        .insert(userAdAccountsTable)
+        .values({ userId: user.id, adAccountId: accountId })
+        .onConflictDoNothing();
+    } catch (grantErr) {
+      req.log.error(
+        { err: grantErr, accountId },
+        "Access grant failed after account insert — rolling back the orphaned account",
+      );
+      const rollback = await supabase.from("ad_accounts").delete().eq("id", accountId);
+      if (rollback.error) {
+        req.log.error(
+          { err: rollback.error, accountId },
+          "Failed to roll back orphaned account after grant failure",
+        );
+      }
+      throw new Error(
+        "The account was created but access couldn't be granted, so it was rolled back. Please try again.",
+      );
+    }
     invalidateMetrixSeedCache();
 
     req.log.info({ accountId, name }, "Manual ad account created");
@@ -605,6 +640,12 @@ router.post("/metrix/accounts", requireAuth, async (req, res) => {
 
 const MAX_MANUAL_IMPORT_BYTES = 8 * 1024 * 1024;
 const BASE64_RE = /^[A-Za-z0-9+/\-_]+={0,2}$/;
+
+/** Maps a performance-CSV import kind to its canonical IAP CSV template class. */
+const PERFORMANCE_CSV_CLASS: Record<string, IapCsvClass> = {
+  performance_demo_csv: "demographic",
+  performance_placement_csv: "device_placement",
+};
 
 router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (req, res) => {
   const accountId = String(req.params["accountId"]);
@@ -655,6 +696,42 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
       return;
     }
 
+    // ── Upload-time validation ────────────────────────────────────────
+    // The two performance CSVs are validated against their exact Meta pivot
+    // export template NOW, so a malformed file is rejected at upload instead
+    // of silently failing later at analysis-run time. Validation only checks
+    // shape — no performance numbers are stored or fabricated from the parse.
+    const csvClass = PERFORMANCE_CSV_CLASS[parsed.data.kind];
+    if (csvClass) {
+      try {
+        const text = content.toString("utf8");
+        const result = parseIapCsv(text, csvClass);
+        if (result.rows.length === 0) {
+          res.status(422).json({
+            message: "This export has a valid header but no data rows. Re-export it with the campaign's rows included.",
+          });
+          return;
+        }
+      } catch (err) {
+        if (err instanceof IapCsvFormatError) {
+          res.status(422).json({ message: err.message });
+          return;
+        }
+        throw err;
+      }
+    }
+
+    // Creative files are checked for a filename-extension / real-content
+    // mismatch (e.g. a video renamed .png), which would otherwise render as
+    // a broken image. Only a proven contradiction is rejected.
+    if (parsed.data.kind === "creative_asset") {
+      const mismatch = creativeAssetTypeMismatch(parsed.data.filename, content);
+      if (mismatch) {
+        res.status(422).json({ message: mismatch });
+        return;
+      }
+    }
+
     // Staged only: the file is stored raw for the analysis pipeline. It is
     // never parsed into performance data at upload time — no fabricated
     // numbers appear in the app from an upload alone.
@@ -677,8 +754,9 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
     if (insert.error) throw new Error(insert.error.message);
 
     const importId = String(insert.data["id"]);
+    let linkResult: CreativeLinkResult | null = null;
     if (parsed.data.kind === "creative_asset" && (parsed.data.ad_names?.length ?? 0) > 0) {
-      await syncCreativeAssetLinks(accountId, importId, parsed.data.filename, [], parsed.data.ad_names!);
+      linkResult = await syncCreativeAssetLinks(accountId, importId, parsed.data.filename, [], parsed.data.ad_names!);
     }
 
     req.log.info(
@@ -692,6 +770,9 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
         filename: parsed.data.filename,
         size_bytes: content.length,
         note: "File staged for the analysis pipeline. Performance data appears only after an analysis run processes it — nothing is parsed or fabricated at upload time.",
+        ...(linkResult
+          ? { link_result: { matched: linkResult.matched, unmatched: linkResult.unmatched } }
+          : {}),
       }),
     );
   } catch (err) {
@@ -790,7 +871,7 @@ router.patch("/metrix/accounts/:accountId/manual-imports/:importId", requireAuth
       .single();
     if (error) throw new Error(error.message);
 
-    await syncCreativeAssetLinks(
+    const linkResult = await syncCreativeAssetLinks(
       accountId,
       importId,
       existing.data[0]!["filename"],
@@ -810,6 +891,7 @@ router.patch("/metrix/accounts/:accountId/manual-imports/:importId", requireAuth
         match_method: data["match_method"] ?? null,
         status: data["status"],
         created_at: String(data["created_at"]),
+        link_result: { matched: linkResult.matched, unmatched: linkResult.unmatched },
       }),
     );
   } catch (err) {
@@ -1055,6 +1137,79 @@ router.get("/metrix/agent-waitlist", requireAdmin, async (req, res) => {
     total,
   });
   res.json(data);
+});
+
+// Server-streamed CSV export of the entire waitlist in a single request.
+// The whole list is written straight to the response in keyset-paged batches
+// (no client-side page loop, no full-table buffering in memory), so the
+// download stays fast and constant-memory even at tens of thousands of rows.
+router.get("/metrix/agent-waitlist/export.csv", requireAdmin, async (req, res) => {
+  const escapeCsv = (value: string) =>
+    /[",\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader(
+    "Content-Disposition",
+    'attachment; filename="metrix-agent-waitlist.csv"',
+  );
+  res.write("email,status,joined_at,approved_at\n");
+
+  const BATCH = 1000;
+  // Keyset pagination on the (created_at, id) order — stable and index-friendly
+  // regardless of size, and immune to offset drift if rows are added mid-export.
+  let cursor: { createdAt: Date; id: number } | null = null;
+  try {
+    for (;;) {
+      const where: SQL | undefined = cursor
+        ? sql`(${agentWaitlistTable.createdAt}, ${agentWaitlistTable.id}) < (${cursor.createdAt.toISOString()}, ${cursor.id})`
+        : undefined;
+      const batch: {
+        id: number;
+        email: string;
+        status: string;
+        approvedAt: Date | null;
+        createdAt: Date;
+      }[] = await db
+        .select({
+          id: agentWaitlistTable.id,
+          email: agentWaitlistTable.email,
+          status: agentWaitlistTable.status,
+          approvedAt: agentWaitlistTable.approvedAt,
+          createdAt: agentWaitlistTable.createdAt,
+        })
+        .from(agentWaitlistTable)
+        .where(where)
+        .orderBy(desc(agentWaitlistTable.createdAt), desc(agentWaitlistTable.id))
+        .limit(BATCH);
+
+      if (batch.length === 0) break;
+      let chunk = "";
+      for (const row of batch) {
+        chunk +=
+          [
+            escapeCsv(row.email),
+            escapeCsv(row.status),
+            row.createdAt.toISOString(),
+            row.approvedAt ? row.approvedAt.toISOString() : "",
+          ].join(",") + "\n";
+      }
+      res.write(chunk);
+
+      const last = batch[batch.length - 1]!;
+      cursor = { createdAt: last.createdAt, id: last.id };
+      if (batch.length < BATCH) break;
+    }
+    res.end();
+  } catch (err) {
+    req.log.error({ err }, "Failed to stream waitlist CSV export");
+    // Headers/first bytes may already be flushed; end the stream rather than
+    // sending a JSON error that would corrupt the partial CSV.
+    if (!res.headersSent) {
+      res.status(500).json({ message: "Could not export the waitlist." });
+    } else {
+      res.end();
+    }
+  }
 });
 
 router.post(
@@ -1800,44 +1955,59 @@ router.post("/metrix/workspaces/:workspaceId/invites", requireAuth, requireWorks
     return;
   }
 
-  if (team.seatLimit !== null) {
-    const pendingRows = await db
-      .select({ email: workspaceInvitesTable.email })
-      .from(workspaceInvitesTable)
-      .where(
-        and(
-          eq(workspaceInvitesTable.workspaceId, workspaceId),
-          eq(workspaceInvitesTable.status, "invited"),
-        ),
-      );
-    const pendingCount = pendingRows.filter(
-      (row) => !team.memberEmails.has(row.email.toLowerCase()),
-    ).length;
-    const seatsUsed = team.memberEmails.size + pendingCount;
+  // Seat check + insert must be atomic, or two invites racing at the last
+  // free seat can both pass the check and both insert, over-booking the
+  // workspace. We serialize per-workspace with a transaction-scoped advisory
+  // lock, then re-count pending invites and insert inside the same
+  // transaction so the count can't go stale between check and write.
+  let seatFull = false;
+  const inserted = await db.transaction(async (tx) => {
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`metrix-invite:${workspaceId}`}))`);
 
-    if (seatsUsed >= team.seatLimit) {
-      res.status(409).json({
-        message: `This workspace is full: all ${team.seatLimit} seats are in use. Remove a member or cancel a pending invite before inviting someone new.`,
-      });
-      return;
+    if (team.seatLimit !== null) {
+      const pendingRows = await tx
+        .select({ email: workspaceInvitesTable.email })
+        .from(workspaceInvitesTable)
+        .where(
+          and(
+            eq(workspaceInvitesTable.workspaceId, workspaceId),
+            eq(workspaceInvitesTable.status, "invited"),
+          ),
+        );
+      const pendingCount = pendingRows.filter(
+        (row) => !team.memberEmails.has(row.email.toLowerCase()),
+      ).length;
+      const seatsUsed = team.memberEmails.size + pendingCount;
+
+      if (seatsUsed >= team.seatLimit) {
+        seatFull = true;
+        return [] as (typeof workspaceInvitesTable.$inferSelect)[];
+      }
     }
-  }
 
-  const inserted = await db
-    .insert(workspaceInvitesTable)
-    .values({
-      workspaceId,
-      email,
-      role,
-      status: "invited",
-      canManageTeam: manageTeam,
-      canViewAgencyRollups: viewAgencyRollups,
-      adAccountIds,
-    })
-    .onConflictDoNothing({
-      target: [workspaceInvitesTable.workspaceId, workspaceInvitesTable.email],
-    })
-    .returning();
+    return tx
+      .insert(workspaceInvitesTable)
+      .values({
+        workspaceId,
+        email,
+        role,
+        status: "invited",
+        canManageTeam: manageTeam,
+        canViewAgencyRollups: viewAgencyRollups,
+        adAccountIds,
+      })
+      .onConflictDoNothing({
+        target: [workspaceInvitesTable.workspaceId, workspaceInvitesTable.email],
+      })
+      .returning();
+  });
+
+  if (seatFull) {
+    res.status(409).json({
+      message: `This workspace is full: all ${team.seatLimit} seats are in use. Remove a member or cancel a pending invite before inviting someone new.`,
+    });
+    return;
+  }
 
   if (inserted.length > 0) {
     // Single-step invite: the account is provisioned immediately (temp

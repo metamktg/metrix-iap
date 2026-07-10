@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { CreativeLinkResult } from './creativeLinkResult';
 import type { ManualImportKind } from './manualImportKind';
 import type { ManualImportMatchMethod } from './manualImportMatchMethod';
 import type { ManualImportStatus } from './manualImportStatus';
@@ -21,4 +22,5 @@ export interface ManualImport {
   match_method?: ManualImportMatchMethod;
   status: ManualImportStatus;
   created_at: string;
+  link_result?: CreativeLinkResult;
 }

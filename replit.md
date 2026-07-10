@@ -45,6 +45,7 @@ Metrix IAP is an ad-performance analysis platform: agencies connect Meta ad acco
 - Hard DB constraints: no ROAS alert rules, BSIL suggestions campaign/ad_set scope only, manual creative intake ≥ 5 assets.
 - Approving a user also provisions a Supabase Auth user via `@workspace/auth-mirror` (idempotent, non-fatal on failure) for FK targets only — login stays custom session auth.
 - Security tests: `artifacts/api-server/src/lib/__tests__/metrixOfficialSecurity.test.ts` (rolled-back transactions, role impersonation) — fail loudly if the official schema isn't deployed.
+- Importer schema RLS: the importer tables (`scripts/src/metrix-supabase/schema.sql`, ad data + `request_access` PII) are reached only by the API server's service_role key, but PostgREST still exposes `public` tables to the browser-embedded anon key. An idempotent RLS block at the end of `schema.sql` enables RLS (deny-by-default) and revokes anon/authenticated grants on every importer table so the anon key gets a hard 401; service_role/superuser (BYPASSRLS) are unaffected.
 
 ## Stack
 

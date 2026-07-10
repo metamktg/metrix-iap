@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { useLocation, useSearch } from "wouter";
 import { ConnectMetaDialog, ManualImportDialog } from "./ConnectAccountDialogs";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
-import { Plug, FileUp, Clock, Database, Info, ArrowRight, CheckSquare, Square, CalendarRange, CalendarX2 } from "lucide-react";
+import { Plug, FileUp, Clock, Database, Info, ArrowRight, CheckSquare, Square, CalendarRange, CalendarX2, AlertTriangle } from "lucide-react";
 import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
 import { DataSourceBadge } from "@/components/ui/DataSourceBadge";
 import { resolveVariableLabel } from "@/lib/variable-registry";
@@ -419,6 +419,33 @@ export function useFocusParam(): string | null {
   const search = useSearch();
   const params = new URLSearchParams(search);
   return params.get("focus");
+}
+
+// Detects a deep-link (`?focus=<id>`) that no longer resolves to any item in
+// the current data set (e.g. the report was regenerated, the cell rolled off
+// the date window, or the item was deleted). Returns true only once the data
+// is present but the id is absent — never while data is still loading.
+export function useStaleFocus(
+  focus: string | null,
+  hasData: boolean,
+  resolved: boolean,
+): boolean {
+  return Boolean(focus) && hasData && !resolved;
+}
+
+export function StaleFocusNotice({ label = "item" }: { label?: string }) {
+  return (
+    <div
+      className="mx-4 mt-3 flex items-start gap-2.5 rounded-lg border border-amber-400/20 bg-amber-400/[0.04] px-3 py-2.5"
+      data-testid="notice-stale-focus"
+    >
+      <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+      <p className="text-[11px] text-foreground/75 leading-relaxed">
+        The linked {label} is no longer available — it may have been removed, regenerated, or fallen
+        outside the current date range.
+      </p>
+    </div>
+  );
 }
 
 // ─── Metric selection bar ─────────────────────────────────────────────

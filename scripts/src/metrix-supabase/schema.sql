@@ -686,3 +686,41 @@ create index if not exists manual_analysis_runs_account_idx
 
 create unique index if not exists manual_analysis_runs_one_running
   on manual_analysis_runs (account_id) where status = 'running';
+
+-- ─────────────────────────────────────────────────────────────────────
+-- Row Level Security (platform integrity).
+--
+-- Every table in this importer schema holds either real ad-performance data
+-- or request-access PII (names, emails, phone numbers). They are ONLY ever
+-- reached by the API server using the Supabase SERVICE_ROLE key (which has
+-- BYPASSRLS) — the app frontends never talk to Supabase directly. The
+-- browser-exposed anon / publishable key must therefore never be able to
+-- read a single row.
+--
+-- Enabling RLS with NO policies denies every non-BYPASSRLS role (anon,
+-- authenticated) by default, and REVOKE strips the default PostgREST grants
+-- so those roles get a hard "permission denied" rather than a silent empty
+-- result. service_role and the direct superuser importer connection are
+-- unaffected. Idempotent — safe to re-run on every import.
+-- ─────────────────────────────────────────────────────────────────────
+do $$
+declare
+  t text;
+  importer_tables text[] := array[
+    'ad_accounts', 'ads', 'iap_runs', 'ad_performance', 'demographic_performance',
+    'placement_performance', 'platform_performance', 'device_performance',
+    'concept_performance', 'campaign_windows', 'data_quality_flags',
+    'concept_intelligence', 'ad_traffic_quality', 'failure_patterns',
+    'icp_profiles', 'message_pillars', 'variable_combinations', 'testing_hypotheses',
+    'imported_creative_briefs', 'library_cells', 'library_cell_performance',
+    'variable_performance', 'demographic_signal', 'placement_signal', 'copy_library',
+    'variable_registry', 'signal_cards', 'account_modules', 'app_config',
+    'request_access', 'meta_oauth_pending', 'connected_ad_accounts', 'report_pulls',
+    'report_rows', 'generation_runs', 'manual_imports', 'manual_analysis_runs'
+  ];
+begin
+  foreach t in array importer_tables loop
+    execute format('alter table if exists public.%I enable row level security', t);
+    execute format('revoke all on public.%I from anon, authenticated', t);
+  end loop;
+end $$;

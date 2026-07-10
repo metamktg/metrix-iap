@@ -209,9 +209,13 @@ export function slugifyColumn(name: string): string {
 /** Matches a raw CSV header against a canonical column name, tolerating the {ACCOUNT_CURRENCY} placeholder (e.g. "Amount spent (USD)"). */
 export function headerMatchesColumn(header: string, canonical: string): boolean {
   if (!canonical.includes("{ACCOUNT_CURRENCY}")) return header.trim() === canonical;
-  const prefix = canonical.split("{ACCOUNT_CURRENCY}")[0]!;
-  const re = new RegExp(`^${prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\([A-Za-z]{3}\\)$`);
-  return re.test(header.trim());
+  // Escape the whole canonical name, then swap the (now-escaped) placeholder
+  // for a 3-letter currency-code pattern. The surrounding parentheses live in
+  // the canonical string itself, so they must not be re-added here.
+  const pattern = canonical
+    .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    .replace("\\{ACCOUNT_CURRENCY\\}", "[A-Za-z]{3}");
+  return new RegExp(`^${pattern}$`).test(header.trim());
 }
 
 export type IapCsvMetricGroup = { name: string; required: boolean; columns: readonly string[] };

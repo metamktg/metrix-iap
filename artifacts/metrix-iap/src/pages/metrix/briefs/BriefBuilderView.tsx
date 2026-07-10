@@ -10,7 +10,7 @@ import { getAdAccount, getBriefBuilder, getStrategyData, getAnalysisData, getMST
 import {
   ModuleHeader, ScopeBanner, ModuleTabs, ModuleScopeGate, PendingState,
   MetricTile, CaveatNote, CrossLink, useFocusParam,
-  RangeScopeBar, NoDataInRangeState,
+  RangeScopeBar, NoDataInRangeState, StaleFocusNotice,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import {
@@ -106,6 +106,9 @@ export function BriefBuilderView() {
               }
             />
             <ScopeBanner account={acct} />
+            {focus && !briefs.some((b) => b.id === focus) && (
+              <StaleFocusNotice label="brief" />
+            )}
             <RangeScopeBar grainNote="Briefs derive from the account's full flight window — this import has no daily grain." />
             {generation.lastError && (
               <div className="px-6 pt-4">

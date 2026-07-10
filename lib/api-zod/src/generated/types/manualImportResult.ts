@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { CreativeLinkResult } from './creativeLinkResult';
 import type { ManualImportResultStatus } from './manualImportResultStatus';
 
 export interface ManualImportResult {
@@ -14,4 +15,5 @@ export interface ManualImportResult {
   size_bytes: number;
   /** Honest processing note (staged for analysis, not parsed into performance data). */
   note: string;
+  link_result?: CreativeLinkResult;
 }

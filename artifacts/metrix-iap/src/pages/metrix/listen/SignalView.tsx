@@ -10,7 +10,7 @@ import { getAdAccount, getListenSignals } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ConfidenceBadge, ModuleTabs, ModuleScopeGate,
   PendingState, MetricTile, ImpactBadge, ScopeBadge, CrossLink, useFocusParam,
-  RangeScopeBar, NoDataInRangeState,
+  RangeScopeBar, NoDataInRangeState, StaleFocusNotice,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
@@ -63,6 +63,9 @@ export function SignalView() {
               table="signal_cards"
             />
             <ScopeBanner account={acct} />
+            {focus && !signals.some((s) => s.id === focus) && (
+              <StaleFocusNotice label="signal" />
+            )}
             <RangeScopeBar grainNote="Signals derive from the account's full flight window — this import has no daily grain." />
 
             {!rangeHasData ? (

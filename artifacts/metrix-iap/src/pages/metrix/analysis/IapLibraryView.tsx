@@ -12,7 +12,7 @@ import {
   ModuleHeader, ScopeBanner, ModuleTabs, ModuleScopeGate, PendingState,
   MetricTile, CaveatNote, MetricSelectionBar, CrossLink, useFocusParam,
   readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel,
-  RangeScopeBar, NoDataInRangeState,
+  RangeScopeBar, NoDataInRangeState, StaleFocusNotice,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { useCellRangeScope } from "@/lib/date-scope";
@@ -114,6 +114,9 @@ export function IapLibraryView() {
               table="performance_by_cell, v3_variable_performance"
             />
             <ScopeBanner account={acct} />
+            {focus && !a.performance_by_cell.some((r) => r.cell_id === focus) && (
+              <StaleFocusNotice label="creative cell" />
+            )}
             <MetricSelectionBar events={allEvents} isSelected={isSelected} onToggle={toggle} />
             <RangeScopeBar grainNote="Cell and variable metrics aggregate each creative's full flight window — this import has no daily grain." />
 

@@ -32,7 +32,16 @@ interface TableBlock {
   headers: string[];
   rows: string[][];
 }
-export type ReportBlock = TextBlock | StatsBlock | TableBlock;
+interface ChartBlock {
+  kind: "chart";
+  /** Only horizontal bar charts are rendered today; kept explicit for future types. */
+  chartType: "bar";
+  title: string;
+  /** Value formatting for axis/labels. */
+  unit: "usd" | "num" | "pct";
+  data: { label: string; value: number }[];
+}
+export type ReportBlock = TextBlock | StatsBlock | TableBlock | ChartBlock;
 
 export interface ReportSection {
   title: string;
@@ -92,6 +101,12 @@ function pct(n: number | null | undefined): string {
 
 function slugify(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 64) || "report";
+}
+
+function fmtChartValue(n: number, unit: ChartBlock["unit"]): string {
+  if (unit === "usd") return usd(n);
+  if (unit === "pct") return pct(n);
+  return num(n);
 }
 
 // ─── Section content builders ─────────────────────────────────────────
@@ -169,6 +184,14 @@ function buildSectionBlocks(sectionTitle: string, seed: MetrixSeed, adAccountId:
       });
       const events = Object.entries(summary.bottom_line_totals ?? {});
       if (events.length > 0) {
+        const spendByEvent = events
+          .map(([event, v]) => ({ label: event, value: v.spend }))
+          .filter((d) => d.value > 0)
+          .sort((a, b) => b.value - a.value)
+          .slice(0, 6);
+        if (spendByEvent.length > 1) {
+          blocks.push({ kind: "chart", chartType: "bar", title: "Spend by result event", unit: "usd", data: spendByEvent });
+        }
         blocks.push({
           kind: "table",
           caption: "Bottom-line totals by result event",
@@ -201,7 +224,17 @@ function buildSectionBlocks(sectionTitle: string, seed: MetrixSeed, adAccountId:
 
   if (t.includes("cell performance") || t.includes("creative cell")) {
     if (!analysis?.performance_by_cell?.length) return [];
-    return [cellRows(analysis.performance_by_cell)];
+    const topSpend = [...analysis.performance_by_cell]
+      .sort((a, b) => b["Amount spent (USD)"] - a["Amount spent (USD)"])
+      .slice(0, 6)
+      .map((r) => ({ label: r.cell_id, value: r["Amount spent (USD)"] }))
+      .filter((d) => d.value > 0);
+    const blocks: ReportBlock[] = [];
+    if (topSpend.length > 1) {
+      blocks.push({ kind: "chart", chartType: "bar", title: "Top creative cells by spend", unit: "usd", data: topSpend });
+    }
+    blocks.push(cellRows(analysis.performance_by_cell));
+    return blocks;
   }
 
   if (t.includes("variable performance")) {
@@ -231,6 +264,17 @@ function buildSectionBlocks(sectionTitle: string, seed: MetrixSeed, adAccountId:
 
   if (t.includes("placement")) {
     const blocks: ReportBlock[] = [];
+    const placementSource = analysis?.v3_placement_signal?.length
+      ? analysis.v3_placement_signal
+      : analysis?.c4e_placement_signal ?? [];
+    const spendByPlacement = [...placementSource]
+      .sort((a, b) => b["Amount spent (USD)"] - a["Amount spent (USD)"])
+      .slice(0, 6)
+      .map((r) => ({ label: r.Placement, value: r["Amount spent (USD)"] }))
+      .filter((d) => d.value > 0);
+    if (spendByPlacement.length > 1) {
+      blocks.push({ kind: "chart", chartType: "bar", title: "Spend by placement", unit: "usd", data: spendByPlacement });
+    }
     if (analysis?.v3_placement_signal?.length) blocks.push(placementRows(analysis.v3_placement_signal, "V3 placement signal"));
     if (analysis?.c4e_placement_signal?.length) blocks.push(placementRows(analysis.c4e_placement_signal, "C4E placement signal"));
     return blocks;
@@ -332,9 +376,43 @@ function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-function renderBlockHtml(block: ReportBlock): string {
+function renderChartHtml(block: ChartBlock, accent: string): string {
+  const rowH = 26;
+  const gap = 8;
+  const labelW = 150;
+  const valueW = 92;
+  const barMaxW = 360;
+  const width = labelW + barMaxW + valueW;
+  const height = block.data.length * (rowH + gap) + 34;
+  const max = Math.max(...block.data.map((d) => d.value), 1);
+  const bars = block.data
+    .map((d, i) => {
+      const y = 30 + i * (rowH + gap);
+      const w = Math.max(2, Math.round((d.value / max) * barMaxW));
+      return `
+      <text x="0" y="${y + rowH / 2 + 4}" class="c-label">${esc(d.label.length > 26 ? d.label.slice(0, 25) + "…" : d.label)}</text>
+      <rect x="${labelW}" y="${y}" width="${w}" height="${rowH}" rx="3" fill="${accent}" fill-opacity="0.82" />
+      <text x="${labelW + w + 6}" y="${y + rowH / 2 + 4}" class="c-value">${esc(fmtChartValue(d.value, block.unit))}</text>`;
+    })
+    .join("");
+  return `<figure class="chart">
+    <figcaption>${esc(block.title)}</figcaption>
+    <svg viewBox="0 0 ${width} ${height}" width="100%" role="img" aria-label="${esc(block.title)}" preserveAspectRatio="xMinYMin meet" style="max-width:${width}px">
+      <style>
+        .c-label { font-family: Arial, Helvetica, sans-serif; font-size: 11px; fill: #374151; }
+        .c-value { font-family: Arial, Helvetica, sans-serif; font-size: 11px; font-weight: 700; fill: #1a1a2e; }
+      </style>
+      ${bars}
+    </svg>
+  </figure>`;
+}
+
+function renderBlockHtml(block: ReportBlock, accent: string): string {
   if (block.kind === "text") {
     return `<p class="body-text">${esc(block.text)}</p>`;
+  }
+  if (block.kind === "chart") {
+    return renderChartHtml(block, accent);
   }
   if (block.kind === "stats") {
     return `<table class="stats"><tr>${block.items
@@ -359,7 +437,7 @@ export function renderReportHtml(model: ReportModel): string {
       (s, i) => `
       <section>
         <h2><span class="sec-num">${String(i + 1).padStart(2, "0")}</span> ${esc(s.title)}</h2>
-        ${s.blocks.map(renderBlockHtml).join("\n")}
+        ${s.blocks.map((b) => renderBlockHtml(b, accent)).join("\n")}
       </section>`,
     )
     .join("\n");
@@ -390,6 +468,8 @@ export function renderReportHtml(model: ReportModel): string {
   table.data th { text-align: left; background: #f3f4f6; padding: 6px 8px; border: 1px solid #e5e7eb; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
   table.data td { padding: 6px 8px; border: 1px solid #e5e7eb; }
   .footer { border-top: 1px solid #e5e7eb; margin-top: 36px; padding-top: 14px; font-family: Arial, Helvetica, sans-serif; font-size: 10px; color: #9ca3af; }
+  figure.chart { margin: 0 0 16px; padding: 0; }
+  figure.chart figcaption { font-family: Arial, Helvetica, sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: #6b7280; margin-bottom: 6px; }
 </style>
 </head>
 <body>
@@ -491,6 +571,34 @@ async function downloadPdf(model: ReportModel, filename: string): Promise<void> 
         ensureRoom(lines.length * 13 + 8);
         doc.text(lines, margin, y);
         y += lines.length * 13 + 8;
+      } else if (block.kind === "chart") {
+        const rowH = 14;
+        const gap = 6;
+        const labelW = 120;
+        const valueW = 70;
+        const barMaxW = maxWidth - labelW - valueW;
+        const max = Math.max(...block.data.map((d) => d.value), 1);
+        ensureRoom(18 + block.data.length * (rowH + gap) + 10);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(7.5);
+        doc.setTextColor(107, 114, 128);
+        doc.text(block.title.toUpperCase(), margin, y);
+        y += 12;
+        for (const d of block.data) {
+          const w = Math.max(1.5, (d.value / max) * barMaxW);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(8);
+          doc.setTextColor(55, 65, 81);
+          const label = d.label.length > 22 ? d.label.slice(0, 21) + "…" : d.label;
+          doc.text(label, margin, y + rowH - 4);
+          doc.setFillColor(...accent);
+          doc.rect(margin + labelW, y, w, rowH, "F");
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(26, 26, 46);
+          doc.text(fmtChartValue(d.value, block.unit), margin + labelW + w + 4, y + rowH - 4);
+          y += rowH + gap;
+        }
+        y += 6;
       } else if (block.kind === "stats") {
         autoTable(doc, {
           startY: y,
