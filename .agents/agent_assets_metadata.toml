@@ -1,5 +1,52 @@
 uploads = []
-generated = []
+
+[[generated]]
+id = "slnGC3BtSxYHEJ3ZIX0mQ"
+uri = "file://artifacts/mockup-sandbox/public/images/c1a.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "6Rm3IV-RXJAXCpZci1114"
+uri = "file://artifacts/mockup-sandbox/public/images/c1d.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "GxpE9b3VFeai-VQpz0u36"
+uri = "file://artifacts/mockup-sandbox/public/images/c2b.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "_b7tWvFM8R9vm3aJY_CCN"
+uri = "file://artifacts/mockup-sandbox/public/images/c2c.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "J0ogKqCh_tWarYjM7TT9u"
+uri = "file://artifacts/mockup-sandbox/public/images/c3b.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "RLX-hotrRKLIudI38wyxp"
+uri = "file://artifacts/mockup-sandbox/public/images/c3c.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "nPOkamB0bOvw26RvzLbrJ"
+uri = "file://artifacts/mockup-sandbox/public/images/c4a.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "owoQMdR9Rh_ODi_v5Axh-"
+uri = "file://artifacts/mockup-sandbox/public/images/c4d.png"
+type = "image"
+title = "generated_image"
 
 [[outputs]]
 id = "1M_NsCzXA7GT4ZUTDR5-7"
