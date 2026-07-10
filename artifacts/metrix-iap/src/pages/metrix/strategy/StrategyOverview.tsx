@@ -14,6 +14,7 @@ import { useDateRange } from "@/contexts/DateRangeContext";
 import {
   useGenerationRun, GenerateButton, ProvenanceBadge, GenerationErrorNote,
 } from "@/components/generation/GenerationControls";
+import { VariableStackChips, IcpChips, playbookHasContent, ScalingPlaybookLanes } from "./strategyShared";
 import { Compass, Map, Users, ListChecks } from "lucide-react";
 
 const SECTION = "Strategy · 04";
@@ -130,10 +131,20 @@ export function StrategyOverview() {
               <SectionCard title="Message pillars" desc="Validated message directions this account's strategy stands on." table="message_pillars">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {pillars.map((p) => (
-                    <div key={p.id} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-1.5">
+                    <div key={p.id} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2">
                       <span className="text-[10px] font-mono text-muted-foreground/70">{p.id}</span>
                       <p className="text-[13px] font-semibold text-foreground leading-tight">{p.label}</p>
                       <p className="text-[11px] text-muted-foreground/80 leading-relaxed">{p.plain_descriptor}</p>
+                      {p.funnel_application && (
+                        <p className="text-[10.5px] text-foreground/70 leading-relaxed">
+                          <span className="font-semibold uppercase tracking-widest text-[9px] text-muted-foreground/70 mr-1">Funnel</span>
+                          {p.funnel_application}
+                        </p>
+                      )}
+                      <div className="mt-auto pt-1 space-y-1.5">
+                        <VariableStackChips stack={p.variable_stack} />
+                        <IcpChips ids={p.target_icps} profiles={strategy.icp_profiles} />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -141,6 +152,16 @@ export function StrategyOverview() {
                   <CrossLink to="/app/strategy/map" label="See the full strategy map" />
                 </div>
               </SectionCard>
+
+              {playbookHasContent(strategy.scaling_playbook) && (
+                <SectionCard
+                  title="Scaling playbook"
+                  desc="Where the analysis says to push, tune, prove, look next — and what to stay away from."
+                  table="scaling_playbook"
+                >
+                  <ScalingPlaybookLanes playbook={strategy.scaling_playbook!} />
+                </SectionCard>
+              )}
 
               <SectionCard title="Strategy modules" desc="Each module reads the same account strategy from a different angle.">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

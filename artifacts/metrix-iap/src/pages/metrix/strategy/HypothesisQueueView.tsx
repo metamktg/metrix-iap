@@ -1,6 +1,7 @@
 // ─── Strategy · Hypothesis Queue ──────────────────────────────────────
 // Active hypotheses queued from analysis, plus the message pillars they
-// build on. Drill-down drawer with cross-links into Analysis and Briefs.
+// build on. Every field the engine produced is surfaced: test variant,
+// isolated variable, success criteria, expected impact, status, risk.
 
 import { useState, useEffect } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
@@ -11,25 +12,36 @@ import {
   MetricTile, CrossLink, useFocusParam,
   RangeScopeBar, NoDataInRangeState,
 } from "../shared";
+import {
+  HypothesisStatusBadge, PillarDetailSections, VariableStackChips, pillarHasDetails,
+} from "./strategyShared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
-import { cn } from "@/lib/utils";
-import { Layers, FlaskConical, AlertTriangle, ArrowRight } from "lucide-react";
+import { Layers, FlaskConical, AlertTriangle, ArrowRight, Beaker, Crosshair, Target, TrendingUp } from "lucide-react";
 import type { ActiveHypothesis } from "@/lib/data/seedTypes";
 
 const SECTION = "Strategy · 04";
 
-const STATUS_STYLE: Record<string, string> = {
-  ready_for_brief_builder: "bg-emerald-400/10 text-emerald-400 border-emerald-400/20",
-  validation_required: "bg-blue-400/10 text-blue-300 border-blue-400/20",
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  ready_for_brief_builder: "Ready for Brief Builder",
-  validation_required: "Validation required",
-};
-
 type Tab = "queue" | "pillars";
+
+/** Compact labeled fact inside a hypothesis card. */
+function HypFact({
+  label, value, Icon,
+}: {
+  label: string;
+  value: string;
+  Icon: React.ComponentType<{ className?: string }>;
+}) {
+  return (
+    <div className="min-w-0">
+      <div className="flex items-center gap-1 mb-0.5">
+        <Icon className="w-2.5 h-2.5 text-muted-foreground/60" />
+        <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
+      </div>
+      <p className="text-[11px] text-foreground/80 leading-snug">{value}</p>
+    </div>
+  );
+}
 
 export function HypothesisQueueView() {
   const seed = useMetrixSeed();
@@ -108,32 +120,49 @@ export function HypothesisQueueView() {
                   <PendingState title="No hypotheses yet" message="Active hypotheses appear once strategy is derived." icon={FlaskConical} />
                 ) : (
                   <div className="space-y-2.5">
-                    {hyps.map((h) => (
-                      <button
-                        key={h.id}
-                        onClick={() => setDetail(h)}
-                        className="w-full text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 hover:border-border/60 hover:bg-white/[0.03] transition-colors"
-                      >
-                        <div className="flex items-start gap-2">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[13px] font-semibold text-foreground leading-tight">{h.label}</p>
-                            <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-muted-foreground/60">
-                              <ArrowRight className="w-3 h-3 text-muted-foreground/60" />
-                              {h.source}
+                    {hyps.map((h) => {
+                      const facts = [
+                        h.isolated_variable && { label: "Isolates", value: h.isolated_variable, Icon: Crosshair },
+                        h.test_variant && { label: "Test variant", value: h.test_variant, Icon: Beaker },
+                        h.success_criteria && { label: "Success criteria", value: h.success_criteria, Icon: Target },
+                        h.expected_impact && { label: "Expected impact", value: h.expected_impact, Icon: TrendingUp },
+                      ].filter(Boolean) as { label: string; value: string; Icon: React.ComponentType<{ className?: string }> }[];
+                      return (
+                        <button
+                          key={h.id}
+                          onClick={() => setDetail(h)}
+                          className="w-full text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 hover:border-border/60 hover:bg-white/[0.03] transition-colors"
+                        >
+                          <div className="flex items-start gap-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[13px] font-semibold text-foreground leading-snug">{h.label}</p>
+                              {h.source && (
+                                <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-muted-foreground/60">
+                                  <ArrowRight className="w-3 h-3 text-muted-foreground/60" />
+                                  {h.source}
+                                </div>
+                              )}
                             </div>
+                            <span className="shrink-0">
+                              <HypothesisStatusBadge status={h.status} />
+                            </span>
                           </div>
-                          <span className={cn("shrink-0 text-[9px] font-semibold border px-1.5 py-0.5 rounded leading-none", STATUS_STYLE[h.status] ?? "bg-muted text-muted-foreground/60 border-border/40")}>
-                            {STATUS_LABEL[h.status] ?? h.status}
-                          </span>
-                        </div>
-                        {h.risk && (
-                          <div className="flex items-start gap-1.5 mt-3 pt-3 border-t border-border/20">
-                            <AlertTriangle className="w-3 h-3 text-amber-400/70 shrink-0 mt-0.5" />
-                            <p className="text-[10px] text-amber-400/70 leading-relaxed">{h.risk}</p>
-                          </div>
-                        )}
-                      </button>
-                    ))}
+                          {facts.length > 0 && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2.5 mt-3 pt-3 border-t border-border/20">
+                              {facts.map((f) => (
+                                <HypFact key={f.label} label={f.label} value={f.value} Icon={f.Icon} />
+                              ))}
+                            </div>
+                          )}
+                          {h.risk && (
+                            <div className="flex items-start gap-1.5 mt-3 pt-3 border-t border-border/20">
+                              <AlertTriangle className="w-3 h-3 text-amber-400/70 shrink-0 mt-0.5" />
+                              <p className="text-[11px] text-amber-400/80 leading-relaxed">{h.risk}</p>
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 )
               )}
@@ -142,27 +171,27 @@ export function HypothesisQueueView() {
                 pillars.length === 0 ? (
                   <PendingState title="No pillars yet" message="Message pillars appear once analysis is ready." icon={Layers} />
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-3">
                     {pillars.map((p) => {
                       const linkedBriefs = briefs.filter((b) => b.source_pillar === p.id);
                       return (
                         <div key={p.id} className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                          <div className="flex items-center gap-1.5 mb-1">
+                          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                             {p.source_cells.map((c) => (
                               <CrossLink key={c} to={`/app/analysis/library?focus=${c}`} label={c} />
                             ))}
                           </div>
-                          <p className="text-[13px] font-semibold text-foreground leading-tight">{p.label}</p>
+                          <p className="text-[14px] font-semibold text-foreground leading-tight">{p.label}</p>
                           <p className="text-[12px] text-primary/80 italic mt-1">"{p.plain_descriptor}"</p>
-                          <p className="text-[11px] text-muted-foreground/65 mt-2 leading-relaxed">{p.why_it_matters}</p>
-                          <div className="mt-3 pt-3 border-t border-border/20 grid grid-cols-2 gap-x-3 gap-y-1.5">
-                            {Object.entries(p.variable_stack).map(([k, v]) => (
-                              <div key={k} className="text-[10px]">
-                                <span className="text-muted-foreground/60 uppercase tracking-wide">{k}</span>
-                                <div className="text-foreground/75">{v}</div>
-                              </div>
-                            ))}
+                          <p className="text-[11.5px] text-muted-foreground/75 mt-2 leading-relaxed">{p.why_it_matters}</p>
+                          <div className="mt-3">
+                            <VariableStackChips stack={p.variable_stack} />
                           </div>
+                          {pillarHasDetails(p) && (
+                            <div className="mt-3 pt-3 border-t border-border/20">
+                              <PillarDetailSections pillar={p} profiles={s.icp_profiles} />
+                            </div>
+                          )}
                           {linkedBriefs.length > 0 && (
                             <div className="mt-3 pt-3 border-t border-border/20">
                               <CrossLink to={`/app/briefs/builder?focus=${linkedBriefs[0].id}`} label={`${linkedBriefs.length} draft brief${linkedBriefs.length > 1 ? "s" : ""} from this pillar`} />
@@ -180,7 +209,7 @@ export function HypothesisQueueView() {
 
             {detail && (
               <InfoDrawer
-                kicker="Hypothesis"
+                kicker={`Hypothesis · ${detail.id}`}
                 title={detail.label}
                 onClose={() => setDetail(null)}
                 footer={
@@ -191,11 +220,13 @@ export function HypothesisQueueView() {
                 }
               >
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className={cn("text-[9px] font-semibold border px-1.5 py-0.5 rounded leading-none", STATUS_STYLE[detail.status] ?? "bg-muted text-muted-foreground/60 border-border/40")}>
-                    {STATUS_LABEL[detail.status] ?? detail.status}
-                  </span>
+                  <HypothesisStatusBadge status={detail.status} />
                 </div>
-                <DrawerField label="Source">{detail.source}</DrawerField>
+                {detail.source && <DrawerField label="Source / control">{detail.source}</DrawerField>}
+                {detail.test_variant && <DrawerField label="Test variant">{detail.test_variant}</DrawerField>}
+                {detail.isolated_variable && <DrawerField label="Isolated variable">{detail.isolated_variable}</DrawerField>}
+                {detail.success_criteria && <DrawerField label="Success criteria">{detail.success_criteria}</DrawerField>}
+                {detail.expected_impact && <DrawerField label="Expected impact">{detail.expected_impact}</DrawerField>}
                 {detail.risk && <DrawerField label="Risk">{detail.risk}</DrawerField>}
               </InfoDrawer>
             )}

@@ -1,32 +1,111 @@
-// ─── Strategy · Avatars ───────────────────────────────────────────────
-// Audience avatars (ICP columns from the historical MST matrix) plus the
-// demographic conversion signal for the active ad account.
+// ─── Strategy · Avatars / ICP ─────────────────────────────────────────
+// One scroll instead of disconnected tabs: matrix avatars (message angles
+// per audience column), full strategy ICP profiles (theory + real
+// performance side by side), and the demographic conversion signal.
 
 import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
-import { getAdAccount, getMST, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
+import { getAdAccount, getMST, getAnalysisData, getStrategyData } from "@/lib/data/metrixSeedAdapter";
 import {
-  ModuleHeader, ScopeBanner, ModuleTabs, ModuleScopeGate, PendingState,
-  MetricTile, CrossLink, readableVariables, resultTerm,
+  ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState,
+  MetricTile, CrossLink, resultTerm, SectionCard, ConfidenceBadge, fmtUSD, fmtPct,
   RangeScopeBar, NoDataInRangeState,
 } from "../shared";
+import { VariableStackChips } from "./strategyShared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/SegmentGridModal";
 import { DemographicTable } from "../analysis/tables";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
-import { Users } from "lucide-react";
-import type { MSTMatrixColumn, MSTMatrixCell } from "@/lib/data/seedTypes";
+import { Users, Fingerprint, DoorOpen, MessageSquareQuote, Compass } from "lucide-react";
+import type { MSTMatrixColumn, MSTMatrixCell, ICPProfile } from "@/lib/data/seedTypes";
 
 const SECTION = "Strategy · 04";
 
-type Tab = "avatars" | "audience";
+/** Labeled paragraph inside an ICP profile card. */
+function IcpFact({
+  label, value, Icon,
+}: {
+  label: string;
+  value?: string;
+  Icon: React.ComponentType<{ className?: string }>;
+}) {
+  if (!value) return null;
+  return (
+    <div>
+      <div className="flex items-center gap-1 mb-0.5">
+        <Icon className="w-2.5 h-2.5 text-muted-foreground/60" />
+        <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
+      </div>
+      <p className="text-[11.5px] text-foreground/80 leading-relaxed">{value}</p>
+    </div>
+  );
+}
+
+/** Theory + performance side by side for one strategy ICP profile. */
+function IcpProfileCard({ profile }: { profile: ICPProfile }) {
+  const perf = profile.performance_data ?? null;
+  const hasPerf = perf != null && (perf.spend != null || perf.cpa != null || perf.cvr_link_pct != null);
+  return (
+    <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[13px] font-semibold text-foreground leading-tight">{profile.profile_name}</p>
+          <span className="text-[9px] font-mono text-muted-foreground/60">{profile.profile_id}</span>
+        </div>
+        {profile.confidence_level && <ConfidenceBadge value={profile.confidence_level} />}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-3">
+        {/* Theory: who they are */}
+        <div className="space-y-2.5">
+          <IcpFact label="Demographics" value={profile.demographic_foundation} Icon={Users} />
+          <IcpFact label="Psychographics" value={profile.psychographic_profile} Icon={Fingerprint} />
+          <IcpFact label="Behavioral signals" value={profile.behavioral_signals} Icon={Compass} />
+          <IcpFact label="Funnel entry" value={profile.funnel_entry_point} Icon={DoorOpen} />
+        </div>
+
+        {/* Evidence: how they actually performed */}
+        <div className="space-y-2.5">
+          {hasPerf && (
+            <div className="rounded-lg border border-border/30 bg-white/[0.015] p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">Real performance</span>
+                {perf?.confidence && <ConfidenceBadge value={perf.confidence} />}
+              </div>
+              <div className="flex items-center gap-5">
+                <div>
+                  <div className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">Spend</div>
+                  <div className="text-[14px] font-bold text-foreground tabular-nums">{perf?.spend != null ? fmtUSD(perf.spend, 0) : "—"}</div>
+                </div>
+                <div>
+                  <div className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">CPA</div>
+                  <div className="text-[14px] font-bold text-foreground tabular-nums">{perf?.cpa != null ? fmtUSD(perf.cpa) : "—"}</div>
+                </div>
+                <div>
+                  <div className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">Link CVR</div>
+                  <div className="text-[14px] font-bold text-foreground tabular-nums">{perf?.cvr_link_pct != null ? fmtPct(perf.cvr_link_pct) : "—"}</div>
+                </div>
+              </div>
+            </div>
+          )}
+          <IcpFact label="Message resonance" value={profile.message_resonance} Icon={MessageSquareQuote} />
+          {profile.strategic_recommendation && (
+            <div className="rounded-lg border border-primary/20 bg-primary/[0.05] p-3">
+              <div className="text-[9px] font-semibold uppercase tracking-widest text-primary/80 mb-0.5">Recommendation</div>
+              <p className="text-[11.5px] text-foreground/85 leading-relaxed">{profile.strategic_recommendation}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function AvatarsView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
-  const [tab, setTab] = useState<Tab>("avatars");
   const [detail, setDetail] = useState<{ column: MSTMatrixColumn; cells: MSTMatrixCell[] } | null>(null);
   const [segmentsOpen, setSegmentsOpen] = useState(false);
   const { rangeHasData } = useDateRange();
@@ -40,31 +119,27 @@ export function AvatarsView() {
         const matrix = mst?.historical_matrix_4x4;
         const analysis = getAnalysisData(seed, adAccountId);
         const demo = analysis?.demographic_registration_signal ?? [];
+        const icpProfiles = getStrategyData(seed, adAccountId)?.icp_profiles ?? [];
 
-        if (!matrix) {
+        if (!matrix && icpProfiles.length === 0) {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Avatars" />
               <ScopeBanner account={acct} />
-              <PendingState title="No avatars yet" message="Avatars are derived from the MST matrix once it's available for this account." icon={Users} />
+              <PendingState title="No avatars yet" message="Avatars are derived from the MST matrix and strategy ICP profiles once they exist for this account." icon={Users} />
             </div>
           );
         }
 
-        const cellsFor = (colId: string) => matrix.cells.filter((c) => c.column_id === colId);
-
-        const TABS: { id: Tab; label: string; count: number }[] = [
-          { id: "avatars", label: "Avatars", count: matrix.columns.length },
-          { id: "audience", label: "Audience signal", count: demo.length },
-        ];
+        const cellsFor = (colId: string) => (matrix ? matrix.cells.filter((c) => c.column_id === colId) : []);
 
         return (
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
             <ModuleHeader
               section={SECTION}
-              title="Avatars"
-              subtitle="Audience avatars from the historical MST matrix, with their message angles."
-              table="historical_matrix_4x4, demographic_registration_signal"
+              title="Avatars / ICP"
+              subtitle="Who this account targets: matrix avatars, full ICP profiles, and the real audience signal — in one place."
+              table="historical_matrix_4x4, icp_profiles, demographic_registration_signal"
             />
             <ScopeBanner account={acct} />
             <RangeScopeBar grainNote="Avatars come from the historical matrix; audience signal aggregates full flight windows — this import has no daily grain." />
@@ -74,60 +149,80 @@ export function AvatarsView() {
             ) : (
             <>
             <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
-              <MetricTile label="Avatars" value={String(matrix.columns.length)} />
-              <MetricTile label="Message angles" value={String(matrix.cells.length)} sub="matrix cells across avatars" />
-              <MetricTile label="Shared rows" value={String(matrix.rows.length)} />
+              <MetricTile label="Avatars" value={String(matrix?.columns.length ?? 0)} />
+              <MetricTile label="Message angles" value={String(matrix?.cells.length ?? 0)} sub="matrix cells across avatars" />
+              <MetricTile label="ICP profiles" value={String(icpProfiles.length)} sub="from the strategy map" />
               <MetricTile label="Audience rows" value={String(demo.length)} sub={`${term.singular} signal`} />
             </div>
 
-            <div className="mt-4">
-              <ModuleTabs tabs={TABS} active={tab} onChange={(id) => setTab(id)} />
-            </div>
-
-            <div className="px-6 py-5 max-w-5xl">
-              {tab === "avatars" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {matrix.columns.map((col) => {
-                    const cells = cellsFor(col.id);
-                    return (
-                      <button
-                        key={col.id}
-                        onClick={() => setDetail({ column: col, cells })}
-                        className="text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 hover:border-border/60 hover:bg-white/[0.03] transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-8 h-8 rounded-lg border border-primary/25 bg-primary/[0.08] flex items-center justify-center">
-                            <Users className="w-4 h-4 text-primary/70" />
+            <div className="px-6 py-5 space-y-4 max-w-5xl">
+              {matrix && (
+                <SectionCard
+                  title="Matrix avatars"
+                  desc="Audience columns from the historical MST matrix, with the message angles built for each."
+                  table="historical_matrix_4x4"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {matrix.columns.map((col) => {
+                      const cells = cellsFor(col.id);
+                      return (
+                        <button
+                          key={col.id}
+                          onClick={() => setDetail({ column: col, cells })}
+                          className="text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 hover:border-border/60 hover:bg-white/[0.03] transition-colors"
+                        >
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-8 h-8 rounded-lg border border-primary/25 bg-primary/[0.08] flex items-center justify-center">
+                              <Users className="w-4 h-4 text-primary/70" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-[13px] font-semibold text-foreground leading-tight whitespace-pre-line">{col.name}</p>
+                              <span className="text-[9px] font-mono text-muted-foreground/60">{col.icp}</span>
+                            </div>
                           </div>
-                          <div className="min-w-0">
-                            <p className="text-[13px] font-semibold text-foreground leading-tight whitespace-pre-line">{col.name}</p>
-                            <span className="text-[9px] font-mono text-muted-foreground/60">{col.icp}</span>
+                          <div className="space-y-1.5 mt-3">
+                            {cells.slice(0, 2).map((c) => (
+                              <p key={c.cell_id} className="text-[11px] text-muted-foreground/70 leading-snug">
+                                <span className="font-mono text-[9px] text-muted-foreground/60 mr-1">{c.cell_id}</span>
+                                {c.plain_text.headline ?? c.concept_code}
+                              </p>
+                            ))}
                           </div>
-                        </div>
-                        <div className="space-y-1.5 mt-3">
-                          {cells.slice(0, 2).map((c) => (
-                            <p key={c.cell_id} className="text-[11px] text-muted-foreground/70 leading-snug">
-                              <span className="font-mono text-[9px] text-muted-foreground/60 mr-1">{c.cell_id}</span>
-                              {c.plain_text.headline ?? c.concept_code}
-                            </p>
-                          ))}
-                        </div>
-                        <div className="mt-3 pt-3 border-t border-border/20 text-[10px] text-muted-foreground/60">
-                          {cells.length} message angle{cells.length === 1 ? "" : "s"} · tap for details
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+                          <div className="mt-3 pt-3 border-t border-border/20 text-[10px] text-muted-foreground/60">
+                            {cells.length} message angle{cells.length === 1 ? "" : "s"} · tap for details
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </SectionCard>
               )}
 
-              {tab === "audience" && (
-                demo.length ? (
+              {icpProfiles.length > 0 && (
+                <SectionCard
+                  title="ICP profiles"
+                  desc="Full customer profiles from the strategy map — who they are, and how they actually performed."
+                  table="icp_profiles"
+                >
+                  <div className="space-y-3">
+                    {icpProfiles.map((p) => (
+                      <IcpProfileCard key={p.profile_id} profile={p} />
+                    ))}
+                  </div>
+                </SectionCard>
+              )}
+
+              <SectionCard
+                title="Audience signal"
+                desc={`Demographic ${term.singular} signal from this account's analysis.`}
+                table="demographic_registration_signal"
+              >
+                {demo.length ? (
                   <DemographicTable rows={demo} />
                 ) : (
                   <PendingState title="No audience signal" message={`Demographic ${term.singular} signal appears once analysis is available.`} icon={Users} />
-                )
-              )}
+                )}
+              </SectionCard>
             </div>
             </>
             )}
@@ -149,12 +244,8 @@ export function AvatarsView() {
                   <DrawerField key={c.cell_id} label={`${c.cell_id} · ${c.concept_code}`}>
                     {c.plain_text.headline && <p className="font-semibold text-foreground">{c.plain_text.headline}</p>}
                     {c.plain_text.primary && <p className="mt-1">{c.plain_text.primary}</p>}
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {Object.values(c.variable_stack).filter(Boolean).map((v) => (
-                        <span key={v} className="text-[8px] font-mono text-muted-foreground/70 border border-border/30 px-1 py-0.5 rounded leading-none" title={readableVariables(v)}>
-                          {v}
-                        </span>
-                      ))}
+                    <div className="mt-2">
+                      <VariableStackChips stack={c.variable_stack} />
                     </div>
                   </DrawerField>
                 ))}
