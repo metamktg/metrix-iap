@@ -64,7 +64,12 @@ import {
   Sparkles,
 } from "lucide-react";
 import type { AdAccount } from "@/lib/data/seedTypes";
-import { RequiredFormatPanel, type IapCsvClassKey } from "./ManualAnalysisControls";
+import {
+  RequiredFormatPanel,
+  GuessedMatchesCallout,
+  guessedCreativeImports,
+  type IapCsvClassKey,
+} from "./ManualAnalysisControls";
 import type { ManualImportInput, ManualImportResult } from "@workspace/api-client-react";
 import { suggestAdNameMatch, type AdNameMatch } from "@/lib/adNameMatch";
 
@@ -848,6 +853,7 @@ export function ManualUploadPanel({ accountId, availableAdNames }: { accountId: 
   const demoImport = imports.find((i) => i.kind === "performance_demo_csv") ?? null;
   const placementImport = imports.find((i) => i.kind === "performance_placement_csv") ?? null;
   const creativeAssets = imports.filter((i) => i.kind === "creative_asset");
+  const guessedImports = guessedCreativeImports(imports);
   const bothRequiredStaged = Boolean(demoImport && placementImport);
 
   // Ad names actually seen aren't known client-side (CSVs are staged raw,
@@ -877,6 +883,7 @@ export function ManualUploadPanel({ accountId, availableAdNames }: { accountId: 
                   <span className="text-muted-foreground/80 truncate">
                     {a.ad_names.length > 0 ? `→ ${a.ad_names.join(", ")}` : "→ unmapped"}
                   </span>
+                  {a.match_method === "guess" && <MatchMethodBadge method="guess" />}
                 </div>
               ))
             ) : (
@@ -888,6 +895,14 @@ export function ManualUploadPanel({ accountId, availableAdNames }: { accountId: 
             pick a date range and explicitly run analysis over these staged files.
           </p>
         </div>
+
+        <GuessedMatchesCallout
+          accountId={accountId}
+          guessedImports={guessedImports}
+          onConfirmed={refresh}
+          onReview={() => setStep("upload")}
+          reviewLabel="Go back to fix"
+        />
         <div className="flex items-center justify-between pt-1">
           <GhostBtn onClick={() => setStep("upload")}>
             <ArrowLeft className="w-3.5 h-3.5" /> Back to uploads

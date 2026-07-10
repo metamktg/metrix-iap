@@ -13,9 +13,13 @@ import {
   useGetManualPerformanceCsvFormat,
   useStartManualAnalysisRun,
   useGetLatestAnalysisRun,
+  useListManualImports,
+  useUpdateManualImportAdNames,
   getGetMetrixSeedQueryKey,
+  getListManualImportsQueryKey,
   ApiError,
   type AnalysisRun,
+  type ManualImport,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
@@ -29,6 +33,7 @@ import {
   CheckCircle2,
   XCircle,
   CalendarRange,
+  AlertTriangle,
 } from "lucide-react";
 
 function RunAnalysisBtn({
@@ -178,6 +183,120 @@ function StatusBadge({ run }: { run: AnalysisRun }) {
   );
 }
 
+/** A staged creative counts as "needs review" when its persisted match was a low-confidence guess the user hasn't confirmed or overridden yet. */
+export function guessedCreativeImports(imports: ManualImport[]): ManualImport[] {
+  return imports.filter((i) => i.kind === "creative_asset" && i.match_method === "guess");
+}
+
+/**
+ * Amber callout warning that N staged creative filename→ad mappings are
+ * still low-confidence guesses. Actionable, never blocking: the user can
+ * confirm all guesses as correct (re-saves each mapping without the guess
+ * flag, so it stops being flagged) or jump back to fix them. Shared by the
+ * manual-upload Review step and the "Run analysis" control.
+ */
+export function GuessedMatchesCallout({
+  accountId,
+  guessedImports,
+  onConfirmed,
+  onReview,
+  reviewLabel,
+}: {
+  accountId: string;
+  guessedImports: ManualImport[];
+  /** Called after all guesses are confirmed so the parent can refetch the imports list. */
+  onConfirmed?: () => void;
+  /** Optional "jump back to fix" action (e.g. return to the upload step). */
+  onReview?: () => void;
+  reviewLabel?: string;
+}) {
+  const updateMutation = useUpdateManualImportAdNames();
+  const [confirming, setConfirming] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (guessedImports.length === 0) return null;
+  const count = guessedImports.length;
+  const plural = count > 1;
+
+  const confirmAll = async () => {
+    setError(null);
+    setConfirming(true);
+    try {
+      // Re-saving ad_names WITHOUT match_method clears the persisted guess
+      // flag server-side (same path a manual override takes) — confirming
+      // is an explicit "yes, these are right" acknowledgement.
+      for (const imp of guessedImports) {
+        await updateMutation.mutateAsync({ accountId, importId: imp.id, data: { ad_names: imp.ad_names } });
+      }
+      onConfirmed?.();
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : "Could not confirm matches. Please try again."
+      );
+    } finally {
+      setConfirming(false);
+    }
+  };
+
+  return (
+    <div className="rounded-lg border border-amber-400/30 bg-amber-400/[0.06] p-3 space-y-2">
+      <div className="flex items-start gap-2">
+        <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+        <div className="min-w-0 space-y-1">
+          <div className="text-[12px] font-semibold text-amber-200">
+            {count} creative {plural ? "matches need" : "match needs"} review
+          </div>
+          <p className="text-[11px] text-amber-100/80 leading-relaxed">
+            {plural ? "These filenames" : "This filename"} didn't clearly match an ad name, so we
+            picked the most likely one as a best guess. Confirm {plural ? "they're" : "it's"} right
+            or fix {plural ? "them" : "it"} first — otherwise analysis may link the wrong creative to
+            an ad.
+          </p>
+          <ul className="text-[10px] text-amber-100/70 leading-relaxed space-y-0.5 pt-0.5">
+            {guessedImports.map((imp) => (
+              <li key={imp.id} className="truncate">
+                <span className="text-amber-100/90">{imp.filename}</span>
+                {imp.ad_names.length > 0 ? ` → ${imp.ad_names.join(", ")}` : " → unmapped"}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+      {error && <p className="text-[11px] text-red-400">{error}</p>}
+      <div className="flex items-center gap-2 flex-wrap pt-0.5">
+        <button
+          onClick={() => void confirmAll()}
+          disabled={confirming || updateMutation.isPending}
+          className={cn(
+            "flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-[11px] font-medium transition-colors",
+            confirming || updateMutation.isPending
+              ? "border-amber-400/30 text-amber-200/60 cursor-not-allowed"
+              : "bg-amber-400/15 border-amber-400/40 text-amber-100 hover:bg-amber-400/25"
+          )}
+        >
+          {confirming ? (
+            <>
+              <Loader2 className="w-3 h-3 animate-spin" /> Confirming…
+            </>
+          ) : (
+            <>
+              <CheckCircle2 className="w-3 h-3" /> Confirm {plural ? `all ${count} matches` : "match"} as correct
+            </>
+          )}
+        </button>
+        {onReview && (
+          <button
+            onClick={onReview}
+            className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-amber-400/30 text-[11px] font-medium text-amber-100/85 hover:bg-amber-400/10 transition-colors"
+          >
+            {reviewLabel ?? "Review & fix"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /**
  * Explicit, manual analysis trigger for an account's staged CSVs.
  * Nothing here runs automatically — the user must pick a date range and
@@ -189,7 +308,10 @@ export function AnalysisControls({ accountId }: { accountId: string }) {
   const queryClient = useQueryClient();
   const startMutation = useStartManualAnalysisRun();
   const { data: latest, refetch } = useGetLatestAnalysisRun(accountId);
+  const { data: importsData, refetch: refetchImports } = useListManualImports(accountId);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const guessedImports = guessedCreativeImports(importsData?.imports ?? []);
 
   const run = latest?.run ?? null;
   const isRunning = run?.status === "running";
@@ -251,6 +373,12 @@ export function AnalysisControls({ accountId }: { accountId: string }) {
           </button>
         ))}
       </div>
+
+      <GuessedMatchesCallout
+        accountId={accountId}
+        guessedImports={guessedImports}
+        onConfirmed={() => void refetchImports()}
+      />
 
       {error && <p className="text-[11px] text-red-400">{error}</p>}
 
