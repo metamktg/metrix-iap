@@ -17,7 +17,7 @@ import { useDateRange } from "@/contexts/DateRangeContext";
 import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/SegmentGridModal";
 import { DemographicTable } from "../analysis/tables";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
-import { Users, Fingerprint, DoorOpen, MessageSquareQuote, Compass, ArrowDownRight } from "lucide-react";
+import { Users, Fingerprint, DoorOpen, MessageSquareQuote, Compass, ArrowDownRight, ArrowUpRight } from "lucide-react";
 import type { MSTMatrixColumn, MSTMatrixCell, ICPProfile } from "@/lib/data/seedTypes";
 
 const SECTION = "Strategy · 04";
@@ -44,11 +44,13 @@ function IcpFact({
 
 /** Theory + performance side by side for one strategy ICP profile. */
 function IcpProfileCard({
-  profile, registerRef, flash,
+  profile, registerRef, flash, avatars, onAvatarClick,
 }: {
   profile: ICPProfile;
   registerRef?: (el: HTMLDivElement | null) => void;
   flash?: boolean;
+  avatars?: MSTMatrixColumn[];
+  onAvatarClick?: (columnId: string) => void;
 }) {
   const perf = profile.performance_data ?? null;
   const hasPerf = perf != null && (perf.spend != null || perf.cpa != null || perf.cvr_link_pct != null);
@@ -109,6 +111,25 @@ function IcpProfileCard({
           )}
         </div>
       </div>
+
+      {avatars && avatars.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-border/20 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+            Targeted by avatar{avatars.length === 1 ? "" : "s"}
+          </span>
+          {avatars.map((col) => (
+            <button
+              key={col.id}
+              onClick={() => onAvatarClick?.(col.id)}
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors"
+              data-testid={`link-icp-avatar-${col.id}`}
+            >
+              {col.name.replace(/\n/g, " ")}
+              <ArrowUpRight className="w-3 h-3" />
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -130,6 +151,17 @@ export function AvatarsView() {
     setFlashProfile(profileId);
     if (flashTimer.current) clearTimeout(flashTimer.current);
     flashTimer.current = setTimeout(() => setFlashProfile(null), 1600);
+  }, []);
+  const avatarRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [flashAvatar, setFlashAvatar] = useState<string | null>(null);
+  const avatarFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollToAvatar = useCallback((columnId: string) => {
+    const el = avatarRefs.current[columnId];
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setFlashAvatar(columnId);
+    if (avatarFlashTimer.current) clearTimeout(avatarFlashTimer.current);
+    avatarFlashTimer.current = setTimeout(() => setFlashAvatar(null), 1600);
   }, []);
 
   return (
@@ -161,6 +193,11 @@ export function AvatarsView() {
           (col.matched_profile_ids ?? [])
             .map((id) => profileById.get(id))
             .filter((p): p is ICPProfile => p != null);
+        // Inverse of matched_profile_ids: which matrix avatars target a given
+        // profile. Same brief-derived mapping, read the other direction — no
+        // fabricated joins.
+        const avatarsForProfile = (profileId: string): MSTMatrixColumn[] =>
+          matrix ? matrix.columns.filter((col) => (col.matched_profile_ids ?? []).includes(profileId)) : [];
 
         return (
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
@@ -198,7 +235,10 @@ export function AvatarsView() {
                       return (
                         <div
                           key={col.id}
-                          className="rounded-xl border border-border/40 bg-white/[0.02] hover:border-border/60 transition-colors"
+                          ref={(el) => { avatarRefs.current[col.id] = el; }}
+                          className={`rounded-xl border bg-white/[0.02] transition-colors duration-500 scroll-mt-24 ${
+                            flashAvatar === col.id ? "border-primary/70 bg-primary/[0.06]" : "border-border/40 hover:border-border/60"
+                          }`}
                         >
                           <button
                             onClick={() => setDetail({ column: col, cells })}
@@ -263,6 +303,8 @@ export function AvatarsView() {
                         profile={p}
                         registerRef={(el) => { profileRefs.current[p.profile_id] = el; }}
                         flash={flashProfile === p.profile_id}
+                        avatars={avatarsForProfile(p.profile_id)}
+                        onAvatarClick={scrollToAvatar}
                       />
                     ))}
                   </div>
