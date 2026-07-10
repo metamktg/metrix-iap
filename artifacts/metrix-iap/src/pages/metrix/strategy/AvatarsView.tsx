@@ -3,7 +3,7 @@
 // per audience column), full strategy ICP profiles (theory + real
 // performance side by side), and the demographic conversion signal.
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getMST, getAnalysisData, getStrategyData } from "@/lib/data/metrixSeedAdapter";
@@ -17,7 +17,7 @@ import { useDateRange } from "@/contexts/DateRangeContext";
 import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/SegmentGridModal";
 import { DemographicTable } from "../analysis/tables";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
-import { Users, Fingerprint, DoorOpen, MessageSquareQuote, Compass } from "lucide-react";
+import { Users, Fingerprint, DoorOpen, MessageSquareQuote, Compass, ArrowDownRight } from "lucide-react";
 import type { MSTMatrixColumn, MSTMatrixCell, ICPProfile } from "@/lib/data/seedTypes";
 
 const SECTION = "Strategy · 04";
@@ -43,11 +43,22 @@ function IcpFact({
 }
 
 /** Theory + performance side by side for one strategy ICP profile. */
-function IcpProfileCard({ profile }: { profile: ICPProfile }) {
+function IcpProfileCard({
+  profile, registerRef, flash,
+}: {
+  profile: ICPProfile;
+  registerRef?: (el: HTMLDivElement | null) => void;
+  flash?: boolean;
+}) {
   const perf = profile.performance_data ?? null;
   const hasPerf = perf != null && (perf.spend != null || perf.cpa != null || perf.cvr_link_pct != null);
   return (
-    <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
+    <div
+      ref={registerRef}
+      className={`rounded-xl border bg-white/[0.02] p-4 transition-colors duration-500 scroll-mt-24 ${
+        flash ? "border-primary/70 bg-primary/[0.06]" : "border-border/40"
+      }`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[13px] font-semibold text-foreground leading-tight">{profile.profile_name}</p>
@@ -109,6 +120,17 @@ export function AvatarsView() {
   const [detail, setDetail] = useState<{ column: MSTMatrixColumn; cells: MSTMatrixCell[] } | null>(null);
   const [segmentsOpen, setSegmentsOpen] = useState(false);
   const { rangeHasData } = useDateRange();
+  const profileRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [flashProfile, setFlashProfile] = useState<string | null>(null);
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollToProfile = useCallback((profileId: string) => {
+    const el = profileRefs.current[profileId];
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setFlashProfile(profileId);
+    if (flashTimer.current) clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setFlashProfile(null), 1600);
+  }, []);
 
   return (
     <ModuleScopeGate section={SECTION} title="Avatars" account={account}>
@@ -132,6 +154,13 @@ export function AvatarsView() {
         }
 
         const cellsFor = (colId: string) => (matrix ? matrix.cells.filter((c) => c.column_id === colId) : []);
+        const profileById = new Map(icpProfiles.map((p) => [p.profile_id, p]));
+        // Only surface links to profiles that both a brief maps to AND that
+        // actually render on this page — never a dangling reference.
+        const matchedProfilesFor = (col: MSTMatrixColumn): ICPProfile[] =>
+          (col.matched_profile_ids ?? [])
+            .map((id) => profileById.get(id))
+            .filter((p): p is ICPProfile => p != null);
 
         return (
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
@@ -165,33 +194,56 @@ export function AvatarsView() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {matrix.columns.map((col) => {
                       const cells = cellsFor(col.id);
+                      const matched = matchedProfilesFor(col);
                       return (
-                        <button
+                        <div
                           key={col.id}
-                          onClick={() => setDetail({ column: col, cells })}
-                          className="text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 hover:border-border/60 hover:bg-white/[0.03] transition-colors"
+                          className="rounded-xl border border-border/40 bg-white/[0.02] hover:border-border/60 transition-colors"
                         >
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="w-8 h-8 rounded-lg border border-primary/25 bg-primary/[0.08] flex items-center justify-center">
-                              <Users className="w-4 h-4 text-primary/70" />
+                          <button
+                            onClick={() => setDetail({ column: col, cells })}
+                            className="w-full text-left p-4 hover:bg-white/[0.03] transition-colors rounded-xl"
+                          >
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-8 h-8 rounded-lg border border-primary/25 bg-primary/[0.08] flex items-center justify-center">
+                                <Users className="w-4 h-4 text-primary/70" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-[13px] font-semibold text-foreground leading-tight whitespace-pre-line">{col.name}</p>
+                                <span className="text-[9px] font-mono text-muted-foreground/60">{col.icp}</span>
+                              </div>
                             </div>
-                            <div className="min-w-0">
-                              <p className="text-[13px] font-semibold text-foreground leading-tight whitespace-pre-line">{col.name}</p>
-                              <span className="text-[9px] font-mono text-muted-foreground/60">{col.icp}</span>
+                            <div className="space-y-1.5 mt-3">
+                              {cells.slice(0, 2).map((c) => (
+                                <p key={c.cell_id} className="text-[11px] text-muted-foreground/70 leading-snug">
+                                  <span className="font-mono text-[9px] text-muted-foreground/60 mr-1">{c.cell_id}</span>
+                                  {c.plain_text.headline ?? c.concept_code}
+                                </p>
+                              ))}
                             </div>
-                          </div>
-                          <div className="space-y-1.5 mt-3">
-                            {cells.slice(0, 2).map((c) => (
-                              <p key={c.cell_id} className="text-[11px] text-muted-foreground/70 leading-snug">
-                                <span className="font-mono text-[9px] text-muted-foreground/60 mr-1">{c.cell_id}</span>
-                                {c.plain_text.headline ?? c.concept_code}
-                              </p>
-                            ))}
-                          </div>
-                          <div className="mt-3 pt-3 border-t border-border/20 text-[10px] text-muted-foreground/60">
-                            {cells.length} message angle{cells.length === 1 ? "" : "s"} · tap for details
-                          </div>
-                        </button>
+                            <div className="mt-3 pt-3 border-t border-border/20 text-[10px] text-muted-foreground/60">
+                              {cells.length} message angle{cells.length === 1 ? "" : "s"} · tap for details
+                            </div>
+                          </button>
+                          {matched.length > 0 && (
+                            <div className="px-4 pb-3 -mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                              <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+                                ICP profile{matched.length === 1 ? "" : "s"}
+                              </span>
+                              {matched.map((p) => (
+                                <button
+                                  key={p.profile_id}
+                                  onClick={() => scrollToProfile(p.profile_id)}
+                                  className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors"
+                                  data-testid={`link-avatar-icp-${p.profile_id}`}
+                                >
+                                  {p.profile_name}
+                                  <ArrowDownRight className="w-3 h-3" />
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
@@ -206,7 +258,12 @@ export function AvatarsView() {
                 >
                   <div className="space-y-3">
                     {icpProfiles.map((p) => (
-                      <IcpProfileCard key={p.profile_id} profile={p} />
+                      <IcpProfileCard
+                        key={p.profile_id}
+                        profile={p}
+                        registerRef={(el) => { profileRefs.current[p.profile_id] = el; }}
+                        flash={flashProfile === p.profile_id}
+                      />
                     ))}
                   </div>
                 </SectionCard>
@@ -235,6 +292,17 @@ export function AvatarsView() {
                 footer={
                   <div className="flex items-center gap-4 flex-wrap">
                     {analysis && <SegmentDrilldownButton onClick={() => setSegmentsOpen(true)} />}
+                    {matchedProfilesFor(detail.column).map((p) => (
+                      <button
+                        key={p.profile_id}
+                        onClick={() => { setDetail(null); setTimeout(() => scrollToProfile(p.profile_id), 60); }}
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors"
+                        data-testid={`link-drawer-icp-${p.profile_id}`}
+                      >
+                        View ICP: {p.profile_name}
+                        <ArrowDownRight className="w-3 h-3" />
+                      </button>
+                    ))}
                     <CrossLink to="/app/mst" label="Open MST matrix" />
                     <CrossLink to="/app/briefs/builder" label="Open Brief Builder" />
                   </div>

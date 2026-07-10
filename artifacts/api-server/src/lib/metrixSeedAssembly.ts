@@ -451,6 +451,50 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
   const mstDoc = modules.get("mst") ?? {};
   const analysisCoreSummary = modules.get("analysis_core_summary") ?? null;
 
+  // ── Avatar ↔ ICP profile mapping (matrix column → strategy profile) ──
+  // The matrix avatar columns (CN_ICP_* ids) and the strategy ICP profiles
+  // (ICP_BOOK*_* ids) use disjoint id schemes, so they cannot be joined by
+  // key. The only strategist-authored bridge is a matrix-mode creative
+  // brief, which carries BOTH a matrix cell position (its leading token is
+  // the avatar column id, e.g. "C2B" → "C2") and a target ICP profile.
+  // We only trust matrix-mode briefs (general-mode briefs use free-text
+  // positions) and only keep profile ids that actually exist for this
+  // account. Unmatched avatars get no field, so the client shows no link
+  // rather than fabricating a join.
+  const validProfileIds = new Set(
+    icpProfiles
+      .map((r) => (r["payload"] as Row | undefined)?.["profile_id"])
+      .filter((v): v is string => typeof v === "string" && v.length > 0),
+  );
+  const columnProfileLinks = new Map<string, Set<string>>();
+  for (const row of creativeBriefs) {
+    const b = (row["payload"] ?? {}) as Row;
+    const meta = (b["brief_metadata"] ?? {}) as Row;
+    if (String(meta["mode"] ?? row["mode"] ?? "") !== "matrix") continue;
+    const tf = (b["testing_framework"] ?? {}) as Row;
+    const sf = (b["strategic_foundation"] ?? {}) as Row;
+    const colMatch = String(tf["matrix_position"] ?? "").match(/^(C\d+)/);
+    const profileId = String(sf["target_icp"] ?? "").trim().split(/\s+/)[0] ?? "";
+    if (!colMatch || !profileId.startsWith("ICP_")) continue;
+    if (!validProfileIds.has(profileId)) continue;
+    const colId = colMatch[1]!;
+    if (!columnProfileLinks.has(colId)) columnProfileLinks.set(colId, new Set());
+    columnProfileLinks.get(colId)!.add(profileId);
+  }
+  const rawMatrix = (mstDoc["historical_matrix_4x4"] ?? null) as Row | null;
+  const matrixWithLinks =
+    rawMatrix && Array.isArray(rawMatrix["columns"])
+      ? {
+          ...rawMatrix,
+          columns: (rawMatrix["columns"] as Row[]).map((col) => {
+            const links = columnProfileLinks.get(String(col["id"] ?? ""));
+            return links && links.size > 0
+              ? { ...col, matched_profile_ids: [...links].sort() }
+              : col;
+          }),
+        }
+      : rawMatrix;
+
   // Which books this account's imported window covers (e.g. BOOK0, BOOK2).
   const books = [...new Set(adPerformance.map((r) => String(r["book"] ?? "")).filter(Boolean))].sort();
   const acrossClause = books.length > 0 ? ` across ${humanJoin(books)}` : "";
@@ -545,7 +589,7 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
       status: mstDoc["status"] ?? "active",
       render_policy: mstDoc["render_policy"] ?? "",
       local_book2_library: libraryCells.map((r) => r["payload"]),
-      historical_matrix_4x4: mstDoc["historical_matrix_4x4"] ?? null,
+      historical_matrix_4x4: matrixWithLinks,
       source_artifacts: mstDoc["source_artifacts"] ?? [],
     },
     listen: { signal_cards: listenCards },

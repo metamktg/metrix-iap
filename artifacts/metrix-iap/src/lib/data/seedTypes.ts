@@ -394,6 +394,13 @@ export interface MSTMatrixColumn {
   id: string;
   name: string;
   icp: string;
+  /**
+   * Strategy ICP profile ids this avatar column maps to, derived at the
+   * data layer (seed assembly) from strategist-authored matrix-mode
+   * creative briefs — never a client-side guess. Absent/empty when no
+   * brief links this avatar to an ICP profile (unmapped → no link shown).
+   */
+  matched_profile_ids?: string[];
 }
 
 export interface MSTMatrixRow {
