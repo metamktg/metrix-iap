@@ -28,6 +28,10 @@ args = "iap-build"
 task = "workflow.run"
 args = "api-server-tests"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "api-codegen-drift"
+
 [[workflows.workflow]]
 name = "api-smoke"
 author = "agent"
@@ -57,6 +61,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm --filter @workspace/api-server run test"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "api-codegen-drift"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/scripts run check:api-codegen-drift"
 
 [workflows.workflow.metadata]
 isValidation = true
