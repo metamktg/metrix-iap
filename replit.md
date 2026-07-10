@@ -10,6 +10,7 @@ Metrix IAP is an ad-performance analysis platform: agencies connect Meta ad acco
 - `pnpm --filter @workspace/scripts run test` — scripts unit tests (vitest, no DB needed): meta-ads-export backfill rules, LittleData CSV parsing/aggregation/reconciliation
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
+- `pnpm --filter @workspace/scripts run check:api-codegen-drift` — build-safety gate (validation step `api-codegen-drift`): regenerates codegen, fails loudly if committed generated types (`lib/api-zod`, `lib/api-client-react`) drifted from `openapi.yaml`, then runs the full `pnpm run typecheck` (rebuilds composite libs first). Catches stale generated API types that pass an isolated per-artifact typecheck but break the real build.
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - `pnpm --filter @workspace/scripts run import:metrix` — (re)apply Metrix Supabase schema and (re)import source data packages (`scripts/data/metrix/`); idempotent. Asserts CSV internal consistency and aborts loudly on drift. Backfills `ads.meta_ad_id`/`creative_asset_url` from a per-account `meta_ads_export.json` when present.
 - `pnpm --filter @workspace/scripts run create:user x@y.com [password]` — create/reset a Metrix IAP user account (prints temp password if none given; forces password change on first login)

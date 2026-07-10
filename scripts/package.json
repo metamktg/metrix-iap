@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "check:metrix-settings-api": "tsx ./src/check-metrix-settings-api.ts",
+    "check:api-codegen-drift": "tsx ./src/check-api-codegen-drift.ts",
     "smoke:api-server": "tsx ./src/smoke-api-server.ts",
     "smoke:metrix-iap-build": "tsx ./src/smoke-metrix-iap-build.ts",
     "import:metrix": "tsx ./src/metrix-supabase/import.ts",
