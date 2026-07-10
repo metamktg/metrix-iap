@@ -60,10 +60,13 @@ import {
   X,
   ChevronDown,
   ListChecks,
+  Hash,
+  Sparkles,
 } from "lucide-react";
 import type { AdAccount } from "@/lib/data/seedTypes";
 import { RequiredFormatPanel, type IapCsvClassKey } from "./ManualAnalysisControls";
 import type { ManualImportInput, ManualImportResult } from "@workspace/api-client-react";
+import { suggestAdNameMatch, type AdNameMatch } from "@/lib/adNameMatch";
 
 export function PrimaryBtn({
   onClick,
@@ -237,47 +240,6 @@ function stageManualImportWithProgress(
 
     xhr.send(JSON.stringify(data));
   });
-}
-
-/**
- * Normalizes a filename or ad name for auto-mapping comparisons: strips
- * the extension, lowercases, and collapses separators (- _ . whitespace)
- * to single spaces so "Summer_Sale-v2.mp4" and "Summer Sale v2" line up.
- */
-function normalizeForMatch(value: string): string {
-  return value
-    .replace(/\.[^/.]+$/, "")
-    .toLowerCase()
-    .replace(/[-_.]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-/**
- * Suggests the best ad-name match for an uploaded filename against a set
- * of known/available ad names. Tries an exact normalized match first,
- * then falls back to a substring match in either direction — filenames
- * often carry extra tokens (dates, sizes, "_final") around the ad name.
- */
-function suggestAdNameMatch(filename: string, candidates: Iterable<string>): string | null {
-  const normalizedFile = normalizeForMatch(filename);
-  if (!normalizedFile) return null;
-
-  let bestSubstring: { name: string; score: number } | null = null;
-  for (const candidate of candidates) {
-    const normalizedCandidate = normalizeForMatch(candidate);
-    if (!normalizedCandidate) continue;
-    if (normalizedCandidate === normalizedFile) return candidate;
-
-    if (normalizedFile.includes(normalizedCandidate) || normalizedCandidate.includes(normalizedFile)) {
-      // Prefer the longer overlapping candidate name — a closer match to the filename.
-      const score = normalizedCandidate.length;
-      if (!bestSubstring || score > bestSubstring.score) {
-        bestSubstring = { name: candidate, score };
-      }
-    }
-  }
-  return bestSubstring?.name ?? null;
 }
 
 const CSV_SLOTS: { kind: "performance_demo_csv" | "performance_placement_csv"; csvClass: IapCsvClassKey; title: string; desc: string }[] = [
@@ -510,6 +472,23 @@ function AdNameDropdownPicker({
   );
 }
 
+/** Small badge explaining why an ad-name suggestion was made. Only shown while the current mapping still equals the auto-suggested value — overriding it (dropdown/free-text) drops the badge automatically. Reads the persisted `match_method` on the import so it survives navigation/reload, not just the current session. */
+function MatchMethodBadge({ method }: { method?: "id" | "fuzzy" | null }) {
+  if (!method) return null;
+  const isId = method === "id";
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 text-[9px] font-medium px-1.5 py-0.5 rounded shrink-0",
+        isId ? "bg-primary/10 text-primary" : "bg-white/[0.06] text-muted-foreground/85"
+      )}
+    >
+      {isId ? <Hash className="w-2.5 h-2.5" /> : <Sparkles className="w-2.5 h-2.5" />}
+      {isId ? "Matched by ID code" : "Matched by filename similarity"}
+    </span>
+  );
+}
+
 function CreativeThumbnail({ accountId, asset }: { accountId: string; asset: ManualImport }) {
   const [broken, setBroken] = useState(false);
   const fileUrl = `/api/metrix/accounts/${accountId}/manual-imports/${asset.id}/file`;
@@ -571,6 +550,9 @@ function CreativeAdNamesEditor({
   const parsedNames = editingFree ? value.split(",").map((s) => s.trim()).filter(Boolean) : asset.ad_names;
   const mismatch = !hasRegistry && parsedNames.length > 0 && parsedNames.some((n) => !knownAdNames.has(n));
 
+  // Any manual override (dropdown pick or free-text edit) omits match_method
+  // from the request, which clears the persisted reason server-side — it
+  // should never keep claiming an auto-match once the user has picked.
   const handleDropdownChange = async (names: string[]) => {
     await updateMutation.mutateAsync({ accountId, importId: asset.id, data: { ad_names: names } });
     onSaved();
@@ -597,7 +579,7 @@ function CreativeAdNamesEditor({
       </div>
 
       {hasRegistry ? (
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <AdNameDropdownPicker
             availableAdNames={availableAdNames!}
             selected={asset.ad_names}
@@ -605,6 +587,7 @@ function CreativeAdNamesEditor({
             defaultOpen={autoFocusPicker && asset.ad_names.length === 0}
           />
           {asset.ad_names.length > 0 && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
+          <MatchMethodBadge method={asset.match_method} />
         </div>
       ) : editingFree ? (
         <div className="flex items-center gap-1.5">
@@ -637,10 +620,11 @@ function CreativeAdNamesEditor({
           </button>
         </div>
       ) : (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <div className="text-[10px] text-muted-foreground/85 flex-1">
             {asset.ad_names.length > 0 ? `Mapped to: ${asset.ad_names.join(", ")}` : "No ad name mapped yet"}
           </div>
+          <MatchMethodBadge method={asset.match_method} />
           <button
             onClick={() => { setValue(asset.ad_names.join(", ")); setEditingFree(true); }}
             className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-muted-foreground/80 hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
@@ -716,7 +700,7 @@ function CreativeUploadSection({
 
       try {
         const content_base64 = await fileToBase64(file);
-        const matchedName = suggestAdNameMatch(file.name, matchCandidates);
+        const match = suggestAdNameMatch(file.name, matchCandidates);
         const staged = await stageManualImportWithProgress(
           accountId,
           {
@@ -724,7 +708,8 @@ function CreativeUploadSection({
             filename: file.name,
             content_type: file.type || undefined,
             content_base64,
-            ad_names: matchedName ? [matchedName] : [],
+            ad_names: match ? [match.name] : [],
+            match_method: match?.method,
           },
           setCurrentPct
         );

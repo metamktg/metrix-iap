@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ManualImportKind } from './manualImportKind';
+import type { ManualImportMatchMethod } from './manualImportMatchMethod';
 import type { ManualImportStatus } from './manualImportStatus';
 
 export interface ManualImport {
@@ -16,6 +17,8 @@ export interface ManualImport {
   content_type?: string | null;
   size_bytes: number;
   ad_names: string[];
+  /** How ad_names was auto-suggested at stage time (id code vs filename similarity), if it still matches the saved mapping. Cleared once the mapping is overridden. */
+  match_method?: ManualImportMatchMethod;
   status: ManualImportStatus;
   created_at: string;
 }

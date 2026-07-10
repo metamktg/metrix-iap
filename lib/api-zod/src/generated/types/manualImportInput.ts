@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ManualImportInputKind } from './manualImportInputKind';
+import type { ManualImportInputMatchMethod } from './manualImportInputMatchMethod';
 
 export interface ManualImportInput {
   kind: ManualImportInputKind;
@@ -23,4 +24,6 @@ export interface ManualImportInput {
   content_base64: string;
   /** For creative_asset uploads only — the ad name(s) this creative is mapped to. */
   ad_names?: string[];
+  /** How ad_names was auto-suggested at stage time (id code vs filename similarity), if at all. */
+  match_method?: ManualImportInputMatchMethod;
 }

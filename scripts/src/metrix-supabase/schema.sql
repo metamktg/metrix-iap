@@ -619,6 +619,13 @@ create index if not exists manual_imports_account_kind_idx on manual_imports (ac
 alter table manual_imports add column if not exists content_type text;
 alter table manual_imports add column if not exists ad_names text[] not null default '{}';
 
+-- Persists how the ad-name mapping was auto-suggested at stage time (id
+-- code vs filename similarity) so the "Matched by…" badge survives reload
+-- instead of only living in client component state. Cleared whenever the
+-- mapping is overridden (dropdown or free-text), so it never lies about a
+-- manually-picked mapping.
+alter table manual_imports add column if not exists match_method text check (match_method in ('id', 'fuzzy'));
+
 -- Generic bucket for Ecommerce/Service/App-specific metrics observed in a
 -- manual CSV upload. Keyed by slugified Meta column name; absent metrics
 -- are simply missing keys — never fabricated as 0/null.
