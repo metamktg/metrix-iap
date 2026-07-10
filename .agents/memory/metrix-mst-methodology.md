@@ -17,8 +17,13 @@ Product copy sometimes calls it "Marketing Strategy Template"; the methodology i
 - Diagonals only when square ≥3×3: ↘ shares one strategic var; ↙ shares one counterbalance var.
 - Canonical global taxonomy: `CN_ FW_ TN_ ST_ AW_ HP_ PR_ HK_` (+ client `CN_ICP_ CN_Design_ CN_CTA_`).
 - Cell codes: columns `C1..Cn` (concept order), rows `A,B,C…`, cell = `<Col><Row>` e.g. `C1A`.
-- **Honesty**: build at the account's real cardinality. LittleData has exactly 3 ICPs → 3 columns;
-  a literal 4×4 would fabricate a 4th avatar/row with no data. Never pad the grid to hit 4×4.
+- **Honesty via flagging, not refusal (user decision, final):** the canonical matrix is 4×4. When an
+  account has fewer than 4 real ICPs, pad to 4 columns with EXPLORATORY columns —
+  `avatar_basis="exploratory"`, blank `profile_id`/ICP link, invented avatar the prompt must flag as a
+  hypothesis. LittleData = 3 real ICPs (C1–C3) + 1 exploratory (C4). With ZERO real ICPs, leave
+  columns empty and fall back to general mode. **Why:** the user explicitly chose 4×4-with-exploratory
+  over a 3×3 that omits the 4th; honesty is preserved by transparent flagging, never by fabricating
+  customer data. (Supersedes the earlier "never pad the grid to 4×4" guidance.)
 - Newest execution layer (Andromeda Olympic Rings, Dec-2025): broad targeting, ABO, Advantage+
   auto-placements, behavioral > demographic, distinct concepts > near-duplicates, CTR = early signal.
 
