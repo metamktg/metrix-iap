@@ -74,7 +74,11 @@ export const StageManualImportResponse = zod.object({
   "import_id": zod.string(),
   "filename": zod.string(),
   "size_bytes": zod.number(),
-  "note": zod.string().describe('Honest processing note (staged for analysis, not parsed into performance data).')
+  "note": zod.string().describe('Honest processing note (staged for analysis, not parsed into performance data).'),
+  "link_result": zod.object({
+  "matched": zod.array(zod.string()).describe('Ad names that resolved to a real ad row and were linked to this asset.'),
+  "unmatched": zod.array(zod.string()).describe('Ad names with no matching ad row — the asset is staged but not linked to a live ad.')
+}).optional().describe('Per-file result of linking a staged creative asset to its ad name(s).')
 })
 
 
@@ -100,7 +104,11 @@ export const ListManualImportsResponse = zod.object({
   "ad_names": zod.array(zod.string()),
   "match_method": zod.enum(['id', 'fuzzy', 'guess']).nullish().describe('How ad_names was auto-suggested at stage time (id code, confident filename similarity, or low-confidence closest guess), if it still matches the saved mapping. Cleared once the mapping is overridden.'),
   "status": zod.enum(['staged', 'processed', 'rejected']),
-  "created_at": zod.string()
+  "created_at": zod.string(),
+  "link_result": zod.object({
+  "matched": zod.array(zod.string()).describe('Ad names that resolved to a real ad row and were linked to this asset.'),
+  "unmatched": zod.array(zod.string()).describe('Ad names with no matching ad row — the asset is staged but not linked to a live ad.')
+}).optional().describe('Per-file result of linking a staged creative asset to its ad name(s).')
 }))
 })
 
@@ -133,7 +141,11 @@ export const UpdateManualImportAdNamesResponse = zod.object({
   "ad_names": zod.array(zod.string()),
   "match_method": zod.enum(['id', 'fuzzy', 'guess']).nullish().describe('How ad_names was auto-suggested at stage time (id code, confident filename similarity, or low-confidence closest guess), if it still matches the saved mapping. Cleared once the mapping is overridden.'),
   "status": zod.enum(['staged', 'processed', 'rejected']),
-  "created_at": zod.string()
+  "created_at": zod.string(),
+  "link_result": zod.object({
+  "matched": zod.array(zod.string()).describe('Ad names that resolved to a real ad row and were linked to this asset.'),
+  "unmatched": zod.array(zod.string()).describe('Ad names with no matching ad row — the asset is staged but not linked to a live ad.')
+}).optional().describe('Per-file result of linking a staged creative asset to its ad name(s).')
 })
 
 

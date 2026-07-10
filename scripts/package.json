@@ -8,6 +8,7 @@
     "check:api-codegen-drift": "tsx ./src/check-api-codegen-drift.ts",
     "smoke:api-server": "tsx ./src/smoke-api-server.ts",
     "smoke:metrix-iap-build": "tsx ./src/smoke-metrix-iap-build.ts",
+    "smoke:marketing-build": "tsx ./src/smoke-marketing-build.ts",
     "import:metrix": "tsx ./src/metrix-supabase/import.ts",
     "create:user": "tsx ./src/create-user.ts",
     "mirror:auth-users": "tsx ./src/metrix-official/mirror-auth-users.ts",

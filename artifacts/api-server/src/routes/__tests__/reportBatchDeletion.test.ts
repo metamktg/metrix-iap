@@ -169,10 +169,10 @@ describe("POST /metrix/workspaces/:workspaceId/reports/batch-delete", () => {
     ];
     const res = await post(workspaceId, { report_ids: ids }, adminToken);
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as { status?: string; deleted_count?: number; deleted_ids?: number[] };
     expect(body.status).toBe("deleted");
     expect(body.deleted_count).toBe(3);
-    expect([...body.deleted_ids].sort()).toEqual([...ids].sort());
+    expect([...(body.deleted_ids ?? [])].sort()).toEqual([...ids].sort());
     expect(await existingIds(ids)).toEqual([]);
   });
 
@@ -180,7 +180,7 @@ describe("POST /metrix/workspaces/:workspaceId/reports/batch-delete", () => {
     const real = await insertReport(adminUserId);
     const res = await post(workspaceId, { report_ids: [real, 987654321] }, adminToken);
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as { status?: string; deleted_count?: number; deleted_ids?: number[] };
     expect(body.deleted_count).toBe(1);
     expect(body.deleted_ids).toEqual([real]);
     expect(await existingIds([real])).toEqual([]);
@@ -190,7 +190,7 @@ describe("POST /metrix/workspaces/:workspaceId/reports/batch-delete", () => {
     const adminOwned = await insertReport(adminUserId);
     const res = await post(workspaceId, { report_ids: [adminOwned] }, memberToken);
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = (await res.json()) as { status?: string; deleted_count?: number; deleted_ids?: number[] };
     expect(body.deleted_count).toBe(0);
     expect(body.deleted_ids).toEqual([]);
     // The admin's report is untouched.

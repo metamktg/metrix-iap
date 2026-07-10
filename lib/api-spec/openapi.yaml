@@ -2654,6 +2654,23 @@ components:
         - kind
         - filename
         - content_base64
+    CreativeLinkResult:
+      type: object
+      description: Per-file result of linking a staged creative asset to its ad name(s).
+      properties:
+        matched:
+          type: array
+          description: Ad names that resolved to a real ad row and were linked to this asset.
+          items:
+            type: string
+        unmatched:
+          type: array
+          description: Ad names with no matching ad row — the asset is staged but not linked to a live ad.
+          items:
+            type: string
+      required:
+        - matched
+        - unmatched
     ManualImportResult:
       type: object
       properties:
@@ -2669,6 +2686,8 @@ components:
         note:
           type: string
           description: Honest processing note (staged for analysis, not parsed into performance data).
+        link_result:
+          $ref: "#/components/schemas/CreativeLinkResult"
       required:
         - status
         - import_id
@@ -2706,6 +2725,8 @@ components:
           enum: [staged, processed, rejected]
         created_at:
           type: string
+        link_result:
+          $ref: "#/components/schemas/CreativeLinkResult"
       required:
         - id
         - account_id

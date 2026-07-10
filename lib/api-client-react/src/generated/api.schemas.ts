@@ -325,6 +325,16 @@ export interface ManualImportInput {
   match_method?: ManualImportInputMatchMethod;
 }
 
+/**
+ * Per-file result of linking a staged creative asset to its ad name(s).
+ */
+export interface CreativeLinkResult {
+  /** Ad names that resolved to a real ad row and were linked to this asset. */
+  matched: string[];
+  /** Ad names with no matching ad row — the asset is staged but not linked to a live ad. */
+  unmatched: string[];
+}
+
 export type ManualImportResultStatus = typeof ManualImportResultStatus[keyof typeof ManualImportResultStatus];
 
 
@@ -339,6 +349,7 @@ export interface ManualImportResult {
   size_bytes: number;
   /** Honest processing note (staged for analysis, not parsed into performance data). */
   note: string;
+  link_result?: CreativeLinkResult;
 }
 
 export type ManualImportKind = typeof ManualImportKind[keyof typeof ManualImportKind];
@@ -383,6 +394,7 @@ export interface ManualImport {
   match_method?: ManualImportMatchMethod;
   status: ManualImportStatus;
   created_at: string;
+  link_result?: CreativeLinkResult;
 }
 
 export interface ListManualImportsResult {

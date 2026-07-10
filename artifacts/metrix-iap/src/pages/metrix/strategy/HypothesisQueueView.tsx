@@ -10,7 +10,7 @@ import { getAdAccount, getStrategyData, getBriefBuilder } from "@/lib/data/metri
 import {
   ModuleHeader, ScopeBanner, ModuleTabs, ModuleScopeGate, PendingState,
   MetricTile, CrossLink, useFocusParam,
-  RangeScopeBar, NoDataInRangeState,
+  RangeScopeBar, NoDataInRangeState, StaleFocusNotice,
 } from "../shared";
 import {
   HypothesisStatusBadge, PillarDetailSections, VariableStackChips, pillarHasDetails,
@@ -97,6 +97,9 @@ export function HypothesisQueueView() {
               table="active_hypotheses, message_pillars"
             />
             <ScopeBanner account={acct} />
+            {focus && !s.active_hypotheses.some((h) => h.id === focus) && (
+              <StaleFocusNotice label="hypothesis" />
+            )}
             <RangeScopeBar grainNote="Hypotheses derive from the account's full flight window — this import has no daily grain." />
 
             {!rangeHasData ? (

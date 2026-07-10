@@ -42,6 +42,7 @@ export * from './channelPref';
 export * from './createAdAccountInput';
 export * from './createAdAccountResult';
 export * from './createAdAccountResultStatus';
+export * from './creativeLinkResult';
 export * from './eventPref';
 export * from './generatedReport';
 export * from './generatedReportCreateInput';

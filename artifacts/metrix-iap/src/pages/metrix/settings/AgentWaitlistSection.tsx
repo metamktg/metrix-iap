@@ -15,11 +15,11 @@ import {
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const WAITLIST_PAGE_SIZE = 50;
-const WAITLIST_EXPORT_PAGE_SIZE = 200;
 const ADMIN_KEY_STORAGE = "metrix-admin-key";
 
 export function AgentWaitlistSection() {
   const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
   const [adminKey, setAdminKey] = useState<string | null>(
     () => sessionStorage.getItem(ADMIN_KEY_STORAGE),
   );
@@ -143,30 +143,31 @@ export function AgentWaitlistSection() {
   const handleExport = async () => {
     if (isExporting || total === 0) return;
     setIsExporting(true);
+    setExportError(null);
     try {
-      const all: { email: string; status: string; joined_at: string }[] = [];
-      let offset = 0;
-      for (;;) {
-        const page = await listAgentWaitlist(
-          { limit: WAITLIST_EXPORT_PAGE_SIZE, offset },
-          { headers: authHeaders },
+      // Single server-streamed request: the API writes the entire waitlist as
+      // CSV in one response (keyset-paged server-side), so there is no
+      // client-side page loop and export stays fast at any scale.
+      const res = await fetch("/api/metrix/agent-waitlist/export.csv", {
+        headers: authHeaders,
+        credentials: "include",
+      });
+      if (!res.ok) {
+        throw new Error(
+          res.status === 401
+            ? "Admin authorization required to export."
+            : `Export failed (HTTP ${res.status}).`,
         );
-        all.push(...page.entries);
-        offset += page.entries.length;
-        if (page.entries.length === 0 || offset >= page.total) break;
       }
-      if (all.length === 0) return;
-      const escapeCsv = (value: string) =>
-        /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
-      const header = "email,status,joined_at";
-      const lines = all.map((e) => `${escapeCsv(e.email)},${e.status},${e.joined_at}`);
-      const blob = new Blob([[header, ...lines].join("\n")], { type: "text/csv;charset=utf-8" });
+      const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = "metrix-agent-waitlist.csv";
       a.click();
       URL.revokeObjectURL(url);
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : "Export failed. Try again.");
     } finally {
       setIsExporting(false);
     }
@@ -197,6 +198,11 @@ export function AgentWaitlistSection() {
         </div>
       }
     >
+      {exportError && (
+        <div className="mb-2 text-[11px] text-red-400/90 px-3 py-2 rounded-md border border-red-400/25 bg-red-400/[0.06]">
+          {exportError}
+        </div>
+      )}
       {isLoading ? (
         <div className="text-[11px] text-muted-foreground/70 p-3">Loading waitlist…</div>
       ) : isError ? (

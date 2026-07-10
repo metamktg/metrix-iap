@@ -364,6 +364,9 @@ function PendingInviteRow({
 
   const handleRevoke = () => {
     if (isRevoking || isResending) return;
+    if (!window.confirm(`Revoke the invite for ${invite.email}? They will lose access and any temp password stops working.`)) {
+      return;
+    }
     setError(null);
     revoke(
       { workspaceId, inviteId: invite.id },
@@ -782,7 +785,7 @@ function TeamAccessViewInner() {
   const ws = getWorkspaceSettings(seed);
   const [inviteOpen, setInviteOpen] = useState(false);
   const { user } = useAuth();
-  const { data: invitesData } = useListWorkspaceInvites(manager.id);
+  const { data: invitesData, isError: invitesFailed } = useListWorkspaceInvites(manager.id);
   const { data: membersData } = useListWorkspaceMembers(manager.id);
 
   // The real roster (members/invites) always comes from the auth DB, not the
@@ -927,6 +930,14 @@ function TeamAccessViewInner() {
                 )}
                 </div>
               ))}
+              {invitesFailed && (
+                <div
+                  className="px-3 py-2.5 text-[11px] text-amber-400/90 bg-amber-400/[0.05]"
+                  data-testid="text-invites-load-error"
+                >
+                  Couldn't load pending invites — this list may be incomplete. Refresh to try again.
+                </div>
+              )}
               {pendingInvites.map((inv) => (
                 <PendingInviteRow key={`invite-${inv.id}`} workspaceId={manager.id} invite={inv} />
               ))}
