@@ -492,11 +492,11 @@ async function importLittleData(q: Q): Promise<number> {
   for (const h of ldStrategy.testing_hypotheses ?? []) {
     await q(
       `insert into testing_hypotheses (account_id, hypothesis_id, statement, control_ref, test_variant,
-         isolated_variable, sample_requirement, duration, success_criteria, risk, expected_impact, failure_plan, priority)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+         isolated_variable, sample_requirement, duration, success_criteria, risk, expected_impact, failure_plan, priority, pillar_id)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
       [LD_ACCOUNT_ID, h.hypothesis_id, str(h.statement), str(h.control), str(h.test_variant),
         str(h.isolated_variable), str(h.sample_requirement), str(h.duration), str(h.success_criteria),
-        str(h.risk), str(h.expected_impact), str(h.failure_plan), str(h.priority)],
+        str(h.risk), str(h.expected_impact), str(h.failure_plan), str(h.priority), h.pillar_id ?? null],
     );
   }
 
@@ -937,11 +937,11 @@ async function main() {
     for (const h of strategy.testing_hypotheses ?? []) {
       await q(
         `insert into testing_hypotheses (account_id, hypothesis_id, statement, control_ref, test_variant,
-           isolated_variable, sample_requirement, duration, success_criteria, risk, expected_impact, failure_plan, priority)
-         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+           isolated_variable, sample_requirement, duration, success_criteria, risk, expected_impact, failure_plan, priority, pillar_id)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
         [ACCOUNT_ID, h.hypothesis_id, str(h.statement), str(h.control), str(h.test_variant),
           str(h.isolated_variable), str(h.sample_requirement), str(h.duration), str(h.success_criteria),
-          str(h.risk), str(h.expected_impact), str(h.failure_plan), str(h.priority)],
+          str(h.risk), str(h.expected_impact), str(h.failure_plan), str(h.priority), h.pillar_id ?? null],
       );
     }
     await q(`insert into account_modules (account_id, module, payload) values ($1,'scaling_playbook',$2)`,

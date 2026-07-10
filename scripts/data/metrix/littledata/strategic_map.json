@@ -143,6 +143,7 @@
   "testing_hypotheses": [
     {
       "hypothesis_id": "LD-H1",
+      "pillar_id": "LD-PILLAR-PERSONAL-STORY",
       "statement": "Emotional gift-moment narrative (HK_Story/HK_Shock + TN_Emotional + precisely-named street) outconverts offer-led catalog creative for cold traffic.",
       "control": "1 Print Static (LD-CN-GIFT-MOMENT, $107.24, 1 purchase)",
       "test_variant": "Gift-moment MST cells: hook (Story/Shock vs Question vs Stat) x concept staging (kitchen gift scene vs unwrap moment vs recipient reaction), single copy variant per cell",
@@ -171,6 +172,7 @@
     },
     {
       "hypothesis_id": "LD-H3",
+      "pillar_id": "LD-PILLAR-CITY-PRIDE",
       "statement": "Geo-specific city pride works only when geo-targeted tightly; broad delivery wastes it.",
       "control": "Music Row Static - Pride ($233.55, 0 purchases on broad delivery)",
       "test_variant": "Same city-pride creative re-run against Nashville-metro-only geo targeting",

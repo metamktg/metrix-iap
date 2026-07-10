@@ -83,15 +83,14 @@ export function StrategyMapView() {
           };
         };
 
-        // A hypothesis feeds a pillar if its source references the pillar id or a source cell.
-        const hypothesesFor = (pillarId: string, cellIds: string[]) =>
-          hypotheses.filter((h) => {
-            const src = h.source.toLowerCase();
-            return src.includes(pillarId.toLowerCase()) || cellIds.some((c) => src.includes(c.toLowerCase()));
-          });
+        // A hypothesis feeds a pillar only via its explicit pillar_id link —
+        // no text inference, so it can never mislink. Hypotheses without a
+        // link (or pointing at a pillar not in this set) stay unattached.
+        const pillarIds = new Set(pillars.map((p) => p.id));
+        const hypothesesFor = (pillarId: string) =>
+          hypotheses.filter((h) => h.pillar_id === pillarId);
 
-        const claimed = new Set(pillars.flatMap((p) => hypothesesFor(p.id, p.source_cells).map((h) => h.id)));
-        const unattached = hypotheses.filter((h) => !claimed.has(h.id));
+        const unattached = hypotheses.filter((h) => !h.pillar_id || !pillarIds.has(h.pillar_id));
 
         return (
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
@@ -111,7 +110,7 @@ export function StrategyMapView() {
             <div className="px-6 py-5 space-y-4 max-w-5xl">
               {pillars.map((p, i) => {
                 const evidence = cellEvidence(p.source_cells);
-                const linked = hypothesesFor(p.id, p.source_cells);
+                const linked = hypothesesFor(p.id);
                 const isOpen = expanded[p.id] ?? false;
                 const hasDetails = pillarHasDetails(p);
                 return (

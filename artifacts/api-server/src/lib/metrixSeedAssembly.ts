@@ -366,6 +366,7 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
       label: h["statement"] ?? "",
       source: h["control_ref"] ?? "",
       status: h["priority"] ?? "unprioritized",
+      pillar_id: h["pillar_id"] ?? undefined,
       risk: h["risk"] ?? undefined,
       test_variant: h["test_variant"],
       isolated_variable: h["isolated_variable"],

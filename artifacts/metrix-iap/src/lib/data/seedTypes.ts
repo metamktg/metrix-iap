@@ -193,6 +193,10 @@ export interface ActiveHypothesis {
   label: string;
   source: string;
   status: string;
+  /** Explicit id of the message pillar this hypothesis tests. Absent when
+   * the source data carries no link — such hypotheses stay honestly
+   * unattached rather than being inferred from text. */
+  pillar_id?: string;
   risk?: string;
   test_variant?: string;
   isolated_variable?: string;

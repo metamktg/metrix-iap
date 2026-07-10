@@ -563,6 +563,9 @@ alter table message_pillars add column if not exists source text not null defaul
 alter table message_pillars add column if not exists generation_run_id uuid;
 alter table testing_hypotheses add column if not exists source text not null default 'imported';
 alter table testing_hypotheses add column if not exists generation_run_id uuid;
+-- Explicit pillar linkage: which message pillar this hypothesis tests.
+-- Nullable — imported rows without a link stay honestly unattached.
+alter table testing_hypotheses add column if not exists pillar_id text;
 alter table imported_creative_briefs add column if not exists source text not null default 'imported';
 alter table imported_creative_briefs add column if not exists generation_run_id uuid;
 

@@ -4168,6 +4168,7 @@
             },
             {
               "id": "HYP_003",
+              "pillar_id": "PILLAR_MaleEfficiencyTest",
               "label": "We believe that a dedicated Male 55-64 / Male 35-44 creative will outperform current overflow-driven CPA because these segments already convert best in the account without any purpose-built message.",
               "source": "Current broad targeting (no dedicated creative)",
               "status": "P2",
@@ -11152,6 +11153,7 @@
           "active_hypotheses": [
             {
               "id": "LD-H1",
+              "pillar_id": "LD-PILLAR-PERSONAL-STORY",
               "label": "Emotional gift-moment narrative (HK_Story/HK_Shock + TN_Emotional + precisely-named street) outconverts offer-led catalog creative for cold traffic.",
               "source": "1 Print Static (LD-CN-GIFT-MOMENT, $107.24, 1 purchase)",
               "status": "P1",
@@ -11174,6 +11176,7 @@
             },
             {
               "id": "LD-H3",
+              "pillar_id": "LD-PILLAR-CITY-PRIDE",
               "label": "Geo-specific city pride works only when geo-targeted tightly; broad delivery wastes it.",
               "source": "Music Row Static - Pride ($233.55, 0 purchases on broad delivery)",
               "status": "P2",
