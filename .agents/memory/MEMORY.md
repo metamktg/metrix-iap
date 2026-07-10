@@ -22,4 +22,5 @@
 - [Supabase bytea file serving](supabase-bytea-file-serving.md) — PostgREST returns bytea as hex string with `\x` prefix on read, same as insert; strip prefix before Buffer.from(hex).
 - [In-process route testing](in-process-route-testing.md) — boot the real app with app.listen(0) + fetch to test routes gated by real DB/Supabase middleware, don't mock it.
 - [API server dev script rebuilds on restart](api-server-dev-rebuild.md) — the API server's dev workflow does a full esbuild+start, not HMR; new/changed routes 404 until the workflow is restarted.
+- [Exact-dim ad PNG export](exact-dim-ad-export.md) — use playwright-core + REPLIT_PLAYWRIGHT_CHROMIUM_EXECUTABLE (npx hangs downloading); magick -trim baked-in mockup wall margins; cache-bust canvas src.
 - [Regex \b boundary breaks on underscore](regex-word-boundary-underscore.md) — \b fails between digit and "_" (both \w); use (?<![a-z0-9])/(?![a-z0-9]) lookarounds to extract tokens from underscore-separated filenames.

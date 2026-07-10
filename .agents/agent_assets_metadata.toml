@@ -53,3 +53,99 @@ id = "1M_NsCzXA7GT4ZUTDR5-7"
 uri = "file://artifacts/metrix-iap/REPAIR_INVENTORY.md"
 type = "text"
 title = "Metrix IAP — Repair Inventory & QA Report"
+
+[[outputs]]
+id = "SOeGtzPQbenFZE3BpMLHq"
+uri = "file://exports/eca-ads/c1a-1x1.png"
+type = "image"
+title = "C1A · Feed 1:1 (1080×1080)"
+
+[[outputs]]
+id = "lcEtBv1E9mW5-h4BhdSu2"
+uri = "file://exports/eca-ads/c1a-9x16.png"
+type = "image"
+title = "C1A · Story/Reels 9:16 (1080×1920)"
+
+[[outputs]]
+id = "-GXF61ZJOuLhAGPzCCKly"
+uri = "file://exports/eca-ads/c2b-1x1.png"
+type = "image"
+title = "C2B · Feed 1:1 (1080×1080)"
+
+[[outputs]]
+id = "0oPChB176YFVgwCrMOnV3"
+uri = "file://exports/eca-ads/c2b-9x16.png"
+type = "image"
+title = "C2B · Story/Reels 9:16 (1080×1920)"
+
+[[outputs]]
+id = "7VF9NhG7Zl4QkhyVFxejF"
+uri = "file://exports/eca-ads/c3c-1x1.png"
+type = "image"
+title = "C3C · Feed 1:1 (1080×1080)"
+
+[[outputs]]
+id = "CWCVbIOh7ScZRde-tXfzW"
+uri = "file://exports/eca-ads/c3c-9x16.png"
+type = "image"
+title = "C3C · Story/Reels 9:16 (1080×1920)"
+
+[[outputs]]
+id = "80jD-LiQNRNLF4UVxHBO-"
+uri = "file://exports/eca-ads/c4d-1x1.png"
+type = "image"
+title = "C4D · Feed 1:1 (1080×1080) · exploratory"
+
+[[outputs]]
+id = "jRFNinOWT5Xd41_uneerh"
+uri = "file://exports/eca-ads/c4d-9x16.png"
+type = "image"
+title = "C4D · Story/Reels 9:16 (1080×1920) · exploratory"
+
+[[outputs]]
+id = "x64CTi-o_UBE656C_sOJV"
+uri = "file://exports/eca-ads/c1d-1x1.png"
+type = "image"
+title = "C1D · Feed 1:1 (1080×1080)"
+
+[[outputs]]
+id = "af1wEKI_oGDP5B7XbD7gt"
+uri = "file://exports/eca-ads/c1d-9x16.png"
+type = "image"
+title = "C1D · Story/Reels 9:16 (1080×1920)"
+
+[[outputs]]
+id = "RW-LfyNd1e6RuD7LatLks"
+uri = "file://exports/eca-ads/c2c-1x1.png"
+type = "image"
+title = "C2C · Feed 1:1 (1080×1080)"
+
+[[outputs]]
+id = "fIVA3ZUOieUmjNkvYXolN"
+uri = "file://exports/eca-ads/c2c-9x16.png"
+type = "image"
+title = "C2C · Story/Reels 9:16 (1080×1920)"
+
+[[outputs]]
+id = "PPGnXK9sO5FhMdjg2e5jb"
+uri = "file://exports/eca-ads/c3b-1x1.png"
+type = "image"
+title = "C3B · Feed 1:1 (1080×1080)"
+
+[[outputs]]
+id = "-igjMmlavVsJErhiXz26v"
+uri = "file://exports/eca-ads/c3b-9x16.png"
+type = "image"
+title = "C3B · Story/Reels 9:16 (1080×1920)"
+
+[[outputs]]
+id = "1G9UL41KRXOaDG6GBHJ0S"
+uri = "file://exports/eca-ads/c4a-1x1.png"
+type = "image"
+title = "C4A · Feed 1:1 (1080×1080) · exploratory"
+
+[[outputs]]
+id = "8gmLz7PLCouN9mW4OWkM0"
+uri = "file://exports/eca-ads/c4a-9x16.png"
+type = "image"
+title = "C4A · Story/Reels 9:16 (1080×1920) · exploratory"
