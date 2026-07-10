@@ -40,6 +40,23 @@ Product copy sometimes calls it "Marketing Strategy Template"; the methodology i
   testing_framework / creative_specifications / copy_architecture) so the existing draft_briefs
   mapping and brief-detail view render them without seed-assembly changes.
 
+## LittleData real brand = East Coast Art Studio (durable)
+The LittleData demo account's real brand is **East Coast Art Studio** (eastcoastartstudio.com, a
+Shopify store of 250+ painterly/cubist city street-sign travel art prints). MST creatives for this
+account must use REAL product photography, not AI-invented images.
+- Pull imagery from Shopify JSON: `/products.json?limit=250` (paginates; some products e.g. Nashville
+  "Music Row" are past page 1 — fetch `/products/<handle>.json` directly). Handle for Nashville:
+  `music-row-wall-art-cubist-nashville-tennessee-usa`.
+- **Image index pattern is consistent per product**: idx0 = flat artwork, idx1 = framed leaning w/
+  plant, idx2 = flat-lay in tray, idx3 = styled room scene (best hero), idx4 = frame-material
+  swatches (great for "not a cheap poster" spec ads), idx5 = size guide.
+- Shopify CDN resize trick: insert `_<W>x` before the extension — `src.replace(/(\.\w+)(\?.*)?$/,'_1200x$1$2')`.
+- **Honest spec claims** come straight from product `body_html`: "museum-grade 200gsm fine-art paper,
+  archival pigment inks, pine wood or metal frames, framed/unframed, made to order." No clean CDN logo
+  exists → use a text wordmark "EAST COAST ART STUDIO".
+- **Why:** the user rejected invented brand/AI imagery and required real website assets; review
+  numbers (ratings/counts) in DR mockups are placeholders to be replaced with the brand's real figures.
+
 ## Column↔ICP join — honesty traps (durable)
 The matrix grid columns are bridged to strategy ICP profiles via matrix-mode briefs (a brief's
 matrix cell code + its target ICP). Two non-obvious ways this silently fabricates or drops links:
