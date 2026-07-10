@@ -41,6 +41,8 @@ import type {
   GeneratedReportCreateInput,
   GeneratedReportCreateResult,
   GeneratedReportDeleteResult,
+  GeneratedReportsBatchDeleteInput,
+  GeneratedReportsBatchDeleteResult,
   GeneratedReportsResult,
   GrantMemberAdAccountInput,
   HealthStatus,
@@ -4128,6 +4130,78 @@ export const useDeleteWorkspaceReport = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getDeleteWorkspaceReportMutationOptions(options));
+    }
+
+export const getBatchDeleteWorkspaceReportsUrl = (workspaceId: string,) => {
+
+
+
+
+  return `/api/metrix/workspaces/${workspaceId}/reports/batch-delete`
+}
+
+/**
+ * Permanently deletes several generated report documents (and their stored snapshots) from Report History in one confirmed action. Only in-app generated reports can be deleted; seed history entries live in the seed bundle and are not addressable here. Members can delete only their own reports; admins can delete any in the workspace. Ids that don't match a deletable report in the workspace are silently ignored. Requires a logged-in session with access to the workspace.
+ * @summary Delete multiple generated reports at once
+ */
+export const batchDeleteWorkspaceReports = async (workspaceId: string,
+    generatedReportsBatchDeleteInput: GeneratedReportsBatchDeleteInput, options?: RequestInit): Promise<GeneratedReportsBatchDeleteResult> => {
+
+  return customFetch<GeneratedReportsBatchDeleteResult>(getBatchDeleteWorkspaceReportsUrl(workspaceId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(generatedReportsBatchDeleteInput)
+  }
+);}
+
+
+
+
+export const getBatchDeleteWorkspaceReportsMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof batchDeleteWorkspaceReports>>, TError,{workspaceId: string;data: BodyType<GeneratedReportsBatchDeleteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof batchDeleteWorkspaceReports>>, TError,{workspaceId: string;data: BodyType<GeneratedReportsBatchDeleteInput>}, TContext> => {
+
+const mutationKey = ['batchDeleteWorkspaceReports'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof batchDeleteWorkspaceReports>>, {workspaceId: string;data: BodyType<GeneratedReportsBatchDeleteInput>}> = (props) => {
+          const {workspaceId,data} = props ?? {};
+
+          return  batchDeleteWorkspaceReports(workspaceId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BatchDeleteWorkspaceReportsMutationResult = NonNullable<Awaited<ReturnType<typeof batchDeleteWorkspaceReports>>>
+    export type BatchDeleteWorkspaceReportsMutationBody = BodyType<GeneratedReportsBatchDeleteInput>
+    export type BatchDeleteWorkspaceReportsMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Delete multiple generated reports at once
+ */
+export const useBatchDeleteWorkspaceReports = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof batchDeleteWorkspaceReports>>, TError,{workspaceId: string;data: BodyType<GeneratedReportsBatchDeleteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof batchDeleteWorkspaceReports>>,
+        TError,
+        {workspaceId: string;data: BodyType<GeneratedReportsBatchDeleteInput>},
+        TContext
+      > => {
+      return useMutation(getBatchDeleteWorkspaceReportsMutationOptions(options));
     }
 
 export const getGetMetaConnectionUrl = () => {

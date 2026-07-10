@@ -2010,6 +2010,53 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/workspaces/{workspaceId}/reports/batch-delete:
+    parameters:
+      - name: workspaceId
+        in: path
+        required: true
+        description: Workspace (manager account) identifier.
+        schema:
+          type: string
+          minLength: 1
+    post:
+      operationId: batchDeleteWorkspaceReports
+      tags: [metrix]
+      summary: Delete multiple generated reports at once
+      description: Permanently deletes several generated report documents (and their stored snapshots) from Report History in one confirmed action. Only in-app generated reports can be deleted; seed history entries live in the seed bundle and are not addressable here. Members can delete only their own reports; admins can delete any in the workspace. Ids that don't match a deletable report in the workspace are silently ignored. Requires a logged-in session with access to the workspace.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GeneratedReportsBatchDeleteInput"
+      responses:
+        "200":
+          description: Reports deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneratedReportsBatchDeleteResult"
+        "400":
+          description: Invalid request payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this workspace
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/meta/connection:
     get:
       operationId: getMetaConnection
@@ -3461,6 +3508,35 @@ components:
             $ref: "#/components/schemas/GeneratedReport"
       required:
         - reports
+    GeneratedReportsBatchDeleteInput:
+      type: object
+      properties:
+        report_ids:
+          type: array
+          description: Ids of the generated reports to delete. Must contain at least one id.
+          minItems: 1
+          maxItems: 200
+          items:
+            type: integer
+      required:
+        - report_ids
+    GeneratedReportsBatchDeleteResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [deleted]
+        deleted_ids:
+          type: array
+          description: Ids that were actually deleted (subset of the requested ids).
+          items:
+            type: integer
+        deleted_count:
+          type: integer
+      required:
+        - status
+        - deleted_ids
+        - deleted_count
     MetaConnectedAccount:
       type: object
       properties:

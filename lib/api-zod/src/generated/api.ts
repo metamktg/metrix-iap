@@ -1219,6 +1219,32 @@ export const DeleteWorkspaceReportResponse = zod.object({
 
 
 /**
+ * Permanently deletes several generated report documents (and their stored snapshots) from Report History in one confirmed action. Only in-app generated reports can be deleted; seed history entries live in the seed bundle and are not addressable here. Members can delete only their own reports; admins can delete any in the workspace. Ids that don't match a deletable report in the workspace are silently ignored. Requires a logged-in session with access to the workspace.
+ * @summary Delete multiple generated reports at once
+ */
+
+
+
+export const BatchDeleteWorkspaceReportsParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.')
+})
+
+export const batchDeleteWorkspaceReportsBodyReportIdsMax = 200;
+
+
+
+export const BatchDeleteWorkspaceReportsBody = zod.object({
+  "report_ids": zod.array(zod.number()).min(1).max(batchDeleteWorkspaceReportsBodyReportIdsMax).describe('Ids of the generated reports to delete. Must contain at least one id.')
+})
+
+export const BatchDeleteWorkspaceReportsResponse = zod.object({
+  "status": zod.enum(['deleted']),
+  "deleted_ids": zod.array(zod.number()).describe('Ids that were actually deleted (subset of the requested ids).'),
+  "deleted_count": zod.number()
+})
+
+
+/**
  * Returns whether the logged-in user has connected a Meta ad account, pending-selection state after OAuth, and the latest report pull status per report class.
  * @summary Get the current user's Meta ad account connection status
  */
