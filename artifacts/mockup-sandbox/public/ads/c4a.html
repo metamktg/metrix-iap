@@ -1,54 +1,37 @@
 <!doctype html>
-<!-- MST C4A (counter ↙) | East Coast Art Studio | design_system CN_Design_CoupleLifestyle | archetype: Two-print couple story (EXPLORATORY)
-     creative_name: C4A_CN_ICP_MillennialCouple_Exploratory_CN_Design_CoupleLifestyle_CN_Lifestyle_FW_StoryBrand_TN_Relatable_HK_Story_ST_TOFU_004
-     C4 column = EXPLORATORY hypothesis avatar (no real ICP). Two-print CSS composite on a styled wall. -->
+<!-- MST C4A (counter ↙) | East Coast Art Studio | archetype: Two-print couple gallery-wall story | EXPLORATORY concept
+     BRAND-MATCHED to eastcoastartstudio.com. Two real prints (c4a-l, c4a-r) as a paired gallery wall.
+     PLACEHOLDER: the short quote/name is representative — no real review text supplied. -->
 <html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>C4A — East Coast Art Studio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="brand.css">
 <style>
- *{margin:0;padding:0;box-sizing:border-box}
- html,body{width:100%;height:100%;overflow:hidden}
- .ad{--ac:#B0813F;position:relative;width:100vw;height:100vh;overflow:hidden;background:#0e0b09;font-family:"Inter",system-ui,sans-serif}
- .wall{position:absolute;inset:0;background:radial-gradient(130% 100% at 50% 22%,#efe3d0 0%,#e6d6bd 52%,#d3bf9f 100%)}
- .wall:after{content:"";position:absolute;inset:0;background:radial-gradient(120% 90% at 50% 30%,rgba(0,0,0,0) 55%,rgba(60,42,20,.18) 100%)}
- .gal{position:absolute;top:15%;left:0;right:0;display:flex;justify-content:center;align-items:flex-start;gap:5vw;z-index:2}
- .fr{background:#fbf7ef;padding:1.4vw;border:1.3vw solid #4a3722;box-shadow:0 3vw 5vw rgba(60,40,20,.3);}
- .fr img{display:block;width:33vw;height:auto}
- .fr.a{transform:rotate(-1.6deg)}
- .fr.b{transform:rotate(1.8deg);margin-top:5vw}
- .amp{align-self:center;margin-top:6vw;font-family:"Fraunces",serif;font-style:italic;font-weight:500;font-size:5vw;color:#7a5a34}
- .scrim{position:absolute;left:0;right:0;bottom:0;height:56%;background:linear-gradient(to bottom,rgba(20,14,8,0) 0%,rgba(20,14,8,.55) 52%,rgba(20,14,8,.93) 100%);z-index:3}
- .top{position:absolute;top:4.4vw;left:5vw;right:5vw;z-index:5;display:flex;align-items:center;justify-content:space-between}
- .brand{font-family:"Fraunces",serif;font-weight:600;font-size:2.5vw;letter-spacing:.16em;text-transform:uppercase;color:#5a4327}
- .stars{color:#c58b2f;font-size:2.5vw;letter-spacing:.2vw}
- .wrap{position:absolute;left:0;right:0;bottom:0;z-index:5;padding:0 6vw 6vw}
- .hook{font-family:"Fraunces",serif;font-weight:600;font-size:6.6vw;line-height:1.06;letter-spacing:-.01em;color:#fff;text-shadow:0 2px 16px rgba(0,0,0,.4)}
- .hook em{font-style:italic;font-weight:500;color:#f0d9b0}
- .sub{font-size:2.6vw;line-height:1.35;color:#f0e7d7;margin-top:2.4vw;max-width:32em}
- .cta{margin-top:4.2vw;display:inline-flex;align-items:center;gap:1.4vw;background:var(--ac);color:#fff;font-family:"Inter";font-weight:800;font-size:2.9vw;padding:3vw 4.8vw;border-radius:99px;box-shadow:0 1.4vw 3vw rgba(80,52,20,.3)}
- .tag{position:absolute;bottom:2.4vw;right:2.8vw;z-index:6;font-family:"Inter";font-size:1.75vw;font-weight:800;letter-spacing:.16em;color:#fff;background:rgba(0,0,0,.36);padding:1vw 2.2vw;border-radius:99px}
+ .ad{background:var(--cream)}
+ .top{display:flex;align-items:center;justify-content:center;padding:4vw 4vw 1vw}
+ .kick{text-align:center;font-size:2.2vw;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--amber);padding:1.6vw 4vw 0}
+ .hl{text-align:center;font-family:var(--serif);font-weight:700;font-size:5.6vw;line-height:1.06;color:var(--ink);padding:1vw 6vw 2.6vw}
+ .wall{flex:1 1 34vh;min-height:0;display:flex;align-items:center;justify-content:center;gap:4vw;padding:0 5vw}
+ .fr{position:relative;height:100%;display:flex;align-items:center}
+ .fr img{height:100%;width:auto;max-width:38vw;object-fit:contain;border-radius:.6vw}
+ .amp{font-family:var(--serif);font-style:italic;font-weight:600;font-size:6vw;color:var(--muted);flex:none}
+ .attr{text-align:center;font-size:2.5vw;font-style:italic;font-family:var(--serif);color:var(--ink-2);padding:3vw 6vw 0;line-height:1.34}
+ .attr b{font-style:normal;font-weight:600;color:var(--ink)}
+ .cta{padding:2.8vw 5vw 3.8vw;text-align:center}
 </style></head>
 <body>
  <div class="ad">
-   <div class="wall">
-     <div class="gal">
-       <figure class="fr a"><img src="../images/real/c4a-l.jpg" alt="Framed street print — where we met"></figure>
-       <span class="amp">&amp;</span>
-       <figure class="fr b"><img src="../images/real/c4a-r.jpg" alt="Framed street print — where we moved in"></figure>
-     </div>
-   </div>
-   <div class="scrim"></div>
-   <div class="top">
-     <span class="brand">East Coast Art Studio</span>
-     <span class="stars">★★★★★</span>
-   </div>
-   <div class="wrap">
-     <div class="hook">The street where we met. <em>The street where we moved in.</em></div>
-     <div class="sub">Frame every place your story happened — any street, any city.</div>
-     <a class="cta" href="#">Tell your story in prints →</a>
-   </div>
-   <div class="tag">C4A · EXPLORATORY</div>
+  <div class="top"><div class="eca-logo eca-logo--row" style="font-size:3.6vw"><span class="eca-logo__name">East Coast Art</span><span class="eca-logo__sub">Studio</span></div></div>
+  <div class="kick">His street &amp; her street</div>
+  <div class="hl">The two streets that<br>became one home.</div>
+  <div class="wall">
+   <div class="fr"><img class="eca-shadow" src="../images/real/c4a-l.jpg" alt="Framed print of one partner's home street"></div>
+   <div class="amp">&amp;</div>
+   <div class="fr"><img class="eca-shadow" src="../images/real/c4a-r.jpg" alt="Framed print of the other partner's home street"></div>
+  </div>
+  <div class="attr">"We framed where we each grew up. Now they hang side by side — just like us." <b>— Dana &amp; Sam</b></div>
+  <div class="cta"><a class="eca-cta" style="font-size:3vw" href="#">Build your pair <span class="eca-cta__ar">→</span></a></div>
+  <div class="eca-tag eca-tag--light">C4A · Exploratory</div>
  </div>
 </body></html>

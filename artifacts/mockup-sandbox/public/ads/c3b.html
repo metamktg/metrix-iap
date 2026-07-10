@@ -1,41 +1,36 @@
 <!doctype html>
-<!-- MST C3B (counter ↙) | East Coast Art Studio | design_system CN_Design_GeoIdentity | archetype: Playful geo-pride pattern interrupt
-     creative_name: C3B_CN_ICP_CityLoyalist_CN_Design_GeoIdentity_CN_UGC_FW_FAB_TN_Playful_HK_Problem_ST_TOFU_007 -->
+<!-- MST C3B (counter ↙) | East Coast Art Studio | archetype: Playful geo-pride pattern interrupt | ICP: City Loyalist
+     BRAND-MATCHED to eastcoastartstudio.com — elegant emphasis (Playfair italic + amber) instead of loud highlighter.
+     Destination match: CTA points to the city collection. -->
 <html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>C3B — East Coast Art Studio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="brand.css">
 <style>
- *{margin:0;padding:0;box-sizing:border-box}
- html,body{width:100%;height:100%;overflow:hidden}
- .ad{--ac:#2F4A3A;position:relative;width:100vw;height:100vh;overflow:hidden;background:#0e0b09;font-family:"Inter",system-ui,sans-serif}
- .photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center}
- .scrim{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(10,9,7,.35) 0%,rgba(10,9,7,0) 34%,rgba(14,16,12,.45) 60%,rgba(14,16,12,.94) 100%)}
- .top{position:absolute;top:4.2vw;left:5vw;right:5vw;z-index:4;display:flex;align-items:center;justify-content:space-between}
- .brand{font-family:"Fraunces",serif;font-weight:600;font-size:2.5vw;letter-spacing:.16em;text-transform:uppercase;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.5)}
- .chip{display:flex;align-items:center;gap:1vw;background:rgba(47,74,58,.9);border:1px solid rgba(255,255,255,.24);border-radius:99px;padding:1vw 2.4vw;color:#eaf1e9;font-size:2vw;font-weight:800;letter-spacing:.14em}
- .chip svg{width:2.4vw;height:2.4vw;display:block}
- .wrap{position:absolute;left:0;right:0;bottom:0;z-index:4;padding:6vw 5.4vw 5.6vw}
- .hook{font-family:"Archivo",sans-serif;font-weight:900;font-size:8.6vw;line-height:1;letter-spacing:-.025em;color:#fff;text-shadow:0 2px 18px rgba(0,0,0,.45)}
- .hook mark{background:#8FB98A;color:#16221a;padding:.02em .16em;border-radius:.1em;box-decoration-break:clone;-webkit-box-decoration-break:clone}
- .sub{font-size:2.7vw;line-height:1.34;color:#e6ede4;margin-top:2.8vw;max-width:32em}
- .cta{margin-top:4.4vw;display:inline-flex;align-items:center;gap:1.4vw;background:#EBE3D3;color:#1a2016;font-family:"Archivo";font-weight:800;font-size:3vw;padding:3.2vw 5vw;border-radius:99px}
- .tag{position:absolute;bottom:2.4vw;right:2.8vw;z-index:6;font-family:"Inter";font-size:1.8vw;font-weight:800;letter-spacing:.18em;color:#fff;background:rgba(0,0,0,.34);padding:1vw 2.2vw;border-radius:99px}
+ .ad{background:var(--dark)}
+ .media{position:absolute;inset:0}
+ .media::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgba(18,14,11,.94) 6%,rgba(18,14,11,.5) 42%,rgba(18,14,11,.14) 70%)}
+ .top{position:relative;z-index:5;display:flex;align-items:center;justify-content:space-between;padding:3.6vw 4vw}
+ .pin{display:inline-flex;align-items:center;gap:1.2vw;background:var(--amber);color:#1A1613;font-weight:600;font-size:2.15vw;letter-spacing:.14em;text-transform:uppercase;padding:1.2vw 2.4vw;border-radius:999px}
+ .pin svg{width:2.6vw;height:2.6vw}
+ .body{position:relative;z-index:5;margin-top:auto;padding:0 5vw 4vw;color:#F4EFE7}
+ h1{font-family:var(--serif);font-weight:700;font-size:6.5vw;line-height:1.04;letter-spacing:.004em}
+ h1 em{font-style:italic;color:var(--amber);font-weight:700}
+ .sub{font-size:2.6vw;line-height:1.42;color:#E4DBCE;margin:2.4vw 0 3.2vw;max-width:92%}
 </style></head>
 <body>
  <div class="ad">
-   <img class="photo" src="../images/real/c3b.jpg" alt="Hand-illustrated Nashville street print styled at home">
-   <div class="scrim"></div>
-   <div class="top">
-     <span class="brand">East Coast Art Studio</span>
-     <span class="chip"><svg viewBox="0 0 24 24" fill="#8FB98A"><path d="M12 2c-3.9 0-7 3.1-7 7 0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>NASHVILLE, TN</span>
-   </div>
-   <div class="wrap">
-     <div class="hook">Nashville deserves better than a <mark>gift-shop skyline</mark>.</div>
-     <div class="sub">Hand-illustrated prints of the streets you actually walk — not another generic postcard.</div>
-     <a class="cta" href="#">Find your Nashville street →</a>
-   </div>
-   <div class="tag">C3B</div>
+  <div class="media"><img class="eca-fill" src="../images/real/c3b.jpg" alt="Hand-illustrated Music Row Nashville street print, framed"></div>
+  <div class="top">
+   <div class="eca-logo eca-logo--row eca-logo--light" style="font-size:3.2vw"><span class="eca-logo__name">East Coast Art</span><span class="eca-logo__sub">Studio</span></div>
+   <div class="pin"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5A2.5 2.5 0 1112 6a2.5 2.5 0 010 5.5z"/></svg>Nashville, TN</div>
+  </div>
+  <div class="body">
+   <h1>Nashville deserves better than a <em>gift-shop skyline.</em></h1>
+   <div class="sub">Hand-illustrated prints of the streets you actually walk — not another generic postcard.</div>
+   <a class="eca-cta eca-cta--amber" style="font-size:3vw" href="#">Find your Nashville street <span class="eca-cta__ar">→</span></a>
+  </div>
+  <div class="eca-tag">C3B</div>
  </div>
 </body></html>
