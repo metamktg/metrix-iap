@@ -347,6 +347,92 @@ describe("buildAccountObject", () => {
     expect(summary["bottom_line_totals"]["onb_complete_registration"]["results"]).toBe(3);
   });
 
+  it("derives avatar column → ICP profile links only from valid matrix-mode briefs", () => {
+    const accountId = "linked";
+    const t = emptyTables();
+    t.adPerformance = groupByAccount([perfRow(accountId)]);
+    t.icpProfiles = groupByAccount([
+      { account_id: accountId, payload: { profile_id: "ICP_BOOK0_A" } },
+      { account_id: accountId, payload: { profile_id: "ICP_BOOK0_B" } },
+    ]);
+    t.accountModules = [
+      {
+        account_id: accountId,
+        module: "mst",
+        payload: {
+          status: "active",
+          historical_matrix_4x4: {
+            columns: [{ id: "C1" }, { id: "C2" }, { id: "C3" }, { id: "C4" }],
+          },
+        },
+      },
+    ];
+    const brief = (over: Row): Row => ({ account_id: accountId, ...over });
+    t.creativeBriefs = groupByAccount([
+      // matrix-mode brief: "C1B" → column C1, target ICP_BOOK0_A.
+      brief({
+        payload: {
+          brief_metadata: { mode: "matrix" },
+          testing_framework: { matrix_position: "C1B" },
+          strategic_foundation: { target_icp: "ICP_BOOK0_A" },
+        },
+      }),
+      // Second matrix brief on the same column with a different profile —
+      // links must accumulate and sort, not overwrite.
+      brief({
+        payload: {
+          brief_metadata: { mode: "matrix" },
+          testing_framework: { matrix_position: "C1A" },
+          strategic_foundation: { target_icp: "ICP_BOOK0_B" },
+        },
+      }),
+      // Parenthetical secondary ICP must be stripped to the leading token.
+      brief({
+        payload: {
+          brief_metadata: { mode: "matrix" },
+          testing_framework: { matrix_position: "C2A" },
+          strategic_foundation: { target_icp: "ICP_BOOK0_B (secondary: ICP_BOOK0_A)" },
+        },
+      }),
+      // General-mode brief (free-text position) must be ignored entirely.
+      brief({
+        payload: {
+          brief_metadata: { mode: "general" },
+          testing_framework: { matrix_position: "C1 hook variations" },
+          strategic_foundation: { target_icp: "ICP_BOOK0_A" },
+        },
+      }),
+      // Matrix brief pointing at an ICP that does not exist for this account —
+      // dropped so no link is fabricated (C3 stays bare).
+      brief({
+        payload: {
+          brief_metadata: { mode: "matrix" },
+          testing_framework: { matrix_position: "C3D" },
+          strategic_foundation: { target_icp: "ICP_BOOK0_Z" },
+        },
+      }),
+    ]);
+
+    const obj = buildAccountObject(
+      { id: accountId, name: "Linked", status: "configured" },
+      t,
+    );
+    const columns = obj["mst"]["historical_matrix_4x4"]["columns"] as Row[];
+    const byId = Object.fromEntries(columns.map((c) => [c["id"], c]));
+    // C1 accumulated both profiles, sorted.
+    expect(byId["C1"]["matched_profile_ids"]).toEqual(["ICP_BOOK0_A", "ICP_BOOK0_B"]);
+    // C2 normalized the parenthetical secondary down to the leading token.
+    expect(byId["C2"]["matched_profile_ids"]).toEqual(["ICP_BOOK0_B"]);
+    // C3's only brief referenced an unknown profile → no link field at all.
+    expect(byId["C3"]["matched_profile_ids"]).toBeUndefined();
+    // C4 had no brief → untouched.
+    expect(byId["C4"]["matched_profile_ids"]).toBeUndefined();
+    // The general-mode brief never leaked ICP_BOOK0_A onto a column via free text.
+    expect(
+      columns.every((c) => (c["matched_profile_ids"] ?? []).length <= 2),
+    ).toBe(true);
+  });
+
   it("scopes listen signal cards to the account", () => {
     const t = emptyTables();
     t.adPerformance = groupByAccount([perfRow("acct_a")]);
