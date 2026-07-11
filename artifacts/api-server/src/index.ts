@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { reconcileAgencyAdminAccess } from "./lib/agencyAccessSafeguard";
+import { ensureDemoAccount } from "./lib/demoAccountSafeguard";
 
 const rawPort = process.env["PORT"];
 
@@ -30,4 +31,10 @@ app.listen(port, (err) => {
 // logs instead of showing up as "the app is broken" reports.
 reconcileAgencyAdminAccess(logger).catch((err) => {
   logger.error({ err }, "Agency access safeguard failed to run");
+});
+
+// Self-healing demo login: recreate/repair the designated demo account on
+// every boot so it survives DB resets, rollbacks, and dev/prod splits.
+ensureDemoAccount(logger).catch((err) => {
+  logger.error({ err }, "Demo account safeguard failed to run");
 });
