@@ -189,11 +189,11 @@ export function IapLibraryView() {
                       const code = detail[key];
                       if (!code || typeof code !== "string") return null;
                       return (
-                        <div key={key} className="flex items-center justify-between gap-2">
-                          <span className="text-[10px] text-muted-foreground/70 uppercase tracking-wide">{label}</span>
-                          <span className="text-[11px] text-foreground/80 text-right">
+                        <div key={key} className="space-y-0.5">
+                          <span className="block text-[10px] text-muted-foreground/70 uppercase tracking-wide">{label}</span>
+                          <span className="block text-[11px] text-foreground/80">
                             {readableVariables(code)}
-                            <span className="block text-[8px] font-mono text-muted-foreground/60">{code}</span>
+                            <span className="ml-1.5 text-[8px] font-mono text-muted-foreground/60">{code}</span>
                           </span>
                         </div>
                       );
@@ -215,7 +215,7 @@ export function IapLibraryView() {
                   </DrawerField>
                 )}
                 <DrawerField label="Creative">
-                  <div className="max-w-[220px]">
+                  <div className="max-w-full">
                     <CreativeCard
                       data={cardFromCell(detail.cell_id, {
                         perfRows: a.performance_by_cell,
