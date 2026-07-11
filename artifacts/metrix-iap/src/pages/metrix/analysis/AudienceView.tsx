@@ -186,7 +186,7 @@ export function AudienceView() {
                   desc="Aggregated across all creative cells. Click a segment bar to inspect its breakdown."
                   table="demographic_registration_signal"
                 >
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {segments.map((s) => {
                       const cpa = s.results > 0 ? s.spend / s.results : null;
                       const genderLabel = s.gender === "female" ? "F" : s.gender === "male" ? "M" : s.gender;

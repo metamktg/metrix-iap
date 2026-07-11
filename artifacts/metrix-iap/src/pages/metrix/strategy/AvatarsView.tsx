@@ -228,7 +228,7 @@ export function AvatarsView() {
                   desc="Audience columns from the historical MST matrix, with the message angles built for each."
                   table="historical_matrix_4x4"
                 >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {matrix.columns.map((col) => {
                       const cells = cellsFor(col.id);
                       const matched = matchedProfilesFor(col);
@@ -296,7 +296,7 @@ export function AvatarsView() {
                   desc="Full customer profiles from the strategy map — who they are, and how they actually performed."
                   table="icp_profiles"
                 >
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {icpProfiles.map((p) => (
                       <IcpProfileCard
                         key={p.profile_id}

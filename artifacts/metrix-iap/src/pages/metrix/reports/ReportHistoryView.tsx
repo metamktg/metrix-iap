@@ -304,7 +304,7 @@ export function ReportHistoryView() {
               );
             })()}
 
-            <div className="px-6 py-5 space-y-3 max-w-3xl">
+            <div className="px-6 py-5 space-y-4 max-w-3xl">
               {sorted.map((r) => {
                 const selectable = selectMode && r.reportId != null;
                 const isSelected = r.reportId != null && selectedIds.has(r.reportId);

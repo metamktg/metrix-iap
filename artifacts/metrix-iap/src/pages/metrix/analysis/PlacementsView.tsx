@@ -265,7 +265,7 @@ export function PlacementsView() {
                   title="Spend by placement"
                   desc="Combined across the V3 and C4E signals. Click any row to inspect the underlying data."
                 >
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {rollup.map((s) => (
                       <SegmentCard
                         key={s.placement}
