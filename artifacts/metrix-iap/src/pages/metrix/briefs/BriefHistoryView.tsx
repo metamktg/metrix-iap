@@ -1,4 +1,4 @@
-// ─── Creative Briefs · History ────────────────────────────────────────
+// ─── Creative · History ───────────────────────────────────────────
 // Chronological record of briefs for the active ad account. Only
 // source-backed drafts exist in this build — no fabricated history.
 
@@ -12,7 +12,7 @@ import {
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { FileClock, FileText } from "lucide-react";
 
-const SECTION = "Creative Briefs · 05";
+const SECTION = "Creative · 05";
 
 const STATUS_LABEL: Record<string, string> = {
   draft_from_seed: "Draft created from seed strategy",

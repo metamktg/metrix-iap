@@ -1,5 +1,5 @@
 // ─── Reports · Settings ───────────────────────────────────────────────
-// Report Builder's local settings: default template (branding / format /
+// Reports settings: default template (branding / format /
 // mode) and scheduled sends. Seed report_builder values act as defaults;
 // workspace-level overrides persist via the API (same override model as
 // Settings → Notifications). Scheduled sends are configuration only —

@@ -1,7 +1,7 @@
 // ─── Analysis · IAP Library ───────────────────────────────────────────
 // Creative cell + variable performance for the active ad account, with
 // metric selection (result events), inline variable codes, a cell drill-
-// down drawer, and cross-links into Strategy and Creative Briefs.
+// down drawer, and cross-links into Strategy and Creative.
 //
 // Unmapped cells (perf data present but no IAP library mapping) are
 // flagged with an amber badge and a top-of-grid warning banner.

@@ -1,4 +1,4 @@
-// ─── Creative Briefs · Brief Builder ──────────────────────────────────
+// ─── Creative · Brief Builder ──────────────────────────────────────
 // Draft briefs derived from strategy pillars, organized by asset format
 // (Static / Video / UGC). Drill-down drawer with cross-links back into
 // Strategy. Video and UGC formats have no source-backed briefs yet.
@@ -22,7 +22,7 @@ import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { FileText, Sparkles, Video, Users } from "lucide-react";
 import type { DraftBrief } from "@/lib/data/seedTypes";
 
-const SECTION = "Creative Briefs · 05";
+const SECTION = "Creative · 05";
 
 const STATUS_LABEL: Record<string, string> = {
   draft_from_seed: "Draft",
