@@ -11,11 +11,11 @@ import {
 import {
   ModuleHeader, ScopeBanner, ConfidenceBadge, ModuleScopeGate,
   PendingState, MetricTile, ImpactBadge, ScopeBadge, CrossLink,
-  RangeScopeBar, NoDataInRangeState,
+  RangeScopeBar, NoDataInRangeState, CaveatNote,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
-import { AlertTriangle, BellOff, Database } from "lucide-react";
+import { AlertTriangle, BellOff } from "lucide-react";
 import type { SignalCard } from "@/lib/data/seedTypes";
 
 const SECTION = "Listen · 02";
@@ -95,16 +95,10 @@ export function AlertsView() {
 
                   {caveats.length > 0 && (
                     <div>
-                      <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Data caveats</h3>
-                      <div className="space-y-3">
+                      <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/50 mb-2">Data caveats</h3>
+                      <div className="space-y-2">
                         {caveats.map((c) => (
-                          <div key={c.id} className="rounded-xl border border-amber-400/15 bg-amber-400/[0.04] p-4">
-                            <div className="flex items-center gap-1.5 mb-2">
-                              <Database className="w-3.5 h-3.5 text-amber-400/80" />
-                              <span className="text-[9px] font-mono uppercase tracking-widest text-amber-400/60">{c.source}</span>
-                            </div>
-                            <p className="text-[12px] text-amber-400/85 leading-relaxed">{c.text}</p>
-                          </div>
+                          <CaveatNote key={c.id} text={c.text} source={c.source} />
                         ))}
                       </div>
                     </div>

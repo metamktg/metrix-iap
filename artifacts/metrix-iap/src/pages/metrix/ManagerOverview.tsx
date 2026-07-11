@@ -118,7 +118,7 @@ export function ManagerOverview() {
               const m = metricById(metricCatalog, id);
               if (!m) return null;
               return (
-                <button key={id} onClick={() => setOpenMetricId(id)} className="text-left">
+                <button key={id} onClick={() => setOpenMetricId(id)} className="text-left group">
                   <MetricTile label={m.label} value={m.formatted} />
                 </button>
               );

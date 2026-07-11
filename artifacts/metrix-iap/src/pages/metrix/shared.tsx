@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { useLocation, useSearch } from "wouter";
 import { ConnectMetaDialog, ManualImportDialog } from "./ConnectAccountDialogs";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
-import { Plug, FileUp, Clock, Database, Info, ArrowRight, CheckSquare, Square, CalendarRange, CalendarX2, AlertTriangle } from "lucide-react";
+import { Plug, FileUp, Clock, Database, Info, ArrowRight, CheckSquare, Square, CalendarRange, CalendarX2, AlertTriangle, ChevronDown } from "lucide-react";
 import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
 import { DataSourceBadge } from "@/components/ui/DataSourceBadge";
 import { resolveVariableLabel } from "@/lib/variable-registry";
@@ -163,14 +163,14 @@ export function ModuleHeader({
   right?: React.ReactNode;
 }) {
   return (
-    <div className="px-6 py-5 border-b border-border/40">
+    <div className="px-6 py-4 border-b border-border/40">
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
-          <span className="mx-section-label block mb-1 !text-[10px]">{section}</span>
-          <h1 className="text-[20px] font-bold text-foreground leading-tight tracking-[-0.02em]">{title}</h1>
-          {subtitle && <p className="text-[12px] text-muted-foreground/75 mt-0.5">{subtitle}</p>}
+          <span className="block mb-1 text-[9px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/50">{section}</span>
+          <h1 className="text-[19px] font-bold text-foreground leading-tight tracking-[-0.02em]">{title}</h1>
+          {subtitle && <p className="text-[11px] text-muted-foreground/60 mt-0.5 leading-relaxed max-w-2xl">{subtitle}</p>}
         </div>
-        <div className="shrink-0 pt-1 flex items-center gap-2">
+        <div className="shrink-0 pt-0.5 flex items-center gap-2">
           {right}
           {table && <DataSourceBadge table={table} collapsible />}
         </div>
@@ -240,12 +240,54 @@ export function NoDataInRangeState({ what, detail }: { what: string; detail?: st
 }
 
 // ─── Data caveat note ─────────────────────────────────────────────────
+// Compact collapsible pill — truncated by default, click to expand.
+// Pass `source` to show a monospace source badge before the text.
+// Pass `defaultExpanded` to start expanded (e.g. short caveats with no truncation).
 
-export function CaveatNote({ text }: { text: string }) {
+export function CaveatNote({
+  text,
+  source,
+  defaultExpanded = false,
+}: {
+  text: string;
+  source?: string;
+  defaultExpanded?: boolean;
+}) {
+  const THRESHOLD = 110;
+  const isLong = text.length > THRESHOLD;
+  const [expanded, setExpanded] = useState(defaultExpanded || !isLong);
+  const preview = isLong ? text.slice(0, THRESHOLD).trimEnd() + "…" : text;
+
   return (
-    <div className="flex items-start gap-2 p-3 rounded-lg border border-amber-400/15 bg-amber-400/[0.04]">
-      <Info className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-      <p className="text-[11px] text-amber-400/80 leading-relaxed">{text}</p>
+    <div className="rounded-lg border border-amber-400/15 bg-amber-400/[0.03] overflow-hidden">
+      <button
+        onClick={isLong ? () => setExpanded((v) => !v) : undefined}
+        disabled={!isLong}
+        className={cn(
+          "w-full flex items-start gap-2 px-3 py-2 text-left",
+          isLong && "hover:bg-amber-400/[0.05] active:bg-amber-400/[0.08] transition-colors"
+        )}
+      >
+        <Info className="w-3 h-3 text-amber-400/70 shrink-0 mt-[3px]" />
+        <div className="flex-1 min-w-0">
+          {source && (
+            <span className="text-[8.5px] font-mono uppercase tracking-widest text-amber-400/50 block mb-0.5">
+              {source}
+            </span>
+          )}
+          <p className="text-[11px] text-amber-400/80 leading-snug">
+            {expanded ? text : preview}
+          </p>
+        </div>
+        {isLong && (
+          <ChevronDown
+            className={cn(
+              "w-3 h-3 text-amber-400/40 shrink-0 mt-[3px] transition-transform duration-150",
+              expanded && "rotate-180"
+            )}
+          />
+        )}
+      </button>
     </div>
   );
 }
@@ -312,14 +354,15 @@ export function PendingState({ title, message, icon: Icon = Clock, action }: { t
 }
 
 // ─── Metric tile ──────────────────────────────────────────────────────
+// When the tile is placed inside a `group` button, border lifts on hover.
 
 export function MetricTile({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="mx-card p-4">
+    <div className="mx-card p-4 transition-colors group-hover:border-primary/30 group-hover:bg-primary/[0.02]">
       <div className="relative">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-2">{label}</div>
+        <div className="text-[9.5px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/60 mb-2">{label}</div>
         <div className="text-[26px] font-bold text-foreground tabular-nums leading-none tracking-[-0.035em]">{value}</div>
-        {sub && <div className="text-[10px] text-muted-foreground/60 mt-2">{sub}</div>}
+        {sub && <div className="text-[10px] text-muted-foreground/55 mt-2 leading-snug">{sub}</div>}
       </div>
     </div>
   );
@@ -436,13 +479,12 @@ export function useStaleFocus(
 export function StaleFocusNotice({ label = "item" }: { label?: string }) {
   return (
     <div
-      className="mx-4 mt-3 flex items-start gap-2.5 rounded-lg border border-amber-400/20 bg-amber-400/[0.04] px-3 py-2.5"
+      className="mx-4 mt-2 flex items-center gap-2 rounded-md border border-amber-400/15 bg-amber-400/[0.03] px-3 py-1.5"
       data-testid="notice-stale-focus"
     >
-      <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-      <p className="text-[11px] text-foreground/75 leading-relaxed">
-        The linked {label} is no longer available — it may have been removed, regenerated, or fallen
-        outside the current date range.
+      <AlertTriangle className="w-3 h-3 text-amber-400/70 shrink-0" />
+      <p className="text-[11px] text-foreground/65 leading-none">
+        Linked {label} no longer available — removed, regenerated, or outside the current range.
       </p>
     </div>
   );
@@ -538,10 +580,10 @@ export function SectionCard({
 }) {
   return (
     <section className="mx-card overflow-hidden">
-      <div className="relative flex items-start gap-3 px-4 py-3 border-b border-[rgba(120,170,255,0.12)]">
+      <div className="relative flex items-center gap-3 px-4 py-2.5 border-b border-[rgba(120,170,255,0.10)]">
         <div className="flex-1 min-w-0">
-          <h3 className="text-[13px] font-semibold text-foreground leading-tight">{title}</h3>
-          {desc && <p className="text-[11px] text-muted-foreground/70 mt-0.5 leading-tight">{desc}</p>}
+          <h3 className="text-[12.5px] font-semibold text-foreground leading-tight">{title}</h3>
+          {desc && <p className="text-[10.5px] text-muted-foreground/55 mt-0.5 leading-snug">{desc}</p>}
         </div>
         <div className="shrink-0 flex items-center gap-2">
           {right}
