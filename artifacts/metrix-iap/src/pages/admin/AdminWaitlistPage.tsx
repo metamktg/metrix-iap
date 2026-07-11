@@ -21,6 +21,7 @@ import {
   useGetAdminEmailStatus,
   useListAdminUsers,
   useAdminCreateUser,
+  useListAdminAdAccounts,
   useAdminResendTempPassword,
   useAdminSendPasswordReset,
   useAdminRevokeUser,
@@ -52,6 +53,10 @@ import {
   UserX,
   UserCheck,
   UserPlus,
+  ChevronDown,
+  ChevronUp,
+  Shield,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -517,13 +522,40 @@ type CreateUserOutcome = {
   temp_password: string;
   email_sent: boolean;
   email_error?: string;
+  granted_ad_account_ids: string[];
 };
 
 function CreateUserForm({ onCreated }: { onCreated: () => void }) {
   const createUser = useAdminCreateUser();
+  const adAccounts = useListAdminAdAccounts();
   const [email, setEmail] = useState("");
+  const [role, setRole] = useState<"analyst" | "client_viewer" | "admin">("analyst");
+  const [canManageTeam, setCanManageTeam] = useState(false);
+  const [canViewRollups, setCanViewRollups] = useState(false);
+  const [selectedAccounts, setSelectedAccounts] = useState<Set<string>>(new Set());
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [outcome, setOutcome] = useState<CreateUserOutcome | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const accountList = adAccounts.data?.ad_accounts ?? [];
+
+  const toggleAccount = (id: string) => {
+    setSelectedAccounts((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const resetForm = () => {
+    setEmail("");
+    setRole("analyst");
+    setCanManageTeam(false);
+    setCanViewRollups(false);
+    setSelectedAccounts(new Set());
+    setShowAdvanced(false);
+  };
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -531,7 +563,15 @@ function CreateUserForm({ onCreated }: { onCreated: () => void }) {
     setError(null);
     setOutcome(null);
     createUser.mutate(
-      { data: { email: email.trim() } },
+      {
+        data: {
+          email: email.trim(),
+          role,
+          can_manage_team: role !== "client_viewer" ? canManageTeam : undefined,
+          can_view_rollups: role !== "client_viewer" ? canViewRollups : undefined,
+          ad_account_ids: Array.from(selectedAccounts),
+        },
+      },
       {
         onSuccess: (res) => {
           setOutcome({
@@ -539,8 +579,9 @@ function CreateUserForm({ onCreated }: { onCreated: () => void }) {
             temp_password: res.temp_password,
             email_sent: res.email_sent,
             email_error: res.email_error,
+            granted_ad_account_ids: res.granted_ad_account_ids,
           });
-          setEmail("");
+          resetForm();
           onCreated();
         },
         onError: (err) => {
@@ -563,40 +604,177 @@ function CreateUserForm({ onCreated }: { onCreated: () => void }) {
 
   return (
     <div
-      className="rounded-lg border border-border/30 bg-white/[0.02] p-3 space-y-2"
+      className="rounded-lg border border-border/30 bg-white/[0.02] p-3 space-y-3"
       data-testid="section-create-user"
     >
       <div className="text-[11px] text-muted-foreground">
         Create an account instantly — the temporary password is shown here to copy and
         share, no email required.
       </div>
-      <form onSubmit={submit} className="flex items-center gap-2" data-testid="form-create-user">
-        <input
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="new.user@company.com"
-          className={cn(INPUT_CLS, "flex-1 min-w-0")}
-          data-testid="input-create-user-email"
-        />
+      <form onSubmit={submit} className="space-y-3" data-testid="form-create-user">
+        <div className="flex items-center gap-2">
+          <input
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="new.user@company.com"
+            className={cn(INPUT_CLS, "flex-1 min-w-0")}
+            data-testid="input-create-user-email"
+          />
+          <button
+            type="submit"
+            disabled={createUser.isPending || !email.trim()}
+            className="flex items-center gap-1.5 h-9 px-3 rounded-md bg-primary text-primary-foreground text-[11px] font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:pointer-events-none shrink-0"
+            data-testid="button-create-user"
+          >
+            {createUser.isPending ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              <UserPlus className="w-3 h-3" />
+            )}
+            Create user
+          </button>
+        </div>
+
         <button
-          type="submit"
-          disabled={createUser.isPending || !email.trim()}
-          className="flex items-center gap-1.5 h-9 px-3 rounded-md bg-primary text-primary-foreground text-[11px] font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:pointer-events-none shrink-0"
-          data-testid="button-create-user"
+          type="button"
+          onClick={() => setShowAdvanced((v) => !v)}
+          className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+          data-testid="button-toggle-advanced"
         >
-          {createUser.isPending ? (
-            <Loader2 className="w-3 h-3 animate-spin" />
-          ) : (
-            <UserPlus className="w-3 h-3" />
-          )}
-          Create user
+          {showAdvanced ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          {showAdvanced ? "Hide" : "Show"} role & access options
         </button>
+
+        {showAdvanced && (
+          <div className="space-y-3 rounded-md border border-border/20 bg-white/[0.01] p-3">
+            <div className="space-y-1.5">
+              <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                Role
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                {(["analyst", "client_viewer", "admin"] as const).map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setRole(r)}
+                    className={cn(
+                      "flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-[11px] font-medium transition-colors",
+                      role === r
+                        ? r === "admin"
+                          ? "border-violet-500/40 bg-violet-500/15 text-violet-300"
+                          : "border-primary/40 bg-primary/15 text-primary"
+                        : "border-border/40 text-muted-foreground hover:text-foreground hover:bg-white/5",
+                    )}
+                    data-testid={`button-role-${r}`}
+                  >
+                    {r === "admin" ? <Shield className="w-3 h-3" /> : <Users className="w-3 h-3" />}
+                    {r === "analyst" ? "Analyst" : r === "client_viewer" ? "Client Viewer" : "Admin"}
+                  </button>
+                ))}
+                <span className="text-[10px] text-muted-foreground/70">
+                  {role === "admin"
+                    ? "Full access; sees all accounts"
+                    : role === "client_viewer"
+                      ? "Read-only access to granted accounts"
+                      : "Can analyze and build reports on granted accounts"}
+                </span>
+              </div>
+            </div>
+
+            {role !== "client_viewer" && (
+              <div className="space-y-1.5">
+                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                  Permissions
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={canManageTeam}
+                    onChange={(e) => setCanManageTeam(e.target.checked)}
+                    className="w-3.5 h-3.5 rounded border-border/40 accent-primary"
+                    data-testid="checkbox-can-manage-team"
+                  />
+                  <span className="text-[11px] text-foreground">Manage team</span>
+                  <span className="text-[10px] text-muted-foreground/70">
+                    — can invite members and manage access
+                  </span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={canViewRollups}
+                    onChange={(e) => setCanViewRollups(e.target.checked)}
+                    className="w-3.5 h-3.5 rounded border-border/40 accent-primary"
+                    data-testid="checkbox-can-view-rollups"
+                  />
+                  <span className="text-[11px] text-foreground">View agency rollups</span>
+                  <span className="text-[10px] text-muted-foreground/70">
+                    — sees cross-account summary data
+                  </span>
+                </label>
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                  Ad account access
+                </div>
+                {selectedAccounts.size > 0 && (
+                  <span className="text-[10px] text-primary">
+                    {selectedAccounts.size} selected
+                  </span>
+                )}
+              </div>
+              {adAccounts.isLoading ? (
+                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground py-1">
+                  <Loader2 className="w-3 h-3 animate-spin" /> Loading accounts…
+                </div>
+              ) : adAccounts.isError ? (
+                <div className="text-[11px] text-muted-foreground/70 py-1">
+                  Could not load ad accounts — grants can be added later in Settings.
+                </div>
+              ) : accountList.length === 0 ? (
+                <div className="text-[11px] text-muted-foreground/70 py-1">
+                  No ad accounts configured yet.
+                </div>
+              ) : (
+                <div
+                  className="max-h-36 overflow-y-auto space-y-0.5 pr-1"
+                  data-testid="list-ad-accounts"
+                >
+                  {accountList.map((account) => (
+                    <label
+                      key={account.id}
+                      className="flex items-center gap-2 cursor-pointer select-none rounded px-1.5 py-1 hover:bg-white/[0.03] transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedAccounts.has(account.id)}
+                        onChange={() => toggleAccount(account.id)}
+                        className="w-3.5 h-3.5 rounded border-border/40 accent-primary shrink-0"
+                        data-testid={`checkbox-account-${account.id}`}
+                      />
+                      <span className="text-[11px] text-foreground truncate">{account.name}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+              {role === "admin" && accountList.length > 0 && (
+                <div className="text-[10px] text-muted-foreground/60">
+                  Admins see all accounts automatically — individual grants are still recorded.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </form>
+
       {outcome && (
         <div
-          className="space-y-1 rounded-md border border-emerald-400/25 bg-emerald-400/5 p-2"
+          className="space-y-1.5 rounded-md border border-emerald-400/25 bg-emerald-400/5 p-2"
           data-testid="panel-created-user"
         >
           <div className="text-[11px] text-emerald-400">
@@ -609,6 +787,17 @@ function CreateUserForm({ onCreated }: { onCreated: () => void }) {
             </code>
             <CopyButton value={outcome.temp_password} />
           </div>
+          {outcome.granted_ad_account_ids.length > 0 && (
+            <div className="text-[10px] text-emerald-300/80" data-testid="text-granted-accounts">
+              Access granted to:{" "}
+              {outcome.granted_ad_account_ids
+                .map(
+                  (id) =>
+                    adAccounts.data?.ad_accounts.find((a) => a.id === id)?.name ?? id,
+                )
+                .join(", ")}
+            </div>
+          )}
           <div className="text-[10px] text-muted-foreground" data-testid="text-create-user-email-note">
             {outcome.email_sent
               ? `Also emailed to ${outcome.email}.`
@@ -626,7 +815,6 @@ function CreateUserForm({ onCreated }: { onCreated: () => void }) {
     </div>
   );
 }
-
 function UsersSection() {
   const users = useListAdminUsers();
   const list = users.data?.users ?? [];

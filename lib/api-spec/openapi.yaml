@@ -994,6 +994,33 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/admin/ad-accounts:
+    get:
+      operationId: listAdminAdAccounts
+      tags: [metrix]
+      summary: List ad accounts available for user grants
+      description: Returns all ad accounts (id and name) from the Metrix data layer so the admin panel can display a checklist when creating or editing users. Requires admin access.
+      security:
+        - adminKey: []
+      responses:
+        "200":
+          description: Ad accounts list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAdAccountsResult"
+        "401":
+          description: Missing or invalid admin credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "503":
+          description: Metrix data layer unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/request-access/{requestId}/approve:
     parameters:
       - name: requestId
@@ -2621,6 +2648,21 @@ components:
           type: string
           format: email
           maxLength: 320
+        role:
+          type: string
+          enum: [admin, analyst, client_viewer]
+          description: User role. 'admin' has full access and sees all accounts; 'analyst' and 'client_viewer' are member-level roles that see only granted accounts. Defaults to 'analyst'.
+        can_manage_team:
+          type: boolean
+          description: Whether the user can manage team members and invites. Only meaningful for member role users. Defaults to false.
+        can_view_rollups:
+          type: boolean
+          description: Whether the user can view agency rollup data. Only meaningful for member role users. Defaults to false.
+        ad_account_ids:
+          type: array
+          items:
+            type: string
+          description: Ad account IDs to grant the user access to at creation time. Empty array or omitted grants no accounts (can be added later).
       required:
         - email
     AdminCreateUserResult:
@@ -2640,11 +2682,36 @@ components:
         email_error:
           type: string
           description: Present only when the courtesy email could not be sent — explains why.
+        granted_ad_account_ids:
+          type: array
+          items:
+            type: string
+          description: Ad account IDs that were granted to the user at creation time.
       required:
         - status
         - email
         - temp_password
         - email_sent
+        - granted_ad_account_ids
+    AdminAdAccountItem:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      required:
+        - id
+        - name
+    AdminAdAccountsResult:
+      type: object
+      properties:
+        ad_accounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminAdAccountItem"
+      required:
+        - ad_accounts
     AdminUserActionResult:
       type: object
       properties:

@@ -16,4 +16,6 @@ export interface AdminCreateUserResult {
   email_sent: boolean;
   /** Present only when the courtesy email could not be sent — explains why. */
   email_error?: string;
+  /** Ad account IDs that were granted to the user at creation time. */
+  granted_ad_account_ids: string[];
 }
