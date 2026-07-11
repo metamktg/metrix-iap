@@ -21,6 +21,7 @@ import { CreativeCard } from "@/components/creative/CreativeCard";
 import { cardFromCell } from "@/lib/creative-assembly";
 import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/SegmentGridModal";
 import { CellTable, VariableTable } from "./tables";
+import type { CreativeCardStats } from "@/components/creative/CreativeCard";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import type { CellPerformanceRow } from "@/lib/data/seedTypes";
 
@@ -105,6 +106,38 @@ export function IapLibraryView() {
         const pillarsForCell = (cellId: string) =>
           (strategy?.message_pillars ?? []).filter((p) => p.source_cells.includes(cellId));
 
+        // Card grid helpers — deduplicate by cell_id (multiple result types
+        // produce multiple rows per cell) and aggregate stats across the
+        // metric-filtered selection for the card stat strip.
+        const cardCtx = {
+          perfRows: a.performance_by_cell,
+          mst: getMST(seed, adAccountId),
+          ...getCreativeLinkContext(seed, adAccountId),
+        };
+
+        function aggStatsForCell(cellId: string, source: CellPerformanceRow[]): CreativeCardStats {
+          const rows = source.filter((r) => r.cell_id === cellId);
+          const spend = rows.reduce((s, r) => s + r["Amount spent (USD)"], 0);
+          const results = rows.reduce((s, r) => s + r.Results, 0);
+          const primary = rows[0];
+          return {
+            spend,
+            results,
+            cpa: results > 0 ? spend / results : null,
+            ctrPct: primary?.CTR_link_pct ?? null,
+            resultLabel: rows.length === 1 ? eventLabel(primary!["Result type"]) : `${rows.length} events`,
+          };
+        }
+
+        function uniqueCellRows(source: CellPerformanceRow[]): CellPerformanceRow[] {
+          const seen = new Set<string>();
+          return source.filter((r) => {
+            if (seen.has(r.cell_id)) return false;
+            seen.add(r.cell_id);
+            return true;
+          });
+        }
+
         return (
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
             <ModuleHeader
@@ -141,13 +174,57 @@ export function IapLibraryView() {
               )}
 
               {tab === "cells" && (
-                cells.length ? <CellTable rows={cells} onRowClick={setDetail} /> : <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." />
+                cells.length ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                    {uniqueCellRows(cells).map((row) => (
+                      <CreativeCard
+                        key={row.cell_id}
+                        data={{
+                          ...cardFromCell(row.cell_id, cardCtx),
+                          stats: aggStatsForCell(row.cell_id, cells),
+                        }}
+                        expandFooter={
+                          <button
+                            onClick={() => setDetail(row)}
+                            className="inline-flex items-center gap-1 text-[10px] font-medium text-primary/80 hover:text-primary border border-primary/20 bg-primary/[0.06] hover:bg-primary/10 px-1.5 py-0.5 rounded transition-colors"
+                          >
+                            Full detail
+                          </button>
+                        }
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." />
+                )
               )}
               {tab === "top" && (
                 <div className="space-y-5">
                   <div>
                     <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Top checkout cells</h3>
-                    {topCells.length ? <CellTable rows={topCells} onRowClick={setDetail} /> : <PendingState title="No ranked cells" message="No ranked cells in the current metric selection." />}
+                    {topCells.length ? (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                        {uniqueCellRows(topCells).map((row) => (
+                          <CreativeCard
+                            key={row.cell_id}
+                            data={{
+                              ...cardFromCell(row.cell_id, cardCtx),
+                              stats: aggStatsForCell(row.cell_id, topCells),
+                            }}
+                            expandFooter={
+                              <button
+                                onClick={() => setDetail(row)}
+                                className="inline-flex items-center gap-1 text-[10px] font-medium text-primary/80 hover:text-primary border border-primary/20 bg-primary/[0.06] hover:bg-primary/10 px-1.5 py-0.5 rounded transition-colors"
+                              >
+                                Full detail
+                              </button>
+                            }
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <PendingState title="No ranked cells" message="No ranked cells in the current metric selection." />
+                    )}
                   </div>
                   <div>
                     <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Top checkout variables</h3>
