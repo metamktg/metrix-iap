@@ -156,7 +156,7 @@ export function MetricDiagnosticModal({
             <div className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest">
               Metric diagnostic
             </div>
-            <DialogTitle className="text-[15px] font-semibold text-foreground">{metric.label}</DialogTitle>
+            <DialogTitle className="text-[17px] font-semibold text-foreground">{metric.label}</DialogTitle>
             <DialogDescription className="text-label text-muted-foreground/70 leading-relaxed">
               {scope === "account"
                 ? "Blended top-line value, avatar × placement breakdown, and the IAP library concepts driving this metric for this account."
