@@ -22,7 +22,7 @@ import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { FileText, Sparkles, Video, Users } from "lucide-react";
 import type { DraftBrief } from "@/lib/data/seedTypes";
 
-const SECTION = "Creative Briefs · 05";
+const SECTION = "Creatives · 05";
 
 const STATUS_LABEL: Record<string, string> = {
   draft_from_seed: "Draft",
