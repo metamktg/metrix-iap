@@ -76,13 +76,13 @@ function ChildRow({ child, count }: { child: NavChild; count: number | null }) {
         onClick={(e) => navigate(child.to, e)}
         aria-current={active ? "page" : undefined}
         className={cn(
-          "flex items-center gap-1.5 pl-3 pr-2 h-8 rounded-r text-body transition-colors",
+          "flex items-center gap-1.5 pl-3 pr-2 min-h-8 py-1 rounded-r text-body transition-colors",
           active
             ? "font-medium mx-nav-child-active"
             : "text-foreground/70 hover:text-foreground hover:bg-[rgba(20,55,110,0.4)]"
         )}
       >
-        <span className="flex-1 truncate leading-tight">{child.label}</span>
+        <span className="flex-1 leading-tight">{child.label}</span>
         {child.placeholder && !active && (
           <span className="text-label-xs font-semibold uppercase tracking-wide text-muted-foreground/80 border border-border/40 px-1 py-0.5 rounded leading-none shrink-0">
             Soon
@@ -144,7 +144,7 @@ function ExpandableSection({
             navigate(landing, e);
             setOpen(true);
           }}
-          className="flex-1 min-w-0 flex items-center gap-2 pl-3 pr-1 h-9"
+          className="flex-1 min-w-0 flex items-center gap-2 pl-3 pr-1 min-h-9 py-1.5"
         >
           <span className={cn(
             "w-4 shrink-0 text-label-xs font-mono tabular-nums",
@@ -152,7 +152,7 @@ function ExpandableSection({
           )}>
             {section.number}
           </span>
-          <span className="flex-1 text-left truncate">{section.label}</span>
+          <span className="flex-1 text-left leading-tight">{section.label}</span>
         </a>
         <button
           type="button"
@@ -219,7 +219,7 @@ function LeafSection({
         onClick={(e) => navigate(to, e)}
         aria-current={active ? "page" : undefined}
         className={cn(
-          "flex items-center gap-2 px-3 h-9 rounded-lg text-label font-semibold uppercase tracking-widest transition-colors",
+          "flex items-center gap-2 px-3 min-h-9 py-1.5 rounded-lg text-label font-semibold uppercase tracking-widest transition-colors",
           active
             ? "mx-nav-active"
             : "text-foreground/75 hover:text-foreground hover:bg-[rgba(20,55,110,0.5)]"
@@ -267,7 +267,7 @@ export function Sidebar() {
 
   return (
     <aside
-      className="flex flex-col w-[216px] shrink-0 h-full overflow-hidden mx-sidebar"
+      className="flex flex-col w-[244px] shrink-0 h-full overflow-hidden mx-sidebar"
       aria-label="Workspace sidebar"
     >
       {/* Logo */}

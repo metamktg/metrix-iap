@@ -25,5 +25,5 @@
 - [Exact-dim ad PNG export](exact-dim-ad-export.md) — use playwright-core + REPLIT_PLAYWRIGHT_CHROMIUM_EXECUTABLE (npx hangs downloading); magick -trim baked-in mockup wall margins; cache-bust canvas src.
 - [Supabase importer-table RLS](supabase-importer-rls.md) — importer tables are service-role-only in app code but the public anon key can still read them via PostgREST; enable RLS + revoke anon/authenticated grants.
 - [Regex \b boundary breaks on underscore](regex-word-boundary-underscore.md) — \b fails between digit and "_" (both \w); use (?<![a-z0-9])/(?![a-z0-9]) lookarounds to extract tokens from underscore-separated filenames.
-- [Concurrent validation codegen race](concurrent-validation-codegen-race.md) — batch validations can TS6053-fail while codegen-drift regenerates lib generated files; re-run the failed check alone before debugging.
+- [Concurrent validation codegen race](concurrent-validation-codegen-race.md) — codegen-drift regeneration also poisons running Vite dev servers; wait for validations + restart web workflow before browser tests.
 - [Vite HMR module-graph corruption](vite-hmr-module-graph.md) — after mass edits, phantom provider/hook crashes at nonexistent line numbers mean a corrupted HMR graph; restart the dev workflow before browser testing.

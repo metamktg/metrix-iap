@@ -249,7 +249,7 @@ export function BudgetView() {
                   {eventRows.length === 0 ? (
                     <PendingState title="No events selected" message="Select at least one result event above." />
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       {eventRows.map(({ event, totals }) => (
                         <SegmentCard
                           key={event}
@@ -275,7 +275,7 @@ export function BudgetView() {
                     <PendingState title="No concept spend" message="No cell rows match the current metric selection." />
                   ) : (
                     <>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {conceptRows.map(([name, spend]) => (
                           <SegmentCard
                             key={name}
