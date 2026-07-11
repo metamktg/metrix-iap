@@ -358,10 +358,10 @@ export function PendingState({ title, message, icon: Icon = Clock, action }: { t
 
 export function MetricTile({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="mx-card p-4 transition-colors group-hover:border-primary/30 group-hover:bg-primary/[0.02]">
-      <div className="relative">
+    <div className="mx-card p-4 transition-colors group-hover:border-primary/30 group-hover:bg-primary/[0.02] min-w-0">
+      <div className="relative min-w-0">
         <div className="text-label font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-2">{label}</div>
-        <div className="text-value font-bold text-foreground tabular-nums leading-none tracking-[-0.035em]">{value}</div>
+        <div className="text-value font-bold text-foreground tabular-nums leading-none tracking-[-0.035em] break-words">{value}</div>
         {sub && <div className="text-body text-muted-foreground/70 mt-2 leading-snug">{sub}</div>}
       </div>
     </div>

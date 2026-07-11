@@ -15,7 +15,7 @@ import {
 } from "@/lib/data/metrixSeedAdapter";
 import { RecommendationDeck, actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
 import {
-  ModuleHeader, ScopeBanner, MetricTile, SectionCard, CaveatNote,
+  ModuleHeader, ScopeBanner, SectionCard, CaveatNote,
   UnconfiguredState, PendingState, fmtUSD, fmtNum, eventLabel, resultTerm,
 } from "./shared";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
@@ -24,6 +24,7 @@ import { buildMetricCatalog, metricSourceFromCampaignSummary, metricById } from 
 import { useMetricSelection } from "@/hooks/useMetricSelection";
 import { MetricPickerButton } from "@/components/creative/MetricPicker";
 import { MetricDiagnosticModal } from "@/components/creative/MetricDiagnosticModal";
+import { MetricTileCarousel } from "@/components/ui/MetricTileCarousel";
 
 const IMPACT_RANK: Record<string, number> = { high: 3, medium: 2, low: 1, setup: 0 };
 
@@ -125,21 +126,22 @@ export function AdAccountOverview() {
       <div className="px-6 py-5 space-y-6 max-w-6xl">
         {/* Health / totals */}
         <div>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-1 px-6">
             <h2 className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Account totals</h2>
             <MetricPickerButton catalog={metricCatalog} selected={selectedMetricIds} onToggle={toggle} onMove={move} onReset={reset} />
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {selectedMetricIds.map((id) => {
+          <MetricTileCarousel
+            metrics={selectedMetricIds.map((id) => {
               const m = metricById(metricCatalog, id);
-              if (!m) return null;
-              return (
-                <button key={id} onClick={() => setOpenMetricId(id)} className="text-left group">
-                  <MetricTile label={m.label} value={m.formatted} />
-                </button>
-              );
+              return {
+                id,
+                label: m?.label ?? id,
+                value: m?.formatted ?? "—",
+                onClick: () => setOpenMetricId(id),
+              };
             })}
-          </div>
+            tileClassName="w-[170px] sm:w-[190px]"
+          />
         </div>
 
         {/* Current focus / next action */}

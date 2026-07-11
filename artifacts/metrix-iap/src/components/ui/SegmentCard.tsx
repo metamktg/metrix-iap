@@ -45,7 +45,7 @@ export function SegmentCard({
     >
       <div className="flex items-start gap-2">
         <div className="flex-1 min-w-0">
-          <h4 className="text-sm font-semibold text-foreground leading-tight truncate">{name}</h4>
+          <h4 className="text-sm font-semibold text-foreground leading-tight">{name}</h4>
           {descriptor && <p className="text-body text-muted-foreground/70 mt-0.5 leading-snug">{descriptor}</p>}
         </div>
         {badge && <div className="shrink-0">{badge}</div>}
