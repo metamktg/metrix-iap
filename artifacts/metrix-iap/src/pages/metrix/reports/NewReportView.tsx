@@ -159,7 +159,7 @@ export function NewReportView() {
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="New Report" />
               <ScopeBanner account={acct} />
-              <PendingState title="Reports pending" message="No report template is available for this account yet." icon={FileText} />
+              <PendingState title="Report Builder pending" message="No report template is available for this account yet." icon={FileText} />
             </div>
           );
         }

@@ -50,7 +50,7 @@ function SegmentDetailDialog({ segment, rows, totalResults, onClose }: SegmentDe
           <div className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest">
             Audience segment
           </div>
-          <DialogTitle className="text-[17px] font-semibold text-foreground">
+          <DialogTitle className="text-[15px] font-semibold text-foreground">
             {genderLabel} · {segment.age}
           </DialogTitle>
           <DialogDescription className="text-label text-muted-foreground/70 leading-relaxed">

@@ -108,7 +108,7 @@ export function AdAccountOverview() {
     { name: "Listen", count: signals.length, unit: signals.length === 1 ? "signal" : "signals", ready: signals.length > 0, to: "/app/listen/signal", Icon: Radio },
     { name: "Analysis", count: cellCount + variableCount, unit: "cells + variables", ready: (cellCount + variableCount) > 0, to: "/app/analysis/library", Icon: BarChart3 },
     { name: "Strategy", count: pillarCount + hypothesisCount, unit: "pillars + hypotheses", ready: (pillarCount + hypothesisCount) > 0, to: "/app/strategy/hypotheses", Icon: Layers },
-    { name: "Reports", count: sectionCount, unit: sectionCount === 1 ? "section" : "sections", ready: sectionCount > 0, to: "/app/reports", Icon: FileText },
+    { name: "Report Builder", count: sectionCount, unit: sectionCount === 1 ? "section" : "sections", ready: sectionCount > 0, to: "/app/report-builder", Icon: FileText },
     { name: "MST", count: matrixCellCount, unit: "matrix cells", ready: mstActive && matrixCellCount > 0, to: "/app/mst", Icon: Grid3x3 },
   ];
 

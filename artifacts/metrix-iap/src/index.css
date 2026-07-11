@@ -78,28 +78,28 @@
      Named Tailwind sizes lifted for readability; semantic utilities
      for labels, body, headings, and KPI values. Do not reintroduce
      arbitrary text-[Npx] values below 13px. */
-  --text-xs: 0.9375rem; /* 15px — lifted from 13px */
+  --text-xs: 0.8125rem; /* 13px — lifted from 12px */
   --text-xs--line-height: 1.4;
-  --text-sm: 1rem; /* 16px */
+  --text-sm: 0.875rem; /* 14px */
   --text-sm--line-height: 1.5;
 
-  --text-label-xs: 0.8125rem; /* 13px — absolute floor, dense metadata only */
+  --text-label-xs: 0.6875rem; /* 11px — absolute floor, dense metadata only */
   --text-label-xs--line-height: 1.3;
-  --text-label: 0.875rem; /* 14px — badges, chips, secondary labels */
+  --text-label: 0.75rem; /* 12px — badges, chips, secondary labels */
   --text-label--line-height: 1.35;
-  --text-body: 1rem; /* 16px — standard dashboard body */
+  --text-body: 0.875rem; /* 14px — standard dashboard body */
   --text-body--line-height: 1.55;
-  --text-body-lg: 1.0625rem; /* 17px */
+  --text-body-lg: 0.9375rem; /* 15px */
   --text-body-lg--line-height: 1.55;
-  --text-section: 1.375rem; /* 22px — section headings */
+  --text-section: 1.25rem; /* 20px — section headings */
   --text-section--line-height: 1.3;
-  --text-title: 1.875rem; /* 30px — page titles */
+  --text-title: 1.75rem; /* 28px — page titles */
   --text-title--line-height: 1.2;
-  --text-value-sm: 1.5rem; /* 24px — compact KPI values */
+  --text-value-sm: 1.375rem; /* 22px — compact KPI values */
   --text-value-sm--line-height: 1.15;
-  --text-value: 1.875rem; /* 30px — primary KPI values */
+  --text-value: 1.75rem; /* 28px — primary KPI values */
   --text-value--line-height: 1.1;
-  --text-value-lg: 2.25rem; /* 36px — hero KPI values */
+  --text-value-lg: 2.125rem; /* 34px — hero KPI values */
   --text-value-lg--line-height: 1.05;
 }
 
@@ -460,18 +460,12 @@
 
   /* Section label — small uppercase, wide tracking, cyan-tinted */
   .mx-section-label {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.18em;
     text-transform: uppercase;
     color: #9fdcff;
   }
-
-  /* Sidebar nav isolation — keep original compact sizes so the global
-     +2px bump does NOT affect left-nav labels/badges/metadata. */
-  .mx-sidebar .text-body    { font-size: 0.875rem !important; }
-  .mx-sidebar .text-label   { font-size: 0.75rem !important; }
-  .mx-sidebar .text-label-xs { font-size: 0.6875rem !important; }
 
   /* Primary CTA button — blue gradient, thin cyan rim, subtle glow */
   .mx-primary-btn {
