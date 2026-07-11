@@ -18,6 +18,12 @@ import {
   getCreativeLinkContext, getMST,
 } from "@/lib/data/metrixSeedAdapter";
 import { useMetricSelection } from "@/lib/metric-selection";
+import { useMetricSelection as useTileSelection } from "@/hooks/useMetricSelection";
+import { MetricPickerButton } from "@/components/creative/MetricPicker";
+import {
+  buildLibraryMetricCatalog, metricById,
+  LIBRARY_METRIC_STORAGE_KEY, LIBRARY_DEFAULT_METRIC_IDS,
+} from "@/lib/data/metricsCatalog";
 import {
   ModuleHeader, ScopeBanner, ModuleTabs, ModuleScopeGate, PendingState,
   MetricTile, CaveatNote, MetricSelectionBar, CrossLink, useFocusParam,
@@ -29,11 +35,14 @@ import { useCellRangeScope } from "@/lib/date-scope";
 import { CreativeCard } from "@/components/creative/CreativeCard";
 import { cardFromCell, libraryCellById } from "@/lib/creative-assembly";
 import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/SegmentGridModal";
+import { SegmentDrilldownModal } from "@/components/creative/SegmentDrilldownModal";
+import { VariableDrilldownModal } from "@/components/creative/VariableDrilldownModal";
 import { CellTable, VariableTable } from "./tables";
 import { rollupDnaFamilies } from "@/lib/creative-dna";
 import { VariableChip, familyLabel } from "../strategy/strategyShared";
 import type { CreativeCardStats } from "@/components/creative/CreativeCard";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
+import type { SegmentId } from "@/lib/segment-analytics";
 import type { CellPerformanceRow, DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 import { CreativeLibraryDialog } from "@/pages/metrix/ConnectAccountDialogs";
 
@@ -60,6 +69,10 @@ export function IapLibraryView() {
   const [detail, setDetail] = useState<CellPerformanceRow | null>(null);
   const [segmentsOpen, setSegmentsOpen] = useState(false);
   const [creativeLibraryOpen, setCreativeLibraryOpen] = useState(false);
+  // Variable drill-down (DNA cards, best-read chips, variable table rows)
+  const [variableCode, setVariableCode] = useState<string | null>(null);
+  // Segment drill-down opened from a card's Demographics tab (scoped to that cell)
+  const [cardSegment, setCardSegment] = useState<{ segment: SegmentId; cellIds: string[] } | null>(null);
   const { rangeHasData } = useDateRange();
 
   const a       = getAnalysisData(seed, adAccountId);
@@ -73,6 +86,22 @@ export function IapLibraryView() {
   );
   const { selected, toggle, isSelected } = useMetricSelection(adAccountId ?? "none", allEvents);
   const { filterCells } = useCellRangeScope(a);
+
+  // ── Customizable KPI tile row (library-scoped catalog + selection) ───
+  // Built from the same metric- and range-filtered rows the grid uses so
+  // the tiles always agree with what's below them.
+  const libCells = useMemo(
+    () => filterCells((a?.performance_by_cell ?? []).filter((r) => selected.includes(r["Result type"]))),
+    [a, selected, filterCells]
+  );
+  const tileCatalog = useMemo(() => buildLibraryMetricCatalog(libCells), [libCells]);
+  const tileCatalogIds = useMemo(() => tileCatalog.map((m) => m.id), [tileCatalog]);
+  const {
+    selected: tileIds, toggle: toggleTile, move: moveTile, reset: resetTiles,
+  } = useTileSelection(tileCatalogIds, {
+    storageKey: LIBRARY_METRIC_STORAGE_KEY,
+    defaultIds: LIBRARY_DEFAULT_METRIC_IDS,
+  });
 
   // ── Unmapped cell detection ──────────────────────────────────────────
   // A cell is "unmapped" when it exists in performance_by_cell but has no
@@ -134,10 +163,6 @@ export function IapLibraryView() {
           const topCells     = filterCells(filterRows(a.top_checkout_cells));
           const topVariables = filterRows(a.top_checkout_variables);
 
-          const totalSpend   = cells.reduce((s, r) => s + r["Amount spent (USD)"], 0);
-          const totalResults = cells.reduce((s, r) => s + r.Results, 0);
-          const uniqueCells  = new Set(cells.map((r) => r.cell_id)).size;
-
           const TABS: { id: Tab; label: string; count: number }[] = [
             { id: "cells",     label: "Creative cells",   count: cells.length },
             { id: "top",       label: "Top performers",   count: topCells.length + topVariables.length },
@@ -198,11 +223,22 @@ export function IapLibraryView() {
                 <NoDataInRangeState what="creative performance" />
               ) : (
               <>
-              <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
-                <MetricTile label="Creative cells"     value={String(uniqueCells)} />
-                <MetricTile label="Spend (selected)"   value={fmtUSD(totalSpend, 0)} />
-                <MetricTile label="Results (selected)" value={fmtNum(totalResults)} />
-                <MetricTile label="Avg CPA" value={totalResults > 0 ? fmtUSD(totalSpend / totalResults) : "—"} sub="spend ÷ results across selection" />
+              <div className="px-6 pt-5">
+                <div className="flex items-center justify-end mb-2">
+                  <MetricPickerButton catalog={tileCatalog} selected={tileIds} onToggle={toggleTile} onMove={moveTile} onReset={resetTiles} />
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {tileIds.map((id) => {
+                    const m = metricById(tileCatalog, id);
+                    if (!m) return null;
+                    return <MetricTile key={m.id} label={m.label} value={m.formatted} sub={m.sub} />;
+                  })}
+                  {tileIds.length === 0 && (
+                    <div className="col-span-2 md:col-span-4 text-[11px] text-muted-foreground/60 border border-dashed border-border/40 rounded-lg px-3 py-4 text-center">
+                      No metrics selected — use “Customize” to add tiles.
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Tabs + Add creatives action */}
@@ -262,14 +298,16 @@ export function IapLibraryView() {
                             demographic={demoByCell.get(row.cell_id) ?? []}
                             placements={allPlacements}
                             onUploadCreatives={() => setCreativeLibraryOpen(true)}
-                            expandFooter={
+                            onSegmentClick={(seg) => setCardSegment({ segment: seg, cellIds: [row.cell_id] })}
+                            expandFooter={(close) => (
                               <button
-                                onClick={() => setDetail(row)}
+                                onClick={() => { close(); setDetail(row); }}
+                                data-testid={`button-full-detail-${row.cell_id}`}
                                 className="inline-flex items-center gap-1 text-[10px] font-medium text-primary/80 hover:text-primary border border-primary/20 bg-primary/[0.06] hover:bg-primary/10 px-1.5 py-0.5 rounded transition-colors"
                               >
                                 Full detail
                               </button>
-                            }
+                            )}
                           />
                         ))}
                       </div>
@@ -297,14 +335,16 @@ export function IapLibraryView() {
                               demographic={demoByCell.get(row.cell_id) ?? []}
                               placements={allPlacements}
                               onUploadCreatives={() => setCreativeLibraryOpen(true)}
-                              expandFooter={
+                              onSegmentClick={(seg) => setCardSegment({ segment: seg, cellIds: [row.cell_id] })}
+                              expandFooter={(close) => (
                                 <button
-                                  onClick={() => setDetail(row)}
+                                  onClick={() => { close(); setDetail(row); }}
+                                  data-testid={`button-full-detail-top-${row.cell_id}`}
                                   className="inline-flex items-center gap-1 text-[10px] font-medium text-primary/80 hover:text-primary border border-primary/20 bg-primary/[0.06] hover:bg-primary/10 px-1.5 py-0.5 rounded transition-colors"
                                 >
                                   Full detail
                                 </button>
-                              }
+                              )}
                             />
                           ))}
                         </div>
@@ -314,7 +354,7 @@ export function IapLibraryView() {
                     </div>
                     <div>
                       <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Top checkout variables</h3>
-                      {topVariables.length ? <VariableTable rows={topVariables} /> : <PendingState title="No ranked variables" message="No ranked variables in the current metric selection." />}
+                      {topVariables.length ? <VariableTable rows={topVariables} onRowClick={(r) => setVariableCode(r.variable_id)} /> : <PendingState title="No ranked variables" message="No ranked variables in the current metric selection." />}
                     </div>
                   </div>
                 )}
@@ -335,7 +375,12 @@ export function IapLibraryView() {
                           {rollupDnaFamilies(variables).map((f) => (
                             <div
                               key={f.family}
-                              className="rounded-xl border border-border/40 bg-white/[0.02] p-3"
+                              role={f.top ? "button" : undefined}
+                              tabIndex={f.top ? 0 : undefined}
+                              onClick={f.top ? () => setVariableCode(f.top!.variableId) : undefined}
+                              onKeyDown={f.top ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setVariableCode(f.top!.variableId); } } : undefined}
+                              title={f.top ? "Open drill-down for this family's best read" : undefined}
+                              className={`rounded-xl border border-border/40 bg-white/[0.02] p-3 ${f.top ? "cursor-pointer hover:border-primary/30 hover:bg-white/[0.04] transition-colors" : ""}`}
                               data-testid={`dna-family-${f.family}`}
                             >
                               <div className="flex items-center justify-between gap-2 mb-2">
@@ -371,7 +416,7 @@ export function IapLibraryView() {
                           ))}
                         </div>
                       </div>
-                      <VariableTable rows={variables} />
+                      <VariableTable rows={variables} onRowClick={(r) => setVariableCode(r.variable_id)} />
                     </div>
                   ) : (
                     <PendingState title="No variables in selection" message="Adjust the metric selection to see variable performance." />
@@ -396,30 +441,56 @@ export function IapLibraryView() {
                     </div>
                   }
                 >
+                  {/* Primary KPIs */}
                   <div className="grid grid-cols-2 gap-3">
                     <MetricTile label="Spend"    value={fmtUSD(detail["Amount spent (USD)"], 0)} />
                     <MetricTile label="Results"  value={fmtNum(detail.Results)} sub={eventLabel(detail["Result type"])} />
                     <MetricTile label="CPA"      value={detail.CPA_result != null ? fmtUSD(detail.CPA_result) : "—"} />
                     <MetricTile label="Link CTR" value={fmtPct(detail.CTR_link_pct)} />
                   </div>
-                  {detail.iap_read && <DrawerField label="IAP read">{detail.iap_read}</DrawerField>}
-                  <DrawerField label="Variable stack">
-                    <div className="space-y-1.5">
+                  {/* Secondary delivery stats — derived from this row, dashes when absent */}
+                  <div className="grid grid-cols-3 gap-x-3 gap-y-2 rounded-lg border border-border/30 bg-white/[0.015] p-3">
+                    {(() => {
+                      const spend = detail["Amount spent (USD)"];
+                      const imps = detail.Impressions;
+                      const reach = detail.Reach;
+                      const linkClicks = detail["Link clicks"];
+                      const stats: { label: string; value: string }[] = [
+                        { label: "Reach", value: fmtNum(reach) },
+                        { label: "Impressions", value: fmtNum(imps) },
+                        { label: "Frequency", value: reach > 0 ? (imps / reach).toFixed(2) : "—" },
+                        { label: "Link clicks", value: fmtNum(linkClicks) },
+                        { label: "CPM", value: imps > 0 ? fmtUSD((spend / imps) * 1000) : "—" },
+                        { label: "CPC (link)", value: linkClicks > 0 ? fmtUSD(spend / linkClicks) : "—" },
+                      ];
+                      return stats.map((s) => (
+                        <div key={s.label}>
+                          <div className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground/50 leading-none mb-1">{s.label}</div>
+                          <div className="text-[11px] font-semibold tabular-nums text-foreground/90">{s.value}</div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                  <DrawerField label="Variable stack — tap a chip to drill down">
+                    <div className="flex flex-wrap gap-1.5">
                       {VARIABLE_FIELDS.map(({ key, label }) => {
                         const code = detail[key];
                         if (!code || typeof code !== "string") return null;
-                        return (
-                          <div key={key} className="space-y-0.5">
-                            <span className="block text-[10px] text-muted-foreground/70 uppercase tracking-wide">{label}</span>
-                            <span className="block text-[11px] text-foreground/80">
-                              {readableVariables(code)}
-                              <span className="ml-1.5 text-[8px] font-mono text-muted-foreground/60">{code}</span>
-                            </span>
-                          </div>
-                        );
+                        return code.split(/\s*\+\s*/).filter(Boolean).map((c) => (
+                          <button
+                            key={key + c}
+                            onClick={() => setVariableCode(c)}
+                            title={`${label} — open variable drill-down`}
+                            data-testid={`chip-drawer-variable-${c}`}
+                            className="rounded transition-transform hover:scale-[1.04] active:scale-[0.97]"
+                          >
+                            <VariableChip code={c} />
+                          </button>
+                        ));
                       })}
                     </div>
                   </DrawerField>
+                  {detail.iap_read && <DrawerField label="IAP read">{detail.iap_read}</DrawerField>}
                   {pillarsForCell(detail.cell_id).length > 0 && (
                     <DrawerField label="Feeds strategy pillars">
                       <div className="space-y-1">
@@ -462,6 +533,26 @@ export function IapLibraryView() {
                   cellIds={[detail.cell_id]}
                 />
               )}
+
+              {/* ── Variable drill-down (DNA cards, chips, table rows) ── */}
+              <VariableDrilldownModal
+                open={variableCode != null}
+                onClose={() => setVariableCode(null)}
+                code={variableCode}
+                analysis={a}
+                variableRows={variables}
+                selectedResultTypes={selected}
+              />
+
+              {/* ── Segment drill-down from a card's Demographics tab ── */}
+              <SegmentDrilldownModal
+                open={cardSegment != null}
+                onClose={() => setCardSegment(null)}
+                segment={cardSegment?.segment ?? null}
+                analysis={a}
+                cellIds={cardSegment?.cellIds ?? null}
+                kicker={cardSegment ? `Creative cell · ${cardSegment.cellIds[0]}` : undefined}
+              />
             </div>
           );
         }}

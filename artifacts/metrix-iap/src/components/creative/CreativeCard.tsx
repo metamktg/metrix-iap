@@ -193,11 +193,16 @@ export function CreativeCard({
   demographic,
   placements,
   onUploadCreatives,
+  onSegmentClick,
 }: {
   data: CreativeCardData;
   className?: string;
-  /** Extra actions rendered in the expanded dialog footer (cross-links, drill-downs). */
-  expandFooter?: React.ReactNode;
+  /**
+   * Extra actions rendered in the expanded dialog footer. Render-prop form
+   * receives close() so an action can dismiss the dialog first (surfaces
+   * opened while it's still up would stack behind it).
+   */
+  expandFooter?: React.ReactNode | ((close: () => void) => React.ReactNode);
   /** True when this cell has performance data but no IAP library mapping. */
   unmapped?: boolean;
   /** Cell-scoped demographic rows for the expanded dialog Demographics tab. */
@@ -206,6 +211,8 @@ export function CreativeCard({
   placements?: PlacementRow[];
   /** Called (after dialog closes) when the user taps "Upload creatives" in the unmapped warning. */
   onUploadCreatives?: () => void;
+  /** Makes the expanded dialog's Demographics tab tappable → segment drill-down. */
+  onSegmentClick?: (segment: { age: string; gender: string }) => void;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -271,6 +278,7 @@ export function CreativeCard({
         expandFooter={expandFooter}
         unmapped={unmapped}
         onUploadCreatives={onUploadCreatives}
+        onSegmentClick={onSegmentClick}
       />
     </>
   );
