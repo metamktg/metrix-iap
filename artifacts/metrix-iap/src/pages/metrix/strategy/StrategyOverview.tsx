@@ -1,7 +1,9 @@
 // ─── Strategy · Overview ──────────────────────────────────────────────
 // Entry point for the Strategy section: pillar and hypothesis counts,
-// the pillar summaries, and jump-offs into each strategy subpage.
+// compact pillar cards (click to expand full detail), scaling playbook,
+// and jump-offs into each strategy subpage.
 
+import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getStrategyData, getBriefBuilder } from "@/lib/data/metrixSeedAdapter";
@@ -14,10 +16,140 @@ import { useDateRange } from "@/contexts/DateRangeContext";
 import {
   useGenerationRun, GenerateButton, ProvenanceBadge, GenerationErrorNote,
 } from "@/components/generation/GenerationControls";
-import { VariableStackChips, IcpChips, playbookHasContent, ScalingPlaybookLanes } from "./strategyShared";
-import { Compass, Map, Users, ListChecks } from "lucide-react";
+import {
+  VariableStackChips, IcpChips, playbookHasContent,
+  ScalingPlaybookLanes, PillarDetailSections,
+} from "./strategyShared";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Compass, Map, Users, ListChecks, ChevronRight, Layers, ArrowRight } from "lucide-react";
+import type { MessagePillar, ICPProfile } from "@/lib/data/seedTypes";
+import { cn } from "@/lib/utils";
+import { useLocation } from "wouter";
 
 const SECTION = "Strategy · 04";
+
+// ─── Pillar expand dialog ─────────────────────────────────────────────
+// Full detail for one message pillar: descriptor, funnel/execution/
+// placement/scaling sections, variable stack, ICP targets.
+
+function PillarExpandDialog({
+  pillar,
+  profiles,
+  open,
+  onOpenChange,
+}: {
+  pillar: MessagePillar;
+  profiles?: ICPProfile[];
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl bg-[hsl(222_61%_6%)] border-border/40 p-0 gap-0 overflow-hidden max-h-[88vh]">
+        {/* Header */}
+        <div className="px-6 pt-5 pb-4 border-b border-border/30">
+          <span className="text-[9px] font-mono text-muted-foreground/50 uppercase tracking-widest block mb-1">
+            {pillar.id}
+          </span>
+          <h2 className="text-[16px] font-semibold text-foreground leading-snug">{pillar.label}</h2>
+          <p className="text-[12px] text-muted-foreground/70 leading-relaxed mt-1.5">{pillar.plain_descriptor}</p>
+        </div>
+
+        {/* Scrollable body */}
+        <div className="overflow-y-auto px-6 py-5 space-y-5">
+          {/* Variable stack */}
+          {Object.keys(pillar.variable_stack ?? {}).length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50">Variable stack</p>
+              <VariableStackChips stack={pillar.variable_stack} />
+            </div>
+          )}
+
+          {/* ICP targets inline (also shown inside PillarDetailSections, but surfaced here for prominence) */}
+          {(pillar.target_icps?.length ?? 0) > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50">Target ICPs</p>
+              <IcpChips ids={pillar.target_icps} profiles={profiles} />
+            </div>
+          )}
+
+          {/* All detail sections (funnel, execution, placement, scaling) */}
+          <PillarDetailSections pillar={pillar} profiles={profiles} />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Compact pillar card ──────────────────────────────────────────────
+// Shows ID + title + 2-line descriptor. Footer badges hint at depth
+// available in the expanded dialog. Full detail on click.
+
+function PillarCard({
+  pillar,
+  profiles,
+}: {
+  pillar: MessagePillar;
+  profiles?: ICPProfile[];
+}) {
+  const [open, setOpen] = useState(false);
+  const varCount  = Object.keys(pillar.variable_stack ?? {}).filter(([, v]) => Boolean(v)).length;
+  const icpCount  = pillar.target_icps?.length ?? 0;
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className={cn(
+          "group text-left w-full rounded-xl border border-border/40 bg-white/[0.02]",
+          "hover:border-primary/30 hover:bg-white/[0.035] hover:shadow-md hover:shadow-black/20",
+          "active:scale-[0.99] transition-all duration-150 flex flex-col p-4 gap-2.5"
+        )}
+      >
+        {/* ID + title row */}
+        <div className="space-y-0.5">
+          <span className="text-[9px] font-mono text-muted-foreground/50 block">{pillar.id}</span>
+          <p className="text-[13px] font-semibold text-foreground leading-snug line-clamp-2">{pillar.label}</p>
+        </div>
+
+        {/* Descriptor — 3-line clamp, no overflow */}
+        <p className="text-[11px] text-muted-foreground/65 leading-relaxed line-clamp-3 flex-1">
+          {pillar.plain_descriptor}
+        </p>
+
+        {/* Footer: depth badges + expand cue */}
+        <div className="flex items-center justify-between pt-1 border-t border-border/20">
+          <div className="flex items-center gap-1.5">
+            {varCount > 0 && (
+              <span className="flex items-center gap-1 text-[8.5px] font-mono text-muted-foreground/50 border border-border/30 bg-white/[0.015] px-1.5 py-0.5 rounded leading-none">
+                <Layers className="w-2.5 h-2.5" />
+                {varCount} var{varCount !== 1 ? "s" : ""}
+              </span>
+            )}
+            {icpCount > 0 && (
+              <span className="flex items-center gap-1 text-[8.5px] font-mono text-muted-foreground/50 border border-border/30 bg-white/[0.015] px-1.5 py-0.5 rounded leading-none">
+                <Users className="w-2.5 h-2.5" />
+                {icpCount} ICP{icpCount !== 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
+          <span className="flex items-center gap-0.5 text-[9px] font-medium text-muted-foreground/40 group-hover:text-primary/60 transition-colors">
+            Details <ChevronRight className="w-3 h-3" />
+          </span>
+        </div>
+      </button>
+
+      <PillarExpandDialog
+        pillar={pillar}
+        profiles={profiles}
+        open={open}
+        onOpenChange={setOpen}
+      />
+    </>
+  );
+}
+
+// ─── Main view ────────────────────────────────────────────────────────
 
 export function StrategyOverview() {
   const seed = useMetrixSeed();
@@ -25,6 +157,7 @@ export function StrategyOverview() {
   const account = getAdAccount(seed, adAccountId);
   const { rangeHasData } = useDateRange();
   const generation = useGenerationRun(adAccountId, "strategy");
+  const [, navigate] = useLocation();
 
   return (
     <ModuleScopeGate section={SECTION} title="Strategy Overview" account={account}>
@@ -59,9 +192,9 @@ export function StrategyOverview() {
           );
         }
 
-        const pillars = strategy.message_pillars;
+        const pillars    = strategy.message_pillars;
         const hypotheses = strategy.active_hypotheses;
-        const testing = hypotheses.filter((h) => h.status.toLowerCase().includes("test")).length;
+        const testing    = hypotheses.filter((h) => h.status.toLowerCase().includes("test")).length;
 
         const subpages = [
           {
@@ -121,31 +254,27 @@ export function StrategyOverview() {
             ) : (
             <>
             <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
-              <MetricTile label="Message pillars" value={fmtNum(pillars.length)} />
-              <MetricTile label="Active hypotheses" value={fmtNum(hypotheses.length)} />
-              <MetricTile label="In testing" value={fmtNum(testing)} />
-              <MetricTile label="Draft briefs" value={fmtNum(briefs?.draft_briefs.length ?? 0)} />
+              <MetricTile label="Message pillars"    value={fmtNum(pillars.length)} />
+              <MetricTile label="Active hypotheses"  value={fmtNum(hypotheses.length)} />
+              <MetricTile label="In testing"         value={fmtNum(testing)} />
+              <MetricTile label="Draft briefs"       value={fmtNum(briefs?.draft_briefs.length ?? 0)} />
             </div>
 
             <div className="px-6 py-5 space-y-4 max-w-5xl">
-              <SectionCard title="Message pillars" desc="Validated message directions this account's strategy stands on." table="message_pillars">
+
+              {/* ── Message pillars — compact cards, full detail on click ── */}
+              <SectionCard
+                title="Message pillars"
+                desc="Validated message directions this account's strategy stands on. Click any pillar to see the full detail."
+                table="message_pillars"
+              >
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {pillars.map((p) => (
-                    <div key={p.id} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2">
-                      <span className="text-[10px] font-mono text-muted-foreground/70">{p.id}</span>
-                      <p className="text-[13px] font-semibold text-foreground leading-tight">{p.label}</p>
-                      <p className="text-[11px] text-muted-foreground/80 leading-relaxed">{p.plain_descriptor}</p>
-                      {p.funnel_application && (
-                        <p className="text-[10.5px] text-foreground/70 leading-relaxed">
-                          <span className="font-semibold uppercase tracking-widest text-[9px] text-muted-foreground/70 mr-1">Funnel</span>
-                          {p.funnel_application}
-                        </p>
-                      )}
-                      <div className="mt-auto pt-1 space-y-1.5">
-                        <VariableStackChips stack={p.variable_stack} />
-                        <IcpChips ids={p.target_icps} profiles={strategy.icp_profiles} />
-                      </div>
-                    </div>
+                    <PillarCard
+                      key={p.id}
+                      pillar={p}
+                      profiles={strategy.icp_profiles}
+                    />
                   ))}
                 </div>
                 <div className="mt-3">
@@ -153,6 +282,7 @@ export function StrategyOverview() {
                 </div>
               </SectionCard>
 
+              {/* ── Scaling playbook ── */}
               {playbookHasContent(strategy.scaling_playbook) && (
                 <SectionCard
                   title="Scaling playbook"
@@ -163,20 +293,31 @@ export function StrategyOverview() {
                 </SectionCard>
               )}
 
+              {/* ── Strategy modules nav ── */}
               <SectionCard title="Strategy modules" desc="Each module reads the same account strategy from a different angle.">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {subpages.map((s) => (
-                    <div key={s.to} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2">
+                    <button
+                      key={s.to}
+                      onClick={() => navigate(s.to)}
+                      className={cn(
+                        "group text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2",
+                        "hover:border-primary/30 hover:bg-white/[0.035] hover:shadow-md hover:shadow-black/20",
+                        "active:scale-[0.99] transition-all duration-150"
+                      )}
+                    >
                       <div className="flex items-center gap-2">
-                        <s.Icon className="w-3.5 h-3.5 text-primary" />
+                        <s.Icon className="w-3.5 h-3.5 text-primary/70" />
                         <span className="text-[13px] font-semibold text-foreground">{s.label}</span>
                       </div>
-                      <p className="text-[11px] text-muted-foreground/80 leading-relaxed">{s.desc}</p>
-                      <div className="flex items-center justify-between mt-auto pt-1">
-                        <span className="text-[10px] font-mono text-muted-foreground/70">{s.stat}</span>
-                        <CrossLink to={s.to} label="Open" />
+                      <p className="text-[11px] text-muted-foreground/70 leading-relaxed flex-1">{s.desc}</p>
+                      <div className="flex items-center justify-between mt-auto pt-1 border-t border-border/20">
+                        <span className="text-[9px] font-mono text-muted-foreground/50">{s.stat}</span>
+                        <span className="flex items-center gap-0.5 text-[9px] font-medium text-muted-foreground/40 group-hover:text-primary/60 transition-colors">
+                          Open <ArrowRight className="w-3 h-3" />
+                        </span>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </SectionCard>
