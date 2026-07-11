@@ -141,7 +141,7 @@ export function ConfidenceBadge({ value }: { value: string }) {
           ? "bg-amber-400/10 text-amber-400 border-amber-400/20"
           : "bg-muted text-muted-foreground/60 border-border/40";
   return (
-    <span className={cn("inline-flex text-label-xs font-semibold border px-1.5 py-0.5 rounded leading-none", cls)}>
+    <span className={cn("inline-flex text-[9px] font-semibold border px-1.5 py-0.5 rounded leading-none", cls)}>
       {value}
     </span>
   );
@@ -163,12 +163,12 @@ export function ModuleHeader({
   right?: React.ReactNode;
 }) {
   return (
-    <div className="px-6 py-5 border-b border-border/40">
+    <div className="px-6 py-4 border-b border-border/40">
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
-          <span className="block mb-1 text-label font-semibold uppercase tracking-[0.16em] text-muted-foreground/60">{section}</span>
-          <h1 className="text-title font-bold text-foreground leading-tight tracking-[-0.02em]">{title}</h1>
-          {subtitle && <p className="text-sm text-muted-foreground mt-1 leading-relaxed max-w-2xl">{subtitle}</p>}
+          <span className="block mb-1 text-[9px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/50">{section}</span>
+          <h1 className="text-[19px] font-bold text-foreground leading-tight tracking-[-0.02em]">{title}</h1>
+          {subtitle && <p className="text-[11px] text-muted-foreground/60 mt-0.5 leading-relaxed max-w-2xl">{subtitle}</p>}
         </div>
         <div className="shrink-0 pt-0.5 flex items-center gap-2">
           {right}
@@ -185,9 +185,9 @@ export function ScopeBanner({ account }: { account: AdAccount }) {
   return (
     <div className="flex items-center gap-2 px-6 py-2 border-b border-border/30 bg-white/[0.015]">
       <Database className="w-3 h-3 text-muted-foreground/60 shrink-0" />
-      <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Scoped to ad account</span>
-      <span className="text-label font-medium text-foreground/80">{account.name}</span>
-      <span className="text-label-xs font-mono text-muted-foreground/60">{account.platform}</span>
+      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Scoped to ad account</span>
+      <span className="text-[11px] font-medium text-foreground/80">{account.name}</span>
+      <span className="text-[9px] font-mono text-muted-foreground/60">{account.platform}</span>
     </div>
   );
 }
@@ -203,13 +203,13 @@ export function RangeScopeBar({ grainNote }: { grainNote?: string }) {
   return (
     <div className="flex items-center gap-2 flex-wrap px-6 py-2 border-b border-border/30 bg-white/[0.01]">
       <CalendarRange className="w-3 h-3 text-muted-foreground/60 shrink-0" />
-      <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Date range</span>
-      <span className="text-label font-medium text-foreground/80 tabular-nums">{formatIsoRange(range)}</span>
+      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Date range</span>
+      <span className="text-[11px] font-medium text-foreground/80 tabular-nums">{formatIsoRange(range)}</span>
       {compare && compareRange && (
-        <span className="text-label text-primary/80 tabular-nums">vs {formatIsoRange(compareRange)}</span>
+        <span className="text-[10px] text-primary/80 tabular-nums">vs {formatIsoRange(compareRange)}</span>
       )}
       {narrowed && (
-        <span className="text-label text-muted-foreground/60">
+        <span className="text-[10px] text-muted-foreground/60">
           {grainNote ?? "Items are included when their flight window overlaps this range; metrics cover each item's full flight — this import has no daily grain."}
         </span>
       )}
@@ -225,13 +225,13 @@ export function NoDataInRangeState({ what, detail }: { what: string; detail?: st
       <div className="w-10 h-10 rounded-xl border border-border/40 bg-white/[0.03] flex items-center justify-center">
         <CalendarX2 className="w-4 h-4 text-muted-foreground/60" />
       </div>
-      <p className="text-sm font-medium text-foreground/75">No {what} in this range</p>
-      <p className="text-body text-muted-foreground/70 max-w-xs">
+      <p className="text-[13px] font-medium text-foreground/60">No {what} in this range</p>
+      <p className="text-[11px] text-muted-foreground/60 max-w-xs">
         {detail ?? (range ? `The selected range (${formatIsoRange(range)}) is outside this data's available window.` : "No dated data is available.")}
       </p>
       <button
         onClick={() => setPreset("all")}
-        className="text-body font-medium text-primary border border-primary/30 bg-primary/10 hover:bg-primary/15 rounded-md px-3 py-1.5 transition-colors"
+        className="text-[11px] font-medium text-primary border border-primary/30 bg-primary/10 hover:bg-primary/15 rounded-md px-3 py-1.5 transition-colors"
       >
         Show all available data
       </button>
@@ -271,11 +271,11 @@ export function CaveatNote({
         <Info className="w-3 h-3 text-amber-400/70 shrink-0 mt-[3px]" />
         <div className="flex-1 min-w-0">
           {source && (
-            <span className="text-label-xs font-mono uppercase tracking-widest text-amber-400/60 block mb-0.5">
+            <span className="text-[8.5px] font-mono uppercase tracking-widest text-amber-400/50 block mb-0.5">
               {source}
             </span>
           )}
-          <p className="text-body text-amber-400/85 leading-snug">
+          <p className="text-[11px] text-amber-400/80 leading-snug">
             {expanded ? text : preview}
           </p>
         </div>
@@ -305,30 +305,30 @@ export function UnconfiguredState({ account }: { account: AdAccount }) {
           <Plug className="w-6 h-6 text-muted-foreground/70" />
         </div>
         <div className="space-y-1.5">
-          <h2 className="text-section font-semibold text-foreground">{s?.title ?? "Connect Meta Ad Account"}</h2>
-          <p className="text-sm text-muted-foreground/70 leading-relaxed">
+          <h2 className="text-[16px] font-semibold text-foreground">{s?.title ?? "Connect Meta Ad Account"}</h2>
+          <p className="text-[12px] text-muted-foreground/60 leading-relaxed">
             {account.name} has no connected data yet. Connect the ad account or add a manual import to begin.
           </p>
         </div>
         <div className="flex items-center justify-center gap-2">
           <button
             onClick={() => setConnectOpen(true)}
-            className="flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary/15 border border-primary/30 text-body font-medium text-primary hover:bg-primary/25 transition-colors"
+            className="flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary/15 border border-primary/30 text-[12px] font-medium text-primary hover:bg-primary/25 transition-colors"
           >
             <Plug className="w-3.5 h-3.5" /> {s?.primary_action ?? "Connect Meta Ad Account"}
           </button>
           <button
             onClick={() => setImportOpen(true)}
-            className="flex items-center gap-1.5 h-9 px-4 rounded-md border border-border/50 text-body font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+            className="flex items-center gap-1.5 h-9 px-4 rounded-md border border-border/50 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
           >
             <FileUp className="w-3.5 h-3.5" /> {s?.secondary_action ?? "Add Manual Import"}
           </button>
         </div>
-        <p className="text-body text-muted-foreground/70 leading-relaxed">
+        <p className="text-[10px] text-muted-foreground/60 leading-relaxed">
           No performance, analysis, or report data is shown until this account is configured.
         </p>
         <div className="pt-1 space-y-2">
-          <p className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
             Or view a different account
           </p>
           <InlineAccountPicker label="Switch ad account" excludeAccountId={account.id} />
@@ -346,8 +346,8 @@ export function PendingState({ title, message, icon: Icon = Clock, action }: { t
       <div className="w-10 h-10 rounded-xl border border-border/40 bg-white/[0.03] flex items-center justify-center">
         <Icon className="w-4 h-4 text-muted-foreground/60" />
       </div>
-      <p className="text-sm font-medium text-foreground/75">{title}</p>
-      <p className="text-body text-muted-foreground/70 max-w-xs">{message}</p>
+      <p className="text-[13px] font-medium text-foreground/60">{title}</p>
+      <p className="text-[11px] text-muted-foreground/60 max-w-xs">{message}</p>
       {action && <div className="pt-1">{action}</div>}
     </div>
   );
@@ -358,11 +358,11 @@ export function PendingState({ title, message, icon: Icon = Clock, action }: { t
 
 export function MetricTile({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="mx-card p-4 transition-colors group-hover:border-primary/30 group-hover:bg-primary/[0.02] min-w-0">
-      <div className="relative min-w-0">
-        <div className="text-label font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-2">{label}</div>
-        <div className="text-value font-bold text-foreground tabular-nums leading-none tracking-[-0.035em] break-words">{value}</div>
-        {sub && <div className="text-body text-muted-foreground/70 mt-2 leading-snug">{sub}</div>}
+    <div className="mx-card p-4 transition-colors group-hover:border-primary/30 group-hover:bg-primary/[0.02]">
+      <div className="relative">
+        <div className="text-[9.5px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/60 mb-2">{label}</div>
+        <div className="text-[26px] font-bold text-foreground tabular-nums leading-none tracking-[-0.035em]">{value}</div>
+        {sub && <div className="text-[10px] text-muted-foreground/55 mt-2 leading-snug">{sub}</div>}
       </div>
     </div>
   );
@@ -388,13 +388,13 @@ export function ModuleTabs<T extends string>({
           onClick={() => onChange(t.id)}
           aria-current={active === t.id ? "page" : undefined}
           className={cn(
-            "flex items-center gap-1.5 h-10 px-3 text-body font-medium border-b-2 transition-colors whitespace-nowrap shrink-0",
+            "flex items-center gap-1.5 h-10 px-3 text-[12px] font-medium border-b-2 transition-colors whitespace-nowrap shrink-0",
             active === t.id ? "border-primary text-foreground" : "border-transparent text-muted-foreground/60 hover:text-foreground"
           )}
         >
           {t.Icon && <t.Icon className="w-3 h-3" />}
           {t.label}
-          {t.count != null && <span className="text-label-xs font-mono text-muted-foreground/60">{t.count}</span>}
+          {t.count != null && <span className="text-[9px] font-mono text-muted-foreground/60">{t.count}</span>}
         </button>
       ))}
     </div>
@@ -448,7 +448,7 @@ export function CrossLink({ to, label }: { to: string; label: string }) {
   return (
     <button
       onClick={() => navigate(to)}
-      className="inline-flex items-center gap-1 text-body font-medium text-primary hover:text-primary/80 transition-colors"
+      className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors"
     >
       {label}
       <ArrowRight className="w-3 h-3" />
@@ -483,7 +483,7 @@ export function StaleFocusNotice({ label = "item" }: { label?: string }) {
       data-testid="notice-stale-focus"
     >
       <AlertTriangle className="w-3 h-3 text-amber-400/70 shrink-0" />
-      <p className="text-body text-foreground/70 leading-none">
+      <p className="text-[11px] text-foreground/65 leading-none">
         Linked {label} no longer available — removed, regenerated, or outside the current range.
       </p>
     </div>
@@ -504,7 +504,7 @@ export function MetricSelectionBar({
 }) {
   return (
     <div className="flex items-center gap-2 flex-wrap px-6 py-2.5 border-b border-border/30 bg-white/[0.01]">
-      <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">
+      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">
         Metric selection
       </span>
       {events.map((e) => {
@@ -515,7 +515,7 @@ export function MetricSelectionBar({
             onClick={() => onToggle(e)}
             aria-pressed={on}
             className={cn(
-              "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-body font-medium transition-colors",
+              "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-[11px] font-medium transition-colors",
               on
                 ? "border-primary/30 bg-primary/10 text-primary"
                 : "border-border/40 text-muted-foreground/60 hover:text-foreground hover:bg-white/[0.03]"
@@ -549,7 +549,7 @@ export const SCOPE_STYLE: Record<string, string> = {
 
 export function ImpactBadge({ impact }: { impact: string }) {
   return (
-    <span className={cn("text-label-xs font-semibold border px-1.5 py-0.5 rounded uppercase tracking-wide leading-none", IMPACT_STYLE[impact] ?? IMPACT_STYLE.low)}>
+    <span className={cn("text-[9px] font-semibold border px-1.5 py-0.5 rounded uppercase tracking-wide leading-none", IMPACT_STYLE[impact] ?? IMPACT_STYLE.low)}>
       {impact} impact
     </span>
   );
@@ -557,7 +557,7 @@ export function ImpactBadge({ impact }: { impact: string }) {
 
 export function ScopeBadge({ scope }: { scope: string }) {
   return (
-    <span className={cn("text-label-xs font-semibold border px-1.5 py-0.5 rounded uppercase tracking-wide leading-none", SCOPE_STYLE[scope] ?? "bg-muted text-muted-foreground/60 border-border/40")}>
+    <span className={cn("text-[9px] font-semibold border px-1.5 py-0.5 rounded uppercase tracking-wide leading-none", SCOPE_STYLE[scope] ?? "bg-muted text-muted-foreground/60 border-border/40")}>
       {scope}
     </span>
   );
@@ -580,10 +580,10 @@ export function SectionCard({
 }) {
   return (
     <section className="mx-card overflow-hidden">
-      <div className="relative flex items-center gap-3 px-5 py-3 border-b border-[rgba(120,170,255,0.10)]">
+      <div className="relative flex items-center gap-3 px-4 py-2.5 border-b border-[rgba(120,170,255,0.10)]">
         <div className="flex-1 min-w-0">
-          <h3 className="text-body-lg font-semibold text-foreground leading-tight">{title}</h3>
-          {desc && <p className="text-body text-muted-foreground/70 mt-0.5 leading-snug">{desc}</p>}
+          <h3 className="text-[12.5px] font-semibold text-foreground leading-tight">{title}</h3>
+          {desc && <p className="text-[10.5px] text-muted-foreground/55 mt-0.5 leading-snug">{desc}</p>}
         </div>
         <div className="shrink-0 flex items-center gap-2">
           {right}

@@ -34,7 +34,7 @@ import { DateRangeProvider } from "@/contexts/DateRangeContext";
 import { SignalView } from "../listen/SignalView";
 import { AlertsView } from "../listen/AlertsView";
 import { RecommendationsView } from "../listen/RecommendationsView";
-import { AnalysisCombinedView } from "../analysis/AnalysisCombinedView";
+import { AnalysisOverview } from "../analysis/AnalysisOverview";
 import { IapLibraryView } from "../analysis/IapLibraryView";
 import { AudienceView } from "../analysis/AudienceView";
 import { PlacementsView } from "../analysis/PlacementsView";
@@ -62,7 +62,7 @@ const GATED_VIEWS: [string, React.ComponentType][] = [
   ["Listen · Signal", SignalView],
   ["Listen · Alerts", AlertsView],
   ["Listen · Recommendations", RecommendationsView],
-  ["Analysis · Overview", AnalysisCombinedView],
+  ["Analysis · Overview", AnalysisOverview],
   ["Analysis · IAP Library", IapLibraryView],
   ["Analysis · Audience", AudienceView],
   ["Analysis · Placements", PlacementsView],

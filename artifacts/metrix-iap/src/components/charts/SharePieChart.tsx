@@ -78,7 +78,7 @@ export function SharePieChart({ data, unit, height = 220, showLegend = true }: S
                 className="w-2 h-2 rounded-full shrink-0"
                 style={{ backgroundColor: PALETTE[i % PALETTE.length] }}
               />
-              <span className="text-label-xs text-muted-foreground/70">{d.name}</span>
+              <span className="text-[10px] text-muted-foreground/70">{d.name}</span>
             </div>
           ))}
         </div>

@@ -72,7 +72,7 @@ export function SignalView() {
               <NoDataInRangeState what="signals" />
             ) : (
             <>
-            <div className="px-6 pt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
               <MetricTile label="Active signals" value={String(signals.length)} />
               <MetricTile label="High impact" value={String(highCount)} sub={highCount > 0 ? "needs review" : "none flagged"} />
               <MetricTile label="Scopes covered" value={String(present.length)} sub={present.map((p) => SCOPE_LABEL[p] ?? p).join(" · ") || "—"} />
@@ -101,11 +101,11 @@ export function SignalView() {
                         <ImpactBadge impact={s.impact} />
                         <ConfidenceBadge value={s.confidence} />
                       </div>
-                      <p className="text-body font-semibold text-foreground leading-snug">{s.title}</p>
-                      <p className="text-body text-muted-foreground/80 mt-1 leading-relaxed">{s.rationale}</p>
+                      <p className="text-[13px] font-semibold text-foreground leading-snug">{s.title}</p>
+                      <p className="text-[12px] text-muted-foreground/70 mt-1 leading-relaxed">{s.rationale}</p>
                       <div className="flex items-start gap-1.5 mt-3 pt-3 border-t border-border/20">
                         <ArrowRight className="w-3.5 h-3.5 text-primary/60 shrink-0 mt-0.5" />
-                        <p className="text-body text-foreground/85 leading-relaxed">{s.recommended_action}</p>
+                        <p className="text-[11px] text-foreground/75 leading-relaxed">{s.recommended_action}</p>
                       </div>
                     </button>
                   ))}
@@ -136,7 +136,7 @@ export function SignalView() {
                 <DrawerField label="Recommended action">{detail.recommended_action}</DrawerField>
                 {detail.source_path && (
                   <DrawerField label="Source">
-                    <span className="font-mono text-label text-muted-foreground/60">{detail.source_path}</span>
+                    <span className="font-mono text-[10px] text-muted-foreground/60">{detail.source_path}</span>
                   </DrawerField>
                 )}
               </InfoDrawer>

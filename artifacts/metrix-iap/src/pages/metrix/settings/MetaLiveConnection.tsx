@@ -147,7 +147,7 @@ export function MetaLiveConnection() {
         )}
 
         {connectionQuery.isLoading && (
-          <div className="flex items-center gap-2 p-3 text-label text-muted-foreground/85">
+          <div className="flex items-center gap-2 p-3 text-[11px] text-muted-foreground/85">
             <Loader2 className="w-3.5 h-3.5 animate-spin" /> Checking connection status…
           </div>
         )}
@@ -162,8 +162,8 @@ export function MetaLiveConnection() {
           <div className="flex items-start gap-3 p-3 rounded-lg border border-border/40 bg-white/[0.02]">
             <ShieldCheck className="w-4 h-4 text-primary/80 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
-              <div className="text-body font-semibold text-foreground">No Meta account connected</div>
-              <p className="text-body text-muted-foreground/85 leading-relaxed mt-0.5">
+              <div className="text-[12px] font-semibold text-foreground">No Meta account connected</div>
+              <p className="text-[11px] text-muted-foreground/85 leading-relaxed mt-0.5">
                 Sign in with the Meta profile that has access to the pilot ad account. Metrix only
                 requests <span className="font-mono text-foreground/80">ads_read</span> — it can
                 never modify campaigns.
@@ -172,7 +172,7 @@ export function MetaLiveConnection() {
             <button
               onClick={handleConnect}
               disabled={connecting}
-              className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-label font-medium text-primary hover:bg-primary/25 transition-colors shrink-0 disabled:opacity-50"
+              className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-[11px] font-medium text-primary hover:bg-primary/25 transition-colors shrink-0 disabled:opacity-50"
               data-testid="button-connect-meta-live"
             >
               {connecting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plug className="w-3 h-3" />}
@@ -221,7 +221,7 @@ function Banner({
         ? "border-amber-400/25 bg-amber-400/[0.06] text-amber-300"
         : "border-red-400/25 bg-red-400/[0.06] text-red-300";
   return (
-    <div className={cn("flex items-start gap-2 p-2.5 rounded-lg border text-label leading-relaxed", classes)}>
+    <div className={cn("flex items-start gap-2 p-2.5 rounded-lg border text-[11px] leading-relaxed", classes)}>
       <Icon className="w-3.5 h-3.5 shrink-0 mt-0.5" />
       <span>{children}</span>
     </div>
@@ -264,12 +264,12 @@ function AccountPicker({ pilotMode, onSelected }: { pilotMode: boolean; onSelect
 
   return (
     <div className="space-y-2.5">
-      <div className="text-label font-mono uppercase tracking-widest text-muted-foreground/80">
+      <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/80">
         Select the ad account to connect
       </div>
 
       {accountsQuery.isLoading && (
-        <div className="flex items-center gap-2 p-3 text-label text-muted-foreground/85">
+        <div className="flex items-center gap-2 p-3 text-[11px] text-muted-foreground/85">
           <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading your Meta ad accounts…
         </div>
       )}
@@ -302,15 +302,15 @@ function AccountPicker({ pilotMode, onSelected }: { pilotMode: boolean; onSelect
             data-testid={`button-pick-account-${a.id}`}
           >
             <div className="flex-1 min-w-0">
-              <div className="text-body font-semibold text-foreground flex items-center gap-2">
+              <div className="text-[12px] font-semibold text-foreground flex items-center gap-2">
                 {a.name ?? a.id}
                 {isPilot && (
-                  <span className="text-label-xs font-semibold uppercase tracking-widest border border-primary/30 bg-primary/[0.08] text-primary px-1.5 py-0.5 rounded leading-none">
+                  <span className="text-[9px] font-semibold uppercase tracking-widest border border-primary/30 bg-primary/[0.08] text-primary px-1.5 py-0.5 rounded leading-none">
                     Pilot account
                   </span>
                 )}
               </div>
-              <div className="text-label font-mono text-muted-foreground/85">
+              <div className="text-[10px] font-mono text-muted-foreground/85">
                 {a.id}
                 {a.currency ? ` · ${a.currency}` : ""}
                 {a.timezone_name ? ` · ${a.timezone_name}` : ""}
@@ -339,7 +339,7 @@ function AccountPicker({ pilotMode, onSelected }: { pilotMode: boolean; onSelect
           disabled={!chosen || select.isPending}
           onClick={() => chosen && select.mutate({ data: { ad_account_id: chosen } })}
           className={cn(
-            "flex items-center gap-1.5 h-9 px-4 rounded-md border text-body font-medium transition-colors",
+            "flex items-center gap-1.5 h-9 px-4 rounded-md border text-[12px] font-medium transition-colors",
             chosen && !select.isPending
               ? "bg-primary/15 border-primary/30 text-primary hover:bg-primary/25"
               : "border-border/40 text-muted-foreground/80 cursor-not-allowed",
@@ -399,10 +399,10 @@ function ConnectedPanel({
       <div className="flex items-center gap-3 p-3 rounded-lg border border-emerald-400/20 bg-emerald-400/[0.04]">
         <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
         <div className="flex-1 min-w-0">
-          <div className="text-body font-semibold text-foreground">
+          <div className="text-[12px] font-semibold text-foreground">
             {account.account_name ?? account.ad_account_id}
           </div>
-          <div className="text-label font-mono text-muted-foreground/85">
+          <div className="text-[10px] font-mono text-muted-foreground/85">
             {account.ad_account_id}
             {account.currency ? ` · ${account.currency}` : ""}
             {account.timezone ? ` · ${account.timezone}` : ""}
@@ -411,7 +411,7 @@ function ConnectedPanel({
         </div>
         <span
           className={cn(
-            "text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none shrink-0",
+            "text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none shrink-0",
             tokenTone,
           )}
         >
@@ -420,7 +420,7 @@ function ConnectedPanel({
         <button
           onClick={onDisconnect}
           disabled={disconnecting}
-          className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-label font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors shrink-0 disabled:opacity-50"
+          className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors shrink-0 disabled:opacity-50"
           data-testid="button-disconnect-meta"
         >
           {disconnecting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Unlink className="w-3 h-3" />}
@@ -435,13 +435,13 @@ function ConnectedPanel({
       )}
 
       <div className="flex items-center justify-between">
-        <div className="text-label font-mono uppercase tracking-widest text-muted-foreground/80">
+        <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/80">
           IAP report pulls · last 30 days
         </div>
         <button
           onClick={() => runReports.mutate()}
           disabled={runReports.isPending || account.token_status === "expired"}
-          className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-label font-medium text-primary hover:bg-primary/25 transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-[11px] font-medium text-primary hover:bg-primary/25 transition-colors disabled:opacity-50"
           data-testid="button-run-reports"
         >
           {runReports.isPending ? (
@@ -492,10 +492,10 @@ function ReportClassRow({
           <Table2 className="w-4 h-4 text-muted-foreground/75 shrink-0" />
         )}
         <div className="flex-1 min-w-0">
-          <div className="text-body font-medium text-foreground">
+          <div className="text-[12px] font-medium text-foreground">
             {REPORT_CLASS_LABELS[reportClass]}
           </div>
-          <div className="text-label text-muted-foreground/85">
+          <div className="text-[10px] text-muted-foreground/85">
             {pull
               ? pull.status === "success"
                 ? `${pull.row_count.toLocaleString()} rows · ${pull.date_range_start} → ${pull.date_range_end} · fetched ${fmtDate(pull.fetched_at)}`
@@ -506,7 +506,7 @@ function ReportClassRow({
         {hasData && (
           <button
             onClick={() => setExpanded((e) => !e)}
-            className="flex items-center gap-1 h-7 px-2.5 rounded-md border border-border/50 text-label font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors shrink-0"
+            className="flex items-center gap-1 h-7 px-2.5 rounded-md border border-border/50 text-[10px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors shrink-0"
             data-testid={`button-toggle-rows-${reportClass}`}
           >
             {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
@@ -549,7 +549,7 @@ function ReportRowsTable({ reportClass }: { reportClass: (typeof REPORT_CLASSES)
   return (
     <div className="border-t border-border/40 p-3">
       {rowsQuery.isLoading && (
-        <div className="flex items-center gap-2 text-label text-muted-foreground/85">
+        <div className="flex items-center gap-2 text-[11px] text-muted-foreground/85">
           <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading rows…
         </div>
       )}
@@ -560,12 +560,12 @@ function ReportRowsTable({ reportClass }: { reportClass: (typeof REPORT_CLASSES)
       )}
       {data && (
         <div className="space-y-2">
-          <div className="text-label text-muted-foreground/80">
+          <div className="text-[10px] text-muted-foreground/80">
             Showing {Math.min(50, data.rows.length)} of {data.total.toLocaleString()} rows ·{" "}
             {data.date_range_start} → {data.date_range_end}
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-label">
+            <table className="w-full text-[10px]">
               <thead>
                 <tr className="text-left text-muted-foreground/80 uppercase tracking-wide">
                   <th className="py-1.5 pr-3 font-medium">Date</th>

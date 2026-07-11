@@ -24,7 +24,7 @@ function NavBadge({ count, badgeKey }: { count: number | null; badgeKey: string 
   if (count == null || count <= 0) return null;
   return (
     <span className={cn(
-      "ml-auto text-label-xs font-bold px-1.5 py-0.5 rounded border leading-none tabular-nums",
+      "ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded border leading-none tabular-nums",
       BADGE_STYLE[badgeKey] ?? "bg-muted text-muted-foreground border-border/40"
     )}>
       {count}
@@ -76,15 +76,15 @@ function ChildRow({ child, count }: { child: NavChild; count: number | null }) {
         onClick={(e) => navigate(child.to, e)}
         aria-current={active ? "page" : undefined}
         className={cn(
-          "flex items-center gap-1.5 pl-3 pr-2 min-h-8 py-1 rounded-r text-body transition-colors",
+          "flex items-center gap-1.5 pl-3 pr-2 h-8 rounded-r text-[12px] transition-colors",
           active
             ? "font-medium mx-nav-child-active"
             : "text-foreground/70 hover:text-foreground hover:bg-[rgba(20,55,110,0.4)]"
         )}
       >
-        <span className="flex-1 leading-tight">{child.label}</span>
+        <span className="flex-1 truncate leading-tight">{child.label}</span>
         {child.placeholder && !active && (
-          <span className="text-label-xs font-semibold uppercase tracking-wide text-muted-foreground/80 border border-border/40 px-1 py-0.5 rounded leading-none shrink-0">
+          <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/80 border border-border/40 px-1 py-0.5 rounded leading-none shrink-0">
             Soon
           </span>
         )}
@@ -124,7 +124,7 @@ function ExpandableSection({
     <li>
       <div
         className={cn(
-          "flex items-center rounded text-label font-semibold uppercase tracking-widest transition-colors select-none",
+          "flex items-center rounded text-[11px] font-semibold uppercase tracking-widest transition-colors select-none",
           landingActive
             ? "mx-nav-active"
             : sectionActive
@@ -144,15 +144,15 @@ function ExpandableSection({
             navigate(landing, e);
             setOpen(true);
           }}
-          className="flex-1 min-w-0 flex items-center gap-2 pl-3 pr-1 min-h-9 py-1.5"
+          className="flex-1 min-w-0 flex items-center gap-2 pl-3 pr-1 h-9"
         >
           <span className={cn(
-            "w-4 shrink-0 text-label-xs font-mono tabular-nums",
+            "w-4 shrink-0 text-[8px] font-mono tabular-nums",
             landingActive ? "text-white/80" : "text-muted-foreground/80"
           )}>
             {section.number}
           </span>
-          <span className="flex-1 text-left leading-tight">{section.label}</span>
+          <span className="flex-1 text-left truncate">{section.label}</span>
         </a>
         <button
           type="button"
@@ -219,21 +219,21 @@ function LeafSection({
         onClick={(e) => navigate(to, e)}
         aria-current={active ? "page" : undefined}
         className={cn(
-          "flex items-center gap-2 px-3 min-h-9 py-1.5 rounded-lg text-label font-semibold uppercase tracking-widest transition-colors",
+          "flex items-center gap-2 px-3 h-9 rounded-lg text-[11px] font-semibold uppercase tracking-widest transition-colors",
           active
             ? "mx-nav-active"
             : "text-foreground/75 hover:text-foreground hover:bg-[rgba(20,55,110,0.5)]"
         )}
       >
         <span className={cn(
-          "w-4 shrink-0 text-label-xs font-mono tabular-nums",
+          "w-4 shrink-0 text-[8px] font-mono tabular-nums",
           active ? "text-white/80" : "text-muted-foreground/80"
         )}>
           {section.number}
         </span>
         <span className="flex-1">{section.label}</span>
         {section.placeholder && (
-          <span className="text-label-xs font-semibold uppercase tracking-wide text-muted-foreground/80 border border-border/40 px-1 py-0.5 rounded leading-none shrink-0 normal-case">
+          <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/80 border border-border/40 px-1 py-0.5 rounded leading-none shrink-0 normal-case">
             Soon
           </span>
         )}
@@ -267,7 +267,7 @@ export function Sidebar() {
 
   return (
     <aside
-      className="flex flex-col w-[244px] shrink-0 h-full overflow-hidden mx-sidebar"
+      className="flex flex-col w-[216px] shrink-0 h-full overflow-hidden mx-sidebar"
       aria-label="Workspace sidebar"
     >
       {/* Logo */}
@@ -278,12 +278,12 @@ export function Sidebar() {
             alt="Metrix"
             className="w-5 h-5 object-contain shrink-0 mx-logo-glow"
           />
-          <span className="text-body font-bold tracking-tight text-foreground">METRIX</span>
-          <span className="text-label-xs font-mono text-muted-foreground/60 border border-border/50 px-1.5 py-0.5 rounded leading-none ml-0.5">
+          <span className="text-[13px] font-bold tracking-tight text-foreground">METRIX</span>
+          <span className="text-[9px] font-mono text-muted-foreground/60 border border-border/50 px-1.5 py-0.5 rounded leading-none ml-0.5">
             IAP
           </span>
         </div>
-        <p className="text-label-xs text-muted-foreground/60 mt-1 leading-tight tracking-wide">
+        <p className="text-[9px] text-muted-foreground/60 mt-1 leading-tight tracking-wide">
           Not more data. Better decisions.
         </p>
       </div>
@@ -321,10 +321,10 @@ export function Sidebar() {
       <div className="px-3 py-3 border-t border-border/40 space-y-2.5">
         <DataSourceBadgeToggle />
         <div className="space-y-0.5">
-          <div className="text-label-xs text-muted-foreground/60 font-mono tracking-wider">
+          <div className="text-[9px] text-muted-foreground/60 font-mono tracking-wider">
             METRIX IAP v2.0-rc
           </div>
-          <div className="text-label-xs text-muted-foreground/60 font-mono">
+          <div className="text-[9px] text-muted-foreground/60 font-mono">
             SAMPLE / DEMO DATA
           </div>
         </div>

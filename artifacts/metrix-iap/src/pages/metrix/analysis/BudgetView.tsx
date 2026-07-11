@@ -11,9 +11,8 @@ import { useMetricSelection } from "@/lib/metric-selection";
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
   CaveatNote, MetricSelectionBar, SectionCard, fmtUSD, fmtNum, fmtPct, eventLabel,
-  RangeScopeBar, NoDataInRangeState
+  RangeScopeBar, NoDataInRangeState,
 } from "../shared";
-import { SegmentCard } from "@/components/ui/SegmentCard";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { useCellRangeScope } from "@/lib/date-scope";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -45,11 +44,11 @@ function ConceptDetailDialog({ concept, rows, onClose }: ConceptDetailDialogProp
     <Dialog open={concept != null} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-xl bg-[hsl(222_61%_6%)] border-border/50 max-h-[82vh] overflow-y-auto">
         <DialogHeader className="text-left space-y-1">
-          <div className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest">
+          <div className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest">
             Concept budget breakdown
           </div>
           <DialogTitle className="text-[15px] font-semibold text-foreground">{concept}</DialogTitle>
-          <DialogDescription className="text-label text-muted-foreground/70 leading-relaxed">
+          <DialogDescription className="text-[11px] text-muted-foreground/70 leading-relaxed">
             {conceptRows.length} cell row{conceptRows.length !== 1 ? "s" : ""} across all result events
           </DialogDescription>
         </DialogHeader>
@@ -63,35 +62,35 @@ function ConceptDetailDialog({ concept, rows, onClose }: ConceptDetailDialogProp
               { label: "Impressions", value: fmtNum(totalImpressions) },
               { label: "CPA", value: cpa != null ? fmtUSD(cpa) : "—" },
             ].map(({ label, value }) => (
-              <div key={label} className="mx-card-nested px-3 py-2.5">
-                <div className="text-label-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-0.5">{label}</div>
-                <div className="text-body-lg font-bold text-foreground tabular-nums leading-none">{value}</div>
+              <div key={label} className="rounded-lg border border-border/40 bg-white/[0.02] px-3 py-2.5">
+                <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-0.5">{label}</div>
+                <div className="text-[18px] font-bold text-foreground tabular-nums leading-none">{value}</div>
               </div>
             ))}
           </div>
 
           {/* Per-cell rows */}
           <div className="space-y-1">
-            <p className="text-label-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+            <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">
               By creative cell
             </p>
-            <div className="rounded-lg border border-border/40 overflow-hidden bg-white/[0.015]">
+            <div className="rounded-lg border border-border/40 overflow-hidden">
               {conceptRows.map((r, i) => (
                 <div
                   key={i}
-                  className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border/20 last:border-b-0 hover:bg-white/[0.02]"
+                  className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border/20 last:border-b-0 bg-white/[0.01]"
                 >
                   <div className="min-w-0">
-                    <div className="text-body font-medium text-foreground truncate">{r.cell_id}</div>
-                    <div className="text-label-xs font-mono text-muted-foreground/60 mt-0.5">
+                    <div className="text-[11px] font-medium text-foreground truncate">{r.cell_id}</div>
+                    <div className="text-[9px] font-mono text-muted-foreground/50 mt-0.5">
                       {r["Result type"]} · {fmtNum(r.Impressions)} impr
                     </div>
                   </div>
                   <div className="shrink-0 text-right">
-                    <div className="text-body font-semibold text-foreground tabular-nums">
+                    <div className="text-[11px] font-semibold text-foreground tabular-nums">
                       {fmtUSD(r["Amount spent (USD)"], 0)}
                     </div>
-                    <div className="text-label-xs text-muted-foreground/70">{fmtNum(r.Results)} results</div>
+                    <div className="text-[9px] text-muted-foreground/60">{fmtNum(r.Results)} results</div>
                   </div>
                 </div>
               ))}
@@ -119,10 +118,10 @@ function PlacementSpendDialog({ open, v3Rows, c4eRows, onClose }: PlacementSpend
     const max = Math.max(...sorted.map((r) => r["Amount spent (USD)"]), 1);
     return (
       <div className="space-y-1.5">
-        <p className="text-label-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">{label}</p>
+        <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">{label}</p>
         {sorted.map((r, i) => (
           <div key={i} className="space-y-1">
-            <div className="flex items-center justify-between text-body gap-3">
+            <div className="flex items-center justify-between text-[11px] gap-3">
               <span className="text-foreground/90 font-medium truncate">{r.Placement}</span>
               <span className="text-muted-foreground/70 tabular-nums shrink-0">
                 {fmtUSD(r["Amount spent (USD)"], 0)} · {fmtNum(r.Results)} results
@@ -130,7 +129,7 @@ function PlacementSpendDialog({ open, v3Rows, c4eRows, onClose }: PlacementSpend
             </div>
             <div className="h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
               <div
-                className="h-full bg-primary/60 rounded-full"
+                className="h-full bg-primary/50 rounded-full"
                 style={{ width: `${Math.max((r["Amount spent (USD)"] / max) * 100, 3)}%` }}
               />
             </div>
@@ -144,11 +143,11 @@ function PlacementSpendDialog({ open, v3Rows, c4eRows, onClose }: PlacementSpend
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-xl bg-[hsl(222_61%_6%)] border-border/50 max-h-[82vh] overflow-y-auto">
         <DialogHeader className="text-left space-y-1">
-          <div className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest">
+          <div className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest">
             Placement spend
           </div>
           <DialogTitle className="text-[15px] font-semibold text-foreground">Spend by placement</DialogTitle>
-          <DialogDescription className="text-label text-muted-foreground/70 leading-relaxed">
+          <DialogDescription className="text-[11px] text-muted-foreground/70 leading-relaxed">
             {v3Rows.length} V3 rows · {c4eRows.length} C4E rows
           </DialogDescription>
         </DialogHeader>
@@ -249,18 +248,17 @@ export function BudgetView() {
                   {eventRows.length === 0 ? (
                     <PendingState title="No events selected" message="Select at least one result event above." />
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       {eventRows.map(({ event, totals }) => (
-                        <SegmentCard
-                          key={event}
-                          name={eventLabel(event)}
-                          metrics={[
-                            { label: "Spend", value: fmtUSD(totals.spend, 0) },
-                            { label: "Results", value: fmtNum(totals.results) },
-                            { label: "CPA", value: totals.results > 0 ? fmtUSD(totals.spend / totals.results) : "—" },
-                            { label: "Link clicks", value: fmtNum(totals.link_clicks) }
-                          ]}
-                        />
+                        <div key={event} className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
+                          <p className="text-[11px] font-semibold text-foreground mb-2">{eventLabel(event)}</p>
+                          <div className="space-y-1.5 text-[11px] tabular-nums">
+                            <div className="flex justify-between"><span className="text-muted-foreground/70">Spend</span><span className="text-foreground/85">{fmtUSD(totals.spend, 0)}</span></div>
+                            <div className="flex justify-between"><span className="text-muted-foreground/70">Results</span><span className="text-foreground/85">{fmtNum(totals.results)}</span></div>
+                            <div className="flex justify-between"><span className="text-muted-foreground/70">CPA</span><span className="text-foreground/85">{totals.results > 0 ? fmtUSD(totals.spend / totals.results) : "—"}</span></div>
+                            <div className="flex justify-between"><span className="text-muted-foreground/70">Link clicks</span><span className="text-foreground/85">{fmtNum(totals.link_clicks)}</span></div>
+                          </div>
+                        </div>
                       ))}
                     </div>
                   )}
@@ -275,29 +273,36 @@ export function BudgetView() {
                     <PendingState title="No concept spend" message="No cell rows match the current metric selection." />
                   ) : (
                     <>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="space-y-1.5">
                         {conceptRows.map(([name, spend]) => (
-                          <SegmentCard
+                          <button
                             key={name}
                             onClick={() => setSelectedConcept(name)}
-                            name={name}
-                            metrics={[
-                              { label: "Spend", value: fmtUSD(spend, 0) }
-                            ]}
-                            footer={
-                              <div className="h-1.5 rounded-full bg-white/[0.04] overflow-hidden mt-1">
-                                <div
-                                  className="h-full bg-primary/60 rounded-full transition-colors group-hover:bg-primary/80"
-                                  style={{ width: `${Math.max((spend / maxConcept) * 100, 3)}%` }}
-                                />
+                            className={cn(
+                              "w-full text-left rounded-lg px-3 py-2.5 border border-border/30 bg-white/[0.01]",
+                              "hover:border-primary/25 hover:bg-primary/[0.03] active:scale-[0.995]",
+                              "transition-all duration-100 group"
+                            )}
+                          >
+                            <div className="flex items-center justify-between text-[11px] mb-1.5">
+                              <span className="text-foreground/85 font-medium">{name}</span>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <span className="text-muted-foreground/60 tabular-nums">{fmtUSD(spend, 0)}</span>
+                                <ChevronRight className="w-3 h-3 text-muted-foreground/40 group-hover:text-primary/60 transition-colors" />
                               </div>
-                            }
-                          />
+                            </div>
+                            <div className="h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
+                              <div
+                                className="h-full bg-primary/50 rounded-full group-hover:bg-primary/70 transition-colors"
+                                style={{ width: `${Math.max((spend / maxConcept) * 100, 3)}%` }}
+                              />
+                            </div>
+                          </button>
                         ))}
                       </div>
-                      <p className="mt-4 text-label text-muted-foreground flex items-center gap-1.5">
-                        <BarChart2 className="w-3.5 h-3.5" />
-                        {conceptRows.length} concept{conceptRows.length !== 1 ? "s" : ""} · click any card for the cell-level breakdown
+                      <p className="mt-3 text-[10px] text-muted-foreground/50 flex items-center gap-1">
+                        <BarChart2 className="w-3 h-3" />
+                        {conceptRows.length} concept{conceptRows.length !== 1 ? "s" : ""} · click any bar for the cell-level breakdown
                       </p>
                     </>
                   )}
@@ -311,15 +316,15 @@ export function BudgetView() {
                   >
                     <button
                       onClick={() => setPlacementOpen(true)}
-                      className="w-full flex items-center justify-between p-4 mx-card-nested hover-elevate active-elevate text-left group"
+                      className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg border border-border/40 bg-white/[0.02] hover:border-primary/25 hover:bg-primary/[0.03] transition-all text-left group"
                     >
                       <div>
-                        <p className="text-body-lg font-semibold text-foreground">View placement breakdown</p>
-                        <p className="text-body text-muted-foreground mt-0.5">
+                        <p className="text-[12px] font-medium text-foreground">View placement breakdown</p>
+                        <p className="text-[10px] text-muted-foreground/60 mt-0.5">
                           {v3Rows.length} V3 rows · {c4eRows.length} C4E rows
                         </p>
                       </div>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                      <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-primary/60 transition-colors shrink-0" />
                     </button>
                   </SectionCard>
                 )}

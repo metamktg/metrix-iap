@@ -35,10 +35,10 @@ function HypFact({
   return (
     <div className="min-w-0">
       <div className="flex items-center gap-1 mb-0.5">
-        <Icon className="w-2.5 h-2.5 text-muted-foreground/80" />
-        <span className="text-label-xs font-semibold uppercase tracking-widest text-muted-foreground/80">{label}</span>
+        <Icon className="w-2.5 h-2.5 text-muted-foreground/60" />
+        <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
       </div>
-      <p className="text-body text-foreground/90 leading-snug">{value}</p>
+      <p className="text-[11px] text-foreground/80 leading-snug">{value}</p>
     </div>
   );
 }
@@ -134,14 +134,14 @@ export function HypothesisQueueView() {
                         <button
                           key={h.id}
                           onClick={() => setDetail(h)}
-                          className="w-full text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 hover-elevate hover:border-primary/40 transition-colors mx-card"
+                          className="w-full text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 hover:border-border/60 hover:bg-white/[0.03] transition-colors"
                         >
                           <div className="flex items-start gap-2">
                             <div className="flex-1 min-w-0">
-                              <p className="text-body-lg font-semibold text-foreground leading-snug">{h.label}</p>
+                              <p className="text-[13px] font-semibold text-foreground leading-snug">{h.label}</p>
                               {h.source && (
-                                <div className="flex items-center gap-1.5 mt-1.5 text-label text-muted-foreground/80">
-                                  <ArrowRight className="w-3 h-3 text-muted-foreground/80" />
+                                <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-muted-foreground/60">
+                                  <ArrowRight className="w-3 h-3 text-muted-foreground/60" />
                                   {h.source}
                                 </div>
                               )}
@@ -160,7 +160,7 @@ export function HypothesisQueueView() {
                           {h.risk && (
                             <div className="flex items-start gap-1.5 mt-3 pt-3 border-t border-border/20">
                               <AlertTriangle className="w-3 h-3 text-amber-400/70 shrink-0 mt-0.5" />
-                              <p className="text-label text-amber-400/80 leading-relaxed">{h.risk}</p>
+                              <p className="text-[11px] text-amber-400/80 leading-relaxed">{h.risk}</p>
                             </div>
                           )}
                         </button>
@@ -178,15 +178,15 @@ export function HypothesisQueueView() {
                     {pillars.map((p) => {
                       const linkedBriefs = briefs.filter((b) => b.source_pillar === p.id);
                       return (
-                        <div key={p.id} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 mx-card">
+                        <div key={p.id} className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
                           <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                             {p.source_cells.map((c) => (
                               <CrossLink key={c} to={`/app/analysis/library?focus=${c}`} label={c} />
                             ))}
                           </div>
-                          <p className="text-body-lg font-semibold text-foreground leading-tight">{p.label}</p>
-                          <p className="text-body text-primary/80 italic mt-1">"{p.plain_descriptor}"</p>
-                          <p className="text-body text-muted-foreground/90 mt-2 leading-relaxed">{p.why_it_matters}</p>
+                          <p className="text-[14px] font-semibold text-foreground leading-tight">{p.label}</p>
+                          <p className="text-[12px] text-primary/80 italic mt-1">"{p.plain_descriptor}"</p>
+                          <p className="text-[11.5px] text-muted-foreground/75 mt-2 leading-relaxed">{p.why_it_matters}</p>
                           <div className="mt-3">
                             <VariableStackChips stack={p.variable_stack} />
                           </div>

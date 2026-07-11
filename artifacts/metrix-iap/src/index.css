@@ -14,7 +14,6 @@
   --color-card: hsl(var(--card));
   --color-card-foreground: hsl(var(--card-foreground));
   --color-card-border: hsl(var(--card-border));
-  --color-table-header: hsl(222 55% 7%);
 
   --color-popover: hsl(var(--popover));
   --color-popover-foreground: hsl(var(--popover-foreground));
@@ -73,34 +72,6 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-
-  /* ── Typography scale (legibility floor) ──
-     Named Tailwind sizes lifted for readability; semantic utilities
-     for labels, body, headings, and KPI values. Do not reintroduce
-     arbitrary text-[Npx] values below 13px. */
-  --text-xs: 0.8125rem; /* 13px — lifted from 12px */
-  --text-xs--line-height: 1.4;
-  --text-sm: 0.875rem; /* 14px */
-  --text-sm--line-height: 1.5;
-
-  --text-label-xs: 0.6875rem; /* 11px — absolute floor, dense metadata only */
-  --text-label-xs--line-height: 1.3;
-  --text-label: 0.75rem; /* 12px — badges, chips, secondary labels */
-  --text-label--line-height: 1.35;
-  --text-body: 0.875rem; /* 14px — standard dashboard body */
-  --text-body--line-height: 1.55;
-  --text-body-lg: 0.9375rem; /* 15px */
-  --text-body-lg--line-height: 1.55;
-  --text-section: 1.25rem; /* 20px — section headings */
-  --text-section--line-height: 1.3;
-  --text-title: 1.75rem; /* 28px — page titles */
-  --text-title--line-height: 1.2;
-  --text-value-sm: 1.375rem; /* 22px — compact KPI values */
-  --text-value-sm--line-height: 1.15;
-  --text-value: 1.75rem; /* 28px — primary KPI values */
-  --text-value--line-height: 1.1;
-  --text-value-lg: 2.125rem; /* 34px — hero KPI values */
-  --text-value-lg--line-height: 1.05;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -136,9 +107,9 @@
   --mx-indigo: #183bff;
 
   --mx-text-main: #f5f8ff;
-  --mx-text-muted: #a8b5c9;
-  --mx-text-soft: #ccd7e9;
-  --mx-text-faint: #8895ab;
+  --mx-text-muted: #9ba8bc;
+  --mx-text-soft: #c6d2e5;
+  --mx-text-faint: #6f7c91;
 
   --mx-success: #35d96f;
   --mx-danger: #ff4f61;
@@ -189,7 +160,7 @@
 
   /* Muted — text lifted for contrast (#9ba8bc) */
   --muted: 219 45% 16%;
-  --muted-foreground: 216 24% 72%;
+  --muted-foreground: 216 20% 67%;
 
   /* Accent = slightly elevated panel */
   --accent: 218 55% 17%;
@@ -279,7 +250,7 @@
   --secondary: 218 55% 15%;
   --secondary-foreground: 217 37% 84%;
   --muted: 219 45% 16%;
-  --muted-foreground: 216 24% 72%;
+  --muted-foreground: 216 20% 67%;
   --accent: 218 55% 17%;
   --accent-foreground: 217 37% 88%;
   --destructive: 354 100% 65%;
@@ -394,13 +365,12 @@
   .mx-card {
     position: relative;
     overflow: hidden;
-    border: 1px solid rgba(96, 152, 255, 0.28);
+    border: 1px solid var(--mx-border-soft);
     border-radius: 14px;
-    background: linear-gradient(180deg, rgba(12, 32, 66, 0.82), rgba(6, 15, 33, 0.86));
+    background: linear-gradient(180deg, rgba(10, 28, 58, 0.78), rgba(5, 13, 29, 0.84));
     box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.06),
-      inset 0 0 0 1px rgba(255,255,255,0.02),
-      0 4px 14px rgba(0, 0, 0, 0.45),
+      inset 0 1px 0 rgba(255,255,255,0.045),
+      inset 0 0 0 1px rgba(255,255,255,0.015),
       0 18px 50px rgba(0, 0, 0, 0.34),
       0 0 38px rgba(0, 104, 255, 0.08);
     backdrop-filter: blur(18px);
@@ -430,9 +400,9 @@
 
   /* Nested mini glass card (opportunities, sub-rows) */
   .mx-card-nested {
-    border: 1px solid rgba(95, 150, 255, 0.24);
+    border: 1px solid rgba(95, 150, 255, 0.16);
     border-radius: 11px;
-    background: linear-gradient(180deg, rgba(14, 32, 62, 0.72), rgba(8, 18, 38, 0.78));
+    background: linear-gradient(180deg, rgba(12, 28, 55, 0.68), rgba(7, 16, 34, 0.76));
     transition: border-color var(--mx-fast), background var(--mx-fast), box-shadow var(--mx-fast);
   }
   .mx-card-nested:hover {
@@ -460,7 +430,7 @@
 
   /* Section label — small uppercase, wide tracking, cyan-tinted */
   .mx-section-label {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.18em;
     text-transform: uppercase;

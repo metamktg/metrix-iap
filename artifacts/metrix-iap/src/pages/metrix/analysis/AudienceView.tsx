@@ -10,9 +10,8 @@ import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, fmtUSD, fmtNum, resultTerm,
-  RangeScopeBar, NoDataInRangeState
+  RangeScopeBar, NoDataInRangeState,
 } from "../shared";
-import { SegmentCard } from "@/components/ui/SegmentCard";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Users, ChevronRight, BarChart2 } from "lucide-react";
@@ -47,13 +46,13 @@ function SegmentDetailDialog({ segment, rows, totalResults, onClose }: SegmentDe
     <Dialog open={segment != null} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-xl bg-[hsl(222_61%_6%)] border-border/50 max-h-[82vh] overflow-y-auto">
         <DialogHeader className="text-left space-y-1">
-          <div className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest">
+          <div className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest">
             Audience segment
           </div>
           <DialogTitle className="text-[15px] font-semibold text-foreground">
             {genderLabel} · {segment.age}
           </DialogTitle>
-          <DialogDescription className="text-label text-muted-foreground/70 leading-relaxed">
+          <DialogDescription className="text-[11px] text-muted-foreground/70 leading-relaxed">
             {segRows.length} creative cell{segRows.length !== 1 ? "s" : ""} in this segment ·{" "}
             {sharePct.toFixed(1)}% of total results
           </DialogDescription>
@@ -68,33 +67,33 @@ function SegmentDetailDialog({ segment, rows, totalResults, onClose }: SegmentDe
               { label: "CPA", value: cpa != null ? fmtUSD(cpa) : "—" },
               { label: "Link clicks", value: fmtNum(linkClicks) },
             ].map(({ label, value }) => (
-              <div key={label} className="mx-card-nested px-3 py-2.5">
-                <div className="text-label-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-0.5">{label}</div>
-                <div className="text-body-lg font-bold text-foreground tabular-nums leading-none">{value}</div>
+              <div key={label} className="rounded-lg border border-border/40 bg-white/[0.02] px-3 py-2.5">
+                <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-0.5">{label}</div>
+                <div className="text-[18px] font-bold text-foreground tabular-nums leading-none">{value}</div>
               </div>
             ))}
           </div>
 
           {/* Per-cell breakdown */}
           <div className="space-y-1">
-            <p className="text-label-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+            <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">
               Results by creative cell
             </p>
-            <div className="rounded-lg border border-border/40 overflow-hidden bg-white/[0.015]">
+            <div className="rounded-lg border border-border/40 overflow-hidden">
               {segRows
                 .sort((a, b) => b.Results - a.Results)
                 .map((r, i) => (
                   <div
                     key={i}
-                    className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border/20 last:border-b-0 hover:bg-white/[0.02]"
+                    className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border/20 last:border-b-0 bg-white/[0.01]"
                   >
                     <div className="min-w-0">
-                      <div className="text-body font-medium text-foreground truncate">{r["Ad name"]}</div>
-                      <div className="text-label-xs font-mono text-muted-foreground/60 mt-0.5">{r.cell_id}</div>
+                      <div className="text-[11px] font-medium text-foreground truncate">{r["Ad name"]}</div>
+                      <div className="text-[9px] font-mono text-muted-foreground/50 mt-0.5">{r.cell_id}</div>
                     </div>
                     <div className="shrink-0 text-right">
-                      <div className="text-body font-semibold text-foreground tabular-nums">{fmtNum(r.Results)} results</div>
-                      <div className="text-label-xs text-muted-foreground/70">{fmtUSD(r["Amount spent (USD)"], 0)}</div>
+                      <div className="text-[11px] font-semibold text-foreground tabular-nums">{fmtNum(r.Results)} results</div>
+                      <div className="text-[9px] text-muted-foreground/60">{fmtUSD(r["Amount spent (USD)"], 0)}</div>
                     </div>
                   </div>
                 ))}
@@ -186,36 +185,48 @@ export function AudienceView() {
                   desc="Aggregated across all creative cells. Click a segment bar to inspect its breakdown."
                   table="demographic_registration_signal"
                 >
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
                     {segments.map((s) => {
                       const cpa = s.results > 0 ? s.spend / s.results : null;
                       const genderLabel = s.gender === "female" ? "F" : s.gender === "male" ? "M" : s.gender;
                       const pct = Math.max((s.results / maxResults) * 100, 3);
                       return (
-                        <SegmentCard
+                        <button
                           key={s.age + s.gender}
                           onClick={() => setSelectedSeg({ age: s.age, gender: s.gender })}
-                          name={`${s.gender} · ${s.age}`}
-                          descriptor={`${fmtNum(s.results)} results`}
-                          metrics={[
-                            { label: "Spend", value: fmtUSD(s.spend, 0) },
-                            { label: "CPA", value: cpa != null ? fmtUSD(cpa) : "—" },
-                          ]}
-                          footer={
-                            <div className="h-1.5 rounded-full bg-white/[0.04] overflow-hidden mt-1">
-                              <div
-                                className="h-full bg-primary/60 rounded-full"
-                                style={{ width: `${pct}%` }}
-                              />
+                          className={cn(
+                            "w-full text-left rounded-lg px-3 py-2.5 border border-border/30 bg-white/[0.01]",
+                            "hover:border-primary/25 hover:bg-primary/[0.03] active:scale-[0.995]",
+                            "transition-all duration-100 group"
+                          )}
+                        >
+                          <div className="flex items-center justify-between text-[12px] mb-1.5 gap-3">
+                            <span className="text-foreground/90 font-medium capitalize">
+                              {s.gender} · {s.age}
+                            </span>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-muted-foreground/70 tabular-nums text-[11px]">
+                                {fmtNum(s.results)} results · {fmtUSD(s.spend, 0)} · CPA {cpa != null ? fmtUSD(cpa) : "—"}
+                              </span>
+                              <div className="flex items-center gap-0.5 text-[9px] text-muted-foreground/40 group-hover:text-primary/60 transition-colors">
+                                <span className="hidden sm:inline">{genderLabel} {s.age}</span>
+                                <ChevronRight className="w-3 h-3" />
+                              </div>
                             </div>
-                          }
-                        />
+                          </div>
+                          <div className="h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
+                            <div
+                              className="h-full bg-primary/50 rounded-full group-hover:bg-primary/70 transition-colors"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </button>
                       );
                     })}
                   </div>
-                  <p className="mt-4 text-label text-muted-foreground flex items-center gap-1.5">
-                    <BarChart2 className="w-3.5 h-3.5" />
-                    {rows.length} underlying rows · click any segment for the full cell-level breakdown
+                  <p className="mt-3 text-[10px] text-muted-foreground/50 flex items-center gap-1">
+                    <BarChart2 className="w-3 h-3" />
+                    {rows.length} underlying rows · click any bar for the full cell-level breakdown
                   </p>
                 </SectionCard>
               </div>

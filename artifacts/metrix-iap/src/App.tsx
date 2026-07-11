@@ -24,7 +24,7 @@ import { Overview } from "@/pages/metrix/Overview";
 import { SignalView } from "@/pages/metrix/listen/SignalView";
 import { AlertsView } from "@/pages/metrix/listen/AlertsView";
 import { RecommendationsView } from "@/pages/metrix/listen/RecommendationsView";
-import { AnalysisCombinedView } from "@/pages/metrix/analysis/AnalysisCombinedView";
+import { AnalysisOverview } from "@/pages/metrix/analysis/AnalysisOverview";
 import { IapLibraryView } from "@/pages/metrix/analysis/IapLibraryView";
 import { AudienceView } from "@/pages/metrix/analysis/AudienceView";
 import { PlacementsView } from "@/pages/metrix/analysis/PlacementsView";
@@ -78,7 +78,7 @@ export function Router() {
       <Route path="/app/listen/recommendations" component={RecommendationsView} />
 
       {/* ── 03 Analysis ───────────────────────────────────────────────── */}
-      <Route path="/app/analysis/overview"   component={AnalysisCombinedView} />
+      <Route path="/app/analysis/overview"   component={AnalysisOverview} />
       <Route path="/app/analysis/library"    component={IapLibraryView} />
       <Route path="/app/analysis/audience"   component={AudienceView} />
       <Route path="/app/analysis/placements" component={PlacementsView} />

@@ -57,7 +57,7 @@ export function AlertsView() {
               <NoDataInRangeState what="alerts" />
             ) : (
             <>
-            <div className="px-6 pt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
               <MetricTile label="Active alerts" value={String(total)} />
               <MetricTile label="High-impact signals" value={String(highSignals.length)} />
               <MetricTile label="Data caveats" value={String(caveats.length)} />
@@ -71,7 +71,7 @@ export function AlertsView() {
                 <>
                   {highSignals.length > 0 && (
                     <div>
-                      <h3 className="text-label font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">High-impact signals</h3>
+                      <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">High-impact signals</h3>
                       <div className="space-y-3">
                         {highSignals.map((s) => (
                           <button
@@ -85,8 +85,8 @@ export function AlertsView() {
                               <ImpactBadge impact={s.impact} />
                               <ConfidenceBadge value={s.confidence} />
                             </div>
-                            <p className="text-body font-semibold text-foreground leading-snug">{s.title}</p>
-                            <p className="text-body text-muted-foreground/80 mt-1 leading-relaxed">{s.rationale}</p>
+                            <p className="text-[13px] font-semibold text-foreground leading-snug">{s.title}</p>
+                            <p className="text-[12px] text-muted-foreground/70 mt-1 leading-relaxed">{s.rationale}</p>
                           </button>
                         ))}
                       </div>
@@ -95,7 +95,7 @@ export function AlertsView() {
 
                   {caveats.length > 0 && (
                     <div>
-                      <h3 className="text-label font-semibold uppercase tracking-[0.15em] text-muted-foreground/50 mb-2">Data caveats</h3>
+                      <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/50 mb-2">Data caveats</h3>
                       <div className="space-y-2">
                         {caveats.map((c) => (
                           <CaveatNote key={c.id} text={c.text} source={c.source} />
@@ -130,7 +130,7 @@ export function AlertsView() {
                 <DrawerField label="Recommended action">{detail.recommended_action}</DrawerField>
                 {detail.source_path && (
                   <DrawerField label="Source">
-                    <span className="font-mono text-label text-muted-foreground/60">{detail.source_path}</span>
+                    <span className="font-mono text-[10px] text-muted-foreground/60">{detail.source_path}</span>
                   </DrawerField>
                 )}
               </InfoDrawer>

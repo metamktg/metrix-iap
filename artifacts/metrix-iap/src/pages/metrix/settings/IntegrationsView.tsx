@@ -53,14 +53,14 @@ export function IntegrationsView() {
                 <div key={a.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
                   {configured ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> : <Circle className="w-4 h-4 text-muted-foreground/80 shrink-0" />}
                   <div className="flex-1 min-w-0">
-                    <div className="text-body font-medium text-foreground">{a.name}</div>
-                    <div className="text-label text-muted-foreground/85">
+                    <div className="text-[12px] font-medium text-foreground">{a.name}</div>
+                    <div className="text-[10px] text-muted-foreground/85">
                       {a.platform} · {configured ? (a.source_status ?? "connected") : "not connected"}
                     </div>
                   </div>
                   <span
                     className={cn(
-                      "text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none shrink-0",
+                      "text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none shrink-0",
                       configured
                         ? "text-emerald-400 border-emerald-400/25 bg-emerald-400/10"
                         : "text-muted-foreground/85 border-border/40 bg-white/[0.03]"
@@ -71,7 +71,7 @@ export function IntegrationsView() {
                   {!configured && (
                     <button
                       onClick={() => setConnectAccount(a)}
-                      className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-label font-medium text-primary hover:bg-primary/25 transition-colors shrink-0"
+                      className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-[11px] font-medium text-primary hover:bg-primary/25 transition-colors shrink-0"
                       data-testid={`button-connect-${a.id}`}
                     >
                       <Plug className="w-3 h-3" /> Connect
@@ -87,13 +87,13 @@ export function IntegrationsView() {
           <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
             <FileUp className="w-4 h-4 text-muted-foreground/85 shrink-0" />
             <div className="flex-1 min-w-0">
-              <div className="text-body font-medium text-foreground">Manual import</div>
-              <div className="text-label text-muted-foreground/85">Upload exported performance data for any ad account</div>
+              <div className="text-[12px] font-medium text-foreground">Manual import</div>
+              <div className="text-[10px] text-muted-foreground/85">Upload exported performance data for any ad account</div>
             </div>
             <button
               onClick={() => defaultImportAccount && setImportAccount(defaultImportAccount)}
               disabled={!defaultImportAccount}
-              className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-label font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+              className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-40 disabled:pointer-events-none"
               data-testid="button-add-import-integrations"
             >
               <FileUp className="w-3 h-3" /> Add import

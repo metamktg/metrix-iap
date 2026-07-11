@@ -37,7 +37,7 @@ export function DateRangePicker() {
   if (!bounds) {
     return (
       <div
-        className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 text-label text-muted-foreground/60 shrink-0"
+        className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 text-[11px] text-muted-foreground/60 shrink-0"
         title="No dated performance data is available for this scope yet."
       >
         <CalendarRange className="w-3 h-3" />
@@ -63,13 +63,13 @@ export function DateRangePicker() {
       <PopoverTrigger asChild>
         <button
           aria-label={`Date range: ${rangeLabel}`}
-          className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 text-label font-medium text-foreground/80 hover:text-foreground hover:bg-white/5 transition-colors shrink-0"
+          className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 text-[11px] font-medium text-foreground/80 hover:text-foreground hover:bg-white/5 transition-colors shrink-0"
         >
           <CalendarRange className="w-3 h-3 text-muted-foreground/70" />
           <span className="hidden md:inline tabular-nums">{rangeLabel}</span>
           <span className="md:hidden">{PRESET_LABELS[preset]}</span>
           {compare && (
-            <span className="text-label-xs font-semibold uppercase tracking-wide text-primary border border-primary/25 bg-primary/10 px-1 py-0.5 rounded leading-none">
+            <span className="text-[8px] font-semibold uppercase tracking-wide text-primary border border-primary/25 bg-primary/10 px-1 py-0.5 rounded leading-none">
               vs prev
             </span>
           )}
@@ -78,8 +78,8 @@ export function DateRangePicker() {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[280px] p-0 bg-[hsl(222_61%_7%)] border-border/50">
         <div className="px-3 py-2.5 border-b border-border/40">
-          <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Date range</p>
-          <p className="text-label text-muted-foreground/70 mt-1">
+          <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Date range</p>
+          <p className="text-[10px] text-muted-foreground/70 mt-1">
             Data available {formatIsoRange(bounds)}
           </p>
         </div>
@@ -93,7 +93,7 @@ export function DateRangePicker() {
                 setOpen(false);
               }}
               className={cn(
-                "w-full flex items-center gap-2 px-2 h-8 rounded text-body transition-colors",
+                "w-full flex items-center gap-2 px-2 h-8 rounded text-[12px] transition-colors",
                 preset === p
                   ? "text-primary bg-primary/10 font-medium"
                   : "text-foreground/75 hover:text-foreground hover:bg-white/5"
@@ -106,7 +106,7 @@ export function DateRangePicker() {
         </div>
 
         <div className="px-3 py-2.5 border-t border-border/40 space-y-2">
-          <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Custom range</p>
+          <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Custom range</p>
           <div className="flex items-center gap-1.5">
             <input
               type="date"
@@ -115,9 +115,9 @@ export function DateRangePicker() {
               max={bounds.end}
               onChange={(e) => setDraftStart(e.target.value)}
               aria-label="Custom range start"
-              className="flex-1 min-w-0 h-7 px-1.5 rounded border border-border/40 bg-white/[0.03] text-label text-foreground/80 [color-scheme:dark]"
+              className="flex-1 min-w-0 h-7 px-1.5 rounded border border-border/40 bg-white/[0.03] text-[11px] text-foreground/80 [color-scheme:dark]"
             />
-            <span className="text-label text-muted-foreground/60">→</span>
+            <span className="text-[10px] text-muted-foreground/60">→</span>
             <input
               type="date"
               value={draftEnd}
@@ -125,13 +125,13 @@ export function DateRangePicker() {
               max={bounds.end}
               onChange={(e) => setDraftEnd(e.target.value)}
               aria-label="Custom range end"
-              className="flex-1 min-w-0 h-7 px-1.5 rounded border border-border/40 bg-white/[0.03] text-label text-foreground/80 [color-scheme:dark]"
+              className="flex-1 min-w-0 h-7 px-1.5 rounded border border-border/40 bg-white/[0.03] text-[11px] text-foreground/80 [color-scheme:dark]"
             />
           </div>
           <button
             onClick={applyCustom}
             disabled={!draftStart || !draftEnd}
-            className="w-full h-7 rounded-md bg-primary/15 border border-primary/30 text-label font-medium text-primary hover:bg-primary/25 transition-colors disabled:opacity-40"
+            className="w-full h-7 rounded-md bg-primary/15 border border-primary/30 text-[11px] font-medium text-primary hover:bg-primary/25 transition-colors disabled:opacity-40"
           >
             Apply custom range
           </button>
@@ -139,9 +139,9 @@ export function DateRangePicker() {
 
         <div className="px-3 py-2.5 border-t border-border/40 flex items-center gap-2">
           <div className="flex-1 min-w-0">
-            <p className="text-label font-medium text-foreground/80">Compare to previous period</p>
+            <p className="text-[11px] font-medium text-foreground/80">Compare to previous period</p>
             {compare && compareRange && (
-              <p className="text-label-xs text-muted-foreground/60 tabular-nums mt-0.5">
+              <p className="text-[9px] text-muted-foreground/60 tabular-nums mt-0.5">
                 vs {formatIsoRange(compareRange)}
               </p>
             )}

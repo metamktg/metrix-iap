@@ -48,11 +48,11 @@ function PillarExpandDialog({
       <DialogContent className="max-w-2xl bg-[hsl(222_61%_6%)] border-border/40 p-0 gap-0 overflow-hidden max-h-[88vh]">
         {/* Header */}
         <div className="px-6 pt-5 pb-4 border-b border-border/30">
-          <span className="text-label-xs font-mono text-muted-foreground/50 uppercase tracking-widest block mb-1">
+          <span className="text-[9px] font-mono text-muted-foreground/50 uppercase tracking-widest block mb-1">
             {pillar.id}
           </span>
-          <h2 className="text-base font-semibold text-foreground leading-snug">{pillar.label}</h2>
-          <p className="text-body text-muted-foreground/70 leading-relaxed mt-1.5">{pillar.plain_descriptor}</p>
+          <h2 className="text-[16px] font-semibold text-foreground leading-snug">{pillar.label}</h2>
+          <p className="text-[12px] text-muted-foreground/70 leading-relaxed mt-1.5">{pillar.plain_descriptor}</p>
         </div>
 
         {/* Scrollable body */}
@@ -60,7 +60,7 @@ function PillarExpandDialog({
           {/* Variable stack */}
           {Object.keys(pillar.variable_stack ?? {}).length > 0 && (
             <div className="space-y-1.5">
-              <p className="text-label-xs font-mono uppercase tracking-widest text-muted-foreground/70">Variable stack</p>
+              <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50">Variable stack</p>
               <VariableStackChips stack={pillar.variable_stack} />
             </div>
           )}
@@ -68,7 +68,7 @@ function PillarExpandDialog({
           {/* ICP targets inline (also shown inside PillarDetailSections, but surfaced here for prominence) */}
           {(pillar.target_icps?.length ?? 0) > 0 && (
             <div className="space-y-1.5">
-              <p className="text-label-xs font-mono uppercase tracking-widest text-muted-foreground/70">Target ICPs</p>
+              <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50">Target ICPs</p>
               <IcpChips ids={pillar.target_icps} profiles={profiles} />
             </div>
           )}
@@ -102,18 +102,18 @@ function PillarCard({
         onClick={() => setOpen(true)}
         className={cn(
           "group text-left w-full rounded-xl border border-border/40 bg-white/[0.02]",
-          "hover:border-primary/40 hover:bg-white/[0.035] hover:shadow-md hover:shadow-black/20 hover-elevate",
-          "active:scale-[0.99] transition-all duration-150 flex flex-col p-4 gap-2.5 mx-card"
+          "hover:border-primary/30 hover:bg-white/[0.035] hover:shadow-md hover:shadow-black/20",
+          "active:scale-[0.99] transition-all duration-150 flex flex-col p-4 gap-2.5"
         )}
       >
         {/* ID + title row */}
         <div className="space-y-0.5">
-          <span className="text-label-xs font-mono text-muted-foreground/70 block">{pillar.id}</span>
-          <p className="text-body font-semibold text-foreground leading-snug line-clamp-2">{pillar.label}</p>
+          <span className="text-[9px] font-mono text-muted-foreground/50 block">{pillar.id}</span>
+          <p className="text-[13px] font-semibold text-foreground leading-snug line-clamp-2">{pillar.label}</p>
         </div>
 
         {/* Descriptor — 3-line clamp, no overflow */}
-        <p className="text-body text-muted-foreground/85 leading-relaxed line-clamp-3 flex-1">
+        <p className="text-[11px] text-muted-foreground/65 leading-relaxed line-clamp-3 flex-1">
           {pillar.plain_descriptor}
         </p>
 
@@ -121,19 +121,19 @@ function PillarCard({
         <div className="flex items-center justify-between pt-1 border-t border-border/20">
           <div className="flex items-center gap-1.5">
             {varCount > 0 && (
-              <span className="flex items-center gap-1 text-label-xs font-mono text-muted-foreground/50 border border-border/30 bg-white/[0.015] px-1.5 py-0.5 rounded leading-none">
+              <span className="flex items-center gap-1 text-[8.5px] font-mono text-muted-foreground/50 border border-border/30 bg-white/[0.015] px-1.5 py-0.5 rounded leading-none">
                 <Layers className="w-2.5 h-2.5" />
                 {varCount} var{varCount !== 1 ? "s" : ""}
               </span>
             )}
             {icpCount > 0 && (
-              <span className="flex items-center gap-1 text-label-xs font-mono text-muted-foreground/50 border border-border/30 bg-white/[0.015] px-1.5 py-0.5 rounded leading-none">
+              <span className="flex items-center gap-1 text-[8.5px] font-mono text-muted-foreground/50 border border-border/30 bg-white/[0.015] px-1.5 py-0.5 rounded leading-none">
                 <Users className="w-2.5 h-2.5" />
                 {icpCount} ICP{icpCount !== 1 ? "s" : ""}
               </span>
             )}
           </div>
-          <span className="flex items-center gap-0.5 text-label-xs font-medium text-muted-foreground/40 group-hover:text-primary/60 transition-colors">
+          <span className="flex items-center gap-0.5 text-[9px] font-medium text-muted-foreground/40 group-hover:text-primary/60 transition-colors">
             Details <ChevronRight className="w-3 h-3" />
           </span>
         </div>
@@ -183,7 +183,7 @@ export function StrategyOverview() {
                     runningLabel="Generating strategy…"
                   />
                 ) : (
-                  <p className="text-label text-muted-foreground/70">
+                  <p className="text-[11px] text-muted-foreground/70">
                     Strategy generation needs analysis data — run the analysis pipeline for this account first.
                   </p>
                 )}
@@ -301,19 +301,19 @@ export function StrategyOverview() {
                       key={s.to}
                       onClick={() => navigate(s.to)}
                       className={cn(
-                        "group text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2 mx-card",
-                        "hover:border-primary/40 hover:bg-white/[0.035] hover:shadow-md hover:shadow-black/20 hover-elevate",
+                        "group text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2",
+                        "hover:border-primary/30 hover:bg-white/[0.035] hover:shadow-md hover:shadow-black/20",
                         "active:scale-[0.99] transition-all duration-150"
                       )}
                     >
                       <div className="flex items-center gap-2">
-                        <s.Icon className="w-4 h-4 text-primary/80" />
-                        <span className="text-body font-semibold text-foreground">{s.label}</span>
+                        <s.Icon className="w-3.5 h-3.5 text-primary/70" />
+                        <span className="text-[13px] font-semibold text-foreground">{s.label}</span>
                       </div>
-                      <p className="text-body text-muted-foreground/80 leading-relaxed flex-1">{s.desc}</p>
+                      <p className="text-[11px] text-muted-foreground/70 leading-relaxed flex-1">{s.desc}</p>
                       <div className="flex items-center justify-between mt-auto pt-1 border-t border-border/20">
-                        <span className="text-label-xs font-mono text-muted-foreground/70">{s.stat}</span>
-                        <span className="flex items-center gap-0.5 text-label-xs font-medium text-muted-foreground/60 group-hover:text-primary/80 transition-colors">
+                        <span className="text-[9px] font-mono text-muted-foreground/50">{s.stat}</span>
+                        <span className="flex items-center gap-0.5 text-[9px] font-medium text-muted-foreground/40 group-hover:text-primary/60 transition-colors">
                           Open <ArrowRight className="w-3 h-3" />
                         </span>
                       </div>
