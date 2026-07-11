@@ -80,15 +80,15 @@ function PlaceholderVisual({ code, format, className }: { code: string; format?:
       className={cn("relative w-full h-full flex flex-col items-center justify-center gap-1.5 select-none", className)}
       style={{ background: `linear-gradient(140deg, hsl(${hue} 45% 14%) 0%, hsl(${(hue + 40) % 360} 40% 9%) 100%)` }}
     >
-      <span className="text-[26px] font-black tracking-tight leading-none" style={{ color: `hsl(${hue} 70% 72% / 0.85)` }}>
+      <span className="text-value-sm font-black tracking-tight leading-none" style={{ color: `hsl(${hue} 70% 72% / 0.85)` }}>
         {code}
       </span>
-      <span className="flex items-center gap-1 text-[8px] font-mono uppercase tracking-widest text-white/35">
+      <span className="flex items-center gap-1 text-label-xs font-mono uppercase tracking-widest text-white/60">
         <ImageOff className="w-2.5 h-2.5" />
         No asset in import
       </span>
       {format && (
-        <span className="absolute top-1.5 right-1.5 text-[8px] font-mono uppercase tracking-wide text-white/40 border border-white/10 px-1 py-0.5 rounded leading-none">
+        <span className="absolute top-1.5 right-1.5 text-label-xs font-mono uppercase tracking-wide text-white/60 border border-white/10 px-1 py-0.5 rounded leading-none">
           {format}
         </span>
       )}
@@ -146,7 +146,7 @@ export function VariableTagChips({ codes, max }: { codes: string[]; max?: number
           key={c + i}
           title={resolveVariableLabel(c)}
           className={cn(
-            "text-[8px] font-mono border px-1 py-0.5 rounded leading-none",
+            "text-label-xs font-mono border px-1 py-0.5 rounded leading-none",
             PREFIX_COLORS[getVariablePrefix(c)]
           )}
         >
@@ -154,7 +154,7 @@ export function VariableTagChips({ codes, max }: { codes: string[]; max?: number
         </span>
       ))}
       {hidden > 0 && (
-        <span className="text-[8px] font-mono text-muted-foreground/60 border border-border/30 px-1 py-0.5 rounded leading-none">
+        <span className="text-label-xs font-mono text-muted-foreground/60 border border-border/30 px-1 py-0.5 rounded leading-none">
           +{hidden}
         </span>
       )}
@@ -175,8 +175,8 @@ function StatStrip({ stats }: { stats: CreativeCardStats }) {
     <div className="grid grid-cols-4 gap-px bg-border/30 rounded-md overflow-hidden border border-border/30">
       {items.map((it) => (
         <div key={it.label} className="bg-[hsl(222_55%_7%)] px-1.5 py-1.5 text-center">
-          <div className="text-[7px] font-mono uppercase tracking-wider text-muted-foreground/60 truncate">{it.label}</div>
-          <div className="text-[10px] font-semibold text-foreground/90 tabular-nums mt-0.5">{it.value}</div>
+          <div className="text-label-xs font-mono uppercase tracking-wider text-muted-foreground/60 truncate">{it.label}</div>
+          <div className="text-label font-semibold text-foreground/90 tabular-nums mt-0.5">{it.value}</div>
         </div>
       ))}
     </div>
@@ -230,7 +230,7 @@ export function CreativeCard({
           </div>
 
           {unmapped && (
-            <div className="absolute top-1.5 left-1.5 flex items-center gap-1 bg-amber-500/20 border border-amber-400/30 text-amber-300 text-[8px] font-semibold px-1.5 py-0.5 rounded-full backdrop-blur-sm z-10">
+            <div className="absolute top-1.5 left-1.5 flex items-center gap-1 bg-amber-500/20 border border-amber-400/30 text-amber-300 text-label-xs font-semibold px-1.5 py-0.5 rounded-full backdrop-blur-sm z-10">
               <span className="w-1 h-1 rounded-full bg-amber-400 shrink-0" />
               Unmapped
             </div>
@@ -245,17 +245,17 @@ export function CreativeCard({
         <div className="p-2.5 space-y-1.5 flex-1 flex flex-col">
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="text-[9px] font-mono text-muted-foreground/60">{data.conceptCode}</span>
+              <span className="text-label-xs font-mono text-muted-foreground/60">{data.conceptCode}</span>
               {data.stage && (
-                <span className="text-[8px] font-mono uppercase text-muted-foreground/60 border border-border/30 px-1 py-0.5 rounded leading-none">
+                <span className="text-label-xs font-mono uppercase text-muted-foreground/60 border border-border/30 px-1 py-0.5 rounded leading-none">
                   {data.stage}
                 </span>
               )}
             </div>
-            <p className="text-[12px] font-semibold text-foreground leading-tight mt-0.5 line-clamp-2">{data.title}</p>
+            <p className="text-body font-semibold text-foreground leading-tight mt-0.5 line-clamp-2">{data.title}</p>
           </div>
           {data.primaryText && (
-            <p className="text-[10px] text-muted-foreground/70 leading-snug line-clamp-2">{data.primaryText}</p>
+            <p className="text-label text-muted-foreground/70 leading-snug line-clamp-2">{data.primaryText}</p>
           )}
           {data.stats && <StatStrip stats={data.stats} />}
           {data.tags.length > 0 && <VariableTagChips codes={data.tags} max={4} />}

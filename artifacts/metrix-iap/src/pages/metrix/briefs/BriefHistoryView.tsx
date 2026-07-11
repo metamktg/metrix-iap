@@ -73,15 +73,15 @@ export function BriefHistoryView() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-[12px] font-semibold text-foreground leading-tight">{pillarLabel(b.source_pillar)}</p>
-                          <span className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/60 border border-border/40 px-1.5 py-0.5 rounded leading-none">{b.asset_type}</span>
+                          <p className="text-body font-semibold text-foreground leading-tight">{pillarLabel(b.source_pillar)}</p>
+                          <span className="text-label font-semibold uppercase tracking-wide text-muted-foreground/70 border border-border/40 px-1.5 py-0.5 rounded leading-none">{b.asset_type}</span>
                         </div>
-                        <p className="text-[11px] text-muted-foreground/60 mt-1 leading-relaxed">{STATUS_LABEL[b.status] ?? b.status}</p>
+                        <p className="text-label text-muted-foreground/80 mt-1 leading-relaxed">{STATUS_LABEL[b.status] ?? b.status}</p>
                         <div className="mt-2">
                           <CrossLink to={`/app/briefs/builder?focus=${b.id}`} label="Open in Brief Builder" />
                         </div>
                       </div>
-                      <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-amber-300 border border-amber-400/20 bg-amber-400/10 px-1.5 py-0.5 rounded leading-none">
+                      <span className="shrink-0 text-label font-semibold uppercase tracking-wide text-amber-300 border border-amber-400/20 bg-amber-400/10 px-1.5 py-0.5 rounded leading-none">
                         Draft
                       </span>
                     </div>

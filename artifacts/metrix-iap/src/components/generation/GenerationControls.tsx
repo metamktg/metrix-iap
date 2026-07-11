@@ -124,7 +124,7 @@ export function GenerateButton({
     <button
       onClick={onClick}
       disabled={isRunning}
-      className="inline-flex items-center gap-1.5 text-[12px] font-medium text-primary border border-primary/30 bg-primary/10 hover:bg-primary/15 rounded-lg px-3 py-1.5 transition-colors disabled:opacity-60"
+      className="inline-flex items-center gap-1.5 text-body font-medium text-primary border border-primary/30 bg-primary/10 hover:bg-primary/15 rounded-lg px-3 py-1.5 transition-colors disabled:opacity-60"
     >
       {isRunning ? (
         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -139,7 +139,7 @@ export function GenerateButton({
 export function ProvenanceBadge({ provenance }: { provenance?: string }) {
   if (provenance !== "generated") return null;
   return (
-    <span className="inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-primary border border-primary/25 bg-primary/10 px-1.5 py-0.5 rounded leading-none">
+    <span className="inline-flex items-center gap-1 text-label-xs font-semibold uppercase tracking-wide text-primary border border-primary/25 bg-primary/10 px-1.5 py-0.5 rounded leading-none">
       <Sparkles className="w-2.5 h-2.5" /> Generated in-app
     </span>
   );
@@ -150,7 +150,7 @@ export function GenerationErrorNote({ message }: { message: string | null }) {
   return (
     <div className="flex items-start gap-2 rounded-lg border border-amber-400/25 bg-amber-400/10 px-3 py-2">
       <AlertTriangle className="w-3.5 h-3.5 text-amber-300 mt-0.5 shrink-0" />
-      <p className="text-[11px] text-amber-200/90 leading-relaxed">
+      <p className="text-label text-amber-200/90 leading-relaxed">
         Last generation run failed: {message}
       </p>
     </div>

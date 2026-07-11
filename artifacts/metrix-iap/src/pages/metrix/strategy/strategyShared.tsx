@@ -31,12 +31,12 @@ export function VariableChip({ code, showCode = true }: { code: string; showCode
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 text-[10px] font-medium border px-1.5 py-0.5 rounded leading-none",
+        "inline-flex items-center gap-1 text-label font-medium border px-1.5 py-0.5 rounded leading-none",
         PREFIX_COLORS[prefix],
       )}
     >
       {resolveVariableLabel(code)}
-      {showCode && <span className="font-mono text-[8px] opacity-60">{code}</span>}
+      {showCode && <span className="font-mono text-label-xs opacity-60">{code}</span>}
     </span>
   );
 }
@@ -51,11 +51,11 @@ export function VariableStackChips({ stack }: { stack: Record<string, string> })
         <span
           key={family}
           className={cn(
-            "inline-flex items-center gap-1.5 text-[10px] font-medium border px-1.5 py-1 rounded leading-none",
+            "inline-flex items-center gap-1.5 text-label font-medium border px-1.5 py-1 rounded leading-none",
             PREFIX_COLORS[getVariablePrefix(code)],
           )}
         >
-          <span className="uppercase tracking-wide text-[8px] opacity-60">{familyLabel(family)}</span>
+          <span className="uppercase tracking-wide text-label-xs opacity-60">{familyLabel(family)}</span>
           {resolveVariableLabel(code)}
         </span>
       ))}
@@ -90,10 +90,10 @@ export function IcpChips({ ids, profiles }: { ids: string[] | undefined; profile
       {ids.map((id) => (
         <span
           key={id}
-          className="inline-flex items-center gap-1 text-[10px] font-medium text-foreground/85 border border-border/40 bg-white/[0.03] px-1.5 py-1 rounded leading-none"
+          className="inline-flex items-center gap-1 text-label font-medium text-foreground/85 border border-border/40 bg-white/[0.03] px-1.5 py-1 rounded leading-none"
           title={id}
         >
-          <Users className="w-2.5 h-2.5 text-primary/70" />
+          <Users className="w-2.5 h-2.5 text-primary/80" />
           {icpName(profiles, id)}
         </span>
       ))}
@@ -134,19 +134,19 @@ export function PillarDetailSections({ pillar, profiles }: { pillar: MessagePill
       {icps.length > 0 && (
         <div className="md:col-span-2">
           <div className="flex items-center gap-1.5 mb-1.5">
-            <Users className="w-3 h-3 text-primary/70" />
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">Targets</span>
+            <Users className="w-3 h-3 text-primary/80" />
+            <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/80">Targets</span>
           </div>
           <IcpChips ids={icps} profiles={profiles} />
         </div>
       )}
       {sections.map(({ key, label, Icon }) => (
-        <div key={key} className="rounded-lg border border-border/30 bg-white/[0.015] p-3">
+        <div key={key} className="rounded-lg border border-border/30 bg-white/[0.015] p-3 hover-elevate">
           <div className="flex items-center gap-1.5 mb-1">
-            <Icon className="w-3 h-3 text-muted-foreground/60" />
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
+            <Icon className="w-3 h-3 text-muted-foreground/70" />
+            <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/80">{label}</span>
           </div>
-          <p className="text-[11.5px] text-foreground/80 leading-relaxed">{pillar[key] as string}</p>
+          <p className="text-label text-foreground/85 leading-relaxed">{pillar[key] as string}</p>
         </div>
       ))}
     </div>
@@ -182,7 +182,7 @@ export function HypothesisStatusBadge({ status }: { status: string }) {
   return (
     <span
       className={cn(
-        "inline-flex text-[9px] font-semibold border px-1.5 py-0.5 rounded leading-none",
+        "inline-flex text-label-xs font-semibold border px-1.5 py-0.5 rounded leading-none",
         HYP_STATUS_STYLE[key] ?? "bg-muted text-muted-foreground/60 border-border/40",
       )}
     >
@@ -204,14 +204,14 @@ export function VariableCombinationsGrid({ combinations }: { combinations: Varia
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
       {combinations.map((c, i) => (
-        <div key={`${c.combination}-${i}`} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2.5">
+        <div key={`${c.combination}-${i}`} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2.5 mx-card">
           <div className="flex items-start justify-between gap-2">
-            {c.context && <span className="text-[10px] font-mono text-muted-foreground/70">{c.context}</span>}
+            {c.context && <span className="text-label font-mono text-muted-foreground/80">{c.context}</span>}
             {c.recommendation && (
               <span
                 className={cn(
-                  "shrink-0 text-[9px] font-semibold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none",
-                  RECO_STYLE[c.recommendation.toLowerCase()] ?? "bg-muted text-muted-foreground/60 border-border/40",
+                  "shrink-0 text-label-xs font-semibold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none",
+                  RECO_STYLE[c.recommendation.toLowerCase()] ?? "bg-muted text-muted-foreground/70 border-border/40",
                 )}
               >
                 {c.recommendation}
@@ -221,12 +221,12 @@ export function VariableCombinationsGrid({ combinations }: { combinations: Varia
           <CombinationChips combination={c.combination} />
           <div className="mt-auto pt-2 border-t border-border/20 flex items-center gap-4">
             <div>
-              <div className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">CPA</div>
-              <div className="text-[14px] font-bold text-foreground tabular-nums">{c.cpa != null ? fmtUSD(c.cpa) : "—"}</div>
+              <div className="text-label-xs font-semibold uppercase tracking-widest text-muted-foreground/80">CPA</div>
+              <div className="text-body font-bold text-foreground tabular-nums">{c.cpa != null ? fmtUSD(c.cpa) : "—"}</div>
             </div>
             <div>
-              <div className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">CVR</div>
-              <div className="text-[14px] font-bold text-foreground tabular-nums">{c.cvr_pct != null ? fmtPct(c.cvr_pct) : "—"}</div>
+              <div className="text-label-xs font-semibold uppercase tracking-widest text-muted-foreground/80">CVR</div>
+              <div className="text-body font-bold text-foreground tabular-nums">{c.cvr_pct != null ? fmtPct(c.cvr_pct) : "—"}</div>
             </div>
             {c.confidence && (
               <div className="ml-auto">
@@ -268,14 +268,14 @@ export function ScalingPlaybookLanes({ playbook }: { playbook: ScalingPlaybook }
     <div className="space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         {lanes.map(({ key, label, Icon, accent }) => (
-          <div key={String(key)} className={cn("rounded-xl border p-3 flex flex-col gap-2", accent)}>
+          <div key={String(key)} className={cn("rounded-xl border p-3 flex flex-col gap-2 hover-elevate", accent)}>
             <div className="flex items-center gap-1.5">
               <Icon className="w-3.5 h-3.5" />
-              <span className="text-[10px] font-semibold uppercase tracking-widest">{label}</span>
+              <span className="text-label font-semibold uppercase tracking-widest">{label}</span>
             </div>
             <ul className="space-y-1.5">
               {(playbook[key] as string[]).map((item, i) => (
-                <li key={i} className="text-[11px] text-foreground/85 leading-snug">
+                <li key={i} className="text-body text-foreground/90 leading-snug">
                   {item}
                 </li>
               ))}
@@ -285,8 +285,8 @@ export function ScalingPlaybookLanes({ playbook }: { playbook: ScalingPlaybook }
       </div>
       {playbook.budget_reallocation_note && (
         <div className="rounded-lg border border-border/30 bg-white/[0.015] p-3">
-          <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1">Budget reallocation</div>
-          <p className="text-[11.5px] text-foreground/80 leading-relaxed">{playbook.budget_reallocation_note}</p>
+          <div className="text-label font-semibold uppercase tracking-widest text-muted-foreground/80 mb-1">Budget reallocation</div>
+          <p className="text-body text-foreground/90 leading-relaxed">{playbook.budget_reallocation_note}</p>
         </div>
       )}
     </div>

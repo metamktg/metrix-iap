@@ -118,7 +118,7 @@ export function AdAccountOverview() {
         section="Ad Account · 01"
         title={account.name}
         subtitle="Account health, current focus, layer readiness, and the account optimization loop."
-        right={<span className="text-[10px] font-mono text-emerald-400/70 uppercase tracking-widest">Connected</span>}
+        right={<span className="text-label font-mono text-emerald-400/70 uppercase tracking-widest">Connected</span>}
       />
       <ScopeBanner account={account} />
 
@@ -126,7 +126,7 @@ export function AdAccountOverview() {
         {/* Health / totals */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60">Account totals</h2>
+            <h2 className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Account totals</h2>
             <MetricPickerButton catalog={metricCatalog} selected={selectedMetricIds} onToggle={toggle} onMove={move} onReset={reset} />
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -151,35 +151,35 @@ export function AdAccountOverview() {
             <div className="rounded-lg border border-purple-400/15 bg-purple-400/[0.03] p-3.5">
               <div className="flex items-center gap-1.5 mb-1.5">
                 <Grid3x3 className="w-3.5 h-3.5 text-purple-300" />
-                <span className="text-[11px] font-semibold text-foreground">Current sprint</span>
+                <span className="text-label font-semibold text-foreground">Current sprint</span>
               </div>
               {mstActive ? (
                 <>
-                  <p className="text-[12px] text-foreground/80 leading-relaxed">
+                  <p className="text-body text-foreground/80 leading-relaxed">
                     MST active — {matrixCellCount} matrix cells across the concept × shared-variable grid, {libraryCount} concepts in the local library.
                   </p>
-                  <button onClick={() => navigate("/app/mst")} className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-primary/80 hover:text-primary transition-colors">
+                  <button onClick={() => navigate("/app/mst")} className="mt-2 inline-flex items-center gap-1 text-label font-medium text-primary/80 hover:text-primary transition-colors">
                     Open MST <ArrowRight className="w-3 h-3" />
                   </button>
                 </>
               ) : (
-                <p className="text-[12px] text-muted-foreground/60 leading-relaxed">No active sprint. MST becomes available once historical data or imports exist.</p>
+                <p className="text-body text-muted-foreground/60 leading-relaxed">No active sprint. MST becomes available once historical data or imports exist.</p>
               )}
             </div>
 
             <div className="rounded-lg border border-primary/15 bg-primary/[0.04] p-3.5">
               <div className="flex items-center gap-1.5 mb-1.5">
                 <Zap className="w-3.5 h-3.5 text-primary" />
-                <span className="text-[11px] font-semibold text-foreground">Next action</span>
+                <span className="text-label font-semibold text-foreground">Next action</span>
               </div>
               {nextAction ? (
                 <>
-                  <p className="text-[12px] font-medium text-foreground leading-snug">{nextAction.title}</p>
-                  <p className="text-[11px] text-foreground/70 mt-1 leading-relaxed">{nextAction.recommended_action}</p>
-                  <p className="text-[10px] text-muted-foreground/70 mt-2">{recCards.length} recommendation{recCards.length === 1 ? "" : "s"} in the optimization loop below.</p>
+                  <p className="text-body font-medium text-foreground leading-snug">{nextAction.title}</p>
+                  <p className="text-label text-foreground/70 mt-1 leading-relaxed">{nextAction.recommended_action}</p>
+                  <p className="text-label text-muted-foreground/70 mt-2">{recCards.length} recommendation{recCards.length === 1 ? "" : "s"} in the optimization loop below.</p>
                 </>
               ) : (
-                <p className="text-[12px] text-muted-foreground/60 leading-relaxed">No recommendations yet.</p>
+                <p className="text-body text-muted-foreground/60 leading-relaxed">No recommendations yet.</p>
               )}
             </div>
           </div>
@@ -187,7 +187,7 @@ export function AdAccountOverview() {
 
         {/* Layer status / readiness */}
         <div>
-          <h2 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-3">Layer status</h2>
+          <h2 className="text-label font-mono uppercase tracking-widest text-muted-foreground/60 mb-3">Layer status</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
             {layers.map((l) => (
               <button
@@ -198,15 +198,15 @@ export function AdAccountOverview() {
                 <div className="flex items-center justify-between gap-2">
                   <l.Icon className="w-3.5 h-3.5 text-primary/60" />
                   <span className={cn(
-                    "text-[8px] font-semibold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none",
+                    "text-label-xs font-semibold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none",
                     l.ready ? "text-emerald-400 border-emerald-400/25 bg-emerald-400/10" : "text-muted-foreground/70 border-border/40 bg-white/[0.03]"
                   )}>
                     {l.ready ? "Ready" : "Pending"}
                   </span>
                 </div>
                 <div>
-                  <div className="text-[12px] font-semibold text-foreground leading-tight">{l.name}</div>
-                  <div className="text-[10px] text-muted-foreground/70 mt-0.5">
+                  <div className="text-body font-semibold text-foreground leading-tight">{l.name}</div>
+                  <div className="text-label text-muted-foreground/70 mt-0.5">
                     <span className="tabular-nums text-foreground/70 font-medium">{l.count}</span> {l.unit}
                   </div>
                 </div>
@@ -220,9 +220,9 @@ export function AdAccountOverview() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {events.map(([key, e]) => (
               <div key={key} className="rounded-lg border border-border/40 bg-white/[0.02] p-3.5">
-                <div className="text-[11px] font-medium text-foreground leading-tight mb-2">{eventLabel(key)}</div>
-                <div className="text-[22px] font-semibold text-foreground tabular-nums leading-none">{fmtNum(e.results)}</div>
-                <div className="text-[10px] text-muted-foreground/70 mt-2 space-y-0.5">
+                <div className="text-label font-medium text-foreground leading-tight mb-2">{eventLabel(key)}</div>
+                <div className="text-value-sm font-semibold text-foreground tabular-nums leading-none">{fmtNum(e.results)}</div>
+                <div className="text-label text-muted-foreground/70 mt-2 space-y-0.5">
                   <div>Spend {fmtUSD(e.spend)}</div>
                   <div>Link clicks {fmtNum(e.link_clicks)}</div>
                 </div>
@@ -237,19 +237,19 @@ export function AdAccountOverview() {
             <div className="rounded-lg border border-emerald-400/15 bg-emerald-400/[0.03] p-3.5">
               <div className="flex items-center gap-1.5 mb-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="text-[11px] font-semibold text-foreground">Primary control</span>
+                <span className="text-label font-semibold text-foreground">Primary control</span>
               </div>
-              <p className="text-[12px] text-foreground/80 leading-relaxed">{core.primary_control_read}</p>
-              <p className="text-[9px] font-mono text-muted-foreground/60 mt-2">{core.primary_control}</p>
+              <p className="text-body text-foreground/80 leading-relaxed">{core.primary_control_read}</p>
+              <p className="text-label-xs font-mono text-muted-foreground/60 mt-2">{core.primary_control}</p>
             </div>
             {core.registration_control && (
               <div className="rounded-lg border border-blue-400/15 bg-blue-400/[0.03] p-3.5">
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <KeyRound className="w-3.5 h-3.5 text-blue-300" />
-                  <span className="text-[11px] font-semibold text-foreground">{term.Singular} control</span>
+                  <span className="text-label font-semibold text-foreground">{term.Singular} control</span>
                 </div>
-                <p className="text-[12px] text-foreground/80 leading-relaxed">{core.registration_control_read}</p>
-                <p className="text-[9px] font-mono text-muted-foreground/60 mt-2">{core.registration_control}</p>
+                <p className="text-body text-foreground/80 leading-relaxed">{core.registration_control_read}</p>
+                <p className="text-label-xs font-mono text-muted-foreground/60 mt-2">{core.registration_control}</p>
               </div>
             )}
           </div>

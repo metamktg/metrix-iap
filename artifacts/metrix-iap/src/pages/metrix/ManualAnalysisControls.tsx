@@ -50,7 +50,7 @@ function RunAnalysisBtn({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-[11px] font-medium text-primary transition-colors",
+        "flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-label font-medium text-primary transition-colors",
         disabled ? "opacity-60 cursor-not-allowed" : "hover:bg-primary/25"
       )}
     >
@@ -99,7 +99,7 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
           <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/85 shrink-0" />
         )}
         <FileText className="w-3.5 h-3.5 text-muted-foreground/85 shrink-0" />
-        <span className="text-[12px] font-medium text-foreground">
+        <span className="text-body font-medium text-foreground">
           Required columns — {CSV_CLASS_TITLES[csvClass]}
           {classData?.report_name ? ` (${classData.report_name})` : ""}
         </span>
@@ -107,33 +107,26 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
       {open && (
         <div className="px-3 pb-3 space-y-2">
           {isLoading || !classData ? (
-            <p className="text-[11px] text-muted-foreground/80">Loading format spec…</p>
+            <p className="text-label text-muted-foreground/80">Loading format spec…</p>
           ) : (
             <>
               <div className="rounded-md border border-border/30 p-2">
-                <div className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/80 mb-1">
+                <div className="text-label-xs font-semibold uppercase tracking-wide text-muted-foreground/80 mb-1">
                   Breakdown columns
                 </div>
-                <p className="text-[11px] text-foreground/80 leading-relaxed">
+                <p className="text-label text-foreground/80 leading-relaxed">
                   {classData.breakdown_columns.join(", ")}
                 </p>
               </div>
               <div className="rounded-md border border-border/30 divide-y divide-border/30">
                 {classData.metric_groups.map((g) => (
                   <div key={g.name} className="flex items-start gap-2 p-2">
-                    <span
-                      className={cn(
-                        "shrink-0 text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded",
-                        g.required
-                          ? "bg-primary/15 text-primary border border-primary/25"
-                          : "bg-white/[0.04] text-muted-foreground/85 border border-border/30"
-                      )}
-                    >
+                    <span className="text-body-lg font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded text-muted-foreground/85 border border-border/30">
                       {g.required ? "Required" : "Optional"}
                     </span>
                     <div className="min-w-0">
-                      <div className="text-[11px] font-medium text-foreground">{g.name}</div>
-                      <p className="text-[10px] text-muted-foreground/80 leading-relaxed mt-0.5">
+                      <div className="text-label font-medium text-foreground">{g.name}</div>
+                      <p className="text-label text-muted-foreground/80 leading-relaxed mt-0.5">
                         {g.columns.join(", ")}
                       </p>
                     </div>
@@ -142,7 +135,7 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
               </div>
               <button
                 onClick={downloadSample}
-                className="flex items-center gap-1.5 text-[11px] font-medium text-primary hover:underline"
+                className="flex items-center gap-1.5 text-label font-medium text-primary hover:underline"
               >
                 <Download className="w-3 h-3" /> Download a sample CSV
               </button>
@@ -164,20 +157,20 @@ const DATE_RANGES: { id: "7d" | "14d" | "30d" | "all"; label: string }[] = [
 function StatusBadge({ run }: { run: AnalysisRun }) {
   if (run.status === "running") {
     return (
-      <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-amber-400">
+      <span className="flex items-center gap-1 text-label font-semibold uppercase tracking-wide text-amber-400">
         <Loader2 className="w-3 h-3 animate-spin" /> Running
       </span>
     );
   }
   if (run.status === "success") {
     return (
-      <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-400">
+      <span className="flex items-center gap-1 text-label font-semibold uppercase tracking-wide text-emerald-400">
         <CheckCircle2 className="w-3 h-3" /> Complete
       </span>
     );
   }
   return (
-    <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-red-400">
+    <span className="flex items-center gap-1 text-label font-semibold uppercase tracking-wide text-red-400">
       <XCircle className="w-3 h-3" /> Failed
     </span>
   );
@@ -243,16 +236,16 @@ export function GuessedMatchesCallout({
       <div className="flex items-start gap-2">
         <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
         <div className="min-w-0 space-y-1">
-          <div className="text-[12px] font-semibold text-amber-200">
+          <div className="text-body font-semibold text-amber-200">
             {count} creative {plural ? "matches need" : "match needs"} review
           </div>
-          <p className="text-[11px] text-amber-100/80 leading-relaxed">
+          <p className="text-label text-amber-100/80 leading-relaxed">
             {plural ? "These filenames" : "This filename"} didn't clearly match an ad name, so we
             picked the most likely one as a best guess. Confirm {plural ? "they're" : "it's"} right
             or fix {plural ? "them" : "it"} first — otherwise analysis may link the wrong creative to
             an ad.
           </p>
-          <ul className="text-[10px] text-amber-100/70 leading-relaxed space-y-0.5 pt-0.5">
+          <ul className="text-label text-amber-100/70 leading-relaxed space-y-0.5 pt-0.5">
             {guessedImports.map((imp) => (
               <li key={imp.id} className="truncate">
                 <span className="text-amber-100/90">{imp.filename}</span>
@@ -262,13 +255,13 @@ export function GuessedMatchesCallout({
           </ul>
         </div>
       </div>
-      {error && <p className="text-[11px] text-red-400">{error}</p>}
+      {error && <p className="text-label text-red-400">{error}</p>}
       <div className="flex items-center gap-2 flex-wrap pt-0.5">
         <button
           onClick={() => void confirmAll()}
           disabled={confirming || updateMutation.isPending}
           className={cn(
-            "flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-[11px] font-medium transition-colors",
+            "flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-label font-medium transition-colors",
             confirming || updateMutation.isPending
               ? "border-amber-400/30 text-amber-200/60 cursor-not-allowed"
               : "bg-amber-400/15 border-amber-400/40 text-amber-100 hover:bg-amber-400/25"
@@ -287,7 +280,7 @@ export function GuessedMatchesCallout({
         {onReview && (
           <button
             onClick={onReview}
-            className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-amber-400/30 text-[11px] font-medium text-amber-100/85 hover:bg-amber-400/10 transition-colors"
+            className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-amber-400/30 text-label font-medium text-amber-100/85 hover:bg-amber-400/10 transition-colors"
           >
             {reviewLabel ?? "Review & fix"}
           </button>
@@ -353,7 +346,7 @@ export function AnalysisControls({ accountId }: { accountId: string }) {
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/85 shrink-0" />
-        <span className="text-[11px] font-medium text-foreground">Date range to analyze</span>
+        <span className="text-label font-medium text-foreground">Date range to analyze</span>
       </div>
       <div className="grid grid-cols-2 gap-1.5">
         {DATE_RANGES.map((r) => (
@@ -362,7 +355,7 @@ export function AnalysisControls({ accountId }: { accountId: string }) {
             onClick={() => setDateRange(r.id)}
             disabled={isRunning}
             className={cn(
-              "h-8 px-2 rounded-md border text-[11px] font-medium transition-colors",
+              "h-8 px-2 rounded-md border text-label font-medium transition-colors",
               dateRange === r.id
                 ? "border-primary/40 bg-primary/[0.08] text-primary"
                 : "border-border/40 bg-white/[0.02] text-muted-foreground/85 hover:bg-white/[0.04]",
@@ -380,23 +373,23 @@ export function AnalysisControls({ accountId }: { accountId: string }) {
         onConfirmed={() => void refetchImports()}
       />
 
-      {error && <p className="text-[11px] text-red-400">{error}</p>}
+      {error && <p className="text-label text-red-400">{error}</p>}
 
       <div className="flex items-center justify-between gap-2">
         {run ? (
           <div className="flex items-center gap-2 min-w-0">
             <StatusBadge run={run} />
             {run.status === "success" && run.date_start && run.date_end && (
-              <span className="text-[10px] text-muted-foreground/80 truncate">
+              <span className="text-label text-muted-foreground/80 truncate">
                 Covers {run.date_start} → {run.date_end} ({run.rows_ingested ?? 0} rows)
               </span>
             )}
             {run.status === "error" && run.error_message && (
-              <span className="text-[10px] text-red-400/80 truncate">{run.error_message}</span>
+              <span className="text-label text-red-400/80 truncate">{run.error_message}</span>
             )}
           </div>
         ) : (
-          <span className="text-[10px] text-muted-foreground/75">No analysis has been run yet.</span>
+          <span className="text-label text-muted-foreground/75">No analysis has been run yet.</span>
         )}
         <RunAnalysisBtn onClick={handleRun} disabled={isRunning || startMutation.isPending}>
           {isRunning || startMutation.isPending ? (
@@ -410,7 +403,7 @@ export function AnalysisControls({ accountId }: { accountId: string }) {
           )}
         </RunAnalysisBtn>
       </div>
-      <p className="text-[10px] text-muted-foreground/75 leading-relaxed">
+      <p className="text-label text-muted-foreground/75 leading-relaxed">
         Analysis only runs when you press this button. It reads your staged uploads and reports
         the exact dates found in the data for the selected range — it will never run on its own.
       </p>

@@ -26,3 +26,4 @@
 - [Supabase importer-table RLS](supabase-importer-rls.md) — importer tables are service-role-only in app code but the public anon key can still read them via PostgREST; enable RLS + revoke anon/authenticated grants.
 - [Regex \b boundary breaks on underscore](regex-word-boundary-underscore.md) — \b fails between digit and "_" (both \w); use (?<![a-z0-9])/(?![a-z0-9]) lookarounds to extract tokens from underscore-separated filenames.
 - [Concurrent validation codegen race](concurrent-validation-codegen-race.md) — batch validations can TS6053-fail while codegen-drift regenerates lib generated files; re-run the failed check alone before debugging.
+- [Vite HMR module-graph corruption](vite-hmr-module-graph.md) — after mass edits, phantom provider/hook crashes at nonexistent line numbers mean a corrupted HMR graph; restart the dev workflow before browser testing.

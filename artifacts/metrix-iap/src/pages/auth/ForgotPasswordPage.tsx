@@ -44,19 +44,19 @@ export function ForgotPasswordPage({ onBack }: { onBack: () => void }) {
             data-testid="text-reset-request-success"
           >
             <MailCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-            <div className="text-[12px] text-foreground">
+            <div className="text-body text-foreground">
               If an account exists for that email, we sent a password reset link.
               The link works once and expires in 1 hour.
             </div>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-3" data-testid="form-forgot-password">
-            <p className="text-[12px] text-muted-foreground">
+            <p className="text-body text-muted-foreground">
               Enter the email you use to sign in and we&apos;ll send you a link to
               choose a new password.
             </p>
             <div className="space-y-1.5">
-              <label htmlFor="forgot-email" className="text-[11px] font-medium text-muted-foreground">
+              <label htmlFor="forgot-email" className="text-label font-medium text-muted-foreground">
                 Email
               </label>
               <input
@@ -67,19 +67,19 @@ export function ForgotPasswordPage({ onBack }: { onBack: () => void }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@company.com"
-                className="w-full h-9 px-3 rounded-md bg-white/[0.03] border border-border/40 text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40"
+                className="w-full h-9 px-3 rounded-md bg-white/[0.03] border border-border/40 text-body text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40"
                 data-testid="input-forgot-email"
               />
             </div>
             {error && (
-              <div className="text-[11px] text-red-400/90" data-testid="text-forgot-error">
+              <div className="text-label text-red-400/90" data-testid="text-forgot-error">
                 {error}
               </div>
             )}
             <button
               type="submit"
               disabled={state === "submitting" || !EMAIL_RE.test(email.trim())}
-              className="w-full h-9 rounded-md bg-primary text-primary-foreground text-[12px] font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-1.5"
+              className="w-full h-9 rounded-md bg-primary text-primary-foreground text-body font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-1.5"
               data-testid="button-send-reset-link"
             >
               {state === "submitting" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
@@ -91,7 +91,7 @@ export function ForgotPasswordPage({ onBack }: { onBack: () => void }) {
         <div className="text-center">
           <button
             onClick={onBack}
-            className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+            className="inline-flex items-center gap-1 text-label text-muted-foreground hover:text-foreground transition-colors"
             data-testid="button-back-to-login"
           >
             <ArrowLeft className="w-3 h-3" /> Back to sign in

@@ -14,6 +14,7 @@
   --color-card: hsl(var(--card));
   --color-card-foreground: hsl(var(--card-foreground));
   --color-card-border: hsl(var(--card-border));
+  --color-table-header: hsl(222 55% 7%);
 
   --color-popover: hsl(var(--popover));
   --color-popover-foreground: hsl(var(--popover-foreground));
@@ -72,6 +73,34 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  /* ── Typography scale (legibility floor) ──
+     Named Tailwind sizes lifted for readability; semantic utilities
+     for labels, body, headings, and KPI values. Do not reintroduce
+     arbitrary text-[Npx] values below 13px. */
+  --text-xs: 0.8125rem; /* 13px — lifted from 12px */
+  --text-xs--line-height: 1.4;
+  --text-sm: 0.875rem; /* 14px */
+  --text-sm--line-height: 1.5;
+
+  --text-label-xs: 0.6875rem; /* 11px — absolute floor, dense metadata only */
+  --text-label-xs--line-height: 1.3;
+  --text-label: 0.75rem; /* 12px — badges, chips, secondary labels */
+  --text-label--line-height: 1.35;
+  --text-body: 0.875rem; /* 14px — standard dashboard body */
+  --text-body--line-height: 1.55;
+  --text-body-lg: 0.9375rem; /* 15px */
+  --text-body-lg--line-height: 1.55;
+  --text-section: 1.25rem; /* 20px — section headings */
+  --text-section--line-height: 1.3;
+  --text-title: 1.75rem; /* 28px — page titles */
+  --text-title--line-height: 1.2;
+  --text-value-sm: 1.375rem; /* 22px — compact KPI values */
+  --text-value-sm--line-height: 1.15;
+  --text-value: 1.75rem; /* 28px — primary KPI values */
+  --text-value--line-height: 1.1;
+  --text-value-lg: 2.125rem; /* 34px — hero KPI values */
+  --text-value-lg--line-height: 1.05;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -107,9 +136,9 @@
   --mx-indigo: #183bff;
 
   --mx-text-main: #f5f8ff;
-  --mx-text-muted: #9ba8bc;
-  --mx-text-soft: #c6d2e5;
-  --mx-text-faint: #6f7c91;
+  --mx-text-muted: #a8b5c9;
+  --mx-text-soft: #ccd7e9;
+  --mx-text-faint: #8895ab;
 
   --mx-success: #35d96f;
   --mx-danger: #ff4f61;
@@ -160,7 +189,7 @@
 
   /* Muted — text lifted for contrast (#9ba8bc) */
   --muted: 219 45% 16%;
-  --muted-foreground: 216 20% 67%;
+  --muted-foreground: 216 24% 72%;
 
   /* Accent = slightly elevated panel */
   --accent: 218 55% 17%;
@@ -250,7 +279,7 @@
   --secondary: 218 55% 15%;
   --secondary-foreground: 217 37% 84%;
   --muted: 219 45% 16%;
-  --muted-foreground: 216 20% 67%;
+  --muted-foreground: 216 24% 72%;
   --accent: 218 55% 17%;
   --accent-foreground: 217 37% 88%;
   --destructive: 354 100% 65%;
@@ -430,7 +459,7 @@
 
   /* Section label — small uppercase, wide tracking, cyan-tinted */
   .mx-section-label {
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.18em;
     text-transform: uppercase;
