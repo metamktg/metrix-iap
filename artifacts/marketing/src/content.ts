@@ -1,4 +1,4 @@
-export const BOOK_DEMO_URL = "https://calendly.com/placeholder-metrix-demo";
+export const BOOK_DEMO_URL = "https://calendly.com/metamktg-agency/metrix-demo";
 
 export const COPY = {
   hero: {

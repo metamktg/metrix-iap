@@ -149,3 +149,9 @@ id = "8gmLz7PLCouN9mW4OWkM0"
 uri = "file://exports/eca-ads/c4a-9x16.png"
 type = "image"
 title = "C4A · Story/Reels 9:16 (1080×1920) · exploratory"
+
+[[outputs]]
+id = "CNXbwCql0bK52x2n4zMX-"
+uri = "file://exports/east-coast-art-creatives.zip"
+type = "unspecified"
+title = "East Coast Art Studio — complete creative package (34 MB)"
