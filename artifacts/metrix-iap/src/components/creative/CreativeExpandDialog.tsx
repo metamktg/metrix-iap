@@ -58,7 +58,7 @@ function ExpandVisual({ data, className }: { data: CreativeCardData; className?:
       className={cn("w-full h-full flex flex-col items-center justify-center gap-2 select-none", className)}
       style={{ background: `linear-gradient(140deg, hsl(${hue} 45% 14%) 0%, hsl(${(hue + 40) % 360} 40% 9%) 100%)` }}
     >
-      <span className="text-[42px] font-black tracking-tight leading-none" style={{ color: `hsl(${hue} 70% 72% / 0.85)` }}>
+      <span className="text-[40px] font-black tracking-tight leading-none" style={{ color: `hsl(${hue} 70% 72% / 0.85)` }}>
         {data.conceptCode}
       </span>
       <span className="flex items-center gap-1.5 text-label-xs font-mono uppercase tracking-widest text-white/60">

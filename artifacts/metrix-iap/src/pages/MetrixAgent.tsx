@@ -116,7 +116,7 @@ export function MetrixAgent() {
         <span className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest block mb-1">
           Metrix Agent · 07
         </span>
-        <h1 className="text-[20px] font-semibold text-foreground leading-tight">Metrix Agent</h1>
+        <h1 className="text-[18px] font-semibold text-foreground leading-tight">Metrix Agent</h1>
         <p className="text-body text-muted-foreground/60 mt-0.5">
           A source-backed AI operator for Metrix workflows. Coming soon.
         </p>
@@ -147,7 +147,7 @@ export function MetrixAgent() {
 
               {/* Copy */}
               <div>
-                <h2 className="text-[22px] font-semibold text-foreground leading-tight">Metrix Agent</h2>
+                <h2 className="text-[20px] font-semibold text-foreground leading-tight">Metrix Agent</h2>
                 <p className="text-body text-foreground/70 mt-2 leading-relaxed">
                   Your source-backed operator layer for summarizing account state, surfacing next actions, and explaining why each recommendation exists.
                 </p>

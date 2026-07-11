@@ -73,7 +73,7 @@ function PlacementDetailDialog({ placement, v3Rows, c4eRows, onClose }: Placemen
           <div className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest">
             Placement detail
           </div>
-          <DialogTitle className="text-[17px] font-semibold text-foreground">{placement}</DialogTitle>
+          <DialogTitle className="text-[15px] font-semibold text-foreground">{placement}</DialogTitle>
           <DialogDescription className="text-label text-muted-foreground/70 leading-relaxed">
             {v3.length > 0 && `${v3.length} V3 row${v3.length !== 1 ? "s" : ""}`}
             {v3.length > 0 && c4e.length > 0 && " · "}
