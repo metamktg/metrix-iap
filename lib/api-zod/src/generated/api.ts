@@ -478,7 +478,8 @@ export const ListAdminUsersResponse = zod.object({
   "must_change_password": zod.boolean(),
   "created_at": zod.string(),
   "last_login_at": zod.string().nullish(),
-  "disabled_at": zod.string().nullish()
+  "disabled_at": zod.string().nullish(),
+  "ad_account_ids": zod.array(zod.string()).describe('Ad account IDs this user has been explicitly granted access to.')
 })),
   "total": zod.number()
 })

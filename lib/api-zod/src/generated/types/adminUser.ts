@@ -18,4 +18,6 @@ export interface AdminUser {
   created_at: string;
   last_login_at?: string | null;
   disabled_at?: string | null;
+  /** Ad account IDs this user has been explicitly granted access to. */
+  ad_account_ids: string[];
 }

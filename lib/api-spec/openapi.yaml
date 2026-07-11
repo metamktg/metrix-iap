@@ -2583,12 +2583,18 @@ components:
         disabled_at:
           type: string
           nullable: true
+        ad_account_ids:
+          type: array
+          items:
+            type: string
+          description: Ad account IDs this user has been explicitly granted access to.
       required:
         - id
         - email
         - status
         - must_change_password
         - created_at
+        - ad_account_ids
     AdminUsersResult:
       type: object
       properties:

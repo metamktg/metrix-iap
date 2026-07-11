@@ -279,6 +279,22 @@ router.get("/metrix/admin/users", requireAdmin, async (req, res) => {
     .from(usersTable)
     .orderBy(desc(usersTable.createdAt));
 
+  const userIds = rows.map((u) => u.id);
+  const grantRows =
+    userIds.length > 0
+      ? await db
+          .select({ userId: userAdAccountsTable.userId, adAccountId: userAdAccountsTable.adAccountId })
+          .from(userAdAccountsTable)
+          .where(inArray(userAdAccountsTable.userId, userIds))
+      : [];
+
+  const grantsByUserId = new Map<number, string[]>();
+  for (const g of grantRows) {
+    const existing = grantsByUserId.get(g.userId) ?? [];
+    existing.push(g.adAccountId);
+    grantsByUserId.set(g.userId, existing);
+  }
+
   res.json(
     ListAdminUsersResponse.parse({
       users: rows.map((u) => ({
@@ -290,6 +306,7 @@ router.get("/metrix/admin/users", requireAdmin, async (req, res) => {
         created_at: u.createdAt.toISOString(),
         last_login_at: u.lastLoginAt ? u.lastLoginAt.toISOString() : null,
         disabled_at: u.disabledAt ? u.disabledAt.toISOString() : null,
+        ad_account_ids: grantsByUserId.get(u.id) ?? [],
       })),
       total: rows.length,
     }),

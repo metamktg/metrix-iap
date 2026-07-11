@@ -321,7 +321,47 @@ function UserActionNote({ outcome, email }: { outcome: UserActionOutcome; email:
   );
 }
 
-function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }) {
+function UserAccessLine({
+  user,
+  adAccounts,
+}: {
+  user: AdminUser;
+  adAccounts: Array<{ id: string; name: string }>;
+}) {
+  const isAdmin = user.role === "admin";
+  if (isAdmin) {
+    return (
+      <div className="text-[10px] text-muted-foreground/70" data-testid={`user-access-${user.id}`}>
+        Access: <span className="text-violet-400/80">All accounts</span>
+      </div>
+    );
+  }
+  if (user.ad_account_ids.length === 0) {
+    return (
+      <div className="text-[10px] text-muted-foreground/50" data-testid={`user-access-${user.id}`}>
+        Access: <span className="italic">No accounts</span>
+      </div>
+    );
+  }
+  const names = user.ad_account_ids
+    .map((id) => adAccounts.find((a) => a.id === id)?.name ?? id)
+    .join(", ");
+  return (
+    <div className="text-[10px] text-muted-foreground/70" data-testid={`user-access-${user.id}`}>
+      Access: <span className="text-foreground/80">{names}</span>
+    </div>
+  );
+}
+
+function UserRow({
+  user,
+  adAccounts,
+  onChanged,
+}: {
+  user: AdminUser;
+  adAccounts: Array<{ id: string; name: string }>;
+  onChanged: () => void;
+}) {
   const resend = useAdminResendTempPassword();
   const sendReset = useAdminSendPasswordReset();
   const revoke = useAdminRevokeUser();
@@ -353,6 +393,7 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
               : " · Never logged in"}
             {user.must_change_password && !disabled ? " · Must change password" : ""}
           </div>
+          <UserAccessLine user={user} adAccounts={adAccounts} />
         </div>
         <UserStatusBadge status={user.status} />
       </div>
@@ -817,7 +858,9 @@ function CreateUserForm({ onCreated }: { onCreated: () => void }) {
 }
 function UsersSection() {
   const users = useListAdminUsers();
+  const adAccounts = useListAdminAdAccounts();
   const list = users.data?.users ?? [];
+  const accountList = adAccounts.data?.ad_accounts ?? [];
 
   return (
     <section className="space-y-3">
@@ -844,7 +887,12 @@ function UsersSection() {
       ) : (
         <div className="space-y-2">
           {list.map((user) => (
-            <UserRow key={user.id} user={user} onChanged={() => void users.refetch()} />
+            <UserRow
+              key={user.id}
+              user={user}
+              adAccounts={accountList}
+              onChanged={() => void users.refetch()}
+            />
           ))}
         </div>
       )}
