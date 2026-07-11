@@ -10,8 +10,9 @@ import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CaveatNote, fmtUSD, fmtNum, resultTerm,
-  RangeScopeBar, NoDataInRangeState,
+  RangeScopeBar, NoDataInRangeState
 } from "../shared";
+import { SegmentCard } from "@/components/ui/SegmentCard";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { LayoutGrid, ChevronRight, BarChart2 } from "lucide-react";
@@ -44,19 +45,19 @@ function PlacementDetailDialog({ placement, v3Rows, c4eRows, onClose }: Placemen
     if (rows.length === 0) return null;
     return (
       <div className="space-y-1">
-        <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">{label}</p>
-        <div className="rounded-lg border border-border/40 overflow-hidden">
+        <p className="text-label-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">{label}</p>
+        <div className="rounded-lg border border-border/40 overflow-hidden bg-white/[0.015]">
           {rows.sort((a, b) => b["Amount spent (USD)"] - a["Amount spent (USD)"]).map((r, i) => (
-            <div key={i} className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border/20 last:border-b-0 bg-white/[0.01]">
+            <div key={i} className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border/20 last:border-b-0 hover:bg-white/[0.02]">
               <div className="min-w-0">
-                <div className="text-[11px] font-medium text-foreground truncate">{r.Placement}</div>
-                <div className="text-[9px] font-mono text-muted-foreground/50 mt-0.5">
+                <div className="text-body font-medium text-foreground truncate">{r.Placement}</div>
+                <div className="text-label-xs font-mono text-muted-foreground/60 mt-0.5">
                   {fmtNum(r.Impressions)} impr · {fmtNum(r["Link clicks"] ?? 0)} clicks
                 </div>
               </div>
               <div className="shrink-0 text-right">
-                <div className="text-[11px] font-semibold text-foreground tabular-nums">{fmtUSD(r["Amount spent (USD)"], 0)}</div>
-                <div className="text-[9px] text-muted-foreground/60">{fmtNum(r.Results)} results</div>
+                <div className="text-body font-semibold text-foreground tabular-nums">{fmtUSD(r["Amount spent (USD)"], 0)}</div>
+                <div className="text-label-xs text-muted-foreground/70">{fmtNum(r.Results)} results</div>
               </div>
             </div>
           ))}
@@ -69,11 +70,11 @@ function PlacementDetailDialog({ placement, v3Rows, c4eRows, onClose }: Placemen
     <Dialog open={placement != null} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-xl bg-[hsl(222_61%_6%)] border-border/50 max-h-[82vh] overflow-y-auto">
         <DialogHeader className="text-left space-y-1">
-          <div className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest">
+          <div className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest">
             Placement detail
           </div>
           <DialogTitle className="text-[15px] font-semibold text-foreground">{placement}</DialogTitle>
-          <DialogDescription className="text-[11px] text-muted-foreground/70 leading-relaxed">
+          <DialogDescription className="text-label text-muted-foreground/70 leading-relaxed">
             {v3.length > 0 && `${v3.length} V3 row${v3.length !== 1 ? "s" : ""}`}
             {v3.length > 0 && c4e.length > 0 && " · "}
             {c4e.length > 0 && `${c4e.length} C4E row${c4e.length !== 1 ? "s" : ""}`}
@@ -89,9 +90,9 @@ function PlacementDetailDialog({ placement, v3Rows, c4eRows, onClose }: Placemen
               { label: "Impressions", value: fmtNum(totalImpressions) },
               { label: "CPA", value: cpa != null ? fmtUSD(cpa) : "—" },
             ].map(({ label, value }) => (
-              <div key={label} className="rounded-lg border border-border/40 bg-white/[0.02] px-3 py-2.5">
-                <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-0.5">{label}</div>
-                <div className="text-[18px] font-bold text-foreground tabular-nums leading-none">{value}</div>
+              <div key={label} className="mx-card-nested px-3 py-2.5">
+                <div className="text-label-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-0.5">{label}</div>
+                <div className="text-body-lg font-bold text-foreground tabular-nums leading-none">{value}</div>
               </div>
             ))}
           </div>
@@ -264,38 +265,31 @@ export function PlacementsView() {
                   title="Spend by placement"
                   desc="Combined across the V3 and C4E signals. Click any row to inspect the underlying data."
                 >
-                  <div className="space-y-1.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {rollup.map((s) => (
-                      <button
+                      <SegmentCard
                         key={s.placement}
                         onClick={() => setSelectedPlacement(s.placement)}
-                        className={cn(
-                          "w-full text-left rounded-lg px-3 py-2.5 border border-border/30 bg-white/[0.01]",
-                          "hover:border-primary/25 hover:bg-primary/[0.03] active:scale-[0.995]",
-                          "transition-all duration-100 group"
-                        )}
-                      >
-                        <div className="flex items-center justify-between text-[12px] mb-1.5 gap-3">
-                          <span className="text-foreground/90 font-medium">{s.placement}</span>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-muted-foreground/70 tabular-nums text-[11px]">
-                              {fmtUSD(s.spend, 0)} · {fmtNum(s.results)} results · {fmtNum(s.impressions)} impr
-                            </span>
-                            <ChevronRight className="w-3 h-3 text-muted-foreground/40 group-hover:text-primary/60 transition-colors" />
+                        name={s.placement}
+                        descriptor={`${fmtNum(s.impressions)} impressions`}
+                        metrics={[
+                          { label: "Spend", value: fmtUSD(s.spend, 0) },
+                          { label: "Results", value: fmtNum(s.results) },
+                        ]}
+                        footer={
+                          <div className="h-1.5 rounded-full bg-white/[0.04] overflow-hidden mt-1">
+                            <div
+                              className="h-full bg-primary/60 rounded-full transition-colors group-hover:bg-primary/80"
+                              style={{ width: `${Math.max((s.spend / maxSpend) * 100, 3)}%` }}
+                            />
                           </div>
-                        </div>
-                        <div className="h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
-                          <div
-                            className="h-full bg-primary/50 rounded-full group-hover:bg-primary/70 transition-colors"
-                            style={{ width: `${Math.max((s.spend / maxSpend) * 100, 3)}%` }}
-                          />
-                        </div>
-                      </button>
+                        }
+                      />
                     ))}
                   </div>
-                  <p className="mt-3 text-[10px] text-muted-foreground/50 flex items-center gap-1">
-                    <BarChart2 className="w-3 h-3" />
-                    {v3.length} V3 rows + {c4e.length} C4E rows · click any bar for the full breakdown
+                  <p className="mt-4 text-label text-muted-foreground flex items-center gap-1.5">
+                    <BarChart2 className="w-3.5 h-3.5" />
+                    {v3.length} V3 rows + {c4e.length} C4E rows · click any card for the full breakdown
                   </p>
                 </SectionCard>
 

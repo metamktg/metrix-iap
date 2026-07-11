@@ -54,7 +54,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const INPUT_CLS =
-  "w-full h-9 px-3 rounded-md bg-white/[0.03] border border-border/40 text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40";
+  "w-full h-9 px-3 rounded-md bg-white/[0.03] border border-border/40 text-body text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40";
 
 function StatusBadge({ status }: { status: string }) {
   const cls =
@@ -66,7 +66,7 @@ function StatusBadge({ status }: { status: string }) {
   return (
     <span
       className={cn(
-        "text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none shrink-0",
+        "text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none shrink-0",
         cls,
       )}
       data-testid={`badge-status-${status}`}
@@ -85,7 +85,7 @@ function CopyButton({ value }: { value: string }) {
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       }}
-      className="inline-flex items-center gap-1 text-[10px] text-primary hover:text-primary/80 transition-colors"
+      className="inline-flex items-center gap-1 text-label text-primary hover:text-primary/80 transition-colors"
       data-testid="button-copy-temp-password"
     >
       {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
@@ -105,7 +105,7 @@ function ApproveResultNote({ outcome }: { outcome: ApproveOutcome }) {
   if (outcome.email_sent) {
     return (
       <div
-        className="flex items-center gap-1.5 text-[11px] text-emerald-400"
+        className="flex items-center gap-1.5 text-label text-emerald-400"
         data-testid="text-approve-emailed"
       >
         <CheckCircle2 className="w-3.5 h-3.5" /> Temporary password emailed to {outcome.email}
@@ -118,17 +118,17 @@ function ApproveResultNote({ outcome }: { outcome: ApproveOutcome }) {
         className="space-y-1 rounded-md border border-amber-400/25 bg-amber-400/5 p-2"
         data-testid="panel-temp-password"
       >
-        <div className="text-[11px] text-amber-400">
+        <div className="text-label text-amber-400">
           Email could not be sent — share this temporary password with {outcome.email} manually:
         </div>
         <div className="flex items-center gap-2">
-          <code className="text-[12px] font-mono text-foreground bg-white/[0.05] px-1.5 py-0.5 rounded">
+          <code className="text-body font-mono text-foreground bg-white/[0.05] px-1.5 py-0.5 rounded">
             {outcome.temp_password}
           </code>
           <CopyButton value={outcome.temp_password} />
         </div>
         {outcome.email_error && (
-          <div className="text-[10px] text-muted-foreground" data-testid="text-email-error">
+          <div className="text-label text-muted-foreground" data-testid="text-email-error">
             {outcome.email_error}
           </div>
         )}
@@ -136,7 +136,7 @@ function ApproveResultNote({ outcome }: { outcome: ApproveOutcome }) {
     );
   }
   return (
-    <div className="text-[11px] text-muted-foreground" data-testid="text-already-approved">
+    <div className="text-label text-muted-foreground" data-testid="text-already-approved">
       Already approved.
     </div>
   );
@@ -161,7 +161,7 @@ function ActionButtons({
       <button
         onClick={onApprove}
         disabled={busy !== null}
-        className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-[11px] font-medium text-emerald-400 hover:bg-emerald-500/25 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+        className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-label font-medium text-emerald-400 hover:bg-emerald-500/25 transition-colors disabled:opacity-50 disabled:pointer-events-none"
         data-testid={`button-approve-${idKey}`}
       >
         {busy === "approve" ? (
@@ -174,7 +174,7 @@ function ActionButtons({
       <button
         onClick={onReject}
         disabled={busy !== null}
-        className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-red-500/10 border border-red-500/25 text-[11px] font-medium text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+        className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-red-500/10 border border-red-500/25 text-label font-medium text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50 disabled:pointer-events-none"
         data-testid={`button-reject-${idKey}`}
       >
         {busy === "reject" ? (
@@ -209,7 +209,7 @@ function EmailStatusBanner() {
         data-testid="banner-email-status"
       >
         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-        <div className="text-[11px] text-muted-foreground">
+        <div className="text-label text-muted-foreground">
           Email delivery is configured (sending as <span className="text-foreground">{from}</span>).
           {" "}Environment: <span className="text-foreground">{environment}</span> — approvals create
           accounts in this environment only.
@@ -224,7 +224,7 @@ function EmailStatusBanner() {
       data-testid="banner-email-status"
     >
       <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-      <div className="text-[11px] text-muted-foreground space-y-0.5">
+      <div className="text-label text-muted-foreground space-y-0.5">
         {mode === "missing_key" ? (
           <div>
             <span className="text-amber-400 font-medium">Email delivery is disabled</span> — no
@@ -262,7 +262,7 @@ function UserStatusBadge({ status }: { status: AdminUser["status"] }) {
   return (
     <span
       className={cn(
-        "text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none shrink-0",
+        "text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none shrink-0",
         cls,
       )}
       data-testid={`badge-user-status-${status}`}
@@ -281,7 +281,7 @@ function UserActionNote({ outcome, email }: { outcome: UserActionOutcome; email:
   if (outcome.email_sent) {
     return (
       <div
-        className="flex items-center gap-1.5 text-[11px] text-emerald-400"
+        className="flex items-center gap-1.5 text-label text-emerald-400"
         data-testid="text-user-action-emailed"
       >
         <CheckCircle2 className="w-3.5 h-3.5" /> New {noun} emailed to {email}
@@ -293,20 +293,20 @@ function UserActionNote({ outcome, email }: { outcome: UserActionOutcome; email:
       className="space-y-1 rounded-md border border-amber-400/25 bg-amber-400/5 p-2"
       data-testid="panel-user-action-fallback"
     >
-      <div className="text-[11px] text-amber-400">
+      <div className="text-label text-amber-400">
         Email could not be sent — share this {noun} with {email} manually
         {outcome.kind === "reset_link" ? " (expires in 1 hour)" : ""}:
       </div>
       {outcome.value && (
         <div className="flex items-center gap-2 min-w-0">
-          <code className="text-[11px] font-mono text-foreground bg-white/[0.05] px-1.5 py-0.5 rounded truncate">
+          <code className="text-label font-mono text-foreground bg-white/[0.05] px-1.5 py-0.5 rounded truncate">
             {outcome.value}
           </code>
           <CopyButton value={outcome.value} />
         </div>
       )}
       {outcome.email_error && (
-        <div className="text-[10px] text-muted-foreground" data-testid="text-user-action-email-error">
+        <div className="text-label text-muted-foreground" data-testid="text-user-action-email-error">
           {outcome.email_error}
         </div>
       )}
@@ -328,7 +328,7 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
   const disabled = user.status === "disabled";
 
   const actionBtn =
-    "flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-[10px] font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none";
+    "flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-label font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none";
 
   return (
     <div
@@ -338,8 +338,8 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
       <div className="flex items-center gap-3 flex-wrap">
         <Mail className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
         <div className="flex-1 min-w-0">
-          <div className="text-[12px] font-medium text-foreground truncate">{user.email}</div>
-          <div className="text-[10px] text-muted-foreground/60">
+          <div className="text-body font-medium text-foreground truncate">{user.email}</div>
+          <div className="text-label text-muted-foreground/60">
             Created {formatDate(user.created_at)}
             {user.last_login_at
               ? ` · Last login ${formatDate(user.last_login_at)}`
@@ -424,7 +424,7 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
             </button>
             {confirmRevoke ? (
               <span className="flex items-center gap-1.5">
-                <span className="text-[10px] text-red-400">Revoke access and sign them out?</span>
+                <span className="text-label text-red-400">Revoke access and sign them out?</span>
                 <button
                   onClick={() => {
                     setConfirmRevoke(false);
@@ -505,7 +505,7 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
       </div>
 
       {outcome && <UserActionNote outcome={outcome} email={user.email} />}
-      {error && <div className="text-[11px] text-red-400/90">{error}</div>}
+      {error && <div className="text-label text-red-400/90">{error}</div>}
     </div>
   );
 }
@@ -517,21 +517,21 @@ function UsersSection() {
   return (
     <section className="space-y-3">
       <div className="flex items-baseline justify-between">
-        <h2 className="text-[13px] font-semibold text-foreground">Provisioned users</h2>
-        <span className="text-[11px] text-muted-foreground">
+        <h2 className="text-body font-semibold text-foreground">Provisioned users</h2>
+        <span className="text-label text-muted-foreground">
           {users.data?.total ?? 0} total
         </span>
       </div>
       {users.isLoading ? (
-        <div className="flex items-center gap-2 text-[11px] text-muted-foreground py-6">
+        <div className="flex items-center gap-2 text-label text-muted-foreground py-6">
           <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading users…
         </div>
       ) : users.isError ? (
-        <div className="text-[11px] text-red-400/90 py-4">
+        <div className="text-label text-red-400/90 py-4">
           Could not load users. Refresh to try again.
         </div>
       ) : list.length === 0 ? (
-        <div className="text-[11px] text-muted-foreground/70 py-4">
+        <div className="text-label text-muted-foreground/70 py-4">
           No provisioned users yet — approve a request or waitlist entry to create the first
           account.
         </div>
@@ -571,11 +571,11 @@ function RequestCard({ entry, onChanged }: { entry: RequestAccessEntry; onChange
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-[13px] font-semibold text-foreground truncate">
+          <div className="text-body font-semibold text-foreground truncate">
             {entry.full_name}
           </div>
-          <div className="text-[11px] text-muted-foreground truncate">{entry.email}</div>
-          <div className="text-[10px] text-muted-foreground/60 mt-0.5">
+          <div className="text-label text-muted-foreground truncate">{entry.email}</div>
+          <div className="text-label text-muted-foreground/60 mt-0.5">
             Requested {formatDate(entry.created_at)}
           </div>
         </div>
@@ -588,14 +588,14 @@ function RequestCard({ entry, onChanged }: { entry: RequestAccessEntry; onChange
           .map((d) => (
             <div key={d.label} className="flex items-center gap-1.5 min-w-0">
               <d.icon className="w-3 h-3 text-muted-foreground/50 shrink-0" />
-              <span className="text-[10px] text-muted-foreground/70 shrink-0">{d.label}:</span>
-              <span className="text-[11px] text-foreground truncate">{d.value}</span>
+              <span className="text-label text-muted-foreground/70 shrink-0">{d.label}:</span>
+              <span className="text-label text-foreground truncate">{d.value}</span>
             </div>
           ))}
       </div>
 
       {outcome && <ApproveResultNote outcome={outcome} />}
-      {error && <div className="text-[11px] text-red-400/90">{error}</div>}
+      {error && <div className="text-label text-red-400/90">{error}</div>}
 
       <ActionButtons
         status={outcome ? "handled" : entry.status}
@@ -646,8 +646,8 @@ function WaitlistRow({ entry, onChanged }: { entry: WaitlistEntry; onChanged: ()
       <div className="flex items-center gap-3">
         <Mail className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
         <div className="flex-1 min-w-0">
-          <div className="text-[12px] font-medium text-foreground truncate">{entry.email}</div>
-          <div className="text-[10px] text-muted-foreground/60">
+          <div className="text-body font-medium text-foreground truncate">{entry.email}</div>
+          <div className="text-label text-muted-foreground/60">
             Joined {formatDate(entry.joined_at)}
           </div>
         </div>
@@ -682,7 +682,7 @@ function WaitlistRow({ entry, onChanged }: { entry: WaitlistEntry; onChanged: ()
         />
       </div>
       {outcome && <ApproveResultNote outcome={outcome} />}
-      {error && <div className="text-[11px] text-red-400/90">{error}</div>}
+      {error && <div className="text-label text-red-400/90">{error}</div>}
     </div>
   );
 }
@@ -722,7 +722,7 @@ function AdminLoginForm({ onSuccess }: { onSuccess: () => void }) {
           <div className="space-y-1.5">
             <label
               htmlFor="admin-password"
-              className="text-[11px] font-medium text-muted-foreground"
+              className="text-label font-medium text-muted-foreground"
             >
               Admin password
             </label>
@@ -739,14 +739,14 @@ function AdminLoginForm({ onSuccess }: { onSuccess: () => void }) {
             />
           </div>
           {error && (
-            <div className="text-[11px] text-red-400/90" data-testid="text-admin-login-error">
+            <div className="text-label text-red-400/90" data-testid="text-admin-login-error">
               {error}
             </div>
           )}
           <button
             type="submit"
             disabled={login.isPending || !password}
-            className="w-full h-9 rounded-md bg-primary text-primary-foreground text-[12px] font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-1.5"
+            className="w-full h-9 rounded-md bg-primary text-primary-foreground text-body font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-1.5"
             data-testid="button-admin-login"
           >
             {login.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
@@ -782,8 +782,8 @@ function AdminConsole({ onLogout }: { onLogout: () => void }) {
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-[16px] font-semibold text-foreground">Waitlist admin</h1>
-            <p className="text-[11px] text-muted-foreground">
+            <h1 className="text-base font-semibold text-foreground">Waitlist admin</h1>
+            <p className="text-label text-muted-foreground">
               Review access requests and waitlist signups. Approving creates an account and
               emails a temporary password.
             </p>
@@ -792,7 +792,7 @@ function AdminConsole({ onLogout }: { onLogout: () => void }) {
             onClick={() =>
               logout.mutate(undefined, { onSuccess: onLogout, onError: onLogout })
             }
-            className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+            className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-label font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
             data-testid="button-admin-logout"
           >
             <LogOut className="w-3 h-3" /> Sign out
@@ -803,21 +803,21 @@ function AdminConsole({ onLogout }: { onLogout: () => void }) {
 
         <section className="space-y-3">
           <div className="flex items-baseline justify-between">
-            <h2 className="text-[13px] font-semibold text-foreground">Access requests</h2>
-            <span className="text-[11px] text-muted-foreground">
+            <h2 className="text-body font-semibold text-foreground">Access requests</h2>
+            <span className="text-label text-muted-foreground">
               {requestEntries.length} total · {pendingRequests} pending
             </span>
           </div>
           {requests.isLoading ? (
-            <div className="flex items-center gap-2 text-[11px] text-muted-foreground py-6">
+            <div className="flex items-center gap-2 text-label text-muted-foreground py-6">
               <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading access requests…
             </div>
           ) : requests.isError ? (
-            <div className="text-[11px] text-red-400/90 py-4">
+            <div className="text-label text-red-400/90 py-4">
               Could not load access requests. Refresh to try again.
             </div>
           ) : requestEntries.length === 0 ? (
-            <div className="text-[11px] text-muted-foreground/70 py-4">
+            <div className="text-label text-muted-foreground/70 py-4">
               No access requests yet.
             </div>
           ) : (
@@ -835,21 +835,21 @@ function AdminConsole({ onLogout }: { onLogout: () => void }) {
 
         <section className="space-y-3">
           <div className="flex items-baseline justify-between">
-            <h2 className="text-[13px] font-semibold text-foreground">Waitlist emails</h2>
-            <span className="text-[11px] text-muted-foreground">
+            <h2 className="text-body font-semibold text-foreground">Waitlist emails</h2>
+            <span className="text-label text-muted-foreground">
               {waitlist.data?.total ?? 0} total · {pendingWaitlist} pending
             </span>
           </div>
           {waitlist.isLoading ? (
-            <div className="flex items-center gap-2 text-[11px] text-muted-foreground py-6">
+            <div className="flex items-center gap-2 text-label text-muted-foreground py-6">
               <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading waitlist…
             </div>
           ) : waitlist.isError ? (
-            <div className="text-[11px] text-red-400/90 py-4">
+            <div className="text-label text-red-400/90 py-4">
               Could not load the waitlist. Refresh to try again.
             </div>
           ) : waitlistEntries.length === 0 ? (
-            <div className="text-[11px] text-muted-foreground/70 py-4">
+            <div className="text-label text-muted-foreground/70 py-4">
               No waitlist signups yet.
             </div>
           ) : (

@@ -34,10 +34,10 @@ function IcpFact({
   return (
     <div>
       <div className="flex items-center gap-1 mb-0.5">
-        <Icon className="w-2.5 h-2.5 text-muted-foreground/60" />
-        <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
+        <Icon className="w-2.5 h-2.5 text-muted-foreground/80" />
+        <span className="text-label-xs font-semibold uppercase tracking-widest text-muted-foreground/80">{label}</span>
       </div>
-      <p className="text-[11.5px] text-foreground/80 leading-relaxed">{value}</p>
+      <p className="text-body text-foreground/90 leading-relaxed">{value}</p>
     </div>
   );
 }
@@ -63,8 +63,8 @@ function IcpProfileCard({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[13px] font-semibold text-foreground leading-tight">{profile.profile_name}</p>
-          <span className="text-[9px] font-mono text-muted-foreground/60">{profile.profile_id}</span>
+          <p className="text-body-lg font-semibold text-foreground leading-tight">{profile.profile_name}</p>
+          <span className="text-label-xs font-mono text-muted-foreground/80">{profile.profile_id}</span>
         </div>
         {profile.confidence_level && <ConfidenceBadge value={profile.confidence_level} />}
       </div>
@@ -83,21 +83,21 @@ function IcpProfileCard({
           {hasPerf && (
             <div className="rounded-lg border border-border/30 bg-white/[0.015] p-3">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">Real performance</span>
+                <span className="text-label-xs font-semibold uppercase tracking-widest text-muted-foreground/80">Real performance</span>
                 {perf?.confidence && <ConfidenceBadge value={perf.confidence} />}
               </div>
               <div className="flex items-center gap-5">
                 <div>
-                  <div className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">Spend</div>
-                  <div className="text-[14px] font-bold text-foreground tabular-nums">{perf?.spend != null ? fmtUSD(perf.spend, 0) : "—"}</div>
+                  <div className="text-label-xs font-semibold uppercase tracking-widest text-muted-foreground/80">Spend</div>
+                  <div className="text-body font-bold text-foreground tabular-nums">{perf?.spend != null ? fmtUSD(perf.spend, 0) : "—"}</div>
                 </div>
                 <div>
-                  <div className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">CPA</div>
-                  <div className="text-[14px] font-bold text-foreground tabular-nums">{perf?.cpa != null ? fmtUSD(perf.cpa) : "—"}</div>
+                  <div className="text-label-xs font-semibold uppercase tracking-widest text-muted-foreground/80">CPA</div>
+                  <div className="text-body font-bold text-foreground tabular-nums">{perf?.cpa != null ? fmtUSD(perf.cpa) : "—"}</div>
                 </div>
                 <div>
-                  <div className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">Link CVR</div>
-                  <div className="text-[14px] font-bold text-foreground tabular-nums">{perf?.cvr_link_pct != null ? fmtPct(perf.cvr_link_pct) : "—"}</div>
+                  <div className="text-label-xs font-semibold uppercase tracking-widest text-muted-foreground/80">Link CVR</div>
+                  <div className="text-body font-bold text-foreground tabular-nums">{perf?.cvr_link_pct != null ? fmtPct(perf.cvr_link_pct) : "—"}</div>
                 </div>
               </div>
             </div>
@@ -105,8 +105,8 @@ function IcpProfileCard({
           <IcpFact label="Message resonance" value={profile.message_resonance} Icon={MessageSquareQuote} />
           {profile.strategic_recommendation && (
             <div className="rounded-lg border border-primary/20 bg-primary/[0.05] p-3">
-              <div className="text-[9px] font-semibold uppercase tracking-widest text-primary/80 mb-0.5">Recommendation</div>
-              <p className="text-[11.5px] text-foreground/85 leading-relaxed">{profile.strategic_recommendation}</p>
+              <div className="text-label-xs font-semibold uppercase tracking-widest text-primary/80 mb-0.5">Recommendation</div>
+              <p className="text-label text-foreground/85 leading-relaxed">{profile.strategic_recommendation}</p>
             </div>
           )}
         </div>
@@ -114,14 +114,14 @@ function IcpProfileCard({
 
       {avatars && avatars.length > 0 && (
         <div className="mt-3 pt-3 border-t border-border/20 flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+          <span className="text-label-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
             Targeted by avatar{avatars.length === 1 ? "" : "s"}
           </span>
           {avatars.map((col) => (
             <button
               key={col.id}
               onClick={() => onAvatarClick?.(col.id)}
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors"
+              className="inline-flex items-center gap-1 text-label font-medium text-primary hover:text-primary/80 transition-colors"
               data-testid={`link-icp-avatar-${col.id}`}
             >
               {col.name.replace(/\n/g, " ")}
@@ -236,8 +236,8 @@ export function AvatarsView() {
                         <div
                           key={col.id}
                           ref={(el) => { avatarRefs.current[col.id] = el; }}
-                          className={`rounded-xl border bg-white/[0.02] transition-colors duration-500 scroll-mt-24 ${
-                            flashAvatar === col.id ? "border-primary/70 bg-primary/[0.06]" : "border-border/40 hover:border-border/60"
+                          className={`rounded-xl border bg-white/[0.02] transition-colors duration-500 scroll-mt-24 mx-card ${
+                            flashAvatar === col.id ? "border-primary/70 bg-primary/[0.06]" : "border-border/40 hover:border-primary/40"
                           }`}
                         >
                           <button
@@ -245,36 +245,36 @@ export function AvatarsView() {
                             className="w-full text-left p-4 hover:bg-white/[0.03] transition-colors rounded-xl"
                           >
                             <div className="flex items-center gap-2 mb-2">
-                              <div className="w-8 h-8 rounded-lg border border-primary/25 bg-primary/[0.08] flex items-center justify-center">
-                                <Users className="w-4 h-4 text-primary/70" />
+                              <div className="w-8 h-8 rounded-lg border border-primary/30 bg-primary/[0.08] flex items-center justify-center">
+                                <Users className="w-4 h-4 text-primary/80" />
                               </div>
                               <div className="min-w-0">
-                                <p className="text-[13px] font-semibold text-foreground leading-tight whitespace-pre-line">{col.name}</p>
-                                <span className="text-[9px] font-mono text-muted-foreground/60">{col.icp}</span>
+                                <p className="text-body-lg font-semibold text-foreground leading-tight whitespace-pre-line">{col.name}</p>
+                                <span className="text-label-xs font-mono text-muted-foreground/80">{col.icp}</span>
                               </div>
                             </div>
                             <div className="space-y-1.5 mt-3">
                               {cells.slice(0, 2).map((c) => (
-                                <p key={c.cell_id} className="text-[11px] text-muted-foreground/70 leading-snug">
-                                  <span className="font-mono text-[9px] text-muted-foreground/60 mr-1">{c.cell_id}</span>
+                                <p key={c.cell_id} className="text-body text-muted-foreground/90 leading-snug">
+                                  <span className="font-mono text-label-xs text-muted-foreground/70 mr-1">{c.cell_id}</span>
                                   {c.plain_text.headline ?? c.concept_code}
                                 </p>
                               ))}
                             </div>
-                            <div className="mt-3 pt-3 border-t border-border/20 text-[10px] text-muted-foreground/60">
+                            <div className="mt-3 pt-3 border-t border-border/20 text-label text-muted-foreground/80">
                               {cells.length} message angle{cells.length === 1 ? "" : "s"} · tap for details
                             </div>
                           </button>
                           {matched.length > 0 && (
                             <div className="px-4 pb-3 -mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-                              <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+                              <span className="text-label-xs font-semibold uppercase tracking-widest text-muted-foreground/80">
                                 ICP profile{matched.length === 1 ? "" : "s"}
                               </span>
                               {matched.map((p) => (
                                 <button
                                   key={p.profile_id}
                                   onClick={() => scrollToProfile(p.profile_id)}
-                                  className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors"
+                                  className="inline-flex items-center gap-1 text-label font-medium text-primary hover:text-primary/80 transition-colors"
                                   data-testid={`link-avatar-icp-${p.profile_id}`}
                                 >
                                   {p.profile_name}
@@ -338,7 +338,7 @@ export function AvatarsView() {
                       <button
                         key={p.profile_id}
                         onClick={() => { setDetail(null); setTimeout(() => scrollToProfile(p.profile_id), 60); }}
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors"
+                        className="inline-flex items-center gap-1 text-label font-medium text-primary hover:text-primary/80 transition-colors"
                         data-testid={`link-drawer-icp-${p.profile_id}`}
                       >
                         View ICP: {p.profile_name}

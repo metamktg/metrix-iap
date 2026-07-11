@@ -27,7 +27,7 @@ export function MetrixDataProvider({ children }: { children: React.ReactNode }) 
     return (
       <FullScreen>
         <Loader2 className="w-6 h-6 text-primary/70 animate-spin mx-auto" />
-        <p className="text-[13px] text-muted-foreground/70">Loading Metrix data…</p>
+        <p className="text-xs text-muted-foreground/70">Loading Metrix data…</p>
       </FullScreen>
     );
   }
@@ -36,14 +36,14 @@ export function MetrixDataProvider({ children }: { children: React.ReactNode }) 
     return (
       <FullScreen>
         <AlertTriangle className="w-6 h-6 text-amber-400/80 mx-auto" />
-        <p className="text-[14px] font-semibold text-foreground">Couldn't load Metrix data</p>
-        <p className="text-[12px] text-muted-foreground/70 leading-relaxed">
+        <p className="text-sm font-semibold text-foreground">Couldn't load Metrix data</p>
+        <p className="text-xs text-muted-foreground/70 leading-relaxed">
           The data service didn't respond. Check that the API server is running, then try again.
         </p>
         <button
           onClick={() => refetch()}
           disabled={isRefetching}
-          className="inline-flex items-center gap-1.5 text-[12px] font-medium text-primary border border-primary/30 bg-primary/10 hover:bg-primary/15 rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-primary border border-primary/30 bg-primary/10 hover:bg-primary/15 rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50"
         >
           <RefreshCw className={isRefetching ? "w-3.5 h-3.5 animate-spin" : "w-3.5 h-3.5"} />
           Retry

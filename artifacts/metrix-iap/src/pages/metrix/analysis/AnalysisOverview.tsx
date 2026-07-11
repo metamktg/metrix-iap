@@ -132,7 +132,7 @@ export function AnalysisOverview() {
               ) : (
                 <div>
                   <div className="px-6 pt-5 flex items-center justify-between mb-2">
-                    <h2 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60">Account totals</h2>
+                    <h2 className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Account totals</h2>
                     <MetricPickerButton catalog={metricCatalog} selected={selectedMetricIds} onToggle={toggle} onMove={move} onReset={reset} />
                   </div>
                   <div className="px-6 grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -155,16 +155,16 @@ export function AnalysisOverview() {
                 {controls && (
                   <SectionCard title="Core control reads" desc="The current control concept for each funnel depth." table="core_reanalysis_read">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                        <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5">Primary control</div>
-                        <p className="text-[13px] font-semibold text-foreground">{controls.primary_control}</p>
-                        <p className="text-[11px] text-muted-foreground/80 mt-1.5 leading-relaxed">{controls.primary_control_read}</p>
+                      <div className="mx-card-nested p-4">
+                        <div className="text-label-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5">Primary control</div>
+                        <p className="text-body-lg font-semibold text-foreground">{controls.primary_control}</p>
+                        <p className="text-body text-muted-foreground mt-1.5 leading-relaxed">{controls.primary_control_read}</p>
                       </div>
                       {controls.registration_control && (
-                        <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5">{term.Singular} control</div>
-                          <p className="text-[13px] font-semibold text-foreground">{controls.registration_control}</p>
-                          <p className="text-[11px] text-muted-foreground/80 mt-1.5 leading-relaxed">{controls.registration_control_read}</p>
+                        <div className="mx-card-nested p-4">
+                          <div className="text-label-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5">{term.Singular} control</div>
+                          <p className="text-body-lg font-semibold text-foreground">{controls.registration_control}</p>
+                          <p className="text-body text-muted-foreground mt-1.5 leading-relaxed">{controls.registration_control_read}</p>
                         </div>
                       )}
                     </div>
@@ -178,20 +178,19 @@ export function AnalysisOverview() {
                         key={s.to}
                         onClick={() => navigate(s.to)}
                         className={cn(
-                          "group text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2",
-                          "hover:border-primary/30 hover:bg-white/[0.035] hover:shadow-md hover:shadow-black/20",
-                          "active:scale-[0.99] transition-all duration-150"
+                          "group text-left mx-card-nested p-4 flex flex-col gap-2.5",
+                          "hover-elevate active-elevate"
                         )}
                       >
                         <div className="flex items-center gap-2">
-                          <s.Icon className="w-3.5 h-3.5 text-primary/70" />
-                          <span className="text-[13px] font-semibold text-foreground">{s.label}</span>
+                          <s.Icon className="w-4 h-4 text-primary" />
+                          <span className="text-body-lg font-semibold text-foreground">{s.label}</span>
                         </div>
-                        <p className="text-[11px] text-muted-foreground/80 leading-relaxed flex-1">{s.desc}</p>
-                        <div className="flex items-center justify-between mt-auto pt-1 border-t border-border/20">
-                          <span className="text-[10px] font-mono text-muted-foreground/70">{s.stat}</span>
-                          <span className="flex items-center gap-0.5 text-[10px] font-medium text-muted-foreground/40 group-hover:text-primary/60 transition-colors">
-                            Open <ArrowRight className="w-3 h-3" />
+                        <p className="text-body text-muted-foreground leading-relaxed flex-1">{s.desc}</p>
+                        <div className="flex items-center justify-between mt-auto pt-2 border-t border-border/20">
+                          <span className="text-label font-mono text-muted-foreground/70">{s.stat}</span>
+                          <span className="flex items-center gap-1 text-label font-medium text-primary/80 group-hover:text-primary transition-colors">
+                            Open <ArrowRight className="w-3.5 h-3.5" />
                           </span>
                         </div>
                       </button>

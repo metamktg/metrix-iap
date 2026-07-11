@@ -245,7 +245,7 @@ export function ReportHistoryView() {
                 <div className="px-6 pt-5 max-w-3xl flex items-center justify-between gap-3 flex-wrap">
                   {selectMode ? (
                     <>
-                      <span className="text-[12px] text-muted-foreground">
+                      <span className="text-body text-muted-foreground">
                         {selectedIds.size === 0
                           ? "Select reports to delete"
                           : `${fmtNum(selectedIds.size)} selected`}
@@ -256,7 +256,7 @@ export function ReportHistoryView() {
                             setSelectedIds(allSelected ? new Set() : new Set(deletableIds))
                           }
                           disabled={batchDeleting}
-                          className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-60"
+                          className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-label font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-60"
                         >
                           {allSelected ? "Deselect all" : `Select all (${fmtNum(deletableIds.length)})`}
                         </button>
@@ -266,7 +266,7 @@ export function ReportHistoryView() {
                               setSelectedIds(allDraftsSelected ? new Set() : new Set(draftIds))
                             }
                             disabled={batchDeleting}
-                            className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-60"
+                            className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-label font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-60"
                           >
                             {allDraftsSelected
                               ? "Deselect drafts"
@@ -276,7 +276,7 @@ export function ReportHistoryView() {
                         <button
                           onClick={exitSelectMode}
                           disabled={batchDeleting}
-                          className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-60"
+                          className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-label font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-60"
                         >
                           <X className="w-3.5 h-3.5" />
                           Cancel
@@ -284,7 +284,7 @@ export function ReportHistoryView() {
                         <button
                           onClick={() => setConfirmBulkDelete(true)}
                           disabled={selectedIds.size === 0 || batchDeleting}
-                          className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-red-400/30 text-[11px] font-medium text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-40"
+                          className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-red-400/30 text-label font-medium text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-40"
                         >
                           {batchDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                           Delete selected
@@ -294,7 +294,7 @@ export function ReportHistoryView() {
                   ) : (
                     <button
                       onClick={() => setSelectMode(true)}
-                      className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors ml-auto"
+                      className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-label font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors ml-auto"
                     >
                       <Check className="w-3.5 h-3.5" />
                       Select
@@ -340,10 +340,10 @@ export function ReportHistoryView() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="text-[13px] font-semibold text-foreground leading-tight">{r.title}</h3>
+                        <h3 className="text-body font-semibold text-foreground leading-tight">{r.title}</h3>
                         <span
                           className={cn(
-                            "text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none",
+                            "text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none",
                             r.status === "exported"
                               ? "text-emerald-400 border-emerald-400/25 bg-emerald-400/10"
                               : "text-amber-400 border-amber-400/25 bg-amber-400/10"
@@ -352,8 +352,8 @@ export function ReportHistoryView() {
                           {r.status}
                         </span>
                       </div>
-                      <p className="text-[11px] text-muted-foreground/80 mt-1 leading-relaxed">{r.summary}</p>
-                      <div className="flex items-center gap-3 mt-2 text-[10px] font-mono text-muted-foreground/70 flex-wrap">
+                      <p className="text-body text-muted-foreground/80 mt-1 leading-relaxed">{r.summary}</p>
+                      <div className="flex items-center gap-3 mt-2 text-label font-mono text-muted-foreground/70 flex-wrap">
                         <span>{fmtDate(r.generated_at)}</span>
                         <span className="inline-flex items-center gap-1">
                           {r.mode === "client" ? <Users className="w-3 h-3" /> : <Building2 className="w-3 h-3" />}
@@ -368,7 +368,7 @@ export function ReportHistoryView() {
                         onClick={() => download(r, r.export_format!)}
                         disabled={busyId !== null}
                         className={cn(
-                          "flex items-center gap-1.5 h-8 px-3 rounded-md border text-[11px] font-medium shrink-0 transition-colors disabled:opacity-60",
+                          "flex items-center gap-1.5 h-8 px-3 rounded-md border text-label font-medium shrink-0 transition-colors disabled:opacity-60",
                           doneId === r.id
                             ? "border-emerald-400/30 text-emerald-400 bg-emerald-400/5"
                             : "border-border/50 text-muted-foreground hover:text-foreground hover:bg-white/5"

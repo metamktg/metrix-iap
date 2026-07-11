@@ -99,9 +99,10 @@ describe("PlacementsView · Bookster (delivery-based, unchanged)", () => {
   it("still renders the V3/C4E delivery sections", () => {
     select("bookster");
     renderView();
-    expect(screen.getByText("V3 placement signal")).toBeTruthy();
-    expect(screen.getByText("C4E placement signal")).toBeTruthy();
+    // Delivery accounts render the combined V3 + C4E spend rollup
     expect(screen.getByText("Spend by placement")).toBeTruthy();
+    expect(screen.getAllByText(/V3 rows/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/C4E rows/).length).toBeGreaterThan(0);
     expect(screen.queryByText("No placement signal")).toBeNull();
   });
 });

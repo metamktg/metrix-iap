@@ -115,15 +115,15 @@ export function ConceptMapView() {
                   >
                     <div className="flex items-center gap-1.5 mb-1.5">
                       {g.cellIds.map((c) => (
-                        <span key={c} className="text-[9px] font-mono text-muted-foreground/70 border border-border/40 px-1 py-0.5 rounded leading-none">{c}</span>
+                        <span key={c} className="text-label-xs font-mono text-muted-foreground/70 border border-border/40 px-1 py-0.5 rounded leading-none">{c}</span>
                       ))}
                     </div>
-                    <p className="text-[13px] font-semibold text-foreground leading-tight">{g.name}</p>
+                    <p className="text-body font-semibold text-foreground leading-tight">{g.name}</p>
 
                     <div className="mt-3 h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
                       <div className="h-full bg-primary/50 rounded-full" style={{ width: `${Math.max((g.spend / maxSpend) * 100, 3)}%` }} />
                     </div>
-                    <div className="flex items-center justify-between mt-1.5 text-[10px] text-muted-foreground/60 tabular-nums">
+                    <div className="flex items-center justify-between mt-1.5 text-label text-muted-foreground/70 tabular-nums">
                       <span>{fmtUSD(g.spend, 0)} spend</span>
                       <span>{fmtNum(g.results)} results</span>
                     </div>
@@ -132,10 +132,10 @@ export function ConceptMapView() {
                       <Layers className="w-3 h-3 text-primary/50" />
                       {linked.length ? (
                         linked.map((p) => (
-                          <span key={p.id} className="text-[10px] text-primary/80 border border-primary/20 bg-primary/[0.06] px-1.5 py-0.5 rounded leading-none">{p.label}</span>
+                          <span key={p.id} className="text-label text-primary/80 border border-primary/20 bg-primary/[0.06] px-1.5 py-0.5 rounded leading-none">{p.label}</span>
                         ))
                       ) : (
-                        <span className="text-[10px] text-muted-foreground/60">No pillar linked yet</span>
+                        <span className="text-label text-muted-foreground/70">No pillar linked yet</span>
                       )}
                     </div>
                   </button>
@@ -166,8 +166,8 @@ export function ConceptMapView() {
                   <div className="space-y-1.5">
                     {detail.cells.map((r) => (
                       <div key={r.cell_id + r["Result type"]} className="flex items-center justify-between gap-2">
-                        <span className="text-[10px] text-muted-foreground/60">{r.cell_id} · {eventLabel(r["Result type"])}</span>
-                        <span className="text-[11px] text-foreground/80 tabular-nums">{fmtNum(r.Results)} · {r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"} CPA</span>
+                        <span className="text-label text-muted-foreground/70">{r.cell_id} · {eventLabel(r["Result type"])}</span>
+                        <span className="text-label text-foreground/80 tabular-nums">{fmtNum(r.Results)} · {r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"} CPA</span>
                       </div>
                     ))}
                   </div>
@@ -176,7 +176,7 @@ export function ConceptMapView() {
                   <div className="space-y-2">
                     {detail.cells.filter((r, i, arr) => arr.findIndex((x) => x.cell_id === r.cell_id) === i).map((r) => (
                       <div key={r.cell_id}>
-                        <span className="text-[9px] font-mono text-muted-foreground/70">{r.cell_id}</span>
+                        <span className="text-label-xs font-mono text-muted-foreground/70">{r.cell_id}</span>
                         <VariableCodeChips row={r} />
                       </div>
                     ))}
@@ -187,7 +187,7 @@ export function ConceptMapView() {
                   .map((p) => (
                     <DrawerField key={p.id} label={`Pillar · ${p.label}`}>
                       <p className="italic text-primary/80">"{p.plain_descriptor}"</p>
-                      <p className="mt-1 text-[11px] text-muted-foreground/70">{p.why_it_matters}</p>
+                      <p className="mt-1 text-label text-muted-foreground/70">{p.why_it_matters}</p>
                     </DrawerField>
                   ))}
                 <DrawerField label="Creatives">

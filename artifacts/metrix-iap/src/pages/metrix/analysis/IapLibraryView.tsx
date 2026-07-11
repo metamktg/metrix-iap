@@ -10,7 +10,7 @@
 // the library refreshes automatically.
 
 import { useState, useEffect, useMemo } from "react";
-import { Images } from "lucide-react";
+import { Images, AlertTriangle } from "lucide-react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import {
@@ -207,7 +207,7 @@ export function IapLibraryView() {
               <div className="mt-4 flex items-center justify-end px-6 pb-0">
                 <button
                   onClick={() => setCreativeLibraryOpen(true)}
-                  className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground/70 hover:text-foreground border border-border/40 hover:border-border/60 bg-white/[0.02] hover:bg-white/[0.04] px-2.5 py-1.5 rounded-md transition-colors"
+                  className="mx-secondary-btn px-3 py-1.5 text-label"
                 >
                   <Images className="w-3.5 h-3.5" />
                   Add creatives
@@ -228,20 +228,20 @@ export function IapLibraryView() {
                     {/* Unmapped warning banner */}
                     {unmappedCellIds.size > 0 && (
                       <div className="flex items-start gap-2.5 p-3 rounded-lg border border-amber-400/25 bg-amber-400/[0.04]">
-                        <span className="text-amber-400 text-[13px] shrink-0 mt-px">⚠</span>
+                        <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-px" />
                         <div className="flex-1 min-w-0 space-y-1">
-                          <p className="text-[11px] font-medium text-amber-300/90">
+                          <p className="text-body-lg font-medium text-amber-300/90">
                             {unmappedCellIds.size} creative {unmappedCellIds.size === 1 ? "cell" : "cells"} not fully mapped to IAP library
                           </p>
-                          <p className="text-[10px] text-muted-foreground/70 leading-relaxed">
+                          <p className="text-body text-muted-foreground/70 leading-relaxed">
                             {unmappedCellIds.size === 1 ? "This cell has" : "These cells have"} performance data but no library entry — variable codes, copy, and creative assets may be missing.
                           </p>
                         </div>
                         <button
                           onClick={() => setCreativeLibraryOpen(true)}
-                          className="shrink-0 flex items-center gap-1 text-[10px] font-medium text-amber-300 hover:text-amber-200 border border-amber-400/25 bg-amber-400/[0.06] hover:bg-amber-400/10 px-2.5 py-1.5 rounded transition-colors"
+                          className="shrink-0 flex items-center gap-1.5 text-label font-medium text-amber-300 hover:text-amber-200 border border-amber-400/25 bg-amber-400/[0.06] hover:bg-amber-400/10 px-2.5 py-1.5 rounded-md transition-colors hover-elevate"
                         >
-                          <Images className="w-3 h-3" />
+                          <Images className="w-3.5 h-3.5" />
                           Add creatives
                         </button>
                       </div>
@@ -263,7 +263,7 @@ export function IapLibraryView() {
                             expandFooter={
                               <button
                                 onClick={() => setDetail(row)}
-                                className="inline-flex items-center gap-1 text-[10px] font-medium text-primary/80 hover:text-primary border border-primary/20 bg-primary/[0.06] hover:bg-primary/10 px-1.5 py-0.5 rounded transition-colors"
+                                className="inline-flex items-center gap-1 text-label font-medium text-primary/80 hover:text-primary border border-primary/20 bg-primary/[0.06] hover:bg-primary/10 px-1.5 py-0.5 rounded transition-colors"
                               >
                                 Full detail
                               </button>
@@ -281,7 +281,7 @@ export function IapLibraryView() {
                 {tab === "top" && (
                   <div className="space-y-5">
                     <div>
-                      <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Top checkout cells</h3>
+                      <h3 className="text-label font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Top checkout cells</h3>
                       {topCells.length ? (
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                           {uniqueCellRows(topCells).map((row) => (
@@ -298,7 +298,7 @@ export function IapLibraryView() {
                               expandFooter={
                                 <button
                                   onClick={() => setDetail(row)}
-                                  className="inline-flex items-center gap-1 text-[10px] font-medium text-primary/80 hover:text-primary border border-primary/20 bg-primary/[0.06] hover:bg-primary/10 px-1.5 py-0.5 rounded transition-colors"
+                                  className="inline-flex items-center gap-1 text-label font-medium text-primary/80 hover:text-primary border border-primary/20 bg-primary/[0.06] hover:bg-primary/10 px-1.5 py-0.5 rounded transition-colors"
                                 >
                                   Full detail
                                 </button>
@@ -311,7 +311,7 @@ export function IapLibraryView() {
                       )}
                     </div>
                     <div>
-                      <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Top checkout variables</h3>
+                      <h3 className="text-label font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Top checkout variables</h3>
                       {topVariables.length ? <VariableTable rows={topVariables} /> : <PendingState title="No ranked variables" message="No ranked variables in the current metric selection." />}
                     </div>
                   </div>
@@ -356,10 +356,10 @@ export function IapLibraryView() {
                         if (!code || typeof code !== "string") return null;
                         return (
                           <div key={key} className="space-y-0.5">
-                            <span className="block text-[10px] text-muted-foreground/70 uppercase tracking-wide">{label}</span>
-                            <span className="block text-[11px] text-foreground/80">
+                            <span className="block text-label text-muted-foreground/70 uppercase tracking-wide">{label}</span>
+                            <span className="block text-label text-foreground/80">
                               {readableVariables(code)}
-                              <span className="ml-1.5 text-[8px] font-mono text-muted-foreground/60">{code}</span>
+                              <span className="ml-1.5 text-label-xs font-mono text-muted-foreground/60">{code}</span>
                             </span>
                           </div>
                         );
@@ -370,14 +370,14 @@ export function IapLibraryView() {
                     <DrawerField label="Feeds strategy pillars">
                       <div className="space-y-1">
                         {pillarsForCell(detail.cell_id).map((p) => (
-                          <div key={p.id} className="text-[11px] text-foreground/80">{p.label}</div>
+                          <div key={p.id} className="text-label text-foreground/80">{p.label}</div>
                         ))}
                       </div>
                     </DrawerField>
                   )}
                   {detail.legacy_library_match && (
                     <DrawerField label="Legacy library match">
-                      <span className="font-mono text-[10px] text-muted-foreground/60">{detail.legacy_library_match}</span>
+                      <span className="font-mono text-label text-muted-foreground/60">{detail.legacy_library_match}</span>
                     </DrawerField>
                   )}
                   <DrawerField label="Creative">

@@ -59,7 +59,7 @@ const SCOPE_STYLE: Record<string, string> = {
 
 function Badge({ text, cls }: { text: string; cls: string }) {
   return (
-    <span className={cn("text-[9px] font-semibold border px-1.5 py-0.5 rounded uppercase tracking-wide leading-none", cls)}>
+    <span className={cn("text-label-xs font-semibold border px-1.5 py-0.5 rounded uppercase tracking-wide leading-none", cls)}>
       {text}
     </span>
   );
@@ -94,10 +94,10 @@ function DetailDrawer({
       <div className="fixed right-0 top-0 h-full w-[400px] max-w-full bg-[hsl(222_61%_6%)] border-l border-border/50 z-50 flex flex-col overflow-hidden shadow-2xl">
         <div className="flex items-center gap-2 px-5 py-4 border-b border-border/40">
           <div className="flex-1 min-w-0">
-            <div className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest mb-1">
+            <div className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest mb-1">
               Recommendation
             </div>
-            <p className="text-[13px] font-semibold text-foreground leading-tight">{card.title}</p>
+            <p className="text-body font-semibold text-foreground leading-tight">{card.title}</p>
           </div>
           <button
             onClick={onClose}
@@ -116,27 +116,27 @@ function DetailDrawer({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Rationale</label>
-            <p className="text-[12px] text-foreground/80 leading-relaxed">{card.rationale}</p>
+            <label className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Rationale</label>
+            <p className="text-body text-foreground/80 leading-relaxed">{card.rationale}</p>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Recommended action</label>
-            <p className="text-[12px] text-foreground/80 leading-relaxed">{card.recommendedAction}</p>
+            <label className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Recommended action</label>
+            <p className="text-body text-foreground/80 leading-relaxed">{card.recommendedAction}</p>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Confidence</label>
-            <p className="text-[12px] text-foreground/80 capitalize">{card.confidence}</p>
+            <label className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Confidence</label>
+            <p className="text-body text-foreground/80 capitalize">{card.confidence}</p>
           </div>
 
           {onSegments && (
             <div className="space-y-1.5">
-              <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Evidence segments</label>
+              <label className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Evidence segments</label>
               <div>
                 <button
                   onClick={() => onSegments(card)}
-                  className="inline-flex items-center gap-1.5 text-[11px] font-medium text-primary border border-primary/30 bg-primary/10 hover:bg-primary/15 rounded-md px-2.5 py-1.5 transition-colors"
+                  className="inline-flex items-center gap-1.5 text-label font-medium text-primary border border-primary/30 bg-primary/10 hover:bg-primary/15 rounded-md px-2.5 py-1.5 transition-colors"
                 >
                   <LayoutGrid className="w-3 h-3" />
                   Avatar × placement drill-down
@@ -147,7 +147,7 @@ function DetailDrawer({
 
           <div className="flex items-start gap-2 p-3 rounded-lg border border-amber-400/15 bg-amber-400/[0.04]">
             <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-            <p className="text-[10px] text-amber-400/80 leading-relaxed">
+            <p className="text-label text-amber-400/80 leading-relaxed">
               Approving adds a manual implementation task. No auto-changes are applied to live campaigns.
             </p>
           </div>
@@ -156,13 +156,13 @@ function DetailDrawer({
         <div className="px-5 py-4 border-t border-border/40 flex items-center gap-2">
           <button
             onClick={() => { onReject(); onClose(); }}
-            className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded border border-border/50 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded border border-border/50 text-body font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
           >
             <X className="w-3.5 h-3.5" /> Reject
           </button>
           <button
             onClick={() => { onApprove(); onClose(); }}
-            className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded bg-primary/15 border border-primary/30 text-[12px] font-medium text-primary hover:bg-primary/25 transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded bg-primary/15 border border-primary/30 text-body font-medium text-primary hover:bg-primary/25 transition-colors"
           >
             <Check className="w-3.5 h-3.5" /> Approve
           </button>
@@ -261,13 +261,13 @@ function SwipeCard({
         {isTop && (
           <>
             <div
-              className="absolute top-4 left-4 text-[11px] font-bold uppercase tracking-widest text-emerald-400 border-2 border-emerald-400 rounded px-2 py-1 rotate-[-12deg]"
+              className="absolute top-4 left-4 text-label font-bold uppercase tracking-widest text-emerald-400 border-2 border-emerald-400 rounded px-2 py-1 rotate-[-12deg]"
               style={{ opacity: approveOpacity }}
             >
               Approve
             </div>
             <div
-              className="absolute top-4 right-4 text-[11px] font-bold uppercase tracking-widest text-red-400 border-2 border-red-400 rounded px-2 py-1 rotate-[12deg]"
+              className="absolute top-4 right-4 text-label font-bold uppercase tracking-widest text-red-400 border-2 border-red-400 rounded px-2 py-1 rotate-[12deg]"
               style={{ opacity: rejectOpacity }}
             >
               Reject
@@ -282,14 +282,14 @@ function SwipeCard({
         </div>
 
         <div>
-          <p className="text-[14px] font-semibold text-foreground leading-snug">{card.title}</p>
+          <p className="text-sm font-semibold text-foreground leading-snug">{card.title}</p>
         </div>
 
-        <p className="text-[12px] text-muted-foreground/70 leading-relaxed line-clamp-3">{card.rationale}</p>
+        <p className="text-body text-muted-foreground/70 leading-relaxed line-clamp-3">{card.rationale}</p>
 
         <div className="mt-auto pt-2 border-t border-border/20">
-          <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-1">Recommended</p>
-          <p className="text-[11px] text-foreground/75 leading-relaxed line-clamp-2">{card.recommendedAction}</p>
+          <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60 mb-1">Recommended</p>
+          <p className="text-label text-foreground/75 leading-relaxed line-clamp-2">{card.recommendedAction}</p>
         </div>
       </div>
     </div>
@@ -367,7 +367,7 @@ export function RecommendationDeck({
             key={t.id}
             onClick={() => setTab(t.id)}
             className={cn(
-              "flex items-center gap-1.5 h-9 px-3 text-[12px] font-medium border-b-2 transition-colors",
+              "flex items-center gap-1.5 h-9 px-3 text-body font-medium border-b-2 transition-colors",
               tab === t.id ? "border-primary text-foreground" : "border-transparent text-muted-foreground/60 hover:text-foreground"
             )}
           >
@@ -375,7 +375,7 @@ export function RecommendationDeck({
             {t.label}
             {t.count > 0 && (
               <span className={cn(
-                "text-[9px] font-bold px-1.5 py-0.5 rounded-full",
+                "text-label-xs font-bold px-1.5 py-0.5 rounded-full",
                 t.id === "tray" ? "bg-emerald-400/15 text-emerald-400"
                   : t.id === "dismissed" ? "bg-muted text-muted-foreground/60"
                   : "bg-primary/15 text-primary"
@@ -391,8 +391,8 @@ export function RecommendationDeck({
             <div className="w-10 h-10 rounded-xl border border-border/40 bg-white/[0.03] flex items-center justify-center">
               <CheckCircle2 className="w-4 h-4 text-emerald-400/60" />
             </div>
-            <p className="text-[13px] font-medium text-foreground/60">{emptyLabel}</p>
-            <p className="text-[11px] text-muted-foreground/60">Check the Task Tray for approved items.</p>
+            <p className="text-body font-medium text-foreground/60">{emptyLabel}</p>
+            <p className="text-label text-muted-foreground/60">Check the Task Tray for approved items.</p>
           </div>
         ) : (
           <div>
@@ -440,7 +440,7 @@ export function RecommendationDeck({
               </button>
             </div>
 
-            <div className="flex items-center justify-center gap-3 mt-3 text-[9px] text-muted-foreground/60 font-mono">
+            <div className="flex items-center justify-center gap-3 mt-3 text-label-xs text-muted-foreground/60 font-mono">
               <span>← reject</span>
               <span>→ approve</span>
               <span>↑ / space details</span>
@@ -451,7 +451,7 @@ export function RecommendationDeck({
               <div className="flex justify-center mt-3">
                 <button
                   onClick={() => onSegments(pending[0])}
-                  className="inline-flex items-center gap-1.5 text-[11px] font-medium text-primary/90 hover:text-primary border border-primary/25 bg-primary/[0.06] hover:bg-primary/10 rounded-md px-2.5 py-1.5 transition-colors"
+                  className="inline-flex items-center gap-1.5 text-label font-medium text-primary/90 hover:text-primary border border-primary/25 bg-primary/[0.06] hover:bg-primary/10 rounded-md px-2.5 py-1.5 transition-colors"
                 >
                   <LayoutGrid className="w-3 h-3" />
                   Avatar × placement for this card
@@ -500,7 +500,7 @@ function TaskTray({
     <div className="space-y-5">
       {groups.map((g) => (
         <div key={g.label}>
-          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">{g.label}</div>
+          <div className="text-label font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">{g.label}</div>
           <div className="space-y-2">
             {g.rows.map((s) => {
               const done = isDone(scopeId, s.id);
@@ -514,11 +514,11 @@ function TaskTray({
                     <Check className="w-2.5 h-2.5" />
                   </button>
                   <div className="flex-1 min-w-0">
-                    <p className={cn("text-[12px] font-medium leading-tight", done ? "text-foreground/50 line-through" : "text-foreground")}>{s.title}</p>
-                    <p className="text-[10px] text-muted-foreground/70 mt-0.5 leading-tight line-clamp-2">{s.recommendedAction}</p>
-                    {s.descriptor && <span className="inline-flex mt-1.5 text-[8px] font-semibold border border-border/40 px-1 py-0.5 rounded text-foreground/60">{s.descriptor}</span>}
+                    <p className={cn("text-body font-medium leading-tight", done ? "text-foreground/50 line-through" : "text-foreground")}>{s.title}</p>
+                    <p className="text-label text-muted-foreground/70 mt-0.5 leading-tight line-clamp-2">{s.recommendedAction}</p>
+                    {s.descriptor && <span className="inline-flex mt-1.5 text-label-xs font-semibold border border-border/40 px-1 py-0.5 rounded text-foreground/60">{s.descriptor}</span>}
                   </div>
-                  <button onClick={() => onRestore(s.id)} className="h-6 px-2 rounded text-[10px] font-medium text-muted-foreground hover:text-foreground border border-border/30 hover:border-border/50 transition-colors shrink-0" title="Restore to deck">
+                  <button onClick={() => onRestore(s.id)} className="h-6 px-2 rounded text-label font-medium text-muted-foreground hover:text-foreground border border-border/30 hover:border-border/50 transition-colors shrink-0" title="Restore to deck">
                     <RotateCcw className="w-3 h-3" />
                   </button>
                 </div>
@@ -542,10 +542,10 @@ function DismissedLog({ items, onRestore }: { items: DeckCard[]; onRestore: (id:
       {items.map((s) => (
         <div key={s.id} className="flex items-start gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.01] opacity-70">
           <div className="flex-1 min-w-0">
-            <p className="text-[12px] font-medium text-foreground/60 leading-tight">{s.title}</p>
-            <p className="text-[10px] text-muted-foreground/60 mt-0.5 leading-tight line-clamp-1">{s.rationale}</p>
+            <p className="text-body font-medium text-foreground/60 leading-tight">{s.title}</p>
+            <p className="text-label text-muted-foreground/60 mt-0.5 leading-tight line-clamp-1">{s.rationale}</p>
           </div>
-          <button onClick={() => onRestore(s.id)} className="h-6 px-2 rounded text-[10px] font-medium text-muted-foreground hover:text-foreground border border-border/30 hover:border-border/50 transition-colors shrink-0" title="Restore to deck">
+          <button onClick={() => onRestore(s.id)} className="h-6 px-2 rounded text-label font-medium text-muted-foreground hover:text-foreground border border-border/30 hover:border-border/50 transition-colors shrink-0" title="Restore to deck">
             <RotateCcw className="w-3 h-3" />
           </button>
         </div>
@@ -560,8 +560,8 @@ function EmptyPanel({ Icon, title, sub }: { Icon: React.ComponentType<{ classNam
       <div className="w-10 h-10 rounded-xl border border-border/40 bg-white/[0.03] flex items-center justify-center">
         <Icon className="w-4 h-4 text-muted-foreground/60" />
       </div>
-      <p className="text-[13px] font-medium text-foreground/60">{title}</p>
-      <p className="text-[11px] text-muted-foreground/60 max-w-xs">{sub}</p>
+      <p className="text-body font-medium text-foreground/60">{title}</p>
+      <p className="text-label text-muted-foreground/60 max-w-xs">{sub}</p>
     </div>
   );
 }
