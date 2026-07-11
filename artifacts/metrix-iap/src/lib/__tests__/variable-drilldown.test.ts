@@ -267,6 +267,66 @@ describe("computeVariableDrilldown — segment KPIs", () => {
   });
 });
 
+describe("computeVariableDrilldown — selectedResultTypes filtering", () => {
+  it("filters performance_by_cell to the selected result types before deriving carrier cells", () => {
+    const analysis = analysisWith({
+      performance_by_cell: [
+        // C1A carries HK_X with checkout — should be included
+        perfRow({ cell_id: "C1A", hook_variable: "HK_X", "Result type": "checkout", "Amount spent (USD)": 200, Results: 20, CPA_result: 10 }),
+        // C1B carries HK_X with install — should be excluded when filtering to checkout
+        perfRow({ cell_id: "C1B", hook_variable: "HK_X", "Result type": "install",  "Amount spent (USD)": 50,  Results: 5,  CPA_result: 10 }),
+        // C1C carries HK_Other — should never appear
+        perfRow({ cell_id: "C1C", hook_variable: "HK_Other", "Result type": "checkout", "Amount spent (USD)": 300, Results: 30, CPA_result: 10 }),
+      ],
+    });
+    const d = computeVariableDrilldown("HK_X", {
+      analysis,
+      mst: null,
+      variableRows: [],
+      selectedResultTypes: ["checkout"],
+    });
+    expect(d.carrierCellIds).toHaveLength(1);
+    expect(d.carrierCellIds[0]).toBe("C1A");
+  });
+
+  it("includes all rows when selectedResultTypes is null (no filter)", () => {
+    const analysis = analysisWith({
+      performance_by_cell: [
+        perfRow({ cell_id: "C1A", hook_variable: "HK_X", "Result type": "checkout" }),
+        perfRow({ cell_id: "C1B", hook_variable: "HK_X", "Result type": "install" }),
+      ],
+    });
+    const d = computeVariableDrilldown("HK_X", {
+      analysis,
+      mst: null,
+      variableRows: [],
+      selectedResultTypes: null,
+    });
+    expect(d.carrierCellIds).toHaveLength(2);
+    expect(d.carrierCellIds).toContain("C1A");
+    expect(d.carrierCellIds).toContain("C1B");
+  });
+
+  it("rankedCells spend aggregates only the filtered result type rows", () => {
+    const analysis = analysisWith({
+      performance_by_cell: [
+        perfRow({ cell_id: "C1A", hook_variable: "HK_X", "Result type": "checkout", "Amount spent (USD)": 200, Results: 20, CPA_result: 10 }),
+        perfRow({ cell_id: "C1A", hook_variable: "HK_X", "Result type": "install",  "Amount spent (USD)": 50,  Results: 5,  CPA_result: 10 }),
+      ],
+    });
+    // checkout filter: C1A's rankedCells spend should be 200, not 250
+    const filtered = computeVariableDrilldown("HK_X", {
+      analysis,
+      mst: null,
+      variableRows: [],
+      selectedResultTypes: ["checkout"],
+    });
+    expect(filtered.rankedCells).toHaveLength(1);
+    expect(filtered.rankedCells[0].cellId).toBe("C1A");
+    expect(filtered.rankedCells[0].spend).toBe(200);
+  });
+});
+
 describe("computeVariableDrilldown — text variants & family", () => {
   it("collects copy only from library cells carrying the code, dropping empty copy", () => {
     const mst = mstWithLibrary([
