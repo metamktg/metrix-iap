@@ -209,7 +209,7 @@ export interface SegmentAttribution {
 }
 
 /** Split a possibly-compound code string ("A + B") into individual codes. */
-function splitCodes(v: string | undefined | null): string[] {
+export function splitCodes(v: string | undefined | null): string[] {
   if (!v) return [];
   return v
     .split(/\s*\+\s*/)
@@ -217,7 +217,7 @@ function splitCodes(v: string | undefined | null): string[] {
     .filter(Boolean);
 }
 
-interface VariableCarrier {
+export interface VariableCarrier {
   hook_variable?: string;
   tone_variable?: string;
   framework_variable?: string;
@@ -227,7 +227,7 @@ interface VariableCarrier {
   cta_variable?: string;
 }
 
-function codesFromCarrier(c: VariableCarrier | null | undefined): string[] {
+export function codesFromCarrier(c: VariableCarrier | null | undefined): string[] {
   if (!c) return [];
   return [
     ...splitCodes(c.hook_variable),

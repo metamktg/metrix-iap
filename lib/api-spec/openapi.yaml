@@ -784,6 +784,44 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
   /metrix/admin/users:
+    post:
+      operationId: adminCreateUser
+      tags: [metrix]
+      summary: Create a user account directly from the admin console
+      description: Provisions a new user account on the spot with a generated temporary password. The temporary password is ALWAYS returned in the response so the admin can copy and share it immediately — email delivery is attempted as a courtesy but is never required for the flow to succeed. The user must change the password on first login. Refuses (409) when an account with this email already exists — use the resend-temp-password action instead. Requires admin access.
+      security:
+        - adminKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminCreateUserInput"
+      responses:
+        "200":
+          description: Account created — includes the temporary password to share
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminCreateUserResult"
+        "400":
+          description: Invalid email
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Missing or invalid admin credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: An account with this email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
     get:
       operationId: listAdminUsers
       tags: [metrix]
@@ -2575,6 +2613,37 @@ components:
       required:
         - status
         - email
+        - email_sent
+    AdminCreateUserInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 320
+      required:
+        - email
+    AdminCreateUserResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [created]
+        email:
+          type: string
+        temp_password:
+          type: string
+          description: Always present — shown on screen for the admin to copy and share directly, independent of email delivery.
+        email_sent:
+          type: boolean
+          description: Whether the courtesy email with the temporary password was delivered. The flow succeeds either way.
+        email_error:
+          type: string
+          description: Present only when the courtesy email could not be sent — explains why.
+      required:
+        - status
+        - email
+        - temp_password
         - email_sent
     AdminUserActionResult:
       type: object

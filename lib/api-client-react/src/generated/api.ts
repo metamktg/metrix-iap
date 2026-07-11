@@ -20,6 +20,8 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AdminCreateUserInput,
+  AdminCreateUserResult,
   AdminEmailStatus,
   AdminLoginInput,
   AdminResendTempPasswordResult,
@@ -1695,6 +1697,77 @@ export function useGetAdminEmailStatus<TData = Awaited<ReturnType<typeof getAdmi
 
 
 
+
+export const getAdminCreateUserUrl = () => {
+
+
+
+
+  return `/api/metrix/admin/users`
+}
+
+/**
+ * Provisions a new user account on the spot with a generated temporary password. The temporary password is ALWAYS returned in the response so the admin can copy and share it immediately — email delivery is attempted as a courtesy but is never required for the flow to succeed. The user must change the password on first login. Refuses (409) when an account with this email already exists — use the resend-temp-password action instead. Requires admin access.
+ * @summary Create a user account directly from the admin console
+ */
+export const adminCreateUser = async (adminCreateUserInput: AdminCreateUserInput, options?: RequestInit): Promise<AdminCreateUserResult> => {
+
+  return customFetch<AdminCreateUserResult>(getAdminCreateUserUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminCreateUserInput)
+  }
+);}
+
+
+
+
+export const getAdminCreateUserMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateUser>>, TError,{data: BodyType<AdminCreateUserInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminCreateUser>>, TError,{data: BodyType<AdminCreateUserInput>}, TContext> => {
+
+const mutationKey = ['adminCreateUser'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminCreateUser>>, {data: BodyType<AdminCreateUserInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminCreateUser(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminCreateUserMutationResult = NonNullable<Awaited<ReturnType<typeof adminCreateUser>>>
+    export type AdminCreateUserMutationBody = BodyType<AdminCreateUserInput>
+    export type AdminCreateUserMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Create a user account directly from the admin console
+ */
+export const useAdminCreateUser = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateUser>>, TError,{data: BodyType<AdminCreateUserInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminCreateUser>>,
+        TError,
+        {data: BodyType<AdminCreateUserInput>},
+        TContext
+      > => {
+      return useMutation(getAdminCreateUserMutationOptions(options));
+    }
 
 export const getListAdminUsersUrl = () => {
 

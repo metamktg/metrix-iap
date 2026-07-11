@@ -20,6 +20,7 @@ import {
   useRejectRequestAccessEntry,
   useGetAdminEmailStatus,
   useListAdminUsers,
+  useAdminCreateUser,
   useAdminResendTempPassword,
   useAdminSendPasswordReset,
   useAdminRevokeUser,
@@ -50,6 +51,7 @@ import {
   Link2,
   UserX,
   UserCheck,
+  UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -510,6 +512,121 @@ function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }
   );
 }
 
+type CreateUserOutcome = {
+  email: string;
+  temp_password: string;
+  email_sent: boolean;
+  email_error?: string;
+};
+
+function CreateUserForm({ onCreated }: { onCreated: () => void }) {
+  const createUser = useAdminCreateUser();
+  const [email, setEmail] = useState("");
+  const [outcome, setOutcome] = useState<CreateUserOutcome | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (createUser.isPending || !email.trim()) return;
+    setError(null);
+    setOutcome(null);
+    createUser.mutate(
+      { data: { email: email.trim() } },
+      {
+        onSuccess: (res) => {
+          setOutcome({
+            email: res.email,
+            temp_password: res.temp_password,
+            email_sent: res.email_sent,
+            email_error: res.email_error,
+          });
+          setEmail("");
+          onCreated();
+        },
+        onError: (err) => {
+          const status = (err as { status?: number }).status;
+          const message = (err as { data?: { message?: string } }).data?.message;
+          if (status === 409) {
+            setError(
+              message ??
+                "An account with this email already exists. Use “New temp password” on that user below instead.",
+            );
+          } else if (status === 400) {
+            setError(message ?? "Please enter a valid email address.");
+          } else {
+            setError("Could not create the account. Please try again.");
+          }
+        },
+      },
+    );
+  };
+
+  return (
+    <div
+      className="rounded-lg border border-border/30 bg-white/[0.02] p-3 space-y-2"
+      data-testid="section-create-user"
+    >
+      <div className="text-[11px] text-muted-foreground">
+        Create an account instantly — the temporary password is shown here to copy and
+        share, no email required.
+      </div>
+      <form onSubmit={submit} className="flex items-center gap-2" data-testid="form-create-user">
+        <input
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="new.user@company.com"
+          className={cn(INPUT_CLS, "flex-1 min-w-0")}
+          data-testid="input-create-user-email"
+        />
+        <button
+          type="submit"
+          disabled={createUser.isPending || !email.trim()}
+          className="flex items-center gap-1.5 h-9 px-3 rounded-md bg-primary text-primary-foreground text-[11px] font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:pointer-events-none shrink-0"
+          data-testid="button-create-user"
+        >
+          {createUser.isPending ? (
+            <Loader2 className="w-3 h-3 animate-spin" />
+          ) : (
+            <UserPlus className="w-3 h-3" />
+          )}
+          Create user
+        </button>
+      </form>
+      {outcome && (
+        <div
+          className="space-y-1 rounded-md border border-emerald-400/25 bg-emerald-400/5 p-2"
+          data-testid="panel-created-user"
+        >
+          <div className="text-[11px] text-emerald-400">
+            Account created for {outcome.email} — share this temporary password (they must
+            change it on first login):
+          </div>
+          <div className="flex items-center gap-2">
+            <code className="text-[12px] font-mono text-foreground bg-white/[0.05] px-1.5 py-0.5 rounded">
+              {outcome.temp_password}
+            </code>
+            <CopyButton value={outcome.temp_password} />
+          </div>
+          <div className="text-[10px] text-muted-foreground" data-testid="text-create-user-email-note">
+            {outcome.email_sent
+              ? `Also emailed to ${outcome.email}.`
+              : outcome.email_error
+                ? `Email not sent: ${outcome.email_error}`
+                : "Email not sent."}
+          </div>
+        </div>
+      )}
+      {error && (
+        <div className="text-[11px] text-red-400/90" data-testid="text-create-user-error">
+          {error}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function UsersSection() {
   const users = useListAdminUsers();
   const list = users.data?.users ?? [];
@@ -522,6 +639,7 @@ function UsersSection() {
           {users.data?.total ?? 0} total
         </span>
       </div>
+      <CreateUserForm onCreated={() => void users.refetch()} />
       {users.isLoading ? (
         <div className="flex items-center gap-2 text-[11px] text-muted-foreground py-6">
           <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading users…

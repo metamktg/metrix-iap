@@ -29,3 +29,4 @@
 - [Vite HMR module-graph corruption](vite-hmr-module-graph.md) — after mass edits, phantom provider/hook crashes at nonexistent line numbers mean a corrupted HMR graph; restart the dev workflow before browser testing.
 - [Metrix IAP visual revert](metrix-iap-visual-revert.md) — user rejected the dense redesign; keep production visual identity, never reintroduce combined-analysis views or text-label-* utilities.
 - [Metrix demographic row grains](metrix-demographic-grains.md) — demographic exports can carry an ACCOUNT aggregate grain overlapping per-cell rows; summing both double-counts — scope via segment-analytics helpers.
+- [metrix-iap vitest OOM](metrix-iap-vitest-oom.md) — parallel jsdom test runs die silently (exit -1, no output); run with --pool=forks --maxWorkers=1, don't read the silent kill as broken tests.

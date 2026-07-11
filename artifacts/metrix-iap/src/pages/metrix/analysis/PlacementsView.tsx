@@ -1,7 +1,10 @@
 // ─── Analysis · Placements ────────────────────────────────────────────
-// Placement delivery signal across the account's analysis runs, with
-// per-placement rollups. Click a placement bar to open a detail dialog
-// showing the full V3 + C4E rows for that placement.
+// Placement delivery signal across the account's analysis runs. Each
+// placement gets a data-rich row (spend, results, CPA, CTR, CPM) that
+// can be re-ranked by any KPI, plus paired spend-share vs result-share
+// bars that make efficiency mismatches visible at a glance. Click a
+// placement to open a detail dialog benchmarked against the account
+// average with the full V3 + C4E rows.
 
 import { useMemo, useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
@@ -9,7 +12,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
-  SectionCard, CaveatNote, fmtUSD, fmtNum, resultTerm,
+  SectionCard, CaveatNote, fmtUSD, fmtNum, fmtPct, resultTerm,
   RangeScopeBar, NoDataInRangeState,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
@@ -19,8 +22,56 @@ import { LayoutGrid, ChevronRight, BarChart2 } from "lucide-react";
 import type { ConversionTrackingSignal, PlacementRow } from "@/lib/data/seedTypes";
 import { ConversionFunnelTable } from "./tables";
 import { cn } from "@/lib/utils";
+import { RankSortBar, KpiStat, sortByRankMetric, useRankMetric, type RankMetric } from "./rankSort";
 
 const SECTION = "Analysis · 03";
+const RANK_STORAGE_KEY = "metrix.placements.rank.v1";
+
+// ─── Rollup ───────────────────────────────────────────────────────────
+
+interface PlacementRollup {
+  placement: string;
+  spend: number;
+  results: number;
+  impressions: number;
+  linkClicks: number;
+  cpa: number | null;
+  ctr: number | null;
+  cpm: number | null;
+  cpc: number | null;
+}
+
+function rollupPlacements(rows: PlacementRow[]): PlacementRollup[] {
+  const byPlacement = new Map<string, { spend: number; results: number; impressions: number; linkClicks: number }>();
+  for (const r of rows) {
+    const s = byPlacement.get(r.Placement) ?? { spend: 0, results: 0, impressions: 0, linkClicks: 0 };
+    s.spend += r["Amount spent (USD)"];
+    s.results += r.Results;
+    s.impressions += r.Impressions;
+    s.linkClicks += r["Link clicks"];
+    byPlacement.set(r.Placement, s);
+  }
+  return [...byPlacement.entries()].map(([placement, s]) => ({
+    placement,
+    ...s,
+    cpa: s.results > 0 ? s.spend / s.results : null,
+    ctr: s.impressions > 0 ? (s.linkClicks / s.impressions) * 100 : null,
+    cpm: s.impressions > 0 ? (s.spend / s.impressions) * 1000 : null,
+    cpc: s.linkClicks > 0 ? s.spend / s.linkClicks : null,
+  }));
+}
+
+function buildRankMetrics(resultPlural: string): RankMetric<PlacementRollup>[] {
+  return [
+    { id: "spend", label: "Spend", direction: "desc", value: (p) => p.spend, format: (v) => fmtUSD(v, 0) },
+    { id: "results", label: resultPlural, direction: "desc", value: (p) => (p.results > 0 ? p.results : null), format: (v) => fmtNum(v) },
+    { id: "cpa", label: "CPA", direction: "asc", value: (p) => p.cpa, format: (v) => fmtUSD(v) },
+    { id: "ctr", label: "Link CTR", direction: "desc", value: (p) => p.ctr, format: (v) => fmtPct(v) },
+    { id: "cpm", label: "CPM", direction: "asc", value: (p) => p.cpm, format: (v) => fmtUSD(v) },
+    { id: "cpc", label: "CPC", direction: "asc", value: (p) => p.cpc, format: (v) => fmtUSD(v) },
+    { id: "impressions", label: "Impressions", direction: "desc", value: (p) => p.impressions, format: (v) => fmtNum(v) },
+  ];
+}
 
 // ─── Placement detail dialog ──────────────────────────────────────────
 
@@ -28,18 +79,47 @@ interface PlacementDetailDialogProps {
   placement: string | null;
   v3Rows: PlacementRow[];
   c4eRows: PlacementRow[];
+  /** Account-level rollup across all placements, for benchmarking. */
+  accountRollup: PlacementRollup[];
   onClose: () => void;
 }
 
-function PlacementDetailDialog({ placement, v3Rows, c4eRows, onClose }: PlacementDetailDialogProps) {
+function deltaLabel(value: number | null, benchmark: number | null, lowerIsBetter: boolean): { text: string; good: boolean } | null {
+  if (value == null || benchmark == null || benchmark <= 0) return null;
+  const pct = ((value - benchmark) / benchmark) * 100;
+  if (!Number.isFinite(pct)) return null;
+  const good = lowerIsBetter ? pct < 0 : pct > 0;
+  const sign = pct >= 0 ? "+" : "";
+  return { text: `${sign}${pct.toFixed(0)}% vs account avg`, good };
+}
+
+function PlacementDetailDialog({ placement, v3Rows, c4eRows, accountRollup, onClose }: PlacementDetailDialogProps) {
   if (!placement) return null;
   const v3 = v3Rows.filter((r) => r.Placement === placement);
   const c4e = c4eRows.filter((r) => r.Placement === placement);
-  const allRows = [...v3, ...c4e];
-  const totalSpend = allRows.reduce((n, r) => n + r["Amount spent (USD)"], 0);
-  const totalResults = allRows.reduce((n, r) => n + r.Results, 0);
-  const totalImpressions = allRows.reduce((n, r) => n + r.Impressions, 0);
-  const cpa = totalResults > 0 ? totalSpend / totalResults : null;
+  const own = rollupPlacements([...v3, ...c4e])[0] ?? null;
+
+  // Account-average benchmark across all placements.
+  const accSpend = accountRollup.reduce((n, p) => n + p.spend, 0);
+  const accResults = accountRollup.reduce((n, p) => n + p.results, 0);
+  const accImpr = accountRollup.reduce((n, p) => n + p.impressions, 0);
+  const accClicks = accountRollup.reduce((n, p) => n + p.linkClicks, 0);
+  const accCpa = accResults > 0 ? accSpend / accResults : null;
+  const accCtr = accImpr > 0 ? (accClicks / accImpr) * 100 : null;
+  const accCpm = accImpr > 0 ? (accSpend / accImpr) * 1000 : null;
+
+  const tiles: { label: string; value: string; delta: { text: string; good: boolean } | null }[] = own
+    ? [
+        { label: "Spend", value: fmtUSD(own.spend, 0), delta: null },
+        { label: "Results", value: fmtNum(own.results), delta: null },
+        { label: "Impressions", value: fmtNum(own.impressions), delta: null },
+        { label: "Link clicks", value: fmtNum(own.linkClicks), delta: null },
+        { label: "CPA", value: own.cpa != null ? fmtUSD(own.cpa) : "—", delta: deltaLabel(own.cpa, accCpa, true) },
+        { label: "Link CTR", value: own.ctr != null ? fmtPct(own.ctr) : "—", delta: deltaLabel(own.ctr, accCtr, false) },
+        { label: "CPM", value: own.cpm != null ? fmtUSD(own.cpm) : "—", delta: deltaLabel(own.cpm, accCpm, true) },
+        { label: "CPC", value: own.cpc != null ? fmtUSD(own.cpc) : "—", delta: null },
+      ]
+    : [];
 
   function PlacementRowGroup({ rows, label }: { rows: PlacementRow[]; label: string }) {
     if (rows.length === 0) return null;
@@ -47,12 +127,13 @@ function PlacementDetailDialog({ placement, v3Rows, c4eRows, onClose }: Placemen
       <div className="space-y-1">
         <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">{label}</p>
         <div className="rounded-lg border border-border/40 overflow-hidden">
-          {rows.sort((a, b) => b["Amount spent (USD)"] - a["Amount spent (USD)"]).map((r, i) => (
+          {[...rows].sort((a, b) => b["Amount spent (USD)"] - a["Amount spent (USD)"]).map((r, i) => (
             <div key={i} className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border/20 last:border-b-0 bg-white/[0.01]">
               <div className="min-w-0">
                 <div className="text-[11px] font-medium text-foreground truncate">{r.Placement}</div>
                 <div className="text-[9px] font-mono text-muted-foreground/50 mt-0.5">
                   {fmtNum(r.Impressions)} impr · {fmtNum(r["Link clicks"] ?? 0)} clicks
+                  {r.CPA != null && ` · CPA ${fmtUSD(r.CPA)}`}
                 </div>
               </div>
               <div className="shrink-0 text-right">
@@ -82,17 +163,17 @@ function PlacementDetailDialog({ placement, v3Rows, c4eRows, onClose }: Placemen
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Top-line */}
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { label: "Spend", value: fmtUSD(totalSpend, 0) },
-              { label: "Results", value: fmtNum(totalResults) },
-              { label: "Impressions", value: fmtNum(totalImpressions) },
-              { label: "CPA", value: cpa != null ? fmtUSD(cpa) : "—" },
-            ].map(({ label, value }) => (
+          {/* Top-line with account-average benchmarks */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {tiles.map(({ label, value, delta }) => (
               <div key={label} className="rounded-lg border border-border/40 bg-white/[0.02] px-3 py-2.5">
                 <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-0.5">{label}</div>
-                <div className="text-[18px] font-bold text-foreground tabular-nums leading-none">{value}</div>
+                <div className="text-[16px] font-bold text-foreground tabular-nums leading-none">{value}</div>
+                {delta && (
+                  <div className={cn("text-[9px] mt-1 leading-none", delta.good ? "text-emerald-300/80" : "text-amber-300/80")}>
+                    {delta.text}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -105,7 +186,7 @@ function PlacementDetailDialog({ placement, v3Rows, c4eRows, onClose }: Placemen
   );
 }
 
-// ─── Conversion sections (unchanged from original) ────────────────────
+// ─── Conversion sections (unchanged) ──────────────────────────────────
 
 function ConversionTrackingSections({ cts }: { cts: ConversionTrackingSignal }) {
   const windowLabel =
@@ -155,25 +236,30 @@ export function PlacementsView() {
 
   const [selectedPlacement, setSelectedPlacement] = useState<string | null>(null);
 
-  const rollup = useMemo(() => {
-    const all = [...(analysis?.v3_placement_signal ?? []), ...(analysis?.c4e_placement_signal ?? [])];
-    const byPlacement = new Map<string, { placement: string; spend: number; results: number; impressions: number }>();
-    for (const r of all) {
-      const s = byPlacement.get(r.Placement) ?? { placement: r.Placement, spend: 0, results: 0, impressions: 0 };
-      s.spend += r["Amount spent (USD)"];
-      s.results += r.Results;
-      s.impressions += r.Impressions;
-      byPlacement.set(r.Placement, s);
-    }
-    return [...byPlacement.values()].sort((a, b) => b.spend - a.spend);
-  }, [analysis]);
+  const rollup = useMemo(
+    () =>
+      rollupPlacements([
+        ...(analysis?.v3_placement_signal ?? []),
+        ...(analysis?.c4e_placement_signal ?? []),
+      ]),
+    [analysis]
+  );
+
+  const term = account ? resultTerm(account) : { singular: "result", plural: "results", Plural: "Results" };
+  const rankMetrics = useMemo(() => buildRankMetrics(term.Plural), [term.Plural]);
+  const { activeId, select } = useRankMetric(
+    RANK_STORAGE_KEY,
+    rankMetrics.map((m) => m.id),
+    "spend"
+  );
+  const activeMetric = rankMetrics.find((m) => m.id === activeId) ?? rankMetrics[0];
+  const ranked = useMemo(() => sortByRankMetric(rollup, activeMetric), [rollup, activeMetric]);
 
   return (
     <>
       <ModuleScopeGate section={SECTION} title="Placements" account={account}>
         {() => {
           const acct = account!;
-          const term = resultTerm(acct);
           const v3 = analysis?.v3_placement_signal ?? [];
           const c4e = analysis?.c4e_placement_signal ?? [];
           const cts = analysis?.conversion_tracking_signal ?? null;
@@ -235,15 +321,15 @@ export function PlacementsView() {
           // ── Delivery-based (V3 / C4E) ────────────────────────────────
           const totalSpend = rollup.reduce((n, s) => n + s.spend, 0);
           const totalResults = rollup.reduce((n, s) => n + s.results, 0);
-          const top = rollup[0];
-          const maxSpend = Math.max(...rollup.map((s) => s.spend), 1);
+          const best = ranked[0];
+          const maxMetricValue = Math.max(...ranked.map((p) => activeMetric.value(p) ?? 0), 0);
 
           return (
             <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
               <ModuleHeader
                 section={SECTION}
                 title="Placements"
-                subtitle="Where delivery happened and what each placement produced. Click a bar to inspect V3 + C4E rows."
+                subtitle="Where delivery happened and what each placement produced. Re-rank by any KPI; click a placement for the full breakdown."
                 table="v3_placement_signal, c4e_placement_signal"
               />
               <ScopeBanner account={acct} />
@@ -256,14 +342,22 @@ export function PlacementsView() {
               <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
                 <MetricTile label="Placements" value={fmtNum(rollup.length)} />
                 <MetricTile label="Placement spend" value={fmtUSD(totalSpend, 0)} />
-                <MetricTile label="Results" value={fmtNum(totalResults)} />
-                <MetricTile label="Top placement" value={top?.placement ?? "—"} sub={top ? `${fmtUSD(top.spend, 0)} spend` : undefined} />
+                <MetricTile label={term.Plural} value={fmtNum(totalResults)} />
+                <MetricTile
+                  label={`Best · ${activeMetric.label}`}
+                  value={best?.placement ?? "—"}
+                  sub={
+                    best && activeMetric.value(best) != null
+                      ? `${activeMetric.format(activeMetric.value(best)!)} ${activeMetric.label.toLowerCase()}`
+                      : undefined
+                  }
+                />
               </div>
 
               <div className="px-6 py-5 space-y-4 max-w-5xl">
                 <SectionCard
                   title="Spend by placement"
-                  desc="Combined across the V3 and C4E signals. Click any row to inspect the underlying data."
+                  desc="Combined across the V3 and C4E signals. Paired bars compare each placement's share of spend against its share of results — a longer green bar means the placement over-delivers for its budget."
                 >
                   {rollup.length > 1 && (
                     <div className="mb-4">
@@ -277,38 +371,82 @@ export function PlacementsView() {
                       />
                     </div>
                   )}
+
+                  <RankSortBar metrics={rankMetrics} activeId={activeMetric.id} onSelect={select} className="mb-3" />
+
                   <div className="space-y-1.5">
-                    {rollup.map((s) => (
-                      <button
-                        key={s.placement}
-                        onClick={() => setSelectedPlacement(s.placement)}
-                        className={cn(
-                          "w-full text-left rounded-lg px-3 py-2.5 border border-border/30 bg-white/[0.01]",
-                          "hover:border-primary/25 hover:bg-primary/[0.03] active:scale-[0.995]",
-                          "transition-all duration-100 group"
-                        )}
-                      >
-                        <div className="flex items-center justify-between text-[12px] mb-1.5 gap-3">
-                          <span className="text-foreground/90 font-medium">{s.placement}</span>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-muted-foreground/70 tabular-nums text-[11px]">
-                              {fmtUSD(s.spend, 0)} · {fmtNum(s.results)} results · {fmtNum(s.impressions)} impr
+                    {ranked.map((s, idx) => {
+                      const spendShare = totalSpend > 0 ? (s.spend / totalSpend) * 100 : 0;
+                      const resultShare = totalResults > 0 ? (s.results / totalResults) * 100 : 0;
+                      const efficiency =
+                        spendShare > 0 && totalResults > 0 ? resultShare / spendShare : null;
+                      const v = activeMetric.value(s);
+                      return (
+                        <button
+                          key={s.placement}
+                          onClick={() => setSelectedPlacement(s.placement)}
+                          data-testid={`row-placement-${s.placement}`}
+                          className={cn(
+                            "w-full text-left rounded-lg px-3 py-2.5 border border-border/30 bg-white/[0.01]",
+                            "hover:border-primary/25 hover:bg-primary/[0.03] active:scale-[0.995]",
+                            "transition-all duration-100 group"
+                          )}
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="w-5 shrink-0 text-[10px] font-mono text-muted-foreground/40 tabular-nums">
+                              {idx + 1}
                             </span>
-                            <ChevronRight className="w-3 h-3 text-muted-foreground/40 group-hover:text-primary/60 transition-colors" />
+                            <div className="min-w-0 w-44 shrink-0">
+                              <div className="text-[12px] font-medium text-foreground/90 truncate">{s.placement}</div>
+                              {efficiency != null && (
+                                <div
+                                  className={cn(
+                                    "text-[8px] font-mono uppercase tracking-wider mt-0.5",
+                                    efficiency >= 1 ? "text-emerald-300/80" : "text-muted-foreground/50"
+                                  )}
+                                  title="Share of results ÷ share of spend — above 1× means this placement produces more than its budget share."
+                                >
+                                  {efficiency.toFixed(1)}× result efficiency
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 grid grid-cols-3 sm:grid-cols-5 gap-x-3 gap-y-1 min-w-0">
+                              <KpiStat label="Spend" value={fmtUSD(s.spend, 0)} highlight={activeMetric.id === "spend"} />
+                              <KpiStat label={term.Plural} value={fmtNum(s.results)} highlight={activeMetric.id === "results"} />
+                              <KpiStat label="CPA" value={s.cpa != null ? fmtUSD(s.cpa) : "—"} highlight={activeMetric.id === "cpa"} />
+                              <KpiStat label="Link CTR" value={s.ctr != null ? fmtPct(s.ctr) : "—"} highlight={activeMetric.id === "ctr"} />
+                              <KpiStat label="CPM" value={s.cpm != null ? fmtUSD(s.cpm) : "—"} highlight={activeMetric.id === "cpm"} />
+                            </div>
+                            <ChevronRight className="w-3 h-3 shrink-0 text-muted-foreground/40 group-hover:text-primary/60 transition-colors" />
                           </div>
-                        </div>
-                        <div className="h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
-                          <div
-                            className="h-full bg-primary/50 rounded-full group-hover:bg-primary/70 transition-colors"
-                            style={{ width: `${Math.max((s.spend / maxSpend) * 100, 3)}%` }}
-                          />
-                        </div>
-                      </button>
-                    ))}
+                          <div className="mt-2 ml-8 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="w-14 shrink-0 text-[8px] font-mono uppercase tracking-wider text-muted-foreground/40">Spend</span>
+                              <div className="flex-1 h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
+                                <div className="h-full bg-primary/50 rounded-full" style={{ width: `${Math.max(spendShare, s.spend > 0 ? 2 : 0)}%` }} />
+                              </div>
+                              <span className="w-9 shrink-0 text-right text-[8px] font-mono text-muted-foreground/50 tabular-nums">{spendShare.toFixed(0)}%</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="w-14 shrink-0 text-[8px] font-mono uppercase tracking-wider text-muted-foreground/40">{term.Plural}</span>
+                              <div className="flex-1 h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
+                                <div className="h-full bg-emerald-400/60 rounded-full" style={{ width: `${Math.max(resultShare, s.results > 0 ? 2 : 0)}%` }} />
+                              </div>
+                              <span className="w-9 shrink-0 text-right text-[8px] font-mono text-muted-foreground/50 tabular-nums">{resultShare.toFixed(0)}%</span>
+                            </div>
+                          </div>
+                          {activeMetric.id !== "spend" && v != null && (
+                            <div className="mt-1.5 ml-8 text-[9px] text-muted-foreground/50 tabular-nums">
+                              Ranked by {activeMetric.label}: {activeMetric.format(v)}
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                   <p className="mt-3 text-[10px] text-muted-foreground/50 flex items-center gap-1">
                     <BarChart2 className="w-3 h-3" />
-                    {v3.length} V3 rows + {c4e.length} C4E rows · click any bar for the full breakdown
+                    {v3.length} V3 rows + {c4e.length} C4E rows · click any placement for the full breakdown
                   </p>
                 </SectionCard>
 
@@ -325,6 +463,7 @@ export function PlacementsView() {
         placement={selectedPlacement}
         v3Rows={analysis?.v3_placement_signal ?? []}
         c4eRows={analysis?.c4e_placement_signal ?? []}
+        accountRollup={rollup}
         onClose={() => setSelectedPlacement(null)}
       />
     </>
