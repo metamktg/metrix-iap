@@ -15,6 +15,8 @@ import {
 import { VariableStackChips } from "./strategyShared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/SegmentGridModal";
+import { SegmentDrilldownModal } from "@/components/creative/SegmentDrilldownModal";
+import type { SegmentId } from "@/lib/segment-analytics";
 import { DemographicTable } from "../analysis/tables";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { Users, Fingerprint, DoorOpen, MessageSquareQuote, Compass, ArrowDownRight, ArrowUpRight } from "lucide-react";
@@ -140,6 +142,7 @@ export function AvatarsView() {
   const account = getAdAccount(seed, adAccountId);
   const [detail, setDetail] = useState<{ column: MSTMatrixColumn; cells: MSTMatrixCell[] } | null>(null);
   const [segmentsOpen, setSegmentsOpen] = useState(false);
+  const [audienceSegment, setAudienceSegment] = useState<SegmentId | null>(null);
   const { rangeHasData } = useDateRange();
   const profileRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [flashProfile, setFlashProfile] = useState<string | null>(null);
@@ -317,7 +320,7 @@ export function AvatarsView() {
                 table="demographic_registration_signal"
               >
                 {demo.length ? (
-                  <DemographicTable rows={demo} />
+                  <DemographicTable rows={demo} onSegmentClick={analysis ? setAudienceSegment : undefined} />
                 ) : (
                   <PendingState title="No audience signal" message={`Demographic ${term.singular} signal appears once analysis is available.`} icon={Users} />
                 )}
@@ -360,6 +363,17 @@ export function AvatarsView() {
                   </DrawerField>
                 ))}
               </InfoDrawer>
+            )}
+
+            {analysis && (
+              <SegmentDrilldownModal
+                open={audienceSegment != null}
+                onClose={() => setAudienceSegment(null)}
+                segment={audienceSegment}
+                analysis={analysis}
+                cellIds={null}
+                kicker="Audience signal"
+              />
             )}
 
             {detail && analysis && (

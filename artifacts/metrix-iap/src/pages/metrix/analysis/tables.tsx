@@ -120,7 +120,14 @@ export function VariableTable({ rows }: { rows: VariablePerformanceRow[] }) {
   );
 }
 
-export function DemographicTable({ rows }: { rows: DemographicRow[] }) {
+export function DemographicTable({
+  rows,
+  onSegmentClick,
+}: {
+  rows: DemographicRow[];
+  /** When provided, rows become clickable and open the segment drill-down. */
+  onSegmentClick?: (segment: { age: string; gender: string }) => void;
+}) {
   return (
     <TableShell>
       <thead className="sticky top-0 bg-[hsl(222_55%_7%)] z-10">
@@ -136,7 +143,13 @@ export function DemographicTable({ rows }: { rows: DemographicRow[] }) {
       </thead>
       <tbody>
         {rows.map((r, i) => (
-          <tr key={r.cell_id + r.Age + r.Gender + i} className="border-b border-border/20 hover:bg-white/[0.02]">
+          <tr
+            key={r.cell_id + r.Age + r.Gender + i}
+            className={`border-b border-border/20 hover:bg-white/[0.02] ${onSegmentClick ? "cursor-pointer" : ""}`}
+            onClick={onSegmentClick ? () => onSegmentClick({ age: r.Age, gender: r.Gender }) : undefined}
+            title={onSegmentClick ? "Open segment drill-down" : undefined}
+            data-testid={onSegmentClick ? `row-demographic-${r.Age}-${r.Gender}-${i}` : undefined}
+          >
             <Td><span className="font-mono text-[10px] text-muted-foreground/60">{r.cell_id}</span></Td>
             <Td>{r.Age}</Td>
             <Td className="capitalize">{r.Gender}</Td>

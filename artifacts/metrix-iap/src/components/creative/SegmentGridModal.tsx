@@ -6,11 +6,20 @@
 // grain. Marginals render real numbers; intersections render an explicit
 // "no joint grain" state. Never fabricated.
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Info } from "lucide-react";
+import { Info, ZoomIn } from "lucide-react";
 import type { AnalysisData, DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 import type { MetricDef } from "@/lib/data/metricsCatalog";
+import {
+  scopeDemographicRows,
+  listSegments,
+  rowsForSegment,
+  computeSegmentTotals,
+  segmentKey,
+  type SegmentId,
+} from "@/lib/segment-analytics";
+import { SegmentDrilldownModal } from "./SegmentDrilldownModal";
 
 function usd(n: number | null | undefined, digits = 2): string {
   if (n == null) return "—";
@@ -68,26 +77,32 @@ interface AvatarSegment {
   totals: SegmentTotals;
 }
 
+/**
+ * Avatar segments via the shared segment-analytics layer so the grid's
+ * marginals and the per-segment drill-down are computed by the same
+ * code (they must reconcile by construction). This also keeps imports
+ * with an "ACCOUNT" aggregate grain honest — account-level totals use
+ * that grain instead of double-counting the overlapping per-cell rows,
+ * and missing fields (e.g. reach) stay null instead of reading as 0.
+ */
 function buildAvatarSegments(rows: DemographicRow[], cellIds: string[] | null): AvatarSegment[] {
-  const scoped = cellIds ? rows.filter((r) => cellIds.includes(r.cell_id)) : rows;
-  const map = new Map<string, AvatarSegment>();
-  for (const r of scoped) {
-    const key = `${r.Age}|${r.Gender}`;
-    const seg = map.get(key) ?? {
-      key,
-      age: r.Age,
-      gender: r.Gender,
-      totals: { spend: 0, results: 0, impressions: 0, reach: 0, clicksAll: 0, linkClicks: 0 },
+  const scoped = scopeDemographicRows(rows, cellIds);
+  return listSegments(scoped).map((seg) => {
+    const t = computeSegmentTotals(rowsForSegment(scoped, seg));
+    return {
+      key: segmentKey(seg),
+      age: seg.age,
+      gender: seg.gender,
+      totals: {
+        spend: t.spend ?? 0,
+        results: t.results ?? 0,
+        impressions: t.impressions ?? 0,
+        reach: t.reach,
+        clicksAll: t.clicksAll,
+        linkClicks: t.linkClicks ?? 0,
+      },
     };
-    seg.totals.spend += r["Amount spent (USD)"];
-    seg.totals.results += r.Results;
-    seg.totals.impressions += r.Impressions;
-    seg.totals.reach = (seg.totals.reach ?? 0) + r.Reach;
-    seg.totals.clicksAll = (seg.totals.clicksAll ?? 0) + r["Clicks (all)"];
-    seg.totals.linkClicks += r["Link clicks"];
-    map.set(key, seg);
-  }
-  return Array.from(map.values()).sort((a, b) => b.totals.spend - a.totals.spend);
+  });
 }
 
 function topPlacements(a: AnalysisData, max = 5): { row: PlacementRow; totals: SegmentTotals }[] {
@@ -153,6 +168,7 @@ export function SegmentGridModal({
   const placements = useMemo(() => topPlacements(analysis), [analysis]);
   const metricLabel = metric?.label ?? "Blended CPA";
   const unavailableOnPlacements = metric?.id === "reach" || metric?.id === "clicks_all";
+  const [drilldownSegment, setDrilldownSegment] = useState<SegmentId | null>(null);
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -201,8 +217,18 @@ export function SegmentGridModal({
                     return (
                       <tr key={seg.key} className="border-b border-border/20">
                         <td className="px-2.5 py-2">
-                          <div className="text-[11px] font-medium text-foreground">{seg.age}</div>
-                          <div className="text-[9px] text-muted-foreground/60 capitalize">{seg.gender}</div>
+                          <button
+                            onClick={() => setDrilldownSegment({ age: seg.age, gender: seg.gender })}
+                            className="group text-left rounded-md -mx-1 px-1 py-0.5 hover:bg-primary/[0.07] transition-colors"
+                            title="Open segment drill-down"
+                            data-testid={`button-segment-drilldown-${seg.key}`}
+                          >
+                            <div className="text-[11px] font-medium text-foreground inline-flex items-center gap-1">
+                              {seg.age}
+                              <ZoomIn className="w-2.5 h-2.5 text-primary/0 group-hover:text-primary/70 transition-colors" />
+                            </div>
+                            <div className="text-[9px] text-muted-foreground/60 capitalize">{seg.gender}</div>
+                          </button>
                         </td>
                         {placements.map(({ row: p }) => (
                           <td
@@ -251,8 +277,18 @@ export function SegmentGridModal({
             Avatar rows: demographic audience signal{cellIds ? ` scoped to ${cellIds.join(", ")}` : " for the whole account"}.
             Placement columns: account-level placement signal. Joint cells populate automatically
             when an export with combined demographic × placement breakdowns is imported.
+            Click an avatar segment to see the concepts and creative variables driving it.
           </span>
         </div>
+
+        <SegmentDrilldownModal
+          open={drilldownSegment != null}
+          onClose={() => setDrilldownSegment(null)}
+          segment={drilldownSegment}
+          analysis={analysis}
+          cellIds={cellIds}
+          kicker={kicker}
+        />
       </DialogContent>
     </Dialog>
   );
