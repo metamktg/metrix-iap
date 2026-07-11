@@ -15,6 +15,8 @@ import net from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { withValidationLock } from "./lib/validation-lock.js";
+
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../..",
@@ -74,9 +76,15 @@ async function sleep(ms: number): Promise<void> {
 }
 
 async function main() {
-  await runBuild().catch((err) => {
-    fail("API server build failed", String(err?.message ?? err));
-  });
+  // The esbuild bundle step imports the shared generated API libs, which the
+  // api-codegen-drift check deletes and rewrites mid-run. Hold the shared
+  // validation lock while building so concurrent batches never race; the
+  // boot + health check afterwards doesn't touch the libs.
+  await withValidationLock("api-smoke", () =>
+    runBuild().catch((err) => {
+      fail("API server build failed", String(err?.message ?? err));
+    }),
+  );
 
   const port = await getFreePort();
   console.log(`Booting server from ${path.relative(repoRoot, entry)} on port ${port}...`);

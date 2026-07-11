@@ -19,6 +19,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { withValidationLock } from "./lib/validation-lock.js";
+
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../..",
@@ -65,6 +67,14 @@ function runStep(
 }
 
 async function main() {
+  // The whole sequence (typecheck:libs, app typecheck, Vite build) reads the
+  // shared generated API libs, which the api-codegen-drift check deletes and
+  // rewrites mid-run. Hold the shared validation lock so concurrent batches
+  // never race (spurious TS6053 "file not found" errors otherwise).
+  await withValidationLock("marketing-build", runSmoke);
+}
+
+async function runSmoke() {
   // Build composite lib declarations first — the app typecheck depends on
   // fresh .d.ts output from lib/* (stale declarations cause bogus TS2305s).
   await runStep("Building lib declarations (typecheck:libs)", [
