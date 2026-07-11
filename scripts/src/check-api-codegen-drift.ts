@@ -26,6 +26,8 @@ import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { withValidationLock } from "./lib/validation-lock.js";
+
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../..",
@@ -65,6 +67,14 @@ function run(
 }
 
 async function main() {
+  // Orval regenerates lib/*/src/generated/** with `clean: true` — the files
+  // are deleted and rewritten mid-run. Hold the shared validation lock for
+  // the whole codegen + diff + typecheck sequence so concurrently running
+  // build smokes never observe the generated libs in a half-deleted state.
+  await withValidationLock("api-codegen-drift", runChecks);
+}
+
+async function runChecks() {
   // 1. Regenerate codegen from the spec (also rebuilds composite lib decls).
   const codegen = await run("Regenerating API codegen from openapi.yaml", "pnpm", [
     "--filter",
