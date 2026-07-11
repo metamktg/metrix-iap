@@ -211,31 +211,72 @@ function OverviewTab({ data }: { data: CreativeCardData }) {
 
 // ─── Demographics tab ──────────────────────────────────────────────────
 
+interface AgeBucket {
+  age: string;
+  male: number; female: number; total: number;
+  maleResults: number; femaleResults: number;
+  maleCpa: number | null; femaleCpa: number | null;
+  maleCtr: number | null; femaleCtr: number | null;
+  maleReach: number; femaleReach: number;
+  maleGender: string | null; femaleGender: string | null;
+}
+
 function DemographicsTab({
   rows,
   onSegmentClick,
 }: {
   rows: DemographicRow[];
-  /** When provided, M/F chips become tappable and open the segment drill-down. */
   onSegmentClick?: (segment: { age: string; gender: string }) => void;
 }) {
   const [metric, setMetric] = useState<DemoMetric>("spend");
 
-  const buckets = useMemo(() => {
-    const map = new Map<string, { age: string; male: number; female: number; total: number; maleGender: string | null; femaleGender: string | null }>();
+  const buckets = useMemo<AgeBucket[]>(() => {
+    const map = new Map<string, AgeBucket>();
     for (const r of rows) {
-      const val = metric === "spend" ? r["Amount spent (USD)"] : r.Results;
       const g = r.Gender.toLowerCase();
-      const b = map.get(r.Age) ?? { age: r.Age, male: 0, female: 0, total: 0, maleGender: null, femaleGender: null };
-      if (g === "male") { b.male += val; b.maleGender = r.Gender; } else { b.female += val; b.femaleGender = r.Gender; }
-      b.total += val;
+      const b = map.get(r.Age) ?? {
+        age: r.Age, male: 0, female: 0, total: 0,
+        maleResults: 0, femaleResults: 0,
+        maleCpa: null, femaleCpa: null,
+        maleCtr: null, femaleCtr: null,
+        maleReach: 0, femaleReach: 0,
+        maleGender: null, femaleGender: null,
+      };
+      if (g === "male") {
+        b.male += r["Amount spent (USD)"];
+        b.maleResults += r.Results;
+        b.maleCpa = r.CPA_result;
+        b.maleCtr = r.CTR_link_pct;
+        b.maleReach += r.Reach;
+        b.maleGender = r.Gender;
+      } else {
+        b.female += r["Amount spent (USD)"];
+        b.femaleResults += r.Results;
+        b.femaleCpa = r.CPA_result;
+        b.femaleCtr = r.CTR_link_pct;
+        b.femaleReach += r.Reach;
+        b.femaleGender = r.Gender;
+      }
+      b.total += r["Amount spent (USD)"];
       map.set(r.Age, b);
     }
     return Array.from(map.values()).sort((a, b) => (parseInt(a.age) || 999) - (parseInt(b.age) || 999));
-  }, [rows, metric]);
+  }, [rows]);
 
-  const maxTotal = useMemo(() => Math.max(...buckets.map((b) => b.total), 1), [buckets]);
-  const fmt = (n: number) => metric === "spend" ? usd(n) : num(n);
+  // Default-select the bucket with highest spend
+  const [selectedAge, setSelectedAge] = useState<string | null>(null);
+  const defaultBucket = useMemo(() => {
+    if (!buckets.length) return null;
+    return [...buckets].sort((a, b) => b.total - a.total)[0];
+  }, [buckets]);
+  const activeBucket = buckets.find((b) => b.age === selectedAge) ?? defaultBucket;
+
+  const maxSpend = useMemo(() => Math.max(...buckets.map((b) => b.total), 1), [buckets]);
+  const maxResults = useMemo(() => Math.max(...buckets.map((b) => b.maleResults + b.femaleResults), 1), [buckets]);
+
+  const barVal = (b: AgeBucket) => metric === "spend" ? b.total : (b.maleResults + b.femaleResults);
+  const barMax = metric === "spend" ? maxSpend : maxResults;
+  const fmtMain = (n: number) => metric === "spend" ? usd(n) : num(n);
 
   if (rows.length === 0) {
     return (
@@ -248,8 +289,9 @@ function DemographicsTab({
 
   return (
     <div className="space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50">Age × gender</p>
+        <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Age × Gender</p>
         <MetricToggle
           options={[{ value: "spend", label: "Spend" }, { value: "results", label: "Results" }]}
           value={metric}
@@ -257,58 +299,154 @@ function DemographicsTab({
         />
       </div>
 
-      <div className="space-y-4">
+      {/* Bar chart — each row is a clickable card */}
+      <div className="space-y-1.5">
         {buckets.map((b) => {
-          const barW = Math.round((b.total / maxTotal) * 100);
-          const mPct = b.total > 0 ? (b.male / b.total) * 100 : 50;
+          const isActive = activeBucket?.age === b.age;
+          const barW = Math.round((barVal(b) / barMax) * 100);
+          const mSpend = b.male; const fSpend = b.female;
+          const mPct = b.total > 0 ? (mSpend / b.total) * 100 : 50;
           const fPct = 100 - mPct;
+          const mRes = b.maleResults; const fRes = b.femaleResults;
+          const totalRes = mRes + fRes;
+          const mResPct = totalRes > 0 ? (mRes / totalRes) * 100 : 50;
+          const fResPct = 100 - mResPct;
+          const [mBarPct, fBarPct] = metric === "spend" ? [mPct, fPct] : [mResPct, fResPct];
+
           return (
-            <div key={b.age} className="space-y-1.5">
-              <div className="flex items-center justify-between text-[10px]">
-                <span className="font-medium text-foreground/80">{b.age}</span>
-                <span className="tabular-nums text-muted-foreground/60">{fmt(b.total)}</span>
+            <button
+              key={b.age}
+              onClick={() => setSelectedAge(b.age)}
+              className={cn(
+                "w-full text-left rounded-lg border px-3 py-2.5 transition-all duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary",
+                isActive
+                  ? "border-primary/40 bg-primary/[0.06]"
+                  : "border-border/30 bg-white/[0.015] hover:border-border/50 hover:bg-white/[0.03]"
+              )}
+            >
+              {/* Row header: age + value */}
+              <div className="flex items-center justify-between mb-2">
+                <span className={cn("text-[13px] font-semibold", isActive ? "text-foreground" : "text-foreground/75")}>
+                  {b.age}
+                </span>
+                <span className="text-[12px] tabular-nums text-muted-foreground/70 font-medium">
+                  {fmtMain(barVal(b))}
+                </span>
               </div>
-              <div className="h-2.5 rounded-full bg-white/[0.05] overflow-hidden">
+
+              {/* Stacked bar */}
+              <div className="h-4 rounded-md bg-white/[0.04] overflow-hidden">
                 <div
-                  className="h-full flex rounded-full overflow-hidden transition-all duration-700"
+                  className="h-full flex rounded-md overflow-hidden transition-all duration-500"
                   style={{ width: `${barW}%` }}
                 >
-                  <div className="h-full bg-blue-400/60" style={{ width: `${mPct}%` }} title={`Male: ${fmt(b.male)}`} />
-                  <div className="h-full bg-rose-400/60" style={{ width: `${fPct}%` }} title={`Female: ${fmt(b.female)}`} />
+                  <div
+                    className="h-full bg-blue-400/50"
+                    style={{ width: `${mBarPct}%` }}
+                    title={`Male: ${metric === "spend" ? usd(mSpend) : num(mRes)}`}
+                  />
+                  <div
+                    className="h-full bg-rose-400/50"
+                    style={{ width: `${fBarPct}%` }}
+                    title={`Female: ${metric === "spend" ? usd(fSpend) : num(fRes)}`}
+                  />
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-[8.5px] text-muted-foreground/55">
-                {([
-                  { key: "male", dot: "bg-blue-400/60", short: "M", value: b.male, gender: b.maleGender },
-                  { key: "female", dot: "bg-rose-400/60", short: "F", value: b.female, gender: b.femaleGender },
-                ] as const).map((g) => {
-                  const clickable = !!onSegmentClick && !!g.gender;
-                  return (
-                    <button
-                      key={g.key}
-                      disabled={!clickable}
-                      onClick={clickable ? () => onSegmentClick!({ age: b.age, gender: g.gender! }) : undefined}
-                      title={clickable ? "Open segment drill-down" : undefined}
-                      data-testid={clickable ? `chip-demo-${b.age}-${g.key}` : undefined}
-                      className={cn(
-                        "flex items-center gap-1 rounded px-1 py-0.5 -mx-1 transition-colors",
-                        clickable && "hover:bg-white/[0.05] hover:text-foreground cursor-pointer"
-                      )}
-                    >
-                      <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", g.dot)} />
-                      {g.short} {fmt(g.value)}
-                    </button>
-                  );
-                })}
-                {onSegmentClick && <span className="text-muted-foreground/35 ml-1">tap M / F to drill down</span>}
+
+              {/* M/F inline values */}
+              <div className="flex items-center gap-3 mt-1.5">
+                <span className="flex items-center gap-1 text-[10px] text-blue-300/80">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60 shrink-0" />
+                  M {metric === "spend" ? usd(mSpend) : num(mRes)}
+                </span>
+                <span className="flex items-center gap-1 text-[10px] text-rose-300/80">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-400/60 shrink-0" />
+                  F {metric === "spend" ? usd(fSpend) : num(fRes)}
+                </span>
+                {isActive && (
+                  <span className="ml-auto text-[9px] font-mono uppercase tracking-wider text-primary/70">
+                    Selected ↑
+                  </span>
+                )}
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
 
-      <p className="text-[8.5px] text-muted-foreground/40 pt-2 border-t border-border/20">
-        Bar width = proportion of top age group. Blue = male, pink = female.
+      {/* KPI panel for selected bucket */}
+      {activeBucket && (
+        <div className="rounded-xl border border-border/40 bg-white/[0.025] overflow-hidden">
+          {/* Panel header */}
+          <div className="px-4 py-2.5 border-b border-border/30 flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Segment KPIs</span>
+              <span className="ml-2 text-[12px] font-semibold text-foreground">{activeBucket.age}</span>
+            </div>
+          </div>
+
+          {/* KPI grid: Male vs Female */}
+          <div className="grid grid-cols-2 divide-x divide-border/30">
+            {([
+              {
+                label: "Male", dot: "bg-blue-400", color: "text-blue-300",
+                spend: activeBucket.male, results: activeBucket.maleResults,
+                cpa: activeBucket.maleCpa, ctr: activeBucket.maleCtr,
+                reach: activeBucket.maleReach, gender: activeBucket.maleGender,
+              },
+              {
+                label: "Female", dot: "bg-rose-400", color: "text-rose-300",
+                spend: activeBucket.female, results: activeBucket.femaleResults,
+                cpa: activeBucket.femaleCpa, ctr: activeBucket.femaleCtr,
+                reach: activeBucket.femaleReach, gender: activeBucket.femaleGender,
+              },
+            ] as const).map((g) => (
+              <div key={g.label} className="p-3 space-y-3">
+                {/* Gender header */}
+                <div className="flex items-center gap-1.5">
+                  <span className={cn("w-2 h-2 rounded-full shrink-0", g.dot)} />
+                  <span className={cn("text-[11px] font-semibold", g.color)}>{g.label}</span>
+                </div>
+
+                {/* KPI rows */}
+                <div className="space-y-2">
+                  {([
+                    { key: "spend", label: "Spend", value: usd(g.spend) },
+                    { key: "results", label: "Results", value: num(g.results) },
+                    { key: "cpa", label: "CPA", value: g.cpa != null ? usd(g.cpa, 2) : "—" },
+                    { key: "ctr", label: "Link CTR", value: g.ctr != null ? pct(g.ctr) : "—" },
+                    { key: "reach", label: "Reach", value: num(g.reach) },
+                  ] as const).map((kpi) => (
+                    <div key={kpi.key} className="flex items-center justify-between">
+                      <span className="text-[10px] text-muted-foreground/60">{kpi.label}</span>
+                      <span className="text-[12px] font-semibold tabular-nums text-foreground/90">{kpi.value}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Drill-down button */}
+                {onSegmentClick && g.gender && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onSegmentClick({ age: activeBucket.age, gender: g.gender! }); }}
+                    data-testid={`chip-demo-${activeBucket.age}-${g.label.toLowerCase()}`}
+                    className={cn(
+                      "w-full text-[10px] font-medium rounded-md border py-1.5 transition-colors",
+                      g.label === "Male"
+                        ? "border-blue-400/25 text-blue-300/80 hover:bg-blue-400/10"
+                        : "border-rose-400/25 text-rose-300/80 hover:bg-rose-400/10"
+                    )}
+                  >
+                    Drill down →
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <p className="text-[9px] text-muted-foreground/40 pt-1">
+        Click an age group to inspect its segment KPIs. Bar width = proportion of highest group.
       </p>
     </div>
   );
