@@ -1,17 +1,17 @@
-// ─── Foreplay-style creative card ─────────────────────────────────────
-// Used anywhere a specific ad / creative concept is referenced: dominant
-// visual, copy beneath, compact stat strip, variable tag chips, click to
-// expand. Renders the real creative when ads.creative_asset_url has been
-// backfilled from a raw Meta export; otherwise (including on image load
-// error) it falls back to a labeled placeholder keyed to the concept
-// code — never a broken image.
+// ─── Creative card ─────────────────────────────────────────────────────
+// Dominant visual, copy, compact stat strip, variable tags, click to
+// expand. Renders the real asset when creative_asset_url is backfilled;
+// falls back to a labelled placeholder keyed to concept code otherwise.
+//
+// Expand dialog delegates to CreativeExpandDialog (tabbed Overview /
+// Demographics / Placements with CSS bar charts and Ads Manager link).
 
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { ImageOff, Maximize2 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { resolveVariableLabel, getVariablePrefix, PREFIX_COLORS } from "@/lib/variable-registry";
-import { AdsManagerButton } from "./AdsManagerLink";
+import { CreativeExpandDialog } from "./CreativeExpandDialog";
+import type { DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 
 // ─── Data shape ───────────────────────────────────────────────────────
 
@@ -49,7 +49,7 @@ export interface CreativeCardData {
   adAccountId?: string | null;
 }
 
-// ─── Formatting (local, avoids circular import with pages/shared) ─────
+// ─── Formatting ───────────────────────────────────────────────────────
 
 function usd(n: number | null | undefined, digits = 2): string {
   if (n == null) return "—";
@@ -64,7 +64,7 @@ function pct(n: number | null | undefined): string {
   return `${n.toFixed(2)}%`;
 }
 
-// ─── Placeholder visual keyed to concept code ─────────────────────────
+// ─── Placeholder visual ───────────────────────────────────────────────
 
 function hueFor(code: string): number {
   let h = 0;
@@ -78,9 +78,7 @@ function PlaceholderVisual({ code, format, className }: { code: string; format?:
     <div
       aria-label={`No creative asset imported for ${code}`}
       className={cn("relative w-full h-full flex flex-col items-center justify-center gap-1.5 select-none", className)}
-      style={{
-        background: `linear-gradient(140deg, hsl(${hue} 45% 14%) 0%, hsl(${(hue + 40) % 360} 40% 9%) 100%)`,
-      }}
+      style={{ background: `linear-gradient(140deg, hsl(${hue} 45% 14%) 0%, hsl(${(hue + 40) % 360} 40% 9%) 100%)` }}
     >
       <span className="text-[26px] font-black tracking-tight leading-none" style={{ color: `hsl(${hue} 70% 72% / 0.85)` }}>
         {code}
@@ -100,7 +98,6 @@ function PlaceholderVisual({ code, format, className }: { code: string; format?:
 
 const VIDEO_EXTENSIONS = new Set(["mp4", "mov", "m4v", "webm", "avi", "mkv"]);
 
-/** Detects video assets from the filename or URL extension so they render in a <video> tag, never an <img> (which silently fails to load video and falls back to a placeholder). */
 function isVideoAsset(assetUrl: string, assetFilename?: string | null): boolean {
   const candidate = assetFilename || assetUrl;
   const match = /\.([a-zA-Z0-9]+)(?:[?#]|$)/.exec(candidate);
@@ -108,7 +105,7 @@ function isVideoAsset(assetUrl: string, assetFilename?: string | null): boolean 
   return ext != null && VIDEO_EXTENSIONS.has(ext);
 }
 
-function CreativeVisual({ data, className }: { data: CreativeCardData; className?: string }) {
+export function CreativeVisual({ data, className }: { data: CreativeCardData; className?: string }) {
   const [broken, setBroken] = useState(false);
   if (data.assetUrl && !broken) {
     if (isVideoAsset(data.assetUrl, data.assetFilename)) {
@@ -116,10 +113,7 @@ function CreativeVisual({ data, className }: { data: CreativeCardData; className
         <video
           src={data.assetUrl}
           className={cn("w-full h-full object-cover", className)}
-          muted
-          loop
-          playsInline
-          autoPlay
+          muted loop playsInline autoPlay
           onError={() => setBroken(true)}
         />
       );
@@ -170,15 +164,15 @@ export function VariableTagChips({ codes, max }: { codes: string[]; max?: number
 
 // ─── Stat strip ───────────────────────────────────────────────────────
 
-function StatStrip({ stats, dense }: { stats: CreativeCardStats; dense?: boolean }) {
-  const items: { label: string; value: string }[] = [
-    { label: "Spend", value: usd(stats.spend, 0) },
+function StatStrip({ stats }: { stats: CreativeCardStats }) {
+  const items = [
+    { label: "Spend",                        value: usd(stats.spend, 0) },
     { label: stats.resultLabel ?? "Results", value: num(stats.results) },
-    { label: "CPA", value: stats.cpa != null ? usd(stats.cpa) : "—" },
-    { label: "Link CTR", value: pct(stats.ctrPct) },
+    { label: "CPA",                          value: stats.cpa != null ? usd(stats.cpa) : "—" },
+    { label: "Link CTR",                     value: pct(stats.ctrPct) },
   ];
   return (
-    <div className={cn("grid grid-cols-4 gap-px bg-border/30 rounded-md overflow-hidden border border-border/30", dense && "grid-cols-4")}>
+    <div className="grid grid-cols-4 gap-px bg-border/30 rounded-md overflow-hidden border border-border/30">
       {items.map((it) => (
         <div key={it.label} className="bg-[hsl(222_55%_7%)] px-1.5 py-1.5 text-center">
           <div className="text-[7px] font-mono uppercase tracking-wider text-muted-foreground/60 truncate">{it.label}</div>
@@ -195,11 +189,23 @@ export function CreativeCard({
   data,
   className,
   expandFooter,
+  unmapped,
+  demographic,
+  placements,
+  onUploadCreatives,
 }: {
   data: CreativeCardData;
   className?: string;
-  /** Extra actions rendered in the expanded dialog (cross-links, segment drill-down). */
+  /** Extra actions rendered in the expanded dialog footer (cross-links, drill-downs). */
   expandFooter?: React.ReactNode;
+  /** True when this cell has performance data but no IAP library mapping. */
+  unmapped?: boolean;
+  /** Cell-scoped demographic rows for the expanded dialog Demographics tab. */
+  demographic?: DemographicRow[];
+  /** Account-level placement rows for the expanded dialog Placements tab. */
+  placements?: PlacementRow[];
+  /** Called (after dialog closes) when the user taps "Upload creatives" in the unmapped warning. */
+  onUploadCreatives?: () => void;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -209,92 +215,63 @@ export function CreativeCard({
         onClick={() => setOpen(true)}
         aria-label={`Expand creative ${data.conceptCode} — ${data.title}`}
         className={cn(
-          "group text-left rounded-xl border border-border/40 bg-white/[0.02] overflow-hidden hover:border-primary/30 hover:bg-white/[0.03] transition-colors flex flex-col",
+          "group text-left rounded-xl border bg-white/[0.02] overflow-hidden transition-all duration-200 flex flex-col",
+          "hover:shadow-lg hover:shadow-black/30 active:scale-[0.98]",
+          unmapped
+            ? "border-amber-400/30 hover:border-amber-400/50"
+            : "border-white/[0.09] hover:border-primary/30",
           className
         )}
       >
-        <div className="relative aspect-[4/5] w-full overflow-hidden border-b border-border/30">
-          <CreativeVisual data={data} />
-          <span className="absolute bottom-1.5 right-1.5 w-5 h-5 rounded bg-black/50 border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+        {/* Visual with hover zoom */}
+        <div className="relative aspect-[4/5] w-full overflow-hidden border-b border-white/[0.06]">
+          <div className="absolute inset-0 transition-transform duration-500 will-change-transform group-hover:scale-[1.04]">
+            <CreativeVisual data={data} />
+          </div>
+
+          {unmapped && (
+            <div className="absolute top-1.5 left-1.5 flex items-center gap-1 bg-amber-500/20 border border-amber-400/30 text-amber-300 text-[8px] font-semibold px-1.5 py-0.5 rounded-full backdrop-blur-sm z-10">
+              <span className="w-1 h-1 rounded-full bg-amber-400 shrink-0" />
+              Unmapped
+            </div>
+          )}
+
+          <span className="absolute bottom-1.5 right-1.5 w-5 h-5 rounded bg-black/50 border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
             <Maximize2 className="w-2.5 h-2.5 text-white/80" />
           </span>
         </div>
+
+        {/* Info strip */}
         <div className="p-2.5 space-y-1.5 flex-1 flex flex-col">
           <div>
             <div className="flex items-center gap-1.5">
               <span className="text-[9px] font-mono text-muted-foreground/60">{data.conceptCode}</span>
-              {data.stage && <span className="text-[8px] font-mono uppercase text-muted-foreground/60 border border-border/30 px-1 py-0.5 rounded leading-none">{data.stage}</span>}
+              {data.stage && (
+                <span className="text-[8px] font-mono uppercase text-muted-foreground/60 border border-border/30 px-1 py-0.5 rounded leading-none">
+                  {data.stage}
+                </span>
+              )}
             </div>
             <p className="text-[12px] font-semibold text-foreground leading-tight mt-0.5 line-clamp-2">{data.title}</p>
           </div>
           {data.primaryText && (
             <p className="text-[10px] text-muted-foreground/70 leading-snug line-clamp-2">{data.primaryText}</p>
           )}
-          {data.stats && <StatStrip stats={data.stats} dense />}
+          {data.stats && <StatStrip stats={data.stats} />}
           {data.tags.length > 0 && <VariableTagChips codes={data.tags} max={4} />}
         </div>
       </button>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl bg-[hsl(222_61%_6%)] border-border/50 p-0 gap-0 overflow-hidden">
-          <div className="grid grid-cols-1 sm:grid-cols-[240px_1fr]">
-            <div className="relative aspect-[4/5] sm:aspect-auto sm:min-h-[360px] border-b sm:border-b-0 sm:border-r border-border/30">
-              <CreativeVisual data={data} className="absolute inset-0" />
-            </div>
-            <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
-              <DialogHeader className="space-y-1 text-left">
-                <div className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest">
-                  Creative · {data.conceptCode}
-                </div>
-                <DialogTitle className="text-[15px] font-semibold text-foreground leading-tight">
-                  {data.title}
-                </DialogTitle>
-                {data.visualSystem && (
-                  <DialogDescription className="text-[11px] text-muted-foreground/70 leading-relaxed">
-                    {data.visualSystem}
-                  </DialogDescription>
-                )}
-              </DialogHeader>
-
-              {(data.primaryText || data.secondaryText || data.cta) && (
-                <div className="space-y-1.5">
-                  <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Copy</p>
-                  {data.primaryText && <p className="text-[12px] text-foreground/85 leading-relaxed">{data.primaryText}</p>}
-                  {data.secondaryText && <p className="text-[11px] text-muted-foreground/75 leading-relaxed">{data.secondaryText}</p>}
-                  {data.cta && (
-                    <span className="inline-flex text-[10px] font-semibold text-primary border border-primary/25 bg-primary/10 px-2 py-1 rounded">
-                      CTA · {data.cta}
-                    </span>
-                  )}
-                </div>
-              )}
-
-              {data.stats && <StatStrip stats={data.stats} />}
-
-              {data.iapRead && (
-                <div className="space-y-1">
-                  <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">IAP read</p>
-                  <p className="text-[11px] text-foreground/80 leading-relaxed">{data.iapRead}</p>
-                </div>
-              )}
-
-              {data.tags.length > 0 && (
-                <div className="space-y-1.5">
-                  <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Variable stack</p>
-                  <VariableTagChips codes={data.tags} />
-                </div>
-              )}
-
-              <div className="flex items-center gap-2 flex-wrap pt-1 border-t border-border/30">
-                <div className="pt-2 flex items-center gap-2 flex-wrap">
-                  <AdsManagerButton metaAdId={data.metaAdId} adAccountId={data.adAccountId} />
-                  {expandFooter}
-                </div>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <CreativeExpandDialog
+        open={open}
+        onOpenChange={setOpen}
+        data={data}
+        demographic={demographic}
+        placements={placements}
+        expandFooter={expandFooter}
+        unmapped={unmapped}
+        onUploadCreatives={onUploadCreatives}
+      />
     </>
   );
 }
