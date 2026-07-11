@@ -211,16 +211,23 @@ function OverviewTab({ data }: { data: CreativeCardData }) {
 
 // ─── Demographics tab ──────────────────────────────────────────────────
 
-function DemographicsTab({ rows }: { rows: DemographicRow[] }) {
+function DemographicsTab({
+  rows,
+  onSegmentClick,
+}: {
+  rows: DemographicRow[];
+  /** When provided, M/F chips become tappable and open the segment drill-down. */
+  onSegmentClick?: (segment: { age: string; gender: string }) => void;
+}) {
   const [metric, setMetric] = useState<DemoMetric>("spend");
 
   const buckets = useMemo(() => {
-    const map = new Map<string, { age: string; male: number; female: number; total: number }>();
+    const map = new Map<string, { age: string; male: number; female: number; total: number; maleGender: string | null; femaleGender: string | null }>();
     for (const r of rows) {
       const val = metric === "spend" ? r["Amount spent (USD)"] : r.Results;
       const g = r.Gender.toLowerCase();
-      const b = map.get(r.Age) ?? { age: r.Age, male: 0, female: 0, total: 0 };
-      if (g === "male") b.male += val; else b.female += val;
+      const b = map.get(r.Age) ?? { age: r.Age, male: 0, female: 0, total: 0, maleGender: null, femaleGender: null };
+      if (g === "male") { b.male += val; b.maleGender = r.Gender; } else { b.female += val; b.femaleGender = r.Gender; }
       b.total += val;
       map.set(r.Age, b);
     }
@@ -270,15 +277,30 @@ function DemographicsTab({ rows }: { rows: DemographicRow[] }) {
                   <div className="h-full bg-rose-400/60" style={{ width: `${fPct}%` }} title={`Female: ${fmt(b.female)}`} />
                 </div>
               </div>
-              <div className="flex items-center gap-3 text-[8.5px] text-muted-foreground/55">
-                <span className="flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60 shrink-0" />
-                  M {fmt(b.male)}
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-400/60 shrink-0" />
-                  F {fmt(b.female)}
-                </span>
+              <div className="flex items-center gap-2 text-[8.5px] text-muted-foreground/55">
+                {([
+                  { key: "male", dot: "bg-blue-400/60", short: "M", value: b.male, gender: b.maleGender },
+                  { key: "female", dot: "bg-rose-400/60", short: "F", value: b.female, gender: b.femaleGender },
+                ] as const).map((g) => {
+                  const clickable = !!onSegmentClick && !!g.gender;
+                  return (
+                    <button
+                      key={g.key}
+                      disabled={!clickable}
+                      onClick={clickable ? () => onSegmentClick!({ age: b.age, gender: g.gender! }) : undefined}
+                      title={clickable ? "Open segment drill-down" : undefined}
+                      data-testid={clickable ? `chip-demo-${b.age}-${g.key}` : undefined}
+                      className={cn(
+                        "flex items-center gap-1 rounded px-1 py-0.5 -mx-1 transition-colors",
+                        clickable && "hover:bg-white/[0.05] hover:text-foreground cursor-pointer"
+                      )}
+                    >
+                      <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", g.dot)} />
+                      {g.short} {fmt(g.value)}
+                    </button>
+                  );
+                })}
+                {onSegmentClick && <span className="text-muted-foreground/35 ml-1">tap M / F to drill down</span>}
               </div>
             </div>
           );
@@ -386,15 +408,22 @@ export interface CreativeExpandDialogProps {
   data: CreativeCardData;
   demographic?: DemographicRow[];
   placements?: PlacementRow[];
-  expandFooter?: React.ReactNode;
+  /**
+   * Extra footer actions. The render-prop form receives close() so an
+   * action can dismiss this dialog before opening another surface
+   * (otherwise the new surface stacks BEHIND the still-open dialog).
+   */
+  expandFooter?: React.ReactNode | ((close: () => void) => React.ReactNode);
   unmapped?: boolean;
   onUploadCreatives?: () => void;
+  /** When provided, Demographics rows become tappable → segment drill-down. */
+  onSegmentClick?: (segment: { age: string; gender: string }) => void;
 }
 
 export function CreativeExpandDialog({
   open, onOpenChange, data,
   demographic = [], placements = [],
-  expandFooter, unmapped, onUploadCreatives,
+  expandFooter, unmapped, onUploadCreatives, onSegmentClick,
 }: CreativeExpandDialogProps) {
   const [tab, setTab] = useState<Tab>("overview");
 
@@ -472,14 +501,14 @@ export function CreativeExpandDialog({
               )}
 
               {tab === "overview"     && <OverviewTab      data={data} />}
-              {tab === "demographics" && <DemographicsTab  rows={demographic} />}
+              {tab === "demographics" && <DemographicsTab  rows={demographic} onSegmentClick={onSegmentClick} />}
               {tab === "placements"   && <PlacementsTab    rows={placements} />}
             </div>
 
             {/* Footer */}
             <div className="shrink-0 px-5 py-3 border-t border-border/30 flex items-center gap-2 flex-wrap bg-[hsl(222_61%_6%)]">
               <AdsManagerButton metaAdId={data.metaAdId} adAccountId={data.adAccountId} />
-              {expandFooter}
+              {typeof expandFooter === "function" ? expandFooter(() => onOpenChange(false)) : expandFooter}
             </div>
           </div>
         </div>

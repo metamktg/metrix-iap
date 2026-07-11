@@ -187,7 +187,14 @@ const VARIABLE_COLUMNS: ColumnAccessors<VariablePerformanceRow> = {
   ctr: { get: (r) => r.CTR_link_pct, defaultDir: "desc" },
 };
 
-export function VariableTable({ rows }: { rows: VariablePerformanceRow[] }) {
+export function VariableTable({
+  rows,
+  onRowClick,
+}: {
+  rows: VariablePerformanceRow[];
+  /** When provided, rows become clickable and open the variable drill-down. */
+  onRowClick?: (row: VariablePerformanceRow) => void;
+}) {
   const { sorted, sort, toggle } = useColumnSort(rows, VARIABLE_COLUMNS);
   return (
     <TableShell>
@@ -205,7 +212,16 @@ export function VariableTable({ rows }: { rows: VariablePerformanceRow[] }) {
       </thead>
       <tbody>
         {sorted.map((r, i) => (
-          <tr key={r.variable_id + r["Result type"] + i} className="border-b border-border/20 hover:bg-white/[0.02]">
+          <tr
+            key={r.variable_id + r["Result type"] + i}
+            className={cn("border-b border-border/20 hover:bg-white/[0.02]", onRowClick && "cursor-pointer focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60")}
+            onClick={onRowClick ? () => onRowClick(r) : undefined}
+            role={onRowClick ? "button" : undefined}
+            tabIndex={onRowClick ? 0 : undefined}
+            onKeyDown={onRowClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onRowClick(r); } } : undefined}
+            title={onRowClick ? "Open variable drill-down" : undefined}
+            data-testid={onRowClick ? `row-variable-${r.variable_id}-${i}` : undefined}
+          >
             <Td>
               <div className="font-medium text-foreground">{readableVariables(r.variable_id)}</div>
               <div className="text-[9px] font-mono text-muted-foreground/60 mt-0.5">{r.variable_id}</div>
