@@ -28,3 +28,4 @@
 - [Concurrent validation codegen race](concurrent-validation-codegen-race.md) — codegen-drift regeneration also poisons running Vite dev servers; wait for validations + restart web workflow before browser tests.
 - [Vite HMR module-graph corruption](vite-hmr-module-graph.md) — after mass edits, phantom provider/hook crashes at nonexistent line numbers mean a corrupted HMR graph; restart the dev workflow before browser testing.
 - [Metrix IAP visual revert](metrix-iap-visual-revert.md) — user rejected the dense redesign; keep production visual identity, never reintroduce combined-analysis views or text-label-* utilities.
+- [Metrix demographic row grains](metrix-demographic-grains.md) — demographic exports can carry an ACCOUNT aggregate grain overlapping per-cell rows; summing both double-counts — scope via segment-analytics helpers.
