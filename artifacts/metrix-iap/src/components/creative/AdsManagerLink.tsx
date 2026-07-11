@@ -44,14 +44,14 @@ export function AdsManagerButton({
       aria-disabled={!enabled}
       className={
         enabled
-          ? "inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-label font-medium px-2 h-6"
-          : "inline-flex items-center gap-1 rounded-md border border-border/40 text-muted-foreground/50 cursor-not-allowed text-label font-medium px-2 h-6"
+          ? "inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-[10px] font-medium px-2 h-6"
+          : "inline-flex items-center gap-1 rounded-md border border-border/40 text-muted-foreground/50 cursor-not-allowed text-[10px] font-medium px-2 h-6"
       }
     >
       <ExternalLink className="w-2.5 h-2.5" />
       {compact ? "Ads Manager" : "View in Ads Manager"}
       {!enabled && !compact && (
-        <span className="text-label-xs font-semibold uppercase tracking-wide border border-border/30 px-1 py-0.5 rounded leading-none ml-0.5">
+        <span className="text-[8px] font-semibold uppercase tracking-wide border border-border/30 px-1 py-0.5 rounded leading-none ml-0.5">
           Pending
         </span>
       )}
@@ -65,7 +65,7 @@ export function AdsManagerButton({
       <TooltipTrigger asChild>
         <span className="inline-flex">{button}</span>
       </TooltipTrigger>
-      <TooltipContent side="top" className="max-w-[240px] text-label leading-relaxed">
+      <TooltipContent side="top" className="max-w-[240px] text-[11px] leading-relaxed">
         Deep link pending: this import doesn't include Meta ad ids yet. The link resolves
         automatically from ad id + ad account id once raw exports with ad ids arrive.
       </TooltipContent>

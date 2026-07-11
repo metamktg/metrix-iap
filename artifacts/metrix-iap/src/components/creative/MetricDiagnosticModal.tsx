@@ -153,11 +153,11 @@ export function MetricDiagnosticModal({
       <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
         <DialogContent className="max-w-2xl bg-[hsl(222_61%_6%)] border-border/50 max-h-[85vh] overflow-y-auto">
           <DialogHeader className="text-left space-y-1">
-            <div className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest">
+            <div className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest">
               Metric diagnostic
             </div>
             <DialogTitle className="text-[15px] font-semibold text-foreground">{metric.label}</DialogTitle>
-            <DialogDescription className="text-label text-muted-foreground/70 leading-relaxed">
+            <DialogDescription className="text-[11px] text-muted-foreground/70 leading-relaxed">
               {scope === "account"
                 ? "Blended top-line value, avatar × placement breakdown, and the IAP library concepts driving this metric for this account."
                 : "Blended top-line value across all connected accounts. Open an account for the avatar/placement breakdown and concept drivers — manager-level analysis doesn't aggregate below bottom-line totals."}
@@ -169,18 +169,18 @@ export function MetricDiagnosticModal({
               <div className="w-10 h-10 mx-auto rounded-xl border border-border/40 bg-white/[0.03] flex items-center justify-center">
                 <Gauge className="w-4 h-4 text-muted-foreground/60" />
               </div>
-              <p className="text-body font-medium text-foreground/60">No data for this metric yet</p>
-              <p className="text-label text-muted-foreground/60 max-w-sm mx-auto">
+              <p className="text-[13px] font-medium text-foreground/60">No data for this metric yet</p>
+              <p className="text-[11px] text-muted-foreground/60 max-w-sm mx-auto">
                 {metric.label} has no underlying rows for this account/date range in the current import.
               </p>
             </div>
           ) : (
             <div className="space-y-4">
               <div className="rounded-lg border border-primary/20 bg-primary/[0.04] p-4">
-                <div className="text-label-xs font-mono uppercase tracking-widest text-muted-foreground/60 mb-1">
+                <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-1">
                   Blended top-line
                 </div>
-                <div className="text-value font-bold text-foreground tabular-nums leading-none tracking-[-0.03em]">
+                <div className="text-[28px] font-bold text-foreground tabular-nums leading-none tracking-[-0.03em]">
                   {metric.formatted}
                 </div>
               </div>
@@ -192,7 +192,7 @@ export function MetricDiagnosticModal({
               )}
 
               {scope === "account" && analysis && metric.isResultEvent && (
-                <div className="flex items-start gap-2 text-label text-muted-foreground/70 leading-relaxed rounded-lg border border-border/30 bg-white/[0.02] p-3">
+                <div className="flex items-start gap-2 text-[11px] text-muted-foreground/70 leading-relaxed rounded-lg border border-border/30 bg-white/[0.02] p-3">
                   <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                   <span>
                     Avatar × placement breakdown isn't available for "{metric.label}" — the demographic and
@@ -205,11 +205,11 @@ export function MetricDiagnosticModal({
 
               {scope === "account" && (
                 <div className="space-y-1.5">
-                  <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">
                     Top IAP library concepts driving this metric
                   </p>
                   {concepts.length === 0 ? (
-                    <p className="text-label text-muted-foreground/60 py-2">
+                    <p className="text-[11px] text-muted-foreground/60 py-2">
                       No creative-cell rows back this metric{metric.isResultEvent ? ` for "${metric.label}"` : ""} in this import.
                     </p>
                   ) : (
@@ -221,12 +221,12 @@ export function MetricDiagnosticModal({
                           className="w-full flex items-center justify-between gap-3 px-3 py-2 border-b border-border/20 last:border-b-0 hover:bg-white/[0.02] transition-colors text-left"
                         >
                           <div className="min-w-0">
-                            <div className="text-label font-medium text-foreground truncate">{c.name}</div>
-                            <div className="text-label-xs font-mono text-muted-foreground/60 mt-0.5">{c.cellId}</div>
+                            <div className="text-[11px] font-medium text-foreground truncate">{c.name}</div>
+                            <div className="text-[9px] font-mono text-muted-foreground/60 mt-0.5">{c.cellId}</div>
                           </div>
                           <div className="shrink-0 text-right">
-                            <div className="text-label font-semibold text-foreground tabular-nums">{c.metricDisplay}</div>
-                            <div className="text-label-xs text-muted-foreground/60">
+                            <div className="text-[11px] font-semibold text-foreground tabular-nums">{c.metricDisplay}</div>
+                            <div className="text-[9px] text-muted-foreground/60">
                               {fmtUSD(c.spend, 0)} · {fmtNum(c.results)} results
                             </div>
                           </div>
@@ -241,7 +241,7 @@ export function MetricDiagnosticModal({
           )}
 
           {scope === "manager" && (
-            <div className="flex items-start gap-2 text-label text-muted-foreground/60 leading-relaxed pt-1 border-t border-border/30">
+            <div className="flex items-start gap-2 text-[10px] text-muted-foreground/60 leading-relaxed pt-1 border-t border-border/30">
               <Info className="w-3 h-3 shrink-0 mt-0.5" />
               <span>Only bottom-line totals aggregate across accounts. Open an ad account for full metric diagnostics.</span>
             </div>

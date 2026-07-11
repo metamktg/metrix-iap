@@ -23,7 +23,7 @@ export function AuthBrandHeader({ subtitle }: { subtitle?: string }) {
       <BrandLogo className="w-10 h-10 mx-auto" />
       <h1 className="text-xl font-semibold text-foreground">Metrix</h1>
       {subtitle ? (
-        <p className="text-body text-muted-foreground">{subtitle}</p>
+        <p className="text-[12px] text-muted-foreground">{subtitle}</p>
       ) : null}
     </div>
   );

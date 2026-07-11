@@ -61,7 +61,7 @@ function ExpandVisual({ data, className }: { data: CreativeCardData; className?:
       <span className="text-[40px] font-black tracking-tight leading-none" style={{ color: `hsl(${hue} 70% 72% / 0.85)` }}>
         {data.conceptCode}
       </span>
-      <span className="flex items-center gap-1.5 text-label-xs font-mono uppercase tracking-widest text-white/60">
+      <span className="flex items-center gap-1.5 text-[9px] font-mono uppercase tracking-widest text-white/35">
         <ImageOff className="w-3 h-3" /> No asset in import
       </span>
     </div>
@@ -76,7 +76,7 @@ function LocalTagChips({ codes }: { codes: string[] }) {
         <span
           key={c + i}
           title={resolveVariableLabel(c)}
-          className={cn("text-label-xs font-mono border px-1.5 py-0.5 rounded leading-none", PREFIX_COLORS[getVariablePrefix(c)])}
+          className={cn("text-[8px] font-mono border px-1.5 py-0.5 rounded leading-none", PREFIX_COLORS[getVariablePrefix(c)])}
         >
           {c}
         </span>
@@ -118,7 +118,7 @@ function TabBar({ tabs, active, onChange }: {
           key={t.id}
           onClick={() => onChange(t.id)}
           className={cn(
-            "flex items-center gap-1.5 px-3.5 py-2.5 text-label font-medium transition-colors border-b-2 -mb-px",
+            "flex items-center gap-1.5 px-3.5 py-2.5 text-[10px] font-medium transition-colors border-b-2 -mb-px",
             active === t.id
               ? "text-foreground border-primary"
               : "text-muted-foreground/50 border-transparent hover:text-muted-foreground/80"
@@ -138,7 +138,7 @@ function MetricToggle({ options, value, onChange }: {
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="flex rounded border border-border/30 overflow-hidden text-label-xs">
+    <div className="flex rounded border border-border/30 overflow-hidden text-[8.5px]">
       {options.map((o) => (
         <button
           key={o.value}
@@ -172,8 +172,8 @@ function OverviewTab({ data }: { data: CreativeCardData }) {
             { label: "Link CTR", value: pct(s.ctrPct) },
           ] as const).map((item) => (
             <div key={item.label} className="rounded-lg border border-border/30 bg-white/[0.02] px-3 py-2.5 text-center">
-              <div className="text-label-xs font-mono uppercase tracking-widest text-muted-foreground/50 mb-1">{item.label}</div>
-              <div className="text-section font-bold text-foreground tabular-nums leading-none">{item.value}</div>
+              <div className="text-[8px] font-mono uppercase tracking-widest text-muted-foreground/50 mb-1">{item.label}</div>
+              <div className="text-[18px] font-bold text-foreground tabular-nums leading-none">{item.value}</div>
             </div>
           ))}
         </div>
@@ -181,11 +181,11 @@ function OverviewTab({ data }: { data: CreativeCardData }) {
 
       {(data.primaryText || data.secondaryText || data.cta) && (
         <div className="space-y-2">
-          <p className="text-label-xs font-mono uppercase tracking-widest text-muted-foreground/50">Copy</p>
-          {data.primaryText && <p className="text-body text-foreground/85 leading-relaxed">{data.primaryText}</p>}
-          {data.secondaryText && <p className="text-label text-muted-foreground/60 leading-relaxed">{data.secondaryText}</p>}
+          <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50">Copy</p>
+          {data.primaryText && <p className="text-[12px] text-foreground/85 leading-relaxed">{data.primaryText}</p>}
+          {data.secondaryText && <p className="text-[11px] text-muted-foreground/60 leading-relaxed">{data.secondaryText}</p>}
           {data.cta && (
-            <span className="inline-flex text-label font-semibold text-primary border border-primary/25 bg-primary/10 px-2 py-1 rounded">
+            <span className="inline-flex text-[10px] font-semibold text-primary border border-primary/25 bg-primary/10 px-2 py-1 rounded">
               CTA · {data.cta}
             </span>
           )}
@@ -194,14 +194,14 @@ function OverviewTab({ data }: { data: CreativeCardData }) {
 
       {data.iapRead && (
         <div className="space-y-1.5">
-          <p className="text-label-xs font-mono uppercase tracking-widest text-muted-foreground/50">IAP read</p>
-          <p className="text-label text-foreground/80 leading-relaxed">{data.iapRead}</p>
+          <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50">IAP read</p>
+          <p className="text-[11px] text-foreground/80 leading-relaxed">{data.iapRead}</p>
         </div>
       )}
 
       {data.tags.length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-label-xs font-mono uppercase tracking-widest text-muted-foreground/50">Variable stack</p>
+          <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50">Variable stack</p>
           <LocalTagChips codes={data.tags} />
         </div>
       )}
@@ -233,8 +233,8 @@ function DemographicsTab({ rows }: { rows: DemographicRow[] }) {
   if (rows.length === 0) {
     return (
       <div className="py-10 text-center space-y-1.5">
-        <p className="text-body font-medium text-muted-foreground/60">No demographic data for this cell</p>
-        <p className="text-label text-muted-foreground/70">Import a demographic pivot export to see the age × gender breakdown.</p>
+        <p className="text-[12px] font-medium text-muted-foreground/60">No demographic data for this cell</p>
+        <p className="text-[10px] text-muted-foreground/50">Import a demographic pivot export to see the age × gender breakdown.</p>
       </div>
     );
   }
@@ -242,7 +242,7 @@ function DemographicsTab({ rows }: { rows: DemographicRow[] }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-label-xs font-mono uppercase tracking-widest text-muted-foreground/50">Age × gender</p>
+        <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50">Age × gender</p>
         <MetricToggle
           options={[{ value: "spend", label: "Spend" }, { value: "results", label: "Results" }]}
           value={metric}
@@ -257,7 +257,7 @@ function DemographicsTab({ rows }: { rows: DemographicRow[] }) {
           const fPct = 100 - mPct;
           return (
             <div key={b.age} className="space-y-1.5">
-              <div className="flex items-center justify-between text-label">
+              <div className="flex items-center justify-between text-[10px]">
                 <span className="font-medium text-foreground/80">{b.age}</span>
                 <span className="tabular-nums text-muted-foreground/60">{fmt(b.total)}</span>
               </div>
@@ -270,7 +270,7 @@ function DemographicsTab({ rows }: { rows: DemographicRow[] }) {
                   <div className="h-full bg-rose-400/60" style={{ width: `${fPct}%` }} title={`Female: ${fmt(b.female)}`} />
                 </div>
               </div>
-              <div className="flex items-center gap-3 text-label-xs text-muted-foreground/55">
+              <div className="flex items-center gap-3 text-[8.5px] text-muted-foreground/55">
                 <span className="flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60 shrink-0" />
                   M {fmt(b.male)}
@@ -285,7 +285,7 @@ function DemographicsTab({ rows }: { rows: DemographicRow[] }) {
         })}
       </div>
 
-      <p className="text-label-xs text-muted-foreground/40 pt-2 border-t border-border/20">
+      <p className="text-[8.5px] text-muted-foreground/40 pt-2 border-t border-border/20">
         Bar width = proportion of top age group. Blue = male, pink = female.
       </p>
     </div>
@@ -324,8 +324,8 @@ function PlacementsTab({ rows }: { rows: PlacementRow[] }) {
   if (rows.length === 0) {
     return (
       <div className="py-10 text-center space-y-1.5">
-        <p className="text-body font-medium text-muted-foreground/60">No placement data for this account</p>
-        <p className="text-label text-muted-foreground/70">Import a device × placement export to see placement signal.</p>
+        <p className="text-[12px] font-medium text-muted-foreground/60">No placement data for this account</p>
+        <p className="text-[10px] text-muted-foreground/50">Import a device × placement export to see placement signal.</p>
       </div>
     );
   }
@@ -333,7 +333,7 @@ function PlacementsTab({ rows }: { rows: PlacementRow[] }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-label-xs font-mono uppercase tracking-widest text-muted-foreground/50">Account-level placements</p>
+        <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50">Account-level placements</p>
         <MetricToggle
           options={[{ value: "spend", label: "Spend" }, { value: "cpa", label: "CPA" }]}
           value={metric}
@@ -348,10 +348,10 @@ function PlacementsTab({ rows }: { rows: PlacementRow[] }) {
           const barW = Math.round((val / maxVal) * 100);
           return (
             <div key={b.Placement + b.Platform} className="space-y-1.5">
-              <div className="flex items-center justify-between text-label">
+              <div className="flex items-center justify-between text-[10px]">
                 <div className="min-w-0">
                   <span className="font-medium text-foreground/80">{b.Placement}</span>
-                  <span className="ml-1.5 text-label-xs text-muted-foreground/50 capitalize">{b.Platform}</span>
+                  <span className="ml-1.5 text-[9px] text-muted-foreground/50 capitalize">{b.Platform}</span>
                 </div>
                 <span className="tabular-nums text-muted-foreground/60 shrink-0 ml-2">
                   {metric === "spend" ? usd(b["Amount spent (USD)"]) : cpa != null ? usd(cpa) : "—"}
@@ -363,7 +363,7 @@ function PlacementsTab({ rows }: { rows: PlacementRow[] }) {
                   style={{ width: `${barW}%` }}
                 />
               </div>
-              <div className="text-label-xs text-muted-foreground/45">
+              <div className="text-[8.5px] text-muted-foreground/45">
                 {num(b.Results)} results · {usd(b["Amount spent (USD)"])} spend
               </div>
             </div>
@@ -371,7 +371,7 @@ function PlacementsTab({ rows }: { rows: PlacementRow[] }) {
         })}
       </div>
 
-      <p className="text-label-xs text-muted-foreground/40 pt-2 border-t border-border/20">
+      <p className="text-[8.5px] text-muted-foreground/40 pt-2 border-t border-border/20">
         Placement signal is account-level — not scoped to this creative cell.
       </p>
     </div>
@@ -416,7 +416,7 @@ export function CreativeExpandDialog({
             <ExpandVisual data={data} className="absolute inset-0" />
 
             {unmapped && (
-              <div className="absolute top-3 left-3 flex items-center gap-1 bg-amber-500/20 border border-amber-400/30 text-amber-300 text-label-xs font-semibold px-2 py-1 rounded-full backdrop-blur-sm">
+              <div className="absolute top-3 left-3 flex items-center gap-1 bg-amber-500/20 border border-amber-400/30 text-amber-300 text-[9px] font-semibold px-2 py-1 rounded-full backdrop-blur-sm">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
                 Unmapped
               </div>
@@ -424,7 +424,7 @@ export function CreativeExpandDialog({
 
             {data.assetFormat && (
               <div className="absolute bottom-3 left-3">
-                <span className="text-label-xs font-mono uppercase text-white/50 border border-white/10 bg-black/40 px-1.5 py-0.5 rounded backdrop-blur-sm">
+                <span className="text-[8px] font-mono uppercase text-white/50 border border-white/10 bg-black/40 px-1.5 py-0.5 rounded backdrop-blur-sm">
                   {data.assetFormat}
                 </span>
               </div>
@@ -436,12 +436,12 @@ export function CreativeExpandDialog({
 
             {/* Header */}
             <div className="px-5 pt-4 pb-3 border-b border-border/30 shrink-0">
-              <div className="text-label-xs font-mono text-muted-foreground/50 uppercase tracking-widest mb-0.5">
+              <div className="text-[9px] font-mono text-muted-foreground/50 uppercase tracking-widest mb-0.5">
                 Creative · {data.conceptCode}
               </div>
-              <p className="text-sm font-semibold text-foreground leading-tight">{data.title}</p>
+              <p className="text-[14px] font-semibold text-foreground leading-tight">{data.title}</p>
               {data.visualSystem && (
-                <p className="text-label text-muted-foreground/55 mt-0.5 leading-relaxed line-clamp-2">{data.visualSystem}</p>
+                <p className="text-[11px] text-muted-foreground/55 mt-0.5 leading-relaxed line-clamp-2">{data.visualSystem}</p>
               )}
             </div>
 
@@ -453,16 +453,16 @@ export function CreativeExpandDialog({
               {/* Unmapped warning shown in overview */}
               {unmapped && tab === "overview" && (
                 <div className="mb-4 flex items-start gap-2.5 p-3 rounded-lg border border-amber-400/25 bg-amber-400/[0.05]">
-                  <span className="text-amber-400 shrink-0 mt-px text-body">⚠</span>
+                  <span className="text-amber-400 shrink-0 mt-px text-[13px]">⚠</span>
                   <div className="space-y-1.5 min-w-0">
-                    <p className="text-label font-medium text-amber-300/90">Not fully mapped to IAP library</p>
-                    <p className="text-label text-muted-foreground/70 leading-relaxed">
+                    <p className="text-[11px] font-medium text-amber-300/90">Not fully mapped to IAP library</p>
+                    <p className="text-[10px] text-muted-foreground/70 leading-relaxed">
                       This cell has performance data but no library entry — variable codes, copy, and asset may be absent.
                     </p>
                     {onUploadCreatives && (
                       <button
                         onClick={() => { onOpenChange(false); onUploadCreatives(); }}
-                        className="flex items-center gap-1 text-label font-medium text-amber-300 hover:text-amber-200 border border-amber-400/25 bg-amber-400/[0.06] hover:bg-amber-400/10 px-2 py-1 rounded transition-colors"
+                        className="flex items-center gap-1 text-[10px] font-medium text-amber-300 hover:text-amber-200 border border-amber-400/25 bg-amber-400/[0.06] hover:bg-amber-400/10 px-2 py-1 rounded transition-colors"
                       >
                         <Upload className="w-3 h-3" /> Upload creatives
                       </button>

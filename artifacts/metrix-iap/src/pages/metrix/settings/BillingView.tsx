@@ -18,7 +18,7 @@ function UsageBar({ label, used, limit }: { label: string; used: number; limit: 
   const pct = limit > 0 ? Math.min((used / limit) * 100, 100) : 0;
   return (
     <div>
-      <div className="flex items-center justify-between text-body mb-1">
+      <div className="flex items-center justify-between text-[12px] mb-1">
         <span className="text-foreground/90 font-medium">{label}</span>
         <span className="text-muted-foreground/80 tabular-nums">{used} / {limit}</span>
       </div>
@@ -70,7 +70,7 @@ export function BillingView() {
         <SectionCard title="Plan includes" desc={`What the ${billing.plan} plan covers.`}>
           <ul className="space-y-1.5">
             {billing.included.map((item) => (
-              <li key={item} className="flex items-center gap-2 text-body text-foreground/85">
+              <li key={item} className="flex items-center gap-2 text-[12px] text-foreground/85">
                 <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> {item}
               </li>
             ))}
@@ -80,20 +80,20 @@ export function BillingView() {
         <SectionCard title="Invoices" desc="Past invoices, newest first.">
           <div className="rounded-lg border border-border/30 bg-white/[0.02] overflow-hidden">
             <div className="grid grid-cols-[1fr_auto_auto] gap-3 px-3 py-2 border-b border-border/30">
-              <span className="text-label uppercase tracking-wide text-muted-foreground/70 font-medium">Invoice</span>
-              <span className="text-label uppercase tracking-wide text-muted-foreground/70 font-medium text-right w-20">Amount</span>
-              <span className="text-label uppercase tracking-wide text-muted-foreground/70 font-medium text-right w-16">Status</span>
+              <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70 font-medium">Invoice</span>
+              <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70 font-medium text-right w-20">Amount</span>
+              <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70 font-medium text-right w-16">Status</span>
             </div>
             <div className="divide-y divide-border/20">
               {billing.invoices.map((inv) => (
                 <div key={inv.id} className="grid grid-cols-[1fr_auto_auto] gap-3 px-3 py-2.5 items-center">
                   <div className="min-w-0">
-                    <div className="text-body font-medium text-foreground">{inv.id}</div>
-                    <div className="text-label font-mono text-muted-foreground/70">{fmtDate(inv.date)}</div>
+                    <div className="text-[12px] font-medium text-foreground">{inv.id}</div>
+                    <div className="text-[10px] font-mono text-muted-foreground/70">{fmtDate(inv.date)}</div>
                   </div>
-                  <span className="text-body text-foreground/90 tabular-nums text-right w-20">{fmtUSD(inv.amount_usd)}</span>
+                  <span className="text-[12px] text-foreground/90 tabular-nums text-right w-20">{fmtUSD(inv.amount_usd)}</span>
                   <span className={cn(
-                    "text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none text-right w-16 justify-self-end",
+                    "text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none text-right w-16 justify-self-end",
                     inv.status === "paid" ? "text-emerald-400 border-emerald-400/25 bg-emerald-400/10" : "text-amber-400 border-amber-400/25 bg-amber-400/10"
                   )}>
                     {inv.status}

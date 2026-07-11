@@ -73,14 +73,14 @@ export function Topbar() {
               {!isLast && crumb.to ? (
                 <Link
                   href={crumb.to}
-                  className="text-body truncate text-muted-foreground/60 hover:text-foreground focus-visible:text-foreground rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  className="text-[12px] truncate text-muted-foreground/60 hover:text-foreground focus-visible:text-foreground rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
                   {crumb.label}
                 </Link>
               ) : (
                 <span
                   aria-current={isLast ? "page" : undefined}
-                  className={cn("text-body truncate", isLast ? "text-foreground font-medium" : "text-muted-foreground/60")}
+                  className={cn("text-[12px] truncate", isLast ? "text-foreground font-medium" : "text-muted-foreground/60")}
                 >
                   {crumb.label}
                 </span>
@@ -95,16 +95,16 @@ export function Topbar() {
 
       {/* Status */}
       {isManager ? (
-        <div className="flex items-center gap-1 text-label font-medium text-muted-foreground/60 shrink-0">
+        <div className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground/60 shrink-0">
           <span className="hidden sm:inline">Agency</span>
         </div>
       ) : unconfigured ? (
-        <div className="flex items-center gap-1.5 text-label text-muted-foreground border border-border/50 rounded px-2 py-1 shrink-0">
+        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground border border-border/50 rounded px-2 py-1 shrink-0">
           <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60" />
           <span>Setup required</span>
         </div>
       ) : (
-        <div className="flex items-center gap-1 text-label font-medium text-emerald-400 shrink-0">
+        <div className="flex items-center gap-1 text-[11px] font-medium text-emerald-400 shrink-0">
           <CheckCircle2 className="w-3 h-3" />
           <span className="hidden sm:inline">Connected</span>
         </div>
@@ -124,7 +124,7 @@ export function Topbar() {
           aria-label={`Account: ${leadLabel}`}
           className="w-7 h-7 rounded flex items-center justify-center bg-primary/15 border border-primary/20 text-primary hover:bg-primary/20 transition-colors"
         >
-          <span className="text-label font-bold leading-none">{initials}</span>
+          <span className="text-[10px] font-bold leading-none">{initials}</span>
         </button>
         <button
           aria-label={user ? `Sign out (${user.email})` : "Sign out"}

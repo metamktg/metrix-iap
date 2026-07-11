@@ -6,10 +6,10 @@ import { readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel } from "../shared
 import type { CellPerformanceRow, VariablePerformanceRow, DemographicRow, PlacementRow, ConversionFunnelRow } from "@/lib/data/seedTypes";
 
 export function Th({ children, right }: { children: React.ReactNode; right?: boolean }) {
-  return <th className={cn("text-label font-mono uppercase tracking-wider text-muted-foreground/70 font-semibold px-3 py-2.5", right ? "text-right" : "text-left")}>{children}</th>;
+  return <th className={cn("text-[9px] font-mono uppercase tracking-widest text-muted-foreground/60 font-semibold px-2.5 py-2", right ? "text-right" : "text-left")}>{children}</th>;
 }
 export function Td({ children, right, className }: { children: React.ReactNode; right?: boolean; className?: string }) {
-  return <td className={cn("px-3 py-2.5 text-sm text-foreground/85 align-top", right && "text-right tabular-nums", className)}>{children}</td>;
+  return <td className={cn("px-2.5 py-2 text-[11px] text-foreground/80 align-top", right && "text-right tabular-nums", className)}>{children}</td>;
 }
 
 export function TableShell({ children }: { children: React.ReactNode }) {
@@ -37,7 +37,7 @@ export function VariableCodeChips({ row }: { row: CellPerformanceRow }) {
   return (
     <div className="flex flex-wrap gap-1 mt-1">
       {codes.map((c) => (
-        <span key={c} className="text-label-xs font-mono text-muted-foreground/70 border border-border/30 px-1 py-0.5 rounded leading-none" title={readableVariables(c)}>
+        <span key={c} className="text-[8px] font-mono text-muted-foreground/70 border border-border/30 px-1 py-0.5 rounded leading-none" title={readableVariables(c)}>
           {c}
         </span>
       ))}
@@ -48,7 +48,7 @@ export function VariableCodeChips({ row }: { row: CellPerformanceRow }) {
 export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; onRowClick?: (row: CellPerformanceRow) => void }) {
   return (
     <TableShell>
-      <thead className="sticky top-0 bg-table-header z-10">
+      <thead className="sticky top-0 bg-[hsl(222_55%_7%)] z-10">
         <tr className="border-b border-border/40">
           <Th>Cell / concept</Th>
           <Th>Result type</Th>
@@ -68,7 +68,7 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
           >
             <Td>
               <div className="font-medium text-foreground">{r.book2_concept_name}</div>
-              <div className="text-label-xs font-mono text-muted-foreground/60 mt-0.5">{r.cell_id}{r.stage ? ` · ${r.stage}` : ""}</div>
+              <div className="text-[9px] font-mono text-muted-foreground/60 mt-0.5">{r.cell_id}{r.stage ? ` · ${r.stage}` : ""}</div>
               <VariableCodeChips row={r} />
             </Td>
             <Td>{eventLabel(r["Result type"])}</Td>
@@ -87,7 +87,7 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
 export function VariableTable({ rows }: { rows: VariablePerformanceRow[] }) {
   return (
     <TableShell>
-      <thead className="sticky top-0 bg-table-header z-10">
+      <thead className="sticky top-0 bg-[hsl(222_55%_7%)] z-10">
         <tr className="border-b border-border/40">
           <Th>Variable</Th>
           <Th>Family</Th>
@@ -104,7 +104,7 @@ export function VariableTable({ rows }: { rows: VariablePerformanceRow[] }) {
           <tr key={r.variable_id + r["Result type"] + i} className="border-b border-border/20 hover:bg-white/[0.02]">
             <Td>
               <div className="font-medium text-foreground">{readableVariables(r.variable_id)}</div>
-              <div className="text-label-xs font-mono text-muted-foreground/60 mt-0.5">{r.variable_id}</div>
+              <div className="text-[9px] font-mono text-muted-foreground/60 mt-0.5">{r.variable_id}</div>
             </Td>
             <Td className="capitalize">{r.variable_family}</Td>
             <Td>{eventLabel(r["Result type"])}</Td>
@@ -123,7 +123,7 @@ export function VariableTable({ rows }: { rows: VariablePerformanceRow[] }) {
 export function DemographicTable({ rows }: { rows: DemographicRow[] }) {
   return (
     <TableShell>
-      <thead className="sticky top-0 bg-table-header z-10">
+      <thead className="sticky top-0 bg-[hsl(222_55%_7%)] z-10">
         <tr className="border-b border-border/40">
           <Th>Cell</Th>
           <Th>Age</Th>
@@ -137,7 +137,7 @@ export function DemographicTable({ rows }: { rows: DemographicRow[] }) {
       <tbody>
         {rows.map((r, i) => (
           <tr key={r.cell_id + r.Age + r.Gender + i} className="border-b border-border/20 hover:bg-white/[0.02]">
-            <Td><span className="font-mono text-label text-muted-foreground/60">{r.cell_id}</span></Td>
+            <Td><span className="font-mono text-[10px] text-muted-foreground/60">{r.cell_id}</span></Td>
             <Td>{r.Age}</Td>
             <Td className="capitalize">{r.Gender}</Td>
             <Td right>{fmtUSD(r["Amount spent (USD)"])}</Td>
@@ -154,7 +154,7 @@ export function DemographicTable({ rows }: { rows: DemographicRow[] }) {
 export function PlacementTable({ rows }: { rows: PlacementRow[] }) {
   return (
     <TableShell>
-      <thead className="sticky top-0 bg-table-header z-10">
+      <thead className="sticky top-0 bg-[hsl(222_55%_7%)] z-10">
         <tr className="border-b border-border/40">
           <Th>Placement</Th>
           <Th>Platform</Th>
@@ -186,7 +186,7 @@ export function PlacementTable({ rows }: { rows: PlacementRow[] }) {
 export function ConversionFunnelTable({ rows, labelHeader }: { rows: (ConversionFunnelRow & { label: string })[]; labelHeader: string }) {
   return (
     <TableShell>
-      <thead className="sticky top-0 bg-table-header z-10">
+      <thead className="sticky top-0 bg-[hsl(222_55%_7%)] z-10">
         <tr className="border-b border-border/40">
           <Th>{labelHeader}</Th>
           <Th right>Link clicks</Th>
@@ -204,7 +204,7 @@ export function ConversionFunnelTable({ rows, labelHeader }: { rows: (Conversion
             <Td right>{r.adds_to_cart != null ? fmtNum(r.adds_to_cart) : "—"}</Td>
             <Td right>{r.checkouts_initiated != null ? fmtNum(r.checkouts_initiated) : "—"}</Td>
             <Td right>{r.purchases != null ? fmtNum(r.purchases) : "—"}</Td>
-            <Td>{r.confidence ? <span className="text-label-xs font-mono uppercase tracking-wider text-muted-foreground/60">{r.confidence.replace(/_/g, " ")}</span> : "—"}</Td>
+            <Td>{r.confidence ? <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/60">{r.confidence.replace(/_/g, " ")}</span> : "—"}</Td>
           </tr>
         ))}
       </tbody>

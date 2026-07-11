@@ -36,7 +36,7 @@ export function DataSourceBadgeToggle() {
     <button
       onClick={toggle}
       className={cn(
-        "flex items-center gap-1 text-label-xs font-mono px-1.5 py-0.5 rounded border transition-colors",
+        "flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.5 rounded border transition-colors",
         on
           ? "text-primary border-primary/30 bg-primary/5 hover:bg-primary/10"
           : "text-muted-foreground/70 border-border/30 bg-transparent hover:bg-white/5"
@@ -84,13 +84,13 @@ export function DataSourceBadge({ table, className, collapsible = false }: DataS
       {!collapsed && tables.map(t => (
         <span
           key={t}
-          className="inline-flex items-center gap-1 text-label-xs font-mono px-1.5 py-0.5 rounded border border-border/30 bg-muted/20 text-muted-foreground/70 leading-none"
+          className="inline-flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.5 rounded border border-border/30 bg-muted/20 text-muted-foreground/70 leading-none"
         >
           {t}
         </span>
       ))}
       {collapsed && (
-        <span className="text-label-xs font-mono text-muted-foreground/60 leading-none">
+        <span className="text-[9px] font-mono text-muted-foreground/60 leading-none">
           {tables.length} table{tables.length > 1 ? "s" : ""}
         </span>
       )}

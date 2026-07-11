@@ -121,13 +121,13 @@ export function CrossmapResultsView() {
                           onClick={() => setActiveCell(cell)}
                           className="border-b border-border/20 cursor-pointer hover:bg-white/[0.02]"
                         >
-                          <Td><span className="font-mono text-label text-muted-foreground/75">{cell.cell_id}</span></Td>
+                          <Td><span className="font-mono text-[11px] text-muted-foreground/75">{cell.cell_id}</span></Td>
                           <Td>
                             <div className="font-medium text-foreground/75">{readableVariables(cell.concept_code)}</div>
-                            {cell.plain_text.headline && <div className="text-label text-muted-foreground/70 mt-0.5">{cell.plain_text.headline}</div>}
+                            {cell.plain_text.headline && <div className="text-[10px] text-muted-foreground/60 mt-0.5">{cell.plain_text.headline}</div>}
                           </Td>
                           <Td className={cn(cell.diagonal_role === "diag_down" && "text-primary", cell.diagonal_role === "diag_up" && "text-teal-300")}>{diag}</Td>
-                          <Td className="text-muted-foreground/70" >Not run</Td>
+                          <Td className="text-muted-foreground/60" >Not run</Td>
                           <Td right>—</Td>
                           <Td right>—</Td>
                           <Td right>—</Td>
@@ -141,12 +141,12 @@ export function CrossmapResultsView() {
                         onClick={() => setActiveCell(cell)}
                         className="border-b border-border/20 cursor-pointer hover:bg-white/[0.02]"
                       >
-                        <Td>{i === 0 ? <span className="font-mono text-label text-foreground/85">{cell.cell_id}</span> : null}</Td>
+                        <Td>{i === 0 ? <span className="font-mono text-[11px] text-foreground/85">{cell.cell_id}</span> : null}</Td>
                         <Td>
                           {i === 0 && (
                             <>
                               <div className="font-medium text-foreground">{readableVariables(cell.concept_code)}</div>
-                              {cell.plain_text.headline && <div className="text-label text-muted-foreground/70 mt-0.5">{cell.plain_text.headline}</div>}
+                              {cell.plain_text.headline && <div className="text-[10px] text-muted-foreground/70 mt-0.5">{cell.plain_text.headline}</div>}
                             </>
                           )}
                         </Td>
@@ -163,7 +163,7 @@ export function CrossmapResultsView() {
               </TableShell>
 
               <div className="flex items-center gap-4">
-                <span className="text-label text-muted-foreground/70">Click any row for the tile's granular performance</span>
+                <span className="text-[11px] text-muted-foreground/60">Click any row for the tile's granular performance</span>
                 <span className="ml-auto flex items-center gap-4">
                   <CrossLink to="/app/mst/matrix" label="Open the matrix" />
                   <CrossLink to="/app/analysis/library" label="Full IAP library" />

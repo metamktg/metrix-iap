@@ -26,19 +26,19 @@ export function MetricPickerButton({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 text-label font-medium text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.04] transition-colors">
+        <button className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 text-[11px] font-medium text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.04] transition-colors">
           <Settings2 className="w-3 h-3" />
           Customize metrics
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 max-h-[420px] overflow-y-auto">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">
+          <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">
             Metric tiles
           </span>
           <button
             onClick={onReset}
-            className="inline-flex items-center gap-1 text-label font-medium text-muted-foreground/60 hover:text-foreground transition-colors"
+            className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground/60 hover:text-foreground transition-colors"
           >
             <RotateCcw className="w-2.5 h-2.5" /> Reset
           </button>
@@ -46,13 +46,13 @@ export function MetricPickerButton({
 
         {selected.length > 0 && (
           <div className="mb-3 space-y-1">
-            <p className="text-label-xs font-mono uppercase tracking-widest text-muted-foreground/50 mb-1">Selected order</p>
+            <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50 mb-1">Selected order</p>
             {selected.map((id, i) => {
               const m = byId.get(id);
               if (!m) return null;
               return (
                 <div key={id} className="flex items-center gap-1.5 px-1.5 py-1 rounded-md bg-primary/[0.05] border border-primary/15">
-                  <span className="text-label text-foreground/85 flex-1 min-w-0 truncate">{m.label}</span>
+                  <span className="text-[11px] text-foreground/85 flex-1 min-w-0 truncate">{m.label}</span>
                   <button
                     disabled={i === 0}
                     onClick={() => onMove(id, -1)}
@@ -73,7 +73,7 @@ export function MetricPickerButton({
           </div>
         )}
 
-        <p className="text-label-xs font-mono uppercase tracking-widest text-muted-foreground/50 mb-1">All metrics</p>
+        <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50 mb-1">All metrics</p>
         <div className="space-y-0.5">
           {catalog.map((m) => {
             const on = selected.includes(m.id);
@@ -94,8 +94,8 @@ export function MetricPickerButton({
                 >
                   {on && <Check className="w-2.5 h-2.5 text-primary" />}
                 </span>
-                <span className="text-label text-foreground/85 flex-1 min-w-0 truncate">{m.label}</span>
-                <span className="text-label text-muted-foreground/50 tabular-nums">{m.formatted}</span>
+                <span className="text-[11px] text-foreground/85 flex-1 min-w-0 truncate">{m.label}</span>
+                <span className="text-[10px] text-muted-foreground/50 tabular-nums">{m.formatted}</span>
               </button>
             );
           })}
