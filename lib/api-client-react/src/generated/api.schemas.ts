@@ -240,6 +240,29 @@ export interface AdminSendPasswordResetResult {
   email_error?: string;
 }
 
+export interface AdminCreateUserInput {
+  /** @maxLength 320 */
+  email: string;
+}
+
+export type AdminCreateUserResultStatus = typeof AdminCreateUserResultStatus[keyof typeof AdminCreateUserResultStatus];
+
+
+export const AdminCreateUserResultStatus = {
+  created: 'created',
+} as const;
+
+export interface AdminCreateUserResult {
+  status: AdminCreateUserResultStatus;
+  email: string;
+  /** Always present — shown on screen for the admin to copy and share directly, independent of email delivery. */
+  temp_password: string;
+  /** Whether the courtesy email with the temporary password was delivered. The flow succeeds either way. */
+  email_sent: boolean;
+  /** Present only when the courtesy email could not be sent — explains why. */
+  email_error?: string;
+}
+
 export type AdminUserActionResultStatus = typeof AdminUserActionResultStatus[keyof typeof AdminUserActionResultStatus];
 
 

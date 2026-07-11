@@ -21,6 +21,8 @@ import {
   RejectAgentWaitlistEntryResponse,
   AdminLoginBody,
   AdminLoginResponse,
+  AdminCreateUserBody,
+  AdminCreateUserResponse,
   GetAdminSessionResponse,
   AdminLogoutResponse,
   ListRequestAccessEntriesResponse,
@@ -289,6 +291,83 @@ router.get("/metrix/admin/users", requireAdmin, async (req, res) => {
         disabled_at: u.disabledAt ? u.disabledAt.toISOString() : null,
       })),
       total: rows.length,
+    }),
+  );
+});
+
+// Create a user account on the spot (demo-call flow). Unlike approval
+// provisioning, the temp password is ALWAYS returned so the admin can copy
+// it from the console immediately — email is a courtesy, never required.
+router.post("/metrix/admin/users", requireAdmin, async (req, res) => {
+  const parsed = AdminCreateUserBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "Please enter a valid email address." });
+    return;
+  }
+  const email = parsed.data.email.trim().toLowerCase();
+
+  const [existing] = await db
+    .select({ id: usersTable.id })
+    .from(usersTable)
+    .where(eq(usersTable.email, email))
+    .limit(1);
+  if (existing) {
+    res.status(409).json({
+      message:
+        "An account with this email already exists. Use “New temp password” on that user below to issue fresh credentials.",
+    });
+    return;
+  }
+
+  const tempPassword = generateTempPassword();
+  const passwordHash = await hashPassword(tempPassword);
+  // Designated agency accounts must always be admins — same rule as
+  // approval provisioning (see agencyAccessSafeguard.ts).
+  const role = isAgencyAdminEmail(email) ? "admin" : undefined;
+
+  // onConflictDoNothing + returning guards the race where two creates for
+  // the same email pass the pre-check: the loser gets no row back → 409.
+  const inserted = await db
+    .insert(usersTable)
+    .values({
+      email,
+      passwordHash,
+      mustChangePassword: true,
+      ...(role ? { role } : {}),
+    })
+    .onConflictDoNothing({ target: usersTable.email })
+    .returning({ id: usersTable.id });
+  if (inserted.length === 0) {
+    res.status(409).json({
+      message:
+        "An account with this email already exists. Use “New temp password” on that user below to issue fresh credentials.",
+    });
+    return;
+  }
+  req.log.info({ email }, "admin created user directly from console");
+
+  // Mirror into Supabase Auth (official-schema FKs). Non-fatal — the
+  // mirror:auth-users script repairs any gaps.
+  try {
+    const mirror = await ensureSupabaseAuthUser(email);
+    await db
+      .update(usersTable)
+      .set({ supabaseUserId: mirror.supabaseUserId })
+      .where(eq(usersTable.email, email));
+  } catch (err) {
+    req.log.error({ err, email }, "Supabase Auth mirror failed for admin-created user");
+  }
+
+  // Courtesy email — the flow succeeds regardless of delivery.
+  const emailResult = await sendApprovalEmail(email, tempPassword, getAppBaseUrl(), req.log);
+  const sent = emailResult.status === "sent";
+  res.json(
+    AdminCreateUserResponse.parse({
+      status: "created",
+      email,
+      temp_password: tempPassword,
+      email_sent: sent,
+      ...(sent ? {} : { email_error: emailResult.reason }),
     }),
   );
 });

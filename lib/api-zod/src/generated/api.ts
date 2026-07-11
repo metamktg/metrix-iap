@@ -440,6 +440,27 @@ export const GetAdminEmailStatusResponse = zod.object({
 
 
 /**
+ * Provisions a new user account on the spot with a generated temporary password. The temporary password is ALWAYS returned in the response so the admin can copy and share it immediately — email delivery is attempted as a courtesy but is never required for the flow to succeed. The user must change the password on first login. Refuses (409) when an account with this email already exists — use the resend-temp-password action instead. Requires admin access.
+ * @summary Create a user account directly from the admin console
+ */
+export const adminCreateUserBodyEmailMax = 320;
+
+
+
+export const AdminCreateUserBody = zod.object({
+  "email": zod.string().email().max(adminCreateUserBodyEmailMax)
+})
+
+export const AdminCreateUserResponse = zod.object({
+  "status": zod.enum(['created']),
+  "email": zod.string(),
+  "temp_password": zod.string().describe('Always present — shown on screen for the admin to copy and share directly, independent of email delivery.'),
+  "email_sent": zod.boolean().describe('Whether the courtesy email with the temporary password was delivered. The flow succeeds either way.'),
+  "email_error": zod.string().optional().describe('Present only when the courtesy email could not be sent — explains why.')
+})
+
+
+/**
  * Returns all provisioned user accounts with their status (active, invited, or disabled), newest first. Requires admin access.
  * @summary List provisioned user accounts
  */
