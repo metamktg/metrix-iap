@@ -1,0 +1,1009 @@
+# Metrix Platform-Wide UI/UX Optimization and Usability Overhaul
+
+Perform a comprehensive platform-wide UI/UX audit and implementation pass across the entire Metrix application.
+
+This is not a cosmetic redesign. The objective is to make every dashboard, navigation layer, data table, visualization, tile, modal, filter, and interaction substantially more intuitive, legible, responsive, and useful.
+
+The final experience should allow users to understand the most important information immediately, navigate complex advertising data confidently, and move from observation to insight without searching through cluttered or poorly prioritized interfaces.
+
+## Primary Objective
+
+Redesign and refine the full platform to maximize:
+
+* Usability
+* Information clarity
+* Data discoverability
+* Visual hierarchy
+* Responsiveness
+* Accessibility
+* Scannability
+* Analytical speed
+* Consistency
+* Perceived product quality
+
+The interface should feel like a premium, mature advertising intelligence platform built for rapid decision-making.
+
+Do not simply restyle existing components. Evaluate whether each component communicates its purpose, value, and available actions clearly. Restructure layouts and interactions wherever necessary.
+
+---
+
+# 1. Full Platform Audit
+
+Audit every route, dashboard, tab, subtab, page, modal, drawer, table, card, chart, navigation state, and responsive breakpoint.
+
+Identify and correct:
+
+* Small or barely legible text
+* Weak typography hierarchy
+* Poor visual contrast
+* Inconsistent font sizes
+* Unclear card and tile purposes
+* Valuable data hidden beneath secondary information
+* Excessive density
+* Excessive empty space
+* Inconsistent spacing and padding
+* Inconsistent component dimensions
+* Unclear active navigation states
+* Confusing labels
+* Weak data prioritization
+* Poor mobile and tablet responsiveness
+* Tables that overflow or become unusable
+* Charts that do not resize correctly
+* Filters that are difficult to find or understand
+* Popups and modals that lack structure
+* Important actions buried below the fold
+* Pages where users cannot immediately determine what matters
+* Repeated or redundant information
+* Decorative elements that reduce clarity
+* Inconsistent colour usage
+* Inconsistent hover, focus, selected, loading, empty, and error states
+
+No existing route should be skipped.
+
+Do not remove existing functionality, navigation, tabs, subtabs, metrics, reports, breakdowns, or data sources unless they are confirmed duplicates. Preserve the platform architecture while substantially improving how it is presented and used.
+
+---
+
+# 2. Typography and Legibility
+
+Increase overall platform legibility.
+
+The current interface frequently uses text that is too small, low contrast, or visually subordinate to less important elements.
+
+Implement a consistent typography system that includes:
+
+* Larger dashboard body text
+* Larger metric values
+* Clearer chart labels
+* More readable table content
+* Strong page headings
+* Distinct section headings
+* Consistent card titles
+* Clear helper text
+* Legible form labels
+* Legible dropdown options
+* Legible modal content
+* Improved line height
+* Improved paragraph width
+* Improved spacing between headings and supporting content
+
+Avoid excessive use of tiny uppercase labels.
+
+Small metadata may be visually secondary, but it must remain comfortably readable.
+
+Important values should visually dominate their supporting labels.
+
+Recommended minimum targets:
+
+* Dashboard body text: approximately 14–16px
+* Important labels: approximately 14–16px
+* Table text: approximately 14–15px
+* Metric values: approximately 24–36px depending on hierarchy
+* Page titles: approximately 28–36px
+* Section headings: approximately 18–24px
+
+Use responsive typography where necessary, but do not allow important text to become excessively small on narrow screens.
+
+---
+
+# 3. Colour, Contrast, and Visual Comfort
+
+Rework the colour system so the interface is easier on the eyes while maintaining a premium Metrix identity.
+
+Requirements:
+
+* Strong text-to-background contrast
+* Clear separation between surfaces
+* Consistent semantic colours
+* Accessible hover and active states
+* Restrained use of bright colours
+* No low-contrast grey text on dark backgrounds
+* No coloured text that becomes difficult to read
+* No excessive glow, gradients, transparency, or visual noise
+* No borders that disappear against the background
+* No cards blending into the main canvas
+* No charts using colours that are difficult to distinguish
+
+Use colour strategically to communicate:
+
+* Positive performance
+* Negative performance
+* Warnings
+* Informational states
+* Selected states
+* Active navigation
+* Comparison periods
+* Metric categories
+* Audience segments
+* Conversion outcomes
+
+Do not use colour as the only method of communicating meaning. Pair colour with labels, icons, values, patterns, or other visual indicators.
+
+The final aesthetic should be:
+
+* Crisp
+* Cool-toned
+* Premium
+* Analytical
+* Calm
+* High contrast
+* Minimal without feeling empty
+* Dense enough for professional use without becoming overwhelming
+
+---
+
+# 4. Platform-Wide Layout and Hierarchy
+
+Every page must communicate the following within seconds:
+
+1. Where the user is
+2. What the page is showing
+3. What the most important result is
+4. What has changed
+5. What the user can filter or compare
+6. What action should be taken next
+
+Restructure pages using a consistent hierarchy:
+
+## Page Header
+
+Each major page should include:
+
+* Clear page title
+* Short contextual description where useful
+* Current account, client, campaign, or reporting scope
+* Date range
+* Comparison period
+* Primary actions
+* Relevant filters
+* Last-updated indicator where applicable
+
+## Summary Layer
+
+The most important performance information should appear first.
+
+Use:
+
+* Primary KPI cards
+* Trend direction
+* Percentage or absolute change
+* Comparison period
+* Concise interpretation
+* Clear visual status
+* Immediate access to further breakdowns
+
+## Analysis Layer
+
+Below the summary, present:
+
+* Time-series performance
+* Segment performance
+* Demographic performance
+* Placement performance
+* Creative performance
+* Funnel performance
+* Campaign, ad set, and ad-level performance
+* Relevant explanations or recommendations
+
+## Detail Layer
+
+Use detailed tables, drill-down views, and secondary information after the primary insight layer.
+
+Do not force users to inspect dense tables before seeing the primary conclusions.
+
+---
+
+# 5. Universal Performance Metric Controls
+
+All hierarchical performance dashboards and performance overview modules must support intuitive switching between the core advertising metrics.
+
+At minimum, users must be able to select:
+
+* Clicks
+* Impressions
+* CTR
+* CPC
+* CPA
+* CVR
+* Conversion Value
+* ROAS
+
+Where available, also support:
+
+* Spend
+* Reach
+* Frequency
+* CPM
+* Purchases
+* Leads
+* Revenue
+* Landing Page Views
+* Cost per Landing Page View
+* Add to Cart
+* Initiate Checkout
+* Video performance metrics
+
+Build a reusable metric selector that works consistently across the platform.
+
+The selected metric should update the relevant:
+
+* KPI value
+* Chart
+* Trend
+* Comparison
+* Table sorting
+* Breakdown
+* Segment ranking
+* Heatmap
+* Supporting analysis
+
+The interface should make it obvious:
+
+* Which metric is currently selected
+* What unit it uses
+* Whether higher or lower is better
+* What period is being measured
+* What comparison is being shown
+* Which dimensions are available for breakdown
+
+Where relevant, allow a primary and secondary metric to be compared together.
+
+For example:
+
+* Spend versus ROAS
+* CTR versus CVR
+* CPC versus CPA
+* Impressions versus purchases
+* Clicks versus landing page views
+
+---
+
+# 6. Data Breakdown and Drill-Down System
+
+Create a consistent drill-down pattern across every data visualization.
+
+Users should be able to move logically through available dimensions such as:
+
+* Account
+* Campaign
+* Ad set
+* Ad
+* Creative
+* Platform
+* Placement
+* Device
+* Geography
+* Age
+* Gender
+* Audience
+* ICP segment
+* Funnel stage
+* Date
+* Hour
+* Day of week
+* Objective
+* Optimization event
+
+Do not create different interaction patterns for each page.
+
+Use a shared system for:
+
+* Metric selection
+* Breakdown selection
+* Filtering
+* Sorting
+* Grouping
+* Search
+* Comparison
+* Export
+* Drill-down
+* Resetting filters
+* Saving a view where supported
+
+Always display the active metric, active filters, and active breakdowns clearly.
+
+Use visible filter chips or a compact active-filter summary.
+
+Provide a clear “Reset filters” action.
+
+Do not hide essential filters inside unclear icons.
+
+---
+
+# 7. Demographic and ICP Data Priority
+
+Demographic data and ICP avatar data are high-priority analytical layers and must not be buried.
+
+Create clear, highly usable modules for:
+
+* Age
+* Gender
+* Location
+* Device
+* Placement
+* Audience segment
+* ICP avatar
+* Funnel stage
+* Relevant behavioural or campaign segment
+
+Each segment should clearly communicate:
+
+* Segment name
+* Segment description
+* Associated ICP or audience interpretation
+* Spend
+* Impressions
+* Clicks
+* CTR
+* CPC
+* Conversions
+* CVR
+* CPA
+* Conversion value
+* ROAS
+* Sample size or data sufficiency where available
+* Performance relative to account average
+* Trend versus previous period
+* Confidence or reliability indicator where supported
+
+For each ICP avatar or audience segment, surface the associated copy, messaging, angle, creative theme, or offer where that information exists.
+
+Users should be able to understand:
+
+* Who the segment represents
+* Which message was shown
+* Which creative or angle was used
+* How the segment responded
+* Which metric drove the conclusion
+* Whether the data is reliable
+* What action is recommended
+
+Provide intuitive ways to compare ICP segments side by side.
+
+Potential presentation patterns include:
+
+* Ranked segment cards
+* Sortable comparison tables
+* Heatmaps
+* Radar or profile charts where genuinely useful
+* Performance matrices
+* Expandable detail drawers
+* Side-by-side comparison mode
+
+Avoid visualizations that look impressive but make comparison harder.
+
+---
+
+# 8. Tile and Card Design System
+
+Create a reusable, consistent system for all platform tiles and cards.
+
+Every tile must immediately communicate:
+
+* What it represents
+* The primary value
+* The relevant time period
+* Whether performance improved or declined
+* What comparison is being used
+* Whether the tile is interactive
+* What deeper data is available
+
+Standard tile structure:
+
+1. Metric or module title
+2. Optional concise explanation
+3. Primary value or insight
+4. Trend or comparison
+5. Supporting context
+6. Optional mini visualization
+7. Clear interaction affordance
+8. Accessible tooltip where needed
+
+Use consistent:
+
+* Border radius
+* Border treatment
+* Background treatment
+* Padding
+* Title placement
+* Metric sizing
+* Icon sizing
+* Hover behaviour
+* Focus state
+* Expand action
+* Overflow menu
+* Loading state
+* Empty state
+* Error state
+
+Avoid filling cards with secondary text before presenting the primary value.
+
+The most valuable content must be the strongest visual element.
+
+Cards should use progressive disclosure. Show the key result first, then allow users to expand or drill into deeper detail.
+
+---
+
+# 9. Popups, Modals, Drawers, and Expanded Views
+
+Standardize every popup, modal, drawer, expanded tile, and data-detail panel.
+
+Use these components for deeper information without forcing users to leave their current analytical context.
+
+Every expanded module should support relevant combinations of:
+
+* Metric switching
+* Sorting
+* Filtering
+* Breakdown selection
+* Date comparison
+* Search
+* Segment comparison
+* Campaign hierarchy drill-down
+* Export
+* Related creative or copy viewing
+* Recommended action
+* Source or methodology details
+
+Modal structure should include:
+
+* Clear title
+* Scope or context
+* Primary insight
+* Relevant controls
+* Main visualization or table
+* Supporting explanation
+* Clear close action
+* Clear secondary actions
+* Sticky controls or header where necessary
+
+Do not use oversized modals for small information.
+
+Do not use small popovers for complex analytical workflows.
+
+Use the correct interaction container based on content complexity.
+
+Ensure modals remain fully usable on smaller laptops, tablets, and mobile devices.
+
+---
+
+# 10. Sortable, Filterable, and Searchable Data
+
+Wherever structured data appears, implement sorting, filtering, and searching when technically appropriate.
+
+Tables should support:
+
+* Sorting by column
+* Filtering by values
+* Search
+* Sticky headers
+* Clear active sort direction
+* Column visibility controls where useful
+* Pagination or virtualization for large datasets
+* Responsive overflow handling
+* Row expansion
+* Comparison highlighting
+* Export where supported
+* Clear empty states
+* Clear loading states
+* Clear error states
+
+Important metrics should be visible without requiring excessive horizontal scrolling.
+
+On smaller screens:
+
+* Prioritize essential columns
+* Allow users to reveal secondary columns
+* Use row cards or expandable rows where a table becomes impractical
+* Preserve sorting and filtering functionality
+* Avoid compressing columns until content becomes illegible
+
+Use sensible default sorting based on the page purpose.
+
+Examples:
+
+* Highest spend
+* Highest conversion value
+* Highest ROAS
+* Lowest CPA
+* Largest decline
+* Highest opportunity
+* Highest confidence
+
+---
+
+# 11. Data Visualization Standards
+
+Audit every chart and visualization.
+
+Each visualization must answer a specific user question.
+
+Every chart should include:
+
+* Clear title
+* Clear metric
+* Clear time period
+* Clear legend
+* Readable axis labels
+* Useful tooltips
+* Comparison context
+* Accessible colours
+* Responsive sizing
+* Empty and loading states
+* Drill-down where applicable
+
+Remove or replace charts that do not improve understanding.
+
+Prioritize:
+
+* Time-series charts for trends
+* Bar charts for ranked comparisons
+* Stacked bars for composition
+* Heatmaps for dimensional comparison
+* Funnel charts only for genuine funnel progression
+* Scatter plots for relationship and efficiency analysis
+* Tables when precision is more important than shape
+* Compact sparklines for supporting trend context
+
+Avoid:
+
+* Unnecessary pie charts
+* Unreadable multi-series charts
+* Excessively bright colours
+* Too many competing legends
+* Truncated labels without tooltips
+* Charts that require users to guess the metric
+* Decorative graphics that provide no analytical value
+
+---
+
+# 12. Peripheral Awareness and Data Scanning
+
+The interface must allow users to scan a dashboard and immediately recognize:
+
+* Strong performance
+* Weak performance
+* Significant changes
+* Outliers
+* Risks
+* Opportunities
+* Recommended next actions
+
+Use controlled visual emphasis.
+
+High-value findings should become natural visual magnets through:
+
+* Placement
+* Scale
+* Contrast
+* Typography
+* Whitespace
+* Semantic indicators
+* Trend markers
+* Confidence markers
+* Concise insight labels
+
+Do not make every component visually loud.
+
+Establish a clear hierarchy between:
+
+* Critical
+* Important
+* Supporting
+* Informational
+* Metadata
+
+Use badges sparingly and consistently.
+
+Create shared visual patterns for:
+
+* Winner
+* Underperformer
+* Opportunity
+* Risk
+* Insufficient data
+* Significant change
+* Stable performance
+* Recommendation available
+
+---
+
+# 13. Navigation and Wayfinding
+
+Audit and improve the entire navigation system.
+
+Requirements:
+
+* Clear distinction between primary and secondary navigation
+* Obvious active page state
+* Obvious active subtab state
+* Consistent naming
+* Consistent ordering
+* Predictable page transitions
+* Clear breadcrumbs where hierarchy is deep
+* Clear account and client scope
+* Accessible collapsed sidebar state
+* Tooltips for collapsed navigation icons
+* Responsive navigation for mobile and tablet
+* No disappearing or inaccessible subnavigation
+* No duplicated navigation labels with different meanings
+* No hidden pages that users cannot reasonably discover
+
+Preserve the approved six primary product layers and their relevant pages:
+
+* Listen
+* Analysis
+* Strategy
+* Report Builder
+* MST
+* Metrix Agent
+
+Ensure all previously approved tabs and subtabs remain available.
+
+Do not rename “Ad Account” into unnecessary alternative labels based on account type, user type, brand, or client. Use consistent user-facing terminology.
+
+---
+
+# 14. Responsive Behaviour
+
+The full platform must work properly across:
+
+* Large desktop
+* Standard desktop
+* Small laptop
+* Tablet landscape
+* Tablet portrait
+* Mobile landscape
+* Mobile portrait
+
+Audit common viewport widths, including approximately:
+
+* 1440px
+* 1280px
+* 1024px
+* 768px
+* 430px
+* 390px
+* 375px
+
+Correct:
+
+* Overlapping elements
+* Clipped text
+* Broken cards
+* Unusable tables
+* Misaligned controls
+* Charts with unreadable labels
+* Filters extending beyond the viewport
+* Modals extending outside the screen
+* Buttons becoming too small
+* Excessively compressed dashboards
+* Sidebars consuming too much space
+* Headers wrapping unpredictably
+* Horizontal scrolling caused by layout defects
+
+Responsive behaviour should reorganize content intelligently, not simply shrink the desktop version.
+
+On narrow screens:
+
+* Stack controls logically
+* Keep the most important KPI visible first
+* Use progressive disclosure
+* Convert unsuitable tables into expandable row layouts
+* Keep primary actions accessible
+* Maintain readable font sizes
+* Preserve metric and breakdown controls
+
+---
+
+# 15. Interaction and Feedback States
+
+Standardize all interaction states.
+
+Every interactive component should include:
+
+* Default state
+* Hover state
+* Focus state
+* Active state
+* Selected state
+* Disabled state
+* Loading state
+* Success state
+* Warning state
+* Error state
+* Empty state
+
+Buttons, tabs, dropdowns, chips, cards, table rows, chart elements, links, toggles, and navigation items should provide clear feedback.
+
+Do not rely on subtle colour changes that users may not notice.
+
+Use accessible keyboard focus indicators.
+
+Ensure users can tab through major controls logically.
+
+---
+
+# 16. Tooltips and Contextual Guidance
+
+Add concise tooltips where terminology, metrics, confidence levels, attribution, or analytical methodology may be unclear.
+
+Tooltips should explain:
+
+* Metric definition
+* Calculation
+* Data source
+* Comparison basis
+* Confidence or sample-size limitation
+* Why a recommendation was produced
+* What a status indicator means
+
+Do not overload the main interface with explanatory paragraphs.
+
+Use contextual guidance without hiding essential information.
+
+---
+
+# 17. Accessibility Requirements
+
+Target WCAG 2.1 AA principles wherever technically feasible.
+
+Include:
+
+* Sufficient text contrast
+* Sufficient interface contrast
+* Keyboard navigation
+* Visible focus states
+* Semantic HTML
+* Accessible labels
+* Accessible form controls
+* Descriptive button text
+* Screen-reader-friendly table headers
+* Non-colour status indicators
+* Appropriate touch target sizing
+* Reduced-motion consideration
+* Support for browser zoom
+* No important information conveyed only through hover
+
+---
+
+# 18. Performance and Implementation Quality
+
+Do not improve appearance by introducing unnecessary rendering cost.
+
+Requirements:
+
+* Reuse shared components
+* Create centralized design tokens
+* Avoid duplicated CSS
+* Avoid route-specific patches where a shared component can solve the issue
+* Avoid excessive animation
+* Avoid heavy visual effects
+* Avoid unnecessary chart rerenders
+* Use virtualization for large tables where needed
+* Preserve existing data loading and API behaviour
+* Prevent layout shifts
+* Preserve fast initial load
+* Lazy-load secondary analytical components where appropriate
+
+Create or refine shared tokens for:
+
+* Typography
+* Spacing
+* Radius
+* Shadows
+* Borders
+* Surface colours
+* Text colours
+* Semantic colours
+* Chart colours
+* Breakpoints
+* Transitions
+* Component heights
+
+---
+
+# 19. Do Not Break Existing Functionality
+
+Before making changes, map the current functionality and route structure.
+
+Do not:
+
+* Remove approved pages
+* Remove tabs or subtabs
+* Remove data views
+* Remove campaign hierarchy
+* Remove filtering capability
+* Remove existing metrics
+* Replace working modules with placeholders
+* Rename established concepts without cause
+* Disconnect real data
+* Replace application content with fabricated examples
+* Simplify the platform by deleting essential analytical depth
+
+Where a feature is incomplete, preserve its intended location and improve the UI state without pretending it is functional.
+
+Clearly distinguish real data, demo data, unavailable data, and coming-soon functionality.
+
+---
+
+# 20. Required Implementation Process
+
+Complete the work in this order:
+
+## Phase 1: Audit
+
+Create an internal inventory of:
+
+* Routes
+* Pages
+* Components
+* Dashboards
+* Tables
+* Charts
+* Modals
+* Filters
+* Navigation layers
+* Responsive issues
+* Typography issues
+* Contrast issues
+* Usability issues
+* Inconsistencies
+
+## Phase 2: Design System
+
+Establish the shared:
+
+* Typography scale
+* Colour system
+* Spacing system
+* Surface system
+* Card system
+* Table system
+* Chart system
+* Modal system
+* Filter system
+* Metric selector
+* Interaction states
+* Breakpoints
+
+## Phase 3: Shared Components
+
+Create or refactor reusable components for:
+
+* Page header
+* KPI tile
+* Insight tile
+* Metric selector
+* Breakdown selector
+* Filter bar
+* Active filter chips
+* Sortable data table
+* Chart container
+* Empty state
+* Loading skeleton
+* Error state
+* Modal
+* Drawer
+* Tooltip
+* Segment card
+* ICP comparison module
+* Trend indicator
+* Confidence indicator
+
+## Phase 4: Page-Level Implementation
+
+Apply the system consistently across all routes and modules.
+
+## Phase 5: Responsive Testing
+
+Test every major page at all required breakpoints.
+
+## Phase 6: Functional Regression Testing
+
+Confirm that existing:
+
+* Navigation
+* Filters
+* Sorting
+* Tables
+* Charts
+* Data loading
+* Popups
+* Drawers
+* Metric controls
+* Account selection
+* Date selection
+* Campaign hierarchy
+* Exports
+* Existing actions
+
+continue to function correctly.
+
+## Phase 7: Final Consistency Pass
+
+Perform a complete final review for:
+
+* Typography
+* Spacing
+* Contrast
+* Responsiveness
+* Navigation
+* Data hierarchy
+* Terminology
+* Interaction patterns
+* Component consistency
+* Analytical usability
+
+---
+
+# 21. Acceptance Criteria
+
+The revision is complete only when all of the following are true:
+
+* Users can identify the main value of each page within seconds.
+* Important metrics are not buried beneath secondary content.
+* All dashboard text is comfortably legible.
+* Colour contrast is visually comfortable and accessible.
+* Metric selection works consistently across relevant dashboards.
+* Core metrics can be compared and broken down intuitively.
+* Demographic and ICP data are prominent and usable.
+* Associated copy, angle, and creative context are visible where available.
+* Data tables are sortable and filterable where appropriate.
+* Large datasets are searchable or navigable.
+* Active filters and breakdowns are always clear.
+* Tiles and cards follow one consistent design system.
+* Modals and drawers use one consistent interaction system.
+* Charts are readable and responsive.
+* Navigation states are clear.
+* All approved routes, tabs, and subtabs remain available.
+* The application works across desktop, laptop, tablet, and mobile.
+* No text overlaps, clips, disappears, or becomes unreadably small.
+* No important control becomes inaccessible at smaller screen sizes.
+* Existing functionality and real data connections remain intact.
+* Empty, loading, error, and insufficient-data states are clearly designed.
+* The platform feels cohesive rather than assembled from disconnected modules.
+* The most valuable information naturally attracts attention.
+* Users can move from high-level performance to detailed breakdowns without confusion.
+* The interface materially improves analytical speed and decision-making.
+
+---
+
+# Final Deliverable
+
+Implement the complete platform-wide UI/UX revision in the current application.
+
+After implementation, provide a concise report containing:
+
+1. Routes and modules audited
+2. Shared components created or refactored
+3. Major usability problems corrected
+4. Responsive improvements completed
+5. Data visualization and table improvements
+6. Metric and breakdown controls implemented
+7. Accessibility improvements
+8. Any remaining limitations caused by missing data or backend functionality
+9. Confirmation that existing routes, features, and data connections were preserved
+10. Confirmation that the updated application was tested across the required viewport sizes
+
+Do not provide only recommendations or a mockup. Apply the changes directly to the current platform and validate the implementation.
