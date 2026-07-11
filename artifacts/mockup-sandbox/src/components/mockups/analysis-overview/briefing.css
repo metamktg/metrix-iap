@@ -1,0 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+:root {
+  --briefing-bg: #030712;
+  --briefing-fg: #f8fafc;
+  --briefing-muted: #94a3b8;
+  --briefing-accent: #3b82f6;
+  --briefing-accent-hover: #2563eb;
+  --briefing-border: #1e293b;
+  --briefing-surface: #0f172a;
+}
+
+.briefing-container {
+  background-color: var(--briefing-bg);
+  color: var(--briefing-fg);
+  font-family: 'Space Mono', monospace;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.briefing-narrative {
+  font-family: 'Fraunces', serif;
+}
+
+.briefing-chip {
+  font-family: 'Space Mono', monospace;
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+
+.module-row {
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.module-row:hover {
+  background-color: var(--briefing-surface);
+  border-color: var(--briefing-accent-hover);
+  cursor: pointer;
+}

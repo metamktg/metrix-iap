@@ -1,0 +1,87 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500;600&display=swap');
+
+.funnel-map-container {
+  --bg-base: #030712; /* Very dark blue/black */
+  --bg-surface: #0f172a;
+  --bg-surface-hover: #1e293b;
+  --border-subtle: rgba(56, 189, 248, 0.15); /* Cool blue subtle */
+  --border-accent: rgba(56, 189, 248, 0.4);
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #475569;
+  --accent-blue: #38bdf8;
+  --accent-blue-glow: rgba(56, 189, 248, 0.3);
+  
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  /* Background grid pattern */
+  background-image: 
+    linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.funnel-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.funnel-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+}
+
+.funnel-card-nav {
+  cursor: pointer;
+}
+
+.funnel-card-nav:hover {
+  border-color: var(--border-accent);
+  background-color: var(--bg-surface-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px -4px rgba(0, 0, 0, 0.6), 0 0 15px var(--accent-blue-glow);
+}
+
+.funnel-line {
+  stroke: var(--border-accent);
+  stroke-width: 2;
+  fill: none;
+  stroke-dasharray: 4 4;
+}
+
+.funnel-line-solid {
+  stroke: var(--accent-blue);
+  stroke-width: 2;
+  fill: none;
+}
+
+.funnel-line-glow {
+  stroke: var(--accent-blue);
+  stroke-width: 6;
+  fill: none;
+  opacity: 0.2;
+  filter: blur(4px);
+}
+
+.funnel-node {
+  background: var(--bg-base);
+  border: 2px solid var(--accent-blue);
+  box-shadow: 0 0 15px var(--accent-blue-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  z-index: 10;
+}
+
+.funnel-label {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent-blue);
+}
