@@ -20,6 +20,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AdminAdAccountsResult,
   AdminCreateUserInput,
   AdminCreateUserResult,
   AdminEmailStatus,
@@ -2130,6 +2131,84 @@ export const useAdminRestoreUser = <TError = ErrorType<ApiError>,
       > => {
       return useMutation(getAdminRestoreUserMutationOptions(options));
     }
+
+export const getListAdminAdAccountsUrl = () => {
+
+
+
+
+  return `/api/metrix/admin/ad-accounts`
+}
+
+/**
+ * Returns all ad accounts (id and name) from the Metrix data layer so the admin panel can display a checklist when creating or editing users. Requires admin access.
+ * @summary List ad accounts available for user grants
+ */
+export const listAdminAdAccounts = async ( options?: RequestInit): Promise<AdminAdAccountsResult> => {
+
+  return customFetch<AdminAdAccountsResult>(getListAdminAdAccountsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminAdAccountsQueryKey = () => {
+    return [
+    `/api/metrix/admin/ad-accounts`
+    ] as const;
+    }
+
+
+export const getListAdminAdAccountsQueryOptions = <TData = Awaited<ReturnType<typeof listAdminAdAccounts>>, TError = ErrorType<ApiError>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminAdAccounts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminAdAccountsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminAdAccounts>>> = ({ signal }) => listAdminAdAccounts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminAdAccounts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminAdAccountsQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminAdAccounts>>>
+export type ListAdminAdAccountsQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary List ad accounts available for user grants
+ */
+
+export function useListAdminAdAccounts<TData = Awaited<ReturnType<typeof listAdminAdAccounts>>, TError = ErrorType<ApiError>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminAdAccounts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminAdAccountsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getApproveRequestAccessEntryUrl = (requestId: string,) => {
 

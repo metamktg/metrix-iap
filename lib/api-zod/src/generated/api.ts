@@ -448,7 +448,11 @@ export const adminCreateUserBodyEmailMax = 320;
 
 
 export const AdminCreateUserBody = zod.object({
-  "email": zod.string().email().max(adminCreateUserBodyEmailMax)
+  "email": zod.string().email().max(adminCreateUserBodyEmailMax),
+  "role": zod.enum(['admin', 'analyst', 'client_viewer']).optional().describe('User role. \'admin\' has full access and sees all accounts; \'analyst\' and \'client_viewer\' are member-level roles that see only granted accounts. Defaults to \'analyst\'.'),
+  "can_manage_team": zod.boolean().optional().describe('Whether the user can manage team members and invites. Only meaningful for member role users. Defaults to false.'),
+  "can_view_rollups": zod.boolean().optional().describe('Whether the user can view agency rollup data. Only meaningful for member role users. Defaults to false.'),
+  "ad_account_ids": zod.array(zod.string()).optional().describe('Ad account IDs to grant the user access to at creation time. Empty array or omitted grants no accounts (can be added later).')
 })
 
 export const AdminCreateUserResponse = zod.object({
@@ -456,7 +460,8 @@ export const AdminCreateUserResponse = zod.object({
   "email": zod.string(),
   "temp_password": zod.string().describe('Always present — shown on screen for the admin to copy and share directly, independent of email delivery.'),
   "email_sent": zod.boolean().describe('Whether the courtesy email with the temporary password was delivered. The flow succeeds either way.'),
-  "email_error": zod.string().optional().describe('Present only when the courtesy email could not be sent — explains why.')
+  "email_error": zod.string().optional().describe('Present only when the courtesy email could not be sent — explains why.'),
+  "granted_ad_account_ids": zod.array(zod.string()).describe('Ad account IDs that were granted to the user at creation time.')
 })
 
 
@@ -550,6 +555,18 @@ export const AdminRestoreUserParams = zod.object({
 export const AdminRestoreUserResponse = zod.object({
   "status": zod.enum(['revoked', 'restored']),
   "email": zod.string()
+})
+
+
+/**
+ * Returns all ad accounts (id and name) from the Metrix data layer so the admin panel can display a checklist when creating or editing users. Requires admin access.
+ * @summary List ad accounts available for user grants
+ */
+export const ListAdminAdAccountsResponse = zod.object({
+  "ad_accounts": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string()
+}))
 })
 
 
