@@ -140,3 +140,19 @@ REQUEST_ACCESS_FROM_EMAIL = "Metrix <no-reply@notifications.metrix.ad>"
 
 [nix]
 channel = "stable-25_05"
+
+[[ports]]
+localPort = 8080
+externalPort = 8080
+
+[[ports]]
+localPort = 8081
+externalPort = 8081
+
+[[ports]]
+localPort = 19673
+externalPort = 80
+
+[[ports]]
+localPort = 22813
+externalPort = 3000
