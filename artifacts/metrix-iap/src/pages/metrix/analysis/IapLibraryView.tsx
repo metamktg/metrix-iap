@@ -10,7 +10,7 @@
 // the library refreshes automatically.
 
 import { useState, useEffect, useMemo } from "react";
-import { Images } from "lucide-react";
+import { Images, Dna } from "lucide-react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import {
@@ -30,6 +30,8 @@ import { CreativeCard } from "@/components/creative/CreativeCard";
 import { cardFromCell, libraryCellById } from "@/lib/creative-assembly";
 import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/SegmentGridModal";
 import { CellTable, VariableTable } from "./tables";
+import { rollupDnaFamilies } from "@/lib/creative-dna";
+import { VariableChip, familyLabel } from "../strategy/strategyShared";
 import type { CreativeCardStats } from "@/components/creative/CreativeCard";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import type { CellPerformanceRow, DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
@@ -319,9 +321,61 @@ export function IapLibraryView() {
 
                 {/* ── Variables tab ── */}
                 {tab === "variables" && (
-                  variables.length
-                    ? <VariableTable rows={variables} />
-                    : <PendingState title="No variables in selection" message="Adjust the metric selection to see variable performance." />
+                  variables.length ? (
+                    <div className="space-y-4">
+                      {/* Family rollup: which DNA families carry the account */}
+                      <div>
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <Dna className="w-3 h-3 text-primary/70" />
+                          <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60">
+                            DNA families in selection
+                          </h3>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+                          {rollupDnaFamilies(variables).map((f) => (
+                            <div
+                              key={f.family}
+                              className="rounded-xl border border-border/40 bg-white/[0.02] p-3"
+                              data-testid={`dna-family-${f.family}`}
+                            >
+                              <div className="flex items-center justify-between gap-2 mb-2">
+                                <span className="text-[11px] font-semibold text-foreground">{familyLabel(f.family)}</span>
+                                <span className="text-[9px] font-mono text-muted-foreground/60">
+                                  {f.variableCount} variable{f.variableCount === 1 ? "" : "s"}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-4 tabular-nums">
+                                <div>
+                                  <div className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground/50 leading-none mb-1">Spend</div>
+                                  <div className="text-[11px] font-semibold text-foreground/90">{fmtUSD(f.spend, 0)}</div>
+                                </div>
+                                <div>
+                                  <div className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground/50 leading-none mb-1">Results</div>
+                                  <div className="text-[11px] font-semibold text-foreground/90">{fmtNum(f.results)}</div>
+                                </div>
+                                <div>
+                                  <div className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground/50 leading-none mb-1">CPA</div>
+                                  <div className="text-[11px] font-semibold text-foreground/90">{f.cpa != null ? fmtUSD(f.cpa) : "—"}</div>
+                                </div>
+                              </div>
+                              {f.top && (
+                                <div className="mt-2 pt-2 border-t border-border/20 flex items-center gap-1.5 flex-wrap">
+                                  <span className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground/50">Best read</span>
+                                  <VariableChip code={f.top.variableId} showCode={false} />
+                                  {f.top.cpa != null && (
+                                    <span className="text-[9px] tabular-nums text-muted-foreground/70">{fmtUSD(f.top.cpa)} CPA</span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <VariableTable rows={variables} />
+                    </div>
+                  ) : (
+                    <PendingState title="No variables in selection" message="Adjust the metric selection to see variable performance." />
+                  )
                 )}
               </div>
               </>

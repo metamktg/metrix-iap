@@ -9,17 +9,18 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getMST, getAnalysisData, getStrategyData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState,
-  MetricTile, CrossLink, resultTerm, SectionCard, ConfidenceBadge, fmtUSD, fmtPct,
+  MetricTile, CrossLink, resultTerm, SectionCard, ConfidenceBadge, fmtUSD, fmtPct, fmtNum,
   RangeScopeBar, NoDataInRangeState,
 } from "../shared";
-import { VariableStackChips } from "./strategyShared";
+import { VariableStackChips, VariableChip, familyLabel } from "./strategyShared";
+import { computeAvatarDna, mergeAvatarDna, type AvatarDna, type DnaVariable } from "@/lib/creative-dna";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/SegmentGridModal";
 import { SegmentDrilldownModal } from "@/components/creative/SegmentDrilldownModal";
 import type { SegmentId } from "@/lib/segment-analytics";
 import { DemographicTable } from "../analysis/tables";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
-import { Users, Fingerprint, DoorOpen, MessageSquareQuote, Compass, ArrowDownRight, ArrowUpRight } from "lucide-react";
+import { Users, Fingerprint, DoorOpen, MessageSquareQuote, Compass, ArrowDownRight, ArrowUpRight, Dna } from "lucide-react";
 import type { MSTMatrixColumn, MSTMatrixCell, ICPProfile } from "@/lib/data/seedTypes";
 
 const SECTION = "Strategy · 04";
@@ -44,15 +45,66 @@ function IcpFact({
   );
 }
 
+/** One measured DNA variable with its evidence numbers. */
+function DnaVariableLine({ v, resultNoun }: { v: DnaVariable; resultNoun: string }) {
+  return (
+    <div className="flex items-center justify-between gap-2 py-1.5 border-b border-border/15 last:border-0">
+      <div className="flex items-center gap-2 min-w-0 flex-wrap">
+        <VariableChip code={v.code} />
+        {v.family && (
+          <span className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground/50">
+            {familyLabel(v.family)}
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-3 shrink-0 tabular-nums">
+        <span className="text-[10px] text-muted-foreground/70">{fmtUSD(v.spend, 0)}</span>
+        <span className="text-[10px] text-muted-foreground/70">{fmtNum(v.results)} {resultNoun}</span>
+        <span className="text-[10px] font-semibold text-foreground/85">
+          {v.cpa != null ? `${fmtUSD(v.cpa)} CPA` : "no CPA"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/** Compact "top measured DNA" chip strip (avatar cards, ICP cards). */
+function DnaChipStrip({ variables, label, testId }: { variables: DnaVariable[]; label: string; testId: string }) {
+  if (variables.length === 0) return null;
+  return (
+    <div className="mt-3 pt-3 border-t border-border/20" data-testid={testId}>
+      <div className="flex items-center gap-1 mb-1.5">
+        <Dna className="w-2.5 h-2.5 text-primary/70" />
+        <span className="text-[8px] font-mono uppercase tracking-widest text-muted-foreground/60">{label}</span>
+      </div>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+        {variables.slice(0, 3).map((v) => (
+          <span key={v.code} className="inline-flex items-center gap-1">
+            <VariableChip code={v.code} showCode={false} />
+            {v.cpa != null && (
+              <span className="text-[9px] tabular-nums text-muted-foreground/70">{fmtUSD(v.cpa)}</span>
+            )}
+          </span>
+        ))}
+        {variables.length > 3 && (
+          <span className="text-[9px] text-muted-foreground/60">+{variables.length - 3} more</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /** Theory + performance side by side for one strategy ICP profile. */
 function IcpProfileCard({
-  profile, registerRef, flash, avatars, onAvatarClick,
+  profile, registerRef, flash, avatars, onAvatarClick, dna,
 }: {
   profile: ICPProfile;
   registerRef?: (el: HTMLDivElement | null) => void;
   flash?: boolean;
   avatars?: MSTMatrixColumn[];
   onAvatarClick?: (columnId: string) => void;
+  /** Measured creative DNA merged across this profile's avatars. */
+  dna?: DnaVariable[];
 }) {
   const perf = profile.performance_data ?? null;
   const hasPerf = perf != null && (perf.spend != null || perf.cpa != null || perf.cvr_link_pct != null);
@@ -132,6 +184,14 @@ function IcpProfileCard({
           ))}
         </div>
       )}
+
+      {dna && dna.length > 0 && (
+        <DnaChipStrip
+          variables={dna}
+          label="Creative DNA · measured via avatars"
+          testId={`icp-dna-${profile.profile_id}`}
+        />
+      )}
     </div>
   );
 }
@@ -201,6 +261,17 @@ export function AvatarsView() {
         // fabricated joins.
         const avatarsForProfile = (profileId: string): MSTMatrixColumn[] =>
           matrix ? matrix.columns.filter((col) => (col.matched_profile_ids ?? []).includes(profileId)) : [];
+        // Measured creative DNA per avatar: only cells that actually ran
+        // contribute — planned-but-unmeasured angles never fabricate numbers.
+        const dnaByColumn = new Map<string, AvatarDna>(
+          matrix ? matrix.columns.map((col) => [col.id, computeAvatarDna(col.id, matrix, analysis, mst)]) : []
+        );
+        const dnaForProfile = (profileId: string): DnaVariable[] =>
+          mergeAvatarDna(
+            avatarsForProfile(profileId)
+              .map((col) => dnaByColumn.get(col.id))
+              .filter((d): d is AvatarDna => d != null)
+          );
 
         return (
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
@@ -264,6 +335,16 @@ export function AvatarsView() {
                                 </p>
                               ))}
                             </div>
+                            {(() => {
+                              const dna = dnaByColumn.get(col.id);
+                              return dna && dna.variables.length > 0 ? (
+                                <DnaChipStrip
+                                  variables={dna.variables}
+                                  label={`Creative DNA · measured from ${dna.measuredCellIds.length} angle${dna.measuredCellIds.length === 1 ? "" : "s"}`}
+                                  testId={`avatar-dna-${col.id}`}
+                                />
+                              ) : null;
+                            })()}
                             <div className="mt-3 pt-3 border-t border-border/20 text-[10px] text-muted-foreground/60">
                               {cells.length} message angle{cells.length === 1 ? "" : "s"} · tap for details
                             </div>
@@ -308,6 +389,7 @@ export function AvatarsView() {
                         flash={flashProfile === p.profile_id}
                         avatars={avatarsForProfile(p.profile_id)}
                         onAvatarClick={scrollToAvatar}
+                        dna={dnaForProfile(p.profile_id)}
                       />
                     ))}
                   </div>
@@ -353,6 +435,31 @@ export function AvatarsView() {
                   </div>
                 }
               >
+                {(() => {
+                  const dna = dnaByColumn.get(detail.column.id);
+                  if (!dna) return null;
+                  return (
+                    <DrawerField label="Creative DNA — measured makeup">
+                      {dna.variables.length > 0 ? (
+                        <>
+                          <p className="text-[10px] text-muted-foreground/70 leading-relaxed mb-1.5">
+                            Aggregated from {dna.measuredCellIds.length} measured angle{dna.measuredCellIds.length === 1 ? "" : "s"} ({dna.measuredCellIds.join(", ")})
+                            {dna.extensionCellIds.length > 0 ? ` — ${dna.extensionCellIds.length} beyond the planned grid` : ""}. Planned angles without performance data are excluded. Variables share angles, so rows overlap and are not additive.
+                          </p>
+                          <div data-testid={`drawer-dna-${detail.column.id}`}>
+                            {dna.variables.slice(0, 10).map((v) => (
+                              <DnaVariableLine key={v.code} v={v} resultNoun={term.plural} />
+                            ))}
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-[11px] text-muted-foreground/70">
+                          No measured creative DNA yet — none of this avatar's angles have performance data.
+                        </p>
+                      )}
+                    </DrawerField>
+                  );
+                })()}
                 {detail.cells.map((c) => (
                   <DrawerField key={c.cell_id} label={`${c.cell_id} · ${c.concept_code}`}>
                     {c.plain_text.headline && <p className="font-semibold text-foreground">{c.plain_text.headline}</p>}
