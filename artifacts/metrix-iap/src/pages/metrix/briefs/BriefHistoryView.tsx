@@ -12,7 +12,7 @@ import {
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { FileClock, FileText } from "lucide-react";
 
-const SECTION = "Creatives · 05";
+const SECTION = "Creative Briefs · 05";
 
 const STATUS_LABEL: Record<string, string> = {
   draft_from_seed: "Draft created from seed strategy",

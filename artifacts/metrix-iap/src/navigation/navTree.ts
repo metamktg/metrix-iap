@@ -7,8 +7,8 @@
 //   2 Listen          → Alerts / Signal / Recommendations
 //   3 Analysis        → Overview / IAP Library / Audience / Placements / Budget Insight
 //   4 Strategy        → Overview / Strategy Map / Avatars · ICP / Hypothesis Queue
-//   5 Creatives → Brief Builder / History
-//   6 Reports   → New Report / Report History / Exports
+//   5 Creative Briefs → Brief Builder / History
+//   6 Report Builder  → New Report / Report History / Exports
 //   7 MST             → Concept Map / Matrix Builder / Creative Scan / Crossmap Results
 //   8 Metrix Agent    (Coming Soon — waitlist)
 //   9 Settings        → Account / Integrations / Team & Access / Notifications / Billing
@@ -149,7 +149,7 @@ export const navTree: NavSection[] = [
   {
     id: "briefs",
     number: "05",
-    label: "Creatives",
+    label: "Creative Briefs",
     children: [
       {
         id: "briefs-builder",
@@ -169,7 +169,7 @@ export const navTree: NavSection[] = [
   {
     id: "reports",
     number: "06",
-    label: "Reports",
+    label: "Report Builder",
     children: [
       {
         id: "reports-new",
