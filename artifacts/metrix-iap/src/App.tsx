@@ -90,11 +90,11 @@ export function Router() {
       <Route path="/app/strategy/avatars"    component={AvatarsView} />
       <Route path="/app/strategy/hypotheses" component={HypothesisQueueView} />
 
-      {/* ── 05 Creative Briefs ────────────────────────────────────────── */}
+      {/* ── 05 Creative ──────────────────────────────────────────────── */}
       <Route path="/app/briefs/builder" component={BriefBuilderView} />
       <Route path="/app/briefs/history" component={BriefHistoryView} />
 
-      {/* ── 06 Report Builder ─────────────────────────────────────────── */}
+      {/* ── 06 Reports ─────────────────────────────────────────────────── */}
       <Route path="/app/reports/new"     component={NewReportView} />
       <Route path="/app/reports/history" component={ReportHistoryView} />
       <Route path="/app/reports/exports" component={ExportsView} />
@@ -124,6 +124,7 @@ export function Router() {
       <Route path="/app/strategy/brief-builder">{() => <Redirect to="/app/briefs/builder" replace />}</Route>
       <Route path="/app/briefs">{() => <Redirect to="/app/briefs/builder" replace />}</Route>
       <Route path="/app/report-builder">{() => <Redirect to="/app/reports/new" replace />}</Route>
+      <Route path="/app/reports/builder">{() => <Redirect to="/app/reports/new" replace />}</Route>
       <Route path="/app/reports">{() => <Redirect to="/app/reports/new" replace />}</Route>
       <Route path="/app/mst">{() => <Redirect to="/app/mst/matrix" replace />}</Route>
       <Route path="/app/settings">{() => <Redirect to="/app/settings/account" replace />}</Route>
