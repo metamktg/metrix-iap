@@ -48,7 +48,7 @@ function ConceptDetailDialog({ concept, rows, onClose }: ConceptDetailDialogProp
           <div className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest">
             Concept budget breakdown
           </div>
-          <DialogTitle className="text-[15px] font-semibold text-foreground">{concept}</DialogTitle>
+          <DialogTitle className="text-[17px] font-semibold text-foreground">{concept}</DialogTitle>
           <DialogDescription className="text-label text-muted-foreground/70 leading-relaxed">
             {conceptRows.length} cell row{conceptRows.length !== 1 ? "s" : ""} across all result events
           </DialogDescription>
@@ -147,7 +147,7 @@ function PlacementSpendDialog({ open, v3Rows, c4eRows, onClose }: PlacementSpend
           <div className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest">
             Placement spend
           </div>
-          <DialogTitle className="text-[15px] font-semibold text-foreground">Spend by placement</DialogTitle>
+          <DialogTitle className="text-[17px] font-semibold text-foreground">Spend by placement</DialogTitle>
           <DialogDescription className="text-label text-muted-foreground/70 leading-relaxed">
             {v3Rows.length} V3 rows · {c4eRows.length} C4E rows
           </DialogDescription>
