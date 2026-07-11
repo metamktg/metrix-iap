@@ -230,8 +230,17 @@ export function ReportHistoryView() {
             </div>
 
             {(() => {
-              const deletableCount = sorted.filter((r) => r.reportId).length;
-              if (deletableCount === 0) return null;
+              const deletableIds = sorted.filter((r) => r.reportId != null).map((r) => r.reportId!);
+              if (deletableIds.length === 0) return null;
+              const draftIds = sorted
+                .filter((r) => r.reportId != null && !r.export_format)
+                .map((r) => r.reportId!);
+              const allSelected =
+                deletableIds.length > 0 && deletableIds.every((id) => selectedIds.has(id));
+              const allDraftsSelected =
+                draftIds.length > 0 &&
+                draftIds.every((id) => selectedIds.has(id)) &&
+                selectedIds.size === draftIds.length;
               return (
                 <div className="px-6 pt-5 max-w-3xl flex items-center justify-between gap-3 flex-wrap">
                   {selectMode ? (
@@ -241,7 +250,29 @@ export function ReportHistoryView() {
                           ? "Select reports to delete"
                           : `${fmtNum(selectedIds.size)} selected`}
                       </span>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                          onClick={() =>
+                            setSelectedIds(allSelected ? new Set() : new Set(deletableIds))
+                          }
+                          disabled={batchDeleting}
+                          className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-60"
+                        >
+                          {allSelected ? "Deselect all" : `Select all (${fmtNum(deletableIds.length)})`}
+                        </button>
+                        {draftIds.length > 0 && (
+                          <button
+                            onClick={() =>
+                              setSelectedIds(allDraftsSelected ? new Set() : new Set(draftIds))
+                            }
+                            disabled={batchDeleting}
+                            className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-60"
+                          >
+                            {allDraftsSelected
+                              ? "Deselect drafts"
+                              : `Select drafts (${fmtNum(draftIds.length)})`}
+                          </button>
+                        )}
                         <button
                           onClick={exitSelectMode}
                           disabled={batchDeleting}
