@@ -52,9 +52,24 @@ export function primaryPerfRow(rows: CellPerformanceRow[], cellId: string): Cell
  * being shown. Preference order: ad with both creative_asset_url and
  * meta_ad_id → ad with an asset → ad with a meta id → null (placeholder +
  * pending link).
+ *
+ * When no ads row carries the cell code directly (manual accounts get
+ * their `ads.cell` only from a Meta export backfill), fall back to the
+ * MST library cell's `mapped_ad_names` — the same authoritative mapping
+ * the analysis produced — matched against `ads.ad_name`. Same preference
+ * order applies within the fallback set.
  */
-export function primaryAdForCell(ads: AdRecord[] | undefined, cellId: string): AdRecord | null {
-  const matches = (ads ?? []).filter((a) => a.cell === cellId);
+export function primaryAdForCell(
+  ads: AdRecord[] | undefined,
+  cellId: string,
+  mappedAdNames?: string[]
+): AdRecord | null {
+  const all = ads ?? [];
+  let matches = all.filter((a) => a.cell === cellId);
+  if (!matches.length && mappedAdNames && mappedAdNames.length > 0) {
+    const nameSet = new Set(mappedAdNames);
+    matches = all.filter((a) => nameSet.has(a.ad_name));
+  }
   if (!matches.length) return null;
   return (
     matches.find((a) => a.creative_asset_url && a.meta_ad_id) ??
@@ -80,7 +95,7 @@ export interface CardAssemblyOpts {
 export function cardFromCell(cellId: string, opts: CardAssemblyOpts): CreativeCardData {
   const lib = libraryCellById(opts.mst, cellId);
   const perf = opts.perfRows ? primaryPerfRow(opts.perfRows, cellId) : null;
-  const ad = primaryAdForCell(opts.ads, cellId);
+  const ad = primaryAdForCell(opts.ads, cellId, lib?.mapped_ad_names);
 
   const tags = lib ? tagsFromLibraryCell(lib) : perf ? tagsFromPerfRow(perf) : [];
 

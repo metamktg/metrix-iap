@@ -188,15 +188,27 @@ export function ConnectMetaDialog({
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 
-async function fileToBase64(file: File): Promise<string> {
-  const buf = await file.arrayBuffer();
-  const bytes = new Uint8Array(buf);
-  let binary = "";
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
-  }
-  return btoa(binary);
+/**
+ * Base64-encodes a file via FileReader.readAsDataURL — the browser does
+ * the encoding natively off the main thread, unlike the previous
+ * arrayBuffer + String.fromCharCode loop which froze the UI for large
+ * (multi-MB) video files.
+ */
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result ?? "");
+      const comma = result.indexOf(",");
+      if (comma === -1) {
+        reject(new Error("Could not read file."));
+        return;
+      }
+      resolve(result.slice(comma + 1));
+    };
+    reader.onerror = () => reject(reader.error ?? new Error("Could not read file."));
+    reader.readAsDataURL(file);
+  });
 }
 
 /**
@@ -678,14 +690,79 @@ function CreativeUploadSection({
   const [currentFile, setCurrentFile] = useState<string | null>(null);
   const [currentPct, setCurrentPct] = useState(0);
   const [justStagedIds, setJustStagedIds] = useState<Set<string>>(new Set());
+  // Per-row delete tracking: a shared mutation's isPending would spin/disable
+  // EVERY row's delete button while one delete runs.
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [autoMapping, setAutoMapping] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  // Throttle progress re-renders: every XHR progress event used to re-render
+  // the whole section (all rows + thumbnails), which made multi-file uploads
+  // feel frozen. Cap updates to ~4/s, always letting 0 and 100 through.
+  const lastPctUpdateRef = useRef(0);
   const deleteMutation = useDeleteManualImport();
+  const updateMutation = useUpdateManualImportAdNames();
+
+  const throttledSetPct = (pct: number) => {
+    const now = Date.now();
+    if (pct !== 0 && pct !== 100 && now - lastPctUpdateRef.current < 250) return;
+    lastPctUpdateRef.current = now;
+    setCurrentPct(pct);
+  };
 
   const creativeAssets = imports.filter((i) => i.kind === "creative_asset");
   const registryNames = useMemo(() => new Set(availableAdNames ?? []), [availableAdNames]);
   const matchCandidates = registryNames.size > 0 ? registryNames : knownAdNames;
   const mappedCount = creativeAssets.filter((a) => a.ad_names.length > 0).length;
+  const unmappedAssets = creativeAssets.filter((a) => a.ad_names.length === 0);
   const isUploading = queueTotal > 0;
+
+  const handleDelete = async (importId: string) => {
+    setPendingDeleteId(importId);
+    try {
+      await deleteMutation.mutateAsync({ accountId, importId });
+      onChanged();
+    } finally {
+      setPendingDeleteId(null);
+    }
+  };
+
+  // Re-runs filename matching for every still-unmapped file in one click.
+  // Only files that actually produce a suggestion are updated; the rest
+  // stay unmapped (and highlighted) rather than being force-mapped to noise.
+  const handleAutoMapAll = async () => {
+    setAutoMapping(true);
+    let matched = 0;
+    let unmatchedCount = 0;
+    const failures: string[] = [];
+    try {
+      for (const asset of unmappedAssets) {
+        const match = suggestAdNameMatch(asset.filename, matchCandidates);
+        if (!match) {
+          unmatchedCount++;
+          continue;
+        }
+        try {
+          await updateMutation.mutateAsync({
+            accountId,
+            importId: asset.id,
+            data: { ad_names: [match.name], match_method: match.method },
+          });
+          matched++;
+        } catch (err) {
+          failures.push(`${asset.filename}: ${err instanceof Error ? err.message : "Auto-map failed."}`);
+        }
+      }
+      if (matched > 0) onChanged();
+      setErrors(failures);
+      setLinkNotices(
+        unmatchedCount > 0
+          ? [`${unmatchedCount} file${unmatchedCount > 1 ? "s" : ""} had no close ad-name match — map ${unmatchedCount > 1 ? "them" : "it"} manually below.`]
+          : []
+      );
+    } finally {
+      setAutoMapping(false);
+    }
+  };
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -724,7 +801,7 @@ function CreativeUploadSection({
             ad_names: match ? [match.name] : [],
             match_method: match?.method,
           },
-          setCurrentPct
+          throttledSetPct
         );
         newlyStaged.push(staged.import_id);
         const unmatched = staged.link_result?.unmatched ?? [];
@@ -813,12 +890,26 @@ function CreativeUploadSection({
 
       {creativeAssets.length > 0 && (
         <div className="space-y-1.5">
-          <div className="flex items-center justify-between px-0.5">
+          <div className="flex items-center justify-between px-0.5 gap-2">
             <span className="text-[10px] font-medium text-muted-foreground/85">
               {mappedCount} of {creativeAssets.length} mapped
             </span>
             {mappedCount < creativeAssets.length && (
               <span className="text-[10px] text-amber-400/90">Pick an ad name for each highlighted file below</span>
+            )}
+            {unmappedAssets.length > 0 && matchCandidates.size > 0 && (
+              <button
+                onClick={() => void handleAutoMapAll()}
+                disabled={autoMapping}
+                className="shrink-0 flex items-center gap-1 h-6 px-2 rounded border border-primary/30 bg-primary/10 text-[10px] font-medium text-primary hover:bg-primary/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                {autoMapping ? (
+                  <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                ) : (
+                  <Sparkles className="w-2.5 h-2.5" />
+                )}
+                Auto-map all
+              </button>
             )}
           </div>
           {creativeAssets.map((asset) => (
@@ -834,12 +925,12 @@ function CreativeUploadSection({
                 />
               </div>
               <button
-                onClick={async () => { await deleteMutation.mutateAsync({ accountId, importId: asset.id }); onChanged(); }}
-                disabled={deleteMutation.isPending}
+                onClick={() => void handleDelete(asset.id)}
+                disabled={pendingDeleteId === asset.id}
                 className="shrink-0 mt-2 w-7 h-7 flex items-center justify-center rounded text-muted-foreground/80 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 aria-label={`Remove ${asset.filename}`}
               >
-                {deleteMutation.isPending ? (
+                {pendingDeleteId === asset.id ? (
                   <Loader2 className="w-3 h-3 animate-spin" />
                 ) : (
                   <Trash2 className="w-3 h-3" />
@@ -1090,6 +1181,13 @@ export function ManualImportDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const queryClient = useQueryClient();
+  // Same real-ads registry the Creative Library dialog uses — keeps
+  // dropdown mapping / auto-matching behavior identical across both
+  // entry points instead of falling back to free-text here.
+  const availableAdNames = useMemo(
+    () => Array.from(new Set((account.ads ?? []).map((a) => a.ad_name))).sort(),
+    [account.ads]
+  );
 
   const handleOpenChange = (o: boolean) => {
     onOpenChange(o);
@@ -1116,7 +1214,7 @@ export function ManualImportDialog({
             only after you explicitly run analysis from the account's setup screen.
           </DialogDescription>
         </DialogHeader>
-        <ManualUploadPanel accountId={account.id} />
+        <ManualUploadPanel accountId={account.id} availableAdNames={availableAdNames} />
       </DialogContent>
     </Dialog>
   );

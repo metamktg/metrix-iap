@@ -20,6 +20,7 @@ Metrix IAP is an ad-performance analysis platform: agencies connect Meta ad acco
 - Required secret: `SUPABASE_DB_URL` (Metrix data importer)
 - Optional secret: `ADMIN_API_KEY` — gates `GET /api/metrix/agent-waitlist`; fails closed (401) when unset
 - Optional secret: `RESEND_API_KEY` — enables outbound email; without it, actions still complete and the server logs an explicit "skipped" warning. Optional `REQUEST_ACCESS_FROM_EMAIL` overrides the Resend sender
+- Optional secret: `DEMO_ACCOUNT_PASSWORD` — enables the self-healing demo login (`demoAccountSafeguard.ts`): on every API-server boot the demo account (`demo@metrix.app` by default, override with `DEMO_ACCOUNT_EMAIL`) is created/repaired with this exact password — admin role, enabled, never `must_change_password` — so it survives DB resets, rollbacks, and the dev/prod split. When unset, nothing is provisioned (logged as skipped).
 
 ## Auth (Metrix IAP)
 

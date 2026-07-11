@@ -38,6 +38,25 @@ describe("primaryAdForCell", () => {
     expect(primaryAdForCell(ads, "ZZZ")).toBeNull();
     expect(primaryAdForCell(undefined, "C1A")).toBeNull();
   });
+
+  it("falls back to library mapped_ad_names when no ads row carries the cell", () => {
+    // Manual accounts: ads.cell is null until a Meta export backfill, but the
+    // MST library knows which ad names belong to the cell.
+    const manualAds: AdRecord[] = [
+      { ad_name: "Summer Sale v2", cell: null, meta_ad_id: null, creative_asset_url: "https://cdn.example.com/summer.jpg" },
+      { ad_name: "Other Ad", cell: null, meta_ad_id: null, creative_asset_url: null },
+    ];
+    expect(primaryAdForCell(manualAds, "C1A", ["Summer Sale v2"])?.ad_name).toBe("Summer Sale v2");
+  });
+
+  it("prefers a direct cell match over the mapped-name fallback", () => {
+    expect(primaryAdForCell(ads, "C1A", ["C2B_T1"])?.ad_name).toBe("C1A_T3");
+  });
+
+  it("fallback still returns null when mapped names have no asset or id", () => {
+    const bare: AdRecord[] = [{ ad_name: "Plain Ad", cell: null, meta_ad_id: null, creative_asset_url: null }];
+    expect(primaryAdForCell(bare, "C1A", ["Plain Ad"])).toBeNull();
+  });
 });
 
 describe("cardFromCell ad wiring", () => {

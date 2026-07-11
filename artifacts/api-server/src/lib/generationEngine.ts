@@ -252,6 +252,41 @@ async function storedPillars(accountId: string): Promise<Row[]> {
   return generated.length > 0 ? generated : all;
 }
 
+// ─── placeholder sanitization ─────────────────────────────────────────
+// Models occasionally leak unreplaced template tokens ("[Client Name]",
+// "{{brand}}", "[INSERT PRODUCT]") into generated copy. Brand-ish tokens
+// are substituted with the real account name; generic placeholder tokens
+// are stripped. Applied to every generated string before persisting so
+// briefs/strategy never render template artifacts. Conservative on
+// purpose: cell codes ("C1A"), variable codes ("CN_UGC + FW_PAS"), and
+// normal bracketed prose are untouched.
+
+const BRAND_TOKEN_RE =
+  /\[\s*(?:client|brand|company|account|business|product)(?:\s+name)?\s*\]|\{\{?\s*(?:client|brand|company|account|business|product)(?:[_\s]?name)?\s*\}?\}/gi;
+const GENERIC_TOKEN_RE =
+  /\[\s*(?:placeholder|tbd|todo|xx+|insert[^\[\]]{0,60})\s*\]|\{\{[^{}]{0,60}\}\}/gi;
+
+export function sanitizeGeneratedText<T>(value: T, accountName: string): T {
+  if (typeof value === "string") {
+    const cleaned = value
+      .replace(BRAND_TOKEN_RE, accountName)
+      .replace(GENERIC_TOKEN_RE, "")
+      .replace(/[ \t]{2,}/g, " ")
+      .replace(/ ([,.;:!?])/g, "$1")
+      .trim();
+    return cleaned as unknown as T;
+  }
+  if (Array.isArray(value)) {
+    return value.map((v) => sanitizeGeneratedText(v, accountName)) as unknown as T;
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, sanitizeGeneratedText(v, accountName)]),
+    ) as T;
+  }
+  return value;
+}
+
 // ─── model call + JSON extraction ─────────────────────────────────────
 
 function extractJson(text: string): unknown {
@@ -700,9 +735,14 @@ export async function startStrategyGeneration(accountId: string, createdBy: stri
   // to a pillar from a newer run.
   const runTag = runId.slice(0, 8);
 
+  const accountName = String(account["name"] ?? accountId);
+
   void (async () => {
     try {
-      const output = await generateValidated(strategyPrompt(evidence, cellIds, icpIds), GeneratedStrategy);
+      const output = sanitizeGeneratedText(
+        await generateValidated(strategyPrompt(evidence, cellIds, icpIds), GeneratedStrategy),
+        accountName,
+      );
 
       // Drop hallucinated references — never present fabricated links.
       const pillars = output.pillars.map((p, i) => ({
@@ -882,14 +922,19 @@ export async function startBriefsGeneration(accountId: string, createdBy: string
   // Run-scope generated ids so ids from different runs never collide.
   const runTag = runId.slice(0, 8);
 
+  const accountName = String(account["name"] ?? accountId);
+
   void (async () => {
     try {
-      const output = await generateValidated(briefsPrompt(pillars, evidence, columns), GeneratedBriefs, {
-        // 16 fully-populated briefs overflow the 8k default → truncated JSON.
-        maxTokens: 16384,
-        // Enforce the locked 4×4 (general mode is exempt) via the repair retry.
-        validate: (v: z.infer<typeof GeneratedBriefs>) => validateMatrixCoverage(v.briefs, columns),
-      });
+      const output = sanitizeGeneratedText(
+        await generateValidated(briefsPrompt(pillars, evidence, columns), GeneratedBriefs, {
+          // 16 fully-populated briefs overflow the 8k default → truncated JSON.
+          maxTokens: 16384,
+          // Enforce the locked 4×4 (general mode is exempt) via the repair retry.
+          validate: (v: z.infer<typeof GeneratedBriefs>) => validateMatrixCoverage(v.briefs, columns),
+        }),
+        accountName,
+      );
 
       const invalid = output.briefs.filter((b) => !pillarIds.has(b.message_pillar));
       if (invalid.length > 0) {

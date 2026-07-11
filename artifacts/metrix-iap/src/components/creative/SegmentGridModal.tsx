@@ -178,7 +178,7 @@ export function SegmentGridModal({
         ) : (
           <div className="rounded-xl border border-border/40 overflow-hidden">
             <div className="overflow-x-auto max-h-[420px] overflow-y-auto">
-              <table className="w-full border-collapse">
+              <table className="w-full min-w-[500px] border-collapse">
                 <thead className="sticky top-0 bg-[hsl(222_55%_7%)] z-10">
                   <tr className="border-b border-border/40">
                     <th className="text-left text-[9px] font-mono uppercase tracking-widest text-muted-foreground/60 font-semibold px-2.5 py-2">
