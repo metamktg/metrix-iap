@@ -1,22 +1,111 @@
 // ─── Analysis · Audience ──────────────────────────────────────────────
 // Demographic conversion signal: who converts, by age band and gender,
-// with per-segment rollups and the full underlying rows. Result copy
-// derives from the account's own result event — never hardcoded.
+// with per-segment rollups. Click any segment bar to open a detail
+// dialog showing stats + the underlying rows for that segment.
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
-  SectionCard, fmtUSD, fmtNum, fmtPct, resultTerm,
+  SectionCard, fmtUSD, fmtNum, resultTerm,
   RangeScopeBar, NoDataInRangeState,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
-import { DemographicTable } from "./tables";
-import { Users } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Users, ChevronRight, BarChart2 } from "lucide-react";
+import type { DemographicRow } from "@/lib/data/seedTypes";
+// DemographicRow fields: cell_id, "Ad name", Age, Gender, "Amount spent (USD)", Results, "Link clicks" etc.
+import { cn } from "@/lib/utils";
 
 const SECTION = "Analysis · 03";
+
+// ─── Segment detail dialog ────────────────────────────────────────────
+
+interface SegmentDetailDialogProps {
+  segment: { age: string; gender: string } | null;
+  rows: DemographicRow[];
+  totalResults: number;
+  onClose: () => void;
+}
+
+function SegmentDetailDialog({ segment, rows, totalResults, onClose }: SegmentDetailDialogProps) {
+  if (!segment) return null;
+  const segRows = rows.filter(
+    (r) => r.Age === segment.age && r.Gender === segment.gender
+  );
+  const spend = segRows.reduce((n, r) => n + r["Amount spent (USD)"], 0);
+  const results = segRows.reduce((n, r) => n + r.Results, 0);
+  const linkClicks = segRows.reduce((n, r) => n + r["Link clicks"], 0);
+  const cpa = results > 0 ? spend / results : null;
+  const sharePct = totalResults > 0 ? (results / totalResults) * 100 : 0;
+  const genderLabel = segment.gender === "female" ? "Female" : segment.gender === "male" ? "Male" : segment.gender;
+
+  return (
+    <Dialog open={segment != null} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-xl bg-[hsl(222_61%_6%)] border-border/50 max-h-[82vh] overflow-y-auto">
+        <DialogHeader className="text-left space-y-1">
+          <div className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest">
+            Audience segment
+          </div>
+          <DialogTitle className="text-[15px] font-semibold text-foreground">
+            {genderLabel} · {segment.age}
+          </DialogTitle>
+          <DialogDescription className="text-[11px] text-muted-foreground/70 leading-relaxed">
+            {segRows.length} creative cell{segRows.length !== 1 ? "s" : ""} in this segment ·{" "}
+            {sharePct.toFixed(1)}% of total results
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {/* Top-line stats */}
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { label: "Results", value: fmtNum(results) },
+              { label: "Spend", value: fmtUSD(spend, 0) },
+              { label: "CPA", value: cpa != null ? fmtUSD(cpa) : "—" },
+              { label: "Link clicks", value: fmtNum(linkClicks) },
+            ].map(({ label, value }) => (
+              <div key={label} className="rounded-lg border border-border/40 bg-white/[0.02] px-3 py-2.5">
+                <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-0.5">{label}</div>
+                <div className="text-[18px] font-bold text-foreground tabular-nums leading-none">{value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Per-cell breakdown */}
+          <div className="space-y-1">
+            <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">
+              Results by creative cell
+            </p>
+            <div className="rounded-lg border border-border/40 overflow-hidden">
+              {segRows
+                .sort((a, b) => b.Results - a.Results)
+                .map((r, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border/20 last:border-b-0 bg-white/[0.01]"
+                  >
+                    <div className="min-w-0">
+                      <div className="text-[11px] font-medium text-foreground truncate">{r["Ad name"]}</div>
+                      <div className="text-[9px] font-mono text-muted-foreground/50 mt-0.5">{r.cell_id}</div>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <div className="text-[11px] font-semibold text-foreground tabular-nums">{fmtNum(r.Results)} results</div>
+                      <div className="text-[9px] text-muted-foreground/60">{fmtUSD(r["Amount spent (USD)"], 0)}</div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Main view ────────────────────────────────────────────────────────
 
 export function AudienceView() {
   const seed = useMetrixSeed();
@@ -24,6 +113,8 @@ export function AudienceView() {
   const account = getAdAccount(seed, adAccountId);
   const analysis = getAnalysisData(seed, adAccountId);
   const { rangeHasData } = useDateRange();
+
+  const [selectedSeg, setSelectedSeg] = useState<{ age: string; gender: string } | null>(null);
 
   const segments = useMemo(() => {
     const rows = analysis?.demographic_registration_signal ?? [];
@@ -40,80 +131,118 @@ export function AudienceView() {
   }, [analysis]);
 
   return (
-    <ModuleScopeGate section={SECTION} title="Audience" account={account}>
-      {() => {
-        const acct = account!;
-        const term = resultTerm(acct);
-        const rows = analysis?.demographic_registration_signal ?? [];
+    <>
+      <ModuleScopeGate section={SECTION} title="Audience" account={account}>
+        {() => {
+          const acct = account!;
+          const term = resultTerm(acct);
+          const rows = analysis?.demographic_registration_signal ?? [];
 
-        if (rows.length === 0) {
+          if (rows.length === 0) {
+            return (
+              <div className="flex-1 flex flex-col">
+                <ModuleHeader section={SECTION} title="Audience" />
+                <ScopeBanner account={acct} />
+                <PendingState title="No demographic signal" message="The audience read appears once demographic result data exists." icon={Users} />
+              </div>
+            );
+          }
+
+          const totalSpend = segments.reduce((n, s) => n + s.spend, 0);
+          const totalResults = segments.reduce((n, s) => n + s.results, 0);
+          const top = segments[0];
+          const maxResults = Math.max(...segments.map((s) => s.results), 1);
+
           return (
-            <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Audience" />
+            <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
+              <ModuleHeader
+                section={SECTION}
+                title="Audience"
+                subtitle={`Who converts: the demographic ${term.singular} signal by age band and gender. Click any segment to inspect it.`}
+                table="demographic_registration_signal"
+              />
               <ScopeBanner account={acct} />
-              <PendingState title="No demographic signal" message="The audience read appears once demographic result data exists." icon={Users} />
+              <RangeScopeBar grainNote="Demographic signal aggregates each cell's full flight window — this import has no daily grain." />
+
+              {!rangeHasData ? (
+                <NoDataInRangeState what="audience data" />
+              ) : (
+              <>
+              <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+                <MetricTile label="Segments" value={fmtNum(segments.length)} />
+                <MetricTile label="Signal spend" value={fmtUSD(totalSpend, 0)} />
+                <MetricTile label={term.Plural} value={fmtNum(totalResults)} />
+                <MetricTile
+                  label="Top segment"
+                  value={top ? `${top.gender === "female" ? "F" : top.gender === "male" ? "M" : top.gender} ${top.age}` : "—"}
+                  sub={top ? `${fmtNum(top.results)} ${term.plural}` : undefined}
+                />
+              </div>
+
+              <div className="px-6 py-5 space-y-4 max-w-5xl">
+                <SectionCard
+                  title={`${term.Plural} by segment`}
+                  desc="Aggregated across all creative cells. Click a segment bar to inspect its breakdown."
+                  table="demographic_registration_signal"
+                >
+                  <div className="space-y-1.5">
+                    {segments.map((s) => {
+                      const cpa = s.results > 0 ? s.spend / s.results : null;
+                      const genderLabel = s.gender === "female" ? "F" : s.gender === "male" ? "M" : s.gender;
+                      const pct = Math.max((s.results / maxResults) * 100, 3);
+                      return (
+                        <button
+                          key={s.age + s.gender}
+                          onClick={() => setSelectedSeg({ age: s.age, gender: s.gender })}
+                          className={cn(
+                            "w-full text-left rounded-lg px-3 py-2.5 border border-border/30 bg-white/[0.01]",
+                            "hover:border-primary/25 hover:bg-primary/[0.03] active:scale-[0.995]",
+                            "transition-all duration-100 group"
+                          )}
+                        >
+                          <div className="flex items-center justify-between text-[12px] mb-1.5 gap-3">
+                            <span className="text-foreground/90 font-medium capitalize">
+                              {s.gender} · {s.age}
+                            </span>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-muted-foreground/70 tabular-nums text-[11px]">
+                                {fmtNum(s.results)} results · {fmtUSD(s.spend, 0)} · CPA {cpa != null ? fmtUSD(cpa) : "—"}
+                              </span>
+                              <div className="flex items-center gap-0.5 text-[9px] text-muted-foreground/40 group-hover:text-primary/60 transition-colors">
+                                <span className="hidden sm:inline">{genderLabel} {s.age}</span>
+                                <ChevronRight className="w-3 h-3" />
+                              </div>
+                            </div>
+                          </div>
+                          <div className="h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
+                            <div
+                              className="h-full bg-primary/50 rounded-full group-hover:bg-primary/70 transition-colors"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="mt-3 text-[10px] text-muted-foreground/50 flex items-center gap-1">
+                    <BarChart2 className="w-3 h-3" />
+                    {rows.length} underlying rows · click any bar for the full cell-level breakdown
+                  </p>
+                </SectionCard>
+              </div>
+              </>
+              )}
             </div>
           );
-        }
+        }}
+      </ModuleScopeGate>
 
-        const totalSpend = segments.reduce((n, s) => n + s.spend, 0);
-        const totalResults = segments.reduce((n, s) => n + s.results, 0);
-        const top = segments[0];
-        const maxResults = Math.max(...segments.map((s) => s.results), 1);
-
-        return (
-          <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
-            <ModuleHeader
-              section={SECTION}
-              title="Audience"
-              subtitle={`Who converts: the demographic ${term.singular} signal by age band and gender.`}
-              table="demographic_registration_signal"
-            />
-            <ScopeBanner account={acct} />
-            <RangeScopeBar grainNote="Demographic signal aggregates each cell's full flight window — this import has no daily grain." />
-
-            {!rangeHasData ? (
-              <NoDataInRangeState what="audience data" />
-            ) : (
-            <>
-            <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
-              <MetricTile label="Segments" value={fmtNum(segments.length)} />
-              <MetricTile label="Signal spend" value={fmtUSD(totalSpend, 0)} />
-              <MetricTile label={term.Plural} value={fmtNum(totalResults)} />
-              <MetricTile label="Top segment" value={top ? `${top.gender === "female" ? "F" : top.gender === "male" ? "M" : top.gender} ${top.age}` : "—"} sub={top ? `${fmtNum(top.results)} ${term.plural}` : undefined} />
-            </div>
-
-            <div className="px-6 py-5 space-y-4 max-w-5xl">
-              <SectionCard title={`${term.Plural} by segment`} desc="Aggregated across all creative cells in the signal." table="demographic_registration_signal">
-                <div className="space-y-2.5">
-                  {segments.map((s) => {
-                    const cpa = s.results > 0 ? s.spend / s.results : null;
-                    return (
-                      <div key={s.age + s.gender}>
-                        <div className="flex items-center justify-between text-[12px] mb-1 gap-3">
-                          <span className="text-foreground/90 font-medium capitalize">{s.gender} · {s.age}</span>
-                          <span className="text-muted-foreground/80 tabular-nums shrink-0">
-                            {fmtNum(s.results)} results · {fmtUSD(s.spend, 0)} · CPA {cpa != null ? fmtUSD(cpa) : "—"}
-                          </span>
-                        </div>
-                        <div className="h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
-                          <div className="h-full bg-primary/50 rounded-full" style={{ width: `${Math.max((s.results / maxResults) * 100, 3)}%` }} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </SectionCard>
-
-              <SectionCard title="Underlying rows" desc="Every demographic signal row behind the rollup, by creative cell." table="demographic_registration_signal">
-                <DemographicTable rows={rows} />
-              </SectionCard>
-            </div>
-            </>
-            )}
-          </div>
-        );
-      }}
-    </ModuleScopeGate>
+      <SegmentDetailDialog
+        segment={selectedSeg}
+        rows={analysis?.demographic_registration_signal ?? []}
+        totalResults={segments.reduce((n, s) => n + s.results, 0)}
+        onClose={() => setSelectedSeg(null)}
+      />
+    </>
   );
 }
