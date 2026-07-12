@@ -44,6 +44,7 @@ import { ConceptMapView } from "@/pages/metrix/mst/ConceptMapView";
 import { MatrixBuilderView } from "@/pages/metrix/mst/MatrixBuilderView";
 import { CreativeScanView } from "@/pages/metrix/mst/CreativeScanView";
 import { CrossmapResultsView } from "@/pages/metrix/mst/CrossmapResultsView";
+import { CommunicationsView } from "@/pages/metrix/mst/CommunicationsView";
 import { MetrixAgent } from "@/pages/MetrixAgent";
 import { AccountSettingsView } from "@/pages/metrix/settings/AccountSettingsView";
 import { IntegrationsView } from "@/pages/metrix/settings/IntegrationsView";
@@ -102,10 +103,11 @@ export function Router() {
       <Route path="/app/reports/settings" component={ReportSettingsView} />
 
       {/* ── 07 MST ────────────────────────────────────────────────────── */}
-      <Route path="/app/mst/concept-map"   component={ConceptMapView} />
-      <Route path="/app/mst/matrix"        component={MatrixBuilderView} />
-      <Route path="/app/mst/creative-scan" component={CreativeScanView} />
-      <Route path="/app/mst/crossmap"      component={CrossmapResultsView} />
+      <Route path="/app/mst/concept-map"    component={ConceptMapView} />
+      <Route path="/app/mst/matrix"         component={MatrixBuilderView} />
+      <Route path="/app/mst/creative-scan"  component={CreativeScanView} />
+      <Route path="/app/mst/communications" component={CommunicationsView} />
+      <Route path="/app/mst/crossmap"       component={CrossmapResultsView} />
 
       {/* ── 08 Metrix Agent ───────────────────────────────────────────── */}
       <Route path="/app/agent" component={MetrixAgent} />

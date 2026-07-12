@@ -35,6 +35,7 @@ const emptyTables = (): AccountTables => ({
   conceptIntelligence: new Map(),
   failurePatterns: new Map(),
   adsRegistry: new Map(),
+  copyLibrary: new Map(),
   accountModules: [],
   signalCards: [],
 });

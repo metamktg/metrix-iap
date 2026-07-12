@@ -165,14 +165,15 @@ export function ModuleHeader({
   right?: React.ReactNode;
 }) {
   return (
-    <div className="px-6 py-4 border-b border-border/40">
-      <div className="flex items-start gap-3">
-        <div className="flex-1 min-w-0">
-          <span className="block mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/80">{section}</span>
-          <h1 className="text-[21px] font-bold text-foreground leading-tight tracking-[-0.02em]">{title}</h1>
-          {subtitle && <p className="text-[13px] text-muted-foreground/80 mt-1 leading-relaxed max-w-2xl">{subtitle}</p>}
+    <div className="px-6 py-2 border-b border-border/40">
+      <div className="flex items-center gap-3">
+        <div className="flex-1 min-w-0 flex items-baseline gap-2 flex-wrap">
+          <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/45 shrink-0">{section}</span>
+          <span className="text-[9px] text-muted-foreground/25 shrink-0" aria-hidden>·</span>
+          <h1 className="text-[15px] font-semibold text-foreground leading-tight tracking-[-0.01em] truncate">{title}</h1>
+          {subtitle && <p className="text-[11px] text-muted-foreground/55 leading-snug max-w-2xl w-full mt-0.5">{subtitle}</p>}
         </div>
-        <div className="shrink-0 pt-0.5 flex items-center gap-2">
+        <div className="shrink-0 flex items-center gap-2">
           {right}
           {table && <DataSourceBadge table={table} collapsible />}
         </div>
@@ -185,11 +186,11 @@ export function ModuleHeader({
 
 export function ScopeBanner({ account }: { account: AdAccount }) {
   return (
-    <div className="flex items-center gap-2 px-6 py-2 border-b border-border/30 bg-white/[0.015]">
-      <Database className="w-3 h-3 text-muted-foreground/60 shrink-0" />
-      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Scoped to ad account</span>
-      <span className="text-[12px] font-medium text-foreground/90">{account.name}</span>
-      <span className="text-[10px] font-mono text-muted-foreground/70">{account.platform}</span>
+    <div className="flex items-center gap-1.5 px-6 py-1 border-b border-border/25 bg-white/[0.01]">
+      <Database className="w-2.5 h-2.5 text-muted-foreground/40 shrink-0" />
+      <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40">Account</span>
+      <span className="text-[11px] font-medium text-foreground/80">{account.name}</span>
+      <span className="text-[9px] font-mono text-muted-foreground/40">{account.platform}</span>
     </div>
   );
 }
@@ -203,16 +204,16 @@ export function RangeScopeBar({ grainNote }: { grainNote?: string }) {
   if (!range || !bounds) return null;
   const narrowed = preset !== "all";
   return (
-    <div className="flex items-center gap-2 flex-wrap px-6 py-2 border-b border-border/30 bg-white/[0.01]">
-      <CalendarRange className="w-3 h-3 text-muted-foreground/60 shrink-0" />
-      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Date range</span>
-      <span className="text-[12px] font-medium text-foreground/90 tabular-nums">{formatIsoRange(range)}</span>
+    <div className="flex items-center gap-1.5 flex-wrap px-6 py-1 border-b border-border/25 bg-white/[0.008]">
+      <CalendarRange className="w-2.5 h-2.5 text-muted-foreground/40 shrink-0" />
+      <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40">Range</span>
+      <span className="text-[11px] font-medium text-foreground/80 tabular-nums">{formatIsoRange(range)}</span>
       {compare && compareRange && (
-        <span className="text-[11px] text-primary/80 tabular-nums">vs {formatIsoRange(compareRange)}</span>
+        <span className="text-[10px] text-primary/70 tabular-nums">vs {formatIsoRange(compareRange)}</span>
       )}
       {narrowed && (
-        <span className="text-[11px] text-muted-foreground/65">
-          {grainNote ?? "Items are included when their flight window overlaps this range; metrics cover each item's full flight — this import has no daily grain."}
+        <span className="text-[10px] text-muted-foreground/45 leading-none">
+          {grainNote ?? "Flight-window aggregates — no daily grain."}
         </span>
       )}
     </div>
@@ -476,13 +477,13 @@ export function ModuleTabs<T extends string>({
           onClick={() => onChange(t.id)}
           aria-current={active === t.id ? "page" : undefined}
           className={cn(
-            "flex items-center gap-1.5 h-10 px-3 text-[13px] font-medium border-b-2 transition-colors whitespace-nowrap shrink-0",
-            active === t.id ? "border-primary text-foreground" : "border-transparent text-muted-foreground/70 hover:text-foreground"
+            "flex items-center gap-1.5 h-8 px-3 text-[12px] font-medium border-b-2 transition-colors whitespace-nowrap shrink-0",
+            active === t.id ? "border-primary text-foreground" : "border-transparent text-muted-foreground/60 hover:text-foreground"
           )}
         >
           {t.Icon && <t.Icon className="w-3 h-3" />}
           {t.label}
-          {t.count != null && <span className="text-[10px] font-mono text-muted-foreground/60">{t.count}</span>}
+          {t.count != null && <span className="text-[10px] font-mono text-muted-foreground/55">{t.count}</span>}
         </button>
       ))}
     </div>
