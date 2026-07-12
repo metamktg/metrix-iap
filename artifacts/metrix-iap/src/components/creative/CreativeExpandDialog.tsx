@@ -7,7 +7,7 @@
 
 import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { Upload, BarChart2, Users, Monitor, ImageOff } from "lucide-react";
+import { Upload, BarChart2, Users, Monitor, ImageOff, ArrowUpRight, ArrowUp, ArrowDown, LayoutGrid } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import type { DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 import type { CreativeCardData } from "./CreativeCard";
@@ -213,7 +213,7 @@ function OverviewTab({ data }: { data: CreativeCardData }) {
 
 interface AgeBucket {
   age: string;
-  male: number; female: number; total: number;
+  male: number; female: number; total: number; grandTotal: number;
   maleResults: number; femaleResults: number;
   maleCpa: number | null; femaleCpa: number | null;
   maleCtr: number | null; femaleCtr: number | null;
@@ -221,21 +221,28 @@ interface AgeBucket {
   maleGender: string | null; femaleGender: string | null;
 }
 
+type DemoSortDir = "desc" | "asc";
+
 function DemographicsTab({
   rows,
   onSegmentClick,
+  onFullBreakdownClick,
 }: {
   rows: DemographicRow[];
   onSegmentClick?: (segment: { age: string; gender: string }) => void;
+  /** When provided, shows a "Full audience breakdown" button that opens the segment grid. */
+  onFullBreakdownClick?: () => void;
 }) {
   const [metric, setMetric] = useState<DemoMetric>("spend");
+  const [sortDir, setSortDir] = useState<DemoSortDir>("desc");
 
-  const buckets = useMemo<AgeBucket[]>(() => {
+  // Build buckets with full KPI fields (HEAD) + grandTotal for share % (base)
+  const allBuckets = useMemo<AgeBucket[]>(() => {
     const map = new Map<string, AgeBucket>();
     for (const r of rows) {
       const g = r.Gender.toLowerCase();
       const b = map.get(r.Age) ?? {
-        age: r.Age, male: 0, female: 0, total: 0,
+        age: r.Age, male: 0, female: 0, total: 0, grandTotal: 0,
         maleResults: 0, femaleResults: 0,
         maleCpa: null, femaleCpa: null,
         maleCtr: null, femaleCtr: null,
@@ -260,10 +267,20 @@ function DemographicsTab({
       b.total += r["Amount spent (USD)"];
       map.set(r.Age, b);
     }
-    return Array.from(map.values()).sort((a, b) => (parseInt(a.age) || 999) - (parseInt(b.age) || 999));
+    const arr = Array.from(map.values());
+    const gt = arr.reduce((s, bucket) => s + bucket.total, 0);
+    arr.forEach((bucket) => { bucket.grandTotal = gt; });
+    return arr;
   }, [rows]);
 
-  // Default-select the bucket with highest spend
+  // Sortable by spend asc/desc (base feature)
+  const buckets = useMemo(() => {
+    return [...allBuckets].sort((a, b) =>
+      sortDir === "desc" ? b.total - a.total : a.total - b.total
+    );
+  }, [allBuckets, sortDir]);
+
+  // Default-select the bucket with highest spend for the KPI panel (HEAD feature)
   const [selectedAge, setSelectedAge] = useState<string | null>(null);
   const defaultBucket = useMemo(() => {
     if (!buckets.length) return null;
@@ -276,7 +293,7 @@ function DemographicsTab({
 
   const barVal = (b: AgeBucket) => metric === "spend" ? b.total : (b.maleResults + b.femaleResults);
   const barMax = metric === "spend" ? maxSpend : maxResults;
-  const fmtMain = (n: number) => metric === "spend" ? usd(n) : num(n);
+  const fmt = (n: number) => metric === "spend" ? usd(n) : num(n);
 
   if (rows.length === 0) {
     return (
@@ -289,18 +306,38 @@ function DemographicsTab({
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Age × Gender</p>
-        <MetricToggle
-          options={[{ value: "spend", label: "Spend" }, { value: "results", label: "Results" }]}
-          value={metric}
-          onChange={(v) => setMetric(v as DemoMetric)}
-        />
+      {/* Header row: label + sort toggle + full-breakdown + metric toggle (base) */}
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5">
+          <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50">Age × gender</p>
+          <button
+            onClick={() => setSortDir((d) => (d === "desc" ? "asc" : "desc"))}
+            title={sortDir === "desc" ? "Sorted high → low. Click for low → high." : "Sorted low → high. Click for high → low."}
+            className="flex items-center gap-0.5 text-[8px] text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors"
+          >
+            {sortDir === "desc" ? <ArrowDown className="w-2.5 h-2.5" /> : <ArrowUp className="w-2.5 h-2.5" />}
+          </button>
+        </div>
+        <div className="flex items-center gap-2">
+          {onFullBreakdownClick && (
+            <button
+              onClick={onFullBreakdownClick}
+              className="flex items-center gap-1 text-[8.5px] font-medium text-primary/70 hover:text-primary border border-primary/20 bg-primary/[0.06] hover:bg-primary/10 px-2 py-1 rounded transition-colors"
+            >
+              <LayoutGrid className="w-2.5 h-2.5" />
+              Full breakdown
+            </button>
+          )}
+          <MetricToggle
+            options={[{ value: "spend", label: "Spend" }, { value: "results", label: "Results" }]}
+            value={metric}
+            onChange={(v) => setMetric(v as DemoMetric)}
+          />
+        </div>
       </div>
 
-      {/* Bar chart — each row is a clickable card */}
-      <div className="space-y-1.5">
+      {/* Bar chart rows — clickable to select for KPI panel (HEAD), with share % (base) */}
+      <div className="space-y-3">
         {buckets.map((b) => {
           const isActive = activeBucket?.age === b.age;
           const barW = Math.round((barVal(b) / barMax) * 100);
@@ -312,25 +349,29 @@ function DemographicsTab({
           const mResPct = totalRes > 0 ? (mRes / totalRes) * 100 : 50;
           const fResPct = 100 - mResPct;
           const [mBarPct, fBarPct] = metric === "spend" ? [mPct, fPct] : [mResPct, fResPct];
+          const sharePct = b.grandTotal > 0 ? (b.total / b.grandTotal) * 100 : 0;
 
           return (
             <button
               key={b.age}
               onClick={() => setSelectedAge(b.age)}
               className={cn(
-                "w-full text-left rounded-lg border px-3 py-2.5 transition-all duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary",
+                "w-full text-left rounded-lg border px-3 py-2.5 transition-all duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary group/row",
                 isActive
                   ? "border-primary/40 bg-primary/[0.06]"
                   : "border-border/30 bg-white/[0.015] hover:border-border/50 hover:bg-white/[0.03]"
               )}
             >
-              {/* Row header: age + value */}
+              {/* Row header: age + share % + total value */}
               <div className="flex items-center justify-between mb-2">
-                <span className={cn("text-[13px] font-semibold", isActive ? "text-foreground" : "text-foreground/75")}>
-                  {b.age}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className={cn("text-[13px] font-semibold", isActive ? "text-foreground" : "text-foreground/75")}>
+                    {b.age}
+                  </span>
+                  <span className="text-[8.5px] tabular-nums text-muted-foreground/40">{sharePct.toFixed(0)}%</span>
+                </div>
                 <span className="text-[12px] tabular-nums text-muted-foreground/70 font-medium">
-                  {fmtMain(barVal(b))}
+                  {fmt(barVal(b))}
                 </span>
               </div>
 
@@ -353,16 +394,32 @@ function DemographicsTab({
                 </div>
               </div>
 
-              {/* M/F inline values */}
-              <div className="flex items-center gap-3 mt-1.5">
-                <span className="flex items-center gap-1 text-[10px] text-blue-300/80">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60 shrink-0" />
-                  M {metric === "spend" ? usd(mSpend) : num(mRes)}
-                </span>
-                <span className="flex items-center gap-1 text-[10px] text-rose-300/80">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-400/60 shrink-0" />
-                  F {metric === "spend" ? usd(fSpend) : num(fRes)}
-                </span>
+              {/* M/F chips — clickable for segment drill-down (base), with ArrowUpRight on hover */}
+              <div className="flex items-center gap-2 mt-1.5 text-[8.5px]">
+                {([
+                  { key: "male", dot: "bg-blue-400/60", short: "M", value: metric === "spend" ? mSpend : mRes, gender: b.maleGender },
+                  { key: "female", dot: "bg-rose-400/60", short: "F", value: metric === "spend" ? fSpend : fRes, gender: b.femaleGender },
+                ] as const).map((gd) => {
+                  const clickable = !!onSegmentClick && !!gd.gender;
+                  return (
+                    <span
+                      key={gd.key}
+                      onClick={clickable ? (e) => { e.stopPropagation(); onSegmentClick!({ age: b.age, gender: gd.gender! }); } : undefined}
+                      data-testid={clickable ? `chip-demo-${b.age}-${gd.key}` : undefined}
+                      title={clickable ? `Drill into ${gd.key} ${b.age} segment` : undefined}
+                      className={cn(
+                        "flex items-center gap-1 rounded-md px-1.5 py-0.5 transition-colors",
+                        clickable
+                          ? "text-muted-foreground/65 hover:bg-white/[0.07] hover:text-foreground cursor-pointer border border-transparent hover:border-border/30"
+                          : "text-muted-foreground/40 cursor-default"
+                      )}
+                    >
+                      <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", gd.dot)} />
+                      {gd.short} {fmt(gd.value)}
+                      {clickable && <ArrowUpRight className="w-2 h-2 opacity-0 group-hover/row:opacity-60 transition-opacity" />}
+                    </span>
+                  );
+                })}
                 {isActive && (
                   <span className="ml-auto text-[9px] font-mono uppercase tracking-wider text-primary/70">
                     Selected ↑
@@ -374,18 +431,15 @@ function DemographicsTab({
         })}
       </div>
 
-      {/* KPI panel for selected bucket */}
+      {/* KPI panel for selected bucket — click a row above to inspect (HEAD) */}
       {activeBucket && (
         <div className="rounded-xl border border-border/40 bg-white/[0.025] overflow-hidden">
-          {/* Panel header */}
           <div className="px-4 py-2.5 border-b border-border/30 flex items-center justify-between">
             <div>
               <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Segment KPIs</span>
               <span className="ml-2 text-[12px] font-semibold text-foreground">{activeBucket.age}</span>
             </div>
           </div>
-
-          {/* KPI grid: Male vs Female */}
           <div className="grid grid-cols-2 divide-x divide-border/30">
             {([
               {
@@ -402,13 +456,10 @@ function DemographicsTab({
               },
             ] as const).map((g) => (
               <div key={g.label} className="p-3 space-y-3">
-                {/* Gender header */}
                 <div className="flex items-center gap-1.5">
                   <span className={cn("w-2 h-2 rounded-full shrink-0", g.dot)} />
                   <span className={cn("text-[11px] font-semibold", g.color)}>{g.label}</span>
                 </div>
-
-                {/* KPI rows */}
                 <div className="space-y-2">
                   {([
                     { key: "spend", label: "Spend", value: usd(g.spend) },
@@ -423,8 +474,6 @@ function DemographicsTab({
                     </div>
                   ))}
                 </div>
-
-                {/* Drill-down button */}
                 {onSegmentClick && g.gender && (
                   <button
                     onClick={(e) => { e.stopPropagation(); onSegmentClick({ age: activeBucket.age, gender: g.gender! }); }}
@@ -445,8 +494,8 @@ function DemographicsTab({
         </div>
       )}
 
-      <p className="text-[9px] text-muted-foreground/40 pt-1">
-        Click an age group to inspect its segment KPIs. Bar width = proportion of highest group.
+      <p className="text-[8.5px] text-muted-foreground/40 pt-2 border-t border-border/20">
+        % share of total {metric === "spend" ? "spend" : "results"} shown next to each age group. Click a row to inspect segment KPIs. Click M / F chips to open drill-down. Blue = male, pink = female.
       </p>
     </div>
   );
@@ -556,14 +605,24 @@ export interface CreativeExpandDialogProps {
   onUploadCreatives?: () => void;
   /** When provided, Demographics rows become tappable → segment drill-down. */
   onSegmentClick?: (segment: { age: string; gender: string }) => void;
+  /**
+   * When provided, a "Full breakdown" button appears on the Demographics tab
+   * that navigates to the full segment grid for this cell. The dialog closes
+   * itself before calling this so the grid doesn't stack behind it.
+   */
+  onFullBreakdownClick?: () => void;
 }
 
 export function CreativeExpandDialog({
   open, onOpenChange, data,
   demographic = [], placements = [],
-  expandFooter, unmapped, onUploadCreatives, onSegmentClick,
+  expandFooter, unmapped, onUploadCreatives, onSegmentClick, onFullBreakdownClick,
 }: CreativeExpandDialogProps) {
   const [tab, setTab] = useState<Tab>("overview");
+
+  const handleFullBreakdown = onFullBreakdownClick
+    ? () => { onOpenChange(false); onFullBreakdownClick(); }
+    : undefined;
 
   const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "overview",      label: "Overview",      icon: <BarChart2 className="w-3 h-3" /> },
@@ -639,7 +698,7 @@ export function CreativeExpandDialog({
               )}
 
               {tab === "overview"     && <OverviewTab      data={data} />}
-              {tab === "demographics" && <DemographicsTab  rows={demographic} onSegmentClick={onSegmentClick} />}
+              {tab === "demographics" && <DemographicsTab  rows={demographic} onSegmentClick={onSegmentClick} onFullBreakdownClick={handleFullBreakdown} />}
               {tab === "placements"   && <PlacementsTab    rows={placements} />}
             </div>
 

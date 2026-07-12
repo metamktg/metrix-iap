@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { useLocation, useSearch } from "wouter";
 import { ConnectMetaDialog, ManualImportDialog } from "./ConnectAccountDialogs";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
-import { Plug, FileUp, Clock, Database, Info, ArrowRight, CheckSquare, Square, CalendarRange, CalendarX2, AlertTriangle, ChevronDown } from "lucide-react";
+import { Plug, FileUp, Clock, Database, Info, ArrowRight, CheckSquare, Square, CalendarRange, CalendarX2, AlertTriangle, ChevronDown, ChevronLeft, Sparkles, Map as MapIcon } from "lucide-react";
 import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
 import { DataSourceBadge } from "@/components/ui/DataSourceBadge";
 import { resolveVariableLabel } from "@/lib/variable-registry";
@@ -442,17 +442,136 @@ export function ModuleScopeGate({
 }
 
 // ─── Cross-module link ────────────────────────────────────────────────
+// Visible pill button — navigates to another module. Use whenever a
+// UI surface should surface a clear actionable jump to a sibling module.
 
 export function CrossLink({ to, label }: { to: string; label: string }) {
   const [, navigate] = useLocation();
   return (
     <button
       onClick={() => navigate(to)}
-      className="inline-flex items-center gap-1 text-[12px] font-medium text-primary hover:text-primary/80 transition-colors"
+      className="inline-flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/25 text-primary hover:bg-primary/18 hover:border-primary/40 transition-all"
     >
       {label}
       <ArrowRight className="w-3 h-3" />
     </button>
+  );
+}
+
+/**
+ * Prominent loop-action button — Analysis → Strategy → Brief closed-loop CTAs.
+ * Rendered as a solid labelled button so it reads as a clear next step, not a
+ * secondary text link.
+ */
+export function LoopAction({
+  to, label, icon = "strategy", variant = "primary",
+}: {
+  to: string;
+  label: string;
+  icon?: "strategy" | "brief" | "analysis";
+  variant?: "primary" | "secondary";
+}) {
+  const [, navigate] = useLocation();
+  const Icon = icon === "strategy" ? MapIcon : icon === "brief" ? Sparkles : ArrowRight;
+  return (
+    <button
+      onClick={() => navigate(to)}
+      className={cn(
+        "inline-flex items-center gap-2 text-[13px] font-semibold px-4 py-2 rounded-lg border transition-all",
+        variant === "primary"
+          ? "bg-primary/15 border-primary/35 text-primary hover:bg-primary/22 hover:border-primary/55 shadow-sm shadow-primary/10"
+          : "bg-white/[0.05] border-border/50 text-foreground/80 hover:bg-white/[0.09] hover:text-foreground hover:border-border/70",
+      )}
+    >
+      <Icon className="w-3.5 h-3.5 shrink-0" />
+      {label}
+      <ArrowRight className="w-3 h-3 opacity-60 ml-0.5" />
+    </button>
+  );
+}
+
+// ─── Flow back-navigation ─────────────────────────────────────────────
+// Pages in the Analysis→Strategy→Brief loop pass ?from=&fromCell=&fromHyp=
+// so the destination page can render a contextual "← Back" button.
+
+export interface FromParams {
+  from: string | null;
+  fromCell: string | null;
+  fromHyp: string | null;
+}
+
+export function useFromParam(): FromParams {
+  const search = useSearch();
+  const p = new URLSearchParams(search);
+  return { from: p.get("from"), fromCell: p.get("fromCell"), fromHyp: p.get("fromHyp") };
+}
+
+/** Returns the back-navigation URL for a given origin param set. */
+function backUrl(fp: FromParams): string | null {
+  if (fp.from === "analysis") {
+    return fp.fromCell ? `/app/analysis/library?focus=${fp.fromCell}` : "/app/analysis/library";
+  }
+  if (fp.from === "strategy") {
+    return fp.fromHyp ? `/app/strategy/hypotheses?focus=${fp.fromHyp}` : "/app/strategy/map";
+  }
+  return null;
+}
+
+function backLabel(fp: FromParams): string {
+  if (fp.from === "analysis") return fp.fromCell ? `Back to cell ${fp.fromCell}` : "Back to Analysis";
+  if (fp.from === "strategy") return fp.fromHyp ? "Back to Hypothesis" : "Back to Strategy";
+  return "Back";
+}
+
+/**
+ * "← Back to [origin]" button. Renders only when a valid ?from= param is
+ * present so pages without the param stay unaffected.
+ */
+export function BackLink() {
+  const fp = useFromParam();
+  const [, navigate] = useLocation();
+  const url = backUrl(fp);
+  if (!url) return null;
+  return (
+    <button
+      onClick={() => navigate(url)}
+      className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground/60 hover:text-foreground/80 transition-colors"
+    >
+      <ChevronLeft className="w-3 h-3" />
+      {backLabel(fp)}
+    </button>
+  );
+}
+
+/**
+ * Slim breadcrumb strip shown just below the module header when a page was
+ * reached via a loop navigation link. Provides constant orientation + back.
+ */
+export function FlowCrumb({ from, fromCell, fromHyp }: FromParams) {
+  const [, navigate] = useLocation();
+  const fp = { from, fromCell, fromHyp };
+  const url = backUrl(fp);
+  if (!url) return null;
+
+  const origin =
+    from === "analysis" ? (fromCell ? `Analysis · ${fromCell}` : "Analysis · IAP Library")
+    : from === "strategy" ? (fromHyp ? `Strategy · ${fromHyp}` : "Strategy Map")
+    : null;
+
+  if (!origin) return null;
+
+  return (
+    <div className="px-6 py-1.5 border-b border-border/20 bg-white/[0.01] flex items-center gap-1.5">
+      <button
+        onClick={() => navigate(url)}
+        className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground/50 hover:text-muted-foreground/80 transition-colors"
+      >
+        <ChevronLeft className="w-2.5 h-2.5" />
+        {origin}
+      </button>
+      <span className="text-muted-foreground/30 text-[10px]">/</span>
+      <span className="text-[10px] text-muted-foreground/50">This page</span>
+    </div>
   );
 }
 

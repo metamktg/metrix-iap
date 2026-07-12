@@ -25,7 +25,7 @@ import {
   LIBRARY_METRIC_STORAGE_KEY, LIBRARY_DEFAULT_METRIC_IDS,
 } from "@/lib/data/metricsCatalog";
 import {
-  ModuleHeader, ScopeBanner, ModuleTabs, ModuleScopeGate, PendingState,
+  ModuleHeader, ScopeBanner, ModuleTabs, ModuleScopeGate, PendingState, FlowCrumb, LoopAction, useFromParam,
   MetricTile, CaveatNote, MetricSelectionBar, CrossLink, useFocusParam,
   readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel,
   RangeScopeBar, NoDataInRangeState, StaleFocusNotice,
@@ -73,12 +73,15 @@ export function IapLibraryView() {
   const [variableCode, setVariableCode] = useState<string | null>(null);
   // Segment drill-down opened from a card's Demographics tab (scoped to that cell)
   const [cardSegment, setCardSegment] = useState<{ segment: SegmentId; cellIds: string[] } | null>(null);
+  // Full audience grid opened from a card's "Full breakdown" button on the Demographics tab
+  const [cardGridCell, setCardGridCell] = useState<CellPerformanceRow | null>(null);
   const { rangeHasData } = useDateRange();
 
   const a       = getAnalysisData(seed, adAccountId);
   const summary = getCampaignSummary(seed, adAccountId);
   const strategy = getStrategyData(seed, adAccountId);
   const mst     = getMST(seed, adAccountId);
+  const fp      = useFromParam();
 
   const allEvents = useMemo(
     () => Object.keys(summary?.bottom_line_totals ?? {}),
@@ -299,6 +302,7 @@ export function IapLibraryView() {
                             placements={allPlacements}
                             onUploadCreatives={() => setCreativeLibraryOpen(true)}
                             onSegmentClick={(seg) => setCardSegment({ segment: seg, cellIds: [row.cell_id] })}
+                            onFullBreakdownClick={() => setCardGridCell(row)}
                             expandFooter={(close) => (
                               <button
                                 onClick={() => { close(); setDetail(row); }}
@@ -336,6 +340,7 @@ export function IapLibraryView() {
                               placements={allPlacements}
                               onUploadCreatives={() => setCreativeLibraryOpen(true)}
                               onSegmentClick={(seg) => setCardSegment({ segment: seg, cellIds: [row.cell_id] })}
+                              onFullBreakdownClick={() => setCardGridCell(row)}
                               expandFooter={(close) => (
                                 <button
                                   onClick={() => { close(); setDetail(row); }}
@@ -432,14 +437,39 @@ export function IapLibraryView() {
                   kicker={`Creative cell · ${detail.cell_id}`}
                   title={detail.book2_concept_name}
                   onClose={() => setDetail(null)}
-                  footer={
-                    <div className="flex items-center gap-4 flex-wrap">
-                      <SegmentDrilldownButton onClick={() => setSegmentsOpen(true)} />
-                      <CrossLink to="/app/strategy/hypotheses" label="Open Hypothesis Queue" />
-                      <CrossLink to="/app/briefs/builder"      label="Open Brief Builder" />
-                      <CrossLink to="/app/mst"                 label="View in MST" />
-                    </div>
-                  }
+                  footer={(() => {
+                    // Contextual strategy navigation: find the pillar/hypothesis
+                    // that cites this cell so the link lands in exactly the right place.
+                    const matchedPillar = strategy?.message_pillars.find(
+                      (p) => p.source_cells.includes(detail.cell_id),
+                    );
+                    const matchedHyp = matchedPillar
+                      ? (strategy?.active_hypotheses.find(
+                          (h) => h.pillar_id === matchedPillar.id && h.status === "ready_for_brief_builder",
+                        ) ?? strategy?.active_hypotheses.find((h) => h.pillar_id === matchedPillar.id))
+                      : null;
+                    const stratUrl = matchedHyp
+                      ? `/app/strategy/hypotheses?focus=${matchedHyp.id}&from=analysis&fromCell=${detail.cell_id}`
+                      : `/app/strategy/map?from=analysis&fromCell=${detail.cell_id}`;
+                    const briefUrl = `/app/briefs/builder?from=analysis&fromCell=${detail.cell_id}`;
+                    return (
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <SegmentDrilldownButton onClick={() => setSegmentsOpen(true)} />
+                        <LoopAction
+                          to={stratUrl}
+                          label={matchedPillar ? "See in Strategy" : "Open Strategy"}
+                          icon="strategy"
+                        />
+                        <LoopAction
+                          to={briefUrl}
+                          label="Open Brief Builder"
+                          icon="brief"
+                          variant="secondary"
+                        />
+                        <CrossLink to="/app/mst" label="View in MST" />
+                      </div>
+                    );
+                  })()}
                 >
                   {/* Primary KPIs */}
                   <div className="grid grid-cols-2 gap-3">
@@ -531,6 +561,18 @@ export function IapLibraryView() {
                   title={detail.book2_concept_name}
                   analysis={a}
                   cellIds={[detail.cell_id]}
+                />
+              )}
+
+              {/* ── Full audience grid opened from a card's Demographics tab ── */}
+              {cardGridCell && (
+                <SegmentGridModal
+                  open={cardGridCell != null}
+                  onClose={() => setCardGridCell(null)}
+                  kicker={`Creative cell · ${cardGridCell.cell_id}`}
+                  title={cardGridCell.book2_concept_name}
+                  analysis={a}
+                  cellIds={[cardGridCell.cell_id]}
                 />
               )}
 

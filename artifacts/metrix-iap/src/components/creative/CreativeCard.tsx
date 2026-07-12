@@ -194,6 +194,7 @@ export function CreativeCard({
   placements,
   onUploadCreatives,
   onSegmentClick,
+  onFullBreakdownClick,
 }: {
   data: CreativeCardData;
   className?: string;
@@ -213,6 +214,11 @@ export function CreativeCard({
   onUploadCreatives?: () => void;
   /** Makes the expanded dialog's Demographics tab tappable → segment drill-down. */
   onSegmentClick?: (segment: { age: string; gender: string }) => void;
+  /**
+   * When provided, a "Full breakdown" button appears on the Demographics tab.
+   * The dialog closes before calling this so the grid doesn't stack behind it.
+   */
+  onFullBreakdownClick?: () => void;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -279,6 +285,7 @@ export function CreativeCard({
         unmapped={unmapped}
         onUploadCreatives={onUploadCreatives}
         onSegmentClick={onSegmentClick}
+        onFullBreakdownClick={onFullBreakdownClick}
       />
     </>
   );

@@ -1,11 +1,13 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { ChevronRight, Bell, CheckCircle2, LogOut } from "lucide-react";
+import { ChevronRight, Bell, CheckCircle2, LogOut, PanelRightOpen, PanelRightClose } from "lucide-react";
 import { useAccount } from "@/contexts/AccountContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { navTree } from "@/navigation/navTree";
 import { BrandLogo } from "@/components/brand/BrandMark";
 import { DateRangePicker } from "./DateRangePicker";
+import { useTaskTray } from "@/contexts/TaskTrayContext";
+import { useTaskTrayCount } from "./TaskTray";
 
 // ─── Derive breadcrumb from navTree ────────────────────────────────────
 
@@ -52,6 +54,8 @@ export function Topbar() {
   const [location] = useLocation();
   const { manager, selectedAccountType, activeAdAccount } = useAccount();
   const { user, logout } = useAuth();
+  const { open, toggle } = useTaskTray();
+  const trayCount = useTaskTrayCount();
 
   const isManager = selectedAccountType === "manager";
   const leadLabel = isManager ? manager.name : activeAdAccount?.name ?? manager.name;
@@ -109,6 +113,32 @@ export function Topbar() {
           <span className="hidden sm:inline">Connected</span>
         </div>
       )}
+
+      <div className="w-px h-4 bg-border/50 shrink-0" />
+
+      {/* Task tray toggle */}
+      <button
+        aria-label={open ? "Close task tray" : "Open task tray"}
+        title={open ? "Close task tray" : `Task tray${trayCount > 0 ? ` (${trayCount} items)` : ""}`}
+        onClick={toggle}
+        className={cn(
+          "relative w-7 h-7 rounded flex items-center justify-center transition-colors",
+          open
+            ? "bg-primary/15 border border-primary/25 text-primary hover:bg-primary/20"
+            : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+        )}
+      >
+        {open ? (
+          <PanelRightClose className="w-3.5 h-3.5" />
+        ) : (
+          <PanelRightOpen className="w-3.5 h-3.5" />
+        )}
+        {!open && trayCount > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] bg-primary rounded-full flex items-center justify-center text-[8px] font-bold text-primary-foreground leading-none px-0.5">
+            {trayCount > 9 ? "9+" : trayCount}
+          </span>
+        )}
+      </button>
 
       <div className="w-px h-4 bg-border/50 shrink-0" />
 
