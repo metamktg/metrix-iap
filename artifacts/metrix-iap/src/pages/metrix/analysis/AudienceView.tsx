@@ -15,7 +15,7 @@ import {
   RangeScopeBar, NoDataInRangeState,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
-import { Users, ChevronRight, AlertTriangle } from "lucide-react";
+import { Users, ChevronRight, AlertTriangle, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   scopeDemographicRows,
@@ -170,7 +170,7 @@ export function AudienceView() {
                             "transition-all duration-100 group"
                           )}
                         >
-                          {/* Header row: rank + name + primary KPI + arrow */}
+                          {/* Header row: rank + name + primary KPI + vibrant action pill */}
                           <div className="flex items-center gap-2.5 mb-2.5">
                             <span className="w-4 shrink-0 text-[10px] font-mono text-muted-foreground/35 tabular-nums text-right">
                               {idx + 1}
@@ -184,13 +184,16 @@ export function AudienceView() {
                                 title={e.signal.reasons.join(" ")}
                               >
                                 <AlertTriangle className="w-2.5 h-2.5" />
-                                Low signal
+                                Low
                               </span>
                             )}
-                            <span className="text-[13px] font-bold tabular-nums text-foreground/80 shrink-0">
+                            <span className="text-[13px] font-bold tabular-nums text-foreground/80 shrink-0 mr-1">
                               {v != null ? activeMetric.format(v) : "—"}
                             </span>
-                            <ChevronRight className="w-3.5 h-3.5 shrink-0 text-muted-foreground/30 group-hover:text-primary/60 group-hover:translate-x-0.5 transition-all" />
+                            {/* Vibrant CTA pill — spans full card click, styled as visual affordance */}
+                            <span className="shrink-0 inline-flex items-center gap-1 h-6 px-2.5 rounded-md text-[10px] font-semibold bg-gradient-to-r from-violet-500 to-blue-500 text-white opacity-60 group-hover:opacity-100 transition-opacity shadow-sm shadow-violet-900/30">
+                              Explore <ArrowRight className="w-2.5 h-2.5" />
+                            </span>
                           </div>
                           {/* Share bar — prominent, 6px */}
                           <div className="ml-6 h-[6px] rounded-full bg-white/[0.05] overflow-hidden mb-2.5">
@@ -199,15 +202,12 @@ export function AudienceView() {
                               style={{ width: `${barPct}%` }}
                             />
                           </div>
-                          {/* Secondary metrics + action hint */}
+                          {/* Secondary metrics */}
                           <div className="ml-6 flex items-center gap-4">
                             <KpiStat label={term.Plural} value={fmtNum(e.totals.results)} highlight={activeMetric.id === "results"} />
                             <KpiStat label="CPA" value={e.derived.cpa != null ? fmtUSD(e.derived.cpa) : "—"} highlight={activeMetric.id === "cpa"} />
                             <KpiStat label="Spend" value={e.totals.spend != null ? fmtUSD(e.totals.spend, 0) : "—"} highlight={activeMetric.id === "spend"} />
                             <KpiStat label="CTR" value={e.derived.ctr != null ? fmtPct(e.derived.ctr) : "—"} highlight={activeMetric.id === "ctr"} />
-                            <span className="ml-auto text-[9px] font-medium text-muted-foreground/30 group-hover:text-primary/55 transition-colors">
-                              View messaging →
-                            </span>
                           </div>
                         </button>
                       );
