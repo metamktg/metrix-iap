@@ -9,7 +9,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getBriefBuilder, getStrategyData, getAnalysisData, getMST, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ModuleTabs, ModuleScopeGate, PendingState,
-  MetricTile, CaveatNote, CrossLink, useFocusParam,
+  MetricTile, CaveatNote, CrossLink, useFocusParam, FlowCrumb, useFromParam,
   RangeScopeBar, NoDataInRangeState, StaleFocusNotice,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
@@ -48,6 +48,7 @@ export function BriefBuilderView() {
   const [detail, setDetail] = useState<DraftBrief | null>(null);
   const { rangeHasData } = useDateRange();
   const generation = useGenerationRun(adAccountId, "briefs");
+  const fp = useFromParam();
 
   const bb = getBriefBuilder(seed, adAccountId);
 
@@ -106,6 +107,7 @@ export function BriefBuilderView() {
               }
             />
             <ScopeBanner account={acct} />
+            <FlowCrumb {...fp} />
             {focus && !briefs.some((b) => b.id === focus) && (
               <StaleFocusNotice label="brief" />
             )}

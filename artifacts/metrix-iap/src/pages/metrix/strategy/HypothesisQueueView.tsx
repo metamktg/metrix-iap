@@ -9,7 +9,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getStrategyData, getBriefBuilder } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ModuleTabs, ModuleScopeGate, PendingState,
-  MetricTile, CrossLink, useFocusParam,
+  MetricTile, CrossLink, useFocusParam, FlowCrumb, useFromParam, LoopAction,
   RangeScopeBar, NoDataInRangeState, StaleFocusNotice,
 } from "../shared";
 import {
@@ -53,6 +53,7 @@ export function HypothesisQueueView() {
   const { rangeHasData } = useDateRange();
 
   const s = getStrategyData(seed, adAccountId);
+  const fp = useFromParam();
 
   // Deep-link: ?focus=<hypothesis id> opens the drawer
   useEffect(() => {
@@ -97,6 +98,7 @@ export function HypothesisQueueView() {
               table="active_hypotheses, message_pillars"
             />
             <ScopeBanner account={acct} />
+            <FlowCrumb {...fp} />
             {focus && !s.active_hypotheses.some((h) => h.id === focus) && (
               <StaleFocusNotice label="hypothesis" />
             )}
@@ -216,9 +218,19 @@ export function HypothesisQueueView() {
                 title={detail.label}
                 onClose={() => setDetail(null)}
                 footer={
-                  <div className="flex items-center gap-4">
-                    {detail.status === "ready_for_brief_builder" && <CrossLink to="/app/briefs/builder" label="Open Brief Builder" />}
-                    <CrossLink to="/app/analysis/library" label="Open IAP Library" />
+                  <div className="flex items-center gap-4 flex-wrap">
+                    {detail.status === "ready_for_brief_builder" && (
+                      <LoopAction
+                        to={`/app/briefs/builder?from=strategy&fromHyp=${detail.id}`}
+                        label="Create Brief"
+                        icon="brief"
+                      />
+                    )}
+                    {fp.fromCell ? (
+                      <CrossLink to={`/app/analysis/library?focus=${fp.fromCell}`} label={`Back to cell ${fp.fromCell}`} />
+                    ) : (
+                      <CrossLink to="/app/analysis/library" label="Open IAP Library" />
+                    )}
                   </div>
                 }
               >

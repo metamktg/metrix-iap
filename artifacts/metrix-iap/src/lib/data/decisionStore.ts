@@ -7,9 +7,18 @@ import { useSyncExternalStore } from "react";
 
 export type Decision = "pending" | "approved" | "rejected";
 
+export interface CardMeta {
+  title: string;
+  recommendedAction: string;
+  actionGroup: string;
+  descriptor?: string;
+  scopeLabel?: string;
+}
+
 interface DecisionRecord {
   decision: Decision;
   done?: boolean;
+  meta?: CardMeta;
 }
 
 interface StoreShape {
@@ -61,11 +70,20 @@ export function getSnapshot(): StoreShape {
 
 // ─── Mutations ────────────────────────────────────────────────────────
 
-export function setDecision(adAccountId: string, cardId: string, decision: Decision) {
+export function setDecision(adAccountId: string, cardId: string, decision: Decision, meta?: CardMeta) {
   const k = key(adAccountId, cardId);
   const prev = state.records[k] ?? { decision: "pending" as Decision };
+  const existingMeta = state.records[k]?.meta;
   state = {
-    records: { ...state.records, [k]: { decision, done: false } },
+    records: {
+      ...state.records,
+      [k]: {
+        decision,
+        done: false,
+        // Preserve existing meta on restore; use new meta on approve
+        meta: meta ?? (decision === "approved" ? existingMeta : existingMeta),
+      },
+    },
     last: { key: k, prev },
   };
   emit();
@@ -99,6 +117,22 @@ export function isDone(adAccountId: string, cardId: string): boolean {
 
 export function hasLast(): boolean {
   return state.last !== null;
+}
+
+export function getAllApproved(): Array<{
+  scopeId: string;
+  cardId: string;
+  meta: CardMeta;
+  done: boolean;
+}> {
+  return Object.entries(state.records)
+    .filter(([, rec]) => rec.decision === "approved" && rec.meta)
+    .map(([k, rec]) => {
+      const sep = k.indexOf("::");
+      const scopeId = k.slice(0, sep);
+      const cardId = k.slice(sep + 2);
+      return { scopeId, cardId, meta: rec.meta!, done: rec.done ?? false };
+    });
 }
 
 // ─── React binding ────────────────────────────────────────────────────
