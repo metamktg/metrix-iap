@@ -106,7 +106,11 @@ function isVideoAsset(assetUrl: string, assetFilename?: string | null): boolean 
 }
 
 export function CreativeVisual({ data, className }: { data: CreativeCardData; className?: string }) {
-  const [broken, setBroken] = useState(false);
+  // Track which URL caused the failure — if assetUrl changes (seed refresh,
+  // account switch) we automatically try the new URL even if a prior URL failed.
+  const [brokenUrl, setBrokenUrl] = useState<string | null>(null);
+  const broken = data.assetUrl != null && brokenUrl === data.assetUrl;
+
   if (data.assetUrl && !broken) {
     if (isVideoAsset(data.assetUrl, data.assetFilename)) {
       return (
@@ -114,7 +118,7 @@ export function CreativeVisual({ data, className }: { data: CreativeCardData; cl
           src={data.assetUrl}
           className={cn("w-full h-full object-cover", className)}
           muted loop playsInline autoPlay
-          onError={() => setBroken(true)}
+          onError={() => setBrokenUrl(data.assetUrl!)}
         />
       );
     }
@@ -123,7 +127,7 @@ export function CreativeVisual({ data, className }: { data: CreativeCardData; cl
         src={data.assetUrl}
         alt={`Creative for ${data.conceptCode}`}
         className={cn("w-full h-full object-cover", className)}
-        onError={() => setBroken(true)}
+        onError={() => setBrokenUrl(data.assetUrl!)}
       />
     );
   }

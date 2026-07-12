@@ -31,7 +31,8 @@ function hueFor(code: string): number {
 }
 
 function ExpandVisual({ data, className }: { data: CreativeCardData; className?: string }) {
-  const [broken, setBroken] = useState(false);
+  const [brokenUrl, setBrokenUrl] = useState<string | null>(null);
+  const broken = data.assetUrl != null && brokenUrl === data.assetUrl;
   const hue = hueFor(data.conceptCode);
   if (data.assetUrl && !broken) {
     if (isVideo(data.assetUrl, data.assetFilename)) {
@@ -40,7 +41,7 @@ function ExpandVisual({ data, className }: { data: CreativeCardData; className?:
           src={data.assetUrl}
           className={cn("w-full h-full object-cover", className)}
           muted loop playsInline autoPlay
-          onError={() => setBroken(true)}
+          onError={() => setBrokenUrl(data.assetUrl!)}
         />
       );
     }
@@ -49,7 +50,7 @@ function ExpandVisual({ data, className }: { data: CreativeCardData; className?:
         src={data.assetUrl}
         alt={`Creative ${data.conceptCode}`}
         className={cn("w-full h-full object-cover", className)}
-        onError={() => setBroken(true)}
+        onError={() => setBrokenUrl(data.assetUrl!)}
       />
     );
   }

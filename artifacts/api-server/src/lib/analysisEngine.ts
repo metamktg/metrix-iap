@@ -25,6 +25,7 @@ import { getSupabase } from "./supabase";
 import { invalidateMetrixSeedCache } from "./metrixSeedAssembly";
 import { logger } from "./logger";
 import { parseIapCsv, IapCsvFormatError, type IapCsvRow } from "./iapCsvParser";
+import { getAppBaseUrl } from "./appUrl";
 
 export const STALE_ANALYSIS_RUN_MS = 10 * 60 * 1000;
 
@@ -437,6 +438,35 @@ export async function startManualAnalysis(
           .from("ads")
           .upsert(adRegistryRows, { onConflict: "account_id,ad_name", ignoreDuplicates: true });
         if (adsUpsert.error) throw new Error(adsUpsert.error.message);
+
+        // Re-sync creative asset links — creatives uploaded BEFORE analysis
+        // had no ads rows to link against at upload time (syncCreativeAssetLinks
+        // logged "unmatched"). Now that the ads rows exist we back-fill them.
+        // Non-fatal: a sync failure must not roll back a successful analysis.
+        try {
+          const creativeImports = await supabase
+            .from("manual_imports")
+            .select("id, filename, ad_names")
+            .eq("account_id", accountId)
+            .eq("kind", "creative_asset");
+          if (!creativeImports.error && creativeImports.data) {
+            for (const imp of creativeImports.data) {
+              const adNames = (imp["ad_names"] as string[] | null) ?? [];
+              if (adNames.length === 0) continue;
+              const fileUrl = `${getAppBaseUrl()}api/metrix/accounts/${accountId}/manual-imports/${imp["id"]}/file`;
+              const sync = await supabase
+                .from("ads")
+                .update({ creative_asset_url: fileUrl, asset_filename: imp["filename"], asset_servable: true })
+                .eq("account_id", accountId)
+                .in("ad_name", adNames);
+              if (sync.error) {
+                logger.warn({ accountId, importId: imp["id"], err: sync.error }, "post-analysis creative sync partial failure");
+              }
+            }
+          }
+        } catch (syncErr) {
+          logger.warn({ accountId, err: syncErr }, "post-analysis creative sync failed (non-fatal)");
+        }
       }
 
       const demographicRows = Array.from(demoBuckets.values()).map((b) => ({
