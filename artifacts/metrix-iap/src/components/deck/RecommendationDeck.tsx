@@ -29,6 +29,7 @@ import {
   toggleDone,
   isDone,
 } from "@/lib/data/decisionStore";
+import type { CardMeta } from "@/lib/data/decisionStore";
 
 export interface DeckCard {
   id: string;
@@ -331,7 +332,13 @@ export function RecommendationDeck({
   const approved = cards.filter((c) => decisionOf(c.id) === "approved");
   const rejected = cards.filter((c) => decisionOf(c.id) === "rejected");
 
-  const approve = useCallback((id: string) => setDecision(scopeId, id, "approved"), [scopeId]);
+  const approve = useCallback((id: string) => {
+    const card = cards.find((c) => c.id === id);
+    const meta: CardMeta | undefined = card
+      ? { title: card.title, recommendedAction: card.recommendedAction, actionGroup: card.actionGroup, descriptor: card.descriptor }
+      : undefined;
+    setDecision(scopeId, id, "approved", meta);
+  }, [scopeId, cards]);
   const reject = useCallback((id: string) => setDecision(scopeId, id, "rejected"), [scopeId]);
   const restore = useCallback((id: string) => setDecision(scopeId, id, "pending"), [scopeId]);
 

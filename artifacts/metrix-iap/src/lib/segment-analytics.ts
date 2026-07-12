@@ -14,6 +14,11 @@
 //   rows (manual demographic uploads). Summing both would double-count,
 //   so account-level totals use the ACCOUNT rows when present, and
 //   per-cell attribution uses only the per-cell rows.
+// - Some imports carry a JOINT demographic × placement grain (rows with
+//   a Placement field). Joint rows overlap plain demographic rows for
+//   the same cell, so totals prefer the plain (marginal) rows per cell
+//   and fall back to joint rows only when a cell has no marginal rows —
+//   joint rows sum to the same marginals by construction.
 
 import type { AnalysisData, DemographicRow, MST } from "@/lib/data/seedTypes";
 
@@ -38,24 +43,43 @@ export function segmentLabel(seg: SegmentId): string {
 
 // ─── Row scoping ──────────────────────────────────────────────────────
 
+/** True when a demographic row carries the joint demographic × placement grain. */
+export function isJointPlacementRow(r: DemographicRow): boolean {
+  return typeof r.Placement === "string" && r.Placement.trim().length > 0;
+}
+
+/**
+ * Collapse overlapping grains to the marginal (non-placement) grain.
+ * Per cell: plain demographic rows are the authoritative marginals when
+ * present; a cell covered only by joint rows uses those (they sum to
+ * the same marginals). Never mixes both grains for one cell.
+ */
+function preferMarginalGrain(rows: DemographicRow[]): DemographicRow[] {
+  if (!rows.some(isJointPlacementRow)) return rows;
+  const cellsWithMarginal = new Set(rows.filter((r) => !isJointPlacementRow(r)).map((r) => r.cell_id));
+  return rows.filter((r) => !isJointPlacementRow(r) || !cellsWithMarginal.has(r.cell_id));
+}
+
 /**
  * Demographic rows at the honest grain for account/cell-scoped totals.
  * - With cellIds: only rows for those cells (never the ACCOUNT grain).
  * - Without: if ACCOUNT rows exist they are the authoritative account
  *   marginals (per-cell rows overlap them); otherwise all rows.
+ * - Joint demographic × placement rows are collapsed per cell so they
+ *   never double-count against the plain demographic grain.
  */
 export function scopeDemographicRows(rows: DemographicRow[], cellIds: string[] | null): DemographicRow[] {
   if (cellIds) {
     const set = new Set(cellIds);
-    return rows.filter((r) => set.has(r.cell_id) && r.cell_id !== ACCOUNT_LEVEL_CELL_ID);
+    return preferMarginalGrain(rows.filter((r) => set.has(r.cell_id) && r.cell_id !== ACCOUNT_LEVEL_CELL_ID));
   }
   const accountRows = rows.filter((r) => r.cell_id === ACCOUNT_LEVEL_CELL_ID);
-  return accountRows.length > 0 ? accountRows : rows;
+  return preferMarginalGrain(accountRows.length > 0 ? accountRows : rows);
 }
 
 /** Rows carrying real per-cell grain (attribution joins use only these). */
 export function cellGrainRows(rows: DemographicRow[], cellIds: string[] | null): DemographicRow[] {
-  const scoped = cellIds ? scopeDemographicRows(rows, cellIds) : rows;
+  const scoped = cellIds ? scopeDemographicRows(rows, cellIds) : preferMarginalGrain(rows);
   return scoped.filter((r) => r.cell_id !== ACCOUNT_LEVEL_CELL_ID);
 }
 
@@ -352,6 +376,84 @@ export function computeSegmentAttribution(
   return { available: true, unavailableReason: null, cells, variables };
 }
 
+// ─── Joint demographic × placement grain ──────────────────────────────
+
+/** Normalized key for matching a placement/platform pair across sources. */
+export function placementKey(placement: string | undefined | null, platform: string | undefined | null): string {
+  return `${(placement ?? "").trim().toLowerCase()}|${(platform ?? "").trim().toLowerCase()}`;
+}
+
+/**
+ * Joint demographic × placement rows at the honest scope.
+ * - With cellIds: only joint rows for those cells (never ACCOUNT grain).
+ * - Without: ACCOUNT-grain joint rows are the authoritative account
+ *   breakdown when present (per-cell joint rows overlap them);
+ *   otherwise all per-cell joint rows.
+ * Empty when the import carries no joint grain — callers must render
+ * that as explicitly unavailable, never estimated.
+ */
+export function scopeJointPlacementRows(rows: DemographicRow[], cellIds: string[] | null): DemographicRow[] {
+  const joint = rows.filter(isJointPlacementRow);
+  if (cellIds) {
+    const set = new Set(cellIds);
+    return joint.filter((r) => set.has(r.cell_id) && r.cell_id !== ACCOUNT_LEVEL_CELL_ID);
+  }
+  const accountRows = joint.filter((r) => r.cell_id === ACCOUNT_LEVEL_CELL_ID);
+  return accountRows.length > 0 ? accountRows : joint;
+}
+
+/**
+ * Totals for one avatar × placement intersection, from joint rows only.
+ * Null when the joint export has no rows for this intersection — the
+ * caller renders that as an explicit gap, never zero.
+ */
+export function jointIntersectionTotals(
+  jointRows: DemographicRow[],
+  seg: SegmentId,
+  placement: string,
+  platform: string
+): SegmentRawTotals | null {
+  const key = placementKey(placement, platform);
+  const rows = rowsForSegment(jointRows, seg).filter((r) => placementKey(r.Placement, r.Platform) === key);
+  return rows.length > 0 ? computeSegmentTotals(rows) : null;
+}
+
+export interface SegmentPlacementEntry {
+  placement: string;
+  platform: string;
+  totals: SegmentRawTotals;
+  derived: SegmentDerivedMetrics;
+}
+
+export interface SegmentPlacementBreakdown {
+  /** False when the import carries no joint demographic × placement grain for this scope. */
+  available: boolean;
+  entries: SegmentPlacementEntry[];
+}
+
+/** Per-placement performance within one segment, from joint rows only. */
+export function computeSegmentPlacementBreakdown(
+  rows: DemographicRow[],
+  seg: SegmentId,
+  cellIds: string[] | null
+): SegmentPlacementBreakdown {
+  const joint = scopeJointPlacementRows(rows, cellIds);
+  if (joint.length === 0) return { available: false, entries: [] };
+  const byKey = new Map<string, { placement: string; platform: string; rows: DemographicRow[] }>();
+  for (const r of rowsForSegment(joint, seg)) {
+    const key = placementKey(r.Placement, r.Platform);
+    const entry = byKey.get(key) ?? { placement: (r.Placement ?? "").trim(), platform: (r.Platform ?? "").trim(), rows: [] };
+    entry.rows.push(r);
+    byKey.set(key, entry);
+  }
+  const entries: SegmentPlacementEntry[] = Array.from(byKey.values()).map((e) => {
+    const totals = computeSegmentTotals(e.rows);
+    return { placement: e.placement, platform: e.platform, totals, derived: deriveSegmentMetrics(totals) };
+  });
+  entries.sort((a, b) => rankTotals(a.totals, b.totals));
+  return { available: true, entries };
+}
+
 // ─── Segment view assembly (what the drill-down renders) ──────────────
 
 export interface SegmentDrilldownData {
@@ -360,6 +462,8 @@ export interface SegmentDrilldownData {
   derived: SegmentDerivedMetrics;
   signal: SegmentSignal;
   attribution: SegmentAttribution;
+  /** Per-placement performance within this segment (joint grain only). */
+  placements: SegmentPlacementBreakdown;
 }
 
 export function computeSegmentDrilldown(
@@ -368,7 +472,8 @@ export function computeSegmentDrilldown(
   seg: SegmentId,
   cellIds: string[] | null
 ): SegmentDrilldownData {
-  const scoped = scopeDemographicRows(analysis.demographic_registration_signal ?? [], cellIds);
+  const allRows = analysis.demographic_registration_signal ?? [];
+  const scoped = scopeDemographicRows(allRows, cellIds);
   const segRows = rowsForSegment(scoped, seg);
   const totals = computeSegmentTotals(segRows);
   return {
@@ -377,5 +482,6 @@ export function computeSegmentDrilldown(
     derived: deriveSegmentMetrics(totals),
     signal: assessSegmentSignal(totals, computeSegmentTotals(scoped)),
     attribution: computeSegmentAttribution(analysis, mst, seg, cellIds),
+    placements: computeSegmentPlacementBreakdown(allRows, seg, cellIds),
   };
 }

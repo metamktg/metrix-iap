@@ -1,10 +1,12 @@
 // ─── Avatar × placement segment grid (A4 modal pattern) ───────────────
 // Drill-down behind every variable/concept stat: blended top-line first,
-// expandable into the avatar × placement grid. This import carries real
-// MARGINALS — avatar segments (age × gender rows per creative cell) and
-// placement performance (account level) — but no joint avatar × placement
-// grain. Marginals render real numbers; intersections render an explicit
-// "no joint grain" state. Never fabricated.
+// expandable into the avatar × placement grid. Standard Meta exports
+// carry only MARGINALS — avatar segments (age × gender rows per creative
+// cell) and placement performance (account level) — so intersections
+// render an explicit "no joint grain" state. When an import carries a
+// combined demographic × placement breakdown (joint rows with a
+// Placement field), the intersections populate from those real rows.
+// Never fabricated either way.
 
 import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -13,11 +15,14 @@ import type { AnalysisData, DemographicRow, PlacementRow } from "@/lib/data/seed
 import type { MetricDef } from "@/lib/data/metricsCatalog";
 import {
   scopeDemographicRows,
+  scopeJointPlacementRows,
+  jointIntersectionTotals,
   listSegments,
   rowsForSegment,
   computeSegmentTotals,
   segmentKey,
   type SegmentId,
+  type SegmentRawTotals,
 } from "@/lib/segment-analytics";
 import { SegmentDrilldownModal } from "./SegmentDrilldownModal";
 
@@ -38,6 +43,18 @@ interface SegmentTotals {
   reach: number | null;
   clicksAll: number | null;
   linkClicks: number;
+}
+
+/** Map strict nullable analytics totals into the grid's totals shape. */
+function toGridTotals(t: SegmentRawTotals): SegmentTotals {
+  return {
+    spend: t.spend ?? 0,
+    results: t.results ?? 0,
+    impressions: t.impressions ?? 0,
+    reach: t.reach,
+    clicksAll: t.clicksAll,
+    linkClicks: t.linkClicks ?? 0,
+  };
 }
 
 /** Resolve the value + display for whichever metric tile was clicked, from a segment's totals. */
@@ -166,6 +183,12 @@ export function SegmentGridModal({
     [analysis, cellIds]
   );
   const placements = useMemo(() => topPlacements(analysis), [analysis]);
+  /** Joint demographic × placement rows — empty for standard Meta exports. */
+  const jointRows = useMemo(
+    () => scopeJointPlacementRows(analysis.demographic_registration_signal ?? [], cellIds),
+    [analysis, cellIds]
+  );
+  const hasJointGrain = jointRows.length > 0;
   const metricLabel = metric?.label ?? "Blended CPA";
   const unavailableOnPlacements = metric?.id === "reach" || metric?.id === "clicks_all";
   const [drilldownSegment, setDrilldownSegment] = useState<SegmentId | null>(null);
@@ -177,10 +200,21 @@ export function SegmentGridModal({
           <div className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest">{kicker}</div>
           <DialogTitle className="text-[15px] font-semibold text-foreground">{title} — avatar × placement</DialogTitle>
           <DialogDescription className="text-[11px] text-muted-foreground/70 leading-relaxed">
-            Avatar rows and placement columns are real marginals from this import, broken out by{" "}
-            <span className="text-foreground/80 font-medium">{metricLabel}</span>. Meta's export does not break
-            results down jointly by demographic and placement, so intersections stay explicitly empty rather than
-            estimated.{unavailableOnPlacements ? " The placement export doesn't carry this metric, so those cells show as unavailable rather than estimated." : ""}
+            {hasJointGrain ? (
+              <>
+                This import carries a combined demographic × placement breakdown, so intersections are real numbers
+                from those joint rows, broken out by <span className="text-foreground/80 font-medium">{metricLabel}</span>.
+                Intersections the joint export doesn't cover stay explicitly empty rather than estimated.
+              </>
+            ) : (
+              <>
+                Avatar rows and placement columns are real marginals from this import, broken out by{" "}
+                <span className="text-foreground/80 font-medium">{metricLabel}</span>. Meta's export does not break
+                results down jointly by demographic and placement, so intersections stay explicitly empty rather than
+                estimated.
+              </>
+            )}
+            {unavailableOnPlacements ? " The placement export doesn't carry this metric, so those cells show as unavailable rather than estimated." : ""}
           </DialogDescription>
         </DialogHeader>
 
@@ -230,15 +264,37 @@ export function SegmentGridModal({
                             <div className="text-[9px] text-muted-foreground/60 capitalize">{seg.gender}</div>
                           </button>
                         </td>
-                        {placements.map(({ row: p }) => (
-                          <td
-                            key={p.Placement + p.Platform}
-                            className="px-2 py-2 text-center text-[10px] text-muted-foreground/40"
-                            title="No joint avatar × placement grain in this import"
-                          >
-                            —
-                          </td>
-                        ))}
+                        {placements.map(({ row: p }) => {
+                          const joint = hasJointGrain
+                            ? jointIntersectionTotals(jointRows, { age: seg.age, gender: seg.gender }, p.Placement, p.Platform)
+                            : null;
+                          if (!joint) {
+                            return (
+                              <td
+                                key={p.Placement + p.Platform}
+                                className="px-2 py-2 text-center text-[10px] text-muted-foreground/40"
+                                title={
+                                  hasJointGrain
+                                    ? "The joint export has no rows for this avatar × placement intersection"
+                                    : "No joint avatar × placement grain in this import"
+                                }
+                              >
+                                —
+                              </td>
+                            );
+                          }
+                          const v = metricValueForSegment(toGridTotals(joint), metric ?? { id: "cpa_blended", isResultEvent: false });
+                          return (
+                            <td
+                              key={p.Placement + p.Platform}
+                              className="px-2 py-2 text-center tabular-nums"
+                              data-testid={`cell-joint-${seg.key}-${p.Placement}-${p.Platform}`}
+                            >
+                              <div className="text-[10px] font-semibold text-foreground/90">{v.display}</div>
+                              <div className="text-[8px] text-muted-foreground/60">{usd(joint.spend, 0)}</div>
+                            </td>
+                          );
+                        })}
                         <td className="px-2.5 py-2 text-right tabular-nums">
                           <div className="text-[11px] font-semibold text-foreground">
                             {blended.display} <span className="text-[8px] font-normal text-muted-foreground/60">{metricLabel}</span>
@@ -275,8 +331,10 @@ export function SegmentGridModal({
           <Info className="w-3 h-3 shrink-0 mt-0.5" />
           <span>
             Avatar rows: demographic audience signal{cellIds ? ` scoped to ${cellIds.join(", ")}` : " for the whole account"}.
-            Placement columns: account-level placement signal. Joint cells populate automatically
-            when an export with combined demographic × placement breakdowns is imported.
+            Placement columns: account-level placement signal.{" "}
+            {hasJointGrain
+              ? "Joint cells are computed from this import's combined demographic × placement rows."
+              : "Joint cells populate automatically when an export with combined demographic × placement breakdowns is imported."}{" "}
             Click an avatar segment to see the concepts and creative variables driving it.
           </span>
         </div>

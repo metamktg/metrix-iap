@@ -21,3 +21,18 @@ double-counts spend/results (observed ~2× drift on real data).
 `artifacts/metrix-iap/src/lib/segment-analytics.ts` instead of filtering rows ad hoc.
 Also: `Reach` can be null across an entire upload — strict-sum to null, never coerce to 0
 (JS silently treats `n + null` as `n + 0`).
+
+## Joint demographic × placement grain
+
+Demographic rows may ALSO carry `Placement`/`Platform` fields — a third, joint grain
+(segment × placement). Rules established with the grid-intersection feature:
+- A non-empty `Placement` string marks a joint row (`isJointPlacementRow`).
+- Per cell, plain (marginal) rows stay authoritative for totals; joint rows are used for
+  totals only when a cell has NO marginal rows (joint sums to marginals by construction).
+  This collapse happens inside `scopeDemographicRows`/`cellGrainRows`, so all existing
+  totals code is automatically double-count-safe.
+- Intersections without joint coverage return `null` (rendered "—"), never zero — the
+  honesty rule extends to the joint grain.
+- ACCOUNT-grain joint rows are authoritative at account scope, always excluded at cell scope.
+- Placement/platform matching against placement-signal labels is trim+case-insensitive
+  (`placementKey`).

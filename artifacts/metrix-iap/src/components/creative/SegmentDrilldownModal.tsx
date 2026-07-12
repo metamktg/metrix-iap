@@ -740,6 +740,41 @@ export function SegmentDrilldownModal({
                 )}
               </div>
 
+              {/* Placement performance (joint demographic × placement grain only) */}
+              {data.placements.available && data.placements.entries.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">
+                    Placements in this segment
+                  </p>
+                  <div className="rounded-lg border border-border/40 overflow-hidden">
+                    {data.placements.entries.map((p) => (
+                      <div
+                        key={`${p.placement}|${p.platform}`}
+                        className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border/20 last:border-b-0"
+                        data-testid={`row-segment-placement-${p.placement}-${p.platform}`}
+                      >
+                        <div className="min-w-0">
+                          <div className="text-[11px] font-medium text-foreground truncate">{p.placement}</div>
+                          <div className="text-[9px] text-muted-foreground/60 capitalize">{p.platform}</div>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <div className="text-[11px] font-semibold text-foreground tabular-nums">
+                            {p.totals.results != null ? `${fmtNum(p.totals.results)} results` : "—"}
+                          </div>
+                          <div className="text-[9px] text-muted-foreground/60 tabular-nums">
+                            {perfSummary(p.totals, p.derived).join(" · ") || "—"}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[9px] text-muted-foreground/55 leading-snug">
+                    Computed from this import's combined demographic × placement rows for {label} only — real joint
+                    grain, not the account-level placement marginals.
+                  </p>
+                </div>
+              )}
+
               {/* Ranked variables */}
               {data.attribution.available && topVariables.length > 0 && (
                 <div className="space-y-1.5">

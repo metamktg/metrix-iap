@@ -20,6 +20,10 @@ import {
   computeSegmentDrilldown,
   segmentLabel,
   LOW_SIGNAL_IMPRESSIONS,
+  isJointPlacementRow,
+  scopeJointPlacementRows,
+  jointIntersectionTotals,
+  computeSegmentPlacementBreakdown,
 } from "./segment-analytics";
 
 const bundle = seed as unknown as MetrixSeed;
@@ -231,6 +235,129 @@ describe("computeSegmentDrilldown", () => {
     const d = computeSegmentDrilldown(analysis, mst, seg, cellIds);
     expect(d.totals).toEqual(computeSegmentTotals(rowsForSegment(scoped, seg)));
     expect(d.attribution.cells.every((c) => c.cellId === "C2B")).toBe(true);
+  });
+});
+
+// ─── Joint demographic × placement grain ──────────────────────────────
+
+function demoRow(overrides: Partial<DemographicRow> & { cell_id: string; Age: string; Gender: string }): DemographicRow {
+  return {
+    "Ad name": "ad",
+    "Amount spent (USD)": 0,
+    Reach: 0,
+    Impressions: 0,
+    Results: 0,
+    "Clicks (all)": 0,
+    "Link clicks": 0,
+    CPA_result: null,
+    CTR_link_pct: 0,
+    Result_per_link_click_pct: 0,
+    ...overrides,
+  } as DemographicRow;
+}
+
+/** Marginal rows for C1 plus joint rows for C1 (overlapping) and C2 (joint-only). */
+function jointFixtureRows(): DemographicRow[] {
+  return [
+    // C1 marginal grain (authoritative for totals)
+    demoRow({ cell_id: "C1", Age: "25-34", Gender: "female", "Amount spent (USD)": 100, Impressions: 2000, Results: 10, "Link clicks": 40, "Clicks (all)": 60, Reach: 1500 }),
+    // C1 joint grain — overlaps the marginal row above (would double-count if summed)
+    demoRow({ cell_id: "C1", Age: "25-34", Gender: "female", Placement: "Feed", Platform: "facebook", "Amount spent (USD)": 60, Impressions: 1200, Results: 6, "Link clicks": 25, "Clicks (all)": 38, Reach: 900 }),
+    demoRow({ cell_id: "C1", Age: "25-34", Gender: "female", Placement: "Stories", Platform: "instagram", "Amount spent (USD)": 40, Impressions: 800, Results: 4, "Link clicks": 15, "Clicks (all)": 22, Reach: 600 }),
+    // C2 joint-only grain — its joint rows ARE the marginals
+    demoRow({ cell_id: "C2", Age: "25-34", Gender: "female", Placement: "Feed", Platform: "facebook", "Amount spent (USD)": 30, Impressions: 500, Results: 2, "Link clicks": 10, "Clicks (all)": 14, Reach: 400 }),
+    demoRow({ cell_id: "C2", Age: "35-44", Gender: "male", Placement: "Reels", Platform: "instagram", "Amount spent (USD)": 20, Impressions: 300, Results: 1, "Link clicks": 5, "Clicks (all)": 8, Reach: 250 }),
+  ];
+}
+
+describe("joint demographic × placement grain", () => {
+  it("isJointPlacementRow detects the joint grain", () => {
+    const rows = jointFixtureRows();
+    expect(isJointPlacementRow(rows[0]!)).toBe(false);
+    expect(isJointPlacementRow(rows[1]!)).toBe(true);
+  });
+
+  it("fixture accounts carry no joint grain — nothing changes for existing imports", () => {
+    for (const id of ["bookster", "littledata"]) {
+      const { analysis } = accountData(id);
+      const rows = analysis.demographic_registration_signal;
+      expect(rows.some(isJointPlacementRow)).toBe(false);
+      expect(scopeJointPlacementRows(rows, null)).toHaveLength(0);
+      expect(computeSegmentPlacementBreakdown(rows, listSegments(scopeDemographicRows(rows, null))[0]!, null).available).toBe(false);
+    }
+  });
+
+  it("scopeDemographicRows never double-counts overlapping marginal + joint rows", () => {
+    const rows = jointFixtureRows();
+    const scoped = scopeDemographicRows(rows, null);
+    // C1 uses its single marginal row; C2 uses its joint rows (only grain it has).
+    expect(scoped.filter((r) => r.cell_id === "C1")).toHaveLength(1);
+    expect(scoped.filter((r) => r.cell_id === "C2")).toHaveLength(2);
+    const totals = computeSegmentTotals(scoped);
+    expect(totals.spend).toBeCloseTo(100 + 30 + 20, 6); // never 100+60+40+30+20
+  });
+
+  it("cell-scoped totals also collapse overlapping grains", () => {
+    const rows = jointFixtureRows();
+    const c1 = computeSegmentTotals(scopeDemographicRows(rows, ["C1"]));
+    expect(c1.spend).toBeCloseTo(100, 6);
+    const c2 = computeSegmentTotals(scopeDemographicRows(rows, ["C2"]));
+    expect(c2.spend).toBeCloseTo(50, 6);
+  });
+
+  it("jointIntersectionTotals returns real numbers for covered intersections and null for gaps", () => {
+    const joint = scopeJointPlacementRows(jointFixtureRows(), null);
+    const seg = { age: "25-34", gender: "female" };
+    const feed = jointIntersectionTotals(joint, seg, "Feed", "facebook");
+    expect(feed).not.toBeNull();
+    expect(feed!.spend).toBeCloseTo(60 + 30, 6); // C1 + C2 Feed rows
+    expect(feed!.results).toBe(8);
+    // Case/whitespace-insensitive matching against placement-signal labels.
+    expect(jointIntersectionTotals(joint, seg, " feed ", "FACEBOOK")!.spend).toBeCloseTo(90, 6);
+    // Uncovered intersection: explicit null, never zero.
+    expect(jointIntersectionTotals(joint, seg, "Reels", "instagram")).toBeNull();
+    expect(jointIntersectionTotals(joint, { age: "35-44", gender: "male" }, "Feed", "facebook")).toBeNull();
+  });
+
+  it("computeSegmentPlacementBreakdown ranks placements within the segment", () => {
+    const b = computeSegmentPlacementBreakdown(jointFixtureRows(), { age: "25-34", gender: "female" }, null);
+    expect(b.available).toBe(true);
+    expect(b.entries.map((e) => `${e.placement}|${e.platform}`)).toEqual(["Feed|facebook", "Stories|instagram"]);
+    expect(b.entries[0]!.totals.spend).toBeCloseTo(90, 6);
+    expect(b.entries[0]!.derived.cpa).toBeCloseTo(90 / 8, 6);
+  });
+
+  it("cell-scoped breakdown only counts joint rows for those cells", () => {
+    const b = computeSegmentPlacementBreakdown(jointFixtureRows(), { age: "25-34", gender: "female" }, ["C2"]);
+    expect(b.available).toBe(true);
+    expect(b.entries).toHaveLength(1);
+    expect(b.entries[0]!.totals.spend).toBeCloseTo(30, 6);
+  });
+
+  it("ACCOUNT-grain joint rows are the authoritative account breakdown when present", () => {
+    const rows = [
+      ...jointFixtureRows(),
+      demoRow({ cell_id: ACCOUNT_LEVEL_CELL_ID, Age: "25-34", Gender: "female", Placement: "Feed", Platform: "facebook", "Amount spent (USD)": 95, Impressions: 1800, Results: 9, "Link clicks": 37, "Clicks (all)": 55, Reach: 1400 }),
+    ];
+    const accountScope = scopeJointPlacementRows(rows, null);
+    expect(accountScope.every((r) => r.cell_id === ACCOUNT_LEVEL_CELL_ID)).toBe(true);
+    // Cell scoping never uses the ACCOUNT grain.
+    const cellScope = scopeJointPlacementRows(rows, ["C1", ACCOUNT_LEVEL_CELL_ID]);
+    expect(cellScope.every((r) => r.cell_id === "C1")).toBe(true);
+  });
+
+  it("computeSegmentDrilldown carries the placement breakdown alongside unchanged totals", () => {
+    const { analysis, mst } = accountData("bookster");
+    const rows = jointFixtureRows();
+    const jointAnalysis: AnalysisData = { ...analysis, demographic_registration_signal: rows };
+    const d = computeSegmentDrilldown(jointAnalysis, mst, { age: "25-34", gender: "female" }, null);
+    expect(d.placements.available).toBe(true);
+    expect(d.placements.entries.length).toBe(2);
+    expect(d.totals.spend).toBeCloseTo(130, 6); // marginal-grain totals, no double count
+    // Existing imports without the joint grain stay exactly as before.
+    const plain = computeSegmentDrilldown(analysis, mst, listSegments(scopeDemographicRows(analysis.demographic_registration_signal, null))[0]!, null);
+    expect(plain.placements.available).toBe(false);
+    expect(plain.placements.entries).toHaveLength(0);
   });
 });
 
