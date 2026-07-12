@@ -424,6 +424,21 @@ export async function startManualAnalysis(
       }));
       await insertChunked("ad_performance", adRows);
 
+      // Upsert each unique ad_name into the ads registry so that
+      // syncCreativeAssetLinks can later UPDATE creative_asset_url on them.
+      // ignoreDuplicates preserves any existing meta_ad_id / creative_asset_url.
+      const uniqueAdNames = Array.from(new Set(adRows.map((r) => r.ad_name)));
+      if (uniqueAdNames.length > 0) {
+        const adRegistryRows = uniqueAdNames.map((adName) => ({
+          account_id: accountId,
+          ad_name: adName,
+        }));
+        const adsUpsert = await supabase
+          .from("ads")
+          .upsert(adRegistryRows, { onConflict: "account_id,ad_name", ignoreDuplicates: true });
+        if (adsUpsert.error) throw new Error(adsUpsert.error.message);
+      }
+
       const demographicRows = Array.from(demoBuckets.values()).map((b) => ({
         account_id: accountId,
         gender: b.gender,
