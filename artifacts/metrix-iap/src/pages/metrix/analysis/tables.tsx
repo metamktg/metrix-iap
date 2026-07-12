@@ -6,10 +6,10 @@ import { readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel } from "../shared
 import type { CellPerformanceRow, VariablePerformanceRow, DemographicRow, PlacementRow, ConversionFunnelRow } from "@/lib/data/seedTypes";
 
 export function Th({ children, right }: { children: React.ReactNode; right?: boolean }) {
-  return <th className={cn("text-[9px] font-mono uppercase tracking-widest text-muted-foreground/60 font-semibold px-2.5 py-2", right ? "text-right" : "text-left")}>{children}</th>;
+  return <th className={cn("text-[10px] font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-2.5 py-2", right ? "text-right" : "text-left")}>{children}</th>;
 }
 export function Td({ children, right, className }: { children: React.ReactNode; right?: boolean; className?: string }) {
-  return <td className={cn("px-2.5 py-2 text-[11px] text-foreground/80 align-top", right && "text-right tabular-nums", className)}>{children}</td>;
+  return <td className={cn("px-2.5 py-2 text-[12px] text-foreground/80 align-top", right && "text-right tabular-nums", className)}>{children}</td>;
 }
 
 export function TableShell({ children }: { children: React.ReactNode }) {
