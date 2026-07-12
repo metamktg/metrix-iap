@@ -167,7 +167,7 @@ export function ModuleHeader({
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
           <span className="mx-section-label block mb-1 !text-[10px]">{section}</span>
-          <h1 className="text-[20px] font-bold text-foreground leading-tight tracking-[-0.02em]">{title}</h1>
+          <h1 className="text-[21px] font-bold text-foreground leading-tight tracking-[-0.02em]">{title}</h1>
           {subtitle && <p className="text-[12px] text-muted-foreground/75 mt-0.5">{subtitle}</p>}
         </div>
         <div className="shrink-0 pt-1 flex items-center gap-2">
@@ -304,7 +304,7 @@ export function PendingState({ title, message, icon: Icon = Clock, action }: { t
       <div className="w-10 h-10 rounded-xl border border-border/40 bg-white/[0.03] flex items-center justify-center">
         <Icon className="w-4 h-4 text-muted-foreground/60" />
       </div>
-      <p className="text-[13px] font-medium text-foreground/60">{title}</p>
+      <p className="text-[15px] font-medium text-foreground/60">{title}</p>
       <p className="text-[11px] text-muted-foreground/60 max-w-xs">{message}</p>
       {action && <div className="pt-1">{action}</div>}
     </div>
@@ -540,7 +540,7 @@ export function SectionCard({
     <section className="mx-card overflow-hidden">
       <div className="relative flex items-start gap-3 px-4 py-3 border-b border-[rgba(120,170,255,0.12)]">
         <div className="flex-1 min-w-0">
-          <h3 className="text-[13px] font-semibold text-foreground leading-tight">{title}</h3>
+          <h3 className="text-[14px] font-semibold text-foreground leading-tight">{title}</h3>
           {desc && <p className="text-[11px] text-muted-foreground/70 mt-0.5 leading-tight">{desc}</p>}
         </div>
         <div className="shrink-0 flex items-center gap-2">
