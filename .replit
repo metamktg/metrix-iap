@@ -125,6 +125,7 @@ REQUEST_ACCESS_FROM_EMAIL = "Metrix <no-reply@notifications.metrix.ad>"
 
 [nix]
 channel = "stable-25_05"
+packages = ["q"]
 
 [[ports]]
 localPort = 8080
