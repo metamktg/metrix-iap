@@ -450,18 +450,17 @@ export function CrossLink({ to, label }: { to: string; label: string }) {
   return (
     <button
       onClick={() => navigate(to)}
-      className="inline-flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/25 text-primary hover:bg-primary/18 hover:border-primary/40 transition-all"
+      className="inline-flex items-center gap-2 text-[14px] font-semibold px-4 py-2 rounded-lg bg-primary/12 border border-primary/30 text-primary hover:bg-primary/20 hover:border-primary/50 transition-all shadow-sm shadow-primary/5"
     >
       {label}
-      <ArrowRight className="w-3 h-3" />
+      <ArrowRight className="w-3.5 h-3.5" />
     </button>
   );
 }
 
 /**
  * Prominent loop-action button — Analysis → Strategy → Brief closed-loop CTAs.
- * Rendered as a solid labelled button so it reads as a clear next step, not a
- * secondary text link.
+ * Always ≥14px, solid fill on primary variant so it reads as a clear action.
  */
 export function LoopAction({
   to, label, icon = "strategy", variant = "primary",
@@ -477,15 +476,15 @@ export function LoopAction({
     <button
       onClick={() => navigate(to)}
       className={cn(
-        "inline-flex items-center gap-2 text-[13px] font-semibold px-4 py-2 rounded-lg border transition-all",
+        "inline-flex items-center gap-2 text-[14px] font-semibold px-4 py-2.5 rounded-lg border transition-all",
         variant === "primary"
-          ? "bg-primary/15 border-primary/35 text-primary hover:bg-primary/22 hover:border-primary/55 shadow-sm shadow-primary/10"
-          : "bg-white/[0.05] border-border/50 text-foreground/80 hover:bg-white/[0.09] hover:text-foreground hover:border-border/70",
+          ? "bg-primary text-white border-primary hover:bg-primary/90 shadow-md shadow-primary/25 hover:shadow-primary/35"
+          : "bg-white/[0.07] border-border/55 text-foreground/90 hover:bg-white/[0.11] hover:text-foreground hover:border-border/75 shadow-sm",
       )}
     >
-      <Icon className="w-3.5 h-3.5 shrink-0" />
+      <Icon className="w-4 h-4 shrink-0" />
       {label}
-      <ArrowRight className="w-3 h-3 opacity-60 ml-0.5" />
+      <ArrowRight className="w-3.5 h-3.5 opacity-75 ml-0.5" />
     </button>
   );
 }
