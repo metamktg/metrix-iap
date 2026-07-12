@@ -155,7 +155,7 @@ export function AudienceView() {
                 >
                   <RankSortBar metrics={rankMetrics} activeId={activeMetric.id} onSelect={select} className="mb-3" />
 
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     {ranked.map((e, idx) => {
                       const v = activeMetric.value(e);
                       const barPct = rankBarPct(v, metricValues, activeMetric.direction);
@@ -165,42 +165,49 @@ export function AudienceView() {
                           onClick={() => setSelectedSeg(e.seg)}
                           data-testid={`row-audience-segment-${e.seg.age}-${e.seg.gender}`}
                           className={cn(
-                            "w-full text-left rounded-lg px-3 py-2.5 border border-border/30 bg-white/[0.01]",
-                            "hover:border-primary/25 hover:bg-primary/[0.03] active:scale-[0.995]",
+                            "w-full text-left rounded-lg px-4 py-3.5 border border-border/30 bg-white/[0.01]",
+                            "hover:border-primary/30 hover:bg-primary/[0.03] active:scale-[0.998]",
                             "transition-all duration-100 group"
                           )}
                         >
-                          <div className="flex items-center gap-3">
-                            <span className="w-5 shrink-0 text-[10px] font-mono text-muted-foreground/40 tabular-nums">
+                          {/* Header row: rank + name + primary KPI + arrow */}
+                          <div className="flex items-center gap-2.5 mb-2.5">
+                            <span className="w-4 shrink-0 text-[10px] font-mono text-muted-foreground/35 tabular-nums text-right">
                               {idx + 1}
                             </span>
-                            <div className="min-w-0 w-36 shrink-0">
-                              <div className="text-[12px] font-medium text-foreground/90 truncate">
-                                {segmentLabel(e.seg)}
-                              </div>
-                              {e.signal.low && (
-                                <span
-                                  className="inline-flex items-center gap-0.5 mt-0.5 text-[8px] font-mono uppercase tracking-wider text-amber-300/80"
-                                  title={e.signal.reasons.join(" ")}
-                                >
-                                  <AlertTriangle className="w-2.5 h-2.5" /> Low signal
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex-1 grid grid-cols-3 sm:grid-cols-5 gap-x-3 gap-y-1 min-w-0">
-                              <KpiStat label={term.Plural} value={fmtNum(e.totals.results)} highlight={activeMetric.id === "results"} />
-                              <KpiStat label="Spend" value={e.totals.spend != null ? fmtUSD(e.totals.spend, 0) : "—"} highlight={activeMetric.id === "spend"} />
-                              <KpiStat label="CPA" value={e.derived.cpa != null ? fmtUSD(e.derived.cpa) : "—"} highlight={activeMetric.id === "cpa"} />
-                              <KpiStat label="Link CTR" value={e.derived.ctr != null ? fmtPct(e.derived.ctr) : "—"} highlight={activeMetric.id === "ctr"} />
-                              <KpiStat label="CVR" value={e.derived.cvr != null ? fmtPct(e.derived.cvr) : "—"} highlight={activeMetric.id === "cvr"} />
-                            </div>
-                            <ChevronRight className="w-3 h-3 shrink-0 text-muted-foreground/40 group-hover:text-primary/60 transition-colors" />
+                            <span className="text-[13px] font-semibold text-foreground/90 flex-1 truncate">
+                              {segmentLabel(e.seg)}
+                            </span>
+                            {e.signal.low && (
+                              <span
+                                className="inline-flex items-center gap-0.5 text-[8px] font-mono uppercase text-amber-300/70 shrink-0"
+                                title={e.signal.reasons.join(" ")}
+                              >
+                                <AlertTriangle className="w-2.5 h-2.5" />
+                                Low signal
+                              </span>
+                            )}
+                            <span className="text-[13px] font-bold tabular-nums text-foreground/80 shrink-0">
+                              {v != null ? activeMetric.format(v) : "—"}
+                            </span>
+                            <ChevronRight className="w-3.5 h-3.5 shrink-0 text-muted-foreground/30 group-hover:text-primary/60 group-hover:translate-x-0.5 transition-all" />
                           </div>
-                          <div className="mt-2 ml-8 h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
+                          {/* Share bar — prominent, 6px */}
+                          <div className="ml-6 h-[6px] rounded-full bg-white/[0.05] overflow-hidden mb-2.5">
                             <div
-                              className="h-full bg-primary/50 rounded-full group-hover:bg-primary/70 transition-colors"
+                              className="h-full rounded-full bg-gradient-to-r from-primary/45 to-primary/65 group-hover:from-primary/60 group-hover:to-primary/80 transition-colors"
                               style={{ width: `${barPct}%` }}
                             />
+                          </div>
+                          {/* Secondary metrics + action hint */}
+                          <div className="ml-6 flex items-center gap-4">
+                            <KpiStat label={term.Plural} value={fmtNum(e.totals.results)} highlight={activeMetric.id === "results"} />
+                            <KpiStat label="CPA" value={e.derived.cpa != null ? fmtUSD(e.derived.cpa) : "—"} highlight={activeMetric.id === "cpa"} />
+                            <KpiStat label="Spend" value={e.totals.spend != null ? fmtUSD(e.totals.spend, 0) : "—"} highlight={activeMetric.id === "spend"} />
+                            <KpiStat label="CTR" value={e.derived.ctr != null ? fmtPct(e.derived.ctr) : "—"} highlight={activeMetric.id === "ctr"} />
+                            <span className="ml-auto text-[9px] font-medium text-muted-foreground/30 group-hover:text-primary/55 transition-colors">
+                              View messaging →
+                            </span>
                           </div>
                         </button>
                       );

@@ -22,7 +22,7 @@ export function AppShell({ children }: AppShellProps) {
             {children}
           </div>
 
-          {open && <TaskTray />}
+          <TaskTray />
         </main>
       </div>
     </div>

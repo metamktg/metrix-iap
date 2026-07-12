@@ -10,7 +10,8 @@
 
 import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { ChevronRight, Info } from "lucide-react";
+import { ChevronRight, Info, ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
+import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
@@ -41,18 +42,23 @@ export function VariableDrilldownModal({
   analysis,
   /** Metric-filtered v3 rows so header totals match the page selection. */
   variableRows,
-  /** The page's result-type selection — scopes cell/segment sections too. */
   selectedResultTypes,
+  onBack,
 }: {
   open: boolean;
   onClose: () => void;
   code: string | null;
   analysis: AnalysisData;
+  /** Metric-filtered v3 rows so header totals match the page selection. */
   variableRows: VariablePerformanceRow[];
+  /** The page's result-type selection — scopes cell/segment sections too. */
   selectedResultTypes?: string[] | null;
+  /** If set, a ← Back button appears in the modal header. */
+  onBack?: () => void;
 }) {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
+  const [, navigate] = useLocation();
   const mst = getMST(seed, adAccountId);
   const [segment, setSegment] = useState<SegmentId | null>(null);
 
@@ -76,6 +82,15 @@ export function VariableDrilldownModal({
       <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
         <DialogContent className="max-w-3xl bg-[hsl(222_61%_6%)] border-border/50 max-h-[85vh] overflow-y-auto">
           <DialogHeader className="text-left space-y-1">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="inline-flex items-center gap-1 text-[10px] text-muted-foreground/60 hover:text-foreground transition-colors mb-0.5 -ml-0.5 group"
+              >
+                <ArrowLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" />
+                Back
+              </button>
+            )}
             <div className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest">
               Variable drill-down{data.family ? ` · ${familyLabel(data.family)}` : ""}
             </div>
@@ -220,6 +235,21 @@ export function VariableDrilldownModal({
               Placement data is account-level in this import and can't be attributed to a single variable, so it's not
               shown here.
             </p>
+
+            {/* ── Next step CTA ── */}
+            <div className="flex items-center justify-between gap-3 pt-3 border-t border-border/25">
+              <p className="text-[9.5px] text-muted-foreground/50 leading-relaxed">
+                Use these variable insights to inform your next sprint test.
+              </p>
+              <button
+                onClick={() => { onClose(); navigate("/app/strategy/map"); }}
+                className="shrink-0 inline-flex items-center gap-1.5 h-7 px-3 rounded-md bg-primary/10 border border-primary/25 text-[10px] font-semibold text-primary/90 hover:bg-primary/15 hover:border-primary/40 transition-colors"
+              >
+                <Sparkles className="w-3 h-3" />
+                Strategy Map
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
