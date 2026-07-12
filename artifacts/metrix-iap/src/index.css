@@ -107,9 +107,9 @@
   --mx-indigo: #183bff;
 
   --mx-text-main: #f5f8ff;
-  --mx-text-muted: #9ba8bc;
+  --mx-text-muted: #aab6ca;
   --mx-text-soft: #c6d2e5;
-  --mx-text-faint: #6f7c91;
+  --mx-text-faint: #8796ac;
 
   --mx-success: #35d96f;
   --mx-danger: #ff4f61;
@@ -158,9 +158,9 @@
   --secondary: 218 55% 15%;
   --secondary-foreground: 217 37% 84%;
 
-  /* Muted — text lifted for contrast (#9ba8bc) */
+  /* Muted — text lifted for contrast */
   --muted: 219 45% 16%;
-  --muted-foreground: 216 20% 67%;
+  --muted-foreground: 216 22% 74%;
 
   /* Accent = slightly elevated panel */
   --accent: 218 55% 17%;
@@ -250,7 +250,7 @@
   --secondary: 218 55% 15%;
   --secondary-foreground: 217 37% 84%;
   --muted: 219 45% 16%;
-  --muted-foreground: 216 20% 67%;
+  --muted-foreground: 216 22% 74%;
   --accent: 218 55% 17%;
   --accent-foreground: 217 37% 88%;
   --destructive: 354 100% 65%;

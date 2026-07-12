@@ -33,7 +33,7 @@ const SCOPE_STYLE: Record<string, string> = {
 
 function Badge({ text, cls }: { text: string; cls: string }) {
   return (
-    <span className={cn("text-[9px] font-semibold border px-1.5 py-0.5 rounded uppercase tracking-wide leading-none", cls)}>
+    <span className={cn("text-[10px] font-semibold border px-1.5 py-0.5 rounded uppercase tracking-wide leading-none", cls)}>
       {text}
     </span>
   );
@@ -213,7 +213,7 @@ export function ManagerOverview() {
                     Open {accountName(c.account_id)} <ArrowRight className="w-3 h-3" />
                   </button>
                   {c.source_path && (
-                    <p className="text-[9px] font-mono text-muted-foreground/60 mt-2">source · {c.source_path}</p>
+                    <p className="text-[10px] font-mono text-muted-foreground/75 mt-2">source · {c.source_path}</p>
                   )}
                 </div>
               ))}

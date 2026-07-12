@@ -19,7 +19,7 @@ function PendingRow({ label, sub }: { label: string; sub?: string }) {
         <p className="text-[12px] font-medium text-foreground/70 leading-tight">{label}</p>
         {sub && <p className="text-[10px] text-muted-foreground/60 mt-0.5 leading-tight">{sub}</p>}
       </div>
-      <span className="text-[8px] font-semibold uppercase tracking-widest text-muted-foreground/60 border border-border/30 px-1.5 py-0.5 rounded shrink-0">
+      <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/75 border border-border/40 px-1.5 py-0.5 rounded shrink-0">
         Pending
       </span>
     </div>

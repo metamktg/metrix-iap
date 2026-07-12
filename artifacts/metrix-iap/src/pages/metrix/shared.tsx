@@ -141,7 +141,7 @@ export function ConfidenceBadge({ value }: { value: string }) {
           ? "bg-amber-400/10 text-amber-400 border-amber-400/20"
           : "bg-muted text-muted-foreground/60 border-border/40";
   return (
-    <span className={cn("inline-flex text-[9px] font-semibold border px-1.5 py-0.5 rounded leading-none", cls)}>
+    <span className={cn("inline-flex text-[10px] font-semibold border px-1.5 py-0.5 rounded leading-none", cls)}>
       {value}
     </span>
   );
@@ -166,9 +166,9 @@ export function ModuleHeader({
     <div className="px-6 py-4 border-b border-border/40">
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
-          <span className="block mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/65">{section}</span>
+          <span className="block mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/80">{section}</span>
           <h1 className="text-[21px] font-bold text-foreground leading-tight tracking-[-0.02em]">{title}</h1>
-          {subtitle && <p className="text-[12px] text-muted-foreground/70 mt-1 leading-relaxed max-w-2xl">{subtitle}</p>}
+          {subtitle && <p className="text-[13px] text-muted-foreground/80 mt-1 leading-relaxed max-w-2xl">{subtitle}</p>}
         </div>
         <div className="shrink-0 pt-0.5 flex items-center gap-2">
           {right}
@@ -701,8 +701,8 @@ export function SectionCard({
     <section className="mx-card overflow-hidden">
       <div className="relative flex items-center gap-3 px-4 py-2.5 border-b border-[rgba(120,170,255,0.10)]">
         <div className="flex-1 min-w-0">
-          <h3 className="text-[14px] font-semibold text-foreground leading-tight">{title}</h3>
-          {desc && <p className="text-[12px] text-muted-foreground/70 mt-0.5 leading-snug">{desc}</p>}
+          <h3 className="text-[16px] font-semibold text-foreground leading-tight">{title}</h3>
+          {desc && <p className="text-[13px] text-muted-foreground/80 mt-0.5 leading-snug">{desc}</p>}
         </div>
         <div className="shrink-0 flex items-center gap-2">
           {right}
