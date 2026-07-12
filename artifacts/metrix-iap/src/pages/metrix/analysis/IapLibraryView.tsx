@@ -312,18 +312,43 @@ export function IapLibraryView() {
                       </div>
                     )}
 
-                    {cells.length ? (() => {
-                      const uniqueCells = uniqueCellRows(cells);
-                      const totalCells = uniqueCells.length;
+                    {(() => {
+                      // Performance cells (deduplicated by cell_id)
+                      const uniquePerfCells = uniqueCellRows(cells);
+                      const perfCellIdSet = new Set(uniquePerfCells.map((r) => r.cell_id));
+
+                      // Library cells that have NO performance data yet — still
+                      // part of the manifest and should render with placeholder stats.
+                      const libOnlyCellIds = mst
+                        ? [...new Set((mst.local_book2_library ?? []).map((c) => c.cell_id))]
+                            .filter((id) => !perfCellIdSet.has(id))
+                        : [];
+
+                      if (uniquePerfCells.length === 0 && libOnlyCellIds.length === 0) {
+                        return <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." />;
+                      }
+
+                      const totalCells = uniquePerfCells.length + libOnlyCellIds.length;
                       const totalPages = Math.max(1, Math.ceil(totalCells / pageSize));
                       const safePage = Math.min(page, totalPages);
-                      const pagedCells = uniqueCells.slice((safePage - 1) * pageSize, safePage * pageSize);
-                      const rangeStart = (safePage - 1) * pageSize + 1;
-                      const rangeEnd = Math.min(safePage * pageSize, totalCells);
+                      const sliceStart = (safePage - 1) * pageSize;
+                      const sliceEnd = safePage * pageSize;
+                      const rangeStart = sliceStart + 1;
+                      const rangeEnd = Math.min(sliceEnd, totalCells);
+
+                      // Slice across the combined list (perf first, then lib-only)
+                      const pagedPerfCells = uniquePerfCells.slice(
+                        sliceStart,
+                        Math.min(sliceEnd, uniquePerfCells.length),
+                      );
+                      const libSliceStart = Math.max(0, sliceStart - uniquePerfCells.length);
+                      const libSliceEnd = Math.max(0, sliceEnd - uniquePerfCells.length);
+                      const pagedLibCellIds = libOnlyCellIds.slice(libSliceStart, libSliceEnd);
+
                       return (
                         <div className="space-y-4">
                           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                            {pagedCells.map((row) => (
+                            {pagedPerfCells.map((row) => (
                               <CreativeCard
                                 key={row.cell_id}
                                 data={{
@@ -345,6 +370,16 @@ export function IapLibraryView() {
                                     Full detail →
                                   </button>
                                 )}
+                              />
+                            ))}
+                            {pagedLibCellIds.map((cellId) => (
+                              <CreativeCard
+                                key={cellId}
+                                data={cardFromCell(cellId, cardCtx)}
+                                unmapped={false}
+                                demographic={[]}
+                                placements={allPlacements}
+                                onUploadCreatives={() => setCreativeLibraryOpen(true)}
                               />
                             ))}
                           </div>
@@ -402,9 +437,7 @@ export function IapLibraryView() {
                           </div>
                         </div>
                       );
-                    })() : (
-                      <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." />
-                    )}
+                    })()}
                   </>
                 )}
 
