@@ -20,6 +20,17 @@ export type NavBadgeKey =
   | "agent"
   | null;
 
+export type NavIconName =
+  | "LayoutDashboard"
+  | "Radio"
+  | "BarChart2"
+  | "Compass"
+  | "FileText"
+  | "FileBarChart"
+  | "Layers"
+  | "Bot"
+  | "Settings2";
+
 export type NavChild = {
   id: string;
   label: string;
@@ -33,6 +44,7 @@ export type NavSection = {
   id: string;
   number: string;
   label: string;
+  icon: NavIconName;
   // Leaf section: direct link, no expand/collapse
   to?: string;
   // Additional locations that should mark this section active.
@@ -58,6 +70,7 @@ export const navTree: NavSection[] = [
     id: "overview",
     number: "01",
     label: "Overview",
+    icon: "LayoutDashboard",
     to: "/",
     matchPaths: ["/app/account"],
     dataSource: "core_reanalysis_read, campaign_summary",
@@ -66,6 +79,7 @@ export const navTree: NavSection[] = [
     id: "listen",
     number: "02",
     label: "Listen",
+    icon: "Radio",
     children: [
       {
         id: "listen-alerts",
@@ -92,6 +106,7 @@ export const navTree: NavSection[] = [
     id: "analysis",
     number: "03",
     label: "Analysis",
+    icon: "BarChart2",
     landing: "/app/analysis/overview",
     children: [
       {
@@ -124,6 +139,7 @@ export const navTree: NavSection[] = [
     id: "strategy",
     number: "04",
     label: "Strategy",
+    icon: "Compass",
     landing: "/app/strategy/overview",
     children: [
       {
@@ -150,6 +166,7 @@ export const navTree: NavSection[] = [
     id: "briefs",
     number: "05",
     label: "Creative Briefs",
+    icon: "FileText",
     children: [
       {
         id: "briefs-builder",
@@ -170,6 +187,7 @@ export const navTree: NavSection[] = [
     id: "reports",
     number: "06",
     label: "Report Builder",
+    icon: "FileBarChart",
     children: [
       {
         id: "reports-new",
@@ -201,6 +219,7 @@ export const navTree: NavSection[] = [
     id: "mst",
     number: "07",
     label: "MST",
+    icon: "Layers",
     children: [
       {
         id: "mst-concept-map",
@@ -233,6 +252,7 @@ export const navTree: NavSection[] = [
     id: "agent",
     number: "08",
     label: "Agent",
+    icon: "Bot",
     to: "/app/agent",
     badgeKey: "agent",
     placeholder: true,
@@ -241,6 +261,7 @@ export const navTree: NavSection[] = [
     id: "settings",
     number: "09",
     label: "Settings",
+    icon: "Settings2",
     children: [
       {
         id: "settings-account",

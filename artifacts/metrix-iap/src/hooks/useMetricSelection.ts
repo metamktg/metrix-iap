@@ -82,3 +82,81 @@ export function useMetricSelection(availableIds: string[]) {
 
   return { selected, toggle, move, reset };
 }
+
+/**
+ * Generic configurable tile selection hook — same pattern as
+ * useMetricSelection but the storage key and default ids are passed in
+ * so different surfaces (overview vs library) can each persist
+ * independently.
+ */
+export function useTileSelection(
+  availableIds: string[],
+  opts: { storageKey: string; defaultIds: string[] }
+) {
+  const { storageKey, defaultIds } = opts;
+
+  function readStored(): string[] | null {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as unknown;
+      if (Array.isArray(parsed) && parsed.every((v) => typeof v === "string")) return parsed as string[];
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  function writeStored(ids: string[]) {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(ids));
+    } catch { /* best-effort */ }
+  }
+
+  const [selected, setSelected] = useState<string[]>(() => {
+    const stored = readStored();
+    const base = stored ?? defaultIds;
+    const filtered = base.filter((id) => availableIds.includes(id));
+    return filtered.length ? filtered : defaultIds.filter((id) => availableIds.includes(id));
+  });
+
+  useEffect(() => {
+    setSelected((prev) => {
+      const filtered = prev.filter((id) => availableIds.includes(id));
+      return filtered.length === prev.length ? prev : filtered;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availableIds.join(",")]);
+
+  const toggle = useCallback((id: string) => {
+    setSelected((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      writeStored(next);
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storageKey]);
+
+  const move = useCallback((id: string, direction: -1 | 1) => {
+    setSelected((prev) => {
+      const idx = prev.indexOf(id);
+      if (idx === -1) return prev;
+      const next = [...prev];
+      const swapWith = idx + direction;
+      if (swapWith < 0 || swapWith >= next.length) return prev;
+      [next[idx], next[swapWith]] = [next[swapWith]!, next[idx]!];
+      writeStored(next);
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storageKey]);
+
+  const reset = useCallback(() => {
+    const next = defaultIds.filter((id) => availableIds.includes(id));
+    writeStored(next);
+    setSelected(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availableIds.join(","), storageKey]);
+
+  return { selected, toggle, move, reset };
+}

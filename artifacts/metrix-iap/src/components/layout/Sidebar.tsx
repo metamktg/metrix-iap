@@ -1,13 +1,67 @@
 import { useLocation } from "wouter";
 import { useState, useEffect, useId } from "react";
 import { cn } from "@/lib/utils";
-import { ChevronDown, Database } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Database,
+  PanelLeftClose,
+  PanelLeftOpen,
+  LayoutDashboard,
+  Radio,
+  BarChart2,
+  Compass,
+  FileText,
+  FileBarChart,
+  Layers,
+  Bot,
+  Settings2,
+} from "lucide-react";
 import { AccountSwitcher } from "./AccountSwitcher";
 import { DataSourceBadgeToggle } from "@/components/ui/DataSourceBadge";
 import { navTree, sectionLandingRoute } from "@/navigation/navTree";
 import { useNavBadges } from "@/navigation/useNavBadges";
 import { useAuth } from "@/contexts/AuthContext";
-import type { NavSection, NavChild } from "@/navigation/navTree";
+import type { NavSection, NavChild, NavIconName } from "@/navigation/navTree";
+
+// ─── Icon map ──────────────────────────────────────────────────────────
+
+const ICONS: Record<NavIconName, React.ComponentType<{ className?: string }>> = {
+  LayoutDashboard,
+  Radio,
+  BarChart2,
+  Compass,
+  FileText,
+  FileBarChart,
+  Layers,
+  Bot,
+  Settings2,
+};
+
+function NavIcon({ name, className }: { name: NavIconName; className?: string }) {
+  const Icon = ICONS[name];
+  return <Icon className={className} />;
+}
+
+// ─── Collapse state ────────────────────────────────────────────────────
+
+const STORAGE_KEY = "metrix_sidebar_collapsed";
+
+function loadCollapsed(): boolean {
+  try {
+    return localStorage.getItem(STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function saveCollapsed(v: boolean) {
+  try {
+    localStorage.setItem(STORAGE_KEY, v ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
+}
 
 // ─── Badge pill ────────────────────────────────────────────────────────
 
@@ -24,7 +78,7 @@ function NavBadge({ count, badgeKey }: { count: number | null; badgeKey: string 
   if (count == null || count <= 0) return null;
   return (
     <span className={cn(
-      "ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded border leading-none tabular-nums",
+      "ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded border leading-none tabular-nums shrink-0",
       BADGE_STYLE[badgeKey] ?? "bg-muted text-muted-foreground border-border/40"
     )}>
       {count}
@@ -60,7 +114,65 @@ function navigate(href: string, e: React.MouseEvent) {
   window.dispatchEvent(new PopStateEvent("popstate"));
 }
 
-// ─── Child row ─────────────────────────────────────────────────────────
+// ─── Tooltip (collapsed-mode hover label) ─────────────────────────────
+
+function CollapseTooltip({ label, sub }: { label: string; sub?: string }) {
+  return (
+    <div className={cn(
+      "absolute left-full top-1/2 -translate-y-1/2 ml-2 z-[100]",
+      "pointer-events-none select-none",
+      "bg-[hsl(222_61%_10%)] border border-border/50 rounded-md shadow-xl",
+      "px-2.5 py-1.5 whitespace-nowrap",
+    )}>
+      <div className="text-[12px] font-semibold text-foreground leading-tight">{label}</div>
+      {sub && <div className="text-[9px] text-muted-foreground/60 mt-0.5">{sub}</div>}
+    </div>
+  );
+}
+
+// ─── Collapsed icon button ─────────────────────────────────────────────
+
+function CollapsedItem({
+  section,
+  badgeCounts,
+}: {
+  section: NavSection;
+  badgeCounts: Record<string, number | null>;
+}) {
+  const [location] = useLocation();
+  const [hovered, setHovered] = useState(false);
+  const active = isSectionActive(section, location);
+  const landing = sectionLandingRoute(section) ?? section.to ?? "#";
+  const badgeCount = section.badgeKey ? badgeCounts[section.badgeKey] ?? null : null;
+
+  return (
+    <li className="relative" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+      <a
+        href={landing}
+        onClick={(e) => navigate(landing, e)}
+        aria-current={active ? "page" : undefined}
+        aria-label={section.label}
+        className={cn(
+          "flex items-center justify-center w-10 h-10 mx-auto rounded-lg transition-all relative",
+          active
+            ? "bg-primary/20 text-primary border border-primary/30"
+            : "text-foreground/50 hover:text-foreground hover:bg-white/[0.06]",
+          section.placeholder && "opacity-50"
+        )}
+      >
+        <NavIcon name={section.icon} className="w-4 h-4" />
+        {badgeCount != null && badgeCount > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-primary text-[7px] font-bold text-white flex items-center justify-center leading-none">
+            {badgeCount > 9 ? "9+" : badgeCount}
+          </span>
+        )}
+      </a>
+      {hovered && <CollapseTooltip label={section.label} sub={section.number} />}
+    </li>
+  );
+}
+
+// ─── Child row (expanded) ──────────────────────────────────────────────
 
 function ChildRow({ child, count }: { child: NavChild; count: number | null }) {
   const [location] = useLocation();
@@ -76,15 +188,15 @@ function ChildRow({ child, count }: { child: NavChild; count: number | null }) {
         onClick={(e) => navigate(child.to, e)}
         aria-current={active ? "page" : undefined}
         className={cn(
-          "flex items-center gap-1.5 pl-3 pr-2 h-8 rounded-r text-[12px] transition-colors",
+          "flex items-center gap-1.5 pl-3 pr-2 h-8 rounded-r text-[12px] transition-all",
           active
-            ? "font-medium mx-nav-child-active"
-            : "text-foreground/70 hover:text-foreground hover:bg-[rgba(20,55,110,0.4)]"
+            ? "font-semibold text-foreground bg-primary/8"
+            : "text-foreground/65 hover:text-foreground hover:bg-[rgba(20,55,110,0.45)]"
         )}
       >
         <span className="flex-1 truncate leading-tight">{child.label}</span>
         {child.placeholder && !active && (
-          <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/80 border border-border/40 px-1 py-0.5 rounded leading-none shrink-0">
+          <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/70 border border-border/40 px-1 py-0.5 rounded leading-none shrink-0">
             Soon
           </span>
         )}
@@ -99,7 +211,7 @@ function ChildRow({ child, count }: { child: NavChild; count: number | null }) {
   );
 }
 
-// ─── Expandable section ────────────────────────────────────────────────
+// ─── Expandable section (expanded) ────────────────────────────────────
 
 function ExpandableSection({
   section,
@@ -124,12 +236,12 @@ function ExpandableSection({
     <li>
       <div
         className={cn(
-          "flex items-center rounded text-[11px] font-semibold uppercase tracking-widest transition-colors select-none",
+          "flex items-center rounded-lg text-[11px] font-semibold uppercase tracking-widest transition-all select-none",
           landingActive
             ? "mx-nav-active"
             : sectionActive
-              ? "text-foreground"
-              : "text-foreground/75 hover:text-foreground hover:bg-[rgba(20,55,110,0.4)]"
+              ? "text-foreground bg-white/[0.03]"
+              : "text-foreground/70 hover:text-foreground hover:bg-[rgba(20,55,110,0.4)]"
         )}
       >
         <a
@@ -144,14 +256,15 @@ function ExpandableSection({
             navigate(landing, e);
             setOpen(true);
           }}
-          className="flex-1 min-w-0 flex items-center gap-2 pl-3 pr-1 h-9"
+          className="flex-1 min-w-0 flex items-center gap-2 pl-2.5 pr-1 h-9"
         >
-          <span className={cn(
-            "w-4 shrink-0 text-[8px] font-mono tabular-nums",
-            landingActive ? "text-white/80" : "text-muted-foreground/80"
-          )}>
-            {section.number}
-          </span>
+          <NavIcon
+            name={section.icon}
+            className={cn(
+              "w-3.5 h-3.5 shrink-0",
+              landingActive ? "text-white" : sectionActive ? "text-foreground/80" : "text-muted-foreground/70"
+            )}
+          />
           <span className="flex-1 text-left truncate">{section.label}</span>
         </a>
         <button
@@ -164,14 +277,11 @@ function ExpandableSection({
             "shrink-0 h-9 w-7 flex items-center justify-center rounded transition-colors",
             landingActive
               ? "text-white/80 hover:text-white"
-              : "text-muted-foreground/80 hover:text-foreground"
+              : "text-muted-foreground/60 hover:text-foreground"
           )}
         >
           <ChevronDown
-            className={cn(
-              "w-3 h-3 transition-transform duration-200",
-              open && "rotate-180"
-            )}
+            className={cn("w-3 h-3 transition-transform duration-200", open && "rotate-180")}
           />
         </button>
       </div>
@@ -196,7 +306,7 @@ function ExpandableSection({
   );
 }
 
-// ─── Leaf section (single direct link) ────────────────────────────────
+// ─── Leaf section (single direct link, expanded) ────────────────────────
 
 function LeafSection({
   section,
@@ -219,21 +329,23 @@ function LeafSection({
         onClick={(e) => navigate(to, e)}
         aria-current={active ? "page" : undefined}
         className={cn(
-          "flex items-center gap-2 px-3 h-9 rounded-lg text-[11px] font-semibold uppercase tracking-widest transition-colors",
+          "flex items-center gap-2 px-2.5 h-9 rounded-lg text-[11px] font-semibold uppercase tracking-widest transition-all",
           active
             ? "mx-nav-active"
-            : "text-foreground/75 hover:text-foreground hover:bg-[rgba(20,55,110,0.5)]"
+            : "text-foreground/70 hover:text-foreground hover:bg-[rgba(20,55,110,0.45)]",
+          section.placeholder && "opacity-60"
         )}
       >
-        <span className={cn(
-          "w-4 shrink-0 text-[8px] font-mono tabular-nums",
-          active ? "text-white/80" : "text-muted-foreground/80"
-        )}>
-          {section.number}
-        </span>
+        <NavIcon
+          name={section.icon}
+          className={cn(
+            "w-3.5 h-3.5 shrink-0",
+            active ? "text-white" : "text-muted-foreground/70"
+          )}
+        />
         <span className="flex-1">{section.label}</span>
         {section.placeholder && (
-          <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/80 border border-border/40 px-1 py-0.5 rounded leading-none shrink-0 normal-case">
+          <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/70 border border-border/40 px-1 py-0.5 rounded leading-none normal-case shrink-0">
             Soon
           </span>
         )}
@@ -253,9 +365,15 @@ function LeafSection({
 export function Sidebar() {
   const badgeCounts = useNavBadges();
   const { user } = useAuth();
+  const [collapsed, setCollapsed] = useState(loadCollapsed);
 
-  // Team & Access is admin-only (the API 403s members); hide it from the nav
-  // for non-admin users so there are no dead links.
+  function toggleCollapse() {
+    setCollapsed(v => {
+      saveCollapsed(!v);
+      return !v;
+    });
+  }
+
   const isAdmin = user?.role === "admin";
   const visibleTree = isAdmin
     ? navTree
@@ -267,67 +385,125 @@ export function Sidebar() {
 
   return (
     <aside
-      className="flex flex-col w-[216px] shrink-0 h-full overflow-hidden mx-sidebar"
+      data-collapsed={collapsed}
+      className={cn(
+        "flex flex-col shrink-0 h-full overflow-hidden mx-sidebar",
+        "transition-[width] duration-200 ease-out",
+        collapsed ? "w-[56px]" : "w-[216px]"
+      )}
       aria-label="Workspace sidebar"
     >
       {/* Logo */}
-      <div className="px-4 pt-4 pb-3 border-b border-border/40">
-        <div className="flex items-center gap-2">
+      <div className={cn(
+        "border-b border-border/40 shrink-0 transition-all duration-200",
+        collapsed ? "px-0 pt-3.5 pb-3 flex items-center justify-center" : "px-4 pt-4 pb-3"
+      )}>
+        {collapsed ? (
           <img
             src={`${import.meta.env.BASE_URL}metrix-logo.png`}
             alt="Metrix"
-            className="w-5 h-5 object-contain shrink-0 mx-logo-glow"
+            className="w-6 h-6 object-contain mx-logo-glow"
           />
-          <span className="text-[13px] font-bold tracking-tight text-foreground">METRIX</span>
-          <span className="text-[9px] font-mono text-muted-foreground/60 border border-border/50 px-1.5 py-0.5 rounded leading-none ml-0.5">
-            IAP
-          </span>
-        </div>
-        <p className="text-[9px] text-muted-foreground/60 mt-1 leading-tight tracking-wide">
-          Not more data. Better decisions.
-        </p>
+        ) : (
+          <>
+            <div className="flex items-center gap-2">
+              <img
+                src={`${import.meta.env.BASE_URL}metrix-logo.png`}
+                alt="Metrix"
+                className="w-5 h-5 object-contain shrink-0 mx-logo-glow"
+              />
+              <span className="text-[13px] font-bold tracking-tight text-foreground">METRIX</span>
+              <span className="text-[9px] font-mono text-muted-foreground/60 border border-border/50 px-1.5 py-0.5 rounded leading-none ml-0.5">
+                IAP
+              </span>
+            </div>
+            <p className="text-[9px] text-muted-foreground/55 mt-1 leading-tight tracking-wide">
+              Not more data. Better decisions.
+            </p>
+          </>
+        )}
       </div>
 
-      {/* Account switcher */}
-      <div className="px-2 py-2 border-b border-border/40">
-        <AccountSwitcher />
-      </div>
+      {/* Account switcher — hide in collapsed mode */}
+      {!collapsed && (
+        <div className="px-2 py-2 border-b border-border/40 shrink-0">
+          <AccountSwitcher />
+        </div>
+      )}
 
       {/* Nav */}
       <nav
-        className="flex-1 overflow-y-auto px-2 py-2"
+        className={cn("flex-1 overflow-y-auto py-2", collapsed ? "px-1" : "px-2")}
         aria-label="Main workspace navigation"
       >
-        <ol className="space-y-0.5 list-none p-0 m-0">
-          {visibleTree.map((section) =>
-            section.children?.length ? (
-              <ExpandableSection
+        {collapsed ? (
+          <ol className="space-y-1 list-none p-0 m-0">
+            {visibleTree.map((section) => (
+              <CollapsedItem
                 key={section.id}
                 section={section}
                 badgeCounts={badgeCounts}
               />
-            ) : (
-              <LeafSection
-                key={section.id}
-                section={section}
-                badgeCounts={badgeCounts}
-              />
-            )
-          )}
-        </ol>
+            ))}
+          </ol>
+        ) : (
+          <ol className="space-y-0.5 list-none p-0 m-0">
+            {visibleTree.map((section) =>
+              section.children?.length ? (
+                <ExpandableSection
+                  key={section.id}
+                  section={section}
+                  badgeCounts={badgeCounts}
+                />
+              ) : (
+                <LeafSection
+                  key={section.id}
+                  section={section}
+                  badgeCounts={badgeCounts}
+                />
+              )
+            )}
+          </ol>
+        )}
       </nav>
 
       {/* Footer */}
-      <div className="px-3 py-3 border-t border-border/40 space-y-2.5">
-        <DataSourceBadgeToggle />
-        <div className="space-y-0.5">
-          <div className="text-[9px] text-muted-foreground/60 font-mono tracking-wider">
-            METRIX IAP v2.0-rc
+      <div className={cn(
+        "border-t border-border/40 shrink-0",
+        collapsed ? "py-3 flex flex-col items-center gap-2" : "px-3 py-3 space-y-2.5"
+      )}>
+        {!collapsed && <DataSourceBadgeToggle />}
+        {!collapsed && (
+          <div className="space-y-0.5">
+            <div className="text-[9px] text-muted-foreground/50 font-mono tracking-wider">
+              METRIX IAP v2.0-rc
+            </div>
+            <div className="text-[9px] text-muted-foreground/50 font-mono">
+              SAMPLE / DEMO DATA
+            </div>
           </div>
-          <div className="text-[9px] text-muted-foreground/60 font-mono">
-            SAMPLE / DEMO DATA
-          </div>
-        </div>
+        )}
+
+        {/* Collapse toggle */}
+        <button
+          onClick={toggleCollapse}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className={cn(
+            "flex items-center justify-center rounded-lg transition-all",
+            "text-muted-foreground/50 hover:text-foreground hover:bg-white/[0.06]",
+            collapsed ? "w-10 h-8" : "w-full h-7 gap-1.5 text-[10px] font-medium border border-border/20"
+          )}
+        >
+          {collapsed ? (
+            <PanelLeftOpen className="w-3.5 h-3.5" />
+          ) : (
+            <>
+              <PanelLeftClose className="w-3 h-3" />
+              <span>Collapse</span>
+            </>
+          )}
+        </button>
       </div>
     </aside>
   );
