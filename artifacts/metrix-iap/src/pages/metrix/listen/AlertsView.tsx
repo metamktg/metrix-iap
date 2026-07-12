@@ -10,7 +10,7 @@ import {
 } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ConfidenceBadge, ModuleScopeGate,
-  PendingState, MetricTile, ImpactBadge, ScopeBadge, CrossLink,
+  PendingState, MetricTile, TileItem, ImpactBadge, ScopeBadge, CrossLink,
   RangeScopeBar, NoDataInRangeState,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
@@ -58,9 +58,46 @@ export function AlertsView() {
             ) : (
             <>
             <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
-              <MetricTile label="Active alerts" value={String(total)} />
-              <MetricTile label="High-impact signals" value={String(highSignals.length)} />
-              <MetricTile label="Data caveats" value={String(caveats.length)} />
+              <MetricTile
+                label="Active alerts"
+                value={String(total)}
+                popover={total > 0 ? {
+                  content: (
+                    <>
+                      {highSignals.map((s) => (
+                        <TileItem key={s.id} title={s.title}
+                          badges={<><ScopeBadge scope={s.scope} /><ImpactBadge impact={s.impact} /></>}
+                          onClick={() => setDetail(s)}
+                        />
+                      ))}
+                      {caveats.map((c) => (
+                        <TileItem key={c.id} title={c.text} sub="Data caveat" />
+                      ))}
+                    </>
+                  ),
+                } : undefined}
+              />
+              <MetricTile
+                label="High-impact signals"
+                value={String(highSignals.length)}
+                popover={highSignals.length > 0 ? {
+                  content: highSignals.map((s) => (
+                    <TileItem key={s.id} title={s.title}
+                      badges={<><ScopeBadge scope={s.scope} /><ConfidenceBadge value={s.confidence} /></>}
+                      onClick={() => setDetail(s)}
+                    />
+                  )),
+                } : undefined}
+              />
+              <MetricTile
+                label="Data caveats"
+                value={String(caveats.length)}
+                popover={caveats.length > 0 ? {
+                  content: caveats.map((c) => (
+                    <TileItem key={c.id} title={c.text} sub={`Source: ${c.source}`} />
+                  )),
+                } : undefined}
+              />
               <MetricTile label="Auto-actions" value="0" sub="alerts never auto-apply changes" />
             </div>
 
