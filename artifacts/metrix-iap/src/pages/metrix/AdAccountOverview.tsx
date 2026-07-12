@@ -1,12 +1,14 @@
 // ─── Ad Account Overview ──────────────────────────────────────────────
-// Scoped to the active ad account. Configured → health, current focus /
-// next action, layer readiness, core controls, optimization loop deck.
-// Unconfigured → connect state. All readiness/counts are derived from real
-// seed data (presence + item counts) — never fabricated.
+// Layer-status-first layout: status hero → two-column body.
+// Left: metric accordions, focus, results, core controls, opt loop.
+// Right: persistent Task Tray anchored at all times.
 
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
-import { ShieldCheck, KeyRound, Radio, BarChart3, Layers, FileText, Grid3x3, Zap, ArrowRight } from "lucide-react";
+import {
+  ShieldCheck, KeyRound, Radio, BarChart3, Layers, FileText, Grid3x3,
+  Zap, ArrowRight, Check, ChevronDown, ChevronRight, ClipboardList,
+} from "lucide-react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import {
@@ -15,7 +17,7 @@ import {
 } from "@/lib/data/metrixSeedAdapter";
 import { RecommendationDeck, actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
 import {
-  ModuleHeader, ScopeBanner, MetricTile, SectionCard, CaveatNote,
+  ModuleHeader, ScopeBanner, SectionCard, CaveatNote,
   UnconfiguredState, PendingState, fmtUSD, fmtNum, eventLabel, resultTerm,
 } from "./shared";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
@@ -24,8 +26,97 @@ import { buildMetricCatalog, metricSourceFromCampaignSummary, metricById } from 
 import { useMetricSelection } from "@/hooks/useMetricSelection";
 import { MetricPickerButton } from "@/components/creative/MetricPicker";
 import { MetricDiagnosticModal } from "@/components/creative/MetricDiagnosticModal";
+import { useDecisions, getDecision, toggleDone, isDone } from "@/lib/data/decisionStore";
 
 const IMPACT_RANK: Record<string, number> = { high: 3, medium: 2, low: 1, setup: 0 };
+
+// ── Persistent Task Tray Panel ──────────────────────────────────────────
+
+function TaskTrayPanel({ scopeId, cards }: { scopeId: string; cards: DeckCard[] }) {
+  useDecisions();
+  const approved = cards.filter((c) => getDecision(scopeId, c.id) === "approved");
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-border/40 shrink-0 bg-white/[0.01]">
+        <ClipboardList className="w-3.5 h-3.5 text-primary/80" />
+        <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/70">Task Tray</span>
+        {approved.length > 0 && (
+          <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-400/15 text-emerald-400 border border-emerald-400/25 tabular-nums">
+            {approved.length}
+          </span>
+        )}
+      </div>
+
+      {/* Tasks */}
+      <div className="flex-1 overflow-y-auto px-3 py-3 min-h-0">
+        {approved.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-3 py-12 text-center px-2">
+            <div className="w-9 h-9 rounded-xl border border-border/30 bg-white/[0.02] flex items-center justify-center">
+              <ClipboardList className="w-4 h-4 text-muted-foreground/25" />
+            </div>
+            <p className="text-[11px] text-muted-foreground/50 font-medium leading-tight">No approved tasks</p>
+            <p className="text-[10px] text-muted-foreground/35 leading-relaxed max-w-[150px]">
+              Approve recommendations from the loop below — they land here as manual tasks.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {approved.map((s) => {
+              const done = isDone(scopeId, s.id);
+              return (
+                <div
+                  key={s.id}
+                  className={cn(
+                    "flex items-start gap-2 p-2.5 rounded-lg border bg-white/[0.02] transition-opacity",
+                    done ? "border-emerald-400/20 opacity-55" : "border-border/40 hover:border-border/60"
+                  )}
+                >
+                  <button
+                    onClick={() => toggleDone(scopeId, s.id)}
+                    className={cn(
+                      "mt-[1px] w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors",
+                      done
+                        ? "bg-emerald-400/20 border-emerald-400/40 text-emerald-400"
+                        : "border-border/50 text-transparent hover:border-primary/50"
+                    )}
+                    aria-label={done ? "Mark not done" : "Mark done"}
+                  >
+                    <Check className="w-2 h-2" />
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <p className={cn(
+                      "text-[11px] font-medium leading-tight",
+                      done ? "text-foreground/40 line-through" : "text-foreground"
+                    )}>
+                      {s.title}
+                    </p>
+                    <p className="text-[9px] text-muted-foreground/50 mt-0.5 leading-tight line-clamp-2">
+                      {s.recommendedAction}
+                    </p>
+                    <span className="inline-flex mt-1 text-[8px] font-semibold border border-border/30 bg-white/[0.03] px-1 py-0.5 rounded text-muted-foreground/55 uppercase tracking-wide">
+                      {s.actionGroup.replace(" actions", "").replace(" updates", "")}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="shrink-0 px-3 py-2.5 border-t border-border/30 bg-white/[0.005]">
+        <p className="text-[9px] text-muted-foreground/35 leading-relaxed text-center">
+          Approve from loop ↓ · tasks are manual, never auto-applied
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ── Main export ─────────────────────────────────────────────────────────
 
 export function AdAccountOverview() {
   const seed = useMetrixSeed();
@@ -48,6 +139,8 @@ export function AdAccountOverview() {
       })),
     [optLoop]
   );
+
+  // ── Early-exit states ───────────────────────────────────────────────
 
   if (!account) {
     return (
@@ -76,7 +169,7 @@ export function AdAccountOverview() {
   const events = Object.entries(cs.bottom_line_totals);
   const term = resultTerm(account);
 
-  // ── Derived (real-data) summaries ──────────────────────────────────
+  // ── Derived summaries ───────────────────────────────────────────────
   const signals = getListenSignals(seed, adAccountId);
   const analysis = getAnalysisData(seed, adAccountId);
   const strategy = getStrategyData(seed, adAccountId);
@@ -97,23 +190,29 @@ export function AdAccountOverview() {
     (a, b) => (IMPACT_RANK[b.impact] ?? 0) - (IMPACT_RANK[a.impact] ?? 0)
   )[0];
 
+  // ── Metric catalog + selection ──────────────────────────────────────
   const metricCatalog = useMemo(() => buildMetricCatalog(metricSourceFromCampaignSummary(cs)), [cs]);
   const availableMetricIds = useMemo(() => metricCatalog.map((m) => m.id), [metricCatalog]);
   const { selected: selectedMetricIds, toggle, move, reset } = useMetricSelection(availableMetricIds);
   const [openMetricId, setOpenMetricId] = useState<string | null>(null);
+  const [expandedMetricId, setExpandedMetricId] = useState<string | null>(null);
   const openMetric = openMetricId ? metricById(metricCatalog, openMetricId) : null;
 
+  // ── Layer readiness ─────────────────────────────────────────────────
   type Layer = { name: string; count: number; unit: string; ready: boolean; to: string; Icon: React.ComponentType<{ className?: string }> };
   const layers: Layer[] = [
-    { name: "Listen", count: signals.length, unit: signals.length === 1 ? "signal" : "signals", ready: signals.length > 0, to: "/app/listen/signal", Icon: Radio },
-    { name: "Analysis", count: cellCount + variableCount, unit: "cells + variables", ready: (cellCount + variableCount) > 0, to: "/app/analysis/library", Icon: BarChart3 },
-    { name: "Strategy", count: pillarCount + hypothesisCount, unit: "pillars + hypotheses", ready: (pillarCount + hypothesisCount) > 0, to: "/app/strategy/hypotheses", Icon: Layers },
-    { name: "Report Builder", count: sectionCount, unit: sectionCount === 1 ? "section" : "sections", ready: sectionCount > 0, to: "/app/report-builder", Icon: FileText },
-    { name: "MST", count: matrixCellCount, unit: "matrix cells", ready: mstActive && matrixCellCount > 0, to: "/app/mst", Icon: Grid3x3 },
+    { name: "Listen",         count: signals.length,              unit: signals.length === 1 ? "signal" : "signals",               ready: signals.length > 0,                       to: "/app/listen/signal",        Icon: Radio },
+    { name: "Analysis",       count: cellCount + variableCount,   unit: "cells + variables",                                        ready: (cellCount + variableCount) > 0,           to: "/app/analysis/library",     Icon: BarChart3 },
+    { name: "Strategy",       count: pillarCount + hypothesisCount, unit: "pillars + hypotheses",                                   ready: (pillarCount + hypothesisCount) > 0,       to: "/app/strategy/hypotheses",  Icon: Layers },
+    { name: "Report Builder", count: sectionCount,                unit: sectionCount === 1 ? "section" : "sections",               ready: sectionCount > 0,                          to: "/app/report-builder",       Icon: FileText },
+    { name: "MST",            count: matrixCellCount,             unit: "matrix cells",                                             ready: mstActive && matrixCellCount > 0,          to: "/app/mst",                  Icon: Grid3x3 },
   ];
 
+  const readyCount = layers.filter((l) => l.ready).length;
+  const allReady = readyCount === layers.length;
+
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
       <ModuleHeader
         section="Ad Account · 01"
         title={account.name}
@@ -122,153 +221,239 @@ export function AdAccountOverview() {
       />
       <ScopeBanner account={account} />
 
-      <div className="px-6 py-5 space-y-6 max-w-6xl">
-        {/* Health / totals */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60">Account totals</h2>
-            <MetricPickerButton catalog={metricCatalog} selected={selectedMetricIds} onToggle={toggle} onMove={move} onReset={reset} />
+      {/* ── Layer Status Hero (full-width, leads the hierarchy) ─────── */}
+      <div className="px-6 py-4 border-b border-border/40 shrink-0 bg-gradient-to-b from-white/[0.02] to-transparent">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <h2 className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/55">Layer Status</h2>
+            <span className={cn(
+              "text-[9px] font-bold uppercase tracking-widest border px-2 py-0.5 rounded-full leading-none",
+              allReady
+                ? "text-emerald-300 border-emerald-400/40 bg-emerald-400/10"
+                : "text-amber-300/80 border-amber-400/30 bg-amber-400/[0.07]"
+            )}>
+              {readyCount}/{layers.length} ready
+            </span>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {selectedMetricIds.map((id) => {
-              const m = metricById(metricCatalog, id);
-              if (!m) return null;
-              return (
-                <button key={id} onClick={() => setOpenMetricId(id)} className="text-left">
-                  <MetricTile label={m.label} value={m.formatted} />
-                </button>
-              );
-            })}
-          </div>
+          <span className="text-[10px] text-muted-foreground/40">Click any layer to navigate</span>
         </div>
 
-        {/* Current focus / next action */}
-        <SectionCard
-          title="Current focus"
-          desc="The active sprint and the highest-priority next action for this account, from the optimization loop."
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="rounded-lg border border-purple-400/15 bg-purple-400/[0.03] p-3.5">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <Grid3x3 className="w-3.5 h-3.5 text-purple-300" />
-                <span className="text-[11px] font-semibold text-foreground">Current sprint</span>
-              </div>
-              {mstActive ? (
-                <>
-                  <p className="text-[12px] text-foreground/80 leading-relaxed">
-                    MST active — {matrixCellCount} matrix cells across the concept × shared-variable grid, {libraryCount} concepts in the local library.
-                  </p>
-                  <button onClick={() => navigate("/app/mst")} className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-primary/80 hover:text-primary transition-colors">
-                    Open MST <ArrowRight className="w-3 h-3" />
-                  </button>
-                </>
-              ) : (
-                <p className="text-[12px] text-muted-foreground/60 leading-relaxed">No active sprint. MST becomes available once historical data or imports exist.</p>
+        <div className="grid grid-cols-5 gap-2">
+          {layers.map((l) => (
+            <button
+              key={l.name}
+              onClick={() => navigate(l.to)}
+              className={cn(
+                "group relative flex flex-col gap-2.5 p-3.5 rounded-xl border text-left transition-all",
+                "hover:-translate-y-0.5 hover:shadow-xl active:translate-y-0",
+                "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/60",
+                l.ready
+                  ? "border-emerald-400/30 bg-gradient-to-br from-emerald-400/[0.07] to-emerald-400/[0.02] hover:border-emerald-400/55 hover:from-emerald-400/[0.11] shadow-emerald-400/5"
+                  : "border-border/40 bg-white/[0.02] hover:border-border/60 hover:bg-white/[0.05]"
               )}
-            </div>
-
-            <div className="rounded-lg border border-primary/15 bg-primary/[0.04] p-3.5">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <Zap className="w-3.5 h-3.5 text-primary" />
-                <span className="text-[11px] font-semibold text-foreground">Next action</span>
+            >
+              {/* Icon + badge row */}
+              <div className="flex items-center justify-between gap-1">
+                <l.Icon className={cn(
+                  "w-3.5 h-3.5 transition-colors",
+                  l.ready ? "text-emerald-400/80 group-hover:text-emerald-400" : "text-muted-foreground/40"
+                )} />
+                <span className={cn(
+                  "text-[8px] font-bold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none",
+                  l.ready
+                    ? "text-emerald-300 border-emerald-400/40 bg-emerald-400/15"
+                    : "text-amber-300/70 border-amber-400/25 bg-amber-400/[0.08]"
+                )}>
+                  {l.ready ? "Ready" : "Pending"}
+                </span>
               </div>
-              {nextAction ? (
-                <>
-                  <p className="text-[12px] font-medium text-foreground leading-snug">{nextAction.title}</p>
-                  <p className="text-[11px] text-foreground/70 mt-1 leading-relaxed">{nextAction.recommended_action}</p>
-                  <p className="text-[10px] text-muted-foreground/70 mt-2">{recCards.length} recommendation{recCards.length === 1 ? "" : "s"} in the optimization loop below.</p>
-                </>
-              ) : (
-                <p className="text-[12px] text-muted-foreground/60 leading-relaxed">No recommendations yet.</p>
+
+              {/* Name + count */}
+              <div className="min-w-0">
+                <div className="text-[12px] font-bold text-foreground leading-tight truncate">{l.name}</div>
+                <div className="text-[10px] text-muted-foreground/60 mt-0.5 tabular-nums">
+                  <span className="font-semibold text-foreground/65">{l.count}</span>{" "}{l.unit}
+                </div>
+              </div>
+
+              {/* Navigate arrow */}
+              <ChevronRight className={cn(
+                "absolute right-2.5 bottom-3.5 w-3 h-3 transition-all",
+                "text-muted-foreground/20 group-hover:text-foreground/55 group-hover:translate-x-0.5"
+              )} />
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Two-column body ────────────────────────────────────────── */}
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+
+        {/* Left: scrollable main content */}
+        <div className="flex-1 min-w-0 overflow-y-auto px-6 py-5 space-y-6">
+
+          {/* Account Totals — metric accordions */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/55">Account Totals</h2>
+              <MetricPickerButton catalog={metricCatalog} selected={selectedMetricIds} onToggle={toggle} onMove={move} onReset={reset} />
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+              {selectedMetricIds.map((id) => {
+                const m = metricById(metricCatalog, id);
+                if (!m) return null;
+                const isExpanded = expandedMetricId === id;
+                return (
+                  <div key={id} className="flex flex-col">
+                    <button
+                      onClick={() => setExpandedMetricId(isExpanded ? null : id)}
+                      className={cn(
+                        "group flex flex-col text-left rounded-xl border px-4 py-3 transition-all",
+                        isExpanded
+                          ? "border-primary/35 bg-primary/[0.08] rounded-b-none border-b-primary/15 shadow-sm shadow-primary/10"
+                          : "border-border/40 bg-white/[0.02] hover:border-border/60 hover:bg-white/[0.04]"
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/55">{m.label}</span>
+                        <ChevronDown className={cn(
+                          "w-3 h-3 text-muted-foreground/30 transition-transform shrink-0",
+                          isExpanded && "rotate-180 text-primary/60"
+                        )} />
+                      </div>
+                      <span className="text-[22px] font-bold text-foreground tabular-nums leading-none">{m.formatted}</span>
+                      {m.sub && <span className="text-[9.5px] text-muted-foreground/50 mt-1.5 leading-tight">{m.sub}</span>}
+                    </button>
+                    {isExpanded && (
+                      <div className="rounded-b-xl border border-t-0 border-primary/30 bg-primary/[0.04] px-4 py-3 space-y-2.5">
+                        <p className="text-[11px] text-foreground/70 leading-relaxed">
+                          <span className="font-semibold text-foreground/80">{m.label}</span> for the current analysis window.
+                          {m.sub && <> Covers {m.sub.toLowerCase()}.</>}
+                        </p>
+                        <button
+                          onClick={() => { setOpenMetricId(id); setExpandedMetricId(null); }}
+                          className="inline-flex items-center gap-1.5 text-[10.5px] font-semibold text-primary hover:text-primary/80 transition-colors"
+                        >
+                          Diagnose full breakdown <ArrowRight className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {selectedMetricIds.length === 0 && (
+                <div className="col-span-2 md:col-span-4 text-[11px] text-muted-foreground/50 border border-dashed border-border/40 rounded-xl px-4 py-5 text-center">
+                  No metrics selected — use "Customize" to add tiles.
+                </div>
               )}
             </div>
           </div>
-        </SectionCard>
 
-        {/* Layer status / readiness */}
-        <div>
-          <h2 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-3">Layer status</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-            {layers.map((l) => (
-              <button
-                key={l.name}
-                onClick={() => navigate(l.to)}
-                className="rounded-xl border border-border/40 bg-white/[0.02] p-3.5 text-left hover:border-border/60 hover:bg-white/[0.04] transition-colors flex flex-col gap-2"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <l.Icon className="w-3.5 h-3.5 text-primary/60" />
-                  <span className={cn(
-                    "text-[10px] font-semibold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none",
-                    l.ready ? "text-emerald-300 border-emerald-400/35 bg-emerald-400/20" : "text-muted-foreground/80 border-border/50 bg-white/[0.05]"
-                  )}>
-                    {l.ready ? "Ready" : "Pending"}
-                  </span>
+          {/* Current Focus */}
+          <SectionCard
+            title="Current focus"
+            desc="The active sprint and the highest-priority next action for this account, from the optimization loop."
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="rounded-xl border border-purple-400/20 bg-purple-400/[0.03] p-4 hover:border-purple-400/30 transition-colors">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Grid3x3 className="w-3.5 h-3.5 text-purple-300/80" />
+                  <span className="text-[11px] font-semibold text-foreground">Current sprint</span>
                 </div>
-                <div>
-                  <div className="text-[12px] font-semibold text-foreground leading-tight">{l.name}</div>
-                  <div className="text-[10px] text-muted-foreground/70 mt-0.5">
-                    <span className="tabular-nums text-foreground/70 font-medium">{l.count}</span> {l.unit}
+                {mstActive ? (
+                  <>
+                    <p className="text-[12px] text-foreground/80 leading-relaxed">
+                      MST active — <span className="font-semibold text-foreground">{matrixCellCount}</span> matrix cells across the concept × shared-variable grid, <span className="font-semibold text-foreground">{libraryCount}</span> concepts in the local library.
+                    </p>
+                    <button onClick={() => navigate("/app/mst")} className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-semibold text-purple-300 hover:text-purple-200 transition-colors">
+                      Open MST <ArrowRight className="w-3 h-3" />
+                    </button>
+                  </>
+                ) : (
+                  <p className="text-[12px] text-muted-foreground/60 leading-relaxed">No active sprint — MST becomes available once historical data or imports exist.</p>
+                )}
+              </div>
+
+              <div className="rounded-xl border border-primary/20 bg-primary/[0.04] p-4 hover:border-primary/30 transition-colors">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Zap className="w-3.5 h-3.5 text-primary/80" />
+                  <span className="text-[11px] font-semibold text-foreground">Next action</span>
+                </div>
+                {nextAction ? (
+                  <>
+                    <p className="text-[12px] font-semibold text-foreground leading-snug">{nextAction.title}</p>
+                    <p className="text-[11px] text-foreground/70 mt-1.5 leading-relaxed">{nextAction.recommended_action}</p>
+                    <p className="text-[10px] text-muted-foreground/60 mt-2.5">
+                      {recCards.length} recommendation{recCards.length === 1 ? "" : "s"} in the loop below ↓
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-[12px] text-muted-foreground/60 leading-relaxed">No recommendations yet.</p>
+                )}
+              </div>
+            </div>
+          </SectionCard>
+
+          {/* Results by event */}
+          <SectionCard title="Results by event" desc="Conversion volume by event for this account.">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {events.map(([key, e]) => (
+                <div key={key} className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
+                  <div className="text-[11px] font-semibold text-foreground leading-tight mb-2">{eventLabel(key)}</div>
+                  <div className="text-[22px] font-bold text-foreground tabular-nums leading-none">{fmtNum(e.results)}</div>
+                  <div className="text-[10px] text-muted-foreground/65 mt-2.5 space-y-1">
+                    <div>Spend <span className="text-foreground/70 font-medium">{fmtUSD(e.spend)}</span></div>
+                    <div>Link clicks <span className="text-foreground/70 font-medium">{fmtNum(e.link_clicks)}</span></div>
                   </div>
                 </div>
-              </button>
-            ))}
-          </div>
+              ))}
+            </div>
+          </SectionCard>
+
+          {/* Core controls */}
+          <SectionCard title="Core controls" desc="The current control creative for each funnel stage, read from the latest reanalysis." table="core_reanalysis_read">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/[0.03] p-4 hover:border-emerald-400/30 transition-colors">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400/80" />
+                  <span className="text-[11px] font-semibold text-foreground">Primary control</span>
+                </div>
+                <p className="text-[12px] text-foreground/80 leading-relaxed">{core.primary_control_read}</p>
+                <p className="text-[10px] font-mono text-muted-foreground/65 mt-2">{core.primary_control}</p>
+              </div>
+              {core.registration_control && (
+                <div className="rounded-xl border border-blue-400/20 bg-blue-400/[0.03] p-4 hover:border-blue-400/30 transition-colors">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <KeyRound className="w-3.5 h-3.5 text-blue-300/80" />
+                    <span className="text-[11px] font-semibold text-foreground">{term.Singular} control</span>
+                  </div>
+                  <p className="text-[12px] text-foreground/80 leading-relaxed">{core.registration_control_read}</p>
+                  <p className="text-[10px] font-mono text-muted-foreground/65 mt-2">{core.registration_control}</p>
+                </div>
+              )}
+            </div>
+            <div className="mt-3">
+              <CaveatNote text={core.data_caveat} />
+            </div>
+          </SectionCard>
+
+          {/* Optimization loop — swiper deck (task tray in right panel) */}
+          <SectionCard
+            title="Optimization loop"
+            desc="Account-scoped recommendations. Swipe right to approve → Task Tray. Left to dismiss. Approved tasks appear in the right panel and are never auto-applied."
+          >
+            {deckCards.length ? (
+              <RecommendationDeck scopeId={account.id} cards={deckCards} emptyLabel="All account recommendations reviewed" />
+            ) : (
+              <PendingState title="No recommendations yet" message="Optimization loop recommendations will appear here once generated." />
+            )}
+          </SectionCard>
         </div>
 
-        {/* Results by event */}
-        <SectionCard title="Results by event" desc="Conversion volume by event for this account.">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {events.map(([key, e]) => (
-              <div key={key} className="rounded-lg border border-border/40 bg-white/[0.02] p-3.5">
-                <div className="text-[11px] font-medium text-foreground leading-tight mb-2">{eventLabel(key)}</div>
-                <div className="text-[22px] font-semibold text-foreground tabular-nums leading-none">{fmtNum(e.results)}</div>
-                <div className="text-[10px] text-muted-foreground/70 mt-2 space-y-0.5">
-                  <div>Spend {fmtUSD(e.spend)}</div>
-                  <div>Link clicks {fmtNum(e.link_clicks)}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-
-        {/* Core controls */}
-        <SectionCard title="Core controls" desc="The current control creative for each funnel stage, read from the latest reanalysis." table="core_reanalysis_read">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="rounded-lg border border-emerald-400/15 bg-emerald-400/[0.03] p-3.5">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="text-[11px] font-semibold text-foreground">Primary control</span>
-              </div>
-              <p className="text-[12px] text-foreground/80 leading-relaxed">{core.primary_control_read}</p>
-              <p className="text-[10px] font-mono text-muted-foreground/75 mt-2">{core.primary_control}</p>
-            </div>
-            {core.registration_control && (
-              <div className="rounded-lg border border-blue-400/15 bg-blue-400/[0.03] p-3.5">
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <KeyRound className="w-3.5 h-3.5 text-blue-300" />
-                  <span className="text-[11px] font-semibold text-foreground">{term.Singular} control</span>
-                </div>
-                <p className="text-[12px] text-foreground/80 leading-relaxed">{core.registration_control_read}</p>
-                <p className="text-[10px] font-mono text-muted-foreground/75 mt-2">{core.registration_control}</p>
-              </div>
-            )}
-          </div>
-          <div className="mt-3">
-            <CaveatNote text={core.data_caveat} />
-          </div>
-        </SectionCard>
-
-        {/* Optimization loop */}
-        <SectionCard
-          title="Optimization loop"
-          desc="Account-scoped recommendations. Swipe right to approve (creates a manual task), left to dismiss. Approved items never auto-edit campaigns."
-        >
-          {deckCards.length ? (
-            <RecommendationDeck scopeId={account.id} cards={deckCards} emptyLabel="All account recommendations reviewed" />
-          ) : (
-            <PendingState title="No recommendations yet" message="Optimization loop recommendations will appear here once generated." />
-          )}
-        </SectionCard>
+        {/* Right: Persistent Task Tray */}
+        <div className="w-[264px] shrink-0 border-l border-border/40 flex flex-col min-h-0">
+          <TaskTrayPanel scopeId={account.id} cards={deckCards} />
+        </div>
       </div>
 
       <MetricDiagnosticModal

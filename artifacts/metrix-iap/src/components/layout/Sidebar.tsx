@@ -132,6 +132,9 @@ function CollapseTooltip({ label, sub }: { label: string; sub?: string }) {
 
 // ─── Collapsed icon button ─────────────────────────────────────────────
 
+// IDs after which a thin section divider is inserted in collapsed mode
+const COLLAPSED_DIVIDER_AFTER = new Set(["overview", "analysis", "reports", "mst"]);
+
 function CollapsedItem({
   section,
   badgeCounts,
@@ -146,29 +149,41 @@ function CollapsedItem({
   const badgeCount = section.badgeKey ? badgeCounts[section.badgeKey] ?? null : null;
 
   return (
-    <li className="relative" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
-      <a
-        href={landing}
-        onClick={(e) => navigate(landing, e)}
-        aria-current={active ? "page" : undefined}
-        aria-label={section.label}
-        className={cn(
-          "flex items-center justify-center w-10 h-10 mx-auto rounded-lg transition-all relative",
-          active
-            ? "bg-primary/20 text-primary border border-primary/30"
-            : "text-foreground/50 hover:text-foreground hover:bg-white/[0.06]",
-          section.placeholder && "opacity-50"
-        )}
-      >
-        <NavIcon name={section.icon} className="w-4 h-4" />
-        {badgeCount != null && badgeCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-primary text-[7px] font-bold text-white flex items-center justify-center leading-none">
-            {badgeCount > 9 ? "9+" : badgeCount}
-          </span>
-        )}
-      </a>
-      {hovered && <CollapseTooltip label={section.label} sub={section.number} />}
-    </li>
+    <>
+      <li className="relative" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
+        <a
+          href={landing}
+          onClick={(e) => navigate(landing, e)}
+          aria-current={active ? "page" : undefined}
+          aria-label={section.label}
+          className={cn(
+            "flex items-center justify-center w-10 h-10 mx-auto rounded-lg transition-all relative overflow-hidden",
+            active
+              ? "bg-primary/25 text-primary border border-primary/35 shadow-sm shadow-primary/20"
+              : "text-foreground/45 hover:text-foreground/90 hover:bg-white/[0.07]",
+            section.placeholder && "opacity-50"
+          )}
+        >
+          {/* Active left accent bar */}
+          {active && (
+            <span className="absolute left-0 top-2 bottom-2 w-[3px] bg-primary rounded-r-full" />
+          )}
+          <NavIcon name={section.icon} className={cn("w-4 h-4 transition-transform", active && "scale-105")} />
+          {badgeCount != null && badgeCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-primary text-[7px] font-bold text-white flex items-center justify-center leading-none">
+              {badgeCount > 9 ? "9+" : badgeCount}
+            </span>
+          )}
+        </a>
+        {hovered && <CollapseTooltip label={section.label} sub={section.number} />}
+      </li>
+      {/* Section group divider */}
+      {COLLAPSED_DIVIDER_AFTER.has(section.id) && (
+        <li aria-hidden="true" className="flex items-center justify-center py-0.5">
+          <span className="w-5 h-px bg-border/35 rounded-full" />
+        </li>
+      )}
+    </>
   );
 }
 
