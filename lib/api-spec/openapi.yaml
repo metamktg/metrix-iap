@@ -784,44 +784,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
   /metrix/admin/users:
-    post:
-      operationId: adminCreateUser
-      tags: [metrix]
-      summary: Create a user account directly from the admin console
-      description: Provisions a new user account on the spot with a generated temporary password. The temporary password is ALWAYS returned in the response so the admin can copy and share it immediately — email delivery is attempted as a courtesy but is never required for the flow to succeed. The user must change the password on first login. Refuses (409) when an account with this email already exists — use the resend-temp-password action instead. Requires admin access.
-      security:
-        - adminKey: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AdminCreateUserInput"
-      responses:
-        "200":
-          description: Account created — includes the temporary password to share
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AdminCreateUserResult"
-        "400":
-          description: Invalid email
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiError"
-        "401":
-          description: Missing or invalid admin credentials
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiError"
-        "409":
-          description: An account with this email already exists
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiError"
     get:
       operationId: listAdminUsers
       tags: [metrix]
@@ -990,33 +952,6 @@ paths:
                 $ref: "#/components/schemas/ApiError"
         "404":
           description: User not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiError"
-  /metrix/admin/ad-accounts:
-    get:
-      operationId: listAdminAdAccounts
-      tags: [metrix]
-      summary: List ad accounts available for user grants
-      description: Returns all ad accounts (id and name) from the Metrix data layer so the admin panel can display a checklist when creating or editing users. Requires admin access.
-      security:
-        - adminKey: []
-      responses:
-        "200":
-          description: Ad accounts list
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AdminAdAccountsResult"
-        "401":
-          description: Missing or invalid admin credentials
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiError"
-        "503":
-          description: Metrix data layer unavailable
           content:
             application/json:
               schema:
@@ -2641,77 +2576,6 @@ components:
         - status
         - email
         - email_sent
-    AdminCreateUserInput:
-      type: object
-      properties:
-        email:
-          type: string
-          format: email
-          maxLength: 320
-        role:
-          type: string
-          enum: [admin, analyst, client_viewer]
-          description: User role. 'admin' has full access and sees all accounts; 'analyst' and 'client_viewer' are member-level roles that see only granted accounts. Defaults to 'analyst'.
-        can_manage_team:
-          type: boolean
-          description: Whether the user can manage team members and invites. Only meaningful for member role users. Defaults to false.
-        can_view_rollups:
-          type: boolean
-          description: Whether the user can view agency rollup data. Only meaningful for member role users. Defaults to false.
-        ad_account_ids:
-          type: array
-          items:
-            type: string
-          description: Ad account IDs to grant the user access to at creation time. Empty array or omitted grants no accounts (can be added later).
-      required:
-        - email
-    AdminCreateUserResult:
-      type: object
-      properties:
-        status:
-          type: string
-          enum: [created]
-        email:
-          type: string
-        temp_password:
-          type: string
-          description: Always present — shown on screen for the admin to copy and share directly, independent of email delivery.
-        email_sent:
-          type: boolean
-          description: Whether the courtesy email with the temporary password was delivered. The flow succeeds either way.
-        email_error:
-          type: string
-          description: Present only when the courtesy email could not be sent — explains why.
-        granted_ad_account_ids:
-          type: array
-          items:
-            type: string
-          description: Ad account IDs that were granted to the user at creation time.
-      required:
-        - status
-        - email
-        - temp_password
-        - email_sent
-        - granted_ad_account_ids
-    AdminAdAccountItem:
-      type: object
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-      required:
-        - id
-        - name
-    AdminAdAccountsResult:
-      type: object
-      properties:
-        ad_accounts:
-          type: array
-          items:
-            $ref: "#/components/schemas/AdminAdAccountItem"
-      required:
-        - ad_accounts
     AdminUserActionResult:
       type: object
       properties:

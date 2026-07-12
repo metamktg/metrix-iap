@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { useLocation, useSearch } from "wouter";
 import { ConnectMetaDialog, ManualImportDialog } from "./ConnectAccountDialogs";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
-import { Plug, FileUp, Clock, Database, Info, ArrowRight, CheckSquare, Square, CalendarRange, CalendarX2, AlertTriangle, ChevronDown } from "lucide-react";
+import { Plug, FileUp, Clock, Database, Info, ArrowRight, CheckSquare, Square, CalendarRange, CalendarX2, AlertTriangle } from "lucide-react";
 import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
 import { DataSourceBadge } from "@/components/ui/DataSourceBadge";
 import { resolveVariableLabel } from "@/lib/variable-registry";
@@ -163,14 +163,14 @@ export function ModuleHeader({
   right?: React.ReactNode;
 }) {
   return (
-    <div className="px-6 py-4 border-b border-border/40">
+    <div className="px-6 py-5 border-b border-border/40">
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
-          <span className="block mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/65">{section}</span>
-          <h1 className="text-[21px] font-bold text-foreground leading-tight tracking-[-0.02em]">{title}</h1>
-          {subtitle && <p className="text-[12px] text-muted-foreground/70 mt-1 leading-relaxed max-w-2xl">{subtitle}</p>}
+          <span className="mx-section-label block mb-1 !text-[10px]">{section}</span>
+          <h1 className="text-[20px] font-bold text-foreground leading-tight tracking-[-0.02em]">{title}</h1>
+          {subtitle && <p className="text-[12px] text-muted-foreground/75 mt-0.5">{subtitle}</p>}
         </div>
-        <div className="shrink-0 pt-0.5 flex items-center gap-2">
+        <div className="shrink-0 pt-1 flex items-center gap-2">
           {right}
           {table && <DataSourceBadge table={table} collapsible />}
         </div>
@@ -186,8 +186,8 @@ export function ScopeBanner({ account }: { account: AdAccount }) {
     <div className="flex items-center gap-2 px-6 py-2 border-b border-border/30 bg-white/[0.015]">
       <Database className="w-3 h-3 text-muted-foreground/60 shrink-0" />
       <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Scoped to ad account</span>
-      <span className="text-[12px] font-medium text-foreground/90">{account.name}</span>
-      <span className="text-[10px] font-mono text-muted-foreground/70">{account.platform}</span>
+      <span className="text-[11px] font-medium text-foreground/80">{account.name}</span>
+      <span className="text-[9px] font-mono text-muted-foreground/60">{account.platform}</span>
     </div>
   );
 }
@@ -204,12 +204,12 @@ export function RangeScopeBar({ grainNote }: { grainNote?: string }) {
     <div className="flex items-center gap-2 flex-wrap px-6 py-2 border-b border-border/30 bg-white/[0.01]">
       <CalendarRange className="w-3 h-3 text-muted-foreground/60 shrink-0" />
       <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Date range</span>
-      <span className="text-[12px] font-medium text-foreground/90 tabular-nums">{formatIsoRange(range)}</span>
+      <span className="text-[11px] font-medium text-foreground/80 tabular-nums">{formatIsoRange(range)}</span>
       {compare && compareRange && (
-        <span className="text-[11px] text-primary/80 tabular-nums">vs {formatIsoRange(compareRange)}</span>
+        <span className="text-[10px] text-primary/80 tabular-nums">vs {formatIsoRange(compareRange)}</span>
       )}
       {narrowed && (
-        <span className="text-[11px] text-muted-foreground/65">
+        <span className="text-[10px] text-muted-foreground/60">
           {grainNote ?? "Items are included when their flight window overlaps this range; metrics cover each item's full flight — this import has no daily grain."}
         </span>
       )}
@@ -225,13 +225,13 @@ export function NoDataInRangeState({ what, detail }: { what: string; detail?: st
       <div className="w-10 h-10 rounded-xl border border-border/40 bg-white/[0.03] flex items-center justify-center">
         <CalendarX2 className="w-4 h-4 text-muted-foreground/60" />
       </div>
-      <p className="text-[15px] font-semibold text-foreground/80">No {what} in this range</p>
-      <p className="text-[12px] text-muted-foreground/70 max-w-xs">
+      <p className="text-[13px] font-medium text-foreground/60">No {what} in this range</p>
+      <p className="text-[11px] text-muted-foreground/60 max-w-xs">
         {detail ?? (range ? `The selected range (${formatIsoRange(range)}) is outside this data's available window.` : "No dated data is available.")}
       </p>
       <button
         onClick={() => setPreset("all")}
-        className="text-[12px] font-medium text-primary border border-primary/30 bg-primary/10 hover:bg-primary/15 rounded-md px-3 py-1.5 transition-colors"
+        className="text-[11px] font-medium text-primary border border-primary/30 bg-primary/10 hover:bg-primary/15 rounded-md px-3 py-1.5 transition-colors"
       >
         Show all available data
       </button>
@@ -240,54 +240,12 @@ export function NoDataInRangeState({ what, detail }: { what: string; detail?: st
 }
 
 // ─── Data caveat note ─────────────────────────────────────────────────
-// Compact collapsible pill — truncated by default, click to expand.
-// Pass `source` to show a monospace source badge before the text.
-// Pass `defaultExpanded` to start expanded (e.g. short caveats with no truncation).
 
-export function CaveatNote({
-  text,
-  source,
-  defaultExpanded = false,
-}: {
-  text: string;
-  source?: string;
-  defaultExpanded?: boolean;
-}) {
-  const THRESHOLD = 110;
-  const isLong = text.length > THRESHOLD;
-  const [expanded, setExpanded] = useState(defaultExpanded || !isLong);
-  const preview = isLong ? text.slice(0, THRESHOLD).trimEnd() + "…" : text;
-
+export function CaveatNote({ text }: { text: string }) {
   return (
-    <div className="rounded-lg border border-amber-400/15 bg-amber-400/[0.03] overflow-hidden">
-      <button
-        onClick={isLong ? () => setExpanded((v) => !v) : undefined}
-        disabled={!isLong}
-        className={cn(
-          "w-full flex items-start gap-2 px-3 py-2 text-left",
-          isLong && "hover:bg-amber-400/[0.05] active:bg-amber-400/[0.08] transition-colors"
-        )}
-      >
-        <Info className="w-3 h-3 text-amber-400/70 shrink-0 mt-[3px]" />
-        <div className="flex-1 min-w-0">
-          {source && (
-            <span className="text-[10px] font-mono uppercase tracking-widest text-amber-400/65 block mb-0.5">
-              {source}
-            </span>
-          )}
-          <p className="text-[12px] text-amber-400/90 leading-snug">
-            {expanded ? text : preview}
-          </p>
-        </div>
-        {isLong && (
-          <ChevronDown
-            className={cn(
-              "w-3 h-3 text-amber-400/40 shrink-0 mt-[3px] transition-transform duration-150",
-              expanded && "rotate-180"
-            )}
-          />
-        )}
-      </button>
+    <div className="flex items-start gap-2 p-3 rounded-lg border border-amber-400/15 bg-amber-400/[0.04]">
+      <Info className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+      <p className="text-[11px] text-amber-400/80 leading-relaxed">{text}</p>
     </div>
   );
 }
@@ -305,30 +263,30 @@ export function UnconfiguredState({ account }: { account: AdAccount }) {
           <Plug className="w-6 h-6 text-muted-foreground/70" />
         </div>
         <div className="space-y-1.5">
-          <h2 className="text-[18px] font-semibold text-foreground">{s?.title ?? "Connect Meta Ad Account"}</h2>
-          <p className="text-[13px] text-muted-foreground/70 leading-relaxed">
+          <h2 className="text-[16px] font-semibold text-foreground">{s?.title ?? "Connect Meta Ad Account"}</h2>
+          <p className="text-[12px] text-muted-foreground/60 leading-relaxed">
             {account.name} has no connected data yet. Connect the ad account or add a manual import to begin.
           </p>
         </div>
         <div className="flex items-center justify-center gap-2">
           <button
             onClick={() => setConnectOpen(true)}
-            className="flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary/15 border border-primary/30 text-[13px] font-medium text-primary hover:bg-primary/25 transition-colors"
+            className="flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary/15 border border-primary/30 text-[12px] font-medium text-primary hover:bg-primary/25 transition-colors"
           >
             <Plug className="w-3.5 h-3.5" /> {s?.primary_action ?? "Connect Meta Ad Account"}
           </button>
           <button
             onClick={() => setImportOpen(true)}
-            className="flex items-center gap-1.5 h-9 px-4 rounded-md border border-border/50 text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+            className="flex items-center gap-1.5 h-9 px-4 rounded-md border border-border/50 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
           >
             <FileUp className="w-3.5 h-3.5" /> {s?.secondary_action ?? "Add Manual Import"}
           </button>
         </div>
-        <p className="text-[11px] text-muted-foreground/70 leading-relaxed">
+        <p className="text-[10px] text-muted-foreground/60 leading-relaxed">
           No performance, analysis, or report data is shown until this account is configured.
         </p>
         <div className="pt-1 space-y-2">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/75">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
             Or view a different account
           </p>
           <InlineAccountPicker label="Switch ad account" excludeAccountId={account.id} />
@@ -346,23 +304,22 @@ export function PendingState({ title, message, icon: Icon = Clock, action }: { t
       <div className="w-10 h-10 rounded-xl border border-border/40 bg-white/[0.03] flex items-center justify-center">
         <Icon className="w-4 h-4 text-muted-foreground/60" />
       </div>
-      <p className="text-[15px] font-semibold text-foreground/80">{title}</p>
-      <p className="text-[12px] text-muted-foreground/70 max-w-xs">{message}</p>
+      <p className="text-[13px] font-medium text-foreground/60">{title}</p>
+      <p className="text-[11px] text-muted-foreground/60 max-w-xs">{message}</p>
       {action && <div className="pt-1">{action}</div>}
     </div>
   );
 }
 
 // ─── Metric tile ──────────────────────────────────────────────────────
-// When the tile is placed inside a `group` button, border lifts on hover.
 
 export function MetricTile({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="mx-card p-4 transition-colors group-hover:border-primary/30 group-hover:bg-primary/[0.02]">
+    <div className="mx-card p-4">
       <div className="relative">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70 mb-2">{label}</div>
+        <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-2">{label}</div>
         <div className="text-[26px] font-bold text-foreground tabular-nums leading-none tracking-[-0.035em]">{value}</div>
-        {sub && <div className="text-[11px] text-muted-foreground/65 mt-2 leading-snug">{sub}</div>}
+        {sub && <div className="text-[10px] text-muted-foreground/60 mt-2">{sub}</div>}
       </div>
     </div>
   );
@@ -388,13 +345,13 @@ export function ModuleTabs<T extends string>({
           onClick={() => onChange(t.id)}
           aria-current={active === t.id ? "page" : undefined}
           className={cn(
-            "flex items-center gap-1.5 h-10 px-3 text-[13px] font-medium border-b-2 transition-colors whitespace-nowrap shrink-0",
-            active === t.id ? "border-primary text-foreground" : "border-transparent text-muted-foreground/70 hover:text-foreground"
+            "flex items-center gap-1.5 h-10 px-3 text-[12px] font-medium border-b-2 transition-colors whitespace-nowrap shrink-0",
+            active === t.id ? "border-primary text-foreground" : "border-transparent text-muted-foreground/60 hover:text-foreground"
           )}
         >
           {t.Icon && <t.Icon className="w-3 h-3" />}
           {t.label}
-          {t.count != null && <span className="text-[10px] font-mono text-muted-foreground/60">{t.count}</span>}
+          {t.count != null && <span className="text-[9px] font-mono text-muted-foreground/60">{t.count}</span>}
         </button>
       ))}
     </div>
@@ -448,7 +405,7 @@ export function CrossLink({ to, label }: { to: string; label: string }) {
   return (
     <button
       onClick={() => navigate(to)}
-      className="inline-flex items-center gap-1 text-[12px] font-medium text-primary hover:text-primary/80 transition-colors"
+      className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors"
     >
       {label}
       <ArrowRight className="w-3 h-3" />
@@ -479,12 +436,13 @@ export function useStaleFocus(
 export function StaleFocusNotice({ label = "item" }: { label?: string }) {
   return (
     <div
-      className="mx-4 mt-2 flex items-center gap-2 rounded-md border border-amber-400/15 bg-amber-400/[0.03] px-3 py-1.5"
+      className="mx-4 mt-3 flex items-start gap-2.5 rounded-lg border border-amber-400/20 bg-amber-400/[0.04] px-3 py-2.5"
       data-testid="notice-stale-focus"
     >
-      <AlertTriangle className="w-3 h-3 text-amber-400/70 shrink-0" />
-      <p className="text-[12px] text-foreground/75 leading-none">
-        Linked {label} no longer available — removed, regenerated, or outside the current range.
+      <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+      <p className="text-[11px] text-foreground/75 leading-relaxed">
+        The linked {label} is no longer available — it may have been removed, regenerated, or fallen
+        outside the current date range.
       </p>
     </div>
   );
@@ -504,7 +462,7 @@ export function MetricSelectionBar({
 }) {
   return (
     <div className="flex items-center gap-2 flex-wrap px-6 py-2.5 border-b border-border/30 bg-white/[0.01]">
-      <span className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/70">
+      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">
         Metric selection
       </span>
       {events.map((e) => {
@@ -515,7 +473,7 @@ export function MetricSelectionBar({
             onClick={() => onToggle(e)}
             aria-pressed={on}
             className={cn(
-              "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-[12px] font-medium transition-colors",
+              "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-[11px] font-medium transition-colors",
               on
                 ? "border-primary/30 bg-primary/10 text-primary"
                 : "border-border/40 text-muted-foreground/60 hover:text-foreground hover:bg-white/[0.03]"
@@ -549,7 +507,7 @@ export const SCOPE_STYLE: Record<string, string> = {
 
 export function ImpactBadge({ impact }: { impact: string }) {
   return (
-    <span className={cn("text-[10px] font-semibold border px-1.5 py-0.5 rounded uppercase tracking-wide leading-none", IMPACT_STYLE[impact] ?? IMPACT_STYLE.low)}>
+    <span className={cn("text-[9px] font-semibold border px-1.5 py-0.5 rounded uppercase tracking-wide leading-none", IMPACT_STYLE[impact] ?? IMPACT_STYLE.low)}>
       {impact} impact
     </span>
   );
@@ -557,7 +515,7 @@ export function ImpactBadge({ impact }: { impact: string }) {
 
 export function ScopeBadge({ scope }: { scope: string }) {
   return (
-    <span className={cn("text-[10px] font-semibold border px-1.5 py-0.5 rounded uppercase tracking-wide leading-none", SCOPE_STYLE[scope] ?? "bg-muted text-muted-foreground/60 border-border/40")}>
+    <span className={cn("text-[9px] font-semibold border px-1.5 py-0.5 rounded uppercase tracking-wide leading-none", SCOPE_STYLE[scope] ?? "bg-muted text-muted-foreground/60 border-border/40")}>
       {scope}
     </span>
   );
@@ -580,10 +538,10 @@ export function SectionCard({
 }) {
   return (
     <section className="mx-card overflow-hidden">
-      <div className="relative flex items-center gap-3 px-4 py-2.5 border-b border-[rgba(120,170,255,0.10)]">
+      <div className="relative flex items-start gap-3 px-4 py-3 border-b border-[rgba(120,170,255,0.12)]">
         <div className="flex-1 min-w-0">
-          <h3 className="text-[14px] font-semibold text-foreground leading-tight">{title}</h3>
-          {desc && <p className="text-[12px] text-muted-foreground/70 mt-0.5 leading-snug">{desc}</p>}
+          <h3 className="text-[13px] font-semibold text-foreground leading-tight">{title}</h3>
+          {desc && <p className="text-[11px] text-muted-foreground/70 mt-0.5 leading-tight">{desc}</p>}
         </div>
         <div className="shrink-0 flex items-center gap-2">
           {right}

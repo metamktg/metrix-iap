@@ -3,7 +3,7 @@
 // HTML rendering contains the expected, escaped content.
 
 import { describe, it, expect } from "vitest";
-import { buildReportModel, renderReportHtml, serializeReportModel, parseReportModel } from "./reportExport";
+import { buildReportModel, renderReportHtml, serializeReportModel, parseReportModel, type SegmentComparisonRequest } from "./reportExport";
 import type { MetrixSeed } from "./data/seedTypes";
 
 const SECTIONS = [
@@ -275,5 +275,145 @@ describe("renderReportHtml", () => {
     // Script tag from seed content must be escaped.
     expect(html).not.toContain("<script>alert(1)</script>");
     expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
+  });
+});
+
+// ─── Segment comparison ───────────────────────────────────────────────
+
+/** Seed with two demographic segments so comparison has real data on both sides. */
+function makeSeedWithTwoSegments(): MetrixSeed {
+  const base = makeSeed() as unknown as Record<string, unknown>;
+  const accounts = base.ad_accounts as Array<Record<string, unknown>>;
+  const iap = accounts[0].iap as Record<string, unknown>;
+  const analysis = iap.analysis as Record<string, unknown>;
+  analysis.demographic_registration_signal = [
+    {
+      cell_id: "C1",
+      "Ad name": "Ad A",
+      Age: "25-34",
+      Gender: "female",
+      "Amount spent (USD)": 300,
+      Reach: 20000,
+      Impressions: 35000,
+      Results: 12,
+      "Clicks (all)": 700,
+      "Link clicks": 500,
+      CPA_result: 25,
+      CTR_link_pct: 1.43,
+      Result_per_link_click_pct: 2.4,
+      book2_concept_name: "Proof-led hook",
+    },
+    {
+      cell_id: "C1",
+      "Ad name": "Ad B",
+      Age: "35-44",
+      Gender: "male",
+      "Amount spent (USD)": 200,
+      Reach: 15000,
+      Impressions: 28000,
+      Results: 8,
+      "Clicks (all)": 500,
+      "Link clicks": 360,
+      CPA_result: 25,
+      CTR_link_pct: 1.29,
+      Result_per_link_click_pct: 2.2,
+      book2_concept_name: "Proof-led hook",
+    },
+  ];
+  return base as unknown as MetrixSeed;
+}
+
+const SEG_A = { age: "25-34", gender: "female" };
+const SEG_B = { age: "35-44", gender: "male" };
+
+describe("buildReportModel — segment comparison", () => {
+  it("does NOT include a segment comparison section when the option is absent", () => {
+    const model = buildReportModel(makeSeed(), "bookster", "internal")!;
+    expect(model.sections.every((s) => !s.title.startsWith("Segment Comparison"))).toBe(true);
+    expect(model.sections).toHaveLength(SECTIONS.length);
+  });
+
+  it("appends the segment comparison section when explicitly requested", () => {
+    const req: SegmentComparisonRequest = { segmentA: SEG_A, segmentB: SEG_B };
+    const model = buildReportModel(makeSeedWithTwoSegments(), "bookster", "internal", {
+      segmentComparison: req,
+    })!;
+    expect(model.sections).toHaveLength(SECTIONS.length + 1);
+    const compSection = model.sections[model.sections.length - 1];
+    expect(compSection.title).toContain("Segment Comparison");
+    expect(compSection.title).toContain("Women 25-34");
+    expect(compSection.title).toContain("Men 35-44");
+  });
+
+  it("the comparison section includes a side-by-side metrics table with both segment labels as headers", () => {
+    const req: SegmentComparisonRequest = { segmentA: SEG_A, segmentB: SEG_B };
+    const model = buildReportModel(makeSeedWithTwoSegments(), "bookster", "internal", {
+      segmentComparison: req,
+    })!;
+    const compSection = model.sections[model.sections.length - 1];
+    const metricsTable = compSection.blocks.find(
+      (b) => b.kind === "table" && "headers" in b && b.headers.includes("Women 25-34"),
+    );
+    expect(metricsTable).toBeDefined();
+    expect(metricsTable!.kind).toBe("table");
+    if (metricsTable!.kind === "table") {
+      expect(metricsTable.headers).toContain("Men 35-44");
+      expect(metricsTable.rows.some((r) => r[0] === "Spend")).toBe(true);
+      expect(metricsTable.rows.some((r) => r[0] === "CPA")).toBe(true);
+      expect(metricsTable.rows.some((r) => r[0] === "Link CTR")).toBe(true);
+    }
+  });
+
+  it("includes top-concept tables when attribution is available", () => {
+    const req: SegmentComparisonRequest = { segmentA: SEG_A, segmentB: SEG_B };
+    const model = buildReportModel(makeSeedWithTwoSegments(), "bookster", "internal", {
+      segmentComparison: req,
+    })!;
+    const compSection = model.sections[model.sections.length - 1];
+    const conceptTables = compSection.blocks.filter(
+      (b) => b.kind === "table" && "caption" in b && b.caption?.includes("top concepts"),
+    );
+    expect(conceptTables.length).toBeGreaterThanOrEqual(1);
+    const allText = JSON.stringify(compSection.blocks);
+    expect(allText).toContain("Proof-led hook");
+  });
+
+  it("reports attribution unavailability honestly when a segment has no demographic rows", () => {
+    // SEG_B doesn't exist in the base seed (only 25-34 female rows).
+    const req: SegmentComparisonRequest = {
+      segmentA: SEG_A,
+      segmentB: { age: "55-64", gender: "female" },
+    };
+    const model = buildReportModel(makeSeed(), "bookster", "internal", {
+      segmentComparison: req,
+    })!;
+    const compSection = model.sections[model.sections.length - 1];
+    const textBlocks = compSection.blocks.filter((b) => b.kind === "text");
+    // Must contain an unavailability notice, not silently skip or fabricate.
+    expect(textBlocks.some((b) => b.kind === "text" && "text" in b && b.text.includes("unavailable"))).toBe(true);
+  });
+
+  it("segment comparison section survives a serialization round-trip", () => {
+    const req: SegmentComparisonRequest = { segmentA: SEG_A, segmentB: SEG_B };
+    const model = buildReportModel(makeSeedWithTwoSegments(), "bookster", "internal", {
+      segmentComparison: req,
+    })!;
+    const parsed = parseReportModel(serializeReportModel(model))!;
+    expect(parsed).not.toBeNull();
+    const compSection = parsed.sections[parsed.sections.length - 1];
+    expect(compSection.title).toContain("Segment Comparison");
+    expect(renderReportHtml(parsed)).toContain("Women 25-34");
+    expect(renderReportHtml(parsed)).toContain("Men 35-44");
+  });
+
+  it("comparison section is included in the rendered HTML", () => {
+    const req: SegmentComparisonRequest = { segmentA: SEG_A, segmentB: SEG_B };
+    const model = buildReportModel(makeSeedWithTwoSegments(), "bookster", "internal", {
+      segmentComparison: req,
+    })!;
+    const html = renderReportHtml(model);
+    expect(html).toContain("Segment Comparison");
+    expect(html).toContain("Women 25-34");
+    expect(html).toContain("Men 35-44");
   });
 });

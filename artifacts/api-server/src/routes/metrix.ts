@@ -21,8 +21,6 @@ import {
   RejectAgentWaitlistEntryResponse,
   AdminLoginBody,
   AdminLoginResponse,
-  AdminCreateUserBody,
-  AdminCreateUserResponse,
   GetAdminSessionResponse,
   AdminLogoutResponse,
   ListRequestAccessEntriesResponse,
@@ -42,7 +40,6 @@ import {
   AdminSendPasswordResetResponse,
   AdminRevokeUserResponse,
   AdminRestoreUserResponse,
-  ListAdminAdAccountsResponse,
   CreateManualAdAccountBody,
   CreateManualAdAccountResponse,
   StageManualImportBody,
@@ -294,132 +291,6 @@ router.get("/metrix/admin/users", requireAdmin, async (req, res) => {
       total: rows.length,
     }),
   );
-});
-
-// Create a user account on the spot (demo-call flow). Unlike approval
-// provisioning, the temp password is ALWAYS returned so the admin can copy
-// it from the console immediately — email is a courtesy, never required.
-router.post("/metrix/admin/users", requireAdmin, async (req, res) => {
-  const parsed = AdminCreateUserBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ message: "Please enter a valid email address." });
-    return;
-  }
-  const email = parsed.data.email.trim().toLowerCase();
-  const requestedRole = parsed.data.role;
-  const canManageTeam = parsed.data.can_manage_team ?? false;
-  const canViewAgencyRollups = parsed.data.can_view_rollups ?? false;
-  const adAccountIds = parsed.data.ad_account_ids ?? [];
-
-  const [existing] = await db
-    .select({ id: usersTable.id })
-    .from(usersTable)
-    .where(eq(usersTable.email, email))
-    .limit(1);
-  if (existing) {
-    res.status(409).json({
-      message:
-        "An account with this email already exists. Use “New temp password” on that user below to issue fresh credentials.",
-    });
-    return;
-  }
-
-  const tempPassword = generateTempPassword();
-  const passwordHash = await hashPassword(tempPassword);
-  // Designated agency accounts must always be admins — same rule as
-  // approval provisioning (see agencyAccessSafeguard.ts).
-  // analyst/client_viewer are invite-level roles; both map to DB role "member".
-  const dbRole = isAgencyAdminEmail(email) ? "admin" : (requestedRole === "admin" ? "admin" : "member");
-
-  // Create user and apply ad account grants atomically. If grant insertion
-  // fails the whole transaction rolls back — no partial-success state.
-  class EmailConflictError extends Error {}
-  let userId: number;
-  try {
-    const result = await db.transaction(async (tx) => {
-      const inserted = await tx
-        .insert(usersTable)
-        .values({
-          email,
-          passwordHash,
-          mustChangePassword: true,
-          role: dbRole,
-          ...(dbRole !== "admin" ? { canManageTeam, canViewAgencyRollups } : {}),
-        })
-        .onConflictDoNothing({ target: usersTable.email })
-        .returning({ id: usersTable.id });
-      if (inserted.length === 0) throw new EmailConflictError();
-      const id = inserted[0]!.id;
-      if (adAccountIds.length > 0) {
-        await tx
-          .insert(userAdAccountsTable)
-          .values(adAccountIds.map((adAccountId) => ({ userId: id, adAccountId })));
-      }
-      return { id };
-    });
-    userId = result.id;
-  } catch (err) {
-    if (err instanceof EmailConflictError) {
-      res.status(409).json({
-        message:
-          "An account with this email already exists. Use “New temp password” on that user below to issue fresh credentials.",
-      });
-      return;
-    }
-    req.log.error({ err, email, adAccountIds }, "Failed to create user with grants (transaction rolled back)");
-    res.status(500).json({ message: "Failed to create account. Please try again." });
-    return;
-  }
-  const grantedAdAccountIds = adAccountIds;
-  req.log.info({ email, role: dbRole, adAccountIds }, "admin created user directly from console");
-
-  // Mirror into Supabase Auth (official-schema FKs). Non-fatal — the
-  // mirror:auth-users script repairs any gaps.
-  try {
-    const mirror = await ensureSupabaseAuthUser(email);
-    await db
-      .update(usersTable)
-      .set({ supabaseUserId: mirror.supabaseUserId })
-      .where(eq(usersTable.email, email));
-  } catch (err) {
-    req.log.error({ err, email }, "Supabase Auth mirror failed for admin-created user");
-  }
-
-  // Courtesy email — the flow succeeds regardless of delivery.
-  const emailResult = await sendApprovalEmail(email, tempPassword, getAppBaseUrl(), req.log);
-  const sent = emailResult.status === "sent";
-  res.json(
-    AdminCreateUserResponse.parse({
-      status: "created",
-      email,
-      temp_password: tempPassword,
-      email_sent: sent,
-      granted_ad_account_ids: grantedAdAccountIds,
-      ...(sent ? {} : { email_error: emailResult.reason }),
-    }),
-  );
-});
-
-// List ad accounts available for grants — used by the admin create-user form
-// to populate the ad-account checklist. Reads directly from Supabase so the
-// list is always live (reflects newly-created manual accounts immediately).
-router.get("/metrix/admin/ad-accounts", requireAdmin, async (req, res) => {
-  try {
-    const supabase = getSupabase();
-    const { data, error } = await supabase
-      .from("ad_accounts")
-      .select("id, name")
-      .order("name", { ascending: true });
-    if (error) throw new Error(error.message);
-    res.json(
-      ListAdminAdAccountsResponse.parse({
-        ad_accounts: (data ?? []).map((a) => ({ id: a["id"] as string, name: a["name"] as string })),
-      }),
-    );
-  } catch (err) {
-    req.log.error({ err }, "Failed to load ad accounts for admin panel");
-    res.status(503).json({ message: "Could not load ad accounts. Please try again." });
-  }
 });
 
 async function findAdminUser(userIdRaw: string) {

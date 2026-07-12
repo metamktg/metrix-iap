@@ -240,60 +240,6 @@ export interface AdminSendPasswordResetResult {
   email_error?: string;
 }
 
-/**
- * User role. 'admin' has full access and sees all accounts; 'analyst' and 'client_viewer' are member-level roles that see only granted accounts. Defaults to 'analyst'.
- */
-export type AdminCreateUserInputRole = typeof AdminCreateUserInputRole[keyof typeof AdminCreateUserInputRole];
-
-
-export const AdminCreateUserInputRole = {
-  admin: 'admin',
-  analyst: 'analyst',
-  client_viewer: 'client_viewer',
-} as const;
-
-export interface AdminCreateUserInput {
-  /** @maxLength 320 */
-  email: string;
-  /** User role. 'admin' has full access and sees all accounts; 'analyst' and 'client_viewer' are member-level roles that see only granted accounts. Defaults to 'analyst'. */
-  role?: AdminCreateUserInputRole;
-  /** Whether the user can manage team members and invites. Only meaningful for member role users. Defaults to false. */
-  can_manage_team?: boolean;
-  /** Whether the user can view agency rollup data. Only meaningful for member role users. Defaults to false. */
-  can_view_rollups?: boolean;
-  /** Ad account IDs to grant the user access to at creation time. Empty array or omitted grants no accounts (can be added later). */
-  ad_account_ids?: string[];
-}
-
-export type AdminCreateUserResultStatus = typeof AdminCreateUserResultStatus[keyof typeof AdminCreateUserResultStatus];
-
-
-export const AdminCreateUserResultStatus = {
-  created: 'created',
-} as const;
-
-export interface AdminCreateUserResult {
-  status: AdminCreateUserResultStatus;
-  email: string;
-  /** Always present — shown on screen for the admin to copy and share directly, independent of email delivery. */
-  temp_password: string;
-  /** Whether the courtesy email with the temporary password was delivered. The flow succeeds either way. */
-  email_sent: boolean;
-  /** Present only when the courtesy email could not be sent — explains why. */
-  email_error?: string;
-  /** Ad account IDs that were granted to the user at creation time. */
-  granted_ad_account_ids: string[];
-}
-
-export interface AdminAdAccountItem {
-  id: string;
-  name: string;
-}
-
-export interface AdminAdAccountsResult {
-  ad_accounts: AdminAdAccountItem[];
-}
-
 export type AdminUserActionResultStatus = typeof AdminUserActionResultStatus[keyof typeof AdminUserActionResultStatus];
 
 

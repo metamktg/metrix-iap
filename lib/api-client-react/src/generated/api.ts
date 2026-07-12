@@ -20,9 +20,6 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  AdminAdAccountsResult,
-  AdminCreateUserInput,
-  AdminCreateUserResult,
   AdminEmailStatus,
   AdminLoginInput,
   AdminResendTempPasswordResult,
@@ -1699,77 +1696,6 @@ export function useGetAdminEmailStatus<TData = Awaited<ReturnType<typeof getAdmi
 
 
 
-export const getAdminCreateUserUrl = () => {
-
-
-
-
-  return `/api/metrix/admin/users`
-}
-
-/**
- * Provisions a new user account on the spot with a generated temporary password. The temporary password is ALWAYS returned in the response so the admin can copy and share it immediately — email delivery is attempted as a courtesy but is never required for the flow to succeed. The user must change the password on first login. Refuses (409) when an account with this email already exists — use the resend-temp-password action instead. Requires admin access.
- * @summary Create a user account directly from the admin console
- */
-export const adminCreateUser = async (adminCreateUserInput: AdminCreateUserInput, options?: RequestInit): Promise<AdminCreateUserResult> => {
-
-  return customFetch<AdminCreateUserResult>(getAdminCreateUserUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(adminCreateUserInput)
-  }
-);}
-
-
-
-
-export const getAdminCreateUserMutationOptions = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateUser>>, TError,{data: BodyType<AdminCreateUserInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof adminCreateUser>>, TError,{data: BodyType<AdminCreateUserInput>}, TContext> => {
-
-const mutationKey = ['adminCreateUser'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminCreateUser>>, {data: BodyType<AdminCreateUserInput>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  adminCreateUser(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type AdminCreateUserMutationResult = NonNullable<Awaited<ReturnType<typeof adminCreateUser>>>
-    export type AdminCreateUserMutationBody = BodyType<AdminCreateUserInput>
-    export type AdminCreateUserMutationError = ErrorType<ApiError>
-
-    /**
- * @summary Create a user account directly from the admin console
- */
-export const useAdminCreateUser = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateUser>>, TError,{data: BodyType<AdminCreateUserInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof adminCreateUser>>,
-        TError,
-        {data: BodyType<AdminCreateUserInput>},
-        TContext
-      > => {
-      return useMutation(getAdminCreateUserMutationOptions(options));
-    }
-
 export const getListAdminUsersUrl = () => {
 
 
@@ -2131,84 +2057,6 @@ export const useAdminRestoreUser = <TError = ErrorType<ApiError>,
       > => {
       return useMutation(getAdminRestoreUserMutationOptions(options));
     }
-
-export const getListAdminAdAccountsUrl = () => {
-
-
-
-
-  return `/api/metrix/admin/ad-accounts`
-}
-
-/**
- * Returns all ad accounts (id and name) from the Metrix data layer so the admin panel can display a checklist when creating or editing users. Requires admin access.
- * @summary List ad accounts available for user grants
- */
-export const listAdminAdAccounts = async ( options?: RequestInit): Promise<AdminAdAccountsResult> => {
-
-  return customFetch<AdminAdAccountsResult>(getListAdminAdAccountsUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getListAdminAdAccountsQueryKey = () => {
-    return [
-    `/api/metrix/admin/ad-accounts`
-    ] as const;
-    }
-
-
-export const getListAdminAdAccountsQueryOptions = <TData = Awaited<ReturnType<typeof listAdminAdAccounts>>, TError = ErrorType<ApiError>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminAdAccounts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListAdminAdAccountsQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminAdAccounts>>> = ({ signal }) => listAdminAdAccounts({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminAdAccounts>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListAdminAdAccountsQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminAdAccounts>>>
-export type ListAdminAdAccountsQueryError = ErrorType<ApiError>
-
-
-/**
- * @summary List ad accounts available for user grants
- */
-
-export function useListAdminAdAccounts<TData = Awaited<ReturnType<typeof listAdminAdAccounts>>, TError = ErrorType<ApiError>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminAdAccounts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListAdminAdAccountsQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
 
 export const getApproveRequestAccessEntryUrl = (requestId: string,) => {
 

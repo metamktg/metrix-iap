@@ -134,7 +134,7 @@ export function AdAccountOverview() {
               const m = metricById(metricCatalog, id);
               if (!m) return null;
               return (
-                <button key={id} onClick={() => setOpenMetricId(id)} className="text-left group">
+                <button key={id} onClick={() => setOpenMetricId(id)} className="text-left">
                   <MetricTile label={m.label} value={m.formatted} />
                 </button>
               );

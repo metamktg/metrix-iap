@@ -13,7 +13,13 @@ import {
   getAnalysisData,
   getStrategyData,
   getOptimizationLoop,
+  getMST,
 } from "@/lib/data/metrixSeedAdapter";
+import {
+  computeSegmentDrilldown,
+  segmentLabel,
+  type SegmentId,
+} from "@/lib/segment-analytics";
 
 export type BrandingMode = "internal" | "client";
 export type ExportFormat = "pdf" | "google_doc" | "html";
@@ -313,6 +319,94 @@ function buildSectionBlocks(sectionTitle: string, seed: MetrixSeed, adAccountId:
   return [];
 }
 
+// ─── Segment comparison ───────────────────────────────────────────────
+
+/** Explicit user choice: which two segments to compare. Never auto-picked. */
+export interface SegmentComparisonRequest {
+  segmentA: SegmentId;
+  segmentB: SegmentId;
+  /**
+   * Optional cell scope (mirrors the in-app drill-down).
+   * When omitted, comparison is over all cells.
+   */
+  cellIds?: string[] | null;
+}
+
+const TOP_CONCEPTS = 5;
+
+function buildSegmentComparisonSection(
+  analysis: AnalysisData,
+  mst: ReturnType<typeof getMST>,
+  req: SegmentComparisonRequest,
+): ReportSection {
+  const cellIds = req.cellIds ?? null;
+  const a = computeSegmentDrilldown(analysis, mst ?? undefined, req.segmentA, cellIds);
+  const b = computeSegmentDrilldown(analysis, mst ?? undefined, req.segmentB, cellIds);
+  const labelA = segmentLabel(req.segmentA);
+  const labelB = segmentLabel(req.segmentB);
+  const title = `Segment Comparison: ${labelA} vs ${labelB}`;
+  const blocks: ReportBlock[] = [];
+
+  // Low-signal warnings surface before the numbers so readers see them first.
+  for (const reason of a.signal.reasons) {
+    blocks.push({ kind: "text", text: `Low signal — ${labelA}: ${reason}` });
+  }
+  for (const reason of b.signal.reasons) {
+    blocks.push({ kind: "text", text: `Low signal — ${labelB}: ${reason}` });
+  }
+
+  // Side-by-side key metrics table.
+  blocks.push({
+    kind: "table",
+    caption: `${labelA} vs ${labelB} — key metrics`,
+    headers: ["Metric", labelA, labelB],
+    rows: [
+      ["Spend", usd(a.totals.spend), usd(b.totals.spend)],
+      ["Results", num(a.totals.results), num(b.totals.results)],
+      ["CPA", a.derived.cpa == null ? "—" : usd(a.derived.cpa), b.derived.cpa == null ? "—" : usd(b.derived.cpa)],
+      ["Link CTR", pct(a.derived.ctr), pct(b.derived.ctr)],
+      ["CPM", a.derived.cpm == null ? "—" : usd(a.derived.cpm), b.derived.cpm == null ? "—" : usd(b.derived.cpm)],
+      ["Frequency", num(a.derived.frequency), num(b.derived.frequency)],
+    ],
+  });
+
+  // Top concepts per segment (attribution join).  Each side is reported
+  // independently so the honest-null treatment for unavailable attribution
+  // is preserved — one side can be unavailable while the other has data.
+  function conceptBlocks(
+    drilldown: ReturnType<typeof computeSegmentDrilldown>,
+    label: string,
+  ): ReportBlock[] {
+    if (!drilldown.attribution.available) {
+      const reason = drilldown.attribution.unavailableReason ?? "Concept attribution not available for this segment.";
+      return [{ kind: "text", text: `${label} — concept breakdown unavailable: ${reason}` }];
+    }
+    const top = drilldown.attribution.cells.slice(0, TOP_CONCEPTS);
+    if (top.length === 0) {
+      return [{ kind: "text", text: `${label} — no concept rows in this scope.` }];
+    }
+    return [
+      {
+        kind: "table",
+        caption: `${label} — top concepts by results`,
+        headers: ["Cell", "Concept", "Results", "CPA", "Link CTR"],
+        rows: top.map((c) => [
+          c.cellId,
+          c.conceptName ?? "—",
+          num(c.totals.results),
+          c.derived.cpa == null ? "—" : usd(c.derived.cpa),
+          pct(c.derived.ctr),
+        ]),
+      },
+    ];
+  }
+
+  blocks.push(...conceptBlocks(a, labelA));
+  blocks.push(...conceptBlocks(b, labelB));
+
+  return { title, blocks };
+}
+
 // ─── Model builder ────────────────────────────────────────────────────
 
 export interface BuildReportOptions {
@@ -322,6 +416,12 @@ export interface BuildReportOptions {
   selectedSections?: string[];
   /** Human-readable report window shown in the document meta line. */
   windowLabel?: string | null;
+  /**
+   * When provided, a "Segment Comparison" section is appended to the report.
+   * The two segments must be chosen explicitly by the user — never auto-picked.
+   * The section is omitted entirely when this option is absent.
+   */
+  segmentComparison?: SegmentComparisonRequest;
 }
 
 export function buildReportModel(
@@ -350,6 +450,15 @@ export function buildReportModel(
     }
     return { title, blocks };
   });
+
+  // Append the segment comparison section only when explicitly requested.
+  if (opts.segmentComparison) {
+    const analysis = getAnalysisData(seed, adAccountId);
+    const mst = getMST(seed, adAccountId);
+    if (analysis) {
+      sections.push(buildSegmentComparisonSection(analysis, mst, opts.segmentComparison));
+    }
+  }
 
   const internal = mode === "internal";
   return {

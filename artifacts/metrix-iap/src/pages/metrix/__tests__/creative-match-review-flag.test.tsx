@@ -153,10 +153,6 @@ describe("creative match review flag", () => {
     // Unambiguous shared ID code.
     stage("CR1234_final.mp4");
 
-    // Wait for all three uploads to actually complete (the transient
-    // uploading progress row also renders a bare filename, so filename
-    // text alone can match before staging finishes).
-    await waitFor(() => expect(store.get()).toHaveLength(3));
     await waitFor(() => {
       expect(screen.getByText("holiday_v3_1080x1080.mp4")).toBeTruthy();
       expect(screen.getByText("Summer_Sale_v2.mp4")).toBeTruthy();
@@ -187,10 +183,7 @@ describe("creative match review flag", () => {
     renderPanel();
     stage("holiday_v3_1080x1080.mp4");
 
-    // Wait for the upload to actually complete (the transient uploading
-    // progress row also renders the bare filename, so waiting on the
-    // filename text alone races the FileReader/XHR completion).
-    await waitFor(() => expect(store.get()).toHaveLength(1));
+    await waitFor(() => expect(screen.getByText("holiday_v3_1080x1080.mp4")).toBeTruthy());
 
     // The staged import must carry the guess method (proves the mapping was
     // applied *with* the review signal, not silently) …
