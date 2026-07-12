@@ -42,6 +42,8 @@ import { rollupDnaFamilies } from "@/lib/creative-dna";
 import { VariableChip, familyLabel } from "../strategy/strategyShared";
 import type { CreativeCardStats } from "@/components/creative/CreativeCard";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
+import { TaskTrayPanel } from "@/components/deck/TaskTrayPanel";
+import { actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
 import type { SegmentId } from "@/lib/segment-analytics";
 import type { CellPerformanceRow, DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 import { CreativeLibraryDialog } from "@/pages/metrix/ConnectAccountDialogs";
@@ -82,6 +84,23 @@ export function IapLibraryView() {
   const strategy = getStrategyData(seed, adAccountId);
   const mst     = getMST(seed, adAccountId);
   const fp      = useFromParam();
+
+  // Deck cards for Task Tray — derived from the account's optimization loop
+  const optLoop = account?.iap?.optimization_loop ?? null;
+  const deckCards: DeckCard[] = useMemo(
+    () =>
+      (optLoop?.recommendation_cards ?? []).map((c) => ({
+        id: c.id,
+        title: c.title,
+        rationale: c.rationale,
+        recommendedAction: c.recommended_action,
+        impact: c.impact,
+        confidence: c.confidence,
+        scope: c.scope,
+        actionGroup: actionGroupForScope(c.scope),
+      })),
+    [optLoop]
+  );
 
   const allEvents = useMemo(
     () => Object.keys(summary?.bottom_line_totals ?? {}),
@@ -307,9 +326,9 @@ export function IapLibraryView() {
                               <button
                                 onClick={() => { close(); setDetail(row); }}
                                 data-testid={`button-full-detail-${row.cell_id}`}
-                                className="inline-flex items-center gap-1 text-[10px] font-medium text-primary/80 hover:text-primary border border-primary/20 bg-primary/[0.06] hover:bg-primary/10 px-1.5 py-0.5 rounded transition-colors"
+                                className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-white bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-all"
                               >
-                                Full detail
+                                Full detail →
                               </button>
                             )}
                           />
@@ -345,9 +364,9 @@ export function IapLibraryView() {
                                 <button
                                   onClick={() => { close(); setDetail(row); }}
                                   data-testid={`button-full-detail-top-${row.cell_id}`}
-                                  className="inline-flex items-center gap-1 text-[10px] font-medium text-primary/80 hover:text-primary border border-primary/20 bg-primary/[0.06] hover:bg-primary/10 px-1.5 py-0.5 rounded transition-colors"
+                                  className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-white bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-all"
                                 >
-                                  Full detail
+                                  Full detail →
                                 </button>
                               )}
                             />
@@ -437,6 +456,7 @@ export function IapLibraryView() {
                   kicker={`Creative cell · ${detail.cell_id}`}
                   title={detail.book2_concept_name}
                   onClose={() => setDetail(null)}
+                  taskTray={adAccountId ? <TaskTrayPanel scopeId={adAccountId} cards={deckCards} compact /> : undefined}
                   footer={(() => {
                     // Contextual strategy navigation: find the pillar/hypothesis
                     // that cites this cell so the link lands in exactly the right place.

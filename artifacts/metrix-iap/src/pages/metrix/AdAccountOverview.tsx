@@ -7,7 +7,7 @@ import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import {
   ShieldCheck, KeyRound, Radio, BarChart3, Layers, FileText, Grid3x3,
-  Zap, ArrowRight, Check, ChevronDown, ChevronRight, ClipboardList,
+  Zap, ArrowRight, ChevronDown, ChevronRight,
 } from "lucide-react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -26,95 +26,9 @@ import { buildMetricCatalog, metricSourceFromCampaignSummary, metricById } from 
 import { useMetricSelection } from "@/hooks/useMetricSelection";
 import { MetricPickerButton } from "@/components/creative/MetricPicker";
 import { MetricDiagnosticModal } from "@/components/creative/MetricDiagnosticModal";
-import { useDecisions, getDecision, toggleDone, isDone } from "@/lib/data/decisionStore";
+import { TaskTrayPanel } from "@/components/deck/TaskTrayPanel";
 
 const IMPACT_RANK: Record<string, number> = { high: 3, medium: 2, low: 1, setup: 0 };
-
-// ── Persistent Task Tray Panel ──────────────────────────────────────────
-
-function TaskTrayPanel({ scopeId, cards }: { scopeId: string; cards: DeckCard[] }) {
-  useDecisions();
-  const approved = cards.filter((c) => getDecision(scopeId, c.id) === "approved");
-
-  return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-border/40 shrink-0 bg-white/[0.01]">
-        <ClipboardList className="w-3.5 h-3.5 text-primary/80" />
-        <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/70">Task Tray</span>
-        {approved.length > 0 && (
-          <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-400/15 text-emerald-400 border border-emerald-400/25 tabular-nums">
-            {approved.length}
-          </span>
-        )}
-      </div>
-
-      {/* Tasks */}
-      <div className="flex-1 overflow-y-auto px-3 py-3 min-h-0">
-        {approved.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-3 py-12 text-center px-2">
-            <div className="w-9 h-9 rounded-xl border border-border/30 bg-white/[0.02] flex items-center justify-center">
-              <ClipboardList className="w-4 h-4 text-muted-foreground/25" />
-            </div>
-            <p className="text-[11px] text-muted-foreground/50 font-medium leading-tight">No approved tasks</p>
-            <p className="text-[10px] text-muted-foreground/35 leading-relaxed max-w-[150px]">
-              Approve recommendations from the loop below — they land here as manual tasks.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {approved.map((s) => {
-              const done = isDone(scopeId, s.id);
-              return (
-                <div
-                  key={s.id}
-                  className={cn(
-                    "flex items-start gap-2 p-2.5 rounded-lg border bg-white/[0.02] transition-opacity",
-                    done ? "border-emerald-400/20 opacity-55" : "border-border/40 hover:border-border/60"
-                  )}
-                >
-                  <button
-                    onClick={() => toggleDone(scopeId, s.id)}
-                    className={cn(
-                      "mt-[1px] w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors",
-                      done
-                        ? "bg-emerald-400/20 border-emerald-400/40 text-emerald-400"
-                        : "border-border/50 text-transparent hover:border-primary/50"
-                    )}
-                    aria-label={done ? "Mark not done" : "Mark done"}
-                  >
-                    <Check className="w-2 h-2" />
-                  </button>
-                  <div className="flex-1 min-w-0">
-                    <p className={cn(
-                      "text-[11px] font-medium leading-tight",
-                      done ? "text-foreground/40 line-through" : "text-foreground"
-                    )}>
-                      {s.title}
-                    </p>
-                    <p className="text-[9px] text-muted-foreground/50 mt-0.5 leading-tight line-clamp-2">
-                      {s.recommendedAction}
-                    </p>
-                    <span className="inline-flex mt-1 text-[8px] font-semibold border border-border/30 bg-white/[0.03] px-1 py-0.5 rounded text-muted-foreground/55 uppercase tracking-wide">
-                      {s.actionGroup.replace(" actions", "").replace(" updates", "")}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="shrink-0 px-3 py-2.5 border-t border-border/30 bg-white/[0.005]">
-        <p className="text-[9px] text-muted-foreground/35 leading-relaxed text-center">
-          Approve from loop ↓ · tasks are manual, never auto-applied
-        </p>
-      </div>
-    </div>
-  );
-}
 
 // ── Main export ─────────────────────────────────────────────────────────
 
