@@ -1,6 +1,6 @@
 // ─── Shared building blocks for seed-hydrated Metrix pages ────────────
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { useLocation, useSearch } from "wouter";
 import { ConnectMetaDialog, ManualImportDialog } from "./ConnectAccountDialogs";
@@ -8,6 +8,8 @@ import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
 import { Plug, FileUp, Clock, Database, Info, ArrowRight, CheckSquare, Square, CalendarRange, CalendarX2, AlertTriangle, ChevronDown, ChevronLeft, Sparkles, Map as MapIcon } from "lucide-react";
 import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
 import { DataSourceBadge } from "@/components/ui/DataSourceBadge";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { resolveVariableLabel } from "@/lib/variable-registry";
 import type { AdAccount } from "@/lib/data/seedTypes";
 
@@ -354,17 +356,103 @@ export function PendingState({ title, message, icon: Icon = Clock, action }: { t
 }
 
 // ─── Metric tile ──────────────────────────────────────────────────────
-// When the tile is placed inside a `group` button, border lifts on hover.
+// When placed inside a `group` button, border lifts on hover.
+// When `popover` is set, the tile becomes a self-contained popover trigger.
 
-export function MetricTile({ label, value, sub }: { label: string; value: string; sub?: string }) {
-  return (
-    <div className="mx-card p-4 transition-colors group-hover:border-primary/30 group-hover:bg-primary/[0.02]">
+type TilePopoverConfig = {
+  content: ReactNode;
+  footer?: ReactNode;
+};
+
+/** Wraps a child button so it closes the enclosing tile popover on click. */
+export function TilePopoverClose({ children }: { children: React.ReactElement }) {
+  return <PopoverPrimitive.Close asChild>{children}</PopoverPrimitive.Close>;
+}
+
+/**
+ * Consistent row item inside a tile popover.
+ * When `onClick` is provided it renders as a button and auto-closes the popover.
+ */
+export function TileItem({
+  title, sub, badges, onClick,
+}: {
+  title: string;
+  sub?: string;
+  badges?: ReactNode;
+  onClick?: () => void;
+}) {
+  const body = (
+    <>
+      {badges && <div className="flex items-center gap-1 flex-wrap mb-0.5">{badges}</div>}
+      <p className="text-[11px] text-foreground/80 line-clamp-2 leading-snug">{title}</p>
+      {sub && <p className="text-[10px] text-muted-foreground/50 mt-0.5 leading-snug">{sub}</p>}
+    </>
+  );
+  if (onClick) {
+    return (
+      <TilePopoverClose>
+        <button
+          onClick={onClick}
+          className="w-full text-left rounded-md px-2.5 py-1.5 hover:bg-white/[0.05] transition-colors"
+        >
+          {body}
+        </button>
+      </TilePopoverClose>
+    );
+  }
+  return <div className="px-2.5 py-1.5 rounded-md">{body}</div>;
+}
+
+export function MetricTile({
+  label, value, sub, popover,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  popover?: TilePopoverConfig;
+}) {
+  const face = (
+    <div className={cn(
+      "mx-card p-4 transition-colors group-hover:border-primary/30 group-hover:bg-primary/[0.02]",
+      popover && "cursor-pointer hover:border-primary/30 hover:bg-primary/[0.02]",
+    )}>
       <div className="relative">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70 mb-2">{label}</div>
+        {popover && (
+          <span className="absolute top-0 right-0 text-[9px] text-muted-foreground/30 leading-none select-none" aria-hidden>›</span>
+        )}
+        <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70 mb-2 leading-tight pr-3">{label}</div>
         <div className="text-[26px] font-bold text-foreground tabular-nums leading-none tracking-[-0.035em]">{value}</div>
-        {sub && <div className="text-[11px] text-muted-foreground/65 mt-2 leading-snug">{sub}</div>}
+        {sub && <div className="text-[11px] text-muted-foreground/65 mt-2 leading-snug line-clamp-2">{sub}</div>}
       </div>
     </div>
+  );
+
+  if (!popover) return face;
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button className="group text-left w-full cursor-pointer">{face}</button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="p-0 overflow-hidden w-72"
+        align="start"
+        sideOffset={6}
+      >
+        <div className="flex items-baseline justify-between px-3.5 py-2.5 border-b border-border/30 bg-white/[0.01]">
+          <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50 mr-2 shrink-0">{label}</span>
+          <span className="text-[15px] font-bold text-foreground tabular-nums">{value}</span>
+        </div>
+        <div className="p-2.5 max-h-64 overflow-y-auto space-y-0.5">
+          {popover.content}
+        </div>
+        {popover.footer && (
+          <div className="px-3.5 py-2 border-t border-border/25 bg-white/[0.01]">
+            {popover.footer}
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
   );
 }
 
