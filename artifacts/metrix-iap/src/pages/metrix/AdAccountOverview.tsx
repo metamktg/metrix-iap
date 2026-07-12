@@ -198,8 +198,8 @@ export function AdAccountOverview() {
                 <div className="flex items-center justify-between gap-2">
                   <l.Icon className="w-3.5 h-3.5 text-primary/60" />
                   <span className={cn(
-                    "text-[8px] font-semibold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none",
-                    l.ready ? "text-emerald-400 border-emerald-400/25 bg-emerald-400/10" : "text-muted-foreground/70 border-border/40 bg-white/[0.03]"
+                    "text-[10px] font-semibold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none",
+                    l.ready ? "text-emerald-300 border-emerald-400/35 bg-emerald-400/20" : "text-muted-foreground/80 border-border/50 bg-white/[0.05]"
                   )}>
                     {l.ready ? "Ready" : "Pending"}
                   </span>
@@ -240,7 +240,7 @@ export function AdAccountOverview() {
                 <span className="text-[11px] font-semibold text-foreground">Primary control</span>
               </div>
               <p className="text-[12px] text-foreground/80 leading-relaxed">{core.primary_control_read}</p>
-              <p className="text-[9px] font-mono text-muted-foreground/60 mt-2">{core.primary_control}</p>
+              <p className="text-[10px] font-mono text-muted-foreground/75 mt-2">{core.primary_control}</p>
             </div>
             {core.registration_control && (
               <div className="rounded-lg border border-blue-400/15 bg-blue-400/[0.03] p-3.5">
@@ -249,7 +249,7 @@ export function AdAccountOverview() {
                   <span className="text-[11px] font-semibold text-foreground">{term.Singular} control</span>
                 </div>
                 <p className="text-[12px] text-foreground/80 leading-relaxed">{core.registration_control_read}</p>
-                <p className="text-[9px] font-mono text-muted-foreground/60 mt-2">{core.registration_control}</p>
+                <p className="text-[10px] font-mono text-muted-foreground/75 mt-2">{core.registration_control}</p>
               </div>
             )}
           </div>

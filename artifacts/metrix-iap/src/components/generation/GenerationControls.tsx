@@ -139,7 +139,7 @@ export function GenerateButton({
 export function ProvenanceBadge({ provenance }: { provenance?: string }) {
   if (provenance !== "generated") return null;
   return (
-    <span className="inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wide text-primary border border-primary/25 bg-primary/10 px-1.5 py-0.5 rounded leading-none">
+    <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-primary border border-primary/25 bg-primary/10 px-1.5 py-0.5 rounded leading-none">
       <Sparkles className="w-2.5 h-2.5" /> Generated in-app
     </span>
   );
