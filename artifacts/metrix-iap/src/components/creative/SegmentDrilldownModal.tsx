@@ -11,7 +11,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Settings2, Check, ChevronUp, ChevronDown, RotateCcw, Info, AlertTriangle, Ban, GitCompareArrows, X, ArrowLeftRight, ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from "lucide-react";
+import { Settings2, Check, ChevronUp, ChevronDown, RotateCcw, Info, AlertTriangle, Ban, GitCompareArrows, X, ArrowLeftRight, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
+import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
@@ -620,20 +621,27 @@ export function SegmentDrilldownModal({
   onClose,
   segment,
   analysis,
-  /** Scope to these creative cells; null = whole account. */
   cellIds,
   kicker = "Segment drill-down",
+  onBack,
+  onNextStep,
 }: {
   open: boolean;
   onClose: () => void;
   segment: SegmentId | null;
   analysis: AnalysisData;
+  /** Scope to these creative cells; null = whole account. */
   cellIds: string[] | null;
   kicker?: string;
+  /** If set, a visible ← Back button appears in the header. */
+  onBack?: () => void;
+  /** Override the "Next step" CTA action. Defaults to opening the Audience view. */
+  onNextStep?: () => void;
 }) {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const mst = getMST(seed, adAccountId);
+  const [, navigate] = useLocation();
 
   const [compareSegment, setCompareSegment] = useState<SegmentId | null>(null);
 
@@ -684,6 +692,15 @@ export function SegmentDrilldownModal({
       >
         <TooltipProvider delayDuration={150}>
           <DialogHeader className="text-left space-y-1">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="inline-flex items-center gap-1 text-[10px] text-muted-foreground/60 hover:text-foreground transition-colors mb-0.5 -ml-0.5 group"
+              >
+                <ArrowLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" />
+                Back
+              </button>
+            )}
             <div className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest">{kicker}</div>
             <DialogTitle className="text-[15px] font-semibold text-foreground" data-testid="title-segment-drilldown">
               {comparing ? `${label} vs ${compareLabel}` : `${label} — what's driving results`}
@@ -939,6 +956,24 @@ export function SegmentDrilldownModal({
               </div>
             </div>
           )}
+
+          {/* ── Next step CTA ── */}
+          <div className="flex items-center justify-between gap-3 pt-3 border-t border-border/25 mt-1">
+            <p className="text-[9.5px] text-muted-foreground/50 leading-relaxed">
+              Use this segment's signal to strengthen your next sprint test.
+            </p>
+            <button
+              onClick={() => {
+                onClose();
+                if (onNextStep) { onNextStep(); } else { navigate("/app/strategy/map"); }
+              }}
+              className="shrink-0 inline-flex items-center gap-1.5 h-7 px-3 rounded-md bg-primary/10 border border-primary/25 text-[10px] font-semibold text-primary/90 hover:bg-primary/15 hover:border-primary/40 transition-colors"
+            >
+              <Sparkles className="w-3 h-3" />
+              Strategy Map
+              <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
         </TooltipProvider>
       </DialogContent>
     </Dialog>

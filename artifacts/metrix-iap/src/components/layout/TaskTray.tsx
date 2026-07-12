@@ -5,7 +5,7 @@
 // draft briefs pending review, and quick module jumps.
 
 import { useLocation } from "wouter";
-import { X, ClipboardList, Sparkles, AlertCircle, FileText, ArrowRight, Zap } from "lucide-react";
+import { X, ClipboardList, Sparkles, AlertCircle, FileText, ArrowRight, Zap, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAccount } from "@/contexts/AccountContext";
 import { useTaskTray } from "@/contexts/TaskTrayContext";
@@ -104,7 +104,7 @@ function EmptySlot({ message }: { message: string }) {
 // ─── Main component ───────────────────────────────────────────────────
 
 export function TaskTray() {
-  const { close } = useTaskTray();
+  const { open, toggle, close } = useTaskTray();
   const { activeAdAccount } = useAccount();
   const [, navigate] = useLocation();
 
@@ -117,6 +117,36 @@ export function TaskTray() {
   const topSignals = signals.slice(0, 2);
 
   const totalItems = topHyps.length + topSignals.length + pendingDrafts.length;
+
+  // ── Minimized strip mode: always present, never intrusive ───────────
+  if (!open) {
+    return (
+      <div className="w-8 shrink-0 border-l border-border/40 bg-[hsl(222_61%_4.5%)] flex flex-col items-center pt-3 gap-3">
+        <button
+          onClick={toggle}
+          title="Expand task tray"
+          aria-label="Expand task tray"
+          className="flex flex-col items-center gap-1.5 text-muted-foreground/40 hover:text-primary/70 transition-colors group"
+        >
+          <ClipboardList className="w-4 h-4 group-hover:scale-110 transition-transform" />
+          {totalItems > 0 && (
+            <span className="text-[8px] font-bold bg-primary/20 text-primary border border-primary/25 rounded-full w-4 h-4 flex items-center justify-center tabular-nums leading-none">
+              {Math.min(totalItems, 9)}
+            </span>
+          )}
+        </button>
+        <div className="w-3 h-px bg-border/25" />
+        <button
+          onClick={toggle}
+          title="Expand"
+          aria-label="Expand task tray"
+          className="text-muted-foreground/30 hover:text-muted-foreground/60 transition-colors"
+        >
+          <ChevronRight className="w-3 h-3" />
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="w-[264px] shrink-0 border-l border-border/40 bg-[hsl(222_61%_4.5%)] flex flex-col overflow-hidden">
