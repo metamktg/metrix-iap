@@ -75,10 +75,10 @@ function LocalTagChips({ codes }: { codes: string[] }) {
       {flat.map((c, i) => (
         <span
           key={c + i}
-          title={resolveVariableLabel(c)}
-          className={cn("text-[8px] font-mono border px-1.5 py-0.5 rounded leading-none", PREFIX_COLORS[getVariablePrefix(c)])}
+          title={c}
+          className={cn("text-[9px] font-medium border px-1.5 py-0.5 rounded leading-none", PREFIX_COLORS[getVariablePrefix(c)])}
         >
-          {c}
+          {resolveVariableLabel(c)}
         </span>
       ))}
     </div>

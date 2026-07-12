@@ -176,15 +176,18 @@ export function VariableDrilldownModal({
                       <button
                         key={`${seg.age}-${seg.gender}`}
                         onClick={() => setSegment(seg)}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-white/[0.03] transition-colors group"
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-primary/[0.07] cursor-pointer transition-colors group"
                         data-testid={`row-variable-segment-${seg.age}-${seg.gender}`}
-                        title="Open segment drill-down"
+                        title="Click to open segment drill-down"
                       >
                         <span className="text-[11px] font-medium text-foreground/85 w-32 shrink-0 capitalize">
                           {segmentLabel(seg)}
                         </span>
-                        <span className="flex-1 h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
-                          <span className="block h-full rounded-full bg-primary/50" style={{ width: `${Math.max(share * 100, 2)}%` }} />
+                        <span className="flex-1 h-2.5 rounded-full bg-white/[0.06] overflow-hidden">
+                          <span
+                            className="block h-full rounded-full bg-gradient-to-r from-primary/60 to-violet-500/60 group-hover:from-primary/85 group-hover:to-violet-500/85 transition-colors"
+                            style={{ width: `${Math.max(share * 100, 2)}%` }}
+                          />
                         </span>
                         <span className="text-[10px] tabular-nums text-muted-foreground/70 w-16 text-right shrink-0">
                           {totals.spend != null ? fmtUSD(totals.spend, 0) : "—"}
@@ -192,7 +195,7 @@ export function VariableDrilldownModal({
                         <span className="text-[10px] tabular-nums text-foreground/80 w-20 text-right shrink-0">
                           {derived.cpa != null ? `${fmtUSD(derived.cpa)} CPA` : "— CPA"}
                         </span>
-                        <ChevronRight className="w-3 h-3 text-muted-foreground/40 group-hover:text-foreground shrink-0" />
+                        <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/35 group-hover:text-primary/80 group-hover:translate-x-0.5 transition-all shrink-0" />
                       </button>
                     );
                   })}
