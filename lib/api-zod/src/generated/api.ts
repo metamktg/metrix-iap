@@ -560,6 +560,47 @@ export const AdminRestoreUserResponse = zod.object({
 
 
 /**
+ * Adds a user_ad_accounts grant for the user. Idempotent. Requires admin access.
+ * @summary Grant a user access to an ad account
+ */
+
+
+
+export const AdminGrantUserAdAccountParams = zod.object({
+  "userId": zod.coerce.number().min(1).describe('User account identifier.')
+})
+
+
+
+
+export const AdminGrantUserAdAccountBody = zod.object({
+  "ad_account_id": zod.string().min(1)
+})
+
+export const AdminGrantUserAdAccountResponse = zod.object({
+  "ad_account_ids": zod.array(zod.string())
+})
+
+
+/**
+ * Removes the user_ad_accounts grant for the user, if present. Requires admin access.
+ * @summary Revoke a user's access to an ad account
+ */
+
+
+
+
+export const AdminRevokeUserAdAccountParams = zod.object({
+  "userId": zod.coerce.number().min(1).describe('User account identifier.'),
+  "adAccountId": zod.coerce.string().min(1).describe('Ad account identifier.')
+})
+
+export const AdminRevokeUserAdAccountResponse = zod.object({
+  "ad_account_ids": zod.array(zod.string())
+})
+
+
+/**
  * Returns all ad accounts (id and name) from the Metrix data layer so the admin panel can display a checklist when creating or editing users. Requires admin access.
  * @summary List ad accounts available for user grants
  */

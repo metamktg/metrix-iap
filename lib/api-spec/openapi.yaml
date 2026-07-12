@@ -994,6 +994,101 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/admin/users/{userId}/ad-accounts:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        description: User account identifier.
+        schema:
+          type: integer
+          minimum: 1
+    post:
+      operationId: adminGrantUserAdAccount
+      tags: [metrix]
+      summary: Grant a user access to an ad account
+      description: Adds a user_ad_accounts grant for the user. Idempotent. Requires admin access.
+      security:
+        - adminKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GrantMemberAdAccountInput"
+      responses:
+        "200":
+          description: Updated ad account grant list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemberAdAccountsResult"
+        "400":
+          description: Unknown ad account or missing body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Missing or invalid admin credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "503":
+          description: Metrix data layer unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/admin/users/{userId}/ad-accounts/{adAccountId}:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        description: User account identifier.
+        schema:
+          type: integer
+          minimum: 1
+      - name: adAccountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+    delete:
+      operationId: adminRevokeUserAdAccount
+      tags: [metrix]
+      summary: Revoke a user's access to an ad account
+      description: Removes the user_ad_accounts grant for the user, if present. Requires admin access.
+      security:
+        - adminKey: []
+      responses:
+        "200":
+          description: Updated ad account grant list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemberAdAccountsResult"
+        "401":
+          description: Missing or invalid admin credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/admin/ad-accounts:
     get:
       operationId: listAdminAdAccounts

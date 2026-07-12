@@ -589,6 +589,79 @@ router.post(
   },
 );
 
+router.post(
+  "/metrix/admin/users/:userId/ad-accounts",
+  requireAdmin,
+  async (req, res) => {
+    const user = await findAdminUser(String(req.params.userId));
+    if (!user) {
+      res.status(404).json({ message: "User not found." });
+      return;
+    }
+
+    const parsed = GrantMemberAdAccountBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ message: "An ad account id is required." });
+      return;
+    }
+
+    let bundle: { ad_accounts?: { id: string }[] };
+    try {
+      bundle = (await getMetrixSeedFromSupabase()) as { ad_accounts?: { id: string }[] };
+    } catch (err) {
+      req.log.error({ err }, "Failed to load Metrix seed while admin granting ad account access");
+      res.status(503).json({
+        message: "Couldn't verify the ad account because the Metrix data layer is unavailable.",
+      });
+      return;
+    }
+    const accountExists = (bundle.ad_accounts ?? []).some(
+      (a) => a.id === parsed.data.ad_account_id,
+    );
+    if (!accountExists) {
+      res.status(400).json({ message: "Unknown ad account." });
+      return;
+    }
+
+    await db
+      .insert(userAdAccountsTable)
+      .values({ userId: user.id, adAccountId: parsed.data.ad_account_id })
+      .onConflictDoNothing({
+        target: [userAdAccountsTable.userId, userAdAccountsTable.adAccountId],
+      });
+
+    const ad_account_ids = await grantsForUser(user.id);
+    req.log.info({ userId: user.id, adAccountId: parsed.data.ad_account_id }, "admin granted ad account access");
+    res.json(ListMemberAdAccountsResponse.parse({ ad_account_ids }));
+  },
+);
+
+router.delete(
+  "/metrix/admin/users/:userId/ad-accounts/:adAccountId",
+  requireAdmin,
+  async (req, res) => {
+    const user = await findAdminUser(String(req.params.userId));
+    if (!user) {
+      res.status(404).json({ message: "User not found." });
+      return;
+    }
+
+    const adAccountId = decodeURIComponent(String(req.params.adAccountId));
+    await db
+      .delete(userAdAccountsTable)
+      .where(
+        and(
+          eq(userAdAccountsTable.userId, user.id),
+          eq(userAdAccountsTable.adAccountId, adAccountId),
+        ),
+      );
+
+    const ad_account_ids = await grantsForUser(user.id);
+    req.log.info({ userId: user.id, adAccountId }, "admin revoked ad account access");
+    res.json(ListMemberAdAccountsResponse.parse({ ad_account_ids }));
+  },
+);
+
 router.get("/metrix/seed", requireAuth, async (req, res) => {
   try {
     const user = req.authUser!;

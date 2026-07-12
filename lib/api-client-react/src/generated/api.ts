@@ -2132,6 +2132,151 @@ export const useAdminRestoreUser = <TError = ErrorType<ApiError>,
       return useMutation(getAdminRestoreUserMutationOptions(options));
     }
 
+export const getAdminGrantUserAdAccountUrl = (userId: number,) => {
+
+
+
+
+  return `/api/metrix/admin/users/${userId}/ad-accounts`
+}
+
+/**
+ * Adds a user_ad_accounts grant for the user. Idempotent. Requires admin access.
+ * @summary Grant a user access to an ad account
+ */
+export const adminGrantUserAdAccount = async (userId: number,
+    grantMemberAdAccountInput: GrantMemberAdAccountInput, options?: RequestInit): Promise<MemberAdAccountsResult> => {
+
+  return customFetch<MemberAdAccountsResult>(getAdminGrantUserAdAccountUrl(userId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(grantMemberAdAccountInput)
+  }
+);}
+
+
+
+
+export const getAdminGrantUserAdAccountMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminGrantUserAdAccount>>, TError,{userId: number;data: BodyType<GrantMemberAdAccountInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminGrantUserAdAccount>>, TError,{userId: number;data: BodyType<GrantMemberAdAccountInput>}, TContext> => {
+
+const mutationKey = ['adminGrantUserAdAccount'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminGrantUserAdAccount>>, {userId: number;data: BodyType<GrantMemberAdAccountInput>}> = (props) => {
+          const {userId,data} = props ?? {};
+
+          return  adminGrantUserAdAccount(userId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminGrantUserAdAccountMutationResult = NonNullable<Awaited<ReturnType<typeof adminGrantUserAdAccount>>>
+    export type AdminGrantUserAdAccountMutationBody = BodyType<GrantMemberAdAccountInput>
+    export type AdminGrantUserAdAccountMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Grant a user access to an ad account
+ */
+export const useAdminGrantUserAdAccount = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminGrantUserAdAccount>>, TError,{userId: number;data: BodyType<GrantMemberAdAccountInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminGrantUserAdAccount>>,
+        TError,
+        {userId: number;data: BodyType<GrantMemberAdAccountInput>},
+        TContext
+      > => {
+      return useMutation(getAdminGrantUserAdAccountMutationOptions(options));
+    }
+
+export const getAdminRevokeUserAdAccountUrl = (userId: number,
+    adAccountId: string,) => {
+
+
+
+
+  return `/api/metrix/admin/users/${userId}/ad-accounts/${adAccountId}`
+}
+
+/**
+ * Removes the user_ad_accounts grant for the user, if present. Requires admin access.
+ * @summary Revoke a user's access to an ad account
+ */
+export const adminRevokeUserAdAccount = async (userId: number,
+    adAccountId: string, options?: RequestInit): Promise<MemberAdAccountsResult> => {
+
+  return customFetch<MemberAdAccountsResult>(getAdminRevokeUserAdAccountUrl(userId,adAccountId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getAdminRevokeUserAdAccountMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRevokeUserAdAccount>>, TError,{userId: number;adAccountId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminRevokeUserAdAccount>>, TError,{userId: number;adAccountId: string}, TContext> => {
+
+const mutationKey = ['adminRevokeUserAdAccount'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminRevokeUserAdAccount>>, {userId: number;adAccountId: string}> = (props) => {
+          const {userId,adAccountId} = props ?? {};
+
+          return  adminRevokeUserAdAccount(userId,adAccountId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminRevokeUserAdAccountMutationResult = NonNullable<Awaited<ReturnType<typeof adminRevokeUserAdAccount>>>
+
+    export type AdminRevokeUserAdAccountMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Revoke a user's access to an ad account
+ */
+export const useAdminRevokeUserAdAccount = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRevokeUserAdAccount>>, TError,{userId: number;adAccountId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminRevokeUserAdAccount>>,
+        TError,
+        {userId: number;adAccountId: string},
+        TContext
+      > => {
+      return useMutation(getAdminRevokeUserAdAccountMutationOptions(options));
+    }
+
 export const getListAdminAdAccountsUrl = () => {
 
 

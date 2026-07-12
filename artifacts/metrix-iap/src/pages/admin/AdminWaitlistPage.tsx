@@ -26,6 +26,8 @@ import {
   useAdminSendPasswordReset,
   useAdminRevokeUser,
   useAdminRestoreUser,
+  useAdminGrantUserAdAccount,
+  useAdminRevokeUserAdAccount,
 } from "@workspace/api-client-react";
 import type {
   RequestAccessEntry,
@@ -57,6 +59,7 @@ import {
   ChevronUp,
   Shield,
   Users,
+  Pencil,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -366,9 +369,19 @@ function UserRow({
   const sendReset = useAdminSendPasswordReset();
   const revoke = useAdminRevokeUser();
   const restore = useAdminRestoreUser();
+  const grantAdAccount = useAdminGrantUserAdAccount();
+  const revokeAdAccount = useAdminRevokeUserAdAccount();
+
   const [outcome, setOutcome] = useState<UserActionOutcome | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmRevoke, setConfirmRevoke] = useState(false);
+  const [editingAccess, setEditingAccess] = useState(false);
+  const [localAdAccountIds, setLocalAdAccountIds] = useState<string[] | null>(null);
+  const [accessError, setAccessError] = useState<string | null>(null);
+  const [pendingAccountId, setPendingAccountId] = useState<string | null>(null);
+
+  const effectiveIds = localAdAccountIds ?? user.ad_account_ids;
+  const isAdmin = user.role === "admin";
 
   const busy =
     resend.isPending || sendReset.isPending || revoke.isPending || restore.isPending;
@@ -376,6 +389,44 @@ function UserRow({
 
   const actionBtn =
     "flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-[10px] font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none";
+
+  const handleToggleAccount = (accountId: string) => {
+    if (pendingAccountId) return;
+    const hasAccess = effectiveIds.includes(accountId);
+    setPendingAccountId(accountId);
+    setAccessError(null);
+    if (hasAccess) {
+      revokeAdAccount.mutate(
+        { userId: user.id, adAccountId: accountId },
+        {
+          onSuccess: (res) => {
+            setLocalAdAccountIds(res.ad_account_ids);
+            setPendingAccountId(null);
+            onChanged();
+          },
+          onError: () => {
+            setAccessError("Could not update access. Please try again.");
+            setPendingAccountId(null);
+          },
+        },
+      );
+    } else {
+      grantAdAccount.mutate(
+        { userId: user.id, data: { ad_account_id: accountId } },
+        {
+          onSuccess: (res) => {
+            setLocalAdAccountIds(res.ad_account_ids);
+            setPendingAccountId(null);
+            onChanged();
+          },
+          onError: () => {
+            setAccessError("Could not update access. Please try again.");
+            setPendingAccountId(null);
+          },
+        },
+      );
+    }
+  };
 
   return (
     <div
@@ -393,10 +444,87 @@ function UserRow({
               : " · Never logged in"}
             {user.must_change_password && !disabled ? " · Must change password" : ""}
           </div>
-          <UserAccessLine user={user} adAccounts={adAccounts} />
+          {!editingAccess && (
+            <div className="flex items-center gap-1">
+              <UserAccessLine
+                user={{ ...user, ad_account_ids: effectiveIds }}
+                adAccounts={adAccounts}
+              />
+              {!isAdmin && (
+                <button
+                  onClick={() => { setEditingAccess(true); setAccessError(null); }}
+                  className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground/50 hover:text-primary transition-colors ml-1 shrink-0"
+                  data-testid={`button-edit-access-${user.id}`}
+                >
+                  <Pencil className="w-2.5 h-2.5" />
+                  Edit
+                </button>
+              )}
+            </div>
+          )}
         </div>
         <UserStatusBadge status={user.status} />
       </div>
+
+      {editingAccess && !isAdmin && (
+        <div
+          className="space-y-1.5 rounded-md border border-border/30 bg-white/[0.02] p-2.5"
+          data-testid={`access-picker-${user.id}`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+              Ad account access
+            </div>
+            <button
+              onClick={() => { setEditingAccess(false); setAccessError(null); }}
+              className="text-[10px] text-primary hover:text-primary/80 transition-colors"
+              data-testid={`button-done-access-${user.id}`}
+            >
+              Done
+            </button>
+          </div>
+          {adAccounts.length === 0 ? (
+            <div className="text-[11px] text-muted-foreground/70">
+              No ad accounts configured yet.
+            </div>
+          ) : (
+            <div className="max-h-36 overflow-y-auto space-y-0.5 pr-1">
+              {adAccounts.map((account) => {
+                const hasAccess = effectiveIds.includes(account.id);
+                const isPending = pendingAccountId === account.id;
+                return (
+                  <label
+                    key={account.id}
+                    className={cn(
+                      "flex items-center gap-2 cursor-pointer select-none rounded px-1.5 py-1 hover:bg-white/[0.03] transition-colors",
+                      pendingAccountId && !isPending ? "opacity-50 pointer-events-none" : "",
+                    )}
+                  >
+                    {isPending ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
+                    ) : (
+                      <input
+                        type="checkbox"
+                        checked={hasAccess}
+                        onChange={() => handleToggleAccount(account.id)}
+                        disabled={!!pendingAccountId}
+                        className="w-3.5 h-3.5 rounded border-border/40 accent-primary shrink-0"
+                        data-testid={`checkbox-access-${user.id}-${account.id}`}
+                      />
+                    )}
+                    <span className="text-[11px] text-foreground truncate">{account.name}</span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+          {accessError && (
+            <div className="text-[11px] text-red-400/90" data-testid={`error-access-${user.id}`}>
+              {accessError}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="flex items-center gap-2 flex-wrap">
         {!disabled && (
