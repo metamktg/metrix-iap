@@ -9,7 +9,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getStrategyData, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState,
-  CrossLink, fmtUSD, fmtNum, FlowCrumb, useFromParam, LoopAction,
+  CrossLink, fmtUSD, fmtNum,
   RangeScopeBar, NoDataInRangeState,
 } from "../shared";
 import {
@@ -50,7 +50,6 @@ export function StrategyMapView() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const { rangeHasData } = useDateRange();
   const { inRangeCell } = useCellRangeScope(getAnalysisData(seed, adAccountId));
-  const fp = useFromParam();
 
   return (
     <ModuleScopeGate section={SECTION} title="Strategy Map" account={account}>
@@ -102,7 +101,6 @@ export function StrategyMapView() {
               table="message_pillars, active_hypotheses, performance_by_cell"
             />
             <ScopeBanner account={acct} />
-            <FlowCrumb {...fp} />
             <RangeScopeBar grainNote="Pillar evidence aggregates each cell's full flight window — this import has no daily grain." />
 
             {!rangeHasData ? (
@@ -243,16 +241,9 @@ export function StrategyMapView() {
                 </div>
               )}
 
-              <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-4">
                 <CrossLink to="/app/strategy/hypotheses" label="Open the hypothesis queue" />
-                <LoopAction
-                  to={fp.fromCell
-                    ? `/app/briefs/builder?from=strategy&fromCell=${fp.fromCell}`
-                    : "/app/briefs/builder"}
-                  label="Draft briefs from pillars"
-                  icon="brief"
-                  variant="secondary"
-                />
+                <CrossLink to="/app/briefs/builder" label="Draft briefs from pillars" />
               </div>
             </div>
             </>

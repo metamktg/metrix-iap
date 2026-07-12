@@ -6,12 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export * from './adminAdAccountItem';
-export * from './adminAdAccountsResult';
-export * from './adminCreateUserInput';
-export * from './adminCreateUserInputRole';
-export * from './adminCreateUserResult';
-export * from './adminCreateUserResultStatus';
 export * from './adminEmailStatus';
 export * from './adminEmailStatusEnvironment';
 export * from './adminEmailStatusMode';

@@ -11,7 +11,6 @@ import { ResetPasswordPage } from "@/pages/auth/ResetPasswordPage";
 import { AdminWaitlistPage } from "@/pages/admin/AdminWaitlistPage";
 import { Loader2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
-import { TaskTrayProvider } from "@/contexts/TaskTrayContext";
 import {
   RESET_PASSWORD_PATH,
   FORGOT_PASSWORD_PATH,
@@ -178,11 +177,9 @@ export function AuthGate() {
     <MetrixDataProvider>
       <AccountProvider>
         <DateRangeProvider>
-          <TaskTrayProvider>
-            <AppShell>
-              <Router />
-            </AppShell>
-          </TaskTrayProvider>
+          <AppShell>
+            <Router />
+          </AppShell>
         </DateRangeProvider>
       </AccountProvider>
     </MetrixDataProvider>

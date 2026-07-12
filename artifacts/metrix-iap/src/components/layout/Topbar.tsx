@@ -1,14 +1,11 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { ChevronRight, Bell, CheckCircle2, LogOut, PanelRightOpen, PanelRightClose, ClipboardList } from "lucide-react";
+import { ChevronRight, Bell, CheckCircle2, LogOut } from "lucide-react";
 import { useAccount } from "@/contexts/AccountContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { navTree } from "@/navigation/navTree";
 import { BrandLogo } from "@/components/brand/BrandMark";
 import { DateRangePicker } from "./DateRangePicker";
-import { useTaskTray } from "@/contexts/TaskTrayContext";
-import { useTaskTrayCount } from "./TaskTray";
-import { useApprovedCount } from "./GlobalTaskTray";
 
 // ─── Derive breadcrumb from navTree ────────────────────────────────────
 
@@ -51,17 +48,10 @@ export function buildBreadcrumbs(location: string, leadLabel: string, isManager:
 
 // ─── Topbar ────────────────────────────────────────────────────────────
 
-interface TopbarProps {
-  onOpenTaskTray: () => void;
-}
-
-export function Topbar({ onOpenTaskTray }: TopbarProps) {
+export function Topbar() {
   const [location] = useLocation();
   const { manager, selectedAccountType, activeAdAccount } = useAccount();
   const { user, logout } = useAuth();
-  const { open, toggle } = useTaskTray();
-  const trayCount = useTaskTrayCount();
-  const approvedCount = useApprovedCount();
 
   const isManager = selectedAccountType === "manager";
   const leadLabel = isManager ? manager.name : activeAdAccount?.name ?? manager.name;
@@ -71,7 +61,7 @@ export function Topbar({ onOpenTaskTray }: TopbarProps) {
   const initials = leadLabel.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 
   return (
-    <header className="h-11 flex items-center gap-2 px-4 shrink-0 mx-topbar">
+    <header className="h-11 flex items-center gap-3 px-4 shrink-0 mx-topbar">
       {/* Breadcrumb */}
       <nav aria-label="Breadcrumb" className="flex items-center gap-0 flex-1 min-w-0">
         <BrandLogo className="w-4 h-4 shrink-0 mr-1" />
@@ -103,7 +93,7 @@ export function Topbar({ onOpenTaskTray }: TopbarProps) {
       {/* Global date range */}
       <DateRangePicker />
 
-      {/* Connection status */}
+      {/* Status */}
       {isManager ? (
         <div className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground/60 shrink-0">
           <span className="hidden sm:inline">Agency</span>
@@ -122,65 +112,11 @@ export function Topbar({ onOpenTaskTray }: TopbarProps) {
 
       <div className="w-px h-4 bg-border/50 shrink-0" />
 
-      {/* Inline task tray toggle (right panel) */}
-      <button
-        aria-label={open ? "Close task tray" : "Open task tray"}
-        title={open ? "Close task tray" : `Task tray${trayCount > 0 ? ` (${trayCount} items)` : ""}`}
-        onClick={toggle}
-        className={cn(
-          "relative w-7 h-7 rounded flex items-center justify-center transition-colors",
-          open
-            ? "bg-primary/15 border border-primary/25 text-primary hover:bg-primary/20"
-            : "text-muted-foreground hover:text-foreground hover:bg-white/5"
-        )}
-      >
-        {open ? (
-          <PanelRightClose className="w-3.5 h-3.5" />
-        ) : (
-          <PanelRightOpen className="w-3.5 h-3.5" />
-        )}
-        {!open && trayCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] bg-primary rounded-full flex items-center justify-center text-[8px] font-bold text-primary-foreground leading-none px-0.5">
-            {trayCount > 9 ? "9+" : trayCount}
-          </span>
-        )}
-      </button>
-
-      <div className="w-px h-4 bg-border/50 shrink-0" />
-
       {/* Actions */}
       <div className="flex items-center gap-1 shrink-0">
-        {/* Global task tray button (slide-over modal) */}
-        <button
-          onClick={onOpenTaskTray}
-          aria-label={
-            approvedCount > 0
-              ? `Task tray — ${approvedCount} action${approvedCount !== 1 ? "s" : ""} to implement`
-              : "Task tray — no approved tasks yet"
-          }
-          title="Task Tray"
-          className={cn(
-            "relative h-7 flex items-center gap-1.5 rounded px-2 transition-all text-[11px] font-semibold",
-            approvedCount > 0
-              ? "bg-emerald-400/12 border border-emerald-400/30 text-emerald-400 hover:bg-emerald-400/20 hover:border-emerald-400/50"
-              : "text-muted-foreground/60 hover:text-foreground hover:bg-white/5"
-          )}
-        >
-          <ClipboardList className="w-3.5 h-3.5 shrink-0" />
-          {approvedCount > 0 ? (
-            <span className="tabular-nums leading-none">
-              {approvedCount}
-            </span>
-          ) : (
-            <span className="hidden sm:inline leading-none">Tasks</span>
-          )}
-        </button>
-
-        <div className="w-px h-4 bg-border/30 shrink-0" />
-
         <button
           aria-label="Notifications"
-          className="relative w-7 h-7 rounded flex items-center justify-center text-muted-foreground/60 hover:text-foreground hover:bg-white/5 transition-colors"
+          className="relative w-7 h-7 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
         >
           <Bell className="w-3.5 h-3.5" />
         </button>
@@ -194,7 +130,7 @@ export function Topbar({ onOpenTaskTray }: TopbarProps) {
           aria-label={user ? `Sign out (${user.email})` : "Sign out"}
           title={user ? `Sign out (${user.email})` : "Sign out"}
           onClick={() => void logout()}
-          className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground/60 hover:text-foreground hover:bg-white/5 transition-colors"
+          className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
           data-testid="button-signout"
         >
           <LogOut className="w-3.5 h-3.5" />

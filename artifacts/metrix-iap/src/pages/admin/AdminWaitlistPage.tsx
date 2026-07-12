@@ -20,14 +20,10 @@ import {
   useRejectRequestAccessEntry,
   useGetAdminEmailStatus,
   useListAdminUsers,
-  useAdminCreateUser,
-  useListAdminAdAccounts,
   useAdminResendTempPassword,
   useAdminSendPasswordReset,
   useAdminRevokeUser,
   useAdminRestoreUser,
-  useAdminGrantUserAdAccount,
-  useAdminRevokeUserAdAccount,
 } from "@workspace/api-client-react";
 import type {
   RequestAccessEntry,
@@ -54,12 +50,6 @@ import {
   Link2,
   UserX,
   UserCheck,
-  UserPlus,
-  ChevronDown,
-  ChevronUp,
-  Shield,
-  Users,
-  Pencil,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -324,64 +314,14 @@ function UserActionNote({ outcome, email }: { outcome: UserActionOutcome; email:
   );
 }
 
-function UserAccessLine({
-  user,
-  adAccounts,
-}: {
-  user: AdminUser;
-  adAccounts: Array<{ id: string; name: string }>;
-}) {
-  const isAdmin = user.role === "admin";
-  if (isAdmin) {
-    return (
-      <div className="text-[10px] text-muted-foreground/70" data-testid={`user-access-${user.id}`}>
-        Access: <span className="text-violet-400/80">All accounts</span>
-      </div>
-    );
-  }
-  if (user.ad_account_ids.length === 0) {
-    return (
-      <div className="text-[10px] text-muted-foreground/50" data-testid={`user-access-${user.id}`}>
-        Access: <span className="italic">No accounts</span>
-      </div>
-    );
-  }
-  const names = user.ad_account_ids
-    .map((id) => adAccounts.find((a) => a.id === id)?.name ?? id)
-    .join(", ");
-  return (
-    <div className="text-[10px] text-muted-foreground/70" data-testid={`user-access-${user.id}`}>
-      Access: <span className="text-foreground/80">{names}</span>
-    </div>
-  );
-}
-
-function UserRow({
-  user,
-  adAccounts,
-  onChanged,
-}: {
-  user: AdminUser;
-  adAccounts: Array<{ id: string; name: string }>;
-  onChanged: () => void;
-}) {
+function UserRow({ user, onChanged }: { user: AdminUser; onChanged: () => void }) {
   const resend = useAdminResendTempPassword();
   const sendReset = useAdminSendPasswordReset();
   const revoke = useAdminRevokeUser();
   const restore = useAdminRestoreUser();
-  const grantAdAccount = useAdminGrantUserAdAccount();
-  const revokeAdAccount = useAdminRevokeUserAdAccount();
-
   const [outcome, setOutcome] = useState<UserActionOutcome | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmRevoke, setConfirmRevoke] = useState(false);
-  const [editingAccess, setEditingAccess] = useState(false);
-  const [localAdAccountIds, setLocalAdAccountIds] = useState<string[] | null>(null);
-  const [accessError, setAccessError] = useState<string | null>(null);
-  const [pendingAccountId, setPendingAccountId] = useState<string | null>(null);
-
-  const effectiveIds = localAdAccountIds ?? user.ad_account_ids;
-  const isAdmin = user.role === "admin";
 
   const busy =
     resend.isPending || sendReset.isPending || revoke.isPending || restore.isPending;
@@ -389,44 +329,6 @@ function UserRow({
 
   const actionBtn =
     "flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-[10px] font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none";
-
-  const handleToggleAccount = (accountId: string) => {
-    if (pendingAccountId) return;
-    const hasAccess = effectiveIds.includes(accountId);
-    setPendingAccountId(accountId);
-    setAccessError(null);
-    if (hasAccess) {
-      revokeAdAccount.mutate(
-        { userId: user.id, adAccountId: accountId },
-        {
-          onSuccess: (res) => {
-            setLocalAdAccountIds(res.ad_account_ids);
-            setPendingAccountId(null);
-            onChanged();
-          },
-          onError: () => {
-            setAccessError("Could not update access. Please try again.");
-            setPendingAccountId(null);
-          },
-        },
-      );
-    } else {
-      grantAdAccount.mutate(
-        { userId: user.id, data: { ad_account_id: accountId } },
-        {
-          onSuccess: (res) => {
-            setLocalAdAccountIds(res.ad_account_ids);
-            setPendingAccountId(null);
-            onChanged();
-          },
-          onError: () => {
-            setAccessError("Could not update access. Please try again.");
-            setPendingAccountId(null);
-          },
-        },
-      );
-    }
-  };
 
   return (
     <div
@@ -444,87 +346,9 @@ function UserRow({
               : " · Never logged in"}
             {user.must_change_password && !disabled ? " · Must change password" : ""}
           </div>
-          {!editingAccess && (
-            <div className="flex items-center gap-1">
-              <UserAccessLine
-                user={{ ...user, ad_account_ids: effectiveIds }}
-                adAccounts={adAccounts}
-              />
-              {!isAdmin && (
-                <button
-                  onClick={() => { setEditingAccess(true); setAccessError(null); }}
-                  className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground/50 hover:text-primary transition-colors ml-1 shrink-0"
-                  data-testid={`button-edit-access-${user.id}`}
-                >
-                  <Pencil className="w-2.5 h-2.5" />
-                  Edit
-                </button>
-              )}
-            </div>
-          )}
         </div>
         <UserStatusBadge status={user.status} />
       </div>
-
-      {editingAccess && !isAdmin && (
-        <div
-          className="space-y-1.5 rounded-md border border-border/30 bg-white/[0.02] p-2.5"
-          data-testid={`access-picker-${user.id}`}
-        >
-          <div className="flex items-center justify-between">
-            <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
-              Ad account access
-            </div>
-            <button
-              onClick={() => { setEditingAccess(false); setAccessError(null); }}
-              className="text-[10px] text-primary hover:text-primary/80 transition-colors"
-              data-testid={`button-done-access-${user.id}`}
-            >
-              Done
-            </button>
-          </div>
-          {adAccounts.length === 0 ? (
-            <div className="text-[11px] text-muted-foreground/70">
-              No ad accounts configured yet.
-            </div>
-          ) : (
-            <div className="max-h-36 overflow-y-auto space-y-0.5 pr-1">
-              {adAccounts.map((account) => {
-                const hasAccess = effectiveIds.includes(account.id);
-                const isPending = pendingAccountId === account.id;
-                return (
-                  <label
-                    key={account.id}
-                    className={cn(
-                      "flex items-center gap-2 cursor-pointer select-none rounded px-1.5 py-1 hover:bg-white/[0.03] transition-colors",
-                      pendingAccountId && !isPending ? "opacity-50 pointer-events-none" : "",
-                    )}
-                  >
-                    {isPending ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
-                    ) : (
-                      <input
-                        type="checkbox"
-                        checked={hasAccess}
-                        onChange={() => handleToggleAccount(account.id)}
-                        disabled={!!pendingAccountId}
-                        className="w-3.5 h-3.5 rounded border-border/40 accent-primary shrink-0"
-                        data-testid={`checkbox-access-${user.id}-${account.id}`}
-                      />
-                    )}
-                    <span className="text-[11px] text-foreground truncate">{account.name}</span>
-                  </label>
-                );
-              })}
-            </div>
-          )}
-          {accessError && (
-            <div className="text-[11px] text-red-400/90" data-testid={`error-access-${user.id}`}>
-              {accessError}
-            </div>
-          )}
-        </div>
-      )}
 
       <div className="flex items-center gap-2 flex-wrap">
         {!disabled && (
@@ -686,309 +510,9 @@ function UserRow({
   );
 }
 
-type CreateUserOutcome = {
-  email: string;
-  temp_password: string;
-  email_sent: boolean;
-  email_error?: string;
-  granted_ad_account_ids: string[];
-};
-
-function CreateUserForm({ onCreated }: { onCreated: () => void }) {
-  const createUser = useAdminCreateUser();
-  const adAccounts = useListAdminAdAccounts();
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"analyst" | "client_viewer" | "admin">("analyst");
-  const [canManageTeam, setCanManageTeam] = useState(false);
-  const [canViewRollups, setCanViewRollups] = useState(false);
-  const [selectedAccounts, setSelectedAccounts] = useState<Set<string>>(new Set());
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [outcome, setOutcome] = useState<CreateUserOutcome | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const accountList = adAccounts.data?.ad_accounts ?? [];
-
-  const toggleAccount = (id: string) => {
-    setSelectedAccounts((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const resetForm = () => {
-    setEmail("");
-    setRole("analyst");
-    setCanManageTeam(false);
-    setCanViewRollups(false);
-    setSelectedAccounts(new Set());
-    setShowAdvanced(false);
-  };
-
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    if (createUser.isPending || !email.trim()) return;
-    setError(null);
-    setOutcome(null);
-    createUser.mutate(
-      {
-        data: {
-          email: email.trim(),
-          role,
-          can_manage_team: role !== "client_viewer" ? canManageTeam : undefined,
-          can_view_rollups: role !== "client_viewer" ? canViewRollups : undefined,
-          ad_account_ids: Array.from(selectedAccounts),
-        },
-      },
-      {
-        onSuccess: (res) => {
-          setOutcome({
-            email: res.email,
-            temp_password: res.temp_password,
-            email_sent: res.email_sent,
-            email_error: res.email_error,
-            granted_ad_account_ids: res.granted_ad_account_ids,
-          });
-          resetForm();
-          onCreated();
-        },
-        onError: (err) => {
-          const status = (err as { status?: number }).status;
-          const message = (err as { data?: { message?: string } }).data?.message;
-          if (status === 409) {
-            setError(
-              message ??
-                "An account with this email already exists. Use “New temp password” on that user below instead.",
-            );
-          } else if (status === 400) {
-            setError(message ?? "Please enter a valid email address.");
-          } else {
-            setError("Could not create the account. Please try again.");
-          }
-        },
-      },
-    );
-  };
-
-  return (
-    <div
-      className="rounded-lg border border-border/30 bg-white/[0.02] p-3 space-y-3"
-      data-testid="section-create-user"
-    >
-      <div className="text-[11px] text-muted-foreground">
-        Create an account instantly — the temporary password is shown here to copy and
-        share, no email required.
-      </div>
-      <form onSubmit={submit} className="space-y-3" data-testid="form-create-user">
-        <div className="flex items-center gap-2">
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="new.user@company.com"
-            className={cn(INPUT_CLS, "flex-1 min-w-0")}
-            data-testid="input-create-user-email"
-          />
-          <button
-            type="submit"
-            disabled={createUser.isPending || !email.trim()}
-            className="flex items-center gap-1.5 h-9 px-3 rounded-md bg-primary text-primary-foreground text-[11px] font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:pointer-events-none shrink-0"
-            data-testid="button-create-user"
-          >
-            {createUser.isPending ? (
-              <Loader2 className="w-3 h-3 animate-spin" />
-            ) : (
-              <UserPlus className="w-3 h-3" />
-            )}
-            Create user
-          </button>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setShowAdvanced((v) => !v)}
-          className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-          data-testid="button-toggle-advanced"
-        >
-          {showAdvanced ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-          {showAdvanced ? "Hide" : "Show"} role & access options
-        </button>
-
-        {showAdvanced && (
-          <div className="space-y-3 rounded-md border border-border/20 bg-white/[0.01] p-3">
-            <div className="space-y-1.5">
-              <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
-                Role
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                {(["analyst", "client_viewer", "admin"] as const).map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => setRole(r)}
-                    className={cn(
-                      "flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-[11px] font-medium transition-colors",
-                      role === r
-                        ? r === "admin"
-                          ? "border-violet-500/40 bg-violet-500/15 text-violet-300"
-                          : "border-primary/40 bg-primary/15 text-primary"
-                        : "border-border/40 text-muted-foreground hover:text-foreground hover:bg-white/5",
-                    )}
-                    data-testid={`button-role-${r}`}
-                  >
-                    {r === "admin" ? <Shield className="w-3 h-3" /> : <Users className="w-3 h-3" />}
-                    {r === "analyst" ? "Analyst" : r === "client_viewer" ? "Client Viewer" : "Admin"}
-                  </button>
-                ))}
-                <span className="text-[10px] text-muted-foreground/70">
-                  {role === "admin"
-                    ? "Full access; sees all accounts"
-                    : role === "client_viewer"
-                      ? "Read-only access to granted accounts"
-                      : "Can analyze and build reports on granted accounts"}
-                </span>
-              </div>
-            </div>
-
-            {role !== "client_viewer" && (
-              <div className="space-y-1.5">
-                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
-                  Permissions
-                </div>
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={canManageTeam}
-                    onChange={(e) => setCanManageTeam(e.target.checked)}
-                    className="w-3.5 h-3.5 rounded border-border/40 accent-primary"
-                    data-testid="checkbox-can-manage-team"
-                  />
-                  <span className="text-[11px] text-foreground">Manage team</span>
-                  <span className="text-[10px] text-muted-foreground/70">
-                    — can invite members and manage access
-                  </span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={canViewRollups}
-                    onChange={(e) => setCanViewRollups(e.target.checked)}
-                    className="w-3.5 h-3.5 rounded border-border/40 accent-primary"
-                    data-testid="checkbox-can-view-rollups"
-                  />
-                  <span className="text-[11px] text-foreground">View agency rollups</span>
-                  <span className="text-[10px] text-muted-foreground/70">
-                    — sees cross-account summary data
-                  </span>
-                </label>
-              </div>
-            )}
-
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
-                  Ad account access
-                </div>
-                {selectedAccounts.size > 0 && (
-                  <span className="text-[10px] text-primary">
-                    {selectedAccounts.size} selected
-                  </span>
-                )}
-              </div>
-              {adAccounts.isLoading ? (
-                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground py-1">
-                  <Loader2 className="w-3 h-3 animate-spin" /> Loading accounts…
-                </div>
-              ) : adAccounts.isError ? (
-                <div className="text-[11px] text-muted-foreground/70 py-1">
-                  Could not load ad accounts — grants can be added later in Settings.
-                </div>
-              ) : accountList.length === 0 ? (
-                <div className="text-[11px] text-muted-foreground/70 py-1">
-                  No ad accounts configured yet.
-                </div>
-              ) : (
-                <div
-                  className="max-h-36 overflow-y-auto space-y-0.5 pr-1"
-                  data-testid="list-ad-accounts"
-                >
-                  {accountList.map((account) => (
-                    <label
-                      key={account.id}
-                      className="flex items-center gap-2 cursor-pointer select-none rounded px-1.5 py-1 hover:bg-white/[0.03] transition-colors"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedAccounts.has(account.id)}
-                        onChange={() => toggleAccount(account.id)}
-                        className="w-3.5 h-3.5 rounded border-border/40 accent-primary shrink-0"
-                        data-testid={`checkbox-account-${account.id}`}
-                      />
-                      <span className="text-[11px] text-foreground truncate">{account.name}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-              {role === "admin" && accountList.length > 0 && (
-                <div className="text-[10px] text-muted-foreground/60">
-                  Admins see all accounts automatically — individual grants are still recorded.
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </form>
-
-      {outcome && (
-        <div
-          className="space-y-1.5 rounded-md border border-emerald-400/25 bg-emerald-400/5 p-2"
-          data-testid="panel-created-user"
-        >
-          <div className="text-[11px] text-emerald-400">
-            Account created for {outcome.email} — share this temporary password (they must
-            change it on first login):
-          </div>
-          <div className="flex items-center gap-2">
-            <code className="text-[12px] font-mono text-foreground bg-white/[0.05] px-1.5 py-0.5 rounded">
-              {outcome.temp_password}
-            </code>
-            <CopyButton value={outcome.temp_password} />
-          </div>
-          {outcome.granted_ad_account_ids.length > 0 && (
-            <div className="text-[10px] text-emerald-300/80" data-testid="text-granted-accounts">
-              Access granted to:{" "}
-              {outcome.granted_ad_account_ids
-                .map(
-                  (id) =>
-                    adAccounts.data?.ad_accounts.find((a) => a.id === id)?.name ?? id,
-                )
-                .join(", ")}
-            </div>
-          )}
-          <div className="text-[10px] text-muted-foreground" data-testid="text-create-user-email-note">
-            {outcome.email_sent
-              ? `Also emailed to ${outcome.email}.`
-              : outcome.email_error
-                ? `Email not sent: ${outcome.email_error}`
-                : "Email not sent."}
-          </div>
-        </div>
-      )}
-      {error && (
-        <div className="text-[11px] text-red-400/90" data-testid="text-create-user-error">
-          {error}
-        </div>
-      )}
-    </div>
-  );
-}
 function UsersSection() {
   const users = useListAdminUsers();
-  const adAccounts = useListAdminAdAccounts();
   const list = users.data?.users ?? [];
-  const accountList = adAccounts.data?.ad_accounts ?? [];
 
   return (
     <section className="space-y-3">
@@ -998,7 +522,6 @@ function UsersSection() {
           {users.data?.total ?? 0} total
         </span>
       </div>
-      <CreateUserForm onCreated={() => void users.refetch()} />
       {users.isLoading ? (
         <div className="flex items-center gap-2 text-[11px] text-muted-foreground py-6">
           <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading users…
@@ -1015,12 +538,7 @@ function UsersSection() {
       ) : (
         <div className="space-y-2">
           {list.map((user) => (
-            <UserRow
-              key={user.id}
-              user={user}
-              adAccounts={accountList}
-              onChanged={() => void users.refetch()}
-            />
+            <UserRow key={user.id} user={user} onChanged={() => void users.refetch()} />
           ))}
         </div>
       )}

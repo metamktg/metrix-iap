@@ -93,10 +93,6 @@ export interface DemographicRow {
   "Ad name": string;
   Age: string;
   Gender: string;
-  /** Present only on joint demographic × placement grain rows (combined breakdown exports). */
-  Placement?: string;
-  /** Present only on joint demographic × placement grain rows. */
-  Platform?: string;
   "Amount spent (USD)": number;
   Reach: number;
   Impressions: number;
