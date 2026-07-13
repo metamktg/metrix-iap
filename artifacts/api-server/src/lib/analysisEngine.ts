@@ -463,20 +463,66 @@ export async function startManualAnalysis(
       const dateStart = scopedDates.reduce((min, d) => (d < min ? d : min), scopedDates[0]!);
       const dateEnd = scopedDates.reduce((max, d) => (d > max ? d : max), scopedDates[0]!);
 
+      // ── Ad-level supplementary aggregation from demo export ────────────
+      // The demographic export reliably carries spend/results/result_type per
+      // ad; the device/placement export is often impression-only (especially
+      // Meta's "Impression device" breakdown). Build a per-(campaign, ad, date)
+      // roll-up from the demo CSV so we can fill in spend and result_type when
+      // the placement export has no financial data.
+      const demoAdBuckets = new Map<
+        string,
+        AggBucket & { campaign: string; adSet: string; adName: string; date: string }
+      >();
+      for (const row of scopedDemo) {
+        const campaign = row.breakdowns["Campaign name"]!;
+        const adSet = row.breakdowns["Ad set name"] ?? "";
+        const adName = row.breakdowns["Ad name"]!;
+        const date = row.breakdowns["Date"]!;
+        const key = [campaign, adName, date].join("\u0001");
+        if (!demoAdBuckets.has(key)) {
+          demoAdBuckets.set(key, { ...emptyBucket(), campaign, adSet, adName, date });
+        }
+        accumulate(demoAdBuckets.get(key)!, row);
+      }
+
       // ── Ad-level rows (ad_performance): aggregate the placement export
       // across its device/platform/placement dimensions to a per-ad/day row.
+      // Spend/results/resultType are filled from the demo aggregation when
+      // the placement export is an impression-only device-breakdown export.
       const adBuckets = new Map<string, AggBucket & { campaign: string; adSet: string; adName: string; resultType: string; date: string }>();
       for (const row of scopedPlacement) {
         const campaign = row.breakdowns["Campaign name"]!;
         const adSet = row.breakdowns["Ad set name"] ?? "";
         const adName = row.breakdowns["Ad name"]!;
-        const resultType = (row.base["result_type"] as string) || "Results";
         const date = row.breakdowns["Date"]!;
-        const key = [campaign, adName, resultType, date].join("\u0001");
+        const key = [campaign, adName, date].join("\u0001");
         if (!adBuckets.has(key)) {
-          adBuckets.set(key, { ...emptyBucket(), campaign, adSet, adName, resultType, date });
+          adBuckets.set(key, { ...emptyBucket(), campaign, adSet, adName, resultType: "", date });
         }
         accumulate(adBuckets.get(key)!, row);
+      }
+      // Supplement from the demo aggregation: fill spend/results/resultType
+      // for any ad bucket the placement export left financially empty.
+      for (const b of adBuckets.values()) {
+        const demoKey = [b.campaign, b.adName, b.date].join("\u0001");
+        const demo = demoAdBuckets.get(demoKey);
+        if (demo) {
+          if (b.spend === null) b.spend = demo.spend;
+          if (b.results === null) b.results = demo.results;
+          if (!b.resultType) b.resultType = demo.resultType ?? "";
+          if (b.linkClicks === null) b.linkClicks = demo.linkClicks;
+          if (b.clicksAll === null) b.clicksAll = demo.clicksAll;
+        }
+        // Use a stable fallback only when result type is genuinely absent from
+        // both exports — avoids the misleading "Results" column-header literal.
+        if (!b.resultType) b.resultType = "unknown";
+      }
+      // Also surface demo-only ad/days (ads present in demo but absent from
+      // placement) so no spend rows are silently dropped.
+      for (const [key, demo] of demoAdBuckets) {
+        if (!adBuckets.has(key)) {
+          adBuckets.set(key, { ...demo, resultType: demo.resultType ?? "unknown" });
+        }
       }
 
       // ── Demographic rows: aggregate demo export by gender/age/day.
@@ -566,6 +612,58 @@ export async function startManualAnalysis(
         extra_metrics: Object.keys(b.extra).length > 0 ? b.extra : null,
       }));
       await insertChunked("ad_performance", adRows);
+
+      // ── Concept-level aggregates (concept_performance) ──────────────────
+      // Derive concept code from ad_name: "C2E_STC_QF_BOOK2_T1" → "C2".
+      // Also extract the book label ("BOOK2") for grouping.
+      // Full-replace all concept_performance for this account so the grid
+      // always reflects the latest analysis run.
+      const extractConcept = (adName: string): string | null => {
+        const m = adName.match(/^([A-Z]\d+)(?=[A-Z_])/);
+        return m ? m[1]! : null;
+      };
+      const extractBook = (adName: string): string | null => {
+        const m = adName.match(/BOOK\d+/i);
+        return m ? m[0]!.toUpperCase() : null;
+      };
+      const conceptMap = new Map<string, { book: string | null; concept: string; spend: number; results: number; linkClicks: number }>();
+      for (const row of adRows) {
+        const concept = extractConcept(String(row.ad_name ?? ""));
+        if (!concept) continue;
+        const book = extractBook(String(row.ad_name ?? ""));
+        const cKey = [book ?? "", concept].join("\u0001");
+        if (!conceptMap.has(cKey)) {
+          conceptMap.set(cKey, { book, concept, spend: 0, results: 0, linkClicks: 0 });
+        }
+        const c = conceptMap.get(cKey)!;
+        c.spend += Number(row.spend ?? 0);
+        c.results += Number(row.results ?? 0);
+        c.linkClicks += Number(row.link_clicks ?? 0);
+      }
+      if (conceptMap.size > 0) {
+        const delConcept = await supabase.from("concept_performance").delete().eq("account_id", accountId);
+        if (delConcept.error) throw new Error(delConcept.error.message);
+        const conceptRows = Array.from(conceptMap.values()).map((c) => {
+          const spend = c.spend > 0 ? c.spend : null;
+          const results = c.results > 0 ? c.results : null;
+          const cpa = spend !== null && results !== null && results > 0 ? spend / results : null;
+          const cvrLinkPct = c.linkClicks > 0 && results !== null ? (results / c.linkClicks) * 100 : null;
+          return {
+            account_id: accountId,
+            book: c.book,
+            concept: c.concept,
+            date_start: dateStart,
+            date_end: dateEnd,
+            spend,
+            link_clicks: c.linkClicks > 0 ? c.linkClicks : null,
+            results,
+            cpa,
+            cvr_link_pct: cvrLinkPct,
+            mapped_in_library: false,
+          };
+        });
+        await insertChunked("concept_performance", conceptRows);
+      }
 
       // Upsert each unique ad_name into the ads registry so that
       // syncCreativeAssetLinks can later UPDATE creative_asset_url on them.
