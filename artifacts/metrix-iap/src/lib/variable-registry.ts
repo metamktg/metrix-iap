@@ -160,6 +160,25 @@ export function getVariablePrefix(code: string): VariablePrefix {
   return valid.includes(prefix) ? prefix : "unknown";
 }
 
+/**
+ * Replaces known variable codes embedded in prose text with their
+ * human-readable labels. Longer codes are matched first to prevent
+ * partial replacements (e.g. CTA_StartFree before CTA_Start).
+ */
+export function resolveInlineVariableCodes(text: string): string {
+  if (!text) return text;
+  const sorted = Object.keys(LABELS).sort((a, b) => b.length - a.length);
+  let result = text;
+  for (const code of sorted) {
+    const escaped = code.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    result = result.replace(
+      new RegExp(`(?<![A-Za-z0-9_])${escaped}(?![A-Za-z0-9_])`, "g"),
+      LABELS[code],
+    );
+  }
+  return result;
+}
+
 /** Color class per prefix for badge styling */
 export const PREFIX_COLORS: Record<VariablePrefix, string> = {
   HK:      "bg-blue-500/10 text-blue-300 border-blue-500/20",

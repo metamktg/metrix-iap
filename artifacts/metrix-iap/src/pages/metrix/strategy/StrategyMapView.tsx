@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getStrategyData, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
+import { resolveInlineVariableCodes } from "@/lib/variable-registry";
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState,
   CrossLink, fmtUSD, fmtNum, FlowCrumb, useFromParam, LoopAction,
@@ -148,11 +149,34 @@ export function StrategyMapView() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <StageLabel Icon={Layers}>Pillar</StageLabel>
-                          <span className="text-[11px] font-mono text-muted-foreground/80">{p.id}</span>
+                          <span className="text-[10px] font-semibold text-muted-foreground/60 tabular-nums">
+                            {String(i + 1).padStart(2, "0")}
+                          </span>
                         </div>
                         <h3 className="text-[18px] font-semibold text-foreground leading-tight mt-1.5">{p.label}</h3>
                         <p className="text-[12.5px] text-foreground/85 mt-1.5 leading-relaxed">{p.plain_descriptor}</p>
-                        <p className="text-[11.5px] text-muted-foreground/80 mt-1.5 leading-relaxed">{p.why_it_matters}</p>
+                        {(() => {
+                          const resolved = p.why_it_matters ? resolveInlineVariableCodes(p.why_it_matters) : "";
+                          if (!resolved) return null;
+                          const WHY_THRESHOLD = 200;
+                          const isLong = resolved.length > WHY_THRESHOLD;
+                          const isWhyOpen = expanded[`why_${p.id}`] ?? false;
+                          return (
+                            <div className="mt-1.5">
+                              <p className="text-[11.5px] text-muted-foreground/80 leading-relaxed">
+                                {isLong && !isWhyOpen ? resolved.slice(0, WHY_THRESHOLD).trimEnd() + "…" : resolved}
+                              </p>
+                              {isLong && (
+                                <button
+                                  onClick={() => setExpanded((e) => ({ ...e, [`why_${p.id}`]: !isWhyOpen }))}
+                                  className="text-[10.5px] text-primary/60 hover:text-primary/90 mt-0.5 transition-colors"
+                                >
+                                  {isWhyOpen ? "Show less" : "Read more"}
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })()}
                         <div className="mt-2.5">
                           <VariableStackChips stack={p.variable_stack} />
                         </div>
@@ -186,13 +210,17 @@ export function StrategyMapView() {
                             <StageLabel Icon={FlaskConical}>Feeds hypotheses</StageLabel>
                           </div>
                           <div className="space-y-1.5">
-                            {linked.map((h) => (
+                            {linked.map((h, hi) => (
                               <div key={h.id} className="flex items-start gap-2.5 rounded-lg border border-border/30 bg-white/[0.015] px-3 py-2">
-                                <span className="text-[10px] font-mono text-muted-foreground/70 shrink-0 mt-0.5">{h.id}</span>
+                                <span className="text-[10px] font-semibold text-muted-foreground/50 shrink-0 mt-0.5 tabular-nums w-4 text-right">
+                                  {hi + 1}
+                                </span>
                                 <div className="flex-1 min-w-0">
                                   <span className="text-[12px] text-foreground/90 leading-snug block">{h.label}</span>
                                   {h.isolated_variable && (
-                                    <span className="text-[10px] text-muted-foreground/70 leading-snug block mt-0.5">Isolates: {h.isolated_variable}</span>
+                                    <span className="text-[10px] text-muted-foreground/60 leading-snug block mt-0.5 line-clamp-2">
+                                      Isolates: {resolveInlineVariableCodes(h.isolated_variable)}
+                                    </span>
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0">
@@ -215,9 +243,7 @@ export function StrategyMapView() {
                   <div className="space-y-1.5">
                     {unattached.map((h) => (
                       <div key={h.id} className="flex items-center gap-2.5 rounded-lg border border-border/30 bg-white/[0.015] px-3 py-2">
-                        <span className="text-[10px] font-mono text-muted-foreground/70 shrink-0">{h.id}</span>
                         <span className="text-[12px] text-foreground/90 flex-1 min-w-0">{h.label}</span>
-                        <span className="text-[11px] text-muted-foreground/75 shrink-0">{h.source}</span>
                         <HypothesisStatusBadge status={h.status} />
                         <CrossLink to={`/app/strategy/hypotheses?focus=${h.id}`} label="Open" />
                       </div>
@@ -267,7 +293,7 @@ export function StrategyMapView() {
               <SegmentGridModal
                 open
                 onClose={() => setSegmentPillar(null)}
-                kicker={`Pillar · ${segmentPillar.id}`}
+                kicker={`Pillar ${String(pillars.findIndex((p) => p.id === segmentPillar.id) + 1).padStart(2, "0")}`}
                 title={segmentPillar.label}
                 analysis={analysis}
                 cellIds={segmentPillar.source_cells}

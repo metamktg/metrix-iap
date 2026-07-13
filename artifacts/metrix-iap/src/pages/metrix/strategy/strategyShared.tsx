@@ -25,11 +25,12 @@ export function familyLabel(family: string): string {
   return FAMILY_LABEL[family] ?? family.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-/** One readable chip per variable code, colored by family prefix. */
-export function VariableChip({ code, showCode = true }: { code: string; showCode?: boolean }) {
+/** One readable chip per variable code, colored by family prefix. Code shown as tooltip on hover. */
+export function VariableChip({ code, showCode = false }: { code: string; showCode?: boolean }) {
   const prefix = getVariablePrefix(code);
   return (
     <span
+      title={code}
       className={cn(
         "inline-flex items-center gap-1 text-[10px] font-medium border px-1.5 py-0.5 rounded leading-none",
         PREFIX_COLORS[prefix],
