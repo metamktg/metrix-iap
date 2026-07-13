@@ -1,3 +1,4 @@
+// @refresh reset
 // ─── Reports · New Report ─────────────────────────────────────────────
 // Metrix-branded / white-label report composition, scoped to the account.
 // Sub-tabs: Report preview (Internal vs Client mode) | Branding & export.

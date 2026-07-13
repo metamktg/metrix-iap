@@ -1,3 +1,4 @@
+// @refresh reset
 // ─── Auth context ──────────────────────────────────────────────────────
 // Session-cookie based auth. The API server owns the session; this context
 // mirrors the current user (or null) and exposes login/logout/changePassword.

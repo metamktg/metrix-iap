@@ -1,3 +1,4 @@
+// @refresh reset
 // ─── Required-format panel + manual analysis controls ──────────────────
 // Two pieces used by the manual-import flow:
 //  - RequiredFormatPanel: shows the exact columns a "Performance export
