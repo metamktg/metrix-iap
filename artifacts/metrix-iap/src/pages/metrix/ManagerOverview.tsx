@@ -99,7 +99,7 @@ export function ManagerOverview() {
       <ModuleHeader
         section="Metrix Manager · Agency Overview"
         title={manager.name}
-        subtitle="Blended bottom-line performance across all connected ad accounts. Deeper analysis lives inside each ad account."
+        subtitle="Blended performance across all ad accounts."
         right={
           <span className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest">
             {data.configured_ad_accounts} configured · {data.unconfigured_ad_accounts} to set up

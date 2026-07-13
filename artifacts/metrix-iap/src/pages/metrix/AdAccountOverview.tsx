@@ -129,11 +129,11 @@ export function AdAccountOverview() {
   // ── Layer readiness ─────────────────────────────────────────────────
   type Layer = { name: string; count: number; unit: string; ready: boolean; to: string; Icon: React.ComponentType<{ className?: string }> };
   const layers: Layer[] = [
-    { name: "Listen",         count: signals.length,              unit: signals.length === 1 ? "signal" : "signals",               ready: signals.length > 0,                       to: "/app/listen/signal",        Icon: Radio },
-    { name: "Analysis",       count: cellCount + variableCount,   unit: "cells + variables",                                        ready: (cellCount + variableCount) > 0,           to: "/app/analysis/library",     Icon: BarChart3 },
-    { name: "Strategy",       count: pillarCount + hypothesisCount, unit: "pillars + hypotheses",                                   ready: (pillarCount + hypothesisCount) > 0,       to: "/app/strategy/hypotheses",  Icon: Layers },
-    { name: "Reports",        count: sectionCount,                unit: sectionCount === 1 ? "section" : "sections",               ready: sectionCount > 0,                          to: "/app/report-builder",       Icon: FileText },
-    { name: "MST",            count: matrixCellCount,             unit: "matrix cells",                                             ready: mstActive && matrixCellCount > 0,          to: "/app/mst",                  Icon: Grid3x3 },
+    { name: "Listen",         count: signals.length,              unit: signals.length === 1 ? "signal" : "signals",  ready: signals.length > 0,                       to: "/app/listen/signal",        Icon: Radio },
+    { name: "Analysis",       count: cellCount + variableCount,   unit: "items",                                       ready: (cellCount + variableCount) > 0,           to: "/app/analysis/library",     Icon: BarChart3 },
+    { name: "Strategy",       count: pillarCount + hypothesisCount, unit: "items",                                     ready: (pillarCount + hypothesisCount) > 0,       to: "/app/strategy/hypotheses",  Icon: Layers },
+    { name: "Reports",        count: sectionCount,                unit: sectionCount === 1 ? "section" : "sections",  ready: sectionCount > 0,                          to: "/app/report-builder",       Icon: FileText },
+    { name: "MST",            count: matrixCellCount,             unit: "cells",                                       ready: mstActive && matrixCellCount > 0,          to: "/app/mst",                  Icon: Grid3x3 },
   ];
 
   const readyCount = layers.filter((l) => l.ready).length;
@@ -144,7 +144,7 @@ export function AdAccountOverview() {
       <ModuleHeader
         section="Ad Account · 01"
         title={account.name}
-        subtitle="Account health, current focus, layer readiness, and the account optimization loop."
+        subtitle="Layer readiness, account focus, and optimization loop."
         right={<span className="text-[10px] font-mono text-emerald-400/70 uppercase tracking-widest">Connected</span>}
       />
       <ScopeBanner account={account} />
@@ -308,7 +308,7 @@ export function AdAccountOverview() {
           {/* Current Focus */}
           <SectionCard
             title="Current focus"
-            desc="The active sprint and the highest-priority next action for this account, from the optimization loop."
+            desc="Active sprint and top priority from the optimization loop."
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="rounded-xl border border-purple-400/20 bg-purple-400/[0.03] p-4 hover:border-purple-400/30 transition-colors">
@@ -319,14 +319,14 @@ export function AdAccountOverview() {
                 {mstActive ? (
                   <>
                     <p className="text-[12px] text-foreground/80 leading-relaxed">
-                      MST active — <span className="font-semibold text-foreground">{matrixCellCount}</span> matrix cells across the concept × shared-variable grid, <span className="font-semibold text-foreground">{libraryCount}</span> concepts in the local library.
+                      MST active — <span className="font-semibold text-foreground">{matrixCellCount}</span> matrix cells, <span className="font-semibold text-foreground">{libraryCount}</span> library concepts.
                     </p>
                     <button onClick={() => navigate("/app/mst")} className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-semibold text-purple-300 hover:text-purple-200 transition-colors">
                       Open MST <ArrowRight className="w-3 h-3" />
                     </button>
                   </>
                 ) : (
-                  <p className="text-[12px] text-muted-foreground/60 leading-relaxed">No active sprint — MST becomes available once historical data or imports exist.</p>
+                  <p className="text-[12px] text-muted-foreground/60 leading-relaxed">No active sprint — import data to begin.</p>
                 )}
               </div>
 
@@ -367,7 +367,7 @@ export function AdAccountOverview() {
           </SectionCard>
 
           {/* Core controls */}
-          <SectionCard title="Core controls" desc="The current control creative for each funnel stage, read from the latest reanalysis." table="core_reanalysis_read">
+          <SectionCard title="Core controls" desc="Control creative per funnel stage from latest reanalysis." table="core_reanalysis_read">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/[0.03] p-4 hover:border-emerald-400/30 transition-colors">
                 <div className="flex items-center gap-1.5 mb-2">
@@ -404,7 +404,7 @@ export function AdAccountOverview() {
           {/* Optimization loop — swiper deck (task tray in right panel) */}
           <SectionCard
             title="Optimization loop"
-            desc="Account-scoped recommendations. Swipe right to approve → Task Tray. Left to dismiss. Approved tasks appear in the right panel and are never auto-applied."
+            desc="Swipe to approve recommendations to the Task Tray, or dismiss. Approved tasks are never auto-applied."
           >
             {deckCards.length ? (
               <RecommendationDeck scopeId={account.id} cards={deckCards} emptyLabel="All account recommendations reviewed" />
