@@ -39,12 +39,16 @@ const cssSource = readFileSync(cssPath, "utf-8");
 
 const ringHsl = parseCssHslToken(extractCssVar(cssSource, "--ring"));
 const bgHsl = parseCssHslToken(extractCssVar(cssSource, "--background"));
+const cardHsl = parseCssHslToken(extractCssVar(cssSource, "--card"));
 
 const [rr, rg, rb] = hslToRgb(...ringHsl);
 const [br, bg2, bb] = hslToRgb(...bgHsl);
+const [cr, cg, cb] = hslToRgb(...cardHsl);
 const ringLuminance = relativeLuminance(rr, rg, rb);
 const bgLuminance = relativeLuminance(br, bg2, bb);
+const cardLuminance = relativeLuminance(cr, cg, cb);
 const ringVsBgContrast = contrastRatio(ringLuminance, bgLuminance);
+const ringVsCardContrast = contrastRatio(ringLuminance, cardLuminance);
 
 // ─── Tests ─────────────────────────────────────────────────────────────────
 
@@ -130,10 +134,26 @@ describe("InfoTooltip focus-ring contrast (WCAG 2.1 SC 1.4.11)", () => {
     expect(l).toBeLessThanOrEqual(1);
   });
 
+  it("--card token value is parseable from the stylesheet", () => {
+    // --card is the module panel background (slightly lighter than --background).
+    // If this fails, the token name or format changed — update the extractor.
+    const [h, s, l] = cardHsl;
+    expect(h).toBeGreaterThanOrEqual(0);
+    expect(h).toBeLessThanOrEqual(360);
+    expect(s).toBeGreaterThanOrEqual(0);
+    expect(s).toBeLessThanOrEqual(1);
+    expect(l).toBeGreaterThanOrEqual(0);
+    expect(l).toBeLessThanOrEqual(1);
+  });
+
   it("ring colour (--ring) has ≥3:1 contrast against the dark module-header surface (--background)", () => {
     // WCAG 2.1 SC 1.4.11 requires non-text contrast ≥ 3:1.
     // Computed from the live CSS token values; fails automatically if the
     // palette is ever changed to a low-contrast combination.
+    //
+    // Surface: --background is the outermost cockpit shell/page background.
+    // The InfoTooltip icon sits directly on this surface when rendered outside
+    // a card (e.g. in a full-bleed module header).
     //
     // Current values (from index.css):
     //   --ring:       hsl(222 100% 54%)  ≈ #155dff  (Metrix electric blue)
@@ -142,10 +162,32 @@ describe("InfoTooltip focus-ring contrast (WCAG 2.1 SC 1.4.11)", () => {
     expect(ringVsBgContrast).toBeGreaterThanOrEqual(3);
   });
 
+  it("ring colour (--ring) has ≥3:1 contrast against the module panel surface (--card)", () => {
+    // WCAG 2.1 SC 1.4.11 requires non-text contrast ≥ 3:1.
+    //
+    // Surface: --card is the raised panel/card background used by module
+    // containers (e.g. MetricModule, analysis panels). When the InfoTooltip
+    // icon is rendered inside a card rather than on the bare page background,
+    // the 1px ring-offset gap shows this card colour, and the ring itself must
+    // still clear the 3:1 threshold against the card surface.
+    //
+    // Current values (from index.css):
+    //   --ring: hsl(222 100% 54%)  ≈ #155dff  (Metrix electric blue)
+    //   --card: hsl(218 65%  10%)  ≈ #0b1a35  (module panel near-black)
+    // Expected contrast ≈ 3.6:1  (above the 3:1 threshold)
+    expect(ringVsCardContrast).toBeGreaterThanOrEqual(3);
+  });
+
   it("ring relative luminance is higher than the dark background luminance", () => {
     // Sanity check: the ring must be the lighter of the two surfaces.
     // If this ever flips, the ring is darker than the background, which
     // means it would be invisible (a dark ring on a dark background).
     expect(ringLuminance).toBeGreaterThan(bgLuminance);
+  });
+
+  it("ring relative luminance is higher than the card panel luminance", () => {
+    // Same sanity check for the card surface: the ring must be lighter than
+    // the panel it appears against, or it would vanish into the background.
+    expect(ringLuminance).toBeGreaterThan(cardLuminance);
   });
 });
