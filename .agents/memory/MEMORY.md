@@ -26,3 +26,4 @@
 - [Supabase importer-table RLS](supabase-importer-rls.md) — importer tables are service-role-only in app code but the public anon key can still read them via PostgREST; enable RLS + revoke anon/authenticated grants.
 - [Regex \b boundary breaks on underscore](regex-word-boundary-underscore.md) — \b fails between digit and "_" (both \w); use (?<![a-z0-9])/(?![a-z0-9]) lookarounds to extract tokens from underscore-separated filenames.
 - [Concurrent validation codegen race](concurrent-validation-codegen-race.md) — batch validations can TS6053-fail while codegen-drift regenerates lib generated files; re-run the failed check alone before debugging.
+- [Generated brief pillar ID patching](generated-brief-pillar-patching.md) — generated brief payloads store the pillar ref in TWO places; seed reads strategic_foundation.message_pillar first (priority). Patch both fields or only foundation.message_pillar.
