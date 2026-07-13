@@ -862,12 +862,25 @@ function CreativeUploadSection({
       <button
         onClick={() => fileRef.current?.click()}
         disabled={isUploading}
-        className="w-full flex flex-col items-center gap-1.5 p-4 rounded-lg border border-dashed border-border/60 hover:border-primary/40 hover:bg-white/[0.02] transition-colors disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
-      >
-        <Upload className="w-4 h-4 text-muted-foreground/85" />
-        {!isUploading && (
-          <span className="text-[11px] text-muted-foreground/80">Choose one or more creative files (max 8 MB each)</span>
+        className={cn(
+          "w-full flex flex-col items-center gap-1.5 p-4 rounded-lg border border-dashed transition-colors",
+          isUploading
+            ? "border-primary/30 bg-primary/[0.03] cursor-not-allowed"
+            : "border-border/60 hover:border-primary/40 hover:bg-white/[0.02] cursor-pointer"
         )}
+      >
+        {isUploading ? (
+          <Loader2 className="w-4 h-4 text-primary animate-spin" />
+        ) : (
+          <Upload className="w-4 h-4 text-muted-foreground/85" />
+        )}
+        <span className="text-[11px] text-muted-foreground/80">
+          {isUploading
+            ? queueTotal > 1
+              ? `Uploading file ${queueIndex} of ${queueTotal}${currentFile ? ` — ${currentFile}` : ""}…`
+              : `Uploading${currentFile ? ` ${currentFile}` : ""}…`
+            : "Choose one or more creative files (max 8 MB each)"}
+        </span>
       </button>
 
       {isUploading && currentFile && (
@@ -962,6 +975,94 @@ function CreativeUploadSection({
  * No date range lives here — that's a separate, explicit "Run analysis"
  * step from the account setup screen.
  */
+/** Compact 3-step pipeline tracker: CSVs → Creatives → Analysis. */
+function PipelineProgress({
+  demoStaged,
+  placementStaged,
+  creativesCount,
+  onAnalysis,
+}: {
+  demoStaged: boolean;
+  placementStaged: boolean;
+  creativesCount: number;
+  onAnalysis: boolean;
+}) {
+  const csvsDone = demoStaged && placementStaged;
+  const csvsPartial = demoStaged || placementStaged;
+
+  const steps = [
+    {
+      label: "CSV files",
+      sublabel: csvsDone
+        ? "Both staged"
+        : csvsPartial
+        ? "1 of 2 staged"
+        : "Required",
+      done: csvsDone,
+      partial: csvsPartial && !csvsDone,
+      active: !csvsDone,
+    },
+    {
+      label: "Creatives",
+      sublabel: creativesCount > 0 ? `${creativesCount} file${creativesCount > 1 ? "s" : ""}` : "Optional",
+      done: creativesCount > 0,
+      partial: false,
+      active: csvsDone && creativesCount === 0,
+    },
+    {
+      label: "Analysis",
+      sublabel: onAnalysis ? "Ready to run" : "Next",
+      done: false,
+      partial: false,
+      active: onAnalysis,
+    },
+  ];
+
+  return (
+    <div className="flex items-center gap-0 pb-1">
+      {steps.map((s, i) => (
+        <div key={s.label} className="flex items-center flex-1 min-w-0">
+          <div className="flex flex-col items-center gap-1 min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+              <div
+                className={cn(
+                  "w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-colors",
+                  s.done
+                    ? "bg-emerald-400/20 border-emerald-400/50"
+                    : s.partial
+                    ? "bg-amber-400/15 border-amber-400/40"
+                    : s.active
+                    ? "bg-primary/15 border-primary/40"
+                    : "bg-white/[0.03] border-border/40"
+                )}
+              >
+                {s.done ? (
+                  <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                ) : s.partial ? (
+                  <Clock className="w-3 h-3 text-amber-400" />
+                ) : s.active ? (
+                  <div className="w-2 h-2 rounded-full bg-primary/70" />
+                ) : (
+                  <div className="w-2 h-2 rounded-full bg-border/60" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <div className={cn("text-[10px] font-semibold leading-none", s.done ? "text-emerald-300/90" : s.active ? "text-foreground/90" : "text-muted-foreground/70")}>
+                  {s.label}
+                </div>
+                <div className="text-[9px] text-muted-foreground/60 leading-none mt-0.5">{s.sublabel}</div>
+              </div>
+            </div>
+          </div>
+          {i < steps.length - 1 && (
+            <div className={cn("h-px flex-shrink-0 w-4", s.done ? "bg-emerald-400/30" : "bg-border/30")} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function ManualUploadPanel({
   accountId,
   availableAdNames,
@@ -996,6 +1097,12 @@ export function ManualUploadPanel({
   if (step === "review") {
     return (
       <div className="space-y-3">
+        <PipelineProgress
+          demoStaged={Boolean(demoImport)}
+          placementStaged={Boolean(placementImport)}
+          creativesCount={creativeAssets.length}
+          onAnalysis={true}
+        />
         {/* Upload summary */}
         <div className="rounded-lg border border-border/40 bg-white/[0.02] p-3 space-y-2">
           <div className="text-[12px] font-semibold text-foreground">Files staged</div>
@@ -1065,6 +1172,12 @@ export function ManualUploadPanel({
 
   return (
     <div className="space-y-4">
+      <PipelineProgress
+        demoStaged={Boolean(demoImport)}
+        placementStaged={Boolean(placementImport)}
+        creativesCount={creativeAssets.length}
+        onAnalysis={false}
+      />
       {CSV_SLOTS.map((slot) => (
         <CsvSlotUpload
           key={slot.kind}
