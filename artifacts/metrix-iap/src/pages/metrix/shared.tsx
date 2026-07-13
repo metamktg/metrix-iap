@@ -21,9 +21,8 @@ export function InfoTooltip({ content }: { content: string }) {
         <TooltipTrigger asChild>
           <button
             type="button"
-            tabIndex={-1}
             aria-label="More info"
-            className="inline-flex items-center justify-center shrink-0 text-muted-foreground/45 hover:text-muted-foreground/80 transition-colors focus-visible:outline-none"
+            className="inline-flex items-center justify-center shrink-0 text-muted-foreground/45 hover:text-muted-foreground/80 transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
           >
             <Info className="w-3.5 h-3.5" />
           </button>
