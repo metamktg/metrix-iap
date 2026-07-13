@@ -7,7 +7,7 @@ import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import {
   ShieldCheck, KeyRound, Radio, BarChart3, Layers, FileText, Grid3x3,
-  Zap, ArrowRight, ChevronDown, ChevronRight,
+  Zap, ArrowRight, ChevronDown, ChevronRight, ChevronLeft, ClipboardList,
 } from "lucide-react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -122,6 +122,8 @@ export function AdAccountOverview() {
   const { selected: selectedMetricIds, toggle, move, reset } = useMetricSelection(availableMetricIds);
   const [openMetricId, setOpenMetricId] = useState<string | null>(null);
   const [expandedMetricId, setExpandedMetricId] = useState<string | null>(null);
+  const [trayOpen, setTrayOpen] = useState(true);
+  const [layerOpen, setLayerOpen] = useState(true);
   const openMetric = openMetricId ? metricById(metricCatalog, openMetricId) : null;
 
   // ── Layer readiness ─────────────────────────────────────────────────
@@ -130,7 +132,7 @@ export function AdAccountOverview() {
     { name: "Listen",         count: signals.length,              unit: signals.length === 1 ? "signal" : "signals",               ready: signals.length > 0,                       to: "/app/listen/signal",        Icon: Radio },
     { name: "Analysis",       count: cellCount + variableCount,   unit: "cells + variables",                                        ready: (cellCount + variableCount) > 0,           to: "/app/analysis/library",     Icon: BarChart3 },
     { name: "Strategy",       count: pillarCount + hypothesisCount, unit: "pillars + hypotheses",                                   ready: (pillarCount + hypothesisCount) > 0,       to: "/app/strategy/hypotheses",  Icon: Layers },
-    { name: "Report Builder", count: sectionCount,                unit: sectionCount === 1 ? "section" : "sections",               ready: sectionCount > 0,                          to: "/app/report-builder",       Icon: FileText },
+    { name: "Reports",        count: sectionCount,                unit: sectionCount === 1 ? "section" : "sections",               ready: sectionCount > 0,                          to: "/app/report-builder",       Icon: FileText },
     { name: "MST",            count: matrixCellCount,             unit: "matrix cells",                                             ready: mstActive && matrixCellCount > 0,          to: "/app/mst",                  Icon: Grid3x3 },
   ];
 
@@ -147,84 +149,112 @@ export function AdAccountOverview() {
       />
       <ScopeBanner account={account} />
 
-      {/* ── Layer Status Hero (full-width, leads the hierarchy) ─────── */}
-      <div className="px-6 py-4 border-b border-border/40 shrink-0 bg-gradient-to-b from-white/[0.02] to-transparent">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <h2 className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/55">Layer Status</h2>
-            <span className={cn(
-              "text-[9px] font-bold uppercase tracking-widest border px-2 py-0.5 rounded-full leading-none",
-              allReady
-                ? "text-emerald-300 border-emerald-400/40 bg-emerald-400/10"
-                : "text-amber-300/80 border-amber-400/30 bg-amber-400/[0.07]"
-            )}>
-              {readyCount}/{layers.length} ready
-            </span>
-          </div>
-          <span className="text-[10px] text-muted-foreground/40">Click any layer to navigate</span>
-        </div>
-
-        <div className="grid grid-cols-5 gap-2">
-          {layers.map((l) => (
+      {/* ── Layer Status ─────────────────────────────────────────────── */}
+      <div className="border-b border-border/40 shrink-0">
+        {/* Header row — always visible */}
+        <div className="flex items-center gap-2.5 px-6 py-2">
+          <h2 className="text-[9.5px] font-mono uppercase tracking-widest text-muted-foreground/50">Layer Status</h2>
+          <span className={cn(
+            "text-[8px] font-bold uppercase tracking-widest border px-1.5 py-0.5 rounded-full leading-none",
+            allReady
+              ? "text-emerald-300 border-emerald-400/40 bg-emerald-400/10"
+              : "text-amber-300/80 border-amber-400/30 bg-amber-400/[0.07]"
+          )}>
+            {readyCount}/{layers.length} ready
+          </span>
+          <div className="ml-auto flex items-center gap-3">
+            {/* Collapsed icon strip — shown only when collapsed */}
+            {!layerOpen && (
+              <div className="flex items-center gap-1">
+                {layers.map((l) => (
+                  <button
+                    key={l.name}
+                    onClick={() => navigate(l.to)}
+                    title={`${l.name} · ${l.ready ? "Ready" : "Pending"}`}
+                    className={cn(
+                      "w-6 h-6 flex items-center justify-center rounded-lg border transition-all",
+                      l.ready
+                        ? "border-emerald-400/35 bg-emerald-400/[0.08] text-emerald-400/80 hover:text-emerald-400 hover:border-emerald-400/55"
+                        : "border-border/30 bg-white/[0.02] text-muted-foreground/30 hover:text-muted-foreground/60 hover:border-border/50"
+                    )}
+                  >
+                    <l.Icon className="w-3 h-3" />
+                  </button>
+                ))}
+              </div>
+            )}
+            {!layerOpen && <span className="text-[9px] text-muted-foreground/35">Click any to navigate</span>}
             <button
-              key={l.name}
-              onClick={() => navigate(l.to)}
-              className={cn(
-                "group relative flex flex-col gap-2.5 p-3.5 rounded-xl border text-left transition-all",
-                "hover:-translate-y-0.5 hover:shadow-xl active:translate-y-0",
-                "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/60",
-                l.ready
-                  ? "border-emerald-400/30 bg-gradient-to-br from-emerald-400/[0.07] to-emerald-400/[0.02] hover:border-emerald-400/55 hover:from-emerald-400/[0.11] shadow-emerald-400/5"
-                  : "border-border/40 bg-white/[0.02] hover:border-border/60 hover:bg-white/[0.05]"
-              )}
+              onClick={() => setLayerOpen(!layerOpen)}
+              aria-label={layerOpen ? "Collapse layer status" : "Expand layer status"}
+              className="flex items-center gap-1 text-muted-foreground/35 hover:text-muted-foreground/70 transition-colors"
             >
-              {/* Icon + badge row */}
-              <div className="flex items-center justify-between gap-1">
-                <l.Icon className={cn(
-                  "w-3.5 h-3.5 transition-colors",
-                  l.ready ? "text-emerald-400/80 group-hover:text-emerald-400" : "text-muted-foreground/40"
-                )} />
-                <span className={cn(
-                  "text-[8px] font-bold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none",
-                  l.ready
-                    ? "text-emerald-300 border-emerald-400/40 bg-emerald-400/15"
-                    : "text-amber-300/70 border-amber-400/25 bg-amber-400/[0.08]"
-                )}>
-                  {l.ready ? "Ready" : "Pending"}
-                </span>
-              </div>
-
-              {/* Name + count */}
-              <div className="min-w-0">
-                <div className="text-[12px] font-bold text-foreground leading-tight truncate">{l.name}</div>
-                <div className="text-[10px] text-muted-foreground/60 mt-0.5 tabular-nums">
-                  <span className="font-semibold text-foreground/65">{l.count}</span>{" "}{l.unit}
-                </div>
-              </div>
-
-              {/* Navigate arrow */}
-              <ChevronRight className={cn(
-                "absolute right-2.5 bottom-3.5 w-3 h-3 transition-all",
-                "text-muted-foreground/20 group-hover:text-foreground/55 group-hover:translate-x-0.5"
-              )} />
+              <ChevronDown className={cn("w-3 h-3 transition-transform", !layerOpen && "-rotate-90")} />
             </button>
-          ))}
+          </div>
         </div>
+
+        {/* Expanded cards */}
+        {layerOpen && (
+          <div className="px-6 pb-3 grid grid-cols-5 gap-1.5">
+            {layers.map((l) => (
+              <button
+                key={l.name}
+                onClick={() => navigate(l.to)}
+                className={cn(
+                  "group relative flex flex-col gap-1.5 px-2.5 py-2.5 rounded-lg border text-left transition-all",
+                  "hover:-translate-y-px hover:shadow-lg active:translate-y-0",
+                  "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/60",
+                  l.ready
+                    ? "border-emerald-400/30 bg-gradient-to-br from-emerald-400/[0.07] to-emerald-400/[0.02] hover:border-emerald-400/55 hover:from-emerald-400/[0.10] shadow-emerald-400/5"
+                    : "border-border/35 bg-white/[0.015] hover:border-border/55 hover:bg-white/[0.04]"
+                )}
+              >
+                {/* Icon + badge */}
+                <div className="flex items-center justify-between gap-1">
+                  <l.Icon className={cn(
+                    "w-3 h-3 transition-colors",
+                    l.ready ? "text-emerald-400/75 group-hover:text-emerald-400" : "text-muted-foreground/35"
+                  )} />
+                  <span className={cn(
+                    "text-[7.5px] font-bold uppercase tracking-wide border px-1 py-px rounded leading-none",
+                    l.ready
+                      ? "text-emerald-300 border-emerald-400/35 bg-emerald-400/12"
+                      : "text-amber-300/65 border-amber-400/22 bg-amber-400/[0.07]"
+                  )}>
+                    {l.ready ? "Ready" : "Pending"}
+                  </span>
+                </div>
+                {/* Name + count */}
+                <div className="min-w-0">
+                  <div className="text-[11px] font-semibold text-foreground leading-tight truncate">{l.name}</div>
+                  <div className="text-[9px] text-muted-foreground/55 mt-0.5 tabular-nums">
+                    <span className="font-semibold text-foreground/60">{l.count}</span>{" "}{l.unit}
+                  </div>
+                </div>
+                <ChevronRight className={cn(
+                  "absolute right-2 bottom-2.5 w-2.5 h-2.5 transition-all",
+                  "text-muted-foreground/15 group-hover:text-foreground/50 group-hover:translate-x-0.5"
+                )} />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ── Two-column body ────────────────────────────────────────── */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
 
         {/* Left: scrollable main content */}
-        <div className="flex-1 min-w-0 overflow-y-auto px-6 py-5 space-y-6">
+        <div className="flex-1 min-w-0 overflow-y-auto px-6 py-3 space-y-3">
 
           {/* Account Totals — metric accordions */}
           <div>
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-2">
               <h2 className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/55">Account Totals</h2>
               <MetricPickerButton catalog={metricCatalog} selected={selectedMetricIds} onToggle={toggle} onMove={move} onReset={reset} />
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+            <div className="grid grid-cols-4 gap-2">
               {selectedMetricIds.map((id) => {
                 const m = metricById(metricCatalog, id);
                 if (!m) return null;
@@ -234,21 +264,21 @@ export function AdAccountOverview() {
                     <button
                       onClick={() => setExpandedMetricId(isExpanded ? null : id)}
                       className={cn(
-                        "group flex flex-col text-left rounded-xl border px-4 py-3 transition-all",
+                        "group flex flex-col text-left rounded-lg border px-3 py-2.5 transition-all",
                         isExpanded
                           ? "border-primary/35 bg-primary/[0.08] rounded-b-none border-b-primary/15 shadow-sm shadow-primary/10"
                           : "border-border/40 bg-white/[0.02] hover:border-border/60 hover:bg-white/[0.04]"
                       )}
                     >
-                      <div className="flex items-center justify-between gap-2 mb-1.5">
-                        <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/55">{m.label}</span>
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/55 truncate">{m.label}</span>
                         <ChevronDown className={cn(
                           "w-3 h-3 text-muted-foreground/30 transition-transform shrink-0",
                           isExpanded && "rotate-180 text-primary/60"
                         )} />
                       </div>
-                      <span className="text-[22px] font-bold text-foreground tabular-nums leading-none">{m.formatted}</span>
-                      {m.sub && <span className="text-[9.5px] text-muted-foreground/50 mt-1.5 leading-tight">{m.sub}</span>}
+                      <span className="text-[16px] font-bold text-foreground tabular-nums leading-none">{m.formatted}</span>
+                      {m.sub && <span className="text-[9px] text-muted-foreground/50 mt-1 leading-tight truncate">{m.sub}</span>}
                     </button>
                     {isExpanded && (
                       <div className="rounded-b-xl border border-t-0 border-primary/30 bg-primary/[0.04] px-4 py-3 space-y-2.5">
@@ -322,14 +352,14 @@ export function AdAccountOverview() {
 
           {/* Results by event */}
           <SectionCard title="Results by event" desc="Conversion volume by event for this account.">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {events.map(([key, e]) => (
-                <div key={key} className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                  <div className="text-[11px] font-semibold text-foreground leading-tight mb-2">{eventLabel(key)}</div>
-                  <div className="text-[22px] font-bold text-foreground tabular-nums leading-none">{fmtNum(e.results)}</div>
-                  <div className="text-[10px] text-muted-foreground/65 mt-2.5 space-y-1">
+                <div key={key} className="rounded-lg border border-border/40 bg-white/[0.02] px-3 py-2.5">
+                  <div className="text-[10px] font-semibold text-foreground/70 leading-tight mb-1.5 truncate">{eventLabel(key)}</div>
+                  <div className="text-[18px] font-bold text-foreground tabular-nums leading-none">{fmtNum(e.results)}</div>
+                  <div className="text-[9.5px] text-muted-foreground/65 mt-2 space-y-0.5">
                     <div>Spend <span className="text-foreground/70 font-medium">{fmtUSD(e.spend)}</span></div>
-                    <div>Link clicks <span className="text-foreground/70 font-medium">{fmtNum(e.link_clicks)}</span></div>
+                    <div>Clicks <span className="text-foreground/70 font-medium">{fmtNum(e.link_clicks)}</span></div>
                   </div>
                 </div>
               ))}
@@ -384,10 +414,23 @@ export function AdAccountOverview() {
           </SectionCard>
         </div>
 
-        {/* Right: Persistent Task Tray */}
-        <div className="w-[264px] shrink-0 border-l border-border/40 flex flex-col min-h-0">
-          <TaskTrayPanel scopeId={account.id} cards={deckCards} />
-        </div>
+        {/* Right: Collapsible Task Tray */}
+        {trayOpen ? (
+          <div className="w-[232px] shrink-0 border-l border-border/40 flex flex-col min-h-0">
+            <TaskTrayPanel scopeId={account.id} cards={deckCards} onCollapse={() => setTrayOpen(false)} />
+          </div>
+        ) : (
+          <div className="w-7 shrink-0 border-l border-border/40 flex flex-col items-center py-3 gap-3">
+            <button
+              onClick={() => setTrayOpen(true)}
+              aria-label="Expand task tray"
+              className="w-5 h-5 flex items-center justify-center rounded text-muted-foreground/40 hover:text-muted-foreground/80 hover:bg-white/[0.06] transition-colors"
+            >
+              <ChevronLeft className="w-3 h-3" />
+            </button>
+            <ClipboardList className="w-3 h-3 text-muted-foreground/25" />
+          </div>
+        )}
       </div>
 
       <MetricDiagnosticModal

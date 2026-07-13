@@ -8,8 +8,33 @@ import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
 import { Plug, FileUp, Clock, Database, Info, ArrowRight, CheckSquare, Square, CalendarRange, CalendarX2, AlertTriangle, ChevronDown, ChevronLeft, Sparkles, Map as MapIcon } from "lucide-react";
 import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
 import { DataSourceBadge } from "@/components/ui/DataSourceBadge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { resolveVariableLabel } from "@/lib/variable-registry";
 import type { AdAccount } from "@/lib/data/seedTypes";
+
+// ─── Info tooltip ──────────────────────────────────────────────────────
+
+export function InfoTooltip({ content }: { content: string }) {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-label="More info"
+            className="inline-flex items-center justify-center shrink-0 text-muted-foreground/45 hover:text-muted-foreground/80 transition-colors focus-visible:outline-none"
+          >
+            <Info className="w-3.5 h-3.5" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-[280px] text-left leading-relaxed text-[11px] whitespace-normal">
+          {content}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 /** Resolve a raw variable code — including compound "A + B" stacks — to labels. */
 export function readableVariables(code: string | null | undefined): string {
@@ -166,9 +191,11 @@ export function ModuleHeader({
     <div className="px-6 py-4 border-b border-border/40">
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
-          <span className="block mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/80">{section}</span>
+          <div className="flex items-center gap-1.5 mb-1">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/80">{section}</span>
+            {subtitle && <InfoTooltip content={subtitle} />}
+          </div>
           <h1 className="text-[21px] font-bold text-foreground leading-tight tracking-[-0.02em]">{title}</h1>
-          {subtitle && <p className="text-[13px] text-muted-foreground/80 mt-1 leading-relaxed max-w-2xl">{subtitle}</p>}
         </div>
         <div className="shrink-0 pt-0.5 flex items-center gap-2">
           {right}
@@ -181,15 +208,11 @@ export function ModuleHeader({
 
 // ─── Scope banner (which ad account a module is reading) ──────────────
 
-export function ScopeBanner({ account }: { account: AdAccount }) {
-  return (
-    <div className="flex items-center gap-2 px-6 py-2 border-b border-border/30 bg-white/[0.015]">
-      <Database className="w-3 h-3 text-muted-foreground/60 shrink-0" />
-      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Scoped to ad account</span>
-      <span className="text-[12px] font-medium text-foreground/90">{account.name}</span>
-      <span className="text-[10px] font-mono text-muted-foreground/70">{account.platform}</span>
-    </div>
-  );
+// ScopeBanner is kept for API compatibility but renders nothing —
+// the sidebar and breadcrumb already show the active ad account.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function ScopeBanner({ account: _account }: { account: AdAccount }) {
+  return null;
 }
 
 // ─── Date-range scope bar ─────────────────────────────────────────────
@@ -698,17 +721,19 @@ export function SectionCard({
 }) {
   return (
     <section className="mx-card overflow-hidden">
-      <div className="relative flex items-center gap-3 px-4 py-2.5 border-b border-[rgba(120,170,255,0.10)]">
+      <div className="relative flex items-center gap-2 px-3.5 py-1.5 border-b border-[rgba(120,170,255,0.10)]">
         <div className="flex-1 min-w-0">
-          <h3 className="text-[16px] font-semibold text-foreground leading-tight">{title}</h3>
-          {desc && <p className="text-[13px] text-muted-foreground/80 mt-0.5 leading-snug">{desc}</p>}
+          <div className="flex items-center gap-1.5">
+            <h3 className="text-[13px] font-semibold text-foreground leading-tight">{title}</h3>
+            {desc && <InfoTooltip content={desc} />}
+          </div>
         </div>
         <div className="shrink-0 flex items-center gap-2">
           {right}
           {table && <DataSourceBadge table={table} collapsible />}
         </div>
       </div>
-      <div className="relative p-4">{children}</div>
+      <div className="relative p-3">{children}</div>
     </section>
   );
 }
