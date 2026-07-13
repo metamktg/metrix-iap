@@ -28,4 +28,6 @@ export interface AnalysisRun {
   creatives_total?: number | null;
   /** Ad names from staged creative assets that could not be matched to any ads row. */
   creatives_unlinked_names?: string[] | null;
+  /** Warnings produced during tolerant CSV column matching (auto-resolved aliases, missing columns, unrecognised columns that might map to expected ones). Null when parsing was clean. Present on successful runs that had non-fatal column issues. */
+  csv_warnings?: string[] | null;
 }

@@ -56,6 +56,8 @@ export type ManualAnalysisRun = {
   creatives_linked: number | null;
   creatives_total: number | null;
   creatives_unlinked_names: string[] | null;
+  /** Warnings produced during tolerant CSV parsing (auto-resolved aliases, missing columns, etc.). Null when parsing was clean. */
+  csv_warnings: string[] | null;
 };
 
 export type CreativeLinkageSummary = {
@@ -66,22 +68,33 @@ export type CreativeLinkageSummary = {
 
 type Row = Record<string, any>;
 
-const runShape = (r: Row): ManualAnalysisRun => ({
-  id: String(r["id"]),
-  account_id: String(r["account_id"]),
-  status: r["status"],
-  date_range: r["date_range"],
-  date_start: r["date_start"] ?? null,
-  date_end: r["date_end"] ?? null,
-  rows_ingested: r["rows_ingested"] ?? null,
-  imports_used: r["imports_used"] ?? null,
-  error_message: r["error_message"] ?? null,
-  started_at: String(r["started_at"]),
-  finished_at: r["finished_at"] ?? null,
-  creatives_linked: null,
-  creatives_total: null,
-  creatives_unlinked_names: null,
-});
+const runShape = (r: Row): ManualAnalysisRun => {
+  let csvWarnings: string[] | null = null;
+  if (r["csv_warnings"]) {
+    try {
+      csvWarnings = JSON.parse(String(r["csv_warnings"]));
+    } catch {
+      csvWarnings = null;
+    }
+  }
+  return {
+    id: String(r["id"]),
+    account_id: String(r["account_id"]),
+    status: r["status"],
+    date_range: r["date_range"],
+    date_start: r["date_start"] ?? null,
+    date_end: r["date_end"] ?? null,
+    rows_ingested: r["rows_ingested"] ?? null,
+    imports_used: r["imports_used"] ?? null,
+    error_message: r["error_message"] ?? null,
+    started_at: String(r["started_at"]),
+    finished_at: r["finished_at"] ?? null,
+    creatives_linked: null,
+    creatives_total: null,
+    creatives_unlinked_names: null,
+    csv_warnings: csvWarnings,
+  };
+};
 
 async function accountExists(accountId: string): Promise<Row | null> {
   const supabase = getSupabase();
@@ -142,7 +155,14 @@ async function startRun(accountId: string, dateRange: DateRangePreset, createdBy
 async function finishRun(
   runId: string,
   status: "success" | "error",
-  fields: { errorMessage?: string; dateStart?: string; dateEnd?: string; rowsIngested?: number; importsUsed?: number },
+  fields: {
+    errorMessage?: string;
+    dateStart?: string;
+    dateEnd?: string;
+    rowsIngested?: number;
+    importsUsed?: number;
+    csvWarnings?: string[];
+  },
 ): Promise<void> {
   const supabase = getSupabase();
   const { error } = await supabase
@@ -154,6 +174,9 @@ async function finishRun(
       date_end: fields.dateEnd ?? null,
       rows_ingested: fields.rowsIngested ?? null,
       imports_used: fields.importsUsed ?? null,
+      csv_warnings: fields.csvWarnings && fields.csvWarnings.length > 0
+        ? JSON.stringify(fields.csvWarnings)
+        : null,
       finished_at: new Date().toISOString(),
     })
     .eq("id", runId);
@@ -388,11 +411,16 @@ export async function startManualAnalysis(
 
   void (async () => {
     try {
+      const allCsvWarnings: string[] = [];
       const demoRows: IapCsvRow[] = [];
       for (const imp of demoImports) {
         const text = decodeStagedContent(String(imp["content"]));
         try {
-          demoRows.push(...parseIapCsv(text, "demographic").rows);
+          const result = parseIapCsv(text, "demographic");
+          demoRows.push(...result.rows);
+          for (const w of result.warnings) {
+            allCsvWarnings.push(`[Demographics "${imp["filename"]}"] ${w}`);
+          }
         } catch (err) {
           const detail = err instanceof IapCsvFormatError ? err.message : String(err);
           throw new AnalysisError(`Demographics file "${imp["filename"]}": ${detail}`, 422);
@@ -402,7 +430,11 @@ export async function startManualAnalysis(
       for (const imp of placementImports) {
         const text = decodeStagedContent(String(imp["content"]));
         try {
-          placementRows.push(...parseIapCsv(text, "device_placement").rows);
+          const result = parseIapCsv(text, "device_placement");
+          placementRows.push(...result.rows);
+          for (const w of result.warnings) {
+            allCsvWarnings.push(`[Placements "${imp["filename"]}"] ${w}`);
+          }
         } catch (err) {
           const detail = err instanceof IapCsvFormatError ? err.message : String(err);
           throw new AnalysisError(`Placements file "${imp["filename"]}": ${detail}`, 422);
@@ -653,6 +685,7 @@ export async function startManualAnalysis(
         dateEnd,
         rowsIngested: totalRows,
         importsUsed: imports!.length,
+        csvWarnings: allCsvWarnings.length > 0 ? allCsvWarnings : undefined,
       });
       invalidateMetrixSeedCache();
       logger.info({ accountId, runId, rows: totalRows, dateStart, dateEnd }, "Manual analysis run succeeded");

@@ -692,6 +692,9 @@ create index if not exists manual_analysis_runs_account_idx
 create unique index if not exists manual_analysis_runs_one_running
   on manual_analysis_runs (account_id) where status = 'running';
 
+-- CSV column warnings from tolerant parsing (JSON-encoded string array, nullable).
+alter table if exists manual_analysis_runs add column if not exists csv_warnings text;
+
 -- ─────────────────────────────────────────────────────────────────────
 -- Row Level Security (platform integrity).
 --

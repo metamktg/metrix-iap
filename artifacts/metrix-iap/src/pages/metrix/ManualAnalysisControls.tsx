@@ -166,6 +166,56 @@ const DATE_RANGES: { id: "7d" | "14d" | "30d" | "all"; label: string }[] = [
   { id: "all", label: "All uploaded data" },
 ];
 
+/**
+ * Shows CSV column warnings from a completed analysis run.
+ * Displayed when the parser auto-resolved column names (e.g. "Day" → "Date"),
+ * found missing columns, or spotted unrecognised columns that might map to
+ * expected ones. Uses amber styling — the run succeeded, but at reduced
+ * confidence for missing core metrics.
+ */
+function CsvWarningsPanel({ run }: { run: AnalysisRun }) {
+  const [expanded, setExpanded] = useState(false);
+  const warnings = run.csv_warnings;
+  if (!warnings || warnings.length === 0) return null;
+
+  const hasReducedConfidence = warnings.some((w) => w.includes("Reduced confidence") || w.includes("core metric"));
+  const count = warnings.length;
+
+  return (
+    <div className="rounded-lg border border-amber-400/30 bg-amber-400/[0.06] p-3 space-y-2">
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="w-full flex items-start gap-2 text-left"
+      >
+        <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+        <div className="flex-1 min-w-0">
+          <div className="text-[11px] font-semibold text-amber-200">
+            {hasReducedConfidence
+              ? "Analysis succeeded with reduced confidence"
+              : "Analysis succeeded with column adjustments"}
+          </div>
+          <p className="text-[10px] text-amber-100/70 mt-0.5">
+            {hasReducedConfidence
+              ? "Some core metric columns were missing — key efficiency scores may be incomplete. "
+              : ""}
+            {count} column {count === 1 ? "notice" : "notices"} from CSV parsing.{" "}
+            <span className="underline cursor-pointer">{expanded ? "Hide" : "Show"} details</span>
+          </p>
+        </div>
+      </button>
+      {expanded && (
+        <ul className="space-y-1 pt-1 border-t border-amber-400/20">
+          {warnings.map((w, i) => (
+            <li key={i} className="text-[10px] text-amber-100/75 leading-relaxed">
+              · {w}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function StatusBadge({ run }: { run: AnalysisRun }) {
   if (run.status === "running") {
     return (
@@ -522,6 +572,8 @@ export function AnalysisControls({ accountId }: { accountId: string }) {
           )}
         </RunAnalysisBtn>
       </div>
+
+      {run && run.status === "success" && <CsvWarningsPanel run={run} />}
 
       {run && (run.status === "success" || run.status === "error") && (
         <CreativeLinkageStatus

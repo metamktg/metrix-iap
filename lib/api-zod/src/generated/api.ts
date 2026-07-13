@@ -281,7 +281,8 @@ export const GetLatestAnalysisRunResponse = zod.object({
   "finished_at": zod.string().nullish(),
   "creatives_linked": zod.number().nullish().describe('Number of staged creative assets successfully linked to ad rows (computed live from current DB state).'),
   "creatives_total": zod.number().nullish().describe('Total number of staged creative asset ad-name mappings attempted.'),
-  "creatives_unlinked_names": zod.array(zod.string()).nullish().describe('Ad names from staged creative assets that could not be matched to any ads row.')
+  "creatives_unlinked_names": zod.array(zod.string()).nullish().describe('Ad names from staged creative assets that could not be matched to any ads row.'),
+  "csv_warnings": zod.array(zod.string()).nullish().describe('Warnings produced during tolerant CSV column matching (auto-resolved aliases, missing columns, unrecognised columns that might map to expected ones). Null when parsing was clean. Present on successful runs that had non-fatal column issues.')
 }).nullable()
 })
 
