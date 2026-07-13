@@ -78,10 +78,24 @@ export function AdAccountOverview() {
     );
   }
 
-  const core = account.iap.core_reanalysis_read;
+  const core = account.iap.core_reanalysis_read ?? null;
   const cs = account.iap.campaign_summary;
   const events = Object.entries(cs.bottom_line_totals);
   const term = resultTerm(account);
+
+  // core_reanalysis_read is nullable at runtime for freshly-analyzed accounts
+  // whose seed hasn't fully populated the module yet — guard before rendering.
+  if (!core) {
+    return (
+      <div className="flex-1 flex flex-col">
+        <ModuleHeader section="Ad Account · 01" title={account.name} subtitle="Account overview" />
+        <PendingState
+          title="Analysis data loading"
+          message="Core analysis data is being assembled. Refresh in a moment."
+        />
+      </div>
+    );
+  }
 
   // ── Derived summaries ───────────────────────────────────────────────
   const signals = getListenSignals(seed, adAccountId);
