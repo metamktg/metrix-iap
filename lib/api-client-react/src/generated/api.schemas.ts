@@ -217,6 +217,7 @@ export const AdminUserRole = {
 export interface AdminUser {
   id: number;
   email: string;
+  display_name?: string | null;
   /** invited = provisioned but never logged in; disabled = access revoked. */
   status: AdminUserStatus;
   role?: AdminUserRole;
@@ -224,6 +225,8 @@ export interface AdminUser {
   created_at: string;
   last_login_at?: string | null;
   disabled_at?: string | null;
+  /** Ad account IDs this user is explicitly granted. Empty for admin-role users (they always see all accounts by role). */
+  ad_account_ids: string[];
 }
 
 export interface AdminUsersResult {
@@ -276,6 +279,76 @@ export const AdminUserActionResultStatus = {
 export interface AdminUserActionResult {
   status: AdminUserActionResultStatus;
   email: string;
+}
+
+export interface AdminAdAccount {
+  /** Ad account identifier (e.g. "act_123" or "manual_xyz"). */
+  id: string;
+  /** Human-readable account name from the Metrix seed. */
+  name?: string | null;
+}
+
+export interface AdminAdAccountsResult {
+  ad_accounts: AdminAdAccount[];
+}
+
+/**
+ * Defaults to member when omitted.
+ */
+export type AdminCreateUserInputRole = typeof AdminCreateUserInputRole[keyof typeof AdminCreateUserInputRole];
+
+
+export const AdminCreateUserInputRole = {
+  admin: 'admin',
+  member: 'member',
+} as const;
+
+export interface AdminCreateUserInput {
+  email: string;
+  /** Optional friendly display name shown in the admin user list. */
+  display_name?: string;
+  /** Defaults to member when omitted. */
+  role?: AdminCreateUserInputRole;
+  /** Ad account grant list for the new user. Ignored for admin-role users (they always see all accounts). Unknown ids are silently skipped. */
+  ad_account_ids?: string[];
+}
+
+export type AdminCreateUserResultStatus = typeof AdminCreateUserResultStatus[keyof typeof AdminCreateUserResultStatus];
+
+
+export const AdminCreateUserResultStatus = {
+  created: 'created',
+} as const;
+
+export interface AdminCreateUserResult {
+  status: AdminCreateUserResultStatus;
+  email: string;
+  user_id: number;
+  email_sent: boolean;
+  /** Present only when the email could not be sent, so the admin can share the temp password manually. */
+  temp_password?: string;
+  /** Present only when the email could not be sent — explains why and how to fix it. */
+  email_error?: string;
+}
+
+export type AdminDeleteUserResultStatus = typeof AdminDeleteUserResultStatus[keyof typeof AdminDeleteUserResultStatus];
+
+
+export const AdminDeleteUserResultStatus = {
+  deleted: 'deleted',
+} as const;
+
+export interface AdminDeleteUserResult {
+  status: AdminDeleteUserResultStatus;
+  email: string;
+}
+
+export interface AdminUserAdAccountsResult {
+  ad_account_ids: string[];
+}
+
+export interface AdminUpdateUserAdAccountsInput {
+  ad_account_ids: string[];
 }
 
 export interface AuthLoginInput {

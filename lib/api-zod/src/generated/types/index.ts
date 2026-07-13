@@ -6,6 +6,14 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './adminAdAccount';
+export * from './adminAdAccountsResult';
+export * from './adminCreateUserInput';
+export * from './adminCreateUserInputRole';
+export * from './adminCreateUserResult';
+export * from './adminCreateUserResultStatus';
+export * from './adminDeleteUserResult';
+export * from './adminDeleteUserResultStatus';
 export * from './adminEmailStatus';
 export * from './adminEmailStatusEnvironment';
 export * from './adminEmailStatusMode';
@@ -15,9 +23,11 @@ export * from './adminResendTempPasswordResultStatus';
 export * from './adminSendPasswordResetResult';
 export * from './adminSendPasswordResetResultStatus';
 export * from './adminSessionStatus';
+export * from './adminUpdateUserAdAccountsInput';
 export * from './adminUser';
 export * from './adminUserActionResult';
 export * from './adminUserActionResultStatus';
+export * from './adminUserAdAccountsResult';
 export * from './adminUserRole';
 export * from './adminUsersResult';
 export * from './adminUserStatus';

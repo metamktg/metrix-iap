@@ -11,6 +11,7 @@ import type { AdminUserStatus } from './adminUserStatus';
 export interface AdminUser {
   id: number;
   email: string;
+  display_name?: string | null;
   /** invited = provisioned but never logged in; disabled = access revoked. */
   status: AdminUserStatus;
   role?: AdminUserRole;
@@ -18,4 +19,6 @@ export interface AdminUser {
   created_at: string;
   last_login_at?: string | null;
   disabled_at?: string | null;
+  /** Ad account IDs this user is explicitly granted. Empty for admin-role users (they always see all accounts by role). */
+  ad_account_ids: string[];
 }
