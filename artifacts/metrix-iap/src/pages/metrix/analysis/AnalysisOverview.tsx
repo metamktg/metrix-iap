@@ -4,7 +4,7 @@
 
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
-import { getAdAccount, getAnalysisData, getCampaignSummary, getCoreControls } from "@/lib/data/metrixSeedAdapter";
+import { getAdAccount, getAnalysisData, getCampaignSummary, getCoreControls, getMST } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
   CaveatNote, SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
@@ -57,6 +57,16 @@ export function AnalysisOverview() {
             }
           : null;
         const cellRowsInRange = filterCells(a.performance_by_cell).length;
+
+        const mst = getMST(seed, adAccountId);
+        const lib = mst?.local_book2_library ?? [];
+        const resolveConceptName = (id: string) =>
+          lib.find((c) => c.cell_id === id)?.book2_concept_name ?? id;
+        const resolveControlText = (text: string, id: string) => {
+          const name = resolveConceptName(id);
+          if (name === id) return text;
+          return text.replace(id, name);
+        };
 
         const subpages = [
           {
@@ -132,16 +142,28 @@ export function AnalysisOverview() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
                       <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5">Primary control</div>
-                      <p className="text-[13px] font-semibold text-foreground">{controls.primary_control}</p>
-                      <p className="text-[11px] text-muted-foreground/80 mt-1.5 leading-relaxed">{controls.primary_control_read}</p>
+                      <p className="text-[13px] font-semibold text-foreground">{resolveConceptName(controls.primary_control)}</p>
+                      <p className="text-[11px] text-muted-foreground/80 mt-1.5 leading-relaxed">{resolveControlText(controls.primary_control_read, controls.primary_control)}</p>
+                      {resolveConceptName(controls.primary_control) !== controls.primary_control && (
+                        <p className="text-[9px] font-mono text-muted-foreground/40 mt-1.5">{controls.primary_control}</p>
+                      )}
                     </div>
-                    {controls.registration_control && (
-                      <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                        <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5">{term.Singular} control</div>
-                        <p className="text-[13px] font-semibold text-foreground">{controls.registration_control}</p>
-                        <p className="text-[11px] text-muted-foreground/80 mt-1.5 leading-relaxed">{controls.registration_control_read}</p>
-                      </div>
-                    )}
+                    {controls.registration_control && (() => {
+                      const regId = controls.registration_control!;
+                      const regName = resolveConceptName(regId);
+                      return (
+                        <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
+                          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5">{term.Singular} control</div>
+                          <p className="text-[13px] font-semibold text-foreground">{regName}</p>
+                          {controls.registration_control_read && (
+                            <p className="text-[11px] text-muted-foreground/80 mt-1.5 leading-relaxed">{resolveControlText(controls.registration_control_read, regId)}</p>
+                          )}
+                          {regName !== regId && (
+                            <p className="text-[9px] font-mono text-muted-foreground/40 mt-1.5">{regId}</p>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </SectionCard>
               )}

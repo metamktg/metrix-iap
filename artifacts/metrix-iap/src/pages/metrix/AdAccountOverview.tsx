@@ -90,6 +90,18 @@ export function AdAccountOverview() {
   const report = getReportBuilder(seed, adAccountId);
   const mst = getMST(seed, adAccountId);
 
+  // Resolve concept IDs to human-readable names from the MST library.
+  const lib = mst?.local_book2_library ?? [];
+  const resolveConceptName = (id: string) =>
+    lib.find((c) => c.cell_id === id)?.book2_concept_name ?? id;
+  const resolveControlText = (text: string, id: string) => {
+    const name = resolveConceptName(id);
+    if (name === id) return text;
+    return text.replace(id, name);
+  };
+  const primaryControlName = resolveConceptName(core.primary_control);
+  const registrationControlName = core.registration_control ? resolveConceptName(core.registration_control) : null;
+
   const cellCount = analysis?.performance_by_cell.length ?? 0;
   const variableCount = analysis?.v3_variable_performance.length ?? 0;
   const pillarCount = strategy?.message_pillars.length ?? 0;
@@ -332,8 +344,11 @@ export function AdAccountOverview() {
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-400/80" />
                   <span className="text-[11px] font-semibold text-foreground">Primary control</span>
                 </div>
-                <p className="text-[12px] text-foreground/80 leading-relaxed">{core.primary_control_read}</p>
-                <p className="text-[10px] font-mono text-muted-foreground/65 mt-2">{core.primary_control}</p>
+                <p className="text-[13px] font-semibold text-foreground mb-1">{primaryControlName}</p>
+                <p className="text-[12px] text-foreground/80 leading-relaxed">{resolveControlText(core.primary_control_read, core.primary_control)}</p>
+                {primaryControlName !== core.primary_control && (
+                  <p className="text-[9px] font-mono text-muted-foreground/40 mt-1.5">{core.primary_control}</p>
+                )}
               </div>
               {core.registration_control && (
                 <div className="rounded-xl border border-blue-400/20 bg-blue-400/[0.03] p-4 hover:border-blue-400/30 transition-colors">
@@ -341,8 +356,13 @@ export function AdAccountOverview() {
                     <KeyRound className="w-3.5 h-3.5 text-blue-300/80" />
                     <span className="text-[11px] font-semibold text-foreground">{term.Singular} control</span>
                   </div>
-                  <p className="text-[12px] text-foreground/80 leading-relaxed">{core.registration_control_read}</p>
-                  <p className="text-[10px] font-mono text-muted-foreground/65 mt-2">{core.registration_control}</p>
+                  <p className="text-[13px] font-semibold text-foreground mb-1">{registrationControlName ?? core.registration_control}</p>
+                  {core.registration_control_read && core.registration_control && (
+                    <p className="text-[12px] text-foreground/80 leading-relaxed">{resolveControlText(core.registration_control_read, core.registration_control)}</p>
+                  )}
+                  {registrationControlName !== core.registration_control && (
+                    <p className="text-[9px] font-mono text-muted-foreground/40 mt-1.5">{core.registration_control}</p>
+                  )}
                 </div>
               )}
             </div>

@@ -241,12 +241,6 @@ export const navTree: NavSection[] = [
         dataSource: "local_book2_library",
       },
       {
-        id: "mst-communications",
-        label: "Communications",
-        to: "/app/mst/communications",
-        dataSource: "copy_library, v3_variable_performance, local_book2_library, demographic_registration_signal",
-      },
-      {
         id: "mst-crossmap",
         label: "Crossmap Results",
         to: "/app/mst/crossmap",

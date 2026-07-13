@@ -51,8 +51,6 @@ import { CreativeLibraryDialog } from "@/pages/metrix/ConnectAccountDialogs";
 const SECTION = "Analysis · 03";
 
 type Tab = "cells" | "top" | "variables";
-type SortOption = "library" | "cpa" | "spend" | "results" | "ctr" | "alpha";
-type StatusFilter = "all" | "has-data" | "lib-only" | "has-creative";
 
 const VARIABLE_FIELDS: { key: keyof CellPerformanceRow; label: string }[] = [
   { key: "hook_variable",       label: "Hook" },
@@ -75,10 +73,6 @@ export function IapLibraryView() {
   const [creativeLibraryOpen, setCreativeLibraryOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<10 | 25 | 50>(10);
-  const [sortBy, setSortBy] = useState<SortOption>("library");
-  const [conceptFilter, setConceptFilter] = useState<string | null>(null);
-  const [variableFilter, setVariableFilter] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   // Variable drill-down (DNA cards, best-read chips, variable table rows)
   const [variableCode, setVariableCode] = useState<string | null>(null);
   // Segment drill-down opened from a card's Demographics tab (scoped to that cell)
@@ -169,8 +163,8 @@ export function IapLibraryView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focus, adAccountId]);
 
-  // Reset to page 1 whenever the active tab, account, page size, sort, or filter changes
-  useEffect(() => { setPage(1); }, [tab, adAccountId, pageSize, sortBy, conceptFilter, variableFilter, statusFilter]);
+  // Reset to page 1 whenever the active tab, account, or page size changes
+  useEffect(() => { setPage(1); }, [tab, adAccountId, pageSize]);
 
   return (
     <>
@@ -318,279 +312,99 @@ export function IapLibraryView() {
                       </div>
                     )}
 
-                    {(() => {
-                      // ── Build unified cell list ───────────────────────────────
-                      const uniquePerfCells = uniqueCellRows(cells);
-                      const perfCellIdSet = new Set(uniquePerfCells.map((r) => r.cell_id));
-                      const libOnlyCellIds = mst
-                        ? [...new Set((mst.local_book2_library ?? []).map((c) => c.cell_id))]
-                            .filter((id) => !perfCellIdSet.has(id))
-                        : [];
-
-                      if (uniquePerfCells.length === 0 && libOnlyCellIds.length === 0) {
-                        return <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." />;
-                      }
-
-                      // Precompute per-cell metadata (title, concept group, variable codes, hasCreative)
-                      const allCellIds = [
-                        ...uniquePerfCells.map((r) => r.cell_id),
-                        ...libOnlyCellIds,
-                      ];
-                      type CellMeta = {
-                        title: string;
-                        conceptGroup: string;
-                        varCodes: string[];
-                        hasCreative: boolean;
-                        perfRow: typeof uniquePerfCells[number] | null;
-                        kind: "perf" | "lib";
-                      };
-                      const metaMap = new Map<string, CellMeta>(
-                        allCellIds.map((cellId) => {
-                          const libCell = libraryCellById(mst, cellId);
-                          const perfRow = uniquePerfCells.find((r) => r.cell_id === cellId) ?? null;
-                          const card = cardFromCell(cellId, cardCtx);
-                          const conceptGroup = cellId.match(/^[A-Z]\d+/i)?.[0]?.toUpperCase() ?? cellId;
-                          const varCodes = [
-                            libCell?.concept_variable ?? perfRow?.concept_variable,
-                            libCell?.hook_variable ?? perfRow?.hook_variable,
-                            libCell?.tone_variable ?? perfRow?.tone_variable,
-                            libCell?.framework_variable ?? perfRow?.framework_variable,
-                            libCell?.pain_proof_variable ?? perfRow?.pain_proof_variable,
-                            libCell?.proof_variable ?? perfRow?.proof_variable,
-                            libCell?.cta_variable ?? perfRow?.cta_variable,
-                          ].filter((v): v is string => Boolean(v));
-                          return [cellId, {
-                            title: card.title,
-                            conceptGroup,
-                            varCodes,
-                            hasCreative: Boolean(card.assetUrl),
-                            perfRow,
-                            kind: perfRow ? "perf" : "lib",
-                          }];
-                        })
-                      );
-
-                      // Available concepts and variable codes for toolbar
-                      const availableConcepts = [...new Set(allCellIds.map((id) => metaMap.get(id)!.conceptGroup))].sort();
-                      const availableVarCodes = [...new Set(allCellIds.flatMap((id) => metaMap.get(id)!.varCodes))].sort();
-
-                      // ── Apply filters ─────────────────────────────────────────
-                      let filteredIds = allCellIds;
-                      if (conceptFilter) {
-                        filteredIds = filteredIds.filter((id) => metaMap.get(id)?.conceptGroup === conceptFilter);
-                      }
-                      if (variableFilter) {
-                        filteredIds = filteredIds.filter((id) => metaMap.get(id)?.varCodes.includes(variableFilter));
-                      }
-                      if (statusFilter === "has-data") {
-                        filteredIds = filteredIds.filter((id) => metaMap.get(id)?.kind === "perf");
-                      } else if (statusFilter === "lib-only") {
-                        filteredIds = filteredIds.filter((id) => metaMap.get(id)?.kind === "lib");
-                      } else if (statusFilter === "has-creative") {
-                        filteredIds = filteredIds.filter((id) => metaMap.get(id)?.hasCreative);
-                      }
-
-                      // ── Apply sort ────────────────────────────────────────────
-                      if (sortBy !== "library") {
-                        filteredIds = [...filteredIds].sort((a, b) => {
-                          const ma = metaMap.get(a)!;
-                          const mb = metaMap.get(b)!;
-                          if (sortBy === "cpa") {
-                            const ca = ma.perfRow?.CPA_result ?? null;
-                            const cb = mb.perfRow?.CPA_result ?? null;
-                            if (ca === null && cb === null) return 0;
-                            if (ca === null) return 1;
-                            if (cb === null) return -1;
-                            return ca - cb;
-                          }
-                          if (sortBy === "spend")   return (mb.perfRow?.["Amount spent (USD)"] ?? 0) - (ma.perfRow?.["Amount spent (USD)"] ?? 0);
-                          if (sortBy === "results") return (mb.perfRow?.Results ?? 0) - (ma.perfRow?.Results ?? 0);
-                          if (sortBy === "ctr")     return (mb.perfRow?.CTR_link_pct ?? 0) - (ma.perfRow?.CTR_link_pct ?? 0);
-                          if (sortBy === "alpha")   return ma.title.localeCompare(mb.title);
-                          return 0;
-                        });
-                      }
-
-                      // ── Pagination ────────────────────────────────────────────
-                      const totalCells = filteredIds.length;
+                    {cells.length ? (() => {
+                      const uniqueCells = uniqueCellRows(cells);
+                      const totalCells = uniqueCells.length;
                       const totalPages = Math.max(1, Math.ceil(totalCells / pageSize));
                       const safePage = Math.min(page, totalPages);
-                      const sliceStart = (safePage - 1) * pageSize;
-                      const sliceEnd = safePage * pageSize;
-                      const rangeStart = sliceStart + 1;
-                      const rangeEnd = Math.min(sliceEnd, totalCells);
-                      const pagedIds = filteredIds.slice(sliceStart, sliceEnd);
-
-                      // ── Sort / filter toolbar constants ──────────────────
-                      const SORT_OPTS: { id: SortOption; label: string }[] = [
-                        { id: "library",  label: "Library" },
-                        { id: "cpa",      label: "Best CPA" },
-                        { id: "spend",    label: "Spend ↓" },
-                        { id: "results",  label: "Results ↓" },
-                        { id: "ctr",      label: "CTR ↓" },
-                        { id: "alpha",    label: "A → Z" },
-                      ];
-                      const STATUS_OPTS: { id: StatusFilter; label: string }[] = [
-                        { id: "all",          label: "All" },
-                        { id: "has-data",     label: "Has data" },
-                        { id: "lib-only",     label: "No data" },
-                        { id: "has-creative", label: "Has creative" },
-                      ];
-                      const activeFilters = [conceptFilter, variableFilter, statusFilter !== "all"].filter(Boolean).length;
-
-                      const pill = (active: boolean) =>
-                        `text-[10px] font-medium px-2 py-0.5 rounded transition-colors ${active ? "bg-primary/15 text-primary" : "text-muted-foreground/50 hover:text-foreground hover:bg-white/[0.04]"}`;
-
-                      if (totalCells === 0) {
-                        return (
-                          <div className="space-y-3">
-                            <div className="rounded-lg border border-border/30 bg-white/[0.02] p-3 space-y-1.5">
-                              <div className="flex items-center gap-2">
-                                <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/40">Sort</span>
-                                {SORT_OPTS.map(o => <button key={o.id} onClick={() => setSortBy(o.id)} className={pill(sortBy === o.id)}>{o.label}</button>)}
-                              </div>
-                            </div>
-                            <PendingState title="No creatives match" message="Clear the active filters to see all library cells." />
-                            {activeFilters > 0 && (
-                              <button onClick={() => { setConceptFilter(null); setVariableFilter(null); setStatusFilter("all"); }} className="text-[10px] text-primary hover:underline">
-                                Clear filters ({activeFilters})
-                              </button>
-                            )}
-                          </div>
-                        );
-                      }
-
+                      const pagedCells = uniqueCells.slice((safePage - 1) * pageSize, safePage * pageSize);
+                      const rangeStart = (safePage - 1) * pageSize + 1;
+                      const rangeEnd = Math.min(safePage * pageSize, totalCells);
                       return (
-                        <div className="space-y-3">
-                          {/* ── Sort / filter toolbar ── */}
-                          <div className="rounded-lg border border-border/25 bg-white/[0.02] px-3 py-2.5 space-y-2">
-                            {/* Sort row */}
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/40 shrink-0 w-10">Sort</span>
-                              <div className="flex items-center gap-0.5 flex-wrap">
-                                {SORT_OPTS.map(o => (
-                                  <button key={o.id} onClick={() => setSortBy(o.id)} className={pill(sortBy === o.id)}>{o.label}</button>
-                                ))}
-                              </div>
-                              {activeFilters > 0 && (
-                                <button
-                                  onClick={() => { setConceptFilter(null); setVariableFilter(null); setStatusFilter("all"); }}
-                                  className="ml-auto text-[9px] text-muted-foreground/50 hover:text-primary transition-colors border border-border/30 px-2 py-0.5 rounded"
-                                >
-                                  Clear filters ({activeFilters})
-                                </button>
-                              )}
-                            </div>
-                            {/* Filter row */}
-                            <div className="flex items-center gap-4 flex-wrap">
-                              {/* Concept */}
-                              {availableConcepts.length > 1 && (
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/40 shrink-0">Concept</span>
-                                  <button onClick={() => setConceptFilter(null)} className={pill(!conceptFilter)}>All</button>
-                                  {availableConcepts.map(c => (
-                                    <button key={c} onClick={() => setConceptFilter(conceptFilter === c ? null : c)} className={pill(conceptFilter === c)}>{c}</button>
-                                  ))}
-                                </div>
-                              )}
-                              {/* Variable */}
-                              {availableVarCodes.length > 0 && (
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/40 shrink-0">Variable</span>
-                                  <select
-                                    value={variableFilter ?? ""}
-                                    onChange={e => setVariableFilter(e.target.value || null)}
-                                    className="text-[10px] bg-white/[0.03] border border-border/30 rounded px-2 py-0.5 text-muted-foreground/70 hover:border-border/50 transition-colors focus:outline-none focus:border-primary/40"
-                                  >
-                                    <option value="">All</option>
-                                    {availableVarCodes.map(code => <option key={code} value={code}>{code}</option>)}
-                                  </select>
-                                </div>
-                              )}
-                              {/* Status */}
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/40 shrink-0">Show</span>
-                                {STATUS_OPTS.map(o => (
-                                  <button key={o.id} onClick={() => setStatusFilter(o.id)} className={pill(statusFilter === o.id)}>{o.label}</button>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* ── Grid ── */}
+                        <div className="space-y-4">
                           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                            {pagedIds.map((cellId) => {
-                              const meta = metaMap.get(cellId)!;
-                              if (meta.kind === "perf") {
-                                const row = meta.perfRow!;
-                                return (
-                                  <CreativeCard
-                                    key={cellId}
-                                    data={{
-                                      ...cardFromCell(cellId, cardCtx),
-                                      stats: aggStatsForCell(cellId, cells),
-                                    }}
-                                    unmapped={unmappedCellIds.has(cellId)}
-                                    demographic={demoByCell.get(cellId) ?? []}
-                                    placements={allPlacements}
-                                    onUploadCreatives={() => setCreativeLibraryOpen(true)}
-                                    onSegmentClick={(seg) => setCardSegment({ segment: seg, cellIds: [cellId] })}
-                                    onFullBreakdownClick={() => setCardGridCell(row)}
-                                    expandFooter={(close) => (
-                                      <button
-                                        onClick={() => { close(); setDetail(row); }}
-                                        data-testid={`button-full-detail-${cellId}`}
-                                        className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-white bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-all"
-                                      >
-                                        Full detail →
-                                      </button>
-                                    )}
-                                  />
-                                );
-                              }
-                              return (
-                                <CreativeCard
-                                  key={cellId}
-                                  data={cardFromCell(cellId, cardCtx)}
-                                  unmapped={false}
-                                  demographic={[]}
-                                  placements={allPlacements}
-                                  onUploadCreatives={() => setCreativeLibraryOpen(true)}
-                                />
-                              );
-                            })}
+                            {pagedCells.map((row) => (
+                              <CreativeCard
+                                key={row.cell_id}
+                                data={{
+                                  ...cardFromCell(row.cell_id, cardCtx),
+                                  stats: aggStatsForCell(row.cell_id, cells),
+                                }}
+                                unmapped={unmappedCellIds.has(row.cell_id)}
+                                demographic={demoByCell.get(row.cell_id) ?? []}
+                                placements={allPlacements}
+                                onUploadCreatives={() => setCreativeLibraryOpen(true)}
+                                onSegmentClick={(seg) => setCardSegment({ segment: seg, cellIds: [row.cell_id] })}
+                                onFullBreakdownClick={() => setCardGridCell(row)}
+                                expandFooter={(close) => (
+                                  <button
+                                    onClick={() => { close(); setDetail(row); }}
+                                    data-testid={`button-full-detail-${row.cell_id}`}
+                                    className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-white bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-all"
+                                  >
+                                    Full detail →
+                                  </button>
+                                )}
+                              />
+                            ))}
                           </div>
 
-                          {/* ── Pagination ── */}
-                          <div className="flex items-center justify-between pt-2 border-t border-border/20">
+                          {/* ── Pagination controls ── */}
+                          <div className="flex items-center justify-between pt-3 border-t border-border/20">
                             <span className="text-[10px] text-muted-foreground/50 tabular-nums">
                               {totalCells <= pageSize
                                 ? `${totalCells} creative${totalCells === 1 ? "" : "s"}`
                                 : `${rangeStart}–${rangeEnd} of ${totalCells}`}
                             </span>
                             <div className="flex items-center gap-3">
+                              {/* Page-size toggle */}
                               <div className="flex items-center gap-0.5">
                                 {([10, 25, 50] as const).map((n) => (
-                                  <button key={n} onClick={() => setPageSize(n)}
-                                    className={`text-[10px] font-medium px-2 py-1 rounded transition-colors ${pageSize === n ? "bg-primary/15 text-primary" : "text-muted-foreground/50 hover:text-foreground hover:bg-white/[0.04]"}`}
-                                  >{n}</button>
+                                  <button
+                                    key={n}
+                                    onClick={() => setPageSize(n)}
+                                    className={`text-[10px] font-medium px-2 py-1 rounded transition-colors ${
+                                      pageSize === n
+                                        ? "bg-primary/15 text-primary"
+                                        : "text-muted-foreground/50 hover:text-foreground hover:bg-white/[0.04]"
+                                    }`}
+                                  >
+                                    {n}
+                                  </button>
                                 ))}
                                 <span className="text-[9px] text-muted-foreground/35 ml-1">per page</span>
                               </div>
+                              {/* Prev / page indicator / Next */}
                               {totalPages > 1 && (
                                 <div className="flex items-center gap-1">
-                                  <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={safePage === 1}
-                                    className="text-[12px] w-6 h-6 flex items-center justify-center rounded border border-border/30 disabled:opacity-25 hover:bg-white/[0.04] transition-colors text-muted-foreground/70" aria-label="Previous page">‹</button>
-                                  <span className="text-[10px] tabular-nums text-muted-foreground/50 px-1 min-w-[3rem] text-center">{safePage} / {totalPages}</span>
-                                  <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={safePage === totalPages}
-                                    className="text-[12px] w-6 h-6 flex items-center justify-center rounded border border-border/30 disabled:opacity-25 hover:bg-white/[0.04] transition-colors text-muted-foreground/70" aria-label="Next page">›</button>
+                                  <button
+                                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                    disabled={safePage === 1}
+                                    className="text-[12px] w-6 h-6 flex items-center justify-center rounded border border-border/30 disabled:opacity-25 hover:bg-white/[0.04] transition-colors text-muted-foreground/70"
+                                    aria-label="Previous page"
+                                  >
+                                    ‹
+                                  </button>
+                                  <span className="text-[10px] tabular-nums text-muted-foreground/50 px-1 min-w-[3rem] text-center">
+                                    {safePage} / {totalPages}
+                                  </span>
+                                  <button
+                                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                                    disabled={safePage === totalPages}
+                                    className="text-[12px] w-6 h-6 flex items-center justify-center rounded border border-border/30 disabled:opacity-25 hover:bg-white/[0.04] transition-colors text-muted-foreground/70"
+                                    aria-label="Next page"
+                                  >
+                                    ›
+                                  </button>
                                 </div>
                               )}
                             </div>
                           </div>
                         </div>
                       );
-                    })()}
+                    })() : (
+                      <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." />
+                    )}
                   </>
                 )}
 
