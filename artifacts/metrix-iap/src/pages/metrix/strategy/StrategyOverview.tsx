@@ -130,9 +130,11 @@ export function StrategyOverview() {
             <div className="px-6 py-5 space-y-4 max-w-5xl">
               <SectionCard title="Message pillars" desc="Validated message directions this account's strategy stands on." table="message_pillars">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {pillars.map((p) => (
+                  {pillars.map((p, i) => (
                     <div key={p.id} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2">
-                      <span className="text-[10px] font-mono text-muted-foreground/70">{p.id}</span>
+                      <span className="text-[10px] font-semibold text-muted-foreground/50 tabular-nums">
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
                       <p className="text-[13px] font-semibold text-foreground leading-tight">{p.label}</p>
                       <p className="text-[11px] text-muted-foreground/80 leading-relaxed">{p.plain_descriptor}</p>
                       {p.funnel_application && (
