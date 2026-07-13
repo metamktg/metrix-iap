@@ -8,8 +8,8 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getOptimizationLoop, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import { RecommendationDeck, actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
 import {
-  ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile, TileItem,
-  ImpactBadge, ScopeBadge, CaveatNote, RangeScopeBar, NoDataInRangeState,
+  ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile, CaveatNote,
+  RangeScopeBar, NoDataInRangeState,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { SegmentGridModal } from "@/components/creative/SegmentGridModal";
@@ -77,44 +77,9 @@ export function RecommendationsView() {
             ) : (
             <>
             <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
-              <MetricTile
-                label="Recommendations"
-                value={String(cards.length)}
-                popover={cards.length > 0 ? {
-                  content: cards.map((c) => (
-                    <TileItem key={c.id} title={c.title}
-                      badges={<><ScopeBadge scope={c.scope} /><ImpactBadge impact={c.impact} /></>}
-                    />
-                  )),
-                } : undefined}
-              />
-              <MetricTile
-                label="High impact"
-                value={String(highCount)}
-                popover={highCount > 0 ? {
-                  content: cards.filter((c) => c.impact === "high").map((c) => (
-                    <TileItem key={c.id} title={c.title}
-                      badges={<ScopeBadge scope={c.scope} />}
-                    />
-                  )),
-                } : undefined}
-              />
-              <MetricTile
-                label="Scopes"
-                value={String(scopes.length)}
-                sub={scopes.join(" · ") || "—"}
-                popover={scopes.length > 0 ? {
-                  content: scopes.map((scope) => {
-                    const n = cards.filter((c) => c.scope === scope).length;
-                    return (
-                      <TileItem key={scope}
-                        title={scope.charAt(0).toUpperCase() + scope.slice(1)}
-                        sub={`${n} recommendation${n !== 1 ? "s" : ""}`}
-                      />
-                    );
-                  }),
-                } : undefined}
-              />
+              <MetricTile label="Recommendations" value={String(cards.length)} />
+              <MetricTile label="High impact" value={String(highCount)} />
+              <MetricTile label="Scopes" value={String(scopes.length)} sub={scopes.join(" · ") || "—"} />
               <MetricTile label="Auto-applied" value="0" sub="manual implementation only" />
             </div>
 

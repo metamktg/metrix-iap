@@ -109,7 +109,6 @@ export type AccountTables = {
   conceptIntelligence: Map<string, Row[]>;
   failurePatterns: Map<string, Row[]>;
   adsRegistry: Map<string, Row[]>;
-  copyLibrary: Map<string, Row[]>;
   accountModules: Row[];
   signalCards: Row[];
 };
@@ -598,15 +597,6 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
       local_book2_library: libraryCells.map((r) => r["payload"]),
       historical_matrix_4x4: matrixWithLinks,
       source_artifacts: mstDoc["source_artifacts"] ?? [],
-      copy_library: forAccount(t.copyLibrary, accountId).map((r) => ({
-        code: r["code"],
-        scope: r["scope"] ?? null,
-        copy_type: r["copy_type"] ?? null,
-        copy: r["copy"] ?? null,
-        char_count: r["char_count"] === null ? null : (r["char_count"] != null ? Number(r["char_count"]) : null),
-        usage: r["usage"] ?? null,
-        notes: r["notes"] ?? null,
-      })),
     },
     listen: { signal_cards: listenCards },
   };
@@ -658,7 +648,6 @@ export async function assembleMetrixSeed(): Promise<Row> {
     conceptIntelligenceAll,
     failurePatternsAll,
     adsRegistryAll,
-    copyLibraryAll,
   ] = await Promise.all([
     selectAll("app_config"),
     selectAll("ad_accounts", (q) => q.order("id")),
@@ -686,7 +675,6 @@ export async function assembleMetrixSeed(): Promise<Row> {
     selectAll("concept_intelligence", (q) => q.order("book").order("concept_code")),
     selectAll("failure_patterns", (q) => q.order("id")),
     selectAll("ads", (q) => q.order("ad_name")),
-    selectAll("copy_library", (q) => q.order("id")),
   ]);
 
   if (adAccounts.length === 0 || adPerformanceAll.length === 0) {
@@ -717,7 +705,6 @@ export async function assembleMetrixSeed(): Promise<Row> {
     conceptIntelligence: groupByAccount(conceptIntelligenceAll),
     failurePatterns: groupByAccount(failurePatternsAll),
     adsRegistry: groupByAccount(adsRegistryAll),
-    copyLibrary: groupByAccount(copyLibraryAll),
     accountModules,
     signalCards,
   };

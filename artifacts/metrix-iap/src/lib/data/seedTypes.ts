@@ -433,23 +433,12 @@ export interface MSTMatrix {
   cells: MSTMatrixCell[];
 }
 
-export interface CopyLibraryRow {
-  code: string;
-  scope?: string | null;
-  copy_type?: string | null;
-  copy?: string | null;
-  char_count?: number | null;
-  usage?: string | null;
-  notes?: string | null;
-}
-
 export interface MST {
   status: string;
   render_policy: string;
   local_book2_library?: MSTLibraryCell[];
   historical_matrix_4x4?: MSTMatrix;
   source_artifacts?: string[];
-  copy_library?: CopyLibraryRow[];
 }
 
 // ─── Ads registry ─────────────────────────────────────────────────────

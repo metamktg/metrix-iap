@@ -9,7 +9,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getListenSignals } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ConfidenceBadge, ModuleTabs, ModuleScopeGate,
-  PendingState, MetricTile, TileItem, ImpactBadge, ScopeBadge, CrossLink, useFocusParam,
+  PendingState, MetricTile, ImpactBadge, ScopeBadge, CrossLink, useFocusParam,
   RangeScopeBar, NoDataInRangeState, StaleFocusNotice,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
@@ -52,9 +52,7 @@ export function SignalView() {
           ...present.map((s) => ({ id: s, label: SCOPE_LABEL[s] ?? s, count: signals.filter((x) => x.scope === s).length })),
         ];
         const shown = tab === "all" ? signals : signals.filter((x) => x.scope === tab);
-        const highImpact = signals.filter((s) => s.impact === "high");
-        const highCount = highImpact.length;
-        const highConfident = signals.filter((s) => s.confidence.toLowerCase().includes("high"));
+        const highCount = signals.filter((s) => s.impact === "high").length;
 
         return (
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
@@ -75,60 +73,10 @@ export function SignalView() {
             ) : (
             <>
             <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
-              <MetricTile
-                label="Active signals"
-                value={String(signals.length)}
-                popover={signals.length > 0 ? {
-                  content: signals.map((s) => (
-                    <TileItem key={s.id} title={s.title}
-                      badges={<><ScopeBadge scope={s.scope} /><ImpactBadge impact={s.impact} /></>}
-                      onClick={() => setDetail(s)}
-                    />
-                  )),
-                } : undefined}
-              />
-              <MetricTile
-                label="High impact"
-                value={String(highCount)}
-                sub={highCount > 0 ? "needs review" : "none flagged"}
-                popover={highCount > 0 ? {
-                  content: highImpact.map((s) => (
-                    <TileItem key={s.id} title={s.title}
-                      badges={<><ScopeBadge scope={s.scope} /><ConfidenceBadge value={s.confidence} /></>}
-                      onClick={() => setDetail(s)}
-                    />
-                  )),
-                } : undefined}
-              />
-              <MetricTile
-                label="Scopes covered"
-                value={String(present.length)}
-                sub={present.map((p) => SCOPE_LABEL[p] ?? p).join(" · ") || "—"}
-                popover={present.length > 0 ? {
-                  content: present.map((scope) => {
-                    const n = signals.filter((s) => s.scope === scope).length;
-                    return (
-                      <TileItem key={scope}
-                        title={SCOPE_LABEL[scope] ?? scope}
-                        sub={`${n} signal${n !== 1 ? "s" : ""}`}
-                        onClick={() => setTab(scope)}
-                      />
-                    );
-                  }),
-                } : undefined}
-              />
-              <MetricTile
-                label="High confidence"
-                value={String(highConfident.length)}
-                popover={highConfident.length > 0 ? {
-                  content: highConfident.map((s) => (
-                    <TileItem key={s.id} title={s.title}
-                      badges={<><ScopeBadge scope={s.scope} /><ImpactBadge impact={s.impact} /></>}
-                      onClick={() => setDetail(s)}
-                    />
-                  )),
-                } : undefined}
-              />
+              <MetricTile label="Active signals" value={String(signals.length)} />
+              <MetricTile label="High impact" value={String(highCount)} sub={highCount > 0 ? "needs review" : "none flagged"} />
+              <MetricTile label="Scopes covered" value={String(present.length)} sub={present.map((p) => SCOPE_LABEL[p] ?? p).join(" · ") || "—"} />
+              <MetricTile label="High confidence" value={String(signals.filter((s) => s.confidence.toLowerCase().includes("high")).length)} />
             </div>
 
             <div className="mt-4">
