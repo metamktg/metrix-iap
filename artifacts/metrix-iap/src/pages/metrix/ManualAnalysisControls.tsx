@@ -474,11 +474,13 @@ export function AnalysisControls({
 }) {
   const [dateRange, setDateRange] = useState<"7d" | "14d" | "30d" | "all">("30d");
   const [error, setError] = useState<string | null>(null);
+  const [fakeProgress, setFakeProgress] = useState(0);
   const queryClient = useQueryClient();
   const startMutation = useStartManualAnalysisRun();
   const { data: latest, refetch } = useGetLatestAnalysisRun(accountId);
   const { data: importsData, refetch: refetchImports } = useListManualImports(accountId);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const fakeProgressRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const calledDoneRef = useRef(false);
 
   const guessedImports = guessedCreativeImports(importsData?.imports ?? []);
@@ -504,6 +506,32 @@ export function AnalysisControls({
       }
     };
   }, [isRunning, refetch, queryClient]);
+
+  // Fake progress bar: counts 0→90 while running, snaps to 100 on success, resets on error/idle.
+  useEffect(() => {
+    if (isRunning && !fakeProgressRef.current) {
+      setFakeProgress(0);
+      fakeProgressRef.current = setInterval(() => {
+        setFakeProgress((prev) => {
+          if (prev >= 90) return 90;
+          const step = prev < 30 ? 4 : prev < 60 ? 2 : 0.8;
+          return Math.min(90, prev + step);
+        });
+      }, 400);
+    }
+    if (!isRunning && fakeProgressRef.current) {
+      clearInterval(fakeProgressRef.current);
+      fakeProgressRef.current = null;
+      if (run?.status === "success") setFakeProgress(100);
+      else setFakeProgress(0);
+    }
+    return () => {
+      if (fakeProgressRef.current) {
+        clearInterval(fakeProgressRef.current);
+        fakeProgressRef.current = null;
+      }
+    };
+  }, [isRunning, run?.status]);
 
   // Fire onDone once when the run transitions to success.
   useEffect(() => {
@@ -589,6 +617,29 @@ export function AnalysisControls({
           )}
         </RunAnalysisBtn>
       </div>
+
+      {/* Progress bar — visible while running and briefly after success */}
+      {(isRunning || run?.status === "success") && fakeProgress > 0 && (
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-[10px] text-muted-foreground/75">
+            <span>
+              {isRunning
+                ? "Processing uploads — reading rows, mapping columns…"
+                : "Analysis complete"}
+            </span>
+            <span className="tabular-nums">{Math.round(fakeProgress)}%</span>
+          </div>
+          <div className="h-1 w-full rounded-full bg-white/[0.06] overflow-hidden">
+            <div
+              className={cn(
+                "h-full rounded-full transition-[width] duration-500 ease-out",
+                run?.status === "success" ? "bg-emerald-400/70" : "bg-primary/70"
+              )}
+              style={{ width: `${fakeProgress}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       {run && run.status === "success" && <CsvWarningsPanel run={run} />}
 
