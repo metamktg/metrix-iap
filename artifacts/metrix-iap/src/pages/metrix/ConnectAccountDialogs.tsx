@@ -67,6 +67,7 @@ import type { AdAccount } from "@/lib/data/seedTypes";
 import {
   RequiredFormatPanel,
   GuessedMatchesCallout,
+  AnalysisControls,
   type IapCsvClassKey,
 } from "./ManualAnalysisControls";
 import { guessedCreativeImports } from "./manualImportUtils";
@@ -318,19 +319,23 @@ function CsvSlotUpload({
   const fileRef = useRef<HTMLInputElement>(null);
   const deleteMutation = useDeleteManualImport();
 
-  const handleStage = async () => {
-    if (!file) return;
+  /** Stages a file immediately. Accepts the file directly so it can be called
+   *  from the onChange handler before React state for `file` has settled. */
+  const handleStage = async (fileToStage: File) => {
     setError(null);
-    if (file.size > MAX_UPLOAD_BYTES) {
+    if (fileToStage.size > MAX_UPLOAD_BYTES) {
       setError("File is too large — the limit is 8 MB.");
+      setFile(null);
+      if (fileRef.current) fileRef.current.value = "";
       return;
     }
+    setFile(fileToStage);
     setUploadPct(0);
     try {
-      const content_base64 = await fileToBase64(file);
+      const content_base64 = await fileToBase64(fileToStage);
       await stageManualImportWithProgress(
         accountId,
-        { kind, filename: file.name, content_type: file.type || undefined, content_base64 },
+        { kind, filename: fileToStage.name, content_type: fileToStage.type || undefined, content_base64 },
         setUploadPct
       );
       setFile(null);
@@ -338,6 +343,8 @@ function CsvSlotUpload({
       onStaged();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed. Check your connection and try again.");
+      setFile(null);
+      if (fileRef.current) fileRef.current.value = "";
     } finally {
       setUploadPct(null);
     }
@@ -386,28 +393,32 @@ function CsvSlotUpload({
             type="file"
             accept=".csv"
             className="hidden"
-            onChange={(e) => { setError(null); setFile(e.target.files?.[0] ?? null); }}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void handleStage(f);
+            }}
           />
           <button
             onClick={() => fileRef.current?.click()}
-            className="w-full flex flex-col items-center gap-1.5 p-4 rounded-lg border border-dashed border-border/60 hover:border-primary/40 hover:bg-white/[0.02] transition-colors cursor-pointer"
-          >
-            <Upload className="w-4 h-4 text-muted-foreground/85" />
-            {file ? (
-              <span className="text-[12px] font-medium text-foreground">
-                {file.name} <span className="text-muted-foreground/80 font-normal">({(file.size / 1024).toFixed(0)} KB)</span>
-              </span>
-            ) : (
-              <span className="text-[11px] text-muted-foreground/80">Choose a .csv file (max 8 MB)</span>
+            disabled={uploadPct !== null}
+            className={cn(
+              "w-full flex flex-col items-center gap-1.5 p-4 rounded-lg border border-dashed transition-colors",
+              uploadPct !== null
+                ? "border-primary/30 bg-primary/[0.03] cursor-not-allowed"
+                : "border-border/60 hover:border-primary/40 hover:bg-white/[0.02] cursor-pointer"
             )}
+          >
+            {uploadPct !== null ? (
+              <Loader2 className="w-4 h-4 text-primary animate-spin" />
+            ) : (
+              <Upload className="w-4 h-4 text-muted-foreground/85" />
+            )}
+            <span className="text-[11px] text-muted-foreground/80">
+              {uploadPct !== null
+                ? `Uploading${file ? ` ${file.name}` : ""}…`
+                : "Click to choose a .csv file — uploads immediately"}
+            </span>
           </button>
-          {file && uploadPct === null && (
-            <div className="flex items-center justify-end">
-              <PrimaryBtn onClick={() => void handleStage()}>
-                <>Stage {title}</>
-              </PrimaryBtn>
-            </div>
-          )}
           {uploadPct !== null && <UploadProgressBar pct={uploadPct} label={`Uploading ${file?.name ?? title}…`} />}
         </>
       )}
@@ -951,7 +962,16 @@ function CreativeUploadSection({
  * No date range lives here — that's a separate, explicit "Run analysis"
  * step from the account setup screen.
  */
-export function ManualUploadPanel({ accountId, availableAdNames }: { accountId: string; availableAdNames?: string[] }) {
+export function ManualUploadPanel({
+  accountId,
+  availableAdNames,
+  onDone,
+}: {
+  accountId: string;
+  availableAdNames?: string[];
+  /** Called when the user finishes the flow (after a successful analysis run or explicit dismiss). */
+  onDone?: () => void;
+}) {
   const [step, setStep] = useState<"upload" | "review">("upload");
   const { data, refetch } = useListManualImports(accountId);
   const queryClient = useQueryClient();
@@ -976,16 +996,17 @@ export function ManualUploadPanel({ accountId, availableAdNames }: { accountId: 
   if (step === "review") {
     return (
       <div className="space-y-3">
+        {/* Upload summary */}
         <div className="rounded-lg border border-border/40 bg-white/[0.02] p-3 space-y-2">
-          <div className="text-[12px] font-semibold text-foreground">Review before finishing</div>
+          <div className="text-[12px] font-semibold text-foreground">Files staged</div>
           <div className="space-y-1.5">
             <div className="flex items-center gap-2 text-[11px]">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span className="text-foreground/80">Demographics CSV — {demoImport?.filename}</span>
+              <span className="text-foreground/80 truncate">Demographics — {demoImport?.filename}</span>
             </div>
             <div className="flex items-center gap-2 text-[11px]">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span className="text-foreground/80">Placements CSV — {placementImport?.filename}</span>
+              <span className="text-foreground/80 truncate">Placements — {placementImport?.filename}</span>
             </div>
             {creativeAssets.length > 0 ? (
               creativeAssets.map((a) => (
@@ -1002,10 +1023,6 @@ export function ManualUploadPanel({ accountId, availableAdNames }: { accountId: 
               <div className="text-[11px] text-muted-foreground/80">No creative files staged.</div>
             )}
           </div>
-          <p className="text-[10px] text-muted-foreground/75 leading-relaxed pt-1 border-t border-border/30">
-            Nothing has been parsed into performance data yet. Go to the account's setup screen to
-            pick a date range and explicitly run analysis over these staged files.
-          </p>
         </div>
 
         <GuessedMatchesCallout
@@ -1015,10 +1032,32 @@ export function ManualUploadPanel({ accountId, availableAdNames }: { accountId: 
           onReview={() => setStep("upload")}
           reviewLabel="Go back to fix"
         />
+
+        {/* Inline first-run analysis trigger */}
+        <div className="rounded-lg border border-primary/20 bg-primary/[0.04] p-3 space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-md bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0">
+              <Database className="w-3.5 h-3.5 text-primary" />
+            </div>
+            <div>
+              <div className="text-[12px] font-semibold text-foreground">Run first analysis</div>
+              <p className="text-[10px] text-muted-foreground/80 leading-relaxed">
+                Pick a date window and process your uploads into performance data now.
+              </p>
+            </div>
+          </div>
+          <AnalysisControls accountId={accountId} onDone={onDone} />
+        </div>
+
         <div className="flex items-center justify-between pt-1">
           <GhostBtn onClick={() => setStep("upload")}>
             <ArrowLeft className="w-3.5 h-3.5" /> Back to uploads
           </GhostBtn>
+          {onDone && (
+            <GhostBtn onClick={onDone}>
+              Skip for now
+            </GhostBtn>
+          )}
         </div>
       </div>
     );
@@ -1214,7 +1253,11 @@ export function ManualImportDialog({
             only after you explicitly run analysis from the account's setup screen.
           </DialogDescription>
         </DialogHeader>
-        <ManualUploadPanel accountId={account.id} availableAdNames={availableAdNames} />
+        <ManualUploadPanel
+          accountId={account.id}
+          availableAdNames={availableAdNames}
+          onDone={() => handleOpenChange(false)}
+        />
       </DialogContent>
     </Dialog>
   );

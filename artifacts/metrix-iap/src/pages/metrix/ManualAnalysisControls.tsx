@@ -464,7 +464,14 @@ function CreativeLinkageStatus({
  * Nothing here runs automatically — the user must pick a date range and
  * press "Run analysis". Polls the latest run every 2.5s while running.
  */
-export function AnalysisControls({ accountId }: { accountId: string }) {
+export function AnalysisControls({
+  accountId,
+  onDone,
+}: {
+  accountId: string;
+  /** Called once when the run status transitions to "success". */
+  onDone?: () => void;
+}) {
   const [dateRange, setDateRange] = useState<"7d" | "14d" | "30d" | "all">("30d");
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
@@ -472,6 +479,7 @@ export function AnalysisControls({ accountId }: { accountId: string }) {
   const { data: latest, refetch } = useGetLatestAnalysisRun(accountId);
   const { data: importsData, refetch: refetchImports } = useListManualImports(accountId);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const calledDoneRef = useRef(false);
 
   const guessedImports = guessedCreativeImports(importsData?.imports ?? []);
 
@@ -496,6 +504,15 @@ export function AnalysisControls({ accountId }: { accountId: string }) {
       }
     };
   }, [isRunning, refetch, queryClient]);
+
+  // Fire onDone once when the run transitions to success.
+  useEffect(() => {
+    if (run?.status !== "success" || !onDone || calledDoneRef.current) return;
+    calledDoneRef.current = true;
+    // Small delay so the user can see the success state before the dialog closes.
+    const t = setTimeout(onDone, 1400);
+    return () => clearTimeout(t);
+  }, [run?.status, onDone]);
 
   const handleRun = async () => {
     setError(null);
