@@ -202,7 +202,7 @@ export function IapLibraryView() {
           if (!a) {
             return (
               <div className="flex-1 flex flex-col">
-                <ModuleHeader section={SECTION} title="IAP Library" />
+                <ModuleHeader section={SECTION} title="IAP Library" tabs="analysis" />
                 <ScopeBanner account={acct} />
                 <PendingState title="Analysis pending" message="No analysis data available for this account yet." />
               </div>
@@ -266,6 +266,7 @@ export function IapLibraryView() {
                 title="IAP Library"
                 subtitle="Creative cell and variable performance, filtered by metric selection."
                 table="performance_by_cell, v3_variable_performance"
+                tabs="analysis"
               />
               <ScopeBanner account={acct} />
               {focus && !a.performance_by_cell.some((r) => r.cell_id === focus) && (

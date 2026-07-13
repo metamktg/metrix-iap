@@ -241,7 +241,7 @@ export function AvatarsView() {
         if (!matrix && icpProfiles.length === 0) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Avatars" />
+              <ModuleHeader section={SECTION} title="Avatars" tabs="strategy" />
               <ScopeBanner account={acct} />
               <PendingState title="No avatars yet" message="Avatars are derived from the MST matrix and strategy ICP profiles once they exist for this account." icon={Users} />
             </div>
@@ -280,6 +280,7 @@ export function AvatarsView() {
               title="Avatars / ICP"
               subtitle="Who this account targets: matrix avatars, full ICP profiles, and the real audience signal — in one place."
               table="historical_matrix_4x4, icp_profiles, demographic_registration_signal"
+              tabs="strategy"
             />
             <ScopeBanner account={acct} />
             <RangeScopeBar grainNote="Avatars come from the historical matrix; audience signal aggregates full flight windows — this import has no daily grain." />

@@ -66,7 +66,7 @@ export function StrategyMapView() {
         if (!strategy || strategy.message_pillars.length === 0) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Strategy Map" />
+              <ModuleHeader section={SECTION} title="Strategy Map" tabs="strategy" />
               <ScopeBanner account={acct} />
               <PendingState title="No strategy map" message="The map draws from message pillars — none exist for this account yet." icon={Map} />
             </div>
@@ -104,6 +104,7 @@ export function StrategyMapView() {
               title="Strategy Map"
               subtitle="Evidence → pillar → hypothesis: how validated cells become the next round of tests."
               table="message_pillars, active_hypotheses, performance_by_cell"
+              tabs="strategy"
             />
             <ScopeBanner account={acct} />
             <FlowCrumb {...fp} />

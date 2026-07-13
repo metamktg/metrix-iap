@@ -105,7 +105,7 @@ export function AudienceView() {
           if (rows.length === 0) {
             return (
               <div className="flex-1 flex flex-col">
-                <ModuleHeader section={SECTION} title="Audience" />
+                <ModuleHeader section={SECTION} title="Audience" tabs="analysis" />
                 <ScopeBanner account={acct} />
                 <PendingState title="No demographic signal" message="The audience read appears once demographic result data exists." icon={Users} />
               </div>
@@ -124,6 +124,7 @@ export function AudienceView() {
                 title="Audience"
                 subtitle={`Who converts: the demographic ${term.singular} signal by age band and gender. Click any segment to see the messaging it responds to.`}
                 table="demographic_registration_signal"
+                tabs="analysis"
               />
               <ScopeBanner account={acct} />
               <RangeScopeBar grainNote="Demographic signal aggregates each cell's full flight window — this import has no daily grain." />
