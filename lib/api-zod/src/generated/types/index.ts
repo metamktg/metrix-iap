@@ -129,6 +129,7 @@ export * from './selectMetaAdAccountResult';
 export * from './startAnalysisInput';
 export * from './startAnalysisInputDateRange';
 export * from './startGenerationResult';
+export * from './syncCreativeLinksResult';
 export * from './updateManualImportAdNamesInput';
 export * from './updateManualImportAdNamesInputMatchMethod';
 export * from './updateMemberPermissionsInput';

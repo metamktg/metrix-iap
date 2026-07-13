@@ -75,6 +75,7 @@ import type {
   SelectMetaAdAccountResult,
   StartAnalysisInput,
   StartGenerationResult,
+  SyncCreativeLinksResult,
   UpdateManualImportAdNamesInput,
   UpdateMemberPermissionsInput,
   UpdateMemberPermissionsResult,
@@ -797,6 +798,77 @@ export const useStartManualAnalysisRun = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getStartManualAnalysisRunMutationOptions(options));
+    }
+
+export const getSyncCreativeLinksUrl = (accountId: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/sync-creative-links`
+}
+
+/**
+ * Re-attempts linking all staged creative assets to their mapped ad names for the account. Useful after correcting an ad_names mapping on an existing upload without re-running the full analysis. Returns counts of linked and unlinked names. Requires access to the account.
+ * @summary Re-sync creative asset links for an account
+ */
+export const syncCreativeLinks = async (accountId: string, options?: RequestInit): Promise<SyncCreativeLinksResult> => {
+
+  return customFetch<SyncCreativeLinksResult>(getSyncCreativeLinksUrl(accountId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getSyncCreativeLinksMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof syncCreativeLinks>>, TError,{accountId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof syncCreativeLinks>>, TError,{accountId: string}, TContext> => {
+
+const mutationKey = ['syncCreativeLinks'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof syncCreativeLinks>>, {accountId: string}> = (props) => {
+          const {accountId} = props ?? {};
+
+          return  syncCreativeLinks(accountId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SyncCreativeLinksMutationResult = NonNullable<Awaited<ReturnType<typeof syncCreativeLinks>>>
+
+    export type SyncCreativeLinksMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Re-sync creative asset links for an account
+ */
+export const useSyncCreativeLinks = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof syncCreativeLinks>>, TError,{accountId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof syncCreativeLinks>>,
+        TError,
+        {accountId: string},
+        TContext
+      > => {
+      return useMutation(getSyncCreativeLinksMutationOptions(options));
     }
 
 export const getGetLatestAnalysisRunUrl = (accountId: string,) => {

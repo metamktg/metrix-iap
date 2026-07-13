@@ -21,14 +21,9 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
+import { FORMAT_LABEL } from "./reportFormatLabels";
 
 const SECTION = "Reports · 06";
-
-export const FORMAT_LABEL: Record<string, string> = {
-  pdf: "PDF",
-  google_doc: "Google Doc",
-  html: "HTML",
-};
 
 type Tab = "preview" | "branding";
 type Mode = "internal" | "client";

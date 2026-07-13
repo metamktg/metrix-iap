@@ -9,7 +9,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getReportHistory } from "@/lib/data/metrixSeedAdapter";
 import { buildReportModel, downloadReportExport, parseReportModel, type BrandingMode } from "@/lib/reportExport";
 import { ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile, CrossLink, fmtNum } from "../shared";
-import { FORMAT_LABEL } from "./NewReportView";
+import { FORMAT_LABEL } from "./reportFormatLabels";
 import { cn } from "@/lib/utils";
 import { History, FileText, Building2, Users, FileDown, Check, Loader2, Trash2, X } from "lucide-react";
 import {

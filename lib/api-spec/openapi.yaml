@@ -387,6 +387,47 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/sync-creative-links:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+    post:
+      operationId: syncCreativeLinks
+      tags: [metrix]
+      summary: Re-sync creative asset links for an account
+      description: Re-attempts linking all staged creative assets to their mapped ad names for the account. Useful after correcting an ad_names mapping on an existing upload without re-running the full analysis. Returns counts of linked and unlinked names. Requires access to the account.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Sync complete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncCreativeLinksResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/accounts/{accountId}/analysis-runs/latest:
     parameters:
       - name: accountId
@@ -2885,12 +2926,41 @@ components:
         finished_at:
           type: string
           nullable: true
+        creatives_linked:
+          type: integer
+          nullable: true
+          description: Number of staged creative assets successfully linked to ad rows (computed live from current DB state).
+        creatives_total:
+          type: integer
+          nullable: true
+          description: Total number of staged creative asset ad-name mappings attempted.
+        creatives_unlinked_names:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: Ad names from staged creative assets that could not be matched to any ads row.
       required:
         - id
         - account_id
         - status
         - date_range
         - started_at
+    SyncCreativeLinksResult:
+      type: object
+      properties:
+        linked:
+          type: integer
+        total:
+          type: integer
+        unlinked_names:
+          type: array
+          items:
+            type: string
+      required:
+        - linked
+        - total
+        - unlinked_names
     LatestAnalysisRunResult:
       type: object
       properties:

@@ -53,6 +53,15 @@ export type ManualAnalysisRun = {
   error_message: string | null;
   started_at: string;
   finished_at: string | null;
+  creatives_linked: number | null;
+  creatives_total: number | null;
+  creatives_unlinked_names: string[] | null;
+};
+
+export type CreativeLinkageSummary = {
+  linked: number;
+  total: number;
+  unlinked_names: string[];
 };
 
 type Row = Record<string, any>;
@@ -69,6 +78,9 @@ const runShape = (r: Row): ManualAnalysisRun => ({
   error_message: r["error_message"] ?? null,
   started_at: String(r["started_at"]),
   finished_at: r["finished_at"] ?? null,
+  creatives_linked: null,
+  creatives_total: null,
+  creatives_unlinked_names: null,
 });
 
 async function accountExists(accountId: string): Promise<Row | null> {
@@ -236,6 +248,104 @@ function derivedRates(spend: number | null, impressions: number | null, linkClic
     ctr_link_pct: linkClicks !== null && impressions !== null && impressions > 0 ? (linkClicks / impressions) * 100 : null,
     cvr_link_pct: linkClicks !== null && linkClicks > 0 && results !== null ? (results / linkClicks) * 100 : null,
     cpm: impressions !== null && impressions > 0 && spend !== null ? (spend / impressions) * 1000 : null,
+  };
+}
+
+/**
+ * Syncs all staged creative asset imports for an account to their mapped
+ * ad names. For each creative_asset import with a non-empty ad_names list,
+ * issues an UPDATE against the ads table so the file URL lands on the matched
+ * row. Returns a summary of how many ad names were linked vs still unmatched.
+ *
+ * This is non-fatal by design — callers should catch and log errors without
+ * surfacing them to users as blocking failures.
+ */
+export async function syncAllCreativeLinksForAccount(
+  accountId: string,
+  appBaseUrl: string,
+): Promise<CreativeLinkageSummary> {
+  const supabase = getSupabase();
+  const { data: creativeImports, error } = await supabase
+    .from("manual_imports")
+    .select("id, filename, ad_names")
+    .eq("account_id", accountId)
+    .eq("kind", "creative_asset");
+  if (error) throw new Error(error.message);
+
+  let totalLinked = 0;
+  let totalMappings = 0;
+  const unlinkedNames: string[] = [];
+
+  for (const imp of creativeImports ?? []) {
+    const adNames = (imp["ad_names"] as string[] | null) ?? [];
+    if (adNames.length === 0) continue;
+    totalMappings += adNames.length;
+    const fileUrl = `${appBaseUrl}api/metrix/accounts/${accountId}/manual-imports/${imp["id"]}/file`;
+    const sync = await supabase
+      .from("ads")
+      .update({ creative_asset_url: fileUrl, asset_filename: imp["filename"], asset_servable: true })
+      .eq("account_id", accountId)
+      .in("ad_name", adNames)
+      .select("ad_name");
+    if (sync.error) {
+      logger.warn(
+        { accountId, importId: imp["id"], err: sync.error },
+        "syncAllCreativeLinksForAccount: partial failure on import",
+      );
+      unlinkedNames.push(...adNames);
+      continue;
+    }
+    const linked = new Set((sync.data ?? []).map((r) => r["ad_name"] as string));
+    totalLinked += linked.size;
+    for (const name of adNames) {
+      if (!linked.has(name)) unlinkedNames.push(name);
+    }
+  }
+
+  return { linked: totalLinked, total: totalMappings, unlinked_names: unlinkedNames };
+}
+
+/**
+ * Computes current creative linkage status for an account by querying
+ * manual_imports and checking which ad names have a matching ads row with
+ * a creative_asset_url set. Does NOT write to the database — read-only
+ * diagnostic query.
+ */
+export async function computeCreativeLinkageSummary(accountId: string): Promise<CreativeLinkageSummary> {
+  const supabase = getSupabase();
+
+  const importsResult = await supabase
+    .from("manual_imports")
+    .select("id, ad_names")
+    .eq("account_id", accountId)
+    .eq("kind", "creative_asset");
+  if (importsResult.error) throw new Error(importsResult.error.message);
+
+  const allMappedNames: string[] = [];
+  for (const imp of importsResult.data ?? []) {
+    const adNames = (imp["ad_names"] as string[] | null) ?? [];
+    allMappedNames.push(...adNames);
+  }
+
+  if (allMappedNames.length === 0) {
+    return { linked: 0, total: 0, unlinked_names: [] };
+  }
+
+  const adsResult = await supabase
+    .from("ads")
+    .select("ad_name")
+    .eq("account_id", accountId)
+    .not("creative_asset_url", "is", null)
+    .in("ad_name", allMappedNames);
+  if (adsResult.error) throw new Error(adsResult.error.message);
+
+  const linkedSet = new Set((adsResult.data ?? []).map((r) => r["ad_name"] as string));
+  const unlinkedNames = allMappedNames.filter((n) => !linkedSet.has(n));
+
+  return {
+    linked: linkedSet.size,
+    total: allMappedNames.length,
+    unlinked_names: unlinkedNames,
   };
 }
 
@@ -440,30 +550,11 @@ export async function startManualAnalysis(
         if (adsUpsert.error) throw new Error(adsUpsert.error.message);
 
         // Re-sync creative asset links — creatives uploaded BEFORE analysis
-        // had no ads rows to link against at upload time (syncCreativeAssetLinks
-        // logged "unmatched"). Now that the ads rows exist we back-fill them.
-        // Non-fatal: a sync failure must not roll back a successful analysis.
+        // had no ads rows to link against at upload time. Now that the ads
+        // rows exist we back-fill them. Non-fatal: a sync failure must not
+        // roll back a successful analysis.
         try {
-          const creativeImports = await supabase
-            .from("manual_imports")
-            .select("id, filename, ad_names")
-            .eq("account_id", accountId)
-            .eq("kind", "creative_asset");
-          if (!creativeImports.error && creativeImports.data) {
-            for (const imp of creativeImports.data) {
-              const adNames = (imp["ad_names"] as string[] | null) ?? [];
-              if (adNames.length === 0) continue;
-              const fileUrl = `${getAppBaseUrl()}api/metrix/accounts/${accountId}/manual-imports/${imp["id"]}/file`;
-              const sync = await supabase
-                .from("ads")
-                .update({ creative_asset_url: fileUrl, asset_filename: imp["filename"], asset_servable: true })
-                .eq("account_id", accountId)
-                .in("ad_name", adNames);
-              if (sync.error) {
-                logger.warn({ accountId, importId: imp["id"], err: sync.error }, "post-analysis creative sync partial failure");
-              }
-            }
-          }
+          await syncAllCreativeLinksForAccount(accountId, getAppBaseUrl());
         } catch (syncErr) {
           logger.warn({ accountId, err: syncErr }, "post-analysis creative sync failed (non-fatal)");
         }

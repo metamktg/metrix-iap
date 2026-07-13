@@ -238,6 +238,24 @@ export const StartManualAnalysisRunResponse = zod.object({
 
 
 /**
+ * Re-attempts linking all staged creative assets to their mapped ad names for the account. Useful after correcting an ad_names mapping on an existing upload without re-running the full analysis. Returns counts of linked and unlinked names. Requires access to the account.
+ * @summary Re-sync creative asset links for an account
+ */
+
+
+
+export const SyncCreativeLinksParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
+})
+
+export const SyncCreativeLinksResponse = zod.object({
+  "linked": zod.number(),
+  "total": zod.number(),
+  "unlinked_names": zod.array(zod.string())
+})
+
+
+/**
  * Returns the most recent manual analysis run for the account, or null when none exists. Runs stuck in 'running' past the staleness cutoff are honestly flipped to 'error'. Requires access to the account.
  * @summary Latest manual analysis run for an account
  */
@@ -260,7 +278,10 @@ export const GetLatestAnalysisRunResponse = zod.object({
   "imports_used": zod.number().nullish(),
   "error_message": zod.string().nullish(),
   "started_at": zod.string(),
-  "finished_at": zod.string().nullish()
+  "finished_at": zod.string().nullish(),
+  "creatives_linked": zod.number().nullish().describe('Number of staged creative assets successfully linked to ad rows (computed live from current DB state).'),
+  "creatives_total": zod.number().nullish().describe('Total number of staged creative asset ad-name mappings attempted.'),
+  "creatives_unlinked_names": zod.array(zod.string()).nullish().describe('Ad names from staged creative assets that could not be matched to any ads row.')
 }).nullable()
 })
 

@@ -514,6 +514,18 @@ export interface AnalysisRun {
   error_message?: string | null;
   started_at: string;
   finished_at?: string | null;
+  /** Number of staged creative assets successfully linked to ad rows (computed live from current DB state). */
+  creatives_linked?: number | null;
+  /** Total number of staged creative asset ad-name mappings attempted. */
+  creatives_total?: number | null;
+  /** Ad names from staged creative assets that could not be matched to any ads row. */
+  creatives_unlinked_names?: string[] | null;
+}
+
+export interface SyncCreativeLinksResult {
+  linked: number;
+  total: number;
+  unlinked_names: string[];
 }
 
 export interface LatestAnalysisRunResult {
