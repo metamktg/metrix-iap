@@ -5,6 +5,29 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+/**
+ * Human-readable descriptor for a single concept code, assembled from concept_intelligence and library_cells at seed-assembly time.
+ */
+export interface ConceptDescriptorEntry {
+  /** The concept code (e.g. "C2B", "C4E"). */
+  code: string;
+  /** Plain-text human label (e.g. "Authority · Static × Checkout Depth"). */
+  descriptor: string;
+  /** Book identifier if applicable (BOOK0, BOOK2, or null). */
+  book?: string | null;
+  /** What this concept does / produced (from concept_intelligence.what). */
+  what?: string | null;
+  /** Why it works (from concept_intelligence.why). */
+  why?: string | null;
+  /** Library cell IDs that map to this concept (used for Library drill-in navigation). */
+  source_cells: string[];
+}
+
+/**
+ * Global map of concept code → descriptor entry. Keys are concept codes (e.g. "C2B", "C4E") present across all accounts. Used by ConceptChip to render human-readable labels without hard-coding them on the client.
+ */
+export type MetrixSeedBundleConceptRegistry = {[key: string]: ConceptDescriptorEntry};
+
 export type MetrixSeedBundleVariableRegistryItem = { [key: string]: unknown };
 
 export type MetrixSeedBundleAppDefaults = { [key: string]: unknown };
@@ -22,6 +45,8 @@ export interface MetrixSeedBundle {
   schema_version: string;
   generated_at?: string;
   integrity_note?: string;
+  /** Global map of concept code → descriptor entry. Keys are concept codes (e.g. "C2B", "C4E") present across all accounts. Used by ConceptChip to render human-readable labels without hard-coding them on the client. */
+  concept_registry?: MetrixSeedBundleConceptRegistry;
   /** Data-layer truth about variable families, including explicit registry_missing entries (ST_/AW_/CTA_ known gap). */
   variable_registry?: MetrixSeedBundleVariableRegistryItem[];
   app_defaults?: MetrixSeedBundleAppDefaults;

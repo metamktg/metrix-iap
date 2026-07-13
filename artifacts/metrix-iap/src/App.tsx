@@ -21,6 +21,7 @@ import {
 // Seed-hydrated Metrix pages (manager → ad-account hierarchy)
 import { AccountProvider } from "@/contexts/AccountContext";
 import { DateRangeProvider } from "@/contexts/DateRangeContext";
+import { ConceptRegistryProvider } from "@/lib/concept-registry-context";
 import { Overview } from "@/pages/metrix/Overview";
 import { SignalView } from "@/pages/metrix/listen/SignalView";
 import { AlertsView } from "@/pages/metrix/listen/AlertsView";
@@ -176,15 +177,17 @@ export function AuthGate() {
 
   return (
     <MetrixDataProvider>
-      <AccountProvider>
-        <DateRangeProvider>
-          <TaskTrayProvider>
-            <AppShell>
-              <Router />
-            </AppShell>
-          </TaskTrayProvider>
-        </DateRangeProvider>
-      </AccountProvider>
+      <ConceptRegistryProvider>
+        <AccountProvider>
+          <DateRangeProvider>
+            <TaskTrayProvider>
+              <AppShell>
+                <Router />
+              </AppShell>
+            </TaskTrayProvider>
+          </DateRangeProvider>
+        </AccountProvider>
+      </ConceptRegistryProvider>
     </MetrixDataProvider>
   );
 }

@@ -16,6 +16,14 @@ export const GetMetrixSeedResponse = zod.object({
   "schema_version": zod.string(),
   "generated_at": zod.string().optional(),
   "integrity_note": zod.string().optional(),
+  "concept_registry": zod.record(zod.string(), zod.object({
+  "code": zod.string().describe('The concept code (e.g. \"C2B\", \"C4E\").'),
+  "descriptor": zod.string().describe('Plain-text human label (e.g. \"Authority · Static × Checkout Depth\").'),
+  "book": zod.string().nullish().describe('Book identifier if applicable (BOOK0, BOOK2, or null).'),
+  "what": zod.string().nullish().describe('What this concept does \/ produced (from concept_intelligence.what).'),
+  "why": zod.string().nullish().describe('Why it works (from concept_intelligence.why).'),
+  "source_cells": zod.array(zod.string()).describe('Library cell IDs that map to this concept (used for Library drill-in navigation).')
+}).describe('Human-readable descriptor for a single concept code, assembled from concept_intelligence and library_cells at seed-assembly time.')).optional().describe('Global map of concept code → descriptor entry. Keys are concept codes (e.g. \"C2B\", \"C4E\") present across all accounts. Used by ConceptChip to render human-readable labels without hard-coding them on the client.'),
   "variable_registry": zod.array(zod.record(zod.string(), zod.unknown())).optional().describe('Data-layer truth about variable families, including explicit registry_missing entries (ST_\/AW_\/CTA_ known gap).'),
   "app_defaults": zod.record(zod.string(), zod.unknown()).optional(),
   "manager_account": zod.record(zod.string(), zod.unknown()),

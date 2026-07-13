@@ -683,6 +683,94 @@ export async function assembleMetrixSeed(): Promise<Row> {
     );
   }
 
+  // ── Global concept registry ────────────────────────────────────────
+  // Keyed by concept_code (matrix codes like C2B, C4E) or the raw
+  // concept_intelligence code (like C2, LD-CN-001). We index both so
+  // that source_cells (variant-level, e.g. C2B) and concept_intelligence
+  // codes (column-level, e.g. C2) are discoverable.
+  //
+  // Priority for descriptor text:
+  //   1. concept_descriptor (new DB column, per-account override)
+  //   2. first sentence of `what` (natural language description)
+  //   3. cleaned code parse fallback
+  //
+  // source_cells: library cells whose cell_id matches the concept_code or
+  // whose concept_id matches. For matrix concepts this is typically 1:1.
+  //
+  // The registry is global (not per-account) — all accounts share the same
+  // concept codes and the same rendered labels.
+
+  const conceptRegistry: Record<string, {
+    code: string;
+    descriptor: string;
+    book: string | null;
+    what: string | null;
+    why: string | null;
+    source_cells: string[];
+  }> = {};
+
+  const libraryCellsByConceptId = new Map<string, string[]>();
+  for (const lc of libraryCellsAll) {
+    const conceptId = String(lc["concept_id"] ?? "");
+    const cellId = String(lc["cell_id"] ?? "");
+    if (!conceptId || !cellId) continue;
+    if (!libraryCellsByConceptId.has(conceptId)) libraryCellsByConceptId.set(conceptId, []);
+    libraryCellsByConceptId.get(conceptId)!.push(cellId);
+    // Also index by cell_id directly (1:1 for matrix variant codes)
+    if (!libraryCellsByConceptId.has(cellId)) libraryCellsByConceptId.set(cellId, []);
+    libraryCellsByConceptId.get(cellId)!.push(cellId);
+  }
+
+  // Index library cell_ids for direct concept_code → cell_id matching
+  const libraryCellIdSet = new Set(libraryCellsAll.map((lc) => String(lc["cell_id"] ?? "")));
+
+  for (const row of conceptIntelligenceAll) {
+    const code = String(row["concept_code"] ?? "");
+    if (!code) continue;
+
+    // Descriptor: DB override > what > fallback
+    const rawWhat = row["what"] ? String(row["what"]) : null;
+    const dbDescriptor = row["concept_descriptor"] ? String(row["concept_descriptor"]) : null;
+    const whatDescriptor = rawWhat
+      ? (rawWhat.split(/\.\s/)[0] ?? rawWhat).slice(0, 100).trim()
+      : null;
+
+    // Cleaned code parse: "C2B" → "Concept C2 · B", "LD-CN-001" → "LD CN 001"
+    const codeDescriptor = /^C\d+[A-Z]$/.test(code)
+      ? `Concept ${code.replace(/([A-Z])$/, " · $1")}`
+      : /^C\d+$/.test(code)
+        ? `Concept ${code}`
+        : code.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()).trim();
+
+    const descriptor = dbDescriptor ?? whatDescriptor ?? codeDescriptor;
+
+    // source_cells: library cells for this concept code or its variants
+    const directCells = libraryCellsByConceptId.get(code) ?? [];
+    // For column-level codes (e.g. "C2"), also collect cells whose cell_id starts with code
+    // (e.g. C2A, C2B, C2C) to cover all variants.
+    const variantCells = libraryCellIdSet.has(code)
+      ? [code]
+      : [...libraryCellIdSet].filter((id) => id.startsWith(code) && /^[A-Z]$/.test(id.slice(code.length)));
+    const sourceCells = [...new Set([...directCells, ...variantCells])].filter(Boolean);
+    // Fallback: if this code itself looks like a valid cell_id, include it.
+    if (sourceCells.length === 0 && /^C\d+[A-Z]$/.test(code)) {
+      sourceCells.push(code);
+    }
+
+    // Prefer the entry with an explicit concept_descriptor (per-account override)
+    const existing = conceptRegistry[code];
+    if (!existing || (dbDescriptor && !existing.descriptor.startsWith("Concept "))) {
+      conceptRegistry[code] = {
+        code,
+        descriptor,
+        book: row["book"] ?? null,
+        what: rawWhat,
+        why: row["why"] ? String(row["why"]) : null,
+        source_cells: sourceCells.length > 0 ? sourceCells : [code],
+      };
+    }
+  }
+
   const tables: AccountTables = {
     adPerformance: groupByAccount(adPerformanceAll),
     conceptPerformance: groupByAccount(conceptPerformanceAll),
@@ -790,6 +878,7 @@ export async function assembleMetrixSeed(): Promise<Row> {
       recommendation_cards: managerCards,
     },
     ad_accounts: accountObjects,
+    concept_registry: conceptRegistry,
     variable_registry: variableRegistry.map((r) => ({
       prefix: r["prefix"],
       family: r["family"],

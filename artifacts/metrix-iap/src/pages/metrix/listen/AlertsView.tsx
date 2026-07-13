@@ -17,6 +17,7 @@ import { useDateRange } from "@/contexts/DateRangeContext";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { AlertTriangle, BellOff, Database } from "lucide-react";
 import type { SignalCard } from "@/lib/data/seedTypes";
+import { TokenizedConceptText } from "@/components/concept/ConceptChip";
 
 const SECTION = "Listen · 02";
 
@@ -85,8 +86,8 @@ export function AlertsView() {
                               <ImpactBadge impact={s.impact} />
                               <ConfidenceBadge value={s.confidence} />
                             </div>
-                            <p className="text-[13px] font-semibold text-foreground leading-snug">{s.title}</p>
-                            <p className="text-[12px] text-muted-foreground/70 mt-1 leading-relaxed">{s.rationale}</p>
+                            <p className="text-[13px] font-semibold text-foreground leading-snug"><TokenizedConceptText text={s.title} /></p>
+                            <p className="text-[12px] text-muted-foreground/70 mt-1 leading-relaxed"><TokenizedConceptText text={s.rationale} /></p>
                           </button>
                         ))}
                       </div>
@@ -103,7 +104,7 @@ export function AlertsView() {
                               <Database className="w-3.5 h-3.5 text-amber-400/80" />
                               <span className="text-[9px] font-mono uppercase tracking-widest text-amber-400/60">{c.source}</span>
                             </div>
-                            <p className="text-[12px] text-amber-400/85 leading-relaxed">{c.text}</p>
+                            <p className="text-[12px] text-amber-400/85 leading-relaxed"><TokenizedConceptText text={c.text} /></p>
                           </div>
                         ))}
                       </div>
@@ -118,7 +119,7 @@ export function AlertsView() {
             {detail && (
               <InfoDrawer
                 kicker="Alert · signal"
-                title={detail.title}
+                title={<TokenizedConceptText text={detail.title} />}
                 onClose={() => setDetail(null)}
                 footer={
                   <div className="flex items-center gap-4">
@@ -132,8 +133,8 @@ export function AlertsView() {
                   <ImpactBadge impact={detail.impact} />
                   <ConfidenceBadge value={detail.confidence} />
                 </div>
-                <DrawerField label="Rationale">{detail.rationale}</DrawerField>
-                <DrawerField label="Recommended action">{detail.recommended_action}</DrawerField>
+                <DrawerField label="Rationale"><TokenizedConceptText text={detail.rationale} /></DrawerField>
+                <DrawerField label="Recommended action"><TokenizedConceptText text={detail.recommended_action} /></DrawerField>
                 {detail.source_path && (
                   <DrawerField label="Source">
                     <span className="font-mono text-[10px] text-muted-foreground/60">{detail.source_path}</span>

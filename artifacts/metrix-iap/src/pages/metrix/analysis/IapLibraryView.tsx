@@ -9,7 +9,7 @@
 // staged and mapped; the dialog invalidates the seed query on close so
 // the library refreshes automatically.
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Images, Dna } from "lucide-react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -47,6 +47,7 @@ import { actionGroupForScope, type DeckCard } from "@/components/deck/Recommenda
 import type { SegmentId } from "@/lib/segment-analytics";
 import type { CellPerformanceRow, DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 import { CreativeLibraryDialog } from "@/pages/metrix/ConnectAccountDialogs";
+import { useConceptHighlight } from "@/lib/concept-registry-context";
 
 const SECTION = "Analysis · 03";
 
@@ -69,6 +70,21 @@ export function IapLibraryView() {
   const [tab, setTab] = useState<Tab>("cells");
   const focus = useFocusParam();
   const [detail, setDetail] = useState<CellPerformanceRow | null>(null);
+
+  // ── Concept highlight (fired by ConceptChip hover in other views) ────
+  const [highlightedCell, setHighlightedCell] = useState<string | null>(null);
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onHighlight = useCallback((code: string) => {
+    setHighlightedCell(code);
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    highlightTimerRef.current = setTimeout(() => setHighlightedCell(null), 2000);
+    // Scroll the card into view if it exists on the current page
+    setTimeout(() => {
+      document.querySelector<HTMLElement>(`[data-concept-cell="${code}"]`)
+        ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }, 50);
+  }, []);
+  useConceptHighlight(onHighlight);
   const [segmentsOpen, setSegmentsOpen] = useState(false);
   const [creativeLibraryOpen, setCreativeLibraryOpen] = useState(false);
   const [page, setPage] = useState(1);
@@ -324,28 +340,37 @@ export function IapLibraryView() {
                         <div className="space-y-4">
                           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                             {pagedCells.map((row) => (
-                              <CreativeCard
+                              <div
                                 key={row.cell_id}
-                                data={{
-                                  ...cardFromCell(row.cell_id, cardCtx),
-                                  stats: aggStatsForCell(row.cell_id, cells),
-                                }}
-                                unmapped={unmappedCellIds.has(row.cell_id)}
-                                demographic={demoByCell.get(row.cell_id) ?? []}
-                                placements={allPlacements}
-                                onUploadCreatives={() => setCreativeLibraryOpen(true)}
-                                onSegmentClick={(seg) => setCardSegment({ segment: seg, cellIds: [row.cell_id] })}
-                                onFullBreakdownClick={() => setCardGridCell(row)}
-                                expandFooter={(close) => (
-                                  <button
-                                    onClick={() => { close(); setDetail(row); }}
-                                    data-testid={`button-full-detail-${row.cell_id}`}
-                                    className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-white bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-all"
-                                  >
-                                    Full detail →
-                                  </button>
-                                )}
-                              />
+                                data-concept-cell={row.cell_id}
+                                className={
+                                  highlightedCell === row.cell_id
+                                    ? "rounded-xl ring-2 ring-primary/70 ring-offset-1 ring-offset-background transition-all duration-300"
+                                    : "transition-all duration-300"
+                                }
+                              >
+                                <CreativeCard
+                                  data={{
+                                    ...cardFromCell(row.cell_id, cardCtx),
+                                    stats: aggStatsForCell(row.cell_id, cells),
+                                  }}
+                                  unmapped={unmappedCellIds.has(row.cell_id)}
+                                  demographic={demoByCell.get(row.cell_id) ?? []}
+                                  placements={allPlacements}
+                                  onUploadCreatives={() => setCreativeLibraryOpen(true)}
+                                  onSegmentClick={(seg) => setCardSegment({ segment: seg, cellIds: [row.cell_id] })}
+                                  onFullBreakdownClick={() => setCardGridCell(row)}
+                                  expandFooter={(close) => (
+                                    <button
+                                      onClick={() => { close(); setDetail(row); }}
+                                      data-testid={`button-full-detail-${row.cell_id}`}
+                                      className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-white bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-all"
+                                    >
+                                      Full detail →
+                                    </button>
+                                  )}
+                                />
+                              </div>
                             ))}
                           </div>
 

@@ -2315,6 +2315,11 @@ components:
           type: string
         integrity_note:
           type: string
+        concept_registry:
+          type: object
+          description: Global map of concept code → descriptor entry. Keys are concept codes (e.g. "C2B", "C4E") present across all accounts. Used by ConceptChip to render human-readable labels without hard-coding them on the client.
+          additionalProperties:
+            $ref: "#/components/schemas/ConceptDescriptorEntry"
         variable_registry:
           type: array
           description: Data-layer truth about variable families, including explicit registry_missing entries (ST_/AW_/CTA_ known gap).
@@ -2339,6 +2344,37 @@ components:
         - schema_version
         - manager_account
         - ad_accounts
+    ConceptDescriptorEntry:
+      type: object
+      description: Human-readable descriptor for a single concept code, assembled from concept_intelligence and library_cells at seed-assembly time.
+      properties:
+        code:
+          type: string
+          description: The concept code (e.g. "C2B", "C4E").
+        descriptor:
+          type: string
+          description: Plain-text human label (e.g. "Authority · Static × Checkout Depth").
+        book:
+          type: string
+          nullable: true
+          description: Book identifier if applicable (BOOK0, BOOK2, or null).
+        what:
+          type: string
+          nullable: true
+          description: What this concept does / produced (from concept_intelligence.what).
+        why:
+          type: string
+          nullable: true
+          description: Why it works (from concept_intelligence.why).
+        source_cells:
+          type: array
+          items:
+            type: string
+          description: Library cell IDs that map to this concept (used for Library drill-in navigation).
+      required:
+        - code
+        - descriptor
+        - source_cells
     WaitlistSignupInput:
       type: object
       properties:

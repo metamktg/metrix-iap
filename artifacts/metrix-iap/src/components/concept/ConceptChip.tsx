@@ -1,0 +1,94 @@
+// ─── ConceptChip ──────────────────────────────────────────────────────
+// Self-contained interactive chip for a concept code (e.g. "C2B").
+// - Reads descriptor from ConceptRegistryContext (no prop-drilling).
+// - Hover: shows tooltip with raw code + concept summary; fires a
+//   library highlight signal so the matching card scrolls into view.
+// - Click: navigates to IAP Library with the concept cell focused.
+
+import { useLocation } from "wouter";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { useConceptRegistry, useConceptDescriptor } from "@/lib/concept-registry-context";
+
+interface ConceptChipProps {
+  code: string;
+  className?: string;
+}
+
+export function ConceptChip({ code, className }: ConceptChipProps) {
+  const [, navigate] = useLocation();
+  const { highlightConcept } = useConceptRegistry();
+  const entry = useConceptDescriptor(code);
+  const descriptor = entry?.descriptor ?? code;
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const focusCell = entry?.source_cells?.[0] ?? code;
+    navigate(`/app/analysis/library?focus=${encodeURIComponent(focusCell)}`);
+  };
+
+  const handleMouseEnter = () => {
+    highlightConcept(code);
+  };
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={handleClick}
+          onMouseEnter={handleMouseEnter}
+          className={
+            className ??
+            "inline-flex items-center gap-0.5 text-[10px] font-semibold " +
+            "text-primary border border-primary/30 bg-primary/[0.08] " +
+            "hover:bg-primary/[0.18] px-1.5 py-0.5 rounded leading-none " +
+            "cursor-pointer transition-colors align-baseline"
+          }
+          aria-label={`Concept ${code}: ${descriptor}`}
+        >
+          {descriptor}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent
+        side="top"
+        className="max-w-[220px] space-y-1 text-left"
+      >
+        <p className="font-mono text-[10px] text-primary-foreground/70">{code}</p>
+        {entry?.what && (
+          <p className="text-[10px] leading-relaxed text-primary-foreground/90">
+            {entry.what.length > 120 ? entry.what.slice(0, 120) + "…" : entry.what}
+          </p>
+        )}
+        <p className="text-[9px] text-primary-foreground/50 italic">Click to open in Library</p>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+// ── Tokenized text renderer ────────────────────────────────────────────
+// Renders a string that may contain concept codes, replacing matched
+// codes with <ConceptChip> inline. Import alongside ConceptChip.
+
+import { tokenizeConceptCodes } from "@/lib/tokenizeConceptCodes";
+
+interface TokenizedConceptTextProps {
+  text: string;
+  className?: string;
+}
+
+export function TokenizedConceptText({ text, className }: TokenizedConceptTextProps) {
+  const { registry } = useConceptRegistry();
+  const tokens = tokenizeConceptCodes(text, registry);
+
+  return (
+    <span className={className}>
+      {tokens.map((t, i) =>
+        t.type === "chip" ? (
+          <ConceptChip key={i} code={t.code} />
+        ) : (
+          <span key={i}>{t.value}</span>
+        ),
+      )}
+    </span>
+  );
+}

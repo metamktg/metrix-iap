@@ -21,6 +21,7 @@ import { cardFromCell } from "@/lib/creative-assembly";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { FileText, Sparkles, Video, Users } from "lucide-react";
 import type { DraftBrief } from "@/lib/data/seedTypes";
+import { TokenizedConceptText } from "@/components/concept/ConceptChip";
 
 const SECTION = "Creative Briefs · 05";
 
@@ -183,7 +184,7 @@ export function BriefBuilderView() {
                         <span className="text-[11px] font-medium text-foreground">{pillarOf(b.source_pillar)?.label ?? b.source_pillar}</span>
                       </div>
 
-                      <p className="text-[12px] text-foreground/80 leading-relaxed flex-1">{b.human_direction}</p>
+                      <p className="text-[12px] text-foreground/80 leading-relaxed flex-1"><TokenizedConceptText text={b.human_direction} /></p>
 
                       <div className="mt-3 pt-3 border-t border-border/20">
                         <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/80 mb-1.5">Creative direction</div>
@@ -214,7 +215,7 @@ export function BriefBuilderView() {
                 }
               >
                 <DrawerField label="Status">{STATUS_LABEL[detail.status] ?? detail.status}</DrawerField>
-                <DrawerField label="Human direction">{detail.human_direction}</DrawerField>
+                <DrawerField label="Human direction"><TokenizedConceptText text={detail.human_direction} /></DrawerField>
                 <DrawerField label="Creative direction">
                   <div className="flex flex-wrap gap-1.5">
                     {detail.plain_variable_descriptors.map((d) => (

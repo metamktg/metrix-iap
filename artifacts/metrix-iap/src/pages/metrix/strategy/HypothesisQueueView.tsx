@@ -19,6 +19,7 @@ import { useDateRange } from "@/contexts/DateRangeContext";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { Layers, FlaskConical, AlertTriangle, ArrowRight, Beaker, Crosshair, Target, TrendingUp } from "lucide-react";
 import type { ActiveHypothesis } from "@/lib/data/seedTypes";
+import { TokenizedConceptText } from "@/components/concept/ConceptChip";
 
 const SECTION = "Strategy · 04";
 
@@ -215,7 +216,7 @@ export function HypothesisQueueView() {
             {detail && (
               <InfoDrawer
                 kicker={`Hypothesis · ${detail.id}`}
-                title={detail.label}
+                title={<TokenizedConceptText text={detail.label} />}
                 onClose={() => setDetail(null)}
                 footer={
                   <div className="flex items-center gap-4 flex-wrap">
@@ -237,9 +238,9 @@ export function HypothesisQueueView() {
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <HypothesisStatusBadge status={detail.status} />
                 </div>
-                {detail.source && <DrawerField label="Source / control">{detail.source}</DrawerField>}
-                {detail.test_variant && <DrawerField label="Test variant">{detail.test_variant}</DrawerField>}
-                {detail.isolated_variable && <DrawerField label="Isolated variable">{detail.isolated_variable}</DrawerField>}
+                {detail.source && <DrawerField label="Source / control"><TokenizedConceptText text={detail.source} /></DrawerField>}
+                {detail.test_variant && <DrawerField label="Test variant"><TokenizedConceptText text={detail.test_variant} /></DrawerField>}
+                {detail.isolated_variable && <DrawerField label="Isolated variable"><TokenizedConceptText text={detail.isolated_variable} /></DrawerField>}
                 {detail.success_criteria && <DrawerField label="Success criteria">{detail.success_criteria}</DrawerField>}
                 {detail.expected_impact && <DrawerField label="Expected impact">{detail.expected_impact}</DrawerField>}
                 {detail.risk && <DrawerField label="Risk">{detail.risk}</DrawerField>}

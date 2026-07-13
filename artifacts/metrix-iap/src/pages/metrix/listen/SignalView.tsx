@@ -16,6 +16,7 @@ import { useDateRange } from "@/contexts/DateRangeContext";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { Radio, ArrowRight } from "lucide-react";
 import type { SignalCard } from "@/lib/data/seedTypes";
+import { TokenizedConceptText } from "@/components/concept/ConceptChip";
 
 const SCOPE_ORDER = ["creative", "funnel", "placement", "mst"];
 const SCOPE_LABEL: Record<string, string> = { creative: "Creative", funnel: "Funnel", placement: "Placement", mst: "MST" };
@@ -101,11 +102,11 @@ export function SignalView() {
                         <ImpactBadge impact={s.impact} />
                         <ConfidenceBadge value={s.confidence} />
                       </div>
-                      <p className="text-[13px] font-semibold text-foreground leading-snug">{s.title}</p>
-                      <p className="text-[12px] text-muted-foreground/70 mt-1 leading-relaxed">{s.rationale}</p>
+                      <p className="text-[13px] font-semibold text-foreground leading-snug"><TokenizedConceptText text={s.title} /></p>
+                      <p className="text-[12px] text-muted-foreground/70 mt-1 leading-relaxed"><TokenizedConceptText text={s.rationale} /></p>
                       <div className="flex items-start gap-1.5 mt-3 pt-3 border-t border-border/20">
                         <ArrowRight className="w-3.5 h-3.5 text-primary/60 shrink-0 mt-0.5" />
-                        <p className="text-[11px] text-foreground/75 leading-relaxed">{s.recommended_action}</p>
+                        <p className="text-[11px] text-foreground/75 leading-relaxed"><TokenizedConceptText text={s.recommended_action} /></p>
                       </div>
                     </button>
                   ))}
@@ -118,7 +119,7 @@ export function SignalView() {
             {detail && (
               <InfoDrawer
                 kicker="Signal"
-                title={detail.title}
+                title={<TokenizedConceptText text={detail.title} />}
                 onClose={() => setDetail(null)}
                 footer={
                   <div className="flex items-center gap-4">
@@ -132,8 +133,8 @@ export function SignalView() {
                   <ImpactBadge impact={detail.impact} />
                   <ConfidenceBadge value={detail.confidence} />
                 </div>
-                <DrawerField label="Rationale">{detail.rationale}</DrawerField>
-                <DrawerField label="Recommended action">{detail.recommended_action}</DrawerField>
+                <DrawerField label="Rationale"><TokenizedConceptText text={detail.rationale} /></DrawerField>
+                <DrawerField label="Recommended action"><TokenizedConceptText text={detail.recommended_action} /></DrawerField>
                 {detail.source_path && (
                   <DrawerField label="Source">
                     <span className="font-mono text-[10px] text-muted-foreground/60">{detail.source_path}</span>
