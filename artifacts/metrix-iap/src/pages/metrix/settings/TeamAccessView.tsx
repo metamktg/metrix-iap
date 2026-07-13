@@ -11,7 +11,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getWorkspaceSettings } from "@/lib/data/metrixSeedAdapter";
 import { ModuleHeader, SectionCard, PendingState, CaveatNote } from "../shared";
 import { cn } from "@/lib/utils";
-import { Users, UserPlus, ShieldCheck, Loader2, X, RotateCw, Plus, ChevronDown, Check } from "lucide-react";
+import { Users, UserPlus, ShieldCheck, Loader2, X, RotateCw, Check } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -523,7 +523,7 @@ function MemberAdAccountsCell({
   adAccounts: AdAccount[];
 }) {
   const queryClient = useQueryClient();
-  const [pickerOpen, setPickerOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { data, isLoading } = useListMemberAdAccounts(workspaceId, email);
   const { mutate: grant, isPending: isGranting } = useGrantMemberAdAccount();
@@ -536,34 +536,28 @@ function MemberAdAccountsCell({
 
   const grantedIds = new Set(data?.ad_account_ids ?? []);
   const grantedAccounts = adAccounts.filter((a) => grantedIds.has(a.id));
-  const availableAccounts = adAccounts.filter((a) => !grantedIds.has(a.id));
   const busy = isGranting || isRevoking;
 
-  const handleGrant = (adAccountId: string) => {
+  const handleToggle = (adAccountId: string, currentlyGranted: boolean) => {
     if (busy) return;
     setError(null);
-    grant(
-      { workspaceId, email, data: { ad_account_id: adAccountId } },
-      {
-        onSuccess: () => {
-          setPickerOpen(false);
-          void invalidate();
+    if (currentlyGranted) {
+      revoke(
+        { workspaceId, email, adAccountId },
+        {
+          onSuccess: () => void invalidate(),
+          onError: () => setError("Could not revoke access. Try again."),
         },
-        onError: () => setError("Could not grant access. Try again."),
-      },
-    );
-  };
-
-  const handleRevoke = (adAccountId: string) => {
-    if (busy) return;
-    setError(null);
-    revoke(
-      { workspaceId, email, adAccountId },
-      {
-        onSuccess: () => void invalidate(),
-        onError: () => setError("Could not revoke access. Try again."),
-      },
-    );
+      );
+    } else {
+      grant(
+        { workspaceId, email, data: { ad_account_id: adAccountId } },
+        {
+          onSuccess: () => void invalidate(),
+          onError: () => setError("Could not grant access. Try again."),
+        },
+      );
+    }
   };
 
   if (isLoading) {
@@ -571,72 +565,73 @@ function MemberAdAccountsCell({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5" data-testid={`cell-account-access-${email}`}>
-      {grantedAccounts.length === 0 && !pickerOpen && (
-        <span className="text-[10px] text-muted-foreground/60" data-testid={`text-no-access-${email}`}>
-          No account access yet
-        </span>
-      )}
-      {grantedAccounts.map((a) => (
-        <span
-          key={a.id}
-          className="flex items-center gap-1 h-5 pl-2 pr-1 rounded border border-border/40 bg-white/[0.03] text-[10px] text-foreground/80"
-          data-testid={`chip-account-${email}-${a.id}`}
-        >
-          {a.name}
-          <button
-            type="button"
-            onClick={() => handleRevoke(a.id)}
-            disabled={busy}
-            title={`Revoke access to ${a.name}`}
-            className="text-muted-foreground/60 hover:text-red-400/90 disabled:opacity-40 disabled:pointer-events-none"
-            data-testid={`button-revoke-account-${email}-${a.id}`}
-          >
-            {isRevoking ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <X className="w-2.5 h-2.5" />}
-          </button>
-        </span>
-      ))}
-
-      {pickerOpen ? (
-        <div className="relative">
-          <select
-            autoFocus
-            defaultValue=""
-            disabled={busy || availableAccounts.length === 0}
-            onChange={(e) => {
-              if (e.target.value) handleGrant(e.target.value);
-            }}
-            onBlur={() => setPickerOpen(false)}
-            className="h-6 pl-2 pr-6 rounded border border-primary/30 bg-white/[0.03] text-[10px] text-foreground focus:outline-none appearance-none"
-            data-testid={`select-grant-account-${email}`}
-          >
-            <option value="" disabled>
-              {availableAccounts.length === 0 ? "No more accounts" : "Choose account…"}
-            </option>
-            {availableAccounts.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="w-2.5 h-2.5 absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground/60 pointer-events-none" />
-        </div>
-      ) : (
+    <div className="space-y-1.5" data-testid={`cell-account-access-${email}`}>
+      <div className="flex items-center flex-wrap gap-1.5">
+        {grantedAccounts.length === 0 ? (
+          <span className="text-[10px] text-muted-foreground/60" data-testid={`text-no-access-${email}`}>
+            No account access yet
+          </span>
+        ) : (
+          grantedAccounts.map((a) => (
+            <span
+              key={a.id}
+              className="h-5 px-1.5 rounded border border-border/40 bg-white/[0.03] text-[10px] text-foreground/80"
+              data-testid={`chip-account-${email}-${a.id}`}
+            >
+              {a.name}
+            </span>
+          ))
+        )}
         <button
           type="button"
-          onClick={() => setPickerOpen(true)}
-          disabled={busy}
-          title="Grant access to an ad account"
-          className="flex items-center gap-1 h-5 px-1.5 rounded border border-dashed border-border/40 text-[10px] text-muted-foreground hover:text-foreground hover:border-border/70 transition-colors disabled:opacity-40 disabled:pointer-events-none"
-          data-testid={`button-add-account-${email}`}
+          onClick={() => setEditing((v) => !v)}
+          disabled={busy && !editing}
+          className={cn(
+            "flex items-center gap-1 h-5 px-1.5 rounded border text-[10px] font-medium transition-colors disabled:opacity-40 disabled:pointer-events-none",
+            editing
+              ? "border-primary/30 bg-primary/[0.08] text-primary"
+              : "border-dashed border-border/40 text-muted-foreground hover:text-foreground hover:border-border/70",
+          )}
+          data-testid={`button-edit-accounts-${email}`}
         >
-          {isGranting ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Plus className="w-2.5 h-2.5" />}
-          Add
+          {editing ? "Done" : "Edit"}
         </button>
+      </div>
+
+      {editing && (
+        <div
+          className="rounded-md border border-border/40 divide-y divide-border/20 max-h-36 overflow-y-auto"
+          data-testid={`picker-accounts-${email}`}
+        >
+          {adAccounts.length === 0 ? (
+            <p className="px-2.5 py-2 text-[10px] text-muted-foreground/60">No ad accounts available.</p>
+          ) : (
+            adAccounts.map((a) => {
+              const granted = grantedIds.has(a.id);
+              return (
+                <label
+                  key={a.id}
+                  className="flex items-center gap-2 px-2.5 py-2 text-[11px] text-foreground/85 cursor-pointer hover:bg-white/[0.03]"
+                  data-testid={`checkbox-account-${email}-${a.id}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={granted}
+                    disabled={busy}
+                    onChange={() => handleToggle(a.id, granted)}
+                    className="w-3.5 h-3.5 accent-primary disabled:opacity-40"
+                  />
+                  {a.name}
+                  {busy && <Loader2 className="w-3 h-3 animate-spin ml-auto text-muted-foreground/40" />}
+                </label>
+              );
+            })
+          )}
+        </div>
       )}
 
       {error && (
-        <span className="text-[10px] text-red-400/90 w-full" data-testid={`text-account-access-error-${email}`}>
+        <span className="text-[10px] text-red-400/90" data-testid={`text-account-access-error-${email}`}>
           {error}
         </span>
       )}
