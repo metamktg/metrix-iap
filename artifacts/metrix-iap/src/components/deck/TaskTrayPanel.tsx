@@ -3,7 +3,7 @@
 // Used in AdAccountOverview (right column) and in the InfoDrawer
 // when a cell detail is open.
 
-import { Check, ClipboardList } from "lucide-react";
+import { Check, ClipboardList, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDecisions, getDecision, toggleDone, isDone } from "@/lib/data/decisionStore";
 import type { DeckCard } from "@/components/deck/RecommendationDeck";
@@ -12,10 +12,12 @@ export function TaskTrayPanel({
   scopeId,
   cards,
   compact = false,
+  onCollapse,
 }: {
   scopeId: string;
   cards: DeckCard[];
   compact?: boolean;
+  onCollapse?: () => void;
 }) {
   useDecisions();
   const approved = cards.filter((c) => getDecision(scopeId, c.id) === "approved");
@@ -25,7 +27,7 @@ export function TaskTrayPanel({
       {/* Header */}
       <div className={cn(
         "flex items-center gap-2 border-b border-border/40 shrink-0 bg-white/[0.01]",
-        compact ? "px-3 py-2.5" : "px-4 py-3"
+        compact ? "px-3 py-2" : "px-3 py-2.5"
       )}>
         <ClipboardList className={cn("text-primary/80 shrink-0", compact ? "w-3 h-3" : "w-3.5 h-3.5")} />
         <span className={cn(
@@ -34,11 +36,22 @@ export function TaskTrayPanel({
         )}>
           Task Tray
         </span>
-        {approved.length > 0 && (
-          <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-400/15 text-emerald-400 border border-emerald-400/25 tabular-nums shrink-0">
-            {approved.length}
-          </span>
-        )}
+        <div className="ml-auto flex items-center gap-1">
+          {approved.length > 0 && (
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-400/15 text-emerald-400 border border-emerald-400/25 tabular-nums shrink-0">
+              {approved.length}
+            </span>
+          )}
+          {onCollapse && (
+            <button
+              onClick={onCollapse}
+              aria-label="Collapse task tray"
+              className="w-5 h-5 flex items-center justify-center rounded text-muted-foreground/40 hover:text-muted-foreground/80 hover:bg-white/[0.06] transition-colors"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tasks */}
