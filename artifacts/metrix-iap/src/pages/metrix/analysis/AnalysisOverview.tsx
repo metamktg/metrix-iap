@@ -36,7 +36,7 @@ export function AnalysisOverview() {
         if (!summary || !a) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Analysis Overview" />
+              <ModuleHeader section={SECTION} title="Analysis Overview" tabs="analysis" />
               <ScopeBanner account={acct} />
               <PendingState title="No analysis yet" message="Analysis appears once performance data is connected or imported." icon={LineChart} />
             </div>
@@ -108,6 +108,7 @@ export function AnalysisOverview() {
               title="Analysis Overview"
               subtitle="What the account's performance data says, and where to drill in."
               table="campaign_summary, performance_by_cell"
+              tabs="analysis"
             />
             <ScopeBanner account={acct} />
             <RangeScopeBar grainNote="Campaign totals cover the account's full flight window — this import has no daily grain." />

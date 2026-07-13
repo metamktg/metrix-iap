@@ -270,7 +270,7 @@ export function PlacementsView() {
           if (!hasDelivery && !hasConversion) {
             return (
               <div className="flex-1 flex flex-col">
-                <ModuleHeader section={SECTION} title="Placements" />
+                <ModuleHeader section={SECTION} title="Placements" tabs="analysis" />
                 <ScopeBanner account={acct} />
                 <PendingState title="No placement signal" message="Placement reads appear once delivery data exists for this account." icon={LayoutGrid} />
               </div>
@@ -292,6 +292,7 @@ export function PlacementsView() {
                   title="Placements"
                   subtitle="Conversion-attributed placement signal for this account. Delivery-based placement runs have not been produced yet."
                   table="placement_performance, platform_performance, device_performance"
+                  tabs="analysis"
                 />
                 <ScopeBanner account={acct} />
                 <RangeScopeBar grainNote="Conversion signal aggregates the export's full window — this import has no daily grain." />
@@ -331,6 +332,7 @@ export function PlacementsView() {
                 title="Placements"
                 subtitle="Where delivery happened and what each placement produced. Re-rank by any KPI; click a placement for the full breakdown."
                 table="v3_placement_signal, c4e_placement_signal"
+                tabs="analysis"
               />
               <ScopeBanner account={acct} />
               <RangeScopeBar grainNote="Placement signal aggregates each run's full flight window — this import has no daily grain." />

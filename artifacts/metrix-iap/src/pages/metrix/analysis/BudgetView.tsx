@@ -42,7 +42,7 @@ export function BudgetView() {
         if (!summary) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Budget" />
+              <ModuleHeader section={SECTION} title="Budget" tabs="analysis" />
               <ScopeBanner account={acct} />
               <PendingState title="No budget data" message="Campaign spend totals appear once analysis is available." icon={Wallet} />
             </div>
@@ -71,6 +71,7 @@ export function BudgetView() {
               title="Budget"
               subtitle="Where spend went and what it produced, by metric selection."
               table="campaign_summary, performance_by_cell"
+              tabs="analysis"
             />
             <ScopeBanner account={acct} />
             <MetricSelectionBar events={allEvents} isSelected={isSelected} onToggle={toggle} />

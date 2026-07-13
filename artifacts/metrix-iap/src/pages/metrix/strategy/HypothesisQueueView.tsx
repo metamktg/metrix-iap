@@ -72,7 +72,7 @@ export function HypothesisQueueView() {
         if (!s) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Hypothesis Queue" />
+              <ModuleHeader section={SECTION} title="Hypothesis Queue" tabs="strategy" />
               <ScopeBanner account={acct} />
               <PendingState title="Strategy pending" message="No strategy has been derived for this account yet." />
             </div>
@@ -97,6 +97,7 @@ export function HypothesisQueueView() {
               title="Hypothesis Queue"
               subtitle="Active hypotheses derived from this account's analysis, queued for validation or briefing."
               table="active_hypotheses, message_pillars"
+              tabs="strategy"
             />
             <ScopeBanner account={acct} />
             <FlowCrumb {...fp} />

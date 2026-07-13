@@ -171,6 +171,63 @@ export function ConfidenceBadge({ value }: { value: string }) {
   );
 }
 
+// ─── Section-level horizontal tab bar ─────────────────────────────────
+// Renders below the title area on Analysis and Strategy pages, giving
+// users persistent in-section navigation. Active tab is URL-matched.
+
+function spaNav(href: string, e: React.MouseEvent) {
+  e.preventDefault();
+  window.history.pushState({}, "", href);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+}
+
+const SECTION_TABS: Record<"analysis" | "strategy", { label: string; to: string }[]> = {
+  analysis: [
+    { label: "Overview",       to: "/app/analysis/overview" },
+    { label: "IAP Library",    to: "/app/analysis/library" },
+    { label: "Audience",       to: "/app/analysis/audience" },
+    { label: "Placements",     to: "/app/analysis/placements" },
+    { label: "Budget Insight", to: "/app/analysis/budget" },
+  ],
+  strategy: [
+    { label: "Overview",          to: "/app/strategy/overview" },
+    { label: "Strategy Map",      to: "/app/strategy/map" },
+    { label: "Avatars / ICP",     to: "/app/strategy/avatars" },
+    { label: "Hypothesis Queue",  to: "/app/strategy/hypotheses" },
+  ],
+};
+
+export function SectionTabBar({ section }: { section: "analysis" | "strategy" }) {
+  const [location] = useLocation();
+  const tabs = SECTION_TABS[section];
+  return (
+    <div className="flex items-center gap-0.5 px-4 border-b border-border/40 overflow-x-auto shrink-0 bg-white/[0.008]">
+      {tabs.map((tab) => {
+        const active = location === tab.to;
+        return (
+          <a
+            key={tab.to}
+            href={tab.to}
+            onClick={(e) => spaNav(tab.to, e)}
+            aria-current={active ? "page" : undefined}
+            className={cn(
+              "relative shrink-0 px-3.5 h-9 flex items-center text-[12px] font-medium transition-colors whitespace-nowrap select-none",
+              active
+                ? "text-foreground"
+                : "text-muted-foreground/55 hover:text-foreground/80 hover:bg-white/[0.04]"
+            )}
+          >
+            {tab.label}
+            {active && (
+              <span className="absolute bottom-0 left-2 right-2 h-[2px] bg-primary rounded-t-full" />
+            )}
+          </a>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Page header ──────────────────────────────────────────────────────
 
 export function ModuleHeader({
@@ -179,28 +236,33 @@ export function ModuleHeader({
   subtitle,
   table,
   right,
+  tabs,
 }: {
   section: string;
   title: string;
   subtitle?: string;
   table?: string;
   right?: React.ReactNode;
+  tabs?: "analysis" | "strategy";
 }) {
   return (
-    <div className="px-6 py-4 border-b border-border/40">
-      <div className="flex items-start gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 mb-1">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/80">{section}</span>
-            {subtitle && <InfoTooltip content={subtitle} />}
+    <div className="shrink-0">
+      <div className={cn("px-6 py-4", !tabs && "border-b border-border/40")}>
+        <div className="flex items-start gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/80">{section}</span>
+              {subtitle && <InfoTooltip content={subtitle} />}
+            </div>
+            <h1 className="text-[21px] font-bold text-foreground leading-tight tracking-[-0.02em]">{title}</h1>
           </div>
-          <h1 className="text-[21px] font-bold text-foreground leading-tight tracking-[-0.02em]">{title}</h1>
-        </div>
-        <div className="shrink-0 pt-0.5 flex items-center gap-2">
-          {right}
-          {table && <DataSourceBadge table={table} collapsible />}
+          <div className="shrink-0 pt-0.5 flex items-center gap-2">
+            {right}
+            {table && <DataSourceBadge table={table} collapsible />}
+          </div>
         </div>
       </div>
+      {tabs && <SectionTabBar section={tabs} />}
     </div>
   );
 }

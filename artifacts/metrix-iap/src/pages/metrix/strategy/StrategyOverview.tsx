@@ -37,7 +37,7 @@ export function StrategyOverview() {
         if (!strategy || strategy.message_pillars.length === 0) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Strategy Overview" />
+              <ModuleHeader section={SECTION} title="Strategy Overview" tabs="strategy" />
               <ScopeBanner account={acct} />
               <PendingState title="No strategy yet" message="Strategy pillars derive from validated analysis reads." icon={Compass} />
               <div className="px-6 pb-6 space-y-3 max-w-lg mx-auto w-full text-center">
@@ -94,6 +94,7 @@ export function StrategyOverview() {
               title="Strategy Overview"
               subtitle="The account's message strategy at a glance: pillars, hypotheses, and where they lead."
               table="message_pillars, active_hypotheses"
+              tabs="strategy"
               right={
                 <div className="flex items-center gap-2">
                   <ProvenanceBadge provenance={strategy.provenance} />
