@@ -22,6 +22,8 @@ import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/
 import { cn } from "@/lib/utils";
 import { Map, ChevronDown, FlaskConical, Layers, BarChart3 } from "lucide-react";
 import type { MessagePillar } from "@/lib/data/seedTypes";
+import { ConceptChip } from "@/components/concept/ConceptChip";
+import { useConceptRegistry } from "@/lib/concept-registry-context";
 
 const SECTION = "Strategy · 04";
 
@@ -45,6 +47,7 @@ function StageLabel({ Icon, children }: { Icon: React.ComponentType<{ className?
 export function StrategyMapView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
+  const { registry } = useConceptRegistry();
   const account = getAdAccount(seed, adAccountId);
   const [segmentPillar, setSegmentPillar] = useState<MessagePillar | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -120,9 +123,11 @@ export function StrategyMapView() {
                     {/* 1 · Evidence */}
                     <div className="flex items-center gap-2 flex-wrap mb-3">
                       <StageLabel Icon={BarChart3}>Evidence</StageLabel>
-                      {p.source_cells.map((c) => (
-                        <span key={c} className="text-[11px] font-mono text-foreground/85 border border-border/40 bg-white/[0.03] px-1.5 py-0.5 rounded leading-none">{c}</span>
-                      ))}
+                      {p.source_cells.map((c) =>
+                        registry[c]
+                          ? <ConceptChip key={c} code={c} />
+                          : <span key={c} className="text-[11px] font-mono text-foreground/85 border border-border/40 bg-white/[0.03] px-1.5 py-0.5 rounded leading-none">{c}</span>
+                      )}
                       {evidence.spend > 0 && (
                         <span className="text-[12px] font-medium text-foreground/85 tabular-nums ml-1">
                           {fmtUSD(evidence.spend, 0)} spend · {fmtNum(evidence.results)} results

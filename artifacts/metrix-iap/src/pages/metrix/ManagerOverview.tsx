@@ -16,6 +16,7 @@ import { buildMetricCatalog, metricSourceFromManagerTotals, metricById } from "@
 import { useMetricSelection } from "@/hooks/useMetricSelection";
 import { MetricPickerButton } from "@/components/creative/MetricPicker";
 import { MetricDiagnosticModal } from "@/components/creative/MetricDiagnosticModal";
+import { TokenizedConceptText } from "@/components/concept/ConceptChip";
 
 const IMPACT_STYLE: Record<string, string> = {
   high: "bg-red-400/10 text-red-300 border-red-400/20",
@@ -200,11 +201,11 @@ export function ManagerOverview() {
                     <Badge text={`${c.impact} impact`} cls={IMPACT_STYLE[c.impact] ?? IMPACT_STYLE.low} />
                     <ConfidenceBadge value={c.confidence} />
                   </div>
-                  <p className="text-[13px] font-semibold text-foreground leading-snug">{c.title}</p>
-                  <p className="text-[12px] text-muted-foreground/70 mt-1 leading-relaxed">{c.rationale}</p>
+                  <p className="text-[13px] font-semibold text-foreground leading-snug"><TokenizedConceptText text={c.title} /></p>
+                  <p className="text-[12px] text-muted-foreground/70 mt-1 leading-relaxed"><TokenizedConceptText text={c.rationale} /></p>
                   <div className="flex items-start gap-1.5 mt-3 pt-3 border-t border-border/20">
                     <ArrowRight className="w-3.5 h-3.5 text-primary/60 shrink-0 mt-0.5" />
-                    <p className="text-[11px] text-foreground/75 leading-relaxed">{c.recommended_action}</p>
+                    <p className="text-[11px] text-foreground/75 leading-relaxed"><TokenizedConceptText text={c.recommended_action} /></p>
                   </div>
                   <button
                     onClick={() => selectAdAccount(c.account_id)}

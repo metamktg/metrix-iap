@@ -247,6 +247,11 @@ create table if not exists concept_intelligence (
 -- Same LittleData single-book relaxation as concept_performance.
 alter table concept_intelligence alter column book drop not null;
 
+-- Human-readable descriptor for this concept (e.g. "Authority · Static × Checkout Depth").
+-- Nullable: the seed assembly derives a descriptor from existing fields when absent.
+-- Per-account override: a non-null value here takes precedence over the global derivation.
+alter table concept_intelligence add column if not exists concept_descriptor text;
+
 create table if not exists ad_traffic_quality (
   id bigint generated always as identity primary key,
   account_id text not null references ad_accounts(id),

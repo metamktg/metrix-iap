@@ -16,7 +16,7 @@ export function InfoDrawer({
   taskTray,
 }: {
   kicker: string;
-  title: string;
+  title: React.ReactNode;
   onClose: () => void;
   children: React.ReactNode;
   footer?: React.ReactNode;

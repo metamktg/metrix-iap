@@ -29,6 +29,7 @@ import {
   toggleDone,
   isDone,
 } from "@/lib/data/decisionStore";
+import { TokenizedConceptText } from "@/components/concept/ConceptChip";
 
 export interface DeckCard {
   id: string;
@@ -117,12 +118,12 @@ function DetailDrawer({
 
           <div className="space-y-1.5">
             <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Rationale</label>
-            <p className="text-[12px] text-foreground/80 leading-relaxed">{card.rationale}</p>
+            <p className="text-[12px] text-foreground/80 leading-relaxed"><TokenizedConceptText text={card.rationale} /></p>
           </div>
 
           <div className="space-y-1.5">
             <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Recommended action</label>
-            <p className="text-[12px] text-foreground/80 leading-relaxed">{card.recommendedAction}</p>
+            <p className="text-[12px] text-foreground/80 leading-relaxed"><TokenizedConceptText text={card.recommendedAction} /></p>
           </div>
 
           <div className="space-y-1.5">

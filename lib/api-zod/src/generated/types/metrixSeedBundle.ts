@@ -7,6 +7,7 @@
  */
 import type { MetrixSeedBundleAdAccountsItem } from './metrixSeedBundleAdAccountsItem';
 import type { MetrixSeedBundleAppDefaults } from './metrixSeedBundleAppDefaults';
+import type { MetrixSeedBundleConceptRegistry } from './metrixSeedBundleConceptRegistry';
 import type { MetrixSeedBundleManagerAccount } from './metrixSeedBundleManagerAccount';
 import type { MetrixSeedBundleVariableRegistryItem } from './metrixSeedBundleVariableRegistryItem';
 import type { MetrixSeedBundleWorkspaceSettings } from './metrixSeedBundleWorkspaceSettings';
@@ -18,6 +19,8 @@ export interface MetrixSeedBundle {
   schema_version: string;
   generated_at?: string;
   integrity_note?: string;
+  /** Global map of concept code → descriptor entry. Keys are concept codes (e.g. "C2B", "C4E") present across all accounts. Used by ConceptChip to render human-readable labels without hard-coding them on the client. */
+  concept_registry?: MetrixSeedBundleConceptRegistry;
   /** Data-layer truth about variable families, including explicit registry_missing entries (ST_/AW_/CTA_ known gap). */
   variable_registry?: MetrixSeedBundleVariableRegistryItem[];
   app_defaults?: MetrixSeedBundleAppDefaults;
