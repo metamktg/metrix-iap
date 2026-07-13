@@ -64,10 +64,10 @@ export function fmtPct(n: number | null | undefined, digits = 2): string {
 
 /** Human-readable label for a Meta result event key. */
 export const EVENT_LABEL: Record<string, string> = {
-  "Website registrations completed": "Registrations completed",
-  "Website trials started": "Trials started",
+  "Website registrations completed": "Registrations",
+  "Website trials started": "Trials",
   "Website purchases": "Purchases",
-  onb_initiate_checkout: "Checkouts initiated",
+  onb_initiate_checkout: "Checkouts",
 };
 
 export function eventLabel(key: string): string {
@@ -383,9 +383,9 @@ export function MetricTile({ label, value, sub }: { label: string; value: string
   return (
     <div className="mx-card p-4 transition-colors group-hover:border-primary/30 group-hover:bg-primary/[0.02]">
       <div className="relative">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70 mb-2">{label}</div>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70 mb-2 truncate">{label}</div>
         <div className="text-[26px] font-bold text-foreground tabular-nums leading-none tracking-[-0.035em]">{value}</div>
-        {sub && <div className="text-[11px] text-muted-foreground/65 mt-2 leading-snug">{sub}</div>}
+        {sub && <div className="text-[11px] text-muted-foreground/65 mt-2 leading-snug line-clamp-2">{sub}</div>}
       </div>
     </div>
   );
