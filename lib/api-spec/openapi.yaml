@@ -387,6 +387,47 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/sync-creative-links:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+    post:
+      operationId: syncCreativeLinks
+      tags: [metrix]
+      summary: Re-sync creative asset links for an account
+      description: Re-attempts linking all staged creative assets to their mapped ad names for the account. Useful after correcting an ad_names mapping on an existing upload without re-running the full analysis. Returns counts of linked and unlinked names. Requires access to the account.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Sync complete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncCreativeLinksResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/accounts/{accountId}/analysis-runs/latest:
     parameters:
       - name: accountId
@@ -804,6 +845,38 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+    post:
+      operationId: createAdminUser
+      tags: [metrix]
+      summary: Provision a user account directly (without a waitlist entry)
+      description: Creates a new user account (or re-provisions an existing one), optionally assigning a role and ad account grants. Generates a temp password, emails it if Resend is configured, and returns it for manual sharing when email fails. Requires admin access.
+      security:
+        - adminKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminCreateUserInput"
+      responses:
+        "200":
+          description: User created / re-provisioned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminCreateUserResult"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Missing or invalid admin credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/admin/users/{userId}/resend-temp-password:
     parameters:
       - name: userId
@@ -944,6 +1017,147 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdminUserActionResult"
+        "401":
+          description: Missing or invalid admin credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/admin/ad-accounts:
+    get:
+      operationId: listAdminAdAccounts
+      tags: [metrix]
+      summary: List all known ad accounts (for the admin grant picker)
+      description: Returns all ad accounts from the Metrix data layer so the admin console can populate the ad account picker when adding users or managing grants. Requires admin access.
+      security:
+        - adminKey: []
+      responses:
+        "200":
+          description: All known ad accounts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAdAccountsResult"
+        "401":
+          description: Missing or invalid admin credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "503":
+          description: Metrix data layer unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/admin/users/{userId}:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        description: User account identifier.
+        schema:
+          type: integer
+          minimum: 1
+    delete:
+      operationId: deleteAdminUser
+      tags: [metrix]
+      summary: Hard-delete a user account
+      description: Permanently deletes the user row, all their sessions, ad account grants, and password reset tokens. Irreversible. Must pass `?confirm=true` as a query param. Requires admin access.
+      security:
+        - adminKey: []
+      responses:
+        "200":
+          description: User deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDeleteUserResult"
+        "400":
+          description: Missing or invalid confirm param
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Missing or invalid admin credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/admin/users/{userId}/ad-accounts:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        description: User account identifier.
+        schema:
+          type: integer
+          minimum: 1
+    get:
+      operationId: getAdminUserAdAccounts
+      tags: [metrix]
+      summary: Get a user's current ad account grants
+      description: Returns the list of ad account ids this user has been granted access to. Requires admin access.
+      security:
+        - adminKey: []
+      responses:
+        "200":
+          description: Current grants
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserAdAccountsResult"
+        "401":
+          description: Missing or invalid admin credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    put:
+      operationId: updateAdminUserAdAccounts
+      tags: [metrix]
+      summary: Replace a user's ad account grants
+      description: Replaces the user's full grant list with the submitted ad_account_ids array. Pass an empty array to clear all grants. Unknown account ids are silently skipped. Requires admin access.
+      security:
+        - adminKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUpdateUserAdAccountsInput"
+      responses:
+        "200":
+          description: Updated grants
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserAdAccountsResult"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "401":
           description: Missing or invalid admin credentials
           content:
@@ -2537,6 +2751,9 @@ components:
           type: integer
         email:
           type: string
+        display_name:
+          type: string
+          nullable: true
         status:
           type: string
           enum: [active, invited, disabled]
@@ -2554,12 +2771,18 @@ components:
         disabled_at:
           type: string
           nullable: true
+        ad_account_ids:
+          type: array
+          items:
+            type: string
+          description: Ad account IDs this user is explicitly granted. Empty for admin-role users (they always see all accounts by role).
       required:
         - id
         - email
         - status
         - must_change_password
         - created_at
+        - ad_account_ids
     AdminUsersResult:
       type: object
       properties:
@@ -2623,6 +2846,99 @@ components:
       required:
         - status
         - email
+    AdminAdAccount:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Ad account identifier (e.g. "act_123" or "manual_xyz").
+        name:
+          type: string
+          nullable: true
+          description: Human-readable account name from the Metrix seed.
+      required:
+        - id
+    AdminAdAccountsResult:
+      type: object
+      properties:
+        ad_accounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminAdAccount"
+      required:
+        - ad_accounts
+    AdminCreateUserInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        display_name:
+          type: string
+          description: Optional friendly display name shown in the admin user list.
+        role:
+          type: string
+          enum: [admin, member]
+          description: Defaults to member when omitted.
+        ad_account_ids:
+          type: array
+          items:
+            type: string
+          description: Ad account grant list for the new user. Ignored for admin-role users (they always see all accounts). Unknown ids are silently skipped.
+      required:
+        - email
+    AdminCreateUserResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [created]
+        email:
+          type: string
+        user_id:
+          type: integer
+        email_sent:
+          type: boolean
+        temp_password:
+          type: string
+          description: Present only when the email could not be sent, so the admin can share the temp password manually.
+        email_error:
+          type: string
+          description: Present only when the email could not be sent — explains why and how to fix it.
+      required:
+        - status
+        - email
+        - user_id
+        - email_sent
+    AdminDeleteUserResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [deleted]
+        email:
+          type: string
+      required:
+        - status
+        - email
+    AdminUserAdAccountsResult:
+      type: object
+      properties:
+        ad_account_ids:
+          type: array
+          items:
+            type: string
+      required:
+        - ad_account_ids
+    AdminUpdateUserAdAccountsInput:
+      type: object
+      properties:
+        ad_account_ids:
+          type: array
+          items:
+            type: string
+      required:
+        - ad_account_ids
     AuthLoginInput:
       type: object
       properties:
@@ -2885,12 +3201,47 @@ components:
         finished_at:
           type: string
           nullable: true
+        creatives_linked:
+          type: integer
+          nullable: true
+          description: Number of staged creative assets successfully linked to ad rows (computed live from current DB state).
+        creatives_total:
+          type: integer
+          nullable: true
+          description: Total number of staged creative asset ad-name mappings attempted.
+        creatives_unlinked_names:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: Ad names from staged creative assets that could not be matched to any ads row.
+        csv_warnings:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: Warnings produced during tolerant CSV column matching (auto-resolved aliases, missing columns, unrecognised columns that might map to expected ones). Null when parsing was clean. Present on successful runs that had non-fatal column issues.
       required:
         - id
         - account_id
         - status
         - date_range
         - started_at
+    SyncCreativeLinksResult:
+      type: object
+      properties:
+        linked:
+          type: integer
+        total:
+          type: integer
+        unlinked_names:
+          type: array
+          items:
+            type: string
+      required:
+        - linked
+        - total
+        - unlinked_names
     LatestAnalysisRunResult:
       type: object
       properties:

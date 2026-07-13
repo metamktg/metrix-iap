@@ -238,6 +238,24 @@ export const StartManualAnalysisRunResponse = zod.object({
 
 
 /**
+ * Re-attempts linking all staged creative assets to their mapped ad names for the account. Useful after correcting an ad_names mapping on an existing upload without re-running the full analysis. Returns counts of linked and unlinked names. Requires access to the account.
+ * @summary Re-sync creative asset links for an account
+ */
+
+
+
+export const SyncCreativeLinksParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
+})
+
+export const SyncCreativeLinksResponse = zod.object({
+  "linked": zod.number(),
+  "total": zod.number(),
+  "unlinked_names": zod.array(zod.string())
+})
+
+
+/**
  * Returns the most recent manual analysis run for the account, or null when none exists. Runs stuck in 'running' past the staleness cutoff are honestly flipped to 'error'. Requires access to the account.
  * @summary Latest manual analysis run for an account
  */
@@ -260,7 +278,11 @@ export const GetLatestAnalysisRunResponse = zod.object({
   "imports_used": zod.number().nullish(),
   "error_message": zod.string().nullish(),
   "started_at": zod.string(),
-  "finished_at": zod.string().nullish()
+  "finished_at": zod.string().nullish(),
+  "creatives_linked": zod.number().nullish().describe('Number of staged creative assets successfully linked to ad rows (computed live from current DB state).'),
+  "creatives_total": zod.number().nullish().describe('Total number of staged creative asset ad-name mappings attempted.'),
+  "creatives_unlinked_names": zod.array(zod.string()).nullish().describe('Ad names from staged creative assets that could not be matched to any ads row.'),
+  "csv_warnings": zod.array(zod.string()).nullish().describe('Warnings produced during tolerant CSV column matching (auto-resolved aliases, missing columns, unrecognised columns that might map to expected ones). Null when parsing was clean. Present on successful runs that had non-fatal column issues.')
 }).nullable()
 })
 
@@ -455,14 +477,37 @@ export const ListAdminUsersResponse = zod.object({
   "users": zod.array(zod.object({
   "id": zod.number(),
   "email": zod.string(),
+  "display_name": zod.string().nullish(),
   "status": zod.enum(['active', 'invited', 'disabled']).describe('invited = provisioned but never logged in; disabled = access revoked.'),
   "role": zod.enum(['admin', 'member']).optional(),
   "must_change_password": zod.boolean(),
   "created_at": zod.string(),
   "last_login_at": zod.string().nullish(),
-  "disabled_at": zod.string().nullish()
+  "disabled_at": zod.string().nullish(),
+  "ad_account_ids": zod.array(zod.string()).describe('Ad account IDs this user is explicitly granted. Empty for admin-role users (they always see all accounts by role).')
 })),
   "total": zod.number()
+})
+
+
+/**
+ * Creates a new user account (or re-provisions an existing one), optionally assigning a role and ad account grants. Generates a temp password, emails it if Resend is configured, and returns it for manual sharing when email fails. Requires admin access.
+ * @summary Provision a user account directly (without a waitlist entry)
+ */
+export const CreateAdminUserBody = zod.object({
+  "email": zod.string().email(),
+  "display_name": zod.string().optional().describe('Optional friendly display name shown in the admin user list.'),
+  "role": zod.enum(['admin', 'member']).optional().describe('Defaults to member when omitted.'),
+  "ad_account_ids": zod.array(zod.string()).optional().describe('Ad account grant list for the new user. Ignored for admin-role users (they always see all accounts). Unknown ids are silently skipped.')
+})
+
+export const CreateAdminUserResponse = zod.object({
+  "status": zod.enum(['created']),
+  "email": zod.string(),
+  "user_id": zod.number(),
+  "email_sent": zod.boolean(),
+  "temp_password": zod.string().optional().describe('Present only when the email could not be sent, so the admin can share the temp password manually.'),
+  "email_error": zod.string().optional().describe('Present only when the email could not be sent — explains why and how to fix it.')
 })
 
 
@@ -537,6 +582,71 @@ export const AdminRestoreUserParams = zod.object({
 export const AdminRestoreUserResponse = zod.object({
   "status": zod.enum(['revoked', 'restored']),
   "email": zod.string()
+})
+
+
+/**
+ * Returns all ad accounts from the Metrix data layer so the admin console can populate the ad account picker when adding users or managing grants. Requires admin access.
+ * @summary List all known ad accounts (for the admin grant picker)
+ */
+export const ListAdminAdAccountsResponse = zod.object({
+  "ad_accounts": zod.array(zod.object({
+  "id": zod.string().describe('Ad account identifier (e.g. \"act_123\" or \"manual_xyz\").'),
+  "name": zod.string().nullish().describe('Human-readable account name from the Metrix seed.')
+}))
+})
+
+
+/**
+ * Permanently deletes the user row, all their sessions, ad account grants, and password reset tokens. Irreversible. Must pass `?confirm=true` as a query param. Requires admin access.
+ * @summary Hard-delete a user account
+ */
+
+
+
+export const DeleteAdminUserParams = zod.object({
+  "userId": zod.coerce.number().min(1).describe('User account identifier.')
+})
+
+export const DeleteAdminUserResponse = zod.object({
+  "status": zod.enum(['deleted']),
+  "email": zod.string()
+})
+
+
+/**
+ * Returns the list of ad account ids this user has been granted access to. Requires admin access.
+ * @summary Get a user's current ad account grants
+ */
+
+
+
+export const GetAdminUserAdAccountsParams = zod.object({
+  "userId": zod.coerce.number().min(1).describe('User account identifier.')
+})
+
+export const GetAdminUserAdAccountsResponse = zod.object({
+  "ad_account_ids": zod.array(zod.string())
+})
+
+
+/**
+ * Replaces the user's full grant list with the submitted ad_account_ids array. Pass an empty array to clear all grants. Unknown account ids are silently skipped. Requires admin access.
+ * @summary Replace a user's ad account grants
+ */
+
+
+
+export const UpdateAdminUserAdAccountsParams = zod.object({
+  "userId": zod.coerce.number().min(1).describe('User account identifier.')
+})
+
+export const UpdateAdminUserAdAccountsBody = zod.object({
+  "ad_account_ids": zod.array(zod.string())
+})
+
+export const UpdateAdminUserAdAccountsResponse = zod.object({
+  "ad_account_ids": zod.array(zod.string())
 })
 
 

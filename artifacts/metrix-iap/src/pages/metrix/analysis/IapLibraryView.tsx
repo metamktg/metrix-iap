@@ -33,7 +33,9 @@ import {
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { useCellRangeScope } from "@/lib/date-scope";
 import { CreativeCard } from "@/components/creative/CreativeCard";
+import { ConceptFamilyView } from "@/components/creative/ConceptFamilyView";
 import { cardFromCell, libraryCellById } from "@/lib/creative-assembly";
+import { groupByConceptFamily } from "@/lib/concept-grouping";
 import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/SegmentGridModal";
 import { SegmentDrilldownModal } from "@/components/creative/SegmentDrilldownModal";
 import { VariableDrilldownModal } from "@/components/creative/VariableDrilldownModal";
@@ -87,6 +89,7 @@ export function IapLibraryView() {
   useConceptHighlight(onHighlight);
   const [segmentsOpen, setSegmentsOpen] = useState(false);
   const [creativeLibraryOpen, setCreativeLibraryOpen] = useState(false);
+  const [groupByConcept, setGroupByConcept] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<10 | 25 | 50>(10);
   // Variable drill-down (DNA cards, best-read chips, variable table rows)
@@ -134,6 +137,15 @@ export function IapLibraryView() {
     () => filterCells((a?.performance_by_cell ?? []).filter((r) => selected.includes(r["Result type"]))),
     [a, selected, filterCells]
   );
+
+  // ── Concept family groups (for "Group by concept" toggle) ────────────
+  // Computed at component top-level so no hook rules are violated.
+  // libCells is the same metric- and date-filtered slice the grid uses.
+  const conceptGroups = useMemo(
+    () => groupByConceptFamily(libCells, mst),
+    [libCells, mst]
+  );
+
   const tileCatalog = useMemo(() => buildLibraryMetricCatalog(libCells), [libCells]);
   const tileCatalogIds = useMemo(() => tileCatalog.map((m) => m.id), [tileCatalog]);
   const {
@@ -284,8 +296,25 @@ export function IapLibraryView() {
                 </div>
               </div>
 
-              {/* Tabs + Add creatives action */}
-              <div className="mt-4 flex items-center justify-end px-6 pb-0">
+              {/* Tabs + filter bar actions */}
+              <div className="mt-4 flex items-center justify-between px-6 pb-0">
+                {/* Group by concept toggle — only meaningful on the cells tab */}
+                {tab === "cells" ? (
+                  <button
+                    onClick={() => setGroupByConcept((v) => !v)}
+                    aria-pressed={groupByConcept}
+                    className={`flex items-center gap-1.5 text-[10px] font-medium border px-2.5 py-1.5 rounded-md transition-colors ${
+                      groupByConcept
+                        ? "border-primary/50 bg-primary/10 text-primary"
+                        : "border-border/40 bg-white/[0.02] text-muted-foreground/70 hover:text-foreground hover:border-border/60 hover:bg-white/[0.04]"
+                    }`}
+                  >
+                    <Dna className="w-3.5 h-3.5" />
+                    Group by concept
+                  </button>
+                ) : (
+                  <div />
+                )}
                 <button
                   onClick={() => setCreativeLibraryOpen(true)}
                   className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground/70 hover:text-foreground border border-border/40 hover:border-border/60 bg-white/[0.02] hover:bg-white/[0.04] px-2.5 py-1.5 rounded-md transition-colors"
@@ -328,7 +357,22 @@ export function IapLibraryView() {
                       </div>
                     )}
 
-                    {cells.length ? (() => {
+                    {/* ── Grouped view ── */}
+                    {groupByConcept ? (
+                      cells.length ? (
+                        <ConceptFamilyView
+                          groups={conceptGroups}
+                          cardCtx={cardCtx}
+                          demoByCell={demoByCell}
+                          allPlacements={allPlacements}
+                          unmappedCellIds={unmappedCellIds}
+                          onDetail={(row) => setDetail(row)}
+                          onUploadCreatives={() => setCreativeLibraryOpen(true)}
+                        />
+                      ) : (
+                        <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." />
+                      )
+                    ) : cells.length ? (() => {
                       const uniqueCells = uniqueCellRows(cells);
                       const totalCells = uniqueCells.length;
                       const totalPages = Math.max(1, Math.ceil(totalCells / pageSize));

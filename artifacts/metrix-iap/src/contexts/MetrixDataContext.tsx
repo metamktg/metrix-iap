@@ -1,3 +1,4 @@
+// @refresh reset
 // ═══════════════════════════════════════════════════════════════════════
 // METRIX IAP — Metrix Data Context
 // Fetches the seed bundle from the backend API (generated React Query hook)

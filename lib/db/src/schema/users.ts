@@ -10,6 +10,7 @@ import {
 export const usersTable = pgTable("users", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
+  displayName: text("display_name"),
   passwordHash: text("password_hash").notNull(),
   mustChangePassword: boolean("must_change_password").notNull().default(true),
   // Access role: 'admin' sees every ad account (agency team); 'member' sees

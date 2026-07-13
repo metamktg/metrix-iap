@@ -1,3 +1,4 @@
+// @refresh reset
 // ─── Concept Registry Context ─────────────────────────────────────────
 // Holds the global concept_registry map from the seed bundle and exposes:
 //  - useConceptDescriptor(code)  — look up a descriptor entry

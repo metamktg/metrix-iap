@@ -218,6 +218,155 @@ export function headerMatchesColumn(header: string, canonical: string): boolean 
   return new RegExp(`^${pattern}$`).test(header.trim());
 }
 
+/**
+ * Known Meta Ads Manager / Ads Reporting column name aliases.
+ * Key: lowercase alias as it appears in real Meta exports.
+ * Value: canonical column name from this spec.
+ *
+ * These cover the most common discrepancies between Meta's UI exports and the
+ * exact column names the IAP template spec requires. When a CSV contains an
+ * alias key, the parser accepts it transparently and records a mapping notice
+ * so the user can see what was auto-resolved.
+ */
+export const COLUMN_ALIASES: Record<string, string> = {
+  // Meta Ads Manager standard UI exports use "Day" for the date breakdown
+  "day": "Date",
+  // CPM — Meta sometimes shortens the label
+  "cpm": "CPM (cost per 1,000 impressions)",
+  // Accounts Center reached — various capitalisation/abbreviation variants
+  "cost per 1,000 accounts center accounts reached":
+    "Cost per 1,000 Accounts Center accounts reached",
+  "cost per 1000 accounts center accounts reached":
+    "Cost per 1,000 Accounts Center accounts reached",
+  "cost per 1,000 account center accounts reached":
+    "Cost per 1,000 Accounts Center accounts reached",
+  "cost per 1000 account center accounts reached":
+    "Cost per 1,000 Accounts Center accounts reached",
+  // Spend column — sometimes labelled without the currency suffix
+  "spend": "Amount spent ({ACCOUNT_CURRENCY})",
+  "total spend": "Amount spent ({ACCOUNT_CURRENCY})",
+  "amount spent": "Amount spent ({ACCOUNT_CURRENCY})",
+  // Results
+  "conversions": "Results",
+  "total results": "Results",
+  "total conversions": "Results",
+  // Link clicks
+  "link click": "Link clicks",
+  // CPC variations
+  "cpc": "CPC (all)",
+  "cost per click": "CPC (all)",
+  // CTR variations
+  "ctr": "CTR (all)",
+  "click-through rate": "CTR (all)",
+  // Reach
+  "unique reach": "Reach",
+  // Impression device
+  "device": "Impression device",
+  "device type": "Impression device",
+  // Frequency
+  "avg. frequency": "Frequency",
+  "average frequency": "Frequency",
+};
+
+/** How a CSV header was resolved to a canonical column name. */
+export type ColumnMatchVia = "exact" | "currency" | "case_insensitive" | "alias" | "slug";
+
+export type ColumnMatch = {
+  headerValue: string;
+  via: ColumnMatchVia;
+};
+
+/**
+ * Tries to find a canonical column in a CSV header row using a cascade:
+ *  1. Exact match
+ *  2. {ACCOUNT_CURRENCY} placeholder match (e.g. "Amount spent (USD)")
+ *  3. Case-insensitive exact match
+ *  4. Known alias lookup (COLUMN_ALIASES)
+ *  5. Slug-based match (normalize both sides to slug form)
+ *
+ * Returns null if no match found even with fuzzy resolution.
+ */
+export function findColumnInHeader(headers: string[], canonical: string): ColumnMatch | null {
+  // 1. Exact match
+  const exact = headers.find((h) => h.trim() === canonical);
+  if (exact !== undefined) return { headerValue: exact.trim(), via: "exact" };
+
+  // 2. Currency placeholder match (e.g. "Amount spent (USD)")
+  if (canonical.includes("{ACCOUNT_CURRENCY}")) {
+    const cur = headers.find((h) => headerMatchesColumn(h, canonical));
+    if (cur !== undefined) return { headerValue: cur.trim(), via: "currency" };
+    // Also check: header might literally say "Amount spent" with no currency
+    const plainSpend = headers.find(
+      (h) => h.trim().toLowerCase() === "amount spent" || COLUMN_ALIASES[h.trim().toLowerCase()] === canonical,
+    );
+    if (plainSpend !== undefined) return { headerValue: plainSpend.trim(), via: "alias" };
+  }
+
+  const lower = canonical.toLowerCase();
+
+  // 3. Case-insensitive exact match
+  const ci = headers.find((h) => h.trim().toLowerCase() === lower);
+  if (ci !== undefined) return { headerValue: ci.trim(), via: "case_insensitive" };
+
+  // 4. Alias lookup — check if any header's lowercase form is an alias that maps to this canonical
+  for (const [aliasKey, aliasCanon] of Object.entries(COLUMN_ALIASES)) {
+    if (aliasCanon === canonical) {
+      const found = headers.find((h) => h.trim().toLowerCase() === aliasKey);
+      if (found !== undefined) return { headerValue: found.trim(), via: "alias" };
+    }
+  }
+
+  // 5. Slug match — normalize both sides and compare
+  const canonSlug = slugifyColumn(canonical);
+  const slugMatch = headers.find((h) => slugifyColumn(h) === canonSlug);
+  if (slugMatch !== undefined) return { headerValue: slugMatch.trim(), via: "slug" };
+
+  return null;
+}
+
+/**
+ * For an unknown CSV header (one that didn't map to any canonical column),
+ * finds the closest missing canonical it might represent using Jaccard token
+ * similarity. Returns null if no candidate scores ≥ 0.4.
+ *
+ * Used to surface auto-suggestions when the parser encounters unrecognised
+ * columns that look like they might be renamed versions of expected ones.
+ */
+export function suggestCanonicalForUnknown(
+  unknownHeader: string,
+  missingCanonicals: string[],
+): string | null {
+  const unknownTokens = new Set(slugifyColumn(unknownHeader).split("_").filter(Boolean));
+  if (unknownTokens.size === 0) return null;
+  let best: { canonical: string; score: number } | null = null;
+  for (const canonical of missingCanonicals) {
+    const canonTokens = new Set(slugifyColumn(canonical).split("_").filter(Boolean));
+    const intersection = [...unknownTokens].filter((t) => canonTokens.has(t)).length;
+    const union = new Set([...unknownTokens, ...canonTokens]).size;
+    const jaccard = union > 0 ? intersection / union : 0;
+    if (jaccard >= 0.4 && (!best || jaccard > best.score)) {
+      best = { canonical, score: jaccard };
+    }
+  }
+  return best?.canonical ?? null;
+}
+
+/**
+ * Core base metrics whose absence meaningfully degrades analysis quality.
+ * Missing any of these triggers a "reduced confidence" warning rather than
+ * a hard error — analysis proceeds with nulls for the missing columns.
+ */
+export const CORE_BASE_METRICS: ReadonlySet<string> = new Set([
+  "Amount spent ({ACCOUNT_CURRENCY})",
+  "Reach",
+  "Impressions",
+  "Results",
+  "Cost per result",
+  "Link clicks",
+  "CTR (link click-through rate)",
+  "CPM (cost per 1,000 impressions)",
+]);
+
 export type IapCsvMetricGroup = { name: string; required: boolean; columns: readonly string[] };
 
 export type IapCsvClassFormat = {

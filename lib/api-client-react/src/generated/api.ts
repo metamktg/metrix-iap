@@ -20,12 +20,18 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AdminAdAccountsResult,
+  AdminCreateUserInput,
+  AdminCreateUserResult,
+  AdminDeleteUserResult,
   AdminEmailStatus,
   AdminLoginInput,
   AdminResendTempPasswordResult,
   AdminSendPasswordResetResult,
   AdminSessionStatus,
+  AdminUpdateUserAdAccountsInput,
   AdminUserActionResult,
+  AdminUserAdAccountsResult,
   AdminUsersResult,
   ApiError,
   AuthChangePasswordInput,
@@ -75,6 +81,7 @@ import type {
   SelectMetaAdAccountResult,
   StartAnalysisInput,
   StartGenerationResult,
+  SyncCreativeLinksResult,
   UpdateManualImportAdNamesInput,
   UpdateMemberPermissionsInput,
   UpdateMemberPermissionsResult,
@@ -797,6 +804,77 @@ export const useStartManualAnalysisRun = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getStartManualAnalysisRunMutationOptions(options));
+    }
+
+export const getSyncCreativeLinksUrl = (accountId: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/sync-creative-links`
+}
+
+/**
+ * Re-attempts linking all staged creative assets to their mapped ad names for the account. Useful after correcting an ad_names mapping on an existing upload without re-running the full analysis. Returns counts of linked and unlinked names. Requires access to the account.
+ * @summary Re-sync creative asset links for an account
+ */
+export const syncCreativeLinks = async (accountId: string, options?: RequestInit): Promise<SyncCreativeLinksResult> => {
+
+  return customFetch<SyncCreativeLinksResult>(getSyncCreativeLinksUrl(accountId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getSyncCreativeLinksMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof syncCreativeLinks>>, TError,{accountId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof syncCreativeLinks>>, TError,{accountId: string}, TContext> => {
+
+const mutationKey = ['syncCreativeLinks'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof syncCreativeLinks>>, {accountId: string}> = (props) => {
+          const {accountId} = props ?? {};
+
+          return  syncCreativeLinks(accountId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SyncCreativeLinksMutationResult = NonNullable<Awaited<ReturnType<typeof syncCreativeLinks>>>
+
+    export type SyncCreativeLinksMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Re-sync creative asset links for an account
+ */
+export const useSyncCreativeLinks = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof syncCreativeLinks>>, TError,{accountId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof syncCreativeLinks>>,
+        TError,
+        {accountId: string},
+        TContext
+      > => {
+      return useMutation(getSyncCreativeLinksMutationOptions(options));
     }
 
 export const getGetLatestAnalysisRunUrl = (accountId: string,) => {
@@ -1774,6 +1852,77 @@ export function useListAdminUsers<TData = Awaited<ReturnType<typeof listAdminUse
 
 
 
+export const getCreateAdminUserUrl = () => {
+
+
+
+
+  return `/api/metrix/admin/users`
+}
+
+/**
+ * Creates a new user account (or re-provisions an existing one), optionally assigning a role and ad account grants. Generates a temp password, emails it if Resend is configured, and returns it for manual sharing when email fails. Requires admin access.
+ * @summary Provision a user account directly (without a waitlist entry)
+ */
+export const createAdminUser = async (adminCreateUserInput: AdminCreateUserInput, options?: RequestInit): Promise<AdminCreateUserResult> => {
+
+  return customFetch<AdminCreateUserResult>(getCreateAdminUserUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminCreateUserInput)
+  }
+);}
+
+
+
+
+export const getCreateAdminUserMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdminUser>>, TError,{data: BodyType<AdminCreateUserInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAdminUser>>, TError,{data: BodyType<AdminCreateUserInput>}, TContext> => {
+
+const mutationKey = ['createAdminUser'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAdminUser>>, {data: BodyType<AdminCreateUserInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAdminUser(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAdminUserMutationResult = NonNullable<Awaited<ReturnType<typeof createAdminUser>>>
+    export type CreateAdminUserMutationBody = BodyType<AdminCreateUserInput>
+    export type CreateAdminUserMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Provision a user account directly (without a waitlist entry)
+ */
+export const useCreateAdminUser = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAdminUser>>, TError,{data: BodyType<AdminCreateUserInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAdminUser>>,
+        TError,
+        {data: BodyType<AdminCreateUserInput>},
+        TContext
+      > => {
+      return useMutation(getCreateAdminUserMutationOptions(options));
+    }
+
 export const getAdminResendTempPasswordUrl = (userId: number,) => {
 
 
@@ -2056,6 +2205,305 @@ export const useAdminRestoreUser = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getAdminRestoreUserMutationOptions(options));
+    }
+
+export const getListAdminAdAccountsUrl = () => {
+
+
+
+
+  return `/api/metrix/admin/ad-accounts`
+}
+
+/**
+ * Returns all ad accounts from the Metrix data layer so the admin console can populate the ad account picker when adding users or managing grants. Requires admin access.
+ * @summary List all known ad accounts (for the admin grant picker)
+ */
+export const listAdminAdAccounts = async ( options?: RequestInit): Promise<AdminAdAccountsResult> => {
+
+  return customFetch<AdminAdAccountsResult>(getListAdminAdAccountsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminAdAccountsQueryKey = () => {
+    return [
+    `/api/metrix/admin/ad-accounts`
+    ] as const;
+    }
+
+
+export const getListAdminAdAccountsQueryOptions = <TData = Awaited<ReturnType<typeof listAdminAdAccounts>>, TError = ErrorType<ApiError>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminAdAccounts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminAdAccountsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminAdAccounts>>> = ({ signal }) => listAdminAdAccounts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminAdAccounts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminAdAccountsQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminAdAccounts>>>
+export type ListAdminAdAccountsQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary List all known ad accounts (for the admin grant picker)
+ */
+
+export function useListAdminAdAccounts<TData = Awaited<ReturnType<typeof listAdminAdAccounts>>, TError = ErrorType<ApiError>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminAdAccounts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminAdAccountsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDeleteAdminUserUrl = (userId: number,) => {
+
+
+
+
+  return `/api/metrix/admin/users/${userId}`
+}
+
+/**
+ * Permanently deletes the user row, all their sessions, ad account grants, and password reset tokens. Irreversible. Must pass `?confirm=true` as a query param. Requires admin access.
+ * @summary Hard-delete a user account
+ */
+export const deleteAdminUser = async (userId: number, options?: RequestInit): Promise<AdminDeleteUserResult> => {
+
+  return customFetch<AdminDeleteUserResult>(getDeleteAdminUserUrl(userId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteAdminUserMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminUser>>, TError,{userId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAdminUser>>, TError,{userId: number}, TContext> => {
+
+const mutationKey = ['deleteAdminUser'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAdminUser>>, {userId: number}> = (props) => {
+          const {userId} = props ?? {};
+
+          return  deleteAdminUser(userId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAdminUserMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAdminUser>>>
+
+    export type DeleteAdminUserMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Hard-delete a user account
+ */
+export const useDeleteAdminUser = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminUser>>, TError,{userId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAdminUser>>,
+        TError,
+        {userId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteAdminUserMutationOptions(options));
+    }
+
+export const getGetAdminUserAdAccountsUrl = (userId: number,) => {
+
+
+
+
+  return `/api/metrix/admin/users/${userId}/ad-accounts`
+}
+
+/**
+ * Returns the list of ad account ids this user has been granted access to. Requires admin access.
+ * @summary Get a user's current ad account grants
+ */
+export const getAdminUserAdAccounts = async (userId: number, options?: RequestInit): Promise<AdminUserAdAccountsResult> => {
+
+  return customFetch<AdminUserAdAccountsResult>(getGetAdminUserAdAccountsUrl(userId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminUserAdAccountsQueryKey = (userId: number,) => {
+    return [
+    `/api/metrix/admin/users/${userId}/ad-accounts`
+    ] as const;
+    }
+
+
+export const getGetAdminUserAdAccountsQueryOptions = <TData = Awaited<ReturnType<typeof getAdminUserAdAccounts>>, TError = ErrorType<ApiError>>(userId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminUserAdAccounts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminUserAdAccountsQueryKey(userId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminUserAdAccounts>>> = ({ signal }) => getAdminUserAdAccounts(userId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: userId !== null && userId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminUserAdAccounts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminUserAdAccountsQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminUserAdAccounts>>>
+export type GetAdminUserAdAccountsQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Get a user's current ad account grants
+ */
+
+export function useGetAdminUserAdAccounts<TData = Awaited<ReturnType<typeof getAdminUserAdAccounts>>, TError = ErrorType<ApiError>>(
+ userId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminUserAdAccounts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminUserAdAccountsQueryOptions(userId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateAdminUserAdAccountsUrl = (userId: number,) => {
+
+
+
+
+  return `/api/metrix/admin/users/${userId}/ad-accounts`
+}
+
+/**
+ * Replaces the user's full grant list with the submitted ad_account_ids array. Pass an empty array to clear all grants. Unknown account ids are silently skipped. Requires admin access.
+ * @summary Replace a user's ad account grants
+ */
+export const updateAdminUserAdAccounts = async (userId: number,
+    adminUpdateUserAdAccountsInput: AdminUpdateUserAdAccountsInput, options?: RequestInit): Promise<AdminUserAdAccountsResult> => {
+
+  return customFetch<AdminUserAdAccountsResult>(getUpdateAdminUserAdAccountsUrl(userId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminUpdateUserAdAccountsInput)
+  }
+);}
+
+
+
+
+export const getUpdateAdminUserAdAccountsMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminUserAdAccounts>>, TError,{userId: number;data: BodyType<AdminUpdateUserAdAccountsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAdminUserAdAccounts>>, TError,{userId: number;data: BodyType<AdminUpdateUserAdAccountsInput>}, TContext> => {
+
+const mutationKey = ['updateAdminUserAdAccounts'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAdminUserAdAccounts>>, {userId: number;data: BodyType<AdminUpdateUserAdAccountsInput>}> = (props) => {
+          const {userId,data} = props ?? {};
+
+          return  updateAdminUserAdAccounts(userId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAdminUserAdAccountsMutationResult = NonNullable<Awaited<ReturnType<typeof updateAdminUserAdAccounts>>>
+    export type UpdateAdminUserAdAccountsMutationBody = BodyType<AdminUpdateUserAdAccountsInput>
+    export type UpdateAdminUserAdAccountsMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Replace a user's ad account grants
+ */
+export const useUpdateAdminUserAdAccounts = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminUserAdAccounts>>, TError,{userId: number;data: BodyType<AdminUpdateUserAdAccountsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAdminUserAdAccounts>>,
+        TError,
+        {userId: number;data: BodyType<AdminUpdateUserAdAccountsInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateAdminUserAdAccountsMutationOptions(options));
     }
 
 export const getApproveRequestAccessEntryUrl = (requestId: string,) => {

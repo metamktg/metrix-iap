@@ -67,9 +67,9 @@ import type { AdAccount } from "@/lib/data/seedTypes";
 import {
   RequiredFormatPanel,
   GuessedMatchesCallout,
-  guessedCreativeImports,
   type IapCsvClassKey,
 } from "./ManualAnalysisControls";
+import { guessedCreativeImports } from "./manualImportUtils";
 import type { ManualImportInput, ManualImportResult } from "@workspace/api-client-react";
 import { suggestAdNameMatch, type AdNameMatch } from "@/lib/adNameMatch";
 

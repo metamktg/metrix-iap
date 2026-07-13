@@ -248,9 +248,7 @@ async function provisionApprovedUser(
 
 router.get("/metrix/admin/email-status", requireAdmin, (req, res) => {
   const { mode, from } = getEmailConfig();
-  const environment = process.env["REPLIT_DEPLOYMENT"]
-    ? "production"
-    : "development";
+  const environment = process.env["NODE_ENV"] === "production" ? "production" : "development";
   res.json(GetAdminEmailStatusResponse.parse({ mode, from, environment }));
 });
 
@@ -263,30 +261,47 @@ function adminUserStatus(user: {
 }
 
 router.get("/metrix/admin/users", requireAdmin, async (req, res) => {
-  const rows = await db
-    .select({
-      id: usersTable.id,
-      email: usersTable.email,
-      role: usersTable.role,
-      mustChangePassword: usersTable.mustChangePassword,
-      createdAt: usersTable.createdAt,
-      lastLoginAt: usersTable.lastLoginAt,
-      disabledAt: usersTable.disabledAt,
-    })
-    .from(usersTable)
-    .orderBy(desc(usersTable.createdAt));
+  const [rows, allGrants] = await Promise.all([
+    db
+      .select({
+        id: usersTable.id,
+        email: usersTable.email,
+        displayName: usersTable.displayName,
+        role: usersTable.role,
+        mustChangePassword: usersTable.mustChangePassword,
+        createdAt: usersTable.createdAt,
+        lastLoginAt: usersTable.lastLoginAt,
+        disabledAt: usersTable.disabledAt,
+      })
+      .from(usersTable)
+      .orderBy(desc(usersTable.createdAt)),
+    db
+      .select({
+        userId: userAdAccountsTable.userId,
+        adAccountId: userAdAccountsTable.adAccountId,
+      })
+      .from(userAdAccountsTable),
+  ]);
+
+  const grantsMap = new Map<number, string[]>();
+  for (const g of allGrants) {
+    if (!grantsMap.has(g.userId)) grantsMap.set(g.userId, []);
+    grantsMap.get(g.userId)!.push(g.adAccountId);
+  }
 
   res.json(
     ListAdminUsersResponse.parse({
       users: rows.map((u) => ({
         id: u.id,
         email: u.email,
+        display_name: u.displayName ?? null,
         status: adminUserStatus(u),
         role: u.role,
         must_change_password: u.mustChangePassword,
         created_at: u.createdAt.toISOString(),
         last_login_at: u.lastLoginAt ? u.lastLoginAt.toISOString() : null,
         disabled_at: u.disabledAt ? u.disabledAt.toISOString() : null,
+        ad_account_ids: grantsMap.get(u.id) ?? [],
       })),
       total: rows.length,
     }),
@@ -442,6 +457,173 @@ router.post(
     );
   },
 );
+
+// ─── Admin: list all known ad accounts (for grant picker) ─────────────
+
+router.get("/metrix/admin/ad-accounts", requireAdmin, async (req, res) => {
+  let bundle: { ad_accounts?: Array<{ id: string; name?: string | null }> };
+  try {
+    bundle = (await getMetrixSeedFromSupabase()) as {
+      ad_accounts?: Array<{ id: string; name?: string | null }>;
+    };
+  } catch (err) {
+    req.log.error({ err }, "Failed to load Metrix seed for admin ad-accounts list");
+    res.status(503).json({ message: "Metrix data layer is unavailable." });
+    return;
+  }
+  const ad_accounts = (bundle.ad_accounts ?? []).map((a) => ({
+    id: a.id,
+    name: a.name ?? null,
+  }));
+  res.json({ ad_accounts });
+});
+
+// ─── Admin: create user directly (no waitlist entry required) ──────────
+
+router.post("/metrix/admin/users", requireAdmin, async (req, res) => {
+  const { z } = await import("zod/v4");
+  const Body = z.object({
+    email: z.string().email(),
+    display_name: z.string().optional(),
+    role: z.enum(["admin", "member"]).optional(),
+    ad_account_ids: z.array(z.string()).optional(),
+  });
+  const parsed = Body.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "Invalid input. An email is required." });
+    return;
+  }
+
+  const { email, display_name, role, ad_account_ids } = parsed.data;
+  const result = await provisionApprovedUser(email.toLowerCase(), req.log, {});
+
+  // Store display name if provided
+  if (display_name?.trim()) {
+    await db
+      .update(usersTable)
+      .set({ displayName: display_name.trim() })
+      .where(eq(usersTable.email, email.toLowerCase()));
+  }
+
+  // Apply requested role if given and not forced by agency safeguard
+  if (role && !isAgencyAdminEmail(email)) {
+    await db
+      .update(usersTable)
+      .set({ role })
+      .where(eq(usersTable.email, email.toLowerCase()));
+  }
+
+  // Grant ad accounts (member-only; admins see everything by role)
+  const effectiveRole = isAgencyAdminEmail(email) ? "admin" : (role ?? "member");
+  if (effectiveRole === "member" && ad_account_ids && ad_account_ids.length > 0) {
+    // Load known accounts to filter unknown ids
+    let knownIds: Set<string> = new Set();
+    try {
+      const bundle = (await getMetrixSeedFromSupabase()) as {
+        ad_accounts?: Array<{ id: string }>;
+      };
+      knownIds = new Set((bundle.ad_accounts ?? []).map((a) => a.id));
+    } catch {
+      // Non-fatal: grant what we can
+    }
+    const validIds = ad_account_ids.filter((id) => knownIds.size === 0 || knownIds.has(id));
+    if (validIds.length > 0) {
+      await db
+        .insert(userAdAccountsTable)
+        .values(validIds.map((adAccountId) => ({ userId: result.userId, adAccountId })))
+        .onConflictDoNothing({
+          target: [userAdAccountsTable.userId, userAdAccountsTable.adAccountId],
+        });
+    }
+  }
+
+  res.json({
+    status: "created",
+    email: email.toLowerCase(),
+    user_id: result.userId,
+    email_sent: result.email_sent,
+    ...(result.temp_password ? { temp_password: result.temp_password } : {}),
+    ...(result.email_error ? { email_error: result.email_error } : {}),
+  });
+});
+
+// ─── Admin: hard-delete a user account ────────────────────────────────
+
+router.delete("/metrix/admin/users/:userId", requireAdmin, async (req, res) => {
+  if (req.query["confirm"] !== "true") {
+    res.status(400).json({ message: "Pass confirm=true to confirm this irreversible action." });
+    return;
+  }
+  const user = await findAdminUser(String(req.params.userId));
+  if (!user) {
+    res.status(404).json({ message: "User not found." });
+    return;
+  }
+
+  // Sessions and grants cascade-delete via FK, but be explicit for reset tokens
+  await deletePasswordResetTokensForUser(user.id);
+  // Cascade on user_sessions and user_ad_accounts handles those rows,
+  // but only if the DB schema uses ON DELETE CASCADE — destroy sessions
+  // explicitly to be safe.
+  await destroyAllSessions(user.id);
+  await db.delete(usersTable).where(eq(usersTable.id, user.id));
+  req.log.info({ email: user.email }, "admin hard-deleted user account");
+
+  res.json({ status: "deleted", email: user.email });
+});
+
+// ─── Admin: get / replace a user's ad account grants ──────────────────
+
+router.get("/metrix/admin/users/:userId/ad-accounts", requireAdmin, async (req, res) => {
+  const user = await findAdminUser(String(req.params.userId));
+  if (!user) {
+    res.status(404).json({ message: "User not found." });
+    return;
+  }
+  const ad_account_ids = await grantsForAdmin(user.id);
+  res.json({ ad_account_ids });
+});
+
+router.put("/metrix/admin/users/:userId/ad-accounts", requireAdmin, async (req, res) => {
+  const { z } = await import("zod/v4");
+  const Body = z.object({ ad_account_ids: z.array(z.string()) });
+  const parsed = Body.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "ad_account_ids array is required." });
+    return;
+  }
+
+  const user = await findAdminUser(String(req.params.userId));
+  if (!user) {
+    res.status(404).json({ message: "User not found." });
+    return;
+  }
+
+  const { ad_account_ids } = parsed.data;
+
+  // Replace the full grant list atomically
+  await db.delete(userAdAccountsTable).where(eq(userAdAccountsTable.userId, user.id));
+  if (ad_account_ids.length > 0) {
+    await db
+      .insert(userAdAccountsTable)
+      .values(ad_account_ids.map((adAccountId) => ({ userId: user.id, adAccountId })))
+      .onConflictDoNothing({
+        target: [userAdAccountsTable.userId, userAdAccountsTable.adAccountId],
+      });
+  }
+
+  const updated = await grantsForAdmin(user.id);
+  res.json({ ad_account_ids: updated });
+});
+
+// Reusable grant-fetch helper for admin routes (no workspace scope needed)
+async function grantsForAdmin(userId: number): Promise<string[]> {
+  const rows = await db
+    .select({ adAccountId: userAdAccountsTable.adAccountId })
+    .from(userAdAccountsTable)
+    .where(eq(userAdAccountsTable.userId, userId));
+  return rows.map((r) => r.adAccountId);
+}
 
 router.get("/metrix/seed", requireAuth, async (req, res) => {
   try {

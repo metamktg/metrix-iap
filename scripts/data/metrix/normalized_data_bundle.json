@@ -36,7 +36,7 @@
       {
         "campaign_name": "BOOK2_LEAD_JUN26_QUIZ_V1",
         "book": "BOOK2",
-        "os": NaN,
+        "os": null,
         "date_start": "2026-06-04",
         "date_end": "2026-06-17",
         "result_type": "Website trials started",
@@ -45,7 +45,7 @@
       {
         "campaign_name": "BOOK2_LEAD_JUN26_QUIZ_V2 [Complete Registration]",
         "book": "BOOK2",
-        "os": NaN,
+        "os": null,
         "date_start": "2026-06-06",
         "date_end": "2026-06-16",
         "result_type": "Website registrations completed",
@@ -54,7 +54,7 @@
       {
         "campaign_name": "BOOK2_LEAD_JUN26_QUIZ_V3",
         "book": "BOOK2",
-        "os": NaN,
+        "os": null,
         "date_start": "2026-06-17",
         "date_end": "2026-07-07",
         "result_type": "onb_initiate_checkout",

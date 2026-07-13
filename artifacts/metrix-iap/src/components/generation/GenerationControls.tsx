@@ -1,3 +1,4 @@
+// @refresh reset
 // ─── In-app generation controls ───────────────────────────────────────
 // Shared hook + UI for triggering Metrix engine generation runs
 // (strategy-from-analysis, briefs-from-strategy) and polling the run

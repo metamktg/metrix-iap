@@ -78,6 +78,8 @@ describe("parseIapCsv — valid exports", () => {
     expect(result.rows[0]!.breakdowns["Gender"]).toBe("female");
     expect(result.rows[0]!.base["impressions"]).toBe(5100);
     expect(result.rows[0]!.base["result_type"]).toBe("Purchases");
+    expect(result.warnings).toEqual([]);
+    expect(result.missingColumns).toEqual([]);
   });
 
   it("parses a valid device/placement export", () => {
@@ -85,30 +87,93 @@ describe("parseIapCsv — valid exports", () => {
     expect(result.rows.length).toBe(1);
     expect(result.rows[0]!.breakdowns["Placement"]).toBe("feed");
     expect(result.rows[0]!.breakdowns["Platform"]).toBe("facebook");
+    expect(result.warnings).toEqual([]);
   });
 });
 
-describe("parseIapCsv — rejects malformed uploads", () => {
+describe("parseIapCsv — alias / fuzzy matching", () => {
+  it('accepts "Day" in place of "Date" via alias match', () => {
+    const breakdownCols = [...DEMOGRAPHIC_BREAKDOWN_COLUMNS];
+    // Replace "Date" with "Day" in the header
+    const header = breakdownCols
+      .map((c) => (c === "Date" ? "Day" : resolveCurrency(c)))
+      .concat(BASE_METRICS.map(resolveCurrency));
+    const row = breakdownCols.map(breakdownValue).concat(BASE_METRICS.map(baseValue));
+    const text = [line(header), line(row)].join("\n");
+
+    const result = parseIapCsv(text, "demographic");
+    expect(result.rows.length).toBe(1);
+    // "Date" breakdown value should be populated from the "Day" column
+    expect(result.rows[0]!.breakdowns["Date"]).toBe("2026-06-01");
+    // A warning should be recorded
+    expect(result.warnings.some((w) => w.includes("Day") && w.includes("Date"))).toBe(true);
+    expect(result.columnMappings["Date"]?.via).toBe("alias");
+  });
+
+  it("accepts case-insensitive column names", () => {
+    const breakdownCols = [...DEMOGRAPHIC_BREAKDOWN_COLUMNS];
+    const header = breakdownCols
+      .map((c) => (c === "Ad name" ? "ad name" : resolveCurrency(c)))
+      .concat(BASE_METRICS.map(resolveCurrency));
+    const row = breakdownCols.map(breakdownValue).concat(BASE_METRICS.map(baseValue));
+    const text = [line(header), line(row)].join("\n");
+
+    const result = parseIapCsv(text, "demographic");
+    expect(result.rows.length).toBe(1);
+    expect(result.rows[0]!.breakdowns["Ad name"]).toBe("UGC_Testimonial_v1");
+    expect(result.columnMappings["Ad name"]?.via).toBe("case_insensitive");
+  });
+
+  it("proceeds with warnings (not error) when a non-critical breakdown column is missing", () => {
+    const breakdownCols = [...DEMOGRAPHIC_BREAKDOWN_COLUMNS];
+    // Drop "Text" — non-critical breakdown column
+    const header = breakdownCols
+      .filter((c) => c !== "Text")
+      .map(resolveCurrency)
+      .concat(BASE_METRICS.map(resolveCurrency));
+    const row = breakdownCols
+      .filter((c) => c !== "Text")
+      .map(breakdownValue)
+      .concat(BASE_METRICS.map(baseValue));
+    const text = [line(header), line(row)].join("\n");
+
+    const result = parseIapCsv(text, "demographic");
+    expect(result.rows.length).toBe(1);
+    expect(result.missingColumns).toContain("Text");
+    expect(result.warnings.some((w) => w.includes("Text"))).toBe(true);
+  });
+
+  it("proceeds with warnings (not error) when base metric columns are missing", () => {
+    const breakdownCols = DEMOGRAPHIC_BREAKDOWN_COLUMNS;
+    // Only provide breakdown columns — no base metrics at all
+    const header = [...breakdownCols.map(resolveCurrency)];
+    const row = [...breakdownCols.map(breakdownValue)];
+    const result = parseIapCsv([line(header), line(row)].join("\n"), "demographic");
+    expect(result.rows.length).toBe(1);
+    expect(result.missingColumns.length).toBeGreaterThan(0);
+    expect(result.warnings.some((w) => /missing|confidence/i.test(w))).toBe(true);
+  });
+});
+
+describe("parseIapCsv — hard errors remain", () => {
   it("throws on an empty file", () => {
     expect(() => parseIapCsv("", "demographic")).toThrow(IapCsvFormatError);
     expect(() => parseIapCsv("   \n  ", "demographic")).toThrow(/empty|missing/i);
   });
 
-  it("throws when a breakdown column is missing", () => {
-    const { header } = validCsv("demographic");
-    const withoutGender = header.filter((h) => h !== "Gender");
-    // Header only (data row would also drop a column); the breakdown check runs first.
-    expect(() => parseIapCsv(line(withoutGender) + "\nx", "demographic")).toThrow(
-      /columns are missing/i,
-    );
-  });
-
-  it("throws when a required Base metric column is missing", () => {
+  it("throws when a CRITICAL breakdown column (Ad name) cannot be resolved at all", () => {
     const breakdownCols = DEMOGRAPHIC_BREAKDOWN_COLUMNS;
-    const header = breakdownCols.map(resolveCurrency);
-    const row = breakdownCols.map(breakdownValue);
+    // Drop Ad name — critical column
+    const header = breakdownCols
+      .filter((c) => c !== "Ad name")
+      .map(resolveCurrency)
+      .concat(BASE_METRICS.map(resolveCurrency));
+    const row = breakdownCols
+      .filter((c) => c !== "Ad name")
+      .map(breakdownValue)
+      .concat(BASE_METRICS.map(baseValue));
     expect(() => parseIapCsv([line(header), line(row)].join("\n"), "demographic")).toThrow(
-      /missing required Base metric/i,
+      IapCsvFormatError,
     );
   });
 

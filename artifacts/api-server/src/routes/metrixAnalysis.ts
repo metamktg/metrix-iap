@@ -5,14 +5,20 @@
 
 import { Router, type IRouter } from "express";
 import { requireAuth } from "../middlewares/requireAuth";
+import { requireAdmin } from "../middlewares/requireAdmin";
 import { userHasAccountAccess } from "./metrix";
 import {
   AnalysisError,
   getLatestAnalysisRun,
   startManualAnalysis,
+  syncAllCreativeLinksForAccount,
+  computeCreativeLinkageSummary,
   type DateRangePreset,
 } from "../lib/analysisEngine";
 import { buildIapCsvClassFormat } from "../lib/iapCsvSpec";
+import { getAppBaseUrl } from "../lib/appUrl";
+import { getSupabase } from "../lib/supabase";
+import { invalidateMetrixSeedCache } from "../lib/metrixSeedAssembly";
 
 const router: IRouter = Router();
 
@@ -67,6 +73,21 @@ router.get("/metrix/accounts/:accountId/analysis-runs/latest", requireAuth, asyn
   try {
     if (!(await guardAccess(req, res, accountId))) return;
     const run = await getLatestAnalysisRun(accountId);
+    // Enrich a settled run with live creative linkage status so the UI can
+    // show "X of Y creatives linked" without a separate roundtrip. Computed
+    // from current DB state so it reflects any re-syncs that happened after
+    // the run finished. Non-fatal: a linkage query failure must not prevent
+    // the run status from being returned.
+    if (run && (run.status === "success" || run.status === "error")) {
+      try {
+        const linkage = await computeCreativeLinkageSummary(accountId);
+        run.creatives_linked = linkage.linked;
+        run.creatives_total = linkage.total;
+        run.creatives_unlinked_names = linkage.unlinked_names;
+      } catch (linkageErr) {
+        req.log.warn({ err: linkageErr, accountId }, "Creative linkage summary failed (non-fatal)");
+      }
+    }
     res.json({ run });
   } catch (err) {
     req.log.error({ err, accountId }, "Failed to read analysis run");
@@ -74,6 +95,71 @@ router.get("/metrix/accounts/:accountId/analysis-runs/latest", requireAuth, asyn
       message: err instanceof Error ? err.message : "Could not read the analysis run.",
     });
   }
+});
+
+router.post("/metrix/accounts/:accountId/sync-creative-links", requireAuth, async (req, res) => {
+  const accountId = String(req.params["accountId"]);
+  try {
+    if (!(await guardAccess(req, res, accountId))) return;
+    const supabase = getSupabase();
+    const account = await supabase.from("ad_accounts").select("id").eq("id", accountId).limit(1);
+    if (account.error) throw new Error(account.error.message);
+    if (!account.data || account.data.length === 0) {
+      res.status(404).json({ message: "Ad account not found." });
+      return;
+    }
+    const result = await syncAllCreativeLinksForAccount(accountId, getAppBaseUrl());
+    invalidateMetrixSeedCache();
+    req.log.info(
+      { accountId, linked: result.linked, total: result.total, unlinked: result.unlinked_names.length },
+      "Manual creative link re-sync complete",
+    );
+    res.json(result);
+  } catch (err) {
+    req.log.error({ err, accountId }, "Failed to sync creative links");
+    res.status(502).json({
+      message: err instanceof Error ? err.message : "Could not sync creative links.",
+    });
+  }
+});
+
+// ─── Admin: one-shot backfill for all accounts ───────────────────────────────
+// Iterates every account that has at least one creative_asset manual import
+// with a non-empty ad_names mapping and syncs creative_asset_url on the ads
+// rows. Safe to call repeatedly — idempotent overwrites.
+router.post("/metrix/admin/sync-all-creative-links", requireAdmin, async (req, res) => {
+  const supabase = getSupabase();
+  const { data: rows, error } = await supabase
+    .from("manual_imports")
+    .select("account_id")
+    .eq("kind", "creative_asset")
+    .not("ad_names", "is", null);
+
+  if (error) {
+    req.log.error({ err: error }, "admin bulk creative sync: failed to list accounts");
+    res.status(502).json({ message: error.message });
+    return;
+  }
+
+  const accountIds = [...new Set((rows ?? []).map((r) => r["account_id"] as string))];
+  req.log.info({ count: accountIds.length }, "admin bulk creative sync: starting");
+
+  const results: Record<string, { linked: number; total: number; unlinked_names: string[] } | { error: string }> = {};
+  for (const accountId of accountIds) {
+    try {
+      const summary = await syncAllCreativeLinksForAccount(accountId, getAppBaseUrl());
+      results[accountId] = summary;
+      req.log.info({ accountId, ...summary }, "admin bulk creative sync: account done");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      results[accountId] = { error: msg };
+      req.log.warn({ accountId, err }, "admin bulk creative sync: account failed (continuing)");
+    }
+  }
+
+  invalidateMetrixSeedCache();
+  req.log.info({ accountIds }, "admin bulk creative sync: complete");
+  res.json({ synced_accounts: accountIds.length, results });
 });
 
 export default router;
