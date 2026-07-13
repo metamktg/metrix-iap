@@ -508,9 +508,12 @@
 }
 
 @layer utilities {
-  /* WCAG 2.4.7: visible keyboard focus indicator on all interactive elements */
+  /* WCAG 2.4.7: visible keyboard focus indicator on all interactive elements.
+   * Full opacity is required — primary at 70% opacity falls below the WCAG
+   * 2.1 SC 1.4.11 non-text contrast threshold of 3:1 on the app's dark surfaces.
+   * Contrast checks in focus-ring-a11y.test.ts guard this value automatically. */
   :focus-visible {
-    outline: 2px solid hsl(var(--primary) / 0.7);
+    outline: 2px solid hsl(var(--primary));
     outline-offset: 2px;
     border-radius: 4px;
   }

@@ -13,6 +13,13 @@ import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { InfoTooltip } from "../shared";
+import {
+  hslToRgb,
+  relativeLuminance,
+  contrastRatio,
+  parseCssHslToken,
+  extractCssVar,
+} from "./wcag-contrast-helpers";
 
 afterEach(cleanup);
 
@@ -20,61 +27,6 @@ function renderTooltip(content = "Helpful explanation") {
   const result = render(<InfoTooltip content={content} />);
   const btn = within(result.container).getByRole("button", { name: /more info/i });
   return { ...result, btn };
-}
-
-// ─── WCAG contrast helpers ─────────────────────────────────────────────────
-// All math follows the WCAG 2.x algorithm for relative luminance and contrast.
-
-function hslToRgb(h: number, s: number, l: number): [number, number, number] {
-  const c = (1 - Math.abs(2 * l - 1)) * s;
-  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-  const m = l - c / 2;
-  let r1 = 0, g1 = 0, b1 = 0;
-  if (h < 60) { r1 = c; g1 = x; }
-  else if (h < 120) { r1 = x; g1 = c; }
-  else if (h < 180) { g1 = c; b1 = x; }
-  else if (h < 240) { g1 = x; b1 = c; }
-  else if (h < 300) { r1 = x; b1 = c; }
-  else { r1 = c; b1 = x; }
-  return [r1 + m, g1 + m, b1 + m];
-}
-
-function srgbLinearize(c: number): number {
-  return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-}
-
-function relativeLuminance(r: number, g: number, b: number): number {
-  return 0.2126 * srgbLinearize(r) + 0.7152 * srgbLinearize(g) + 0.0722 * srgbLinearize(b);
-}
-
-function contrastRatio(lumA: number, lumB: number): number {
-  const lighter = Math.max(lumA, lumB);
-  const darker = Math.min(lumA, lumB);
-  return (lighter + 0.05) / (darker + 0.05);
-}
-
-/**
- * Parse a CSS HSL token value in "H S% L%" format (no hsl() wrapper,
- * as used in Tailwind/shadcn CSS custom properties).
- * Returns [h 0-360, s 0-1, l 0-1].
- */
-function parseCssHslToken(raw: string): [number, number, number] {
-  const parts = raw.trim().split(/\s+/);
-  if (parts.length !== 3) throw new Error(`Unexpected HSL token: "${raw}"`);
-  return [parseFloat(parts[0]), parseFloat(parts[1]) / 100, parseFloat(parts[2]) / 100];
-}
-
-/**
- * Extract the *first* occurrence of a CSS custom property value from a CSS
- * string.  Handles optional `hsl(...)` wrapper so it works for both bare
- * channel tokens ("222 100% 54%") and full hsl() values.
- */
-function extractCssVar(css: string, varName: string): string {
-  const re = new RegExp(`${varName}:\\s*([^;]+);`);
-  const m = css.match(re);
-  if (!m) throw new Error(`CSS variable "${varName}" not found in stylesheet`);
-  // Strip hsl() wrapper if present so we always get bare channel tokens.
-  return m[1].trim().replace(/^hsl\(/, "").replace(/\)$/, "");
 }
 
 // ─── Read the design tokens live from the stylesheet ──────────────────────
