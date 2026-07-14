@@ -7,7 +7,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getStrategyData, getBriefBuilder } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
-  SectionCard, CrossLink, fmtNum,
+  SectionCard, CrossLink, fmtNum, LoopAction,
   RangeScopeBar, NoDataInRangeState,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
@@ -183,6 +183,10 @@ export function StrategyOverview() {
                   ))}
                 </div>
               </SectionCard>
+
+              <div className="flex items-center gap-3 pt-1">
+                <LoopAction to="/app/briefs/builder" label="Draft briefs from this strategy" icon="brief" />
+              </div>
             </div>
             </>
             )}

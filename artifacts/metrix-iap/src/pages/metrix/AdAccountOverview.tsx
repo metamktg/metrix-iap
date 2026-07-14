@@ -17,7 +17,7 @@ import {
 } from "@/lib/data/metrixSeedAdapter";
 import { RecommendationDeck, actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
 import {
-  ModuleHeader, ScopeBanner, SectionCard, CaveatNote,
+  ModuleHeader, ScopeBanner, SectionCard, CaveatNote, ExpandableText,
   UnconfiguredState, PendingState, fmtUSD, fmtNum, eventLabel, resultTerm,
 } from "./shared";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
@@ -389,7 +389,7 @@ export function AdAccountOverview() {
                   <span className="text-[11px] font-semibold text-foreground">Primary control</span>
                 </div>
                 <p className="text-[13px] font-semibold text-foreground mb-1">{primaryControlName}</p>
-                <p className="text-[12px] text-foreground/80 leading-relaxed">{resolveControlText(core.primary_control_read, core.primary_control)}</p>
+                <ExpandableText className="text-[12px] text-foreground/80 leading-relaxed" text={resolveControlText(core.primary_control_read, core.primary_control)} />
                 {primaryControlName !== core.primary_control && (
                   <p className="text-[9px] font-mono text-muted-foreground/40 mt-1.5">{core.primary_control}</p>
                 )}
@@ -402,7 +402,7 @@ export function AdAccountOverview() {
                   </div>
                   <p className="text-[13px] font-semibold text-foreground mb-1">{registrationControlName ?? core.registration_control}</p>
                   {core.registration_control_read && core.registration_control && (
-                    <p className="text-[12px] text-foreground/80 leading-relaxed">{resolveControlText(core.registration_control_read, core.registration_control)}</p>
+                    <ExpandableText className="text-[12px] text-foreground/80 leading-relaxed" text={resolveControlText(core.registration_control_read, core.registration_control)} />
                   )}
                   {registrationControlName !== core.registration_control && (
                     <p className="text-[9px] font-mono text-muted-foreground/40 mt-1.5">{core.registration_control}</p>

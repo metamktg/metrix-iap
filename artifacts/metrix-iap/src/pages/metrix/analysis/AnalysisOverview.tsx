@@ -8,7 +8,7 @@ import { getAdAccount, getAnalysisData, getCampaignSummary, getCoreControls, get
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
   CaveatNote, SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
-  RangeScopeBar, NoDataInRangeState,
+  RangeScopeBar, NoDataInRangeState, ExpandableText, LoopAction,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { useCellRangeScope, sumInRange } from "@/lib/date-scope";
@@ -144,7 +144,7 @@ export function AnalysisOverview() {
                     <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
                       <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5">Primary control</div>
                       <p className="text-[13px] font-semibold text-foreground">{resolveConceptName(controls.primary_control)}</p>
-                      <p className="text-[11px] text-muted-foreground/80 mt-1.5 leading-relaxed">{resolveControlText(controls.primary_control_read, controls.primary_control)}</p>
+                      <div className="mt-1.5"><ExpandableText className="text-[11px] text-muted-foreground/80 leading-relaxed" text={resolveControlText(controls.primary_control_read, controls.primary_control)} /></div>
                       {resolveConceptName(controls.primary_control) !== controls.primary_control && (
                         <p className="text-[9px] font-mono text-muted-foreground/40 mt-1.5">{controls.primary_control}</p>
                       )}
@@ -157,7 +157,7 @@ export function AnalysisOverview() {
                           <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5">{term.Singular} control</div>
                           <p className="text-[13px] font-semibold text-foreground">{regName}</p>
                           {controls.registration_control_read && (
-                            <p className="text-[11px] text-muted-foreground/80 mt-1.5 leading-relaxed">{resolveControlText(controls.registration_control_read, regId)}</p>
+                            <div className="mt-1.5"><ExpandableText className="text-[11px] text-muted-foreground/80 leading-relaxed" text={resolveControlText(controls.registration_control_read, regId)} /></div>
                           )}
                           {regName !== regId && (
                             <p className="text-[9px] font-mono text-muted-foreground/40 mt-1.5">{regId}</p>
@@ -186,6 +186,10 @@ export function AnalysisOverview() {
                   ))}
                 </div>
               </SectionCard>
+
+              <div className="flex items-center gap-3 pt-1">
+                <LoopAction to="/app/strategy/overview" label="Continue to Strategy" icon="strategy" />
+              </div>
             </div>
             </>
             )}
