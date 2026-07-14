@@ -25,7 +25,7 @@ import { getSupabase } from "./supabase";
 import { invalidateMetrixSeedCache } from "./metrixSeedAssembly";
 import { logger } from "./logger";
 import { parseIapCsv, IapCsvFormatError, type IapCsvRow } from "./iapCsvParser";
-import { getAppBaseUrl } from "./appUrl";
+
 
 export const STALE_ANALYSIS_RUN_MS = 10 * 60 * 1000;
 
@@ -285,7 +285,6 @@ function derivedRates(spend: number | null, impressions: number | null, linkClic
  */
 export async function syncAllCreativeLinksForAccount(
   accountId: string,
-  appBaseUrl: string,
 ): Promise<CreativeLinkageSummary> {
   const supabase = getSupabase();
   const { data: creativeImports, error } = await supabase
@@ -303,7 +302,7 @@ export async function syncAllCreativeLinksForAccount(
     const adNames = (imp["ad_names"] as string[] | null) ?? [];
     if (adNames.length === 0) continue;
     totalMappings += adNames.length;
-    const fileUrl = `${appBaseUrl}api/metrix/accounts/${accountId}/manual-imports/${imp["id"]}/file`;
+    const fileUrl = `/api/metrix/accounts/${accountId}/manual-imports/${imp["id"]}/file`;
     const sync = await supabase
       .from("ads")
       .update({ creative_asset_url: fileUrl, asset_filename: imp["filename"], asset_servable: true })
@@ -668,11 +667,21 @@ export async function startManualAnalysis(
       // Upsert each unique ad_name into the ads registry so that
       // syncCreativeAssetLinks can later UPDATE creative_asset_url on them.
       // ignoreDuplicates preserves any existing meta_ad_id / creative_asset_url.
+      // Also derive cell / concept / book from the ad_name so the seed's ads
+      // registry can link performance rows to library cells without a separate
+      // copy_performance import.
+      const extractCell = (adName: string): string | null => {
+        const m = adName.match(/^([A-Z]\d+[A-Z]+)(?=[_\s]|$)/);
+        return m ? m[1]! : null;
+      };
       const uniqueAdNames = Array.from(new Set(adRows.map((r) => r.ad_name)));
       if (uniqueAdNames.length > 0) {
         const adRegistryRows = uniqueAdNames.map((adName) => ({
           account_id: accountId,
           ad_name: adName,
+          cell: extractCell(adName),
+          concept: extractConcept(adName),
+          book: extractBook(adName),
         }));
         const adsUpsert = await supabase
           .from("ads")
@@ -684,7 +693,7 @@ export async function startManualAnalysis(
         // rows exist we back-fill them. Non-fatal: a sync failure must not
         // roll back a successful analysis.
         try {
-          await syncAllCreativeLinksForAccount(accountId, getAppBaseUrl());
+          await syncAllCreativeLinksForAccount(accountId);
         } catch (syncErr) {
           logger.warn({ accountId, err: syncErr }, "post-analysis creative sync failed (non-fatal)");
         }

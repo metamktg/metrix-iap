@@ -672,7 +672,56 @@ export async function userHasAccountAccess(userId: number, accountId: string): P
 }
 
 function manualImportFileUrl(accountId: string, importId: string): string {
-  return `${getAppBaseUrl()}api/metrix/accounts/${accountId}/manual-imports/${importId}/file`;
+  return `/api/metrix/accounts/${accountId}/manual-imports/${importId}/file`;
+}
+
+// In-process cache for creative asset file content.  Supabase bytea fetches
+// are slow (10-17 s on large images) and trigger statement timeouts when many
+// card thumbnails fire simultaneously.  Caching the decoded Buffer after the
+// first fetch means all subsequent renders (re-mounts, scrolls, refreshes
+// within the TTL) are served from memory in < 1 ms.
+//
+// In-flight map provides request coalescing: if 20 cards request the same
+// importId at the same time, only ONE Supabase query runs; the other 19
+// await the shared Promise instead of each racing to open their own connection.
+const CREATIVE_FILE_CACHE_TTL_MS = 10 * 60 * 1000; // 10 min
+const creativeFileCache = new Map<string, { buf: Buffer; contentType: string; expires: number }>();
+const creativeFileInFlight = new Map<string, Promise<{ buf: Buffer; contentType: string }>>();
+
+async function fetchAndCacheCreativeFile(
+  importId: string,
+  accountId: string,
+): Promise<{ buf: Buffer; contentType: string }> {
+  const cached = creativeFileCache.get(importId);
+  if (cached && Date.now() < cached.expires) {
+    return cached;
+  }
+  const existing = creativeFileInFlight.get(importId);
+  if (existing) return existing;
+
+  const promise = (async () => {
+    const supabase = getSupabase();
+    const result = await supabase
+      .from("manual_imports")
+      .select("id, content_type, content")
+      .eq("id", importId)
+      .eq("account_id", accountId)
+      .limit(1);
+    if (result.error) throw new Error(result.error.message);
+    if (!result.data || result.data.length === 0) throw Object.assign(new Error("not_found"), { code: "not_found" });
+    const row = result.data[0]!;
+    const rawContent = row["content"] as string;
+    const hex = rawContent.startsWith("\\x") ? rawContent.slice(2) : rawContent;
+    const buf = Buffer.from(hex, "hex");
+    const contentType = (row["content_type"] as string | null) ?? "application/octet-stream";
+    creativeFileCache.set(importId, { buf, contentType, expires: Date.now() + CREATIVE_FILE_CACHE_TTL_MS });
+    return { buf, contentType };
+  })().finally(() => {
+    creativeFileInFlight.delete(importId);
+  });
+
+  creativeFileInFlight.set(importId, promise);
+  return promise;
 }
 
 /**
@@ -1131,25 +1180,20 @@ router.get("/metrix/accounts/:accountId/manual-imports/:importId/file", requireA
       res.status(403).json({ message: "You don't have access to this ad account." });
       return;
     }
-    const supabase = getSupabase();
-    const existing = await supabase
-      .from("manual_imports")
-      .select("id, content_type, content")
-      .eq("id", importId)
-      .eq("account_id", accountId)
-      .limit(1);
-    if (existing.error) throw new Error(existing.error.message);
-    if (!existing.data || existing.data.length === 0) {
-      res.status(404).json({ message: "Staged import not found." });
-      return;
+    let file: { buf: Buffer; contentType: string };
+    try {
+      file = await fetchAndCacheCreativeFile(importId, accountId);
+    } catch (err) {
+      if (err instanceof Error && (err as any).code === "not_found") {
+        res.status(404).json({ message: "Staged import not found." });
+        return;
+      }
+      throw err;
     }
-    const row = existing.data[0]!;
-    const rawContent = row["content"] as string;
-    const hex = rawContent.startsWith("\\x") ? rawContent.slice(2) : rawContent;
-    const buf = Buffer.from(hex, "hex");
-    const contentType = (row["content_type"] as string | null) ?? "application/octet-stream";
+    const { buf, contentType } = file;
     res.setHeader("Content-Type", contentType);
-    res.setHeader("Cache-Control", "private, max-age=60");
+    // Long browser cache — the file bytes never change after upload.
+    res.setHeader("Cache-Control", "private, max-age=3600");
 
     // Video elements (Safari in particular) require Range/206 support to
     // play at all, not just to seek — without this, video creatives can

@@ -19,7 +19,7 @@
 - [Orval Params-type name collision](orval-params-collision.md) — prefer path segments over query params for operation discriminators; mixed path+query params can collide on generated Params names.
 - [Metrix result terminology](metrix-result-terminology.md) — derive the account's result noun from analysis cell rows' Result type, never bottom-line totals (installs dominate totals and mislabel).
 - [Metrix manual analysis runs](metrix-manual-analysis-runs.md) — date presets anchor to MAX(date) in uploaded data, not wall clock; avoid circular imports between sibling component files (silent HMR-only failure).
-- [Supabase bytea file serving](supabase-bytea-file-serving.md) — PostgREST returns bytea as hex string with `\x` prefix on read, same as insert; strip prefix before Buffer.from(hex).
+- [Supabase bytea file serving](supabase-bytea-file-serving.md) — PostgREST returns bytea as hex string with `\x` prefix on read; bytea fetches for large images are slow (10-17 s) and timeout under concurrent load; use in-process TTL cache + in-flight Promise map to coalesce requests.
 - [In-process route testing](in-process-route-testing.md) — boot the real app with app.listen(0) + fetch to test routes gated by real DB/Supabase middleware, don't mock it.
 - [API server dev script rebuilds on restart](api-server-dev-rebuild.md) — the API server's dev workflow does a full esbuild+start, not HMR; new/changed routes 404 until the workflow is restarted.
 - [Exact-dim ad PNG export](exact-dim-ad-export.md) — use playwright-core + REPLIT_PLAYWRIGHT_CHROMIUM_EXECUTABLE (npx hangs downloading); magick -trim baked-in mockup wall margins; cache-bust canvas src.
@@ -27,3 +27,6 @@
 - [Regex \b boundary breaks on underscore](regex-word-boundary-underscore.md) — \b fails between digit and "_" (both \w); use (?<![a-z0-9])/(?![a-z0-9]) lookarounds to extract tokens from underscore-separated filenames.
 - [Concurrent validation codegen race](concurrent-validation-codegen-race.md) — batch validations can TS6053-fail while codegen-drift regenerates lib generated files; re-run the failed check alone before debugging.
 - [Generated brief pillar ID patching](generated-brief-pillar-patching.md) — generated brief payloads store the pillar ref in TWO places; seed reads strategic_foundation.message_pillar first (priority). Patch both fields or only foundation.message_pillar.
+- [library_cells multi-entry per cell_id](library-cells-multi-entry.md) — local_book2_library has multiple rows per cell_id (Feed/Square/Story aspect variants); any code iterating it must deduplicate by cell_id before using as React keys or canonical data.
+- [Creative asset URLs must be relative paths](creative-asset-url-relative.md) — store /api/... relative paths, never absolute https:// URLs; Replit dev domains change across sessions and stale absolute URLs silently break image loading.
+- [CreativeVisual loading state](creative-visual-loading-state.md) — blank <img> during cold Supabase load (1–5 s) is visually identical to "No asset"; use loadedUrl state + spinner overlay + brokenUrl useEffect reset to distinguish loading from missing.

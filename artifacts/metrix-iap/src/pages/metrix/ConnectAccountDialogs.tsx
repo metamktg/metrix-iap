@@ -524,20 +524,32 @@ function MatchMethodBadge({ method }: { method?: "id" | "fuzzy" | "guess" | null
 
 function CreativeThumbnail({ accountId, asset }: { accountId: string; asset: ManualImport }) {
   const [broken, setBroken] = useState(false);
-  const fileUrl = `/api/metrix/accounts/${accountId}/manual-imports/${asset.id}/file`;
+  const [shouldLoad, setShouldLoad] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const isVideo = (asset.content_type ?? "").startsWith("video/");
+  const fileUrl = `/api/metrix/accounts/${accountId}/manual-imports/${asset.id}/file`;
 
-  if (broken) {
-    return (
-      <div className="w-10 h-10 rounded-md border border-border/40 bg-white/[0.03] flex items-center justify-center shrink-0">
-        <Images className="w-4 h-4 text-muted-foreground/60" />
-      </div>
+  // Only fetch the file when the thumbnail scrolls into view — prevents 65+
+  // simultaneous Supabase queries when the creative library dialog opens.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setShouldLoad(true); obs.disconnect(); } },
+      { threshold: 0.01, rootMargin: "120px" }
     );
-  }
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   return (
-    <div className="w-10 h-10 rounded-md border border-border/40 bg-black/20 overflow-hidden shrink-0 flex items-center justify-center">
-      {isVideo ? (
+    <div
+      ref={containerRef}
+      className="w-10 h-10 rounded-md border border-border/40 bg-black/20 overflow-hidden shrink-0 flex items-center justify-center"
+    >
+      {broken ? (
+        <Images className="w-4 h-4 text-muted-foreground/60" />
+      ) : !shouldLoad ? null : isVideo ? (
         <video src={fileUrl} className="w-full h-full object-cover" muted onError={() => setBroken(true)} />
       ) : (
         <img

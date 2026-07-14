@@ -10,9 +10,11 @@
 // the library refreshes automatically.
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { Images, Dna } from "lucide-react";
+import { Images, Dna, RefreshCw } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
+import { useSyncCreativeLinks, getGetMetrixSeedQueryKey, getAuthMeQueryKey, type AuthUser } from "@workspace/api-client-react";
 import {
   getAdAccount, getAnalysisData, getStrategyData, getCampaignSummary,
   getCreativeLinkContext, getMST,
@@ -69,6 +71,14 @@ export function IapLibraryView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
+  const queryClient = useQueryClient();
+  // Read the settled user from the query cache — avoids importing from
+  // AuthContext (a Vite @refresh reset boundary) which would add this
+  // module to the auth HMR graph and cause cascade crashes on codegen drift.
+  const cachedUser = queryClient.getQueryData<AuthUser | null>(getAuthMeQueryKey());
+  const isAdmin = cachedUser?.role === "admin";
+  const syncMutation = useSyncCreativeLinks();
+  const [syncResult, setSyncResult] = useState<{ linked: number; total: number } | null>(null);
   const [tab, setTab] = useState<Tab>("cells");
   const focus = useFocusParam();
   const [detail, setDetail] = useState<CellPerformanceRow | null>(null);
@@ -236,6 +246,22 @@ export function IapLibraryView() {
             ...getCreativeLinkContext(seed, adAccountId),
           };
 
+          // Cells that have uploaded creative assets but no performance data.
+          // These are shown below the perf-cell grid so the user can see all
+          // their uploaded images even before analysis has run on those cells.
+          const perfCellIdsSet = new Set(a.performance_by_cell.map((r) => r.cell_id));
+          const creativeOnlyCellIds = (() => {
+            const seen = new Set<string>();
+            const result: string[] = [];
+            for (const ad of (cardCtx.ads ?? [])) {
+              const cid = ad.cell;
+              if (!cid || perfCellIdsSet.has(cid) || seen.has(cid) || !ad.creative_asset_url) continue;
+              seen.add(cid);
+              result.push(cid);
+            }
+            return result;
+          })();
+
           function aggStatsForCell(cellId: string, source: CellPerformanceRow[]): CreativeCardStats {
             const rows    = source.filter((r) => r.cell_id === cellId);
             const spend   = rows.reduce((s, r) => s + r["Amount spent (USD)"], 0);
@@ -316,13 +342,46 @@ export function IapLibraryView() {
                 ) : (
                   <div />
                 )}
-                <button
-                  onClick={() => setCreativeLibraryOpen(true)}
-                  className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground/70 hover:text-foreground border border-border/40 hover:border-border/60 bg-white/[0.02] hover:bg-white/[0.04] px-2.5 py-1.5 rounded-md transition-colors"
-                >
-                  <Images className="w-3.5 h-3.5" />
-                  Add creatives
-                </button>
+                <div className="flex items-center gap-2">
+                  {isAdmin && adAccountId && (
+                    <button
+                      onClick={async () => {
+                        setSyncResult(null);
+                        try {
+                          const result = await syncMutation.mutateAsync({ accountId: adAccountId });
+                          setSyncResult({ linked: result.linked, total: result.total });
+                          await queryClient.invalidateQueries({ queryKey: getGetMetrixSeedQueryKey() });
+                        } catch {
+                          // non-fatal — endpoint logs server-side
+                        }
+                      }}
+                      disabled={syncMutation.isPending}
+                      title={syncResult ? `${syncResult.linked}/${syncResult.total} creatives linked` : "Re-sync creative asset links"}
+                      className={[
+                        "flex items-center gap-1.5 text-[10px] font-medium border px-2.5 py-1.5 rounded-md transition-colors",
+                        syncMutation.isPending
+                          ? "border-border/30 text-muted-foreground/40 cursor-not-allowed"
+                          : syncResult
+                          ? "border-emerald-400/30 text-emerald-400/80 bg-emerald-400/[0.04] hover:bg-emerald-400/[0.08]"
+                          : "border-border/40 text-muted-foreground/70 hover:text-foreground bg-white/[0.02] hover:bg-white/[0.04] hover:border-border/60",
+                      ].join(" ")}
+                    >
+                      <RefreshCw className={["w-3.5 h-3.5", syncMutation.isPending ? "animate-spin" : ""].join(" ").trim()} />
+                      {syncMutation.isPending
+                        ? "Syncing…"
+                        : syncResult
+                        ? `${syncResult.linked}/${syncResult.total} linked`
+                        : "Re-sync creatives"}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setCreativeLibraryOpen(true)}
+                    className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground/70 hover:text-foreground border border-border/40 hover:border-border/60 bg-white/[0.02] hover:bg-white/[0.04] px-2.5 py-1.5 rounded-md transition-colors"
+                  >
+                    <Images className="w-3.5 h-3.5" />
+                    Add creatives
+                  </button>
+                </div>
               </div>
               <div className="mt-1">
                 <ModuleTabs tabs={TABS} active={tab} onChange={(id) => setTab(id)} />
@@ -373,7 +432,7 @@ export function IapLibraryView() {
                       ) : (
                         <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." />
                       )
-                    ) : cells.length ? (() => {
+                    ) : (() => {
                       const uniqueCells = uniqueCellRows(cells);
                       const totalCells = uniqueCells.length;
                       const totalPages = Math.max(1, Math.ceil(totalCells / pageSize));
@@ -381,100 +440,129 @@ export function IapLibraryView() {
                       const pagedCells = uniqueCells.slice((safePage - 1) * pageSize, safePage * pageSize);
                       const rangeStart = (safePage - 1) * pageSize + 1;
                       const rangeEnd = Math.min(safePage * pageSize, totalCells);
+
+                      if (totalCells === 0 && creativeOnlyCellIds.length === 0) {
+                        return <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." />;
+                      }
+
                       return (
                         <div className="space-y-4">
-                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                            {pagedCells.map((row) => (
-                              <div
-                                key={row.cell_id}
-                                data-concept-cell={row.cell_id}
-                                className={
-                                  highlightedCell === row.cell_id
-                                    ? "rounded-xl ring-2 ring-primary/70 ring-offset-1 ring-offset-background transition-all duration-300"
-                                    : "transition-all duration-300"
-                                }
-                              >
-                                <CreativeCard
-                                  data={{
-                                    ...cardFromCell(row.cell_id, cardCtx),
-                                    stats: aggStatsForCell(row.cell_id, cells),
-                                  }}
-                                  unmapped={unmappedCellIds.has(row.cell_id)}
-                                  demographic={demoByCell.get(row.cell_id) ?? []}
-                                  placements={allPlacements}
-                                  onUploadCreatives={() => setCreativeLibraryOpen(true)}
-                                  onSegmentClick={(seg) => setCardSegment({ segment: seg, cellIds: [row.cell_id] })}
-                                  onFullBreakdownClick={() => setCardGridCell(row)}
-                                  expandFooter={(close) => (
-                                    <button
-                                      onClick={() => { close(); setDetail(row); }}
-                                      data-testid={`button-full-detail-${row.cell_id}`}
-                                      className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-white bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-all"
-                                    >
-                                      Full detail →
-                                    </button>
-                                  )}
-                                />
-                              </div>
-                            ))}
-                          </div>
-
-                          {/* ── Pagination controls ── */}
-                          <div className="flex items-center justify-between pt-3 border-t border-border/20">
-                            <span className="text-[10px] text-muted-foreground/50 tabular-nums">
-                              {totalCells <= pageSize
-                                ? `${totalCells} creative${totalCells === 1 ? "" : "s"}`
-                                : `${rangeStart}–${rangeEnd} of ${totalCells}`}
-                            </span>
-                            <div className="flex items-center gap-3">
-                              {/* Page-size toggle */}
-                              <div className="flex items-center gap-0.5">
-                                {([10, 25, 50] as const).map((n) => (
-                                  <button
-                                    key={n}
-                                    onClick={() => setPageSize(n)}
-                                    className={`text-[10px] font-medium px-2 py-1 rounded transition-colors ${
-                                      pageSize === n
-                                        ? "bg-primary/15 text-primary"
-                                        : "text-muted-foreground/50 hover:text-foreground hover:bg-white/[0.04]"
-                                    }`}
+                          {/* ── Performance cells ── */}
+                          {totalCells > 0 && (
+                            <>
+                              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                                {pagedCells.map((row) => (
+                                  <div
+                                    key={row.cell_id}
+                                    data-concept-cell={row.cell_id}
+                                    className={
+                                      highlightedCell === row.cell_id
+                                        ? "rounded-xl ring-2 ring-primary/70 ring-offset-1 ring-offset-background transition-all duration-300"
+                                        : "transition-all duration-300"
+                                    }
                                   >
-                                    {n}
-                                  </button>
+                                    <CreativeCard
+                                      data={{
+                                        ...cardFromCell(row.cell_id, cardCtx),
+                                        stats: aggStatsForCell(row.cell_id, cells),
+                                      }}
+                                      unmapped={unmappedCellIds.has(row.cell_id)}
+                                      demographic={demoByCell.get(row.cell_id) ?? []}
+                                      placements={allPlacements}
+                                      onUploadCreatives={() => setCreativeLibraryOpen(true)}
+                                      onSegmentClick={(seg) => setCardSegment({ segment: seg, cellIds: [row.cell_id] })}
+                                      onFullBreakdownClick={() => setCardGridCell(row)}
+                                      expandFooter={(close) => (
+                                        <button
+                                          onClick={() => { close(); setDetail(row); }}
+                                          data-testid={`button-full-detail-${row.cell_id}`}
+                                          className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-white bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-all"
+                                        >
+                                          Full detail →
+                                        </button>
+                                      )}
+                                    />
+                                  </div>
                                 ))}
-                                <span className="text-[9px] text-muted-foreground/35 ml-1">per page</span>
                               </div>
-                              {/* Prev / page indicator / Next */}
-                              {totalPages > 1 && (
-                                <div className="flex items-center gap-1">
-                                  <button
-                                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                                    disabled={safePage === 1}
-                                    className="text-[12px] w-6 h-6 flex items-center justify-center rounded border border-border/30 disabled:opacity-25 hover:bg-white/[0.04] transition-colors text-muted-foreground/70"
-                                    aria-label="Previous page"
-                                  >
-                                    ‹
-                                  </button>
-                                  <span className="text-[10px] tabular-nums text-muted-foreground/50 px-1 min-w-[3rem] text-center">
-                                    {safePage} / {totalPages}
-                                  </span>
-                                  <button
-                                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                                    disabled={safePage === totalPages}
-                                    className="text-[12px] w-6 h-6 flex items-center justify-center rounded border border-border/30 disabled:opacity-25 hover:bg-white/[0.04] transition-colors text-muted-foreground/70"
-                                    aria-label="Next page"
-                                  >
-                                    ›
-                                  </button>
+
+                              {/* ── Pagination controls ── */}
+                              <div className="flex items-center justify-between pt-3 border-t border-border/20">
+                                <span className="text-[10px] text-muted-foreground/50 tabular-nums">
+                                  {totalCells <= pageSize
+                                    ? `${totalCells} creative${totalCells === 1 ? "" : "s"} with performance data`
+                                    : `${rangeStart}–${rangeEnd} of ${totalCells}`}
+                                </span>
+                                <div className="flex items-center gap-3">
+                                  {/* Page-size toggle */}
+                                  <div className="flex items-center gap-0.5">
+                                    {([10, 25, 50] as const).map((n) => (
+                                      <button
+                                        key={n}
+                                        onClick={() => setPageSize(n)}
+                                        className={`text-[10px] font-medium px-2 py-1 rounded transition-colors ${
+                                          pageSize === n
+                                            ? "bg-primary/15 text-primary"
+                                            : "text-muted-foreground/50 hover:text-foreground hover:bg-white/[0.04]"
+                                        }`}
+                                      >
+                                        {n}
+                                      </button>
+                                    ))}
+                                    <span className="text-[9px] text-muted-foreground/35 ml-1">per page</span>
+                                  </div>
+                                  {/* Prev / page indicator / Next */}
+                                  {totalPages > 1 && (
+                                    <div className="flex items-center gap-1">
+                                      <button
+                                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                        disabled={safePage === 1}
+                                        className="text-[12px] w-6 h-6 flex items-center justify-center rounded border border-border/30 disabled:opacity-25 hover:bg-white/[0.04] transition-colors text-muted-foreground/70"
+                                        aria-label="Previous page"
+                                      >
+                                        ‹
+                                      </button>
+                                      <span className="text-[10px] tabular-nums text-muted-foreground/50 px-1 min-w-[3rem] text-center">
+                                        {safePage} / {totalPages}
+                                      </span>
+                                      <button
+                                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                                        disabled={safePage === totalPages}
+                                        className="text-[12px] w-6 h-6 flex items-center justify-center rounded border border-border/30 disabled:opacity-25 hover:bg-white/[0.04] transition-colors text-muted-foreground/70"
+                                        aria-label="Next page"
+                                      >
+                                        ›
+                                      </button>
+                                    </div>
+                                  )}
                                 </div>
-                              )}
+                              </div>
+                            </>
+                          )}
+
+                          {/* ── Creative assets without performance data ── */}
+                          {creativeOnlyCellIds.length > 0 && (
+                            <div className="space-y-3 pt-2 border-t border-border/15">
+                              <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/40">
+                                Creative assets — no performance data yet ({creativeOnlyCellIds.length})
+                              </p>
+                              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                                {creativeOnlyCellIds.map((cellId) => (
+                                  <CreativeCard
+                                    key={cellId}
+                                    data={{ ...cardFromCell(cellId, cardCtx), stats: aggStatsForCell(cellId, cells) }}
+                                    unmapped={false}
+                                    demographic={[]}
+                                    placements={[]}
+                                    onUploadCreatives={() => setCreativeLibraryOpen(true)}
+                                  />
+                                ))}
+                              </div>
                             </div>
-                          </div>
+                          )}
                         </div>
                       );
-                    })() : (
-                      <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." />
-                    )}
+                    })()}
                   </>
                 )}
 

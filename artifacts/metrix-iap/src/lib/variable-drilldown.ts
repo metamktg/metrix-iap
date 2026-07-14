@@ -226,7 +226,10 @@ export function computeVariableDrilldown(
   }
 
   // ── Text variants from library cells carrying the code ──────────────
-  const textVariants: VariableTextVariant[] = (mst?.local_book2_library ?? [])
+  // local_book2_library may have multiple entries per cell_id (e.g. Feed /
+  // Square / Story aspect ratio variants). Deduplicate by cellId after mapping
+  // so the render list never produces duplicate React keys.
+  const textVariantsRaw: VariableTextVariant[] = (mst?.local_book2_library ?? [])
     .filter((c) => codesFromCarrier(c).includes(code))
     .map((c) => ({
       cellId: c.cell_id,
@@ -236,6 +239,12 @@ export function computeVariableDrilldown(
       cta: c.cta || null,
     }))
     .filter((v) => v.primary || v.secondary || v.cta);
+  const seenVariantCells = new Set<string>();
+  const textVariants = textVariantsRaw.filter((v) => {
+    if (seenVariantCells.has(v.cellId)) return false;
+    seenVariantCells.add(v.cellId);
+    return true;
+  });
 
   return {
     code,

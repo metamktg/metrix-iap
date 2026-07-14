@@ -16,7 +16,7 @@ import {
   type DateRangePreset,
 } from "../lib/analysisEngine";
 import { buildIapCsvClassFormat } from "../lib/iapCsvSpec";
-import { getAppBaseUrl } from "../lib/appUrl";
+
 import { getSupabase } from "../lib/supabase";
 import { invalidateMetrixSeedCache } from "../lib/metrixSeedAssembly";
 
@@ -108,7 +108,7 @@ router.post("/metrix/accounts/:accountId/sync-creative-links", requireAuth, asyn
       res.status(404).json({ message: "Ad account not found." });
       return;
     }
-    const result = await syncAllCreativeLinksForAccount(accountId, getAppBaseUrl());
+    const result = await syncAllCreativeLinksForAccount(accountId);
     invalidateMetrixSeedCache();
     req.log.info(
       { accountId, linked: result.linked, total: result.total, unlinked: result.unlinked_names.length },
@@ -147,7 +147,7 @@ router.post("/metrix/admin/sync-all-creative-links", requireAdmin, async (req, r
   const results: Record<string, { linked: number; total: number; unlinked_names: string[] } | { error: string }> = {};
   for (const accountId of accountIds) {
     try {
-      const summary = await syncAllCreativeLinksForAccount(accountId, getAppBaseUrl());
+      const summary = await syncAllCreativeLinksForAccount(accountId);
       results[accountId] = summary;
       req.log.info({ accountId, ...summary }, "admin bulk creative sync: account done");
     } catch (err) {
