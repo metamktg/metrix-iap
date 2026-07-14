@@ -292,8 +292,9 @@ export function RangeScopeBar({ grainNote }: { grainNote?: string }) {
         <span className="text-[11px] text-primary/80 tabular-nums">vs {formatIsoRange(compareRange)}</span>
       )}
       {narrowed && (
-        <span className="text-[11px] text-muted-foreground/65">
-          {grainNote ?? "Items are included when their flight window overlaps this range; metrics cover each item's full flight — this import has no daily grain."}
+        <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground/65">
+          Flight-window scope
+          <InfoTooltip content={grainNote ?? "Items are included when their flight window overlaps this range; metrics cover each item's full flight — this import has no daily grain."} />
         </span>
       )}
     </div>
@@ -314,7 +315,7 @@ export function NoDataInRangeState({ what, detail }: { what: string; detail?: st
       </p>
       <button
         onClick={() => setPreset("all")}
-        className="text-[12px] font-medium text-primary border border-primary/30 bg-primary/10 hover:bg-primary/15 rounded-md px-3 py-1.5 transition-colors"
+        className="text-[12px] font-semibold text-primary-foreground bg-primary border border-primary hover:bg-primary/90 rounded-md px-3.5 py-2 transition-colors shadow-md shadow-primary/25"
       >
         Show all available data
       </button>
@@ -372,6 +373,41 @@ export function CaveatNote({
         )}
       </button>
     </div>
+  );
+}
+
+// ─── Expandable prose ─────────────────────────────────────────────────
+// Neutral roll-down for explanatory text: shows the first ~clause, click
+// to expand the rest. Use instead of always-visible multi-sentence prose.
+
+export function ExpandableText({
+  text,
+  className,
+  threshold = 120,
+}: {
+  text: string;
+  className?: string;
+  threshold?: number;
+}) {
+  const isLong = text.length > threshold;
+  const [expanded, setExpanded] = useState(false);
+  if (!isLong) return <p className={className}>{text}</p>;
+  const preview = text.slice(0, threshold).trimEnd() + "…";
+  return (
+    <button
+      type="button"
+      onClick={() => setExpanded((v) => !v)}
+      className="w-full text-left group/expand"
+      aria-expanded={expanded}
+    >
+      <span className={cn(className, "block")}>
+        {expanded ? text : preview}{" "}
+        <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-primary/80 group-hover/expand:text-primary whitespace-nowrap">
+          {expanded ? "Less" : "More"}
+          <ChevronDown className={cn("w-2.5 h-2.5 transition-transform duration-150", expanded && "rotate-180")} />
+        </span>
+      </span>
+    </button>
   );
 }
 

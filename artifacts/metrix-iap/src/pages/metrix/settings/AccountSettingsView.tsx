@@ -260,7 +260,7 @@ export function AccountSettingsView() {
               {!configured && (
                 <button
                   onClick={() => setConnectOpen(true)}
-                  className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-[11px] font-medium text-primary hover:bg-primary/25 transition-colors"
+                  className="flex items-center gap-1.5 h-8 px-3.5 rounded-md bg-primary border border-primary text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-md shadow-primary/25"
                   data-testid="button-connect-account"
                 >
                   <Plug className="w-3 h-3" /> Connect
@@ -275,7 +275,7 @@ export function AccountSettingsView() {
               </div>
               <button
                 onClick={() => setImportOpen(true)}
-                className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+                className="flex items-center gap-1.5 h-8 px-3.5 rounded-md bg-primary border border-primary text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-md shadow-primary/25"
                 data-testid="button-add-import"
               >
                 <FileUp className="w-3 h-3" /> Add import
@@ -292,7 +292,7 @@ export function AccountSettingsView() {
                 </div>
                 <button
                   onClick={() => setCreativeLibraryOpen(true)}
-                  className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+                  className="flex items-center gap-1.5 h-8 px-3.5 rounded-md bg-primary border border-primary text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-md shadow-primary/25"
                   data-testid="button-upload-creatives"
                 >
                   <Images className="w-3 h-3" /> Upload creatives

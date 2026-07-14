@@ -10,7 +10,7 @@ import { getAdAccount, getListenSignals } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ConfidenceBadge, ModuleTabs, ModuleScopeGate,
   PendingState, MetricTile, ImpactBadge, ScopeBadge, CrossLink, useFocusParam,
-  RangeScopeBar, NoDataInRangeState, StaleFocusNotice,
+  RangeScopeBar, NoDataInRangeState, StaleFocusNotice, LoopAction,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
@@ -86,7 +86,12 @@ export function SignalView() {
 
             <div className="px-6 py-5 max-w-3xl">
               {signals.length === 0 ? (
-                <PendingState title="No signals yet" message="Signals appear here once analysis has run for this account." icon={Radio} />
+                <PendingState
+                  title="No signals yet"
+                  message="Signals appear here once analysis has run for this account."
+                  icon={Radio}
+                  action={<LoopAction to="/app/analysis/overview" label="Review Analysis" icon="analysis" variant="secondary" />}
+                />
               ) : shown.length === 0 ? (
                 <PendingState title="No signals in this scope" message="Switch scope to view other signals." icon={Radio} />
               ) : (
@@ -110,6 +115,12 @@ export function SignalView() {
                       </div>
                     </button>
                   ))}
+                </div>
+              )}
+
+              {signals.length > 0 && (
+                <div className="flex items-center gap-3 mt-5">
+                  <LoopAction to="/app/analysis/overview" label="Continue to Analysis" icon="analysis" />
                 </div>
               )}
             </div>

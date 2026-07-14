@@ -9,7 +9,7 @@ import { getAdAccount, getOptimizationLoop, getAnalysisData } from "@/lib/data/m
 import { RecommendationDeck, actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile, CaveatNote,
-  RangeScopeBar, NoDataInRangeState,
+  RangeScopeBar, NoDataInRangeState, LoopAction,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { SegmentGridModal } from "@/components/creative/SegmentGridModal";
@@ -93,7 +93,11 @@ export function RecommendationsView() {
                   onSegments={analysis ? (card) => setSegmentCardId(card.id) : undefined}
                 />
               ) : (
-                <PendingState title="No recommendations" message="Optimization-loop recommendations will appear here once generated." />
+                <PendingState
+                  title="No recommendations"
+                  message="Optimization-loop recommendations will appear here once generated."
+                  action={<LoopAction to="/app/analysis/overview" label="Review Analysis" icon="analysis" variant="secondary" />}
+                />
               )}
             </div>
             </>

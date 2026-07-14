@@ -203,7 +203,7 @@ export function ReportSettingsView() {
                     }}
                     className="w-full h-8 px-2.5 rounded-md border border-border/40 bg-white/[0.03] text-[12px] text-foreground/85 placeholder:text-muted-foreground/40"
                   />
-                  <p className="text-[10px] text-muted-foreground/60">Comma-separated emails. Saved when the field loses focus.</p>
+                  <p className="text-[10px] text-muted-foreground/60">Comma-separated emails — saves automatically.</p>
                 </div>
               </>
             )}

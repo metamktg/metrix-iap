@@ -330,7 +330,7 @@ function AddMemberDialog({
               <button
                 type="submit"
                 disabled={!email.trim() || isPending || atSeatLimit}
-                className="flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary/15 border border-primary/30 text-[12px] font-medium text-primary hover:bg-primary/25 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                className="flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary border border-primary text-[12px] font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-md shadow-primary/25 disabled:opacity-40 disabled:pointer-events-none"
                 data-testid="button-send-invite"
               >
                 {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserPlus className="w-3.5 h-3.5" />}
