@@ -524,9 +524,21 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
     // Numeric Meta ad account id (no "act_" prefix) for Ads Manager deep
     // links. Null until a raw Meta export supplies it via the importer.
     meta_ad_account_id: account["meta_ad_account_id"] ?? null,
-    // Ad registry: ad_name → cell/concept plus meta_ad_id and
-    // creative_asset_url once backfilled. Nullable fields stay null in the
-    // current import — the client renders honest pending states for them.
+    // Creative asset pipeline (verified end-to-end):
+    //   1. Admin uploads image/video via POST /accounts/:id/manual-imports
+    //      (kind = "creative_asset", ad_names = [matched ad_name values])
+    //   2. POST /accounts/:id/sync-creative-links runs syncAllCreativeLinksForAccount:
+    //      updates ads.creative_asset_url = servable URL, ads.asset_filename = filename
+    //   3. Seed assembly here picks up creative_asset_url + asset_filename from the
+    //      ads table and ships them in AdRecord (both fields included below)
+    //   4. primaryAdForCell (creative-assembly.ts) resolves the best ad per cell:
+    //      prefers cell-code match, falls back to MSTLibraryCell.mapped_ad_names
+    //      lookup against ads.ad_name — covers manual accounts with no meta_ads_export
+    //   5. CreativeVisual renders <img> or <video> using assetUrl + assetFilename;
+    //      isVideoAsset uses assetFilename extension for reliable video detection
+    //
+    // If creatives still show "No asset": run Re-sync creatives in IAP Library
+    // (admin button) or POST /accounts/:id/sync-creative-links from the API.
     ads: adsRegistry.map((r) => ({
       ad_name: r["ad_name"],
       book: r["book"] ?? null,

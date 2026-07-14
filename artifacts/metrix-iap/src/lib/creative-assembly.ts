@@ -75,6 +75,7 @@ export function primaryAdForCell(
     matches.find((a) => a.creative_asset_url && a.meta_ad_id) ??
     matches.find((a) => a.creative_asset_url) ??
     matches.find((a) => a.meta_ad_id) ??
+    matches[0] ??
     null
   );
 }

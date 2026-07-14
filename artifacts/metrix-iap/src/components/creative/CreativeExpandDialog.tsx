@@ -30,28 +30,40 @@ function hueFor(code: string): number {
   return h;
 }
 
-function ExpandVisual({ data, className }: { data: CreativeCardData; className?: string }) {
-  const [brokenUrl, setBrokenUrl] = useState<string | null>(null);
-  const broken = data.assetUrl != null && brokenUrl === data.assetUrl;
+function ExpandVisualInner({ data, className }: { data: CreativeCardData; className?: string }) {
+  const [broken, setBroken] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const loading = !broken && !loaded;
   const hue = hueFor(data.conceptCode);
-  if (data.assetUrl && !broken) {
+  if (data.assetUrl) {
     if (isVideo(data.assetUrl, data.assetFilename)) {
       return (
         <video
           src={data.assetUrl}
           className={cn("w-full h-full object-cover", className)}
           muted loop playsInline autoPlay
-          onError={() => setBrokenUrl(data.assetUrl!)}
+          onError={() => setBroken(true)}
         />
       );
     }
     return (
-      <img
-        src={data.assetUrl}
-        alt={`Creative ${data.conceptCode}`}
-        className={cn("w-full h-full object-cover", className)}
-        onError={() => setBrokenUrl(data.assetUrl!)}
-      />
+      <div className={cn("relative w-full h-full", className)}>
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white/[0.03]">
+            <div className="w-6 h-6 rounded-full border-2 border-primary/20 border-t-primary/50 animate-spin" />
+          </div>
+        )}
+        <img
+          src={data.assetUrl}
+          alt={`Creative ${data.conceptCode}`}
+          className={cn(
+            "w-full h-full object-cover transition-opacity duration-300",
+            loading ? "opacity-0" : "opacity-100",
+          )}
+          onLoad={() => setLoaded(true)}
+          onError={() => setBroken(true)}
+        />
+      </div>
     );
   }
   return (
@@ -67,6 +79,10 @@ function ExpandVisual({ data, className }: { data: CreativeCardData; className?:
       </span>
     </div>
   );
+}
+
+function ExpandVisual({ data, className }: { data: CreativeCardData; className?: string }) {
+  return <ExpandVisualInner key={data.assetUrl ?? "__placeholder__"} data={data} className={className} />;
 }
 
 function LocalTagChips({ codes }: { codes: string[] }) {

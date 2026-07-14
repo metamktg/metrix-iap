@@ -183,7 +183,6 @@ function spaNav(href: string, e: React.MouseEvent) {
 
 const SECTION_TABS: Record<"analysis" | "strategy", { label: string; to: string }[]> = {
   analysis: [
-    { label: "Overview",       to: "/app/analysis/overview" },
     { label: "IAP Library",    to: "/app/analysis/library" },
     { label: "Audience",       to: "/app/analysis/audience" },
     { label: "Placements",     to: "/app/analysis/placements" },
