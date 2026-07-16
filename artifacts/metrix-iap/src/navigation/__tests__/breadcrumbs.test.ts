@@ -77,6 +77,26 @@ describe("leaf sections show their section label", () => {
   }
 });
 
+describe("section landing pages show only the section label (Overview as parent route)", () => {
+  const landingSections = navTree.filter(
+    (s) => s.landing && !s.children?.some((c) => c.to === s.landing)
+  );
+
+  it("navTree has at least one section where the landing is not a child (Analysis, Strategy)", () => {
+    expect(landingSections.length).toBeGreaterThanOrEqual(2);
+  });
+
+  for (const section of landingSections) {
+    it(`${section.landing} → [${LEAD}, "${section.label}"] (section as parent, no "Overview" subtab crumb)`, () => {
+      expect(labels(section.landing!)).toEqual([LEAD, section.label]);
+    });
+
+    it(`${section.landing}/sub-detail also collapses to section label`, () => {
+      expect(labels(`${section.landing}/sub-detail`)).toEqual([LEAD, section.label]);
+    });
+  }
+});
+
 describe("child pages show section + child labels", () => {
   const childPaths = navTree.flatMap((section) =>
     (section.children ?? []).map((child) => ({ section, child }))

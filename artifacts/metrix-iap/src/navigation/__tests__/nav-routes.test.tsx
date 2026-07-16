@@ -27,13 +27,19 @@ import {
   NOT_FOUND_TEXT,
 } from "./harness";
 
-// Every path the sidebar can link to (sections + children + matchPaths).
+// Every path the sidebar can link to (sections + children + matchPaths +
+// section landing pages that are not themselves a child subtab).
 const navPaths: { label: string; to: string }[] = navTree.flatMap((section) => [
   ...(section.to ? [{ label: section.label, to: section.to }] : []),
   ...(section.matchPaths ?? []).map((to) => ({
     label: `${section.label} (matchPath)`,
     to,
   })),
+  // Landing routes that are not listed as a child (Overview-as-parent-route
+  // pattern): section header navigates there but no child row duplicates it.
+  ...(section.landing && !section.children?.some((c) => c.to === section.landing)
+    ? [{ label: `${section.label} (Overview)`, to: section.landing }]
+    : []),
   ...(section.children ?? []).map((child) => ({
     label: `${section.label} · ${child.label}`,
     to: child.to,

@@ -24,6 +24,13 @@ export function buildBreadcrumbs(location: string, leadLabel: string, isManager:
         return crumbs;
       }
     }
+    // Section landing page — Overview acts as the section's primary parent
+    // route, not a nested subtab. When on the landing, the section label IS
+    // the leaf crumb (no separate "Overview" child crumb beneath it).
+    if (section.landing && (location === section.landing || location.startsWith(section.landing + "/"))) {
+      crumbs.push({ label: section.label, to: section.landing });
+      return crumbs;
+    }
     for (const child of section.children ?? []) {
       if (location === child.to || location.startsWith(child.to + "/")) {
         crumbs.push({ label: section.label, to: section.children![0]!.to });
