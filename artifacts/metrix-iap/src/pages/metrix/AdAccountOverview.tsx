@@ -214,7 +214,7 @@ export function AdAccountOverview() {
 
         {/* Expanded cards */}
         {layerOpen && (
-          <div className="px-6 pb-3 grid grid-cols-5 gap-1.5">
+          <div className="px-6 pb-3 grid grid-cols-dashboard-5 gap-1.5">
             {layers.map((l) => (
               <button
                 key={l.name}
@@ -272,7 +272,7 @@ export function AdAccountOverview() {
               <h2 className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/55">Account Totals</h2>
               <MetricPickerButton catalog={metricCatalog} selected={selectedMetricIds} onToggle={toggle} onMove={move} onReset={reset} />
             </div>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-dashboard-4 gap-2">
               {selectedMetricIds.map((id) => {
                 const m = metricById(metricCatalog, id);
                 if (!m) return null;

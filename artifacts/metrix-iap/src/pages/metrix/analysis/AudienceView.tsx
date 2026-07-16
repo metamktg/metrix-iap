@@ -153,9 +153,8 @@ export function AudienceView() {
                   title="Segment performance"
                   desc="All cells · re-rank by KPI · click a segment for drivers"
                   table="demographic_registration_signal"
+                  right={<RankSortBar metrics={rankMetrics} activeId={activeMetric.id} onSelect={select} />}
                 >
-                  <RankSortBar metrics={rankMetrics} activeId={activeMetric.id} onSelect={select} className="mb-3" />
-
                   <div className="space-y-2">
                     {ranked.map((e, idx) => {
                       const v = activeMetric.value(e);

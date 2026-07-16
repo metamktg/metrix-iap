@@ -200,6 +200,7 @@ function ConversionTrackingSections({ cts }: { cts: ConversionTrackingSignal }) 
           desc={`Funnel actions attributed to the converting placement. ${windowLabel ?? ""}`.trim()}
           table="placement_performance (tracking_basis=conversion)"
         >
+          <CaveatNote text="Conversion-attributed rows — delivery spend not applicable for this tracking basis." />
           <ConversionFunnelTable rows={cts.placements.map((r) => ({ ...r, label: r.placement }))} labelHeader="Placement" />
         </SectionCard>
       )}
@@ -209,6 +210,7 @@ function ConversionTrackingSections({ cts }: { cts: ConversionTrackingSignal }) 
           desc="Funnel actions · by converting platform"
           table="platform_performance (tracking_basis=conversion)"
         >
+          <CaveatNote text="Conversion-attributed rows — delivery spend not applicable for this tracking basis." />
           <ConversionFunnelTable rows={cts.platforms.map((r) => ({ ...r, label: r.platform }))} labelHeader="Platform" />
         </SectionCard>
       )}
@@ -218,6 +220,7 @@ function ConversionTrackingSections({ cts }: { cts: ConversionTrackingSignal }) 
           desc="Funnel actions · by converting device"
           table="device_performance (tracking_basis=conversion)"
         >
+          <CaveatNote text="Conversion-attributed rows — delivery spend not applicable for this tracking basis." />
           <ConversionFunnelTable rows={cts.devices.map((r) => ({ ...r, label: r.device }))} labelHeader="Device" />
         </SectionCard>
       )}
@@ -360,6 +363,7 @@ export function PlacementsView() {
                 <SectionCard
                   title="Spend by placement"
                   desc="V3 + C4E combined · spend share vs result share · longer green bar = over-delivers"
+                  right={<RankSortBar metrics={rankMetrics} activeId={activeMetric.id} onSelect={select} />}
                 >
                   {rollup.length > 1 && (
                     <div className="mb-4">
@@ -373,8 +377,6 @@ export function PlacementsView() {
                       />
                     </div>
                   )}
-
-                  <RankSortBar metrics={rankMetrics} activeId={activeMetric.id} onSelect={select} className="mb-3" />
 
                   <div className="space-y-1.5">
                     {ranked.map((s, idx) => {

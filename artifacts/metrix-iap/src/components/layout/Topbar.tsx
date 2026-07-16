@@ -26,7 +26,7 @@ export function Topbar() {
   const initials = leadLabel.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 
   return (
-    <header className="h-11 flex items-center gap-3 px-4 shrink-0 mx-topbar">
+    <header className="h-[var(--topbar-h)] flex items-center gap-3 px-4 shrink-0 mx-topbar">
       {/* Breadcrumb */}
       <nav aria-label="Breadcrumb" className="flex items-center gap-0 flex-1 min-w-0">
         <BrandLogo className="w-4 h-4 shrink-0 mr-1" />
@@ -80,7 +80,7 @@ export function Topbar() {
       {/* Task tray toggle */}
       <button
         aria-label={open ? "Close task tray" : "Open task tray"}
-        title={open ? "Close task tray" : `Task tray${trayCount > 0 ? ` (${trayCount} items)` : ""}`}
+        title={open ? "Close task tray" : `Pending workflow actions${trayCount > 0 ? ` (${trayCount} items)` : ""}`}
         onClick={toggle}
         className={cn(
           "relative w-7 h-7 rounded flex items-center justify-center transition-colors",

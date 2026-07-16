@@ -121,7 +121,7 @@ export function TaskTray() {
   // ── Minimized strip mode: always present, never intrusive ───────────
   if (!open) {
     return (
-      <div className="w-8 shrink-0 border-l border-border/40 bg-[hsl(222_61%_4.5%)] flex flex-col items-center pt-3 gap-3">
+      <div className="w-[var(--tray-closed)] shrink-0 border-l border-border/40 bg-[hsl(222_61%_4.5%)] flex flex-col items-center pt-3 gap-3">
         <button
           onClick={toggle}
           title="Expand task tray"
@@ -149,7 +149,7 @@ export function TaskTray() {
   }
 
   return (
-    <div className="w-[264px] shrink-0 border-l border-border/40 bg-[hsl(222_61%_4.5%)] flex flex-col overflow-hidden">
+    <div className="w-[var(--tray-open)] shrink-0 border-l border-border/40 bg-[hsl(222_61%_4.5%)] flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/40">
         <ClipboardList className="w-3.5 h-3.5 text-primary/60 shrink-0" />
@@ -168,6 +168,13 @@ export function TaskTray() {
         >
           <X className="w-3 h-3" />
         </button>
+      </div>
+
+      {/* Pending actions descriptor */}
+      <div className="px-3 py-2 border-b border-border/30 bg-white/[0.01]">
+        <p className="text-[10px] text-muted-foreground/55 leading-snug">
+          Workflow items requiring your attention — approve, review, or action each before closing.
+        </p>
       </div>
 
       {/* Scrollable body */}

@@ -65,21 +65,25 @@ function saveCollapsed(v: boolean) {
 
 // ─── Badge pill ────────────────────────────────────────────────────────
 
-const BADGE_STYLE: Record<string, string> = {
-  alerts:      "bg-destructive/15 text-destructive border-destructive/20",
-  signals:     "text-amber-400 bg-amber-400/10 border-amber-400/20",
-  suggestions: "bg-primary/15 text-primary border-primary/20",
-  briefs:      "bg-primary/15 text-primary border-primary/20",
-  mst:         "bg-muted text-muted-foreground border-border/40",
-  agent:       "bg-muted text-muted-foreground border-border/40",
+const BADGE_STYLE: Record<string, { base: string; shape: string }> = {
+  alerts:      { base: "bg-destructive/15 text-destructive border-destructive/20",        shape: "rounded" },
+  signals:     { base: "bg-amber-400 text-amber-950 border-amber-400/80",                  shape: "rounded-full" },
+  suggestions: { base: "bg-primary/15 text-primary border-primary/30",                     shape: "rounded-full" },
+  briefs:      { base: "bg-primary/12 text-primary border-primary/30",                     shape: "rounded-full" },
+  mst:         { base: "bg-white/[0.04] text-muted-foreground/55 border-border/35",        shape: "rounded" },
+  agent:       { base: "bg-white/[0.04] text-muted-foreground/55 border-border/35",        shape: "rounded" },
 };
+
+const BADGE_FALLBACK = { base: "bg-muted text-muted-foreground border-border/40", shape: "rounded" };
 
 function NavBadge({ count, badgeKey }: { count: number | null; badgeKey: string }) {
   if (count == null || count <= 0) return null;
+  const style = BADGE_STYLE[badgeKey] ?? BADGE_FALLBACK;
   return (
     <span className={cn(
-      "ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded border leading-none tabular-nums shrink-0",
-      BADGE_STYLE[badgeKey] ?? "bg-muted text-muted-foreground border-border/40"
+      "ml-auto text-[9px] font-bold px-1.5 py-0.5 border leading-none tabular-nums shrink-0",
+      style.base,
+      style.shape,
     )}>
       {count}
     </span>
@@ -152,16 +156,18 @@ function CollapsedItem({
     <>
       <li className="relative" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
         <a
-          href={landing}
-          onClick={(e) => navigate(landing, e)}
+          href={section.placeholder ? undefined : landing}
+          onClick={section.placeholder ? (e) => e.preventDefault() : (e) => navigate(landing, e)}
           aria-current={active ? "page" : undefined}
-          aria-label={section.label}
+          aria-disabled={section.placeholder || undefined}
+          aria-label={section.placeholder ? `${section.label} — coming soon` : section.label}
+          tabIndex={section.placeholder ? -1 : undefined}
           className={cn(
             "flex items-center justify-center w-10 h-10 mx-auto rounded-lg transition-all relative overflow-hidden",
             active
               ? "bg-primary/25 text-primary border border-primary/35 shadow-sm shadow-primary/20"
               : "text-foreground/45 hover:text-foreground/90 hover:bg-white/[0.07]",
-            section.placeholder && "opacity-50"
+            section.placeholder && "opacity-40 cursor-not-allowed pointer-events-none"
           )}
         >
           {/* Active left accent bar */}
@@ -340,15 +346,17 @@ function LeafSection({
         <span className="absolute left-0 top-[6px] bottom-[6px] w-0.5 bg-primary rounded-full" />
       )}
       <a
-        href={to}
-        onClick={(e) => navigate(to, e)}
+        href={section.placeholder ? undefined : to}
+        onClick={section.placeholder ? (e) => e.preventDefault() : (e) => navigate(to, e)}
         aria-current={active ? "page" : undefined}
+        aria-disabled={section.placeholder || undefined}
+        tabIndex={section.placeholder ? -1 : undefined}
         className={cn(
           "flex items-center gap-2 px-2.5 h-9 rounded-lg text-[11px] font-semibold uppercase tracking-widest transition-all",
           active
             ? "mx-nav-active"
             : "text-foreground/70 hover:text-foreground hover:bg-[rgba(20,55,110,0.45)]",
-          section.placeholder && "opacity-60"
+          section.placeholder && "opacity-40 cursor-not-allowed pointer-events-none"
         )}
       >
         <NavIcon
@@ -360,8 +368,8 @@ function LeafSection({
         />
         <span className="flex-1">{section.label}</span>
         {section.placeholder && (
-          <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/70 border border-border/40 px-1 py-0.5 rounded leading-none normal-case shrink-0">
-            Soon
+          <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/55 border border-border/35 px-1 py-0.5 rounded leading-none normal-case shrink-0">
+            Coming Soon
           </span>
         )}
         {section.badgeKey && !section.placeholder && (
@@ -404,7 +412,7 @@ export function Sidebar() {
       className={cn(
         "flex flex-col shrink-0 h-full overflow-hidden mx-sidebar",
         "transition-[width] duration-200 ease-out",
-        collapsed ? "w-[56px]" : "w-[216px]"
+        collapsed ? "w-[var(--sidebar-collapsed)]" : "w-[var(--sidebar-expanded)]"
       )}
       aria-label="Workspace sidebar"
     >
@@ -439,10 +447,23 @@ export function Sidebar() {
         )}
       </div>
 
-      {/* Account switcher — hide in collapsed mode */}
-      {!collapsed && (
-        <div className="px-2 py-2 border-b border-border/40 shrink-0">
-          <AccountSwitcher />
+      {/* Account context header — distinct zone so the workspace selector
+          reads as "what am I scoped to" rather than generic nav chrome.
+          Collapsed: compact icon-only button. Expanded: labelled zone. */}
+      {collapsed ? (
+        <div className="shrink-0 border-b border-border/40 bg-white/[0.015] flex items-center justify-center py-1">
+          <AccountSwitcher compact />
+        </div>
+      ) : (
+        <div className="shrink-0 border-b border-border/40 bg-white/[0.015]">
+          <div className="px-3 pt-2 pb-0.5">
+            <span className="text-[8px] font-mono uppercase tracking-[0.2em] text-muted-foreground/40 select-none">
+              Workspace
+            </span>
+          </div>
+          <div className="px-2 pb-2">
+            <AccountSwitcher />
+          </div>
         </div>
       )}
 

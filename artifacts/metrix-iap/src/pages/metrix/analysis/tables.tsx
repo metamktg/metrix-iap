@@ -2,11 +2,12 @@
 // Used across IAP Library, Concept Map, Budget, and Strategy Avatars.
 // Column headers on the data tables are click-to-sort: first click sorts
 // by that KPI (cost metrics ascending — cheapest first — volume/rate
-// metrics descending), second click flips direction, third restores the
-// original order. Null values always sort last.
+// metrics descending), second click flips direction. A '×' reset button
+// on the active column restores the original order. Null values always
+// sort last.
 
 import { useMemo, useState } from "react";
-import { ArrowDown, ArrowUp } from "lucide-react";
+import { ArrowDown, ArrowUp, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel } from "../shared";
 import type { CellPerformanceRow, VariablePerformanceRow, DemographicRow, PlacementRow, ConversionFunnelRow } from "@/lib/data/seedTypes";
@@ -46,12 +47,16 @@ export function useColumnSort<Row>(rows: Row[], accessors: ColumnAccessors<Row>)
     if (!col) return;
     setSort((prev) => {
       if (prev?.key !== key) return { key, dir: col.defaultDir };
-      if (prev.dir === col.defaultDir) return { key, dir: prev.dir === "asc" ? "desc" : "asc" };
-      return null; // third click restores original order
+      // Bi-state: flip direction. Use the × reset button to clear the sort.
+      return { key, dir: prev.dir === "asc" ? "desc" : "asc" };
     });
   }
 
-  return { sorted, sort, toggle };
+  function reset() {
+    setSort(null);
+  }
+
+  return { sorted, sort, toggle, reset };
 }
 
 export function SortableTh({
@@ -60,34 +65,49 @@ export function SortableTh({
   sortKey,
   sort,
   onToggle,
+  onReset,
 }: {
   children: React.ReactNode;
   right?: boolean;
   sortKey: string;
   sort: { key: string; dir: SortDir } | null;
   onToggle: (key: string) => void;
+  onReset?: () => void;
 }) {
   const active = sort?.key === sortKey;
   return (
     <th className={cn("px-2.5 py-2", right ? "text-right" : "text-left")}>
-      <button
-        onClick={() => onToggle(sortKey)}
-        data-testid={`sort-${sortKey}`}
-        title="Click to sort"
-        className={cn(
-          "inline-flex items-center gap-0.5 text-[10px] font-mono uppercase tracking-widest font-semibold transition-colors",
-          active ? "text-foreground" : "text-muted-foreground/70 hover:text-foreground",
-          right && "flex-row-reverse"
+      <div className={cn("inline-flex items-center gap-0.5", right && "flex-row-reverse w-full justify-end")}>
+        <button
+          onClick={() => onToggle(sortKey)}
+          data-testid={`sort-${sortKey}`}
+          title={active ? (sort!.dir === "asc" ? "Sorted ascending — click for descending" : "Sorted descending — click for ascending") : "Click to sort"}
+          className={cn(
+            "inline-flex items-center gap-0.5 text-[10px] font-mono uppercase tracking-widest font-semibold transition-colors",
+            active ? "text-foreground" : "text-muted-foreground/70 hover:text-foreground",
+            right && "flex-row-reverse"
+          )}
+        >
+          {children}
+          {active &&
+            (sort!.dir === "asc" ? (
+              <ArrowUp className="w-2.5 h-2.5 text-primary/70" />
+            ) : (
+              <ArrowDown className="w-2.5 h-2.5 text-primary/70" />
+            ))}
+        </button>
+        {active && onReset && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onReset(); }}
+            data-testid={`sort-reset-${sortKey}`}
+            title="Clear sort"
+            aria-label="Clear sort"
+            className="ml-0.5 p-0.5 rounded text-muted-foreground/35 hover:text-foreground/80 hover:bg-white/[0.06] transition-colors"
+          >
+            <X className="w-2.5 h-2.5" />
+          </button>
         )}
-      >
-        {children}
-        {active &&
-          (sort!.dir === "asc" ? (
-            <ArrowUp className="w-2.5 h-2.5 text-primary/70" />
-          ) : (
-            <ArrowDown className="w-2.5 h-2.5 text-primary/70" />
-          ))}
-      </button>
+      </div>
     </th>
   );
 }
@@ -138,18 +158,18 @@ const CELL_COLUMNS: ColumnAccessors<CellPerformanceRow> = {
 };
 
 export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; onRowClick?: (row: CellPerformanceRow) => void }) {
-  const { sorted, sort, toggle } = useColumnSort(rows, CELL_COLUMNS);
+  const { sorted, sort, toggle, reset } = useColumnSort(rows, CELL_COLUMNS);
   return (
     <TableShell>
       <thead className="sticky top-0 bg-[hsl(222_55%_7%)] z-10">
         <tr className="border-b border-border/40">
-          <SortableTh sortKey="concept" sort={sort} onToggle={toggle}>Cell / concept</SortableTh>
+          <SortableTh sortKey="concept" sort={sort} onToggle={toggle} onReset={reset}>Cell / concept</SortableTh>
           <Th>Result type</Th>
-          <SortableTh right sortKey="spend" sort={sort} onToggle={toggle}>Spend</SortableTh>
-          <SortableTh right sortKey="results" sort={sort} onToggle={toggle}>Results</SortableTh>
-          <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle}>CPA</SortableTh>
-          <SortableTh right sortKey="ctr" sort={sort} onToggle={toggle}>Link CTR</SortableTh>
-          <SortableTh right sortKey="rpc" sort={sort} onToggle={toggle}>Result/click</SortableTh>
+          <SortableTh right sortKey="spend" sort={sort} onToggle={toggle} onReset={reset}>Spend</SortableTh>
+          <SortableTh right sortKey="results" sort={sort} onToggle={toggle} onReset={reset}>Results</SortableTh>
+          <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle} onReset={reset}>CPA</SortableTh>
+          <SortableTh right sortKey="ctr" sort={sort} onToggle={toggle} onReset={reset}>Link CTR</SortableTh>
+          <SortableTh right sortKey="rpc" sort={sort} onToggle={toggle} onReset={reset}>Result/click</SortableTh>
         </tr>
       </thead>
       <tbody>
@@ -195,19 +215,19 @@ export function VariableTable({
   /** When provided, rows become clickable and open the variable drill-down. */
   onRowClick?: (row: VariablePerformanceRow) => void;
 }) {
-  const { sorted, sort, toggle } = useColumnSort(rows, VARIABLE_COLUMNS);
+  const { sorted, sort, toggle, reset } = useColumnSort(rows, VARIABLE_COLUMNS);
   return (
     <TableShell>
       <thead className="sticky top-0 bg-[hsl(222_55%_7%)] z-10">
         <tr className="border-b border-border/40">
-          <SortableTh sortKey="variable" sort={sort} onToggle={toggle}>Variable</SortableTh>
-          <SortableTh sortKey="family" sort={sort} onToggle={toggle}>Family</SortableTh>
+          <SortableTh sortKey="variable" sort={sort} onToggle={toggle} onReset={reset}>Variable</SortableTh>
+          <SortableTh sortKey="family" sort={sort} onToggle={toggle} onReset={reset}>Family</SortableTh>
           <Th>Result type</Th>
-          <SortableTh right sortKey="spend" sort={sort} onToggle={toggle}>Spend</SortableTh>
-          <SortableTh right sortKey="ads" sort={sort} onToggle={toggle}>Ads</SortableTh>
-          <SortableTh right sortKey="results" sort={sort} onToggle={toggle}>Results</SortableTh>
-          <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle}>CPA</SortableTh>
-          <SortableTh right sortKey="ctr" sort={sort} onToggle={toggle}>Link CTR</SortableTh>
+          <SortableTh right sortKey="spend" sort={sort} onToggle={toggle} onReset={reset}>Spend</SortableTh>
+          <SortableTh right sortKey="ads" sort={sort} onToggle={toggle} onReset={reset}>Ads</SortableTh>
+          <SortableTh right sortKey="results" sort={sort} onToggle={toggle} onReset={reset}>Results</SortableTh>
+          <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle} onReset={reset}>CPA</SortableTh>
+          <SortableTh right sortKey="ctr" sort={sort} onToggle={toggle} onReset={reset}>Link CTR</SortableTh>
         </tr>
       </thead>
       <tbody>
@@ -258,18 +278,18 @@ export function DemographicTable({
   /** When provided, rows become clickable and open the segment drill-down. */
   onSegmentClick?: (segment: { age: string; gender: string }) => void;
 }) {
-  const { sorted, sort, toggle } = useColumnSort(rows, DEMOGRAPHIC_COLUMNS);
+  const { sorted, sort, toggle, reset } = useColumnSort(rows, DEMOGRAPHIC_COLUMNS);
   return (
     <TableShell>
       <thead className="sticky top-0 bg-[hsl(222_55%_7%)] z-10">
         <tr className="border-b border-border/40">
-          <SortableTh sortKey="cell" sort={sort} onToggle={toggle}>Cell</SortableTh>
-          <SortableTh sortKey="age" sort={sort} onToggle={toggle}>Age</SortableTh>
-          <SortableTh sortKey="gender" sort={sort} onToggle={toggle}>Gender</SortableTh>
-          <SortableTh right sortKey="spend" sort={sort} onToggle={toggle}>Spend</SortableTh>
-          <SortableTh right sortKey="results" sort={sort} onToggle={toggle}>Results</SortableTh>
-          <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle}>CPA</SortableTh>
-          <SortableTh right sortKey="rpc" sort={sort} onToggle={toggle}>Result/click</SortableTh>
+          <SortableTh sortKey="cell" sort={sort} onToggle={toggle} onReset={reset}>Cell</SortableTh>
+          <SortableTh sortKey="age" sort={sort} onToggle={toggle} onReset={reset}>Age</SortableTh>
+          <SortableTh sortKey="gender" sort={sort} onToggle={toggle} onReset={reset}>Gender</SortableTh>
+          <SortableTh right sortKey="spend" sort={sort} onToggle={toggle} onReset={reset}>Spend</SortableTh>
+          <SortableTh right sortKey="results" sort={sort} onToggle={toggle} onReset={reset}>Results</SortableTh>
+          <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle} onReset={reset}>CPA</SortableTh>
+          <SortableTh right sortKey="rpc" sort={sort} onToggle={toggle} onReset={reset}>Result/click</SortableTh>
         </tr>
       </thead>
       <tbody>
@@ -304,16 +324,16 @@ const PLACEMENT_COLUMNS: ColumnAccessors<PlacementRow> = {
 };
 
 export function PlacementTable({ rows }: { rows: PlacementRow[] }) {
-  const { sorted, sort, toggle } = useColumnSort(rows, PLACEMENT_COLUMNS);
+  const { sorted, sort, toggle, reset } = useColumnSort(rows, PLACEMENT_COLUMNS);
   return (
     <TableShell>
       <thead className="sticky top-0 bg-[hsl(222_55%_7%)] z-10">
         <tr className="border-b border-border/40">
-          <SortableTh sortKey="placement" sort={sort} onToggle={toggle}>Placement</SortableTh>
-          <SortableTh sortKey="platform" sort={sort} onToggle={toggle}>Platform</SortableTh>
-          <SortableTh right sortKey="spend" sort={sort} onToggle={toggle}>Spend</SortableTh>
-          <SortableTh right sortKey="results" sort={sort} onToggle={toggle}>Results</SortableTh>
-          <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle}>CPA</SortableTh>
+          <SortableTh sortKey="placement" sort={sort} onToggle={toggle} onReset={reset}>Placement</SortableTh>
+          <SortableTh sortKey="platform" sort={sort} onToggle={toggle} onReset={reset}>Platform</SortableTh>
+          <SortableTh right sortKey="spend" sort={sort} onToggle={toggle} onReset={reset}>Spend</SortableTh>
+          <SortableTh right sortKey="results" sort={sort} onToggle={toggle} onReset={reset}>Results</SortableTh>
+          <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle} onReset={reset}>CPA</SortableTh>
         </tr>
       </thead>
       <tbody>
@@ -331,26 +351,35 @@ export function PlacementTable({ rows }: { rows: PlacementRow[] }) {
   );
 }
 
+const FUNNEL_COLUMNS: ColumnAccessors<ConversionFunnelRow & { label: string }> = {
+  link_clicks:          { get: (r) => r.link_clicks,          defaultDir: "desc" },
+  adds_to_cart:         { get: (r) => r.adds_to_cart,         defaultDir: "desc" },
+  checkouts_initiated:  { get: (r) => r.checkouts_initiated,  defaultDir: "desc" },
+  purchases:            { get: (r) => r.purchases,            defaultDir: "desc" },
+};
+
 /**
  * Conversion-attributed funnel table (device/platform/placement pivots).
  * No spend/CPA columns by design — spend is not attributable under
- * conversion-based tracking.
+ * conversion-based tracking. Columns are sortable; label column stays
+ * in original order (no numeric accessor for strings).
  */
 export function ConversionFunnelTable({ rows, labelHeader }: { rows: (ConversionFunnelRow & { label: string })[]; labelHeader: string }) {
+  const { sorted, sort, toggle, reset } = useColumnSort(rows, FUNNEL_COLUMNS);
   return (
     <TableShell>
       <thead className="sticky top-0 bg-[hsl(222_55%_7%)] z-10">
         <tr className="border-b border-border/40">
           <Th>{labelHeader}</Th>
-          <Th right>Link clicks</Th>
-          <Th right>Adds to cart</Th>
-          <Th right>Checkouts initiated</Th>
-          <Th right>Purchases</Th>
+          <SortableTh right sortKey="link_clicks" sort={sort} onToggle={toggle} onReset={reset}>Link clicks</SortableTh>
+          <SortableTh right sortKey="adds_to_cart" sort={sort} onToggle={toggle} onReset={reset}>Adds to cart</SortableTh>
+          <SortableTh right sortKey="checkouts_initiated" sort={sort} onToggle={toggle} onReset={reset}>Checkouts initiated</SortableTh>
+          <SortableTh right sortKey="purchases" sort={sort} onToggle={toggle} onReset={reset}>Purchases</SortableTh>
           <Th>Confidence</Th>
         </tr>
       </thead>
       <tbody>
-        {rows.map((r, i) => (
+        {sorted.map((r, i) => (
           <tr key={r.label + i} className="border-b border-border/20 hover:bg-white/[0.02]">
             <Td className="font-medium text-foreground capitalize">{r.label}</Td>
             <Td right>{r.link_clicks != null ? fmtNum(r.link_clicks) : "—"}</Td>

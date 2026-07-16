@@ -114,7 +114,7 @@ export function ManagerOverview() {
             <h2 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60">Bottom-line totals</h2>
             <MetricPickerButton catalog={metricCatalog} selected={selectedMetricIds} onToggle={toggle} onMove={move} onReset={reset} />
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-dashboard-4 gap-3">
             {selectedMetricIds.map((id) => {
               const m = metricById(metricCatalog, id);
               if (!m) return null;
