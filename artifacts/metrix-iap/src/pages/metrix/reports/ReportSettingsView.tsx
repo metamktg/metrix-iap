@@ -106,7 +106,7 @@ export function ReportSettingsView() {
       <div className="flex-1 overflow-y-auto p-6 space-y-4 max-w-3xl">
         <SectionCard
           title="Default template"
-          desc="Branding, format, and audience defaults applied when composing a new report."
+          desc="Branding · format · audience defaults"
           table="workspace_report_settings"
         >
           <div className="space-y-4 pt-1">
@@ -156,7 +156,7 @@ export function ReportSettingsView() {
 
         <SectionCard
           title="Scheduled sends"
-          desc="Deliver the default report automatically on a cadence."
+          desc="Automatic delivery · on a cadence"
           table="workspace_report_settings"
         >
           <div className="space-y-4 pt-1">

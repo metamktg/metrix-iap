@@ -66,7 +66,7 @@ export function RecommendationsView() {
             <ModuleHeader
               section={SECTION}
               title="Recommendations"
-              subtitle="Optimization-loop recommendations. Approving adds a manual task — nothing is auto-applied."
+              subtitle="Optimization loop · approval adds a manual task"
               table="recommendation_cards"
             />
             <ScopeBanner account={acct} />

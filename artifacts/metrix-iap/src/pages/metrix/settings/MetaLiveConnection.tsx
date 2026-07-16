@@ -127,7 +127,7 @@ export function MetaLiveConnection() {
   return (
     <SectionCard
       title="Live Meta connection"
-      desc="Connect a Meta ad account with read-only (ads_read) access and pull the IAP report classes. All data below is live from Meta — nothing is simulated."
+      desc="Read-only (ads_read) connection · IAP report classes · all data live from Meta"
     >
       <div className="space-y-3">
         {flashSuccess && !connection?.connected && (

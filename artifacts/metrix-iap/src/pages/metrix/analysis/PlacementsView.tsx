@@ -206,7 +206,7 @@ function ConversionTrackingSections({ cts }: { cts: ConversionTrackingSignal }) 
       {cts.platforms.length > 0 && (
         <SectionCard
           title="Conversion-attributed platforms"
-          desc="Funnel actions attributed to the converting platform."
+          desc="Funnel actions · by converting platform"
           table="platform_performance (tracking_basis=conversion)"
         >
           <ConversionFunnelTable rows={cts.platforms.map((r) => ({ ...r, label: r.platform }))} labelHeader="Platform" />
@@ -215,7 +215,7 @@ function ConversionTrackingSections({ cts }: { cts: ConversionTrackingSignal }) 
       {cts.devices.length > 0 && (
         <SectionCard
           title="Conversion-attributed devices"
-          desc="Funnel actions attributed to the converting device."
+          desc="Funnel actions · by converting device"
           table="device_performance (tracking_basis=conversion)"
         >
           <ConversionFunnelTable rows={cts.devices.map((r) => ({ ...r, label: r.device }))} labelHeader="Device" />
@@ -290,7 +290,7 @@ export function PlacementsView() {
                 <ModuleHeader
                   section={SECTION}
                   title="Placements"
-                  subtitle="Conversion-attributed placement signal for this account. Delivery-based placement runs have not been produced yet."
+                  subtitle="Conversion-attributed placement signal · no delivery-based runs yet"
                   table="placement_performance, platform_performance, device_performance"
                   tabs="analysis"
                 />
@@ -330,7 +330,7 @@ export function PlacementsView() {
               <ModuleHeader
                 section={SECTION}
                 title="Placements"
-                subtitle="Where delivery happened and what each placement produced. Re-rank by any KPI; click a placement for the full breakdown."
+                subtitle="Delivery by placement · re-rank by KPI · click for breakdown"
                 table="v3_placement_signal, c4e_placement_signal"
                 tabs="analysis"
               />
@@ -359,7 +359,7 @@ export function PlacementsView() {
               <div className="px-6 py-5 space-y-4 max-w-5xl">
                 <SectionCard
                   title="Spend by placement"
-                  desc="Combined across the V3 and C4E signals. Paired bars compare each placement's share of spend against its share of results — a longer green bar means the placement over-delivers for its budget."
+                  desc="V3 + C4E combined · spend share vs result share · longer green bar = over-delivers"
                 >
                   {rollup.length > 1 && (
                     <div className="mb-4">

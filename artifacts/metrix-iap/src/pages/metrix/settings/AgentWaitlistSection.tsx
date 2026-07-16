@@ -98,7 +98,7 @@ export function AgentWaitlistSection() {
     return (
       <SectionCard
         title="Metrix Agent waitlist"
-        desc="Waitlist signups contain personal emails and are restricted to admins."
+        desc="Personal emails · admin-only"
       >
         <div className="p-3 rounded-lg border border-border/30 bg-white/[0.02] space-y-2.5" data-testid="panel-waitlist-locked">
           <div className="flex items-center gap-2.5">
@@ -176,7 +176,7 @@ export function AgentWaitlistSection() {
   return (
     <SectionCard
       title="Metrix Agent waitlist"
-      desc="Emails collected from the Metrix Agent waitlist signup, newest first."
+      desc="Waitlist signups · newest first"
       right={
         <div className="flex items-center gap-2">
           <button

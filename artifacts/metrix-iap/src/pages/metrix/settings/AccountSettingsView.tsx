@@ -2,13 +2,14 @@
 // Account-scoped settings: data connection, white-label, data isolation,
 // plus the workspace-wide Metrix Agent waitlist admin section.
 
+import { TYPE } from "../typography";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ApiError } from "@workspace/api-client-react";
 import { useScopedAdAccountId, useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAdAccount, getReportBuilder } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, ScopeBanner, SectionCard, CaveatNote, PendingState, useFocusParam, ClampedProse } from "../shared";
+import { ModuleHeader, ScopeBanner, SectionCard, CaveatNote, PendingState, useFocusParam, DetailReveal } from "../shared";
 import { ConnectMetaDialog, ManualImportDialog, CreativeLibraryDialog } from "../ConnectAccountDialogs";
 import { AnalysisControls } from "../ManualAnalysisControls";
 import { AgentWaitlistSection } from "./AgentWaitlistSection";
@@ -34,7 +35,7 @@ function SessionSection() {
   };
 
   return (
-    <SectionCard title="Your session" desc="The account you're currently signed in with.">
+    <SectionCard title="Your session" desc="Currently signed-in account">
       <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
         <UserCircle2 className="w-4 h-4 text-primary shrink-0" />
         <div className="flex-1 min-w-0">
@@ -137,7 +138,7 @@ function PasswordSection() {
       )}
       data-testid="section-password"
     >
-      <SectionCard title="Password" desc="Change the password you use to sign in. Changing it signs you out everywhere else.">
+      <SectionCard title="Password" desc="Change password · signs you out everywhere else">
         <form onSubmit={handleSubmit} className="space-y-3 max-w-sm" data-testid="form-account-change-password">
           <div className="space-y-1.5">
             <label htmlFor="account-current-password" className="text-[11px] font-medium text-muted-foreground">
@@ -249,7 +250,7 @@ export function AccountSettingsView() {
         <PasswordSection />
 
         {/* Data connection */}
-        <SectionCard title="Data connection" desc="Meta ad account connection and manual import status.">
+        <SectionCard title="Data connection" desc="Meta connection · manual import status">
           <div className="space-y-2.5">
             <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
               {configured ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> : <Circle className="w-4 h-4 text-muted-foreground/80 shrink-0" />}
@@ -304,13 +305,13 @@ export function AccountSettingsView() {
 
         {/* Analysis — the only place a date range is chosen, and analysis is
             only ever triggered by this explicit button. */}
-        <SectionCard title="Run analysis" desc="Pick a date range and explicitly analyze the staged manual uploads. Never runs automatically.">
+        <SectionCard title="Run analysis" desc="Pick a date range · never runs automatically">
           <AnalysisControls accountId={account.id} />
         </SectionCard>
 
         {/* White-label */}
         {rb && (
-          <SectionCard title="White-label & branding" desc="How reports are branded when delivered to this account's client.">
+          <SectionCard title="White-label & branding" desc="Client-facing report branding">
             <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
               <Palette className="w-4 h-4 text-primary shrink-0" />
               <div className="flex-1 min-w-0">
@@ -325,21 +326,26 @@ export function AccountSettingsView() {
         )}
 
         {/* Data isolation */}
-        <SectionCard title="Data isolation" desc="How this account's data is scoped within the manager.">
+        <SectionCard title="Data isolation" desc="Account data scoping">
           <div className="flex items-start gap-2.5 p-3 rounded-lg border border-emerald-400/15 bg-emerald-400/[0.03]">
             <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-            <ClampedProse
-              className="text-[11px] text-foreground/75 leading-relaxed"
-              text={`All analysis, strategy, briefs, reports, and MST data are isolated to ${account.name}. Only bottom-line performance totals roll up to the ${manager.name} overview. Approving a recommendation creates a manual task and never auto-edits a live campaign.`}
-              render={() => (
-                <>
-                  All analysis, strategy, briefs, reports, and MST data are isolated to{" "}
-                  <span className="font-medium text-foreground">{account.name}</span>. Only bottom-line
-                  performance totals roll up to the{" "}
-                  <span className="font-medium text-foreground">{manager.name}</span> overview. Approving a
-                  recommendation creates a manual task and never auto-edits a live campaign.
-                </>
-              )}
+            <DetailReveal
+              label={<>All data isolated to <span className="font-medium text-foreground">{account.name}</span></>}
+              labelClassName={TYPE.caption}
+              eyebrow="Data isolation"
+              sections={[
+                {
+                  render: () => (
+                    <>
+                      All analysis, strategy, briefs, reports, and MST data are isolated to{" "}
+                      <span className="font-medium text-foreground">{account.name}</span>. Only bottom-line
+                      performance totals roll up to the{" "}
+                      <span className="font-medium text-foreground">{manager.name}</span> overview. Approving a
+                      recommendation creates a manual task and never auto-edits a live campaign.
+                    </>
+                  ),
+                },
+              ]}
             />
           </div>
         </SectionCard>

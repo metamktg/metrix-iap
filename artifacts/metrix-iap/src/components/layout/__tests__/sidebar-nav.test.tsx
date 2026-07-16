@@ -79,13 +79,14 @@ describe("navTree landing routes", () => {
     }
   });
 
-  it("Analysis and Strategy landing is their Overview page, with no redundant Overview child", () => {
+  it("Analysis and Strategy land on their explicit Overview child page", () => {
     const analysis = navTree.find((s) => s.id === "analysis")!;
     const strategy = navTree.find((s) => s.id === "strategy")!;
     expect(sectionLandingRoute(analysis)).toBe("/app/analysis/overview");
     expect(sectionLandingRoute(strategy)).toBe("/app/strategy/overview");
-    expect(analysis.children!.map((c) => c.label)).not.toContain("Overview");
-    expect(strategy.children!.map((c) => c.label)).not.toContain("Overview");
+    // Overview is a real child page (sub-page navigation IA), listed first.
+    expect(analysis.children![0]!.label).toBe("Overview");
+    expect(strategy.children![0]!.label).toBe("Overview");
   });
 
   it("sections without an Overview child land on their first child", () => {
@@ -106,9 +107,9 @@ describe("Sidebar section headers", () => {
     expect(window.location.pathname).toBe("/app/analysis/overview");
     const childList = within(nav).getByLabelText("Analysis pages");
     expect(isExpanded(childList)).toBe(true);
-    // Expanded children include the real subpages, but no "Overview" child
+    // Expanded children include the real subpages, led by the Overview child
     expect(within(childList).getByText("IAP Library")).toBeTruthy();
-    expect(within(childList).queryByText("Overview")).toBeNull();
+    expect(within(childList).getByText("Overview")).toBeTruthy();
   });
 
   it("a section without an Overview child navigates to its first child", () => {

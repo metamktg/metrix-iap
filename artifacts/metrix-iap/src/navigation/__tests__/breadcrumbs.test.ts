@@ -8,7 +8,7 @@
 
 import { describe, it, expect } from "vitest";
 
-import { buildBreadcrumbs } from "@/components/layout/Topbar";
+import { buildBreadcrumbs } from "@/components/layout/breadcrumbs";
 import { navTree } from "../navTree";
 
 const LEAD = "Bookster";

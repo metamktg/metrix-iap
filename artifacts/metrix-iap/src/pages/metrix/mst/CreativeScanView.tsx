@@ -43,7 +43,12 @@ export function CreativeScanView() {
           );
         }
 
-        const library = mst.local_book2_library;
+        // local_book2_library may contain multiple rows per cell_id (aspect
+        // variants such as Feed / Square / Story) — deduplicate to one entry
+        // per concept so cards render once and keys stay unique.
+        const library = mst.local_book2_library.filter(
+          (c, i, arr) => arr.findIndex((o) => o.cell_id === c.cell_id) === i
+        );
 
         const VAR_FAMILIES: { label: string; get: (c: (typeof library)[number]) => string | null | undefined }[] = [
           { label: "Hook", get: (c) => c.hook_variable },
@@ -70,7 +75,7 @@ export function CreativeScanView() {
             <ModuleHeader
               section={SECTION}
               title="Creative Scan"
-              subtitle="The scanned local creative library and the variable library it produces."
+              subtitle="Scanned creative library · variable library"
               table="local_book2_library"
             />
             <ScopeBanner account={acct} />
@@ -101,7 +106,7 @@ export function CreativeScanView() {
                 <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
                   {library.map((c) => (
                     <CreativeCard
-                      key={c.cell_id + c.book2_concept_name}
+                      key={c.cell_id}
                       data={cardFromCell(c.cell_id, {
                         perfRows: getAnalysisData(seed, adAccountId)?.performance_by_cell,
                         mst,

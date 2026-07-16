@@ -30,3 +30,5 @@
 - [library_cells multi-entry per cell_id](library-cells-multi-entry.md) — local_book2_library has multiple rows per cell_id (Feed/Square/Story aspect variants); any code iterating it must deduplicate by cell_id before using as React keys or canonical data.
 - [Creative asset URLs must be relative paths](creative-asset-url-relative.md) — store /api/... relative paths, never absolute https:// URLs; Replit dev domains change across sessions and stale absolute URLs silently break image loading.
 - [CreativeVisual loading state](creative-visual-loading-state.md) — blank <img> during cold Supabase load (1–5 s) is visually identical to "No asset"; use loadedUrl state + spinner overlay + brokenUrl useEffect reset to distinguish loading from missing.
+- [Vitest runs must be serial](vitest-serial-runs.md) — two concurrent vitest processes both exit -1 with no output; full suite exceeds a 120s bash timeout — run dirs separately, pipe to a log.
+- [Metrix IAP headless login quirk](metrix-headless-login.md) — login succeeds but URL stays on /login (shows 404 shell); don't waitForURL, just goto target routes directly after a short wait.

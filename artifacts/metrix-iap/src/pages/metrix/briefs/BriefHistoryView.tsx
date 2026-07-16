@@ -44,7 +44,7 @@ export function BriefHistoryView() {
             <ModuleHeader
               section={SECTION}
               title="History"
-              subtitle="Every brief generated for this account, with its current status."
+              subtitle="All generated briefs · current status"
               table="draft_briefs"
             />
             <ScopeBanner account={acct} />

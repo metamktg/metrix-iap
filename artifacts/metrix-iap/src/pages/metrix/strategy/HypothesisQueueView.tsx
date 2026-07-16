@@ -10,10 +10,11 @@ import { getAdAccount, getStrategyData, getBriefBuilder } from "@/lib/data/metri
 import {
   ModuleHeader, ScopeBanner, ModuleTabs, ModuleScopeGate, PendingState,
   MetricTile, CrossLink, useFocusParam, FlowCrumb, useFromParam, LoopAction,
-  RangeScopeBar, NoDataInRangeState, StaleFocusNotice, ExpandableText,
+  RangeScopeBar, NoDataInRangeState, StaleFocusNotice, DetailReveal, deriveLabel,
 } from "../shared";
 import {
   HypothesisStatusBadge, PillarDetailSections, VariableStackChips, pillarHasDetails,
+  HypothesisCodeChipsRow,
 } from "./strategyShared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
@@ -25,7 +26,8 @@ const SECTION = "Strategy · 04";
 
 type Tab = "queue" | "pillars";
 
-/** Compact labeled fact inside a hypothesis card. */
+/** Compact labeled fact inside a hypothesis card — one derived line only;
+ *  the full prose lives in the detail drawer. */
 function HypFact({
   label, value, Icon,
 }: {
@@ -39,7 +41,7 @@ function HypFact({
         <Icon className="w-2.5 h-2.5 text-muted-foreground/60" />
         <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
       </div>
-      <p className="text-[11px] text-foreground/80 leading-snug line-clamp-2">{value}</p>
+      <p className="text-[11px] text-foreground/80 leading-snug line-clamp-1">{deriveLabel(value, 56)}</p>
     </div>
   );
 }
@@ -95,7 +97,7 @@ export function HypothesisQueueView() {
             <ModuleHeader
               section={SECTION}
               title="Hypothesis Queue"
-              subtitle="Active hypotheses derived from this account's analysis, queued for validation or briefing."
+              subtitle="Queued for validation or briefing"
               table="active_hypotheses, message_pillars"
               tabs="strategy"
             />
@@ -142,7 +144,10 @@ export function HypothesisQueueView() {
                         >
                           <div className="flex items-start gap-2">
                             <div className="flex-1 min-w-0">
-                              <p className="text-[13px] font-semibold text-foreground leading-snug">{h.label}</p>
+                              {/* Density rule: chips first; the sentence drops to a
+                                  one-line caption (full prose in the tap drawer). */}
+                              <HypothesisCodeChipsRow label={h.label} />
+                              <p className="text-[12px] text-foreground/80 leading-snug line-clamp-1 mt-1">{deriveLabel(h.label, 72)}</p>
                               {h.source && (
                                 <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-muted-foreground/60">
                                   <ArrowRight className="w-3 h-3 text-muted-foreground/60" />
@@ -164,7 +169,7 @@ export function HypothesisQueueView() {
                           {h.risk && (
                             <div className="flex items-start gap-1.5 mt-3 pt-3 border-t border-border/20">
                               <AlertTriangle className="w-3 h-3 text-amber-400/70 shrink-0 mt-0.5" />
-                              <p className="text-[11px] text-amber-400/80 leading-relaxed line-clamp-2">{h.risk}</p>
+                              <p className="text-[11px] text-amber-400/80 leading-relaxed line-clamp-1">{deriveLabel(h.risk, 90)}</p>
                             </div>
                           )}
                         </button>
@@ -189,9 +194,16 @@ export function HypothesisQueueView() {
                             ))}
                           </div>
                           <p className="text-[14px] font-semibold text-foreground leading-tight">{p.label}</p>
-                          <p className="text-[12px] text-primary/80 italic mt-1">"{p.plain_descriptor}"</p>
-                          <div className="mt-2">
-                            <ExpandableText className="text-[11.5px] text-muted-foreground/75 leading-relaxed" text={p.why_it_matters} />
+                          <div className="mt-1">
+                            <DetailReveal
+                              label={deriveLabel(p.plain_descriptor, 72)}
+                              labelClassName="text-[12px] text-primary/80 italic"
+                              eyebrow={p.label}
+                              sections={[
+                                { label: "Descriptor", text: p.plain_descriptor },
+                                { label: "Why it matters", text: p.why_it_matters },
+                              ]}
+                            />
                           </div>
                           <div className="mt-3">
                             <VariableStackChips stack={p.variable_stack} />

@@ -96,12 +96,16 @@ describe("PlacementsView · LittleData (conversion-only)", () => {
 });
 
 describe("PlacementsView · Bookster (delivery-based, unchanged)", () => {
-  it("still renders the V3/C4E delivery sections", () => {
+  it("still renders the combined V3/C4E delivery rollup", () => {
+    // The separate "V3 placement signal" / "C4E placement signal" sections
+    // were merged into a single combined rollup ("Spend by placement");
+    // the per-signal split now lives in the placement drill-down.
     select("bookster");
     renderView();
-    expect(screen.getByText("V3 placement signal")).toBeTruthy();
-    expect(screen.getByText("C4E placement signal")).toBeTruthy();
     expect(screen.getByText("Spend by placement")).toBeTruthy();
+    // Combined rollup renders one ranked row per placement.
+    const rows = document.querySelectorAll('[data-testid^="row-placement-"]');
+    expect(rows.length).toBeGreaterThan(0);
     expect(screen.queryByText("No placement signal")).toBeNull();
   });
 });

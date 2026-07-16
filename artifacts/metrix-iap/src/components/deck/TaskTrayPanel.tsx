@@ -126,7 +126,7 @@ export function TaskTrayPanel({
         "shrink-0 border-t border-border/30 bg-white/[0.005]",
         compact ? "px-2.5 py-2" : "px-3 py-2.5"
       )}>
-        <p className="text-[8.5px] text-muted-foreground/30 leading-relaxed text-center">
+        <p className="text-[9px] text-muted-foreground/30 leading-relaxed text-center">
           Approve from loop · never auto-applied
         </p>
       </div>

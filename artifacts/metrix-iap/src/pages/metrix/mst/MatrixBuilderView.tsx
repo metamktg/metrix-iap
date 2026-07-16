@@ -65,7 +65,6 @@ export function MatrixGrid({ matrix, onCellClick }: { matrix: MSTMatrix; onCellC
                       <>
                         <div className="text-[11px] font-semibold text-primary leading-tight">{readableVariables(cell.concept_code)}</div>
                         {cell.plain_text.headline && <div className="text-[12px] font-medium text-foreground mt-1 leading-tight">{cell.plain_text.headline}</div>}
-                        {cell.plain_text.primary && <div className="text-[11px] text-muted-foreground/80 mt-1 leading-snug line-clamp-3">{cell.plain_text.primary}</div>}
                         <div className="text-[12px] font-mono text-muted-foreground/80 mt-1.5">{cell.cell_id}</div>
                       </>
                     ) : (
@@ -115,7 +114,7 @@ export function MatrixBuilderView() {
             <ModuleHeader
               section={SECTION}
               title="Matrix Builder"
-              subtitle="The historical 4×4 concept × shared-variable test matrix for this account."
+              subtitle="Historical concept × shared-variable matrix"
               table="historical_matrix_4x4"
             />
             <ScopeBanner account={acct} />

@@ -71,7 +71,7 @@ export function CrossmapResultsView() {
             <ModuleHeader
               section={SECTION}
               title="Crossmap Results"
-              subtitle="Planned matrix cells crossmapped to what actually ran and what it produced."
+              subtitle="Planned cells × actual delivery"
               table="historical_matrix_4x4, performance_by_cell"
             />
             <ScopeBanner account={acct} />

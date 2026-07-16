@@ -241,7 +241,7 @@ function CompareLowSignalBanner({ data, label }: { data: SegmentDrilldownData; l
   if (!data.signal.low) return null;
   return (
     <div
-      className="flex items-start gap-2 text-[10.5px] text-amber-200/90 leading-relaxed rounded-lg border border-amber-500/25 bg-amber-500/[0.06] p-2.5"
+      className="flex items-start gap-2 text-[11px] text-amber-200/90 leading-relaxed rounded-lg border border-amber-500/25 bg-amber-500/[0.06] p-2.5"
       data-testid={`banner-low-signal-${segmentKey(data.segment)}`}
     >
       <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5 text-amber-300" />
@@ -387,7 +387,7 @@ function CompareAttributionColumn({ data, side }: { data: SegmentDrilldownData; 
   return (
     <div className="space-y-3 min-w-0" data-testid={`compare-column-${side}`}>
       {!data.attribution.available ? (
-        <div className="flex items-start gap-2 text-[10.5px] text-muted-foreground/70 leading-relaxed rounded-lg border border-border/30 bg-white/[0.02] p-2.5">
+        <div className="flex items-start gap-2 text-[11px] text-muted-foreground/70 leading-relaxed rounded-lg border border-border/30 bg-white/[0.02] p-2.5">
           <Info className="w-3 h-3 shrink-0 mt-0.5" />
           <span>{data.attribution.unavailableReason}</span>
         </div>
@@ -404,14 +404,14 @@ function CompareAttributionColumn({ data, side }: { data: SegmentDrilldownData; 
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <div className="text-[10.5px] font-medium text-foreground truncate">{c.conceptName ?? c.cellId}</div>
-                      <div className="text-[8.5px] font-mono text-muted-foreground/60">{c.cellId}</div>
+                      <div className="text-[11px] font-medium text-foreground truncate">{c.conceptName ?? c.cellId}</div>
+                      <div className="text-[9px] font-mono text-muted-foreground/60">{c.cellId}</div>
                     </div>
                     <div className="shrink-0 text-right">
-                      <div className="text-[10.5px] font-semibold text-foreground tabular-nums">
+                      <div className="text-[11px] font-semibold text-foreground tabular-nums">
                         {c.totals.results != null ? `${fmtNum(c.totals.results)} res` : "—"}
                       </div>
-                      <div className="text-[8.5px] text-muted-foreground/60">
+                      <div className="text-[9px] text-muted-foreground/60">
                         {c.totals.spend != null ? fmtUSD(c.totals.spend, 0) : "—"}
                         {c.derived.cpa != null ? ` · ${fmtUSD(c.derived.cpa)} CPA` : ""}
                       </div>
@@ -432,10 +432,10 @@ function CompareAttributionColumn({ data, side }: { data: SegmentDrilldownData; 
                     data-testid={`row-compare-variable-${side}-${v.code}`}
                   >
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="text-[8.5px] font-mono text-muted-foreground/50 w-3.5 shrink-0">{i + 1}</span>
+                      <span className="text-[9px] font-mono text-muted-foreground/50 w-3.5 shrink-0">{i + 1}</span>
                       <VariableChip v={v} />
                     </div>
-                    <div className="shrink-0 text-right text-[8.5px] text-muted-foreground/60 tabular-nums">
+                    <div className="shrink-0 text-right text-[9px] text-muted-foreground/60 tabular-nums">
                       {v.derived.cpa != null ? `${fmtUSD(v.derived.cpa)} CPA` : v.totals.spend != null ? fmtUSD(v.totals.spend, 0) : "—"}
                     </div>
                   </div>
@@ -832,7 +832,7 @@ export function SegmentDrilldownModal({
                           {m.formatted}
                         </div>
                         {unavailable && (
-                          <div className="text-[8.5px] text-muted-foreground/55 leading-snug mt-0.5">{m.unavailableReason}</div>
+                          <div className="text-[9px] text-muted-foreground/55 leading-snug mt-0.5">{m.unavailableReason}</div>
                         )}
                       </div>
                     );
@@ -861,8 +861,8 @@ export function SegmentDrilldownModal({
                             {/* Name + result count */}
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0">
-                                <div className="text-[11.5px] font-semibold text-foreground/90 truncate">{c.conceptName ?? c.cellId}</div>
-                                <div className="text-[8.5px] font-mono text-muted-foreground/40 mt-0.5">{c.cellId}</div>
+                                <div className="text-[12px] font-semibold text-foreground/90 truncate">{c.conceptName ?? c.cellId}</div>
+                                <div className="text-[9px] font-mono text-muted-foreground/40 mt-0.5">{c.cellId}</div>
                               </div>
                               {c.totals.results != null && (
                                 <div className="shrink-0 text-right">
@@ -977,7 +977,7 @@ export function SegmentDrilldownModal({
 
           {/* ── Next step CTA ── */}
           <div className="flex items-center justify-between gap-3 pt-3 border-t border-border/25 mt-1">
-            <p className="text-[9.5px] text-muted-foreground/50 leading-relaxed">
+            <p className="text-[10px] text-muted-foreground/50 leading-relaxed">
               Use this segment's signal to strengthen your next sprint test.
             </p>
             <button

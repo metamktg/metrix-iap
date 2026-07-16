@@ -30,8 +30,13 @@ describe("primaryAdForCell", () => {
     expect(primaryAdForCell(idOnly, "C1A")?.ad_name).toBe("C1A_T2");
   });
 
-  it("returns null when the cell has no ads with asset or id", () => {
-    expect(primaryAdForCell(ads, "C3C")).toBeNull();
+  it("returns the name-only row when the cell has no ads with asset or id", () => {
+    // The card still shows the ad name; assetUrl/metaAdId stay null so the
+    // UI renders a placeholder and a pending Ads Manager link.
+    const ad = primaryAdForCell(ads, "C3C");
+    expect(ad?.ad_name).toBe("C3C_T1");
+    expect(ad?.creative_asset_url).toBeNull();
+    expect(ad?.meta_ad_id).toBeNull();
   });
 
   it("returns null for unknown cells and undefined registries", () => {
@@ -53,9 +58,12 @@ describe("primaryAdForCell", () => {
     expect(primaryAdForCell(ads, "C1A", ["C2B_T1"])?.ad_name).toBe("C1A_T3");
   });
 
-  it("fallback still returns null when mapped names have no asset or id", () => {
+  it("fallback returns the name-only row when mapped names have no asset or id", () => {
     const bare: AdRecord[] = [{ ad_name: "Plain Ad", cell: null, meta_ad_id: null, creative_asset_url: null }];
-    expect(primaryAdForCell(bare, "C1A", ["Plain Ad"])).toBeNull();
+    const ad = primaryAdForCell(bare, "C1A", ["Plain Ad"]);
+    expect(ad?.ad_name).toBe("Plain Ad");
+    expect(ad?.creative_asset_url).toBeNull();
+    expect(ad?.meta_ad_id).toBeNull();
   });
 });
 

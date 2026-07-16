@@ -72,16 +72,22 @@ function renderMap() {
   );
 }
 
-// The pillar cards are the only divs carrying the `border-l-2` accent
-// class; each one contains its own pillar id and its linked hypotheses.
+// Pillar cards and hypothesis rows carry stable data-testids
+// (`pillar-card-<id>`, `hyp-row-<id>`). The first-layer rule means ids
+// and full prose are no longer visible textContent (labels + popovers),
+// so assertions anchor on these structural hooks instead.
 function pillarCards(container: HTMLElement) {
-  return [...container.querySelectorAll<HTMLElement>("div.border-l-2")];
+  return [...container.querySelectorAll<HTMLElement>('[data-testid^="pillar-card-"]')];
 }
 
 function cardForPillar(container: HTMLElement, pillarId: string) {
-  return pillarCards(container).find((c) =>
-    (c.textContent ?? "").includes(pillarId)
-  );
+  return container.querySelector<HTMLElement>(
+    `[data-testid="pillar-card-${pillarId}"]`
+  ) ?? undefined;
+}
+
+function holdsHypothesis(scope: HTMLElement, hypId: string) {
+  return !!scope.querySelector(`[data-testid="hyp-row-${hypId}"]`);
 }
 
 // The "Other active hypotheses" bucket: the rounded card wrapping that label.
@@ -92,13 +98,9 @@ function otherSection(container: HTMLElement) {
   return label?.closest("div.rounded-xl") as HTMLElement | undefined;
 }
 
-// How many pillar cards hold a given hypothesis id in their linked-row
-// list. Note the id can also appear in prose elsewhere (e.g. the scaling
-// playbook narrative), so this is scoped to pillar cards only.
+// How many pillar cards hold a given hypothesis row.
 function pillarCardsHolding(container: HTMLElement, hypId: string) {
-  return pillarCards(container).filter((c) =>
-    (c.textContent ?? "").includes(hypId)
-  );
+  return pillarCards(container).filter((c) => holdsHypothesis(c, hypId));
 }
 
 beforeEach(() => {
@@ -147,15 +149,15 @@ for (const [accountId, accountName] of ACCOUNTS) {
         const owner = cardForPillar(container, h.pillar_id!);
         expect(owner).toBeTruthy();
         // Appears in its owning pillar card…
-        expect(owner!.textContent).toContain(h.id);
+        expect(holdsHypothesis(owner!, h.id)).toBe(true);
         // …and in no other pillar card.
         const otherCards = pillarCards(container).filter((c) => c !== owner);
         for (const c of otherCards) {
-          expect(c.textContent).not.toContain(h.id);
+          expect(holdsHypothesis(c, h.id)).toBe(false);
         }
         // …and not in the "Other active hypotheses" bucket.
         const bucket = otherSection(container);
-        if (bucket) expect(bucket.textContent).not.toContain(h.id);
+        if (bucket) expect(holdsHypothesis(bucket, h.id)).toBe(false);
       }
     });
 
@@ -172,10 +174,10 @@ for (const [accountId, accountName] of ACCOUNTS) {
       expect(bucket).toBeTruthy();
       for (const h of unattached) {
         // Present in the bucket…
-        expect(bucket!.textContent).toContain(h.id);
+        expect(holdsHypothesis(bucket!, h.id)).toBe(true);
         // …and in no pillar card.
         for (const c of pillarCards(container)) {
-          expect(c.textContent).not.toContain(h.id);
+          expect(holdsHypothesis(c, h.id)).toBe(false);
         }
       }
     });

@@ -4,12 +4,13 @@
 // ad-account grants are all set before the invite is sent, and the account
 // is provisioned immediately (no separate "accept invite" flow exists).
 
+import { TYPE } from "../typography";
 import { useState, type FormEvent } from "react";
 import { useAccount } from "@/contexts/AccountContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getWorkspaceSettings } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, SectionCard, PendingState, CaveatNote, ExpandableText } from "../shared";
+import { ModuleHeader, SectionCard, PendingState, CaveatNote, DetailReveal, deriveLabel } from "../shared";
 import { cn } from "@/lib/utils";
 import { Users, UserPlus, ShieldCheck, Loader2, X, RotateCw, Check } from "lucide-react";
 import {
@@ -940,7 +941,7 @@ function TeamAccessViewInner() {
           </div>
         </SectionCard>
 
-        <SectionCard title="Roles" desc="What each role can see and do.">
+        <SectionCard title="Roles" desc="Per-role visibility & permissions">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {team.roles.map((r) => (
               <div key={r.id} className="rounded-lg border border-border/40 bg-white/[0.02] p-3.5">
@@ -951,10 +952,15 @@ function TeamAccessViewInner() {
           </div>
         </SectionCard>
 
-        <SectionCard title="Access policy" desc="How ad-account access is granted across the workspace.">
+        <SectionCard title="Access policy" desc="Ad-account access grants">
           <div className="flex items-start gap-2.5 p-3 rounded-lg border border-emerald-400/15 bg-emerald-400/[0.03]">
             <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-            <ExpandableText className="text-[11px] text-foreground/75 leading-relaxed" text={team.access_policy} />
+            <DetailReveal
+              label={deriveLabel(team.access_policy, 72)}
+              labelClassName={TYPE.caption}
+              eyebrow="Access policy"
+              sections={[{ text: team.access_policy }]}
+            />
           </div>
           <div className="mt-2.5">
             <CaveatNote text="Data isolation still applies per ad account regardless of role — no member sees cross-account analysis." />

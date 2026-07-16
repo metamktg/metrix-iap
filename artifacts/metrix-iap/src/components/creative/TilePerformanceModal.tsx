@@ -184,6 +184,17 @@ export function TilePerformanceModal({
             </div>
           )}
 
+          {/* Cell copy — full prose lives here; the matrix tile face shows the headline only */}
+          {matrixCell?.plain_text?.primary && (
+            <div className="space-y-1 pt-1 border-t border-border/30">
+              <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60 pt-2">Cell copy</p>
+              {matrixCell.plain_text.headline && (
+                <p className="text-[12px] font-medium text-foreground leading-tight">{matrixCell.plain_text.headline}</p>
+              )}
+              <p className="text-[11px] text-foreground/80 leading-relaxed">{matrixCell.plain_text.primary}</p>
+            </div>
+          )}
+
           {/* Creative context */}
           {(lib || matrixCell) && (
             <div className="space-y-1.5 pt-1 border-t border-border/30">

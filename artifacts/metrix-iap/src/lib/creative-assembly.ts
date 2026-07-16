@@ -50,8 +50,9 @@ export function primaryPerfRow(rows: CellPerformanceRow[], cellId: string): Cell
  * Primary ad registry row for a cell. Asset and deep link come from the
  * same ad so the "View in Ads Manager" link always points at the creative
  * being shown. Preference order: ad with both creative_asset_url and
- * meta_ad_id → ad with an asset → ad with a meta id → null (placeholder +
- * pending link).
+ * meta_ad_id → ad with an asset → ad with a meta id → first match
+ * (name-only row; the card stays honest with a placeholder asset and a
+ * pending Ads Manager link) → null when no ads match at all.
  *
  * When no ads row carries the cell code directly (manual accounts get
  * their `ads.cell` only from a Meta export backfill), fall back to the

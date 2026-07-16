@@ -534,6 +534,10 @@ function CreativeThumbnail({ accountId, asset }: { accountId: string; asset: Man
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setShouldLoad(true);
+      return;
+    }
     const obs = new IntersectionObserver(
       ([entry]) => { if (entry.isIntersecting) { setShouldLoad(true); obs.disconnect(); } },
       { threshold: 0.01, rootMargin: "120px" }

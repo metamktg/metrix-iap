@@ -60,7 +60,7 @@ export function BillingView() {
       </div>
 
       <div className="px-6 py-5 space-y-5 max-w-3xl">
-        <SectionCard title="Usage" desc="Where the workspace sits against its plan limits.">
+        <SectionCard title="Usage" desc="Workspace usage vs plan limits">
           <div className="space-y-3">
             <UsageBar label="Connected ad accounts" used={billing.usage.connected_ad_accounts} limit={billing.usage.ad_account_limit} />
             <UsageBar label="Team seats" used={billing.usage.seats_used} limit={billing.usage.seat_limit} />
@@ -77,7 +77,7 @@ export function BillingView() {
           </ul>
         </SectionCard>
 
-        <SectionCard title="Invoices" desc="Past invoices, newest first.">
+        <SectionCard title="Invoices" desc="Past invoices · newest first">
           <div className="rounded-lg border border-border/30 bg-white/[0.02] overflow-hidden">
             <div className="grid grid-cols-[1fr_auto_auto] gap-3 px-3 py-2 border-b border-border/30">
               <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70 font-medium">Invoice</span>

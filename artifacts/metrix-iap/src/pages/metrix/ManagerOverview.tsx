@@ -9,7 +9,7 @@ import { CheckCircle2, Plug, TrendingUp, Plus, ArrowRight } from "lucide-react";
 import { useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getManagerOverview } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, MetricTile, SectionCard, ConfidenceBadge, ClampedProse, fmtUSD, fmtNum, eventLabel } from "./shared";
+import { ModuleHeader, MetricTile, SectionCard, ConfidenceBadge, DetailReveal, fmtUSD, fmtNum, eventLabel } from "./shared";
 import { AddAccountDialog } from "./AddAccountDialog";
 import { cn } from "@/lib/utils";
 import { buildMetricCatalog, metricSourceFromManagerTotals, metricById } from "@/lib/data/metricsCatalog";
@@ -99,7 +99,7 @@ export function ManagerOverview() {
       <ModuleHeader
         section="Metrix Manager · Agency Overview"
         title={manager.name}
-        subtitle="Blended performance across all ad accounts."
+        subtitle="Blended performance · all ad accounts"
         right={
           <span className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest">
             {data.configured_ad_accounts} configured · {data.unconfigured_ad_accounts} to set up
@@ -128,7 +128,7 @@ export function ManagerOverview() {
         </div>
 
         {/* Results by event */}
-        <SectionCard title="Results by event" desc="Aggregated result volume across connected accounts, by conversion event.">
+        <SectionCard title="Results by event" desc="Result volume by conversion event · all accounts">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {events.map(([key, e]) => (
               <div key={key} className="rounded-lg border border-border/40 bg-white/[0.02] p-3.5">
@@ -147,7 +147,7 @@ export function ManagerOverview() {
         </SectionCard>
 
         {/* Accounts */}
-        <SectionCard title="Ad accounts" desc="Select an account to open its scoped intelligence platform.">
+        <SectionCard title="Ad accounts" desc="Select an account to open it">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {adAccounts.map((a) => {
               const configured = a.status === "configured";
@@ -187,7 +187,7 @@ export function ManagerOverview() {
         {/* Manager recommendations — READ-ONLY, account-labeled. No swipe / no optimization loop here. */}
         <SectionCard
           title="Account recommendations"
-          desc="Cross-account signals surfaced at the agency level. Read-only — open the source account to act on them. No campaign is auto-edited."
+          desc="Cross-account signals · read-only · act from the source account"
         >
           {data.recommendation_cards.length === 0 ? (
             <p className="text-[12px] text-muted-foreground/70 py-4 text-center">No account recommendations at the moment.</p>
@@ -201,24 +201,23 @@ export function ManagerOverview() {
                     <Badge text={`${c.impact} impact`} cls={IMPACT_STYLE[c.impact] ?? IMPACT_STYLE.low} />
                     <ConfidenceBadge value={c.confidence} />
                   </div>
-                  <p className="text-[13px] font-semibold text-foreground leading-snug"><TokenizedConceptText text={c.title} /></p>
-                  <div className="mt-1">
-                    <ClampedProse
-                      className="text-[12px] text-muted-foreground/70 leading-relaxed"
-                      text={c.rationale}
-                      render={(t) => <TokenizedConceptText text={t} />}
-                    />
-                  </div>
-                  <div className="flex items-start gap-1.5 mt-3 pt-3 border-t border-border/20">
-                    <ArrowRight className="w-3.5 h-3.5 text-primary/60 shrink-0 mt-0.5" />
-                    <div className="flex-1 min-w-0">
-                      <ClampedProse
-                        className="text-[11px] text-foreground/75 leading-relaxed"
-                        text={c.recommended_action}
-                        render={(t) => <TokenizedConceptText text={t} />}
-                      />
-                    </div>
-                  </div>
+                  <DetailReveal
+                    label={<TokenizedConceptText text={c.title} />}
+                    labelClassName="text-[13px] font-semibold text-foreground leading-snug"
+                    eyebrow="Recommendation"
+                    sections={[
+                      {
+                        label: "Rationale",
+                        text: c.rationale,
+                        render: c.rationale ? () => <TokenizedConceptText text={c.rationale} /> : undefined,
+                      },
+                      {
+                        label: "Recommended action",
+                        text: c.recommended_action,
+                        render: c.recommended_action ? () => <TokenizedConceptText text={c.recommended_action} /> : undefined,
+                      },
+                    ]}
+                  />
                   <button
                     onClick={() => selectAdAccount(c.account_id)}
                     className="mt-3 self-start inline-flex items-center gap-1 text-[11px] font-medium text-primary/80 hover:text-primary transition-colors"
@@ -226,7 +225,7 @@ export function ManagerOverview() {
                     Open {accountName(c.account_id)} <ArrowRight className="w-3 h-3" />
                   </button>
                   {c.source_path && (
-                    <p className="text-[10px] font-mono text-muted-foreground/75 mt-2">source · {c.source_path}</p>
+                    <p className="text-[10px] font-mono text-muted-foreground/60 mt-2">source · {c.source_path}</p>
                   )}
                 </div>
               ))}

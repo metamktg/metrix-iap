@@ -1,17 +1,60 @@
 // ─── Shared building blocks for seed-hydrated Metrix pages ────────────
 //
 // Verbosity rulebook — platform-wide content consolidation:
-// • No always-visible paragraph over ~2 sentences in cards/lists. Compact it;
-//   never delete information.
+// • FIRST-LAYER RULE: no full sentences on the primary dashboard layer.
+//   Cards/lists show concise, high-impact labels only; sentence prose moves
+//   behind <DetailReveal> — a click/tap/keyboard popover with an always-
+//   visible info affordance. Derive labels mechanically with deriveLabel()
+//   (first clause, word-boundary cut) — never invent new copy.
 // • Inside <button> cards whose full text lives in a drawer/modal: clamp with
-//   CSS `line-clamp-N` (nested buttons are invalid HTML, so no roll-downs here).
-// • Inside plain <div> cards with no drawer: use <ExpandableText> for plain
-//   strings, or <ClampedProse> when the content needs a custom renderer
-//   (e.g. TokenizedConceptText) — both roll down in place, no info loss.
+//   CSS `line-clamp-N` (nested buttons are invalid HTML, so no DetailReveal
+//   or roll-downs there) and let the drawer carry the prose.
+// • Second-layer surfaces (drawers, modals, expanded detail sections) keep
+//   full prose; use <DenseText> there if clamping is still needed —
+//   <ExpandableText>/<ClampedProse> are legacy aliases over it.
 // • Data caveats / honesty disclaimers: <CaveatNote> (collapsible amber pill,
 //   optional `source` badge).
 // • Metric definitions and methodology asides: <InfoTooltip>.
 // • Drawers (InfoDrawer/DrawerField) and modals may show full-length prose.
+//
+// Typography roles — import { TYPE } from "./typography":
+// • TYPE.label   10px uppercase eyebrow/section labels
+// • TYPE.title   13px semibold card/list titles
+// • TYPE.body    12px primary prose in cards/tiles
+// • TYPE.caption 11px secondary/meta prose
+// Standard tile anatomy: eyebrow label → title → clamped body → chip rows →
+// footer/meta. No half-pixel sizes (10.5/11.5/12.5px) in card bodies.
+//
+// Normalization rulebook — import from "@/lib/normalize" (pure, tested):
+// • TITLES: compound "Main — Qualifier" analysis/pillar titles split with
+//   splitTitle() at the FIRST " — "; card face shows main (line-clamp-1) +
+//   qualifier caption; full compound stays in title attr / popover eyebrow.
+// • HIERARCHY REFS: free-text refs into the Book → Concept → Row hierarchy
+//   ("BOOK0 Concept C2 (esp. Row B)") parse with parseHierarchyRef() and
+//   render as compact mono chips ("B0 · C2 · Row B") via <NormalizedRefItem>
+//   (strategyShared.tsx); annotation + raw string move behind DetailReveal.
+//   Unparseable strings fall back to deriveLabel — never dropped.
+// • METRICS: fmtMetric(kind, n) is the single precision table — usd_unit
+//   (CPA/CPC: 2dp < $1,000, 0dp above), usd_total (spend: 0dp), pct (2dp
+//   < 10%, 1dp above, "0%" for zero), count (separators; fmtCount compact
+//   opt-in). No per-call-site digit choices.
+// • CONFIDENCE: normalizeConfidence() extracts level + qualifier + polarity;
+//   <ConfidenceBadge> colors by POLARITY first — "high (of failure)" renders
+//   red, never emerald. Unknown levels pass through as their raw label.
+// • CHIP ROWS: cap at 4 visible chips (maxVisible), overflow collapses into
+//   a "+N" popover chip (ChipOverflow in strategyShared.tsx). Inside a
+//   DetailReveal label or a <button> card the overflow is a plain "+N" text
+//   span instead — no nested popovers/buttons.
+// • CHIP FACES: variable chips show the resolved label only — family eyebrow
+//   and raw code live in the title attr. ICP chips show compactIcpName()
+//   (trailing parentheticals / " - …" qualifiers stripped); full name + id
+//   stay in the title attr.
+// • HYPOTHESES: sentences are import/LLM prose with no stable grammar —
+//   NEVER parsed into actions. First layer shows the variable codes the
+//   sentence mentions (extractVariableCodes → chips) via <HypothesisLabel>
+//   (strategyShared.tsx); full sentence + isolates stay behind DetailReveal.
+//   Codeless sentences fall back to deriveLabel. Inside <button> queue cards:
+//   <HypothesisCodeChipsRow> + a line-clamp-1 caption, drawer keeps prose.
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -22,7 +65,10 @@ import { Plug, FileUp, Clock, Database, Info, ArrowRight, CheckSquare, Square, C
 import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
 import { DataSourceBadge } from "@/components/ui/DataSourceBadge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { resolveVariableLabel } from "@/lib/variable-registry";
+import { normalizeConfidence } from "@/lib/normalize";
+import { TYPE } from "./typography";
 import type { AdAccount } from "@/lib/data/seedTypes";
 
 // ─── Info tooltip ──────────────────────────────────────────────────────
@@ -167,19 +213,27 @@ export function resultTerm(account: AdAccount | null | undefined): ResultTerm {
 // ─── Confidence badge ─────────────────────────────────────────────────
 
 export function ConfidenceBadge({ value }: { value: string }) {
+  const c = normalizeConfidence(value);
   const v = value.toLowerCase();
-  const cls = v.includes("high")
-    ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/20"
-    : v.includes("validation") || v.includes("required")
-      ? "bg-blue-400/10 text-blue-300 border-blue-400/20"
-      : v.includes("directional")
-        ? "bg-purple-400/10 text-purple-300 border-purple-400/20"
-        : v.includes("medium")
-          ? "bg-amber-400/10 text-amber-400 border-amber-400/20"
-          : "bg-muted text-muted-foreground/60 border-border/40";
+  const cls =
+    c.polarity === "negative"
+      ? "bg-red-400/10 text-red-300 border-red-400/20"
+      : c.level === "high"
+        ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/20"
+        : v.includes("validation") || v.includes("required")
+          ? "bg-blue-400/10 text-blue-300 border-blue-400/20"
+          : c.level === "directional"
+            ? "bg-purple-400/10 text-purple-300 border-purple-400/20"
+            : c.level === "medium"
+              ? "bg-amber-400/10 text-amber-400 border-amber-400/20"
+              : "bg-muted text-muted-foreground/60 border-border/40";
   return (
-    <span className={cn("inline-flex text-[10px] font-semibold border px-1.5 py-0.5 rounded leading-none", cls)}>
-      {value}
+    <span
+      title={c.qualifier ? value : undefined}
+      className={cn("inline-flex text-[10px] font-semibold border px-1.5 py-0.5 rounded leading-none", cls)}
+    >
+      {c.label}
+      {c.qualifier && <span className="ml-1 font-normal opacity-70">({c.qualifier})</span>}
     </span>
   );
 }
@@ -281,11 +335,16 @@ export function ModuleHeader({
 
 // ─── Scope banner (which ad account a module is reading) ──────────────
 
-// ScopeBanner is kept for API compatibility but renders nothing —
-// the sidebar and breadcrumb already show the active ad account.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function ScopeBanner({ account: _account }: { account: AdAccount }) {
-  return null;
+// Compact one-line scope strip: names the ad account every module is
+// scoped to. Kept to a single label-first line — no prose.
+export function ScopeBanner({ account }: { account: AdAccount }) {
+  return (
+    <div className="flex items-center gap-2 px-6 py-1.5 border-b border-border/20 bg-white/[0.01]" data-testid="banner-scope">
+      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/70 shrink-0" />
+      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Scope</span>
+      <span className="text-[11px] font-medium text-foreground/85 truncate">{account.name}</span>
+    </div>
+  );
 }
 
 // ─── Date-range scope bar ─────────────────────────────────────────────
@@ -389,51 +448,20 @@ export function CaveatNote({
   );
 }
 
-// ─── Expandable prose ─────────────────────────────────────────────────
-// Neutral roll-down for explanatory text: shows the first ~clause, click
-// to expand the rest. Use instead of always-visible multi-sentence prose.
+// ─── Dense text (universal clamped prose) ─────────────────────────────
+// The one text-density primitive: CSS line-clamp preview + in-place
+// "More/Less" roll-down. Works with plain strings or a custom renderer
+// (e.g. TokenizedConceptText). Never deletes information — the full text
+// is always one click away. Not for use inside <button> cards (nested
+// buttons are invalid HTML): clamp with raw `line-clamp-N` there and let
+// the drawer/modal carry the full prose.
 
-export function ExpandableText({
-  text,
-  className,
-  threshold = 120,
-}: {
-  text: string;
-  className?: string;
-  threshold?: number;
-}) {
-  const isLong = text.length > threshold;
-  const [expanded, setExpanded] = useState(false);
-  if (!isLong) return <p className={className}>{text}</p>;
-  const preview = text.slice(0, threshold).trimEnd() + "…";
-  return (
-    <button
-      type="button"
-      onClick={() => setExpanded((v) => !v)}
-      className="w-full text-left group/expand"
-      aria-expanded={expanded}
-    >
-      <span className={cn(className, "block")}>
-        {expanded ? text : preview}{" "}
-        <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-primary/80 group-hover/expand:text-primary whitespace-nowrap">
-          {expanded ? "Less" : "More"}
-          <ChevronDown className={cn("w-2.5 h-2.5 transition-transform duration-150", expanded && "rotate-180")} />
-        </span>
-      </span>
-    </button>
-  );
-}
-
-// ─── Clamped prose (custom-rendered content) ──────────────────────────
-// Like ExpandableText, but clamps via CSS so the content can be any custom
-// renderer (e.g. TokenizedConceptText). For non-button contexts only.
-
-export function ClampedProse({
+export function DenseText({
   text,
   render,
   className,
   clampClass = "line-clamp-2",
-  threshold = 160,
+  threshold = 120,
 }: {
   text: string;
   render?: (text: string) => React.ReactNode;
@@ -458,6 +486,155 @@ export function ClampedProse({
         <ChevronDown className={cn("w-2.5 h-2.5 transition-transform duration-150", expanded && "rotate-180")} />
       </button>
     </div>
+  );
+}
+
+// ─── Expandable prose (legacy alias) ──────────────────────────────────
+// Thin wrapper over <DenseText> kept for existing call sites. Previews
+// now clamp by line (CSS) instead of a character slice, so preview
+// heights stay visually consistent across cards.
+
+export function ExpandableText({
+  text,
+  className,
+  threshold = 120,
+}: {
+  text: string;
+  className?: string;
+  threshold?: number;
+}) {
+  return <DenseText text={text} className={className} threshold={threshold} />;
+}
+
+// ─── Clamped prose (legacy alias) ─────────────────────────────────────
+// Thin wrapper over <DenseText> kept for existing call sites that pass a
+// custom renderer or clamp depth.
+
+export function ClampedProse({
+  text,
+  render,
+  className,
+  clampClass = "line-clamp-2",
+  threshold = 160,
+}: {
+  text: string;
+  render?: (text: string) => React.ReactNode;
+  className?: string;
+  clampClass?: string;
+  threshold?: number;
+}) {
+  return (
+    <DenseText
+      text={text}
+      render={render}
+      className={className}
+      clampClass={clampClass}
+      threshold={threshold}
+    />
+  );
+}
+
+// ─── Label derivation (mechanical, never fabricates copy) ────────────
+// Extracts a concise, high-impact label from existing prose: takes the
+// first clause (up to the first sentence end, em-dash, or colon), then
+// cuts at a word boundary if still over `max`. Purely mechanical — the
+// label is always a prefix/clause of the source text, never new copy.
+
+export function deriveLabel(text: string | null | undefined, max = 60): string {
+  const t = (text ?? "").trim().replace(/\s+/g, " ");
+  if (!t) return "";
+  const m = t.match(/^(.*?)(?:[.!?](?:\s|$)|\s—\s|:\s)/);
+  let clause = m && m[1].trim().length >= 8 ? m[1].trim() : t;
+  if (clause.length <= max) return clause;
+  const cut = clause.slice(0, max + 1);
+  const lastSpace = cut.lastIndexOf(" ");
+  clause = lastSpace > 24 ? cut.slice(0, lastSpace) : clause.slice(0, max);
+  return clause.replace(/[\s,;:—-]+$/, "") + "…";
+}
+
+// ─── Detail reveal (first-layer popover) ──────────────────────────────
+// THE first-layer primitive: a concise label stays visible on the card;
+// the full sentence prose lives in a click/tap/keyboard popover. The
+// info affordance is always visible (never hover-only), so the reveal is
+// discoverable on touch and accessible by keyboard (Radix handles focus,
+// Escape, and viewport collision). Not for use inside <button> cards —
+// nested buttons are invalid HTML; clamp + drawer there instead.
+
+export interface DetailSection {
+  /** Small uppercase section label inside the popover. */
+  label?: string;
+  /** Full prose for this section. */
+  text?: string;
+  /** Custom renderer (takes precedence over `text`). */
+  render?: () => React.ReactNode;
+}
+
+export function DetailReveal({
+  label,
+  eyebrow,
+  sections,
+  labelClassName,
+  className,
+  align = "start",
+  testId,
+}: {
+  /** Concise always-visible label (derive with deriveLabel — no new copy). */
+  label: React.ReactNode;
+  /** Small uppercase kicker at the top of the popover. */
+  eyebrow?: string;
+  /** Full-prose sections revealed in the popover. */
+  sections: DetailSection[];
+  /** Classes for the visible label span (defaults to TYPE.body). */
+  labelClassName?: string;
+  /** Classes for the trigger row. */
+  className?: string;
+  align?: "start" | "center" | "end";
+  testId?: string;
+}) {
+  const content = sections.filter((s) => (s.text ?? "").trim() || s.render);
+  if (content.length === 0) {
+    return <span className={cn(labelClassName ?? TYPE.body, "block min-w-0", className)}>{label}</span>;
+  }
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-haspopup="dialog"
+          data-testid={testId}
+          className={cn(
+            "group inline-flex items-start gap-1.5 text-left min-w-0 max-w-full rounded-sm",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
+            className
+          )}
+        >
+          <span className={cn(labelClassName ?? TYPE.body, "min-w-0 group-hover:text-foreground transition-colors")}>
+            {label}
+          </span>
+          <Info
+            aria-hidden
+            className="w-3 h-3 shrink-0 mt-[3px] text-muted-foreground/45 group-hover:text-primary/80 transition-colors"
+          />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align={align}
+        collisionPadding={12}
+        className="w-[380px] max-w-[min(90vw,420px)] max-h-[min(60vh,480px)] overflow-y-auto p-4 space-y-3 border-border/60 bg-popover/95 backdrop-blur-sm"
+      >
+        {eyebrow && (
+          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/80">{eyebrow}</div>
+        )}
+        {content.map((s, i) => (
+          <div key={i} className="space-y-1">
+            {s.label && (
+              <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/60">{s.label}</div>
+            )}
+            {s.render ? s.render() : <p className={TYPE.body}>{s.text}</p>}
+          </div>
+        ))}
+      </PopoverContent>
+    </Popover>
   );
 }
 

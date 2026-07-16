@@ -3,6 +3,7 @@
 // per audience column), full strategy ICP profiles (theory + real
 // performance side by side), and the demographic conversion signal.
 
+import { TYPE } from "../typography";
 import { useState, useRef, useCallback } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -10,7 +11,7 @@ import { getAdAccount, getMST, getAnalysisData, getStrategyData } from "@/lib/da
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState,
   MetricTile, CrossLink, resultTerm, SectionCard, ConfidenceBadge, fmtUSD, fmtPct, fmtNum,
-  RangeScopeBar, NoDataInRangeState,
+  RangeScopeBar, NoDataInRangeState, DetailReveal, deriveLabel,
 } from "../shared";
 import { VariableStackChips, VariableChip, familyLabel } from "./strategyShared";
 import { computeAvatarDna, mergeAvatarDna, type AvatarDna, type DnaVariable } from "@/lib/creative-dna";
@@ -20,7 +21,7 @@ import { SegmentDrilldownModal } from "@/components/creative/SegmentDrilldownMod
 import type { SegmentId } from "@/lib/segment-analytics";
 import { DemographicTable } from "../analysis/tables";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
-import { Users, Fingerprint, DoorOpen, MessageSquareQuote, Compass, ArrowDownRight, ArrowUpRight, Dna } from "lucide-react";
+import { Users, Fingerprint, DoorOpen, MessageSquareQuote, Compass, ArrowDownRight, ArrowUpRight, Dna, ChevronDown } from "lucide-react";
 import type { MSTMatrixColumn, MSTMatrixCell, ICPProfile } from "@/lib/data/seedTypes";
 
 const SECTION = "Strategy · 04";
@@ -40,7 +41,16 @@ function IcpFact({
         <Icon className="w-2.5 h-2.5 text-muted-foreground/60" />
         <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
       </div>
-      <p className="text-[11.5px] text-foreground/80 leading-relaxed">{value}</p>
+      {value.length > 72 ? (
+        <DetailReveal
+          label={deriveLabel(value, 64)}
+          labelClassName={TYPE.body}
+          eyebrow={label}
+          sections={[{ text: value }]}
+        />
+      ) : (
+        <p className={TYPE.body}>{value}</p>
+      )}
     </div>
   );
 }
@@ -77,14 +87,11 @@ function DnaChipStrip({ variables, label, testId }: { variables: DnaVariable[]; 
         <Dna className="w-2.5 h-2.5 text-primary/70" />
         <span className="text-[8px] font-mono uppercase tracking-widest text-muted-foreground/60">{label}</span>
       </div>
+      {/* Density rule: no per-chip $CPA on the card face — the evidence
+          numbers live in the drawer's DNA breakdown. */}
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
         {variables.slice(0, 3).map((v) => (
-          <span key={v.code} className="inline-flex items-center gap-1">
-            <VariableChip code={v.code} showCode={false} />
-            {v.cpa != null && (
-              <span className="text-[9px] tabular-nums text-muted-foreground/70">{fmtUSD(v.cpa)}</span>
-            )}
-          </span>
+          <VariableChip key={v.code} code={v.code} showCode={false} />
         ))}
         {variables.length > 3 && (
           <span className="text-[9px] text-muted-foreground/60">+{variables.length - 3} more</span>
@@ -108,6 +115,15 @@ function IcpProfileCard({
 }) {
   const perf = profile.performance_data ?? null;
   const hasPerf = perf != null && (perf.spend != null || perf.cpa != null || perf.cvr_link_pct != null);
+  // Density rule: the card face carries evidence + action (performance,
+  // recommendation, avatars, DNA); the theory paragraphs (demographics,
+  // psychographics, behavior, funnel entry, resonance) collapse behind
+  // an explicit "Profile detail" expander — copy untouched, just moved.
+  const [theoryOpen, setTheoryOpen] = useState(false);
+  const hasTheory = Boolean(
+    profile.demographic_foundation || profile.psychographic_profile ||
+    profile.behavioral_signals || profile.funnel_entry_point || profile.message_resonance,
+  );
   return (
     <div
       ref={registerRef}
@@ -123,47 +139,64 @@ function IcpProfileCard({
         {profile.confidence_level && <ConfidenceBadge value={profile.confidence_level} />}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-3">
-        {/* Theory: who they are */}
-        <div className="space-y-2.5">
-          <IcpFact label="Demographics" value={profile.demographic_foundation} Icon={Users} />
-          <IcpFact label="Psychographics" value={profile.psychographic_profile} Icon={Fingerprint} />
-          <IcpFact label="Behavioral signals" value={profile.behavioral_signals} Icon={Compass} />
-          <IcpFact label="Funnel entry" value={profile.funnel_entry_point} Icon={DoorOpen} />
-        </div>
-
+      <div className="space-y-2.5 mt-3">
         {/* Evidence: how they actually performed */}
-        <div className="space-y-2.5">
-          {hasPerf && (
-            <div className="rounded-lg border border-border/30 bg-white/[0.015] p-3">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">Real performance</span>
-                {perf?.confidence && <ConfidenceBadge value={perf.confidence} />}
+        {hasPerf && (
+          <div className="rounded-lg border border-border/30 bg-white/[0.015] p-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">Real performance</span>
+              {perf?.confidence && <ConfidenceBadge value={perf.confidence} />}
+            </div>
+            <div className="flex items-center gap-5">
+              <div>
+                <div className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">Spend</div>
+                <div className="text-[14px] font-bold text-foreground tabular-nums">{perf?.spend != null ? fmtUSD(perf.spend, 0) : "—"}</div>
               </div>
-              <div className="flex items-center gap-5">
-                <div>
-                  <div className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">Spend</div>
-                  <div className="text-[14px] font-bold text-foreground tabular-nums">{perf?.spend != null ? fmtUSD(perf.spend, 0) : "—"}</div>
-                </div>
-                <div>
-                  <div className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">CPA</div>
-                  <div className="text-[14px] font-bold text-foreground tabular-nums">{perf?.cpa != null ? fmtUSD(perf.cpa) : "—"}</div>
-                </div>
-                <div>
-                  <div className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">Link CVR</div>
-                  <div className="text-[14px] font-bold text-foreground tabular-nums">{perf?.cvr_link_pct != null ? fmtPct(perf.cvr_link_pct) : "—"}</div>
-                </div>
+              <div>
+                <div className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">CPA</div>
+                <div className="text-[14px] font-bold text-foreground tabular-nums">{perf?.cpa != null ? fmtUSD(perf.cpa) : "—"}</div>
+              </div>
+              <div>
+                <div className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">Link CVR</div>
+                <div className="text-[14px] font-bold text-foreground tabular-nums">{perf?.cvr_link_pct != null ? fmtPct(perf.cvr_link_pct) : "—"}</div>
               </div>
             </div>
-          )}
-          <IcpFact label="Message resonance" value={profile.message_resonance} Icon={MessageSquareQuote} />
-          {profile.strategic_recommendation && (
-            <div className="rounded-lg border border-primary/20 bg-primary/[0.05] p-3">
-              <div className="text-[9px] font-semibold uppercase tracking-widest text-primary/80 mb-0.5">Recommendation</div>
-              <p className="text-[11.5px] text-foreground/85 leading-relaxed">{profile.strategic_recommendation}</p>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
+        {profile.strategic_recommendation && (
+          <div className="rounded-lg border border-primary/20 bg-primary/[0.05] p-3">
+            <div className="text-[9px] font-semibold uppercase tracking-widest text-primary/80 mb-0.5">Recommendation</div>
+            <DetailReveal
+              label={deriveLabel(profile.strategic_recommendation, 72)}
+              labelClassName={TYPE.body}
+              eyebrow="Recommendation"
+              sections={[{ text: profile.strategic_recommendation }]}
+            />
+          </div>
+        )}
+        {/* Theory: who they are — collapsed by default */}
+        {hasTheory && (
+          <div>
+            <button
+              type="button"
+              onClick={() => setTheoryOpen((o) => !o)}
+              aria-expanded={theoryOpen}
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors"
+            >
+              <ChevronDown className={`w-3 h-3 transition-transform ${theoryOpen ? "rotate-180" : ""}`} />
+              {theoryOpen ? "Hide profile detail" : "Profile detail"}
+            </button>
+            {theoryOpen && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-4 gap-y-2.5 mt-2.5">
+                <IcpFact label="Demographics" value={profile.demographic_foundation} Icon={Users} />
+                <IcpFact label="Psychographics" value={profile.psychographic_profile} Icon={Fingerprint} />
+                <IcpFact label="Behavioral signals" value={profile.behavioral_signals} Icon={Compass} />
+                <IcpFact label="Funnel entry" value={profile.funnel_entry_point} Icon={DoorOpen} />
+                <IcpFact label="Message resonance" value={profile.message_resonance} Icon={MessageSquareQuote} />
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {avatars && avatars.length > 0 && (
@@ -278,7 +311,7 @@ export function AvatarsView() {
             <ModuleHeader
               section={SECTION}
               title="Avatars / ICP"
-              subtitle="Who this account targets: matrix avatars, full ICP profiles, and the real audience signal — in one place."
+              subtitle="Matrix avatars · ICP profiles · audience signal"
               table="historical_matrix_4x4, icp_profiles, demographic_registration_signal"
               tabs="strategy"
             />
@@ -300,7 +333,7 @@ export function AvatarsView() {
               {matrix && (
                 <SectionCard
                   title="Matrix avatars"
-                  desc="Audience columns from the historical MST matrix, with the message angles built for each."
+                  desc="Matrix audience columns · message angles per avatar"
                   table="historical_matrix_4x4"
                 >
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -328,14 +361,9 @@ export function AvatarsView() {
                                 <span className="text-[9px] font-mono text-muted-foreground/60">{col.icp}</span>
                               </div>
                             </div>
-                            <div className="space-y-1.5 mt-3">
-                              {cells.slice(0, 2).map((c) => (
-                                <p key={c.cell_id} className="text-[11px] text-muted-foreground/70 leading-snug">
-                                  <span className="font-mono text-[9px] text-muted-foreground/60 mr-1">{c.cell_id}</span>
-                                  {c.plain_text.headline ?? c.concept_code}
-                                </p>
-                              ))}
-                            </div>
+                            {/* Density rule: the avatar card face shows WHO
+                                (name, ICP code) and the measured DNA — the
+                                per-cell message lines live in the tap drawer. */}
                             {(() => {
                               const dna = dnaByColumn.get(col.id);
                               return dna && dna.variables.length > 0 ? (
@@ -378,7 +406,7 @@ export function AvatarsView() {
               {icpProfiles.length > 0 && (
                 <SectionCard
                   title="ICP profiles"
-                  desc="Full customer profiles from the strategy map — who they are, and how they actually performed."
+                  desc="Strategy-map customer profiles · real performance"
                   table="icp_profiles"
                 >
                   <div className="space-y-3">

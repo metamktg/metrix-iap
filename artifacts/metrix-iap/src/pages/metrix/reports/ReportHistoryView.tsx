@@ -8,7 +8,7 @@ import { useAccount, useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getReportHistory } from "@/lib/data/metrixSeedAdapter";
 import { buildReportModel, downloadReportExport, parseReportModel, type BrandingMode } from "@/lib/reportExport";
-import { ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile, CrossLink, fmtNum } from "../shared";
+import { ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile, CrossLink, fmtNum, deriveLabel } from "../shared";
 import { FORMAT_LABEL } from "./reportFormatLabels";
 import { cn } from "@/lib/utils";
 import { History, FileText, Building2, Users, FileDown, Check, Loader2, Trash2, X } from "lucide-react";
@@ -218,7 +218,7 @@ export function ReportHistoryView() {
             <ModuleHeader
               section={SECTION}
               title="Report History"
-              subtitle="Every report generated for this account, newest first."
+              subtitle="All generated reports · newest first"
               table="report_history"
             />
             <ScopeBanner account={acct} />
@@ -352,7 +352,7 @@ export function ReportHistoryView() {
                           {r.status}
                         </span>
                       </div>
-                      <p className="text-[11px] text-muted-foreground/80 mt-1 leading-relaxed">{r.summary}</p>
+                      <p className="text-[11px] text-muted-foreground/80 mt-1 leading-relaxed line-clamp-1">{deriveLabel(r.summary, 90)}</p>
                       <div className="flex items-center gap-3 mt-2 text-[10px] font-mono text-muted-foreground/70 flex-wrap">
                         <span>{fmtDate(r.generated_at)}</span>
                         <span className="inline-flex items-center gap-1">

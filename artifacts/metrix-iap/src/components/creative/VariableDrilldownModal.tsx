@@ -30,7 +30,7 @@ function Kpi({ label, value, sub }: { label: string; value: string; sub?: string
     <div className="rounded-lg border border-border/40 bg-white/[0.02] p-2.5">
       <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/60">{label}</div>
       <div className="text-[16px] font-bold tabular-nums leading-tight mt-0.5 text-foreground">{value}</div>
-      {sub && <div className="text-[8.5px] text-muted-foreground/55 leading-snug mt-0.5">{sub}</div>}
+      {sub && <div className="text-[9px] text-muted-foreground/55 leading-snug mt-0.5">{sub}</div>}
     </div>
   );
 }
@@ -241,7 +241,7 @@ export function VariableDrilldownModal({
 
             {/* ── Next step CTA ── */}
             <div className="flex items-center justify-between gap-3 pt-3 border-t border-border/25">
-              <p className="text-[9.5px] text-muted-foreground/50 leading-relaxed">
+              <p className="text-[10px] text-muted-foreground/50 leading-relaxed">
                 Use these variable insights to inform your next sprint test.
               </p>
               <button

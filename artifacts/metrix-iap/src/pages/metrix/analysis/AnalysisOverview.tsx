@@ -2,13 +2,14 @@
 // Entry point for the Analysis section: campaign totals, the core
 // control reads, and jump-offs into each analysis subpage.
 
+import { TYPE } from "../typography";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAnalysisData, getCampaignSummary, getCoreControls, getMST } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
   CaveatNote, SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
-  RangeScopeBar, NoDataInRangeState, ExpandableText, LoopAction,
+  RangeScopeBar, NoDataInRangeState, DetailReveal, deriveLabel, LoopAction,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { useCellRangeScope, sumInRange } from "@/lib/date-scope";
@@ -106,7 +107,7 @@ export function AnalysisOverview() {
             <ModuleHeader
               section={SECTION}
               title="Analysis Overview"
-              subtitle="What the account's performance data says, and where to drill in."
+              subtitle="Performance reads · drill-in modules"
               table="campaign_summary, performance_by_cell"
               tabs="analysis"
             />
@@ -139,12 +140,24 @@ export function AnalysisOverview() {
               {summary.data_caveat && <CaveatNote text={summary.data_caveat} />}
 
               {controls && (
-                <SectionCard title="Core control reads" desc="The current control concept for each funnel depth." table="core_reanalysis_read">
+                <SectionCard title="Core control reads" desc="Current control concept per funnel depth" table="core_reanalysis_read">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
                       <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5">Primary control</div>
                       <p className="text-[13px] font-semibold text-foreground">{resolveConceptName(controls.primary_control)}</p>
-                      <div className="mt-1.5"><ExpandableText className="text-[11px] text-muted-foreground/80 leading-relaxed" text={resolveControlText(controls.primary_control_read, controls.primary_control)} /></div>
+                      <div className="mt-1.5">
+                        {(() => {
+                          const read = resolveControlText(controls.primary_control_read, controls.primary_control);
+                          return (
+                            <DetailReveal
+                              label={deriveLabel(read, 72)}
+                              labelClassName={TYPE.caption}
+                              eyebrow="Primary control"
+                              sections={[{ label: "Control read", text: read }]}
+                            />
+                          );
+                        })()}
+                      </div>
                       {resolveConceptName(controls.primary_control) !== controls.primary_control && (
                         <p className="text-[9px] font-mono text-muted-foreground/40 mt-1.5">{controls.primary_control}</p>
                       )}
@@ -156,9 +169,19 @@ export function AnalysisOverview() {
                         <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
                           <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5">{term.Singular} control</div>
                           <p className="text-[13px] font-semibold text-foreground">{regName}</p>
-                          {controls.registration_control_read && (
-                            <div className="mt-1.5"><ExpandableText className="text-[11px] text-muted-foreground/80 leading-relaxed" text={resolveControlText(controls.registration_control_read, regId)} /></div>
-                          )}
+                          {controls.registration_control_read && (() => {
+                            const read = resolveControlText(controls.registration_control_read, regId);
+                            return (
+                              <div className="mt-1.5">
+                                <DetailReveal
+                                  label={deriveLabel(read, 72)}
+                                  labelClassName={TYPE.caption}
+                                  eyebrow={`${term.Singular} control`}
+                                  sections={[{ label: "Control read", text: read }]}
+                                />
+                              </div>
+                            );
+                          })()}
                           {regName !== regId && (
                             <p className="text-[9px] font-mono text-muted-foreground/40 mt-1.5">{regId}</p>
                           )}
@@ -169,7 +192,7 @@ export function AnalysisOverview() {
                 </SectionCard>
               )}
 
-              <SectionCard title="Analysis modules" desc="Each module reads a different slice of the same account data.">
+              <SectionCard title="Analysis modules" desc="Same data · different slices">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {subpages.map((s) => (
                     <div key={s.to} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2">
@@ -177,7 +200,7 @@ export function AnalysisOverview() {
                         <s.Icon className="w-3.5 h-3.5 text-primary" />
                         <span className="text-[13px] font-semibold text-foreground">{s.label}</span>
                       </div>
-                      <p className="text-[11px] text-muted-foreground/80 leading-relaxed">{s.desc}</p>
+                      <p className={TYPE.caption}>{s.desc}</p>
                       <div className="flex items-center justify-between mt-auto pt-1">
                         <span className="text-[10px] font-mono text-muted-foreground/70">{s.stat}</span>
                         <CrossLink to={s.to} label="Open" />
