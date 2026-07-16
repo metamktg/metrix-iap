@@ -20,10 +20,22 @@ export function ConceptChip({ code, className }: ConceptChipProps) {
   const entry = useConceptDescriptor(code);
   const descriptor = entry?.descriptor ?? code;
 
-  const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const openInLibrary = () => {
     const focusCell = entry?.source_cells?.[0] ?? code;
     navigate(`/app/analysis/library?focus=${encodeURIComponent(focusCell)}`);
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    openInLibrary();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      e.stopPropagation();
+      openInLibrary();
+    }
   };
 
   const handleMouseEnter = () => {
@@ -33,9 +45,11 @@ export function ConceptChip({ code, className }: ConceptChipProps) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <button
-          type="button"
+        <span
+          role="button"
+          tabIndex={0}
           onClick={handleClick}
+          onKeyDown={handleKeyDown}
           onMouseEnter={handleMouseEnter}
           className={
             className ??
@@ -47,7 +61,7 @@ export function ConceptChip({ code, className }: ConceptChipProps) {
           aria-label={`Concept ${code}: ${descriptor}`}
         >
           {descriptor}
-        </button>
+        </span>
       </TooltipTrigger>
       <TooltipContent
         side="top"
