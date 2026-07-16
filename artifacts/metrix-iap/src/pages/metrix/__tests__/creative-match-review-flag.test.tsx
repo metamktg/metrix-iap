@@ -186,11 +186,14 @@ describe("creative match review flag", () => {
     await waitFor(() => expect(screen.getByText("holiday_v3_1080x1080.mp4")).toBeTruthy());
 
     // The staged import must carry the guess method (proves the mapping was
-    // applied *with* the review signal, not silently) …
-    const staged = store.get() as { ad_names: string[]; match_method?: string }[];
-    expect(staged).toHaveLength(1);
-    expect(staged[0].ad_names).toEqual(["Holiday Bundle v3"]);
-    expect(staged[0].match_method).toBe("guess");
+    // applied *with* the review signal, not silently) … The store populates
+    // asynchronously relative to the filename render, so poll for it.
+    await waitFor(() => {
+      const staged = store.get() as { ad_names: string[]; match_method?: string }[];
+      expect(staged).toHaveLength(1);
+      expect(staged[0].ad_names).toEqual(["Holiday Bundle v3"]);
+      expect(staged[0].match_method).toBe("guess");
+    });
 
     // … and that signal must surface as the visible review badge.
     expect(screen.getByText("Best guess — please review")).toBeTruthy();

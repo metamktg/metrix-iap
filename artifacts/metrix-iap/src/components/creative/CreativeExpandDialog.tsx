@@ -155,7 +155,7 @@ function MetricToggle({ options, value, onChange }: {
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="flex rounded border border-border/30 overflow-hidden text-[8.5px]">
+    <div className="flex rounded border border-border/30 overflow-hidden text-[9px]">
       {options.map((o) => (
         <button
           key={o.value}
@@ -540,7 +540,7 @@ function PlacementsTab({ rows }: { rows: PlacementRow[] }) {
                   style={{ width: `${barW}%` }}
                 />
               </div>
-              <div className="text-[8.5px] text-muted-foreground/45">
+              <div className="text-[9px] text-muted-foreground/45">
                 {num(b.Results)} results · {usd(b["Amount spent (USD)"])} spend
               </div>
             </div>
@@ -548,7 +548,7 @@ function PlacementsTab({ rows }: { rows: PlacementRow[] }) {
         })}
       </div>
 
-      <p className="text-[8.5px] text-muted-foreground/40 pt-2 border-t border-border/20">
+      <p className="text-[9px] text-muted-foreground/40 pt-2 border-t border-border/20">
         Placement signal is account-level — not scoped to this creative cell.
       </p>
     </div>

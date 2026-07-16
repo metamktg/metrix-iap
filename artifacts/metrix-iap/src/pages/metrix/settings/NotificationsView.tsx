@@ -133,11 +133,11 @@ export function NotificationsView() {
       <ModuleHeader
         section={SECTION}
         title="Notifications"
-        subtitle={`Workspace-wide · how ${manager.name} hears about signals, alerts, and reports.`}
+        subtitle="Workspace-wide · signals · alerts · reports"
       />
 
       <div className="px-6 py-5 space-y-5 max-w-3xl">
-        <SectionCard title="Channels" desc="Where notifications are delivered. Click to toggle.">
+        <SectionCard title="Channels" desc="Delivery channels · click to toggle">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {channels.map((c) => (
               <div key={c.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
@@ -165,7 +165,7 @@ export function NotificationsView() {
           </div>
         </SectionCard>
 
-        <SectionCard title="Events" desc="Which product events notify the workspace, per channel. Click a mark to toggle.">
+        <SectionCard title="Events" desc="Events per channel · click a mark to toggle">
           <div className="rounded-lg border border-border/30 bg-white/[0.02] overflow-hidden">
             <div className="grid grid-cols-[1fr_56px_56px] gap-2 px-3 py-2 border-b border-border/30">
               <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70 font-medium">Event</span>
@@ -203,7 +203,7 @@ export function NotificationsView() {
           </div>
         </SectionCard>
 
-        <SectionCard title="Digest" desc="The scheduled summary across all ad accounts.">
+        <SectionCard title="Digest" desc="Scheduled summary · all ad accounts">
           <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
             <CalendarClock className="w-4 h-4 text-primary shrink-0" />
             <div className="flex-1 min-w-0">

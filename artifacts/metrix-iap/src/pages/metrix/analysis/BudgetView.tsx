@@ -69,7 +69,7 @@ export function BudgetView() {
             <ModuleHeader
               section={SECTION}
               title="Budget"
-              subtitle="Where spend went and what it produced, by metric selection."
+              subtitle="Spend allocation · by metric selection"
               table="campaign_summary, performance_by_cell"
               tabs="analysis"
             />
@@ -93,7 +93,7 @@ export function BudgetView() {
 
               <SectionCard
                 title="Efficiency by result event"
-                desc="Spend and outcome for each selected result event."
+                desc="Spend & outcome · per result event"
                 table="bottom_line_totals"
               >
                 {eventRows.length === 0 ? (
@@ -117,7 +117,7 @@ export function BudgetView() {
 
               <SectionCard
                 title="Spend by concept"
-                desc="Reported spend across creative concepts in the current metric selection."
+                desc="Current metric selection"
                 table="performance_by_cell"
               >
                 {conceptRows.length === 0 ? (
@@ -142,7 +142,7 @@ export function BudgetView() {
               {a && (a.v3_placement_signal.length > 0 || a.c4e_placement_signal.length > 0) && (
                 <SectionCard
                   title="Placement spend"
-                  desc="Spend and results by placement across analysis runs."
+                  desc="Spend & results · by placement"
                   table="v3_placement_signal, c4e_placement_signal"
                 >
                   <div className="space-y-5">

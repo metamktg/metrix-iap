@@ -30,6 +30,7 @@ import {
   isDone,
 } from "@/lib/data/decisionStore";
 import { TokenizedConceptText } from "@/components/concept/ConceptChip";
+import { deriveLabel } from "@/pages/metrix/shared";
 
 export interface DeckCard {
   id: string;
@@ -286,11 +287,11 @@ function SwipeCard({
           <p className="text-[14px] font-semibold text-foreground leading-snug">{card.title}</p>
         </div>
 
-        <p className="text-[12px] text-muted-foreground/70 leading-relaxed line-clamp-3">{card.rationale}</p>
+        <p className="text-[12px] text-muted-foreground/70 leading-snug line-clamp-2">{deriveLabel(card.rationale, 110)}</p>
 
         <div className="mt-auto pt-2 border-t border-border/20">
           <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-1">Recommended</p>
-          <p className="text-[11px] text-foreground/75 leading-relaxed line-clamp-2">{card.recommendedAction}</p>
+          <p className="text-[11px] text-foreground/75 leading-snug line-clamp-1">{deriveLabel(card.recommendedAction, 90)}</p>
         </div>
       </div>
     </div>
@@ -516,7 +517,7 @@ function TaskTray({
                   </button>
                   <div className="flex-1 min-w-0">
                     <p className={cn("text-[12px] font-medium leading-tight", done ? "text-foreground/50 line-through" : "text-foreground")}>{s.title}</p>
-                    <p className="text-[10px] text-muted-foreground/70 mt-0.5 leading-tight line-clamp-2">{s.recommendedAction}</p>
+                    <p className="text-[10px] text-muted-foreground/70 mt-0.5 leading-tight line-clamp-1">{deriveLabel(s.recommendedAction, 90)}</p>
                     {s.descriptor && <span className="inline-flex mt-1.5 text-[8px] font-semibold border border-border/40 px-1 py-0.5 rounded text-foreground/60">{s.descriptor}</span>}
                   </div>
                   <button onClick={() => onRestore(s.id)} className="h-6 px-2 rounded text-[10px] font-medium text-muted-foreground hover:text-foreground border border-border/30 hover:border-border/50 transition-colors shrink-0" title="Restore to deck">
@@ -544,7 +545,7 @@ function DismissedLog({ items, onRestore }: { items: DeckCard[]; onRestore: (id:
         <div key={s.id} className="flex items-start gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.01] opacity-70">
           <div className="flex-1 min-w-0">
             <p className="text-[12px] font-medium text-foreground/60 leading-tight">{s.title}</p>
-            <p className="text-[10px] text-muted-foreground/60 mt-0.5 leading-tight line-clamp-1">{s.rationale}</p>
+            <p className="text-[10px] text-muted-foreground/60 mt-0.5 leading-tight line-clamp-1">{deriveLabel(s.rationale, 90)}</p>
           </div>
           <button onClick={() => onRestore(s.id)} className="h-6 px-2 rounded text-[10px] font-medium text-muted-foreground hover:text-foreground border border-border/30 hover:border-border/50 transition-colors shrink-0" title="Restore to deck">
             <RotateCcw className="w-3 h-3" />

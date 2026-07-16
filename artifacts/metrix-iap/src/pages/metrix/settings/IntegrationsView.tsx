@@ -45,7 +45,7 @@ export function IntegrationsView() {
 
         {!hasLiveConnection && (
         <>
-        <SectionCard title="Meta ad accounts" desc="Each ad account connects independently; data never crosses accounts.">
+        <SectionCard title="Meta ad accounts" desc="Independent connections · data never crosses accounts">
           <div className="space-y-2.5">
             {accounts.map((a) => {
               const configured = a.status === "configured";
@@ -83,7 +83,7 @@ export function IntegrationsView() {
           </div>
         </SectionCard>
 
-        <SectionCard title="Manual imports" desc="For accounts without an API connection, exported performance data can be imported by hand.">
+        <SectionCard title="Manual imports" desc="Hand-imported performance data · no API connection needed">
           <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
             <FileUp className="w-4 h-4 text-muted-foreground/85 shrink-0" />
             <div className="flex-1 min-w-0">

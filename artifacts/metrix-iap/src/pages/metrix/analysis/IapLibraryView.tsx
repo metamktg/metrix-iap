@@ -290,7 +290,7 @@ export function IapLibraryView() {
               <ModuleHeader
                 section={SECTION}
                 title="IAP Library"
-                subtitle="Creative cell and variable performance, filtered by metric selection."
+                subtitle="Cell & variable performance · by metric selection"
                 table="performance_by_cell, v3_variable_performance"
                 tabs="analysis"
               />

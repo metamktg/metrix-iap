@@ -151,7 +151,7 @@ export function AudienceView() {
               <div className="px-6 py-5 space-y-4 max-w-5xl">
                 <SectionCard
                   title="Segment performance"
-                  desc="Aggregated across all creative cells. Re-rank by any KPI; click a segment to see which concepts, copy and variables drive it."
+                  desc="All cells · re-rank by KPI · click a segment for drivers"
                   table="demographic_registration_signal"
                 >
                   <RankSortBar metrics={rankMetrics} activeId={activeMetric.id} onSelect={select} className="mb-3" />

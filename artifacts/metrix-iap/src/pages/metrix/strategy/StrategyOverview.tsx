@@ -2,19 +2,22 @@
 // Entry point for the Strategy section: pillar and hypothesis counts,
 // the pillar summaries, and jump-offs into each strategy subpage.
 
+import { TYPE } from "../typography";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getStrategyData, getBriefBuilder } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CrossLink, fmtNum, LoopAction,
-  RangeScopeBar, NoDataInRangeState, ExpandableText,
+  RangeScopeBar, NoDataInRangeState, DetailReveal, deriveLabel,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import {
   useGenerationRun, GenerateButton, ProvenanceBadge, GenerationErrorNote,
 } from "@/components/generation/GenerationControls";
 import { VariableStackChips, IcpChips, playbookHasContent, ScalingPlaybookLanes } from "./strategyShared";
+import { splitTitle } from "@/lib/normalize";
+import { cn } from "@/lib/utils";
 import { Compass, Map, Users, ListChecks } from "lucide-react";
 
 const SECTION = "Strategy · 04";
@@ -92,7 +95,7 @@ export function StrategyOverview() {
             <ModuleHeader
               section={SECTION}
               title="Strategy Overview"
-              subtitle="The account's message strategy at a glance: pillars, hypotheses, and where they lead."
+              subtitle="Pillars · hypotheses · next moves"
               table="message_pillars, active_hypotheses"
               tabs="strategy"
               right={
@@ -129,27 +132,35 @@ export function StrategyOverview() {
             </div>
 
             <div className="px-6 py-5 space-y-4 max-w-5xl">
-              <SectionCard title="Message pillars" desc="Validated message directions this account's strategy stands on." table="message_pillars">
+              <SectionCard title="Message pillars" desc="Validated message directions" table="message_pillars">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {pillars.map((p, i) => (
+                  {pillars.map((p, i) => {
+                    const t = splitTitle(p.label);
+                    return (
                     <div key={p.id} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2">
                       <span className="text-[10px] font-semibold text-muted-foreground/50 tabular-nums">
                         {String(i + 1).padStart(2, "0")}
                       </span>
-                      <p className="text-[13px] font-semibold text-foreground leading-tight">{p.label}</p>
-                      <ExpandableText className="text-[11px] text-muted-foreground/80 leading-relaxed" text={p.plain_descriptor} />
-                      {p.funnel_application && (
-                        <div>
-                          <span className="block font-semibold uppercase tracking-widest text-[9px] text-muted-foreground/70 mb-0.5">Funnel</span>
-                          <ExpandableText className="text-[10.5px] text-foreground/70 leading-relaxed" text={p.funnel_application} />
-                        </div>
-                      )}
+                      <div title={t.qualifier ? p.label : undefined}>
+                        <p className="text-[13px] font-semibold text-foreground leading-tight line-clamp-1">{t.main}</p>
+                        {t.qualifier && <p className={cn(TYPE.caption, "line-clamp-1 mt-0.5")}>{t.qualifier}</p>}
+                      </div>
+                      <DetailReveal
+                        label={deriveLabel(p.plain_descriptor, 72)}
+                        labelClassName={TYPE.caption}
+                        eyebrow={p.label}
+                        sections={[
+                          { label: "Descriptor", text: p.plain_descriptor },
+                          { label: "Funnel application", text: p.funnel_application ?? undefined },
+                        ]}
+                      />
                       <div className="mt-auto pt-1 space-y-1.5">
                         <VariableStackChips stack={p.variable_stack} />
                         <IcpChips ids={p.target_icps} profiles={strategy.icp_profiles} />
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <div className="mt-3">
                   <CrossLink to="/app/strategy/map" label="See the full strategy map" />
@@ -159,14 +170,14 @@ export function StrategyOverview() {
               {playbookHasContent(strategy.scaling_playbook) && (
                 <SectionCard
                   title="Scaling playbook"
-                  desc="Where the analysis says to push, tune, prove, look next — and what to stay away from."
+                  desc="Push · tune · prove · watch · avoid"
                   table="scaling_playbook"
                 >
                   <ScalingPlaybookLanes playbook={strategy.scaling_playbook!} />
                 </SectionCard>
               )}
 
-              <SectionCard title="Strategy modules" desc="Each module reads the same account strategy from a different angle.">
+              <SectionCard title="Strategy modules" desc="Same strategy · different angles">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {subpages.map((s) => (
                     <div key={s.to} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2">
@@ -174,7 +185,7 @@ export function StrategyOverview() {
                         <s.Icon className="w-3.5 h-3.5 text-primary" />
                         <span className="text-[13px] font-semibold text-foreground">{s.label}</span>
                       </div>
-                      <p className="text-[11px] text-muted-foreground/80 leading-relaxed">{s.desc}</p>
+                      <p className={TYPE.caption}>{s.desc}</p>
                       <div className="flex items-center justify-between mt-auto pt-1">
                         <span className="text-[10px] font-mono text-muted-foreground/70">{s.stat}</span>
                         <CrossLink to={s.to} label="Open" />

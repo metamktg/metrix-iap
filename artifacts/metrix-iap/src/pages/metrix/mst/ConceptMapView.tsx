@@ -87,7 +87,7 @@ export function ConceptMapView() {
             <ModuleHeader
               section={SECTION}
               title="Concept Map"
-              subtitle="Creative concepts mapped to the strategy pillars they feed."
+              subtitle="Concepts mapped to pillars"
               table="performance_by_cell, message_pillars"
             />
             <ScopeBanner account={acct} />

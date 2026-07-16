@@ -3,6 +3,7 @@
 // Left: metric accordions, focus, results, core controls, opt loop.
 // Right: persistent Task Tray anchored at all times.
 
+import { TYPE } from "./typography";
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import {
@@ -17,7 +18,7 @@ import {
 } from "@/lib/data/metrixSeedAdapter";
 import { RecommendationDeck, actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
 import {
-  ModuleHeader, ScopeBanner, SectionCard, CaveatNote, ExpandableText,
+  ModuleHeader, ScopeBanner, SectionCard, CaveatNote, DetailReveal, deriveLabel,
   UnconfiguredState, PendingState, fmtUSD, fmtNum, eventLabel, resultTerm,
 } from "./shared";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
@@ -122,7 +123,10 @@ export function AdAccountOverview() {
   const hypothesisCount = strategy?.active_hypotheses.length ?? 0;
   const sectionCount = report?.report_sections.length ?? 0;
   const matrixCellCount = mst?.historical_matrix_4x4?.cells.length ?? 0;
-  const libraryCount = mst?.local_book2_library?.length ?? 0;
+  // local_book2_library may contain multiple rows per cell_id (aspect
+  // variants such as Feed / Square / Story) — count distinct concepts so the
+  // number matches the cards shown on the Creative Scan page.
+  const libraryCount = new Set(lib.map((c) => c.cell_id)).size;
   const mstActive = mst?.status === "active";
 
   const recCards = optLoop?.recommendation_cards ?? [];
@@ -158,7 +162,7 @@ export function AdAccountOverview() {
       <ModuleHeader
         section="Ad Account · 01"
         title={account.name}
-        subtitle="Layer readiness, account focus, and optimization loop."
+        subtitle="Layer readiness · account focus · optimization loop"
         right={<span className="text-[10px] font-mono text-emerald-400/70 uppercase tracking-widest">Connected</span>}
       />
       <ScopeBanner account={account} />
@@ -167,7 +171,7 @@ export function AdAccountOverview() {
       <div className="border-b border-border/40 shrink-0">
         {/* Header row — always visible */}
         <div className="flex items-center gap-2.5 px-6 py-2">
-          <h2 className="text-[9.5px] font-mono uppercase tracking-widest text-muted-foreground/50">Layer Status</h2>
+          <h2 className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50">Layer Status</h2>
           <span className={cn(
             "text-[8px] font-bold uppercase tracking-widest border px-1.5 py-0.5 rounded-full leading-none",
             allReady
@@ -231,7 +235,7 @@ export function AdAccountOverview() {
                     l.ready ? "text-emerald-400/75 group-hover:text-emerald-400" : "text-muted-foreground/35"
                   )} />
                   <span className={cn(
-                    "text-[7.5px] font-bold uppercase tracking-wide border px-1 py-px rounded leading-none",
+                    "text-[8px] font-bold uppercase tracking-wide border px-1 py-px rounded leading-none",
                     l.ready
                       ? "text-emerald-300 border-emerald-400/35 bg-emerald-400/12"
                       : "text-amber-300/65 border-amber-400/22 bg-amber-400/[0.07]"
@@ -296,13 +300,13 @@ export function AdAccountOverview() {
                     </button>
                     {isExpanded && (
                       <div className="rounded-b-xl border border-t-0 border-primary/30 bg-primary/[0.04] px-4 py-3 space-y-2.5">
-                        <p className="text-[11px] text-foreground/70 leading-relaxed">
+                        <p className={TYPE.caption}>
                           <span className="font-semibold text-foreground/80">{m.label}</span> for the current analysis window.
                           {m.sub && <> Covers {m.sub.toLowerCase()}.</>}
                         </p>
                         <button
                           onClick={() => { setOpenMetricId(id); setExpandedMetricId(null); }}
-                          className="inline-flex items-center gap-1.5 text-[10.5px] font-semibold text-primary hover:text-primary/80 transition-colors"
+                          className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors"
                         >
                           Diagnose full breakdown <ArrowRight className="w-3 h-3" />
                         </button>
@@ -322,7 +326,7 @@ export function AdAccountOverview() {
           {/* Current Focus */}
           <SectionCard
             title="Current focus"
-            desc="Active sprint and top priority from the optimization loop."
+            desc="Active sprint · top priority"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="rounded-xl border border-purple-400/20 bg-purple-400/[0.03] p-4 hover:border-purple-400/30 transition-colors">
@@ -333,7 +337,7 @@ export function AdAccountOverview() {
                 {mstActive ? (
                   <>
                     <p className="text-[12px] text-foreground/80 leading-relaxed">
-                      MST active — <span className="font-semibold text-foreground">{matrixCellCount}</span> matrix cells, <span className="font-semibold text-foreground">{libraryCount}</span> library concepts.
+                      MST active · <span className="font-semibold text-foreground">{matrixCellCount}</span> matrix cells · <span className="font-semibold text-foreground">{libraryCount}</span> library concepts
                     </p>
                     <button onClick={() => navigate("/app/mst")} className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-semibold text-purple-300 hover:text-purple-200 transition-colors">
                       Open MST <ArrowRight className="w-3 h-3" />
@@ -351,10 +355,12 @@ export function AdAccountOverview() {
                 </div>
                 {nextAction ? (
                   <>
-                    <p className="text-[12px] font-semibold text-foreground leading-snug">{nextAction.title}</p>
-                    <div className="mt-1.5">
-                      <ExpandableText className="text-[11px] text-foreground/70 leading-relaxed" text={nextAction.recommended_action} />
-                    </div>
+                    <DetailReveal
+                      label={nextAction.title}
+                      labelClassName="text-[12px] font-semibold text-foreground leading-snug"
+                      eyebrow="Next action"
+                      sections={[{ label: "Recommended action", text: nextAction.recommended_action }]}
+                    />
                     <p className="text-[10px] text-muted-foreground/60 mt-2.5">
                       {recCards.length} recommendation{recCards.length === 1 ? "" : "s"} in the loop below ↓
                     </p>
@@ -367,13 +373,13 @@ export function AdAccountOverview() {
           </SectionCard>
 
           {/* Results by event */}
-          <SectionCard title="Results by event" desc="Conversion volume by event for this account.">
+          <SectionCard title="Results by event" desc="Conversion volume by event">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {events.map(([key, e]) => (
                 <div key={key} className="rounded-lg border border-border/40 bg-white/[0.02] px-3 py-2.5">
                   <div className="text-[10px] font-semibold text-foreground/70 leading-tight mb-1.5 truncate">{eventLabel(key)}</div>
                   <div className="text-[18px] font-bold text-foreground tabular-nums leading-none">{fmtNum(e.results)}</div>
-                  <div className="text-[9.5px] text-muted-foreground/65 mt-2 space-y-0.5">
+                  <div className="text-[10px] text-muted-foreground/65 mt-2 space-y-0.5">
                     <div>Spend <span className="text-foreground/70 font-medium">{fmtUSD(e.spend)}</span></div>
                     <div>Clicks <span className="text-foreground/70 font-medium">{fmtNum(e.link_clicks)}</span></div>
                   </div>
@@ -383,7 +389,7 @@ export function AdAccountOverview() {
           </SectionCard>
 
           {/* Core controls */}
-          <SectionCard title="Core controls" desc="Control creative per funnel stage from latest reanalysis." table="core_reanalysis_read">
+          <SectionCard title="Core controls" desc="Control creative per funnel stage" table="core_reanalysis_read">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/[0.03] p-4 hover:border-emerald-400/30 transition-colors">
                 <div className="flex items-center gap-1.5 mb-2">
@@ -391,7 +397,17 @@ export function AdAccountOverview() {
                   <span className="text-[11px] font-semibold text-foreground">Primary control</span>
                 </div>
                 <p className="text-[13px] font-semibold text-foreground mb-1">{primaryControlName}</p>
-                <ExpandableText className="text-[12px] text-foreground/80 leading-relaxed" text={resolveControlText(core.primary_control_read, core.primary_control)} />
+                {(() => {
+                  const read = resolveControlText(core.primary_control_read, core.primary_control);
+                  return (
+                    <DetailReveal
+                      label={deriveLabel(read, 72)}
+                      labelClassName="text-[12px] text-foreground/80 leading-relaxed"
+                      eyebrow="Primary control"
+                      sections={[{ label: "Control read", text: read }]}
+                    />
+                  );
+                })()}
                 {primaryControlName !== core.primary_control && (
                   <p className="text-[9px] font-mono text-muted-foreground/40 mt-1.5">{core.primary_control}</p>
                 )}
@@ -403,9 +419,17 @@ export function AdAccountOverview() {
                     <span className="text-[11px] font-semibold text-foreground">{term.Singular} control</span>
                   </div>
                   <p className="text-[13px] font-semibold text-foreground mb-1">{registrationControlName ?? core.registration_control}</p>
-                  {core.registration_control_read && core.registration_control && (
-                    <ExpandableText className="text-[12px] text-foreground/80 leading-relaxed" text={resolveControlText(core.registration_control_read, core.registration_control)} />
-                  )}
+                  {core.registration_control_read && core.registration_control && (() => {
+                    const read = resolveControlText(core.registration_control_read, core.registration_control);
+                    return (
+                      <DetailReveal
+                        label={deriveLabel(read, 72)}
+                        labelClassName="text-[12px] text-foreground/80 leading-relaxed"
+                        eyebrow={`${term.Singular} control`}
+                        sections={[{ label: "Control read", text: read }]}
+                      />
+                    );
+                  })()}
                   {registrationControlName !== core.registration_control && (
                     <p className="text-[9px] font-mono text-muted-foreground/40 mt-1.5">{core.registration_control}</p>
                   )}
@@ -420,7 +444,7 @@ export function AdAccountOverview() {
           {/* Optimization loop — swiper deck (task tray in right panel) */}
           <SectionCard
             title="Optimization loop"
-            desc="Swipe to approve recommendations to the Task Tray, or dismiss. Approved tasks are never auto-applied."
+            desc="Approve to Task Tray or dismiss · never auto-applied"
           >
             {deckCards.length ? (
               <RecommendationDeck scopeId={account.id} cards={deckCards} emptyLabel="All account recommendations reviewed" />

@@ -11,7 +11,7 @@ import {
 import {
   ModuleHeader, ScopeBanner, ConfidenceBadge, ModuleScopeGate,
   PendingState, MetricTile, ImpactBadge, ScopeBadge, CrossLink,
-  RangeScopeBar, NoDataInRangeState, CaveatNote,
+  RangeScopeBar, NoDataInRangeState, CaveatNote, deriveLabel,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
@@ -48,7 +48,7 @@ export function AlertsView() {
             <ModuleHeader
               section={SECTION}
               title="Alerts"
-              subtitle="High-impact signals and data caveats that need attention."
+              subtitle="High-impact signals · data caveats"
               table="signal_cards, data_caveats"
             />
             <ScopeBanner account={acct} />
@@ -87,7 +87,7 @@ export function AlertsView() {
                               <ConfidenceBadge value={s.confidence} />
                             </div>
                             <p className="text-[13px] font-semibold text-foreground leading-snug"><TokenizedConceptText text={s.title} /></p>
-                            <p className="text-[12px] text-muted-foreground/70 mt-1 leading-relaxed line-clamp-2"><TokenizedConceptText text={s.rationale} /></p>
+                            <p className="text-[12px] text-muted-foreground/70 mt-1 leading-snug line-clamp-1"><TokenizedConceptText text={deriveLabel(s.rationale, 90)} /></p>
                           </button>
                         ))}
                       </div>

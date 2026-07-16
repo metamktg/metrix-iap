@@ -10,7 +10,7 @@ import { getAdAccount, getListenSignals } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ConfidenceBadge, ModuleTabs, ModuleScopeGate,
   PendingState, MetricTile, ImpactBadge, ScopeBadge, CrossLink, useFocusParam,
-  RangeScopeBar, NoDataInRangeState, StaleFocusNotice, LoopAction,
+  RangeScopeBar, NoDataInRangeState, StaleFocusNotice, LoopAction, deriveLabel,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
@@ -60,7 +60,7 @@ export function SignalView() {
             <ModuleHeader
               section={SECTION}
               title="Signal"
-              subtitle="Source-backed signals surfaced from this account's latest analysis."
+              subtitle="Source-backed signals · latest analysis"
               table="signal_cards"
             />
             <ScopeBanner account={acct} />
@@ -108,10 +108,10 @@ export function SignalView() {
                         <ConfidenceBadge value={s.confidence} />
                       </div>
                       <p className="text-[13px] font-semibold text-foreground leading-snug"><TokenizedConceptText text={s.title} /></p>
-                      <p className="text-[12px] text-muted-foreground/70 mt-1 leading-relaxed line-clamp-2"><TokenizedConceptText text={s.rationale} /></p>
+                      <p className="text-[12px] text-muted-foreground/70 mt-1 leading-snug line-clamp-1"><TokenizedConceptText text={deriveLabel(s.rationale, 90)} /></p>
                       <div className="flex items-start gap-1.5 mt-3 pt-3 border-t border-border/20">
                         <ArrowRight className="w-3.5 h-3.5 text-primary/60 shrink-0 mt-0.5" />
-                        <p className="text-[11px] text-foreground/75 leading-relaxed line-clamp-2"><TokenizedConceptText text={s.recommended_action} /></p>
+                        <p className="text-[11px] text-foreground/75 leading-snug line-clamp-1"><TokenizedConceptText text={deriveLabel(s.recommended_action, 80)} /></p>
                       </div>
                     </button>
                   ))}

@@ -127,13 +127,13 @@ export function ExportsView() {
             <ModuleHeader
               section={SECTION}
               title="Exports"
-              subtitle="How reports leave Metrix: formats, branding policy, and delivered exports."
+              subtitle="Formats · branding policy · delivered exports"
               table="report_builder"
             />
             <ScopeBanner account={acct} />
 
             <div className="px-6 py-5 space-y-5 max-w-3xl">
-              <SectionCard title="Available formats" desc="Click a format to download the current report in it.">
+              <SectionCard title="Available formats" desc="Click a format to download">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {rb.export_formats.map((f) => {
                     const key = `fmt:${f}`;
@@ -166,14 +166,14 @@ export function ExportsView() {
                 </div>
               </SectionCard>
 
-              <SectionCard title="Branding policy" desc="How exported reports are branded for delivery.">
+              <SectionCard title="Branding policy" desc="Export branding for delivery">
                 <div className="text-[12px] text-foreground/85 capitalize mb-2">
                   Default: {rb.default_branding} branding · white-label {rb.white_label_supported ? "supported" : "unavailable"}
                 </div>
                 <CaveatNote text={rb.logo_policy} />
               </SectionCard>
 
-              <SectionCard title="Exported deliverables" desc="Reports from this account that have been exported. Download re-generates the file from current data.">
+              <SectionCard title="Exported deliverables" desc="Exported reports · download re-generates from current data">
                 {exportedReports.length === 0 ? (
                   <PendingState title="Nothing exported yet" message="Exported reports will be listed here with their format and date." icon={FileText} />
                 ) : (

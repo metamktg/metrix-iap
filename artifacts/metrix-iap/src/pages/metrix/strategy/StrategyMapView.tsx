@@ -11,14 +11,15 @@ import { resolveInlineVariableCodes } from "@/lib/variable-registry";
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState,
   CrossLink, fmtUSD, fmtNum, FlowCrumb, useFromParam, LoopAction,
-  RangeScopeBar, NoDataInRangeState, ExpandableText,
+  RangeScopeBar, NoDataInRangeState, DetailReveal, deriveLabel, InfoTooltip,
 } from "../shared";
 import {
-  VariableStackChips, PillarDetailSections, pillarHasDetails,
+  VariableStackChips, PillarDetailSections, pillarHasDetails, HypothesisLabel,
   HypothesisStatusBadge, VariableCombinationsGrid, playbookHasContent, ScalingPlaybookLanes,
 } from "./strategyShared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { useCellRangeScope } from "@/lib/date-scope";
+import { splitTitle } from "@/lib/normalize";
 import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/SegmentGridModal";
 import { cn } from "@/lib/utils";
 import { Map, ChevronDown, FlaskConical, Layers, BarChart3 } from "lucide-react";
@@ -102,7 +103,7 @@ export function StrategyMapView() {
             <ModuleHeader
               section={SECTION}
               title="Strategy Map"
-              subtitle="Evidence → pillar → hypothesis: how validated cells become the next round of tests."
+              subtitle="Evidence → pillar → hypothesis"
               table="message_pillars, active_hypotheses, performance_by_cell"
               tabs="strategy"
             />
@@ -121,7 +122,7 @@ export function StrategyMapView() {
                 const isOpen = expanded[p.id] ?? false;
                 const hasDetails = pillarHasDetails(p);
                 return (
-                  <div key={p.id} className={cn("rounded-xl border border-border/40 border-l-2 bg-white/[0.02] p-5", PILLAR_ACCENT[i % PILLAR_ACCENT.length])}>
+                  <div key={p.id} data-testid={`pillar-card-${p.id}`} className={cn("rounded-xl border border-border/40 border-l-2 bg-white/[0.02] p-5", PILLAR_ACCENT[i % PILLAR_ACCENT.length])}>
                     {/* 1 · Evidence */}
                     <div className="flex items-center gap-2 flex-wrap mb-3">
                       <StageLabel Icon={BarChart3}>Evidence</StageLabel>
@@ -154,19 +155,28 @@ export function StrategyMapView() {
                             {String(i + 1).padStart(2, "0")}
                           </span>
                         </div>
-                        <h3 className="text-[18px] font-semibold text-foreground leading-tight mt-1.5">{p.label}</h3>
-                        <div className="mt-1.5">
-                          <ExpandableText className="text-[12.5px] text-foreground/85 leading-relaxed" text={p.plain_descriptor} />
-                        </div>
                         {(() => {
-                          const resolved = p.why_it_matters ? resolveInlineVariableCodes(p.why_it_matters) : "";
-                          if (!resolved) return null;
+                          const t = splitTitle(p.label);
                           return (
-                            <div className="mt-1.5">
-                              <ExpandableText className="text-[11.5px] text-muted-foreground/80 leading-relaxed" text={resolved} threshold={200} />
+                            <div title={t.qualifier ? p.label : undefined}>
+                              <h3 className="text-[18px] font-semibold text-foreground leading-tight mt-1.5">{t.main}</h3>
+                              {t.qualifier && <p className="text-[11px] text-muted-foreground/80 leading-snug mt-0.5">{t.qualifier}</p>}
                             </div>
                           );
                         })()}
+                        <div className="mt-1.5">
+                          <DetailReveal
+                            label={deriveLabel(p.plain_descriptor, 72)}
+                            eyebrow={`Pillar ${String(i + 1).padStart(2, "0")} — ${p.label}`}
+                            sections={[
+                              { label: "Descriptor", text: p.plain_descriptor },
+                              {
+                                label: "Why it matters",
+                                text: p.why_it_matters ? resolveInlineVariableCodes(p.why_it_matters) : undefined,
+                              },
+                            ]}
+                          />
+                        </div>
                         <div className="mt-2.5">
                           <VariableStackChips stack={p.variable_stack} />
                         </div>
@@ -179,7 +189,7 @@ export function StrategyMapView() {
                               className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors"
                             >
                               <ChevronDown className={cn("w-3 h-3 transition-transform", isOpen && "rotate-180")} />
-                              {isOpen ? "Hide execution detail" : "Execution detail — funnel, specs, placement, scaling"}
+                              {isOpen ? "Hide execution detail" : "Execution detail"}
                             </button>
                             {isOpen && (
                               <div className="mt-3">
@@ -201,17 +211,12 @@ export function StrategyMapView() {
                           </div>
                           <div className="space-y-1.5">
                             {linked.map((h, hi) => (
-                              <div key={h.id} className="flex items-start gap-2.5 rounded-lg border border-border/30 bg-white/[0.015] px-3 py-2">
+                              <div key={h.id} data-testid={`hyp-row-${h.id}`} className="flex items-start gap-2.5 rounded-lg border border-border/30 bg-white/[0.015] px-3 py-2">
                                 <span className="text-[10px] font-semibold text-muted-foreground/50 shrink-0 mt-0.5 tabular-nums w-4 text-right">
                                   {hi + 1}
                                 </span>
                                 <div className="flex-1 min-w-0">
-                                  <span className="text-[12px] text-foreground/90 leading-snug block">{h.label}</span>
-                                  {h.isolated_variable && (
-                                    <span className="text-[10px] text-muted-foreground/60 leading-snug block mt-0.5 line-clamp-2">
-                                      Isolates: {resolveInlineVariableCodes(h.isolated_variable)}
-                                    </span>
-                                  )}
+                                  <HypothesisLabel label={h.label} isolated={h.isolated_variable} />
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0">
                                   <HypothesisStatusBadge status={h.status} />
@@ -232,8 +237,10 @@ export function StrategyMapView() {
                   <div className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/85 mb-2">Other active hypotheses</div>
                   <div className="space-y-1.5">
                     {unattached.map((h) => (
-                      <div key={h.id} className="flex items-center gap-2.5 rounded-lg border border-border/30 bg-white/[0.015] px-3 py-2">
-                        <span className="text-[12px] text-foreground/90 flex-1 min-w-0">{h.label}</span>
+                      <div key={h.id} data-testid={`hyp-row-${h.id}`} className="flex items-center gap-2.5 rounded-lg border border-border/30 bg-white/[0.015] px-3 py-2">
+                        <div className="flex-1 min-w-0">
+                          <HypothesisLabel label={h.label} isolated={h.isolated_variable} />
+                        </div>
                         <HypothesisStatusBadge status={h.status} />
                         <CrossLink to={`/app/strategy/hypotheses?focus=${h.id}`} label="Open" />
                       </div>
@@ -245,9 +252,9 @@ export function StrategyMapView() {
               {/* Variable combinations: winning/losing stacks behind the map */}
               {combinations.length > 0 && (
                 <div className="pt-2 space-y-3">
-                  <div>
+                  <div className="flex items-center gap-1.5">
                     <h3 className="text-[16px] font-semibold text-foreground leading-tight">Variable combinations</h3>
-                    <p className="text-[13px] text-muted-foreground/80 mt-0.5">Validated variable stacks with their real CPA / CVR reads and the engine's recommendation.</p>
+                    <InfoTooltip content="Validated variable stacks with their real CPA / CVR reads and the engine's recommendation." />
                   </div>
                   <VariableCombinationsGrid combinations={combinations} />
                 </div>
@@ -256,9 +263,9 @@ export function StrategyMapView() {
               {/* Scaling playbook lanes */}
               {playbookHasContent(playbook) && (
                 <div className="pt-2 space-y-3">
-                  <div>
+                  <div className="flex items-center gap-1.5">
                     <h3 className="text-[16px] font-semibold text-foreground leading-tight">Scaling playbook</h3>
-                    <p className="text-[13px] text-muted-foreground/80 mt-0.5">Where the analysis says to push, tune, prove, look next — and what to stay away from.</p>
+                    <InfoTooltip content="Where the analysis says to push, tune, prove, look next — and what to stay away from." />
                   </div>
                   <ScalingPlaybookLanes playbook={playbook!} />
                 </div>

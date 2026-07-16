@@ -175,7 +175,7 @@ export function NewReportView() {
             <ModuleHeader
               section={SECTION}
               title="New Report"
-              subtitle="Compose a client-ready report from this account's analysis and strategy."
+              subtitle="Client-ready report · from analysis & strategy"
               table="reports"
             />
             <ScopeBanner account={acct} />
@@ -380,7 +380,7 @@ export function NewReportView() {
 
               {tab === "branding" && (
                 <>
-                  <SectionCard title="Branding" desc="Report white-labeling for client delivery.">
+                  <SectionCard title="Branding" desc="White-labeling · client delivery">
                     <div className="flex items-center gap-4 flex-wrap">
                       <div className={cn("flex items-center gap-2 px-3 py-2 rounded-lg border", "border-primary/25 bg-primary/8")}>
                         <Palette className="w-3.5 h-3.5 text-primary" />
@@ -399,7 +399,7 @@ export function NewReportView() {
                     </div>
                   </SectionCard>
 
-                  <SectionCard title="Export" desc="Deliver the composed report in the client's preferred format.">
+                  <SectionCard title="Export" desc="Composed report · client's preferred format">
                     <div className="flex items-center gap-2 flex-wrap">
                       {rb.export_formats.map((f) => (
                         <button

@@ -10,7 +10,7 @@ import { getAdAccount, getBriefBuilder, getStrategyData, getAnalysisData, getMST
 import {
   ModuleHeader, ScopeBanner, ModuleTabs, ModuleScopeGate, PendingState,
   MetricTile, CaveatNote, CrossLink, useFocusParam, FlowCrumb, useFromParam,
-  RangeScopeBar, NoDataInRangeState, StaleFocusNotice,
+  RangeScopeBar, NoDataInRangeState, StaleFocusNotice, deriveLabel,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import {
@@ -91,7 +91,7 @@ export function BriefBuilderView() {
             <ModuleHeader
               section={SECTION}
               title="Brief Builder"
-              subtitle="Creative briefs generated from strategy message pillars, by asset format."
+              subtitle="Briefs from message pillars · by asset format"
               table="draft_briefs, message_pillars"
               right={
                 <div className="flex items-center gap-2">
@@ -184,7 +184,7 @@ export function BriefBuilderView() {
                         <span className="text-[11px] font-medium text-foreground">{pillarOf(b.source_pillar)?.label ?? b.source_pillar}</span>
                       </div>
 
-                      <p className="text-[12px] text-foreground/80 leading-relaxed flex-1 line-clamp-3"><TokenizedConceptText text={b.human_direction} /></p>
+                      <p className="text-[12px] text-foreground/80 leading-snug flex-1 line-clamp-2"><TokenizedConceptText text={deriveLabel(b.human_direction, 100)} /></p>
 
                       <div className="mt-3 pt-3 border-t border-border/20">
                         <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/80 mb-1.5">Creative direction</div>
