@@ -79,14 +79,14 @@ describe("navTree landing routes", () => {
     }
   });
 
-  it("Analysis and Strategy land on their explicit Overview child page", () => {
+  it("Analysis and Strategy land on their Overview page (Overview is the parent route, not a child subtab)", () => {
     const analysis = navTree.find((s) => s.id === "analysis")!;
     const strategy = navTree.find((s) => s.id === "strategy")!;
     expect(sectionLandingRoute(analysis)).toBe("/app/analysis/overview");
     expect(sectionLandingRoute(strategy)).toBe("/app/strategy/overview");
-    // Overview is a real child page (sub-page navigation IA), listed first.
-    expect(analysis.children![0]!.label).toBe("Overview");
-    expect(strategy.children![0]!.label).toBe("Overview");
+    // Overview is the section's primary parent route, not a nested subtab.
+    expect(analysis.children?.some((c) => c.id === "analysis-overview")).toBe(false);
+    expect(strategy.children?.some((c) => c.id === "strategy-overview")).toBe(false);
   });
 
   it("sections without an Overview child land on their first child", () => {
@@ -107,9 +107,10 @@ describe("Sidebar section headers", () => {
     expect(window.location.pathname).toBe("/app/analysis/overview");
     const childList = within(nav).getByLabelText("Analysis pages");
     expect(isExpanded(childList)).toBe(true);
-    // Expanded children include the real subpages, led by the Overview child
+    // Expanded children show the real subpages; Overview is the section header
+    // (parent route), not a child subtab — so it does not appear in the list.
     expect(within(childList).getByText("IAP Library")).toBeTruthy();
-    expect(within(childList).getByText("Overview")).toBeTruthy();
+    expect(within(childList).queryByText("Overview")).toBeNull();
   });
 
   it("a section without an Overview child navigates to its first child", () => {

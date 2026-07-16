@@ -110,12 +110,6 @@ export const navTree: NavSection[] = [
     landing: "/app/analysis/overview",
     children: [
       {
-        id: "analysis-overview",
-        label: "Overview",
-        to: "/app/analysis/overview",
-        dataSource: "campaign_summary, concept_rollup",
-      },
-      {
         id: "analysis-library",
         label: "IAP Library",
         to: "/app/analysis/library",
@@ -148,12 +142,6 @@ export const navTree: NavSection[] = [
     icon: "Compass",
     landing: "/app/strategy/overview",
     children: [
-      {
-        id: "strategy-overview",
-        label: "Overview",
-        to: "/app/strategy/overview",
-        dataSource: "message_pillars, active_hypotheses",
-      },
       {
         id: "strategy-map",
         label: "Strategy Map",
