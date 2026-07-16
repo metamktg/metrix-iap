@@ -61,6 +61,8 @@ async function existingIds(ids: number[]): Promise<number[]> {
   return rows.map((r) => r.id);
 }
 
+// 60s hook timeout: the seed fetch hits live Supabase and can exceed the
+// default 10s when validation workflows run concurrently (observed flake).
 beforeAll(async () => {
   const bundle = (await getMetrixSeedFromSupabase()) as {
     manager_account?: { id?: string };
@@ -107,17 +109,24 @@ beforeAll(async () => {
       resolve();
     });
   });
-});
+}, 60_000);
 
 afterAll(async () => {
-  await db
-    .delete(workspaceReportsTable)
-    .where(inArray(workspaceReportsTable.createdByUserId, [adminUserId, memberUserId]));
-  await db
-    .delete(userSessionsTable)
-    .where(inArray(userSessionsTable.userId, [adminUserId, memberUserId]));
-  await db.delete(usersTable).where(inArray(usersTable.id, [adminUserId, memberUserId]));
-  await close();
+  // Guard every step: if beforeAll timed out partway, some of these ids /
+  // the server handle may never have been assigned.
+  if (adminUserId !== undefined || memberUserId !== undefined) {
+    const userIds = [adminUserId, memberUserId].filter(
+      (id): id is number => id !== undefined,
+    );
+    await db
+      .delete(workspaceReportsTable)
+      .where(inArray(workspaceReportsTable.createdByUserId, userIds));
+    await db
+      .delete(userSessionsTable)
+      .where(inArray(userSessionsTable.userId, userIds));
+    await db.delete(usersTable).where(inArray(usersTable.id, userIds));
+  }
+  await close?.();
   await pool.end();
 });
 
