@@ -8,7 +8,7 @@ import { getAdAccount, getStrategyData, getBriefBuilder } from "@/lib/data/metri
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CrossLink, fmtNum, LoopAction,
-  RangeScopeBar, NoDataInRangeState,
+  RangeScopeBar, NoDataInRangeState, ExpandableText,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import {
@@ -137,12 +137,12 @@ export function StrategyOverview() {
                         {String(i + 1).padStart(2, "0")}
                       </span>
                       <p className="text-[13px] font-semibold text-foreground leading-tight">{p.label}</p>
-                      <p className="text-[11px] text-muted-foreground/80 leading-relaxed">{p.plain_descriptor}</p>
+                      <ExpandableText className="text-[11px] text-muted-foreground/80 leading-relaxed" text={p.plain_descriptor} />
                       {p.funnel_application && (
-                        <p className="text-[10.5px] text-foreground/70 leading-relaxed">
-                          <span className="font-semibold uppercase tracking-widest text-[9px] text-muted-foreground/70 mr-1">Funnel</span>
-                          {p.funnel_application}
-                        </p>
+                        <div>
+                          <span className="block font-semibold uppercase tracking-widest text-[9px] text-muted-foreground/70 mb-0.5">Funnel</span>
+                          <ExpandableText className="text-[10.5px] text-foreground/70 leading-relaxed" text={p.funnel_application} />
+                        </div>
                       )}
                       <div className="mt-auto pt-1 space-y-1.5">
                         <VariableStackChips stack={p.variable_stack} />

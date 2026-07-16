@@ -10,7 +10,7 @@ import { getAdAccount, getStrategyData, getBriefBuilder } from "@/lib/data/metri
 import {
   ModuleHeader, ScopeBanner, ModuleTabs, ModuleScopeGate, PendingState,
   MetricTile, CrossLink, useFocusParam, FlowCrumb, useFromParam, LoopAction,
-  RangeScopeBar, NoDataInRangeState, StaleFocusNotice,
+  RangeScopeBar, NoDataInRangeState, StaleFocusNotice, ExpandableText,
 } from "../shared";
 import {
   HypothesisStatusBadge, PillarDetailSections, VariableStackChips, pillarHasDetails,
@@ -39,7 +39,7 @@ function HypFact({
         <Icon className="w-2.5 h-2.5 text-muted-foreground/60" />
         <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
       </div>
-      <p className="text-[11px] text-foreground/80 leading-snug">{value}</p>
+      <p className="text-[11px] text-foreground/80 leading-snug line-clamp-2">{value}</p>
     </div>
   );
 }
@@ -164,7 +164,7 @@ export function HypothesisQueueView() {
                           {h.risk && (
                             <div className="flex items-start gap-1.5 mt-3 pt-3 border-t border-border/20">
                               <AlertTriangle className="w-3 h-3 text-amber-400/70 shrink-0 mt-0.5" />
-                              <p className="text-[11px] text-amber-400/80 leading-relaxed">{h.risk}</p>
+                              <p className="text-[11px] text-amber-400/80 leading-relaxed line-clamp-2">{h.risk}</p>
                             </div>
                           )}
                         </button>
@@ -190,7 +190,9 @@ export function HypothesisQueueView() {
                           </div>
                           <p className="text-[14px] font-semibold text-foreground leading-tight">{p.label}</p>
                           <p className="text-[12px] text-primary/80 italic mt-1">"{p.plain_descriptor}"</p>
-                          <p className="text-[11.5px] text-muted-foreground/75 mt-2 leading-relaxed">{p.why_it_matters}</p>
+                          <div className="mt-2">
+                            <ExpandableText className="text-[11.5px] text-muted-foreground/75 leading-relaxed" text={p.why_it_matters} />
+                          </div>
                           <div className="mt-3">
                             <VariableStackChips stack={p.variable_stack} />
                           </div>

@@ -9,7 +9,7 @@ import { useAccount } from "@/contexts/AccountContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getWorkspaceSettings } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, SectionCard, PendingState, CaveatNote } from "../shared";
+import { ModuleHeader, SectionCard, PendingState, CaveatNote, ExpandableText } from "../shared";
 import { cn } from "@/lib/utils";
 import { Users, UserPlus, ShieldCheck, Loader2, X, RotateCw, Check } from "lucide-react";
 import {
@@ -954,7 +954,7 @@ function TeamAccessViewInner() {
         <SectionCard title="Access policy" desc="How ad-account access is granted across the workspace.">
           <div className="flex items-start gap-2.5 p-3 rounded-lg border border-emerald-400/15 bg-emerald-400/[0.03]">
             <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-            <p className="text-[11px] text-foreground/75 leading-relaxed">{team.access_policy}</p>
+            <ExpandableText className="text-[11px] text-foreground/75 leading-relaxed" text={team.access_policy} />
           </div>
           <div className="mt-2.5">
             <CaveatNote text="Data isolation still applies per ad account regardless of role — no member sees cross-account analysis." />

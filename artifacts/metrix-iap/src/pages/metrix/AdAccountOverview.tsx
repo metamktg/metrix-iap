@@ -352,7 +352,9 @@ export function AdAccountOverview() {
                 {nextAction ? (
                   <>
                     <p className="text-[12px] font-semibold text-foreground leading-snug">{nextAction.title}</p>
-                    <p className="text-[11px] text-foreground/70 mt-1.5 leading-relaxed">{nextAction.recommended_action}</p>
+                    <div className="mt-1.5">
+                      <ExpandableText className="text-[11px] text-foreground/70 leading-relaxed" text={nextAction.recommended_action} />
+                    </div>
                     <p className="text-[10px] text-muted-foreground/60 mt-2.5">
                       {recCards.length} recommendation{recCards.length === 1 ? "" : "s"} in the loop below ↓
                     </p>

@@ -5,7 +5,7 @@
 
 import { cn } from "@/lib/utils";
 import { resolveVariableLabel, getVariablePrefix, PREFIX_COLORS } from "@/lib/variable-registry";
-import { fmtUSD, fmtPct, ConfidenceBadge } from "../shared";
+import { fmtUSD, fmtPct, ConfidenceBadge, ExpandableText } from "../shared";
 import { Funnel, Wrench, LayoutGrid, TrendingUp, Users, ArrowUpRight, Ban, FlaskConical, Search, Sparkles } from "lucide-react";
 import type { MessagePillar, ICPProfile, VariableCombination, ScalingPlaybook } from "@/lib/data/seedTypes";
 
@@ -147,7 +147,7 @@ export function PillarDetailSections({ pillar, profiles }: { pillar: MessagePill
             <Icon className="w-3 h-3 text-muted-foreground/60" />
             <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
           </div>
-          <p className="text-[11.5px] text-foreground/80 leading-relaxed">{pillar[key] as string}</p>
+          <ExpandableText className="text-[11.5px] text-foreground/80 leading-relaxed" text={pillar[key] as string} />
         </div>
       ))}
     </div>
@@ -287,7 +287,7 @@ export function ScalingPlaybookLanes({ playbook }: { playbook: ScalingPlaybook }
       {playbook.budget_reallocation_note && (
         <div className="rounded-lg border border-border/30 bg-white/[0.015] p-3">
           <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1">Budget reallocation</div>
-          <p className="text-[11.5px] text-foreground/80 leading-relaxed">{playbook.budget_reallocation_note}</p>
+          <ExpandableText className="text-[11.5px] text-foreground/80 leading-relaxed" text={playbook.budget_reallocation_note} />
         </div>
       )}
     </div>

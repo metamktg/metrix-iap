@@ -184,7 +184,7 @@ export function BriefBuilderView() {
                         <span className="text-[11px] font-medium text-foreground">{pillarOf(b.source_pillar)?.label ?? b.source_pillar}</span>
                       </div>
 
-                      <p className="text-[12px] text-foreground/80 leading-relaxed flex-1"><TokenizedConceptText text={b.human_direction} /></p>
+                      <p className="text-[12px] text-foreground/80 leading-relaxed flex-1 line-clamp-3"><TokenizedConceptText text={b.human_direction} /></p>
 
                       <div className="mt-3 pt-3 border-t border-border/20">
                         <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/80 mb-1.5">Creative direction</div>
