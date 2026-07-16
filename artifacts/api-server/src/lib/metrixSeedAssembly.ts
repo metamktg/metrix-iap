@@ -783,6 +783,44 @@ export async function assembleMetrixSeed(): Promise<Row> {
     }
   }
 
+  // ── Supplement registry with cell codes from library_cells ────────────
+  // Signal/alert/hypothesis/brief text references cell-level codes (C2B,
+  // C4E, etc.) that may not have a matching concept_intelligence row.
+  // Build stub entries from the library cell payload so tokenizeConceptCodes
+  // can produce chips for those codes and users can click through to the
+  // Library — no fabricated descriptors, only data from real payload fields.
+  const seenLibraryCellCodes = new Set<string>();
+  for (const lc of libraryCellsAll) {
+    const cellId = String(lc["cell_id"] ?? "");
+    if (!cellId || seenLibraryCellCodes.has(cellId)) continue;
+    seenLibraryCellCodes.add(cellId);
+    // Only chip-able cell codes (C\d+[A-Z]); column codes handled above.
+    if (!/^C\d+[A-Z]$/.test(cellId)) continue;
+    // concept_intelligence rows take priority; skip if already registered.
+    if (conceptRegistry[cellId]) continue;
+
+    const payload = (lc["payload"] ?? {}) as Row;
+    const conceptName = payload["book2_concept_name"]
+      ? String(payload["book2_concept_name"])
+      : null;
+    const descriptor = conceptName
+      ? (conceptName.split(/\.\s/)[0] ?? conceptName).slice(0, 100).trim()
+      : `Concept ${cellId.replace(/([A-Z])$/, " · $1")}`;
+
+    // Inherit book from the parent column-level entry (e.g. "C2" for "C2B").
+    const columnCode = cellId.replace(/[A-Z]$/, "");
+    const book = conceptRegistry[columnCode]?.book ?? null;
+
+    conceptRegistry[cellId] = {
+      code: cellId,
+      descriptor,
+      book,
+      what: null,
+      why: null,
+      source_cells: [cellId],
+    };
+  }
+
   const tables: AccountTables = {
     adPerformance: groupByAccount(adPerformanceAll),
     conceptPerformance: groupByAccount(conceptPerformanceAll),
