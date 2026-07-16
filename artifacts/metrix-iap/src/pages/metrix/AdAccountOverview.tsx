@@ -123,7 +123,10 @@ export function AdAccountOverview() {
   const hypothesisCount = strategy?.active_hypotheses.length ?? 0;
   const sectionCount = report?.report_sections.length ?? 0;
   const matrixCellCount = mst?.historical_matrix_4x4?.cells.length ?? 0;
-  const libraryCount = mst?.local_book2_library?.length ?? 0;
+  // local_book2_library may contain multiple rows per cell_id (aspect
+  // variants such as Feed / Square / Story) — count distinct concepts so the
+  // number matches the cards shown on the Creative Scan page.
+  const libraryCount = new Set(lib.map((c) => c.cell_id)).size;
   const mstActive = mst?.status === "active";
 
   const recCards = optLoop?.recommendation_cards ?? [];
