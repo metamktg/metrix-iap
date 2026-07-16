@@ -1,4 +1,17 @@
 // ─── Shared building blocks for seed-hydrated Metrix pages ────────────
+//
+// Verbosity rulebook — platform-wide content consolidation:
+// • No always-visible paragraph over ~2 sentences in cards/lists. Compact it;
+//   never delete information.
+// • Inside <button> cards whose full text lives in a drawer/modal: clamp with
+//   CSS `line-clamp-N` (nested buttons are invalid HTML, so no roll-downs here).
+// • Inside plain <div> cards with no drawer: use <ExpandableText> for plain
+//   strings, or <ClampedProse> when the content needs a custom renderer
+//   (e.g. TokenizedConceptText) — both roll down in place, no info loss.
+// • Data caveats / honesty disclaimers: <CaveatNote> (collapsible amber pill,
+//   optional `source` badge).
+// • Metric definitions and methodology asides: <InfoTooltip>.
+// • Drawers (InfoDrawer/DrawerField) and modals may show full-length prose.
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -408,6 +421,43 @@ export function ExpandableText({
         </span>
       </span>
     </button>
+  );
+}
+
+// ─── Clamped prose (custom-rendered content) ──────────────────────────
+// Like ExpandableText, but clamps via CSS so the content can be any custom
+// renderer (e.g. TokenizedConceptText). For non-button contexts only.
+
+export function ClampedProse({
+  text,
+  render,
+  className,
+  clampClass = "line-clamp-2",
+  threshold = 160,
+}: {
+  text: string;
+  render?: (text: string) => React.ReactNode;
+  className?: string;
+  clampClass?: string;
+  threshold?: number;
+}) {
+  const isLong = text.length > threshold;
+  const [expanded, setExpanded] = useState(false);
+  const content = render ? render(text) : text;
+  if (!isLong) return <p className={className}>{content}</p>;
+  return (
+    <div className="min-w-0">
+      <p className={cn(className, !expanded && clampClass)}>{content}</p>
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        aria-expanded={expanded}
+        className="mt-0.5 inline-flex items-center gap-0.5 text-[10px] font-medium text-primary/80 hover:text-primary transition-colors"
+      >
+        {expanded ? "Less" : "More"}
+        <ChevronDown className={cn("w-2.5 h-2.5 transition-transform duration-150", expanded && "rotate-180")} />
+      </button>
+    </div>
   );
 }
 

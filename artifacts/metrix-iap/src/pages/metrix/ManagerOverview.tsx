@@ -9,7 +9,7 @@ import { CheckCircle2, Plug, TrendingUp, Plus, ArrowRight } from "lucide-react";
 import { useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getManagerOverview } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, MetricTile, SectionCard, ConfidenceBadge, fmtUSD, fmtNum, eventLabel } from "./shared";
+import { ModuleHeader, MetricTile, SectionCard, ConfidenceBadge, ClampedProse, fmtUSD, fmtNum, eventLabel } from "./shared";
 import { AddAccountDialog } from "./AddAccountDialog";
 import { cn } from "@/lib/utils";
 import { buildMetricCatalog, metricSourceFromManagerTotals, metricById } from "@/lib/data/metricsCatalog";
@@ -202,10 +202,22 @@ export function ManagerOverview() {
                     <ConfidenceBadge value={c.confidence} />
                   </div>
                   <p className="text-[13px] font-semibold text-foreground leading-snug"><TokenizedConceptText text={c.title} /></p>
-                  <p className="text-[12px] text-muted-foreground/70 mt-1 leading-relaxed"><TokenizedConceptText text={c.rationale} /></p>
+                  <div className="mt-1">
+                    <ClampedProse
+                      className="text-[12px] text-muted-foreground/70 leading-relaxed"
+                      text={c.rationale}
+                      render={(t) => <TokenizedConceptText text={t} />}
+                    />
+                  </div>
                   <div className="flex items-start gap-1.5 mt-3 pt-3 border-t border-border/20">
                     <ArrowRight className="w-3.5 h-3.5 text-primary/60 shrink-0 mt-0.5" />
-                    <p className="text-[11px] text-foreground/75 leading-relaxed"><TokenizedConceptText text={c.recommended_action} /></p>
+                    <div className="flex-1 min-w-0">
+                      <ClampedProse
+                        className="text-[11px] text-foreground/75 leading-relaxed"
+                        text={c.recommended_action}
+                        render={(t) => <TokenizedConceptText text={t} />}
+                      />
+                    </div>
                   </div>
                   <button
                     onClick={() => selectAdAccount(c.account_id)}

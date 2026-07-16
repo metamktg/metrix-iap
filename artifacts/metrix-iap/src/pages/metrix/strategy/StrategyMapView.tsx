@@ -11,7 +11,7 @@ import { resolveInlineVariableCodes } from "@/lib/variable-registry";
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState,
   CrossLink, fmtUSD, fmtNum, FlowCrumb, useFromParam, LoopAction,
-  RangeScopeBar, NoDataInRangeState,
+  RangeScopeBar, NoDataInRangeState, ExpandableText,
 } from "../shared";
 import {
   VariableStackChips, PillarDetailSections, pillarHasDetails,
@@ -155,26 +155,15 @@ export function StrategyMapView() {
                           </span>
                         </div>
                         <h3 className="text-[18px] font-semibold text-foreground leading-tight mt-1.5">{p.label}</h3>
-                        <p className="text-[12.5px] text-foreground/85 mt-1.5 leading-relaxed">{p.plain_descriptor}</p>
+                        <div className="mt-1.5">
+                          <ExpandableText className="text-[12.5px] text-foreground/85 leading-relaxed" text={p.plain_descriptor} />
+                        </div>
                         {(() => {
                           const resolved = p.why_it_matters ? resolveInlineVariableCodes(p.why_it_matters) : "";
                           if (!resolved) return null;
-                          const WHY_THRESHOLD = 200;
-                          const isLong = resolved.length > WHY_THRESHOLD;
-                          const isWhyOpen = expanded[`why_${p.id}`] ?? false;
                           return (
                             <div className="mt-1.5">
-                              <p className="text-[11.5px] text-muted-foreground/80 leading-relaxed">
-                                {isLong && !isWhyOpen ? resolved.slice(0, WHY_THRESHOLD).trimEnd() + "…" : resolved}
-                              </p>
-                              {isLong && (
-                                <button
-                                  onClick={() => setExpanded((e) => ({ ...e, [`why_${p.id}`]: !isWhyOpen }))}
-                                  className="text-[10.5px] text-primary/60 hover:text-primary/90 mt-0.5 transition-colors"
-                                >
-                                  {isWhyOpen ? "Show less" : "Read more"}
-                                </button>
-                              )}
+                              <ExpandableText className="text-[11.5px] text-muted-foreground/80 leading-relaxed" text={resolved} threshold={200} />
                             </div>
                           );
                         })()}
