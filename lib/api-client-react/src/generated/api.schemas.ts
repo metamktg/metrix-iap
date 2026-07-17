@@ -568,9 +568,21 @@ export interface IapCsvClassFormat {
   sample_csv: string;
 }
 
+/**
+ * A single canonical column name paired with the known alias variants the CSV parser accepts in its place.
+ */
+export interface ColumnAliasEntry {
+  /** The exact column name as required by the Metrix spec (currency placeholder resolved to plain label for display). */
+  canonical: string;
+  /** Alias variants accepted by the CSV parser (title-cased for readability). */
+  aliases: string[];
+}
+
 export interface ManualPerformanceCsvFormat {
   demographic: IapCsvClassFormat;
   device_placement: IapCsvClassFormat;
+  /** Known accepted column name variants for the most commonly misnamed columns, derived from the server COLUMN_ALIASES map. Collapsed reference guide for the upload UI. */
+  column_aliases: ColumnAliasEntry[];
 }
 
 /**

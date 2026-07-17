@@ -22,6 +22,7 @@ import {
   ApiError,
   type AnalysisRun,
   type ManualImport,
+  type ColumnAliasEntry,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { guessedCreativeImports } from "./manualImportUtils";
@@ -82,6 +83,68 @@ const CSV_CLASS_TITLES: Record<IapCsvClassKey, string> = {
 };
 
 /**
+ * Expandable reference guide showing which column name variants the CSV parser
+ * accepts for the most commonly misnamed columns. Data comes from the API
+ * (server derives it from COLUMN_ALIASES in iapCsvSpec.ts — no client-side
+ * duplication of the alias map).
+ */
+function ColumnAliasGuide({
+  aliases,
+  open,
+  onToggle,
+}: {
+  aliases: ColumnAliasEntry[];
+  open: boolean;
+  onToggle: () => void;
+}) {
+  if (aliases.length === 0) return null;
+  return (
+    <div className="rounded-md border border-border/30 overflow-hidden">
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center gap-1.5 px-2.5 py-2 text-left hover:bg-white/[0.03] transition-colors"
+      >
+        {open ? (
+          <ChevronDown className="w-3 h-3 text-muted-foreground/70 shrink-0" />
+        ) : (
+          <ChevronRight className="w-3 h-3 text-muted-foreground/70 shrink-0" />
+        )}
+        <span className="text-[11px] font-medium text-foreground/85">
+          Accepted column name variants
+        </span>
+        <span className="ml-auto text-[10px] text-muted-foreground/55">
+          common Meta UI aliases
+        </span>
+      </button>
+      {open && (
+        <div className="border-t border-border/30 divide-y divide-border/20">
+          {aliases.map(({ canonical, aliases: aliasList }) => (
+            <div key={canonical} className="px-2.5 py-2 space-y-1">
+              <div className="text-[10px] font-semibold text-foreground/70 uppercase tracking-wide">
+                {canonical}
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {aliasList.map((alias) => (
+                  <span
+                    key={alias}
+                    className="px-1.5 py-0.5 rounded bg-white/[0.05] border border-border/30 text-[10px] text-muted-foreground/80 font-mono"
+                  >
+                    {alias}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+          <p className="px-2.5 py-2 text-[10px] text-muted-foreground/45 leading-relaxed">
+            The parser accepts these automatically — no need to rename columns before uploading.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
  * Shows the exact breakdown + metric columns one CSV class must contain,
  * straight from the server-side spec, plus a downloadable sample CSV.
  * Used once per required CSV (Demographics, Placements) in the upload flow.
@@ -89,6 +152,7 @@ const CSV_CLASS_TITLES: Record<IapCsvClassKey, string> = {
 export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) {
   const { data, isLoading } = useGetManualPerformanceCsvFormat();
   const [open, setOpen] = useState(false);
+  const [aliasesOpen, setAliasesOpen] = useState(false);
   const classData = data?.[csvClass];
 
   const downloadSample = () => {
@@ -161,6 +225,15 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
               >
                 <Download className="w-3 h-3" /> Download a sample CSV
               </button>
+
+              {/* ── Accepted column name variants ─────────────────── */}
+              {classData && (
+                <ColumnAliasGuide
+                  aliases={data?.column_aliases ?? []}
+                  open={aliasesOpen}
+                  onToggle={() => setAliasesOpen((v) => !v)}
+                />
+              )}
             </>
           )}
         </div>

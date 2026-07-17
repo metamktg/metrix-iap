@@ -3192,6 +3192,21 @@ components:
         - breakdown_columns
         - metric_groups
         - sample_csv
+    ColumnAliasEntry:
+      type: object
+      description: A single canonical column name paired with the known alias variants the CSV parser accepts in its place.
+      properties:
+        canonical:
+          type: string
+          description: The exact column name as required by the Metrix spec (currency placeholder resolved to plain label for display).
+        aliases:
+          type: array
+          items:
+            type: string
+          description: Alias variants accepted by the CSV parser (title-cased for readability).
+      required:
+        - canonical
+        - aliases
     ManualPerformanceCsvFormat:
       type: object
       properties:
@@ -3199,9 +3214,15 @@ components:
           $ref: "#/components/schemas/IapCsvClassFormat"
         device_placement:
           $ref: "#/components/schemas/IapCsvClassFormat"
+        column_aliases:
+          type: array
+          items:
+            $ref: "#/components/schemas/ColumnAliasEntry"
+          description: Known accepted column name variants for the most commonly misnamed columns, derived from the server COLUMN_ALIASES map. Collapsed reference guide for the upload UI.
       required:
         - demographic
         - device_placement
+        - column_aliases
     StartAnalysisInput:
       type: object
       properties:

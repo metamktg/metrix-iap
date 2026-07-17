@@ -49,6 +49,7 @@ export * from './authUser';
 export * from './authUserResult';
 export * from './authUserRole';
 export * from './channelPref';
+export * from './columnAliasEntry';
 export * from './columnMappingSummaryEntry';
 export * from './columnMappingSummaryEntryTier';
 export * from './conceptDescriptorEntry';

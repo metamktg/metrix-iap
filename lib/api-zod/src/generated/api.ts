@@ -237,7 +237,11 @@ export const GetManualPerformanceCsvFormatResponse = zod.object({
   "columns": zod.array(zod.string())
 })),
   "sample_csv": zod.string()
-})
+}),
+  "column_aliases": zod.array(zod.object({
+  "canonical": zod.string().describe('The exact column name as required by the Metrix spec (currency placeholder resolved to plain label for display).'),
+  "aliases": zod.array(zod.string()).describe('Alias variants accepted by the CSV parser (title-cased for readability).')
+}).describe('A single canonical column name paired with the known alias variants the CSV parser accepts in its place.')).describe('Known accepted column name variants for the most commonly misnamed columns, derived from the server COLUMN_ALIASES map. Collapsed reference guide for the upload UI.')
 })
 
 
