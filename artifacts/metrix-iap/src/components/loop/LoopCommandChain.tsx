@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { useGetLatestAnalysisRun } from "@workspace/api-client-react";
 import { useGenerationRun } from "@/components/generation/GenerationControls";
 import type { AdAccount, StrategyData, BriefBuilder } from "@/lib/data/seedTypes";
+import { computeStaleStages } from "./staleStageDetection";
 import {
   BarChart3, Layers, FileText,
   CheckCircle2, Lock, Loader2, X,
@@ -903,32 +904,25 @@ export function LoopCommandChain({
   const loopStatus   = iap?.loop_status ?? null;
 
   // ── Staleness: generated before the latest successful analysis run ────────
+  // Pure logic extracted to staleStageDetection.ts (unit-tested there).
   // Loop status stage keys: "strategy_map" for strategy, "brief_builder" for briefs
-  const analysisFinishedAt = (analysisRun?.status === "success" ? analysisRun?.finished_at : null) ?? null;
-  const strategyGeneratedAt = (strategyLastRun?.status === "success" ? strategyLastRun?.finished_at : null)
-    ?? loopStatus?.find((l) => l.stage === "strategy_map")?.generated_at
-    ?? null;
-  const briefsGeneratedAt = (briefsLastRun?.status === "success" ? briefsLastRun?.finished_at : null)
-    ?? loopStatus?.find((l) => l.stage === "brief_builder")?.generated_at
-    ?? null;
-
-  const strategyIsStale =
-    strategyComplete &&
-    analysisComplete &&
-    !!analysisFinishedAt &&
-    !!strategyGeneratedAt &&
-    !strategyRunning &&
-    new Date(analysisFinishedAt) > new Date(strategyGeneratedAt);
-
-  const briefsIsStale =
-    briefsComplete &&
-    analysisComplete &&
-    !!briefsGeneratedAt &&
-    !briefsRunning &&
-    (
-      (!!analysisFinishedAt && new Date(analysisFinishedAt) > new Date(briefsGeneratedAt)) ||
-      (!!strategyGeneratedAt && new Date(strategyGeneratedAt) > new Date(briefsGeneratedAt))
-    );
+  const {
+    analysisFinishedAt,
+    strategyGeneratedAt,
+    briefsGeneratedAt,
+    strategyIsStale,
+    briefsIsStale,
+  } = computeStaleStages({
+    analysisRun,
+    strategyLastRun,
+    briefsLastRun,
+    loopStatus: loopStatus ?? null,
+    analysisComplete,
+    strategyComplete,
+    briefsComplete,
+    strategyRunning,
+    briefsRunning,
+  });
 
   const completeCount = [analysisComplete, strategyComplete, briefsComplete].filter(Boolean).length;
   const anyRunning    = analysisRunning || strategyRunning || briefsRunning;
