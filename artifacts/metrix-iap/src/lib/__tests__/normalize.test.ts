@@ -1,9 +1,27 @@
-// ─── Normalization framework unit tests ───────────────────────────────
-// Exercises the mechanical parsers against REAL strings from the live
-// seed data (pillar titles, scaling playbook lanes, variable-combination
-// contexts) — never invented shapes.
+// ─── normalize.ts export smoke-test + unit tests ──────────────────────
+//
+// Guards against two failure modes in the normalization framework:
+//   1. A deleted export — caught by the export-set equality check with a
+//      clear list of which names are missing or unexpectedly added.
+//   2. A null-returning or broken stub accidentally introduced during a
+//      refactor — caught by calling each utility with representative
+//      inputs and asserting the return shape is non-null and structurally
+//      correct.
+//
+// Type-only exports (interfaces / type aliases: SplitTitle, HierarchyRef,
+// ParsedHierarchyRef, NormalizedConfidence, MetricKind, ConfidenceLevel,
+// ConfidencePolarity) are erased at compile time and are intentionally
+// absent from the RUNTIME_EXPORTS list.
+//
+// normalize.ts has no React components or context dependencies, so all
+// checks here are plain vitest assertions — no RTL rendering required.
+//
+// Functional tests use REAL strings from the live seed data (pillar
+// titles, scaling playbook lanes, variable-combination contexts) —
+// never invented shapes.
 
 import { describe, it, expect } from "vitest";
+import * as normalize from "../normalize";
 import {
   splitTitle,
   parseHierarchyRef,
@@ -14,6 +32,45 @@ import {
   extractVariableCodes,
   compactIcpName,
 } from "../normalize";
+
+// ─── 1. Export-set equality ───────────────────────────────────────────
+// Fails loudly if a name is added or removed without updating this list.
+
+const RUNTIME_EXPORTS: Array<keyof typeof normalize> = [
+  "splitTitle",
+  "parseHierarchyRef",
+  "formatHierarchyRef",
+  "extractVariableCodes",
+  "compactIcpName",
+  "fmtCount",
+  "fmtMetric",
+  "normalizeConfidence",
+];
+
+describe("normalize.ts exports — set equality", () => {
+  it("exports the expected set of runtime names (no missing, no extras)", () => {
+    const actual = Object.keys(normalize);
+    const missing = RUNTIME_EXPORTS.filter((name) => !actual.includes(name));
+    const extras = actual.filter(
+      (name) => !RUNTIME_EXPORTS.includes(name as keyof typeof normalize),
+    );
+    expect(missing, `Missing exports: ${missing.join(", ")}`).toHaveLength(0);
+    expect(
+      extras,
+      `Unexpected new exports (add them to RUNTIME_EXPORTS): ${extras.join(", ")}`,
+    ).toHaveLength(0);
+  });
+});
+
+// ─── 2. Binding checks ────────────────────────────────────────────────
+// Guards every export against being set to null or undefined.
+
+describe("normalize.ts exports — binding checks", () => {
+  it.each(RUNTIME_EXPORTS)("%s is defined and non-null", (name) => {
+    expect(normalize[name]).toBeDefined();
+    expect(normalize[name]).not.toBeNull();
+  });
+});
 
 describe("splitTitle", () => {
   it("splits compound em-dash titles at the first ' — '", () => {
