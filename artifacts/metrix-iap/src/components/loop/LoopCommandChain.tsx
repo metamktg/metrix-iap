@@ -25,7 +25,7 @@ import {
   BarChart3, Layers, FileText,
   CheckCircle2, Lock, Loader2, X,
   Upload, Link2, PlayCircle, RefreshCw,
-  AlertTriangle, Sparkles, ArrowRight, Clock,
+  AlertTriangle, Sparkles, ArrowRight, Clock, RotateCcw,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────
@@ -123,6 +123,7 @@ function StageTile({
   stage,
   isComplete,
   isRunning,
+  isStale,
   isNext,
   isLocked,
   isActive,
@@ -132,6 +133,7 @@ function StageTile({
   stage: Stage;
   isComplete: boolean;
   isRunning: boolean;
+  isStale: boolean;
   isNext: boolean;
   isLocked: boolean;
   isActive: boolean;
@@ -153,6 +155,8 @@ function StageTile({
           ? "border-primary/40 bg-primary/[0.1] shadow-sm shadow-primary/10 cursor-pointer"
           : isRunning
           ? "border-amber-400/30 bg-amber-400/[0.05] cursor-pointer"
+          : isStale
+          ? "border-orange-400/30 bg-orange-400/[0.04] hover:border-orange-400/45 hover:bg-orange-400/[0.07] cursor-pointer"
           : isComplete
           ? "border-emerald-400/20 bg-emerald-400/[0.03] hover:border-emerald-400/35 hover:bg-emerald-400/[0.06] cursor-pointer"
           : isNext
@@ -176,6 +180,7 @@ function StageTile({
           "w-4 h-4",
           isLocked   ? "text-muted-foreground/30"
             : isRunning  ? "text-amber-400/80"
+            : isStale    ? "text-orange-400/75"
             : isComplete ? "text-emerald-400/70"
             : isNext     ? "text-primary/70"
             : "text-muted-foreground/30",
@@ -184,6 +189,8 @@ function StageTile({
         <span className="absolute -top-1 -right-1.5">
           {isRunning ? (
             <Loader2 className="w-2.5 h-2.5 text-amber-400/90 animate-spin" />
+          ) : isStale ? (
+            <RotateCcw className="w-2.5 h-2.5 text-orange-400/85" />
           ) : isComplete ? (
             <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400/80" />
           ) : isNext ? (
@@ -197,6 +204,7 @@ function StageTile({
         "text-[8px] font-bold uppercase tracking-[0.14em] leading-none",
         isLocked   ? "text-muted-foreground/20"
           : isRunning  ? "text-amber-400/60"
+          : isStale    ? "text-orange-400/55"
           : isComplete ? "text-emerald-400/50"
           : isNext     ? "text-primary/55"
           : "text-muted-foreground/30",
@@ -224,6 +232,8 @@ function StageIntelligence({
   analysisRunning,
   strategyRunning,
   briefsRunning,
+  strategyIsStale,
+  briefsIsStale,
   cellCount,
   variableCount,
   pillarCount,
@@ -244,6 +254,8 @@ function StageIntelligence({
   analysisRunning: boolean;
   strategyRunning: boolean;
   briefsRunning: boolean;
+  strategyIsStale: boolean;
+  briefsIsStale: boolean;
   cellCount: number;
   variableCount: number;
   pillarCount: number;
@@ -379,6 +391,15 @@ function StageIntelligence({
           </div>
         )}
 
+        {strategyIsStale && !strategyRunning && (
+          <div className="flex items-start gap-2 rounded-lg border border-orange-400/20 bg-orange-400/[0.05] px-2.5 py-2">
+            <RotateCcw className="w-3 h-3 text-orange-400/70 mt-0.5 shrink-0" />
+            <p className="text-[10px] text-orange-200/65 leading-relaxed">
+              Analysis data has been refreshed. Results here reflect the previous run.
+            </p>
+          </div>
+        )}
+
         {!analysisComplete && (
           <p className="text-[10px] text-muted-foreground/30 leading-relaxed">
             Run analysis first — strategy is built from the cell and variable results.
@@ -437,6 +458,15 @@ function StageIntelligence({
         </div>
       )}
 
+      {briefsIsStale && !briefsRunning && (
+        <div className="flex items-start gap-2 rounded-lg border border-orange-400/20 bg-orange-400/[0.05] px-2.5 py-2">
+          <RotateCcw className="w-3 h-3 text-orange-400/70 mt-0.5 shrink-0" />
+          <p className="text-[10px] text-orange-200/65 leading-relaxed">
+            Analysis data has been refreshed. Results here reflect the previous run.
+          </p>
+        </div>
+      )}
+
       {!strategyComplete && (
         <p className="text-[10px] text-muted-foreground/30 leading-relaxed">
           Generate strategy first — briefs are derived from the message pillars.
@@ -467,6 +497,8 @@ function CommandHub({
   briefsRunning,
   strategyElapsedSeconds,
   briefsElapsedSeconds,
+  strategyIsStale,
+  briefsIsStale,
   cellCount,
   variableCount,
   pillarCount,
@@ -494,6 +526,8 @@ function CommandHub({
   briefsRunning: boolean;
   strategyElapsedSeconds: number;
   briefsElapsedSeconds: number;
+  strategyIsStale: boolean;
+  briefsIsStale: boolean;
   cellCount: number;
   variableCount: number;
   pillarCount: number;
@@ -539,13 +573,18 @@ function CommandHub({
     : stage === "strategy" ? strategyComplete
     : briefsComplete;
 
+  const isStale = (stage === "strategy" && strategyIsStale)
+    || (stage === "briefs" && briefsIsStale);
+
   const statusLabel = isRunning ? "Running"
+    : isStale ? "Data refreshed"
     : isComplete ? "Complete"
     : stage === "analysis" ? "Not run"
     : stage === "strategy" ? (analysisComplete ? "Ready to generate" : "Needs analysis")
     : (strategyComplete ? "Ready to generate" : "Needs strategy");
 
   const statusClass = isRunning   ? "text-amber-400/80 bg-amber-400/10 border-amber-400/20"
+    : isStale       ? "text-orange-400/80 bg-orange-400/[0.08] border-orange-400/20"
     : isComplete     ? "text-emerald-400/70 bg-emerald-400/[0.08] border-emerald-400/15"
     : (analysisComplete && stage === "strategy") || (strategyComplete && stage === "briefs")
     ? "text-primary/70 bg-primary/[0.08] border-primary/15"
@@ -726,6 +765,8 @@ function CommandHub({
             analysisRunning={analysisRunning}
             strategyRunning={strategyRunning}
             briefsRunning={briefsRunning}
+            strategyIsStale={strategyIsStale}
+            briefsIsStale={briefsIsStale}
             cellCount={cellCount}
             variableCount={variableCount}
             pillarCount={pillarCount}
@@ -838,6 +879,34 @@ export function LoopCommandChain({
   const briefBuilder = iap?.brief_builder ?? null;
   const loopStatus   = iap?.loop_status ?? null;
 
+  // ── Staleness: generated before the latest successful analysis run ────────
+  // Loop status stage keys: "strategy_map" for strategy, "brief_builder" for briefs
+  const analysisFinishedAt = (analysisRun?.status === "success" ? analysisRun?.finished_at : null) ?? null;
+  const strategyGeneratedAt = (strategyLastRun?.status === "success" ? strategyLastRun?.finished_at : null)
+    ?? loopStatus?.find((l) => l.stage === "strategy_map")?.generated_at
+    ?? null;
+  const briefsGeneratedAt = (briefsLastRun?.status === "success" ? briefsLastRun?.finished_at : null)
+    ?? loopStatus?.find((l) => l.stage === "brief_builder")?.generated_at
+    ?? null;
+
+  const strategyIsStale =
+    strategyComplete &&
+    analysisComplete &&
+    !!analysisFinishedAt &&
+    !!strategyGeneratedAt &&
+    !strategyRunning &&
+    new Date(analysisFinishedAt) > new Date(strategyGeneratedAt);
+
+  const briefsIsStale =
+    briefsComplete &&
+    analysisComplete &&
+    !!briefsGeneratedAt &&
+    !briefsRunning &&
+    (
+      (!!analysisFinishedAt && new Date(analysisFinishedAt) > new Date(briefsGeneratedAt)) ||
+      (!!strategyGeneratedAt && new Date(strategyGeneratedAt) > new Date(briefsGeneratedAt))
+    );
+
   const completeCount = [analysisComplete, strategyComplete, briefsComplete].filter(Boolean).length;
   const anyRunning    = analysisRunning || strategyRunning || briefsRunning;
 
@@ -866,6 +935,7 @@ export function LoopCommandChain({
             stage="analysis"
             isComplete={analysisComplete}
             isRunning={analysisRunning}
+            isStale={false}
             isNext={!analysisComplete && !analysisRunning}
             isLocked={false}
             isActive={activeStage === "analysis"}
@@ -881,6 +951,7 @@ export function LoopCommandChain({
             stage="strategy"
             isComplete={strategyComplete}
             isRunning={strategyRunning}
+            isStale={strategyIsStale}
             isNext={analysisComplete && !strategyComplete && !strategyRunning}
             isLocked={!analysisComplete && !strategyComplete && !strategyRunning}
             isActive={activeStage === "strategy"}
@@ -897,6 +968,7 @@ export function LoopCommandChain({
             stage="briefs"
             isComplete={briefsComplete}
             isRunning={briefsRunning}
+            isStale={briefsIsStale}
             isNext={strategyComplete && !briefsComplete && !briefsRunning}
             isLocked={!strategyComplete && !briefsComplete && !briefsRunning}
             isActive={activeStage === "briefs"}
@@ -919,6 +991,8 @@ export function LoopCommandChain({
           briefsRunning={briefsRunning}
           strategyElapsedSeconds={strategyGen.elapsedSeconds}
           briefsElapsedSeconds={briefsGen.elapsedSeconds}
+          strategyIsStale={strategyIsStale}
+          briefsIsStale={briefsIsStale}
           cellCount={cellCount}
           variableCount={variableCount}
           pillarCount={pillarCount}
