@@ -462,6 +462,8 @@ export interface ColumnMappingSummaryEntry {
   method: string;
   /** Resolution tier: exact (verbatim), resolved (alias/slug/case), inferred (Jaccard ≥0.5), or missing (not found). */
   tier: ColumnMappingSummaryEntryTier;
+  /** True when this column is listed in the spec's requiredBreakdownColumns for this CSV class. A missing required column will cause the analysis run to produce incomplete or failed results — not just reduced confidence. */
+  is_required: boolean;
 }
 
 export type ManualImportResultStatus = typeof ManualImportResultStatus[keyof typeof ManualImportResultStatus];

@@ -939,6 +939,7 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
       confidence: number;
       method: string;
       tier: "exact" | "resolved" | "inferred" | "missing";
+      is_required: boolean;
     }> | undefined;
     if (csvClass) {
       try {
@@ -956,6 +957,7 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
           confidence: e.confidence,
           method: e.method,
           tier: e.tier,
+          is_required: e.isRequired,
         }));
       } catch (err) {
         if (err instanceof IapCsvFormatError) {

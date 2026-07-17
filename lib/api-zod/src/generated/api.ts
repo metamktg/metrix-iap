@@ -92,7 +92,8 @@ export const StageManualImportResponse = zod.object({
   "found_as": zod.string().nullish().describe('The actual header value found in the CSV, or null if the column was not found.'),
   "confidence": zod.number().describe('Mapping confidence 0–1. 1.0 = exact match; 0 = not found.'),
   "method": zod.string().describe('Human-readable label describing how the column was resolved.'),
-  "tier": zod.enum(['exact', 'resolved', 'inferred', 'missing']).describe('Resolution tier: exact (verbatim), resolved (alias\/slug\/case), inferred (Jaccard ≥0.5), or missing (not found).')
+  "tier": zod.enum(['exact', 'resolved', 'inferred', 'missing']).describe('Resolution tier: exact (verbatim), resolved (alias\/slug\/case), inferred (Jaccard ≥0.5), or missing (not found).'),
+  "is_required": zod.boolean().describe('True when this column is listed in the spec\'s requiredBreakdownColumns for this CSV class. A missing required column will cause the analysis run to produce incomplete or failed results — not just reduced confidence.')
 }).describe('Per-canonical column mapping result included in the upload staging response. Covers every breakdown and base metric column so the client can render a full column-mapping report.')).optional().describe('Column mapping results for performance CSV uploads (absent for creative_asset uploads). Covers every canonical breakdown and base metric column.')
 })
 
@@ -129,7 +130,8 @@ export const ListManualImportsResponse = zod.object({
   "found_as": zod.string().nullish().describe('The actual header value found in the CSV, or null if the column was not found.'),
   "confidence": zod.number().describe('Mapping confidence 0–1. 1.0 = exact match; 0 = not found.'),
   "method": zod.string().describe('Human-readable label describing how the column was resolved.'),
-  "tier": zod.enum(['exact', 'resolved', 'inferred', 'missing']).describe('Resolution tier: exact (verbatim), resolved (alias\/slug\/case), inferred (Jaccard ≥0.5), or missing (not found).')
+  "tier": zod.enum(['exact', 'resolved', 'inferred', 'missing']).describe('Resolution tier: exact (verbatim), resolved (alias\/slug\/case), inferred (Jaccard ≥0.5), or missing (not found).'),
+  "is_required": zod.boolean().describe('True when this column is listed in the spec\'s requiredBreakdownColumns for this CSV class. A missing required column will cause the analysis run to produce incomplete or failed results — not just reduced confidence.')
 }).describe('Per-canonical column mapping result included in the upload staging response. Covers every breakdown and base metric column so the client can render a full column-mapping report.')).nullish().describe('Column mapping results stored at upload time for performance CSV imports (absent for creative_asset uploads). Used to surface column health warnings at the \'Run analysis\' step and to re-hydrate the mapping panel on subsequent visits without re-uploading.')
 }))
 })
@@ -173,7 +175,8 @@ export const UpdateManualImportAdNamesResponse = zod.object({
   "found_as": zod.string().nullish().describe('The actual header value found in the CSV, or null if the column was not found.'),
   "confidence": zod.number().describe('Mapping confidence 0–1. 1.0 = exact match; 0 = not found.'),
   "method": zod.string().describe('Human-readable label describing how the column was resolved.'),
-  "tier": zod.enum(['exact', 'resolved', 'inferred', 'missing']).describe('Resolution tier: exact (verbatim), resolved (alias\/slug\/case), inferred (Jaccard ≥0.5), or missing (not found).')
+  "tier": zod.enum(['exact', 'resolved', 'inferred', 'missing']).describe('Resolution tier: exact (verbatim), resolved (alias\/slug\/case), inferred (Jaccard ≥0.5), or missing (not found).'),
+  "is_required": zod.boolean().describe('True when this column is listed in the spec\'s requiredBreakdownColumns for this CSV class. A missing required column will cause the analysis run to produce incomplete or failed results — not just reduced confidence.')
 }).describe('Per-canonical column mapping result included in the upload staging response. Covers every breakdown and base metric column so the client can render a full column-mapping report.')).nullish().describe('Column mapping results stored at upload time for performance CSV imports (absent for creative_asset uploads). Used to surface column health warnings at the \'Run analysis\' step and to re-hydrate the mapping panel on subsequent visits without re-uploading.')
 })
 

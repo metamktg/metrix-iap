@@ -57,6 +57,12 @@ export type ColumnMappingSummaryEntry = {
   confidence: number;
   method: string;
   tier: "exact" | "resolved" | "inferred" | "missing";
+  /**
+   * True when the column is listed in the spec's `requiredBreakdownColumns`
+   * for this CSV class. A missing required column will cause the analysis run
+   * to produce incomplete or failed results, not just reduced confidence.
+   */
+  isRequired: boolean;
 };
 
 export type IapCsvParseResult = {
@@ -234,6 +240,7 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
         confidence: match.confidence,
         method: match.method,
         tier: matchTier(match),
+        isRequired: spec.requiredBreakdownColumns.includes(col),
       });
     } else {
       missingBreakdowns.push(col);
@@ -263,6 +270,7 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
           confidence: match.confidence,
           method: match.method,
           tier: matchTier(match),
+          isRequired: false,
         });
       } else {
         missingBaseMetrics.push(col);
@@ -286,6 +294,7 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
         confidence: match.confidence,
         method: match.method,
         tier: matchTier(match),
+        isRequired: false,
       });
     } else {
       missingBaseMetrics.push(col);
@@ -318,6 +327,7 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
         confidence: inferred.confidence,
         method: inferred.method,
         tier: "inferred",
+        isRequired: spec.requiredBreakdownColumns.includes(col),
       });
 
       // Only emit a warning for moderate-confidence matches (0.5–<0.75).
@@ -346,7 +356,7 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
       // Only set a "missing" summary entry if one isn't already there (primary cascade
       // never writes "missing" entries — they only originate here).
       if (!summaryMap.has(col)) {
-        summaryMap.set(col, { canonical: col, foundAs: null, confidence: 0, method: "Not found", tier: "missing" });
+        summaryMap.set(col, { canonical: col, foundAs: null, confidence: 0, method: "Not found", tier: "missing", isRequired: spec.requiredBreakdownColumns.includes(col) });
       }
     }
   }

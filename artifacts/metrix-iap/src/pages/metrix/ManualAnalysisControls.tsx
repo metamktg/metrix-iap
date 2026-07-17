@@ -44,10 +44,13 @@ import {
 function RunAnalysisBtn({
   onClick,
   disabled,
+  warning,
   children,
 }: {
   onClick: () => void;
   disabled?: boolean;
+  /** When true, uses amber "run anyway" styling to signal elevated risk. */
+  warning?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -55,8 +58,15 @@ function RunAnalysisBtn({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-[11px] font-medium text-primary transition-colors",
-        disabled ? "opacity-60 cursor-not-allowed" : "hover:bg-primary/25"
+        "flex items-center gap-1.5 h-8 px-3 rounded-md border text-[11px] font-medium transition-colors",
+        warning
+          ? "bg-amber-400/15 border-amber-400/40 text-amber-200"
+          : "bg-primary/15 border-primary/30 text-primary",
+        disabled
+          ? "opacity-60 cursor-not-allowed"
+          : warning
+          ? "hover:bg-amber-400/25"
+          : "hover:bg-primary/25"
       )}
     >
       {children}
@@ -463,9 +473,14 @@ function CreativeLinkageStatus({
  * Compact pre-run warning banner that reads the mapping_summary stored on
  * the account's staged performance CSV imports and surfaces any columns
  * that are missing (tier = "missing") or only inferred with low confidence
- * (tier = "inferred"). Non-blocking — the user can still press "Run
- * analysis" — but names the specific columns so they can fix the CSV
- * before committing compute time.
+ * (tier = "inferred").
+ *
+ * Required breakdown columns (is_required = true) that are missing are shown
+ * in a distinct red section — these will cause the analysis run to produce
+ * incomplete or failed results, not just reduced confidence.
+ *
+ * Non-blocking — the user can still press "Run analysis" — but names the
+ * specific columns so they can fix the CSV before committing compute time.
  */
 function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
   const [expanded, setExpanded] = useState(false);
@@ -480,12 +495,12 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
 
   if (csvImports.length === 0) return null;
 
-  // Gather all problem entries across both CSVs, tagged with the CSV kind.
   type ProblemEntry = {
     canonical: string;
     tier: string;
     found_as: string | null;
     csvLabel: string;
+    isRequired: boolean;
   };
   const problems: ProblemEntry[] = [];
   for (const imp of csvImports) {
@@ -493,63 +508,109 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
       imp.kind === "performance_demo_csv" ? "Demographics CSV" : "Placements CSV";
     for (const entry of imp.mapping_summary ?? []) {
       if (entry.tier === "missing" || entry.tier === "inferred") {
-        problems.push({ canonical: entry.canonical, tier: entry.tier, found_as: entry.found_as ?? null, csvLabel: label });
+        problems.push({
+          canonical: entry.canonical,
+          tier: entry.tier,
+          found_as: entry.found_as ?? null,
+          csvLabel: label,
+          isRequired: entry.is_required ?? false,
+        });
       }
     }
   }
 
   if (problems.length === 0) return null;
 
-  const missingCount = problems.filter((p) => p.tier === "missing").length;
-  const inferredCount = problems.filter((p) => p.tier === "inferred").length;
+  const requiredMissing = problems.filter((p) => p.tier === "missing" && p.isRequired);
+  const optionalMissing = problems.filter((p) => p.tier === "missing" && !p.isRequired);
+  const inferred = problems.filter((p) => p.tier === "inferred");
 
-  const headline =
-    missingCount > 0
-      ? `${missingCount} column${missingCount > 1 ? "s" : ""} missing from your CSV${inferredCount > 0 ? `, ${inferredCount} low-confidence` : ""}`
-      : `${inferredCount} column${inferredCount > 1 ? "s" : ""} matched with low confidence`;
+  // Required-missing columns get their own red section at the top.
+  // Optional-missing and inferred columns share the amber section below.
+  const hasRequired = requiredMissing.length > 0;
+  const amberProblems = [...optionalMissing, ...inferred];
 
-  const subtext =
-    missingCount > 0
-      ? "Missing columns may reduce analysis accuracy. You can still run, but consider fixing your CSV first."
-      : "These columns were matched by similarity rather than name. Verify the CSV header matches the expected column names.";
+  const renderProblemRow = (p: ProblemEntry, i: number) => (
+    <li key={i} className="text-[10px] leading-relaxed" style={{ color: p.isRequired && p.tier === "missing" ? "rgb(252 165 165 / 0.85)" : "rgb(253 230 138 / 0.75)" }}>
+      <span
+        className={cn(
+          "inline-block mr-1.5 px-1 py-px rounded text-[9px] font-semibold uppercase tracking-wide border",
+          p.tier === "missing" && p.isRequired
+            ? "bg-red-500/15 border-red-400/40 text-red-300"
+            : p.tier === "missing"
+            ? "bg-red-500/10 border-red-400/30 text-red-300"
+            : "bg-amber-400/10 border-amber-400/30 text-amber-300"
+        )}
+      >
+        {p.tier === "missing" ? "missing" : "low confidence"}
+      </span>
+      <span className="font-medium" style={{ color: p.isRequired && p.tier === "missing" ? "rgb(252 165 165)" : "rgb(253 230 138 / 0.9)" }}>{p.canonical}</span>
+      {p.found_as && p.tier === "inferred" && (
+        <span style={{ color: "rgb(253 230 138 / 0.55)" }}> (found as &ldquo;{p.found_as}&rdquo;)</span>
+      )}
+      <span style={{ marginLeft: "0.25rem", color: p.isRequired && p.tier === "missing" ? "rgb(252 165 165 / 0.45)" : "rgb(253 230 138 / 0.45)" }}>· {p.csvLabel}</span>
+    </li>
+  );
 
   return (
-    <div className="rounded-lg border border-amber-400/30 bg-amber-400/[0.06] p-3 space-y-2">
-      <button
-        onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-start gap-2 text-left"
-      >
-        <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-        <div className="flex-1 min-w-0">
-          <div className="text-[11px] font-semibold text-amber-200">{headline}</div>
-          <p className="text-[10px] text-amber-100/70 mt-0.5 leading-relaxed">
-            {subtext}{" "}
-            <span className="underline cursor-pointer">{expanded ? "Hide" : "Show"} details</span>
-          </p>
+    <div className="space-y-2">
+      {/* ── Required-missing section (red) ─────────────────────────────── */}
+      {hasRequired && (
+        <div className="rounded-lg border border-red-400/35 bg-red-500/[0.07] p-3 space-y-2">
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="w-full flex items-start gap-2 text-left"
+          >
+            <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <div className="text-[11px] font-semibold text-red-200">
+                {requiredMissing.length} required breakdown column{requiredMissing.length > 1 ? "s" : ""} missing
+              </div>
+              <p className="text-[10px] text-red-100/70 mt-0.5 leading-relaxed">
+                These columns are load-bearing for analysis. Without them the run will likely produce
+                incomplete or failed results.{" "}
+                <span className="underline cursor-pointer">{expanded ? "Hide" : "Show"} details</span>
+              </p>
+            </div>
+          </button>
+          {expanded && (
+            <ul className="space-y-1 pt-1 border-t border-red-400/20">
+              {requiredMissing.map((p, i) => renderProblemRow(p, i))}
+            </ul>
+          )}
         </div>
-      </button>
-      {expanded && (
-        <ul className="space-y-1 pt-1 border-t border-amber-400/20">
-          {problems.map((p, i) => (
-            <li key={i} className="text-[10px] text-amber-100/75 leading-relaxed">
-              <span
-                className={cn(
-                  "inline-block mr-1.5 px-1 py-px rounded text-[9px] font-semibold uppercase tracking-wide border",
-                  p.tier === "missing"
-                    ? "bg-red-500/10 border-red-400/30 text-red-300"
-                    : "bg-amber-400/10 border-amber-400/30 text-amber-300"
-                )}
-              >
-                {p.tier === "missing" ? "missing" : "low confidence"}
-              </span>
-              <span className="font-medium text-amber-100/90">{p.canonical}</span>
-              {p.found_as && p.tier === "inferred" && (
-                <span className="text-amber-100/55"> (found as &ldquo;{p.found_as}&rdquo;)</span>
-              )}
-              <span className="text-amber-100/45 ml-1">· {p.csvLabel}</span>
-            </li>
-          ))}
-        </ul>
+      )}
+
+      {/* ── Optional-missing + inferred section (amber) ────────────────── */}
+      {amberProblems.length > 0 && (
+        <div className="rounded-lg border border-amber-400/30 bg-amber-400/[0.06] p-3 space-y-2">
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="w-full flex items-start gap-2 text-left"
+          >
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <div className="text-[11px] font-semibold text-amber-200">
+                {optionalMissing.length > 0 && inferred.length > 0
+                  ? `${optionalMissing.length} column${optionalMissing.length > 1 ? "s" : ""} missing, ${inferred.length} low-confidence`
+                  : optionalMissing.length > 0
+                  ? `${optionalMissing.length} optional column${optionalMissing.length > 1 ? "s" : ""} missing`
+                  : `${inferred.length} column${inferred.length > 1 ? "s" : ""} matched with low confidence`}
+              </div>
+              <p className="text-[10px] text-amber-100/70 mt-0.5 leading-relaxed">
+                {optionalMissing.length > 0
+                  ? "Missing optional columns may reduce analysis accuracy. Consider fixing your CSV first."
+                  : "These columns were matched by similarity rather than name. Verify the CSV header matches the expected column names."}{" "}
+                <span className="underline cursor-pointer">{expanded ? "Hide" : "Show"} details</span>
+              </p>
+            </div>
+          </button>
+          {expanded && (
+            <ul className="space-y-1 pt-1 border-t border-amber-400/20">
+              {amberProblems.map((p, i) => renderProblemRow(p, i))}
+            </ul>
+          )}
+        </div>
       )}
     </div>
   );
@@ -583,6 +644,15 @@ export function AnalysisControls({
 
   const run = latest?.run ?? null;
   const isRunning = run?.status === "running";
+
+  // Detect whether any required breakdown column is missing across staged CSVs.
+  // When true, we soft-block the Run button with a warning (escape hatch kept).
+  const hasRequiredMissing = (importsData?.imports ?? []).some(
+    (imp) =>
+      (imp.kind === "performance_demo_csv" || imp.kind === "performance_placement_csv") &&
+      imp.mapping_summary?.some((e) => e.tier === "missing" && e.is_required)
+  );
+  const [forceRunAcknowledged, setForceRunAcknowledged] = useState(false);
 
   useEffect(() => {
     if (isRunning && !pollRef.current) {
@@ -687,6 +757,32 @@ export function AnalysisControls({
 
       {error && <p className="text-[11px] text-red-400">{error}</p>}
 
+      {/* Soft-block warning when required breakdown columns are missing */}
+      {hasRequiredMissing && !isRunning && !forceRunAcknowledged && (
+        <div className="rounded-lg border border-red-400/35 bg-red-500/[0.07] p-3 space-y-2">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0 space-y-1">
+              <div className="text-[11px] font-semibold text-red-200">
+                Required columns are missing — this run will likely fail
+              </div>
+              <p className="text-[10px] text-red-100/70 leading-relaxed">
+                One or more required breakdown columns (e.g. Age, Placement) were not found in your
+                CSV. Fix the file and re-upload it, or run anyway and review the error.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 pt-0.5">
+            <button
+              onClick={() => setForceRunAcknowledged(true)}
+              className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-red-400/35 bg-red-500/[0.08] text-[11px] font-medium text-red-200 hover:bg-red-500/[0.14] transition-colors"
+            >
+              <PlayCircle className="w-3 h-3" /> Run anyway
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between gap-2">
         {run ? (
           <div className="flex items-center gap-2 min-w-0">
@@ -703,10 +799,22 @@ export function AnalysisControls({
         ) : (
           <span className="text-[10px] text-muted-foreground/75">No analysis has been run yet.</span>
         )}
-        <RunAnalysisBtn onClick={handleRun} disabled={isRunning || startMutation.isPending}>
+        <RunAnalysisBtn
+          onClick={handleRun}
+          disabled={isRunning || startMutation.isPending || (hasRequiredMissing && !forceRunAcknowledged)}
+          warning={hasRequiredMissing && forceRunAcknowledged}
+        >
           {isRunning || startMutation.isPending ? (
             <>
               <Loader2 className="w-3.5 h-3.5 animate-spin" /> Running…
+            </>
+          ) : hasRequiredMissing && !forceRunAcknowledged ? (
+            <>
+              <PlayCircle className="w-3.5 h-3.5" /> Run analysis
+            </>
+          ) : hasRequiredMissing && forceRunAcknowledged ? (
+            <>
+              <PlayCircle className="w-3.5 h-3.5" /> Run anyway
             </>
           ) : (
             <>
