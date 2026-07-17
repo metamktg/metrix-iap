@@ -61,7 +61,7 @@ import { cn } from "@/lib/utils";
 import { useLocation, useSearch } from "wouter";
 import { ConnectMetaDialog, ManualImportDialog } from "./ConnectAccountDialogs";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
-import { Plug, FileUp, Clock, Database, Info, ArrowRight, CheckSquare, Square, CalendarX2, AlertTriangle, ChevronDown, ChevronLeft, Sparkles, Map as MapIcon } from "lucide-react";
+import { Plug, FileUp, Clock, Database, Info, ArrowRight, ArrowLeftRight, CheckSquare, Square, CalendarX2, AlertTriangle, ChevronDown, ChevronLeft, Sparkles, Map as MapIcon } from "lucide-react";
 import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
 import { DataSourceBadge } from "@/components/ui/DataSourceBadge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -365,7 +365,10 @@ export function RangeScopeBar({ grainNote }: { grainNote?: string }) {
   return (
     <div className="flex items-center gap-2 flex-wrap px-6 py-2 border-b border-border/30 bg-white/[0.01]">
       {compare && compareRange && (
-        <span className="text-[11px] text-primary/80 tabular-nums">vs {formatIsoRange(compareRange)}</span>
+        <span className="inline-flex items-center gap-1 text-[11px] text-primary/80 tabular-nums">
+          <ArrowLeftRight className="w-3 h-3 shrink-0 opacity-70" />
+          vs {formatIsoRange(compareRange)}
+        </span>
       )}
       {narrowed && (
         <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground/65">
