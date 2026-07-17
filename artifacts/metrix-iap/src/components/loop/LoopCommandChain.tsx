@@ -75,6 +75,12 @@ function fmtFull(iso: string): string {
   });
 }
 
+function fmtElapsed(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
 // ── Stat pill ─────────────────────────────────────────────────────────────
 
 function StatPill({ value, label }: { value: string | number; label?: string }) {
@@ -120,6 +126,7 @@ function StageTile({
   isNext,
   isLocked,
   isActive,
+  elapsedSeconds,
   onClick,
 }: {
   stage: Stage;
@@ -128,6 +135,7 @@ function StageTile({
   isNext: boolean;
   isLocked: boolean;
   isActive: boolean;
+  elapsedSeconds?: number;
   onClick: () => void;
 }) {
   const { icon: Icon, label } = STAGE_CONFIG[stage];
@@ -137,7 +145,7 @@ function StageTile({
       onClick={onClick}
       disabled={isLocked}
       className={cn(
-        "flex flex-col items-center justify-center gap-2 py-3 px-2 rounded-xl flex-1 min-w-0",
+        "relative flex flex-col items-center justify-center gap-2 py-3 px-2 rounded-xl flex-1 min-w-0 overflow-hidden",
         "border transition-all duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40",
         isLocked
           ? "border-border/8 bg-transparent opacity-25 cursor-not-allowed"
@@ -152,6 +160,16 @@ function StageTile({
           : "border-border/15 hover:border-border/30 cursor-pointer",
       )}
     >
+      {/* Animated indeterminate progress bar — bottom edge, running only */}
+      {isRunning && (
+        <span
+          aria-hidden="true"
+          className="absolute bottom-0 left-0 right-0 h-[2px] overflow-hidden"
+        >
+          <span className="absolute inset-y-0 w-1/2 bg-amber-400/50 rounded-full animate-[progress-slide_1.4s_ease-in-out_infinite]" />
+        </span>
+      )}
+
       {/* Icon + inline state indicator */}
       <div className="relative flex items-center justify-center">
         <Icon className={cn(
@@ -185,6 +203,13 @@ function StageTile({
       )}>
         {label}
       </span>
+
+      {/* Elapsed time — replaces label when running */}
+      {isRunning && elapsedSeconds !== undefined && (
+        <span className="text-[8px] font-mono tabular-nums text-amber-400/50 leading-none -mt-1">
+          {fmtElapsed(elapsedSeconds)}
+        </span>
+      )}
     </button>
   );
 }
@@ -440,6 +465,8 @@ function CommandHub({
   analysisRunning,
   strategyRunning,
   briefsRunning,
+  strategyElapsedSeconds,
+  briefsElapsedSeconds,
   cellCount,
   variableCount,
   pillarCount,
@@ -465,6 +492,8 @@ function CommandHub({
   analysisRunning: boolean;
   strategyRunning: boolean;
   briefsRunning: boolean;
+  strategyElapsedSeconds: number;
+  briefsElapsedSeconds: number;
   cellCount: number;
   variableCount: number;
   pillarCount: number;
@@ -502,6 +531,10 @@ function CommandHub({
     || (stage === "strategy" && strategyRunning)
     || (stage === "briefs"   && briefsRunning);
 
+  const elapsedSeconds = stage === "strategy" ? strategyElapsedSeconds
+    : stage === "briefs" ? briefsElapsedSeconds
+    : 0;
+
   const isComplete = stage === "analysis" ? analysisComplete
     : stage === "strategy" ? strategyComplete
     : briefsComplete;
@@ -528,9 +561,22 @@ function CommandHub({
   // Actions section content
   function Actions() {
     if (isRunning) return (
-      <div className="flex items-center gap-2">
-        <Loader2 className="w-3 h-3 text-amber-400/70 animate-spin shrink-0" />
-        <span className="text-[10px] text-amber-400/55">Processing — views will update when complete</span>
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <Loader2 className="w-3 h-3 text-amber-400/70 animate-spin shrink-0" />
+          <span className="text-[10px] text-amber-400/55">Processing — views will update when complete</span>
+        </div>
+        {/* Elapsed time + indeterminate progress bar */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 h-[3px] rounded-full overflow-hidden bg-amber-400/10">
+            <span className="absolute inset-y-0 w-1/3 bg-amber-400/45 rounded-full animate-[progress-slide_1.4s_ease-in-out_infinite]" />
+          </div>
+          {elapsedSeconds > 0 && (
+            <span className="text-[9px] font-mono tabular-nums text-amber-400/45 leading-none shrink-0">
+              {fmtElapsed(elapsedSeconds)}
+            </span>
+          )}
+        </div>
       </div>
     );
 
@@ -838,6 +884,7 @@ export function LoopCommandChain({
             isNext={analysisComplete && !strategyComplete && !strategyRunning}
             isLocked={!analysisComplete && !strategyComplete && !strategyRunning}
             isActive={activeStage === "strategy"}
+            elapsedSeconds={strategyGen.elapsedSeconds}
             onClick={() => toggle("strategy")}
           />
 
@@ -853,6 +900,7 @@ export function LoopCommandChain({
             isNext={strategyComplete && !briefsComplete && !briefsRunning}
             isLocked={!strategyComplete && !briefsComplete && !briefsRunning}
             isActive={activeStage === "briefs"}
+            elapsedSeconds={briefsGen.elapsedSeconds}
             onClick={() => toggle("briefs")}
           />
         </div>
@@ -869,6 +917,8 @@ export function LoopCommandChain({
           analysisRunning={analysisRunning}
           strategyRunning={strategyRunning}
           briefsRunning={briefsRunning}
+          strategyElapsedSeconds={strategyGen.elapsedSeconds}
+          briefsElapsedSeconds={briefsGen.elapsedSeconds}
           cellCount={cellCount}
           variableCount={variableCount}
           pillarCount={pillarCount}

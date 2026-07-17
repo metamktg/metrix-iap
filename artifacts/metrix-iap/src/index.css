@@ -770,3 +770,8 @@
     }
   }
 }
+
+@keyframes progress-slide {
+  0%   { left: -60%; }
+  100% { left: 110%; }
+}

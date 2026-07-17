@@ -25,6 +25,9 @@ const KIND_LABEL: Record<GenerationKind, string> = {
   briefs: "briefs",
 };
 
+// How often (ms) we poll the run status endpoint while a job is in flight.
+const POLL_INTERVAL_MS = 2500;
+
 export function useGenerationRun(accountId: string | null, kind: GenerationKind) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -35,7 +38,7 @@ export function useGenerationRun(accountId: string | null, kind: GenerationKind)
     query: {
       queryKey: getGetLatestGenerationRunQueryKey(accountId ?? "", kind),
       enabled: !!accountId,
-      refetchInterval: polling ? 2500 : false,
+      refetchInterval: polling ? POLL_INTERVAL_MS : false,
     },
   });
 
@@ -102,9 +105,32 @@ export function useGenerationRun(accountId: string | null, kind: GenerationKind)
 
   const isRunning = mutation.isPending || polling || run?.status === "running";
 
+  // ── Elapsed-time counter ─────────────────────────────────────────────────
+  // Starts ticking when isRunning becomes true; resets when it becomes false.
+  // Gives the user a live signal that work is happening without needing the
+  // hub open.
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const runningStartRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!isRunning) {
+      runningStartRef.current = null;
+      setElapsedSeconds(0);
+      return;
+    }
+    if (runningStartRef.current === null) {
+      runningStartRef.current = Date.now();
+    }
+    const iv = setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - runningStartRef.current!) / 1000));
+    }, 1000);
+    return () => clearInterval(iv);
+  }, [isRunning]);
+
   return {
     start,
     isRunning,
+    elapsedSeconds,
     lastRun: run,
     lastError: run?.status === "error" ? (run.error_message ?? "Generation failed.") : null,
   };
