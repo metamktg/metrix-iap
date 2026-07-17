@@ -66,6 +66,7 @@ import {
   Hash,
   Sparkles,
   GitMerge,
+  ArrowLeftRight,
 } from "lucide-react";
 import type { AdAccount } from "@/lib/data/seedTypes";
 import {
@@ -422,6 +423,8 @@ function CsvSlotUpload({
   staged,
   onStaged,
   onRemoved,
+  highlightAsTarget,
+  onMismatch,
 }: {
   accountId: string;
   kind: "performance_demo_csv" | "performance_placement_csv";
@@ -431,6 +434,8 @@ function CsvSlotUpload({
   staged: ManualImport | null;
   onStaged: () => void;
   onRemoved: () => void;
+  highlightAsTarget?: boolean;
+  onMismatch?: (targetCsvClass: IapCsvClassKey | null) => void;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -449,11 +454,14 @@ function CsvSlotUpload({
     }
   }, [staged]);
 
+  const isMismatch = Boolean(error?.includes("Did you upload it in the wrong slot?"));
+
   /** Stages a file immediately. Accepts the file directly so it can be called
    *  from the onChange handler before React state for `file` has settled. */
   const handleStage = async (fileToStage: File) => {
     setError(null);
     setMappingSummary(null);
+    onMismatch?.(null);
     if (fileToStage.size > MAX_UPLOAD_BYTES) {
       setError("File is too large — the limit is 8 MB.");
       setFile(null);
@@ -476,7 +484,16 @@ function CsvSlotUpload({
       if (fileRef.current) fileRef.current.value = "";
       onStaged();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed. Check your connection and try again.");
+      const msg = err instanceof Error ? err.message : "Upload failed. Check your connection and try again.";
+      setError(msg);
+      if (msg.includes("Did you upload it in the wrong slot?")) {
+        const targetClass: IapCsvClassKey = msg.includes("Device/Placement CSV instead")
+          ? "device_placement"
+          : "demographic";
+        onMismatch?.(targetClass);
+      } else {
+        onMismatch?.(null);
+      }
       setFile(null);
       if (fileRef.current) fileRef.current.value = "";
     } finally {
@@ -492,7 +509,14 @@ function CsvSlotUpload({
   };
 
   return (
-    <div className="space-y-2">
+    <div className={cn("space-y-2 rounded-lg transition-colors", highlightAsTarget && "ring-1 ring-amber-400/40 ring-offset-2 ring-offset-background p-2 -m-2")}>
+      {highlightAsTarget && (
+        <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md border border-amber-400/35 bg-amber-400/[0.07]">
+          <ArrowLeftRight className="w-3 h-3 text-amber-400 shrink-0" />
+          <span className="text-[11px] text-amber-300 font-semibold">Upload the misplaced file here instead</span>
+        </div>
+      )}
+
       <div className="flex items-start gap-3 p-3 rounded-lg border border-border/40 bg-white/[0.02]">
         <FileSpreadsheet className={cn("w-4 h-4 shrink-0 mt-0.5", staged ? "text-emerald-400" : "text-muted-foreground/85")} />
         <div className="min-w-0 flex-1">
@@ -540,17 +564,23 @@ function CsvSlotUpload({
               "w-full flex flex-col items-center gap-1.5 p-4 rounded-lg border border-dashed transition-colors",
               uploadPct !== null
                 ? "border-primary/30 bg-primary/[0.03] cursor-not-allowed"
+                : highlightAsTarget
+                ? "border-amber-400/50 bg-amber-400/[0.05] hover:border-amber-400/70 hover:bg-amber-400/[0.08] cursor-pointer"
                 : "border-border/60 hover:border-primary/40 hover:bg-white/[0.02] cursor-pointer"
             )}
           >
             {uploadPct !== null ? (
               <Loader2 className="w-4 h-4 text-primary animate-spin" />
+            ) : highlightAsTarget ? (
+              <Upload className="w-4 h-4 text-amber-400" />
             ) : (
               <Upload className="w-4 h-4 text-muted-foreground/85" />
             )}
-            <span className="text-[11px] text-muted-foreground/80">
+            <span className={cn("text-[11px]", highlightAsTarget ? "text-amber-300/90" : "text-muted-foreground/80")}>
               {uploadPct !== null
                 ? `Uploading${file ? ` ${file.name}` : ""}…`
+                : highlightAsTarget
+                ? "Click to upload the misplaced file here"
                 : "Click to choose a .csv file — uploads immediately"}
             </span>
           </button>
@@ -561,10 +591,20 @@ function CsvSlotUpload({
       {mappingSummary && <CsvMappingPanel summary={mappingSummary} />}
 
       {error && (
-        <div className="flex items-start gap-2 p-2.5 rounded-lg border border-red-400/25 bg-red-400/[0.06]">
-          <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
-          <p className="text-[11px] text-red-300 leading-relaxed">{error}</p>
-        </div>
+        isMismatch ? (
+          <div className="rounded-lg border border-amber-400/30 bg-amber-400/[0.06] p-3 space-y-1.5">
+            <div className="flex items-center gap-2">
+              <ArrowLeftRight className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span className="text-[12px] font-semibold text-amber-300">File uploaded to wrong slot</span>
+            </div>
+            <p className="text-[11px] text-amber-200/80 leading-relaxed pl-[1.375rem]">{error}</p>
+          </div>
+        ) : (
+          <div className="flex items-start gap-2 p-2.5 rounded-lg border border-red-400/25 bg-red-400/[0.06]">
+            <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
+            <p className="text-[11px] text-red-300 leading-relaxed">{error}</p>
+          </div>
+        )
       )}
     </div>
   );
@@ -1227,6 +1267,7 @@ export function ManualUploadPanel({
   onDone?: () => void;
 }) {
   const [step, setStep] = useState<"upload" | "review">("upload");
+  const [highlightSlot, setHighlightSlot] = useState<IapCsvClassKey | null>(null);
   const { data, refetch } = useListManualImports(accountId);
   const queryClient = useQueryClient();
   const imports = data?.imports ?? [];
@@ -1340,8 +1381,10 @@ export function ManualUploadPanel({
           title={slot.title}
           desc={slot.desc}
           staged={slot.kind === "performance_demo_csv" ? demoImport : placementImport}
-          onStaged={refresh}
+          onStaged={() => { setHighlightSlot(null); refresh(); }}
           onRemoved={refresh}
+          highlightAsTarget={highlightSlot === slot.csvClass}
+          onMismatch={setHighlightSlot}
         />
       ))}
 
