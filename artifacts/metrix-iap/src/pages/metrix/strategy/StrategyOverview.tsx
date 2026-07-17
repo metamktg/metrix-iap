@@ -115,7 +115,7 @@ export function StrategyOverview() {
                     <GenerateButton
                       onClick={generation.start}
                       isRunning={generation.isRunning}
-                      label={strategy.provenance === "generated" ? "Regenerate strategy" : "Generate from analysis"}
+                      label="Build Strategy"
                       runningLabel="Generating…"
                     />
                   )}

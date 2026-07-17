@@ -730,6 +730,9 @@ function CommandHub({
     onClose();
   }
 
+  // Pre-execution confirmation step for strategy / briefs
+  const [pendingConfirm, setPendingConfirm] = useState<"strategy" | "briefs" | null>(null);
+
   // Actions section content
   function Actions() {
     if (isRunning) return (
@@ -783,35 +786,57 @@ function CommandHub({
             analysisComplete ? "mx-secondary-btn" : "mx-primary-btn",
           )}
         >
-          {analysisComplete
-            ? <><RefreshCw className="w-3.5 h-3.5" /> Re-run</>
-            : <><PlayCircle className="w-3.5 h-3.5" /> Run Analysis</>
-          }
+          <PlayCircle className="w-3.5 h-3.5" /> Run Analysis
         </button>
       </div>
     );
 
-    if (stage === "strategy") return (
-      <div className="flex flex-wrap gap-1.5">
-        <button
-          onClick={() => { onGenerateStrategy(); onClose(); }}
-          disabled={!analysisComplete}
-          className={cn(
-            "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
-            !analysisComplete
-              ? "opacity-30 cursor-not-allowed mx-secondary-btn"
-              : strategyComplete
-              ? "mx-secondary-btn"
-              : "mx-primary-btn",
-          )}
-        >
-          {strategyComplete
-            ? <><RefreshCw className="w-3.5 h-3.5" /> Regenerate</>
-            : <><Sparkles className="w-3.5 h-3.5" /> Generate Strategy</>
-          }
-        </button>
-      </div>
-    );
+    if (stage === "strategy") {
+      if (pendingConfirm === "strategy") return (
+        <div className="flex flex-col gap-2.5">
+          <div className="rounded-lg border border-primary/15 bg-primary/[0.05] px-2.5 py-2 space-y-1">
+            <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/35">Grounded in</p>
+            <p className="text-label text-foreground/70 leading-relaxed">
+              Analysis run
+              {analysisRun?.date_start && analysisRun?.date_end
+                ? ` · ${fmtDate(analysisRun.date_start)} – ${fmtDate(analysisRun.date_end)}`
+                : ""}
+              {analysisRun?.rows_ingested != null ? ` · ${analysisRun.rows_ingested.toLocaleString()} rows` : ""}
+            </p>
+          </div>
+          <div className="flex gap-1.5">
+            <button
+              onClick={() => { setPendingConfirm(null); onGenerateStrategy(); onClose(); }}
+              className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-primary-btn"
+            >
+              <Sparkles className="w-3.5 h-3.5" /> Build Strategy
+            </button>
+            <button
+              onClick={() => setPendingConfirm(null)}
+              className="inline-flex items-center text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      );
+      return (
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            onClick={() => analysisComplete && setPendingConfirm("strategy")}
+            disabled={!analysisComplete}
+            className={cn(
+              "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
+              !analysisComplete
+                ? "opacity-30 cursor-not-allowed mx-secondary-btn"
+                : "mx-primary-btn",
+            )}
+          >
+            <Sparkles className="w-3.5 h-3.5" /> Build Strategy
+          </button>
+        </div>
+      );
+    }
 
     if (stage === "report") return (
       <div className="flex flex-wrap gap-1.5">
@@ -851,30 +876,53 @@ function CommandHub({
               : "mx-primary-btn",
           )}
         >
-          <RefreshCw className="w-3.5 h-3.5" /> Run Analysis Again
+          <PlayCircle className="w-3.5 h-3.5" /> Run Analysis
         </button>
       </div>
     );
 
-    // briefs
+    // briefs — confirmation step before firing
+    if (pendingConfirm === "briefs") return (
+      <div className="flex flex-col gap-2.5">
+        <div className="rounded-lg border border-primary/15 bg-primary/[0.05] px-2.5 py-2 space-y-1">
+          <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/35">Grounded in</p>
+          <p className="text-label text-foreground/70 leading-relaxed">
+            Strategy
+            {strategyLastRun?.finished_at ? ` · generated ${fmtDate(strategyLastRun.finished_at)}` : ""}
+            {strategyLastRun?.model ? ` · ${strategyLastRun.model}` : ""}
+            {pillarCount > 0 ? ` · ${pillarCount} pillar${pillarCount === 1 ? "" : "s"}` : ""}
+          </p>
+        </div>
+        <div className="flex gap-1.5">
+          <button
+            onClick={() => { setPendingConfirm(null); onGenerateBriefs(); onClose(); }}
+            className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-primary-btn"
+          >
+            <Sparkles className="w-3.5 h-3.5" /> Draft Briefs
+          </button>
+          <button
+            onClick={() => setPendingConfirm(null)}
+            className="inline-flex items-center text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+
     return (
       <div className="flex flex-wrap gap-1.5">
         <button
-          onClick={() => { onGenerateBriefs(); onClose(); }}
+          onClick={() => strategyComplete && setPendingConfirm("briefs")}
           disabled={!strategyComplete}
           className={cn(
             "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
             !strategyComplete
               ? "opacity-30 cursor-not-allowed mx-secondary-btn"
-              : briefsComplete
-              ? "mx-secondary-btn"
               : "mx-primary-btn",
           )}
         >
-          {briefsComplete
-            ? <><RefreshCw className="w-3.5 h-3.5" /> Regenerate</>
-            : <><Sparkles className="w-3.5 h-3.5" /> Generate Briefs</>
-          }
+          <Sparkles className="w-3.5 h-3.5" /> Draft Briefs
         </button>
         {briefsComplete && (
           <button
