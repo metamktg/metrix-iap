@@ -13,7 +13,7 @@ import { readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel } from "../shared
 import type { CellPerformanceRow, VariablePerformanceRow, DemographicRow, PlacementRow, ConversionFunnelRow } from "@/lib/data/seedTypes";
 
 export function Th({ children, right }: { children: React.ReactNode; right?: boolean }) {
-  return <th className={cn("text-[10px] font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-2.5 py-2", right ? "text-right" : "text-left")}>{children}</th>;
+  return <th className={cn("text-label font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-2.5 py-2", right ? "text-right" : "text-left")}>{children}</th>;
 }
 
 // ─── Column sorting ───────────────────────────────────────────────────
@@ -90,7 +90,7 @@ export function SortableTh({
           data-testid={`sort-${sortKey}`}
           title={active ? (sort!.dir === "asc" ? "Sorted ascending — click for descending" : "Sorted descending — click for ascending") : "Click to sort"}
           className={cn(
-            "inline-flex items-center gap-0.5 text-[10px] font-mono uppercase tracking-widest font-semibold transition-colors",
+            "inline-flex items-center gap-0.5 text-label font-mono uppercase tracking-widest font-semibold transition-colors",
             active ? "text-foreground" : "text-muted-foreground/70 hover:text-foreground",
             right && "flex-row-reverse"
           )}
@@ -98,9 +98,9 @@ export function SortableTh({
           {children}
           {active &&
             (sort!.dir === "asc" ? (
-              <ArrowUp className="w-2.5 h-2.5 text-primary/70" />
+              <ArrowUp className="w-3.5 h-3.5 text-primary/70" />
             ) : (
-              <ArrowDown className="w-2.5 h-2.5 text-primary/70" />
+              <ArrowDown className="w-3.5 h-3.5 text-primary/70" />
             ))}
         </button>
         {active && onReset && (
@@ -111,7 +111,7 @@ export function SortableTh({
             aria-label="Clear sort"
             className="ml-0.5 p-0.5 rounded text-muted-foreground/35 hover:text-foreground/80 hover:bg-white/[0.06] transition-colors"
           >
-            <X className="w-2.5 h-2.5" />
+            <X className="w-3.5 h-3.5" />
           </button>
         )}
       </div>
@@ -119,7 +119,7 @@ export function SortableTh({
   );
 }
 export function Td({ children, right, className }: { children: React.ReactNode; right?: boolean; className?: string }) {
-  return <td className={cn("px-2.5 py-2 text-[12px] text-foreground/85 align-top", right && "text-right tabular-nums", className)}>{children}</td>;
+  return <td className={cn("px-2.5 py-2 text-body text-foreground/85 align-top", right && "text-right tabular-nums", className)}>{children}</td>;
 }
 
 export function TableShell({ children }: { children: React.ReactNode }) {
@@ -168,7 +168,7 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
   const { sorted, sort, toggle, reset } = useColumnSort(rows, CELL_COLUMNS);
   return (
     <TableShell>
-      <thead className="sticky top-0 bg-[hsl(222_55%_7%)] z-10">
+      <thead className="sticky top-0 bg-surface-table z-10">
         <tr className="border-b border-border/40">
           <SortableTh sortKey="concept" sort={sort} onToggle={toggle} onReset={reset}>Cell / concept</SortableTh>
           <Th>Result type</Th>
@@ -225,7 +225,7 @@ export function VariableTable({
   const { sorted, sort, toggle, reset } = useColumnSort(rows, VARIABLE_COLUMNS);
   return (
     <TableShell>
-      <thead className="sticky top-0 bg-[hsl(222_55%_7%)] z-10">
+      <thead className="sticky top-0 bg-surface-table z-10">
         <tr className="border-b border-border/40">
           <SortableTh sortKey="variable" sort={sort} onToggle={toggle} onReset={reset}>Variable</SortableTh>
           <SortableTh sortKey="family" sort={sort} onToggle={toggle} onReset={reset}>Family</SortableTh>
@@ -288,7 +288,7 @@ export function DemographicTable({
   const { sorted, sort, toggle, reset } = useColumnSort(rows, DEMOGRAPHIC_COLUMNS);
   return (
     <TableShell>
-      <thead className="sticky top-0 bg-[hsl(222_55%_7%)] z-10">
+      <thead className="sticky top-0 bg-surface-table z-10">
         <tr className="border-b border-border/40">
           <SortableTh sortKey="cell" sort={sort} onToggle={toggle} onReset={reset}>Cell</SortableTh>
           <SortableTh sortKey="age" sort={sort} onToggle={toggle} onReset={reset}>Age</SortableTh>
@@ -308,7 +308,7 @@ export function DemographicTable({
             title={onSegmentClick ? "Open segment drill-down" : undefined}
             data-testid={onSegmentClick ? `row-demographic-${r.Age}-${r.Gender}-${i}` : undefined}
           >
-            <Td><span className="font-mono text-[10px] text-muted-foreground/60">{r.cell_id}</span></Td>
+            <Td><span className="font-mono text-label text-muted-foreground/60">{r.cell_id}</span></Td>
             <Td>{r.Age}</Td>
             <Td className="capitalize">{r.Gender}</Td>
             <Td right>{fmtUSD(r["Amount spent (USD)"])}</Td>
@@ -334,7 +334,7 @@ export function PlacementTable({ rows }: { rows: PlacementRow[] }) {
   const { sorted, sort, toggle, reset } = useColumnSort(rows, PLACEMENT_COLUMNS);
   return (
     <TableShell>
-      <thead className="sticky top-0 bg-[hsl(222_55%_7%)] z-10">
+      <thead className="sticky top-0 bg-surface-table z-10">
         <tr className="border-b border-border/40">
           <SortableTh sortKey="placement" sort={sort} onToggle={toggle} onReset={reset}>Placement</SortableTh>
           <SortableTh sortKey="platform" sort={sort} onToggle={toggle} onReset={reset}>Platform</SortableTh>
@@ -375,7 +375,7 @@ export function ConversionFunnelTable({ rows, labelHeader }: { rows: (Conversion
   const { sorted, sort, toggle, reset } = useColumnSort(rows, FUNNEL_COLUMNS);
   return (
     <TableShell>
-      <thead className="sticky top-0 bg-[hsl(222_55%_7%)] z-10">
+      <thead className="sticky top-0 bg-surface-table z-10">
         <tr className="border-b border-border/40">
           <Th>{labelHeader}</Th>
           <SortableTh right sortKey="link_clicks" sort={sort} onToggle={toggle} onReset={reset}>Link clicks</SortableTh>

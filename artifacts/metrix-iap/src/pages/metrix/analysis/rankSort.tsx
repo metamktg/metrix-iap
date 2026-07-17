@@ -111,7 +111,7 @@ export function RankSortBar<Row>({
             onClick={() => onSelect(m.id)}
             data-testid={`rank-metric-${m.id}`}
             className={cn(
-              "inline-flex items-center gap-1 h-6 px-2 rounded-full border text-[10px] font-medium transition-colors",
+              "inline-flex items-center gap-1 h-6 px-2 rounded-full border text-label font-medium transition-colors",
               active
                 ? "border-primary/40 bg-primary/10 text-foreground"
                 : "border-border/40 bg-white/[0.01] text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.04]"
@@ -120,9 +120,9 @@ export function RankSortBar<Row>({
             {m.label}
             {active &&
               (m.direction === "asc" ? (
-                <ArrowUp className="w-2.5 h-2.5 text-primary/70" />
+                <ArrowUp className="w-3.5 h-3.5 text-primary/70" />
               ) : (
-                <ArrowDown className="w-2.5 h-2.5 text-primary/70" />
+                <ArrowDown className="w-3.5 h-3.5 text-primary/70" />
               ))}
           </button>
         );
@@ -148,7 +148,7 @@ export function KpiStat({
       </div>
       <div
         className={cn(
-          "text-[11px] font-semibold tabular-nums leading-none truncate",
+          "text-caption font-semibold tabular-nums leading-none truncate",
           highlight ? "text-primary" : "text-foreground/90"
         )}
       >

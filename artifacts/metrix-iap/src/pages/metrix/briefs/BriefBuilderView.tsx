@@ -170,27 +170,27 @@ export function BriefBuilderView() {
                       className="text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col hover:border-border/60 hover:bg-white/[0.03] transition-colors"
                     >
                       <div className="flex items-center justify-between gap-2 mb-2">
-                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/80 border border-border/50 px-1.5 py-0.5 rounded leading-none">
-                          <FileText className="w-2.5 h-2.5" /> {b.asset_type}
+                        <span className="inline-flex items-center gap-1 text-label font-semibold uppercase tracking-wide text-muted-foreground/80 border border-border/50 px-1.5 py-0.5 rounded leading-none">
+                          <FileText className="w-3.5 h-3.5" /> {b.asset_type}
                         </span>
-                        <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-200 border border-amber-400/30 bg-amber-400/20 px-1.5 py-0.5 rounded leading-none">
+                        <span className="text-label font-semibold uppercase tracking-wide text-amber-200 border border-amber-400/30 bg-amber-400/20 px-1.5 py-0.5 rounded leading-none">
                           {STATUS_LABEL[b.status] ?? b.status}
                         </span>
                       </div>
 
                       <div className="flex items-center gap-1.5 mb-2">
-                        <Sparkles className="w-3 h-3 text-primary/60" />
-                        <span className="text-[11px] text-muted-foreground/60">From pillar</span>
-                        <span className="text-[11px] font-medium text-foreground">{pillarOf(b.source_pillar)?.label ?? b.source_pillar}</span>
+                        <Sparkles className="w-3.5 h-3.5 text-primary/60" />
+                        <span className="text-caption text-muted-foreground/60">From pillar</span>
+                        <span className="text-caption font-medium text-foreground">{pillarOf(b.source_pillar)?.label ?? b.source_pillar}</span>
                       </div>
 
-                      <p className="text-[12px] text-foreground/80 leading-snug flex-1 line-clamp-2"><TokenizedConceptText text={deriveLabel(b.human_direction, 100)} /></p>
+                      <p className="text-body text-foreground/80 leading-snug flex-1 line-clamp-2"><TokenizedConceptText text={deriveLabel(b.human_direction, 100)} /></p>
 
                       <div className="mt-3 pt-3 border-t border-border/20">
-                        <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/80 mb-1.5">Creative direction</div>
+                        <div className="text-label font-mono uppercase tracking-widest text-muted-foreground/80 mb-1.5">Creative direction</div>
                         <div className="flex flex-wrap gap-1.5">
                           {b.plain_variable_descriptors.map((d) => (
-                            <span key={d} className="text-[10px] text-foreground/75 border border-border/40 bg-white/[0.03] px-1.5 py-0.5 rounded leading-none">{d}</span>
+                            <span key={d} className="text-label text-foreground/75 border border-border/40 bg-white/[0.03] px-1.5 py-0.5 rounded leading-none">{d}</span>
                           ))}
                         </div>
                       </div>
@@ -219,7 +219,7 @@ export function BriefBuilderView() {
                 <DrawerField label="Creative direction">
                   <div className="flex flex-wrap gap-1.5">
                     {detail.plain_variable_descriptors.map((d) => (
-                      <span key={d} className="text-[10px] text-foreground/75 border border-border/40 bg-white/[0.03] px-1.5 py-0.5 rounded leading-none">{d}</span>
+                      <span key={d} className="text-label text-foreground/75 border border-border/40 bg-white/[0.03] px-1.5 py-0.5 rounded leading-none">{d}</span>
                     ))}
                   </div>
                 </DrawerField>

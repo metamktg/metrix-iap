@@ -38,7 +38,7 @@ function IcpFact({
   return (
     <div>
       <div className="flex items-center gap-1 mb-0.5">
-        <Icon className="w-2.5 h-2.5 text-muted-foreground/60" />
+        <Icon className="w-3.5 h-3.5 text-muted-foreground/60" />
         <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
       </div>
       {value.length > 72 ? (
@@ -68,9 +68,9 @@ function DnaVariableLine({ v, resultNoun }: { v: DnaVariable; resultNoun: string
         )}
       </div>
       <div className="flex items-center gap-3 shrink-0 tabular-nums">
-        <span className="text-[10px] text-muted-foreground/70">{fmtUSD(v.spend, 0)}</span>
-        <span className="text-[10px] text-muted-foreground/70">{fmtNum(v.results)} {resultNoun}</span>
-        <span className="text-[10px] font-semibold text-foreground/85">
+        <span className="text-label text-muted-foreground/70">{fmtUSD(v.spend, 0)}</span>
+        <span className="text-label text-muted-foreground/70">{fmtNum(v.results)} {resultNoun}</span>
+        <span className="text-label font-semibold text-foreground/85">
           {v.cpa != null ? `${fmtUSD(v.cpa)} CPA` : "no CPA"}
         </span>
       </div>
@@ -84,7 +84,7 @@ function DnaChipStrip({ variables, label, testId }: { variables: DnaVariable[]; 
   return (
     <div className="mt-3 pt-3 border-t border-border/20" data-testid={testId}>
       <div className="flex items-center gap-1 mb-1.5">
-        <Dna className="w-2.5 h-2.5 text-primary/70" />
+        <Dna className="w-3.5 h-3.5 text-primary/70" />
         <span className="text-[8px] font-mono uppercase tracking-widest text-muted-foreground/60">{label}</span>
       </div>
       {/* Density rule: no per-chip $CPA on the card face — the evidence
@@ -133,7 +133,7 @@ function IcpProfileCard({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[13px] font-semibold text-foreground leading-tight">{profile.profile_name}</p>
+          <p className="text-title font-semibold text-foreground leading-tight">{profile.profile_name}</p>
           <span className="text-[9px] font-mono text-muted-foreground/60">{profile.profile_id}</span>
         </div>
         {profile.confidence_level && <ConfidenceBadge value={profile.confidence_level} />}
@@ -150,15 +150,15 @@ function IcpProfileCard({
             <div className="flex items-center gap-5">
               <div>
                 <div className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">Spend</div>
-                <div className="text-[14px] font-bold text-foreground tabular-nums">{perf?.spend != null ? fmtUSD(perf.spend, 0) : "—"}</div>
+                <div className="text-sm font-bold text-foreground tabular-nums">{perf?.spend != null ? fmtUSD(perf.spend, 0) : "—"}</div>
               </div>
               <div>
                 <div className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">CPA</div>
-                <div className="text-[14px] font-bold text-foreground tabular-nums">{perf?.cpa != null ? fmtUSD(perf.cpa) : "—"}</div>
+                <div className="text-sm font-bold text-foreground tabular-nums">{perf?.cpa != null ? fmtUSD(perf.cpa) : "—"}</div>
               </div>
               <div>
                 <div className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">Link CVR</div>
-                <div className="text-[14px] font-bold text-foreground tabular-nums">{perf?.cvr_link_pct != null ? fmtPct(perf.cvr_link_pct) : "—"}</div>
+                <div className="text-sm font-bold text-foreground tabular-nums">{perf?.cvr_link_pct != null ? fmtPct(perf.cvr_link_pct) : "—"}</div>
               </div>
             </div>
           </div>
@@ -181,9 +181,9 @@ function IcpProfileCard({
               type="button"
               onClick={() => setTheoryOpen((o) => !o)}
               aria-expanded={theoryOpen}
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors"
+              className="inline-flex items-center gap-1 text-caption font-medium text-primary hover:text-primary/80 transition-colors"
             >
-              <ChevronDown className={`w-3 h-3 transition-transform ${theoryOpen ? "rotate-180" : ""}`} />
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${theoryOpen ? "rotate-180" : ""}`} />
               {theoryOpen ? "Hide profile detail" : "Profile detail"}
             </button>
             {theoryOpen && (
@@ -208,11 +208,11 @@ function IcpProfileCard({
             <button
               key={col.id}
               onClick={() => onAvatarClick?.(col.id)}
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors"
+              className="inline-flex items-center gap-1 text-caption font-medium text-primary hover:text-primary/80 transition-colors"
               data-testid={`link-icp-avatar-${col.id}`}
             >
               {col.name.replace(/\n/g, " ")}
-              <ArrowUpRight className="w-3 h-3" />
+              <ArrowUpRight className="w-3.5 h-3.5" />
             </button>
           ))}
         </div>
@@ -356,7 +356,7 @@ export function AvatarsView() {
                                 <Users className="w-4 h-4 text-primary/70" />
                               </div>
                               <div className="min-w-0">
-                                <p className="text-[13px] font-semibold text-foreground leading-tight whitespace-pre-line">{col.name}</p>
+                                <p className="text-title font-semibold text-foreground leading-tight whitespace-pre-line">{col.name}</p>
                                 <span className="text-[9px] font-mono text-muted-foreground/60">{col.icp}</span>
                               </div>
                             </div>
@@ -373,7 +373,7 @@ export function AvatarsView() {
                                 />
                               ) : null;
                             })()}
-                            <div className="mt-3 pt-3 border-t border-border/20 text-[10px] text-muted-foreground/60">
+                            <div className="mt-3 pt-3 border-t border-border/20 text-label text-muted-foreground/60">
                               {cells.length} message angle{cells.length === 1 ? "" : "s"} · tap for details
                             </div>
                           </button>
@@ -386,11 +386,11 @@ export function AvatarsView() {
                                 <button
                                   key={p.profile_id}
                                   onClick={() => scrollToProfile(p.profile_id)}
-                                  className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors"
+                                  className="inline-flex items-center gap-1 text-caption font-medium text-primary hover:text-primary/80 transition-colors"
                                   data-testid={`link-avatar-icp-${p.profile_id}`}
                                 >
                                   {p.profile_name}
-                                  <ArrowDownRight className="w-3 h-3" />
+                                  <ArrowDownRight className="w-3.5 h-3.5" />
                                 </button>
                               ))}
                             </div>
@@ -451,11 +451,11 @@ export function AvatarsView() {
                       <button
                         key={p.profile_id}
                         onClick={() => { setDetail(null); setTimeout(() => scrollToProfile(p.profile_id), 60); }}
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors"
+                        className="inline-flex items-center gap-1 text-caption font-medium text-primary hover:text-primary/80 transition-colors"
                         data-testid={`link-drawer-icp-${p.profile_id}`}
                       >
                         View ICP: {p.profile_name}
-                        <ArrowDownRight className="w-3 h-3" />
+                        <ArrowDownRight className="w-3.5 h-3.5" />
                       </button>
                     ))}
                     <CrossLink to="/app/mst" label="Open MST matrix" />
@@ -470,7 +470,7 @@ export function AvatarsView() {
                     <DrawerField label="Creative DNA — measured makeup">
                       {dna.variables.length > 0 ? (
                         <>
-                          <p className="text-[10px] text-muted-foreground/70 leading-relaxed mb-1.5">
+                          <p className="text-label text-muted-foreground/70 leading-relaxed mb-1.5">
                             Aggregated from {dna.measuredCellIds.length} measured angle{dna.measuredCellIds.length === 1 ? "" : "s"} ({dna.measuredCellIds.join(", ")})
                             {dna.extensionCellIds.length > 0 ? ` — ${dna.extensionCellIds.length} beyond the planned grid` : ""}. Planned angles without performance data are excluded. Variables share angles, so rows overlap and are not additive.
                           </p>
@@ -481,7 +481,7 @@ export function AvatarsView() {
                           </div>
                         </>
                       ) : (
-                        <p className="text-[11px] text-muted-foreground/70">
+                        <p className="text-caption text-muted-foreground/70">
                           No measured creative DNA yet — none of this avatar's angles have performance data.
                         </p>
                       )}

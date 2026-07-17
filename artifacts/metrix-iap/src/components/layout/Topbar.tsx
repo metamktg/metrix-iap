@@ -55,7 +55,7 @@ function AccountMenu({
       aria-label="Account menu"
       className={cn(
         "absolute right-0 top-full mt-1.5 w-52 z-50",
-        "bg-[hsl(222_55%_8%)] border border-border/60 rounded-xl shadow-2xl",
+        "bg-surface-sidebar border border-border/60 rounded-xl elevation-floating",
         "flex flex-col overflow-hidden"
       )}
     >
@@ -63,10 +63,10 @@ function AccountMenu({
       <div className="px-3.5 py-3 border-b border-border/40">
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-lg bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0">
-            <span className="text-[10px] font-bold text-primary leading-none">{initials}</span>
+            <span className="text-label font-bold text-primary leading-none">{initials}</span>
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-semibold text-foreground/90 truncate leading-tight">
+            <p className="text-caption font-semibold text-foreground/90 truncate leading-tight">
               {email ?? "My account"}
             </p>
             <p className="text-[9px] text-muted-foreground/50 font-mono uppercase tracking-wide leading-tight mt-0.5">
@@ -118,7 +118,7 @@ function MenuItem({
       onClick={onClick}
       data-testid={testId}
       className={cn(
-        "w-full flex items-center gap-2.5 px-3.5 py-1.5 text-[12px] font-medium transition-colors text-left",
+        "w-full flex items-center gap-2.5 px-3.5 py-1.5 text-body font-medium transition-colors text-left",
         danger
           ? "text-red-400/80 hover:text-red-400 hover:bg-red-400/[0.06]"
           : "text-foreground/70 hover:text-foreground hover:bg-white/[0.04]"
@@ -156,18 +156,18 @@ export function Topbar() {
           const isLast = i === crumbs.length - 1;
           return (
             <span key={i} className="flex items-center min-w-0">
-              <ChevronRight className="w-3 h-3 text-muted-foreground/50 shrink-0 mx-0.5" />
+              <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0 mx-0.5" />
               {!isLast && crumb.to ? (
                 <Link
                   href={crumb.to}
-                  className="text-[12px] truncate text-muted-foreground/60 hover:text-foreground focus-visible:text-foreground rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  className="text-body truncate text-muted-foreground/60 hover:text-foreground focus-visible:text-foreground rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
                   {crumb.label}
                 </Link>
               ) : (
                 <span
                   aria-current={isLast ? "page" : undefined}
-                  className={cn("text-[12px] truncate", isLast ? "text-foreground font-medium" : "text-muted-foreground/60")}
+                  className={cn("text-body truncate", isLast ? "text-foreground font-medium" : "text-muted-foreground/60")}
                 >
                   {crumb.label}
                 </span>
@@ -182,17 +182,17 @@ export function Topbar() {
 
       {/* Status */}
       {isManager ? (
-        <div className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground/60 shrink-0">
+        <div className="flex items-center gap-1 text-caption font-medium text-muted-foreground/60 shrink-0">
           <span className="hidden sm:inline">Agency</span>
         </div>
       ) : unconfigured ? (
-        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground border border-border/50 rounded px-2 py-1 shrink-0">
+        <div className="flex items-center gap-1.5 text-caption text-muted-foreground border border-border/50 rounded px-2 py-1 shrink-0">
           <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60" />
           <span>Setup required</span>
         </div>
       ) : (
-        <div className="flex items-center gap-1 text-[11px] font-medium text-emerald-400 shrink-0">
-          <CheckCircle2 className="w-3 h-3" />
+        <div className="flex items-center gap-1 text-caption font-medium text-emerald-400 shrink-0">
+          <CheckCircle2 className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">Connected</span>
         </div>
       )}
@@ -217,7 +217,7 @@ export function Topbar() {
           <PanelRightOpen className="w-3.5 h-3.5" />
         )}
         {!open && trayCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] bg-primary rounded-full flex items-center justify-center text-[8px] font-bold text-primary-foreground leading-none px-0.5">
+          <span className="absolute -top-0.5 -right-0.5 min-w-3.5 h-3.5 bg-primary rounded-full flex items-center justify-center text-[8px] font-bold text-primary-foreground leading-none px-0.5">
             {trayCount > 9 ? "9+" : trayCount}
           </span>
         )}
@@ -248,7 +248,7 @@ export function Topbar() {
                 : "bg-primary/15 border border-primary/20 text-primary hover:bg-primary/20"
             )}
           >
-            <span className="text-[10px] font-bold leading-none">{initials}</span>
+            <span className="text-label font-bold leading-none">{initials}</span>
           </button>
 
           {menuOpen && (

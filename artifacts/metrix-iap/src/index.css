@@ -64,6 +64,24 @@
   --color-metrix-danger: hsl(var(--metrix-danger));
   --color-metrix-panel: hsl(var(--metrix-panel));
 
+  /* ── Semantic surface / text / status tokens ── */
+  --color-surface: hsl(var(--surface));
+  --color-surface-raised: hsl(var(--surface-raised));
+  --color-surface-overlay: hsl(var(--surface-overlay));
+  --color-surface-table: hsl(var(--surface-table));
+  --color-surface-sidebar: hsl(var(--surface-sidebar));
+  --color-surface-deep: hsl(var(--surface-deep));
+  --color-surface-preview: hsl(var(--surface-preview));
+  --color-border-subtle: hsl(var(--border-subtle));
+  --color-border-default: hsl(var(--border-default));
+  --color-text-primary: hsl(var(--text-primary));
+  --color-text-secondary: hsl(var(--text-secondary));
+  --color-text-muted: hsl(var(--text-muted));
+  --color-status-success: hsl(var(--status-success));
+  --color-status-warning: hsl(var(--status-warning));
+  --color-status-danger: hsl(var(--status-danger));
+  --color-status-info: hsl(var(--status-info));
+
   --font-sans: var(--app-font-sans);
   --font-serif: var(--app-font-serif);
   --font-mono: var(--app-font-mono);
@@ -88,6 +106,28 @@
   --opaque-button-border-intensity: 9;
   --elevate-1: rgba(255,255,255, .04);
   --elevate-2: rgba(255,255,255, .09);
+
+  /* ── Semantic surface / text / status tokens ── */
+  /* Surface depth scale (lightest → deepest) */
+  --surface-raised: 219 55% 13%;      /* elevated sub-panel */
+  --surface: 218 65% 10%;             /* card-level glass panel */
+  --surface-sidebar: 222 55% 8%;      /* task tray, topbar tooltip, nav shell */
+  --surface-overlay: 222 61% 7%;      /* popovers, dropdowns */
+  --surface-table: 222 55% 7%;        /* sticky table headers */
+  --surface-deep: 222 61% 6%;         /* modals, slide-over panels */
+  --surface-preview: 222 65% 5%;      /* creative preview / video panel bg */
+  /* Border hierarchy */
+  --border-subtle: 221 53% 18%;       /* faint dividers, card outlines */
+  --border-default: 221 53% 22%;      /* standard interactive borders */
+  /* Text hierarchy */
+  --text-primary: 222 100% 97%;       /* primary content, headings */
+  --text-secondary: 217 37% 88%;      /* secondary labels, sub-titles */
+  --text-muted: 216 28% 78%;          /* muted/supportive copy ≥ 3:1 on bg-main */
+  /* Status palette (WCAG-safe on dark surfaces) */
+  --status-success: 141 68% 53%;      /* #35d96f */
+  --status-warning: 44 92% 63%;       /* #f7c948 */
+  --status-danger: 354 100% 65%;      /* #ff4f61 */
+  --status-info: 222 100% 54%;        /* #155dff */
 
   /* ── Metrix raw cockpit tokens (spec) ── */
   --mx-bg-deep: #020711;
@@ -165,9 +205,9 @@
   --secondary: 218 55% 15%;
   --secondary-foreground: 217 37% 84%;
 
-  /* Muted — text lifted for contrast */
+  /* Muted — text lifted for WCAG AA contrast (≥ 4.5:1 on bg-main at full opacity) */
   --muted: 219 45% 16%;
-  --muted-foreground: 216 22% 74%;
+  --muted-foreground: 216 28% 78%;
 
   /* Accent = slightly elevated panel */
   --accent: 218 55% 17%;
@@ -257,7 +297,7 @@
   --secondary: 218 55% 15%;
   --secondary-foreground: 217 37% 84%;
   --muted: 219 45% 16%;
-  --muted-foreground: 216 22% 74%;
+  --muted-foreground: 216 28% 78%;
   --accent: 218 55% 17%;
   --accent-foreground: 217 37% 88%;
   --destructive: 354 100% 65%;
@@ -275,6 +315,23 @@
   --metrix-success: 141 68% 53%;
   --metrix-danger: 354 100% 65%;
   --metrix-panel: 218 65% 10%;
+  /* Semantic tokens (same as :root — app is always dark) */
+  --surface-raised: 219 55% 13%;
+  --surface: 218 65% 10%;
+  --surface-sidebar: 222 55% 8%;
+  --surface-overlay: 222 61% 7%;
+  --surface-table: 222 55% 7%;
+  --surface-deep: 222 61% 6%;
+  --surface-preview: 222 65% 5%;
+  --border-subtle: 221 53% 18%;
+  --border-default: 221 53% 22%;
+  --text-primary: 222 100% 97%;
+  --text-secondary: 217 37% 88%;
+  --text-muted: 216 28% 78%;
+  --status-success: 141 68% 53%;
+  --status-warning: 44 92% 63%;
+  --status-danger: 354 100% 65%;
+  --status-info: 222 100% 54%;
 
   --shadow-2xs: 0 1px 2px 0 rgba(0,0,0,0.5);
   --shadow-xs: 0 1px 3px 0 rgba(0,0,0,0.6);
@@ -298,6 +355,13 @@
   html, body {
     @apply text-foreground font-sans antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Normalize all Lucide icons to stroke-width 1.5 (default is 2).
+     Explicit strokeWidth={n} prop on a single icon still takes precedence
+     via the SVG presentation-attribute → CSS cascade order. */
+  svg.lucide {
+    stroke-width: 1.5;
   }
 
   /* Layered dark command-center background */
@@ -515,6 +579,40 @@
 }
 
 @layer utilities {
+  /* ── Formal type scale — matches TYPE constants in typography.ts ──────
+     Add sizes here instead of using arbitrary text-[Npx] in components.
+     Use text-sm (14px) and text-lg (18px) from Tailwind's built-in scale.
+     Scale: label(10) · caption(11) · body(12) · title(13) · text-sm(14) ·
+            callout(15) · text-base(16) · text-lg(18) · display(21) ·
+            section(22) · stat(26) · bignum(28)
+     ─────────────────────────────────────────────────────────────────── */
+  .text-label   { font-size: 0.625rem;   line-height: 1.4; }  /* 10px */
+  .text-caption { font-size: 0.6875rem;  line-height: 1.5; }  /* 11px */
+  .text-body    { font-size: 0.75rem;    line-height: 1.5; }  /* 12px ≡ text-xs */
+  .text-title   { font-size: 0.8125rem;  line-height: 1.3; }  /* 13px */
+  /* text-sm = 14px, text-base = 16px, text-lg = 18px (Tailwind built-ins) */
+  .text-callout { font-size: 0.9375rem;  line-height: 1.4; }  /* 15px */
+  .text-display { font-size: 1.3125rem;  line-height: 1.2; }  /* 21px */
+  .text-section { font-size: 1.375rem;   line-height: 1.2; }  /* 22px */
+  .text-stat    { font-size: 1.625rem;   line-height: 1.1; }  /* 26px */
+  .text-bignum  { font-size: 1.75rem;    line-height: 1.1; }  /* 28px */
+  .text-hero    { font-size: 2.5rem;     line-height: 1.0; }  /* 40px — oversized creative/display */
+
+  /* ── Metric number — tabular-nums for all KPI / stat values ─────── */
+  .metric-num                   { font-variant-numeric: tabular-nums; }
+  [data-metric]                 { font-variant-numeric: tabular-nums; }
+  .tabular-nums                 { font-variant-numeric: tabular-nums; }
+
+  /* ── Elevation shadow scale (3 semantic levels) ───────────────────
+     Use these instead of raw shadow-* utilities on card/modal/popover.
+     flat    → inline content, flush with page
+     raised  → card surfaces, section panels
+     floating → popovers, modals, tooltips, dropdowns
+     ─────────────────────────────────────────────────────────────── */
+  .elevation-flat     { box-shadow: none; }
+  .elevation-raised   { box-shadow: var(--shadow-sm); }
+  .elevation-floating { box-shadow: var(--shadow-xl); }
+
   /* WCAG 2.4.7: visible keyboard focus indicator on all interactive elements.
    * Full opacity is required — primary at 70% opacity falls below the WCAG
    * 2.1 SC 1.4.11 non-text contrast threshold of 3:1 on the app's dark surfaces.

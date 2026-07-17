@@ -171,10 +171,10 @@ export function AudienceView() {
                         >
                           {/* Header row: rank + name + primary KPI + vibrant action pill */}
                           <div className="flex items-center gap-2.5 mb-2.5">
-                            <span className="w-4 shrink-0 text-[10px] font-mono text-muted-foreground/35 tabular-nums text-right">
+                            <span className="w-4 shrink-0 text-label font-mono text-muted-foreground/35 tabular-nums text-right">
                               {idx + 1}
                             </span>
-                            <span className="text-[13px] font-semibold text-foreground/90 flex-1 truncate">
+                            <span className="text-title font-semibold text-foreground/90 flex-1 truncate">
                               {segmentLabel(e.seg)}
                             </span>
                             {e.signal.low && (
@@ -182,16 +182,16 @@ export function AudienceView() {
                                 className="inline-flex items-center gap-0.5 text-[8px] font-mono uppercase text-amber-300/70 shrink-0"
                                 title={e.signal.reasons.join(" ")}
                               >
-                                <AlertTriangle className="w-2.5 h-2.5" />
+                                <AlertTriangle className="w-3.5 h-3.5" />
                                 Low
                               </span>
                             )}
-                            <span className="text-[13px] font-bold tabular-nums text-foreground/80 shrink-0 mr-1">
+                            <span className="text-title font-bold tabular-nums text-foreground/80 shrink-0 mr-1">
                               {v != null ? activeMetric.format(v) : "—"}
                             </span>
                             {/* Vibrant CTA pill — spans full card click, styled as visual affordance */}
-                            <span className="shrink-0 inline-flex items-center gap-1 h-6 px-2.5 rounded-md text-[10px] font-semibold bg-gradient-to-r from-violet-500 to-blue-500 text-white opacity-60 group-hover:opacity-100 transition-opacity shadow-sm shadow-violet-900/30">
-                              Explore <ArrowRight className="w-2.5 h-2.5" />
+                            <span className="shrink-0 inline-flex items-center gap-1 h-6 px-2.5 rounded-md text-label font-semibold bg-gradient-to-r from-violet-500 to-blue-500 text-white opacity-60 group-hover:opacity-100 transition-opacity shadow-sm shadow-violet-900/30">
+                              Explore <ArrowRight className="w-3.5 h-3.5" />
                             </span>
                           </div>
                           {/* Share bar — prominent, 6px */}
@@ -212,7 +212,7 @@ export function AudienceView() {
                       );
                     })}
                   </div>
-                  <p className="mt-3 text-[10px] text-muted-foreground/50">
+                  <p className="mt-3 text-label text-muted-foreground/50">
                     Bar length is relative to the best segment on the selected KPI ({activeMetric.label}).
                     {" "}{rows.length} underlying rows · click a segment for its messaging drill-down.
                   </p>

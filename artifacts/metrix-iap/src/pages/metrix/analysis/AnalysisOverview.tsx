@@ -142,8 +142,8 @@ export function AnalysisOverview() {
                 <SectionCard title="Core control reads" desc="Current control concept per funnel depth" table="core_reanalysis_read">
                   <div className="grid grid-cols-dashboard-2 gap-3">
                     <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                      <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5">Primary control</div>
-                      <p className="text-[13px] font-semibold text-foreground">{resolveConceptName(controls.primary_control)}</p>
+                      <div className="text-label font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5">Primary control</div>
+                      <p className="text-title font-semibold text-foreground">{resolveConceptName(controls.primary_control)}</p>
                       <div className="mt-1.5">
                         {(() => {
                           const read = resolveControlText(controls.primary_control_read, controls.primary_control);
@@ -166,8 +166,8 @@ export function AnalysisOverview() {
                       const regName = resolveConceptName(regId);
                       return (
                         <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5">{term.Singular} control</div>
-                          <p className="text-[13px] font-semibold text-foreground">{regName}</p>
+                          <div className="text-label font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5">{term.Singular} control</div>
+                          <p className="text-title font-semibold text-foreground">{regName}</p>
                           {controls.registration_control_read && (() => {
                             const read = resolveControlText(controls.registration_control_read, regId);
                             return (
@@ -197,11 +197,11 @@ export function AnalysisOverview() {
                     <div key={s.to} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2">
                       <div className="flex items-center gap-2">
                         <s.Icon className="w-3.5 h-3.5 text-primary" />
-                        <span className="text-[13px] font-semibold text-foreground">{s.label}</span>
+                        <span className="text-title font-semibold text-foreground">{s.label}</span>
                       </div>
                       <p className={TYPE.caption}>{s.desc}</p>
                       <div className="flex items-center justify-between mt-auto pt-1">
-                        <span className="text-[10px] font-mono text-muted-foreground/70">{s.stat}</span>
+                        <span className="text-label font-mono text-muted-foreground/70">{s.stat}</span>
                         <CrossLink to={s.to} label="Open" />
                       </div>
                     </div>

@@ -43,7 +43,7 @@ export function DataSourceBadgeToggle() {
       )}
       title="Toggle data source annotations"
     >
-      <Database className="w-2.5 h-2.5" />
+      <Database className="w-3.5 h-3.5" />
       DB
     </button>
   );
@@ -80,7 +80,7 @@ export function DataSourceBadge({ table, className, collapsible = false }: DataS
 
   return (
     <div className={cn("inline-flex items-center gap-1.5 flex-wrap", className)}>
-      <Database className="w-2.5 h-2.5 text-muted-foreground/60 shrink-0" />
+      <Database className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />
       {!collapsed && tables.map(t => (
         <span
           key={t}
@@ -100,7 +100,7 @@ export function DataSourceBadge({ table, className, collapsible = false }: DataS
           className="text-muted-foreground/60 hover:text-muted-foreground/60 transition-colors"
           title={collapsed ? "Show table names" : "Collapse"}
         >
-          {collapsed ? <ChevronDown className="w-2.5 h-2.5" /> : <ChevronUp className="w-2.5 h-2.5" />}
+          {collapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
         </button>
       )}
     </div>

@@ -125,23 +125,23 @@ export function CreativeScanView() {
                 ) : (
                   <div className="space-y-5">
                     <div className="flex items-center gap-1.5">
-                      <p className="text-[12px] text-muted-foreground/80">Variables in use, grouped by family.</p>
+                      <p className="text-body text-muted-foreground/80">Variables in use, grouped by family.</p>
                       <InfoTooltip content="Distinct creative variables in use across this account's concept library, grouped by family. The count shows how many concepts use each variable." />
                     </div>
                     {variableGroups.map((g) => (
                       <div key={g.label}>
                         <div className="flex items-center gap-2 mb-2">
-                          <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/70">{g.label}</h3>
-                          <span className="text-[10px] font-mono text-muted-foreground/60">{g.items.length}</span>
+                          <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/70">{g.label}</h3>
+                          <span className="text-label font-mono text-muted-foreground/60">{g.items.length}</span>
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {g.items.map((it) => (
                             <div key={it.code} className="flex items-center gap-2 rounded-lg border border-border/40 bg-white/[0.02] px-2.5 py-1.5">
                               <div>
-                                <div className="text-[12px] font-medium text-foreground/90 leading-tight">{readableVariables(it.code)}</div>
-                                <div className="text-[10px] font-mono text-muted-foreground/60 mt-0.5">{it.code}</div>
+                                <div className="text-body font-medium text-foreground/90 leading-tight">{readableVariables(it.code)}</div>
+                                <div className="text-label font-mono text-muted-foreground/60 mt-0.5">{it.code}</div>
                               </div>
-                              <span className="text-[10px] font-mono text-muted-foreground/75 border border-border/40 rounded px-1.5 py-0.5 leading-none">×{it.count}</span>
+                              <span className="text-label font-mono text-muted-foreground/75 border border-border/40 rounded px-1.5 py-0.5 leading-none">×{it.count}</span>
                             </div>
                           ))}
                         </div>

@@ -59,7 +59,7 @@ function RunAnalysisBtn({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "flex items-center gap-1.5 h-8 px-3 rounded-md border text-[11px] font-medium transition-colors",
+        "flex items-center gap-1.5 h-8 px-3 rounded-md border text-caption font-medium transition-colors",
         warning
           ? "bg-amber-400/15 border-amber-400/40 text-amber-200"
           : "bg-primary/15 border-primary/30 text-primary",
@@ -105,14 +105,14 @@ function ColumnAliasGuide({
         className="w-full flex items-center gap-1.5 px-2.5 py-2 text-left hover:bg-white/[0.03] transition-colors"
       >
         {open ? (
-          <ChevronDown className="w-3 h-3 text-muted-foreground/70 shrink-0" />
+          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
         ) : (
-          <ChevronRight className="w-3 h-3 text-muted-foreground/70 shrink-0" />
+          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
         )}
-        <span className="text-[11px] font-medium text-foreground/85">
+        <span className="text-caption font-medium text-foreground/85">
           Accepted column name variants
         </span>
-        <span className="ml-auto text-[10px] text-muted-foreground/55">
+        <span className="ml-auto text-label text-muted-foreground/55">
           common Meta UI aliases
         </span>
       </button>
@@ -120,14 +120,14 @@ function ColumnAliasGuide({
         <div className="border-t border-border/30 divide-y divide-border/20">
           {aliases.map(({ canonical, aliases: aliasList }) => (
             <div key={canonical} className="px-2.5 py-2 space-y-1">
-              <div className="text-[10px] font-semibold text-foreground/70 uppercase tracking-wide">
+              <div className="text-label font-semibold text-foreground/70 uppercase tracking-wide">
                 {canonical}
               </div>
               <div className="flex flex-wrap gap-1">
                 {aliasList.map((alias) => (
                   <span
                     key={alias}
-                    className="px-1.5 py-0.5 rounded bg-white/[0.05] border border-border/30 text-[10px] text-muted-foreground/80 font-mono"
+                    className="px-1.5 py-0.5 rounded bg-white/[0.05] border border-border/30 text-label text-muted-foreground/80 font-mono"
                   >
                     {alias}
                   </span>
@@ -135,7 +135,7 @@ function ColumnAliasGuide({
               </div>
             </div>
           ))}
-          <p className="px-2.5 py-2 text-[10px] text-muted-foreground/45 leading-relaxed">
+          <p className="px-2.5 py-2 text-label text-muted-foreground/45 leading-relaxed">
             The parser accepts these automatically — no need to rename columns before uploading.
           </p>
         </div>
@@ -178,7 +178,7 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
           <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/85 shrink-0" />
         )}
         <FileText className="w-3.5 h-3.5 text-muted-foreground/85 shrink-0" />
-        <span className="text-[12px] font-medium text-foreground">
+        <span className="text-body font-medium text-foreground">
           Required columns — {CSV_CLASS_TITLES[csvClass]}
           {classData?.report_name ? ` (${classData.report_name})` : ""}
         </span>
@@ -186,14 +186,14 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
       {open && (
         <div className="px-3 pb-3 space-y-2">
           {isLoading || !classData ? (
-            <p className="text-[11px] text-muted-foreground/80">Loading format spec…</p>
+            <p className="text-caption text-muted-foreground/80">Loading format spec…</p>
           ) : (
             <>
               <div className="rounded-md border border-border/30 p-2">
                 <div className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/80 mb-1">
                   Breakdown columns
                 </div>
-                <p className="text-[11px] text-foreground/80 leading-relaxed">
+                <p className="text-caption text-foreground/80 leading-relaxed">
                   {classData.breakdown_columns.join(", ")}
                 </p>
               </div>
@@ -211,8 +211,8 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
                       {g.required ? "Required" : "Optional"}
                     </span>
                     <div className="min-w-0">
-                      <div className="text-[11px] font-medium text-foreground">{g.name}</div>
-                      <p className="text-[10px] text-muted-foreground/80 leading-relaxed mt-0.5">
+                      <div className="text-caption font-medium text-foreground">{g.name}</div>
+                      <p className="text-label text-muted-foreground/80 leading-relaxed mt-0.5">
                         {g.columns.join(", ")}
                       </p>
                     </div>
@@ -221,9 +221,9 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
               </div>
               <button
                 onClick={downloadSample}
-                className="flex items-center gap-1.5 text-[11px] font-medium text-primary hover:underline"
+                className="flex items-center gap-1.5 text-caption font-medium text-primary hover:underline"
               >
-                <Download className="w-3 h-3" /> Download a sample CSV
+                <Download className="w-3.5 h-3.5" /> Download a sample CSV
               </button>
 
               {/* ── Accepted column name variants ─────────────────── */}
@@ -272,12 +272,12 @@ function CsvWarningsPanel({ run }: { run: AnalysisRun }) {
       >
         <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
-          <div className="text-[11px] font-semibold text-amber-200">
+          <div className="text-caption font-semibold text-amber-200">
             {hasReducedConfidence
               ? "Analysis succeeded with reduced confidence"
               : "Analysis succeeded with column adjustments"}
           </div>
-          <p className="text-[10px] text-amber-100/70 mt-0.5">
+          <p className="text-label text-amber-100/70 mt-0.5">
             {hasReducedConfidence
               ? "Some core metric columns were missing — key efficiency scores may be incomplete. "
               : ""}
@@ -289,7 +289,7 @@ function CsvWarningsPanel({ run }: { run: AnalysisRun }) {
       {expanded && (
         <ul className="space-y-1 pt-1 border-t border-amber-400/20">
           {warnings.map((w, i) => (
-            <li key={i} className="text-[10px] text-amber-100/75 leading-relaxed">
+            <li key={i} className="text-label text-amber-100/75 leading-relaxed">
               · {w}
             </li>
           ))}
@@ -302,21 +302,21 @@ function CsvWarningsPanel({ run }: { run: AnalysisRun }) {
 function StatusBadge({ run }: { run: AnalysisRun }) {
   if (run.status === "running") {
     return (
-      <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-amber-400">
-        <Loader2 className="w-3 h-3 animate-spin" /> Running
+      <span className="flex items-center gap-1 text-label font-semibold uppercase tracking-wide text-amber-400">
+        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Running
       </span>
     );
   }
   if (run.status === "success") {
     return (
-      <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-400">
-        <CheckCircle2 className="w-3 h-3" /> Complete
+      <span className="flex items-center gap-1 text-label font-semibold uppercase tracking-wide text-emerald-400">
+        <CheckCircle2 className="w-3.5 h-3.5" /> Complete
       </span>
     );
   }
   return (
-    <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-red-400">
-      <XCircle className="w-3 h-3" /> Failed
+    <span className="flex items-center gap-1 text-label font-semibold uppercase tracking-wide text-red-400">
+      <XCircle className="w-3.5 h-3.5" /> Failed
     </span>
   );
 }
@@ -377,16 +377,16 @@ export function GuessedMatchesCallout({
       <div className="flex items-start gap-2">
         <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
         <div className="min-w-0 space-y-1">
-          <div className="text-[12px] font-semibold text-amber-200">
+          <div className="text-body font-semibold text-amber-200">
             {count} creative {plural ? "matches need" : "match needs"} review
           </div>
-          <p className="text-[11px] text-amber-100/80 leading-relaxed">
+          <p className="text-caption text-amber-100/80 leading-relaxed">
             {plural ? "These filenames" : "This filename"} didn't clearly match an ad name, so we
             picked the most likely one as a best guess. Confirm {plural ? "they're" : "it's"} right
             or fix {plural ? "them" : "it"} first — otherwise analysis may link the wrong creative to
             an ad.
           </p>
-          <ul className="text-[10px] text-amber-100/70 leading-relaxed space-y-0.5 pt-0.5">
+          <ul className="text-label text-amber-100/70 leading-relaxed space-y-0.5 pt-0.5">
             {guessedImports.map((imp) => (
               <li key={imp.id} className="truncate">
                 <span className="text-amber-100/90">{imp.filename}</span>
@@ -396,13 +396,13 @@ export function GuessedMatchesCallout({
           </ul>
         </div>
       </div>
-      {error && <p className="text-[11px] text-red-400">{error}</p>}
+      {error && <p className="text-caption text-red-400">{error}</p>}
       <div className="flex items-center gap-2 flex-wrap pt-0.5">
         <button
           onClick={() => void confirmAll()}
           disabled={confirming || updateMutation.isPending}
           className={cn(
-            "flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-[11px] font-medium transition-colors",
+            "flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-caption font-medium transition-colors",
             confirming || updateMutation.isPending
               ? "border-amber-400/30 text-amber-200/60 cursor-not-allowed"
               : "bg-amber-400/15 border-amber-400/40 text-amber-100 hover:bg-amber-400/25"
@@ -410,18 +410,18 @@ export function GuessedMatchesCallout({
         >
           {confirming ? (
             <>
-              <Loader2 className="w-3 h-3 animate-spin" /> Confirming…
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Confirming…
             </>
           ) : (
             <>
-              <CheckCircle2 className="w-3 h-3" /> Confirm {plural ? `all ${count} matches` : "match"} as correct
+              <CheckCircle2 className="w-3.5 h-3.5" /> Confirm {plural ? `all ${count} matches` : "match"} as correct
             </>
           )}
         </button>
         {onReview && (
           <button
             onClick={onReview}
-            className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-amber-400/30 text-[11px] font-medium text-amber-100/85 hover:bg-amber-400/10 transition-colors"
+            className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-amber-400/30 text-caption font-medium text-amber-100/85 hover:bg-amber-400/10 transition-colors"
           >
             {reviewLabel ?? "Review & fix"}
           </button>
@@ -488,7 +488,7 @@ function CreativeLinkageStatus({
         <div className="min-w-0 flex-1 space-y-1">
           <div
             className={cn(
-              "text-[11px] font-semibold",
+              "text-caption font-semibold",
               allLinked ? "text-emerald-300" : "text-amber-200"
             )}
           >
@@ -497,7 +497,7 @@ function CreativeLinkageStatus({
               : `${linked} of ${total} creatives linked — ${unlinked.length} unmatched`}
           </div>
           {!allLinked && unlinked.length > 0 && (
-            <div className="text-[10px] text-amber-100/70 leading-relaxed space-y-0.5">
+            <div className="text-label text-amber-100/70 leading-relaxed space-y-0.5">
               <p>
                 These ad names had no matching row in the data — check that the names in
                 the creative mapping exactly match what's in your CSV:
@@ -521,7 +521,7 @@ function CreativeLinkageStatus({
           onClick={() => void handleResync()}
           disabled={syncMutation.isPending}
           className={cn(
-            "shrink-0 flex items-center gap-1 text-[10px] font-medium border px-2.5 py-1.5 rounded transition-colors",
+            "shrink-0 flex items-center gap-1 text-label font-medium border px-2.5 py-1.5 rounded transition-colors",
             allLinked
               ? "border-emerald-400/30 text-emerald-300 hover:bg-emerald-400/10"
               : "border-amber-400/30 text-amber-200 hover:bg-amber-400/10",
@@ -530,14 +530,14 @@ function CreativeLinkageStatus({
           title="Re-attempt linking all staged creatives to their mapped ad names"
         >
           {syncMutation.isPending ? (
-            <Loader2 className="w-3 h-3 animate-spin" />
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
           ) : (
-            <RefreshCw className="w-3 h-3" />
+            <RefreshCw className="w-3.5 h-3.5" />
           )}
           Re-sync
         </button>
       </div>
-      {syncError && <p className="text-[11px] text-red-400">{syncError}</p>}
+      {syncError && <p className="text-caption text-red-400">{syncError}</p>}
     </div>
   );
 }
@@ -604,7 +604,7 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
   const amberProblems = [...optionalMissing, ...inferred];
 
   const renderProblemRow = (p: ProblemEntry, i: number) => (
-    <li key={i} className="text-[10px] leading-relaxed" style={{ color: p.isRequired && p.tier === "missing" ? "rgb(252 165 165 / 0.85)" : "rgb(253 230 138 / 0.75)" }}>
+    <li key={i} className="text-label leading-relaxed" style={{ color: p.isRequired && p.tier === "missing" ? "rgb(252 165 165 / 0.85)" : "rgb(253 230 138 / 0.75)" }}>
       <span
         className={cn(
           "inline-block mr-1.5 px-1 py-px rounded text-[9px] font-semibold uppercase tracking-wide border",
@@ -636,10 +636,10 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
           >
             <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
-              <div className="text-[11px] font-semibold text-red-200">
+              <div className="text-caption font-semibold text-red-200">
                 {requiredMissing.length} required breakdown column{requiredMissing.length > 1 ? "s" : ""} missing
               </div>
-              <p className="text-[10px] text-red-100/70 mt-0.5 leading-relaxed">
+              <p className="text-label text-red-100/70 mt-0.5 leading-relaxed">
                 These columns are load-bearing for analysis. Without them the run will likely produce
                 incomplete or failed results.{" "}
                 <span className="underline cursor-pointer">{expanded ? "Hide" : "Show"} details</span>
@@ -663,14 +663,14 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
           >
             <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
-              <div className="text-[11px] font-semibold text-amber-200">
+              <div className="text-caption font-semibold text-amber-200">
                 {optionalMissing.length > 0 && inferred.length > 0
                   ? `${optionalMissing.length} column${optionalMissing.length > 1 ? "s" : ""} missing, ${inferred.length} low-confidence`
                   : optionalMissing.length > 0
                   ? `${optionalMissing.length} optional column${optionalMissing.length > 1 ? "s" : ""} missing`
                   : `${inferred.length} column${inferred.length > 1 ? "s" : ""} matched with low confidence`}
               </div>
-              <p className="text-[10px] text-amber-100/70 mt-0.5 leading-relaxed">
+              <p className="text-label text-amber-100/70 mt-0.5 leading-relaxed">
                 {optionalMissing.length > 0
                   ? "Missing optional columns may reduce analysis accuracy. Consider fixing your CSV first."
                   : "These columns were matched by similarity rather than name. Verify the CSV header matches the expected column names."}{" "}
@@ -799,7 +799,7 @@ export function AnalysisControls({
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/85 shrink-0" />
-        <span className="text-[11px] font-medium text-foreground">Date range to analyze</span>
+        <span className="text-caption font-medium text-foreground">Date range to analyze</span>
       </div>
       <div className="grid grid-cols-2 gap-1.5">
         {DATE_RANGES.map((r) => (
@@ -808,7 +808,7 @@ export function AnalysisControls({
             onClick={() => setDateRange(r.id)}
             disabled={isRunning}
             className={cn(
-              "h-8 px-2 rounded-md border text-[11px] font-medium transition-colors",
+              "h-8 px-2 rounded-md border text-caption font-medium transition-colors",
               dateRange === r.id
                 ? "border-primary/40 bg-primary/[0.08] text-primary"
                 : "border-border/40 bg-white/[0.02] text-muted-foreground/85 hover:bg-white/[0.04]",
@@ -828,7 +828,7 @@ export function AnalysisControls({
         onConfirmed={() => void refetchImports()}
       />
 
-      {error && <p className="text-[11px] text-red-400">{error}</p>}
+      {error && <p className="text-caption text-red-400">{error}</p>}
 
       {/* Soft-block warning when required breakdown columns are missing */}
       {hasRequiredMissing && !isRunning && !forceRunAcknowledged && (
@@ -836,10 +836,10 @@ export function AnalysisControls({
           <div className="flex items-start gap-2">
             <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0 space-y-1">
-              <div className="text-[11px] font-semibold text-red-200">
+              <div className="text-caption font-semibold text-red-200">
                 Required columns are missing — this run will likely fail
               </div>
-              <p className="text-[10px] text-red-100/70 leading-relaxed">
+              <p className="text-label text-red-100/70 leading-relaxed">
                 One or more required breakdown columns (e.g. Age, Placement) were not found in your
                 CSV. Fix the file and re-upload it, or run anyway and review the error.
               </p>
@@ -848,9 +848,9 @@ export function AnalysisControls({
           <div className="flex items-center gap-2 pt-0.5">
             <button
               onClick={() => setForceRunAcknowledged(true)}
-              className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-red-400/35 bg-red-500/[0.08] text-[11px] font-medium text-red-200 hover:bg-red-500/[0.14] transition-colors"
+              className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-red-400/35 bg-red-500/[0.08] text-caption font-medium text-red-200 hover:bg-red-500/[0.14] transition-colors"
             >
-              <PlayCircle className="w-3 h-3" /> Run anyway
+              <PlayCircle className="w-3.5 h-3.5" /> Run anyway
             </button>
           </div>
         </div>
@@ -861,16 +861,16 @@ export function AnalysisControls({
           <div className="flex items-center gap-2 min-w-0">
             <StatusBadge run={run} />
             {run.status === "success" && run.date_start && run.date_end && (
-              <span className="text-[10px] text-muted-foreground/80 truncate">
+              <span className="text-label text-muted-foreground/80 truncate">
                 Covers {run.date_start} → {run.date_end} ({run.rows_ingested ?? 0} rows)
               </span>
             )}
             {run.status === "error" && run.error_message && (
-              <span className="text-[10px] text-red-400/80 truncate">{run.error_message}</span>
+              <span className="text-label text-red-400/80 truncate">{run.error_message}</span>
             )}
           </div>
         ) : (
-          <span className="text-[10px] text-muted-foreground/75">No analysis has been run yet.</span>
+          <span className="text-label text-muted-foreground/75">No analysis has been run yet.</span>
         )}
         <RunAnalysisBtn
           onClick={handleRun}
@@ -900,7 +900,7 @@ export function AnalysisControls({
       {/* Progress bar — visible while running and briefly after success */}
       {(isRunning || run?.status === "success") && fakeProgress > 0 && (
         <div className="space-y-1">
-          <div className="flex items-center justify-between text-[10px] text-muted-foreground/75">
+          <div className="flex items-center justify-between text-label text-muted-foreground/75">
             <span>
               {isRunning
                 ? "Processing uploads — reading rows, mapping columns…"
@@ -933,7 +933,7 @@ export function AnalysisControls({
         />
       )}
 
-      <p className="text-[10px] text-muted-foreground/75 leading-relaxed">
+      <p className="text-label text-muted-foreground/75 leading-relaxed">
         Analysis only runs when you press this button. It reads your staged uploads and reports
         the exact dates found in the data for the selected range — it will never run on its own.
       </p>

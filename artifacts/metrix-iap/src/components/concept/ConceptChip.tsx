@@ -53,7 +53,7 @@ export function ConceptChip({ code, className }: ConceptChipProps) {
           onMouseEnter={handleMouseEnter}
           className={
             className ??
-            "inline-flex items-center gap-0.5 text-[10px] font-semibold " +
+            "inline-flex items-center gap-0.5 text-label font-semibold " +
             "text-primary border border-primary/30 bg-primary/[0.08] " +
             "hover:bg-primary/[0.18] px-1.5 py-0.5 rounded leading-none " +
             "cursor-pointer transition-colors align-baseline"
@@ -67,9 +67,9 @@ export function ConceptChip({ code, className }: ConceptChipProps) {
         side="top"
         className="max-w-[220px] space-y-1 text-left"
       >
-        <p className="font-mono text-[10px] text-primary-foreground/70">{code}</p>
+        <p className="font-mono text-label text-primary-foreground/70">{code}</p>
         {entry?.what && (
-          <p className="text-[10px] leading-relaxed text-primary-foreground/90">
+          <p className="text-label leading-relaxed text-primary-foreground/90">
             {entry.what.length > 120 ? entry.what.slice(0, 120) + "…" : entry.what}
           </p>
         )}

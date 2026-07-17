@@ -101,8 +101,8 @@ export function BudgetView() {
                   <div className="grid grid-cols-dashboard-3 gap-3">
                     {eventRows.map(({ event, totals }) => (
                       <div key={event} className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                        <p className="text-[11px] font-semibold text-foreground mb-2">{eventLabel(event)}</p>
-                        <div className="space-y-1.5 text-[11px] tabular-nums">
+                        <p className="text-caption font-semibold text-foreground mb-2">{eventLabel(event)}</p>
+                        <div className="space-y-1.5 text-caption tabular-nums">
                           <div className="flex justify-between"><span className="text-muted-foreground/70">Spend</span><span className="text-foreground/85">{fmtUSD(totals.spend, 0)}</span></div>
                           <div className="flex justify-between"><span className="text-muted-foreground/70">Results</span><span className="text-foreground/85">{fmtNum(totals.results)}</span></div>
                           <div className="flex justify-between"><span className="text-muted-foreground/70">CPA</span><span className="text-foreground/85">{totals.results > 0 ? fmtUSD(totals.spend / totals.results) : "—"}</span></div>
@@ -125,7 +125,7 @@ export function BudgetView() {
                   <div className="space-y-2.5">
                     {conceptRows.map(([name, spend]) => (
                       <div key={name}>
-                        <div className="flex items-center justify-between text-[11px] mb-1">
+                        <div className="flex items-center justify-between text-caption mb-1">
                           <span className="text-foreground/85 font-medium">{name}</span>
                           <span className="text-muted-foreground/60 tabular-nums">{fmtUSD(spend, 0)}</span>
                         </div>
@@ -147,13 +147,13 @@ export function BudgetView() {
                   <div className="space-y-5">
                     {a.v3_placement_signal.length > 0 && (
                       <div>
-                        <h4 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">V3 placement signal</h4>
+                        <h4 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">V3 placement signal</h4>
                         <PlacementTable rows={a.v3_placement_signal} />
                       </div>
                     )}
                     {a.c4e_placement_signal.length > 0 && (
                       <div>
-                        <h4 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">C4E placement signal</h4>
+                        <h4 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">C4E placement signal</h4>
                         <PlacementTable rows={a.c4e_placement_signal} />
                       </div>
                     )}

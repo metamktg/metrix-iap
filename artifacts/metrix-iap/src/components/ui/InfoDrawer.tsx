@@ -37,7 +37,7 @@ export function InfoDrawer({
 
       {/* Slide-over panel — widens automatically when a task tray is present */}
       <div className={cn(
-        "fixed right-0 top-0 h-full bg-[hsl(222_61%_5.5%)] border-l border-border/50 z-50 flex flex-col overflow-hidden shadow-2xl transition-[width]",
+        "fixed right-0 top-0 h-full bg-surface-deep border-l border-border/50 z-50 flex flex-col overflow-hidden elevation-floating transition-[width]",
         taskTray
           ? "w-full sm:w-[760px] lg:w-[860px]"
           : "w-full sm:w-[540px] lg:w-[620px]"
@@ -46,8 +46,8 @@ export function InfoDrawer({
         {/* ── Full-width header ── */}
         <div className="flex items-start gap-3 px-6 py-5 border-b border-border/40 shrink-0 bg-white/[0.01]">
           <div className="flex-1 min-w-0">
-            <div className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest mb-1.5 leading-none">{kicker}</div>
-            <p className="text-[16px] font-bold text-foreground leading-snug">{title}</p>
+            <div className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest mb-1.5 leading-none">{kicker}</div>
+            <p className="text-base font-bold text-foreground leading-snug">{title}</p>
           </div>
           <button
             onClick={onClose}
@@ -86,8 +86,8 @@ export function InfoDrawer({
 export function DrawerField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">{label}</label>
-      <div className="text-[13px] text-foreground/90 leading-relaxed">{children}</div>
+      <label className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">{label}</label>
+      <div className="text-title text-foreground/90 leading-relaxed">{children}</div>
     </div>
   );
 }

@@ -12,9 +12,19 @@ interface SharePieChartProps {
   showLegend?: boolean;
 }
 
-const PALETTE = [
-  "#3b82f6", "#06b6d4", "#8b5cf6", "#ec4899", "#f59e0b",
-  "#10b981", "#6366f1", "#f43f5e", "#14b8a6", "#a855f7",
+// Chart palette — semantic CSS variable references for the Metrix dark theme.
+// Ordered to maximize contrast between adjacent segments.
+const PALETTE_VARS = [
+  "var(--color-chart-1)",
+  "var(--color-chart-2)",
+  "var(--color-chart-3)",
+  "var(--color-chart-4)",
+  "var(--color-chart-5)",
+  "hsl(var(--metrix-cyan))",
+  "hsl(var(--primary))",
+  "hsl(var(--metrix-gold))",
+  "hsl(var(--metrix-success))",
+  "hsl(var(--metrix-danger))",
 ];
 
 export function SharePieChart({ data, unit, height = 220, showLegend = true }: SharePieChartProps) {
@@ -49,7 +59,7 @@ export function SharePieChart({ data, unit, height = 220, showLegend = true }: S
             stroke="none"
           >
             {chartData.map((_, i) => (
-              <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
+              <Cell key={i} fill={PALETTE_VARS[i % PALETTE_VARS.length]} />
             ))}
           </Pie>
           <Tooltip
@@ -60,9 +70,9 @@ export function SharePieChart({ data, unit, height = 220, showLegend = true }: S
               const value = Number(p.value ?? 0);
               const pct = total > 0 ? ((value / total) * 100).toFixed(1) : "0";
               return (
-                <div className="rounded-lg border border-border/50 bg-[hsl(222_61%_6%)] px-3 py-2 shadow-xl text-xs">
+                <div className="rounded-lg border border-border/50 bg-surface px-3 py-2 elevation-floating text-body">
                   <div className="font-medium text-foreground mb-1">{name}</div>
-                  <div className="text-muted-foreground">{fmt(value)} ({pct}%)</div>
+                  <div className="text-muted-foreground tabular-nums">{fmt(value)} ({pct}%)</div>
                 </div>
               );
             }}
@@ -76,9 +86,9 @@ export function SharePieChart({ data, unit, height = 220, showLegend = true }: S
             <div key={d.name} className="flex items-center gap-1.5">
               <div
                 className="w-2 h-2 rounded-full shrink-0"
-                style={{ backgroundColor: PALETTE[i % PALETTE.length] }}
+                style={{ backgroundColor: PALETTE_VARS[i % PALETTE_VARS.length] }}
               />
-              <span className="text-label-xs text-muted-foreground/70">{d.name}</span>
+              <span className="text-label text-muted-foreground/70">{d.name}</span>
             </div>
           ))}
         </div>

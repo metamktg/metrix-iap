@@ -52,7 +52,7 @@ export function StrategyOverview() {
                     runningLabel="Generating strategy…"
                   />
                 ) : (
-                  <p className="text-[11px] text-muted-foreground/70">
+                  <p className="text-caption text-muted-foreground/70">
                     Strategy generation needs analysis data — run the analysis pipeline for this account first.
                   </p>
                 )}
@@ -137,11 +137,11 @@ export function StrategyOverview() {
                     const t = splitTitle(p.label);
                     return (
                     <div key={p.id} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2">
-                      <span className="text-[10px] font-semibold text-muted-foreground/50 tabular-nums">
+                      <span className="text-label font-semibold text-muted-foreground/50 tabular-nums">
                         {String(i + 1).padStart(2, "0")}
                       </span>
                       <div title={t.qualifier ? p.label : undefined}>
-                        <p className="text-[13px] font-semibold text-foreground leading-tight line-clamp-1">{t.main}</p>
+                        <p className="text-title font-semibold text-foreground leading-tight line-clamp-1">{t.main}</p>
                         {t.qualifier && <p className={cn(TYPE.caption, "line-clamp-1 mt-0.5")}>{t.qualifier}</p>}
                       </div>
                       <DetailReveal
@@ -182,11 +182,11 @@ export function StrategyOverview() {
                     <div key={s.to} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2">
                       <div className="flex items-center gap-2">
                         <s.Icon className="w-3.5 h-3.5 text-primary" />
-                        <span className="text-[13px] font-semibold text-foreground">{s.label}</span>
+                        <span className="text-title font-semibold text-foreground">{s.label}</span>
                       </div>
                       <p className={TYPE.caption}>{s.desc}</p>
                       <div className="flex items-center justify-between mt-auto pt-1">
-                        <span className="text-[10px] font-mono text-muted-foreground/70">{s.stat}</span>
+                        <span className="text-label font-mono text-muted-foreground/70">{s.stat}</span>
                         <CrossLink to={s.to} label="Open" />
                       </div>
                     </div>

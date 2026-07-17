@@ -7,7 +7,7 @@
 
 import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { Upload, BarChart2, Users, Monitor, ImageOff } from "lucide-react";
+import { Upload, BarChart2, Users, Monitor, ImageOff, AlertTriangle } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import type { DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 import type { CreativeCardData } from "./CreativeCard";
@@ -71,11 +71,11 @@ function ExpandVisualInner({ data, className }: { data: CreativeCardData; classN
       className={cn("w-full h-full flex flex-col items-center justify-center gap-2 select-none", className)}
       style={{ background: `linear-gradient(140deg, hsl(${hue} 45% 14%) 0%, hsl(${(hue + 40) % 360} 40% 9%) 100%)` }}
     >
-      <span className="text-[40px] font-black tracking-tight leading-none" style={{ color: `hsl(${hue} 70% 72% / 0.85)` }}>
+      <span className="text-hero font-black tracking-tight leading-none" style={{ color: `hsl(${hue} 70% 72% / 0.85)` }}>
         {data.conceptCode}
       </span>
       <span className="flex items-center gap-1.5 text-[9px] font-mono uppercase tracking-widest text-white/35">
-        <ImageOff className="w-3 h-3" /> No asset in import
+        <ImageOff className="w-3.5 h-3.5" /> No asset in import
       </span>
     </div>
   );
@@ -135,7 +135,7 @@ function TabBar({ tabs, active, onChange }: {
           key={t.id}
           onClick={() => onChange(t.id)}
           className={cn(
-            "flex items-center gap-1.5 px-3.5 py-2.5 text-[10px] font-medium transition-colors border-b-2 -mb-px",
+            "flex items-center gap-1.5 px-3.5 py-2.5 text-label font-medium transition-colors border-b-2 -mb-px",
             active === t.id
               ? "text-foreground border-primary"
               : "text-muted-foreground/50 border-transparent hover:text-muted-foreground/80"
@@ -190,7 +190,7 @@ function OverviewTab({ data }: { data: CreativeCardData }) {
           ] as const).map((item) => (
             <div key={item.label} className="rounded-lg border border-border/30 bg-white/[0.02] px-3 py-2.5 text-center">
               <div className="text-[8px] font-mono uppercase tracking-widest text-muted-foreground/50 mb-1">{item.label}</div>
-              <div className="text-[18px] font-bold text-foreground tabular-nums leading-none">{item.value}</div>
+              <div className="text-lg font-bold text-foreground tabular-nums leading-none">{item.value}</div>
             </div>
           ))}
         </div>
@@ -199,10 +199,10 @@ function OverviewTab({ data }: { data: CreativeCardData }) {
       {(data.primaryText || data.secondaryText || data.cta) && (
         <div className="space-y-2">
           <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50">Copy</p>
-          {data.primaryText && <p className="text-[12px] text-foreground/85 leading-relaxed">{data.primaryText}</p>}
-          {data.secondaryText && <p className="text-[11px] text-muted-foreground/60 leading-relaxed">{data.secondaryText}</p>}
+          {data.primaryText && <p className="text-body text-foreground/85 leading-relaxed">{data.primaryText}</p>}
+          {data.secondaryText && <p className="text-caption text-muted-foreground/60 leading-relaxed">{data.secondaryText}</p>}
           {data.cta && (
-            <span className="inline-flex text-[10px] font-semibold text-primary border border-primary/25 bg-primary/10 px-2 py-1 rounded">
+            <span className="inline-flex text-label font-semibold text-primary border border-primary/25 bg-primary/10 px-2 py-1 rounded">
               CTA · {data.cta}
             </span>
           )}
@@ -212,7 +212,7 @@ function OverviewTab({ data }: { data: CreativeCardData }) {
       {data.iapRead && (
         <div className="space-y-1.5">
           <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50">IAP read</p>
-          <p className="text-[11px] text-foreground/80 leading-relaxed">{data.iapRead}</p>
+          <p className="text-caption text-foreground/80 leading-relaxed">{data.iapRead}</p>
         </div>
       )}
 
@@ -298,8 +298,8 @@ function DemographicsTab({
   if (rows.length === 0) {
     return (
       <div className="py-10 text-center space-y-1.5">
-        <p className="text-[12px] font-medium text-muted-foreground/60">No demographic data for this cell</p>
-        <p className="text-[10px] text-muted-foreground/50">Import a demographic pivot export to see the age × gender breakdown.</p>
+        <p className="text-body font-medium text-muted-foreground/60">No demographic data for this cell</p>
+        <p className="text-label text-muted-foreground/50">Import a demographic pivot export to see the age × gender breakdown.</p>
       </div>
     );
   }
@@ -308,7 +308,7 @@ function DemographicsTab({
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Age × Gender</p>
+        <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Age × Gender</p>
         <MetricToggle
           options={[{ value: "spend", label: "Spend" }, { value: "results", label: "Results" }]}
           value={metric}
@@ -343,10 +343,10 @@ function DemographicsTab({
             >
               {/* Row header: age + value */}
               <div className="flex items-center justify-between mb-2">
-                <span className={cn("text-[13px] font-semibold", isActive ? "text-foreground" : "text-foreground/75")}>
+                <span className={cn("text-title font-semibold", isActive ? "text-foreground" : "text-foreground/75")}>
                   {b.age}
                 </span>
-                <span className="text-[12px] tabular-nums text-muted-foreground/70 font-medium">
+                <span className="text-body tabular-nums text-muted-foreground/70 font-medium">
                   {fmtMain(barVal(b))}
                 </span>
               </div>
@@ -372,11 +372,11 @@ function DemographicsTab({
 
               {/* M/F inline values */}
               <div className="flex items-center gap-3 mt-1.5">
-                <span className="flex items-center gap-1 text-[10px] text-blue-300/80">
+                <span className="flex items-center gap-1 text-label text-blue-300/80">
                   <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60 shrink-0" />
                   M {metric === "spend" ? usd(mSpend) : num(mRes)}
                 </span>
-                <span className="flex items-center gap-1 text-[10px] text-rose-300/80">
+                <span className="flex items-center gap-1 text-label text-rose-300/80">
                   <span className="w-1.5 h-1.5 rounded-full bg-rose-400/60 shrink-0" />
                   F {metric === "spend" ? usd(fSpend) : num(fRes)}
                 </span>
@@ -397,8 +397,8 @@ function DemographicsTab({
           {/* Panel header */}
           <div className="px-4 py-2.5 border-b border-border/30 flex items-center justify-between">
             <div>
-              <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Segment KPIs</span>
-              <span className="ml-2 text-[12px] font-semibold text-foreground">{activeBucket.age}</span>
+              <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Segment KPIs</span>
+              <span className="ml-2 text-body font-semibold text-foreground">{activeBucket.age}</span>
             </div>
           </div>
 
@@ -422,7 +422,7 @@ function DemographicsTab({
                 {/* Gender header */}
                 <div className="flex items-center gap-1.5">
                   <span className={cn("w-2 h-2 rounded-full shrink-0", g.dot)} />
-                  <span className={cn("text-[11px] font-semibold", g.color)}>{g.label}</span>
+                  <span className={cn("text-caption font-semibold", g.color)}>{g.label}</span>
                 </div>
 
                 {/* KPI rows */}
@@ -435,8 +435,8 @@ function DemographicsTab({
                     { key: "reach", label: "Reach", value: num(g.reach) },
                   ] as const).map((kpi) => (
                     <div key={kpi.key} className="flex items-center justify-between">
-                      <span className="text-[10px] text-muted-foreground/60">{kpi.label}</span>
-                      <span className="text-[12px] font-semibold tabular-nums text-foreground/90">{kpi.value}</span>
+                      <span className="text-label text-muted-foreground/60">{kpi.label}</span>
+                      <span className="text-body font-semibold tabular-nums text-foreground/90">{kpi.value}</span>
                     </div>
                   ))}
                 </div>
@@ -447,7 +447,7 @@ function DemographicsTab({
                     onClick={(e) => { e.stopPropagation(); onSegmentClick({ age: activeBucket.age, gender: g.gender! }); }}
                     data-testid={`chip-demo-${activeBucket.age}-${g.label.toLowerCase()}`}
                     className={cn(
-                      "w-full text-[10px] font-medium rounded-md border py-1.5 transition-colors",
+                      "w-full text-label font-medium rounded-md border py-1.5 transition-colors",
                       g.label === "Male"
                         ? "border-blue-400/25 text-blue-300/80 hover:bg-blue-400/10"
                         : "border-rose-400/25 text-rose-300/80 hover:bg-rose-400/10"
@@ -501,8 +501,8 @@ function PlacementsTab({ rows }: { rows: PlacementRow[] }) {
   if (rows.length === 0) {
     return (
       <div className="py-10 text-center space-y-1.5">
-        <p className="text-[12px] font-medium text-muted-foreground/60">No placement data for this account</p>
-        <p className="text-[10px] text-muted-foreground/50">Import a device × placement export to see placement signal.</p>
+        <p className="text-body font-medium text-muted-foreground/60">No placement data for this account</p>
+        <p className="text-label text-muted-foreground/50">Import a device × placement export to see placement signal.</p>
       </div>
     );
   }
@@ -525,7 +525,7 @@ function PlacementsTab({ rows }: { rows: PlacementRow[] }) {
           const barW = Math.round((val / maxVal) * 100);
           return (
             <div key={b.Placement + b.Platform} className="space-y-1.5">
-              <div className="flex items-center justify-between text-[10px]">
+              <div className="flex items-center justify-between text-label">
                 <div className="min-w-0">
                   <span className="font-medium text-foreground/80">{b.Placement}</span>
                   <span className="ml-1.5 text-[9px] text-muted-foreground/50 capitalize">{b.Platform}</span>
@@ -583,20 +583,20 @@ export function CreativeExpandDialog({
   const [tab, setTab] = useState<Tab>("overview");
 
   const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: "overview",      label: "Overview",      icon: <BarChart2 className="w-3 h-3" /> },
-    { id: "demographics",  label: "Demographics",  icon: <Users    className="w-3 h-3" /> },
-    { id: "placements",    label: "Placements",    icon: <Monitor  className="w-3 h-3" /> },
+    { id: "overview",      label: "Overview",      icon: <BarChart2 className="w-3.5 h-3.5" /> },
+    { id: "demographics",  label: "Demographics",  icon: <Users    className="w-3.5 h-3.5" /> },
+    { id: "placements",    label: "Placements",    icon: <Monitor  className="w-3.5 h-3.5" /> },
   ];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-w-4xl bg-[hsl(222_61%_6%)] border-border/40 p-0 gap-0 overflow-hidden duration-200 max-h-[92vh]"
+        className="max-w-4xl bg-surface-deep border-border/40 p-0 gap-0 overflow-hidden duration-200 max-h-[92vh]"
       >
         <div className="grid grid-rows-[260px_1fr] sm:grid-rows-none sm:grid-cols-[42%_1fr] min-h-0 max-h-[92vh] overflow-hidden">
 
           {/* ── Left: creative visual ── */}
-          <div className="relative overflow-hidden bg-[hsl(222_65%_5%)] sm:border-r border-b sm:border-b-0 border-border/30">
+          <div className="relative overflow-hidden bg-surface-preview sm:border-r border-b sm:border-b-0 border-border/30">
             <ExpandVisual data={data} className="absolute inset-0" />
 
             {unmapped && (
@@ -623,9 +623,9 @@ export function CreativeExpandDialog({
               <div className="text-[9px] font-mono text-muted-foreground/50 uppercase tracking-widest mb-0.5">
                 Creative · {data.conceptCode}
               </div>
-              <p className="text-[14px] font-semibold text-foreground leading-tight">{data.title}</p>
+              <p className="text-sm font-semibold text-foreground leading-tight">{data.title}</p>
               {data.visualSystem && (
-                <p className="text-[11px] text-muted-foreground/55 mt-0.5 leading-relaxed line-clamp-2">{data.visualSystem}</p>
+                <p className="text-caption text-muted-foreground/55 mt-0.5 leading-relaxed line-clamp-2">{data.visualSystem}</p>
               )}
             </div>
 
@@ -637,18 +637,18 @@ export function CreativeExpandDialog({
               {/* Unmapped warning shown in overview */}
               {unmapped && tab === "overview" && (
                 <div className="mb-4 flex items-start gap-2.5 p-3 rounded-lg border border-amber-400/25 bg-amber-400/[0.05]">
-                  <span className="text-amber-400 shrink-0 mt-px text-[13px]">⚠</span>
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-px" strokeWidth={1.5} />
                   <div className="space-y-1.5 min-w-0">
-                    <p className="text-[11px] font-medium text-amber-300/90">Not fully mapped to IAP library</p>
-                    <p className="text-[10px] text-muted-foreground/70 leading-relaxed">
+                    <p className="text-caption font-medium text-amber-300/90">Not fully mapped to IAP library</p>
+                    <p className="text-label text-muted-foreground/70 leading-relaxed">
                       This cell has performance data but no library entry — variable codes, copy, and asset may be absent.
                     </p>
                     {onUploadCreatives && (
                       <button
                         onClick={() => { onOpenChange(false); onUploadCreatives(); }}
-                        className="flex items-center gap-1 text-[10px] font-medium text-amber-300 hover:text-amber-200 border border-amber-400/25 bg-amber-400/[0.06] hover:bg-amber-400/10 px-2 py-1 rounded transition-colors"
+                        className="flex items-center gap-1 text-label font-medium text-amber-300 hover:text-amber-200 border border-amber-400/25 bg-amber-400/[0.06] hover:bg-amber-400/10 px-2 py-1 rounded transition-colors"
                       >
-                        <Upload className="w-3 h-3" /> Upload creatives
+                        <Upload className="w-3.5 h-3.5" /> Upload creatives
                       </button>
                     )}
                   </div>
@@ -661,7 +661,7 @@ export function CreativeExpandDialog({
             </div>
 
             {/* Footer */}
-            <div className="shrink-0 px-5 py-3 border-t border-border/30 flex items-center gap-2 flex-wrap bg-[hsl(222_61%_6%)]">
+            <div className="shrink-0 px-5 py-3 border-t border-border/30 flex items-center gap-2 flex-wrap bg-surface-deep">
               <AdsManagerButton metaAdId={data.metaAdId} adAccountId={data.adAccountId} />
               {typeof expandFooter === "function" ? expandFooter(() => onOpenChange(false)) : expandFooter}
             </div>

@@ -34,7 +34,7 @@ const SCOPE_STYLE: Record<string, string> = {
 
 function Badge({ text, cls }: { text: string; cls: string }) {
   return (
-    <span className={cn("text-[10px] font-semibold border px-1.5 py-0.5 rounded uppercase tracking-wide leading-none", cls)}>
+    <span className={cn("text-label font-semibold border px-1.5 py-0.5 rounded uppercase tracking-wide leading-none", cls)}>
       {text}
     </span>
   );
@@ -74,8 +74,8 @@ export function ManagerOverview() {
               <Plug className="w-5 h-5 text-primary" />
             </div>
             <div className="space-y-1.5">
-              <h2 className="text-[16px] font-semibold text-foreground">Add your first ad account</h2>
-              <p className="text-[12px] text-muted-foreground/70 leading-relaxed">
+              <h2 className="text-base font-semibold text-foreground">Add your first ad account</h2>
+              <p className="text-body text-muted-foreground/70 leading-relaxed">
                 Connect a live Meta ad account, or create a manual account and upload exported
                 reports. Every Metrix module scopes to a single ad account — analysis surfaces
                 stay honestly pending until real data is processed.
@@ -83,7 +83,7 @@ export function ManagerOverview() {
             </div>
             <button
               onClick={() => setAddOpen(true)}
-              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary/15 border border-primary/30 text-primary text-[12px] font-medium hover:bg-primary/25 transition-colors"
+              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary/15 border border-primary/30 text-primary text-body font-medium hover:bg-primary/25 transition-colors"
             >
               <Plus className="w-3.5 h-3.5" /> Add Ad Account
             </button>
@@ -101,7 +101,7 @@ export function ManagerOverview() {
         title={manager.name}
         subtitle="Blended performance · all ad accounts"
         right={
-          <span className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest">
+          <span className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest">
             {data.configured_ad_accounts} configured · {data.unconfigured_ad_accounts} to set up
           </span>
         }
@@ -111,7 +111,7 @@ export function ManagerOverview() {
         {/* Bottom-line totals */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60">Bottom-line totals</h2>
+            <h2 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/60">Bottom-line totals</h2>
             <MetricPickerButton catalog={metricCatalog} selected={selectedMetricIds} onToggle={toggle} onMove={move} onReset={reset} />
           </div>
           <div className="grid grid-cols-dashboard-4 gap-3">
@@ -133,11 +133,11 @@ export function ManagerOverview() {
             {events.map(([key, e]) => (
               <div key={key} className="rounded-lg border border-border/40 bg-white/[0.02] p-3.5">
                 <div className="flex items-center gap-1.5 mb-2">
-                  <TrendingUp className="w-3 h-3 text-primary/60" />
-                  <span className="text-[11px] font-medium text-foreground leading-tight">{eventLabel(key)}</span>
+                  <TrendingUp className="w-3.5 h-3.5 text-primary/60" />
+                  <span className="text-caption font-medium text-foreground leading-tight">{eventLabel(key)}</span>
                 </div>
-                <div className="text-[22px] font-semibold text-foreground tabular-nums leading-none">{fmtNum(e.results)}</div>
-                <div className="text-[10px] text-muted-foreground/70 mt-2 space-y-0.5">
+                <div className="text-section font-semibold text-foreground tabular-nums leading-none">{fmtNum(e.results)}</div>
+                <div className="text-label text-muted-foreground/70 mt-2 space-y-0.5">
                   <div>Spend {fmtUSD(e.spend)}</div>
                   <div>Link clicks {fmtNum(e.link_clicks)}</div>
                 </div>
@@ -161,8 +161,8 @@ export function ManagerOverview() {
                     {configured ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <Plug className="w-4 h-4 text-muted-foreground/70" />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-medium text-foreground leading-tight">{a.name}</div>
-                    <div className="text-[10px] text-muted-foreground/70 mt-0.5 capitalize">{configured ? `${a.platform} · connected` : "Setup required"}</div>
+                    <div className="text-title font-medium text-foreground leading-tight">{a.name}</div>
+                    <div className="text-label text-muted-foreground/70 mt-0.5 capitalize">{configured ? `${a.platform} · connected` : "Setup required"}</div>
                   </div>
                 </button>
               );
@@ -177,8 +177,8 @@ export function ManagerOverview() {
                 <Plus className="w-4 h-4 text-muted-foreground/60" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-medium text-foreground/80 leading-tight">Add or connect an ad account</div>
-                <div className="text-[10px] text-muted-foreground/70 mt-0.5">Connect Meta or add a manual import</div>
+                <div className="text-title font-medium text-foreground/80 leading-tight">Add or connect an ad account</div>
+                <div className="text-label text-muted-foreground/70 mt-0.5">Connect Meta or add a manual import</div>
               </div>
             </button>
           </div>
@@ -190,7 +190,7 @@ export function ManagerOverview() {
           desc="Cross-account signals · read-only · act from the source account"
         >
           {data.recommendation_cards.length === 0 ? (
-            <p className="text-[12px] text-muted-foreground/70 py-4 text-center">No account recommendations at the moment.</p>
+            <p className="text-body text-muted-foreground/70 py-4 text-center">No account recommendations at the moment.</p>
           ) : (
             <div className="grid grid-cols-dashboard-2-lg gap-3">
               {data.recommendation_cards.map((c) => (
@@ -203,7 +203,7 @@ export function ManagerOverview() {
                   </div>
                   <DetailReveal
                     label={<TokenizedConceptText text={c.title} />}
-                    labelClassName="text-[13px] font-semibold text-foreground leading-snug"
+                    labelClassName="text-title font-semibold text-foreground leading-snug"
                     eyebrow="Recommendation"
                     sections={[
                       {
@@ -220,12 +220,12 @@ export function ManagerOverview() {
                   />
                   <button
                     onClick={() => selectAdAccount(c.account_id)}
-                    className="mt-3 self-start inline-flex items-center gap-1 text-[11px] font-medium text-primary/80 hover:text-primary transition-colors"
+                    className="mt-3 self-start inline-flex items-center gap-1 text-caption font-medium text-primary/80 hover:text-primary transition-colors"
                   >
-                    Open {accountName(c.account_id)} <ArrowRight className="w-3 h-3" />
+                    Open {accountName(c.account_id)} <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                   {c.source_path && (
-                    <p className="text-[10px] font-mono text-muted-foreground/60 mt-2">source · {c.source_path}</p>
+                    <p className="text-label font-mono text-muted-foreground/60 mt-2">source · {c.source_path}</p>
                   )}
                 </div>
               ))}

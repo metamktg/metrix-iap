@@ -86,7 +86,7 @@ function fmtElapsed(seconds: number): string {
 
 function StatPill({ value, label }: { value: string | number; label?: string }) {
   return (
-    <span className="inline-flex items-baseline gap-1 text-[10px] tabular-nums bg-white/[0.04] border border-border/20 rounded-md px-2 py-1 leading-none">
+    <span className="inline-flex items-baseline gap-1 text-label tabular-nums bg-white/[0.04] border border-border/20 rounded-md px-2 py-1 leading-none">
       <span className="font-bold text-foreground/70">{value}</span>
       {label && <span className="text-muted-foreground/40 font-normal">{label}</span>}
     </span>
@@ -110,8 +110,8 @@ function DepBadge({
         : "text-muted-foreground/30 bg-white/[0.025] border-border/15",
     )}>
       {satisfied
-        ? <CheckCircle2 className="w-2.5 h-2.5" />
-        : <Lock className="w-2.5 h-2.5" />
+        ? <CheckCircle2 className="w-3.5 h-3.5" />
+        : <Lock className="w-3.5 h-3.5" />
       }
       {label}
     </span>
@@ -169,7 +169,7 @@ function StageTile({
       {isRunning && (
         <span
           aria-hidden="true"
-          className="absolute bottom-0 left-0 right-0 h-[2px] overflow-hidden"
+          className="absolute bottom-0 left-0 right-0 h-0.5 overflow-hidden"
         >
           <span className="absolute inset-y-0 w-1/2 bg-amber-400/50 rounded-full animate-[progress-slide_1.4s_ease-in-out_infinite]" />
         </span>
@@ -189,11 +189,11 @@ function StageTile({
         {/* State overlay badge — top-right of icon */}
         <span className="absolute -top-1 -right-1.5">
           {isRunning ? (
-            <Loader2 className="w-2.5 h-2.5 text-amber-400/90 animate-spin" />
+            <Loader2 className="w-3.5 h-3.5 text-amber-400/90 animate-spin" />
           ) : isStale ? (
-            <RotateCcw className="w-2.5 h-2.5 text-orange-400/85" />
+            <RotateCcw className="w-3.5 h-3.5 text-orange-400/85" />
           ) : isComplete ? (
-            <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400/80" />
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400/80" />
           ) : isNext ? (
             <span className="block w-2 h-2 rounded-full bg-primary/70 animate-pulse" />
           ) : null}
@@ -284,8 +284,8 @@ function StageIntelligence({
   function ErrorBlock({ message }: { message: string }) {
     return (
       <div className="flex items-start gap-2 rounded-lg border border-amber-400/20 bg-amber-400/[0.06] px-2.5 py-2 mt-1">
-        <AlertTriangle className="w-3 h-3 text-amber-400/70 mt-0.5 shrink-0" />
-        <p className="text-[10px] text-amber-200/65 leading-relaxed">{message}</p>
+        <AlertTriangle className="w-3.5 h-3.5 text-amber-400/70 mt-0.5 shrink-0" />
+        <p className="text-label text-amber-200/65 leading-relaxed">{message}</p>
       </div>
     );
   }
@@ -303,7 +303,7 @@ function StageIntelligence({
         {/* Causal position */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-[9px] text-muted-foreground/30 font-medium">Root stage</span>
-          <ArrowRight className="w-2.5 h-2.5 text-muted-foreground/20" />
+          <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/20" />
           <span className="text-[9px] text-muted-foreground/35">Enables Strategy &amp; Briefs</span>
         </div>
 
@@ -324,7 +324,7 @@ function StageIntelligence({
         {/* Last run provenance */}
         {lastRun && (
           <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground/30">
-            <Clock className="w-2.5 h-2.5 shrink-0" />
+            <Clock className="w-3.5 h-3.5 shrink-0" />
             <span>Last run {fmtFull(lastRun)}</span>
           </div>
         )}
@@ -334,7 +334,7 @@ function StageIntelligence({
         )}
 
         {!analysisComplete && !analysisRunning && !hasError && (
-          <p className="text-[10px] text-muted-foreground/30 leading-relaxed">
+          <p className="text-label text-muted-foreground/30 leading-relaxed">
             Upload a CSV export or connect a Meta ad account, then run analysis.
           </p>
         )}
@@ -363,7 +363,7 @@ function StageIntelligence({
             label={`Analysis${analysisWindow ? `: ${analysisWindow}` : ""}`}
             satisfied={analysisComplete}
           />
-          <ArrowRight className="w-2.5 h-2.5 text-muted-foreground/20" />
+          <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/20" />
           <span className="text-[9px] text-muted-foreground/35">Enables Briefs</span>
         </div>
 
@@ -375,7 +375,7 @@ function StageIntelligence({
             {icpCount > 0 && <StatPill value={icpCount} label="ICPs" />}
             {isGenerated && (
               <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-primary/60 bg-primary/[0.08] border border-primary/15 rounded-md px-2 py-1 leading-none">
-                <Sparkles className="w-2.5 h-2.5" /> Generated
+                <Sparkles className="w-3.5 h-3.5" /> Generated
               </span>
             )}
           </div>
@@ -384,7 +384,7 @@ function StageIntelligence({
         {/* Provenance */}
         {genDate && (
           <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground/30">
-            <Clock className="w-2.5 h-2.5 shrink-0" />
+            <Clock className="w-3.5 h-3.5 shrink-0" />
             <span>Generated {fmtFull(genDate)}</span>
             {strategyLastRun?.model && (
               <span className="text-muted-foreground/20">· {strategyLastRun.model}</span>
@@ -394,15 +394,15 @@ function StageIntelligence({
 
         {strategyIsStale && !strategyRunning && (
           <div className="flex items-start gap-2 rounded-lg border border-orange-400/20 bg-orange-400/[0.05] px-2.5 py-2">
-            <RotateCcw className="w-3 h-3 text-orange-400/70 mt-0.5 shrink-0" />
-            <p className="text-[10px] text-orange-200/65 leading-relaxed">
+            <RotateCcw className="w-3.5 h-3.5 text-orange-400/70 mt-0.5 shrink-0" />
+            <p className="text-label text-orange-200/65 leading-relaxed">
               Analysis data has been refreshed. Results here reflect the previous run.
             </p>
           </div>
         )}
 
         {!analysisComplete && (
-          <p className="text-[10px] text-muted-foreground/30 leading-relaxed">
+          <p className="text-label text-muted-foreground/30 leading-relaxed">
             Run analysis first — strategy is built from the cell and variable results.
           </p>
         )}
@@ -445,7 +445,7 @@ function StageIntelligence({
           ))}
           {isGenerated && (
             <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-primary/60 bg-primary/[0.08] border border-primary/15 rounded-md px-2 py-1 leading-none">
-              <Sparkles className="w-2.5 h-2.5" /> Generated
+              <Sparkles className="w-3.5 h-3.5" /> Generated
             </span>
           )}
         </div>
@@ -454,30 +454,30 @@ function StageIntelligence({
       {/* Provenance */}
       {genDate && (
         <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground/30">
-          <Clock className="w-2.5 h-2.5 shrink-0" />
+          <Clock className="w-3.5 h-3.5 shrink-0" />
           <span>Generated {fmtFull(genDate)}</span>
         </div>
       )}
 
       {briefsIsStale && !briefsRunning && (
         <div className="flex items-start gap-2 rounded-lg border border-orange-400/20 bg-orange-400/[0.05] px-2.5 py-2">
-          <RotateCcw className="w-3 h-3 text-orange-400/70 mt-0.5 shrink-0" />
-          <p className="text-[10px] text-orange-200/65 leading-relaxed">
+          <RotateCcw className="w-3.5 h-3.5 text-orange-400/70 mt-0.5 shrink-0" />
+          <p className="text-label text-orange-200/65 leading-relaxed">
             Analysis data has been refreshed. Results here reflect the previous run.
           </p>
         </div>
       )}
 
       {!strategyComplete && (
-        <p className="text-[10px] text-muted-foreground/30 leading-relaxed">
+        <p className="text-label text-muted-foreground/30 leading-relaxed">
           Generate strategy first — briefs are derived from the message pillars.
         </p>
       )}
 
       {hasError && briefsLastRun?.error_message && (
         <div className="flex items-start gap-2 rounded-lg border border-amber-400/20 bg-amber-400/[0.06] px-2.5 py-2 mt-1">
-          <AlertTriangle className="w-3 h-3 text-amber-400/70 mt-0.5 shrink-0" />
-          <p className="text-[10px] text-amber-200/65 leading-relaxed">{briefsLastRun.error_message}</p>
+          <AlertTriangle className="w-3.5 h-3.5 text-amber-400/70 mt-0.5 shrink-0" />
+          <p className="text-label text-amber-200/65 leading-relaxed">{briefsLastRun.error_message}</p>
         </div>
       )}
     </div>
@@ -605,8 +605,8 @@ function CommandHub({
     if (isRunning) return (
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
-          <Loader2 className="w-3 h-3 text-amber-400/70 animate-spin shrink-0" />
-          <span className="text-[10px] text-amber-400/55">Processing — views will update when complete</span>
+          <Loader2 className="w-3.5 h-3.5 text-amber-400/70 animate-spin shrink-0" />
+          <span className="text-label text-amber-400/55">Processing — views will update when complete</span>
         </div>
         {/* Elapsed time + indeterminate progress bar */}
         <div className="flex items-center gap-2">
@@ -626,28 +626,28 @@ function CommandHub({
       <div className="flex flex-wrap gap-1.5">
         <button
           onClick={() => goTo("/app/settings/account")}
-          className="inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
+          className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
         >
-          <Upload className="w-2.5 h-2.5" />
+          <Upload className="w-3.5 h-3.5" />
           Upload CSV
         </button>
         <button
           onClick={() => goTo("/app/settings/account")}
-          className="inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
+          className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
         >
-          <Link2 className="w-2.5 h-2.5" />
+          <Link2 className="w-3.5 h-3.5" />
           Connect Meta
         </button>
         <button
           onClick={() => goTo("/app/settings/account")}
           className={cn(
-            "inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1.5 rounded-lg",
+            "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
             analysisComplete ? "mx-secondary-btn" : "mx-primary-btn",
           )}
         >
           {analysisComplete
-            ? <><RefreshCw className="w-2.5 h-2.5" /> Re-run</>
-            : <><PlayCircle className="w-2.5 h-2.5" /> Run Analysis</>
+            ? <><RefreshCw className="w-3.5 h-3.5" /> Re-run</>
+            : <><PlayCircle className="w-3.5 h-3.5" /> Run Analysis</>
           }
         </button>
       </div>
@@ -659,7 +659,7 @@ function CommandHub({
           onClick={() => { onGenerateStrategy(); onClose(); }}
           disabled={!analysisComplete}
           className={cn(
-            "inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1.5 rounded-lg",
+            "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
             !analysisComplete
               ? "opacity-30 cursor-not-allowed mx-secondary-btn"
               : strategyComplete
@@ -668,8 +668,8 @@ function CommandHub({
           )}
         >
           {strategyComplete
-            ? <><RefreshCw className="w-2.5 h-2.5" /> Regenerate</>
-            : <><Sparkles className="w-2.5 h-2.5" /> Generate Strategy</>
+            ? <><RefreshCw className="w-3.5 h-3.5" /> Regenerate</>
+            : <><Sparkles className="w-3.5 h-3.5" /> Generate Strategy</>
           }
         </button>
       </div>
@@ -682,7 +682,7 @@ function CommandHub({
           onClick={() => { onGenerateBriefs(); onClose(); }}
           disabled={!strategyComplete}
           className={cn(
-            "inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1.5 rounded-lg",
+            "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
             !strategyComplete
               ? "opacity-30 cursor-not-allowed mx-secondary-btn"
               : briefsComplete
@@ -691,14 +691,14 @@ function CommandHub({
           )}
         >
           {briefsComplete
-            ? <><RefreshCw className="w-2.5 h-2.5" /> Regenerate</>
-            : <><Sparkles className="w-2.5 h-2.5" /> Generate Briefs</>
+            ? <><RefreshCw className="w-3.5 h-3.5" /> Regenerate</>
+            : <><Sparkles className="w-3.5 h-3.5" /> Generate Briefs</>
           }
         </button>
         {briefsComplete && (
           <button
             onClick={() => goTo("/app/briefs/history")}
-            className="inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
+            className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
           >
             View Archive
           </button>
@@ -715,7 +715,7 @@ function CommandHub({
     >
       <div
         ref={popupRef}
-        className="w-[380px] max-w-full flex flex-col rounded-2xl overflow-hidden shadow-2xl shadow-black/70"
+        className="w-[380px] max-w-full flex flex-col rounded-2xl overflow-hidden elevation-floating"
         style={{
           background: "hsl(var(--card))",
           border: "1px solid hsl(var(--border) / 0.2)",
@@ -740,12 +740,12 @@ function CommandHub({
           </div>
 
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-bold text-foreground/85 leading-none">{stageLabel}</p>
+            <p className="text-title font-bold text-foreground/85 leading-none">{stageLabel}</p>
             <span className={cn(
               "inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider border rounded-md px-1.5 py-0.5 mt-1.5 leading-none",
               statusClass,
             )}>
-              {isRunning && <Loader2 className="w-2.5 h-2.5 animate-spin" />}
+              {isRunning && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               {statusLabel}
             </span>
           </div>
@@ -809,7 +809,7 @@ function CommandHub({
                   )}
                 >
                   <span className={cn(
-                    "text-[11px] font-semibold leading-none",
+                    "text-caption font-semibold leading-none",
                     !isAccessible ? "text-muted-foreground/40"
                       : isCurrent ? "text-primary/80"
                       : "text-foreground/65 group-hover:text-foreground/85",
@@ -961,7 +961,7 @@ export function LoopCommandChain({
           />
 
           <ArrowRight className={cn(
-            "w-3 h-3 shrink-0 transition-colors",
+            "w-3.5 h-3.5 shrink-0 transition-colors",
             analysisComplete ? "text-emerald-400/25" : "text-muted-foreground/10",
           )} />
 
@@ -978,7 +978,7 @@ export function LoopCommandChain({
           />
 
           <ArrowRight className={cn(
-            "w-3 h-3 shrink-0 transition-colors",
+            "w-3.5 h-3.5 shrink-0 transition-colors",
             strategyComplete ? "text-emerald-400/25" : "text-muted-foreground/10",
           )} />
 

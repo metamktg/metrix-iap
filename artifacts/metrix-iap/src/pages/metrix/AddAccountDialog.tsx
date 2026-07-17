@@ -105,8 +105,8 @@ export function AddAccountDialog({
                   <Plus className="w-4 h-4 text-primary" />
                 </div>
               </div>
-              <DialogTitle className="text-[16px]">Add Ad Account</DialogTitle>
-              <DialogDescription className="text-[12px] leading-relaxed">
+              <DialogTitle className="text-base">Add Ad Account</DialogTitle>
+              <DialogDescription className="text-body leading-relaxed">
                 Bring a new ad account into Metrix. Connect it live through Meta, or create a
                 manual account and upload exported reports.
               </DialogDescription>
@@ -124,8 +124,8 @@ export function AddAccountDialog({
                   <Plug className="w-4 h-4 text-primary" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[13px] font-semibold text-foreground">Connect Meta Ad Account</div>
-                  <p className="text-[11px] text-muted-foreground/85 leading-relaxed mt-0.5">
+                  <div className="text-title font-semibold text-foreground">Connect Meta Ad Account</div>
+                  <p className="text-caption text-muted-foreground/85 leading-relaxed mt-0.5">
                     Authorize read-only access with Meta and link a live ad account. Data pulls
                     run against the real Meta API.
                   </p>
@@ -141,8 +141,8 @@ export function AddAccountDialog({
                   <FileUp className="w-4 h-4 text-muted-foreground/80" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[13px] font-semibold text-foreground">Upload manual reports</div>
-                  <p className="text-[11px] text-muted-foreground/85 leading-relaxed mt-0.5">
+                  <div className="text-title font-semibold text-foreground">Upload manual reports</div>
+                  <p className="text-caption text-muted-foreground/85 leading-relaxed mt-0.5">
                     Create an account without a live connection and stage exported Meta reports
                     for the analysis pipeline.
                   </p>
@@ -161,8 +161,8 @@ export function AddAccountDialog({
                   <FileUp className="w-4 h-4 text-primary" />
                 </div>
               </div>
-              <DialogTitle className="text-[16px]">Name the ad account</DialogTitle>
-              <DialogDescription className="text-[12px] leading-relaxed">
+              <DialogTitle className="text-base">Name the ad account</DialogTitle>
+              <DialogDescription className="text-body leading-relaxed">
                 Use the client or brand name. The account starts unconfigured — performance data
                 appears only after uploaded reports are processed by an analysis run.
               </DialogDescription>
@@ -177,7 +177,7 @@ export function AddAccountDialog({
                 placeholder="e.g. Acme Skincare"
                 maxLength={120}
                 className={cn(
-                  "w-full h-10 px-3 rounded-md bg-white/[0.03] border text-[13px] text-foreground",
+                  "w-full h-10 px-3 rounded-md bg-white/[0.03] border text-title text-foreground",
                   "placeholder:text-muted-foreground/75 focus:outline-none focus:ring-1",
                   error ? "border-red-400/40 focus:ring-red-400/40" : "border-border/50 focus:ring-primary/40 focus:border-primary/40"
                 )}
@@ -185,7 +185,7 @@ export function AddAccountDialog({
               {error && (
                 <div className="flex items-start gap-2 p-2.5 rounded-lg border border-red-400/25 bg-red-400/[0.06]">
                   <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
-                  <p className="text-[11px] text-red-300 leading-relaxed">{error}</p>
+                  <p className="text-caption text-red-300 leading-relaxed">{error}</p>
                 </div>
               )}
               <div className="flex items-center justify-between pt-1">
@@ -216,8 +216,8 @@ export function AddAccountDialog({
                   <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                 </div>
               </div>
-              <DialogTitle className="text-[16px]">{created.name} created</DialogTitle>
-              <DialogDescription className="text-[12px] leading-relaxed">
+              <DialogTitle className="text-base">{created.name} created</DialogTitle>
+              <DialogDescription className="text-body leading-relaxed">
                 Stage exported reports now, or skip and upload later from the account's setup
                 screen. Uploads are stored for the analysis pipeline — nothing is parsed at
                 upload time.

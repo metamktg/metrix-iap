@@ -154,9 +154,9 @@ export function ExportsView() {
                           <FileDown className="w-4 h-4 text-primary shrink-0" />
                         )}
                         <div>
-                          <div className="text-[12px] font-medium text-foreground">{FORMAT_LABEL[f] ?? f}</div>
-                          <div className={cn("text-[10px] flex items-center gap-1", doneKey === key ? "text-emerald-400" : "text-muted-foreground/70")}>
-                            <Check className="w-3 h-3 text-emerald-400" /> {doneKey === key ? "Downloaded" : "Supported · click to download"}
+                          <div className="text-body font-medium text-foreground">{FORMAT_LABEL[f] ?? f}</div>
+                          <div className={cn("text-label flex items-center gap-1", doneKey === key ? "text-emerald-400" : "text-muted-foreground/70")}>
+                            <Check className="w-3.5 h-3.5 text-emerald-400" /> {doneKey === key ? "Downloaded" : "Supported · click to download"}
                           </div>
                         </div>
                       </button>
@@ -166,7 +166,7 @@ export function ExportsView() {
               </SectionCard>
 
               <SectionCard title="Branding policy" desc="Export branding for delivery">
-                <div className="text-[12px] text-foreground/85 capitalize mb-2">
+                <div className="text-body text-foreground/85 capitalize mb-2">
                   Default: {rb.default_branding} branding · white-label {rb.white_label_supported ? "supported" : "unavailable"}
                 </div>
                 <CaveatNote text={rb.logo_policy} />
@@ -181,8 +181,8 @@ export function ExportsView() {
                       <div key={r.key} className="flex items-center gap-3 py-2.5">
                         <FileText className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
                         <div className="flex-1 min-w-0">
-                          <div className="text-[12px] font-medium text-foreground truncate">{r.title}</div>
-                          <div className="text-[10px] font-mono text-muted-foreground/70">
+                          <div className="text-body font-medium text-foreground truncate">{r.title}</div>
+                          <div className="text-label font-mono text-muted-foreground/70">
                             {fmtDate(r.generated_at)} · {r.mode === "client" ? "Client-facing" : "Internal"}
                             {r.modelJson && <span className="text-primary/80"> · saved snapshot</span>}
                           </div>
@@ -192,18 +192,18 @@ export function ExportsView() {
                             onClick={() => downloadDeliverable(r, r.export_format!)}
                             disabled={busyKey !== null}
                             className={cn(
-                              "flex items-center gap-1.5 text-[10px] font-semibold uppercase border px-2 py-1 rounded leading-none shrink-0 transition-colors disabled:opacity-60",
+                              "flex items-center gap-1.5 text-label font-semibold uppercase border px-2 py-1 rounded leading-none shrink-0 transition-colors disabled:opacity-60",
                               doneKey === r.key
                                 ? "text-emerald-400 border-emerald-400/25 bg-emerald-400/10"
                                 : "text-primary border-primary/25 bg-primary/10 hover:bg-primary/20"
                             )}
                           >
                             {busyKey === r.key ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
                             ) : doneKey === r.key ? (
-                              <Check className="w-3 h-3" />
+                              <Check className="w-3.5 h-3.5" />
                             ) : (
-                              <FileDown className="w-3 h-3" />
+                              <FileDown className="w-3.5 h-3.5" />
                             )}
                             {FORMAT_LABEL[r.export_format] ?? r.export_format}
                           </button>

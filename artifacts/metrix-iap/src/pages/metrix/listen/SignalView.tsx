@@ -107,11 +107,11 @@ export function SignalView() {
                         <ImpactBadge impact={s.impact} />
                         <ConfidenceBadge value={s.confidence} />
                       </div>
-                      <p className="text-[13px] font-semibold text-foreground leading-snug"><TokenizedConceptText text={s.title} /></p>
-                      <p className="text-[12px] text-muted-foreground/70 mt-1 leading-snug line-clamp-1"><span>{deriveLabel(s.rationale, 90)}</span></p>
+                      <p className="text-title font-semibold text-foreground leading-snug"><TokenizedConceptText text={s.title} /></p>
+                      <p className="text-body text-muted-foreground/70 mt-1 leading-snug line-clamp-1"><span>{deriveLabel(s.rationale, 90)}</span></p>
                       <div className="flex items-start gap-1.5 mt-3 pt-3 border-t border-border/20">
                         <ArrowRight className="w-3.5 h-3.5 text-primary/60 shrink-0 mt-0.5" />
-                        <p className="text-[11px] text-foreground/75 leading-snug line-clamp-1"><span>{deriveLabel(s.recommended_action, 80)}</span></p>
+                        <p className="text-caption text-foreground/75 leading-snug line-clamp-1"><span>{deriveLabel(s.recommended_action, 80)}</span></p>
                       </div>
                     </button>
                   ))}
@@ -148,7 +148,7 @@ export function SignalView() {
                 <DrawerField label="Recommended action"><TokenizedConceptText text={detail.recommended_action} /></DrawerField>
                 {detail.source_path && (
                   <DrawerField label="Source">
-                    <span className="font-mono text-[10px] text-muted-foreground/60">{detail.source_path}</span>
+                    <span className="font-mono text-label text-muted-foreground/60">{detail.source_path}</span>
                   </DrawerField>
                 )}
               </InfoDrawer>

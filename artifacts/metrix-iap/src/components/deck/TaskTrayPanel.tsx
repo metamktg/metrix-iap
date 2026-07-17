@@ -29,10 +29,10 @@ export function TaskTrayPanel({
         "flex items-center gap-2 border-b border-border/40 shrink-0 bg-white/[0.01]",
         compact ? "px-3 py-2" : "px-3 py-2.5"
       )}>
-        <ClipboardList className={cn("text-primary/80 shrink-0", compact ? "w-3 h-3" : "w-3.5 h-3.5")} />
+        <ClipboardList className={cn("text-primary/80 shrink-0", compact ? "w-3.5 h-3.5" : "w-3.5 h-3.5")} />
         <span className={cn(
           "font-bold uppercase tracking-widest text-foreground/70",
-          compact ? "text-[9px]" : "text-[10px]"
+          compact ? "text-[9px]" : "text-label"
         )}>
           Task Tray
         </span>
@@ -48,7 +48,7 @@ export function TaskTrayPanel({
               aria-label="Collapse task tray"
               className="w-5 h-5 flex items-center justify-center rounded text-muted-foreground/40 hover:text-muted-foreground/80 hover:bg-white/[0.06] transition-colors"
             >
-              <X className="w-3 h-3" />
+              <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
@@ -67,7 +67,7 @@ export function TaskTrayPanel({
             )}>
               <ClipboardList className={cn("text-muted-foreground/25", compact ? "w-3.5 h-3.5" : "w-4 h-4")} />
             </div>
-            <p className="text-[10px] text-muted-foreground/50 font-medium leading-tight">No approved tasks</p>
+            <p className="text-label text-muted-foreground/50 font-medium leading-tight">No approved tasks</p>
             <p className="text-[9px] text-muted-foreground/35 leading-relaxed max-w-[140px]">
               Approve recommendations from the loop to add tasks here.
             </p>
@@ -88,19 +88,19 @@ export function TaskTrayPanel({
                   <button
                     onClick={() => toggleDone(scopeId, s.id)}
                     className={cn(
-                      "mt-[1px] w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors",
+                      "mt-px w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors",
                       done
                         ? "bg-emerald-400/20 border-emerald-400/40 text-emerald-400"
                         : "border-border/50 text-transparent hover:border-primary/50"
                     )}
                     aria-label={done ? "Mark not done" : "Mark done"}
                   >
-                    <Check className="w-2 h-2" />
+                    <Check className="w-3.5 h-3.5" />
                   </button>
                   <div className="flex-1 min-w-0">
                     <p className={cn(
                       "font-medium leading-tight",
-                      compact ? "text-[10px]" : "text-[11px]",
+                      compact ? "text-label" : "text-caption",
                       done ? "text-foreground/40 line-through" : "text-foreground"
                     )}>
                       {s.title}
