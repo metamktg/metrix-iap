@@ -687,11 +687,12 @@ export const RejectRequestAccessEntryResponse = zod.object({
  */
 export const authLoginBodyPasswordMax = 200;
 
-
+export const authLoginBodyRememberMeDefault = false;
 
 export const AuthLoginBody = zod.object({
   "email": zod.string().email(),
-  "password": zod.string().min(1).max(authLoginBodyPasswordMax)
+  "password": zod.string().min(1).max(authLoginBodyPasswordMax),
+  "rememberMe": zod.boolean().default(authLoginBodyRememberMeDefault).describe('When true, the session cookie is set with a 30-day Max-Age. When false (default), the cookie is a session cookie cleared when the browser closes.')
 })
 
 export const AuthLoginResponse = zod.object({

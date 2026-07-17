@@ -86,12 +86,15 @@ export function setSessionCookie(
   res: Response,
   token: string,
   expiresAt: Date,
+  rememberMe = false,
 ): void {
   res.cookie(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
     secure: req.secure,
-    expires: expiresAt,
+    // When rememberMe is false the cookie has no expires/Max-Age so the
+    // browser treats it as a session cookie and clears it on close.
+    ...(rememberMe ? { expires: expiresAt } : {}),
     path: "/",
   });
 }

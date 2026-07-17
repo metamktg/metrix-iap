@@ -66,7 +66,7 @@ router.post("/metrix/auth/login", loginRateLimit, async (req, res) => {
       .update(usersTable)
       .set({ lastLoginAt: new Date() })
       .where(eq(usersTable.id, user.id));
-    setSessionCookie(req, res, token, expiresAt);
+    setSessionCookie(req, res, token, expiresAt, parsed.data.rememberMe ?? false);
 
     const data = AuthLoginResponse.parse({
       user: {

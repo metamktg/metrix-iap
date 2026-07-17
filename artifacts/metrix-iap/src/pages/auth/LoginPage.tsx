@@ -16,6 +16,7 @@ export function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
@@ -25,7 +26,7 @@ export function LoginPage() {
     setLoginError(null);
     setIsLoggingIn(true);
     try {
-      await login(email.trim(), password);
+      await login(email.trim(), password, rememberMe);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         setLoginError("Invalid email or password.");
@@ -89,6 +90,17 @@ export function LoginPage() {
               data-testid="input-login-password"
             />
           </div>
+          <label className="flex items-center gap-2 cursor-pointer select-none w-fit">
+            <input
+              id="login-remember-me"
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="w-3.5 h-3.5 rounded accent-primary cursor-pointer"
+              data-testid="checkbox-remember-me"
+            />
+            <span className="text-[11px] text-muted-foreground">Remember me</span>
+          </label>
           {loginError && (
             <div className="text-[11px] text-red-400/90" data-testid="text-login-error">
               {loginError}
