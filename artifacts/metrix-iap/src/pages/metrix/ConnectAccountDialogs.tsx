@@ -435,9 +435,19 @@ function CsvSlotUpload({
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploadPct, setUploadPct] = useState<number | null>(null);
-  const [mappingSummary, setMappingSummary] = useState<ColumnMappingSummaryEntry[] | null>(null);
+  const [mappingSummary, setMappingSummary] = useState<ColumnMappingSummaryEntry[] | null>(
+    staged?.mapping_summary && staged.mapping_summary.length > 0 ? staged.mapping_summary : null
+  );
   const fileRef = useRef<HTMLInputElement>(null);
   const deleteMutation = useDeleteManualImport();
+
+  useEffect(() => {
+    if (staged?.mapping_summary && staged.mapping_summary.length > 0) {
+      setMappingSummary(staged.mapping_summary);
+    } else {
+      setMappingSummary(null);
+    }
+  }, [staged]);
 
   /** Stages a file immediately. Accepts the file directly so it can be called
    *  from the onChange handler before React state for `file` has settled. */
