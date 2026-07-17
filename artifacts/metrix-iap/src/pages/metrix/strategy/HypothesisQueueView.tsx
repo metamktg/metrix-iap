@@ -8,7 +8,7 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getStrategyData, getBriefBuilder } from "@/lib/data/metrixSeedAdapter";
 import {
-  ModuleHeader, ScopeBanner, ModuleTabs, ModuleScopeGate, PendingState,
+  ModuleHeader, ScopeBanner, ModuleTabs, ModuleScopeGate, PendingState, useTabParam,
   MetricTile, CrossLink, useFocusParam, FlowCrumb, useFromParam, LoopAction,
   RangeScopeBar, NoDataInRangeState, StaleFocusNotice,
 } from "../shared";
@@ -48,7 +48,7 @@ export function HypothesisQueueView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
-  const [tab, setTab] = useState<Tab>("queue");
+  const [tab, setTab] = useTabParam<Tab>("queue", ["queue", "pillars"]);
   const focus = useFocusParam();
   const [detail, setDetail] = useState<ActiveHypothesis | null>(null);
   const { rangeHasData } = useDateRange();

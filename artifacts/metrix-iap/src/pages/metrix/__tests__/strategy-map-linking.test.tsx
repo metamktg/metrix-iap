@@ -51,7 +51,7 @@ function strategyFor(accountId: string) {
 }
 
 function select(accountId: string) {
-  sessionStorage.setItem(
+  localStorage.setItem(
     ACCOUNT_KEY,
     JSON.stringify({ type: "ad_account", adAccountId: accountId })
   );
@@ -104,6 +104,7 @@ function pillarCardsHolding(container: HTMLElement, hypId: string) {
 beforeEach(() => {
   cleanup();
   sessionStorage.clear();
+  localStorage.clear();
   window.history.replaceState({}, "", "/");
 });
 

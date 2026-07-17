@@ -7,7 +7,7 @@ import { useAccount, useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getReportBuilder } from "@/lib/data/metrixSeedAdapter";
 import { buildReportModel, downloadReportExport, serializeReportModel, parseReportModel } from "@/lib/reportExport";
-import { ModuleHeader, ScopeBanner, ModuleScopeGate, SectionCard, ModuleTabs, CaveatNote, PendingState, CrossLink } from "../shared";
+import { ModuleHeader, ScopeBanner, ModuleScopeGate, SectionCard, ModuleTabs, CaveatNote, PendingState, CrossLink, useTabParam } from "../shared";
 import { useDateRange, formatIsoRange, isoMin, isoMax, type IsoRange } from "@/contexts/DateRangeContext";
 import { cn } from "@/lib/utils";
 import { FileText, FileDown, Palette, Check, Eye, Building2, Users, Loader2, CalendarRange, Sparkles } from "lucide-react";
@@ -39,7 +39,7 @@ export function NewReportView() {
   const { manager } = useAccount();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [tab, setTab] = useState<string>("preview");
+  const [tab, setTab] = useTabParam<Tab>("preview", ["preview", "branding"]);
   const [mode, setMode] = useState<Mode>("internal");
   const [exporting, setExporting] = useState<string | null>(null);
   const [exported, setExported] = useState<string | null>(null);

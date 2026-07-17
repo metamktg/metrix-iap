@@ -8,7 +8,7 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getBriefBuilder, getStrategyData, getAnalysisData, getMST, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
 import {
-  ModuleHeader, ScopeBanner, ModuleTabs, ModuleScopeGate, PendingState,
+  ModuleHeader, ScopeBanner, ModuleTabs, ModuleScopeGate, PendingState, useTabParam,
   MetricTile, CaveatNote, CrossLink, useFocusParam, FlowCrumb, useFromParam,
   RangeScopeBar, NoDataInRangeState, StaleFocusNotice,
 } from "../shared";
@@ -44,7 +44,7 @@ export function BriefBuilderView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
-  const [tab, setTab] = useState<FormatTab>("static");
+  const [tab, setTab] = useTabParam<FormatTab>("static", ["static", "video", "ugc"]);
   const focus = useFocusParam();
   const [detail, setDetail] = useState<DraftBrief | null>(null);
   const { rangeHasData } = useDateRange();

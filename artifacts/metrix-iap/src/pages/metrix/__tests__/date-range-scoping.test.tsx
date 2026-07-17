@@ -53,7 +53,7 @@ const c4 = windows.get("C4")!;
 const LATE_RANGE = { start: "2026-07-01", end: "2026-07-07" };
 
 function selectBookster() {
-  sessionStorage.setItem(ACCOUNT_KEY, JSON.stringify({ type: "ad_account", adAccountId: "bookster" }));
+  localStorage.setItem(ACCOUNT_KEY, JSON.stringify({ type: "ad_account", adAccountId: "bookster" }));
 }
 
 function setRange(state: null | { customStart: string; customEnd: string }) {
@@ -92,6 +92,7 @@ function renderView(View: React.ComponentType) {
 beforeEach(() => {
   cleanup();
   sessionStorage.clear();
+  localStorage.clear();
   window.history.replaceState({}, "", "/");
 });
 

@@ -57,7 +57,8 @@ beforeEach(() => {
   cleanup();
   vi.useFakeTimers();
   sessionStorage.clear();
-  sessionStorage.setItem(
+  localStorage.clear();
+  localStorage.setItem(
     SESSION_KEY,
     JSON.stringify({ type: "ad_account", adAccountId: "bookster" })
   );

@@ -1,6 +1,6 @@
 // ─── Shared building blocks for seed-hydrated Metrix pages ────────────
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { useLocation, useSearch } from "wouter";
 import { ConnectMetaDialog, ManualImportDialog } from "./ConnectAccountDialogs";
@@ -572,6 +572,35 @@ export function FlowCrumb({ from, fromCell, fromHyp }: FromParams) {
       <span className="text-[10px] text-muted-foreground/50">This page</span>
     </div>
   );
+}
+
+// ─── Tab URL param (?tab=<id>) ────────────────────────────────────────
+// In-module tab state lives in the URL (same convention as ?focus=) so a
+// copied link or refresh reproduces the exact view. Tab switches use
+// replace-navigation: Back never walks through tab clicks. The default
+// tab keeps a clean URL (param removed). Pass `validIds` when the tab set
+// is static; dynamic tab sets validate at the call site instead.
+
+export function useTabParam<T extends string = string>(
+  defaultTab: T,
+  validIds?: readonly T[],
+): [T, (id: T) => void] {
+  const search = useSearch();
+  const [pathname, navigate] = useLocation();
+  const raw = new URLSearchParams(search).get("tab");
+  const isValid = raw != null && (!validIds || (validIds as readonly string[]).includes(raw));
+  const tab = isValid ? (raw as T) : defaultTab;
+  const setTab = useCallback(
+    (id: T) => {
+      const params = new URLSearchParams(search);
+      if (id === defaultTab) params.delete("tab");
+      else params.set("tab", id);
+      const qs = params.toString();
+      navigate(qs ? `${pathname}?${qs}` : pathname, { replace: true });
+    },
+    [search, pathname, navigate, defaultTab],
+  );
+  return [tab, setTab];
 }
 
 // ─── Focus deep-link param (?focus=<id>) ──────────────────────────────

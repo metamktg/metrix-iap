@@ -28,7 +28,8 @@ export const AUTH_GATE_PATHS = PRE_LOGIN_ROUTE_PATHS;
 
 export function seedAccountSession() {
   sessionStorage.clear();
-  sessionStorage.setItem(
+  localStorage.clear();
+  localStorage.setItem(
     SESSION_KEY,
     JSON.stringify({ type: "ad_account", adAccountId: "bookster" })
   );

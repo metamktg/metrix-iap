@@ -34,7 +34,7 @@ import { PlacementsView } from "../analysis/PlacementsView";
 const SESSION_KEY = "metrix_active_account_v1";
 
 function select(adAccountId: string) {
-  sessionStorage.setItem(SESSION_KEY, JSON.stringify({ type: "ad_account", adAccountId }));
+  localStorage.setItem(SESSION_KEY, JSON.stringify({ type: "ad_account", adAccountId }));
 }
 
 function renderView() {
@@ -57,6 +57,7 @@ function renderView() {
 beforeEach(() => {
   cleanup();
   sessionStorage.clear();
+  localStorage.clear();
   window.history.replaceState({}, "", "/");
 });
 

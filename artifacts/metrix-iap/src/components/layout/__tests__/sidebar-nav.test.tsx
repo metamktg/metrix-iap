@@ -67,6 +67,7 @@ function openDropdown(trigger: Element) {
 beforeEach(() => {
   cleanup();
   sessionStorage.clear();
+  localStorage.clear();
   window.history.replaceState({}, "", "/");
 });
 
@@ -145,7 +146,7 @@ describe("Sidebar section headers", () => {
 
 describe("Inline account picker", () => {
   it("appears in the no-account state and populates the page in place", () => {
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify({ type: "manager", adAccountId: null }));
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ type: "manager", adAccountId: null }));
     renderWithProviders(<AnalysisOverview />);
 
     expect(screen.getByText("No ad account selected")).toBeTruthy();
@@ -158,7 +159,7 @@ describe("Inline account picker", () => {
     expect(window.location.pathname).toBe("/");
     expect(screen.queryByText("No ad account selected")).toBeNull();
     // Selection persisted exactly like the global switcher flow
-    expect(JSON.parse(sessionStorage.getItem(SESSION_KEY)!)).toEqual({
+    expect(JSON.parse(localStorage.getItem(SESSION_KEY)!)).toEqual({
       type: "ad_account",
       adAccountId: configured.id,
     });
@@ -167,7 +168,7 @@ describe("Inline account picker", () => {
 
   it("offers other accounts from the unconfigured state", () => {
     const unconfigured = seed.ad_accounts.find((a: { status: string }) => a.status !== "configured");
-    sessionStorage.setItem(
+    localStorage.setItem(
       SESSION_KEY,
       JSON.stringify({ type: "ad_account", adAccountId: unconfigured.id })
     );
@@ -181,6 +182,6 @@ describe("Inline account picker", () => {
     const configured = seed.ad_accounts.find((a: { status: string }) => a.status === "configured");
     fireEvent.click(within(menu).getByText(configured.name));
     expect(screen.queryByText("Switch ad account")).toBeNull();
-    expect(JSON.parse(sessionStorage.getItem(SESSION_KEY)!).adAccountId).toBe(configured.id);
+    expect(JSON.parse(localStorage.getItem(SESSION_KEY)!).adAccountId).toBe(configured.id);
   });
 });

@@ -22,6 +22,7 @@ import {
   type ManualImport,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import {
   FileText,
@@ -306,6 +307,7 @@ export function AnalysisControls({ accountId }: { accountId: string }) {
   const [dateRange, setDateRange] = useState<"7d" | "14d" | "30d" | "all">("30d");
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const startMutation = useStartManualAnalysisRun();
   const { data: latest, refetch } = useGetLatestAnalysisRun(accountId);
   const { data: importsData, refetch: refetchImports } = useListManualImports(accountId);
@@ -326,6 +328,25 @@ export function AnalysisControls({ accountId }: { accountId: string }) {
       clearInterval(pollRef.current);
       pollRef.current = null;
       queryClient.invalidateQueries({ queryKey: getGetMetrixSeedQueryKey() });
+      // This branch only fires when a run we were polling settles, so the
+      // toast reports a real transition — never a run that finished before
+      // this screen mounted.
+      const settled = latest?.run;
+      if (settled?.status === "success") {
+        toast({
+          title: "Analysis complete",
+          description:
+            settled.date_start && settled.date_end
+              ? `Covers ${settled.date_start} \u2192 ${settled.date_end} (${settled.rows_ingested ?? 0} rows). Data refreshed.`
+              : "Data refreshed.",
+        });
+      } else if (settled?.status === "error") {
+        toast({
+          title: "Analysis failed",
+          description: settled.error_message ?? "The run ended with an error.",
+          variant: "destructive",
+        });
+      }
     }
     return () => {
       if (pollRef.current) {
@@ -333,7 +354,7 @@ export function AnalysisControls({ accountId }: { accountId: string }) {
         pollRef.current = null;
       }
     };
-  }, [isRunning, refetch, queryClient]);
+  }, [isRunning, refetch, queryClient, latest, toast]);
 
   const handleRun = async () => {
     setError(null);
