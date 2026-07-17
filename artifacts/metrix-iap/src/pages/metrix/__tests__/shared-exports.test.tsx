@@ -31,6 +31,7 @@ import * as shared from "../shared";
 // NoDataInRangeState → DateRangeProvider → useMetrixSeed + useAccount.
 vi.mock("@/contexts/MetrixDataContext", () => ({
   useMetrixSeed: () => ({ accounts: [], manager: null }),
+  useMetrixIsRefetching: () => false,
   MetrixDataProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 vi.mock("@/contexts/AccountContext", () => ({

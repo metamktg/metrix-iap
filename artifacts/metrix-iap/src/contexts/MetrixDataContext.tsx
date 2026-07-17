@@ -12,6 +12,7 @@ import { AlertTriangle, RefreshCw } from "lucide-react";
 import type { MetrixSeed } from "@/lib/data/seedTypes";
 
 const MetrixDataContext = createContext<MetrixSeed | null>(null);
+const MetrixLoadingContext = createContext<{ isRefetching: boolean }>({ isRefetching: false });
 
 function FullScreen({ children }: { children: React.ReactNode }) {
   return (
@@ -68,11 +69,20 @@ export function MetrixDataProvider({ children }: { children: React.ReactNode }) 
   }
 
   const seed = data as unknown as MetrixSeed;
-  return <MetrixDataContext.Provider value={seed}>{children}</MetrixDataContext.Provider>;
+  return (
+    <MetrixLoadingContext.Provider value={{ isRefetching }}>
+      <MetrixDataContext.Provider value={seed}>{children}</MetrixDataContext.Provider>
+    </MetrixLoadingContext.Provider>
+  );
 }
 
 export function useMetrixSeed(): MetrixSeed {
   const ctx = useContext(MetrixDataContext);
   if (!ctx) throw new Error("useMetrixSeed must be used within MetrixDataProvider");
   return ctx;
+}
+
+/** Returns true while the seed is being re-fetched in the background. */
+export function useMetrixIsRefetching(): boolean {
+  return useContext(MetrixLoadingContext).isRefetching;
 }

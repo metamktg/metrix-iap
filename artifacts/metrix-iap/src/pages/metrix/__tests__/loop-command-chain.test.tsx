@@ -85,6 +85,7 @@ vi.mock("@/components/generation/GenerationControls", () => ({
 
 vi.mock("@/contexts/MetrixDataContext", () => ({
   useMetrixSeed: () => activeSeed,
+  useMetrixIsRefetching: () => false,
   MetrixDataProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 

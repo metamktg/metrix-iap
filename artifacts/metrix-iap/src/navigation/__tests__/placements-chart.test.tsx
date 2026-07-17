@@ -17,6 +17,7 @@ vi.mock("@/contexts/MetrixDataContext", async () => {
   const { seed } = await import("./seed");
   return {
     useMetrixSeed: () => seed,
+    useMetrixIsRefetching: () => false,
     MetrixDataProvider: ({ children }: { children: React.ReactNode }) =>
       children,
   };

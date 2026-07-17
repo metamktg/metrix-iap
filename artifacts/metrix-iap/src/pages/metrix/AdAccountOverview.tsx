@@ -11,7 +11,7 @@ import {
   Zap, ArrowRight, ChevronDown,
 } from "lucide-react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
-import { useMetrixSeed } from "@/contexts/MetrixDataContext";
+import { useMetrixSeed, useMetrixIsRefetching } from "@/contexts/MetrixDataContext";
 import {
   getAdAccount, getAnalysisData, getMST,
 } from "@/lib/data/metrixSeedAdapter";
@@ -19,6 +19,7 @@ import { RecommendationDeck, actionGroupForScope, type DeckCard } from "@/compon
 import {
   ModuleHeader, SectionCard, CaveatNote, DetailReveal, deriveLabel,
   UnconfiguredState, PendingState, CrossLink, fmtUSD, fmtNum, eventLabel, resultTerm,
+  SkeletonTileRow,
 } from "./shared";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
 import { cn } from "@/lib/utils";
@@ -55,6 +56,7 @@ export function AdAccountOverview() {
   );
 
   // ── Hooks hoisted above early returns (Rules of Hooks) ──────────────
+  const isRefetching = useMetrixIsRefetching();
   const cs = account?.iap?.campaign_summary ?? null;
   const metricCatalog = useMemo(
     () => (cs ? buildMetricCatalog(metricSourceFromCampaignSummary(cs)) : []),
@@ -166,7 +168,10 @@ export function AdAccountOverview() {
               <h2 className="text-label font-mono uppercase tracking-widest text-muted-foreground/55">Account Totals</h2>
               <MetricPickerButton catalog={metricCatalog} selected={selectedMetricIds} onToggle={toggle} onMove={move} onReset={reset} />
             </div>
-            <div className="grid grid-cols-dashboard-4 gap-2">
+            {isRefetching ? (
+              <SkeletonTileRow count={selectedMetricIds.length || 4} />
+            ) : null}
+            <div className={cn("grid grid-cols-dashboard-4 gap-2", isRefetching && "hidden")}>
               {selectedMetricIds.map((id) => {
                 const m = metricById(metricCatalog, id);
                 if (!m) return null;
