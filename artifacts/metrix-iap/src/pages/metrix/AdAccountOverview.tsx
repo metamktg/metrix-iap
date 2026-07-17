@@ -53,6 +53,20 @@ export function AdAccountOverview() {
     [optLoop]
   );
 
+  // ── All hooks before any early return (Rules of Hooks) ─────────────
+  // cs may be null before the guards below; hooks receive an empty catalog
+  // in that case and will never be visible to the user.
+  const cs = account?.iap?.campaign_summary ?? null;
+  const metricCatalog = useMemo(
+    () => cs ? buildMetricCatalog(metricSourceFromCampaignSummary(cs)) : [],
+    [cs]
+  );
+  const availableMetricIds = useMemo(() => metricCatalog.map((m) => m.id), [metricCatalog]);
+  const { selected: selectedMetricIds, toggle, move, reset } = useMetricSelection(availableMetricIds);
+  const [openMetricId, setOpenMetricId] = useState<string | null>(null);
+  const [expandedMetricId, setExpandedMetricId] = useState<string | null>(null);
+  const [layerOpen, setLayerOpen] = useState(true);
+
   // ── Early-exit states ───────────────────────────────────────────────
 
   if (!account) {
@@ -78,8 +92,9 @@ export function AdAccountOverview() {
   }
 
   const core = account.iap.core_reanalysis_read ?? null;
-  const cs = account.iap.campaign_summary;
-  const events = Object.entries(cs.bottom_line_totals);
+  // cs is already defined above via account?.iap?.campaign_summary ?? null;
+  // after this guard account.iap is confirmed non-null so cs is non-null too.
+  const events = Object.entries(cs!.bottom_line_totals);
   const term = resultTerm(account);
 
   // core_reanalysis_read is nullable at runtime for freshly-analyzed accounts
@@ -132,13 +147,7 @@ export function AdAccountOverview() {
     (a, b) => (IMPACT_RANK[b.impact] ?? 0) - (IMPACT_RANK[a.impact] ?? 0)
   )[0];
 
-  // ── Metric catalog + selection ──────────────────────────────────────
-  const metricCatalog = useMemo(() => buildMetricCatalog(metricSourceFromCampaignSummary(cs)), [cs]);
-  const availableMetricIds = useMemo(() => metricCatalog.map((m) => m.id), [metricCatalog]);
-  const { selected: selectedMetricIds, toggle, move, reset } = useMetricSelection(availableMetricIds);
-  const [openMetricId, setOpenMetricId] = useState<string | null>(null);
-  const [expandedMetricId, setExpandedMetricId] = useState<string | null>(null);
-  const [layerOpen, setLayerOpen] = useState(true);
+  // ── Derived from metric selection (non-hook) ────────────────────────
   const openMetric = openMetricId ? metricById(metricCatalog, openMetricId) : null;
 
   // ── Layer readiness ─────────────────────────────────────────────────
