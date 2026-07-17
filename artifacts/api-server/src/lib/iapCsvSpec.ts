@@ -295,7 +295,12 @@ export function buildIapCsvClassFormat(csvClass: IapCsvClass): IapCsvClassFormat
     buildSampleRow(breakdownSample1, baseSample1),
     buildSampleRow(breakdownSample2, baseSample2),
   ];
-  const sampleCsv = [header.join(","), ...rows.map((r) => r.map((c) => (c.includes(",") ? `"${c}"` : c)).join(","))].join("\n");
+  // Quote header cells too — several canonical column names contain commas
+  // (e.g. "CPM (cost per 1,000 impressions)"), so an unquoted header row
+  // would be malformed CSV and the sample would fail its own re-upload.
+  const sampleCsv = [header, ...rows]
+    .map((r) => r.map((c) => (c.includes(",") ? `"${c}"` : c)).join(","))
+    .join("\n");
 
   return {
     report_name: spec.className,
