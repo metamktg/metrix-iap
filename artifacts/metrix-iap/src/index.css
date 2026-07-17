@@ -169,6 +169,13 @@
   --mx-fast: 140ms var(--mx-ease);
   --mx-med: 220ms var(--mx-ease);
 
+  /* ── Reduced-motion guard ───────────────────────────────────────────
+   * --transition-speed resolves to the standard 200ms in normal mode and
+   * to 0ms when prefers-reduced-motion: reduce is set. Components and CSS
+   * utilities can read this variable so motion-sensitive users get instant
+   * transitions. The @media block below overrides it. */
+  --transition-speed: 200ms;
+
   /* ── Semantic tokens (HSL channels) mapped to the spec palette ── */
   /* Background #050b18 */
   --background: 221 66% 6%;
@@ -623,6 +630,14 @@
     border-radius: 4px;
   }
 
+  /* Custom inputs that suppress the default outline in favor of a border
+   * highlight still need a :focus-visible ring for keyboard users. */
+  input.focus-border:focus-visible,
+  input[class*="focus:outline-none"]:focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
+  }
+
   input[type="search"]::-webkit-search-cancel-button {
     @apply hidden;
   }
@@ -872,4 +887,26 @@
 @keyframes progress-slide {
   0%   { left: -60%; }
   100% { left: 110%; }
+}
+
+/* ── Reduced-motion: instant transitions for motion-sensitive users ─────
+ * Sets --transition-speed to 0ms and kills known animation utilities so
+ * all CSS transitions and Tailwind animate-* classes become instant.
+ * Components should read `var(--transition-speed)` instead of hardcoding
+ * durations where motion-awareness is important. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transition-speed: 0ms;
+    --mx-fast: 0ms var(--mx-ease);
+    --mx-med: 0ms var(--mx-ease);
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

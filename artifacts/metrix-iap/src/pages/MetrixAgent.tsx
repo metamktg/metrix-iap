@@ -83,7 +83,7 @@ function WaitlistForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@company.com"
-            className="w-full h-9 pl-8 pr-3 rounded-lg border border-border/50 bg-white/[0.03] text-body text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/50 transition-colors"
+            className="w-full h-9 pl-8 pr-3 rounded-lg border border-border/50 bg-white/[0.03] text-body text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/50 focus-visible:ring-1 focus-visible:ring-ring transition-colors"
             aria-label="Email address"
           />
         </div>

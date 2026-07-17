@@ -85,8 +85,9 @@ function AngleRow({
       {/* Angle header */}
       <button
         onClick={() => setShowCells((v) => !v)}
-        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/[0.03] transition-colors text-left"
+        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/[0.03] active:bg-white/[0.05] transition-colors text-left"
         aria-expanded={showCells}
+        aria-label={`${showCells ? "Collapse" : "Expand"} angle ${group.angleKey}: ${group.angleLabel}`}
       >
         <span className="shrink-0 w-5 h-5 rounded border border-border/40 flex items-center justify-center">
           {showCells
@@ -183,7 +184,8 @@ function ConceptFamilyCard({
       <button
         onClick={() => setExpanded((v) => !v)}
         aria-expanded={expanded}
-        className="w-full flex items-center gap-3 px-4 py-3.5 text-left"
+        aria-label={`${expanded ? "Collapse" : "Expand"} concept ${group.conceptId}`}
+        className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors"
       >
         <span className={cn(
           "shrink-0 w-6 h-6 rounded-md border flex items-center justify-center transition-colors",

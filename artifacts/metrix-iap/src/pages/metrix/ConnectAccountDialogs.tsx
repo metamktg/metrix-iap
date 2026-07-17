@@ -833,7 +833,7 @@ function CreativeAdNamesEditor({
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") void handleFreeSave(); }}
             placeholder="Ad name(s), comma-separated"
-            className="flex-1 h-7 px-2 rounded bg-white/[0.03] border border-border/50 text-caption text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40"
+            className="flex-1 h-7 px-2 rounded bg-white/[0.03] border border-border/50 text-caption text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
           />
           <button
             onClick={() => void handleFreeSave()}

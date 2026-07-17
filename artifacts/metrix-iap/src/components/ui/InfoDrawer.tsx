@@ -3,9 +3,11 @@
 // When a `taskTray` node is passed, a narrow right column hosts it so
 // the tray stays visible alongside the detail content.
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 export function InfoDrawer({
   kicker,
@@ -22,6 +24,13 @@ export function InfoDrawer({
   footer?: React.ReactNode;
   taskTray?: React.ReactNode;
 }) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const reducedMotion = useReducedMotion();
+
+  // Native focus trapping: Tab/Shift+Tab cycle within the panel;
+  // focus is returned to the triggering element on close.
+  useFocusTrap(panelRef, true);
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -33,15 +42,21 @@ export function InfoDrawer({
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-background/50 backdrop-blur-[2px] z-40" onClick={onClose} />
+      <div className="fixed inset-0 bg-background/50 backdrop-blur-[2px] z-40" onClick={onClose} aria-hidden="true" />
 
       {/* Slide-over panel — widens automatically when a task tray is present */}
-      <div className={cn(
-        "fixed right-0 top-0 h-full bg-surface-deep border-l border-border/50 z-50 flex flex-col overflow-hidden elevation-floating transition-[width]",
-        taskTray
-          ? "w-full sm:w-[760px] lg:w-[860px]"
-          : "w-full sm:w-[540px] lg:w-[620px]"
-      )}>
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={typeof title === "string" ? title : kicker}
+        className={cn(
+          "fixed right-0 top-0 h-full bg-surface-deep border-l border-border/50 z-50 flex flex-col overflow-hidden elevation-floating",
+          !reducedMotion && "transition-[width]",
+          taskTray
+            ? "w-full sm:w-[760px] lg:w-[860px]"
+            : "w-full sm:w-[540px] lg:w-[620px]"
+        )}>
 
         {/* ── Full-width header ── */}
         <div className="flex items-start gap-3 px-6 py-5 border-b border-border/40 shrink-0 bg-white/[0.01]">
