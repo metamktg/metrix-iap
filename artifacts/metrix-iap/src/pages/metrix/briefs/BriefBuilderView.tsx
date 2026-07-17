@@ -101,7 +101,7 @@ export function BriefBuilderView() {
                     <GenerateButton
                       onClick={generation.start}
                       isRunning={generation.isRunning}
-                      label={bb?.provenance === "generated" ? "Regenerate briefs" : "Generate from strategy"}
+                      label="Draft Briefs"
                       runningLabel="Generating…"
                     />
                   )}
