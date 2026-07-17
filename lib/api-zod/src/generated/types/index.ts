@@ -49,6 +49,8 @@ export * from './authUser';
 export * from './authUserResult';
 export * from './authUserRole';
 export * from './channelPref';
+export * from './columnMappingSummaryEntry';
+export * from './columnMappingSummaryEntryTier';
 export * from './conceptDescriptorEntry';
 export * from './createAdAccountInput';
 export * from './createAdAccountResult';

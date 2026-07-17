@@ -3027,6 +3027,32 @@ components:
       required:
         - matched
         - unmatched
+    ColumnMappingSummaryEntry:
+      type: object
+      description: Per-canonical column mapping result included in the upload staging response. Covers every breakdown and base metric column so the client can render a full column-mapping report.
+      properties:
+        canonical:
+          type: string
+          description: The canonical column name from the IAP spec.
+        found_as:
+          type: string
+          nullable: true
+          description: The actual header value found in the CSV, or null if the column was not found.
+        confidence:
+          type: number
+          description: Mapping confidence 0–1. 1.0 = exact match; 0 = not found.
+        method:
+          type: string
+          description: Human-readable label describing how the column was resolved.
+        tier:
+          type: string
+          enum: [exact, resolved, inferred, missing]
+          description: "Resolution tier: exact (verbatim), resolved (alias/slug/case), inferred (Jaccard ≥0.5), or missing (not found)."
+      required:
+        - canonical
+        - confidence
+        - method
+        - tier
     ManualImportResult:
       type: object
       properties:
@@ -3044,6 +3070,11 @@ components:
           description: Honest processing note (staged for analysis, not parsed into performance data).
         link_result:
           $ref: "#/components/schemas/CreativeLinkResult"
+        mapping_summary:
+          type: array
+          description: Column mapping results for performance CSV uploads (absent for creative_asset uploads). Covers every canonical breakdown and base metric column.
+          items:
+            $ref: "#/components/schemas/ColumnMappingSummaryEntry"
       required:
         - status
         - import_id

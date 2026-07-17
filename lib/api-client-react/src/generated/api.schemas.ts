@@ -435,6 +435,35 @@ export interface CreativeLinkResult {
   unmatched: string[];
 }
 
+/**
+ * Resolution tier: exact (verbatim), resolved (alias/slug/case), inferred (Jaccard ≥0.5), or missing (not found).
+ */
+export type ColumnMappingSummaryEntryTier = typeof ColumnMappingSummaryEntryTier[keyof typeof ColumnMappingSummaryEntryTier];
+
+
+export const ColumnMappingSummaryEntryTier = {
+  exact: 'exact',
+  resolved: 'resolved',
+  inferred: 'inferred',
+  missing: 'missing',
+} as const;
+
+/**
+ * Per-canonical column mapping result included in the upload staging response. Covers every breakdown and base metric column so the client can render a full column-mapping report.
+ */
+export interface ColumnMappingSummaryEntry {
+  /** The canonical column name from the IAP spec. */
+  canonical: string;
+  /** The actual header value found in the CSV, or null if the column was not found. */
+  found_as?: string | null;
+  /** Mapping confidence 0–1. 1.0 = exact match; 0 = not found. */
+  confidence: number;
+  /** Human-readable label describing how the column was resolved. */
+  method: string;
+  /** Resolution tier: exact (verbatim), resolved (alias/slug/case), inferred (Jaccard ≥0.5), or missing (not found). */
+  tier: ColumnMappingSummaryEntryTier;
+}
+
 export type ManualImportResultStatus = typeof ManualImportResultStatus[keyof typeof ManualImportResultStatus];
 
 
@@ -450,6 +479,8 @@ export interface ManualImportResult {
   /** Honest processing note (staged for analysis, not parsed into performance data). */
   note: string;
   link_result?: CreativeLinkResult;
+  /** Column mapping results for performance CSV uploads (absent for creative_asset uploads). Covers every canonical breakdown and base metric column. */
+  mapping_summary?: ColumnMappingSummaryEntry[];
 }
 
 export type ManualImportKind = typeof ManualImportKind[keyof typeof ManualImportKind];

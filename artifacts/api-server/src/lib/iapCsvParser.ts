@@ -19,6 +19,7 @@ import {
   headerMatchesColumn,
   slugifyColumn,
   findColumnInHeader,
+  inferColumnMapping,
   suggestCanonicalForUnknown,
   type IapCsvClass,
   IAP_CSV_CLASS_SPECS,
@@ -40,6 +41,23 @@ export type IapCsvRow = {
   extra: Record<string, number | string | null>;
 };
 
+/**
+ * Per-column mapping result for the `mappingSummary` field.
+ *
+ * tier:
+ *   "exact"    — matched verbatim (confidence 1.0 / 0.99 for currency)
+ *   "resolved" — matched via case-insensitive, alias, or slug resolution (0.90–0.97)
+ *   "inferred" — matched via Jaccard token similarity (0.50–<0.90)
+ *   "missing"  — could not be found even with inference
+ */
+export type ColumnMappingSummaryEntry = {
+  canonical: string;
+  foundAs: string | null;
+  confidence: number;
+  method: string;
+  tier: "exact" | "resolved" | "inferred" | "missing";
+};
+
 export type IapCsvParseResult = {
   rows: IapCsvRow[];
   /** Which optional (non-Base) metric columns were present in this file's header. */
@@ -53,11 +71,17 @@ export type IapCsvParseResult = {
   warnings: string[];
   /**
    * Columns that were resolved via non-exact matching (alias, slug, case,
-   * currency). Maps canonical column name → how it was matched.
+   * currency, inferred). Maps canonical column name → how it was matched.
    */
   columnMappings: Record<string, ColumnMatch>;
   /** Canonical columns that could not be found in the header even with fuzzy resolution. */
   missingColumns: string[];
+  /**
+   * Full per-column mapping summary for every canonical breakdown and base
+   * metric column. Includes both resolved and missing columns so the caller
+   * can render a complete column-mapping report to the user.
+   */
+  mappingSummary: ColumnMappingSummaryEntry[];
 };
 
 function parseCsvLines(text: string): string[][] {
@@ -131,16 +155,27 @@ function parseNumericCell(raw: string | undefined): number | null {
 /** Breakdown column names that are load-bearing for the analysis pipeline. */
 const CRITICAL_BREAKDOWN_COLUMNS = new Set(["Date", "Ad name", "Campaign name"]);
 
+/** Determine the display tier for a ColumnMatch. */
+function matchTier(match: ColumnMatch): "exact" | "resolved" | "inferred" {
+  if (match.via === "exact" || match.via === "currency") return "exact";
+  if (match.via === "inferred") return "inferred";
+  return "resolved";
+}
+
 /**
  * Parses one staged CSV against the given class's canonical template.
  *
  * Column resolution order: exact → currency-placeholder → case-insensitive →
- * known alias (e.g. "Day" → "Date") → slug match.
+ * known alias (e.g. "Day" → "Date") → slug match → Jaccard inference.
  *
  * Missing breakdown columns and missing Base-section metric columns now produce
  * warnings instead of hard errors, EXCEPT for critical breakdown columns
  * (Date, Ad name, Campaign name) which are load-bearing and abort with a
  * clear message when completely unresolvable.
+ *
+ * Unknown CSV headers that score ≥ 0.75 Jaccard similarity to a missing
+ * canonical are auto-promoted silently; those scoring 0.5–0.74 are promoted
+ * with a warning; those below 0.5 leave the canonical column as missing.
  */
 export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseResult {
   const spec = IAP_CSV_CLASS_SPECS[csvClass];
@@ -155,7 +190,17 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
   const columnMappings: Record<string, ColumnMatch> = {};
   const missingColumns: string[] = [];
 
-  // ── Breakdown column resolution ──────────────────────────────────────
+  // Single authoritative summary map: canonical → entry. Using a Map (not an
+  // array) guarantees exactly one entry per canonical column even when a column
+  // passes through multiple resolution stages (e.g. initially "missing" then
+  // promoted to "inferred" by the inference pass).
+  const summaryMap = new Map<string, ColumnMappingSummaryEntry>();
+
+  // Track which header values have been claimed by a canonical mapping
+  // (used later for the inferred-match pass over unmapped headers).
+  const claimedHeaderValues = new Set<string>();
+
+  // ── Breakdown column resolution (primary cascade) ─────────────────────
   // Map each canonical breakdown column to the actual header cell index.
   const breakdownIdx = new Map<string, number>();
   const missingBreakdowns: string[] = [];
@@ -165,6 +210,7 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
     if (match) {
       const idx = rawHeader.findIndex((h) => h.trim() === match.headerValue);
       breakdownIdx.set(col, idx);
+      claimedHeaderValues.add(match.headerValue);
       if (match.via !== "exact") {
         columnMappings[col] = match;
         warnings.push(
@@ -172,17 +218,133 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
             `Renaming it to "${col}" in your export will improve reliability.`,
         );
       }
+      summaryMap.set(col, {
+        canonical: col,
+        foundAs: match.headerValue,
+        confidence: match.confidence,
+        method: match.method,
+        tier: matchTier(match),
+      });
     } else {
       missingBreakdowns.push(col);
-      missingColumns.push(col);
     }
   }
 
-  // Hard-error if critical breakdown columns cannot be resolved at all
-  const criticalMissing = missingBreakdowns.filter((c) => CRITICAL_BREAKDOWN_COLUMNS.has(c));
-  if (criticalMissing.length > 0) {
-    // Before throwing, look for out-of-scope columns that might be these
-    const suggestions = criticalMissing.map((c) => {
+  // ── Base metric column resolution (primary cascade) ───────────────────
+  const baseMetricIdx = new Map<string, number>();
+  const missingBaseMetrics: string[] = [];
+  let amountSpentIdx = -1;
+
+  for (const col of BASE_METRICS) {
+    if (col === "Amount spent ({ACCOUNT_CURRENCY})") {
+      const match = findColumnInHeader(headerStrings, col);
+      if (match) {
+        amountSpentIdx = rawHeader.findIndex((h) => h.trim() === match.headerValue);
+        claimedHeaderValues.add(match.headerValue);
+        if (match.via !== "exact" && match.via !== "currency") {
+          columnMappings[col] = match;
+          warnings.push(
+            `Spend column auto-matched from "${match.headerValue}" (via ${match.via} match).`,
+          );
+        }
+        summaryMap.set(col, {
+          canonical: col,
+          foundAs: match.headerValue,
+          confidence: match.confidence,
+          method: match.method,
+          tier: matchTier(match),
+        });
+      } else {
+        missingBaseMetrics.push(col);
+      }
+      continue;
+    }
+    const match = findColumnInHeader(headerStrings, col);
+    if (match) {
+      const idx = rawHeader.findIndex((h) => h.trim() === match.headerValue);
+      baseMetricIdx.set(col, idx);
+      claimedHeaderValues.add(match.headerValue);
+      if (match.via !== "exact") {
+        columnMappings[col] = match;
+        warnings.push(
+          `Metric column "${col}" auto-matched from "${match.headerValue}" (via ${match.via} match).`,
+        );
+      }
+      summaryMap.set(col, {
+        canonical: col,
+        foundAs: match.headerValue,
+        confidence: match.confidence,
+        method: match.method,
+        tier: matchTier(match),
+      });
+    } else {
+      missingBaseMetrics.push(col);
+    }
+  }
+
+  // ── Inference pass: try Jaccard-based auto-mapping for ALL missing columns ─
+  // Run inference on every unresolved column — including critical breakdowns —
+  // before hard-failing, so an obvious high-similarity header can be promoted.
+  const unmappedHeaders = headerStrings.filter((h) => !claimedHeaderValues.has(h));
+
+  // All unresolved: critical + non-critical breakdowns + base metrics
+  const allMissingForInference = [...missingBreakdowns, ...missingBaseMetrics];
+  const stillMissingAfterInference: string[] = [];
+
+  for (const col of allMissingForInference) {
+    const inferred = inferColumnMapping(unmappedHeaders, col);
+    if (inferred) {
+      // Auto-promote — overwrite any prior "missing" summary entry
+      claimedHeaderValues.add(inferred.headerValue);
+      const unmappedIdx = unmappedHeaders.indexOf(inferred.headerValue);
+      if (unmappedIdx !== -1) unmappedHeaders.splice(unmappedIdx, 1);
+
+      const headerIdx = rawHeader.findIndex((h) => h.trim() === inferred.headerValue);
+      columnMappings[col] = inferred;
+
+      summaryMap.set(col, {
+        canonical: col,
+        foundAs: inferred.headerValue,
+        confidence: inferred.confidence,
+        method: inferred.method,
+        tier: "inferred",
+      });
+
+      // Only emit a warning for moderate-confidence matches (0.5–<0.75).
+      // High-confidence inferred (≥0.75) are auto-applied silently.
+      if (inferred.confidence < 0.75) {
+        const isBreakdown = spec.breakdownColumns.includes(col);
+        const label = isBreakdown ? `Column "${col}"` : `Metric column "${col}"`;
+        warnings.push(
+          `${label} mapped from "${inferred.headerValue}" with moderate confidence ` +
+            `(${Math.round(inferred.confidence * 100)}%) — please verify this is correct.`,
+        );
+      }
+
+      // Assign the resolved index to the right map
+      if (spec.breakdownColumns.includes(col)) {
+        breakdownIdx.set(col, headerIdx);
+      } else {
+        if (col === "Amount spent ({ACCOUNT_CURRENCY})") {
+          amountSpentIdx = headerIdx;
+        } else {
+          baseMetricIdx.set(col, headerIdx);
+        }
+      }
+    } else {
+      stillMissingAfterInference.push(col);
+      // Only set a "missing" summary entry if one isn't already there (primary cascade
+      // never writes "missing" entries — they only originate here).
+      if (!summaryMap.has(col)) {
+        summaryMap.set(col, { canonical: col, foundAs: null, confidence: 0, method: "Not found", tier: "missing" });
+      }
+    }
+  }
+
+  // Hard-error if critical breakdown columns are still unresolvable after inference
+  const criticalStillMissing = stillMissingAfterInference.filter((c) => CRITICAL_BREAKDOWN_COLUMNS.has(c));
+  if (criticalStillMissing.length > 0) {
+    const suggestions = criticalStillMissing.map((c) => {
       const suggestion = suggestCanonicalForUnknown(c, headerStrings);
       return suggestion ? `"${c}" (closest in your file: "${suggestion}")` : `"${c}"`;
     });
@@ -193,57 +355,29 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
     );
   }
 
-  // Warn (not error) for non-critical missing breakdown columns
-  const nonCriticalMissingBreakdowns = missingBreakdowns.filter((c) => !CRITICAL_BREAKDOWN_COLUMNS.has(c));
-  if (nonCriticalMissingBreakdowns.length > 0) {
+  // Non-critical breakdown columns that are still missing after all resolution passes
+  const nonCriticalStillMissing = stillMissingAfterInference.filter((c) => !CRITICAL_BREAKDOWN_COLUMNS.has(c));
+  if (nonCriticalStillMissing.filter((c) => spec.breakdownColumns.includes(c)).length > 0) {
+    const missing = nonCriticalStillMissing.filter((c) => spec.breakdownColumns.includes(c));
     warnings.push(
       `The following breakdown columns are missing and will be treated as blank: ` +
-        `${nonCriticalMissingBreakdowns.join(", ")}. ` +
+        `${missing.join(", ")}. ` +
         `This will reduce the detail available for breakdown analysis.`,
     );
-  }
-
-  // ── Base metric column resolution ────────────────────────────────────
-  const baseMetricIdx = new Map<string, number>();
-  const missingBaseMetrics: string[] = [];
-  let amountSpentIdx = -1;
-
-  for (const col of BASE_METRICS) {
-    if (col === "Amount spent ({ACCOUNT_CURRENCY})") {
-      const match = findColumnInHeader(headerStrings, col);
-      if (match) {
-        amountSpentIdx = rawHeader.findIndex((h) => h.trim() === match.headerValue);
-        if (match.via !== "exact" && match.via !== "currency") {
-          columnMappings[col] = match;
-          warnings.push(
-            `Spend column auto-matched from "${match.headerValue}" (via ${match.via} match).`,
-          );
-        }
-      } else {
-        missingBaseMetrics.push(col);
-        missingColumns.push(col);
-      }
-      continue;
-    }
-    const match = findColumnInHeader(headerStrings, col);
-    if (match) {
-      const idx = rawHeader.findIndex((h) => h.trim() === match.headerValue);
-      baseMetricIdx.set(col, idx);
-      if (match.via !== "exact") {
-        columnMappings[col] = match;
-        warnings.push(
-          `Metric column "${col}" auto-matched from "${match.headerValue}" (via ${match.via} match).`,
-        );
-      }
-    } else {
-      missingBaseMetrics.push(col);
+    for (const col of missing) {
       missingColumns.push(col);
     }
   }
 
+  // Final missing columns (base metrics still unresolvable)
+  const stillMissingBaseMetrics = stillMissingAfterInference.filter((c) => BASE_METRICS.includes(c));
+  for (const col of stillMissingBaseMetrics) {
+    missingColumns.push(col);
+  }
+
   if (missingBaseMetrics.length > 0) {
-    const coreImpact = missingBaseMetrics.filter((c) => CORE_BASE_METRICS.has(c));
-    const minorImpact = missingBaseMetrics.filter((c) => !CORE_BASE_METRICS.has(c));
+    const coreImpact = stillMissingBaseMetrics.filter((c) => CORE_BASE_METRICS.has(c));
+    const minorImpact = stillMissingBaseMetrics.filter((c) => !CORE_BASE_METRICS.has(c));
     if (coreImpact.length > 0) {
       warnings.push(
         `⚠ Reduced confidence: core metric columns are missing and will be null — ` +
@@ -266,29 +400,11 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
     ...BASE_METRICS,
     ...OPTIONAL_METRICS,
   ]);
-  const mappedHeaderValues = new Set([
-    ...Object.values(columnMappings).map((m) => m.headerValue),
-    ...spec.breakdownColumns
-      .filter((c) => breakdownIdx.has(c))
-      .map((c) => rawHeader[breakdownIdx.get(c)!]?.trim() ?? ""),
-    ...BASE_METRICS.filter((c) => baseMetricIdx.has(c) || (c.includes("{ACCOUNT_CURRENCY}") && amountSpentIdx >= 0)).map(
-      (c) => {
-        if (c.includes("{ACCOUNT_CURRENCY}")) return amountSpentIdx >= 0 ? rawHeader[amountSpentIdx]?.trim() ?? "" : "";
-        const idx = baseMetricIdx.get(c);
-        return idx !== undefined ? rawHeader[idx]?.trim() ?? "" : "";
-      },
-    ),
-  ]);
 
-  // Find currently-missing canonicals (for suggestion matching)
   const currentlyMissingCanonicals = missingColumns.slice();
 
-  for (const h of headerStrings) {
-    // Skip headers we already mapped or that are in the canonical set
-    if (mappedHeaderValues.has(h)) continue;
-    // Check if it's directly a known canonical (already found via exact in colIndex)
+  for (const h of unmappedHeaders) {
     if (allCanonicals.has(h)) continue;
-
     if (currentlyMissingCanonicals.length > 0) {
       const suggestion = suggestCanonicalForUnknown(h, currentlyMissingCanonicals);
       if (suggestion) {
@@ -363,6 +479,7 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
     warnings,
     columnMappings,
     missingColumns,
+    mappingSummary: Array.from(summaryMap.values()),
   };
 }
 

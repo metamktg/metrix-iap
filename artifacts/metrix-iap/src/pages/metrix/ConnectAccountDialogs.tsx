@@ -22,6 +22,7 @@ import {
   getListManualImportsQueryKey,
   ApiError,
   type ManualImport,
+  type ColumnMappingSummaryEntry,
 } from "@workspace/api-client-react";
 import {
   Dialog,
@@ -58,10 +59,13 @@ import {
   Pencil,
   Check,
   X,
+  XCircle,
   ChevronDown,
+  ChevronRight,
   ListChecks,
   Hash,
   Sparkles,
+  GitMerge,
 } from "lucide-react";
 import type { AdAccount } from "@/lib/data/seedTypes";
 import {
@@ -294,6 +298,121 @@ function UploadProgressBar({ pct, label }: { pct: number; label: string }) {
   );
 }
 
+/**
+ * Collapsible column-mapping summary panel shown after a CSV upload when
+ * any non-exact column resolutions occurred. Green = confidence ≥ 0.85,
+ * amber = 0.5–0.84, red = missing. Exact matches are omitted (happy path).
+ */
+function CsvMappingPanel({ summary }: { summary: ColumnMappingSummaryEntry[] }) {
+  const [open, setOpen] = useState(false);
+
+  const nonExact = summary.filter((e) => e.tier !== "exact");
+  const resolved = nonExact.filter((e) => e.tier !== "missing");
+  const missing = nonExact.filter((e) => e.tier === "missing");
+
+  if (nonExact.length === 0) return null;
+
+  const headerLabel = [
+    resolved.length > 0 && `${resolved.length} auto-resolved`,
+    missing.length > 0 && `${missing.length} missing`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const headerColor =
+    missing.length > 0
+      ? "border-amber-400/25 bg-amber-400/[0.04]"
+      : "border-emerald-400/20 bg-emerald-400/[0.03]";
+  const chevronColor =
+    missing.length > 0 ? "text-amber-400/80" : "text-emerald-400/80";
+  const iconColor =
+    missing.length > 0 ? "text-amber-400" : "text-emerald-400";
+
+  return (
+    <div className={cn("rounded-lg border overflow-hidden", headerColor)}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-white/[0.02] transition-colors"
+        aria-expanded={open}
+      >
+        <GitMerge className={cn("w-3 h-3 shrink-0", iconColor)} />
+        <span className="text-[11px] font-medium text-foreground/80 flex-1">
+          Column mapping{" "}
+          <span className="font-normal text-muted-foreground/80">— {headerLabel}</span>
+        </span>
+        {open ? (
+          <ChevronDown className={cn("w-3 h-3 shrink-0", chevronColor)} />
+        ) : (
+          <ChevronRight className={cn("w-3 h-3 shrink-0", chevronColor)} />
+        )}
+      </button>
+
+      {open && (
+        <div className="px-3 pb-3 space-y-1 border-t border-white/[0.04]">
+          {resolved.length > 0 && (
+            <div className="pt-2 space-y-1">
+              {resolved.map((e) => {
+                const isHigh = e.confidence >= 0.85;
+                return (
+                  <div
+                    key={e.canonical}
+                    className={cn(
+                      "flex items-start gap-2 px-2 py-1.5 rounded text-[10px]",
+                      isHigh
+                        ? "bg-emerald-400/[0.06] border border-emerald-400/15"
+                        : "bg-amber-400/[0.06] border border-amber-400/15"
+                    )}
+                  >
+                    <CheckCircle2
+                      className={cn(
+                        "w-3 h-3 shrink-0 mt-px",
+                        isHigh ? "text-emerald-400" : "text-amber-400"
+                      )}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <span className="font-medium text-foreground/90">{e.canonical}</span>
+                      {e.found_as && e.found_as !== e.canonical && (
+                        <span className="text-muted-foreground/70"> ← {e.found_as}</span>
+                      )}
+                      <span
+                        className={cn(
+                          "ml-1.5 text-[9px] font-semibold uppercase tracking-wide",
+                          isHigh ? "text-emerald-400/80" : "text-amber-400/80"
+                        )}
+                      >
+                        {Math.round(e.confidence * 100)}%
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {missing.length > 0 && (
+            <div className={cn("pt-2 space-y-1", resolved.length > 0 && "mt-1")}>
+              {missing.length > 0 && (
+                <p className="text-[9px] uppercase tracking-wide font-semibold text-muted-foreground/60 pb-0.5">
+                  Missing columns
+                </p>
+              )}
+              {missing.map((e) => (
+                <div
+                  key={e.canonical}
+                  className="flex items-center gap-2 px-2 py-1.5 rounded text-[10px] bg-red-400/[0.06] border border-red-400/15"
+                >
+                  <XCircle className="w-3 h-3 shrink-0 text-red-400/80" />
+                  <span className="font-medium text-foreground/80 min-w-0 truncate">{e.canonical}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CsvSlotUpload({
   accountId,
   kind,
@@ -316,6 +435,7 @@ function CsvSlotUpload({
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploadPct, setUploadPct] = useState<number | null>(null);
+  const [mappingSummary, setMappingSummary] = useState<ColumnMappingSummaryEntry[] | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const deleteMutation = useDeleteManualImport();
 
@@ -323,6 +443,7 @@ function CsvSlotUpload({
    *  from the onChange handler before React state for `file` has settled. */
   const handleStage = async (fileToStage: File) => {
     setError(null);
+    setMappingSummary(null);
     if (fileToStage.size > MAX_UPLOAD_BYTES) {
       setError("File is too large — the limit is 8 MB.");
       setFile(null);
@@ -333,11 +454,14 @@ function CsvSlotUpload({
     setUploadPct(0);
     try {
       const content_base64 = await fileToBase64(fileToStage);
-      await stageManualImportWithProgress(
+      const result = await stageManualImportWithProgress(
         accountId,
         { kind, filename: fileToStage.name, content_type: fileToStage.type || undefined, content_base64 },
         setUploadPct
       );
+      if (result.mapping_summary && result.mapping_summary.length > 0) {
+        setMappingSummary(result.mapping_summary);
+      }
       setFile(null);
       if (fileRef.current) fileRef.current.value = "";
       onStaged();
@@ -352,6 +476,7 @@ function CsvSlotUpload({
 
   const handleRemove = async () => {
     if (!staged) return;
+    setMappingSummary(null);
     await deleteMutation.mutateAsync({ accountId, importId: staged.id });
     onRemoved();
   };
@@ -422,6 +547,8 @@ function CsvSlotUpload({
           {uploadPct !== null && <UploadProgressBar pct={uploadPct} label={`Uploading ${file?.name ?? title}…`} />}
         </>
       )}
+
+      {mappingSummary && <CsvMappingPanel summary={mappingSummary} />}
 
       {error && (
         <div className="flex items-start gap-2 p-2.5 rounded-lg border border-red-400/25 bg-red-400/[0.06]">

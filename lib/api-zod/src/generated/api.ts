@@ -86,7 +86,14 @@ export const StageManualImportResponse = zod.object({
   "link_result": zod.object({
   "matched": zod.array(zod.string()).describe('Ad names that resolved to a real ad row and were linked to this asset.'),
   "unmatched": zod.array(zod.string()).describe('Ad names with no matching ad row — the asset is staged but not linked to a live ad.')
-}).optional().describe('Per-file result of linking a staged creative asset to its ad name(s).')
+}).optional().describe('Per-file result of linking a staged creative asset to its ad name(s).'),
+  "mapping_summary": zod.array(zod.object({
+  "canonical": zod.string().describe('The canonical column name from the IAP spec.'),
+  "found_as": zod.string().nullish().describe('The actual header value found in the CSV, or null if the column was not found.'),
+  "confidence": zod.number().describe('Mapping confidence 0–1. 1.0 = exact match; 0 = not found.'),
+  "method": zod.string().describe('Human-readable label describing how the column was resolved.'),
+  "tier": zod.enum(['exact', 'resolved', 'inferred', 'missing']).describe('Resolution tier: exact (verbatim), resolved (alias\/slug\/case), inferred (Jaccard ≥0.5), or missing (not found).')
+}).describe('Per-canonical column mapping result included in the upload staging response. Covers every breakdown and base metric column so the client can render a full column-mapping report.')).optional().describe('Column mapping results for performance CSV uploads (absent for creative_asset uploads). Covers every canonical breakdown and base metric column.')
 })
 
 

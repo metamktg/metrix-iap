@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ColumnMappingSummaryEntry } from './columnMappingSummaryEntry';
 import type { CreativeLinkResult } from './creativeLinkResult';
 import type { ManualImportResultStatus } from './manualImportResultStatus';
 
@@ -16,4 +17,6 @@ export interface ManualImportResult {
   /** Honest processing note (staged for analysis, not parsed into performance data). */
   note: string;
   link_result?: CreativeLinkResult;
+  /** Column mapping results for performance CSV uploads (absent for creative_asset uploads). Covers every canonical breakdown and base metric column. */
+  mapping_summary?: ColumnMappingSummaryEntry[];
 }
