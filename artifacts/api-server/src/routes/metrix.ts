@@ -993,6 +993,7 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
         match_method: parsed.data.kind === "creative_asset" ? (parsed.data.match_method ?? null) : null,
         uploaded_by_user_id: user.id,
         uploaded_by_email: user.email,
+        ...(csvMappingSummary ? { mapping_summary: csvMappingSummary } : {}),
       })
       .select("id")
       .single();
@@ -1046,7 +1047,7 @@ router.get("/metrix/accounts/:accountId/manual-imports", requireAuth, async (req
     }
     const { data, error } = await supabase
       .from("manual_imports")
-      .select("id, account_id, kind, filename, content_type, size_bytes, ad_names, match_method, status, created_at")
+      .select("id, account_id, kind, filename, content_type, size_bytes, ad_names, match_method, status, created_at, mapping_summary")
       .eq("account_id", accountId)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
@@ -1063,6 +1064,7 @@ router.get("/metrix/accounts/:accountId/manual-imports", requireAuth, async (req
           match_method: r["match_method"] ?? null,
           status: r["status"],
           created_at: String(r["created_at"]),
+          mapping_summary: r["mapping_summary"] ?? null,
         })),
       }),
     );

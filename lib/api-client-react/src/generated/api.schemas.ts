@@ -526,6 +526,8 @@ export interface ManualImport {
   status: ManualImportStatus;
   created_at: string;
   link_result?: CreativeLinkResult;
+  /** Column mapping results stored at upload time for performance CSV imports (absent for creative_asset uploads). Used to surface column health warnings at the 'Run analysis' step. */
+  mapping_summary?: ColumnMappingSummaryEntry[] | null;
 }
 
 export interface ListManualImportsResult {

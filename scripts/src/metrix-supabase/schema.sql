@@ -656,6 +656,11 @@ begin
     check (match_method in ('id', 'fuzzy', 'guess'));
 end $$;
 
+-- Column mapping summary for performance CSV uploads. Stored at upload time
+-- so the "Run analysis" step can surface any missing/low-confidence columns
+-- without re-parsing the raw file. Null for creative_asset imports.
+alter table manual_imports add column if not exists mapping_summary jsonb;
+
 -- Generic bucket for Ecommerce/Service/App-specific metrics observed in a
 -- manual CSV upload. Keyed by slugified Meta column name; absent metrics
 -- are simply missing keys — never fabricated as 0/null.

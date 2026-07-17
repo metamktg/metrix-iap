@@ -460,6 +460,102 @@ function CreativeLinkageStatus({
 }
 
 /**
+ * Compact pre-run warning banner that reads the mapping_summary stored on
+ * the account's staged performance CSV imports and surfaces any columns
+ * that are missing (tier = "missing") or only inferred with low confidence
+ * (tier = "inferred"). Non-blocking — the user can still press "Run
+ * analysis" — but names the specific columns so they can fix the CSV
+ * before committing compute time.
+ */
+function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
+  const [expanded, setExpanded] = useState(false);
+
+  // Only performance CSVs carry a mapping_summary; creatives don't.
+  const csvImports = imports.filter(
+    (imp) =>
+      (imp.kind === "performance_demo_csv" || imp.kind === "performance_placement_csv") &&
+      imp.mapping_summary &&
+      imp.mapping_summary.length > 0
+  );
+
+  if (csvImports.length === 0) return null;
+
+  // Gather all problem entries across both CSVs, tagged with the CSV kind.
+  type ProblemEntry = {
+    canonical: string;
+    tier: string;
+    found_as: string | null;
+    csvLabel: string;
+  };
+  const problems: ProblemEntry[] = [];
+  for (const imp of csvImports) {
+    const label =
+      imp.kind === "performance_demo_csv" ? "Demographics CSV" : "Placements CSV";
+    for (const entry of imp.mapping_summary ?? []) {
+      if (entry.tier === "missing" || entry.tier === "inferred") {
+        problems.push({ canonical: entry.canonical, tier: entry.tier, found_as: entry.found_as ?? null, csvLabel: label });
+      }
+    }
+  }
+
+  if (problems.length === 0) return null;
+
+  const missingCount = problems.filter((p) => p.tier === "missing").length;
+  const inferredCount = problems.filter((p) => p.tier === "inferred").length;
+
+  const headline =
+    missingCount > 0
+      ? `${missingCount} column${missingCount > 1 ? "s" : ""} missing from your CSV${inferredCount > 0 ? `, ${inferredCount} low-confidence` : ""}`
+      : `${inferredCount} column${inferredCount > 1 ? "s" : ""} matched with low confidence`;
+
+  const subtext =
+    missingCount > 0
+      ? "Missing columns may reduce analysis accuracy. You can still run, but consider fixing your CSV first."
+      : "These columns were matched by similarity rather than name. Verify the CSV header matches the expected column names.";
+
+  return (
+    <div className="rounded-lg border border-amber-400/30 bg-amber-400/[0.06] p-3 space-y-2">
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="w-full flex items-start gap-2 text-left"
+      >
+        <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+        <div className="flex-1 min-w-0">
+          <div className="text-[11px] font-semibold text-amber-200">{headline}</div>
+          <p className="text-[10px] text-amber-100/70 mt-0.5 leading-relaxed">
+            {subtext}{" "}
+            <span className="underline cursor-pointer">{expanded ? "Hide" : "Show"} details</span>
+          </p>
+        </div>
+      </button>
+      {expanded && (
+        <ul className="space-y-1 pt-1 border-t border-amber-400/20">
+          {problems.map((p, i) => (
+            <li key={i} className="text-[10px] text-amber-100/75 leading-relaxed">
+              <span
+                className={cn(
+                  "inline-block mr-1.5 px-1 py-px rounded text-[9px] font-semibold uppercase tracking-wide border",
+                  p.tier === "missing"
+                    ? "bg-red-500/10 border-red-400/30 text-red-300"
+                    : "bg-amber-400/10 border-amber-400/30 text-amber-300"
+                )}
+              >
+                {p.tier === "missing" ? "missing" : "low confidence"}
+              </span>
+              <span className="font-medium text-amber-100/90">{p.canonical}</span>
+              {p.found_as && p.tier === "inferred" && (
+                <span className="text-amber-100/55"> (found as &ldquo;{p.found_as}&rdquo;)</span>
+              )}
+              <span className="text-amber-100/45 ml-1">· {p.csvLabel}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/**
  * Explicit, manual analysis trigger for an account's staged CSVs.
  * Nothing here runs automatically — the user must pick a date range and
  * press "Run analysis". Polls the latest run every 2.5s while running.
@@ -580,6 +676,8 @@ export function AnalysisControls({
           </button>
         ))}
       </div>
+
+      <MappingHealthBanner imports={importsData?.imports ?? []} />
 
       <GuessedMatchesCallout
         accountId={accountId}
