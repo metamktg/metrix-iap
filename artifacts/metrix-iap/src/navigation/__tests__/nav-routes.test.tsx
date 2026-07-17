@@ -60,13 +60,13 @@ beforeEach(() => {
 });
 
 describe("every navTree path resolves to a real page", () => {
-  it("navTree yields a sane number of paths", () => {
+  it("navTree yields a sane number of paths", async () => {
     expect(navPaths.length).toBeGreaterThanOrEqual(20);
   });
 
   for (const { label, to } of navPaths) {
-    it(`${label} (${to}) does not hit the 404 page`, () => {
-      const { container } = renderAt(to);
+    it(`${label} (${to}) does not hit the 404 page`, async () => {
+      const { container } = await renderAt(to);
       expect(container.textContent).not.toContain(NOT_FOUND_TEXT);
       expect(container.textContent?.trim().length).toBeGreaterThan(0);
     });
@@ -75,8 +75,8 @@ describe("every navTree path resolves to a real page", () => {
 
 describe("legacy redirects land on their new targets", () => {
   for (const [from, target] of legacyRedirects) {
-    it(`${from} → ${target}`, () => {
-      const { container, location } = renderAt(from);
+    it(`${from} → ${target}`, async () => {
+      const { container, location } = await renderAt(from);
       expect(location.history.at(-1)).toBe(target);
       expect(container.textContent).not.toContain(NOT_FOUND_TEXT);
     });
@@ -87,8 +87,8 @@ describe("legacy redirects land on their new targets", () => {
 // user opening that link (old email, bookmark) must be redirected to a real
 // in-app destination — never fall through to the 404 page.
 describe("a signed-in user visiting /forgot-password is redirected", () => {
-  it("/forgot-password → /app/settings/account?focus=password, not the 404 page", () => {
-    const { container, location } = renderAuthedAt("/forgot-password");
+  it("/forgot-password → /app/settings/account?focus=password, not the 404 page", async () => {
+    const { container, location } = await renderAuthedAt("/forgot-password");
     expect(location.history.at(-1)).toBe("/app/settings/account?focus=password");
     expect(container.textContent).not.toContain(NOT_FOUND_TEXT);
     expect(container.textContent?.trim().length).toBeGreaterThan(0);
@@ -96,8 +96,8 @@ describe("a signed-in user visiting /forgot-password is redirected", () => {
 });
 
 describe("unknown paths still 404", () => {
-  it("a bogus path renders the NotFound page", () => {
-    const { container } = renderAt("/app/definitely-not-a-real-page");
+  it("a bogus path renders the NotFound page", async () => {
+    const { container } = await renderAt("/app/definitely-not-a-real-page");
     expect(container.textContent).toContain(NOT_FOUND_TEXT);
   });
 });
@@ -118,12 +118,12 @@ describe("every PRE_LOGIN_ROUTE_PATHS entry renders its own screen, not the logi
     return text;
   }
 
-  it("the login baseline itself renders non-empty content", () => {
+  it("the login baseline itself renders non-empty content", async () => {
     expect(loginBaselineText().trim().length).toBeGreaterThan(0);
   });
 
   for (const path of PRE_LOGIN_ROUTE_PATHS) {
-    it(`${path} renders a screen distinct from the login page`, () => {
+    it(`${path} renders a screen distinct from the login page`, async () => {
       const baseline = loginBaselineText();
       const { container } = renderAuthGateAt(path);
       const text = container.textContent ?? "";

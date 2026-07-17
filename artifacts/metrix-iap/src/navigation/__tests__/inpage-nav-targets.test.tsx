@@ -90,11 +90,11 @@ beforeEach(() => {
 });
 
 describe("scanner sanity", () => {
-  it("finds a sane number of hardcoded navigation targets", () => {
+  it("finds a sane number of hardcoded navigation targets", async () => {
     expect(targets.length).toBeGreaterThanOrEqual(15);
   });
 
-  it("catches known in-page targets outside the sidebar", () => {
+  it("catches known in-page targets outside the sidebar", async () => {
     const paths = targets.map((t) => t.to);
     // AddAccountDialog / ConnectAccountDialogs "Meta connection" path
     expect(paths).toContain("/app/settings/integrations");
@@ -107,7 +107,7 @@ describe("scanner sanity", () => {
     expect(paths).toContain("/app/account");
   });
 
-  it("no navigation target has a dynamic path segment", () => {
+  it("no navigation target has a dynamic path segment", async () => {
     // If this ever fails, a page interpolates the route path itself
     // (not just the query string); add explicit coverage for it.
     for (const t of targets) {
@@ -118,8 +118,8 @@ describe("scanner sanity", () => {
 
 describe("every hardcoded in-page navigation target resolves", () => {
   for (const { to, sources } of targets) {
-    it(`${to} (used in ${sources.join(", ")}) does not hit the 404 page`, () => {
-      const { container } = renderAt(to);
+    it(`${to} (used in ${sources.join(", ")}) does not hit the 404 page`, async () => {
+      const { container } = await renderAt(to);
       expect(container.textContent).not.toContain(NOT_FOUND_TEXT);
       expect(container.textContent?.trim().length).toBeGreaterThan(0);
     });
