@@ -21,6 +21,7 @@ import {
   findColumnInHeader,
   inferColumnMapping,
   suggestCanonicalForUnknown,
+  detectCsvClassMismatch,
   type IapCsvClass,
   IAP_CSV_CLASS_SPECS,
   type ColumnMatch,
@@ -185,6 +186,15 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
   }
   const rawHeader = lines[0]!;
   const headerStrings = rawHeader.map((h) => h.trim());
+
+  // ── Cross-class mismatch detection ────────────────────────────────────
+  // Detect when the uploaded file belongs to the OTHER pivot class. Do this
+  // before any resolution so the user gets an actionable message immediately
+  // rather than a confusing "missing columns" wall or silent empty analysis.
+  const mismatchError = detectCsvClassMismatch(headerStrings, csvClass);
+  if (mismatchError) {
+    throw new IapCsvFormatError(mismatchError);
+  }
 
   const warnings: string[] = [];
   const columnMappings: Record<string, ColumnMatch> = {};

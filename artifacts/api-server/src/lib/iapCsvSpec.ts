@@ -512,6 +512,60 @@ export function suggestCanonicalForUnknown(
 }
 
 /**
+ * Columns that uniquely identify each CSV class. Their presence in a file
+ * parsed under the OTHER class is strong evidence of a wrong-slot upload.
+ * Each set uses columns that cannot appear in the opposing class's template.
+ *
+ * Demographic signatures: "Gender" and "Age" only exist in the demographic pivot.
+ * Device/placement signatures: "Placement" and "Impression device" only exist
+ *   in the device/placement pivot.
+ */
+export const CSV_CLASS_SIGNATURE_COLUMNS: Record<IapCsvClass, readonly string[]> = {
+  demographic: ["Gender", "Age"],
+  device_placement: ["Placement", "Impression device"],
+};
+
+/**
+ * Checks whether the CSV headers look like they belong to a DIFFERENT class
+ * than the one the caller is trying to parse.
+ *
+ * Returns a human-readable error message when a mismatch is detected, or null
+ * when the headers are consistent with the expected class. Uses the same
+ * `findColumnInHeader` resolution cascade (aliases, case-insensitive, slug)
+ * so that variants like "ad placement" or "device type" are also caught.
+ *
+ * A single matching signature column is sufficient to flag the mismatch,
+ * since these columns are exclusive to their respective pivot classes and
+ * cannot appear in the other class's export.
+ */
+export function detectCsvClassMismatch(
+  headers: string[],
+  expectedClass: IapCsvClass,
+): string | null {
+  const otherClass: IapCsvClass = expectedClass === "demographic" ? "device_placement" : "demographic";
+  const otherSignature = CSV_CLASS_SIGNATURE_COLUMNS[otherClass];
+
+  const matchedCols = otherSignature.filter((col) => findColumnInHeader(headers, col) !== null);
+  if (matchedCols.length === 0) return null;
+
+  const quotedCols = matchedCols.map((c) => `"${c}"`).join(", ");
+  if (expectedClass === "demographic") {
+    return (
+      `This file looks like a Device/Placement pivot export — it contains ${quotedCols}, ` +
+      `which only appears in that pivot type. ` +
+      `Did you upload it in the wrong slot? ` +
+      `Upload this file as the Device/Placement CSV instead, and provide a Demographic pivot export here.`
+    );
+  }
+  return (
+    `This file looks like a Demographic pivot export — it contains ${quotedCols}, ` +
+    `which only appears in that pivot type. ` +
+    `Did you upload it in the wrong slot? ` +
+    `Upload this file as the Demographic CSV instead, and provide a Device/Placement pivot export here.`
+  );
+}
+
+/**
  * Core base metrics whose absence meaningfully degrades analysis quality.
  * Missing any of these triggers a "reduced confidence" warning rather than
  * a hard error — analysis proceeds with nulls for the missing columns.

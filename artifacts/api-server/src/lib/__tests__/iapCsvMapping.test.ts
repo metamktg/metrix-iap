@@ -8,6 +8,7 @@ import {
   inferColumnMapping,
   COLUMN_ALIASES,
   slugifyColumn,
+  detectCsvClassMismatch,
   type ColumnMatch,
 } from "../iapCsvSpec";
 import { parseIapCsv, IapCsvFormatError } from "../iapCsvParser";
@@ -425,5 +426,125 @@ describe("parseIapCsv — new alias entries end-to-end", () => {
     const row = breakdownCols.map(breakdownValue).concat(BASE_METRICS.map(baseValue));
     const result = parseIapCsv([line(header), line(row)].join("\n"), "demographic");
     expect(["alias", "case_insensitive"]).toContain(result.columnMappings["ThruPlays"]?.via);
+  });
+});
+
+// ── Cross-class mismatch detection ─────────────────────────────────────────────
+
+describe("detectCsvClassMismatch — pure function", () => {
+  it("returns null when headers match expected demographic class", () => {
+    const demographicHeaders = [...DEMOGRAPHIC_BREAKDOWN_COLUMNS, ...BASE_METRICS].map(resolveCurrency);
+    expect(detectCsvClassMismatch(demographicHeaders, "demographic")).toBeNull();
+  });
+
+  it("returns null when headers match expected device_placement class", () => {
+    const dpHeaders = [...DEVICE_PLACEMENT_BREAKDOWN_COLUMNS, ...BASE_METRICS].map(resolveCurrency);
+    expect(detectCsvClassMismatch(dpHeaders, "device_placement")).toBeNull();
+  });
+
+  it("detects device_placement CSV uploaded to demographic slot via 'Placement'", () => {
+    const dpHeaders = [...DEVICE_PLACEMENT_BREAKDOWN_COLUMNS, ...BASE_METRICS].map(resolveCurrency);
+    const result = detectCsvClassMismatch(dpHeaders, "demographic");
+    expect(result).not.toBeNull();
+    expect(result).toMatch(/device.?placement/i);
+    expect(result).toMatch(/wrong slot/i);
+  });
+
+  it("detects device_placement CSV uploaded to demographic slot via 'Impression device'", () => {
+    const headers = ["Date", "Ad name", "Campaign name", "Impression device"];
+    const result = detectCsvClassMismatch(headers, "demographic");
+    expect(result).not.toBeNull();
+    expect(result).toMatch(/device.?placement/i);
+  });
+
+  it("detects demographic CSV uploaded to device_placement slot via 'Gender'", () => {
+    const demoHeaders = [...DEMOGRAPHIC_BREAKDOWN_COLUMNS, ...BASE_METRICS].map(resolveCurrency);
+    const result = detectCsvClassMismatch(demoHeaders, "device_placement");
+    expect(result).not.toBeNull();
+    expect(result).toMatch(/demographic/i);
+    expect(result).toMatch(/wrong slot/i);
+  });
+
+  it("detects demographic CSV uploaded to device_placement slot via 'Age'", () => {
+    const headers = ["Date", "Ad name", "Campaign name", "Age"];
+    const result = detectCsvClassMismatch(headers, "device_placement");
+    expect(result).not.toBeNull();
+    expect(result).toMatch(/demographic/i);
+  });
+
+  it("catches 'Placement' alias 'ad placement' when parsing as demographic", () => {
+    // 'ad placement' is an alias for 'Placement' in COLUMN_ALIASES
+    const headers = ["Date", "Campaign name", "Ad name", "Gender", "Age", "ad placement"];
+    const result = detectCsvClassMismatch(headers, "demographic");
+    // 'ad placement' resolves to Placement (device_placement signature)
+    // AND Gender/Age also present — either way mismatch is detected
+    // (In this case: demographic-slot CSV has both demographic AND device_placement signatures)
+    // The device_placement signature match ('ad placement' → Placement) should fire
+    expect(result).not.toBeNull();
+  });
+
+  it("catches 'device type' alias for 'Impression device' when parsing as demographic", () => {
+    const headers = ["Date", "Campaign name", "Ad name", "device type", "Platform"];
+    const result = detectCsvClassMismatch(headers, "demographic");
+    expect(result).not.toBeNull();
+    expect(result).toMatch(/device.?placement/i);
+  });
+
+  it("names the detected columns in the error message", () => {
+    const headers = ["Date", "Ad name", "Campaign name", "Placement", "Impression device"];
+    const result = detectCsvClassMismatch(headers, "demographic");
+    expect(result).not.toBeNull();
+    expect(result).toMatch(/"Placement"/);
+  });
+
+  it("returns null for a minimal header with no class-signature columns", () => {
+    // Generic columns that appear in both — no signal either way
+    const headers = ["Date", "Campaign name", "Ad name", "Impressions", "Reach"];
+    expect(detectCsvClassMismatch(headers, "demographic")).toBeNull();
+    expect(detectCsvClassMismatch(headers, "device_placement")).toBeNull();
+  });
+});
+
+describe("parseIapCsv — cross-class mismatch throws IapCsvFormatError", () => {
+  it("throws when a device_placement CSV is parsed as demographic", () => {
+    const csv = validCsv("device_placement");
+    expect(() => parseIapCsv(csv, "demographic")).toThrow(IapCsvFormatError);
+  });
+
+  it("throws when a demographic CSV is parsed as device_placement", () => {
+    const csv = validCsv("demographic");
+    expect(() => parseIapCsv(csv, "device_placement")).toThrow(IapCsvFormatError);
+  });
+
+  it("error message for device_placement-in-demographic slot mentions device/placement and wrong slot", () => {
+    const csv = validCsv("device_placement");
+    let msg = "";
+    try {
+      parseIapCsv(csv, "demographic");
+    } catch (e) {
+      msg = (e as Error).message;
+    }
+    expect(msg).toMatch(/device.?placement/i);
+    expect(msg).toMatch(/wrong slot/i);
+  });
+
+  it("error message for demographic-in-device_placement slot mentions demographic and wrong slot", () => {
+    const csv = validCsv("demographic");
+    let msg = "";
+    try {
+      parseIapCsv(csv, "device_placement");
+    } catch (e) {
+      msg = (e as Error).message;
+    }
+    expect(msg).toMatch(/demographic/i);
+    expect(msg).toMatch(/wrong slot/i);
+  });
+
+  it("does NOT throw for a correctly-slotted demographic CSV", () => {
+    expect(() => parseIapCsv(validCsv("demographic"), "demographic")).not.toThrow();
+  });
+
+  it("does NOT throw for a correctly-slotted device_placement CSV", () => {
+    expect(() => parseIapCsv(validCsv("device_placement"), "device_placement")).not.toThrow();
   });
 });
