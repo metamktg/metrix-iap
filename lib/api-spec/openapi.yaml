@@ -3027,6 +3027,36 @@ components:
       required:
         - matched
         - unmatched
+    ColumnMappingSummaryEntry:
+      type: object
+      description: Per-canonical column mapping result included in the upload staging response. Covers every breakdown and base metric column so the client can render a full column-mapping report.
+      properties:
+        canonical:
+          type: string
+          description: The canonical column name from the IAP spec.
+        found_as:
+          type: string
+          nullable: true
+          description: The actual header value found in the CSV, or null if the column was not found.
+        confidence:
+          type: number
+          description: Mapping confidence 0–1. 1.0 = exact match; 0 = not found.
+        method:
+          type: string
+          description: Human-readable label describing how the column was resolved.
+        tier:
+          type: string
+          enum: [exact, resolved, inferred, missing]
+          description: "Resolution tier: exact (verbatim), resolved (alias/slug/case), inferred (Jaccard ≥0.5), or missing (not found)."
+        is_required:
+          type: boolean
+          description: "True when this column is listed in the spec's requiredBreakdownColumns for this CSV class. A missing required column will cause the analysis run to produce incomplete or failed results — not just reduced confidence."
+      required:
+        - canonical
+        - confidence
+        - method
+        - tier
+        - is_required
     ManualImportResult:
       type: object
       properties:
@@ -3044,6 +3074,11 @@ components:
           description: Honest processing note (staged for analysis, not parsed into performance data).
         link_result:
           $ref: "#/components/schemas/CreativeLinkResult"
+        mapping_summary:
+          type: array
+          description: Column mapping results for performance CSV uploads (absent for creative_asset uploads). Covers every canonical breakdown and base metric column.
+          items:
+            $ref: "#/components/schemas/ColumnMappingSummaryEntry"
       required:
         - status
         - import_id
@@ -3083,6 +3118,12 @@ components:
           type: string
         link_result:
           $ref: "#/components/schemas/CreativeLinkResult"
+        mapping_summary:
+          type: array
+          description: Column mapping results stored at upload time for performance CSV imports (absent for creative_asset uploads). Used to surface column health warnings at the 'Run analysis' step and to re-hydrate the mapping panel on subsequent visits without re-uploading.
+          nullable: true
+          items:
+            $ref: "#/components/schemas/ColumnMappingSummaryEntry"
       required:
         - id
         - account_id
@@ -3151,6 +3192,21 @@ components:
         - breakdown_columns
         - metric_groups
         - sample_csv
+    ColumnAliasEntry:
+      type: object
+      description: A single canonical column name paired with the known alias variants the CSV parser accepts in its place.
+      properties:
+        canonical:
+          type: string
+          description: The exact column name as required by the Metrix spec (currency placeholder resolved to plain label for display).
+        aliases:
+          type: array
+          items:
+            type: string
+          description: Alias variants accepted by the CSV parser (title-cased for readability).
+      required:
+        - canonical
+        - aliases
     ManualPerformanceCsvFormat:
       type: object
       properties:
@@ -3158,9 +3214,15 @@ components:
           $ref: "#/components/schemas/IapCsvClassFormat"
         device_placement:
           $ref: "#/components/schemas/IapCsvClassFormat"
+        column_aliases:
+          type: array
+          items:
+            $ref: "#/components/schemas/ColumnAliasEntry"
+          description: Known accepted column name variants for the most commonly misnamed columns, derived from the server COLUMN_ALIASES map. Collapsed reference guide for the upload UI.
       required:
         - demographic
         - device_placement
+        - column_aliases
     StartAnalysisInput:
       type: object
       properties:

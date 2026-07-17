@@ -435,6 +435,37 @@ export interface CreativeLinkResult {
   unmatched: string[];
 }
 
+/**
+ * Resolution tier: exact (verbatim), resolved (alias/slug/case), inferred (Jaccard ≥0.5), or missing (not found).
+ */
+export type ColumnMappingSummaryEntryTier = typeof ColumnMappingSummaryEntryTier[keyof typeof ColumnMappingSummaryEntryTier];
+
+
+export const ColumnMappingSummaryEntryTier = {
+  exact: 'exact',
+  resolved: 'resolved',
+  inferred: 'inferred',
+  missing: 'missing',
+} as const;
+
+/**
+ * Per-canonical column mapping result included in the upload staging response. Covers every breakdown and base metric column so the client can render a full column-mapping report.
+ */
+export interface ColumnMappingSummaryEntry {
+  /** The canonical column name from the IAP spec. */
+  canonical: string;
+  /** The actual header value found in the CSV, or null if the column was not found. */
+  found_as?: string | null;
+  /** Mapping confidence 0–1. 1.0 = exact match; 0 = not found. */
+  confidence: number;
+  /** Human-readable label describing how the column was resolved. */
+  method: string;
+  /** Resolution tier: exact (verbatim), resolved (alias/slug/case), inferred (Jaccard ≥0.5), or missing (not found). */
+  tier: ColumnMappingSummaryEntryTier;
+  /** True when this column is listed in the spec's requiredBreakdownColumns for this CSV class. A missing required column will cause the analysis run to produce incomplete or failed results — not just reduced confidence. */
+  is_required: boolean;
+}
+
 export type ManualImportResultStatus = typeof ManualImportResultStatus[keyof typeof ManualImportResultStatus];
 
 
@@ -450,6 +481,8 @@ export interface ManualImportResult {
   /** Honest processing note (staged for analysis, not parsed into performance data). */
   note: string;
   link_result?: CreativeLinkResult;
+  /** Column mapping results for performance CSV uploads (absent for creative_asset uploads). Covers every canonical breakdown and base metric column. */
+  mapping_summary?: ColumnMappingSummaryEntry[];
 }
 
 export type ManualImportKind = typeof ManualImportKind[keyof typeof ManualImportKind];
@@ -495,6 +528,8 @@ export interface ManualImport {
   status: ManualImportStatus;
   created_at: string;
   link_result?: CreativeLinkResult;
+  /** Column mapping results stored at upload time for performance CSV imports (absent for creative_asset uploads). Used to surface column health warnings at the 'Run analysis' step and to re-hydrate the mapping panel on subsequent visits without re-uploading. */
+  mapping_summary?: ColumnMappingSummaryEntry[] | null;
 }
 
 export interface ListManualImportsResult {
@@ -533,9 +568,21 @@ export interface IapCsvClassFormat {
   sample_csv: string;
 }
 
+/**
+ * A single canonical column name paired with the known alias variants the CSV parser accepts in its place.
+ */
+export interface ColumnAliasEntry {
+  /** The exact column name as required by the Metrix spec (currency placeholder resolved to plain label for display). */
+  canonical: string;
+  /** Alias variants accepted by the CSV parser (title-cased for readability). */
+  aliases: string[];
+}
+
 export interface ManualPerformanceCsvFormat {
   demographic: IapCsvClassFormat;
   device_placement: IapCsvClassFormat;
+  /** Known accepted column name variants for the most commonly misnamed columns, derived from the server COLUMN_ALIASES map. Collapsed reference guide for the upload UI. */
+  column_aliases: ColumnAliasEntry[];
 }
 
 /**

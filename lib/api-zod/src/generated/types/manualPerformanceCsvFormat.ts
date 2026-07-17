@@ -5,9 +5,12 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ColumnAliasEntry } from './columnAliasEntry';
 import type { IapCsvClassFormat } from './iapCsvClassFormat';
 
 export interface ManualPerformanceCsvFormat {
   demographic: IapCsvClassFormat;
   device_placement: IapCsvClassFormat;
+  /** Known accepted column name variants for the most commonly misnamed columns, derived from the server COLUMN_ALIASES map. Collapsed reference guide for the upload UI. */
+  column_aliases: ColumnAliasEntry[];
 }

@@ -25,6 +25,7 @@ import { getSupabase } from "./supabase";
 import { invalidateMetrixSeedCache } from "./metrixSeedAssembly";
 import { logger } from "./logger";
 import { parseIapCsv, IapCsvFormatError, type IapCsvRow } from "./iapCsvParser";
+import { detectCsvClassFromHeaders, checkDuplicateCsvClasses, iapCsvClassLabel } from "./iapCsvSpec";
 
 
 export const STALE_ANALYSIS_RUN_MS = 10 * 60 * 1000;
@@ -103,7 +104,72 @@ async function accountExists(accountId: string): Promise<Row | null> {
   return data && data.length > 0 ? data[0]! : null;
 }
 
-/** Latest run for an account, with dead 'running' rows honestly flipped to error. */
+/**
+ * Synthesizes a ManualAnalysisRun-like object from the latest report_pulls rows
+ * for a live-Meta account. Live-Meta pulls use fetched_at (not finished_at) and
+ * store results under ad_account_id (= the act_XXX account id). Returns null if
+ * no report pulls exist for the account.
+ */
+async function synthesizeRunFromReportPulls(accountId: string): Promise<ManualAnalysisRun | null> {
+  const supabase = getSupabase();
+  const { data: pulls, error } = await supabase
+    .from("report_pulls")
+    .select("id, report_class, status, fetched_at, date_range_start, date_range_end, error_message")
+    .eq("ad_account_id", accountId)
+    .order("fetched_at", { ascending: false })
+    .limit(20);
+  if (error) throw new Error(error.message);
+  if (!pulls || pulls.length === 0) return null;
+
+  // De-duplicate to one row per report_class (latest per class).
+  const latestByClass = new Map<string, Row>();
+  for (const pull of pulls) {
+    const cls = String(pull["report_class"]);
+    if (!latestByClass.has(cls)) latestByClass.set(cls, pull);
+  }
+  const latestPulls = [...latestByClass.values()];
+
+  const allSuccess = latestPulls.every((p) => p["status"] === "success");
+  const anyRunning = latestPulls.some((p) => p["status"] === "running");
+  const overallStatus: ManualAnalysisRun["status"] = allSuccess
+    ? "success"
+    : anyRunning
+      ? "running"
+      : "error";
+
+  // Use the most recent fetched_at as the run timestamp. For a finished run,
+  // this is both started_at and finished_at (report pulls don't record a
+  // separate start time).
+  const latestFetchedAt = latestPulls
+    .map((p) => String(p["fetched_at"]))
+    .sort()
+    .at(-1)!;
+
+  const firstError = latestPulls.find((p) => p["error_message"])?.["error_message"] ?? null;
+  const anyPull = latestPulls[0]!;
+
+  return {
+    id: String(anyPull["id"]),
+    account_id: accountId,
+    status: overallStatus,
+    date_range: "30d",
+    date_start: anyPull["date_range_start"] ? String(anyPull["date_range_start"]) : null,
+    date_end: anyPull["date_range_end"] ? String(anyPull["date_range_end"]) : null,
+    rows_ingested: null,
+    imports_used: null,
+    error_message: firstError ? String(firstError) : null,
+    started_at: latestFetchedAt,
+    finished_at: overallStatus !== "running" ? latestFetchedAt : null,
+    creatives_linked: null,
+    creatives_total: null,
+    creatives_unlinked_names: null,
+    csv_warnings: null,
+  };
+}
+
+/** Latest run for an account, with dead 'running' rows honestly flipped to error.
+ * Falls back to synthesizing a run from report_pulls when no manual run exists
+ * (live-Meta accounts store their analysis results there instead). */
 export async function getLatestAnalysisRun(accountId: string): Promise<ManualAnalysisRun | null> {
   const supabase = getSupabase();
   const { data, error } = await supabase
@@ -114,7 +180,10 @@ export async function getLatestAnalysisRun(accountId: string): Promise<ManualAna
     .limit(1);
   if (error) throw new Error(error.message);
   const row = data?.[0];
-  if (!row) return null;
+  if (!row) {
+    // No manual run — check if this is a live-Meta account with report_pulls.
+    return synthesizeRunFromReportPulls(accountId);
+  }
   if (row["status"] === "running" && Date.now() - new Date(row["started_at"]).getTime() > STALE_ANALYSIS_RUN_MS) {
     const { data: updated, error: updErr } = await supabase
       .from("manual_analysis_runs")
@@ -205,6 +274,45 @@ function withinRange(date: string, dateRange: DateRangePreset, maxDate: string):
 function decodeStagedContent(hexOrRaw: string): string {
   const hex = hexOrRaw.replace(/^\\x/, "");
   return Buffer.from(hex, "hex").toString("utf8");
+}
+
+/**
+ * Extracts the first (header) line of a CSV and splits it into individual
+ * column name strings. Handles double-quoted fields but not embedded newlines
+ * in headers — Meta Ads pivot export headers never span multiple lines.
+ *
+ * Used only for class detection (signature column lookup), not for full
+ * data parsing, so a lightweight implementation is sufficient.
+ */
+function csvFirstLineHeaders(text: string): string[] {
+  const newlineIdx = text.indexOf("\n");
+  const firstLine = newlineIdx >= 0 ? text.slice(0, newlineIdx) : text;
+  // Split on commas respecting double-quoted cells.
+  const cells: string[] = [];
+  let field = "";
+  let inQuotes = false;
+  for (let i = 0; i < firstLine.length; i++) {
+    const c = firstLine[i];
+    if (inQuotes) {
+      if (c === '"' && firstLine[i + 1] === '"') {
+        field += '"';
+        i++;
+      } else if (c === '"') {
+        inQuotes = false;
+      } else {
+        field += c;
+      }
+    } else if (c === '"') {
+      inQuotes = true;
+    } else if (c === ",") {
+      cells.push(field.trim());
+      field = "";
+    } else {
+      field += c;
+    }
+  }
+  cells.push(field.trim());
+  return cells;
 }
 
 function num(v: number | string | null | undefined): number | null {
@@ -402,6 +510,28 @@ export async function startManualAnalysis(
     ].filter(Boolean);
     throw new AnalysisError(
       `Both reports are required before running analysis. Missing: ${missing.join(" and ")}.`,
+      422,
+    );
+  }
+
+  // ── Duplicate-class guard ──────────────────────────────────────────────
+  // Detect the actual pivot class of each staged CSV and verify the two
+  // slots cover DISTINCT classes (one demographic, one device_placement).
+  // A user can upload two copies of the same class (e.g. two demographic
+  // exports) without triggering the upload-time mismatch check when the
+  // file lacks the opposing class's exclusive signature columns.
+  const demoDetected = demoImports.map((imp) =>
+    detectCsvClassFromHeaders(csvFirstLineHeaders(decodeStagedContent(String(imp["content"])))),
+  );
+  const placementDetected = placementImports.map((imp) =>
+    detectCsvClassFromHeaders(csvFirstLineHeaders(decodeStagedContent(String(imp["content"])))),
+  );
+  const dupCheck = checkDuplicateCsvClasses(demoDetected, placementDetected);
+  if (dupCheck) {
+    throw new AnalysisError(
+      `Both staged CSVs are ${iapCsvClassLabel(dupCheck.duplicatedClass)} exports. ` +
+        `The ${iapCsvClassLabel(dupCheck.missingClass)} pivot export is missing — ` +
+        `upload the correct file in the other slot before running analysis.`,
       422,
     );
   }

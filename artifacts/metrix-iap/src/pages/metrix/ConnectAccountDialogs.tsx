@@ -22,6 +22,7 @@ import {
   getListManualImportsQueryKey,
   ApiError,
   type ManualImport,
+  type ColumnMappingSummaryEntry,
 } from "@workspace/api-client-react";
 import {
   Dialog,
@@ -58,10 +59,14 @@ import {
   Pencil,
   Check,
   X,
+  XCircle,
   ChevronDown,
+  ChevronRight,
   ListChecks,
   Hash,
   Sparkles,
+  GitMerge,
+  ArrowLeftRight,
 } from "lucide-react";
 import type { AdAccount } from "@/lib/data/seedTypes";
 import {
@@ -294,6 +299,121 @@ function UploadProgressBar({ pct, label }: { pct: number; label: string }) {
   );
 }
 
+/**
+ * Collapsible column-mapping summary panel shown after a CSV upload when
+ * any non-exact column resolutions occurred. Green = confidence ≥ 0.85,
+ * amber = 0.5–0.84, red = missing. Exact matches are omitted (happy path).
+ */
+function CsvMappingPanel({ summary }: { summary: ColumnMappingSummaryEntry[] }) {
+  const [open, setOpen] = useState(false);
+
+  const nonExact = summary.filter((e) => e.tier !== "exact");
+  const resolved = nonExact.filter((e) => e.tier !== "missing");
+  const missing = nonExact.filter((e) => e.tier === "missing");
+
+  if (nonExact.length === 0) return null;
+
+  const headerLabel = [
+    resolved.length > 0 && `${resolved.length} auto-resolved`,
+    missing.length > 0 && `${missing.length} missing`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const headerColor =
+    missing.length > 0
+      ? "border-amber-400/25 bg-amber-400/[0.04]"
+      : "border-emerald-400/20 bg-emerald-400/[0.03]";
+  const chevronColor =
+    missing.length > 0 ? "text-amber-400/80" : "text-emerald-400/80";
+  const iconColor =
+    missing.length > 0 ? "text-amber-400" : "text-emerald-400";
+
+  return (
+    <div className={cn("rounded-lg border overflow-hidden", headerColor)}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-white/[0.02] transition-colors"
+        aria-expanded={open}
+      >
+        <GitMerge className={cn("w-3 h-3 shrink-0", iconColor)} />
+        <span className="text-[11px] font-medium text-foreground/80 flex-1">
+          Column mapping{" "}
+          <span className="font-normal text-muted-foreground/80">— {headerLabel}</span>
+        </span>
+        {open ? (
+          <ChevronDown className={cn("w-3 h-3 shrink-0", chevronColor)} />
+        ) : (
+          <ChevronRight className={cn("w-3 h-3 shrink-0", chevronColor)} />
+        )}
+      </button>
+
+      {open && (
+        <div className="px-3 pb-3 space-y-1 border-t border-white/[0.04]">
+          {resolved.length > 0 && (
+            <div className="pt-2 space-y-1">
+              {resolved.map((e) => {
+                const isHigh = e.confidence >= 0.85;
+                return (
+                  <div
+                    key={e.canonical}
+                    className={cn(
+                      "flex items-start gap-2 px-2 py-1.5 rounded text-[10px]",
+                      isHigh
+                        ? "bg-emerald-400/[0.06] border border-emerald-400/15"
+                        : "bg-amber-400/[0.06] border border-amber-400/15"
+                    )}
+                  >
+                    <CheckCircle2
+                      className={cn(
+                        "w-3 h-3 shrink-0 mt-px",
+                        isHigh ? "text-emerald-400" : "text-amber-400"
+                      )}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <span className="font-medium text-foreground/90">{e.canonical}</span>
+                      {e.found_as && e.found_as !== e.canonical && (
+                        <span className="text-muted-foreground/70"> ← {e.found_as}</span>
+                      )}
+                      <span
+                        className={cn(
+                          "ml-1.5 text-[9px] font-semibold uppercase tracking-wide",
+                          isHigh ? "text-emerald-400/80" : "text-amber-400/80"
+                        )}
+                      >
+                        {Math.round(e.confidence * 100)}%
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {missing.length > 0 && (
+            <div className={cn("pt-2 space-y-1", resolved.length > 0 && "mt-1")}>
+              {missing.length > 0 && (
+                <p className="text-[9px] uppercase tracking-wide font-semibold text-muted-foreground/60 pb-0.5">
+                  Missing columns
+                </p>
+              )}
+              {missing.map((e) => (
+                <div
+                  key={e.canonical}
+                  className="flex items-center gap-2 px-2 py-1.5 rounded text-[10px] bg-red-400/[0.06] border border-red-400/15"
+                >
+                  <XCircle className="w-3 h-3 shrink-0 text-red-400/80" />
+                  <span className="font-medium text-foreground/80 min-w-0 truncate">{e.canonical}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CsvSlotUpload({
   accountId,
   kind,
@@ -303,6 +423,8 @@ function CsvSlotUpload({
   staged,
   onStaged,
   onRemoved,
+  highlightAsTarget,
+  onMismatch,
 }: {
   accountId: string;
   kind: "performance_demo_csv" | "performance_placement_csv";
@@ -312,17 +434,34 @@ function CsvSlotUpload({
   staged: ManualImport | null;
   onStaged: () => void;
   onRemoved: () => void;
+  highlightAsTarget?: boolean;
+  onMismatch?: (targetCsvClass: IapCsvClassKey | null) => void;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploadPct, setUploadPct] = useState<number | null>(null);
+  const [mappingSummary, setMappingSummary] = useState<ColumnMappingSummaryEntry[] | null>(
+    staged?.mapping_summary && staged.mapping_summary.length > 0 ? staged.mapping_summary : null
+  );
   const fileRef = useRef<HTMLInputElement>(null);
   const deleteMutation = useDeleteManualImport();
+
+  useEffect(() => {
+    if (staged?.mapping_summary && staged.mapping_summary.length > 0) {
+      setMappingSummary(staged.mapping_summary);
+    } else {
+      setMappingSummary(null);
+    }
+  }, [staged]);
+
+  const isMismatch = Boolean(error?.includes("Did you upload it in the wrong slot?"));
 
   /** Stages a file immediately. Accepts the file directly so it can be called
    *  from the onChange handler before React state for `file` has settled. */
   const handleStage = async (fileToStage: File) => {
     setError(null);
+    setMappingSummary(null);
+    onMismatch?.(null);
     if (fileToStage.size > MAX_UPLOAD_BYTES) {
       setError("File is too large — the limit is 8 MB.");
       setFile(null);
@@ -333,16 +472,28 @@ function CsvSlotUpload({
     setUploadPct(0);
     try {
       const content_base64 = await fileToBase64(fileToStage);
-      await stageManualImportWithProgress(
+      const result = await stageManualImportWithProgress(
         accountId,
         { kind, filename: fileToStage.name, content_type: fileToStage.type || undefined, content_base64 },
         setUploadPct
       );
+      if (result.mapping_summary && result.mapping_summary.length > 0) {
+        setMappingSummary(result.mapping_summary);
+      }
       setFile(null);
       if (fileRef.current) fileRef.current.value = "";
       onStaged();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed. Check your connection and try again.");
+      const msg = err instanceof Error ? err.message : "Upload failed. Check your connection and try again.";
+      setError(msg);
+      if (msg.includes("Did you upload it in the wrong slot?")) {
+        const targetClass: IapCsvClassKey = msg.includes("Device/Placement CSV instead")
+          ? "device_placement"
+          : "demographic";
+        onMismatch?.(targetClass);
+      } else {
+        onMismatch?.(null);
+      }
       setFile(null);
       if (fileRef.current) fileRef.current.value = "";
     } finally {
@@ -352,12 +503,20 @@ function CsvSlotUpload({
 
   const handleRemove = async () => {
     if (!staged) return;
+    setMappingSummary(null);
     await deleteMutation.mutateAsync({ accountId, importId: staged.id });
     onRemoved();
   };
 
   return (
-    <div className="space-y-2">
+    <div className={cn("space-y-2 rounded-lg transition-colors", highlightAsTarget && "ring-1 ring-amber-400/40 ring-offset-2 ring-offset-background p-2 -m-2")}>
+      {highlightAsTarget && (
+        <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md border border-amber-400/35 bg-amber-400/[0.07]">
+          <ArrowLeftRight className="w-3 h-3 text-amber-400 shrink-0" />
+          <span className="text-[11px] text-amber-300 font-semibold">Upload the misplaced file here instead</span>
+        </div>
+      )}
+
       <div className="flex items-start gap-3 p-3 rounded-lg border border-border/40 bg-white/[0.02]">
         <FileSpreadsheet className={cn("w-4 h-4 shrink-0 mt-0.5", staged ? "text-emerald-400" : "text-muted-foreground/85")} />
         <div className="min-w-0 flex-1">
@@ -405,17 +564,23 @@ function CsvSlotUpload({
               "w-full flex flex-col items-center gap-1.5 p-4 rounded-lg border border-dashed transition-colors",
               uploadPct !== null
                 ? "border-primary/30 bg-primary/[0.03] cursor-not-allowed"
+                : highlightAsTarget
+                ? "border-amber-400/50 bg-amber-400/[0.05] hover:border-amber-400/70 hover:bg-amber-400/[0.08] cursor-pointer"
                 : "border-border/60 hover:border-primary/40 hover:bg-white/[0.02] cursor-pointer"
             )}
           >
             {uploadPct !== null ? (
               <Loader2 className="w-4 h-4 text-primary animate-spin" />
+            ) : highlightAsTarget ? (
+              <Upload className="w-4 h-4 text-amber-400" />
             ) : (
               <Upload className="w-4 h-4 text-muted-foreground/85" />
             )}
-            <span className="text-[11px] text-muted-foreground/80">
+            <span className={cn("text-[11px]", highlightAsTarget ? "text-amber-300/90" : "text-muted-foreground/80")}>
               {uploadPct !== null
                 ? `Uploading${file ? ` ${file.name}` : ""}…`
+                : highlightAsTarget
+                ? "Click to upload the misplaced file here"
                 : "Click to choose a .csv file — uploads immediately"}
             </span>
           </button>
@@ -423,11 +588,23 @@ function CsvSlotUpload({
         </>
       )}
 
+      {mappingSummary && <CsvMappingPanel summary={mappingSummary} />}
+
       {error && (
-        <div className="flex items-start gap-2 p-2.5 rounded-lg border border-red-400/25 bg-red-400/[0.06]">
-          <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
-          <p className="text-[11px] text-red-300 leading-relaxed">{error}</p>
-        </div>
+        isMismatch ? (
+          <div className="rounded-lg border border-amber-400/30 bg-amber-400/[0.06] p-3 space-y-1.5">
+            <div className="flex items-center gap-2">
+              <ArrowLeftRight className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span className="text-[12px] font-semibold text-amber-300">File uploaded to wrong slot</span>
+            </div>
+            <p className="text-[11px] text-amber-200/80 leading-relaxed pl-[1.375rem]">{error}</p>
+          </div>
+        ) : (
+          <div className="flex items-start gap-2 p-2.5 rounded-lg border border-red-400/25 bg-red-400/[0.06]">
+            <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
+            <p className="text-[11px] text-red-300 leading-relaxed">{error}</p>
+          </div>
+        )
       )}
     </div>
   );
@@ -1090,6 +1267,7 @@ export function ManualUploadPanel({
   onDone?: () => void;
 }) {
   const [step, setStep] = useState<"upload" | "review">("upload");
+  const [highlightSlot, setHighlightSlot] = useState<IapCsvClassKey | null>(null);
   const { data, refetch } = useListManualImports(accountId);
   const queryClient = useQueryClient();
   const imports = data?.imports ?? [];
@@ -1203,8 +1381,10 @@ export function ManualUploadPanel({
           title={slot.title}
           desc={slot.desc}
           staged={slot.kind === "performance_demo_csv" ? demoImport : placementImport}
-          onStaged={refresh}
+          onStaged={() => { setHighlightSlot(null); refresh(); }}
           onRemoved={refresh}
+          highlightAsTarget={highlightSlot === slot.csvClass}
+          onMismatch={setHighlightSlot}
         />
       ))}
 

@@ -635,6 +635,13 @@ alter table manual_imports add column if not exists ad_names text[] not null def
 -- manually-picked mapping.
 alter table manual_imports add column if not exists match_method text;
 
+-- Persists the CSV column-mapping report produced at upload time so the
+-- CsvMappingPanel can be re-hydrated from the GET /manual-imports response
+-- on any subsequent visit (dialog re-open, page refresh) without requiring
+-- the user to re-upload. Only present for performance_demo_csv and
+-- performance_placement_csv kinds; null for creative_asset rows.
+alter table manual_imports add column if not exists mapping_summary jsonb;
+
 -- (Re)apply the check idempotently. `add column if not exists` above won't
 -- widen a pre-existing id/fuzzy-only constraint, so drop any existing
 -- match_method check and re-add the current allowed set. This lets the new
@@ -655,6 +662,11 @@ begin
     add constraint manual_imports_match_method_check
     check (match_method in ('id', 'fuzzy', 'guess'));
 end $$;
+
+-- Column mapping summary for performance CSV uploads. Stored at upload time
+-- so the "Run analysis" step can surface any missing/low-confidence columns
+-- without re-parsing the raw file. Null for creative_asset imports.
+alter table manual_imports add column if not exists mapping_summary jsonb;
 
 -- Generic bucket for Ecommerce/Service/App-specific metrics observed in a
 -- manual CSV upload. Keyed by slugified Meta column name; absent metrics

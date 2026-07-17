@@ -86,7 +86,15 @@ export const StageManualImportResponse = zod.object({
   "link_result": zod.object({
   "matched": zod.array(zod.string()).describe('Ad names that resolved to a real ad row and were linked to this asset.'),
   "unmatched": zod.array(zod.string()).describe('Ad names with no matching ad row — the asset is staged but not linked to a live ad.')
-}).optional().describe('Per-file result of linking a staged creative asset to its ad name(s).')
+}).optional().describe('Per-file result of linking a staged creative asset to its ad name(s).'),
+  "mapping_summary": zod.array(zod.object({
+  "canonical": zod.string().describe('The canonical column name from the IAP spec.'),
+  "found_as": zod.string().nullish().describe('The actual header value found in the CSV, or null if the column was not found.'),
+  "confidence": zod.number().describe('Mapping confidence 0–1. 1.0 = exact match; 0 = not found.'),
+  "method": zod.string().describe('Human-readable label describing how the column was resolved.'),
+  "tier": zod.enum(['exact', 'resolved', 'inferred', 'missing']).describe('Resolution tier: exact (verbatim), resolved (alias\/slug\/case), inferred (Jaccard ≥0.5), or missing (not found).'),
+  "is_required": zod.boolean().describe('True when this column is listed in the spec\'s requiredBreakdownColumns for this CSV class. A missing required column will cause the analysis run to produce incomplete or failed results — not just reduced confidence.')
+}).describe('Per-canonical column mapping result included in the upload staging response. Covers every breakdown and base metric column so the client can render a full column-mapping report.')).optional().describe('Column mapping results for performance CSV uploads (absent for creative_asset uploads). Covers every canonical breakdown and base metric column.')
 })
 
 
@@ -116,7 +124,15 @@ export const ListManualImportsResponse = zod.object({
   "link_result": zod.object({
   "matched": zod.array(zod.string()).describe('Ad names that resolved to a real ad row and were linked to this asset.'),
   "unmatched": zod.array(zod.string()).describe('Ad names with no matching ad row — the asset is staged but not linked to a live ad.')
-}).optional().describe('Per-file result of linking a staged creative asset to its ad name(s).')
+}).optional().describe('Per-file result of linking a staged creative asset to its ad name(s).'),
+  "mapping_summary": zod.array(zod.object({
+  "canonical": zod.string().describe('The canonical column name from the IAP spec.'),
+  "found_as": zod.string().nullish().describe('The actual header value found in the CSV, or null if the column was not found.'),
+  "confidence": zod.number().describe('Mapping confidence 0–1. 1.0 = exact match; 0 = not found.'),
+  "method": zod.string().describe('Human-readable label describing how the column was resolved.'),
+  "tier": zod.enum(['exact', 'resolved', 'inferred', 'missing']).describe('Resolution tier: exact (verbatim), resolved (alias\/slug\/case), inferred (Jaccard ≥0.5), or missing (not found).'),
+  "is_required": zod.boolean().describe('True when this column is listed in the spec\'s requiredBreakdownColumns for this CSV class. A missing required column will cause the analysis run to produce incomplete or failed results — not just reduced confidence.')
+}).describe('Per-canonical column mapping result included in the upload staging response. Covers every breakdown and base metric column so the client can render a full column-mapping report.')).nullish().describe('Column mapping results stored at upload time for performance CSV imports (absent for creative_asset uploads). Used to surface column health warnings at the \'Run analysis\' step and to re-hydrate the mapping panel on subsequent visits without re-uploading.')
 }))
 })
 
@@ -153,7 +169,15 @@ export const UpdateManualImportAdNamesResponse = zod.object({
   "link_result": zod.object({
   "matched": zod.array(zod.string()).describe('Ad names that resolved to a real ad row and were linked to this asset.'),
   "unmatched": zod.array(zod.string()).describe('Ad names with no matching ad row — the asset is staged but not linked to a live ad.')
-}).optional().describe('Per-file result of linking a staged creative asset to its ad name(s).')
+}).optional().describe('Per-file result of linking a staged creative asset to its ad name(s).'),
+  "mapping_summary": zod.array(zod.object({
+  "canonical": zod.string().describe('The canonical column name from the IAP spec.'),
+  "found_as": zod.string().nullish().describe('The actual header value found in the CSV, or null if the column was not found.'),
+  "confidence": zod.number().describe('Mapping confidence 0–1. 1.0 = exact match; 0 = not found.'),
+  "method": zod.string().describe('Human-readable label describing how the column was resolved.'),
+  "tier": zod.enum(['exact', 'resolved', 'inferred', 'missing']).describe('Resolution tier: exact (verbatim), resolved (alias\/slug\/case), inferred (Jaccard ≥0.5), or missing (not found).'),
+  "is_required": zod.boolean().describe('True when this column is listed in the spec\'s requiredBreakdownColumns for this CSV class. A missing required column will cause the analysis run to produce incomplete or failed results — not just reduced confidence.')
+}).describe('Per-canonical column mapping result included in the upload staging response. Covers every breakdown and base metric column so the client can render a full column-mapping report.')).nullish().describe('Column mapping results stored at upload time for performance CSV imports (absent for creative_asset uploads). Used to surface column health warnings at the \'Run analysis\' step and to re-hydrate the mapping panel on subsequent visits without re-uploading.')
 })
 
 
@@ -213,7 +237,11 @@ export const GetManualPerformanceCsvFormatResponse = zod.object({
   "columns": zod.array(zod.string())
 })),
   "sample_csv": zod.string()
-})
+}),
+  "column_aliases": zod.array(zod.object({
+  "canonical": zod.string().describe('The exact column name as required by the Metrix spec (currency placeholder resolved to plain label for display).'),
+  "aliases": zod.array(zod.string()).describe('Alias variants accepted by the CSV parser (title-cased for readability).')
+}).describe('A single canonical column name paired with the known alias variants the CSV parser accepts in its place.')).describe('Known accepted column name variants for the most commonly misnamed columns, derived from the server COLUMN_ALIASES map. Collapsed reference guide for the upload UI.')
 })
 
 

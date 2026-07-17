@@ -25,17 +25,27 @@ const KIND_LABEL: Record<GenerationKind, string> = {
   briefs: "briefs",
 };
 
+// How often (ms) we poll the run status endpoint while a job is in flight.
+const POLL_INTERVAL_MS = 2500;
+
 export function useGenerationRun(accountId: string | null, kind: GenerationKind) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [polling, setPolling] = useState(false);
   const settledRunIds = useRef<Set<string>>(new Set());
+  // Double-tap guard: firingRef blocks a second mutate() call synchronously
+  // (before any re-render); firingState drives the isRunning value so the
+  // button disables in the very next render triggered by setFiring(true).
+  // Without this, a rapid double-tap fires two API requests because
+  // mutation.isPending only flips after the async mutation starts.
+  const firingRef = useRef(false);
+  const [firing, setFiring] = useState(false);
 
   const latestQuery = useGetLatestGenerationRun(accountId ?? "", kind, {
     query: {
       queryKey: getGetLatestGenerationRunQueryKey(accountId ?? "", kind),
       enabled: !!accountId,
-      refetchInterval: polling ? 2500 : false,
+      refetchInterval: polling ? POLL_INTERVAL_MS : false,
     },
   });
 
@@ -74,16 +84,26 @@ export function useGenerationRun(accountId: string | null, kind: GenerationKind)
 
   const start = () => {
     if (!accountId) return;
+    // Guard against rapid double-taps: firingRef blocks the second call
+    // synchronously (before any re-render); setFiring(true) triggers a
+    // re-render so isRunning is true before mutation.isPending catches up.
+    if (firingRef.current) return;
+    firingRef.current = true;
+    setFiring(true);
     mutation.mutate(
       { accountId },
       {
         onSuccess: () => {
+          firingRef.current = false;
+          setFiring(false);
           setPolling(true);
           void queryClient.invalidateQueries({
             queryKey: getGetLatestGenerationRunQueryKey(accountId, kind),
           });
         },
         onError: (err: unknown) => {
+          firingRef.current = false;
+          setFiring(false);
           const message =
             err instanceof ApiError
               ? ((err.data as { message?: string } | null)?.message ?? err.message)
@@ -100,11 +120,34 @@ export function useGenerationRun(accountId: string | null, kind: GenerationKind)
     );
   };
 
-  const isRunning = mutation.isPending || polling || run?.status === "running";
+  const isRunning = firing || mutation.isPending || polling || run?.status === "running";
+
+  // ── Elapsed-time counter ─────────────────────────────────────────────────
+  // Starts ticking when isRunning becomes true; resets when it becomes false.
+  // Gives the user a live signal that work is happening without needing the
+  // hub open.
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const runningStartRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!isRunning) {
+      runningStartRef.current = null;
+      setElapsedSeconds(0);
+      return;
+    }
+    if (runningStartRef.current === null) {
+      runningStartRef.current = Date.now();
+    }
+    const iv = setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - runningStartRef.current!) / 1000));
+    }, 1000);
+    return () => clearInterval(iv);
+  }, [isRunning]);
 
   return {
     start,
     isRunning,
+    elapsedSeconds,
     lastRun: run,
     lastError: run?.status === "error" ? (run.error_message ?? "Generation failed.") : null,
   };

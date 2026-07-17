@@ -227,13 +227,39 @@ export function headerMatchesColumn(header: string, canonical: string): boolean 
  * exact column names the IAP template spec requires. When a CSV contains an
  * alias key, the parser accepts it transparently and records a mapping notice
  * so the user can see what was auto-resolved.
+ *
+ * Provenance notes are inline. When adding entries, document the source
+ * (e.g. "Meta Ads Manager UI vXX", "observed in real client export", etc.)
+ * so future maintainers can verify or remove stale aliases.
  */
 export const COLUMN_ALIASES: Record<string, string> = {
+  // ── Date / time breakdowns ───────────────────────────────────────────
   // Meta Ads Manager standard UI exports use "Day" for the date breakdown
   "day": "Date",
-  // CPM — Meta sometimes shortens the label
+  // Reporting period labels seen in Meta Business Suite / legacy exports
+  "report date": "Date",
+  "reporting date": "Date",
+  "reporting starts": "Date",
+  "report start": "Date",
+  "date start": "Date",
+  "week": "Date",                  // weekly-rollup exports sometimes emit "Week"
+
+  // ── Spend / amount ───────────────────────────────────────────────────
+  // Spend column — sometimes labelled without the currency suffix
+  "spend": "Amount spent ({ACCOUNT_CURRENCY})",
+  "total spend": "Amount spent ({ACCOUNT_CURRENCY})",
+  "amount spent": "Amount spent ({ACCOUNT_CURRENCY})",
+  // Variants observed in localised/agency-processed exports
+  "budget spent": "Amount spent ({ACCOUNT_CURRENCY})",
+  "ad spend": "Amount spent ({ACCOUNT_CURRENCY})",
+  "cost": "Amount spent ({ACCOUNT_CURRENCY})",
+
+  // ── CPM ─────────────────────────────────────────────────────────────
+  // Meta sometimes shortens the label to the abbreviation only
   "cpm": "CPM (cost per 1,000 impressions)",
-  // Accounts Center reached — various capitalisation/abbreviation variants
+  "cpm (cost per 1000 impressions)": "CPM (cost per 1,000 impressions)",
+
+  // ── Accounts Center reached ──────────────────────────────────────────
   "cost per 1,000 accounts center accounts reached":
     "Cost per 1,000 Accounts Center accounts reached",
   "cost per 1000 accounts center accounts reached":
@@ -242,38 +268,118 @@ export const COLUMN_ALIASES: Record<string, string> = {
     "Cost per 1,000 Accounts Center accounts reached",
   "cost per 1000 account center accounts reached":
     "Cost per 1,000 Accounts Center accounts reached",
-  // Spend column — sometimes labelled without the currency suffix
-  "spend": "Amount spent ({ACCOUNT_CURRENCY})",
-  "total spend": "Amount spent ({ACCOUNT_CURRENCY})",
-  "amount spent": "Amount spent ({ACCOUNT_CURRENCY})",
-  // Results
+
+  // ── Results / conversions ────────────────────────────────────────────
   "conversions": "Results",
   "total results": "Results",
   "total conversions": "Results",
-  // Link clicks
-  "link click": "Link clicks",
-  // CPC variations
+  "actions": "Results",             // legacy Meta label pre-2020
+  "total actions": "Results",
+
+  // ── CPC ─────────────────────────────────────────────────────────────
+  // "CPC (all)" — the blended click cost across all click types
   "cpc": "CPC (all)",
   "cost per click": "CPC (all)",
-  // CTR variations
+  // "CPC (cost per link click)" — the link-specific cost (higher specificity)
+  "link cpc": "CPC (cost per link click)",
+  "cost per link click": "CPC (cost per link click)",
+
+  // ── CTR ─────────────────────────────────────────────────────────────
+  // "CTR (all)" — blended CTR
   "ctr": "CTR (all)",
   "click-through rate": "CTR (all)",
-  // Reach
+  "click through rate": "CTR (all)",
+  // "CTR (link click-through rate)" — link-specific CTR
+  "link ctr": "CTR (link click-through rate)",
+  "ctr (link)": "CTR (link click-through rate)",
+  "link click-through rate": "CTR (link click-through rate)",
+  "link click through rate": "CTR (link click-through rate)",
+
+  // ── Link clicks ──────────────────────────────────────────────────────
+  "link click": "Link clicks",
+
+  // ── Reach ────────────────────────────────────────────────────────────
   "unique reach": "Reach",
-  // Impression device
+
+  // ── Impression device / placement breakdown ──────────────────────────
+  // Impression device label variants seen in Ads Manager UI
   "device": "Impression device",
   "device type": "Impression device",
-  // Frequency
+  "ad impression device": "Impression device",
+  // Placement
+  "ad placement": "Placement",
+  "placement type": "Placement",
+
+  // ── Frequency ────────────────────────────────────────────────────────
   "avg. frequency": "Frequency",
   "average frequency": "Frequency",
+  "avg frequency": "Frequency",
+
+  // ── Landing page views ───────────────────────────────────────────────
+  "landing page view": "Landing page views",
+  "lpv": "Landing page views",
+
+  // ── Video metrics ─────────────────────────────────────────────────────
+  // ThruPlays — Meta sometimes shows "Thruplays" or plural variant
+  "thruplays": "ThruPlays",
+  "thruplay": "ThruPlays",
+  // 3-second video plays
+  "3 second video plays": "3-second video plays",
+  "3s video plays": "3-second video plays",
+  "3 sec video plays": "3-second video plays",
+  // Video play-through quartile variants (no space before %)
+  "video plays at 25": "Video plays at 25%",
+  "video plays at 50": "Video plays at 50%",
+  "video plays at 75": "Video plays at 75%",
+  "video plays at 95": "Video plays at 95%",
+  "video plays at 100": "Video plays at 100%",
+  "video p25": "Video plays at 25%",
+  "video p50": "Video plays at 50%",
+  "video p75": "Video plays at 75%",
+  "video p95": "Video plays at 95%",
+  "video p100": "Video plays at 100%",
 };
 
 /** How a CSV header was resolved to a canonical column name. */
-export type ColumnMatchVia = "exact" | "currency" | "case_insensitive" | "alias" | "slug";
+export type ColumnMatchVia = "exact" | "currency" | "case_insensitive" | "alias" | "slug" | "inferred";
 
+/**
+ * Represents a successful mapping from a CSV header to a canonical column.
+ *
+ * `confidence` ranges 0–1:
+ *   - exact       → 1.00
+ *   - currency    → 0.99 (amount spent with locale currency suffix)
+ *   - case_insensitive → 0.97
+ *   - alias       → 0.95 (known Meta UI export variant)
+ *   - slug        → 0.90 (normalized slug match)
+ *   - inferred    → Jaccard similarity score (0.5–1.0 when promoted)
+ *
+ * `method` is a short human-readable label suitable for display in the UI.
+ */
 export type ColumnMatch = {
   headerValue: string;
   via: ColumnMatchVia;
+  confidence: number;
+  method: string;
+};
+
+/** Fixed confidence values for each resolution tier. */
+export const CONFIDENCE_BY_VIA: Record<ColumnMatchVia, number> = {
+  exact: 1.0,
+  currency: 0.99,
+  case_insensitive: 0.97,
+  alias: 0.95,
+  slug: 0.90,
+  inferred: 0, // overridden per-call with actual Jaccard score
+};
+
+const METHOD_LABEL_BY_VIA: Record<ColumnMatchVia, string> = {
+  exact: "Exact match",
+  currency: "Currency suffix match",
+  case_insensitive: "Case-insensitive match",
+  alias: "Known alias",
+  slug: "Normalized slug match",
+  inferred: "Inferred (Jaccard similarity)",
 };
 
 /**
@@ -287,41 +393,91 @@ export type ColumnMatch = {
  * Returns null if no match found even with fuzzy resolution.
  */
 export function findColumnInHeader(headers: string[], canonical: string): ColumnMatch | null {
+  const makeMatch = (headerValue: string, via: ColumnMatchVia, confidence?: number): ColumnMatch => ({
+    headerValue,
+    via,
+    confidence: confidence ?? CONFIDENCE_BY_VIA[via],
+    method: METHOD_LABEL_BY_VIA[via],
+  });
+
   // 1. Exact match
   const exact = headers.find((h) => h.trim() === canonical);
-  if (exact !== undefined) return { headerValue: exact.trim(), via: "exact" };
+  if (exact !== undefined) return makeMatch(exact.trim(), "exact");
 
   // 2. Currency placeholder match (e.g. "Amount spent (USD)")
   if (canonical.includes("{ACCOUNT_CURRENCY}")) {
     const cur = headers.find((h) => headerMatchesColumn(h, canonical));
-    if (cur !== undefined) return { headerValue: cur.trim(), via: "currency" };
+    if (cur !== undefined) return makeMatch(cur.trim(), "currency");
     // Also check: header might literally say "Amount spent" with no currency
     const plainSpend = headers.find(
       (h) => h.trim().toLowerCase() === "amount spent" || COLUMN_ALIASES[h.trim().toLowerCase()] === canonical,
     );
-    if (plainSpend !== undefined) return { headerValue: plainSpend.trim(), via: "alias" };
+    if (plainSpend !== undefined) return makeMatch(plainSpend.trim(), "alias");
   }
 
   const lower = canonical.toLowerCase();
 
   // 3. Case-insensitive exact match
   const ci = headers.find((h) => h.trim().toLowerCase() === lower);
-  if (ci !== undefined) return { headerValue: ci.trim(), via: "case_insensitive" };
+  if (ci !== undefined) return makeMatch(ci.trim(), "case_insensitive");
 
   // 4. Alias lookup — check if any header's lowercase form is an alias that maps to this canonical
   for (const [aliasKey, aliasCanon] of Object.entries(COLUMN_ALIASES)) {
     if (aliasCanon === canonical) {
       const found = headers.find((h) => h.trim().toLowerCase() === aliasKey);
-      if (found !== undefined) return { headerValue: found.trim(), via: "alias" };
+      if (found !== undefined) return makeMatch(found.trim(), "alias");
     }
   }
 
   // 5. Slug match — normalize both sides and compare
   const canonSlug = slugifyColumn(canonical);
   const slugMatch = headers.find((h) => slugifyColumn(h) === canonSlug);
-  if (slugMatch !== undefined) return { headerValue: slugMatch.trim(), via: "slug" };
+  if (slugMatch !== undefined) return makeMatch(slugMatch.trim(), "slug");
 
   return null;
+}
+
+/**
+ * Infers the best mapping from a list of unmapped CSV headers to a missing
+ * canonical column using Jaccard token similarity on slugified forms.
+ *
+ * Returns a `ColumnMatch` (via: "inferred") when the best scoring unmapped
+ * header exceeds the minimum threshold (score ≥ 0.5); null otherwise.
+ *
+ * Callers should use this after `findColumnInHeader` has already failed —
+ * i.e. only for headers that weren't matched by exact/alias/slug resolution.
+ *
+ * Threshold semantics:
+ *   ≥ 0.75 — high confidence, auto-promote silently
+ *   0.50–0.74 — moderate confidence, auto-promote with a warning
+ *   < 0.50 — not promoted; canonical stays missing
+ */
+export function inferColumnMapping(
+  unmappedHeaders: string[],
+  missingCanonical: string,
+): ColumnMatch | null {
+  const canonTokens = new Set(slugifyColumn(missingCanonical).split("_").filter(Boolean));
+  if (canonTokens.size === 0) return null;
+
+  let best: { headerValue: string; score: number } | null = null;
+  for (const h of unmappedHeaders) {
+    const hTokens = new Set(slugifyColumn(h).split("_").filter(Boolean));
+    if (hTokens.size === 0) continue;
+    const intersection = [...canonTokens].filter((t) => hTokens.has(t)).length;
+    const union = new Set([...canonTokens, ...hTokens]).size;
+    const jaccard = union > 0 ? intersection / union : 0;
+    if (jaccard >= 0.5 && (!best || jaccard > best.score)) {
+      best = { headerValue: h, score: jaccard };
+    }
+  }
+
+  if (!best) return null;
+  return {
+    headerValue: best.headerValue,
+    via: "inferred",
+    confidence: best.score,
+    method: `Inferred (${Math.round(best.score * 100)}% token match)`,
+  };
 }
 
 /**
@@ -331,6 +487,10 @@ export function findColumnInHeader(headers: string[], canonical: string): Column
  *
  * Used to surface auto-suggestions when the parser encounters unrecognised
  * columns that look like they might be renamed versions of expected ones.
+ *
+ * @deprecated Prefer `inferColumnMapping` which returns a typed `ColumnMatch`
+ *   and handles auto-promotion logic. This function is kept for backward
+ *   compatibility with callers that only need the suggestion string.
  */
 export function suggestCanonicalForUnknown(
   unknownHeader: string,
@@ -349,6 +509,60 @@ export function suggestCanonicalForUnknown(
     }
   }
   return best?.canonical ?? null;
+}
+
+/**
+ * Columns that uniquely identify each CSV class. Their presence in a file
+ * parsed under the OTHER class is strong evidence of a wrong-slot upload.
+ * Each set uses columns that cannot appear in the opposing class's template.
+ *
+ * Demographic signatures: "Gender" and "Age" only exist in the demographic pivot.
+ * Device/placement signatures: "Placement" and "Impression device" only exist
+ *   in the device/placement pivot.
+ */
+export const CSV_CLASS_SIGNATURE_COLUMNS: Record<IapCsvClass, readonly string[]> = {
+  demographic: ["Gender", "Age"],
+  device_placement: ["Placement", "Impression device"],
+};
+
+/**
+ * Checks whether the CSV headers look like they belong to a DIFFERENT class
+ * than the one the caller is trying to parse.
+ *
+ * Returns a human-readable error message when a mismatch is detected, or null
+ * when the headers are consistent with the expected class. Uses the same
+ * `findColumnInHeader` resolution cascade (aliases, case-insensitive, slug)
+ * so that variants like "ad placement" or "device type" are also caught.
+ *
+ * A single matching signature column is sufficient to flag the mismatch,
+ * since these columns are exclusive to their respective pivot classes and
+ * cannot appear in the other class's export.
+ */
+export function detectCsvClassMismatch(
+  headers: string[],
+  expectedClass: IapCsvClass,
+): string | null {
+  const otherClass: IapCsvClass = expectedClass === "demographic" ? "device_placement" : "demographic";
+  const otherSignature = CSV_CLASS_SIGNATURE_COLUMNS[otherClass];
+
+  const matchedCols = otherSignature.filter((col) => findColumnInHeader(headers, col) !== null);
+  if (matchedCols.length === 0) return null;
+
+  const quotedCols = matchedCols.map((c) => `"${c}"`).join(", ");
+  if (expectedClass === "demographic") {
+    return (
+      `This file looks like a Device/Placement pivot export — it contains ${quotedCols}, ` +
+      `which only appears in that pivot type. ` +
+      `Did you upload it in the wrong slot? ` +
+      `Upload this file as the Device/Placement CSV instead, and provide a Demographic pivot export here.`
+    );
+  }
+  return (
+    `This file looks like a Demographic pivot export — it contains ${quotedCols}, ` +
+    `which only appears in that pivot type. ` +
+    `Did you upload it in the wrong slot? ` +
+    `Upload this file as the Demographic CSV instead, and provide a Device/Placement pivot export here.`
+  );
 }
 
 /**
@@ -382,6 +596,64 @@ function resolveCurrencyColumn(col: string): string {
 
 function buildSampleRow(breakdowns: Record<string, string>, baseValues: Record<string, string>): string[] {
   return [...Object.values(breakdowns), ...Object.values(baseValues)];
+}
+
+/**
+ * Detects which IAP CSV class a file belongs to by checking for the class's
+ * exclusive signature columns in the header row.
+ *
+ * Returns the detected class, or null when neither class's signature columns
+ * appear (e.g. a CSV with no breakdown columns at all). The check is tolerant
+ * of column aliases and case variations — it uses the same `findColumnInHeader`
+ * cascade as the full parser.
+ *
+ * Signature columns are mutually exclusive between the two classes:
+ *   demographic     → "Gender", "Age"
+ *   device_placement → "Placement", "Impression device"
+ */
+export function detectCsvClassFromHeaders(headers: string[]): IapCsvClass | null {
+  for (const cls of ["demographic", "device_placement"] as const) {
+    const signatures = CSV_CLASS_SIGNATURE_COLUMNS[cls];
+    if (signatures.some((col) => findColumnInHeader(headers, col) !== null)) {
+      return cls;
+    }
+  }
+  return null;
+}
+
+/**
+ * Checks whether both CSV staging slots (demo and placement) resolved to the
+ * same CSV class — which means one required class is duplicated and the other
+ * is entirely missing.
+ *
+ * Pass in the detected classes for all imports in each slot (may include nulls
+ * for files where detection was inconclusive). Returns a descriptor of the
+ * duplicate/missing pair when a conflict is found, or null when the coverage
+ * looks correct.
+ *
+ * This is a pure function — it does no I/O and can be unit-tested directly.
+ */
+export function checkDuplicateCsvClasses(
+  demoDetected: (IapCsvClass | null)[],
+  placementDetected: (IapCsvClass | null)[],
+): { duplicatedClass: IapCsvClass; missingClass: IapCsvClass } | null {
+  const demoClass = demoDetected.find((c) => c !== null) ?? null;
+  const placementClass = placementDetected.find((c) => c !== null) ?? null;
+  if (demoClass !== null && placementClass !== null && demoClass === placementClass) {
+    const missingClass: IapCsvClass = demoClass === "demographic" ? "device_placement" : "demographic";
+    return { duplicatedClass: demoClass, missingClass };
+  }
+  return null;
+}
+
+const CSV_CLASS_LABEL: Record<IapCsvClass, string> = {
+  demographic: "Demographic (Gender/Age)",
+  device_placement: "Device/Placement (Impression device, Platform, Placement)",
+};
+
+/** Human-readable label for a CSV class, for use in error messages. */
+export function iapCsvClassLabel(cls: IapCsvClass): string {
+  return CSV_CLASS_LABEL[cls];
 }
 
 /** Builds the user-facing format spec (columns + a valid sample CSV) for one CSV class. */

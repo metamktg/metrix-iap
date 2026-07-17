@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ColumnMappingSummaryEntry } from './columnMappingSummaryEntry';
 import type { CreativeLinkResult } from './creativeLinkResult';
 import type { ManualImportKind } from './manualImportKind';
 import type { ManualImportMatchMethod } from './manualImportMatchMethod';
@@ -23,4 +24,6 @@ export interface ManualImport {
   status: ManualImportStatus;
   created_at: string;
   link_result?: CreativeLinkResult;
+  /** Column mapping results stored at upload time for performance CSV imports (absent for creative_asset uploads). Used to surface column health warnings at the 'Run analysis' step and to re-hydrate the mapping panel on subsequent visits without re-uploading. */
+  mapping_summary?: ColumnMappingSummaryEntry[] | null;
 }

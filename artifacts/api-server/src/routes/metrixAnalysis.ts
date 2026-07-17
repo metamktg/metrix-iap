@@ -15,7 +15,7 @@ import {
   computeCreativeLinkageSummary,
   type DateRangePreset,
 } from "../lib/analysisEngine";
-import { buildIapCsvClassFormat } from "../lib/iapCsvSpec";
+import { buildIapCsvClassFormat, COLUMN_ALIASES } from "../lib/iapCsvSpec";
 
 import { getSupabase } from "../lib/supabase";
 import { invalidateMetrixSeedCache } from "../lib/metrixSeedAssembly";
@@ -43,10 +43,39 @@ async function guardAccess(req: any, res: any, accountId: string): Promise<boole
   return true;
 }
 
+/**
+ * The five canonical columns most commonly exported under wrong names from
+ * Meta Ads Manager. Aliases are derived from COLUMN_ALIASES grouped by their
+ * canonical target — no duplication; the parser logic stays in iapCsvSpec.ts.
+ *
+ * "Amount spent ({ACCOUNT_CURRENCY})" is presented without the currency
+ * placeholder since that detail is already explained in the column list above.
+ */
+const ALIAS_GUIDE_CANONICALS: string[] = [
+  "Date",
+  "Amount spent ({ACCOUNT_CURRENCY})",
+  "Link clicks",
+  "ThruPlays",
+  "Reach",
+];
+
+function buildColumnAliasGuide(): { canonical: string; aliases: string[] }[] {
+  return ALIAS_GUIDE_CANONICALS.map((canonical) => {
+    const aliases = Object.entries(COLUMN_ALIASES)
+      .filter(([, target]) => target === canonical)
+      .map(([alias]) => alias.charAt(0).toUpperCase() + alias.slice(1));
+    return {
+      canonical: canonical.replace(" ({ACCOUNT_CURRENCY})", ""),
+      aliases,
+    };
+  }).filter((g) => g.aliases.length > 0);
+}
+
 router.get("/metrix/manual-performance-csv-format", requireAuth, (_req, res) => {
   res.json({
     demographic: buildIapCsvClassFormat("demographic"),
     device_placement: buildIapCsvClassFormat("device_placement"),
+    column_aliases: buildColumnAliasGuide(),
   });
 });
 
