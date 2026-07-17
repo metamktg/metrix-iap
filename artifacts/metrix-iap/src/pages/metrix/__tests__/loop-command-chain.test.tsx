@@ -3,13 +3,15 @@
 // Guards correct stage state rendering in LoopCommandChain for:
 //   1. Configured account with full data (all stages complete)
 //   2. Configured account with no analysis run yet (analysis next, rest locked)
+//   3. Strategy stage running (running ≠ locked; counter "●"; hub label "Running")
+//   4. Analysis stage running (tile in running state; counter "●")
 //
 // Also confirms the hooks-violation fix (hoisted useState/useMemo in
 // AdAccountOverview above the early-return guards) does not regress under
 // the jsdom test harness.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, cleanup, screen } from "@testing-library/react";
+import { render, cleanup, screen, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import fs from "node:fs";
 import path from "node:path";
@@ -27,6 +29,17 @@ const baseSeed = JSON.parse(
   )
 );
 
+// ── Per-test mutable state ────────────────────────────────────────────────
+//
+// These are read by the vi.mock factory closures below. Set them before
+// renderOverview() in tests that need non-default values; they are reset
+// to defaults in beforeEach so existing tests are unaffected.
+
+let activeSeed: typeof baseSeed = baseSeed;
+let mockStrategyRunning = false;
+let mockBriefsRunning = false;
+let mockAnalysisRunStatus: string | null = null;
+
 // ── Mocks ────────────────────────────────────────────────────────────────
 //
 // LoopCommandChain makes two async calls: useGetLatestAnalysisRun (for the
@@ -38,7 +51,11 @@ vi.mock("@workspace/api-client-react", async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
-    useGetLatestAnalysisRun: () => ({ data: null }),
+    useGetLatestAnalysisRun: () => ({
+      data: mockAnalysisRunStatus
+        ? { run: { status: mockAnalysisRunStatus } }
+        : null,
+    }),
     useGetLatestGenerationRun: () => ({ data: null }),
     useGenerateAccountStrategy: () => ({ mutate: vi.fn(), isPending: false }),
     useGenerateAccountBriefs: () => ({ mutate: vi.fn(), isPending: false }),
@@ -46,16 +63,19 @@ vi.mock("@workspace/api-client-react", async (importOriginal) => {
 });
 
 vi.mock("@/components/generation/GenerationControls", () => ({
-  useGenerationRun: () => ({
+  useGenerationRun: (_accountId: unknown, kind: string) => ({
     start: vi.fn(),
-    isRunning: false,
+    isRunning:
+      kind === "strategy"
+        ? mockStrategyRunning
+        : kind === "briefs"
+          ? mockBriefsRunning
+          : false,
+    elapsedSeconds: 0,
     lastRun: null,
     lastError: null,
   }),
 }));
-
-// Mutable — swapped per test via renderOverview(seed).
-let activeSeed: typeof baseSeed = baseSeed;
 
 vi.mock("@/contexts/MetrixDataContext", () => ({
   useMetrixSeed: () => activeSeed,
@@ -143,6 +163,9 @@ beforeEach(() => {
   sessionStorage.clear();
   window.history.replaceState({}, "", "/");
   activeSeed = baseSeed;
+  mockStrategyRunning = false;
+  mockBriefsRunning = false;
+  mockAnalysisRunStatus = null;
 });
 
 // ── Tests ──────────────────────────────────────────────────────────────────
@@ -247,6 +270,94 @@ describe("LoopCommandChain — configured account with no analysis run yet", () 
     const briefsTile = screen.getByRole("button", { name: /^briefs$/i });
     expect(isDisabled(strategyTile)).toBe(true);
     expect(isDisabled(briefsTile)).toBe(true);
+  });
+});
+
+describe("LoopCommandChain — Strategy stage running", () => {
+  // When a strategy generation run is in flight, useGenerationRun returns
+  // isRunning: true for kind === "strategy".  The tile must not be disabled
+  // (running ≠ locked), the header counter must show "●" (anyRunning), and
+  // opening the Command Hub must show the "Running" status label.
+  //
+  // Note: when isRunning, StageTile appends an elapsed-time "0:00" span inside
+  // the button, so its accessible name becomes "Strategy0:00" rather than the
+  // idle "Strategy". Selectors in this group use /strategy/i without anchors
+  // to match both forms.
+
+  it("Strategy tile is not disabled while running — running ≠ locked", () => {
+    mockStrategyRunning = true;
+    selectAccount("bookster");
+    renderOverview();
+    // Name is "Strategy0:00" when running (elapsed timer is rendered inside the tile)
+    const strategyTile = screen.getByRole("button", { name: /strategy/i });
+    expect(isDisabled(strategyTile)).toBe(false);
+  });
+
+  it("counter shows '●' while strategy is running", () => {
+    mockStrategyRunning = true;
+    selectAccount("bookster");
+    const { container } = renderOverview();
+    expect(container.textContent).toContain("●");
+  });
+
+  it("Command Hub status label reads 'Running' when strategy is running", () => {
+    mockStrategyRunning = true;
+    selectAccount("bookster");
+    renderOverview();
+    // Click the Strategy tile to open the Command Hub
+    const strategyTile = screen.getByRole("button", { name: /strategy/i });
+    fireEvent.click(strategyTile);
+    // The hub header renders the status label "Running" (amber badge)
+    expect(screen.getByText("Running")).toBeTruthy();
+  });
+
+  it("Execute button is suppressed (Actions replaced by Status) while running", () => {
+    mockStrategyRunning = true;
+    selectAccount("bookster");
+    renderOverview();
+    const strategyTile = screen.getByRole("button", { name: /strategy/i });
+    fireEvent.click(strategyTile);
+    // When running, the hub renders "Status" not "Actions" as the section label,
+    // and the generate/regenerate button is not present.
+    expect(screen.getByText("Status")).toBeTruthy();
+    expect(screen.queryByText(/Generate Strategy/i)).toBeNull();
+    expect(screen.queryByText(/Regenerate/i)).toBeNull();
+  });
+});
+
+describe("LoopCommandChain — Analysis stage running", () => {
+  // When an analysis run is in flight, useGetLatestAnalysisRun returns
+  // { run: { status: "running" } }.  The Analysis tile must not be disabled
+  // (analysis is never locked), the counter must show "●" (anyRunning), and
+  // opening the hub must show the "Running" status label.
+  //
+  // Note: when isRunning, StageTile appends an elapsed-time "0:00" span, so
+  // the accessible name becomes "Analysis0:00". Selectors use /analysis/i
+  // without anchors to match both the idle and running forms.
+
+  it("Analysis tile is not disabled while running", () => {
+    mockAnalysisRunStatus = "running";
+    selectAccount("bookster");
+    renderOverview();
+    // Name may be "Analysis0:00" when running (elapsed timer rendered in tile)
+    const analysisTile = screen.getByRole("button", { name: /analysis/i });
+    expect(isDisabled(analysisTile)).toBe(false);
+  });
+
+  it("counter shows '●' while analysis is running", () => {
+    mockAnalysisRunStatus = "running";
+    selectAccount("bookster");
+    const { container } = renderOverview();
+    expect(container.textContent).toContain("●");
+  });
+
+  it("Command Hub status label reads 'Running' when analysis is running", () => {
+    mockAnalysisRunStatus = "running";
+    selectAccount("bookster");
+    renderOverview();
+    const analysisTile = screen.getByRole("button", { name: /analysis/i });
+    fireEvent.click(analysisTile);
+    expect(screen.getByText("Running")).toBeTruthy();
   });
 });
 
