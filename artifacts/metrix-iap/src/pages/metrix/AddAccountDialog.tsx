@@ -10,6 +10,7 @@ import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useCreateManualAdAccount,
+  useListManualImports,
   getGetMetrixSeedQueryKey,
   ApiError,
   type CreateAdAccountResult,
@@ -52,18 +53,34 @@ export function AddAccountDialog({
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<CreateAdAccountResult | null>(null);
+  const [confirmingClose, setConfirmingClose] = useState(false);
   const createMutation = useCreateManualAdAccount();
+
+  const { data: stagedImportsData } = useListManualImports(
+    created?.account_id ?? ""
+  );
+  const hasStagedImports = (stagedImportsData?.imports?.length ?? 0) > 0;
 
   const reset = () => {
     setStep("choose");
     setName("");
     setError(null);
     setCreated(null);
+    setConfirmingClose(false);
   };
 
   const handleOpenChange = (o: boolean) => {
+    if (!o && step === "manual_uploads" && hasStagedImports && !confirmingClose) {
+      setConfirmingClose(true);
+      return;
+    }
     onOpenChange(o);
     if (!o) reset();
+  };
+
+  const handleConfirmClose = () => {
+    onOpenChange(false);
+    reset();
   };
 
   const handleCreate = async () => {
@@ -94,9 +111,37 @@ export function AddAccountDialog({
     if (created) selectAdAccount(created.account_id);
   };
 
+  const stepNumber = step === "choose" ? 1 : step === "manual_name" ? 2 : 3;
+  const totalSteps = step === "choose" ? 1 : 3;
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md">
+        {/* Step indicator — shown whenever we are in a multi-step manual flow */}
+        {step !== "choose" && (
+          <div className="flex items-center justify-between mb-0">
+            <div className="flex items-center gap-1.5">
+              {Array.from({ length: totalSteps }, (_, i) => {
+                const n = i + 1;
+                return (
+                  <div
+                    key={n}
+                    className={cn(
+                      "w-1.5 h-1.5 rounded-full transition-colors",
+                      n < stepNumber ? "bg-emerald-400/60"
+                        : n === stepNumber ? "bg-primary/70"
+                        : "bg-border/40"
+                    )}
+                  />
+                );
+              })}
+            </div>
+            <span className="text-[9px] font-medium text-muted-foreground/40 tabular-nums">
+              Step {stepNumber} of {totalSteps}
+            </span>
+          </div>
+        )}
+
         {step === "choose" && (
           <>
             <DialogHeader>
@@ -208,7 +253,7 @@ export function AddAccountDialog({
           </>
         )}
 
-        {step === "manual_uploads" && created && (
+        {step === "manual_uploads" && created && !confirmingClose && (
           <>
             <DialogHeader>
               <div className="flex items-center gap-2 mb-1">
@@ -226,8 +271,27 @@ export function AddAccountDialog({
 
             <ManualUploadPanel accountId={created.account_id} />
 
-            <div className="flex items-center justify-end pt-1">
+            <div className="flex items-center justify-between pt-1">
+              <GhostBtn onClick={() => setStep("manual_name")}>
+                <ArrowLeft className="w-3.5 h-3.5" /> Back
+              </GhostBtn>
               <GhostBtn onClick={finish}>Done — open account</GhostBtn>
+            </div>
+          </>
+        )}
+
+        {step === "manual_uploads" && created && confirmingClose && (
+          <>
+            <DialogHeader>
+              <DialogTitle className="text-base">Leave without completing?</DialogTitle>
+              <DialogDescription className="text-body leading-relaxed">
+                You have staged files that haven't been reviewed yet. You can come back to
+                review and run analysis from the account's setup screen.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <GhostBtn onClick={() => setConfirmingClose(false)}>Keep staging</GhostBtn>
+              <PrimaryBtn onClick={handleConfirmClose}>Leave anyway</PrimaryBtn>
             </div>
           </>
         )}

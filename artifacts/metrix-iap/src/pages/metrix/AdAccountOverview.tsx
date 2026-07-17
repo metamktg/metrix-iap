@@ -150,7 +150,7 @@ export function AdAccountOverview() {
 
       {/* ── IAP Loop Command Chain ────────────────────────────────────── */}
       <div className="px-6 py-2 border-b border-border/40 shrink-0">
-        <LoopCommandChain accountId={account.id} account={account} />
+        <LoopCommandChain accountId={account.id} account={account} managerId={seed.manager_account.id} />
       </div>
 
       {/* ── Two-column body ────────────────────────────────────────── */}

@@ -61,7 +61,8 @@ import { cn } from "@/lib/utils";
 import { useLocation, useSearch } from "wouter";
 import { ConnectMetaDialog, ManualImportDialog } from "./ConnectAccountDialogs";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
-import { Plug, FileUp, Clock, Database, Info, ArrowRight, ArrowLeftRight, CheckSquare, Square, CalendarX2, AlertTriangle, ChevronDown, ChevronLeft, Sparkles, Map as MapIcon } from "lucide-react";
+import { useListManualImports } from "@workspace/api-client-react";
+import { Plug, FileUp, Clock, Database, Info, ArrowRight, ArrowLeftRight, CheckSquare, CheckCircle2, Square, CalendarX2, AlertTriangle, ChevronDown, ChevronLeft, Sparkles, Map as MapIcon } from "lucide-react";
 import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
 import { DataSourceBadge } from "@/components/ui/DataSourceBadge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -644,18 +645,90 @@ export function UnconfiguredState({ account }: { account: AdAccount }) {
   const s = account.overview_state;
   const [connectOpen, setConnectOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+
+  const isManual = account.platform !== "meta" && account.platform !== "facebook";
+  const { data: importsData } = useListManualImports(account.id);
+  const imports = importsData?.imports ?? [];
+  const csvsDone = isManual && (
+    imports.some((i) => i.kind === "performance_demo_csv") &&
+    imports.some((i) => i.kind === "performance_placement_csv")
+  );
+  const creativesMapped = isManual && imports.filter((i) => i.kind === "creative_asset").some((a) => a.ad_names.length > 0);
+
+  const setupSteps = isManual
+    ? [
+        { label: "Name the account", desc: `Account created as "${account.name}"`, done: true },
+        { label: "Upload performance CSVs", desc: "Demographics + placements pivot exports — both required before analysis", done: csvsDone },
+        { label: "Map creative assets", desc: "Link image files to ads for visual analysis (optional)", done: creativesMapped },
+        { label: "Run analysis", desc: "Process your staged uploads into structured ad performance data", done: false },
+      ]
+    : [
+        { label: "Connect data source", desc: "Link a live Meta account to pull ad performance data", done: false },
+        { label: "Run analysis", desc: "Pull and process live ad performance data for this account", done: false },
+        { label: "Generate strategy", desc: "AI-generated message pillars and hypotheses", done: false },
+        { label: "Generate briefs", desc: "Creative execution briefs per pillar and hypothesis", done: false },
+      ];
+
+  const doneCount = setupSteps.filter((s) => s.done).length;
+
   return (
-    <div className="flex-1 flex items-center justify-center py-20 px-6">
-      <div className="max-w-md text-center space-y-5">
-        <div className="w-14 h-14 rounded-2xl border border-border/40 bg-white/[0.03] flex items-center justify-center mx-auto">
-          <Plug className="w-6 h-6 text-muted-foreground/70" />
-        </div>
-        <div className="space-y-1.5">
-          <h2 className="text-lg font-semibold text-foreground">{s?.title ?? "Connect Meta Ad Account"}</h2>
-          <p className="text-title text-muted-foreground/70 leading-relaxed">
-            {account.name} has no connected data yet. Connect the ad account or add a manual import to begin.
+    <div className="flex-1 flex items-center justify-center py-16 px-6">
+      <div className="max-w-sm w-full space-y-5">
+        {/* Header */}
+        <div className="text-center space-y-1.5">
+          <div className="w-12 h-12 rounded-2xl border border-border/40 bg-white/[0.03] flex items-center justify-center mx-auto mb-3">
+            <Plug className="w-5 h-5 text-muted-foreground/60" />
+          </div>
+          <h2 className="text-base font-semibold text-foreground">{s?.title ?? "Get started with " + account.name}</h2>
+          <p className="text-caption text-muted-foreground/60 leading-relaxed">
+            {isManual
+              ? "Upload your Meta CSV exports, then run analysis to see performance data."
+              : "Connect a data source, then follow the setup checklist below."}
           </p>
         </div>
+
+        {/* Guided setup checklist with live completion checkmarks */}
+        <div className="rounded-xl border border-border/30 bg-white/[0.02] overflow-hidden">
+          {/* Progress strip */}
+          {doneCount > 0 && (
+            <div className="px-4 py-2 border-b border-border/20 flex items-center gap-2">
+              <div className="flex-1 h-1 rounded-full bg-border/30 overflow-hidden">
+                <div
+                  className="h-full bg-emerald-400/50 rounded-full transition-all"
+                  style={{ width: `${Math.round((doneCount / setupSteps.length) * 100)}%` }}
+                />
+              </div>
+              <span className="text-[9px] font-mono tabular-nums text-muted-foreground/40">{doneCount}/{setupSteps.length}</span>
+            </div>
+          )}
+          {setupSteps.map((step, i) => (
+            <div
+              key={i}
+              className={cn(
+                "flex items-start gap-3 px-4 py-3 border-b border-border/20 last:border-0",
+                step.done && "opacity-60",
+              )}
+            >
+              <div className={cn(
+                "w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5",
+                step.done
+                  ? "text-emerald-400"
+                  : "border border-border/40 bg-white/[0.03]",
+              )}>
+                {step.done
+                  ? <CheckCircle2 className="w-4 h-4" />
+                  : <span className="text-[9px] font-bold text-muted-foreground/40 tabular-nums">{i + 1}</span>
+                }
+              </div>
+              <div className="min-w-0">
+                <p className={cn("text-caption font-semibold leading-none mb-0.5", step.done ? "text-foreground/50 line-through" : "text-foreground/70")}>{step.label}</p>
+                <p className="text-[10px] text-muted-foreground/45 leading-snug">{step.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Actions */}
         <div className="flex items-center justify-center gap-2">
           <button
             onClick={() => setConnectOpen(true)}
@@ -670,11 +743,10 @@ export function UnconfiguredState({ account }: { account: AdAccount }) {
             <FileUp className="w-3.5 h-3.5" /> {s?.secondary_action ?? "Add Manual Import"}
           </button>
         </div>
-        <p className="text-caption text-muted-foreground/70 leading-relaxed">
-          No performance, analysis, or report data is shown until this account is configured.
-        </p>
-        <div className="pt-1 space-y-2">
-          <p className="text-caption font-semibold uppercase tracking-widest text-muted-foreground/75">
+
+        {/* Switch account */}
+        <div className="text-center space-y-1.5">
+          <p className="text-caption font-semibold uppercase tracking-widest text-muted-foreground/40">
             Or view a different account
           </p>
           <InlineAccountPicker label="Switch ad account" excludeAccountId={account.id} />

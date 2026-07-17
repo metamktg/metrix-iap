@@ -47,6 +47,8 @@ let mockAnalysisRunStatus: string | null = null;
 // generation run status). Both are mocked to idle/no-data so tests are
 // deterministic without a live API server.
 
+let mockReportCount = 0;
+
 vi.mock("@workspace/api-client-react", async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
@@ -59,6 +61,10 @@ vi.mock("@workspace/api-client-react", async (importOriginal) => {
     useGetLatestGenerationRun: () => ({ data: null }),
     useGenerateAccountStrategy: () => ({ mutate: vi.fn(), isPending: false }),
     useGenerateAccountBriefs: () => ({ mutate: vi.fn(), isPending: false }),
+    useListWorkspaceReports: () => ({
+      data: { reports: Array.from({ length: mockReportCount }, (_, i) => ({ id: String(i), ad_account_id: "bookster" })) },
+    }),
+    useListManualImports: () => ({ data: { imports: [] } }),
   };
 });
 
@@ -166,6 +172,7 @@ beforeEach(() => {
   mockStrategyRunning = false;
   mockBriefsRunning = false;
   mockAnalysisRunStatus = null;
+  mockReportCount = 0;
 });
 
 // ── Tests ──────────────────────────────────────────────────────────────────
@@ -177,7 +184,8 @@ describe("LoopCommandChain — configured account with full data (Bookster)", ()
     expect(screen.getByText("IAP Loop")).toBeTruthy();
   });
 
-  it("shows all 3 stages complete (✓ counter)", () => {
+  it("shows all 5 stages complete (✓ counter) when reports also exist", () => {
+    mockReportCount = 1;
     selectAccount("bookster");
     const { container } = renderOverview();
     expect(container.textContent).toContain("✓");
@@ -220,19 +228,27 @@ describe("LoopCommandChain — configured account with no analysis run yet", () 
     expect(screen.getByText("IAP Loop")).toBeTruthy();
   });
 
-  it("shows 0/3 complete counter — no stages have data", () => {
+  it("shows 0/5 complete counter — no stages have data", () => {
     const seed = seedWithNoAnalysisAccount();
     selectAccount("fresh_account");
     const { container } = renderOverview(seed);
-    expect(container.textContent).toContain("0/3");
+    expect(container.textContent).toContain("0/5");
   });
 
-  it("Analysis stage tile is not locked — analysis is always the entry point", () => {
+  it("Data stage tile is not locked — data is the entry point", () => {
+    const seed = seedWithNoAnalysisAccount();
+    selectAccount("fresh_account");
+    renderOverview(seed);
+    const dataTile = screen.getByRole("button", { name: /^data$/i });
+    expect(isDisabled(dataTile)).toBe(false);
+  });
+
+  it("Analysis stage tile is locked — no data has been ingested yet", () => {
     const seed = seedWithNoAnalysisAccount();
     selectAccount("fresh_account");
     renderOverview(seed);
     const analysisTile = screen.getByRole("button", { name: /^analysis$/i });
-    expect(isDisabled(analysisTile)).toBe(false);
+    expect(isDisabled(analysisTile)).toBe(true);
   });
 
   it("Strategy stage tile is locked — analysis has not run", () => {
