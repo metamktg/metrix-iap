@@ -6,14 +6,13 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import {
-  ShieldCheck, KeyRound, Radio, BarChart3, Layers, FileText, Grid3x3,
-  Zap, ArrowRight, ChevronDown, ChevronRight,
+  ShieldCheck, KeyRound, Grid3x3,
+  Zap, ArrowRight, ChevronDown,
 } from "lucide-react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import {
-  getAdAccount, getListenSignals, getAnalysisData, getStrategyData,
-  getReportBuilder, getMST,
+  getAdAccount, getAnalysisData, getMST,
 } from "@/lib/data/metrixSeedAdapter";
 import { RecommendationDeck, actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
 import {
@@ -27,6 +26,7 @@ import { useMetricSelection } from "@/hooks/useMetricSelection";
 import { MetricPickerButton } from "@/components/creative/MetricPicker";
 import { MetricDiagnosticModal } from "@/components/creative/MetricDiagnosticModal";
 import { TaskTrayPanel } from "@/components/deck/TaskTrayPanel";
+import { LoopCommandChain } from "@/components/loop/LoopCommandChain";
 
 const IMPACT_RANK: Record<string, number> = { high: 3, medium: 2, low: 1, setup: 0 };
 
@@ -84,10 +84,7 @@ export function AdAccountOverview() {
   const term = resultTerm(account);
 
   // ── Derived summaries ───────────────────────────────────────────────
-  const signals = getListenSignals(seed, adAccountId);
   const analysis = getAnalysisData(seed, adAccountId);
-  const strategy = getStrategyData(seed, adAccountId);
-  const report = getReportBuilder(seed, adAccountId);
   const mst = getMST(seed, adAccountId);
 
   // Resolve concept IDs to human-readable names from the MST library.
@@ -102,11 +99,6 @@ export function AdAccountOverview() {
   const primaryControlName = resolveConceptName(core.primary_control);
   const registrationControlName = core.registration_control ? resolveConceptName(core.registration_control) : null;
 
-  const cellCount = analysis?.performance_by_cell.length ?? 0;
-  const variableCount = analysis?.v3_variable_performance.length ?? 0;
-  const pillarCount = strategy?.message_pillars.length ?? 0;
-  const hypothesisCount = strategy?.active_hypotheses.length ?? 0;
-  const sectionCount = report?.report_sections.length ?? 0;
   const matrixCellCount = mst?.historical_matrix_4x4?.cells.length ?? 0;
   const libraryCount = mst?.local_book2_library?.length ?? 0;
   const mstActive = mst?.status === "active";
@@ -124,19 +116,6 @@ export function AdAccountOverview() {
   const [expandedMetricId, setExpandedMetricId] = useState<string | null>(null);
   const openMetric = openMetricId ? metricById(metricCatalog, openMetricId) : null;
 
-  // ── Layer readiness ─────────────────────────────────────────────────
-  type Layer = { name: string; count: number; unit: string; ready: boolean; to: string; Icon: React.ComponentType<{ className?: string }> };
-  const layers: Layer[] = [
-    { name: "Listen",         count: signals.length,              unit: signals.length === 1 ? "signal" : "signals",               ready: signals.length > 0,                       to: "/app/listen/signal",        Icon: Radio },
-    { name: "Analysis",       count: cellCount + variableCount,   unit: "cells + variables",                                        ready: (cellCount + variableCount) > 0,           to: "/app/analysis/library",     Icon: BarChart3 },
-    { name: "Strategy",       count: pillarCount + hypothesisCount, unit: "pillars + hypotheses",                                   ready: (pillarCount + hypothesisCount) > 0,       to: "/app/strategy/hypotheses",  Icon: Layers },
-    { name: "Report Builder", count: sectionCount,                unit: sectionCount === 1 ? "section" : "sections",               ready: sectionCount > 0,                          to: "/app/report-builder",       Icon: FileText },
-    { name: "MST",            count: matrixCellCount,             unit: "matrix cells",                                             ready: mstActive && matrixCellCount > 0,          to: "/app/mst",                  Icon: Grid3x3 },
-  ];
-
-  const readyCount = layers.filter((l) => l.ready).length;
-  const allReady = readyCount === layers.length;
-
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
       <ModuleHeader
@@ -147,69 +126,9 @@ export function AdAccountOverview() {
       />
       <ScopeBanner account={account} />
 
-      {/* ── Layer Status Hero (full-width, leads the hierarchy) ─────── */}
-      <div className="px-6 py-4 border-b border-border/40 shrink-0 bg-gradient-to-b from-white/[0.02] to-transparent">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <h2 className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/55">Layer Status</h2>
-            <span className={cn(
-              "text-[9px] font-bold uppercase tracking-widest border px-2 py-0.5 rounded-full leading-none",
-              allReady
-                ? "text-emerald-300 border-emerald-400/40 bg-emerald-400/10"
-                : "text-amber-300/80 border-amber-400/30 bg-amber-400/[0.07]"
-            )}>
-              {readyCount}/{layers.length} ready
-            </span>
-          </div>
-          <span className="text-[10px] text-muted-foreground/40">Click any layer to navigate</span>
-        </div>
-
-        <div className="grid grid-cols-5 gap-2">
-          {layers.map((l) => (
-            <button
-              key={l.name}
-              onClick={() => navigate(l.to)}
-              className={cn(
-                "group relative flex flex-col gap-2.5 p-3.5 rounded-xl border text-left transition-all",
-                "hover:-translate-y-0.5 hover:shadow-xl active:translate-y-0",
-                "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/60",
-                l.ready
-                  ? "border-emerald-400/30 bg-gradient-to-br from-emerald-400/[0.07] to-emerald-400/[0.02] hover:border-emerald-400/55 hover:from-emerald-400/[0.11] shadow-emerald-400/5"
-                  : "border-border/40 bg-white/[0.02] hover:border-border/60 hover:bg-white/[0.05]"
-              )}
-            >
-              {/* Icon + badge row */}
-              <div className="flex items-center justify-between gap-1">
-                <l.Icon className={cn(
-                  "w-3.5 h-3.5 transition-colors",
-                  l.ready ? "text-emerald-400/80 group-hover:text-emerald-400" : "text-muted-foreground/40"
-                )} />
-                <span className={cn(
-                  "text-[8px] font-bold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none",
-                  l.ready
-                    ? "text-emerald-300 border-emerald-400/40 bg-emerald-400/15"
-                    : "text-amber-300/70 border-amber-400/25 bg-amber-400/[0.08]"
-                )}>
-                  {l.ready ? "Ready" : "Pending"}
-                </span>
-              </div>
-
-              {/* Name + count */}
-              <div className="min-w-0">
-                <div className="text-[12px] font-bold text-foreground leading-tight truncate">{l.name}</div>
-                <div className="text-[10px] text-muted-foreground/60 mt-0.5 tabular-nums">
-                  <span className="font-semibold text-foreground/65">{l.count}</span>{" "}{l.unit}
-                </div>
-              </div>
-
-              {/* Navigate arrow */}
-              <ChevronRight className={cn(
-                "absolute right-2.5 bottom-3.5 w-3 h-3 transition-all",
-                "text-muted-foreground/20 group-hover:text-foreground/55 group-hover:translate-x-0.5"
-              )} />
-            </button>
-          ))}
-        </div>
+      {/* ── IAP Loop Command Chain (execute-on-command, leads hierarchy) ── */}
+      <div className="px-6 py-4 border-b border-border/40 shrink-0">
+        <LoopCommandChain accountId={account.id} account={account} />
       </div>
 
       {/* ── Two-column body ────────────────────────────────────────── */}
