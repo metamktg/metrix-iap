@@ -123,11 +123,9 @@ function navigate(href: string, e: React.MouseEvent) {
 function CollapseTooltip({
   label,
   teaser,
-  isPlaceholder,
 }: {
   label: string;
-  teaser: string;
-  isPlaceholder?: boolean;
+  teaser?: string;
 }) {
   return (
     <div className={cn(
@@ -136,13 +134,10 @@ function CollapseTooltip({
       "bg-[hsl(222_61%_10%)] border border-border/50 rounded-md shadow-xl",
       "px-2.5 py-1.5 max-w-[220px]",
     )}>
-      {isPlaceholder && (
-        <span className="inline-block text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/55 border border-border/35 px-1 py-0.5 rounded leading-none mb-1.5">
-          Coming Soon
-        </span>
-      )}
       <div className="text-[12px] font-semibold text-foreground leading-tight whitespace-nowrap">{label}</div>
-      <div className="text-[10px] text-muted-foreground/65 mt-1 leading-snug whitespace-normal">{teaser}</div>
+      {teaser && (
+        <div className="text-[10px] text-muted-foreground/65 mt-1 leading-snug whitespace-normal">{teaser}</div>
+      )}
     </div>
   );
 }
@@ -213,11 +208,10 @@ function CollapsedItem({
             </span>
           )}
         </a>
-        {hovered && section.placeholder && section.teaser && (
+        {hovered && (
           <CollapseTooltip
             label={section.label}
             teaser={section.teaser}
-            isPlaceholder
           />
         )}
       </li>

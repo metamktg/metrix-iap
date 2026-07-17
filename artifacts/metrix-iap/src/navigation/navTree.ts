@@ -259,7 +259,6 @@ export const navTree: NavSection[] = [
     icon: "Bot",
     to: "/app/agent",
     badgeKey: "agent",
-    placeholder: true,
     teaser: "Your AI strategist — analyzes patterns, surfaces winning tests, and drafts briefs autonomously.",
   },
   {
