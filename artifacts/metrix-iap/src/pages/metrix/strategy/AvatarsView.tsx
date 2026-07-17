@@ -275,7 +275,9 @@ export function AvatarsView() {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Avatars" tabs="strategy" account={acct} />
-              <PendingState title="No avatars yet" message="Avatars are derived from the MST matrix and strategy ICP profiles once they exist for this account." icon={Users} />
+              <PendingState title="No avatars yet" message="Avatars are derived from the MST matrix and strategy ICP profiles once they exist for this account." icon={Users}
+                action={<CrossLink to="/app/mst/matrix" label="Open MST Matrix" />}
+              />
             </div>
           );
         }
@@ -432,7 +434,9 @@ export function AvatarsView() {
                 {demo.length ? (
                   <DemographicTable rows={demo} onSegmentClick={analysis ? setAudienceSegment : undefined} />
                 ) : (
-                  <PendingState title="No audience signal" message={`Demographic ${term.singular} signal appears once analysis is available.`} icon={Users} />
+                  <PendingState title="No audience signal" message={`Demographic ${term.singular} signal appears once analysis is available.`} icon={Users}
+                    action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />}
+                  />
                 )}
               </SectionCard>
             </div>

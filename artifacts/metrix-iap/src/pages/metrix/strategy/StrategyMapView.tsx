@@ -68,7 +68,9 @@ export function StrategyMapView() {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Strategy Map" tabs="strategy" account={acct} />
-              <PendingState title="No strategy map" message="The map draws from message pillars — none exist for this account yet." icon={Map} />
+              <PendingState title="No strategy map" message="The map draws from message pillars — none exist for this account yet." icon={Map}
+                action={<CrossLink to="/app/strategy/overview" label="Go to Strategy Overview" />}
+              />
             </div>
           );
         }

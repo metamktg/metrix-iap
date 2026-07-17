@@ -9,7 +9,7 @@ import { getAdAccount, getAnalysisData, getCampaignSummary } from "@/lib/data/me
 import { useMetricSelection } from "@/lib/metric-selection";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
-  CaveatNote, MetricSelectionBar, SectionCard, fmtUSD, fmtNum, fmtPct, eventLabel,
+  CaveatNote, CrossLink, MetricSelectionBar, SectionCard, fmtUSD, fmtNum, fmtPct, eventLabel,
   RangeScopeBar, NoDataInRangeState,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
@@ -43,7 +43,12 @@ export function BudgetView() {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Budget" tabs="analysis" account={acct} />
-              <PendingState title="No budget data" message="Campaign spend totals appear once analysis is available." icon={Wallet} />
+              <PendingState
+                title="No budget data"
+                message="Campaign spend totals appear once analysis is available."
+                icon={Wallet}
+                action={<CrossLink to="/app/analysis/overview" label="Return to Analysis Overview" />}
+              />
             </div>
           );
         }
@@ -96,7 +101,7 @@ export function BudgetView() {
                 table="bottom_line_totals"
               >
                 {eventRows.length === 0 ? (
-                  <PendingState title="No events selected" message="Select at least one result event above." />
+                  <PendingState title="No events selected" message="Select at least one result event above." action={<CrossLink to="/app/analysis/overview" label="Return to Overview" />} />
                 ) : (
                   <div className="grid grid-cols-dashboard-3 gap-3">
                     {eventRows.map(({ event, totals }) => (
@@ -120,7 +125,7 @@ export function BudgetView() {
                 table="performance_by_cell"
               >
                 {conceptRows.length === 0 ? (
-                  <PendingState title="No concept spend" message="No cell rows match the current metric selection." />
+                  <PendingState title="No concept spend" message="No cell rows match the current metric selection." action={<CrossLink to="/app/analysis/overview" label="Return to Overview" />} />
                 ) : (
                   <div className="space-y-2.5">
                     {conceptRows.map(([name, spend]) => (

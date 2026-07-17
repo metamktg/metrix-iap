@@ -4,7 +4,7 @@
 import { useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getWorkspaceSettings } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, SectionCard, PendingState, MetricTile, fmtUSD } from "../shared";
+import { ModuleHeader, SectionCard, PendingState, MetricTile, fmtUSD, CrossLink } from "../shared";
 import { cn } from "@/lib/utils";
 import { CreditCard, Check } from "lucide-react";
 
@@ -38,7 +38,9 @@ export function BillingView() {
     return (
       <div className="flex-1 flex flex-col">
         <ModuleHeader section={SECTION} title="Billing" />
-        <PendingState title="No workspace settings" message="Billing details are not available for this workspace yet." icon={CreditCard} />
+        <PendingState title="No workspace settings" message="Billing details are not available for this workspace yet." icon={CreditCard}
+          action={<CrossLink to="/app/analysis/overview" label="Go to Overview" />}
+        />
       </div>
     );
   }

@@ -212,7 +212,11 @@ export function IapLibraryView() {
             return (
               <div className="flex-1 flex flex-col">
                 <ModuleHeader section={SECTION} title="IAP Library" tabs="analysis" account={acct} />
-                <PendingState title="Analysis pending" message="No analysis data available for this account yet." />
+                <PendingState
+                  title="Analysis pending"
+                  message="No analysis data available for this account yet."
+                  action={<CrossLink to="/app/analysis/overview" label="Go to Analysis Overview" />}
+                />
               </div>
             );
           }
@@ -428,7 +432,7 @@ export function IapLibraryView() {
                           onUploadCreatives={() => setCreativeLibraryOpen(true)}
                         />
                       ) : (
-                        <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." />
+                        <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." action={<CrossLink to="/app/analysis/overview" label="Back to Overview" />} />
                       )
                     ) : (() => {
                       const uniqueCells = uniqueCellRows(cells);
@@ -440,7 +444,7 @@ export function IapLibraryView() {
                       const rangeEnd = Math.min(safePage * pageSize, totalCells);
 
                       if (totalCells === 0 && creativeOnlyCellIds.length === 0) {
-                        return <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." />;
+                        return <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." action={<CrossLink to="/app/analysis/overview" label="Back to Overview" />} />;
                       }
 
                       return (
@@ -597,12 +601,12 @@ export function IapLibraryView() {
                           ))}
                         </div>
                       ) : (
-                        <PendingState title="No ranked cells" message="No ranked cells in the current metric selection." />
+                        <PendingState title="No ranked cells" message="No ranked cells in the current metric selection." action={<CrossLink to="/app/analysis/overview" label="Back to Overview" />} />
                       )}
                     </div>
                     <div>
                       <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Top checkout variables</h3>
-                      {topVariables.length ? <VariableTable rows={topVariables} onRowClick={(r) => setVariableCode(r.variable_id)} /> : <PendingState title="No ranked variables" message="No ranked variables in the current metric selection." />}
+                      {topVariables.length ? <VariableTable rows={topVariables} onRowClick={(r) => setVariableCode(r.variable_id)} /> : <PendingState title="No ranked variables" message="No ranked variables in the current metric selection." action={<CrossLink to="/app/analysis/overview" label="Back to Overview" />} />}
                     </div>
                   </div>
                 )}
@@ -667,7 +671,7 @@ export function IapLibraryView() {
                       <VariableTable rows={variables} onRowClick={(r) => setVariableCode(r.variable_id)} />
                     </div>
                   ) : (
-                    <PendingState title="No variables in selection" message="Adjust the metric selection to see variable performance." />
+                    <PendingState title="No variables in selection" message="Adjust the metric selection to see variable performance." action={<CrossLink to="/app/analysis/overview" label="Back to Overview" />} />
                   )
                 )}
               </div>

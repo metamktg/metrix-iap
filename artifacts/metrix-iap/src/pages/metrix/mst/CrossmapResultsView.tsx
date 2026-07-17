@@ -44,7 +44,9 @@ export function CrossmapResultsView() {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Crossmap Results" account={acct} />
-              <PendingState title="No crossmap yet" message={mst?.render_policy ?? "Crossmap results appear once the matrix and performance data both exist."} icon={GitMerge} />
+              <PendingState title="No crossmap yet" message={mst?.render_policy ?? "Crossmap results appear once the matrix and performance data both exist."} icon={GitMerge}
+                action={<CrossLink to="/app/mst/matrix" label="Open MST Matrix" />}
+              />
             </div>
           );
         }

@@ -12,7 +12,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
-  SectionCard, CaveatNote, fmtUSD, fmtNum, fmtPct, resultTerm,
+  SectionCard, CaveatNote, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
   RangeScopeBar, NoDataInRangeState,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
@@ -274,7 +274,12 @@ export function PlacementsView() {
             return (
               <div className="flex-1 flex flex-col">
                 <ModuleHeader section={SECTION} title="Placements" tabs="analysis" account={acct} />
-                <PendingState title="No placement signal" message="Placement reads appear once delivery data exists for this account." icon={LayoutGrid} />
+                <PendingState
+                  title="No placement signal"
+                  message="Placement reads appear once delivery data exists for this account."
+                  icon={LayoutGrid}
+                  action={<CrossLink to="/app/analysis/overview" label="Return to Analysis Overview" />}
+                />
               </div>
             );
           }

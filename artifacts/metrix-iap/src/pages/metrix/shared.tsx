@@ -771,6 +771,42 @@ export function PendingState({ title, message, icon: Icon = Clock, action }: { t
   );
 }
 
+// ─── Skeleton loading primitives ──────────────────────────────────────
+// animate-pulse shimmer blocks that mirror the shape of real content so
+// the layout doesn't jump when data arrives. Use for any async operation
+// longer than ~300 ms that would otherwise leave a frozen or blank area.
+
+export function SkeletonBlock({
+  className,
+}: {
+  className?: string;
+}) {
+  return (
+    <div
+      aria-hidden="true"
+      className={cn("animate-pulse rounded-md bg-white/[0.06]", className)}
+    />
+  );
+}
+
+/** A row of evenly-sized shimmer tiles that matches the metric tile grid. */
+export function SkeletonTileRow({ count = 4 }: { count?: number }) {
+  return (
+    <div
+      aria-hidden="true"
+      className="grid gap-2"
+      style={{ gridTemplateColumns: `repeat(${count}, minmax(0, 1fr))` }}
+    >
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="rounded-xl border border-border/30 bg-white/[0.02] px-3 py-2.5 space-y-2">
+          <SkeletonBlock className="h-2 w-2/3" />
+          <SkeletonBlock className="h-5 w-1/2" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Metric tile ──────────────────────────────────────────────────────
 // When the tile is placed inside a `group` button, border lifts on hover.
 

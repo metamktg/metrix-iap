@@ -25,6 +25,7 @@ import {
   type ColumnAliasEntry,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 import { guessedCreativeImports } from "./manualImportUtils";
 import { cn } from "@/lib/utils";
 import {
@@ -771,6 +772,23 @@ export function AnalysisControls({
       }
     };
   }, [isRunning, run?.status]);
+
+  const { toast } = useToast();
+  const toastedRunIdRef = useRef<string | null>(null);
+
+  // Toast once when a run first transitions to success.
+  useEffect(() => {
+    if (run?.status !== "success" || !run.id || toastedRunIdRef.current === run.id) return;
+    toastedRunIdRef.current = run.id;
+    toast({
+      title: "Analysis complete",
+      description:
+        run.date_start && run.date_end
+          ? `Data covers ${run.date_start} → ${run.date_end}.`
+          : "Performance data is ready to review.",
+      duration: 4000,
+    });
+  }, [run?.status, run?.id, run?.date_start, run?.date_end, toast]);
 
   // Fire onDone once when the run transitions to success.
   useEffect(() => {

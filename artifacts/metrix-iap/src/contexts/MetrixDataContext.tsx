@@ -8,7 +8,7 @@
 
 import React, { createContext, useContext } from "react";
 import { useGetMetrixSeed } from "@workspace/api-client-react";
-import { Loader2, AlertTriangle, RefreshCw } from "lucide-react";
+import { AlertTriangle, RefreshCw } from "lucide-react";
 import type { MetrixSeed } from "@/lib/data/seedTypes";
 
 const MetrixDataContext = createContext<MetrixSeed | null>(null);
@@ -27,8 +27,22 @@ export function MetrixDataProvider({ children }: { children: React.ReactNode }) 
   if (isLoading) {
     return (
       <FullScreen>
-        <Loader2 className="w-6 h-6 text-primary/70 animate-spin mx-auto" />
-        <p className="text-title text-muted-foreground/70">Loading Metrix data…</p>
+        <div className="w-full max-w-xl space-y-3 px-4" aria-busy="true" aria-label="Loading Metrix data">
+          <div className="animate-pulse rounded-md bg-white/[0.06] h-3 w-1/3" />
+          <div
+            className="grid gap-2"
+            style={{ gridTemplateColumns: "repeat(4, minmax(0, 1fr))" }}
+          >
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="rounded-xl border border-border/30 bg-white/[0.02] px-3 py-2.5 space-y-2">
+                <div className="animate-pulse rounded-md bg-white/[0.06] h-2 w-2/3" />
+                <div className="animate-pulse rounded-md bg-white/[0.06] h-5 w-1/2" />
+              </div>
+            ))}
+          </div>
+          <div className="animate-pulse rounded-md bg-white/[0.06] h-24 w-full" />
+          <div className="animate-pulse rounded-md bg-white/[0.06] h-16 w-full" />
+        </div>
       </FullScreen>
     );
   }

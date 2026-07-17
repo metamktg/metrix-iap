@@ -9,7 +9,7 @@ import { useScopedAdAccountId, useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAdAccount, getReportBuilder } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, SectionCard, CaveatNote, PendingState, useFocusParam, DetailReveal } from "../shared";
+import { ModuleHeader, SectionCard, CaveatNote, PendingState, useFocusParam, DetailReveal, CrossLink } from "../shared";
 import { ConnectMetaDialog, ManualImportDialog, CreativeLibraryDialog } from "../ConnectAccountDialogs";
 import { AnalysisControls } from "../ManualAnalysisControls";
 import { AgentWaitlistSection } from "./AgentWaitlistSection";
@@ -224,7 +224,9 @@ export function AccountSettingsView() {
     return (
       <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
         <ModuleHeader section={SECTION} title="Account" />
-        <PendingState title="No ad account selected" message="Choose an ad account to manage its settings." />
+        <PendingState title="No ad account selected" message="Choose an ad account to manage its settings."
+          action={<CrossLink to="/app/analysis/overview" label="Go to Overview" />}
+        />
         <div className="px-6 py-5 space-y-5 max-w-3xl">
           <SessionSection />
           <PasswordSection />

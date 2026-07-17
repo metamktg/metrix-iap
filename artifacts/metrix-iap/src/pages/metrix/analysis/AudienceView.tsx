@@ -11,7 +11,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
-  SectionCard, fmtUSD, fmtNum, fmtPct, resultTerm,
+  SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
   RangeScopeBar, NoDataInRangeState,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
@@ -106,7 +106,12 @@ export function AudienceView() {
             return (
               <div className="flex-1 flex flex-col">
                 <ModuleHeader section={SECTION} title="Audience" tabs="analysis" account={acct} />
-                <PendingState title="No demographic signal" message="The audience read appears once demographic result data exists." icon={Users} />
+                <PendingState
+                  title="No demographic signal"
+                  message="The audience read appears once demographic result data exists."
+                  icon={Users}
+                  action={<CrossLink to="/app/analysis/overview" label="Return to Analysis Overview" />}
+                />
               </div>
             );
           }

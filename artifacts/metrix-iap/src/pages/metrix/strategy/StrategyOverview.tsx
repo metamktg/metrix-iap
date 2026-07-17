@@ -9,7 +9,7 @@ import { getAdAccount, getStrategyData, getBriefBuilder } from "@/lib/data/metri
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CrossLink, fmtNum, LoopAction,
-  RangeScopeBar, NoDataInRangeState, DetailReveal, deriveLabel,
+  RangeScopeBar, NoDataInRangeState, DetailReveal, deriveLabel, SkeletonBlock,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import {
@@ -41,9 +41,19 @@ export function StrategyOverview() {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Strategy Overview" tabs="strategy" account={acct} />
-              <PendingState title="No strategy yet" message="Strategy pillars derive from validated analysis reads." icon={Compass} />
+              <PendingState title="No strategy yet" message="Strategy pillars derive from validated analysis reads." icon={Compass}
+                action={!hasAnalysis ? <CrossLink to="/app/analysis/overview" label="Review Analysis first" /> : undefined}
+              />
+              {generation.isRunning && (
+                <div className="px-6 pt-2 pb-4 space-y-2.5 max-w-2xl" aria-busy="true">
+                  <SkeletonBlock className="h-3 w-1/4" />
+                  <SkeletonBlock className="h-20 w-full" />
+                  <SkeletonBlock className="h-20 w-full" />
+                  <SkeletonBlock className="h-20 w-full" />
+                </div>
+              )}
               <div className="px-6 pb-6 space-y-3 max-w-lg mx-auto w-full text-center">
-                <GenerationErrorNote message={generation.lastError} />
+                <GenerationErrorNote message={generation.lastError} onRetry={generation.start} />
                 {hasAnalysis ? (
                   <GenerateButton
                     onClick={generation.start}
@@ -115,7 +125,7 @@ export function StrategyOverview() {
             <RangeScopeBar grainNote="Strategy derives from the account's full flight window — this import has no daily grain." />
             {generation.lastError && (
               <div className="px-6 pt-4">
-                <GenerationErrorNote message={generation.lastError} />
+                <GenerationErrorNote message={generation.lastError} onRetry={generation.start} />
               </div>
             )}
 

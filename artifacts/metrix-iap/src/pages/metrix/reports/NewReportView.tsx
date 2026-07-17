@@ -67,6 +67,7 @@ export function NewReportView() {
           toast({
             title: "Report generated",
             description: `"${result.report.title}" was saved to Report History and downloaded as ${FORMAT_LABEL[result.report.export_format] ?? result.report.export_format}.`,
+            duration: 4000,
           });
         } else {
           toast({
@@ -154,7 +155,9 @@ export function NewReportView() {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="New Report" account={acct} />
-              <PendingState title="Report Builder pending" message="No report template is available for this account yet." icon={FileText} />
+              <PendingState title="Report Builder pending" message="No report template is available for this account yet." icon={FileText}
+                action={<CrossLink to="/app/analysis/overview" label="Review Analysis first" />}
+              />
             </div>
           );
         }

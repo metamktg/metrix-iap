@@ -18,7 +18,7 @@ import {
 import { RecommendationDeck, actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
 import {
   ModuleHeader, SectionCard, CaveatNote, DetailReveal, deriveLabel,
-  UnconfiguredState, PendingState, fmtUSD, fmtNum, eventLabel, resultTerm,
+  UnconfiguredState, PendingState, CrossLink, fmtUSD, fmtNum, eventLabel, resultTerm,
 } from "./shared";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
 import { cn } from "@/lib/utils";
@@ -100,6 +100,7 @@ export function AdAccountOverview() {
         <PendingState
           title="Analysis data loading"
           message="Core analysis data is being assembled. Refresh in a moment."
+          action={<CrossLink to="/app/analysis/overview" label="Go to Analysis" />}
         />
       </div>
     );
@@ -342,7 +343,11 @@ export function AdAccountOverview() {
             {deckCards.length ? (
               <RecommendationDeck scopeId={account.id} cards={deckCards} emptyLabel="All account recommendations reviewed" />
             ) : (
-              <PendingState title="No recommendations yet" message="Optimization loop recommendations will appear here once generated." />
+              <PendingState
+                title="No recommendations yet"
+                message="Optimization loop recommendations will appear here once generated."
+                action={<CrossLink to="/app/listen/recommendations" label="View Recommendations" />}
+              />
             )}
           </SectionCard>
         </div>

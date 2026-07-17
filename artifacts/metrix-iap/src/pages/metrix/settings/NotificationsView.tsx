@@ -6,7 +6,7 @@
 import { useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getWorkspaceSettings } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, SectionCard, PendingState } from "../shared";
+import { ModuleHeader, SectionCard, PendingState, CrossLink } from "../shared";
 import { cn } from "@/lib/utils";
 import { Bell, Mail, MonitorSmartphone, CalendarClock, Check, Minus } from "lucide-react";
 import {
@@ -85,7 +85,9 @@ export function NotificationsView() {
     return (
       <div className="flex-1 flex flex-col">
         <ModuleHeader section={SECTION} title="Notifications" />
-        <PendingState title="No workspace settings" message="Notification settings are not available for this workspace yet." icon={Bell} />
+        <PendingState title="No workspace settings" message="Notification settings are not available for this workspace yet." icon={Bell}
+          action={<CrossLink to="/app/analysis/overview" label="Go to Overview" />}
+        />
       </div>
     );
   }

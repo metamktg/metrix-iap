@@ -10,7 +10,7 @@ import { useAccount } from "@/contexts/AccountContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getWorkspaceSettings } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, SectionCard, PendingState, CaveatNote, DetailReveal, deriveLabel } from "../shared";
+import { ModuleHeader, SectionCard, PendingState, CaveatNote, DetailReveal, deriveLabel, CrossLink } from "../shared";
 import { cn } from "@/lib/utils";
 import { Users, UserPlus, ShieldCheck, Loader2, X, RotateCw, Check } from "lucide-react";
 import {
@@ -20,6 +20,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   useListWorkspaceInvites,
   useListWorkspaceMembers,
@@ -355,6 +365,7 @@ function PendingInviteRow({
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
   const [resent, setResent] = useState(false);
+  const [confirmRevoke, setConfirmRevoke] = useState(false);
   const { mutate: revoke, isPending: isRevoking } = useRevokeWorkspaceInvite();
   const { mutate: resend, isPending: isResending } = useResendWorkspaceInvite();
 
@@ -365,9 +376,6 @@ function PendingInviteRow({
 
   const handleRevoke = () => {
     if (isRevoking || isResending) return;
-    if (!window.confirm(`Revoke the invite for ${invite.email}? They will lose access and any temp password stops working.`)) {
-      return;
-    }
     setError(null);
     revoke(
       { workspaceId, inviteId: invite.id },
@@ -431,7 +439,7 @@ function PendingInviteRow({
         </button>
         <button
           type="button"
-          onClick={handleRevoke}
+          onClick={() => setConfirmRevoke(true)}
           disabled={isRevoking || isResending}
           title="Revoke invite"
           className="flex items-center gap-1 h-6 px-2 rounded border border-red-400/25 bg-red-400/[0.06] text-label font-medium text-red-400/90 hover:bg-red-400/[0.12] transition-colors disabled:opacity-40 disabled:pointer-events-none"
@@ -441,6 +449,26 @@ function PendingInviteRow({
           Revoke
         </button>
       </div>
+
+      <AlertDialog open={confirmRevoke} onOpenChange={setConfirmRevoke}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revoke invite?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The invite for <strong>{invite.email}</strong> will be cancelled. They will lose access and any temporary password stops working.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRevoke}
+              className="bg-red-600 hover:bg-red-700 text-white focus-visible:ring-red-600"
+            >
+              Revoke invite
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -677,9 +705,10 @@ function MemberActionsCell({
     );
   };
 
-  const handleStatusChange = (next: "active" | "disabled") => {
+  const [confirmDisable, setConfirmDisable] = useState(false);
+
+  const doStatusChange = (next: "active" | "disabled") => {
     if (busy) return;
-    if (next === "disabled" && !window.confirm(`Remove ${email}'s access to this workspace?`)) return;
     setError(null);
     setStatus(
       { workspaceId, email, data: { status: next } },
@@ -693,6 +722,15 @@ function MemberActionsCell({
           ),
       },
     );
+  };
+
+  const handleStatusChange = (next: "active" | "disabled") => {
+    if (busy) return;
+    if (next === "disabled") {
+      setConfirmDisable(true);
+      return;
+    }
+    doStatusChange(next);
   };
 
   return (
@@ -750,6 +788,26 @@ function MemberActionsCell({
           {error}
         </span>
       )}
+
+      <AlertDialog open={confirmDisable} onOpenChange={setConfirmDisable}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove member access?</AlertDialogTitle>
+            <AlertDialogDescription>
+              <strong>{email}</strong> will lose access to this workspace immediately. You can restore their access at any time.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => doStatusChange("disabled")}
+              className="bg-red-600 hover:bg-red-700 text-white focus-visible:ring-red-600"
+            >
+              Remove access
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -767,6 +825,7 @@ export function TeamAccessView() {
           title="Access required"
           message="Team management is available to admins and members with the Manage team permission. Ask a workspace admin if you need a change to your access."
           icon={ShieldCheck}
+          action={<CrossLink to="/app/analysis/overview" label="Back to Overview" />}
         />
       </div>
     );

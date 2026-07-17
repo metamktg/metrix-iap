@@ -93,7 +93,9 @@ export function SignalView() {
                   action={<LoopAction to="/app/analysis/overview" label="Review Analysis" icon="analysis" variant="secondary" />}
                 />
               ) : shown.length === 0 ? (
-                <PendingState title="No signals in this scope" message="Switch scope to view other signals." icon={Radio} />
+                <PendingState title="No signals in this scope" message="Switch scope to view other signals." icon={Radio}
+                  action={<CrossLink to="/app/listen/alerts" label="View Alerts" />}
+                />
               ) : (
                 <div className="space-y-3">
                   {shown.map((s) => (

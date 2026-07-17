@@ -74,7 +74,9 @@ export function AlertsView() {
 
             <div className="px-6 py-5 max-w-3xl space-y-6">
               {total === 0 ? (
-                <PendingState title="No active alerts" message="High-impact signals and data caveats appear here when detected." icon={BellOff} />
+                <PendingState title="No active alerts" message="High-impact signals and data caveats appear here when detected." icon={BellOff}
+                  action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />}
+                />
               ) : (
                 <>
                   {highSignals.length > 0 && (

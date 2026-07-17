@@ -10,7 +10,7 @@ import { getAdAccount, getBriefBuilder, getStrategyData, getAnalysisData, getMST
 import {
   ModuleHeader, ModuleTabs, ModuleScopeGate, PendingState,
   MetricTile, CaveatNote, CrossLink, useFocusParam, FlowCrumb, useFromParam,
-  RangeScopeBar, NoDataInRangeState, StaleFocusNotice, deriveLabel,
+  RangeScopeBar, NoDataInRangeState, StaleFocusNotice, deriveLabel, SkeletonBlock,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import {
@@ -115,7 +115,7 @@ export function BriefBuilderView() {
             <RangeScopeBar grainNote="Briefs derive from the account's full flight window — this import has no daily grain." />
             {generation.lastError && (
               <div className="px-6 pt-4">
-                <GenerationErrorNote message={generation.lastError} />
+                <GenerationErrorNote message={generation.lastError} onRetry={generation.start} />
               </div>
             )}
 
@@ -149,7 +149,15 @@ export function BriefBuilderView() {
                         : `No source-backed ${tab === "ugc" ? "UGC" : "video"} briefs exist for this account yet. Briefs are only generated from validated strategy — nothing is fabricated.`
                     }
                     icon={tab === "video" ? Video : tab === "ugc" ? Users : FileText}
+                    action={!hasPillars ? <CrossLink to="/app/strategy/overview" label="Review Strategy first" /> : undefined}
                   />
+                  {generation.isRunning && (
+                    <div className="space-y-2.5" aria-busy="true">
+                      <SkeletonBlock className="h-32 w-full" />
+                      <SkeletonBlock className="h-32 w-full" />
+                      <SkeletonBlock className="h-32 w-full" />
+                    </div>
+                  )}
                   {tab === "static" && hasPillars && briefs.length === 0 && (
                     <div className="text-center">
                       <GenerateButton

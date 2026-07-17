@@ -114,7 +114,9 @@ export function ExportsView() {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Exports" account={acct} />
-              <PendingState title="No export options" message="Export formats become available once the report template exists." icon={FileDown} />
+              <PendingState title="No export options" message="Export formats become available once the report template exists." icon={FileDown}
+                action={<CrossLink to="/app/reports/new" label="Compose a Report" />}
+              />
             </div>
           );
         }
@@ -174,7 +176,9 @@ export function ExportsView() {
 
               <SectionCard title="Exported deliverables" desc="Exported reports · download re-generates from current data">
                 {exportedReports.length === 0 ? (
-                  <PendingState title="Nothing exported yet" message="Exported reports will be listed here with their format and date." icon={FileText} />
+                  <PendingState title="Nothing exported yet" message="Exported reports will be listed here with their format and date." icon={FileText}
+                    action={<CrossLink to="/app/reports/new" label="Compose a Report" />}
+                  />
                 ) : (
                   <div className="divide-y divide-border/20">
                     {exportedReports.map((r) => (

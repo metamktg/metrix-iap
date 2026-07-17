@@ -31,6 +31,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Command,
@@ -897,6 +907,7 @@ function CreativeUploadSection({
   // Per-row delete tracking: a shared mutation's isPending would spin/disable
   // EVERY row's delete button while one delete runs.
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [autoMapping, setAutoMapping] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   // Throttle progress re-renders: every XHR progress event used to re-render
@@ -921,6 +932,7 @@ function CreativeUploadSection({
   const isUploading = queueTotal > 0;
 
   const handleDelete = async (importId: string) => {
+    setConfirmDeleteId(null);
     setPendingDeleteId(importId);
     try {
       await deleteMutation.mutateAsync({ accountId, importId });
@@ -1142,7 +1154,7 @@ function CreativeUploadSection({
                 />
               </div>
               <button
-                onClick={() => void handleDelete(asset.id)}
+                onClick={() => setConfirmDeleteId(asset.id)}
                 disabled={pendingDeleteId === asset.id}
                 className="shrink-0 mt-2 w-7 h-7 flex items-center justify-center rounded text-muted-foreground/80 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 aria-label={`Remove ${asset.filename}`}
@@ -1157,6 +1169,31 @@ function CreativeUploadSection({
           ))}
         </div>
       )}
+
+      {(() => {
+        const asset = confirmDeleteId ? creativeAssets.find((a) => a.id === confirmDeleteId) : null;
+        return (
+          <AlertDialog open={!!confirmDeleteId} onOpenChange={(open) => { if (!open) setConfirmDeleteId(null); }}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Remove creative file?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  <strong>{asset?.filename ?? "This file"}</strong> will be permanently removed from this account's staged imports. This cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => { if (confirmDeleteId) void handleDelete(confirmDeleteId); }}
+                  className="bg-red-600 hover:bg-red-700 text-white focus-visible:ring-red-600"
+                >
+                  Remove file
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        );
+      })()}
     </div>
   );
 }

@@ -37,7 +37,9 @@ export function CreativeScanView() {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Creative Scan" account={acct} />
-              <PendingState title="No scanned creatives" message={mst?.render_policy ?? "The creative scan populates once the local library is mapped."} icon={Library} />
+              <PendingState title="No scanned creatives" message={mst?.render_policy ?? "The creative scan populates once the local library is mapped."} icon={Library}
+                action={<CrossLink to="/app/mst/matrix" label="Open MST Matrix" />}
+              />
             </div>
           );
         }
@@ -121,7 +123,9 @@ export function CreativeScanView() {
 
               {tab === "variables" && (
                 distinctVarCount === 0 ? (
-                  <PendingState title="No variables yet" message="The variable library aggregates from concepts in the local library." icon={Tags} />
+                  <PendingState title="No variables yet" message="The variable library aggregates from concepts in the local library." icon={Tags}
+                    action={<CrossLink to="/app/analysis/library" label="Open IAP Library" />}
+                  />
                 ) : (
                   <div className="space-y-5">
                     <div className="flex items-center gap-1.5">

@@ -38,7 +38,12 @@ export function AnalysisOverview() {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Analysis Overview" tabs="analysis" account={acct} />
-              <PendingState title="No analysis yet" message="Analysis appears once performance data is connected or imported." icon={LineChart} />
+              <PendingState
+                title="No analysis yet"
+                message="Analysis appears once performance data is connected or imported."
+                icon={LineChart}
+                action={<CrossLink to="/app/analysis/library" label="Import data or connect an account" />}
+              />
             </div>
           );
         }

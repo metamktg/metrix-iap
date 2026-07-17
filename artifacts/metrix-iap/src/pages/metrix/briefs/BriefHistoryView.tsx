@@ -63,7 +63,12 @@ export function BriefHistoryView() {
 
             <div className="px-6 py-5 max-w-3xl">
               {briefs.length === 0 ? (
-                <PendingState title="No brief history" message="Briefs appear here once generated from strategy pillars." icon={FileClock} />
+                <PendingState
+                  title="No brief history"
+                  message="Briefs appear here once generated from strategy pillars."
+                  icon={FileClock}
+                  action={<CrossLink to="/app/briefs/builder" label="Open Brief Builder" />}
+                />
               ) : (
                 <div className="space-y-2.5">
                   {briefs.map((b) => (

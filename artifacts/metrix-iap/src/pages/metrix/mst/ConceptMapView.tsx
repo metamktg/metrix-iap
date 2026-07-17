@@ -53,7 +53,9 @@ export function ConceptMapView() {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Concept Map" account={acct} />
-              <PendingState title="No concepts yet" message="Concepts appear once cell-level analysis is available." icon={Network} />
+              <PendingState title="No concepts yet" message="Concepts appear once cell-level analysis is available." icon={Network}
+                action={<CrossLink to="/app/analysis/library" label="Open IAP Library" />}
+              />
             </div>
           );
         }

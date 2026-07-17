@@ -80,6 +80,7 @@ export function ReportHistoryView() {
         toast({
           title: "Report deleted",
           description: `"${title}" was removed from Report History.`,
+          duration: 4000,
         });
       },
       onError: () => {
@@ -201,10 +202,9 @@ export function ReportHistoryView() {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Report History" account={acct} />
-              <PendingState title="No reports yet" message="Reports you compose and export will appear here." icon={History} />
-              <div className="px-6 pb-6 text-center">
-                <CrossLink to="/app/reports/new" label="Compose the first report" />
-              </div>
+              <PendingState title="No reports yet" message="Reports you compose and export will appear here." icon={History}
+                action={<CrossLink to="/app/reports/new" label="Compose the first report" />}
+              />
             </div>
           );
         }

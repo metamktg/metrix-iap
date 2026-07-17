@@ -102,7 +102,9 @@ export function MatrixBuilderView() {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Matrix Builder" account={acct} />
-              <PendingState title="No matrix available" message={mst?.render_policy ?? "The matrix becomes available once historical data or imports exist."} icon={Grid3x3} />
+              <PendingState title="No matrix available" message={mst?.render_policy ?? "The matrix becomes available once historical data or imports exist."} icon={Grid3x3}
+                action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />}
+              />
             </div>
           );
         }

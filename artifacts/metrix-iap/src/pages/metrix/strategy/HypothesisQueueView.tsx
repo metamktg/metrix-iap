@@ -75,7 +75,9 @@ export function HypothesisQueueView() {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Hypothesis Queue" tabs="strategy" account={acct} />
-              <PendingState title="Strategy pending" message="No strategy has been derived for this account yet." />
+              <PendingState title="Strategy pending" message="No strategy has been derived for this account yet."
+                action={<CrossLink to="/app/strategy/overview" label="Go to Strategy Overview" />}
+              />
             </div>
           );
         }
@@ -125,7 +127,9 @@ export function HypothesisQueueView() {
             <div className="px-6 py-5 max-w-4xl">
               {tab === "queue" && (
                 hyps.length === 0 ? (
-                  <PendingState title="No hypotheses yet" message="Active hypotheses appear once strategy is derived." icon={FlaskConical} />
+                  <PendingState title="No hypotheses yet" message="Active hypotheses appear once strategy is derived." icon={FlaskConical}
+                    action={<CrossLink to="/app/strategy/overview" label="Go to Strategy Overview" />}
+                  />
                 ) : (
                   <div className="space-y-2.5">
                     {hyps.map((h) => {
@@ -180,7 +184,9 @@ export function HypothesisQueueView() {
 
               {tab === "pillars" && (
                 pillars.length === 0 ? (
-                  <PendingState title="No pillars yet" message="Message pillars appear once analysis is ready." icon={Layers} />
+                  <PendingState title="No pillars yet" message="Message pillars appear once analysis is ready." icon={Layers}
+                    action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />}
+                  />
                 ) : (
                   <div className="space-y-3">
                     {pillars.map((p) => {
