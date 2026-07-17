@@ -31,7 +31,7 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
   return (
     <div className="rounded-lg border border-border/40 bg-white/[0.02] px-2.5 py-2">
       <div className="text-[8px] font-mono uppercase tracking-widest text-muted-foreground/60">{label}</div>
-      <div className="text-[13px] font-semibold text-foreground tabular-nums mt-0.5">{value}</div>
+      <div className="text-title font-semibold text-foreground tabular-nums mt-0.5">{value}</div>
       {sub && <div className="text-[9px] text-muted-foreground/60 mt-0.5">{sub}</div>}
     </div>
   );
@@ -86,16 +86,16 @@ export function TilePerformanceModal({
   return (
     <>
       <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-        <DialogContent className="max-w-3xl bg-[hsl(222_61%_6%)] border-border/50 max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl bg-surface-deep border-border/50 max-h-[85vh] overflow-y-auto">
           <DialogHeader className="text-left space-y-1">
-            <div className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest">
+            <div className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest">
               MST tile · {cellId}
               {matrixCell?.diagonal_role === "diag_down" && " · Primary diagonal ↘"}
               {matrixCell?.diagonal_role === "diag_up" && " · Counter diagonal ↗"}
             </div>
-            <DialogTitle className="text-[15px] font-semibold text-foreground leading-tight">{title}</DialogTitle>
+            <DialogTitle className="text-callout font-semibold text-foreground leading-tight">{title}</DialogTitle>
             {matrixCell && (
-              <DialogDescription className="text-[11px] text-muted-foreground/70">
+              <DialogDescription className="text-caption text-muted-foreground/70">
                 {matrixCell.column_label} × {matrixCell.row_shared_variable}
               </DialogDescription>
             )}
@@ -106,8 +106,8 @@ export function TilePerformanceModal({
               <div className="w-10 h-10 mx-auto rounded-xl border border-border/40 bg-white/[0.03] flex items-center justify-center">
                 <Grid3x3 className="w-4 h-4 text-muted-foreground/60" />
               </div>
-              <p className="text-[13px] font-medium text-foreground/60">This tile never ran</p>
-              <p className="text-[11px] text-muted-foreground/60 max-w-sm mx-auto">
+              <p className="text-title font-medium text-foreground/60">This tile never ran</p>
+              <p className="text-caption text-muted-foreground/60 max-w-sm mx-auto">
                 No performance rows exist for {cellId} in this import — it's a planned matrix cell
                 without observed spend. Numbers appear here once it runs.
               </p>
@@ -128,15 +128,15 @@ export function TilePerformanceModal({
                 </div>
                 <div className="grid grid-cols-3 divide-x divide-border/30">
                   <div className="px-3 py-2 text-center">
-                    <div className="text-[12px] font-semibold text-foreground tabular-nums">{num(totals.impressions)}</div>
+                    <div className="text-body font-semibold text-foreground tabular-nums">{num(totals.impressions)}</div>
                     <div className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground/60 mt-0.5">Impressions</div>
                   </div>
                   <div className="px-3 py-2 text-center">
-                    <div className="text-[12px] font-semibold text-foreground tabular-nums">{num(totals.linkClicks)}</div>
+                    <div className="text-body font-semibold text-foreground tabular-nums">{num(totals.linkClicks)}</div>
                     <div className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground/60 mt-0.5">Link clicks</div>
                   </div>
                   <div className="px-3 py-2 text-center">
-                    <div className="text-[12px] font-semibold text-foreground tabular-nums">{num(totals.results)}</div>
+                    <div className="text-body font-semibold text-foreground tabular-nums">{num(totals.results)}</div>
                     <div className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground/60 mt-0.5">Results</div>
                   </div>
                 </div>
@@ -157,11 +157,11 @@ export function TilePerformanceModal({
                   <tbody>
                     {perf.map((r) => (
                       <tr key={r["Result type"]} className="border-b border-border/20 last:border-b-0">
-                        <td className="px-3 py-1.5 text-[11px] text-foreground/85">{r["Result type"]}</td>
-                        <td className="px-3 py-1.5 text-right text-[11px] tabular-nums text-foreground/85">{usd(r["Amount spent (USD)"])}</td>
-                        <td className="px-3 py-1.5 text-right text-[11px] tabular-nums text-foreground/85">{num(r.Results)}</td>
-                        <td className="px-3 py-1.5 text-right text-[11px] tabular-nums text-foreground/85">{r.CPA_result != null ? usd(r.CPA_result) : "—"}</td>
-                        <td className="px-3 py-1.5 text-right text-[11px] tabular-nums text-foreground/85">{pct(r.CTR_link_pct)}</td>
+                        <td className="px-3 py-1.5 text-caption text-foreground/85">{r["Result type"]}</td>
+                        <td className="px-3 py-1.5 text-right text-caption tabular-nums text-foreground/85">{usd(r["Amount spent (USD)"])}</td>
+                        <td className="px-3 py-1.5 text-right text-caption tabular-nums text-foreground/85">{num(r.Results)}</td>
+                        <td className="px-3 py-1.5 text-right text-caption tabular-nums text-foreground/85">{r.CPA_result != null ? usd(r.CPA_result) : "—"}</td>
+                        <td className="px-3 py-1.5 text-right text-caption tabular-nums text-foreground/85">{pct(r.CTR_link_pct)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -170,14 +170,14 @@ export function TilePerformanceModal({
 
               {card.iapRead && (
                 <div className="space-y-1">
-                  <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">IAP read</p>
-                  <p className="text-[11px] text-foreground/80 leading-relaxed">{card.iapRead}</p>
+                  <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">IAP read</p>
+                  <p className="text-caption text-foreground/80 leading-relaxed">{card.iapRead}</p>
                 </div>
               )}
 
               {card.tags.length > 0 && (
                 <div className="space-y-1.5">
-                  <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Variable stack</p>
+                  <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Variable stack</p>
                   <VariableTagChips codes={card.tags} />
                 </div>
               )}
@@ -187,18 +187,18 @@ export function TilePerformanceModal({
           {/* Cell copy — full prose lives here; the matrix tile face shows the headline only */}
           {matrixCell?.plain_text?.primary && (
             <div className="space-y-1 pt-1 border-t border-border/30">
-              <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60 pt-2">Cell copy</p>
+              <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60 pt-2">Cell copy</p>
               {matrixCell.plain_text.headline && (
-                <p className="text-[12px] font-medium text-foreground leading-tight">{matrixCell.plain_text.headline}</p>
+                <p className="text-body font-medium text-foreground leading-tight">{matrixCell.plain_text.headline}</p>
               )}
-              <p className="text-[11px] text-foreground/80 leading-relaxed">{matrixCell.plain_text.primary}</p>
+              <p className="text-caption text-foreground/80 leading-relaxed">{matrixCell.plain_text.primary}</p>
             </div>
           )}
 
           {/* Creative context */}
           {(lib || matrixCell) && (
             <div className="space-y-1.5 pt-1 border-t border-border/30">
-              <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60 pt-2">Creative</p>
+              <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60 pt-2">Creative</p>
               <div className="max-w-[220px]">
                 <CreativeCard data={card} />
               </div>

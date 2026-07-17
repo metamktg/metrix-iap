@@ -25,6 +25,7 @@ const seed = JSON.parse(
 
 vi.mock("@/contexts/MetrixDataContext", () => ({
   useMetrixSeed: () => seed,
+  useMetrixIsRefetching: () => false,
   MetrixDataProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 

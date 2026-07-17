@@ -64,29 +64,29 @@ function TrayAnalysisUnconfigured({ accountId }: { accountId: string }) {
       {/* Header stripe */}
       <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/30 bg-primary/[0.04]">
         <CalendarRange className="w-3.5 h-3.5 text-primary/80 shrink-0" />
-        <span className="text-[11px] font-semibold text-foreground/80 flex-1">IAP Analysis</span>
+        <span className="text-caption font-semibold text-foreground/80 flex-1">IAP Analysis</span>
         <span className="text-[9px] font-mono uppercase tracking-widest text-amber-400/70 border border-amber-400/25 bg-amber-400/[0.08] rounded px-1.5 py-0.5 leading-none">
           Setup required
         </span>
       </div>
       {/* Body */}
       <div className="px-3 py-3 space-y-3">
-        <p className="text-[11px] text-foreground/55 leading-snug">
+        <p className="text-caption text-foreground/55 leading-snug">
           Upload your performance CSVs or connect Meta to unlock analysis, strategy, and briefs.
         </p>
         <div className="grid grid-cols-2 gap-1.5">
           <button
             onClick={() => navigate(`/app/account?account=${accountId}`)}
-            className="flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg bg-primary/15 border border-primary/30 text-[11px] font-semibold text-primary hover:bg-primary/25 transition-colors"
+            className="flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg bg-primary/15 border border-primary/30 text-caption font-semibold text-primary hover:bg-primary/25 transition-colors"
           >
-            <UploadCloud className="w-3 h-3" />
+            <UploadCloud className="w-3.5 h-3.5" />
             Upload CSV
           </button>
           <button
             onClick={() => navigate(`/app/account?account=${accountId}`)}
-            className="flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg border border-border/40 bg-white/[0.03] text-[11px] font-medium text-foreground/65 hover:text-foreground hover:bg-white/[0.06] transition-colors"
+            className="flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg border border-border/40 bg-white/[0.03] text-caption font-medium text-foreground/65 hover:text-foreground hover:bg-white/[0.06] transition-colors"
           >
-            <Zap className="w-3 h-3" />
+            <Zap className="w-3.5 h-3.5" />
             Connect Meta
           </button>
         </div>
@@ -146,20 +146,20 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
       {/* Header stripe */}
       <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/30 bg-primary/[0.04]">
         <CalendarRange className="w-3.5 h-3.5 text-primary/80 shrink-0" />
-        <span className="text-[11px] font-semibold text-foreground/80 flex-1">Run Analysis</span>
+        <span className="text-caption font-semibold text-foreground/80 flex-1">Run Analysis</span>
         {run?.status === "success" && (
           <span className="flex items-center gap-0.5 text-[9px] font-semibold text-emerald-400">
-            <CheckCircle2 className="w-2.5 h-2.5" /> Complete
+            <CheckCircle2 className="w-3.5 h-3.5" /> Complete
           </span>
         )}
         {run?.status === "running" && (
           <span className="flex items-center gap-0.5 text-[9px] font-semibold text-amber-400">
-            <Loader2 className="w-2.5 h-2.5 animate-spin" /> Running
+            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Running
           </span>
         )}
         {run?.status === "error" && (
           <span className="flex items-center gap-0.5 text-[9px] font-semibold text-red-400">
-            <XCircle className="w-2.5 h-2.5" /> Failed
+            <XCircle className="w-3.5 h-3.5" /> Failed
           </span>
         )}
       </div>
@@ -168,7 +168,7 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
       <div className="px-3 py-2.5 space-y-2.5">
         {/* Last run summary */}
         {run?.status === "success" && run.date_start && run.date_end && (
-          <div className="text-[10px] text-muted-foreground/60 bg-emerald-400/[0.05] border border-emerald-400/15 rounded-lg px-2.5 py-1.5 leading-snug">
+          <div className="text-label text-muted-foreground/60 bg-emerald-400/[0.05] border border-emerald-400/15 rounded-lg px-2.5 py-1.5 leading-snug">
             <span className="text-emerald-400/80 font-medium">Last run:</span>{" "}
             {run.date_start} → {run.date_end}
             {run.rows_ingested != null && (
@@ -177,7 +177,7 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
           </div>
         )}
         {run?.status === "error" && run.error_message && (
-          <div className="text-[10px] text-red-400/80 bg-red-400/[0.05] border border-red-400/15 rounded-lg px-2.5 py-1.5 leading-snug line-clamp-2">
+          <div className="text-label text-red-400/80 bg-red-400/[0.05] border border-red-400/15 rounded-lg px-2.5 py-1.5 leading-snug line-clamp-2">
             {run.error_message}
           </div>
         )}
@@ -195,7 +195,7 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
               onClick={() => setDateRange(r.id)}
               disabled={isRunning}
               className={cn(
-                "h-7 rounded-lg border text-[10px] font-semibold transition-colors",
+                "h-7 rounded-lg border text-label font-semibold transition-colors",
                 dateRange === r.id
                   ? "border-primary/50 bg-primary/15 text-primary"
                   : "border-border/35 bg-white/[0.02] text-foreground/50 hover:bg-white/[0.05] hover:text-foreground/75",
@@ -208,7 +208,7 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
         </div>
 
         {error && (
-          <p className="text-[10px] text-red-400 leading-snug">{error}</p>
+          <p className="text-label text-red-400 leading-snug">{error}</p>
         )}
 
         {/* Run / Re-run button — de-emphasised when recently run */}
@@ -217,12 +217,12 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
           <button
             onClick={() => void handleRun()}
             disabled={startMutation.isPending}
-            className="w-full flex items-center justify-center gap-1.5 h-7 rounded-lg border border-border/30 bg-white/[0.02] text-[11px] font-medium text-muted-foreground/60 hover:text-foreground/80 hover:bg-white/[0.05] hover:border-border/50 transition-colors"
+            className="w-full flex items-center justify-center gap-1.5 h-7 rounded-lg border border-border/30 bg-white/[0.02] text-caption font-medium text-muted-foreground/60 hover:text-foreground/80 hover:bg-white/[0.05] hover:border-border/50 transition-colors"
           >
             {startMutation.isPending ? (
-              <><Loader2 className="w-3 h-3 animate-spin" /> Starting…</>
+              <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Starting…</>
             ) : (
-              <><RotateCcw className="w-3 h-3" /> Re-run analysis</>
+              <><RotateCcw className="w-3.5 h-3.5" /> Re-run analysis</>
             )}
           </button>
         ) : (
@@ -231,7 +231,7 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
             onClick={() => void handleRun()}
             disabled={isRunning || startMutation.isPending}
             className={cn(
-              "w-full flex items-center justify-center gap-2 h-8 rounded-lg text-[12px] font-semibold transition-colors",
+              "w-full flex items-center justify-center gap-2 h-8 rounded-lg text-body font-semibold transition-colors",
               isRunning || startMutation.isPending
                 ? "bg-primary/10 border border-primary/20 text-primary/50 cursor-not-allowed"
                 : "bg-primary text-primary-foreground hover:bg-primary/90"
@@ -257,11 +257,11 @@ function UploadDataLink({ accountId }: { accountId: string }) {
   return (
     <button
       onClick={() => navigate(`/app/account?account=${accountId}`)}
-      className="w-full flex items-center gap-1.5 text-[10px] text-muted-foreground/50 hover:text-foreground/70 transition-colors justify-center py-0.5"
+      className="w-full flex items-center gap-1.5 text-label text-muted-foreground/50 hover:text-foreground/70 transition-colors justify-center py-0.5"
     >
-      <Upload className="w-2.5 h-2.5" />
+      <Upload className="w-3.5 h-3.5" />
       Upload / manage data files
-      <ArrowRight className="w-2.5 h-2.5 ml-auto opacity-40" />
+      <ArrowRight className="w-3.5 h-3.5 ml-auto opacity-40" />
     </button>
   );
 }
@@ -337,7 +337,7 @@ function TrayItem({
 }) {
   return (
     <TrayCard accent={accent}>
-      <p className="text-[12px] font-medium text-foreground/90 leading-snug line-clamp-2">{label}</p>
+      <p className="text-body font-medium text-foreground/90 leading-snug line-clamp-2">{label}</p>
       {sub && (
         <span className="inline-block text-[9px] font-semibold uppercase tracking-wide bg-white/[0.06] border border-border/30 rounded px-1.5 py-0.5 text-foreground/55 leading-none">
           {sub}
@@ -346,10 +346,10 @@ function TrayItem({
       {onAction && (
         <button
           onClick={onAction}
-          className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary-foreground bg-primary hover:bg-primary/90 rounded px-2 py-0.5 transition-colors"
+          className="inline-flex items-center gap-1 text-caption font-semibold text-primary-foreground bg-primary hover:bg-primary/90 rounded px-2 py-0.5 transition-colors"
         >
           {actionLabel}
-          <ArrowRight className="w-2.5 h-2.5" />
+          <ArrowRight className="w-3.5 h-3.5" />
         </button>
       )}
     </TrayCard>
@@ -375,15 +375,15 @@ function ApprovedTaskItem({
               : "border-border/50 text-transparent hover:border-emerald-400/60 hover:bg-emerald-400/5"
           )}
         >
-          <Check className="w-2.5 h-2.5" />
+          <Check className="w-3.5 h-3.5" />
         </button>
 
         <div className="flex-1 min-w-0">
-          <p className={cn("text-[12px] font-medium leading-tight", done ? "text-foreground/40 line-through" : "text-foreground/90")}>
+          <p className={cn("text-body font-medium leading-tight", done ? "text-foreground/40 line-through" : "text-foreground/90")}>
             {meta.title}
           </p>
           {!done && (
-            <p className="text-[10px] text-foreground/60 mt-0.5 leading-snug line-clamp-2">
+            <p className="text-label text-foreground/60 mt-0.5 leading-snug line-clamp-2">
               {meta.recommendedAction}
             </p>
           )}
@@ -405,7 +405,7 @@ function ApprovedTaskItem({
           aria-label="Return to deck"
           className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground/40 hover:text-muted-foreground hover:bg-white/5 transition-colors shrink-0"
         >
-          <RotateCcw className="w-2.5 h-2.5" />
+          <RotateCcw className="w-3.5 h-3.5" />
         </button>
       </div>
     </TrayCard>
@@ -425,11 +425,11 @@ function TrayNavLink({
   return (
     <button
       onClick={() => navigate(to)}
-      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-[12px] font-medium text-foreground/60 hover:text-foreground hover:bg-white/[0.04] transition-colors text-left"
+      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-body font-medium text-foreground/60 hover:text-foreground hover:bg-white/[0.04] transition-colors text-left"
     >
-      {Icon && <Icon className="w-3 h-3 shrink-0 text-muted-foreground/50" />}
+      {Icon && <Icon className="w-3.5 h-3.5 shrink-0 text-muted-foreground/50" />}
       {label}
-      <ArrowRight className="w-2.5 h-2.5 ml-auto opacity-40" />
+      <ArrowRight className="w-3.5 h-3.5 ml-auto opacity-40" />
     </button>
   );
 }
@@ -450,14 +450,14 @@ function EmptySlot({
   const [, navigate] = useLocation();
   return (
     <div className="px-0.5 py-1.5 space-y-1">
-      <p className="text-[11px] text-foreground/40 leading-snug">{message}</p>
+      <p className="text-caption text-foreground/40 leading-snug">{message}</p>
       {nudgeLabel && nudgeTo && (
         <button
           onClick={() => navigate(nudgeTo)}
-          className="text-[10px] text-primary/70 hover:text-primary font-medium transition-colors flex items-center gap-1"
+          className="text-label text-primary/70 hover:text-primary font-medium transition-colors flex items-center gap-1"
         >
           {nudgeLabel}
-          <ArrowRight className="w-2.5 h-2.5" />
+          <ArrowRight className="w-3.5 h-3.5" />
         </button>
       )}
     </div>
@@ -503,7 +503,7 @@ export function TaskTray() {
   if (!open) {
     const hasPriorityItems = approvedUndone.length > 0;
     return (
-      <div className="w-[var(--tray-closed)] shrink-0 border-l-2 border-border/50 bg-[hsl(222_55%_8%)] flex flex-col items-center py-3 gap-2">
+      <div className="w-[var(--tray-closed)] shrink-0 border-l-2 border-border/50 bg-surface-sidebar flex flex-col items-center py-3 gap-2">
         <button
           onClick={toggle}
           title="Expand task tray"
@@ -526,7 +526,7 @@ export function TaskTray() {
             </div>
             {totalItems > 0 && (
               <span className={cn(
-                "absolute -top-1.5 -right-1.5 min-w-[16px] h-4 rounded-full flex items-center justify-center text-[9px] font-bold leading-none px-1 tabular-nums border",
+                "absolute -top-1.5 -right-1.5 min-w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold leading-none px-1 tabular-nums border",
                 hasPriorityItems
                   ? "bg-emerald-500 text-white border-emerald-400/50"
                   : "bg-primary text-primary-foreground border-primary/50"
@@ -542,7 +542,7 @@ export function TaskTray() {
           onClick={toggle}
           title="Expand task tray"
         >
-          <ChevronRight className="w-3 h-3 text-muted-foreground/25" />
+          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/25" />
         </div>
 
         <button
@@ -560,17 +560,17 @@ export function TaskTray() {
   const accountIsUnconfigured = isAdAccountView && activeAdAccount?.status !== "configured";
 
   return (
-    <div className="w-[var(--tray-open)] shrink-0 border-l-2 border-border/60 bg-[hsl(222_55%_8%)] flex flex-col overflow-hidden">
+    <div className="w-[var(--tray-open)] shrink-0 border-l-2 border-border/60 bg-surface-sidebar flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50 bg-white/[0.02]">
         <div className="w-7 h-7 rounded-lg bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0">
           <ClipboardList className="w-4 h-4 text-primary" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[10px] font-mono text-muted-foreground/50 uppercase tracking-widest leading-none mb-0.5">
+          <p className="text-label font-mono text-muted-foreground/50 uppercase tracking-widest leading-none mb-0.5">
             Workflow
           </p>
-          <p className="text-[13px] font-semibold text-foreground leading-tight">
+          <p className="text-title font-semibold text-foreground leading-tight">
             {totalItems === 0
               ? "All caught up"
               : `${totalItems} action${totalItems !== 1 ? "s" : ""} pending`}
@@ -628,9 +628,9 @@ export function TaskTray() {
                 <div className="mt-1">
                   <button
                     onClick={() => setShowDone((v) => !v)}
-                    className="flex items-center gap-1 text-[10px] text-muted-foreground/50 hover:text-foreground/60 transition-colors px-0.5 py-0.5"
+                    className="flex items-center gap-1 text-label text-muted-foreground/50 hover:text-foreground/60 transition-colors px-0.5 py-0.5"
                   >
-                    {showDone ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                    {showDone ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                     Done ({approvedDone.length})
                   </button>
                   {showDone && (

@@ -10,7 +10,7 @@ import { useAccount } from "@/contexts/AccountContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getWorkspaceSettings } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, SectionCard, PendingState, CaveatNote, DetailReveal, deriveLabel } from "../shared";
+import { ModuleHeader, SectionCard, PendingState, CaveatNote, DetailReveal, deriveLabel, CrossLink } from "../shared";
 import { cn } from "@/lib/utils";
 import { Users, UserPlus, ShieldCheck, Loader2, X, RotateCw, Check } from "lucide-react";
 import {
@@ -20,6 +20,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   useListWorkspaceInvites,
   useListWorkspaceMembers,
@@ -95,11 +105,11 @@ function PermissionToggleRow({
           checked ? "border-primary bg-primary/20 text-primary" : "border-border/50",
         )}
       >
-        {checked && <Check className="w-2.5 h-2.5" />}
+        {checked && <Check className="w-3.5 h-3.5" />}
       </div>
       <div className="min-w-0">
-        <div className="text-[11px] font-medium text-foreground">{label}</div>
-        <div className="text-[10px] text-muted-foreground/70 leading-relaxed">{description}</div>
+        <div className="text-caption font-medium text-foreground">{label}</div>
+        <div className="text-label text-muted-foreground/70 leading-relaxed">{description}</div>
       </div>
     </button>
   );
@@ -208,8 +218,8 @@ function AddMemberDialog({
           <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center mb-1">
             <UserPlus className="w-4 h-4 text-primary" />
           </div>
-          <DialogTitle className="text-[16px]">Add member</DialogTitle>
-          <DialogDescription className="text-[12px] leading-relaxed">
+          <DialogTitle className="text-base">Add member</DialogTitle>
+          <DialogDescription className="text-body leading-relaxed">
             Set permissions and account access, then send the invite — the account is provisioned
             immediately with a temp password.
           </DialogDescription>
@@ -217,7 +227,7 @@ function AddMemberDialog({
 
         <form onSubmit={handleSubmit} className="space-y-3.5">
           <div className="space-y-1.5">
-            <label htmlFor="invite-email" className="text-[11px] font-medium text-foreground/80">
+            <label htmlFor="invite-email" className="text-caption font-medium text-foreground/80">
               Email address
             </label>
             <input
@@ -228,13 +238,13 @@ function AddMemberDialog({
               onChange={(e) => setEmail(e.target.value)}
               placeholder="name@company.com"
               autoComplete="off"
-              className="w-full h-9 px-3 rounded-md bg-white/[0.03] border border-border/40 text-[12px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40"
+              className="w-full h-9 px-3 rounded-md bg-white/[0.03] border border-border/40 text-body text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
               data-testid="input-invite-email"
             />
           </div>
 
           <div className="space-y-1.5">
-            <span className="text-[11px] font-medium text-foreground/80">Role</span>
+            <span className="text-caption font-medium text-foreground/80">Role</span>
             <div className="grid grid-cols-2 gap-2">
               {INVITE_ROLES.map((r) => (
                 <button
@@ -242,7 +252,7 @@ function AddMemberDialog({
                   type="button"
                   onClick={() => setRole(r.id)}
                   className={cn(
-                    "h-9 rounded-md border text-[12px] font-medium transition-colors",
+                    "h-9 rounded-md border text-body font-medium transition-colors",
                     role === r.id
                       ? "border-primary/30 bg-primary/[0.08] text-primary"
                       : "border-border/40 bg-white/[0.02] text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"
@@ -256,7 +266,7 @@ function AddMemberDialog({
           </div>
 
           <div className="space-y-1.5">
-            <span className="text-[11px] font-medium text-foreground/80">Permissions</span>
+            <span className="text-caption font-medium text-foreground/80">Permissions</span>
             <div className="space-y-1.5">
               <PermissionToggleRow
                 label="Manage team"
@@ -276,15 +286,15 @@ function AddMemberDialog({
           </div>
 
           <div className="space-y-1.5">
-            <span className="text-[11px] font-medium text-foreground/80">Ad account access</span>
+            <span className="text-caption font-medium text-foreground/80">Ad account access</span>
             {adAccounts.length === 0 ? (
-              <p className="text-[10px] text-muted-foreground/60">No ad accounts available yet.</p>
+              <p className="text-label text-muted-foreground/60">No ad accounts available yet.</p>
             ) : (
               <div className="max-h-36 overflow-y-auto rounded-md border border-border/40 divide-y divide-border/20">
                 {adAccounts.map((a) => (
                   <label
                     key={a.id}
-                    className="flex items-center gap-2 px-2.5 py-2 text-[11px] text-foreground/85 cursor-pointer hover:bg-white/[0.03]"
+                    className="flex items-center gap-2 px-2.5 py-2 text-caption text-foreground/85 cursor-pointer hover:bg-white/[0.03]"
                     data-testid={`checkbox-invite-account-${a.id}`}
                   >
                     <input
@@ -301,20 +311,20 @@ function AddMemberDialog({
           </div>
 
           {atSeatLimit && (
-            <div className="text-[11px] text-amber-400/90" data-testid="text-seat-limit-warning">
+            <div className="text-caption text-amber-400/90" data-testid="text-seat-limit-warning">
               This workspace is full: all {seatLimit} seats are in use. Remove a member or cancel a
               pending invite before adding someone new.
             </div>
           )}
 
           {feedback && (
-            <div className="text-[11px] text-amber-400/90" data-testid="text-invite-feedback">
+            <div className="text-caption text-amber-400/90" data-testid="text-invite-feedback">
               {feedback}
             </div>
           )}
 
           {successNotice && (
-            <div className="text-[11px] text-emerald-400/90" data-testid="text-invite-success">
+            <div className="text-caption text-emerald-400/90" data-testid="text-invite-success">
               {successNotice}
             </div>
           )}
@@ -323,7 +333,7 @@ function AddMemberDialog({
             <button
               type="button"
               onClick={() => handleOpenChange(false)}
-              className="h-9 px-4 rounded-md border border-border/50 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+              className="h-9 px-4 rounded-md border border-border/50 text-body font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
             >
               {successNotice ? "Close" : "Cancel"}
             </button>
@@ -331,7 +341,7 @@ function AddMemberDialog({
               <button
                 type="submit"
                 disabled={!email.trim() || isPending || atSeatLimit}
-                className="flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary border border-primary text-[12px] font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-md shadow-primary/25 disabled:opacity-40 disabled:pointer-events-none"
+                className="flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary border border-primary text-body font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-md shadow-primary/25 disabled:opacity-40 disabled:pointer-events-none"
                 data-testid="button-send-invite"
               >
                 {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserPlus className="w-3.5 h-3.5" />}
@@ -355,6 +365,7 @@ function PendingInviteRow({
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
   const [resent, setResent] = useState(false);
+  const [confirmRevoke, setConfirmRevoke] = useState(false);
   const { mutate: revoke, isPending: isRevoking } = useRevokeWorkspaceInvite();
   const { mutate: resend, isPending: isResending } = useResendWorkspaceInvite();
 
@@ -365,9 +376,6 @@ function PendingInviteRow({
 
   const handleRevoke = () => {
     if (isRevoking || isResending) return;
-    if (!window.confirm(`Revoke the invite for ${invite.email}? They will lose access and any temp password stops working.`)) {
-      return;
-    }
     setError(null);
     revoke(
       { workspaceId, inviteId: invite.id },
@@ -400,10 +408,10 @@ function PendingInviteRow({
     >
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-[12px] font-medium text-foreground truncate">{invite.email}</span>
+          <span className="text-body font-medium text-foreground truncate">{invite.email}</span>
           <span className="text-[9px] font-semibold uppercase tracking-wide text-amber-400 border border-amber-400/25 bg-amber-400/10 px-1.5 py-0.5 rounded leading-none">Invited</span>
         </div>
-        <div className="text-[10px] text-muted-foreground/70 truncate">
+        <div className="text-label text-muted-foreground/70 truncate">
           {error ? (
             <span className="text-red-400/90" data-testid={`text-invite-error-${invite.email}`}>{error}</span>
           ) : (
@@ -414,7 +422,7 @@ function PendingInviteRow({
           )}
         </div>
       </div>
-      <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none text-foreground/75 border-border/40 bg-white/[0.03]">
+      <span className="text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none text-foreground/75 border-border/40 bg-white/[0.03]">
         {invite.role}
       </span>
       <div className="flex items-center justify-end gap-1.5">
@@ -423,24 +431,44 @@ function PendingInviteRow({
           onClick={handleResend}
           disabled={isRevoking || isResending}
           title="Resend invite"
-          className="flex items-center gap-1 h-6 px-2 rounded border border-border/40 bg-white/[0.02] text-[10px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/[0.05] transition-colors disabled:opacity-40 disabled:pointer-events-none"
+          className="flex items-center gap-1 h-6 px-2 rounded border border-border/40 bg-white/[0.02] text-label font-medium text-muted-foreground hover:text-foreground hover:bg-white/[0.05] transition-colors disabled:opacity-40 disabled:pointer-events-none"
           data-testid={`button-resend-invite-${invite.email}`}
         >
-          {isResending ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCw className="w-3 h-3" />}
+          {isResending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCw className="w-3.5 h-3.5" />}
           Resend
         </button>
         <button
           type="button"
-          onClick={handleRevoke}
+          onClick={() => setConfirmRevoke(true)}
           disabled={isRevoking || isResending}
           title="Revoke invite"
-          className="flex items-center gap-1 h-6 px-2 rounded border border-red-400/25 bg-red-400/[0.06] text-[10px] font-medium text-red-400/90 hover:bg-red-400/[0.12] transition-colors disabled:opacity-40 disabled:pointer-events-none"
+          className="flex items-center gap-1 h-6 px-2 rounded border border-red-400/25 bg-red-400/[0.06] text-label font-medium text-red-400/90 hover:bg-red-400/[0.12] transition-colors disabled:opacity-40 disabled:pointer-events-none"
           data-testid={`button-revoke-invite-${invite.email}`}
         >
-          {isRevoking ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
+          {isRevoking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
           Revoke
         </button>
       </div>
+
+      <AlertDialog open={confirmRevoke} onOpenChange={setConfirmRevoke}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revoke invite?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The invite for <strong>{invite.email}</strong> will be cancelled. They will lose access and any temporary password stops working.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRevoke}
+              className="bg-red-600 hover:bg-red-700 text-white focus-visible:ring-red-600"
+            >
+              Revoke invite
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -482,7 +510,7 @@ function MemberPermissionsCell({
         disabled={isPending}
         onClick={() => handleToggle({ manage_team: !manageTeam, view_agency_rollups: viewAgencyRollups })}
         className={cn(
-          "h-5 px-1.5 rounded border text-[10px] font-medium transition-colors disabled:opacity-40",
+          "h-5 px-1.5 rounded border text-label font-medium transition-colors disabled:opacity-40",
           manageTeam
             ? "border-primary/30 bg-primary/[0.08] text-primary"
             : "border-border/40 bg-white/[0.02] text-muted-foreground hover:text-foreground",
@@ -496,7 +524,7 @@ function MemberPermissionsCell({
         disabled={isPending}
         onClick={() => handleToggle({ manage_team: manageTeam, view_agency_rollups: !viewAgencyRollups })}
         className={cn(
-          "h-5 px-1.5 rounded border text-[10px] font-medium transition-colors disabled:opacity-40",
+          "h-5 px-1.5 rounded border text-label font-medium transition-colors disabled:opacity-40",
           viewAgencyRollups
             ? "border-primary/30 bg-primary/[0.08] text-primary"
             : "border-border/40 bg-white/[0.02] text-muted-foreground hover:text-foreground",
@@ -506,7 +534,7 @@ function MemberPermissionsCell({
         View rollups
       </button>
       {error && (
-        <span className="text-[10px] text-red-400/90 w-full" data-testid={`text-permissions-error-${email}`}>
+        <span className="text-label text-red-400/90 w-full" data-testid={`text-permissions-error-${email}`}>
           {error}
         </span>
       )}
@@ -562,21 +590,21 @@ function MemberAdAccountsCell({
   };
 
   if (isLoading) {
-    return <span className="text-[10px] text-muted-foreground/60">Loading…</span>;
+    return <span className="text-label text-muted-foreground/60">Loading…</span>;
   }
 
   return (
     <div className="space-y-1.5" data-testid={`cell-account-access-${email}`}>
       <div className="flex items-center flex-wrap gap-1.5">
         {grantedAccounts.length === 0 ? (
-          <span className="text-[10px] text-muted-foreground/60" data-testid={`text-no-access-${email}`}>
+          <span className="text-label text-muted-foreground/60" data-testid={`text-no-access-${email}`}>
             No account access yet
           </span>
         ) : (
           grantedAccounts.map((a) => (
             <span
               key={a.id}
-              className="h-5 px-1.5 rounded border border-border/40 bg-white/[0.03] text-[10px] text-foreground/80"
+              className="h-5 px-1.5 rounded border border-border/40 bg-white/[0.03] text-label text-foreground/80"
               data-testid={`chip-account-${email}-${a.id}`}
             >
               {a.name}
@@ -588,7 +616,7 @@ function MemberAdAccountsCell({
           onClick={() => setEditing((v) => !v)}
           disabled={busy && !editing}
           className={cn(
-            "flex items-center gap-1 h-5 px-1.5 rounded border text-[10px] font-medium transition-colors disabled:opacity-40 disabled:pointer-events-none",
+            "flex items-center gap-1 h-5 px-1.5 rounded border text-label font-medium transition-colors disabled:opacity-40 disabled:pointer-events-none",
             editing
               ? "border-primary/30 bg-primary/[0.08] text-primary"
               : "border-dashed border-border/40 text-muted-foreground hover:text-foreground hover:border-border/70",
@@ -605,14 +633,14 @@ function MemberAdAccountsCell({
           data-testid={`picker-accounts-${email}`}
         >
           {adAccounts.length === 0 ? (
-            <p className="px-2.5 py-2 text-[10px] text-muted-foreground/60">No ad accounts available.</p>
+            <p className="px-2.5 py-2 text-label text-muted-foreground/60">No ad accounts available.</p>
           ) : (
             adAccounts.map((a) => {
               const granted = grantedIds.has(a.id);
               return (
                 <label
                   key={a.id}
-                  className="flex items-center gap-2 px-2.5 py-2 text-[11px] text-foreground/85 cursor-pointer hover:bg-white/[0.03]"
+                  className="flex items-center gap-2 px-2.5 py-2 text-caption text-foreground/85 cursor-pointer hover:bg-white/[0.03]"
                   data-testid={`checkbox-account-${email}-${a.id}`}
                 >
                   <input
@@ -623,7 +651,7 @@ function MemberAdAccountsCell({
                     className="w-3.5 h-3.5 accent-primary disabled:opacity-40"
                   />
                   {a.name}
-                  {busy && <Loader2 className="w-3 h-3 animate-spin ml-auto text-muted-foreground/40" />}
+                  {busy && <Loader2 className="w-3.5 h-3.5 animate-spin ml-auto text-muted-foreground/40" />}
                 </label>
               );
             })
@@ -632,7 +660,7 @@ function MemberAdAccountsCell({
       )}
 
       {error && (
-        <span className="text-[10px] text-red-400/90" data-testid={`text-account-access-error-${email}`}>
+        <span className="text-label text-red-400/90" data-testid={`text-account-access-error-${email}`}>
           {error}
         </span>
       )}
@@ -677,9 +705,10 @@ function MemberActionsCell({
     );
   };
 
-  const handleStatusChange = (next: "active" | "disabled") => {
+  const [confirmDisable, setConfirmDisable] = useState(false);
+
+  const doStatusChange = (next: "active" | "disabled") => {
     if (busy) return;
-    if (next === "disabled" && !window.confirm(`Remove ${email}'s access to this workspace?`)) return;
     setError(null);
     setStatus(
       { workspaceId, email, data: { status: next } },
@@ -695,6 +724,15 @@ function MemberActionsCell({
     );
   };
 
+  const handleStatusChange = (next: "active" | "disabled") => {
+    if (busy) return;
+    if (next === "disabled") {
+      setConfirmDisable(true);
+      return;
+    }
+    doStatusChange(next);
+  };
+
   return (
     <div className="flex flex-wrap items-center gap-1.5" data-testid={`cell-actions-${email}`}>
       {!disabled && (
@@ -703,10 +741,10 @@ function MemberActionsCell({
           onClick={handleResend}
           disabled={busy}
           title="Send a new temp password"
-          className="flex items-center gap-1 h-6 px-2 rounded border border-border/40 bg-white/[0.02] text-[10px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/[0.05] transition-colors disabled:opacity-40 disabled:pointer-events-none"
+          className="flex items-center gap-1 h-6 px-2 rounded border border-border/40 bg-white/[0.02] text-label font-medium text-muted-foreground hover:text-foreground hover:bg-white/[0.05] transition-colors disabled:opacity-40 disabled:pointer-events-none"
           data-testid={`button-resend-temp-password-${email}`}
         >
-          {isResending ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCw className="w-3 h-3" />}
+          {isResending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCw className="w-3.5 h-3.5" />}
           Resend temp password
         </button>
       )}
@@ -716,7 +754,7 @@ function MemberActionsCell({
         disabled={busy}
         title={disabled ? "Restore access" : "Remove access"}
         className={cn(
-          "flex items-center gap-1 h-6 px-2 rounded border text-[10px] font-medium transition-colors disabled:opacity-40 disabled:pointer-events-none",
+          "flex items-center gap-1 h-6 px-2 rounded border text-label font-medium transition-colors disabled:opacity-40 disabled:pointer-events-none",
           disabled
             ? "border-emerald-400/25 bg-emerald-400/[0.06] text-emerald-400/90 hover:bg-emerald-400/[0.12]"
             : "border-red-400/25 bg-red-400/[0.06] text-red-400/90 hover:bg-red-400/[0.12]",
@@ -724,32 +762,52 @@ function MemberActionsCell({
         data-testid={disabled ? `button-restore-member-${email}` : `button-remove-member-${email}`}
       >
         {isUpdatingStatus ? (
-          <Loader2 className="w-3 h-3 animate-spin" />
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
         ) : disabled ? (
-          <Check className="w-3 h-3" />
+          <Check className="w-3.5 h-3.5" />
         ) : (
-          <X className="w-3 h-3" />
+          <X className="w-3.5 h-3.5" />
         )}
         {disabled ? "Restore" : "Remove"}
       </button>
       {tempPassword && (
         <span
-          className="text-[10px] text-amber-400/90 font-mono w-full"
+          className="text-label text-amber-400/90 font-mono w-full"
           data-testid={`text-temp-password-${email}`}
         >
           Email didn't send — temp password: {tempPassword}
         </span>
       )}
       {resent && !tempPassword && !error && (
-        <span className="text-[10px] text-emerald-400/90 w-full" data-testid={`text-resend-success-${email}`}>
+        <span className="text-label text-emerald-400/90 w-full" data-testid={`text-resend-success-${email}`}>
           New temp password sent.
         </span>
       )}
       {error && (
-        <span className="text-[10px] text-red-400/90 w-full" data-testid={`text-actions-error-${email}`}>
+        <span className="text-label text-red-400/90 w-full" data-testid={`text-actions-error-${email}`}>
           {error}
         </span>
       )}
+
+      <AlertDialog open={confirmDisable} onOpenChange={setConfirmDisable}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove member access?</AlertDialogTitle>
+            <AlertDialogDescription>
+              <strong>{email}</strong> will lose access to this workspace immediately. You can restore their access at any time.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => doStatusChange("disabled")}
+              className="bg-red-600 hover:bg-red-700 text-white focus-visible:ring-red-600"
+            >
+              Remove access
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -767,6 +825,7 @@ export function TeamAccessView() {
           title="Access required"
           message="Team management is available to admins and members with the Manage team permission. Ask a workspace admin if you need a change to your access."
           icon={ShieldCheck}
+          action={<CrossLink to="/app/analysis/overview" label="Back to Overview" />}
         />
       </div>
     );
@@ -852,10 +911,10 @@ function TeamAccessViewInner() {
         right={
           <button
             onClick={() => setInviteOpen(true)}
-            className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-[11px] font-medium text-primary hover:bg-primary/25 transition-colors"
+            className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-caption font-medium text-primary hover:bg-primary/25 transition-colors"
             data-testid="button-invite-member"
           >
-            <UserPlus className="w-3 h-3" /> Add member
+            <UserPlus className="w-3.5 h-3.5" /> Add member
           </button>
         }
       />
@@ -867,9 +926,9 @@ function TeamAccessViewInner() {
         >
           <div className="rounded-lg border border-border/30 bg-white/[0.02] overflow-hidden">
             <div className="grid grid-cols-[1fr_auto_auto] gap-3 px-3 py-2 border-b border-border/30">
-              <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70 font-medium">Member</span>
-              <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70 font-medium">Role</span>
-              <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70 font-medium text-right w-24">Last active</span>
+              <span className="text-label uppercase tracking-wide text-muted-foreground/70 font-medium">Member</span>
+              <span className="text-label uppercase tracking-wide text-muted-foreground/70 font-medium">Role</span>
+              <span className="text-label uppercase tracking-wide text-muted-foreground/70 font-medium text-right w-24">Last active</span>
             </div>
             <div className="divide-y divide-border/20">
               {memberRows.map((m) => (
@@ -877,7 +936,7 @@ function TeamAccessViewInner() {
                 <div className="grid grid-cols-[1fr_auto_auto] gap-3 items-center">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-[12px] font-medium text-foreground truncate">{m.name}</span>
+                      <span className="text-body font-medium text-foreground truncate">{m.name}</span>
                       {m.disabled ? (
                         <span className="text-[9px] font-semibold uppercase tracking-wide text-red-400 border border-red-400/25 bg-red-400/10 px-1.5 py-0.5 rounded leading-none">Removed</span>
                       ) : m.invited ? (
@@ -886,15 +945,15 @@ function TeamAccessViewInner() {
                         <span className="text-[9px] font-semibold uppercase tracking-wide text-emerald-400 border border-emerald-400/25 bg-emerald-400/10 px-1.5 py-0.5 rounded leading-none">Active</span>
                       ) : null}
                     </div>
-                    <div className="text-[10px] text-muted-foreground/70 truncate">{m.email}</div>
+                    <div className="text-label text-muted-foreground/70 truncate">{m.email}</div>
                   </div>
                   <span className={cn(
-                    "text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none",
+                    "text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none",
                     m.role === "owner" ? "text-primary border-primary/25 bg-primary/10" : "text-foreground/75 border-border/40 bg-white/[0.03]"
                   )}>
                     {m.role}
                   </span>
-                  <span className="text-[10px] font-mono text-muted-foreground/70 text-right w-24">
+                  <span className="text-label font-mono text-muted-foreground/70 text-right w-24">
                     {m.lastActive
                       ? new Date(m.lastActive).toLocaleDateString(undefined, { month: "short", day: "numeric" })
                       : "—"}
@@ -913,7 +972,7 @@ function TeamAccessViewInner() {
                         <MemberAdAccountsCell workspaceId={manager.id} email={m.email} adAccounts={seed.ad_accounts} />
                       </>
                     ) : (
-                      <span className="text-[10px] text-muted-foreground/60">
+                      <span className="text-label text-muted-foreground/60">
                         Account access can be granted once this member signs in for the first time.
                       </span>
                     )}
@@ -928,7 +987,7 @@ function TeamAccessViewInner() {
               ))}
               {invitesFailed && (
                 <div
-                  className="px-3 py-2.5 text-[11px] text-amber-400/90 bg-amber-400/[0.05]"
+                  className="px-3 py-2.5 text-caption text-amber-400/90 bg-amber-400/[0.05]"
                   data-testid="text-invites-load-error"
                 >
                   Couldn't load pending invites — this list may be incomplete. Refresh to try again.
@@ -945,8 +1004,8 @@ function TeamAccessViewInner() {
           <div className="grid grid-cols-dashboard-3 gap-3">
             {team.roles.map((r) => (
               <div key={r.id} className="rounded-lg border border-border/40 bg-white/[0.02] p-3.5">
-                <div className="text-[12px] font-semibold text-foreground capitalize">{r.label}</div>
-                <p className="text-[11px] text-muted-foreground/80 mt-1 leading-relaxed">{r.description}</p>
+                <div className="text-body font-semibold text-foreground capitalize">{r.label}</div>
+                <p className="text-caption text-muted-foreground/80 mt-1 leading-relaxed">{r.description}</p>
               </div>
             ))}
           </div>

@@ -49,7 +49,7 @@ export function LoginPage() {
         {/* Login */}
         <form onSubmit={handleLogin} className="space-y-3" data-testid="form-login">
           <div className="space-y-1.5">
-            <label htmlFor="login-email" className="text-[11px] font-medium text-muted-foreground">
+            <label htmlFor="login-email" className="text-caption font-medium text-muted-foreground">
               Email
             </label>
             <input
@@ -60,19 +60,19 @@ export function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@company.com"
-              className="w-full h-9 px-3 rounded-md bg-white/[0.03] border border-border/40 text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40"
+              className="w-full h-9 px-3 rounded-md bg-white/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
               data-testid="input-login-email"
             />
           </div>
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label htmlFor="login-password" className="text-[11px] font-medium text-muted-foreground">
+              <label htmlFor="login-password" className="text-caption font-medium text-muted-foreground">
                 Password
               </label>
               <button
                 type="button"
                 onClick={() => navigate("/forgot-password")}
-                className="text-[11px] text-muted-foreground/70 hover:text-foreground transition-colors"
+                className="text-caption text-muted-foreground/70 hover:text-foreground transition-colors"
                 data-testid="link-forgot-password"
               >
                 Forgot password?
@@ -86,7 +86,7 @@ export function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••••••"
-              className="w-full h-9 px-3 rounded-md bg-white/[0.03] border border-border/40 text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40"
+              className="w-full h-9 px-3 rounded-md bg-white/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
               data-testid="input-login-password"
             />
           </div>
@@ -99,17 +99,17 @@ export function LoginPage() {
               className="w-3.5 h-3.5 rounded accent-primary cursor-pointer"
               data-testid="checkbox-remember-me"
             />
-            <span className="text-[11px] text-muted-foreground">Remember me</span>
+            <span className="text-caption text-muted-foreground">Remember me</span>
           </label>
           {loginError && (
-            <div className="text-[11px] text-red-400/90" data-testid="text-login-error">
+            <div className="text-caption text-red-400/90" data-testid="text-login-error">
               {loginError}
             </div>
           )}
           <button
             type="submit"
             disabled={isLoggingIn || !email.trim() || !password}
-            className="w-full h-9 rounded-md bg-primary text-primary-foreground text-[12px] font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-1.5"
+            className="w-full h-9 rounded-md bg-primary text-primary-foreground text-body font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-1.5"
             data-testid="button-login"
           >
             {isLoggingIn ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
@@ -120,7 +120,7 @@ export function LoginPage() {
         {/* Divider */}
         <div className="flex items-center gap-3">
           <div className="flex-1 h-px bg-border/40" />
-          <span className="text-[10px] uppercase tracking-wide text-muted-foreground/60">
+          <span className="text-label uppercase tracking-wide text-muted-foreground/60">
             No account?
           </span>
           <div className="flex-1 h-px bg-border/40" />
@@ -130,12 +130,12 @@ export function LoginPage() {
         <div className="space-y-2.5">
           <a
             href="/www/#request-access"
-            className="w-full h-9 rounded-md border border-primary/30 bg-primary/10 text-[12px] font-medium text-primary hover:bg-primary/20 transition-colors flex items-center justify-center gap-1.5"
+            className="w-full h-9 rounded-md border border-primary/30 bg-primary/10 text-body font-medium text-primary hover:bg-primary/20 transition-colors flex items-center justify-center gap-1.5"
             data-testid="link-request-access"
           >
             Request access <ArrowRight className="w-3.5 h-3.5" />
           </a>
-          <p className="text-[11px] text-muted-foreground/70 text-center">
+          <p className="text-caption text-muted-foreground/70 text-center">
             Access is approved by the Metrix team. Approved users receive a temporary
             password by email.
           </p>
@@ -145,10 +145,10 @@ export function LoginPage() {
         <div className="text-center">
           <a
             href="/www/"
-            className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+            className="inline-flex items-center gap-1 text-caption text-muted-foreground hover:text-foreground transition-colors"
             data-testid="link-marketing-site"
           >
-            Learn more about Metrix <ArrowRight className="w-3 h-3" />
+            Learn more about Metrix <ArrowRight className="w-3.5 h-3.5" />
           </a>
         </div>
       </div>

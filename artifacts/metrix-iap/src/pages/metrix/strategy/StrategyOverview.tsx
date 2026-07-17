@@ -9,7 +9,7 @@ import { getAdAccount, getStrategyData, getBriefBuilder } from "@/lib/data/metri
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CrossLink, fmtNum, LoopAction,
-  RangeScopeBar, NoDataInRangeState, DetailReveal, deriveLabel,
+  RangeScopeBar, NoDataInRangeState, DetailReveal, deriveLabel, SkeletonBlock,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import {
@@ -41,9 +41,19 @@ export function StrategyOverview() {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Strategy Overview" tabs="strategy" account={acct} />
-              <PendingState title="No strategy yet" message="Strategy pillars derive from validated analysis reads." icon={Compass} />
+              <PendingState title="No strategy yet" message="Strategy pillars derive from validated analysis reads." icon={Compass}
+                action={!hasAnalysis ? <CrossLink to="/app/analysis/overview" label="Review Analysis first" /> : undefined}
+              />
+              {generation.isRunning && (
+                <div className="px-6 pt-2 pb-4 space-y-2.5 max-w-2xl" aria-busy="true">
+                  <SkeletonBlock className="h-3 w-1/4" />
+                  <SkeletonBlock className="h-20 w-full" />
+                  <SkeletonBlock className="h-20 w-full" />
+                  <SkeletonBlock className="h-20 w-full" />
+                </div>
+              )}
               <div className="px-6 pb-6 space-y-3 max-w-lg mx-auto w-full text-center">
-                <GenerationErrorNote message={generation.lastError} />
+                <GenerationErrorNote message={generation.lastError} onRetry={generation.start} />
                 {hasAnalysis ? (
                   <GenerateButton
                     onClick={generation.start}
@@ -52,7 +62,7 @@ export function StrategyOverview() {
                     runningLabel="Generating strategy…"
                   />
                 ) : (
-                  <p className="text-[11px] text-muted-foreground/70">
+                  <p className="text-caption text-muted-foreground/70">
                     Strategy generation needs analysis data — run the analysis pipeline for this account first.
                   </p>
                 )}
@@ -115,7 +125,7 @@ export function StrategyOverview() {
             <RangeScopeBar grainNote="Strategy derives from the account's full flight window — this import has no daily grain." />
             {generation.lastError && (
               <div className="px-6 pt-4">
-                <GenerationErrorNote message={generation.lastError} />
+                <GenerationErrorNote message={generation.lastError} onRetry={generation.start} />
               </div>
             )}
 
@@ -137,11 +147,11 @@ export function StrategyOverview() {
                     const t = splitTitle(p.label);
                     return (
                     <div key={p.id} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2">
-                      <span className="text-[10px] font-semibold text-muted-foreground/50 tabular-nums">
+                      <span className="text-label font-semibold text-muted-foreground/50 tabular-nums">
                         {String(i + 1).padStart(2, "0")}
                       </span>
                       <div title={t.qualifier ? p.label : undefined}>
-                        <p className="text-[13px] font-semibold text-foreground leading-tight line-clamp-1">{t.main}</p>
+                        <p className="text-title font-semibold text-foreground leading-tight line-clamp-1">{t.main}</p>
                         {t.qualifier && <p className={cn(TYPE.caption, "line-clamp-1 mt-0.5")}>{t.qualifier}</p>}
                       </div>
                       <DetailReveal
@@ -182,11 +192,11 @@ export function StrategyOverview() {
                     <div key={s.to} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2">
                       <div className="flex items-center gap-2">
                         <s.Icon className="w-3.5 h-3.5 text-primary" />
-                        <span className="text-[13px] font-semibold text-foreground">{s.label}</span>
+                        <span className="text-title font-semibold text-foreground">{s.label}</span>
                       </div>
                       <p className={TYPE.caption}>{s.desc}</p>
                       <div className="flex items-center justify-between mt-auto pt-1">
-                        <span className="text-[10px] font-mono text-muted-foreground/70">{s.stat}</span>
+                        <span className="text-label font-mono text-muted-foreground/70">{s.stat}</span>
                         <CrossLink to={s.to} label="Open" />
                       </div>
                     </div>

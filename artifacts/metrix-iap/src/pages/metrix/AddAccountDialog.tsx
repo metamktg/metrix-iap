@@ -10,6 +10,7 @@ import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useCreateManualAdAccount,
+  useListManualImports,
   getGetMetrixSeedQueryKey,
   ApiError,
   type CreateAdAccountResult,
@@ -52,18 +53,34 @@ export function AddAccountDialog({
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<CreateAdAccountResult | null>(null);
+  const [confirmingClose, setConfirmingClose] = useState(false);
   const createMutation = useCreateManualAdAccount();
+
+  const { data: stagedImportsData } = useListManualImports(
+    created?.account_id ?? ""
+  );
+  const hasStagedImports = (stagedImportsData?.imports?.length ?? 0) > 0;
 
   const reset = () => {
     setStep("choose");
     setName("");
     setError(null);
     setCreated(null);
+    setConfirmingClose(false);
   };
 
   const handleOpenChange = (o: boolean) => {
+    if (!o && step === "manual_uploads" && hasStagedImports && !confirmingClose) {
+      setConfirmingClose(true);
+      return;
+    }
     onOpenChange(o);
     if (!o) reset();
+  };
+
+  const handleConfirmClose = () => {
+    onOpenChange(false);
+    reset();
   };
 
   const handleCreate = async () => {
@@ -94,9 +111,37 @@ export function AddAccountDialog({
     if (created) selectAdAccount(created.account_id);
   };
 
+  const stepNumber = step === "choose" ? 1 : step === "manual_name" ? 2 : 3;
+  const totalSteps = step === "choose" ? 1 : 3;
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md">
+        {/* Step indicator — shown whenever we are in a multi-step manual flow */}
+        {step !== "choose" && (
+          <div className="flex items-center justify-between mb-0">
+            <div className="flex items-center gap-1.5">
+              {Array.from({ length: totalSteps }, (_, i) => {
+                const n = i + 1;
+                return (
+                  <div
+                    key={n}
+                    className={cn(
+                      "w-1.5 h-1.5 rounded-full transition-colors",
+                      n < stepNumber ? "bg-emerald-400/60"
+                        : n === stepNumber ? "bg-primary/70"
+                        : "bg-border/40"
+                    )}
+                  />
+                );
+              })}
+            </div>
+            <span className="text-[9px] font-medium text-muted-foreground/40 tabular-nums">
+              Step {stepNumber} of {totalSteps}
+            </span>
+          </div>
+        )}
+
         {step === "choose" && (
           <>
             <DialogHeader>
@@ -105,8 +150,8 @@ export function AddAccountDialog({
                   <Plus className="w-4 h-4 text-primary" />
                 </div>
               </div>
-              <DialogTitle className="text-[16px]">Add Ad Account</DialogTitle>
-              <DialogDescription className="text-[12px] leading-relaxed">
+              <DialogTitle className="text-base">Add Ad Account</DialogTitle>
+              <DialogDescription className="text-body leading-relaxed">
                 Bring a new ad account into Metrix. Connect it live through Meta, or create a
                 manual account and upload exported reports.
               </DialogDescription>
@@ -124,8 +169,8 @@ export function AddAccountDialog({
                   <Plug className="w-4 h-4 text-primary" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[13px] font-semibold text-foreground">Connect Meta Ad Account</div>
-                  <p className="text-[11px] text-muted-foreground/85 leading-relaxed mt-0.5">
+                  <div className="text-title font-semibold text-foreground">Connect Meta Ad Account</div>
+                  <p className="text-caption text-muted-foreground/85 leading-relaxed mt-0.5">
                     Authorize read-only access with Meta and link a live ad account. Data pulls
                     run against the real Meta API.
                   </p>
@@ -141,8 +186,8 @@ export function AddAccountDialog({
                   <FileUp className="w-4 h-4 text-muted-foreground/80" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[13px] font-semibold text-foreground">Upload manual reports</div>
-                  <p className="text-[11px] text-muted-foreground/85 leading-relaxed mt-0.5">
+                  <div className="text-title font-semibold text-foreground">Upload manual reports</div>
+                  <p className="text-caption text-muted-foreground/85 leading-relaxed mt-0.5">
                     Create an account without a live connection and stage exported Meta reports
                     for the analysis pipeline.
                   </p>
@@ -161,8 +206,8 @@ export function AddAccountDialog({
                   <FileUp className="w-4 h-4 text-primary" />
                 </div>
               </div>
-              <DialogTitle className="text-[16px]">Name the ad account</DialogTitle>
-              <DialogDescription className="text-[12px] leading-relaxed">
+              <DialogTitle className="text-base">Name the ad account</DialogTitle>
+              <DialogDescription className="text-body leading-relaxed">
                 Use the client or brand name. The account starts unconfigured — performance data
                 appears only after uploaded reports are processed by an analysis run.
               </DialogDescription>
@@ -177,7 +222,7 @@ export function AddAccountDialog({
                 placeholder="e.g. Acme Skincare"
                 maxLength={120}
                 className={cn(
-                  "w-full h-10 px-3 rounded-md bg-white/[0.03] border text-[13px] text-foreground",
+                  "w-full h-10 px-3 rounded-md bg-white/[0.03] border text-title text-foreground",
                   "placeholder:text-muted-foreground/75 focus:outline-none focus:ring-1",
                   error ? "border-red-400/40 focus:ring-red-400/40" : "border-border/50 focus:ring-primary/40 focus:border-primary/40"
                 )}
@@ -185,7 +230,7 @@ export function AddAccountDialog({
               {error && (
                 <div className="flex items-start gap-2 p-2.5 rounded-lg border border-red-400/25 bg-red-400/[0.06]">
                   <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
-                  <p className="text-[11px] text-red-300 leading-relaxed">{error}</p>
+                  <p className="text-caption text-red-300 leading-relaxed">{error}</p>
                 </div>
               )}
               <div className="flex items-center justify-between pt-1">
@@ -208,7 +253,7 @@ export function AddAccountDialog({
           </>
         )}
 
-        {step === "manual_uploads" && created && (
+        {step === "manual_uploads" && created && !confirmingClose && (
           <>
             <DialogHeader>
               <div className="flex items-center gap-2 mb-1">
@@ -216,8 +261,8 @@ export function AddAccountDialog({
                   <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                 </div>
               </div>
-              <DialogTitle className="text-[16px]">{created.name} created</DialogTitle>
-              <DialogDescription className="text-[12px] leading-relaxed">
+              <DialogTitle className="text-base">{created.name} created</DialogTitle>
+              <DialogDescription className="text-body leading-relaxed">
                 Stage exported reports now, or skip and upload later from the account's setup
                 screen. Uploads are stored for the analysis pipeline — nothing is parsed at
                 upload time.
@@ -226,8 +271,27 @@ export function AddAccountDialog({
 
             <ManualUploadPanel accountId={created.account_id} />
 
-            <div className="flex items-center justify-end pt-1">
+            <div className="flex items-center justify-between pt-1">
+              <GhostBtn onClick={() => setStep("manual_name")}>
+                <ArrowLeft className="w-3.5 h-3.5" /> Back
+              </GhostBtn>
               <GhostBtn onClick={finish}>Done — open account</GhostBtn>
+            </div>
+          </>
+        )}
+
+        {step === "manual_uploads" && created && confirmingClose && (
+          <>
+            <DialogHeader>
+              <DialogTitle className="text-base">Leave without completing?</DialogTitle>
+              <DialogDescription className="text-body leading-relaxed">
+                You have staged files that haven't been reviewed yet. You can come back to
+                review and run analysis from the account's setup screen.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <GhostBtn onClick={() => setConfirmingClose(false)}>Keep staging</GhostBtn>
+              <PrimaryBtn onClick={handleConfirmClose}>Leave anyway</PrimaryBtn>
             </div>
           </>
         )}

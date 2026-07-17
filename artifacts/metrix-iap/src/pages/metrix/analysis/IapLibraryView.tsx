@@ -10,7 +10,7 @@
 // the library refreshes automatically.
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { Images, Dna, RefreshCw } from "lucide-react";
+import { Images, Dna, RefreshCw, AlertTriangle } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -212,7 +212,11 @@ export function IapLibraryView() {
             return (
               <div className="flex-1 flex flex-col">
                 <ModuleHeader section={SECTION} title="IAP Library" tabs="analysis" account={acct} />
-                <PendingState title="Analysis pending" message="No analysis data available for this account yet." />
+                <PendingState
+                  title="Analysis pending"
+                  message="No analysis data available for this account yet."
+                  action={<CrossLink to="/app/analysis/overview" label="Go to Analysis Overview" />}
+                />
               </div>
             );
           }
@@ -314,7 +318,7 @@ export function IapLibraryView() {
                     return <MetricTile key={m.id} label={m.label} value={m.formatted} sub={m.sub} />;
                   })}
                   {tileIds.length === 0 && (
-                    <div className="col-span-2 md:col-span-4 text-[11px] text-muted-foreground/60 border border-dashed border-border/40 rounded-lg px-3 py-4 text-center">
+                    <div className="col-span-2 md:col-span-4 text-caption text-muted-foreground/60 border border-dashed border-border/40 rounded-lg px-3 py-4 text-center">
                       No metrics selected — use “Customize” to add tiles.
                     </div>
                   )}
@@ -328,7 +332,7 @@ export function IapLibraryView() {
                   <button
                     onClick={() => setGroupByConcept((v) => !v)}
                     aria-pressed={groupByConcept}
-                    className={`flex items-center gap-1.5 text-[10px] font-medium border px-2.5 py-1.5 rounded-md transition-colors ${
+                    className={`flex items-center gap-1.5 text-label font-medium border px-2.5 py-1.5 rounded-md transition-colors ${
                       groupByConcept
                         ? "border-primary/50 bg-primary/10 text-primary"
                         : "border-border/40 bg-white/[0.02] text-muted-foreground/70 hover:text-foreground hover:border-border/60 hover:bg-white/[0.04]"
@@ -356,7 +360,7 @@ export function IapLibraryView() {
                       disabled={syncMutation.isPending}
                       title={syncResult ? `${syncResult.linked}/${syncResult.total} creatives linked` : "Re-sync creative asset links"}
                       className={[
-                        "flex items-center gap-1.5 text-[10px] font-medium border px-2.5 py-1.5 rounded-md transition-colors",
+                        "flex items-center gap-1.5 text-label font-medium border px-2.5 py-1.5 rounded-md transition-colors",
                         syncMutation.isPending
                           ? "border-border/30 text-muted-foreground/40 cursor-not-allowed"
                           : syncResult
@@ -374,7 +378,7 @@ export function IapLibraryView() {
                   )}
                   <button
                     onClick={() => setCreativeLibraryOpen(true)}
-                    className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground/70 hover:text-foreground border border-border/40 hover:border-border/60 bg-white/[0.02] hover:bg-white/[0.04] px-2.5 py-1.5 rounded-md transition-colors"
+                    className="flex items-center gap-1.5 text-label font-medium text-muted-foreground/70 hover:text-foreground border border-border/40 hover:border-border/60 bg-white/[0.02] hover:bg-white/[0.04] px-2.5 py-1.5 rounded-md transition-colors"
                   >
                     <Images className="w-3.5 h-3.5" />
                     Add creatives
@@ -396,20 +400,20 @@ export function IapLibraryView() {
                     {/* Unmapped warning banner */}
                     {unmappedCellIds.size > 0 && (
                       <div className="flex items-start gap-2.5 p-3 rounded-lg border border-amber-400/25 bg-amber-400/[0.04]">
-                        <span className="text-amber-400 text-[13px] shrink-0 mt-px">⚠</span>
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-px" strokeWidth={1.5} />
                         <div className="flex-1 min-w-0 space-y-1">
-                          <p className="text-[11px] font-medium text-amber-300/90">
+                          <p className="text-caption font-medium text-amber-300/90">
                             {unmappedCellIds.size} creative {unmappedCellIds.size === 1 ? "cell" : "cells"} not fully mapped to IAP library
                           </p>
-                          <p className="text-[10px] text-muted-foreground/70 leading-relaxed">
+                          <p className="text-label text-muted-foreground/70 leading-relaxed">
                             {unmappedCellIds.size === 1 ? "This cell has" : "These cells have"} performance data but no library entry — variable codes, copy, and creative assets may be missing.
                           </p>
                         </div>
                         <button
                           onClick={() => setCreativeLibraryOpen(true)}
-                          className="shrink-0 flex items-center gap-1 text-[10px] font-medium text-amber-300 hover:text-amber-200 border border-amber-400/25 bg-amber-400/[0.06] hover:bg-amber-400/10 px-2.5 py-1.5 rounded transition-colors"
+                          className="shrink-0 flex items-center gap-1 text-label font-medium text-amber-300 hover:text-amber-200 border border-amber-400/25 bg-amber-400/[0.06] hover:bg-amber-400/10 px-2.5 py-1.5 rounded transition-colors"
                         >
-                          <Images className="w-3 h-3" />
+                          <Images className="w-3.5 h-3.5" />
                           Add creatives
                         </button>
                       </div>
@@ -428,7 +432,7 @@ export function IapLibraryView() {
                           onUploadCreatives={() => setCreativeLibraryOpen(true)}
                         />
                       ) : (
-                        <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." />
+                        <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." action={<CrossLink to="/app/analysis/overview" label="Back to Overview" />} />
                       )
                     ) : (() => {
                       const uniqueCells = uniqueCellRows(cells);
@@ -440,7 +444,7 @@ export function IapLibraryView() {
                       const rangeEnd = Math.min(safePage * pageSize, totalCells);
 
                       if (totalCells === 0 && creativeOnlyCellIds.length === 0) {
-                        return <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." />;
+                        return <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." action={<CrossLink to="/app/analysis/overview" label="Back to Overview" />} />;
                       }
 
                       return (
@@ -474,7 +478,7 @@ export function IapLibraryView() {
                                         <button
                                           onClick={() => { close(); setDetail(row); }}
                                           data-testid={`button-full-detail-${row.cell_id}`}
-                                          className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-white bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-all"
+                                          className="inline-flex items-center gap-1.5 text-title font-semibold text-white bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-all"
                                         >
                                           Full detail →
                                         </button>
@@ -486,7 +490,7 @@ export function IapLibraryView() {
 
                               {/* ── Pagination controls ── */}
                               <div className="flex items-center justify-between pt-3 border-t border-border/20">
-                                <span className="text-[10px] text-muted-foreground/50 tabular-nums">
+                                <span className="text-label text-muted-foreground/50 tabular-nums">
                                   {totalCells <= pageSize
                                     ? `${totalCells} creative${totalCells === 1 ? "" : "s"} with performance data`
                                     : `${rangeStart}–${rangeEnd} of ${totalCells}`}
@@ -498,7 +502,7 @@ export function IapLibraryView() {
                                       <button
                                         key={n}
                                         onClick={() => setPageSize(n)}
-                                        className={`text-[10px] font-medium px-2 py-1 rounded transition-colors ${
+                                        className={`text-label font-medium px-2 py-1 rounded transition-colors ${
                                           pageSize === n
                                             ? "bg-primary/15 text-primary"
                                             : "text-muted-foreground/50 hover:text-foreground hover:bg-white/[0.04]"
@@ -515,18 +519,18 @@ export function IapLibraryView() {
                                       <button
                                         onClick={() => setPage((p) => Math.max(1, p - 1))}
                                         disabled={safePage === 1}
-                                        className="text-[12px] w-6 h-6 flex items-center justify-center rounded border border-border/30 disabled:opacity-25 hover:bg-white/[0.04] transition-colors text-muted-foreground/70"
+                                        className="text-body w-6 h-6 flex items-center justify-center rounded border border-border/30 disabled:opacity-25 hover:bg-white/[0.04] transition-colors text-muted-foreground/70"
                                         aria-label="Previous page"
                                       >
                                         ‹
                                       </button>
-                                      <span className="text-[10px] tabular-nums text-muted-foreground/50 px-1 min-w-[3rem] text-center">
+                                      <span className="text-label tabular-nums text-muted-foreground/50 px-1 min-w-[3rem] text-center">
                                         {safePage} / {totalPages}
                                       </span>
                                       <button
                                         onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                                         disabled={safePage === totalPages}
-                                        className="text-[12px] w-6 h-6 flex items-center justify-center rounded border border-border/30 disabled:opacity-25 hover:bg-white/[0.04] transition-colors text-muted-foreground/70"
+                                        className="text-body w-6 h-6 flex items-center justify-center rounded border border-border/30 disabled:opacity-25 hover:bg-white/[0.04] transition-colors text-muted-foreground/70"
                                         aria-label="Next page"
                                       >
                                         ›
@@ -541,7 +545,7 @@ export function IapLibraryView() {
                           {/* ── Creative assets without performance data ── */}
                           {creativeOnlyCellIds.length > 0 && (
                             <div className="space-y-3 pt-2 border-t border-border/15">
-                              <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/40">
+                              <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/40">
                                 Creative assets — no performance data yet ({creativeOnlyCellIds.length})
                               </p>
                               <div className="grid grid-cols-dashboard-5-xl gap-3">
@@ -568,7 +572,7 @@ export function IapLibraryView() {
                 {tab === "top" && (
                   <div className="space-y-5">
                     <div>
-                      <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Top checkout cells</h3>
+                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Top checkout cells</h3>
                       {topCells.length ? (
                         <div className="grid grid-cols-dashboard-5-xl gap-3">
                           {uniqueCellRows(topCells).map((row) => (
@@ -588,7 +592,7 @@ export function IapLibraryView() {
                                 <button
                                   onClick={() => { close(); setDetail(row); }}
                                   data-testid={`button-full-detail-top-${row.cell_id}`}
-                                  className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-white bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-all"
+                                  className="inline-flex items-center gap-1.5 text-title font-semibold text-white bg-primary hover:bg-primary/90 border border-primary px-3 py-1.5 rounded-lg shadow-sm shadow-primary/20 transition-all"
                                 >
                                   Full detail →
                                 </button>
@@ -597,12 +601,12 @@ export function IapLibraryView() {
                           ))}
                         </div>
                       ) : (
-                        <PendingState title="No ranked cells" message="No ranked cells in the current metric selection." />
+                        <PendingState title="No ranked cells" message="No ranked cells in the current metric selection." action={<CrossLink to="/app/analysis/overview" label="Back to Overview" />} />
                       )}
                     </div>
                     <div>
-                      <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Top checkout variables</h3>
-                      {topVariables.length ? <VariableTable rows={topVariables} onRowClick={(r) => setVariableCode(r.variable_id)} /> : <PendingState title="No ranked variables" message="No ranked variables in the current metric selection." />}
+                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Top checkout variables</h3>
+                      {topVariables.length ? <VariableTable rows={topVariables} onRowClick={(r) => setVariableCode(r.variable_id)} /> : <PendingState title="No ranked variables" message="No ranked variables in the current metric selection." action={<CrossLink to="/app/analysis/overview" label="Back to Overview" />} />}
                     </div>
                   </div>
                 )}
@@ -614,8 +618,8 @@ export function IapLibraryView() {
                       {/* Family rollup: which DNA families carry the account */}
                       <div>
                         <div className="flex items-center gap-1.5 mb-2">
-                          <Dna className="w-3 h-3 text-primary/70" />
-                          <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60">
+                          <Dna className="w-3.5 h-3.5 text-primary/70" />
+                          <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/60">
                             DNA families in selection
                           </h3>
                         </div>
@@ -628,11 +632,11 @@ export function IapLibraryView() {
                               onClick={f.top ? () => setVariableCode(f.top!.variableId) : undefined}
                               onKeyDown={f.top ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setVariableCode(f.top!.variableId); } } : undefined}
                               title={f.top ? "Open drill-down for this family's best read" : undefined}
-                              className={`rounded-xl border border-border/40 bg-white/[0.02] p-3 ${f.top ? "cursor-pointer hover:border-primary/30 hover:bg-white/[0.04] transition-colors" : ""}`}
+                              className={`rounded-xl border border-border/40 bg-white/[0.02] p-3 ${f.top ? "cursor-pointer hover:border-primary/30 hover:bg-white/[0.04] active:bg-white/[0.06] transition-colors focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60" : ""}`}
                               data-testid={`dna-family-${f.family}`}
                             >
                               <div className="flex items-center justify-between gap-2 mb-2">
-                                <span className="text-[11px] font-semibold text-foreground">{familyLabel(f.family)}</span>
+                                <span className="text-caption font-semibold text-foreground">{familyLabel(f.family)}</span>
                                 <span className="text-[9px] font-mono text-muted-foreground/60">
                                   {f.variableCount} variable{f.variableCount === 1 ? "" : "s"}
                                 </span>
@@ -640,15 +644,15 @@ export function IapLibraryView() {
                               <div className="flex items-center gap-4 tabular-nums">
                                 <div>
                                   <div className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground/50 leading-none mb-1">Spend</div>
-                                  <div className="text-[11px] font-semibold text-foreground/90">{fmtUSD(f.spend, 0)}</div>
+                                  <div className="text-caption font-semibold text-foreground/90">{fmtUSD(f.spend, 0)}</div>
                                 </div>
                                 <div>
                                   <div className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground/50 leading-none mb-1">Results</div>
-                                  <div className="text-[11px] font-semibold text-foreground/90">{fmtNum(f.results)}</div>
+                                  <div className="text-caption font-semibold text-foreground/90">{fmtNum(f.results)}</div>
                                 </div>
                                 <div>
                                   <div className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground/50 leading-none mb-1">CPA</div>
-                                  <div className="text-[11px] font-semibold text-foreground/90">{f.cpa != null ? fmtUSD(f.cpa) : "—"}</div>
+                                  <div className="text-caption font-semibold text-foreground/90">{f.cpa != null ? fmtUSD(f.cpa) : "—"}</div>
                                 </div>
                               </div>
                               {f.top && (
@@ -667,7 +671,7 @@ export function IapLibraryView() {
                       <VariableTable rows={variables} onRowClick={(r) => setVariableCode(r.variable_id)} />
                     </div>
                   ) : (
-                    <PendingState title="No variables in selection" message="Adjust the metric selection to see variable performance." />
+                    <PendingState title="No variables in selection" message="Adjust the metric selection to see variable performance." action={<CrossLink to="/app/analysis/overview" label="Back to Overview" />} />
                   )
                 )}
               </div>
@@ -739,7 +743,7 @@ export function IapLibraryView() {
                       return stats.map((s) => (
                         <div key={s.label}>
                           <div className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground/50 leading-none mb-1">{s.label}</div>
-                          <div className="text-[11px] font-semibold tabular-nums text-foreground/90">{s.value}</div>
+                          <div className="text-caption font-semibold tabular-nums text-foreground/90">{s.value}</div>
                         </div>
                       ));
                     })()}
@@ -768,14 +772,14 @@ export function IapLibraryView() {
                     <DrawerField label="Feeds strategy pillars">
                       <div className="space-y-1">
                         {pillarsForCell(detail.cell_id).map((p) => (
-                          <div key={p.id} className="text-[11px] text-foreground/80">{p.label}</div>
+                          <div key={p.id} className="text-caption text-foreground/80">{p.label}</div>
                         ))}
                       </div>
                     </DrawerField>
                   )}
                   {detail.legacy_library_match && (
                     <DrawerField label="Legacy library match">
-                      <span className="font-mono text-[10px] text-muted-foreground/60">{detail.legacy_library_match}</span>
+                      <span className="font-mono text-label text-muted-foreground/60">{detail.legacy_library_match}</span>
                     </DrawerField>
                   )}
                   <DrawerField label="Creative">

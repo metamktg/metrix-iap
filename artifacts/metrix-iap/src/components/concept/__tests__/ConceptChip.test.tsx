@@ -21,6 +21,7 @@ vi.mock("@/contexts/MetrixDataContext", () => ({
       },
     },
   }),
+  useMetrixIsRefetching: () => false,
 }));
 
 import { TooltipProvider } from "@/components/ui/tooltip";

@@ -131,12 +131,12 @@ function CollapseTooltip({
     <div className={cn(
       "absolute left-full top-1/2 -translate-y-1/2 ml-2 z-[100]",
       "pointer-events-none select-none",
-      "bg-[hsl(222_61%_10%)] border border-border/50 rounded-md shadow-xl",
+      "bg-surface border border-border/50 rounded-md elevation-raised",
       "px-2.5 py-1.5 max-w-[220px]",
     )}>
-      <div className="text-[12px] font-semibold text-foreground leading-tight whitespace-nowrap">{label}</div>
+      <div className="text-body font-semibold text-foreground leading-tight whitespace-nowrap">{label}</div>
       {teaser && (
-        <div className="text-[10px] text-muted-foreground/65 mt-1 leading-snug whitespace-normal">{teaser}</div>
+        <div className="text-label text-muted-foreground/65 mt-1 leading-snug whitespace-normal">{teaser}</div>
       )}
     </div>
   );
@@ -149,14 +149,14 @@ function ExpandedPlaceholderTooltip({ label, teaser }: { label: string; teaser: 
     <div className={cn(
       "absolute left-2 right-2 top-full mt-0.5 z-[100]",
       "pointer-events-none select-none",
-      "bg-[hsl(222_61%_10%)] border border-border/50 rounded-md shadow-xl",
+      "bg-surface border border-border/50 rounded-md elevation-raised",
       "px-2.5 py-2",
     )}>
       <span className="inline-block text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/55 border border-border/35 px-1 py-0.5 rounded leading-none mb-1.5">
         Coming Soon
       </span>
-      <div className="text-[11px] font-semibold text-foreground leading-tight">{label}</div>
-      <div className="text-[10px] text-muted-foreground/65 mt-1 leading-snug">{teaser}</div>
+      <div className="text-caption font-semibold text-foreground leading-tight">{label}</div>
+      <div className="text-label text-muted-foreground/65 mt-1 leading-snug">{teaser}</div>
     </div>
   );
 }
@@ -239,7 +239,7 @@ function ChildRow({ child, count }: { child: NavChild; count: number | null }) {
       onMouseLeave={child.placeholder ? () => setHovered(false) : undefined}
     >
       {active && (
-        <span className="absolute left-0 top-[5px] bottom-[5px] w-0.5 bg-primary rounded-full" />
+        <span className="absolute left-0 top-1.5 bottom-[5px] w-0.5 bg-primary rounded-full" />
       )}
       <a
         href={child.placeholder ? undefined : child.to}
@@ -248,7 +248,7 @@ function ChildRow({ child, count }: { child: NavChild; count: number | null }) {
         aria-disabled={child.placeholder || undefined}
         tabIndex={child.placeholder ? -1 : undefined}
         className={cn(
-          "flex items-center gap-1.5 pl-3 pr-2 h-8 rounded-r text-[12px] transition-all",
+          "flex items-center gap-1.5 pl-3 pr-2 h-8 rounded-r text-body transition-all",
           active
             ? "font-semibold text-foreground bg-primary/8"
             : "text-foreground/65 hover:text-foreground hover:bg-[rgba(20,55,110,0.45)]",
@@ -262,7 +262,7 @@ function ChildRow({ child, count }: { child: NavChild; count: number | null }) {
           </span>
         )}
         {!child.placeholder && child.dataSource && (
-          <Database className="w-2 h-2 shrink-0 text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <Database className="w-3.5 h-3.5 shrink-0 text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity" />
         )}
         {child.badgeKey && !child.placeholder && (
           <NavBadge count={count} badgeKey={child.badgeKey} />
@@ -300,7 +300,7 @@ function ExpandableSection({
     <li>
       <div
         className={cn(
-          "flex items-center rounded-lg text-[11px] font-semibold uppercase tracking-widest transition-all select-none",
+          "flex items-center rounded-lg text-caption font-semibold uppercase tracking-widest transition-all select-none",
           landingActive
             ? "mx-nav-active"
             : sectionActive
@@ -345,7 +345,7 @@ function ExpandableSection({
           )}
         >
           <ChevronDown
-            className={cn("w-3 h-3 transition-transform duration-200", open && "rotate-180")}
+            className={cn("w-3.5 h-3.5 transition-transform duration-200", open && "rotate-180")}
           />
         </button>
       </div>
@@ -391,7 +391,7 @@ function LeafSection({
       onMouseLeave={section.placeholder ? () => setHovered(false) : undefined}
     >
       {active && (
-        <span className="absolute left-0 top-[6px] bottom-[6px] w-0.5 bg-primary rounded-full" />
+        <span className="absolute left-0 top-1.5 bottom-[6px] w-0.5 bg-primary rounded-full" />
       )}
       <a
         href={section.placeholder ? undefined : to}
@@ -400,7 +400,7 @@ function LeafSection({
         aria-disabled={section.placeholder || undefined}
         tabIndex={section.placeholder ? -1 : undefined}
         className={cn(
-          "flex items-center gap-2 px-2.5 h-9 rounded-lg text-[11px] font-semibold uppercase tracking-widest transition-all",
+          "flex items-center gap-2 px-2.5 h-9 rounded-lg text-caption font-semibold uppercase tracking-widest transition-all",
           active
             ? "mx-nav-active"
             : "text-foreground/70 hover:text-foreground hover:bg-[rgba(20,55,110,0.45)]",
@@ -486,7 +486,7 @@ export function Sidebar() {
                 alt="Metrix"
                 className="w-5 h-5 object-contain shrink-0 mx-logo-glow"
               />
-              <span className="text-[13px] font-bold tracking-tight text-foreground">METRIX</span>
+              <span className="text-title font-bold tracking-tight text-foreground">METRIX</span>
               <span className="text-[9px] font-mono text-muted-foreground/60 border border-border/50 px-1.5 py-0.5 rounded leading-none ml-0.5">
                 IAP
               </span>
@@ -579,14 +579,14 @@ export function Sidebar() {
           className={cn(
             "flex items-center justify-center rounded-lg transition-all",
             "text-muted-foreground/50 hover:text-foreground hover:bg-white/[0.06]",
-            collapsed ? "w-10 h-8" : "w-full h-7 gap-1.5 text-[10px] font-medium border border-border/20"
+            collapsed ? "w-10 h-8" : "w-full h-7 gap-1.5 text-label font-medium border border-border/20"
           )}
         >
           {collapsed ? (
             <PanelLeftOpen className="w-3.5 h-3.5" />
           ) : (
             <>
-              <PanelLeftClose className="w-3 h-3" />
+              <PanelLeftClose className="w-3.5 h-3.5" />
               <span>Collapse</span>
             </>
           )}

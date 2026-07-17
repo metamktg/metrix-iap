@@ -61,7 +61,8 @@ import { cn } from "@/lib/utils";
 import { useLocation, useSearch } from "wouter";
 import { ConnectMetaDialog, ManualImportDialog } from "./ConnectAccountDialogs";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
-import { Plug, FileUp, Clock, Database, Info, ArrowRight, ArrowLeftRight, CheckSquare, Square, CalendarX2, AlertTriangle, ChevronDown, ChevronLeft, Sparkles, Map as MapIcon } from "lucide-react";
+import { useListManualImports } from "@workspace/api-client-react";
+import { Plug, FileUp, Clock, Database, Info, ArrowRight, ArrowLeftRight, CheckSquare, CheckCircle2, Square, CalendarX2, AlertTriangle, ChevronDown, ChevronLeft, Sparkles, Map as MapIcon } from "lucide-react";
 import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
 import { DataSourceBadge } from "@/components/ui/DataSourceBadge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -86,7 +87,7 @@ export function InfoTooltip({ content }: { content: string }) {
             <Info className="w-3.5 h-3.5" />
           </button>
         </TooltipTrigger>
-        <TooltipContent className="max-w-[280px] text-left leading-relaxed text-[11px] whitespace-normal">
+        <TooltipContent className="max-w-[280px] text-left leading-relaxed text-caption whitespace-normal">
           {content}
         </TooltipContent>
       </Tooltip>
@@ -230,7 +231,7 @@ export function ConfidenceBadge({ value }: { value: string }) {
   return (
     <span
       title={c.qualifier ? value : undefined}
-      className={cn("inline-flex text-[10px] font-semibold border px-1.5 py-0.5 rounded leading-none", cls)}
+      className={cn("inline-flex text-label font-semibold border px-1.5 py-0.5 rounded leading-none", cls)}
     >
       {c.label}
       {c.qualifier && <span className="ml-1 font-normal opacity-70">({c.qualifier})</span>}
@@ -277,7 +278,7 @@ export function SectionTabBar({ section }: { section: "analysis" | "strategy" })
             onClick={(e) => spaNav(tab.to, e)}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "relative shrink-0 px-3.5 h-9 flex items-center text-[12px] font-medium transition-colors whitespace-nowrap select-none",
+              "relative shrink-0 px-3.5 h-9 flex items-center text-body font-medium transition-colors whitespace-nowrap select-none",
               active
                 ? "text-foreground"
                 : "text-muted-foreground/55 hover:text-foreground/80 hover:bg-white/[0.04]"
@@ -285,7 +286,7 @@ export function SectionTabBar({ section }: { section: "analysis" | "strategy" })
           >
             {tab.label}
             {active && (
-              <span className="absolute bottom-0 left-2 right-2 h-[2px] bg-primary rounded-t-full" />
+              <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary rounded-t-full" />
             )}
           </a>
         );
@@ -320,16 +321,16 @@ export function ModuleHeader({
         <div className="flex items-start gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 mb-1">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/80">{sectionLabel}</span>
+              <span className="text-label font-semibold uppercase tracking-[0.16em] text-muted-foreground/80">{sectionLabel}</span>
               {subtitle && <InfoTooltip content={subtitle} />}
             </div>
-            <h1 className="text-[21px] font-bold text-foreground leading-tight tracking-[-0.02em]">{title}</h1>
+            <h1 className="text-display font-bold text-foreground leading-tight tracking-[-0.02em]">{title}</h1>
           </div>
           <div className="shrink-0 pt-0.5 flex items-center gap-2">
             {account && (
               <span
                 data-testid="banner-scope"
-                className="hidden sm:inline-flex items-center gap-1.5 text-[11px] text-muted-foreground/65"
+                className="hidden sm:inline-flex items-center gap-1.5 text-caption text-muted-foreground/65"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/70 shrink-0" />
                 <span className="font-medium text-foreground/80 truncate max-w-[140px]">{account.name}</span>
@@ -358,13 +359,13 @@ export function RangeScopeBar({ grainNote }: { grainNote?: string }) {
   return (
     <div className="flex items-center gap-2 flex-wrap px-6 py-2 border-b border-border/30 bg-white/[0.01]">
       {compare && compareRange && (
-        <span className="inline-flex items-center gap-1 text-[11px] text-primary/80 tabular-nums">
-          <ArrowLeftRight className="w-3 h-3 shrink-0 opacity-70" />
+        <span className="inline-flex items-center gap-1 text-caption text-primary/80 tabular-nums">
+          <ArrowLeftRight className="w-3.5 h-3.5 shrink-0 opacity-70" />
           vs {formatIsoRange(compareRange)}
         </span>
       )}
       {narrowed && (
-        <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground/65">
+        <span className="inline-flex items-center gap-1.5 text-caption text-muted-foreground/65">
           Flight-window scope
           <InfoTooltip content={grainNote ?? "Items are included when their flight window overlaps this range; metrics cover each item's full flight — this import has no daily grain."} />
         </span>
@@ -381,13 +382,13 @@ export function NoDataInRangeState({ what, detail }: { what: string; detail?: st
       <div className="w-10 h-10 rounded-xl border border-border/40 bg-white/[0.03] flex items-center justify-center">
         <CalendarX2 className="w-4 h-4 text-muted-foreground/60" />
       </div>
-      <p className="text-[15px] font-semibold text-foreground/80">No {what} in this range</p>
-      <p className="text-[12px] text-muted-foreground/70 max-w-xs">
+      <p className="text-callout font-semibold text-foreground/80">No {what} in this range</p>
+      <p className="text-body text-muted-foreground/70 max-w-xs">
         {detail ?? (range ? `The selected range (${formatIsoRange(range)}) is outside this data's available window.` : "No dated data is available.")}
       </p>
       <button
         onClick={() => setPreset("all")}
-        className="text-[12px] font-semibold text-primary-foreground bg-primary border border-primary hover:bg-primary/90 rounded-md px-3.5 py-2 transition-colors shadow-md shadow-primary/25"
+        className="text-body font-semibold text-primary-foreground bg-primary border border-primary hover:bg-primary/90 rounded-md px-3.5 py-2 transition-colors shadow-md shadow-primary/25"
       >
         Show all available data
       </button>
@@ -424,21 +425,21 @@ export function CaveatNote({
           isLong && "hover:bg-amber-400/[0.05] active:bg-amber-400/[0.08] transition-colors"
         )}
       >
-        <Info className="w-3 h-3 text-amber-400/70 shrink-0 mt-[3px]" />
+        <Info className="w-3.5 h-3.5 text-amber-400/70 shrink-0 mt-1" />
         <div className="flex-1 min-w-0">
           {source && (
-            <span className="text-[10px] font-mono uppercase tracking-widest text-amber-400/65 block mb-0.5">
+            <span className="text-label font-mono uppercase tracking-widest text-amber-400/65 block mb-0.5">
               {source}
             </span>
           )}
-          <p className="text-[12px] text-amber-400/90 leading-snug">
+          <p className="text-body text-amber-400/90 leading-snug">
             {expanded ? text : preview}
           </p>
         </div>
         {isLong && (
           <ChevronDown
             className={cn(
-              "w-3 h-3 text-amber-400/40 shrink-0 mt-[3px] transition-transform duration-150",
+              "w-3.5 h-3.5 text-amber-400/40 shrink-0 mt-1 transition-transform duration-150",
               expanded && "rotate-180"
             )}
           />
@@ -480,10 +481,10 @@ export function DenseText({
         type="button"
         onClick={() => setExpanded((v) => !v)}
         aria-expanded={expanded}
-        className="mt-0.5 inline-flex items-center gap-0.5 text-[10px] font-medium text-primary/80 hover:text-primary transition-colors"
+        className="mt-0.5 inline-flex items-center gap-0.5 text-label font-medium text-primary/80 hover:text-primary transition-colors"
       >
         {expanded ? "Less" : "More"}
-        <ChevronDown className={cn("w-2.5 h-2.5 transition-transform duration-150", expanded && "rotate-180")} />
+        <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-150", expanded && "rotate-180")} />
       </button>
     </div>
   );
@@ -613,7 +614,7 @@ export function DetailReveal({
           </span>
           <Info
             aria-hidden
-            className="w-3 h-3 shrink-0 mt-[3px] text-muted-foreground/45 group-hover:text-primary/80 transition-colors"
+            className="w-3.5 h-3.5 shrink-0 mt-1 text-muted-foreground/45 group-hover:text-primary/80 transition-colors"
           />
         </button>
       </PopoverTrigger>
@@ -623,12 +624,12 @@ export function DetailReveal({
         className="w-[380px] max-w-[min(90vw,420px)] max-h-[min(60vh,480px)] overflow-y-auto p-4 space-y-3 border-border/60 bg-popover/95 backdrop-blur-sm"
       >
         {eyebrow && (
-          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/80">{eyebrow}</div>
+          <div className="text-label font-semibold uppercase tracking-[0.14em] text-muted-foreground/80">{eyebrow}</div>
         )}
         {content.map((s, i) => (
           <div key={i} className="space-y-1">
             {s.label && (
-              <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/60">{s.label}</div>
+              <div className="text-label font-semibold uppercase tracking-[0.14em] text-muted-foreground/60">{s.label}</div>
             )}
             {s.render ? s.render() : <p className={TYPE.body}>{s.text}</p>}
           </div>
@@ -644,37 +645,108 @@ export function UnconfiguredState({ account }: { account: AdAccount }) {
   const s = account.overview_state;
   const [connectOpen, setConnectOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+
+  const isManual = account.platform !== "meta" && account.platform !== "facebook";
+  const { data: importsData } = useListManualImports(account.id);
+  const imports = importsData?.imports ?? [];
+  const csvsDone = isManual && (
+    imports.some((i) => i.kind === "performance_demo_csv") &&
+    imports.some((i) => i.kind === "performance_placement_csv")
+  );
+  const creativesMapped = isManual && imports.filter((i) => i.kind === "creative_asset").some((a) => a.ad_names.length > 0);
+
+  const setupSteps = isManual
+    ? [
+        { label: "Name the account", desc: `Account created as "${account.name}"`, done: true },
+        { label: "Upload performance CSVs", desc: "Demographics + placements pivot exports — both required before analysis", done: csvsDone },
+        { label: "Map creative assets", desc: "Link image files to ads for visual analysis (optional)", done: creativesMapped },
+        { label: "Run analysis", desc: "Process your staged uploads into structured ad performance data", done: false },
+      ]
+    : [
+        { label: "Connect data source", desc: "Link a live Meta account to pull ad performance data", done: false },
+        { label: "Run analysis", desc: "Pull and process live ad performance data for this account", done: false },
+        { label: "Generate strategy", desc: "AI-generated message pillars and hypotheses", done: false },
+        { label: "Generate briefs", desc: "Creative execution briefs per pillar and hypothesis", done: false },
+      ];
+
+  const doneCount = setupSteps.filter((s) => s.done).length;
+
   return (
-    <div className="flex-1 flex items-center justify-center py-20 px-6">
-      <div className="max-w-md text-center space-y-5">
-        <div className="w-14 h-14 rounded-2xl border border-border/40 bg-white/[0.03] flex items-center justify-center mx-auto">
-          <Plug className="w-6 h-6 text-muted-foreground/70" />
-        </div>
-        <div className="space-y-1.5">
-          <h2 className="text-[18px] font-semibold text-foreground">{s?.title ?? "Connect Meta Ad Account"}</h2>
-          <p className="text-[13px] text-muted-foreground/70 leading-relaxed">
-            {account.name} has no connected data yet. Connect the ad account or add a manual import to begin.
+    <div className="flex-1 flex items-center justify-center py-16 px-6">
+      <div className="max-w-sm w-full space-y-5">
+        {/* Header */}
+        <div className="text-center space-y-1.5">
+          <div className="w-12 h-12 rounded-2xl border border-border/40 bg-white/[0.03] flex items-center justify-center mx-auto mb-3">
+            <Plug className="w-5 h-5 text-muted-foreground/60" />
+          </div>
+          <h2 className="text-base font-semibold text-foreground">{s?.title ?? "Get started with " + account.name}</h2>
+          <p className="text-caption text-muted-foreground/60 leading-relaxed">
+            {isManual
+              ? "Upload your Meta CSV exports, then run analysis to see performance data."
+              : "Connect a data source, then follow the setup checklist below."}
           </p>
         </div>
+
+        {/* Guided setup checklist with live completion checkmarks */}
+        <div className="rounded-xl border border-border/30 bg-white/[0.02] overflow-hidden">
+          {/* Progress strip */}
+          {doneCount > 0 && (
+            <div className="px-4 py-2 border-b border-border/20 flex items-center gap-2">
+              <div className="flex-1 h-1 rounded-full bg-border/30 overflow-hidden">
+                <div
+                  className="h-full bg-emerald-400/50 rounded-full transition-all"
+                  style={{ width: `${Math.round((doneCount / setupSteps.length) * 100)}%` }}
+                />
+              </div>
+              <span className="text-[9px] font-mono tabular-nums text-muted-foreground/40">{doneCount}/{setupSteps.length}</span>
+            </div>
+          )}
+          {setupSteps.map((step, i) => (
+            <div
+              key={i}
+              className={cn(
+                "flex items-start gap-3 px-4 py-3 border-b border-border/20 last:border-0",
+                step.done && "opacity-60",
+              )}
+            >
+              <div className={cn(
+                "w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5",
+                step.done
+                  ? "text-emerald-400"
+                  : "border border-border/40 bg-white/[0.03]",
+              )}>
+                {step.done
+                  ? <CheckCircle2 className="w-4 h-4" />
+                  : <span className="text-[9px] font-bold text-muted-foreground/40 tabular-nums">{i + 1}</span>
+                }
+              </div>
+              <div className="min-w-0">
+                <p className={cn("text-caption font-semibold leading-none mb-0.5", step.done ? "text-foreground/50 line-through" : "text-foreground/70")}>{step.label}</p>
+                <p className="text-[10px] text-muted-foreground/45 leading-snug">{step.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Actions */}
         <div className="flex items-center justify-center gap-2">
           <button
             onClick={() => setConnectOpen(true)}
-            className="flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary/15 border border-primary/30 text-[13px] font-medium text-primary hover:bg-primary/25 transition-colors"
+            className="flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary/15 border border-primary/30 text-title font-medium text-primary hover:bg-primary/25 transition-colors"
           >
             <Plug className="w-3.5 h-3.5" /> {s?.primary_action ?? "Connect Meta Ad Account"}
           </button>
           <button
             onClick={() => setImportOpen(true)}
-            className="flex items-center gap-1.5 h-9 px-4 rounded-md border border-border/50 text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+            className="flex items-center gap-1.5 h-9 px-4 rounded-md border border-border/50 text-title font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
           >
             <FileUp className="w-3.5 h-3.5" /> {s?.secondary_action ?? "Add Manual Import"}
           </button>
         </div>
-        <p className="text-[11px] text-muted-foreground/70 leading-relaxed">
-          No performance, analysis, or report data is shown until this account is configured.
-        </p>
-        <div className="pt-1 space-y-2">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/75">
+
+        {/* Switch account */}
+        <div className="text-center space-y-1.5">
+          <p className="text-caption font-semibold uppercase tracking-widest text-muted-foreground/40">
             Or view a different account
           </p>
           <InlineAccountPicker label="Switch ad account" excludeAccountId={account.id} />
@@ -692,9 +764,45 @@ export function PendingState({ title, message, icon: Icon = Clock, action }: { t
       <div className="w-10 h-10 rounded-xl border border-border/40 bg-white/[0.03] flex items-center justify-center">
         <Icon className="w-4 h-4 text-muted-foreground/60" />
       </div>
-      <p className="text-[15px] font-semibold text-foreground/80">{title}</p>
-      <p className="text-[12px] text-muted-foreground/70 max-w-xs">{message}</p>
+      <p className="text-callout font-semibold text-foreground/80">{title}</p>
+      <p className="text-body text-muted-foreground/70 max-w-xs">{message}</p>
       {action && <div className="pt-1">{action}</div>}
+    </div>
+  );
+}
+
+// ─── Skeleton loading primitives ──────────────────────────────────────
+// animate-pulse shimmer blocks that mirror the shape of real content so
+// the layout doesn't jump when data arrives. Use for any async operation
+// longer than ~300 ms that would otherwise leave a frozen or blank area.
+
+export function SkeletonBlock({
+  className,
+}: {
+  className?: string;
+}) {
+  return (
+    <div
+      aria-hidden="true"
+      className={cn("animate-pulse rounded-md bg-white/[0.06]", className)}
+    />
+  );
+}
+
+/** A row of evenly-sized shimmer tiles that matches the metric tile grid. */
+export function SkeletonTileRow({ count = 4 }: { count?: number }) {
+  return (
+    <div
+      aria-hidden="true"
+      className="grid gap-2"
+      style={{ gridTemplateColumns: `repeat(${count}, minmax(0, 1fr))` }}
+    >
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="rounded-xl border border-border/30 bg-white/[0.02] px-3 py-2.5 space-y-2">
+          <SkeletonBlock className="h-2 w-2/3" />
+          <SkeletonBlock className="h-5 w-1/2" />
+        </div>
+      ))}
     </div>
   );
 }
@@ -706,9 +814,9 @@ export function MetricTile({ label, value, sub }: { label: React.ReactNode; valu
   return (
     <div className="mx-card p-4 transition-colors group-hover:border-primary/30 group-hover:bg-primary/[0.02]">
       <div className="relative">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70 mb-2 truncate">{label}</div>
-        <div className="text-[26px] font-bold text-foreground tabular-nums leading-none tracking-[-0.035em]">{value}</div>
-        {sub && <div className="text-[11px] text-muted-foreground/65 mt-2 leading-snug line-clamp-2">{sub}</div>}
+        <div className="text-caption font-semibold uppercase tracking-[0.12em] text-muted-foreground/70 mb-2 truncate">{label}</div>
+        <div className="text-stat font-bold text-foreground tabular-nums leading-none tracking-[-0.035em]">{value}</div>
+        {sub && <div className="text-caption text-muted-foreground/65 mt-2 leading-snug line-clamp-2">{sub}</div>}
       </div>
     </div>
   );
@@ -734,13 +842,13 @@ export function ModuleTabs<T extends string>({
           onClick={() => onChange(t.id)}
           aria-current={active === t.id ? "page" : undefined}
           className={cn(
-            "flex items-center gap-1.5 h-10 px-3 text-[13px] font-medium border-b-2 transition-colors whitespace-nowrap shrink-0",
+            "flex items-center gap-1.5 h-10 px-3 text-title font-medium border-b-2 transition-colors whitespace-nowrap shrink-0",
             active === t.id ? "border-primary text-foreground" : "border-transparent text-muted-foreground/70 hover:text-foreground"
           )}
         >
-          {t.Icon && <t.Icon className="w-3 h-3" />}
+          {t.Icon && <t.Icon className="w-3.5 h-3.5" />}
           {t.label}
-          {t.count != null && <span className="text-[10px] font-mono text-muted-foreground/60">{t.count}</span>}
+          {t.count != null && <span className="text-label font-mono text-muted-foreground/60">{t.count}</span>}
         </button>
       ))}
     </div>
@@ -796,7 +904,7 @@ export function CrossLink({ to, label }: { to: string; label: string }) {
   return (
     <button
       onClick={() => navigate(to)}
-      className="inline-flex items-center gap-2 text-[14px] font-semibold px-4 py-2 rounded-lg bg-primary/12 border border-primary/30 text-primary hover:bg-primary/20 hover:border-primary/50 transition-all shadow-sm shadow-primary/5"
+      className="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg bg-primary/12 border border-primary/30 text-primary hover:bg-primary/20 hover:border-primary/50 transition-all shadow-sm shadow-primary/5"
     >
       {label}
       <ArrowRight className="w-3.5 h-3.5" />
@@ -822,7 +930,7 @@ export function LoopAction({
     <button
       onClick={() => navigate(to)}
       className={cn(
-        "inline-flex items-center gap-2 text-[14px] font-semibold px-4 py-2.5 rounded-lg border transition-all",
+        "inline-flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-lg border transition-all",
         variant === "primary"
           ? "bg-primary text-white border-primary hover:bg-primary/90 shadow-md shadow-primary/25 hover:shadow-primary/35"
           : "bg-white/[0.07] border-border/55 text-foreground/90 hover:bg-white/[0.11] hover:text-foreground hover:border-border/75 shadow-sm",
@@ -880,9 +988,9 @@ export function BackLink() {
   return (
     <button
       onClick={() => navigate(url)}
-      className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground/60 hover:text-foreground/80 transition-colors"
+      className="inline-flex items-center gap-1 text-caption font-medium text-muted-foreground/60 hover:text-foreground/80 transition-colors"
     >
-      <ChevronLeft className="w-3 h-3" />
+      <ChevronLeft className="w-3.5 h-3.5" />
       {backLabel(fp)}
     </button>
   );
@@ -909,13 +1017,13 @@ export function FlowCrumb({ from, fromCell, fromHyp }: FromParams) {
     <div className="px-6 py-1.5 border-b border-border/20 bg-white/[0.01] flex items-center gap-1.5">
       <button
         onClick={() => navigate(url)}
-        className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground/50 hover:text-muted-foreground/80 transition-colors"
+        className="inline-flex items-center gap-1 text-label font-medium text-muted-foreground/50 hover:text-muted-foreground/80 transition-colors"
       >
-        <ChevronLeft className="w-2.5 h-2.5" />
+        <ChevronLeft className="w-3.5 h-3.5" />
         {origin}
       </button>
-      <span className="text-muted-foreground/30 text-[10px]">/</span>
-      <span className="text-[10px] text-muted-foreground/50">This page</span>
+      <span className="text-muted-foreground/30 text-label">/</span>
+      <span className="text-label text-muted-foreground/50">This page</span>
     </div>
   );
 }
@@ -946,8 +1054,8 @@ export function StaleFocusNotice({ label = "item" }: { label?: string }) {
       className="mx-4 mt-2 flex items-center gap-2 rounded-md border border-amber-400/15 bg-amber-400/[0.03] px-3 py-1.5"
       data-testid="notice-stale-focus"
     >
-      <AlertTriangle className="w-3 h-3 text-amber-400/70 shrink-0" />
-      <p className="text-[12px] text-foreground/75 leading-none">
+      <AlertTriangle className="w-3.5 h-3.5 text-amber-400/70 shrink-0" />
+      <p className="text-body text-foreground/75 leading-none">
         Linked {label} no longer available — removed, regenerated, or outside the current range.
       </p>
     </div>
@@ -968,7 +1076,7 @@ export function MetricSelectionBar({
 }) {
   return (
     <div className="flex items-center gap-2 flex-wrap px-6 py-2.5 border-b border-border/30 bg-white/[0.01]">
-      <span className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/70">
+      <span className="text-caption font-mono uppercase tracking-widest text-muted-foreground/70">
         Metric selection
       </span>
       {events.map((e) => {
@@ -979,13 +1087,13 @@ export function MetricSelectionBar({
             onClick={() => onToggle(e)}
             aria-pressed={on}
             className={cn(
-              "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-[12px] font-medium transition-colors",
+              "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-body font-medium transition-colors",
               on
                 ? "border-primary/30 bg-primary/10 text-primary"
                 : "border-border/40 text-muted-foreground/60 hover:text-foreground hover:bg-white/[0.03]"
             )}
           >
-            {on ? <CheckSquare className="w-3 h-3" /> : <Square className="w-3 h-3" />}
+            {on ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
             {eventLabel(e)}
           </button>
         );
@@ -1013,7 +1121,7 @@ export const SCOPE_STYLE: Record<string, string> = {
 
 export function ImpactBadge({ impact }: { impact: string }) {
   return (
-    <span className={cn("text-[10px] font-semibold border px-1.5 py-0.5 rounded uppercase tracking-wide leading-none", IMPACT_STYLE[impact] ?? IMPACT_STYLE.low)}>
+    <span className={cn("text-label font-semibold border px-1.5 py-0.5 rounded uppercase tracking-wide leading-none", IMPACT_STYLE[impact] ?? IMPACT_STYLE.low)}>
       {impact} impact
     </span>
   );
@@ -1021,7 +1129,7 @@ export function ImpactBadge({ impact }: { impact: string }) {
 
 export function ScopeBadge({ scope }: { scope: string }) {
   return (
-    <span className={cn("text-[10px] font-semibold border px-1.5 py-0.5 rounded uppercase tracking-wide leading-none", SCOPE_STYLE[scope] ?? "bg-muted text-muted-foreground/60 border-border/40")}>
+    <span className={cn("text-label font-semibold border px-1.5 py-0.5 rounded uppercase tracking-wide leading-none", SCOPE_STYLE[scope] ?? "bg-muted text-muted-foreground/60 border-border/40")}>
       {scope}
     </span>
   );
@@ -1047,7 +1155,7 @@ export function SectionCard({
       <div className="relative flex items-center gap-2 px-3.5 py-1.5 border-b border-[rgba(120,170,255,0.10)]">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
-            <h3 className="text-[13px] font-semibold text-foreground leading-tight">{title}</h3>
+            <h3 className="text-title font-semibold text-foreground leading-tight">{title}</h3>
             {desc && <InfoTooltip content={desc} />}
           </div>
         </div>

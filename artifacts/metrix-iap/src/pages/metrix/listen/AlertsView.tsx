@@ -74,12 +74,14 @@ export function AlertsView() {
 
             <div className="px-6 py-5 max-w-3xl space-y-6">
               {total === 0 ? (
-                <PendingState title="No active alerts" message="High-impact signals and data caveats appear here when detected." icon={BellOff} />
+                <PendingState title="No active alerts" message="High-impact signals and data caveats appear here when detected." icon={BellOff}
+                  action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />}
+                />
               ) : (
                 <>
                   {highSignals.length > 0 && (
                     <div>
-                      <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">High-impact signals</h3>
+                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">High-impact signals</h3>
                       <div className="space-y-3">
                         {highSignals.map((s) => (
                           <button
@@ -93,8 +95,8 @@ export function AlertsView() {
                               <ImpactBadge impact={s.impact} />
                               <ConfidenceBadge value={s.confidence} />
                             </div>
-                            <p className="text-[13px] font-semibold text-foreground leading-snug"><TokenizedConceptText text={s.title} /></p>
-                            <p className="text-[12px] text-muted-foreground/70 mt-1 leading-snug line-clamp-1"><span>{deriveLabel(s.rationale, 90)}</span></p>
+                            <p className="text-title font-semibold text-foreground leading-snug"><TokenizedConceptText text={s.title} /></p>
+                            <p className="text-body text-muted-foreground/70 mt-1 leading-snug line-clamp-1"><span>{deriveLabel(s.rationale, 90)}</span></p>
                           </button>
                         ))}
                       </div>
@@ -103,7 +105,7 @@ export function AlertsView() {
 
                   {caveats.length > 0 && (
                     <div>
-                      <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Data caveats</h3>
+                      <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Data caveats</h3>
                       <div className="space-y-2">
                         {caveats.map((c) => (
                           <CaveatNote key={c.id} text={c.text} source={c.source} />
@@ -138,7 +140,7 @@ export function AlertsView() {
                 <DrawerField label="Recommended action"><TokenizedConceptText text={detail.recommended_action} /></DrawerField>
                 {detail.source_path && (
                   <DrawerField label="Source">
-                    <span className="font-mono text-[10px] text-muted-foreground/60">{detail.source_path}</span>
+                    <span className="font-mono text-label text-muted-foreground/60">{detail.source_path}</span>
                   </DrawerField>
                 )}
               </InfoDrawer>

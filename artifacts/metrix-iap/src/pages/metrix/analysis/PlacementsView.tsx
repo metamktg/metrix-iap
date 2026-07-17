@@ -12,7 +12,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
-  SectionCard, CaveatNote, fmtUSD, fmtNum, fmtPct, resultTerm,
+  SectionCard, CaveatNote, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
   RangeScopeBar, NoDataInRangeState,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
@@ -125,19 +125,19 @@ function PlacementDetailDialog({ placement, v3Rows, c4eRows, accountRollup, onCl
     if (rows.length === 0) return null;
     return (
       <div className="space-y-1">
-        <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">{label}</p>
+        <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">{label}</p>
         <div className="rounded-lg border border-border/40 overflow-hidden">
           {[...rows].sort((a, b) => b["Amount spent (USD)"] - a["Amount spent (USD)"]).map((r, i) => (
             <div key={i} className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border/20 last:border-b-0 bg-white/[0.01]">
               <div className="min-w-0">
-                <div className="text-[11px] font-medium text-foreground truncate">{r.Placement}</div>
+                <div className="text-caption font-medium text-foreground truncate">{r.Placement}</div>
                 <div className="text-[9px] font-mono text-muted-foreground/50 mt-0.5">
                   {fmtNum(r.Impressions)} impr · {fmtNum(r["Link clicks"] ?? 0)} clicks
                   {r.CPA != null && ` · CPA ${fmtUSD(r.CPA)}`}
                 </div>
               </div>
               <div className="shrink-0 text-right">
-                <div className="text-[11px] font-semibold text-foreground tabular-nums">{fmtUSD(r["Amount spent (USD)"], 0)}</div>
+                <div className="text-caption font-semibold text-foreground tabular-nums">{fmtUSD(r["Amount spent (USD)"], 0)}</div>
                 <div className="text-[9px] text-muted-foreground/60">{fmtNum(r.Results)} results</div>
               </div>
             </div>
@@ -149,13 +149,13 @@ function PlacementDetailDialog({ placement, v3Rows, c4eRows, accountRollup, onCl
 
   return (
     <Dialog open={placement != null} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-xl bg-[hsl(222_61%_6%)] border-border/50 max-h-[82vh] overflow-y-auto">
+      <DialogContent className="max-w-xl bg-surface-deep border-border/50 max-h-[82vh] overflow-y-auto">
         <DialogHeader className="text-left space-y-1">
-          <div className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest">
+          <div className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest">
             Placement detail
           </div>
-          <DialogTitle className="text-[15px] font-semibold text-foreground">{placement}</DialogTitle>
-          <DialogDescription className="text-[11px] text-muted-foreground/70 leading-relaxed">
+          <DialogTitle className="text-callout font-semibold text-foreground">{placement}</DialogTitle>
+          <DialogDescription className="text-caption text-muted-foreground/70 leading-relaxed">
             {v3.length > 0 && `${v3.length} V3 row${v3.length !== 1 ? "s" : ""}`}
             {v3.length > 0 && c4e.length > 0 && " · "}
             {c4e.length > 0 && `${c4e.length} C4E row${c4e.length !== 1 ? "s" : ""}`}
@@ -168,7 +168,7 @@ function PlacementDetailDialog({ placement, v3Rows, c4eRows, accountRollup, onCl
             {tiles.map(({ label, value, delta }) => (
               <div key={label} className="rounded-lg border border-border/40 bg-white/[0.02] px-3 py-2.5">
                 <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-0.5">{label}</div>
-                <div className="text-[16px] font-bold text-foreground tabular-nums leading-none">{value}</div>
+                <div className="text-base font-bold text-foreground tabular-nums leading-none">{value}</div>
                 {delta && (
                   <div className={cn("text-[9px] mt-1 leading-none", delta.good ? "text-emerald-300/80" : "text-amber-300/80")}>
                     {delta.text}
@@ -274,7 +274,12 @@ export function PlacementsView() {
             return (
               <div className="flex-1 flex flex-col">
                 <ModuleHeader section={SECTION} title="Placements" tabs="analysis" account={acct} />
-                <PendingState title="No placement signal" message="Placement reads appear once delivery data exists for this account." icon={LayoutGrid} />
+                <PendingState
+                  title="No placement signal"
+                  message="Placement reads appear once delivery data exists for this account."
+                  icon={LayoutGrid}
+                  action={<CrossLink to="/app/analysis/overview" label="Return to Analysis Overview" />}
+                />
               </div>
             );
           }
@@ -366,7 +371,7 @@ export function PlacementsView() {
                 >
                   {rollup.length > 1 && (
                     <div className="mb-4">
-                      <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-1">
+                      <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60 mb-1">
                         Share of spend
                       </p>
                       <SharePieChart
@@ -396,11 +401,11 @@ export function PlacementsView() {
                           )}
                         >
                           <div className="flex items-center gap-3">
-                            <span className="w-5 shrink-0 text-[10px] font-mono text-muted-foreground/40 tabular-nums">
+                            <span className="w-5 shrink-0 text-label font-mono text-muted-foreground/40 tabular-nums">
                               {idx + 1}
                             </span>
                             <div className="min-w-0 w-44 shrink-0">
-                              <div className="text-[12px] font-medium text-foreground/90 truncate">{s.placement}</div>
+                              <div className="text-body font-medium text-foreground/90 truncate">{s.placement}</div>
                               {efficiency != null && (
                                 <div
                                   className={cn(
@@ -420,7 +425,7 @@ export function PlacementsView() {
                               <KpiStat label="Link CTR" value={s.ctr != null ? fmtPct(s.ctr) : "—"} highlight={activeMetric.id === "ctr"} />
                               <KpiStat label="CPM" value={s.cpm != null ? fmtUSD(s.cpm) : "—"} highlight={activeMetric.id === "cpm"} />
                             </div>
-                            <ChevronRight className="w-3 h-3 shrink-0 text-muted-foreground/40 group-hover:text-primary/60 transition-colors" />
+                            <ChevronRight className="w-3.5 h-3.5 shrink-0 text-muted-foreground/40 group-hover:text-primary/60 transition-colors" />
                           </div>
                           <div className="mt-2 ml-8 space-y-1">
                             <div className="flex items-center gap-2">
@@ -447,8 +452,8 @@ export function PlacementsView() {
                       );
                     })}
                   </div>
-                  <p className="mt-3 text-[10px] text-muted-foreground/50 flex items-center gap-1">
-                    <BarChart2 className="w-3 h-3" />
+                  <p className="mt-3 text-label text-muted-foreground/50 flex items-center gap-1">
+                    <BarChart2 className="w-3.5 h-3.5" />
                     {v3.length} V3 rows + {c4e.length} C4E rows · click any placement for the full breakdown
                   </p>
                 </SectionCard>

@@ -63,6 +63,7 @@ vi.mock("wouter", () => ({
 // Provide the seed without spinning up a real API.
 vi.mock("@/contexts/MetrixDataContext", () => ({
   useMetrixSeed: () => MOCK_SEED,
+  useMetrixIsRefetching: () => false,
 }));
 
 // ── Test wrapper ────────────────────────────────────────────────────────────

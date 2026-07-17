@@ -9,7 +9,7 @@ import { useScopedAdAccountId, useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAdAccount, getReportBuilder } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, SectionCard, CaveatNote, PendingState, useFocusParam, DetailReveal } from "../shared";
+import { ModuleHeader, SectionCard, CaveatNote, PendingState, useFocusParam, DetailReveal, CrossLink } from "../shared";
 import { ConnectMetaDialog, ManualImportDialog, CreativeLibraryDialog } from "../ConnectAccountDialogs";
 import { AnalysisControls } from "../ManualAnalysisControls";
 import { AgentWaitlistSection } from "./AgentWaitlistSection";
@@ -39,16 +39,16 @@ function SessionSection() {
       <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
         <UserCircle2 className="w-4 h-4 text-primary shrink-0" />
         <div className="flex-1 min-w-0">
-          <div className="text-[12px] font-medium text-foreground truncate" data-testid="text-session-email">{user.email}</div>
-          <div className="text-[10px] text-muted-foreground/85">Signed in</div>
+          <div className="text-body font-medium text-foreground truncate" data-testid="text-session-email">{user.email}</div>
+          <div className="text-label text-muted-foreground/85">Signed in</div>
         </div>
         <button
           onClick={handleSignOut}
           disabled={signingOut}
-          className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-50"
           data-testid="button-sign-out"
         >
-          {signingOut ? <Loader2 className="w-3 h-3 animate-spin" /> : <LogOut className="w-3 h-3" />}
+          {signingOut ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <LogOut className="w-3.5 h-3.5" />}
           Sign out
         </button>
       </div>
@@ -57,7 +57,7 @@ function SessionSection() {
 }
 
 const inputClass =
-  "w-full h-9 px-3 rounded-md bg-white/[0.03] border border-border/40 text-[13px] text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40";
+  "w-full h-9 px-3 rounded-md bg-white/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring";
 
 function PasswordSection() {
   const { changePassword } = useAuth();
@@ -141,7 +141,7 @@ function PasswordSection() {
       <SectionCard title="Password" desc="Change password · signs you out everywhere else">
         <form onSubmit={handleSubmit} className="space-y-3 max-w-sm" data-testid="form-account-change-password">
           <div className="space-y-1.5">
-            <label htmlFor="account-current-password" className="text-[11px] font-medium text-muted-foreground">
+            <label htmlFor="account-current-password" className="text-caption font-medium text-muted-foreground">
               Current password
             </label>
             <input
@@ -156,7 +156,7 @@ function PasswordSection() {
             />
           </div>
           <div className="space-y-1.5">
-            <label htmlFor="account-new-password" className="text-[11px] font-medium text-muted-foreground">
+            <label htmlFor="account-new-password" className="text-caption font-medium text-muted-foreground">
               New password <span className="text-muted-foreground/80">(min. 8 characters)</span>
             </label>
             <input
@@ -172,7 +172,7 @@ function PasswordSection() {
             />
           </div>
           <div className="space-y-1.5">
-            <label htmlFor="account-confirm-password" className="text-[11px] font-medium text-muted-foreground">
+            <label htmlFor="account-confirm-password" className="text-caption font-medium text-muted-foreground">
               Confirm new password
             </label>
             <input
@@ -187,19 +187,19 @@ function PasswordSection() {
             />
           </div>
           {error && (
-            <div className="text-[11px] text-red-400/90" data-testid="text-account-change-password-error">
+            <div className="text-caption text-red-400/90" data-testid="text-account-change-password-error">
               {error}
             </div>
           )}
           {success && (
-            <div className="flex items-center gap-1.5 text-[11px] text-emerald-400/90" data-testid="text-account-change-password-success">
+            <div className="flex items-center gap-1.5 text-caption text-emerald-400/90" data-testid="text-account-change-password-success">
               <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> Password updated. Other sessions have been signed out.
             </div>
           )}
           <button
             type="submit"
             disabled={isSubmitting || !currentPassword || !newPassword || !confirmPassword}
-            className="flex items-center justify-center gap-1.5 h-9 px-4 rounded-md bg-primary text-primary-foreground text-[12px] font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+            className="flex items-center justify-center gap-1.5 h-9 px-4 rounded-md bg-primary text-primary-foreground text-body font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:pointer-events-none"
             data-testid="button-account-change-password"
           >
             {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5" />}
@@ -224,7 +224,9 @@ export function AccountSettingsView() {
     return (
       <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
         <ModuleHeader section={SECTION} title="Account" />
-        <PendingState title="No ad account selected" message="Choose an ad account to manage its settings." />
+        <PendingState title="No ad account selected" message="Choose an ad account to manage its settings."
+          action={<CrossLink to="/app/analysis/overview" label="Go to Overview" />}
+        />
         <div className="px-6 py-5 space-y-5 max-w-3xl">
           <SessionSection />
           <PasswordSection />
@@ -254,48 +256,48 @@ export function AccountSettingsView() {
             <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
               {configured ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> : <Circle className="w-4 h-4 text-muted-foreground/80 shrink-0" />}
               <div className="flex-1 min-w-0">
-                <div className="text-[12px] font-medium text-foreground">Meta ad account</div>
-                <div className="text-[10px] text-muted-foreground/85">{configured ? `${account.platform} · connected` : "Not connected"}</div>
+                <div className="text-body font-medium text-foreground">Meta ad account</div>
+                <div className="text-label text-muted-foreground/85">{configured ? `${account.platform} · connected` : "Not connected"}</div>
               </div>
               {!configured && (
                 <button
                   onClick={() => setConnectOpen(true)}
-                  className="flex items-center gap-1.5 h-8 px-3.5 rounded-md bg-primary border border-primary text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-md shadow-primary/25"
+                  className="flex items-center gap-1.5 h-8 px-3.5 rounded-md bg-primary border border-primary text-caption font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-md shadow-primary/25"
                   data-testid="button-connect-account"
                 >
-                  <Plug className="w-3 h-3" /> Connect
+                  <Plug className="w-3.5 h-3.5" /> Connect
                 </button>
               )}
             </div>
             <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
               <FileUp className="w-4 h-4 text-muted-foreground/85 shrink-0" />
               <div className="flex-1 min-w-0">
-                <div className="text-[12px] font-medium text-foreground">Manual import</div>
-                <div className="text-[10px] text-muted-foreground/85">Upload exported performance data</div>
+                <div className="text-body font-medium text-foreground">Manual import</div>
+                <div className="text-label text-muted-foreground/85">Upload exported performance data</div>
               </div>
               <button
                 onClick={() => setImportOpen(true)}
-                className="flex items-center gap-1.5 h-8 px-3.5 rounded-md bg-primary border border-primary text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-md shadow-primary/25"
+                className="flex items-center gap-1.5 h-8 px-3.5 rounded-md bg-primary border border-primary text-caption font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-md shadow-primary/25"
                 data-testid="button-add-import"
               >
-                <FileUp className="w-3 h-3" /> Add import
+                <FileUp className="w-3.5 h-3.5" /> Add import
               </button>
             </div>
             {configured && (
               <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
                 <Images className="w-4 h-4 text-muted-foreground/85 shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <div className="text-[12px] font-medium text-foreground">Creative library</div>
-                  <div className="text-[10px] text-muted-foreground/85">
+                  <div className="text-body font-medium text-foreground">Creative library</div>
+                  <div className="text-label text-muted-foreground/85">
                     Add creative files after the fact, mapped to existing ads — no CSV re-upload needed
                   </div>
                 </div>
                 <button
                   onClick={() => setCreativeLibraryOpen(true)}
-                  className="flex items-center gap-1.5 h-8 px-3.5 rounded-md bg-primary border border-primary text-[11px] font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-md shadow-primary/25"
+                  className="flex items-center gap-1.5 h-8 px-3.5 rounded-md bg-primary border border-primary text-caption font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-md shadow-primary/25"
                   data-testid="button-upload-creatives"
                 >
-                  <Images className="w-3 h-3" /> Upload creatives
+                  <Images className="w-3.5 h-3.5" /> Upload creatives
                 </button>
               </div>
             )}
@@ -314,8 +316,8 @@ export function AccountSettingsView() {
             <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
               <Palette className="w-4 h-4 text-primary shrink-0" />
               <div className="flex-1 min-w-0">
-                <div className="text-[12px] font-medium text-foreground capitalize">{rb.default_branding} branding</div>
-                <div className="text-[10px] text-muted-foreground/85">White-label {rb.white_label_supported ? "supported" : "unavailable"} · formats: {rb.export_formats.join(", ")}</div>
+                <div className="text-body font-medium text-foreground capitalize">{rb.default_branding} branding</div>
+                <div className="text-label text-muted-foreground/85">White-label {rb.white_label_supported ? "supported" : "unavailable"} · formats: {rb.export_formats.join(", ")}</div>
               </div>
             </div>
             <div className="mt-2.5">
@@ -352,7 +354,7 @@ export function AccountSettingsView() {
         {/* Metrix Agent waitlist (admin, manager-wide) */}
         <AgentWaitlistSection />
 
-        <div className={cn("text-[10px] font-mono text-muted-foreground/80", "px-1")}>
+        <div className={cn("text-label font-mono text-muted-foreground/80", "px-1")}>
           Account ID · {account.id}
         </div>
       </div>

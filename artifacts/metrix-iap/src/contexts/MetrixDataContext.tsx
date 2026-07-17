@@ -8,10 +8,11 @@
 
 import React, { createContext, useContext } from "react";
 import { useGetMetrixSeed } from "@workspace/api-client-react";
-import { Loader2, AlertTriangle, RefreshCw } from "lucide-react";
+import { AlertTriangle, RefreshCw } from "lucide-react";
 import type { MetrixSeed } from "@/lib/data/seedTypes";
 
 const MetrixDataContext = createContext<MetrixSeed | null>(null);
+const MetrixLoadingContext = createContext<{ isRefetching: boolean }>({ isRefetching: false });
 
 function FullScreen({ children }: { children: React.ReactNode }) {
   return (
@@ -27,8 +28,22 @@ export function MetrixDataProvider({ children }: { children: React.ReactNode }) 
   if (isLoading) {
     return (
       <FullScreen>
-        <Loader2 className="w-6 h-6 text-primary/70 animate-spin mx-auto" />
-        <p className="text-[13px] text-muted-foreground/70">Loading Metrix data…</p>
+        <div className="w-full max-w-xl space-y-3 px-4" aria-busy="true" aria-label="Loading Metrix data">
+          <div className="animate-pulse rounded-md bg-white/[0.06] h-3 w-1/3" />
+          <div
+            className="grid gap-2"
+            style={{ gridTemplateColumns: "repeat(4, minmax(0, 1fr))" }}
+          >
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="rounded-xl border border-border/30 bg-white/[0.02] px-3 py-2.5 space-y-2">
+                <div className="animate-pulse rounded-md bg-white/[0.06] h-2 w-2/3" />
+                <div className="animate-pulse rounded-md bg-white/[0.06] h-5 w-1/2" />
+              </div>
+            ))}
+          </div>
+          <div className="animate-pulse rounded-md bg-white/[0.06] h-24 w-full" />
+          <div className="animate-pulse rounded-md bg-white/[0.06] h-16 w-full" />
+        </div>
       </FullScreen>
     );
   }
@@ -37,14 +52,14 @@ export function MetrixDataProvider({ children }: { children: React.ReactNode }) 
     return (
       <FullScreen>
         <AlertTriangle className="w-6 h-6 text-amber-400/80 mx-auto" />
-        <p className="text-[14px] font-semibold text-foreground">Couldn't load Metrix data</p>
-        <p className="text-[12px] text-muted-foreground/70 leading-relaxed">
+        <p className="text-sm font-semibold text-foreground">Couldn't load Metrix data</p>
+        <p className="text-body text-muted-foreground/70 leading-relaxed">
           The data service didn't respond. Check that the API server is running, then try again.
         </p>
         <button
           onClick={() => refetch()}
           disabled={isRefetching}
-          className="inline-flex items-center gap-1.5 text-[12px] font-medium text-primary border border-primary/30 bg-primary/10 hover:bg-primary/15 rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 text-body font-medium text-primary border border-primary/30 bg-primary/10 hover:bg-primary/15 rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50"
         >
           <RefreshCw className={isRefetching ? "w-3.5 h-3.5 animate-spin" : "w-3.5 h-3.5"} />
           Retry
@@ -54,11 +69,20 @@ export function MetrixDataProvider({ children }: { children: React.ReactNode }) 
   }
 
   const seed = data as unknown as MetrixSeed;
-  return <MetrixDataContext.Provider value={seed}>{children}</MetrixDataContext.Provider>;
+  return (
+    <MetrixLoadingContext.Provider value={{ isRefetching }}>
+      <MetrixDataContext.Provider value={seed}>{children}</MetrixDataContext.Provider>
+    </MetrixLoadingContext.Provider>
+  );
 }
 
 export function useMetrixSeed(): MetrixSeed {
   const ctx = useContext(MetrixDataContext);
   if (!ctx) throw new Error("useMetrixSeed must be used within MetrixDataProvider");
   return ctx;
+}
+
+/** Returns true while the seed is being re-fetched in the background. */
+export function useMetrixIsRefetching(): boolean {
+  return useContext(MetrixLoadingContext).isRefetching;
 }

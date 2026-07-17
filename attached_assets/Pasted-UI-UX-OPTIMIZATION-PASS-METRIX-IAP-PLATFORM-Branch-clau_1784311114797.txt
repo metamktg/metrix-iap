@@ -1,0 +1,92 @@
+UI/UX OPTIMIZATION PASS — METRIX IAP PLATFORM
+Branch: claude/metrix-end-to-end-workflow-h7utq2 (PR #3). Work on top of it.
+
+PRIME DIRECTIVES (read first, violate nothing)
+1. Do NOT rebrand. Keep the existing dark theme, violet/blue primary, and brand marks.
+   This is a systematization + disclosure pass, not a redesign.
+2. Honesty is the product's core rule: never fabricate, estimate, or pre-fill data to make
+   a screen look fuller. Empty means empty — but every empty state must say WHY and offer
+   the ONE action that unblocks it.
+3. Do not change API contracts, seed shapes, or data logic. UI layer only.
+4. All 346 client tests must still pass (pnpm --filter @workspace/metrix-iap run test) and
+   pnpm run typecheck must stay clean after every phase. Update test assertions only when
+   copy you intentionally changed breaks them.
+
+PHASE 1 — DESIGN TOKEN SYSTEMATIZATION (foundation for everything else)
+- Audit all views for ad-hoc values (raw hex, arbitrary text-[10px]/text-[13px] sizes,
+  random border opacities) and consolidate into semantic tokens: surface, surface-raised,
+  border-subtle, text-primary/secondary/muted, status (success/warning/danger/info),
+  and a type scale (11/12/13/16/21 exists — formalize it).
+- One spacing rhythm (4px base) and one elevation/shadow scale across cards, modals, popovers.
+- One icon family (Lucide, already used) at consistent sizes (14/16/20) and stroke width.
+  No emoji as icons anywhere.
+- Tabular-nums on ALL metric numbers, table columns, and KPI tiles so values never jitter.
+- Verify every text/background pair ≥4.5:1 (secondary text ≥3:1) against the dark surfaces.
+  Fix the worst offenders: muted-foreground/50-range text on dark cards.
+
+PHASE 2 — PROGRESSIVE DISCLOSURE ARCHITECTURE (the core ask)
+Model every account screen as three altitude levels and enforce them consistently:
+  L1 GLANCE  — what happened (KPI tiles, status, one headline insight)
+  L2 SCAN    — ranked comparisons (segment/placement/concept rows with share bars)
+  L3 INSPECT — full drill-down (modals/drawers with every metric + provenance)
+Rules:
+- Nothing at L3 renders at L1. Collapse advanced detail (data-source/table badges,
+  caveat notes, extra_metrics, confidence methodology) behind expanders or the existing
+  DataSourceBadge collapsible pattern — visible on demand, silent by default.
+- Every L2 row must look clickable (cursor, hover, chevron/affordance) and open its L3.
+- The IAP loop is the platform's spine: Upload → Analyze → Strategy → Briefs → Report →
+  Re-run. Add a persistent per-account "loop stepper" on the Account Overview showing
+  which stages are complete/pending (data exists: analysis runs, generation runs,
+  iap_runs stages, reports). Each pending stage = one primary CTA that starts it.
+  This replaces the user having to know the order themselves.
+- Exactly ONE primary CTA per screen (the next loop action); everything else is
+  secondary/ghost. Audit every view for competing primary buttons.
+- Multi-step dialogs (AddAccountDialog, ManualUploadPanel) already step correctly —
+  add an explicit step indicator (1 of 3), keep Back everywhere, and confirm-before-dismiss
+  when uploads/mappings are staged but unreviewed.
+- First-run experience: an account with zero data shows a single guided "Get set up"
+  card (name → upload both CSVs → map creatives → run analysis) with per-item checkmarks,
+  not six modules of separate empty states. Modules stay reachable (never hide nav),
+  each with its honest pending state linking back to the blocking step.
+
+PHASE 3 — STATE & FEEDBACK POLISH
+- Loading: skeletons (animate-pulse, matching final layout to avoid CLS) for anything
+  >300ms: seed load, analysis polling, generation runs. Never a frozen screen or bare spinner
+  for long operations; generation buttons keep their in-flight label ("Generating…").
+- Empty: every empty state = icon + why it's empty + the unblocking action. Audit all
+  PendingState usages for dead-ends (message with no CTA).
+- Error: every error surface = cause + recovery action (retry / fix mapping / re-upload).
+  Analysis/generation run failures already carry real error messages — surface them
+  verbatim with a Retry button, never a generic "something went wrong".
+- Success: brief confirmation on completed runs (toast or inline flash, auto-dismiss 4s,
+  aria-live="polite", never steals focus).
+- Destructive actions (delete import, delete report, revoke): danger color, spatially
+  separated, confirm dialog; add Undo where feasible.
+
+PHASE 4 — INTERACTION & ACCESSIBILITY (desktop-web rules)
+- Visible focus rings (2px, primary color) on ALL interactive elements; tab order = visual
+  order; drill-down modals trap focus, Esc closes, focus returns to the trigger.
+- aria-labels on every icon-only button (delete, edit, close, expand).
+- Hover + active states on every clickable row/tile (subtle bg shift + cursor-pointer);
+  no hover-only information — anything shown on hover is also reachable by click/focus.
+- Motion: 150–300ms, ease-out enter / ease-in exit, transform+opacity only, stagger list
+  entrances ≤50ms/item, and honor prefers-reduced-motion globally (add the media query
+  guard to shared transition utilities).
+- Charts (recharts): every chart needs a legend, hover tooltip with exact values,
+  loading skeleton, and an honest "no data yet" state; gridlines low-contrast; never
+  encode meaning by color alone (pair with labels/patterns); series colors ≥3:1 against bg.
+- Tables/long lists (ads registry, library, waitlist): sticky headers, sortable columns
+  with aria-sort, and virtualize anything that can exceed ~50 rows.
+
+PHASE 5 — VERIFY & REPORT
+- pnpm run typecheck && pnpm --filter @workspace/metrix-iap run test → all green.
+- Manual pass at 1440px and 768px + one 375px sanity check: no horizontal scroll,
+  no content hidden under sticky headers/topbar.
+- Keyboard-only walkthrough of: add account → upload → map creative → run analysis →
+  open Audience drill-down → generate strategy → generate briefs → create report.
+- Deliver a summary table: per phase, what changed, files touched, before/after
+  screenshots of (a) Account Overview with the loop stepper, (b) an empty first-run
+  account, (c) Audience view L1→L2→L3, (d) a generation error with recovery.
+
+Work phase by phase, commit per phase with clear messages, and stop and report if any
+phase forces a data-layer change — do not make one silently.

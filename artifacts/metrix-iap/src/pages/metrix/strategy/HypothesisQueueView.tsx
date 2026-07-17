@@ -38,10 +38,10 @@ function HypFact({
   return (
     <div className="min-w-0">
       <div className="flex items-center gap-1 mb-0.5">
-        <Icon className="w-2.5 h-2.5 text-muted-foreground/60" />
+        <Icon className="w-3.5 h-3.5 text-muted-foreground/60" />
         <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
       </div>
-      <p className="text-[11px] text-foreground/80 leading-snug line-clamp-1">{deriveLabel(value, 56)}</p>
+      <p className="text-caption text-foreground/80 leading-snug line-clamp-1">{deriveLabel(value, 56)}</p>
     </div>
   );
 }
@@ -75,7 +75,9 @@ export function HypothesisQueueView() {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Hypothesis Queue" tabs="strategy" account={acct} />
-              <PendingState title="Strategy pending" message="No strategy has been derived for this account yet." />
+              <PendingState title="Strategy pending" message="No strategy has been derived for this account yet."
+                action={<CrossLink to="/app/strategy/overview" label="Go to Strategy Overview" />}
+              />
             </div>
           );
         }
@@ -125,7 +127,9 @@ export function HypothesisQueueView() {
             <div className="px-6 py-5 max-w-4xl">
               {tab === "queue" && (
                 hyps.length === 0 ? (
-                  <PendingState title="No hypotheses yet" message="Active hypotheses appear once strategy is derived." icon={FlaskConical} />
+                  <PendingState title="No hypotheses yet" message="Active hypotheses appear once strategy is derived." icon={FlaskConical}
+                    action={<CrossLink to="/app/strategy/overview" label="Go to Strategy Overview" />}
+                  />
                 ) : (
                   <div className="space-y-2.5">
                     {hyps.map((h) => {
@@ -146,10 +150,10 @@ export function HypothesisQueueView() {
                               {/* Density rule: chips first; the sentence drops to a
                                   one-line caption (full prose in the tap drawer). */}
                               <HypothesisCodeChipsRow label={h.label} />
-                              <p className="text-[12px] text-foreground/80 leading-snug line-clamp-1 mt-1">{deriveLabel(h.label, 72)}</p>
+                              <p className="text-body text-foreground/80 leading-snug line-clamp-1 mt-1">{deriveLabel(h.label, 72)}</p>
                               {h.source && (
-                                <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-muted-foreground/60">
-                                  <ArrowRight className="w-3 h-3 text-muted-foreground/60" />
+                                <div className="flex items-center gap-1.5 mt-1.5 text-caption text-muted-foreground/60">
+                                  <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/60" />
                                   {h.source}
                                 </div>
                               )}
@@ -167,8 +171,8 @@ export function HypothesisQueueView() {
                           )}
                           {h.risk && (
                             <div className="flex items-start gap-1.5 mt-3 pt-3 border-t border-border/20">
-                              <AlertTriangle className="w-3 h-3 text-amber-400/70 shrink-0 mt-0.5" />
-                              <p className="text-[11px] text-amber-400/80 leading-relaxed line-clamp-1">{deriveLabel(h.risk, 90)}</p>
+                              <AlertTriangle className="w-3.5 h-3.5 text-amber-400/70 shrink-0 mt-0.5" />
+                              <p className="text-caption text-amber-400/80 leading-relaxed line-clamp-1">{deriveLabel(h.risk, 90)}</p>
                             </div>
                           )}
                         </button>
@@ -180,7 +184,9 @@ export function HypothesisQueueView() {
 
               {tab === "pillars" && (
                 pillars.length === 0 ? (
-                  <PendingState title="No pillars yet" message="Message pillars appear once analysis is ready." icon={Layers} />
+                  <PendingState title="No pillars yet" message="Message pillars appear once analysis is ready." icon={Layers}
+                    action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />}
+                  />
                 ) : (
                   <div className="space-y-3">
                     {pillars.map((p) => {
@@ -192,11 +198,11 @@ export function HypothesisQueueView() {
                               <CrossLink key={c} to={`/app/analysis/library?focus=${c}`} label={c} />
                             ))}
                           </div>
-                          <p className="text-[14px] font-semibold text-foreground leading-tight">{p.label}</p>
+                          <p className="text-sm font-semibold text-foreground leading-tight">{p.label}</p>
                           <div className="mt-1">
                             <DetailReveal
                               label={deriveLabel(p.plain_descriptor, 72)}
-                              labelClassName="text-[12px] text-primary/80 italic"
+                              labelClassName="text-body text-primary/80 italic"
                               eyebrow={p.label}
                               sections={[
                                 { label: "Descriptor", text: p.plain_descriptor },

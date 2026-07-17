@@ -33,3 +33,4 @@
 - [CreativeVisual loading state](creative-visual-loading-state.md) — blank <img> during cold Supabase load (1–5 s) is visually identical to "No asset"; use loadedUrl state + spinner overlay + brokenUrl useEffect reset to distinguish loading from missing.
 - [Vitest runs must be serial](vitest-serial-runs.md) — two concurrent vitest processes both exit -1 with no output; full suite exceeds a 120s bash timeout — run dirs separately, pipe to a log.
 - [Metrix IAP headless login quirk](metrix-headless-login.md) — login succeeds but URL stays on /login (shows 404 shell); don't waitForURL, just goto target routes directly after a short wait.
+- [Design token scale (metrix-iap)](design-token-scale.md) — formal type scale utilities in index.css @layer utilities; batch-replace text-[Npx] with named classes; semantic surface/border/text/status tokens.

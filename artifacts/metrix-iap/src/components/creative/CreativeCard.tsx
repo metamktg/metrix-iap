@@ -86,13 +86,13 @@ function PlaceholderVisual({ code, format, className }: { code: string; format?:
       style={{ background: `linear-gradient(155deg, hsl(${hue} 38% 12%) 0%, hsl(${(hue + 50) % 360} 32% 7%) 100%)` }}
     >
       <span
-        className="text-[38px] font-black tracking-tight leading-none"
+        className="text-hero font-black tracking-tight leading-none"
         style={{ color: `hsl(${hue} 65% 68% / 0.75)` }}
       >
         {code}
       </span>
       <span className="flex items-center gap-1 text-[8px] font-mono uppercase tracking-widest text-white/25">
-        <ImageOff className="w-2.5 h-2.5" />
+        <ImageOff className="w-3.5 h-3.5" />
         No asset
       </span>
       {format && (
@@ -203,9 +203,9 @@ function StatStrip({ stats }: { stats: CreativeCardStats }) {
   return (
     <div className="grid grid-cols-2 gap-px bg-border/30 rounded-md overflow-hidden border border-border/30">
       {items.map((it) => (
-        <div key={it.label} className="bg-[hsl(222_55%_7%)] px-2 py-1.5 text-center">
+        <div key={it.label} className="bg-surface-table px-2 py-1.5 text-center">
           <div className="text-[7px] font-mono uppercase tracking-wider text-muted-foreground/55 truncate">{it.label}</div>
-          <div className="text-[10px] font-semibold text-foreground/90 tabular-nums mt-0.5">{it.value}</div>
+          <div className="text-label font-semibold text-foreground/90 tabular-nums mt-0.5">{it.value}</div>
         </div>
       ))}
     </div>
@@ -313,7 +313,7 @@ export function CreativeCard({
               title="Expand creative"
               className="flex items-center gap-1 text-[9px] font-medium text-white/80 hover:text-white transition-colors"
             >
-              <Maximize2 className="w-3 h-3" />
+              <Maximize2 className="w-3.5 h-3.5" />
               Expand
             </button>
             {adsUrl && (
@@ -325,7 +325,7 @@ export function CreativeCard({
                 title="View in Ads Manager"
                 className="flex items-center gap-1 text-[9px] font-medium text-primary/80 hover:text-primary transition-colors"
               >
-                <ExternalLink className="w-3 h-3" />
+                <ExternalLink className="w-3.5 h-3.5" />
                 Ads Manager
               </a>
             )}
@@ -343,7 +343,7 @@ export function CreativeCard({
                 </span>
               )}
             </div>
-            <p className="text-[12px] font-semibold text-foreground leading-tight mt-0.5 line-clamp-2">{data.title}</p>
+            <p className="text-body font-semibold text-foreground leading-tight mt-0.5 line-clamp-2">{data.title}</p>
           </div>
           {data.stats && <StatStrip stats={data.stats} />}
         </div>

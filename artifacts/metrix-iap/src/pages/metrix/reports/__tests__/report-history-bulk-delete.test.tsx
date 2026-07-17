@@ -27,6 +27,7 @@ vi.mock("@/contexts/MetrixDataContext", async () => {
   const { seed } = await import("@/navigation/__tests__/seed");
   return {
     useMetrixSeed: () => seed,
+    useMetrixIsRefetching: () => false,
     MetrixDataProvider: ({ children }: { children: React.ReactNode }) =>
       children,
   };
@@ -129,6 +130,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.clearAllTimers();
   vi.unstubAllGlobals();
 });
 

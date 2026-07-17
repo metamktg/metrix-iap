@@ -5,15 +5,24 @@
 // metrics descending), second click flips direction. A '×' reset button
 // on the active column restores the original order. Null values always
 // sort last.
+//
+// Accessibility: sortable column headers expose aria-sort="ascending" |
+// "descending" | "none"; clickable rows get role="button" + tabIndex + Enter
+// key support; active states are present alongside hover states.
+//
+// Virtualization: tables with >50 rows use @tanstack/react-virtual to keep
+// the DOM small. VirtualTableBody handles the padding approach so column
+// widths remain normal table layout (no absolute positioning hacks).
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowDown, ArrowUp, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel } from "../shared";
 import type { CellPerformanceRow, VariablePerformanceRow, DemographicRow, PlacementRow, ConversionFunnelRow } from "@/lib/data/seedTypes";
 
 export function Th({ children, right }: { children: React.ReactNode; right?: boolean }) {
-  return <th className={cn("text-[10px] font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-2.5 py-2", right ? "text-right" : "text-left")}>{children}</th>;
+  return <th className={cn("text-label font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-2.5 py-2", right ? "text-right" : "text-left")}>{children}</th>;
 }
 
 // ─── Column sorting ───────────────────────────────────────────────────
@@ -82,15 +91,24 @@ export function SortableTh({
   onReset?: () => void;
 }) {
   const active = sort?.key === sortKey;
+  const ariaSort: React.AriaAttributes["aria-sort"] = active
+    ? sort!.dir === "asc"
+      ? "ascending"
+      : "descending"
+    : "none";
   return (
-    <th className={cn("px-2.5 py-2", right ? "text-right" : "text-left")}>
+    <th
+      className={cn("px-2.5 py-2", right ? "text-right" : "text-left")}
+      aria-sort={ariaSort}
+    >
       <div className={cn("inline-flex items-center gap-0.5", right && "flex-row-reverse w-full justify-end")}>
         <button
           onClick={() => onToggle(sortKey)}
           data-testid={`sort-${sortKey}`}
           title={active ? (sort!.dir === "asc" ? "Sorted ascending — click for descending" : "Sorted descending — click for ascending") : "Click to sort"}
+          aria-label={`Sort by ${String(children)}${active ? (sort!.dir === "asc" ? ", currently ascending" : ", currently descending") : ""}`}
           className={cn(
-            "inline-flex items-center gap-0.5 text-[10px] font-mono uppercase tracking-widest font-semibold transition-colors",
+            "inline-flex items-center gap-0.5 text-label font-mono uppercase tracking-widest font-semibold transition-colors",
             active ? "text-foreground" : "text-muted-foreground/70 hover:text-foreground",
             right && "flex-row-reverse"
           )}
@@ -98,9 +116,9 @@ export function SortableTh({
           {children}
           {active &&
             (sort!.dir === "asc" ? (
-              <ArrowUp className="w-2.5 h-2.5 text-primary/70" />
+              <ArrowUp className="w-3.5 h-3.5 text-primary/70" />
             ) : (
-              <ArrowDown className="w-2.5 h-2.5 text-primary/70" />
+              <ArrowDown className="w-3.5 h-3.5 text-primary/70" />
             ))}
         </button>
         {active && onReset && (
@@ -111,25 +129,69 @@ export function SortableTh({
             aria-label="Clear sort"
             className="ml-0.5 p-0.5 rounded text-muted-foreground/35 hover:text-foreground/80 hover:bg-white/[0.06] transition-colors"
           >
-            <X className="w-2.5 h-2.5" />
+            <X className="w-3.5 h-3.5" />
           </button>
         )}
       </div>
     </th>
   );
 }
+
 export function Td({ children, right, className }: { children: React.ReactNode; right?: boolean; className?: string }) {
-  return <td className={cn("px-2.5 py-2 text-[12px] text-foreground/85 align-top", right && "text-right tabular-nums", className)}>{children}</td>;
+  return <td className={cn("px-2.5 py-2 text-body text-foreground/85 align-top", right && "text-right tabular-nums", className)}>{children}</td>;
 }
 
-export function TableShell({ children }: { children: React.ReactNode }) {
+// ─── Virtual table body ───────────────────────────────────────────────
+// Used when row count exceeds VIRTUAL_THRESHOLD. Uses the padding-row
+// approach so standard table column layout is preserved (no absolute
+// positioning). The scroll container ref comes from TableShell's div.
+const VIRTUAL_THRESHOLD = 50;
+const ESTIMATED_ROW_PX = 48;
+
+function VirtualTableBody<Row>({
+  rows,
+  scrollRef,
+  renderRow,
+}: {
+  rows: Row[];
+  scrollRef: React.RefObject<HTMLDivElement | null>;
+  renderRow: (row: Row, index: number) => React.ReactNode;
+}) {
+  const virtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => ESTIMATED_ROW_PX,
+    overscan: 8,
+  });
+  const items = virtualizer.getVirtualItems();
+  const totalSize = virtualizer.getTotalSize();
+  const paddingTop = items.length > 0 ? (items[0]?.start ?? 0) : 0;
+  const paddingBottom = items.length > 0
+    ? totalSize - (items[items.length - 1]?.end ?? 0)
+    : 0;
+
+  return (
+    <tbody>
+      {paddingTop > 0 && <tr aria-hidden="true"><td colSpan={999} style={{ height: paddingTop, padding: 0 }} /></tr>}
+      {items.map((item) => renderRow(rows[item.index]!, item.index))}
+      {paddingBottom > 0 && <tr aria-hidden="true"><td colSpan={999} style={{ height: paddingBottom, padding: 0 }} /></tr>}
+    </tbody>
+  );
+}
+
+function TableShellInner({ children, scrollRef }: { children: React.ReactNode; scrollRef: React.RefObject<HTMLDivElement | null> }) {
   return (
     <div className="rounded-xl border border-border/40 overflow-hidden bg-white/[0.015]">
-      <div className="overflow-x-auto max-h-[520px] overflow-y-auto">
+      <div ref={scrollRef} className="overflow-x-auto max-h-[520px] overflow-y-auto">
         <table className="w-full border-collapse">{children}</table>
       </div>
     </div>
   );
+}
+
+export function TableShell({ children }: { children: React.ReactNode }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  return <TableShellInner scrollRef={scrollRef}>{children}</TableShellInner>;
 }
 
 /** Compact inline variable-code chips for a cell row. */
@@ -166,41 +228,58 @@ const CELL_COLUMNS: ColumnAccessors<CellPerformanceRow> = {
 
 export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; onRowClick?: (row: CellPerformanceRow) => void }) {
   const { sorted, sort, toggle, reset } = useColumnSort(rows, CELL_COLUMNS);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const useVirtual = sorted.length > VIRTUAL_THRESHOLD;
+
+  const renderRow = (r: CellPerformanceRow, _i: number) => (
+    <tr
+      key={r.cell_id + r["Result type"]}
+      className={cn(
+        "border-b border-border/20 hover:bg-white/[0.02]",
+        onRowClick && "cursor-pointer active:bg-white/[0.04] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60"
+      )}
+      onClick={onRowClick ? () => onRowClick(r) : undefined}
+      role={onRowClick ? "button" : undefined}
+      tabIndex={onRowClick ? 0 : undefined}
+      onKeyDown={onRowClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onRowClick(r); } } : undefined}
+      aria-label={onRowClick ? `Open details for ${r.book2_concept_name ?? r.cell_id}` : undefined}
+    >
+      <Td>
+        <div className="font-medium text-foreground">{r.book2_concept_name}</div>
+        <div className="text-[9px] font-mono text-muted-foreground/60 mt-0.5">{r.cell_id}{r.stage ? ` · ${r.stage}` : ""}</div>
+        <VariableCodeChips row={r} />
+      </Td>
+      <Td>{eventLabel(r["Result type"])}</Td>
+      <Td right>{fmtUSD(r["Amount spent (USD)"])}</Td>
+      <Td right>{fmtNum(r.Results)}</Td>
+      <Td right>{r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}</Td>
+      <Td right>{fmtPct(r.CTR_link_pct)}</Td>
+      <Td right>{fmtPct(r.Result_per_link_click_pct)}</Td>
+    </tr>
+  );
+
+  const thead = (
+    <thead className="sticky top-0 bg-surface-table z-10">
+      <tr className="border-b border-border/40">
+        <SortableTh sortKey="concept" sort={sort} onToggle={toggle} onReset={reset}>Cell / concept</SortableTh>
+        <Th>Result type</Th>
+        <SortableTh right sortKey="spend" sort={sort} onToggle={toggle} onReset={reset}>Spend</SortableTh>
+        <SortableTh right sortKey="results" sort={sort} onToggle={toggle} onReset={reset}>Results</SortableTh>
+        <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle} onReset={reset}>CPA</SortableTh>
+        <SortableTh right sortKey="ctr" sort={sort} onToggle={toggle} onReset={reset}>Link CTR</SortableTh>
+        <SortableTh right sortKey="rpc" sort={sort} onToggle={toggle} onReset={reset}>Result/click</SortableTh>
+      </tr>
+    </thead>
+  );
+
   return (
-    <TableShell>
-      <thead className="sticky top-0 bg-[hsl(222_55%_7%)] z-10">
-        <tr className="border-b border-border/40">
-          <SortableTh sortKey="concept" sort={sort} onToggle={toggle} onReset={reset}>Cell / concept</SortableTh>
-          <Th>Result type</Th>
-          <SortableTh right sortKey="spend" sort={sort} onToggle={toggle} onReset={reset}>Spend</SortableTh>
-          <SortableTh right sortKey="results" sort={sort} onToggle={toggle} onReset={reset}>Results</SortableTh>
-          <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle} onReset={reset}>CPA</SortableTh>
-          <SortableTh right sortKey="ctr" sort={sort} onToggle={toggle} onReset={reset}>Link CTR</SortableTh>
-          <SortableTh right sortKey="rpc" sort={sort} onToggle={toggle} onReset={reset}>Result/click</SortableTh>
-        </tr>
-      </thead>
-      <tbody>
-        {sorted.map((r) => (
-          <tr
-            key={r.cell_id + r["Result type"]}
-            className={cn("border-b border-border/20 hover:bg-white/[0.02]", onRowClick && "cursor-pointer")}
-            onClick={onRowClick ? () => onRowClick(r) : undefined}
-          >
-            <Td>
-              <div className="font-medium text-foreground">{r.book2_concept_name}</div>
-              <div className="text-[9px] font-mono text-muted-foreground/60 mt-0.5">{r.cell_id}{r.stage ? ` · ${r.stage}` : ""}</div>
-              <VariableCodeChips row={r} />
-            </Td>
-            <Td>{eventLabel(r["Result type"])}</Td>
-            <Td right>{fmtUSD(r["Amount spent (USD)"])}</Td>
-            <Td right>{fmtNum(r.Results)}</Td>
-            <Td right>{r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}</Td>
-            <Td right>{fmtPct(r.CTR_link_pct)}</Td>
-            <Td right>{fmtPct(r.Result_per_link_click_pct)}</Td>
-          </tr>
-        ))}
-      </tbody>
-    </TableShell>
+    <TableShellInner scrollRef={scrollRef}>
+      {thead}
+      {useVirtual
+        ? <VirtualTableBody rows={sorted} scrollRef={scrollRef} renderRow={renderRow} />
+        : <tbody>{sorted.map((r) => renderRow(r, 0))}</tbody>
+      }
+    </TableShellInner>
   );
 }
 
@@ -223,47 +302,60 @@ export function VariableTable({
   onRowClick?: (row: VariablePerformanceRow) => void;
 }) {
   const { sorted, sort, toggle, reset } = useColumnSort(rows, VARIABLE_COLUMNS);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const useVirtual = sorted.length > VIRTUAL_THRESHOLD;
+
+  const renderRow = (r: VariablePerformanceRow, i: number) => (
+    <tr
+      key={r.variable_id + r["Result type"] + i}
+      className={cn(
+        "border-b border-border/20 hover:bg-white/[0.02]",
+        onRowClick && "cursor-pointer active:bg-white/[0.04] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60"
+      )}
+      onClick={onRowClick ? () => onRowClick(r) : undefined}
+      role={onRowClick ? "button" : undefined}
+      tabIndex={onRowClick ? 0 : undefined}
+      onKeyDown={onRowClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onRowClick(r); } } : undefined}
+      title={onRowClick ? "Open variable drill-down" : undefined}
+      data-testid={onRowClick ? `row-variable-${r.variable_id}-${i}` : undefined}
+    >
+      <Td>
+        <div className="font-medium text-foreground">{readableVariables(r.variable_id)}</div>
+        <div className="text-[9px] font-mono text-muted-foreground/60 mt-0.5">{r.variable_id}</div>
+      </Td>
+      <Td className="capitalize">{r.variable_family}</Td>
+      <Td>{eventLabel(r["Result type"])}</Td>
+      <Td right>{fmtUSD(r["Amount spent (USD)"])}</Td>
+      <Td right>{fmtNum(r.unique_ads)}</Td>
+      <Td right>{fmtNum(r.Results)}</Td>
+      <Td right>{r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}</Td>
+      <Td right>{fmtPct(r.CTR_link_pct)}</Td>
+    </tr>
+  );
+
+  const thead = (
+    <thead className="sticky top-0 bg-surface-table z-10">
+      <tr className="border-b border-border/40">
+        <SortableTh sortKey="variable" sort={sort} onToggle={toggle} onReset={reset}>Variable</SortableTh>
+        <SortableTh sortKey="family" sort={sort} onToggle={toggle} onReset={reset}>Family</SortableTh>
+        <Th>Result type</Th>
+        <SortableTh right sortKey="spend" sort={sort} onToggle={toggle} onReset={reset}>Spend</SortableTh>
+        <SortableTh right sortKey="ads" sort={sort} onToggle={toggle} onReset={reset}>Ads</SortableTh>
+        <SortableTh right sortKey="results" sort={sort} onToggle={toggle} onReset={reset}>Results</SortableTh>
+        <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle} onReset={reset}>CPA</SortableTh>
+        <SortableTh right sortKey="ctr" sort={sort} onToggle={toggle} onReset={reset}>Link CTR</SortableTh>
+      </tr>
+    </thead>
+  );
+
   return (
-    <TableShell>
-      <thead className="sticky top-0 bg-[hsl(222_55%_7%)] z-10">
-        <tr className="border-b border-border/40">
-          <SortableTh sortKey="variable" sort={sort} onToggle={toggle} onReset={reset}>Variable</SortableTh>
-          <SortableTh sortKey="family" sort={sort} onToggle={toggle} onReset={reset}>Family</SortableTh>
-          <Th>Result type</Th>
-          <SortableTh right sortKey="spend" sort={sort} onToggle={toggle} onReset={reset}>Spend</SortableTh>
-          <SortableTh right sortKey="ads" sort={sort} onToggle={toggle} onReset={reset}>Ads</SortableTh>
-          <SortableTh right sortKey="results" sort={sort} onToggle={toggle} onReset={reset}>Results</SortableTh>
-          <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle} onReset={reset}>CPA</SortableTh>
-          <SortableTh right sortKey="ctr" sort={sort} onToggle={toggle} onReset={reset}>Link CTR</SortableTh>
-        </tr>
-      </thead>
-      <tbody>
-        {sorted.map((r, i) => (
-          <tr
-            key={r.variable_id + r["Result type"] + i}
-            className={cn("border-b border-border/20 hover:bg-white/[0.02]", onRowClick && "cursor-pointer focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60")}
-            onClick={onRowClick ? () => onRowClick(r) : undefined}
-            role={onRowClick ? "button" : undefined}
-            tabIndex={onRowClick ? 0 : undefined}
-            onKeyDown={onRowClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onRowClick(r); } } : undefined}
-            title={onRowClick ? "Open variable drill-down" : undefined}
-            data-testid={onRowClick ? `row-variable-${r.variable_id}-${i}` : undefined}
-          >
-            <Td>
-              <div className="font-medium text-foreground">{readableVariables(r.variable_id)}</div>
-              <div className="text-[9px] font-mono text-muted-foreground/60 mt-0.5">{r.variable_id}</div>
-            </Td>
-            <Td className="capitalize">{r.variable_family}</Td>
-            <Td>{eventLabel(r["Result type"])}</Td>
-            <Td right>{fmtUSD(r["Amount spent (USD)"])}</Td>
-            <Td right>{fmtNum(r.unique_ads)}</Td>
-            <Td right>{fmtNum(r.Results)}</Td>
-            <Td right>{r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}</Td>
-            <Td right>{fmtPct(r.CTR_link_pct)}</Td>
-          </tr>
-        ))}
-      </tbody>
-    </TableShell>
+    <TableShellInner scrollRef={scrollRef}>
+      {thead}
+      {useVirtual
+        ? <VirtualTableBody rows={sorted} scrollRef={scrollRef} renderRow={renderRow} />
+        : <tbody>{sorted.map((r, i) => renderRow(r, i))}</tbody>
+      }
+    </TableShellInner>
   );
 }
 
@@ -288,7 +380,7 @@ export function DemographicTable({
   const { sorted, sort, toggle, reset } = useColumnSort(rows, DEMOGRAPHIC_COLUMNS);
   return (
     <TableShell>
-      <thead className="sticky top-0 bg-[hsl(222_55%_7%)] z-10">
+      <thead className="sticky top-0 bg-surface-table z-10">
         <tr className="border-b border-border/40">
           <SortableTh sortKey="cell" sort={sort} onToggle={toggle} onReset={reset}>Cell</SortableTh>
           <SortableTh sortKey="age" sort={sort} onToggle={toggle} onReset={reset}>Age</SortableTh>
@@ -303,12 +395,18 @@ export function DemographicTable({
         {sorted.map((r, i) => (
           <tr
             key={r.cell_id + r.Age + r.Gender + i}
-            className={`border-b border-border/20 hover:bg-white/[0.02] ${onSegmentClick ? "cursor-pointer" : ""}`}
+            className={cn(
+              "border-b border-border/20 hover:bg-white/[0.02]",
+              onSegmentClick && "cursor-pointer active:bg-white/[0.04] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60"
+            )}
             onClick={onSegmentClick ? () => onSegmentClick({ age: r.Age, gender: r.Gender }) : undefined}
-            title={onSegmentClick ? "Open segment drill-down" : undefined}
+            role={onSegmentClick ? "button" : undefined}
+            tabIndex={onSegmentClick ? 0 : undefined}
+            onKeyDown={onSegmentClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSegmentClick({ age: r.Age, gender: r.Gender }); } } : undefined}
+            aria-label={onSegmentClick ? `Open segment for ${r.Age}, ${r.Gender}` : undefined}
             data-testid={onSegmentClick ? `row-demographic-${r.Age}-${r.Gender}-${i}` : undefined}
           >
-            <Td><span className="font-mono text-[10px] text-muted-foreground/60">{r.cell_id}</span></Td>
+            <Td><span className="font-mono text-label text-muted-foreground/60">{r.cell_id}</span></Td>
             <Td>{r.Age}</Td>
             <Td className="capitalize">{r.Gender}</Td>
             <Td right>{fmtUSD(r["Amount spent (USD)"])}</Td>
@@ -334,7 +432,7 @@ export function PlacementTable({ rows }: { rows: PlacementRow[] }) {
   const { sorted, sort, toggle, reset } = useColumnSort(rows, PLACEMENT_COLUMNS);
   return (
     <TableShell>
-      <thead className="sticky top-0 bg-[hsl(222_55%_7%)] z-10">
+      <thead className="sticky top-0 bg-surface-table z-10">
         <tr className="border-b border-border/40">
           <SortableTh sortKey="placement" sort={sort} onToggle={toggle} onReset={reset}>Placement</SortableTh>
           <SortableTh sortKey="platform" sort={sort} onToggle={toggle} onReset={reset}>Platform</SortableTh>
@@ -345,7 +443,7 @@ export function PlacementTable({ rows }: { rows: PlacementRow[] }) {
       </thead>
       <tbody>
         {sorted.map((r, i) => (
-          <tr key={r.Placement + r.Platform + i} className="border-b border-border/20 hover:bg-white/[0.02]">
+          <tr key={r.Placement + r.Platform + i} className="border-b border-border/20 hover:bg-white/[0.02] active:bg-white/[0.04]">
             <Td className="font-medium text-foreground">{r.Placement}</Td>
             <Td className="capitalize">{r.Platform}</Td>
             <Td right>{fmtUSD(r["Amount spent (USD)"])}</Td>
@@ -375,7 +473,7 @@ export function ConversionFunnelTable({ rows, labelHeader }: { rows: (Conversion
   const { sorted, sort, toggle, reset } = useColumnSort(rows, FUNNEL_COLUMNS);
   return (
     <TableShell>
-      <thead className="sticky top-0 bg-[hsl(222_55%_7%)] z-10">
+      <thead className="sticky top-0 bg-surface-table z-10">
         <tr className="border-b border-border/40">
           <Th>{labelHeader}</Th>
           <SortableTh right sortKey="link_clicks" sort={sort} onToggle={toggle} onReset={reset}>Link clicks</SortableTh>
@@ -387,7 +485,7 @@ export function ConversionFunnelTable({ rows, labelHeader }: { rows: (Conversion
       </thead>
       <tbody>
         {sorted.map((r, i) => (
-          <tr key={r.label + i} className="border-b border-border/20 hover:bg-white/[0.02]">
+          <tr key={r.label + i} className="border-b border-border/20 hover:bg-white/[0.02] active:bg-white/[0.04]">
             <Td className="font-medium text-foreground capitalize">{r.label}</Td>
             <Td right>{r.link_clicks != null ? fmtNum(r.link_clicks) : "—"}</Td>
             <Td right>{r.adds_to_cart != null ? fmtNum(r.adds_to_cart) : "—"}</Td>

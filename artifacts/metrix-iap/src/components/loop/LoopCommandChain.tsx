@@ -1,6 +1,8 @@
 // ─── IAP Loop · Command Chain ─────────────────────────────────────────
 //
-// THREE minimal stage tiles — pure state at a glance, no data on face.
+// SIX stage tiles — pure state at a glance, no data on face.
+// Stages: Data → Analysis → Strategy → Briefs → Report → Re-run
+//
 // Each tile is a clickable state light: icon + indicator + label only.
 //
 // Clicking opens the Command Hub: a progressive-disclosure panel that
@@ -18,12 +20,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { useGetLatestAnalysisRun } from "@workspace/api-client-react";
+import { useGetLatestAnalysisRun, useListWorkspaceReports, useListManualImports } from "@workspace/api-client-react";
 import { useGenerationRun } from "@/components/generation/GenerationControls";
 import type { AdAccount, StrategyData, BriefBuilder } from "@/lib/data/seedTypes";
 import { computeStaleStages } from "./staleStageDetection";
 import {
-  BarChart3, Layers, FileText,
+  BarChart3, Layers, FileText, Database, FileBarChart,
   CheckCircle2, Lock, Loader2, X,
   Upload, Link2, PlayCircle, RefreshCw,
   AlertTriangle, Sparkles, ArrowRight, Clock, RotateCcw,
@@ -31,11 +33,15 @@ import {
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
-type Stage = "analysis" | "strategy" | "briefs";
+type Stage = "data" | "analysis" | "strategy" | "briefs" | "report" | "rerun";
 
 // ── Route map ─────────────────────────────────────────────────────────────
 
 const STAGE_ROUTES: Record<Stage, { label: string; path: string; desc: string }[]> = {
+  data: [
+    { label: "Account Setup",  path: "/app/settings/account",      desc: "Uploads · source" },
+    { label: "Integrations",   path: "/app/settings/integrations",  desc: "Meta OAuth" },
+  ],
   analysis: [
     { label: "Overview",   path: "/app/analysis/overview",   desc: "Cells · variables" },
     { label: "Library",    path: "/app/analysis/library",    desc: "Creative concepts" },
@@ -53,15 +59,28 @@ const STAGE_ROUTES: Record<Stage, { label: string; path: string; desc: string }[
     { label: "Builder", path: "/app/briefs/builder", desc: "Draft & export" },
     { label: "History", path: "/app/briefs/history", desc: "Past generations" },
   ],
+  report: [
+    { label: "New Report",    path: "/app/reports/new",     desc: "Generate a report" },
+    { label: "Report History", path: "/app/reports/history", desc: "Past generations" },
+  ],
+  rerun: [
+    { label: "Account Setup",  path: "/app/settings/account",     desc: "Uploads · source" },
+    { label: "Run Analysis",   path: "/app/settings/account",     desc: "Start next cycle" },
+  ],
 };
 
 // ── Stage config ──────────────────────────────────────────────────────────
 
 const STAGE_CONFIG = {
-  analysis: { icon: BarChart3, label: "Analysis" },
-  strategy: { icon: Layers,    label: "Strategy"  },
-  briefs:   { icon: FileText,  label: "Briefs"    },
+  data:     { icon: Database,     label: "Data"     },
+  analysis: { icon: BarChart3,    label: "Analysis" },
+  strategy: { icon: Layers,       label: "Strategy" },
+  briefs:   { icon: FileText,     label: "Briefs"   },
+  report:   { icon: FileBarChart, label: "Report"   },
+  rerun:    { icon: RotateCcw,    label: "Re-run"   },
 } as const;
+
+const TOTAL_STAGES = 5;
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -86,7 +105,7 @@ function fmtElapsed(seconds: number): string {
 
 function StatPill({ value, label }: { value: string | number; label?: string }) {
   return (
-    <span className="inline-flex items-baseline gap-1 text-[10px] tabular-nums bg-white/[0.04] border border-border/20 rounded-md px-2 py-1 leading-none">
+    <span className="inline-flex items-baseline gap-1 text-label tabular-nums bg-white/[0.04] border border-border/20 rounded-md px-2 py-1 leading-none">
       <span className="font-bold text-foreground/70">{value}</span>
       {label && <span className="text-muted-foreground/40 font-normal">{label}</span>}
     </span>
@@ -110,8 +129,8 @@ function DepBadge({
         : "text-muted-foreground/30 bg-white/[0.025] border-border/15",
     )}>
       {satisfied
-        ? <CheckCircle2 className="w-2.5 h-2.5" />
-        : <Lock className="w-2.5 h-2.5" />
+        ? <CheckCircle2 className="w-3.5 h-3.5" />
+        : <Lock className="w-3.5 h-3.5" />
       }
       {label}
     </span>
@@ -169,7 +188,7 @@ function StageTile({
       {isRunning && (
         <span
           aria-hidden="true"
-          className="absolute bottom-0 left-0 right-0 h-[2px] overflow-hidden"
+          className="absolute bottom-0 left-0 right-0 h-0.5 overflow-hidden"
         >
           <span className="absolute inset-y-0 w-1/2 bg-amber-400/50 rounded-full animate-[progress-slide_1.4s_ease-in-out_infinite]" />
         </span>
@@ -189,11 +208,11 @@ function StageTile({
         {/* State overlay badge — top-right of icon */}
         <span className="absolute -top-1 -right-1.5">
           {isRunning ? (
-            <Loader2 className="w-2.5 h-2.5 text-amber-400/90 animate-spin" />
+            <Loader2 className="w-3.5 h-3.5 text-amber-400/90 animate-spin" />
           ) : isStale ? (
-            <RotateCcw className="w-2.5 h-2.5 text-orange-400/85" />
+            <RotateCcw className="w-3.5 h-3.5 text-orange-400/85" />
           ) : isComplete ? (
-            <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400/80" />
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400/80" />
           ) : isNext ? (
             <span className="block w-2 h-2 rounded-full bg-primary/70 animate-pulse" />
           ) : null}
@@ -227,9 +246,11 @@ function StageTile({
 
 function StageIntelligence({
   stage,
+  dataComplete,
   analysisComplete,
   strategyComplete,
   briefsComplete,
+  reportComplete,
   analysisRunning,
   strategyRunning,
   briefsRunning,
@@ -241,17 +262,21 @@ function StageIntelligence({
   hypothesisCount,
   icpCount,
   briefCount,
+  reportCount,
   strategy,
   briefBuilder,
   analysisRun,
   strategyLastRun,
   briefsLastRun,
   loopStatus,
+  accountPlatform,
 }: {
   stage: Stage;
+  dataComplete: boolean;
   analysisComplete: boolean;
   strategyComplete: boolean;
   briefsComplete: boolean;
+  reportComplete: boolean;
   analysisRunning: boolean;
   strategyRunning: boolean;
   briefsRunning: boolean;
@@ -263,6 +288,7 @@ function StageIntelligence({
   hypothesisCount: number;
   icpCount: number;
   briefCount: number;
+  reportCount: number;
   strategy: StrategyData | null;
   briefBuilder: BriefBuilder | null;
   analysisRun: {
@@ -276,6 +302,7 @@ function StageIntelligence({
   strategyLastRun: { status: string; finished_at?: string | null; error_message?: string | null; model?: string | null } | null;
   briefsLastRun:   { status: string; finished_at?: string | null; error_message?: string | null } | null;
   loopStatus: { stage: string; window_start?: string | null; window_end?: string | null; generated_at?: string | null }[] | null;
+  accountPlatform?: string;
 }) {
   const analysisLS = loopStatus?.find((l) => l.stage === "analysis") ?? null;
   const strategyLS = loopStatus?.find((l) => l.stage === "strategy") ?? null;
@@ -284,8 +311,33 @@ function StageIntelligence({
   function ErrorBlock({ message }: { message: string }) {
     return (
       <div className="flex items-start gap-2 rounded-lg border border-amber-400/20 bg-amber-400/[0.06] px-2.5 py-2 mt-1">
-        <AlertTriangle className="w-3 h-3 text-amber-400/70 mt-0.5 shrink-0" />
-        <p className="text-[10px] text-amber-200/65 leading-relaxed">{message}</p>
+        <AlertTriangle className="w-3.5 h-3.5 text-amber-400/70 mt-0.5 shrink-0" />
+        <p className="text-label text-amber-200/65 leading-relaxed">{message}</p>
+      </div>
+    );
+  }
+
+  // ── Data intelligence ────────────────────────────────────────────────
+
+  if (stage === "data") {
+    const isLiveMeta = accountPlatform === "meta" || accountPlatform === "facebook";
+    return (
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-[9px] text-muted-foreground/30 font-medium">Entry point</span>
+          <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/20" />
+          <span className="text-[9px] text-muted-foreground/35">Enables Analysis</span>
+        </div>
+        {dataComplete ? (
+          <div className="flex flex-wrap gap-1.5">
+            <StatPill value={isLiveMeta ? "Live Meta" : "Manual"} label="source" />
+            {cellCount > 0 && <StatPill value={cellCount} label="cells" />}
+          </div>
+        ) : (
+          <p className="text-label text-muted-foreground/30 leading-relaxed">
+            Connect a live Meta ad account or upload exported CSV reports to begin.
+          </p>
+        )}
       </div>
     );
   }
@@ -303,7 +355,7 @@ function StageIntelligence({
         {/* Causal position */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-[9px] text-muted-foreground/30 font-medium">Root stage</span>
-          <ArrowRight className="w-2.5 h-2.5 text-muted-foreground/20" />
+          <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/20" />
           <span className="text-[9px] text-muted-foreground/35">Enables Strategy &amp; Briefs</span>
         </div>
 
@@ -324,7 +376,7 @@ function StageIntelligence({
         {/* Last run provenance */}
         {lastRun && (
           <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground/30">
-            <Clock className="w-2.5 h-2.5 shrink-0" />
+            <Clock className="w-3.5 h-3.5 shrink-0" />
             <span>Last run {fmtFull(lastRun)}</span>
           </div>
         )}
@@ -334,7 +386,7 @@ function StageIntelligence({
         )}
 
         {!analysisComplete && !analysisRunning && !hasError && (
-          <p className="text-[10px] text-muted-foreground/30 leading-relaxed">
+          <p className="text-label text-muted-foreground/30 leading-relaxed">
             Upload a CSV export or connect a Meta ad account, then run analysis.
           </p>
         )}
@@ -363,7 +415,7 @@ function StageIntelligence({
             label={`Analysis${analysisWindow ? `: ${analysisWindow}` : ""}`}
             satisfied={analysisComplete}
           />
-          <ArrowRight className="w-2.5 h-2.5 text-muted-foreground/20" />
+          <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/20" />
           <span className="text-[9px] text-muted-foreground/35">Enables Briefs</span>
         </div>
 
@@ -375,7 +427,7 @@ function StageIntelligence({
             {icpCount > 0 && <StatPill value={icpCount} label="ICPs" />}
             {isGenerated && (
               <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-primary/60 bg-primary/[0.08] border border-primary/15 rounded-md px-2 py-1 leading-none">
-                <Sparkles className="w-2.5 h-2.5" /> Generated
+                <Sparkles className="w-3.5 h-3.5" /> Generated
               </span>
             )}
           </div>
@@ -384,7 +436,7 @@ function StageIntelligence({
         {/* Provenance */}
         {genDate && (
           <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground/30">
-            <Clock className="w-2.5 h-2.5 shrink-0" />
+            <Clock className="w-3.5 h-3.5 shrink-0" />
             <span>Generated {fmtFull(genDate)}</span>
             {strategyLastRun?.model && (
               <span className="text-muted-foreground/20">· {strategyLastRun.model}</span>
@@ -394,15 +446,15 @@ function StageIntelligence({
 
         {strategyIsStale && !strategyRunning && (
           <div className="flex items-start gap-2 rounded-lg border border-orange-400/20 bg-orange-400/[0.05] px-2.5 py-2">
-            <RotateCcw className="w-3 h-3 text-orange-400/70 mt-0.5 shrink-0" />
-            <p className="text-[10px] text-orange-200/65 leading-relaxed">
+            <RotateCcw className="w-3.5 h-3.5 text-orange-400/70 mt-0.5 shrink-0" />
+            <p className="text-label text-orange-200/65 leading-relaxed">
               Analysis data has been refreshed. Results here reflect the previous run.
             </p>
           </div>
         )}
 
         {!analysisComplete && (
-          <p className="text-[10px] text-muted-foreground/30 leading-relaxed">
+          <p className="text-label text-muted-foreground/30 leading-relaxed">
             Run analysis first — strategy is built from the cell and variable results.
           </p>
         )}
@@ -445,7 +497,7 @@ function StageIntelligence({
           ))}
           {isGenerated && (
             <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-primary/60 bg-primary/[0.08] border border-primary/15 rounded-md px-2 py-1 leading-none">
-              <Sparkles className="w-2.5 h-2.5" /> Generated
+              <Sparkles className="w-3.5 h-3.5" /> Generated
             </span>
           )}
         </div>
@@ -454,31 +506,89 @@ function StageIntelligence({
       {/* Provenance */}
       {genDate && (
         <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground/30">
-          <Clock className="w-2.5 h-2.5 shrink-0" />
+          <Clock className="w-3.5 h-3.5 shrink-0" />
           <span>Generated {fmtFull(genDate)}</span>
         </div>
       )}
 
       {briefsIsStale && !briefsRunning && (
         <div className="flex items-start gap-2 rounded-lg border border-orange-400/20 bg-orange-400/[0.05] px-2.5 py-2">
-          <RotateCcw className="w-3 h-3 text-orange-400/70 mt-0.5 shrink-0" />
-          <p className="text-[10px] text-orange-200/65 leading-relaxed">
+          <RotateCcw className="w-3.5 h-3.5 text-orange-400/70 mt-0.5 shrink-0" />
+          <p className="text-label text-orange-200/65 leading-relaxed">
             Analysis data has been refreshed. Results here reflect the previous run.
           </p>
         </div>
       )}
 
       {!strategyComplete && (
-        <p className="text-[10px] text-muted-foreground/30 leading-relaxed">
+        <p className="text-label text-muted-foreground/30 leading-relaxed">
           Generate strategy first — briefs are derived from the message pillars.
         </p>
       )}
 
       {hasError && briefsLastRun?.error_message && (
         <div className="flex items-start gap-2 rounded-lg border border-amber-400/20 bg-amber-400/[0.06] px-2.5 py-2 mt-1">
-          <AlertTriangle className="w-3 h-3 text-amber-400/70 mt-0.5 shrink-0" />
-          <p className="text-[10px] text-amber-200/65 leading-relaxed">{briefsLastRun.error_message}</p>
+          <AlertTriangle className="w-3.5 h-3.5 text-amber-400/70 mt-0.5 shrink-0" />
+          <p className="text-label text-amber-200/65 leading-relaxed">{briefsLastRun.error_message}</p>
         </div>
+      )}
+    </div>
+  );
+}
+
+// ── Report intelligence ──────────────────────────────────────────────────
+// (Rendered as the last case inside StageIntelligence via stage === "report")
+
+function ReportIntelligence({
+  briefsComplete,
+  reportComplete,
+  reportCount,
+}: {
+  briefsComplete: boolean;
+  reportComplete: boolean;
+  reportCount: number;
+}) {
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <DepBadge label="Briefs" satisfied={briefsComplete} />
+        <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/20" />
+        <span className="text-[9px] text-muted-foreground/35">Deliverable</span>
+      </div>
+      {reportComplete ? (
+        <div className="flex flex-wrap gap-1.5">
+          <StatPill value={reportCount} label={reportCount === 1 ? "report" : "reports"} />
+        </div>
+      ) : (
+        <p className="text-label text-muted-foreground/30 leading-relaxed">
+          {briefsComplete
+            ? "Generate a report to export performance insights for your client."
+            : "Complete the analysis + strategy + briefs stages first."}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ── Re-run intelligence ───────────────────────────────────────────────────
+
+function RerunIntelligence({ allLoopComplete }: { allLoopComplete: boolean }) {
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <DepBadge label="Full loop complete" satisfied={allLoopComplete} />
+        <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/20" />
+        <span className="text-[9px] text-muted-foreground/35">Next cycle</span>
+      </div>
+      {allLoopComplete ? (
+        <p className="text-label text-muted-foreground/30 leading-relaxed">
+          Loop complete. Upload updated data or pull fresh Meta results, then re-run
+          analysis to begin the next cycle.
+        </p>
+      ) : (
+        <p className="text-label text-muted-foreground/30 leading-relaxed">
+          Complete all five stages first — Data → Analysis → Strategy → Briefs → Report.
+        </p>
       )}
     </div>
   );
@@ -490,9 +600,11 @@ function CommandHub({
   stage,
   onClose,
   currentPath,
+  dataComplete,
   analysisComplete,
   strategyComplete,
   briefsComplete,
+  reportComplete,
   analysisRunning,
   strategyRunning,
   briefsRunning,
@@ -507,12 +619,15 @@ function CommandHub({
   hypothesisCount,
   icpCount,
   briefCount,
+  reportCount,
   strategy,
   briefBuilder,
   analysisRun,
   strategyLastRun,
   briefsLastRun,
   loopStatus,
+  accountPlatform,
+  allLoopComplete,
   onNavigate,
   onGenerateStrategy,
   onGenerateBriefs,
@@ -520,9 +635,11 @@ function CommandHub({
   stage: Stage;
   onClose: () => void;
   currentPath: string;
+  dataComplete: boolean;
   analysisComplete: boolean;
   strategyComplete: boolean;
   briefsComplete: boolean;
+  reportComplete: boolean;
   analysisRunning: boolean;
   strategyRunning: boolean;
   briefsRunning: boolean;
@@ -537,6 +654,7 @@ function CommandHub({
   hypothesisCount: number;
   icpCount: number;
   briefCount: number;
+  reportCount: number;
   strategy: StrategyData | null;
   briefBuilder: BriefBuilder | null;
   analysisRun: {
@@ -550,6 +668,8 @@ function CommandHub({
   strategyLastRun: { status: string; finished_at?: string | null; error_message?: string | null; model?: string | null } | null;
   briefsLastRun:   { status: string; finished_at?: string | null; error_message?: string | null } | null;
   loopStatus: { stage: string; window_start?: string | null; window_end?: string | null; generated_at?: string | null }[] | null;
+  accountPlatform?: string;
+  allLoopComplete: boolean;
   onNavigate: (path: string) => void;
   onGenerateStrategy: () => void;
   onGenerateBriefs: () => void;
@@ -570,11 +690,15 @@ function CommandHub({
 
   const elapsedSeconds = stage === "analysis" ? analysisElapsedSeconds
     : stage === "strategy" ? strategyElapsedSeconds
-    : briefsElapsedSeconds;
+    : stage === "briefs" ? briefsElapsedSeconds
+    : 0;
 
-  const isComplete = stage === "analysis" ? analysisComplete
+  const isComplete = stage === "data"     ? dataComplete
+    : stage === "analysis" ? analysisComplete
     : stage === "strategy" ? strategyComplete
-    : briefsComplete;
+    : stage === "briefs"   ? briefsComplete
+    : stage === "report"   ? reportComplete
+    : false; // "rerun" is never complete — the loop is cyclic
 
   const isStale = (stage === "strategy" && strategyIsStale)
     || (stage === "briefs" && briefsIsStale);
@@ -582,14 +706,20 @@ function CommandHub({
   const statusLabel = isRunning ? "Running"
     : isStale ? "Data refreshed"
     : isComplete ? "Complete"
+    : stage === "data"     ? "No data yet"
     : stage === "analysis" ? "Not run"
+    : stage === "report"   ? (briefsComplete ? "Ready to generate" : "Needs briefs")
+    : stage === "rerun"    ? (allLoopComplete ? "Ready to re-run" : "Complete loop first")
     : stage === "strategy" ? (analysisComplete ? "Ready to generate" : "Needs analysis")
     : (strategyComplete ? "Ready to generate" : "Needs strategy");
 
   const statusClass = isRunning   ? "text-amber-400/80 bg-amber-400/10 border-amber-400/20"
     : isStale       ? "text-orange-400/80 bg-orange-400/[0.08] border-orange-400/20"
     : isComplete     ? "text-emerald-400/70 bg-emerald-400/[0.08] border-emerald-400/15"
-    : (analysisComplete && stage === "strategy") || (strategyComplete && stage === "briefs")
+    : (analysisComplete && stage === "strategy")
+      || (strategyComplete && stage === "briefs")
+      || (briefsComplete && stage === "report")
+      || (allLoopComplete && stage === "rerun")
     ? "text-primary/70 bg-primary/[0.08] border-primary/15"
     : "text-muted-foreground/35 bg-white/[0.03] border-border/15";
 
@@ -605,8 +735,8 @@ function CommandHub({
     if (isRunning) return (
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
-          <Loader2 className="w-3 h-3 text-amber-400/70 animate-spin shrink-0" />
-          <span className="text-[10px] text-amber-400/55">Processing — views will update when complete</span>
+          <Loader2 className="w-3.5 h-3.5 text-amber-400/70 animate-spin shrink-0" />
+          <span className="text-label text-amber-400/55">Processing — views will update when complete</span>
         </div>
         {/* Elapsed time + indeterminate progress bar */}
         <div className="flex items-center gap-2">
@@ -622,32 +752,40 @@ function CommandHub({
       </div>
     );
 
+    if (stage === "data") return (
+      <div className="flex flex-wrap gap-1.5">
+        <button
+          onClick={() => goTo("/app/settings/account")}
+          className={cn(
+            "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
+            dataComplete ? "mx-secondary-btn" : "mx-primary-btn",
+          )}
+        >
+          <Upload className="w-3.5 h-3.5" />
+          Upload CSV
+        </button>
+        <button
+          onClick={() => goTo("/app/settings/integrations")}
+          className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
+        >
+          <Link2 className="w-3.5 h-3.5" />
+          Connect Meta
+        </button>
+      </div>
+    );
+
     if (stage === "analysis") return (
       <div className="flex flex-wrap gap-1.5">
         <button
           onClick={() => goTo("/app/settings/account")}
-          className="inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
-        >
-          <Upload className="w-2.5 h-2.5" />
-          Upload CSV
-        </button>
-        <button
-          onClick={() => goTo("/app/settings/account")}
-          className="inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
-        >
-          <Link2 className="w-2.5 h-2.5" />
-          Connect Meta
-        </button>
-        <button
-          onClick={() => goTo("/app/settings/account")}
           className={cn(
-            "inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1.5 rounded-lg",
+            "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
             analysisComplete ? "mx-secondary-btn" : "mx-primary-btn",
           )}
         >
           {analysisComplete
-            ? <><RefreshCw className="w-2.5 h-2.5" /> Re-run</>
-            : <><PlayCircle className="w-2.5 h-2.5" /> Run Analysis</>
+            ? <><RefreshCw className="w-3.5 h-3.5" /> Re-run</>
+            : <><PlayCircle className="w-3.5 h-3.5" /> Run Analysis</>
           }
         </button>
       </div>
@@ -659,7 +797,7 @@ function CommandHub({
           onClick={() => { onGenerateStrategy(); onClose(); }}
           disabled={!analysisComplete}
           className={cn(
-            "inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1.5 rounded-lg",
+            "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
             !analysisComplete
               ? "opacity-30 cursor-not-allowed mx-secondary-btn"
               : strategyComplete
@@ -668,9 +806,52 @@ function CommandHub({
           )}
         >
           {strategyComplete
-            ? <><RefreshCw className="w-2.5 h-2.5" /> Regenerate</>
-            : <><Sparkles className="w-2.5 h-2.5" /> Generate Strategy</>
+            ? <><RefreshCw className="w-3.5 h-3.5" /> Regenerate</>
+            : <><Sparkles className="w-3.5 h-3.5" /> Generate Strategy</>
           }
+        </button>
+      </div>
+    );
+
+    if (stage === "report") return (
+      <div className="flex flex-wrap gap-1.5">
+        <button
+          onClick={() => goTo("/app/reports/new")}
+          className={cn(
+            "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
+            reportComplete ? "mx-secondary-btn" : briefsComplete ? "mx-primary-btn" : "mx-secondary-btn opacity-50",
+          )}
+          disabled={!briefsComplete && !reportComplete}
+        >
+          {reportComplete
+            ? <><RefreshCw className="w-3.5 h-3.5" /> New Report</>
+            : <><Sparkles className="w-3.5 h-3.5" /> Generate Report</>
+          }
+        </button>
+        {reportComplete && (
+          <button
+            onClick={() => goTo("/app/reports/history")}
+            className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
+          >
+            View History
+          </button>
+        )}
+      </div>
+    );
+
+    if (stage === "rerun") return (
+      <div className="flex flex-wrap gap-1.5">
+        <button
+          onClick={() => goTo("/app/settings/account")}
+          disabled={!allLoopComplete}
+          className={cn(
+            "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
+            !allLoopComplete
+              ? "opacity-30 cursor-not-allowed mx-secondary-btn"
+              : "mx-primary-btn",
+          )}
+        >
+          <RefreshCw className="w-3.5 h-3.5" /> Run Analysis Again
         </button>
       </div>
     );
@@ -682,7 +863,7 @@ function CommandHub({
           onClick={() => { onGenerateBriefs(); onClose(); }}
           disabled={!strategyComplete}
           className={cn(
-            "inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1.5 rounded-lg",
+            "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
             !strategyComplete
               ? "opacity-30 cursor-not-allowed mx-secondary-btn"
               : briefsComplete
@@ -691,14 +872,14 @@ function CommandHub({
           )}
         >
           {briefsComplete
-            ? <><RefreshCw className="w-2.5 h-2.5" /> Regenerate</>
-            : <><Sparkles className="w-2.5 h-2.5" /> Generate Briefs</>
+            ? <><RefreshCw className="w-3.5 h-3.5" /> Regenerate</>
+            : <><Sparkles className="w-3.5 h-3.5" /> Generate Briefs</>
           }
         </button>
         {briefsComplete && (
           <button
             onClick={() => goTo("/app/briefs/history")}
-            className="inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
+            className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
           >
             View Archive
           </button>
@@ -715,7 +896,7 @@ function CommandHub({
     >
       <div
         ref={popupRef}
-        className="w-[380px] max-w-full flex flex-col rounded-2xl overflow-hidden shadow-2xl shadow-black/70"
+        className="w-[380px] max-w-full flex flex-col rounded-2xl overflow-hidden elevation-floating"
         style={{
           background: "hsl(var(--card))",
           border: "1px solid hsl(var(--border) / 0.2)",
@@ -740,12 +921,12 @@ function CommandHub({
           </div>
 
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-bold text-foreground/85 leading-none">{stageLabel}</p>
+            <p className="text-title font-bold text-foreground/85 leading-none">{stageLabel}</p>
             <span className={cn(
               "inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider border rounded-md px-1.5 py-0.5 mt-1.5 leading-none",
               statusClass,
             )}>
-              {isRunning && <Loader2 className="w-2.5 h-2.5 animate-spin" />}
+              {isRunning && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               {statusLabel}
             </span>
           </div>
@@ -760,29 +941,43 @@ function CommandHub({
 
         {/* ── Layer 2: Intelligence ────────────────────────────────────── */}
         <div className="px-4 py-3 border-t border-border/12">
-          <StageIntelligence
-            stage={stage}
-            analysisComplete={analysisComplete}
-            strategyComplete={strategyComplete}
-            briefsComplete={briefsComplete}
-            analysisRunning={analysisRunning}
-            strategyRunning={strategyRunning}
-            briefsRunning={briefsRunning}
-            strategyIsStale={strategyIsStale}
-            briefsIsStale={briefsIsStale}
-            cellCount={cellCount}
-            variableCount={variableCount}
-            pillarCount={pillarCount}
-            hypothesisCount={hypothesisCount}
-            icpCount={icpCount}
-            briefCount={briefCount}
-            strategy={strategy}
-            briefBuilder={briefBuilder}
-            analysisRun={analysisRun}
-            strategyLastRun={strategyLastRun}
-            briefsLastRun={briefsLastRun}
-            loopStatus={loopStatus}
-          />
+          {stage === "report" ? (
+            <ReportIntelligence
+              briefsComplete={briefsComplete}
+              reportComplete={reportComplete}
+              reportCount={reportCount}
+            />
+          ) : stage === "rerun" ? (
+            <RerunIntelligence allLoopComplete={allLoopComplete} />
+          ) : (
+            <StageIntelligence
+              stage={stage}
+              dataComplete={dataComplete}
+              analysisComplete={analysisComplete}
+              strategyComplete={strategyComplete}
+              briefsComplete={briefsComplete}
+              reportComplete={reportComplete}
+              analysisRunning={analysisRunning}
+              strategyRunning={strategyRunning}
+              briefsRunning={briefsRunning}
+              strategyIsStale={strategyIsStale}
+              briefsIsStale={briefsIsStale}
+              cellCount={cellCount}
+              variableCount={variableCount}
+              pillarCount={pillarCount}
+              hypothesisCount={hypothesisCount}
+              icpCount={icpCount}
+              briefCount={briefCount}
+              reportCount={reportCount}
+              strategy={strategy}
+              briefBuilder={briefBuilder}
+              analysisRun={analysisRun}
+              strategyLastRun={strategyLastRun}
+              briefsLastRun={briefsLastRun}
+              loopStatus={loopStatus}
+              accountPlatform={accountPlatform}
+            />
+          )}
         </div>
 
         {/* ── Layer 3: Navigate ────────────────────────────────────────── */}
@@ -793,7 +988,7 @@ function CommandHub({
           <div className="grid grid-cols-2 gap-1">
             {routes.map((r) => {
               const isCurrent    = currentPath === r.path;
-              const isAccessible = isComplete || isRunning;
+              const isAccessible = isComplete || isRunning || (stage === "rerun" && allLoopComplete);
               return (
                 <button
                   key={r.path}
@@ -809,7 +1004,7 @@ function CommandHub({
                   )}
                 >
                   <span className={cn(
-                    "text-[11px] font-semibold leading-none",
+                    "text-caption font-semibold leading-none",
                     !isAccessible ? "text-muted-foreground/40"
                       : isCurrent ? "text-primary/80"
                       : "text-foreground/65 group-hover:text-foreground/85",
@@ -845,9 +1040,11 @@ function CommandHub({
 export function LoopCommandChain({
   accountId,
   account,
+  managerId,
 }: {
   accountId: string;
   account: AdAccount;
+  managerId: string;
 }) {
   const [location, navigate] = useLocation();
   const [activeStage, setActiveStage] = useState<Stage | null>(null);
@@ -855,6 +1052,8 @@ export function LoopCommandChain({
   const strategyGen = useGenerationRun(accountId, "strategy");
   const briefsGen   = useGenerationRun(accountId, "briefs");
   const { data: latestAnalysisData } = useGetLatestAnalysisRun(accountId);
+  const { data: reportsData }        = useListWorkspaceReports(managerId);
+  const { data: manualImportsData }  = useListManualImports(accountId);
 
   const analysisRun     = latestAnalysisData?.run ?? null;
   const strategyLastRun = strategyGen.lastRun ?? null;
@@ -863,16 +1062,27 @@ export function LoopCommandChain({
   const iap = account.iap ?? null;
 
   // Counts
-  const cellCount       = iap?.analysis?.performance_by_cell?.length ?? 0;
-  const variableCount   = iap?.analysis?.v3_variable_performance?.length ?? 0;
-  const pillarCount     = iap?.strategy?.message_pillars?.length ?? 0;
-  const hypothesisCount = iap?.strategy?.active_hypotheses?.length ?? 0;
-  const icpCount        = iap?.strategy?.icp_profiles?.length ?? 0;
-  const briefCount      = iap?.brief_builder?.draft_briefs?.length ?? 0;
+  const cellCount          = iap?.analysis?.performance_by_cell?.length ?? 0;
+  const variableCount      = iap?.analysis?.v3_variable_performance?.length ?? 0;
+  const pillarCount        = iap?.strategy?.message_pillars?.length ?? 0;
+  const hypothesisCount    = iap?.strategy?.active_hypotheses?.length ?? 0;
+  const icpCount           = iap?.strategy?.icp_profiles?.length ?? 0;
+  const briefCount         = iap?.brief_builder?.draft_briefs?.length ?? 0;
+  const reportCount        = (reportsData?.reports ?? []).filter((r) => r.ad_account_id === accountId).length;
+  const stagedImportCount  = manualImportsData?.imports?.length ?? 0;
 
+  // Stage completion signals.
+  // dataComplete and analysisComplete use DIFFERENT signals:
+  //   Data     — source is connected (live Meta) OR manual files are staged OR analysis ran
+  //   Analysis — result data exists from a completed analysis run
+  const isLiveMeta       = account.platform === "meta" || account.platform === "facebook";
   const analysisComplete = cellCount + variableCount > 0;
+  const dataComplete     = isLiveMeta || stagedImportCount > 0 || analysisComplete;
   const strategyComplete = pillarCount > 0;
   const briefsComplete   = briefCount > 0;
+  const reportComplete   = reportCount > 0;
+  // rerun is the 6th tile — represents the next loop cycle; never "complete"
+  const allLoopComplete  = dataComplete && analysisComplete && strategyComplete && briefsComplete && reportComplete;
 
   const analysisRunning = analysisRun?.status === "running";
   const strategyRunning = strategyGen.isRunning;
@@ -924,7 +1134,7 @@ export function LoopCommandChain({
     briefsRunning,
   });
 
-  const completeCount = [analysisComplete, strategyComplete, briefsComplete].filter(Boolean).length;
+  const completeCount = [dataComplete, analysisComplete, strategyComplete, briefsComplete, reportComplete].filter(Boolean).length;
   const anyRunning    = analysisRunning || strategyRunning || briefsRunning;
 
   const toggle = (s: Stage) => setActiveStage((prev) => (prev === s ? null : s));
@@ -938,30 +1148,47 @@ export function LoopCommandChain({
           <span className={cn(
             "text-[9px] font-mono tabular-nums tracking-widest",
             anyRunning          ? "text-amber-400/55"
-              : completeCount === 3 ? "text-emerald-400/45"
+              : completeCount === TOTAL_STAGES ? "text-emerald-400/45"
               : completeCount > 0   ? "text-primary/40"
               : "text-muted-foreground/22",
           )}>
-            {anyRunning ? "●" : completeCount === 3 ? "✓" : `${completeCount}/3`}
+            {anyRunning ? "●" : completeCount === TOTAL_STAGES ? "✓" : `${completeCount}/${TOTAL_STAGES}`}
           </span>
         </div>
 
-        {/* Three tiles + causal connectors */}
-        <div className="flex items-center gap-1">
+        {/* Six tiles + causal connectors */}
+        <div className="flex items-center gap-0.5">
+          <StageTile
+            stage="data"
+            isComplete={dataComplete}
+            isRunning={false}
+            isStale={false}
+            isNext={!dataComplete}
+            isLocked={false}
+            isActive={activeStage === "data"}
+            elapsedSeconds={0}
+            onClick={() => toggle("data")}
+          />
+
+          <ArrowRight className={cn(
+            "w-2.5 h-2.5 shrink-0 transition-colors",
+            dataComplete ? "text-emerald-400/25" : "text-muted-foreground/10",
+          )} />
+
           <StageTile
             stage="analysis"
             isComplete={analysisComplete}
             isRunning={analysisRunning}
             isStale={false}
-            isNext={!analysisComplete && !analysisRunning}
-            isLocked={false}
+            isNext={dataComplete && !analysisComplete && !analysisRunning}
+            isLocked={!dataComplete && !analysisComplete && !analysisRunning}
             isActive={activeStage === "analysis"}
             elapsedSeconds={analysisElapsedSeconds}
             onClick={() => toggle("analysis")}
           />
 
           <ArrowRight className={cn(
-            "w-3 h-3 shrink-0 transition-colors",
+            "w-2.5 h-2.5 shrink-0 transition-colors",
             analysisComplete ? "text-emerald-400/25" : "text-muted-foreground/10",
           )} />
 
@@ -978,7 +1205,7 @@ export function LoopCommandChain({
           />
 
           <ArrowRight className={cn(
-            "w-3 h-3 shrink-0 transition-colors",
+            "w-2.5 h-2.5 shrink-0 transition-colors",
             strategyComplete ? "text-emerald-400/25" : "text-muted-foreground/10",
           )} />
 
@@ -993,6 +1220,40 @@ export function LoopCommandChain({
             elapsedSeconds={briefsGen.elapsedSeconds}
             onClick={() => toggle("briefs")}
           />
+
+          <ArrowRight className={cn(
+            "w-2.5 h-2.5 shrink-0 transition-colors",
+            briefsComplete ? "text-emerald-400/25" : "text-muted-foreground/10",
+          )} />
+
+          <StageTile
+            stage="report"
+            isComplete={reportComplete}
+            isRunning={false}
+            isStale={false}
+            isNext={briefsComplete && !reportComplete}
+            isLocked={!briefsComplete && !reportComplete}
+            isActive={activeStage === "report"}
+            elapsedSeconds={0}
+            onClick={() => toggle("report")}
+          />
+
+          <ArrowRight className={cn(
+            "w-2.5 h-2.5 shrink-0 transition-colors",
+            allLoopComplete ? "text-primary/20" : "text-muted-foreground/10",
+          )} />
+
+          <StageTile
+            stage="rerun"
+            isComplete={false}
+            isRunning={false}
+            isStale={false}
+            isNext={allLoopComplete && !anyRunning}
+            isLocked={!allLoopComplete}
+            isActive={activeStage === "rerun"}
+            elapsedSeconds={0}
+            onClick={() => toggle("rerun")}
+          />
         </div>
       </div>
 
@@ -1001,9 +1262,11 @@ export function LoopCommandChain({
           stage={activeStage}
           onClose={() => setActiveStage(null)}
           currentPath={location}
+          dataComplete={dataComplete}
           analysisComplete={analysisComplete}
           strategyComplete={strategyComplete}
           briefsComplete={briefsComplete}
+          reportComplete={reportComplete}
           analysisRunning={analysisRunning}
           strategyRunning={strategyRunning}
           briefsRunning={briefsRunning}
@@ -1018,12 +1281,15 @@ export function LoopCommandChain({
           hypothesisCount={hypothesisCount}
           icpCount={icpCount}
           briefCount={briefCount}
+          reportCount={reportCount}
           strategy={strategy}
           briefBuilder={briefBuilder}
           analysisRun={analysisRun}
           strategyLastRun={strategyLastRun}
           briefsLastRun={briefsLastRun}
           loopStatus={loopStatus}
+          accountPlatform={account.platform}
+          allLoopComplete={allLoopComplete}
           onNavigate={navigate}
           onGenerateStrategy={() => strategyGen.start()}
           onGenerateBriefs={() => briefsGen.start()}

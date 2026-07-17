@@ -39,7 +39,7 @@ export function VariableChip({ code, showCode = false }: { code: string; showCod
     <span
       title={code}
       className={cn(
-        "inline-flex items-center gap-1 text-[10px] font-medium border px-1.5 py-0.5 rounded leading-none",
+        "inline-flex items-center gap-1 text-label font-medium border px-1.5 py-0.5 rounded leading-none",
         PREFIX_COLORS[prefix],
       )}
     >
@@ -58,7 +58,7 @@ function ChipOverflow({ count, children }: { count: number; children: React.Reac
         <button
           type="button"
           aria-label={`Show ${count} more`}
-          className="inline-flex items-center text-[10px] font-semibold text-muted-foreground/80 border border-border/50 bg-white/[0.04] hover:bg-white/[0.08] px-1.5 py-1 rounded leading-none transition-colors"
+          className="inline-flex items-center text-label font-semibold text-muted-foreground/80 border border-border/50 bg-white/[0.04] hover:bg-white/[0.08] px-1.5 py-1 rounded leading-none transition-colors"
         >
           +{count}
         </button>
@@ -85,7 +85,7 @@ export function VariableStackChips({ stack, maxVisible = 4 }: { stack: Record<st
       key={family}
       title={`${familyLabel(family)} · ${code}`}
       className={cn(
-        "inline-flex items-center text-[10px] font-medium border px-1.5 py-1 rounded leading-none",
+        "inline-flex items-center text-label font-medium border px-1.5 py-1 rounded leading-none",
         PREFIX_COLORS[getVariablePrefix(code)],
       )}
     >
@@ -132,10 +132,10 @@ export function IcpChips({ ids, profiles, maxVisible = 4 }: { ids: string[] | un
     return (
       <span
         key={id}
-        className="inline-flex items-center gap-1 text-[10px] font-medium text-foreground/85 border border-border/40 bg-white/[0.03] px-1.5 py-1 rounded leading-none"
+        className="inline-flex items-center gap-1 text-label font-medium text-foreground/85 border border-border/40 bg-white/[0.03] px-1.5 py-1 rounded leading-none"
         title={compact === full ? id : `${full} · ${id}`}
       >
-        <Users className="w-2.5 h-2.5 text-primary/70" />
+        <Users className="w-3.5 h-3.5 text-primary/70" />
         {compact}
       </span>
     );
@@ -162,7 +162,7 @@ function RefChips({ refs }: { refs: HierarchyRef[] }) {
       {refs.map((r, i) => (
         <span
           key={i}
-          className="inline-flex items-center text-[10px] font-mono font-semibold text-foreground/90 border border-border/50 bg-white/[0.04] px-1.5 py-0.5 rounded leading-none whitespace-nowrap"
+          className="inline-flex items-center text-label font-mono font-semibold text-foreground/90 border border-border/50 bg-white/[0.04] px-1.5 py-0.5 rounded leading-none whitespace-nowrap"
         >
           {formatHierarchyRef(r)}
         </span>
@@ -182,12 +182,12 @@ export function NormalizedRefItem({ text, eyebrow }: { text: string; eyebrow: st
     return text.length > 40 ? (
       <DetailReveal
         label={deriveLabel(text, 40)}
-        labelClassName="text-[11px] text-foreground/85 leading-snug"
+        labelClassName="text-caption text-foreground/85 leading-snug"
         eyebrow={eyebrow}
         sections={[{ text }]}
       />
     ) : (
-      <span className="text-[11px] text-foreground/85 leading-snug">{text}</span>
+      <span className="text-caption text-foreground/85 leading-snug">{text}</span>
     );
   }
   if (!parsed.annotation) {
@@ -224,7 +224,7 @@ function HypothesisCodeChips({ codes, maxVisible = 4 }: { codes: string[]; maxVi
         <VariableChip key={c} code={c} />
       ))}
       {hidden > 0 && (
-        <span className="text-[10px] font-semibold text-muted-foreground/80">+{hidden}</span>
+        <span className="text-label font-semibold text-muted-foreground/80">+{hidden}</span>
       )}
     </span>
   );
@@ -246,7 +246,7 @@ export function HypothesisLabel({ label, isolated }: { label: string; isolated?:
       <DetailReveal
         label={deriveLabel(label, 90)}
         eyebrow="Hypothesis"
-        labelClassName="text-[12px] text-foreground/90 leading-snug"
+        labelClassName="text-body text-foreground/90 leading-snug"
         sections={sections}
       />
     );
@@ -301,8 +301,8 @@ export function PillarDetailSections({ pillar, profiles }: { pillar: MessagePill
       {icps.length > 0 && (
         <div className="md:col-span-2">
           <div className="flex items-center gap-1.5 mb-1.5">
-            <Users className="w-3 h-3 text-primary/70" />
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">Targets</span>
+            <Users className="w-3.5 h-3.5 text-primary/70" />
+            <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70">Targets</span>
           </div>
           <IcpChips ids={icps} profiles={profiles} />
         </div>
@@ -310,8 +310,8 @@ export function PillarDetailSections({ pillar, profiles }: { pillar: MessagePill
       {sections.map(({ key, label, Icon }) => (
         <div key={key} className="rounded-lg border border-border/30 bg-white/[0.015] p-3">
           <div className="flex items-center gap-1.5 mb-1">
-            <Icon className="w-3 h-3 text-muted-foreground/60" />
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
+            <Icon className="w-3.5 h-3.5 text-muted-foreground/60" />
+            <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
           </div>
           <DetailReveal
             label={deriveLabel(pillar[key] as string, 72)}
@@ -394,11 +394,11 @@ export function VariableCombinationsGrid({ combinations }: { combinations: Varia
           <div className="mt-auto pt-2 border-t border-border/20 flex items-center gap-4">
             <div>
               <div className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">CPA</div>
-              <div className="text-[14px] font-bold text-foreground tabular-nums">{fmtMetric("usd_unit", c.cpa)}</div>
+              <div className="text-sm font-bold text-foreground tabular-nums">{fmtMetric("usd_unit", c.cpa)}</div>
             </div>
             <div>
               <div className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">CVR</div>
-              <div className="text-[14px] font-bold text-foreground tabular-nums">{fmtMetric("pct", c.cvr_pct)}</div>
+              <div className="text-sm font-bold text-foreground tabular-nums">{fmtMetric("pct", c.cvr_pct)}</div>
             </div>
             {c.confidence && (
               <div className="ml-auto">
@@ -443,7 +443,7 @@ export function ScalingPlaybookLanes({ playbook }: { playbook: ScalingPlaybook }
           <div key={String(key)} className={cn("rounded-xl border p-3 flex flex-col gap-2", accent)}>
             <div className="flex items-center gap-1.5">
               <Icon className="w-3.5 h-3.5" />
-              <span className="text-[10px] font-semibold uppercase tracking-widest">{label}</span>
+              <span className="text-label font-semibold uppercase tracking-widest">{label}</span>
             </div>
             <ul className="space-y-1.5">
               {(playbook[key] as string[]).map((item, i) => (
@@ -457,7 +457,7 @@ export function ScalingPlaybookLanes({ playbook }: { playbook: ScalingPlaybook }
       </div>
       {playbook.budget_reallocation_note && (
         <div className="rounded-lg border border-border/30 bg-white/[0.015] p-3">
-          <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1">Budget reallocation</div>
+          <div className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1">Budget reallocation</div>
           <DetailReveal
             label={deriveLabel(playbook.budget_reallocation_note, 72)}
             labelClassName={TYPE.body}

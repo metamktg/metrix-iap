@@ -29,7 +29,7 @@ function Kpi({ label, value, sub }: { label: string; value: string; sub?: string
   return (
     <div className="rounded-lg border border-border/40 bg-white/[0.02] p-2.5">
       <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/60">{label}</div>
-      <div className="text-[16px] font-bold tabular-nums leading-tight mt-0.5 text-foreground">{value}</div>
+      <div className="text-base font-bold tabular-nums leading-tight mt-0.5 text-foreground">{value}</div>
       {sub && <div className="text-[9px] text-muted-foreground/55 leading-snug mt-0.5">{sub}</div>}
     </div>
   );
@@ -80,25 +80,25 @@ export function VariableDrilldownModal({
   return (
     <>
       <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-        <DialogContent className="max-w-3xl bg-[hsl(222_61%_6%)] border-border/50 max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl bg-surface-deep border-border/50 max-h-[85vh] overflow-y-auto">
           <DialogHeader className="text-left space-y-1">
             {onBack && (
               <button
                 onClick={onBack}
-                className="inline-flex items-center gap-1 text-[10px] text-muted-foreground/60 hover:text-foreground transition-colors mb-0.5 -ml-0.5 group"
+                className="inline-flex items-center gap-1 text-label text-muted-foreground/60 hover:text-foreground transition-colors mb-0.5 -ml-0.5 group"
               >
-                <ArrowLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" />
+                <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
                 Back
               </button>
             )}
-            <div className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest">
+            <div className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest">
               Variable drill-down{data.family ? ` · ${familyLabel(data.family)}` : ""}
             </div>
-            <DialogTitle className="text-[15px] font-semibold text-foreground flex items-center gap-2 flex-wrap" data-testid="title-variable-drilldown">
+            <DialogTitle className="text-callout font-semibold text-foreground flex items-center gap-2 flex-wrap" data-testid="title-variable-drilldown">
               {readableVariables(code)}
               <span className="text-[9px] font-mono font-normal text-muted-foreground/60 border border-border/30 px-1.5 py-0.5 rounded">{code}</span>
             </DialogTitle>
-            <DialogDescription className="text-[11px] text-muted-foreground/70 leading-relaxed">
+            <DialogDescription className="text-caption text-muted-foreground/70 leading-relaxed">
               Numbers come from this import's own variable-level rows and the creative cells that actually carried this
               variable — nothing estimated.
             </DialogDescription>
@@ -119,7 +119,7 @@ export function VariableDrilldownModal({
                 <Kpi label="Unique ads" value={fmtNum(data.totals.uniqueAds)} />
               </div>
             ) : (
-              <div className="flex items-start gap-2 text-[11px] text-muted-foreground/70 leading-relaxed rounded-lg border border-border/40 bg-white/[0.02] p-3">
+              <div className="flex items-start gap-2 text-caption text-muted-foreground/70 leading-relaxed rounded-lg border border-border/40 bg-white/[0.02] p-3">
                 <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                 <span>
                   No variable-level performance row for this code in the current metric selection — the sections below
@@ -130,7 +130,7 @@ export function VariableDrilldownModal({
 
             {/* ── Top ads carrying this variable ── */}
             <div className="space-y-1.5">
-              <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">
+              <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">
                 Top ads carrying this variable
               </p>
               {topCells.length > 0 ? (
@@ -152,7 +152,7 @@ export function VariableDrilldownModal({
                   ))}
                 </div>
               ) : (
-                <p className="text-[11px] text-muted-foreground/60">
+                <p className="text-caption text-muted-foreground/60">
                   No creative cell in this import carries this variable.
                 </p>
               )}
@@ -165,7 +165,7 @@ export function VariableDrilldownModal({
 
             {/* ── Segment performance ── */}
             <div className="space-y-1.5">
-              <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">
+              <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">
                 Segment performance — scoped to this variable's cells
               </p>
               {data.segments.available ? (
@@ -180,7 +180,7 @@ export function VariableDrilldownModal({
                         data-testid={`row-variable-segment-${seg.age}-${seg.gender}`}
                         title="Click to open segment drill-down"
                       >
-                        <span className="text-[11px] font-medium text-foreground/85 w-32 shrink-0 capitalize">
+                        <span className="text-caption font-medium text-foreground/85 w-32 shrink-0 capitalize">
                           {segmentLabel(seg)}
                         </span>
                         <span className="flex-1 h-2.5 rounded-full bg-white/[0.06] overflow-hidden">
@@ -189,10 +189,10 @@ export function VariableDrilldownModal({
                             style={{ width: `${Math.max(share * 100, 2)}%` }}
                           />
                         </span>
-                        <span className="text-[10px] tabular-nums text-muted-foreground/70 w-16 text-right shrink-0">
+                        <span className="text-label tabular-nums text-muted-foreground/70 w-16 text-right shrink-0">
                           {totals.spend != null ? fmtUSD(totals.spend, 0) : "—"}
                         </span>
-                        <span className="text-[10px] tabular-nums text-foreground/80 w-20 text-right shrink-0">
+                        <span className="text-label tabular-nums text-foreground/80 w-20 text-right shrink-0">
                           {derived.cpa != null ? `${fmtUSD(derived.cpa)} CPA` : "— CPA"}
                         </span>
                         <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/35 group-hover:text-primary/80 group-hover:translate-x-0.5 transition-all shrink-0" />
@@ -201,7 +201,7 @@ export function VariableDrilldownModal({
                   })}
                 </div>
               ) : (
-                <div className="flex items-start gap-2 text-[11px] text-muted-foreground/60 leading-relaxed rounded-lg border border-border/30 bg-white/[0.01] p-3">
+                <div className="flex items-start gap-2 text-caption text-muted-foreground/60 leading-relaxed rounded-lg border border-border/30 bg-white/[0.01] p-3">
                   <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                   <span>{data.segments.unavailableReason}</span>
                 </div>
@@ -211,7 +211,7 @@ export function VariableDrilldownModal({
             {/* ── Copy variants ── */}
             {data.textVariants.length > 0 && (
               <div className="space-y-1.5">
-                <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">
+                <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">
                   Copy that ran with this variable
                 </p>
                 <div className="space-y-2">
@@ -219,10 +219,10 @@ export function VariableDrilldownModal({
                     <div key={v.cellId} className="rounded-lg border border-border/40 bg-white/[0.02] p-2.5 space-y-1">
                       <div className="flex items-center gap-1.5">
                         <span className="text-[9px] font-mono text-muted-foreground/60">{v.cellId}</span>
-                        {v.conceptName && <span className="text-[10px] font-medium text-foreground/80">{v.conceptName}</span>}
+                        {v.conceptName && <span className="text-label font-medium text-foreground/80">{v.conceptName}</span>}
                       </div>
-                      {v.primary && <p className="text-[11px] text-foreground/85 leading-relaxed">{v.primary}</p>}
-                      {v.secondary && <p className="text-[10px] text-muted-foreground/70 leading-relaxed">{v.secondary}</p>}
+                      {v.primary && <p className="text-caption text-foreground/85 leading-relaxed">{v.primary}</p>}
+                      {v.secondary && <p className="text-label text-muted-foreground/70 leading-relaxed">{v.secondary}</p>}
                       {v.cta && (
                         <span className="inline-block text-[9px] font-medium text-primary/80 border border-primary/20 bg-primary/[0.06] px-1.5 py-0.5 rounded">
                           {v.cta}
@@ -241,16 +241,16 @@ export function VariableDrilldownModal({
 
             {/* ── Next step CTA ── */}
             <div className="flex items-center justify-between gap-3 pt-3 border-t border-border/25">
-              <p className="text-[10px] text-muted-foreground/50 leading-relaxed">
+              <p className="text-label text-muted-foreground/50 leading-relaxed">
                 Use these variable insights to inform your next sprint test.
               </p>
               <button
                 onClick={() => { onClose(); navigate("/app/strategy/map"); }}
-                className="shrink-0 inline-flex items-center gap-1.5 h-7 px-3 rounded-md bg-primary/10 border border-primary/25 text-[10px] font-semibold text-primary/90 hover:bg-primary/15 hover:border-primary/40 transition-colors"
+                className="shrink-0 inline-flex items-center gap-1.5 h-7 px-3 rounded-md bg-primary/10 border border-primary/25 text-label font-semibold text-primary/90 hover:bg-primary/15 hover:border-primary/40 transition-colors"
               >
-                <Sparkles className="w-3 h-3" />
+                <Sparkles className="w-3.5 h-3.5" />
                 Strategy Map
-                <ArrowRight className="w-3 h-3" />
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>

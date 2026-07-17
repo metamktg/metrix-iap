@@ -156,11 +156,11 @@ export function SegmentGridModal({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-3xl bg-[hsl(222_61%_6%)] border-border/50">
+      <DialogContent className="max-w-3xl bg-surface-deep border-border/50">
         <DialogHeader className="text-left space-y-1">
-          <div className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest">{kicker}</div>
-          <DialogTitle className="text-[15px] font-semibold text-foreground">{title} — avatar × placement</DialogTitle>
-          <DialogDescription className="text-[11px] text-muted-foreground/70 leading-relaxed">
+          <div className="text-label font-mono text-muted-foreground/60 uppercase tracking-widest">{kicker}</div>
+          <DialogTitle className="text-callout font-semibold text-foreground">{title} — avatar × placement</DialogTitle>
+          <DialogDescription className="text-caption text-muted-foreground/70 leading-relaxed">
             Avatar rows and placement columns are real marginals from this import, broken out by{" "}
             <span className="text-foreground/80 font-medium">{metricLabel}</span>. Meta's export does not break
             results down jointly by demographic and placement, so intersections stay explicitly empty rather than
@@ -170,8 +170,8 @@ export function SegmentGridModal({
 
         {avatars.length === 0 ? (
           <div className="py-10 text-center space-y-1">
-            <p className="text-[12px] font-medium text-foreground/60">No demographic rows for this selection</p>
-            <p className="text-[11px] text-muted-foreground/60">
+            <p className="text-body font-medium text-foreground/60">No demographic rows for this selection</p>
+            <p className="text-caption text-muted-foreground/60">
               The demographic export doesn't include rows for {cellIds?.join(", ") ?? "this account"}.
             </p>
           </div>
@@ -179,7 +179,7 @@ export function SegmentGridModal({
           <div className="rounded-xl border border-border/40 overflow-hidden">
             <div className="overflow-x-auto max-h-[420px] overflow-y-auto">
               <table className="w-full min-w-[500px] border-collapse">
-                <thead className="sticky top-0 bg-[hsl(222_55%_7%)] z-10">
+                <thead className="sticky top-0 bg-surface-table z-10">
                   <tr className="border-b border-border/40">
                     <th className="text-left text-[9px] font-mono uppercase tracking-widest text-muted-foreground/60 font-semibold px-2.5 py-2">
                       Avatar segment
@@ -201,20 +201,20 @@ export function SegmentGridModal({
                     return (
                       <tr key={seg.key} className="border-b border-border/20">
                         <td className="px-2.5 py-2">
-                          <div className="text-[11px] font-medium text-foreground">{seg.age}</div>
+                          <div className="text-caption font-medium text-foreground">{seg.age}</div>
                           <div className="text-[9px] text-muted-foreground/60 capitalize">{seg.gender}</div>
                         </td>
                         {placements.map(({ row: p }) => (
                           <td
                             key={p.Placement + p.Platform}
-                            className="px-2 py-2 text-center text-[10px] text-muted-foreground/40"
+                            className="px-2 py-2 text-center text-label text-muted-foreground/40"
                             title="No joint avatar × placement grain in this import"
                           >
                             —
                           </td>
                         ))}
                         <td className="px-2.5 py-2 text-right tabular-nums">
-                          <div className="text-[11px] font-semibold text-foreground">
+                          <div className="text-caption font-semibold text-foreground">
                             {blended.display} <span className="text-[8px] font-normal text-muted-foreground/60">{metricLabel}</span>
                           </div>
                           <div className="text-[9px] text-muted-foreground/60">{usd(seg.totals.spend, 0)} · {num(seg.totals.results)} res</div>
@@ -225,14 +225,14 @@ export function SegmentGridModal({
                   {/* Placement marginal row (account level) */}
                   <tr className="border-t border-border/40 bg-white/[0.015]">
                     <td className="px-2.5 py-2">
-                      <div className="text-[10px] font-mono uppercase tracking-wide text-primary/70">All avatars</div>
+                      <div className="text-label font-mono uppercase tracking-wide text-primary/70">All avatars</div>
                       <div className="text-[8px] text-muted-foreground/60">placement marginals · account level</div>
                     </td>
                     {placements.map(({ row: p, totals }) => {
                       const v = metricValueForSegment(totals, metric ?? { id: "cpa_blended", isResultEvent: false });
                       return (
                         <td key={p.Placement + p.Platform} className="px-2 py-2 text-center tabular-nums">
-                          <div className="text-[10px] font-semibold text-foreground/90">{v.display}</div>
+                          <div className="text-label font-semibold text-foreground/90">{v.display}</div>
                           <div className="text-[8px] text-muted-foreground/60">{usd(p["Amount spent (USD)"], 0)}</div>
                         </td>
                       );
@@ -245,8 +245,8 @@ export function SegmentGridModal({
           </div>
         )}
 
-        <div className="flex items-start gap-2 text-[10px] text-muted-foreground/60 leading-relaxed">
-          <Info className="w-3 h-3 shrink-0 mt-0.5" />
+        <div className="flex items-start gap-2 text-label text-muted-foreground/60 leading-relaxed">
+          <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
           <span>
             Avatar rows: demographic audience signal{cellIds ? ` scoped to ${cellIds.join(", ")}` : " for the whole account"}.
             Placement columns: account-level placement signal. Joint cells populate automatically
@@ -266,7 +266,7 @@ export function SegmentDrilldownButton({ onClick, label = "Avatar × placement" 
         e.stopPropagation();
         onClick();
       }}
-      className="inline-flex items-center gap-1 text-[10px] font-medium text-primary/80 hover:text-primary border border-primary/20 bg-primary/[0.06] hover:bg-primary/10 px-1.5 py-0.5 rounded transition-colors"
+      className="inline-flex items-center gap-1 text-label font-medium text-primary/80 hover:text-primary border border-primary/20 bg-primary/[0.06] hover:bg-primary/10 px-1.5 py-0.5 rounded transition-colors"
     >
       <span className="w-1 h-1 rounded-full bg-primary/60" />
       {label}

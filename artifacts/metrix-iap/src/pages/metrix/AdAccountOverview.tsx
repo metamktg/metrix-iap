@@ -11,14 +11,15 @@ import {
   Zap, ArrowRight, ChevronDown,
 } from "lucide-react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
-import { useMetrixSeed } from "@/contexts/MetrixDataContext";
+import { useMetrixSeed, useMetrixIsRefetching } from "@/contexts/MetrixDataContext";
 import {
   getAdAccount, getAnalysisData, getMST,
 } from "@/lib/data/metrixSeedAdapter";
 import { RecommendationDeck, actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
 import {
   ModuleHeader, SectionCard, CaveatNote, DetailReveal, deriveLabel,
-  UnconfiguredState, PendingState, fmtUSD, fmtNum, eventLabel, resultTerm,
+  UnconfiguredState, PendingState, CrossLink, fmtUSD, fmtNum, eventLabel, resultTerm,
+  SkeletonTileRow,
 } from "./shared";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
 import { cn } from "@/lib/utils";
@@ -55,6 +56,7 @@ export function AdAccountOverview() {
   );
 
   // ── Hooks hoisted above early returns (Rules of Hooks) ──────────────
+  const isRefetching = useMetrixIsRefetching();
   const cs = account?.iap?.campaign_summary ?? null;
   const metricCatalog = useMemo(
     () => (cs ? buildMetricCatalog(metricSourceFromCampaignSummary(cs)) : []),
@@ -100,6 +102,7 @@ export function AdAccountOverview() {
         <PendingState
           title="Analysis data loading"
           message="Core analysis data is being assembled. Refresh in a moment."
+          action={<CrossLink to="/app/analysis/overview" label="Go to Analysis" />}
         />
       </div>
     );
@@ -144,13 +147,13 @@ export function AdAccountOverview() {
         section="Ad Account · 01"
         title={account.name}
         subtitle="Command chain · focus · optimization"
-        right={<span className="text-[10px] font-mono text-emerald-400/70 uppercase tracking-widest">Connected</span>}
+        right={<span className="text-label font-mono text-emerald-400/70 uppercase tracking-widest">Connected</span>}
         account={account}
       />
 
       {/* ── IAP Loop Command Chain ────────────────────────────────────── */}
       <div className="px-6 py-2 border-b border-border/40 shrink-0">
-        <LoopCommandChain accountId={account.id} account={account} />
+        <LoopCommandChain accountId={account.id} account={account} managerId={seed.manager_account.id} />
       </div>
 
       {/* ── Two-column body ────────────────────────────────────────── */}
@@ -162,10 +165,13 @@ export function AdAccountOverview() {
           {/* Account Totals — metric accordions */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h2 className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/55">Account Totals</h2>
+              <h2 className="text-label font-mono uppercase tracking-widest text-muted-foreground/55">Account Totals</h2>
               <MetricPickerButton catalog={metricCatalog} selected={selectedMetricIds} onToggle={toggle} onMove={move} onReset={reset} />
             </div>
-            <div className="grid grid-cols-dashboard-4 gap-2">
+            {isRefetching ? (
+              <SkeletonTileRow count={selectedMetricIds.length || 4} />
+            ) : null}
+            <div className={cn("grid grid-cols-dashboard-4 gap-2", isRefetching && "hidden")}>
               {selectedMetricIds.map((id) => {
                 const m = metricById(metricCatalog, id);
                 if (!m) return null;
@@ -184,11 +190,11 @@ export function AdAccountOverview() {
                       <div className="flex items-center justify-between gap-2 mb-1">
                         <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/55 truncate">{m.label}</span>
                         <ChevronDown className={cn(
-                          "w-3 h-3 text-muted-foreground/30 transition-transform shrink-0",
+                          "w-3.5 h-3.5 text-muted-foreground/30 transition-transform shrink-0",
                           isExpanded && "rotate-180 text-primary/60"
                         )} />
                       </div>
-                      <span className="text-[16px] font-bold text-foreground tabular-nums leading-none">{m.formatted}</span>
+                      <span className="text-base font-bold text-foreground tabular-nums leading-none">{m.formatted}</span>
                       {m.sub && <span className="text-[9px] text-muted-foreground/50 mt-1 leading-tight truncate">{m.sub}</span>}
                     </button>
                     {isExpanded && (
@@ -199,9 +205,9 @@ export function AdAccountOverview() {
                         </p>
                         <button
                           onClick={() => { setOpenMetricId(id); setExpandedMetricId(null); }}
-                          className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors"
+                          className="inline-flex items-center gap-1.5 text-caption font-semibold text-primary hover:text-primary/80 transition-colors"
                         >
-                          Diagnose full breakdown <ArrowRight className="w-3 h-3" />
+                          Diagnose full breakdown <ArrowRight className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     )}
@@ -209,7 +215,7 @@ export function AdAccountOverview() {
                 );
               })}
               {selectedMetricIds.length === 0 && (
-                <div className="col-span-2 md:col-span-4 text-[11px] text-muted-foreground/50 border border-dashed border-border/40 rounded-xl px-4 py-5 text-center">
+                <div className="col-span-2 md:col-span-4 text-caption text-muted-foreground/50 border border-dashed border-border/40 rounded-xl px-4 py-5 text-center">
                   No metrics selected — use "Customize" to add tiles.
                 </div>
               )}
@@ -225,41 +231,41 @@ export function AdAccountOverview() {
               <div className="rounded-xl border border-purple-400/20 bg-purple-400/[0.03] p-4 hover:border-purple-400/30 transition-colors">
                 <div className="flex items-center gap-1.5 mb-2">
                   <Grid3x3 className="w-3.5 h-3.5 text-purple-300/80" />
-                  <span className="text-[11px] font-semibold text-foreground">Current sprint</span>
+                  <span className="text-caption font-semibold text-foreground">Current sprint</span>
                 </div>
                 {mstActive ? (
                   <>
-                    <p className="text-[12px] text-foreground/80 leading-relaxed">
+                    <p className="text-body text-foreground/80 leading-relaxed">
                       MST active · <span className="font-semibold text-foreground">{matrixCellCount}</span> matrix cells · <span className="font-semibold text-foreground">{libraryCount}</span> library concepts
                     </p>
-                    <button onClick={() => navigate("/app/mst")} className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-semibold text-purple-300 hover:text-purple-200 transition-colors">
-                      Open MST <ArrowRight className="w-3 h-3" />
+                    <button onClick={() => navigate("/app/mst")} className="mt-3 inline-flex items-center gap-1.5 text-caption font-semibold text-purple-300 hover:text-purple-200 transition-colors">
+                      Open MST <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </>
                 ) : (
-                  <p className="text-[12px] text-muted-foreground/60 leading-relaxed">No active sprint — import data to begin.</p>
+                  <p className="text-body text-muted-foreground/60 leading-relaxed">No active sprint — import data to begin.</p>
                 )}
               </div>
 
               <div className="rounded-xl border border-primary/20 bg-primary/[0.04] p-4 hover:border-primary/30 transition-colors">
                 <div className="flex items-center gap-1.5 mb-2">
                   <Zap className="w-3.5 h-3.5 text-primary/80" />
-                  <span className="text-[11px] font-semibold text-foreground">Next action</span>
+                  <span className="text-caption font-semibold text-foreground">Next action</span>
                 </div>
                 {nextAction ? (
                   <>
                     <DetailReveal
                       label={nextAction.title}
-                      labelClassName="text-[12px] font-semibold text-foreground leading-snug"
+                      labelClassName="text-body font-semibold text-foreground leading-snug"
                       eyebrow="Next action"
                       sections={[{ label: "Recommended action", text: nextAction.recommended_action }]}
                     />
-                    <p className="text-[10px] text-muted-foreground/60 mt-2.5">
+                    <p className="text-label text-muted-foreground/60 mt-2.5">
                       {recCards.length} recommendation{recCards.length === 1 ? "" : "s"} in the loop below ↓
                     </p>
                   </>
                 ) : (
-                  <p className="text-[12px] text-muted-foreground/60 leading-relaxed">No recommendations yet.</p>
+                  <p className="text-body text-muted-foreground/60 leading-relaxed">No recommendations yet.</p>
                 )}
               </div>
             </div>
@@ -270,9 +276,9 @@ export function AdAccountOverview() {
             <div className="grid grid-cols-dashboard-4-sm gap-2">
               {events.map(([key, e]) => (
                 <div key={key} className="rounded-lg border border-border/40 bg-white/[0.02] px-3 py-2.5">
-                  <div className="text-[10px] font-semibold text-foreground/70 leading-tight mb-1.5 truncate">{eventLabel(key)}</div>
-                  <div className="text-[18px] font-bold text-foreground tabular-nums leading-none">{fmtNum(e.results)}</div>
-                  <div className="text-[10px] text-muted-foreground/65 mt-2 space-y-0.5">
+                  <div className="text-label font-semibold text-foreground/70 leading-tight mb-1.5 truncate">{eventLabel(key)}</div>
+                  <div className="text-lg font-bold text-foreground tabular-nums leading-none">{fmtNum(e.results)}</div>
+                  <div className="text-label text-muted-foreground/65 mt-2 space-y-0.5">
                     <div>Spend <span className="text-foreground/70 font-medium">{fmtUSD(e.spend)}</span></div>
                     <div>Clicks <span className="text-foreground/70 font-medium">{fmtNum(e.link_clicks)}</span></div>
                   </div>
@@ -287,15 +293,15 @@ export function AdAccountOverview() {
               <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/[0.03] p-4 hover:border-emerald-400/30 transition-colors">
                 <div className="flex items-center gap-1.5 mb-2">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-400/80" />
-                  <span className="text-[11px] font-semibold text-foreground">Primary control</span>
+                  <span className="text-caption font-semibold text-foreground">Primary control</span>
                 </div>
-                <p className="text-[13px] font-semibold text-foreground mb-1">{primaryControlName}</p>
+                <p className="text-title font-semibold text-foreground mb-1">{primaryControlName}</p>
                 {(() => {
                   const read = resolveControlText(core.primary_control_read, core.primary_control);
                   return (
                     <DetailReveal
                       label={deriveLabel(read, 72)}
-                      labelClassName="text-[12px] text-foreground/80 leading-relaxed"
+                      labelClassName="text-body text-foreground/80 leading-relaxed"
                       eyebrow="Primary control"
                       sections={[{ label: "Control read", text: read }]}
                     />
@@ -309,15 +315,15 @@ export function AdAccountOverview() {
                 <div className="rounded-xl border border-blue-400/20 bg-blue-400/[0.03] p-4 hover:border-blue-400/30 transition-colors">
                   <div className="flex items-center gap-1.5 mb-2">
                     <KeyRound className="w-3.5 h-3.5 text-blue-300/80" />
-                    <span className="text-[11px] font-semibold text-foreground">{term.Singular} control</span>
+                    <span className="text-caption font-semibold text-foreground">{term.Singular} control</span>
                   </div>
-                  <p className="text-[13px] font-semibold text-foreground mb-1">{registrationControlName ?? core.registration_control}</p>
+                  <p className="text-title font-semibold text-foreground mb-1">{registrationControlName ?? core.registration_control}</p>
                   {core.registration_control_read && core.registration_control && (() => {
                     const read = resolveControlText(core.registration_control_read, core.registration_control);
                     return (
                       <DetailReveal
                         label={deriveLabel(read, 72)}
-                        labelClassName="text-[12px] text-foreground/80 leading-relaxed"
+                        labelClassName="text-body text-foreground/80 leading-relaxed"
                         eyebrow={`${term.Singular} control`}
                         sections={[{ label: "Control read", text: read }]}
                       />
@@ -342,7 +348,11 @@ export function AdAccountOverview() {
             {deckCards.length ? (
               <RecommendationDeck scopeId={account.id} cards={deckCards} emptyLabel="All account recommendations reviewed" />
             ) : (
-              <PendingState title="No recommendations yet" message="Optimization loop recommendations will appear here once generated." />
+              <PendingState
+                title="No recommendations yet"
+                message="Optimization loop recommendations will appear here once generated."
+                action={<CrossLink to="/app/listen/recommendations" label="View Recommendations" />}
+              />
             )}
           </SectionCard>
         </div>

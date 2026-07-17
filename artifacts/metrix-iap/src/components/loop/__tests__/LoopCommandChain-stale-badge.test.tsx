@@ -50,6 +50,8 @@ vi.mock("@workspace/api-client-react", () => ({
   useGetLatestAnalysisRun: () => ({
     data: mockAnalysisState.run ? { run: mockAnalysisState.run } : null,
   }),
+  useListWorkspaceReports: () => ({ data: { reports: [] } }),
+  useListManualImports: () => ({ data: { imports: [] } }),
 }));
 
 vi.mock("@/components/generation/GenerationControls", () => ({
@@ -103,7 +105,7 @@ function makeWrapper() {
 
 function renderChain(account: AdAccount = makeCompleteAccount()) {
   return render(
-    <LoopCommandChain accountId="acc-1" account={account} />,
+    <LoopCommandChain accountId="acc-1" account={account} managerId="test-manager" />,
     { wrapper: makeWrapper() },
   );
 }
