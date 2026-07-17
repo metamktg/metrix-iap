@@ -598,6 +598,64 @@ function buildSampleRow(breakdowns: Record<string, string>, baseValues: Record<s
   return [...Object.values(breakdowns), ...Object.values(baseValues)];
 }
 
+/**
+ * Detects which IAP CSV class a file belongs to by checking for the class's
+ * exclusive signature columns in the header row.
+ *
+ * Returns the detected class, or null when neither class's signature columns
+ * appear (e.g. a CSV with no breakdown columns at all). The check is tolerant
+ * of column aliases and case variations — it uses the same `findColumnInHeader`
+ * cascade as the full parser.
+ *
+ * Signature columns are mutually exclusive between the two classes:
+ *   demographic     → "Gender", "Age"
+ *   device_placement → "Placement", "Impression device"
+ */
+export function detectCsvClassFromHeaders(headers: string[]): IapCsvClass | null {
+  for (const cls of ["demographic", "device_placement"] as const) {
+    const signatures = CSV_CLASS_SIGNATURE_COLUMNS[cls];
+    if (signatures.some((col) => findColumnInHeader(headers, col) !== null)) {
+      return cls;
+    }
+  }
+  return null;
+}
+
+/**
+ * Checks whether both CSV staging slots (demo and placement) resolved to the
+ * same CSV class — which means one required class is duplicated and the other
+ * is entirely missing.
+ *
+ * Pass in the detected classes for all imports in each slot (may include nulls
+ * for files where detection was inconclusive). Returns a descriptor of the
+ * duplicate/missing pair when a conflict is found, or null when the coverage
+ * looks correct.
+ *
+ * This is a pure function — it does no I/O and can be unit-tested directly.
+ */
+export function checkDuplicateCsvClasses(
+  demoDetected: (IapCsvClass | null)[],
+  placementDetected: (IapCsvClass | null)[],
+): { duplicatedClass: IapCsvClass; missingClass: IapCsvClass } | null {
+  const demoClass = demoDetected.find((c) => c !== null) ?? null;
+  const placementClass = placementDetected.find((c) => c !== null) ?? null;
+  if (demoClass !== null && placementClass !== null && demoClass === placementClass) {
+    const missingClass: IapCsvClass = demoClass === "demographic" ? "device_placement" : "demographic";
+    return { duplicatedClass: demoClass, missingClass };
+  }
+  return null;
+}
+
+const CSV_CLASS_LABEL: Record<IapCsvClass, string> = {
+  demographic: "Demographic (Gender/Age)",
+  device_placement: "Device/Placement (Impression device, Platform, Placement)",
+};
+
+/** Human-readable label for a CSV class, for use in error messages. */
+export function iapCsvClassLabel(cls: IapCsvClass): string {
+  return CSV_CLASS_LABEL[cls];
+}
+
 /** Builds the user-facing format spec (columns + a valid sample CSV) for one CSV class. */
 export function buildIapCsvClassFormat(csvClass: IapCsvClass): IapCsvClassFormat {
   const spec = IAP_CSV_CLASS_SPECS[csvClass];

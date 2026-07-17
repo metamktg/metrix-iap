@@ -25,6 +25,7 @@ import { getSupabase } from "./supabase";
 import { invalidateMetrixSeedCache } from "./metrixSeedAssembly";
 import { logger } from "./logger";
 import { parseIapCsv, IapCsvFormatError, type IapCsvRow } from "./iapCsvParser";
+import { detectCsvClassFromHeaders, checkDuplicateCsvClasses, iapCsvClassLabel } from "./iapCsvSpec";
 
 
 export const STALE_ANALYSIS_RUN_MS = 10 * 60 * 1000;
@@ -275,6 +276,45 @@ function decodeStagedContent(hexOrRaw: string): string {
   return Buffer.from(hex, "hex").toString("utf8");
 }
 
+/**
+ * Extracts the first (header) line of a CSV and splits it into individual
+ * column name strings. Handles double-quoted fields but not embedded newlines
+ * in headers — Meta Ads pivot export headers never span multiple lines.
+ *
+ * Used only for class detection (signature column lookup), not for full
+ * data parsing, so a lightweight implementation is sufficient.
+ */
+function csvFirstLineHeaders(text: string): string[] {
+  const newlineIdx = text.indexOf("\n");
+  const firstLine = newlineIdx >= 0 ? text.slice(0, newlineIdx) : text;
+  // Split on commas respecting double-quoted cells.
+  const cells: string[] = [];
+  let field = "";
+  let inQuotes = false;
+  for (let i = 0; i < firstLine.length; i++) {
+    const c = firstLine[i];
+    if (inQuotes) {
+      if (c === '"' && firstLine[i + 1] === '"') {
+        field += '"';
+        i++;
+      } else if (c === '"') {
+        inQuotes = false;
+      } else {
+        field += c;
+      }
+    } else if (c === '"') {
+      inQuotes = true;
+    } else if (c === ",") {
+      cells.push(field.trim());
+      field = "";
+    } else {
+      field += c;
+    }
+  }
+  cells.push(field.trim());
+  return cells;
+}
+
 function num(v: number | string | null | undefined): number | null {
   return typeof v === "number" ? v : null;
 }
@@ -470,6 +510,28 @@ export async function startManualAnalysis(
     ].filter(Boolean);
     throw new AnalysisError(
       `Both reports are required before running analysis. Missing: ${missing.join(" and ")}.`,
+      422,
+    );
+  }
+
+  // ── Duplicate-class guard ──────────────────────────────────────────────
+  // Detect the actual pivot class of each staged CSV and verify the two
+  // slots cover DISTINCT classes (one demographic, one device_placement).
+  // A user can upload two copies of the same class (e.g. two demographic
+  // exports) without triggering the upload-time mismatch check when the
+  // file lacks the opposing class's exclusive signature columns.
+  const demoDetected = demoImports.map((imp) =>
+    detectCsvClassFromHeaders(csvFirstLineHeaders(decodeStagedContent(String(imp["content"])))),
+  );
+  const placementDetected = placementImports.map((imp) =>
+    detectCsvClassFromHeaders(csvFirstLineHeaders(decodeStagedContent(String(imp["content"])))),
+  );
+  const dupCheck = checkDuplicateCsvClasses(demoDetected, placementDetected);
+  if (dupCheck) {
+    throw new AnalysisError(
+      `Both staged CSVs are ${iapCsvClassLabel(dupCheck.duplicatedClass)} exports. ` +
+        `The ${iapCsvClassLabel(dupCheck.missingClass)} pivot export is missing — ` +
+        `upload the correct file in the other slot before running analysis.`,
       422,
     );
   }
