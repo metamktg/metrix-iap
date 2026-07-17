@@ -1,5 +1,5 @@
 // ─── Ad Account Overview ──────────────────────────────────────────────
-// Layer-status-first layout: status hero → two-column body.
+// Loop-command-chain layout: IAP loop hero → two-column body.
 // Left: metric accordions, focus, results, core controls, opt loop.
 // Right: persistent Task Tray anchored at all times.
 
@@ -7,14 +7,13 @@ import { TYPE } from "./typography";
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import {
-  ShieldCheck, KeyRound, Radio, BarChart3, Layers, FileText, Grid3x3,
-  Zap, ArrowRight, ChevronDown, ChevronRight,
+  ShieldCheck, KeyRound, Grid3x3,
+  Zap, ArrowRight, ChevronDown,
 } from "lucide-react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import {
-  getAdAccount, getListenSignals, getAnalysisData, getStrategyData,
-  getReportBuilder, getMST,
+  getAdAccount, getAnalysisData, getMST,
 } from "@/lib/data/metrixSeedAdapter";
 import { RecommendationDeck, actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
 import {
@@ -27,6 +26,8 @@ import { buildMetricCatalog, metricSourceFromCampaignSummary, metricById } from 
 import { useMetricSelection } from "@/hooks/useMetricSelection";
 import { MetricPickerButton } from "@/components/creative/MetricPicker";
 import { MetricDiagnosticModal } from "@/components/creative/MetricDiagnosticModal";
+import { LoopCommandChain } from "@/components/loop/LoopCommandChain";
+
 const IMPACT_RANK: Record<string, number> = { high: 3, medium: 2, low: 1, setup: 0 };
 
 // ── Main export ─────────────────────────────────────────────────────────
@@ -53,19 +54,16 @@ export function AdAccountOverview() {
     [optLoop]
   );
 
-  // ── All hooks before any early return (Rules of Hooks) ─────────────
-  // cs may be null before the guards below; hooks receive an empty catalog
-  // in that case and will never be visible to the user.
+  // ── Hooks hoisted above early returns (Rules of Hooks) ──────────────
   const cs = account?.iap?.campaign_summary ?? null;
   const metricCatalog = useMemo(
-    () => cs ? buildMetricCatalog(metricSourceFromCampaignSummary(cs)) : [],
+    () => (cs ? buildMetricCatalog(metricSourceFromCampaignSummary(cs)) : []),
     [cs]
   );
   const availableMetricIds = useMemo(() => metricCatalog.map((m) => m.id), [metricCatalog]);
   const { selected: selectedMetricIds, toggle, move, reset } = useMetricSelection(availableMetricIds);
   const [openMetricId, setOpenMetricId] = useState<string | null>(null);
   const [expandedMetricId, setExpandedMetricId] = useState<string | null>(null);
-  const [layerOpen, setLayerOpen] = useState(true);
 
   // ── Early-exit states ───────────────────────────────────────────────
 
@@ -92,10 +90,6 @@ export function AdAccountOverview() {
   }
 
   const core = account.iap.core_reanalysis_read ?? null;
-  // cs is already defined above via account?.iap?.campaign_summary ?? null;
-  // after this guard account.iap is confirmed non-null so cs is non-null too.
-  const events = Object.entries(cs!.bottom_line_totals);
-  const term = resultTerm(account);
 
   // core_reanalysis_read is nullable at runtime for freshly-analyzed accounts
   // whose seed hasn't fully populated the module yet — guard before rendering.
@@ -112,11 +106,11 @@ export function AdAccountOverview() {
   }
 
   // ── Derived summaries ───────────────────────────────────────────────
-  const signals = getListenSignals(seed, adAccountId);
   const analysis = getAnalysisData(seed, adAccountId);
-  const strategy = getStrategyData(seed, adAccountId);
-  const report = getReportBuilder(seed, adAccountId);
   const mst = getMST(seed, adAccountId);
+
+  const events = Object.entries(account.iap.campaign_summary.bottom_line_totals);
+  const term = resultTerm(account);
 
   // Resolve concept IDs to human-readable names from the MST library.
   const lib = mst?.local_book2_library ?? [];
@@ -130,11 +124,6 @@ export function AdAccountOverview() {
   const primaryControlName = resolveConceptName(core.primary_control);
   const registrationControlName = core.registration_control ? resolveConceptName(core.registration_control) : null;
 
-  const cellCount = analysis?.performance_by_cell.length ?? 0;
-  const variableCount = analysis?.v3_variable_performance.length ?? 0;
-  const pillarCount = strategy?.message_pillars.length ?? 0;
-  const hypothesisCount = strategy?.active_hypotheses.length ?? 0;
-  const sectionCount = report?.report_sections.length ?? 0;
   const matrixCellCount = mst?.historical_matrix_4x4?.cells.length ?? 0;
   // local_book2_library may contain multiple rows per cell_id (aspect
   // variants such as Feed / Square / Story) — count distinct concepts so the
@@ -147,123 +136,21 @@ export function AdAccountOverview() {
     (a, b) => (IMPACT_RANK[b.impact] ?? 0) - (IMPACT_RANK[a.impact] ?? 0)
   )[0];
 
-  // ── Derived from metric selection (non-hook) ────────────────────────
   const openMetric = openMetricId ? metricById(metricCatalog, openMetricId) : null;
-
-  // ── Layer readiness ─────────────────────────────────────────────────
-  type Layer = { name: string; count: number; unit: string; ready: boolean; to: string; Icon: React.ComponentType<{ className?: string }> };
-  const layers: Layer[] = [
-    { name: "Listen",         count: signals.length,              unit: signals.length === 1 ? "signal" : "signals",  ready: signals.length > 0,                       to: "/app/listen/signal",        Icon: Radio },
-    { name: "Analysis",       count: cellCount + variableCount,   unit: "items",                                       ready: (cellCount + variableCount) > 0,           to: "/app/analysis/library",     Icon: BarChart3 },
-    { name: "Strategy",       count: pillarCount + hypothesisCount, unit: "items",                                     ready: (pillarCount + hypothesisCount) > 0,       to: "/app/strategy/hypotheses",  Icon: Layers },
-    { name: "Reports",        count: sectionCount,                unit: sectionCount === 1 ? "section" : "sections",  ready: sectionCount > 0,                          to: "/app/report-builder",       Icon: FileText },
-    { name: "MST",            count: matrixCellCount,             unit: "cells",                                       ready: mstActive && matrixCellCount > 0,          to: "/app/mst",                  Icon: Grid3x3 },
-  ];
-
-  const readyCount = layers.filter((l) => l.ready).length;
-  const allReady = readyCount === layers.length;
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
       <ModuleHeader
         section="Ad Account · 01"
         title={account.name}
-        subtitle="Layer readiness · account focus · optimization loop"
+        subtitle="Command chain · focus · optimization"
         right={<span className="text-[10px] font-mono text-emerald-400/70 uppercase tracking-widest">Connected</span>}
         account={account}
       />
 
-      {/* ── Layer Status ─────────────────────────────────────────────── */}
-      <div className="border-b border-border/40 shrink-0">
-        {/* Header row — always visible */}
-        <div className="flex items-center gap-2.5 px-6 py-2">
-          <h2 className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50">Layer Status</h2>
-          <span className={cn(
-            "text-[8px] font-bold uppercase tracking-widest border px-1.5 py-0.5 rounded-full leading-none",
-            allReady
-              ? "text-emerald-300 border-emerald-400/40 bg-emerald-400/10"
-              : "text-amber-300/80 border-amber-400/30 bg-amber-400/[0.07]"
-          )}>
-            {readyCount}/{layers.length} ready
-          </span>
-          <div className="ml-auto flex items-center gap-3">
-            {/* Collapsed icon strip — shown only when collapsed */}
-            {!layerOpen && (
-              <div className="flex items-center gap-1">
-                {layers.map((l) => (
-                  <button
-                    key={l.name}
-                    onClick={() => navigate(l.to)}
-                    title={`${l.name} · ${l.ready ? "Ready" : "Pending"}`}
-                    className={cn(
-                      "w-6 h-6 flex items-center justify-center rounded-lg border transition-all",
-                      l.ready
-                        ? "border-emerald-400/35 bg-emerald-400/[0.08] text-emerald-400/80 hover:text-emerald-400 hover:border-emerald-400/55"
-                        : "border-border/30 bg-white/[0.02] text-muted-foreground/30 hover:text-muted-foreground/60 hover:border-border/50"
-                    )}
-                  >
-                    <l.Icon className="w-3 h-3" />
-                  </button>
-                ))}
-              </div>
-            )}
-            {!layerOpen && <span className="text-[9px] text-muted-foreground/35">Click any to navigate</span>}
-            <button
-              onClick={() => setLayerOpen(!layerOpen)}
-              aria-label={layerOpen ? "Collapse layer status" : "Expand layer status"}
-              className="flex items-center gap-1 text-muted-foreground/35 hover:text-muted-foreground/70 transition-colors"
-            >
-              <ChevronDown className={cn("w-3 h-3 transition-transform", !layerOpen && "-rotate-90")} />
-            </button>
-          </div>
-        </div>
-
-        {/* Expanded cards */}
-        {layerOpen && (
-          <div className="px-6 pb-3 grid grid-cols-dashboard-5 gap-1.5">
-            {layers.map((l) => (
-              <button
-                key={l.name}
-                onClick={() => navigate(l.to)}
-                className={cn(
-                  "group relative flex flex-col gap-1.5 px-2.5 py-2.5 rounded-lg border text-left transition-all",
-                  "hover:-translate-y-px hover:shadow-lg active:translate-y-0",
-                  "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/60",
-                  l.ready
-                    ? "border-emerald-400/30 bg-gradient-to-br from-emerald-400/[0.07] to-emerald-400/[0.02] hover:border-emerald-400/55 hover:from-emerald-400/[0.10] shadow-emerald-400/5"
-                    : "border-border/35 bg-white/[0.015] hover:border-border/55 hover:bg-white/[0.04]"
-                )}
-              >
-                {/* Icon + badge */}
-                <div className="flex items-center justify-between gap-1">
-                  <l.Icon className={cn(
-                    "w-3 h-3 transition-colors",
-                    l.ready ? "text-emerald-400/75 group-hover:text-emerald-400" : "text-muted-foreground/35"
-                  )} />
-                  <span className={cn(
-                    "text-[8px] font-bold uppercase tracking-wide border px-1 py-px rounded leading-none",
-                    l.ready
-                      ? "text-emerald-300 border-emerald-400/35 bg-emerald-400/12"
-                      : "text-amber-300/65 border-amber-400/22 bg-amber-400/[0.07]"
-                  )}>
-                    {l.ready ? "Ready" : "Pending"}
-                  </span>
-                </div>
-                {/* Name + count */}
-                <div className="min-w-0">
-                  <div className="text-[11px] font-semibold text-foreground leading-tight truncate">{l.name}</div>
-                  <div className="text-[9px] text-muted-foreground/55 mt-0.5 tabular-nums">
-                    <span className="font-semibold text-foreground/60">{l.count}</span>{" "}{l.unit}
-                  </div>
-                </div>
-                <ChevronRight className={cn(
-                  "absolute right-2 bottom-2.5 w-2.5 h-2.5 transition-all",
-                  "text-muted-foreground/15 group-hover:text-foreground/50 group-hover:translate-x-0.5"
-                )} />
-              </button>
-            ))}
-          </div>
-        )}
+      {/* ── IAP Loop Command Chain ────────────────────────────────────── */}
+      <div className="px-6 py-2 border-b border-border/40 shrink-0">
+        <LoopCommandChain accountId={account.id} account={account} />
       </div>
 
       {/* ── Two-column body ────────────────────────────────────────── */}
@@ -459,6 +346,7 @@ export function AdAccountOverview() {
             )}
           </SectionCard>
         </div>
+
 
       </div>
 

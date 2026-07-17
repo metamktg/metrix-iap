@@ -77,6 +77,7 @@ Metrix IAP is an ad-performance analysis platform: agencies connect Meta ad acco
 - Live Meta connection (pilot): OAuth via Meta Graph v23.0, `ads_read` scope only. Tokens AES-256-GCM encrypted (`TOKEN_ENCRYPTION_KEY`); OAuth state HMAC-signed (`SESSION_SECRET`, 15-min expiry). Report pulls insert as `running`, flip to `success` only after all rows commit (partial rows deleted on failure). Once a live connection exists, demo/seed integration panels are hidden — live and demo data never mix.
 - In-app Strategy/Briefs generation: `POST /api/metrix/accounts/:id/generate/{strategy,briefs}` (202 + `run_id`, background job) via `generationEngine.ts` — claude-sonnet-4-6 through the Replit AI integration, evidence packs from real Supabase analysis rows, zod validation + one repair retry, hallucinated refs dropped. Generated rows (`source='generated'`) fully replace imported rows for that kind (never merged); same running/success/error honesty pattern; only one running run per account+kind.
 - Generated reports (`workspace_reports`, Replit Postgres) store a full document snapshot at generate time so History/Exports reproduce it exactly; deletable from Report History (workspace-scoped).
+- The IAP Loop is execute-on-command, never automatic. Data ingestion (live Meta pulls, manual uploads) refreshes data but must never trigger a loop run; the interface only recommends the next runnable stage for the user to execute.
 
 ## Product
 
