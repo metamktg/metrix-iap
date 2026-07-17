@@ -9,7 +9,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getStrategyData, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import { resolveInlineVariableCodes } from "@/lib/variable-registry";
 import {
-  ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState,
+  ModuleHeader, ModuleScopeGate, PendingState,
   CrossLink, fmtUSD, fmtNum, FlowCrumb, useFromParam, LoopAction,
   RangeScopeBar, NoDataInRangeState, DetailReveal, deriveLabel, InfoTooltip,
 } from "../shared";

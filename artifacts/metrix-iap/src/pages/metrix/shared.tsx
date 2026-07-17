@@ -345,13 +345,6 @@ export function ModuleHeader({
   );
 }
 
-// ─── Scope banner (which ad account a module is reading) ──────────────
-// Collapsed — scope is now displayed inline in ModuleHeader's right slot.
-// Kept exported so existing imports compile without changes.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function ScopeBanner({ account: _account }: { account: AdAccount }) {
-  return null;
-}
 
 // ─── Date-range scope bar ─────────────────────────────────────────────
 // Standard strip under the scope banner: shows the active global range,

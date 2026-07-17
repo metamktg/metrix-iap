@@ -8,7 +8,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getOptimizationLoop, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import { RecommendationDeck, actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
 import {
-  ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile, CaveatNote,
+  ModuleHeader, ModuleScopeGate, PendingState, MetricTile, CaveatNote,
   RangeScopeBar, NoDataInRangeState, LoopAction,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
