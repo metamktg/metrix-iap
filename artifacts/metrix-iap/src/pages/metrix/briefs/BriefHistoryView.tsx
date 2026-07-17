@@ -54,7 +54,7 @@ export function BriefHistoryView() {
               <NoDataInRangeState what="brief history" />
             ) : (
             <>
-            <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="Total briefs" value={String(briefs.length)} />
               <MetricTile label="Drafts" value={String(drafts)} />
               <MetricTile label="Finalized" value={String(finalized)} sub={finalized === 0 ? "none finalized yet" : undefined} />

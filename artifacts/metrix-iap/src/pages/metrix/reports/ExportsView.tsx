@@ -133,7 +133,7 @@ export function ExportsView() {
 
             <div className="px-6 py-5 space-y-5 max-w-3xl">
               <SectionCard title="Available formats" desc="Click a format to download">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-dashboard-3-sm gap-3">
                   {rb.export_formats.map((f) => {
                     const key = `fmt:${f}`;
                     return (

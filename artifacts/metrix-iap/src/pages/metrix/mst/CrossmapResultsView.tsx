@@ -87,7 +87,7 @@ export function CrossmapResultsView() {
               />
             ) : (
             <>
-            <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="Planned cells" value={fmtNum(planned)} />
               <MetricTile label="Cells with data" value={fmtNum(ran.length)} sub={`${coveragePct.toFixed(0)}% matrix coverage`} />
               <MetricTile label="Crossmapped spend" value={fmtUSD(totalSpend, 0)} />

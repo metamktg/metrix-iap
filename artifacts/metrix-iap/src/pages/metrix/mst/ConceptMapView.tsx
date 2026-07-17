@@ -96,14 +96,14 @@ export function ConceptMapView() {
               <NoDataInRangeState what="concept data" />
             ) : (
             <>
-            <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="Concepts" value={String(groups.length)} />
               <MetricTile label="Creative cells" value={String(new Set(rowsInRange.map((r) => r.cell_id)).size)} />
               <MetricTile label="Strategy pillars" value={String(pillars.length)} />
               <MetricTile label="Concepts feeding pillars" value={String(linkedConcepts)} />
             </div>
 
-            <div className="px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-3 max-w-5xl">
+            <div className="px-6 py-5 grid grid-cols-dashboard-2 gap-3 max-w-5xl">
               {groups.map((g) => {
                 const linked = pillarsForGroup(g);
                 return (

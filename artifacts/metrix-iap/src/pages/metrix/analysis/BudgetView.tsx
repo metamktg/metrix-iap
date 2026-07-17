@@ -80,7 +80,7 @@ export function BudgetView() {
               <NoDataInRangeState what="budget data" />
             ) : (
             <>
-            <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="Total spend" value={fmtUSD(summary.total_spend_usd, 0)} />
               <MetricTile label="Impressions" value={fmtNum(summary.total_impressions)} />
               <MetricTile label="Link clicks" value={fmtNum(summary.total_link_clicks)} />
@@ -98,7 +98,7 @@ export function BudgetView() {
                 {eventRows.length === 0 ? (
                   <PendingState title="No events selected" message="Select at least one result event above." />
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-dashboard-3 gap-3">
                     {eventRows.map(({ event, totals }) => (
                       <div key={event} className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
                         <p className="text-[11px] font-semibold text-foreground mb-2">{eventLabel(event)}</p>

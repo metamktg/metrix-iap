@@ -222,7 +222,7 @@ export function ReportHistoryView() {
               account={acct}
             />
 
-            <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-3 gap-3 max-w-3xl">
+            <div className="px-6 pt-5 grid grid-cols-dashboard-3 gap-3 max-w-3xl">
               <MetricTile label="Reports" value={fmtNum(history.length)} />
               <MetricTile label="Exported" value={fmtNum(exported)} />
               <MetricTile label="Drafts" value={fmtNum(history.length - exported)} />

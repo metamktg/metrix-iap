@@ -111,7 +111,7 @@ export function HypothesisQueueView() {
               <NoDataInRangeState what="hypothesis data" />
             ) : (
             <>
-            <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="In queue" value={String(hyps.length)} />
               <MetricTile label="Ready for briefs" value={String(ready.length)} />
               <MetricTile label="Validation required" value={String(validating.length)} />
@@ -159,7 +159,7 @@ export function HypothesisQueueView() {
                             </span>
                           </div>
                           {facts.length > 0 && (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2.5 mt-3 pt-3 border-t border-border/20">
+                            <div className="grid grid-cols-dashboard-2 gap-x-4 gap-y-2.5 mt-3 pt-3 border-t border-border/20">
                               {facts.map((f) => (
                                 <HypFact key={f.label} label={f.label} value={f.value} Icon={f.Icon} />
                               ))}

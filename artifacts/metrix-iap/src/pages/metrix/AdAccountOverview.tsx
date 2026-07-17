@@ -328,7 +328,7 @@ export function AdAccountOverview() {
             title="Current focus"
             desc="Active sprint · top priority"
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-dashboard-2 gap-3">
               <div className="rounded-xl border border-purple-400/20 bg-purple-400/[0.03] p-4 hover:border-purple-400/30 transition-colors">
                 <div className="flex items-center gap-1.5 mb-2">
                   <Grid3x3 className="w-3.5 h-3.5 text-purple-300/80" />
@@ -374,7 +374,7 @@ export function AdAccountOverview() {
 
           {/* Results by event */}
           <SectionCard title="Results by event" desc="Conversion volume by event">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="grid grid-cols-dashboard-4-sm gap-2">
               {events.map(([key, e]) => (
                 <div key={key} className="rounded-lg border border-border/40 bg-white/[0.02] px-3 py-2.5">
                   <div className="text-[10px] font-semibold text-foreground/70 leading-tight mb-1.5 truncate">{eventLabel(key)}</div>
@@ -390,7 +390,7 @@ export function AdAccountOverview() {
 
           {/* Core controls */}
           <SectionCard title="Core controls" desc="Control creative per funnel stage" table="core_reanalysis_read">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-dashboard-2 gap-3">
               <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/[0.03] p-4 hover:border-emerald-400/30 transition-colors">
                 <div className="flex items-center gap-1.5 mb-2">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-400/80" />

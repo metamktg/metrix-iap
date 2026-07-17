@@ -123,7 +123,7 @@ export function BriefBuilderView() {
               <NoDataInRangeState what="draft briefs" />
             ) : (
             <>
-            <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="Draft briefs" value={String(briefs.length)} />
               <MetricTile label="Pillars covered" value={String(pillarsCovered)} sub={`of ${strategy?.message_pillars.length ?? 0} message pillars`} />
               <MetricTile label="Static" value={String(byFormat("static").length)} />
@@ -162,7 +162,7 @@ export function BriefBuilderView() {
                   )}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-dashboard-2 gap-3">
                   {shown.map((b) => (
                     <button
                       key={b.id}

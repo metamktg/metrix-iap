@@ -102,7 +102,7 @@ export function CreativeScanView() {
               <CaveatNote text={mst.render_policy} />
 
               {tab === "library" && (
-                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+                <div className="grid grid-cols-dashboard-4-xl gap-3">
                   {library.map((c) => (
                     <CreativeCard
                       key={c.cell_id}

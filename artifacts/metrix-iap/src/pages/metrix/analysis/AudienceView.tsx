@@ -132,7 +132,7 @@ export function AudienceView() {
                 <NoDataInRangeState what="audience data" />
               ) : (
               <>
-              <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
                 <MetricTile label="Segments" value={fmtNum(entries.length)} />
                 <MetricTile label="Signal spend" value={fmtUSD(totalSpend, 0)} />
                 <MetricTile label={term.Plural} value={fmtNum(totalResults)} />

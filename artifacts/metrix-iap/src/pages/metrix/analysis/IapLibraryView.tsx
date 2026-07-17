@@ -308,7 +308,7 @@ export function IapLibraryView() {
                 <div className="flex items-center justify-end mb-2">
                   <MetricPickerButton catalog={tileCatalog} selected={tileIds} onToggle={toggleTile} onMove={moveTile} onReset={resetTiles} />
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-dashboard-4 gap-3">
                   {tileIds.map((id) => {
                     const m = metricById(tileCatalog, id);
                     if (!m) return null;
@@ -449,7 +449,7 @@ export function IapLibraryView() {
                           {/* ── Performance cells ── */}
                           {totalCells > 0 && (
                             <>
-                              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                              <div className="grid grid-cols-dashboard-5-xl gap-3">
                                 {pagedCells.map((row) => (
                                   <div
                                     key={row.cell_id}
@@ -545,7 +545,7 @@ export function IapLibraryView() {
                               <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/40">
                                 Creative assets — no performance data yet ({creativeOnlyCellIds.length})
                               </p>
-                              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                              <div className="grid grid-cols-dashboard-5-xl gap-3">
                                 {creativeOnlyCellIds.map((cellId) => (
                                   <CreativeCard
                                     key={cellId}
@@ -571,7 +571,7 @@ export function IapLibraryView() {
                     <div>
                       <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Top checkout cells</h3>
                       {topCells.length ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                        <div className="grid grid-cols-dashboard-5-xl gap-3">
                           {uniqueCellRows(topCells).map((row) => (
                             <CreativeCard
                               key={row.cell_id}
@@ -620,7 +620,7 @@ export function IapLibraryView() {
                             DNA families in selection
                           </h3>
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+                        <div className="grid grid-cols-dashboard-4-xl gap-3">
                           {rollupDnaFamilies(variables).map((f) => (
                             <div
                               key={f.family}

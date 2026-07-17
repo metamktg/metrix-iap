@@ -117,7 +117,7 @@ export function AnalysisOverview() {
               <NoDataInRangeState what="analysis data" />
             ) : (
             <>
-            <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               {scoped ? (
                 <>
                   <MetricTile label="Spend (in range)" value={fmtUSD(scoped.spend, 0)} sub="concept flights overlapping range" />
@@ -140,7 +140,7 @@ export function AnalysisOverview() {
 
               {controls && (
                 <SectionCard title="Core control reads" desc="Current control concept per funnel depth" table="core_reanalysis_read">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-dashboard-2 gap-3">
                     <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
                       <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5">Primary control</div>
                       <p className="text-[13px] font-semibold text-foreground">{resolveConceptName(controls.primary_control)}</p>
@@ -192,7 +192,7 @@ export function AnalysisOverview() {
               )}
 
               <SectionCard title="Analysis modules" desc="Same data · different slices">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-dashboard-2 gap-3">
                   {subpages.map((s) => (
                     <div key={s.to} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2">
                       <div className="flex items-center gap-2">

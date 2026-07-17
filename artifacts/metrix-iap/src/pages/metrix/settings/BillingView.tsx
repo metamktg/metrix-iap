@@ -53,7 +53,7 @@ export function BillingView() {
         subtitle={`Workspace-wide · plan and payment for ${manager.name}.`}
       />
 
-      <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-3 gap-3 max-w-3xl">
+      <div className="px-6 pt-5 grid grid-cols-dashboard-3 gap-3 max-w-3xl">
         <MetricTile label="Plan" value={billing.plan} sub={`Billed ${billing.billing_cycle}`} />
         <MetricTile label="Price" value={`${fmtUSD(billing.price_usd_month, 0)}/mo`} />
         <MetricTile label="Renews" value={fmtDate(billing.renews_at)} sub={billing.payment_method} />

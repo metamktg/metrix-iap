@@ -164,7 +164,7 @@ function PlacementDetailDialog({ placement, v3Rows, c4eRows, accountRollup, onCl
 
         <div className="space-y-4">
           {/* Top-line with account-average benchmarks */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div className="grid grid-cols-dashboard-4-sm gap-2">
             {tiles.map(({ label, value, delta }) => (
               <div key={label} className="rounded-lg border border-border/40 bg-white/[0.02] px-3 py-2.5">
                 <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-0.5">{label}</div>
@@ -302,7 +302,7 @@ export function PlacementsView() {
                   <NoDataInRangeState what="placement data" />
                 ) : (
                   <>
-                    <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
                       <MetricTile label="Placements" value={fmtNum(pls.length)} />
                       <MetricTile label="Link clicks" value={fmtNum(totalClicks)} />
                       <MetricTile label="Purchases" value={fmtNum(totalPurchases)} />
@@ -343,7 +343,7 @@ export function PlacementsView() {
                 <NoDataInRangeState what="placement data" />
               ) : (
               <>
-              <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
                 <MetricTile label="Placements" value={fmtNum(rollup.length)} />
                 <MetricTile label="Placement spend" value={fmtUSD(totalSpend, 0)} />
                 <MetricTile label={term.Plural} value={fmtNum(totalResults)} />
@@ -413,7 +413,7 @@ export function PlacementsView() {
                                 </div>
                               )}
                             </div>
-                            <div className="flex-1 grid grid-cols-3 sm:grid-cols-5 gap-x-3 gap-y-1 min-w-0">
+                            <div className="flex-1 grid grid-cols-dashboard-5-kpi gap-x-3 gap-y-1 min-w-0">
                               <KpiStat label="Spend" value={fmtUSD(s.spend, 0)} highlight={activeMetric.id === "spend"} />
                               <KpiStat label={term.Plural} value={fmtNum(s.results)} highlight={activeMetric.id === "results"} />
                               <KpiStat label="CPA" value={s.cpa != null ? fmtUSD(s.cpa) : "—"} highlight={activeMetric.id === "cpa"} />

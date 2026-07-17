@@ -942,7 +942,7 @@ function TeamAccessViewInner() {
         </SectionCard>
 
         <SectionCard title="Roles" desc="Per-role visibility & permissions">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-dashboard-3 gap-3">
             {team.roles.map((r) => (
               <div key={r.id} className="rounded-lg border border-border/40 bg-white/[0.02] p-3.5">
                 <div className="text-[12px] font-semibold text-foreground capitalize">{r.label}</div>

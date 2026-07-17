@@ -129,7 +129,7 @@ export function ManagerOverview() {
 
         {/* Results by event */}
         <SectionCard title="Results by event" desc="Result volume by conversion event · all accounts">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-dashboard-3-sm gap-3">
             {events.map(([key, e]) => (
               <div key={key} className="rounded-lg border border-border/40 bg-white/[0.02] p-3.5">
                 <div className="flex items-center gap-1.5 mb-2">
@@ -148,7 +148,7 @@ export function ManagerOverview() {
 
         {/* Accounts */}
         <SectionCard title="Ad accounts" desc="Select an account to open it">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-dashboard-2 gap-3">
             {adAccounts.map((a) => {
               const configured = a.status === "configured";
               return (
@@ -192,7 +192,7 @@ export function ManagerOverview() {
           {data.recommendation_cards.length === 0 ? (
             <p className="text-[12px] text-muted-foreground/70 py-4 text-center">No account recommendations at the moment.</p>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <div className="grid grid-cols-dashboard-2-lg gap-3">
               {data.recommendation_cards.map((c) => (
                 <div key={c.id} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col">
                   <div className="flex items-center gap-1.5 flex-wrap mb-2">

@@ -297,7 +297,7 @@ export function PillarDetailSections({ pillar, profiles }: { pillar: MessagePill
   const icps = pillar.target_icps ?? [];
   if (sections.length === 0 && icps.length === 0) return null;
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+    <div className="grid grid-cols-dashboard-2 gap-3">
       {icps.length > 0 && (
         <div className="md:col-span-2">
           <div className="flex items-center gap-1.5 mb-1.5">
@@ -374,7 +374,7 @@ const RECO_STYLE: Record<string, string> = {
 
 export function VariableCombinationsGrid({ combinations }: { combinations: VariableCombination[] }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+    <div className="grid grid-cols-dashboard-3 gap-3">
       {combinations.map((c, i) => (
         <div key={`${c.combination}-${i}`} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2.5">
           <div className="flex items-start justify-between gap-2">
@@ -438,7 +438,7 @@ export function ScalingPlaybookLanes({ playbook }: { playbook: ScalingPlaybook }
   );
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-dashboard-playbook gap-3">
         {lanes.map(({ key, label, Icon, accent }) => (
           <div key={String(key)} className={cn("rounded-xl border p-3 flex flex-col gap-2", accent)}>
             <div className="flex items-center gap-1.5">

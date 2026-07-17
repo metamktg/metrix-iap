@@ -187,7 +187,7 @@ function IcpProfileCard({
               {theoryOpen ? "Hide profile detail" : "Profile detail"}
             </button>
             {theoryOpen && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-4 gap-y-2.5 mt-2.5">
+              <div className="grid grid-cols-dashboard-2-lg gap-x-4 gap-y-2.5 mt-2.5">
                 <IcpFact label="Demographics" value={profile.demographic_foundation} Icon={Users} />
                 <IcpFact label="Psychographics" value={profile.psychographic_profile} Icon={Fingerprint} />
                 <IcpFact label="Behavioral signals" value={profile.behavioral_signals} Icon={Compass} />
@@ -321,7 +321,7 @@ export function AvatarsView() {
               <NoDataInRangeState what="avatar data" />
             ) : (
             <>
-            <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="Avatars" value={String(matrix?.columns.length ?? 0)} />
               <MetricTile label="Message angles" value={String(matrix?.cells.length ?? 0)} sub="matrix cells across avatars" />
               <MetricTile label="ICP profiles" value={String(icpProfiles.length)} sub="from the strategy map" />
@@ -335,7 +335,7 @@ export function AvatarsView() {
                   desc="Matrix audience columns · message angles per avatar"
                   table="historical_matrix_4x4"
                 >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-dashboard-2 gap-3">
                     {matrix.columns.map((col) => {
                       const cells = cellsFor(col.id);
                       const matched = matchedProfilesFor(col);

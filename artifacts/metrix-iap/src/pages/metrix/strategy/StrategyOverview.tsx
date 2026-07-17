@@ -123,7 +123,7 @@ export function StrategyOverview() {
               <NoDataInRangeState what="strategy data" />
             ) : (
             <>
-            <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="Message pillars" value={fmtNum(pillars.length)} />
               <MetricTile label="Active hypotheses" value={fmtNum(hypotheses.length)} />
               <MetricTile label="In testing" value={fmtNum(testing)} />
@@ -132,7 +132,7 @@ export function StrategyOverview() {
 
             <div className="px-6 py-5 space-y-4 max-w-5xl">
               <SectionCard title="Message pillars" desc="Validated message directions" table="message_pillars">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-dashboard-3 gap-3">
                   {pillars.map((p, i) => {
                     const t = splitTitle(p.label);
                     return (
@@ -177,7 +177,7 @@ export function StrategyOverview() {
               )}
 
               <SectionCard title="Strategy modules" desc="Same strategy · different angles">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-dashboard-3 gap-3">
                   {subpages.map((s) => (
                     <div key={s.to} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2">
                       <div className="flex items-center gap-2">
