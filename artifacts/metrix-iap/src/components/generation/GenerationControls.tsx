@@ -33,6 +33,13 @@ export function useGenerationRun(accountId: string | null, kind: GenerationKind)
   const { toast } = useToast();
   const [polling, setPolling] = useState(false);
   const settledRunIds = useRef<Set<string>>(new Set());
+  // Double-tap guard: firingRef blocks a second mutate() call synchronously
+  // (before any re-render); firingState drives the isRunning value so the
+  // button disables in the very next render triggered by setFiring(true).
+  // Without this, a rapid double-tap fires two API requests because
+  // mutation.isPending only flips after the async mutation starts.
+  const firingRef = useRef(false);
+  const [firing, setFiring] = useState(false);
 
   const latestQuery = useGetLatestGenerationRun(accountId ?? "", kind, {
     query: {
@@ -77,16 +84,26 @@ export function useGenerationRun(accountId: string | null, kind: GenerationKind)
 
   const start = () => {
     if (!accountId) return;
+    // Guard against rapid double-taps: firingRef blocks the second call
+    // synchronously (before any re-render); setFiring(true) triggers a
+    // re-render so isRunning is true before mutation.isPending catches up.
+    if (firingRef.current) return;
+    firingRef.current = true;
+    setFiring(true);
     mutation.mutate(
       { accountId },
       {
         onSuccess: () => {
+          firingRef.current = false;
+          setFiring(false);
           setPolling(true);
           void queryClient.invalidateQueries({
             queryKey: getGetLatestGenerationRunQueryKey(accountId, kind),
           });
         },
         onError: (err: unknown) => {
+          firingRef.current = false;
+          setFiring(false);
           const message =
             err instanceof ApiError
               ? ((err.data as { message?: string } | null)?.message ?? err.message)
@@ -103,7 +120,7 @@ export function useGenerationRun(accountId: string | null, kind: GenerationKind)
     );
   };
 
-  const isRunning = mutation.isPending || polling || run?.status === "running";
+  const isRunning = firing || mutation.isPending || polling || run?.status === "running";
 
   // ── Elapsed-time counter ─────────────────────────────────────────────────
   // Starts ticking when isRunning becomes true; resets when it becomes false.
