@@ -153,8 +153,7 @@ export function NewReportView() {
         if (!rb) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="New Report" />
-              <ScopeBanner account={acct} />
+              <ModuleHeader section={SECTION} title="New Report" account={acct} />
               <PendingState title="Report Builder pending" message="No report template is available for this account yet." icon={FileText} />
             </div>
           );
@@ -177,8 +176,8 @@ export function NewReportView() {
               title="New Report"
               subtitle="Client-ready report · from analysis & strategy"
               table="reports"
+              account={acct}
             />
-            <ScopeBanner account={acct} />
             <ModuleTabs tabs={tabs} active={tab} onChange={setTab} />
 
             <div className="px-6 py-5 space-y-5 max-w-4xl">

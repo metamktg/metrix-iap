@@ -164,8 +164,8 @@ export function AdAccountOverview() {
         title={account.name}
         subtitle="Layer readiness · account focus · optimization loop"
         right={<span className="text-[10px] font-mono text-emerald-400/70 uppercase tracking-widest">Connected</span>}
+        account={account}
       />
-      <ScopeBanner account={account} />
 
       {/* ── Layer Status ─────────────────────────────────────────────── */}
       <div className="border-b border-border/40 shrink-0">

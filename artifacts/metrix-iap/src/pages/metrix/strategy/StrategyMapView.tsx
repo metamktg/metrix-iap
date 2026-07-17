@@ -67,8 +67,7 @@ export function StrategyMapView() {
         if (!strategy || strategy.message_pillars.length === 0) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Strategy Map" tabs="strategy" />
-              <ScopeBanner account={acct} />
+              <ModuleHeader section={SECTION} title="Strategy Map" tabs="strategy" account={acct} />
               <PendingState title="No strategy map" message="The map draws from message pillars — none exist for this account yet." icon={Map} />
             </div>
           );
@@ -106,8 +105,8 @@ export function StrategyMapView() {
               subtitle="Evidence → pillar → hypothesis"
               table="message_pillars, active_hypotheses, performance_by_cell"
               tabs="strategy"
+              account={acct}
             />
-            <ScopeBanner account={acct} />
             <FlowCrumb {...fp} />
             <RangeScopeBar grainNote="Pillar evidence aggregates each cell's full flight window — this import has no daily grain." />
 

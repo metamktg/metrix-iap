@@ -93,6 +93,7 @@ export function BriefBuilderView() {
               title="Brief Builder"
               subtitle="Briefs from message pillars · by asset format"
               table="draft_briefs, message_pillars"
+              account={acct}
               right={
                 <div className="flex items-center gap-2">
                   <ProvenanceBadge provenance={bb?.provenance} />
@@ -107,7 +108,6 @@ export function BriefBuilderView() {
                 </div>
               }
             />
-            <ScopeBanner account={acct} />
             <FlowCrumb {...fp} />
             {focus && !briefs.some((b) => b.id === focus) && (
               <StaleFocusNotice label="brief" />

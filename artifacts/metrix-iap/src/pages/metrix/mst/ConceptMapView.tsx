@@ -52,8 +52,7 @@ export function ConceptMapView() {
         if (!a || a.performance_by_cell.length === 0) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Concept Map" />
-              <ScopeBanner account={acct} />
+              <ModuleHeader section={SECTION} title="Concept Map" account={acct} />
               <PendingState title="No concepts yet" message="Concepts appear once cell-level analysis is available." icon={Network} />
             </div>
           );
@@ -89,8 +88,8 @@ export function ConceptMapView() {
               title="Concept Map"
               subtitle="Concepts mapped to pillars"
               table="performance_by_cell, message_pillars"
+              account={acct}
             />
-            <ScopeBanner account={acct} />
             <RangeScopeBar grainNote="Concept groups aggregate each cell's full flight window — this import has no daily grain." />
 
             {!rangeHasData ? (

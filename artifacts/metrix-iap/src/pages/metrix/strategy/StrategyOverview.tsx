@@ -40,8 +40,7 @@ export function StrategyOverview() {
         if (!strategy || strategy.message_pillars.length === 0) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Strategy Overview" tabs="strategy" />
-              <ScopeBanner account={acct} />
+              <ModuleHeader section={SECTION} title="Strategy Overview" tabs="strategy" account={acct} />
               <PendingState title="No strategy yet" message="Strategy pillars derive from validated analysis reads." icon={Compass} />
               <div className="px-6 pb-6 space-y-3 max-w-lg mx-auto w-full text-center">
                 <GenerationErrorNote message={generation.lastError} />
@@ -98,6 +97,7 @@ export function StrategyOverview() {
               subtitle="Pillars · hypotheses · next moves"
               table="message_pillars, active_hypotheses"
               tabs="strategy"
+              account={acct}
               right={
                 <div className="flex items-center gap-2">
                   <ProvenanceBadge provenance={strategy.provenance} />
@@ -112,7 +112,6 @@ export function StrategyOverview() {
                 </div>
               }
             />
-            <ScopeBanner account={acct} />
             <RangeScopeBar grainNote="Strategy derives from the account's full flight window — this import has no daily grain." />
             {generation.lastError && (
               <div className="px-6 pt-4">

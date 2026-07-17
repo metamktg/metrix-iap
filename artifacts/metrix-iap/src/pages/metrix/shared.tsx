@@ -303,6 +303,7 @@ export function ModuleHeader({
   table,
   right,
   tabs,
+  account,
 }: {
   section: string;
   title: string;
@@ -310,19 +311,30 @@ export function ModuleHeader({
   table?: string;
   right?: React.ReactNode;
   tabs?: "analysis" | "strategy";
+  account?: AdAccount;
 }) {
+  const sectionLabel = section.split(" · ")[0];
   return (
     <div className="shrink-0">
       <div className={cn("px-6 py-4", !tabs && "border-b border-border/40")}>
         <div className="flex items-start gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 mb-1">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/80">{section}</span>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/80">{sectionLabel}</span>
               {subtitle && <InfoTooltip content={subtitle} />}
             </div>
             <h1 className="text-[21px] font-bold text-foreground leading-tight tracking-[-0.02em]">{title}</h1>
           </div>
           <div className="shrink-0 pt-0.5 flex items-center gap-2">
+            {account && (
+              <span
+                data-testid="banner-scope"
+                className="hidden sm:inline-flex items-center gap-1.5 text-[11px] text-muted-foreground/65"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/70 shrink-0" />
+                <span className="font-medium text-foreground/80 truncate max-w-[140px]">{account.name}</span>
+              </span>
+            )}
             {right}
             {table && <DataSourceBadge table={table} collapsible />}
           </div>
@@ -334,17 +346,11 @@ export function ModuleHeader({
 }
 
 // ─── Scope banner (which ad account a module is reading) ──────────────
-
-// Compact one-line scope strip: names the ad account every module is
-// scoped to. Kept to a single label-first line — no prose.
-export function ScopeBanner({ account }: { account: AdAccount }) {
-  return (
-    <div className="flex items-center gap-2 px-6 py-1.5 border-b border-border/20 bg-white/[0.01]" data-testid="banner-scope">
-      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/70 shrink-0" />
-      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Scope</span>
-      <span className="text-[11px] font-medium text-foreground/85 truncate">{account.name}</span>
-    </div>
-  );
+// Collapsed — scope is now displayed inline in ModuleHeader's right slot.
+// Kept exported so existing imports compile without changes.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function ScopeBanner({ account: _account }: { account: AdAccount }) {
+  return null;
 }
 
 // ─── Date-range scope bar ─────────────────────────────────────────────
@@ -355,6 +361,7 @@ export function RangeScopeBar({ grainNote }: { grainNote?: string }) {
   const { range, bounds, preset, compare, compareRange } = useDateRange();
   if (!range || !bounds) return null;
   const narrowed = preset !== "all";
+  if (!narrowed && !compare) return null;
   return (
     <div className="flex items-center gap-2 flex-wrap px-6 py-2 border-b border-border/30 bg-white/[0.01]">
       <CalendarRange className="w-3 h-3 text-muted-foreground/60 shrink-0" />
@@ -702,7 +709,7 @@ export function PendingState({ title, message, icon: Icon = Clock, action }: { t
 // ─── Metric tile ──────────────────────────────────────────────────────
 // When the tile is placed inside a `group` button, border lifts on hover.
 
-export function MetricTile({ label, value, sub }: { label: string; value: string; sub?: string }) {
+export function MetricTile({ label, value, sub }: { label: React.ReactNode; value: string; sub?: string }) {
   return (
     <div className="mx-card p-4 transition-colors group-hover:border-primary/30 group-hover:bg-primary/[0.02]">
       <div className="relative">

@@ -46,8 +46,8 @@ export function BriefHistoryView() {
               title="History"
               subtitle="All generated briefs · current status"
               table="draft_briefs"
+              account={acct}
             />
-            <ScopeBanner account={acct} />
             <RangeScopeBar grainNote="Brief history derives from the account's full flight window — this import has no daily grain." />
 
             {!rangeHasData ? (

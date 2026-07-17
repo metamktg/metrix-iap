@@ -239,8 +239,7 @@ export function AccountSettingsView() {
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
-      <ModuleHeader section={SECTION} title="Account" subtitle={`Configuration for ${account.name} under ${manager.name}.`} />
-      <ScopeBanner account={account} />
+      <ModuleHeader section={SECTION} title="Account" subtitle={`Configuration for ${account.name} under ${manager.name}.`} account={account} />
 
       <div className="px-6 py-5 space-y-5 max-w-3xl">
         {/* Session */}

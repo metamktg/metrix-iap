@@ -9,9 +9,9 @@ import {
   getAdAccount, getListenSignals, getCoreControls, getCampaignSummary,
 } from "@/lib/data/metrixSeedAdapter";
 import {
-  ModuleHeader, ScopeBanner, ConfidenceBadge, ModuleScopeGate,
+  ModuleHeader, ConfidenceBadge, ModuleScopeGate,
   PendingState, MetricTile, ImpactBadge, ScopeBadge, CrossLink,
-  RangeScopeBar, NoDataInRangeState, CaveatNote, deriveLabel,
+  RangeScopeBar, NoDataInRangeState, CaveatNote, deriveLabel, InfoTooltip,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
@@ -50,19 +50,26 @@ export function AlertsView() {
               title="Alerts"
               subtitle="High-impact signals · data caveats"
               table="signal_cards, data_caveats"
+              account={acct}
             />
-            <ScopeBanner account={acct} />
             <RangeScopeBar grainNote="Alerts derive from the account's full flight window — this import has no daily grain." />
 
             {!rangeHasData ? (
               <NoDataInRangeState what="alerts" />
             ) : (
             <>
-            <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
-              <MetricTile label="Active alerts" value={String(total)} />
+            <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-3 gap-3">
+              <MetricTile
+                label={
+                  <span className="inline-flex items-center gap-1">
+                    Active alerts
+                    <InfoTooltip content="Alerts never auto-apply changes — all suggestions require a manual action to implement." />
+                  </span>
+                }
+                value={String(total)}
+              />
               <MetricTile label="High-impact signals" value={String(highSignals.length)} />
               <MetricTile label="Data caveats" value={String(caveats.length)} />
-              <MetricTile label="Auto-actions" value="0" sub="alerts never auto-apply changes" />
             </div>
 
             <div className="px-6 py-5 max-w-3xl space-y-6">
@@ -87,7 +94,7 @@ export function AlertsView() {
                               <ConfidenceBadge value={s.confidence} />
                             </div>
                             <p className="text-[13px] font-semibold text-foreground leading-snug"><TokenizedConceptText text={s.title} /></p>
-                            <p className="text-[12px] text-muted-foreground/70 mt-1 leading-snug line-clamp-1"><TokenizedConceptText text={deriveLabel(s.rationale, 90)} /></p>
+                            <p className="text-[12px] text-muted-foreground/70 mt-1 leading-snug line-clamp-1"><span>{deriveLabel(s.rationale, 90)}</span></p>
                           </button>
                         ))}
                       </div>

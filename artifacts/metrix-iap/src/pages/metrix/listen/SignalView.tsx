@@ -8,7 +8,7 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getListenSignals } from "@/lib/data/metrixSeedAdapter";
 import {
-  ModuleHeader, ScopeBanner, ConfidenceBadge, ModuleTabs, ModuleScopeGate,
+  ModuleHeader, ConfidenceBadge, ModuleTabs, ModuleScopeGate,
   PendingState, MetricTile, ImpactBadge, ScopeBadge, CrossLink, useFocusParam,
   RangeScopeBar, NoDataInRangeState, StaleFocusNotice, LoopAction, deriveLabel,
 } from "../shared";
@@ -62,8 +62,8 @@ export function SignalView() {
               title="Signal"
               subtitle="Source-backed signals · latest analysis"
               table="signal_cards"
+              account={acct}
             />
-            <ScopeBanner account={acct} />
             {focus && !signals.some((s) => s.id === focus) && (
               <StaleFocusNotice label="signal" />
             )}
@@ -108,10 +108,10 @@ export function SignalView() {
                         <ConfidenceBadge value={s.confidence} />
                       </div>
                       <p className="text-[13px] font-semibold text-foreground leading-snug"><TokenizedConceptText text={s.title} /></p>
-                      <p className="text-[12px] text-muted-foreground/70 mt-1 leading-snug line-clamp-1"><TokenizedConceptText text={deriveLabel(s.rationale, 90)} /></p>
+                      <p className="text-[12px] text-muted-foreground/70 mt-1 leading-snug line-clamp-1"><span>{deriveLabel(s.rationale, 90)}</span></p>
                       <div className="flex items-start gap-1.5 mt-3 pt-3 border-t border-border/20">
                         <ArrowRight className="w-3.5 h-3.5 text-primary/60 shrink-0 mt-0.5" />
-                        <p className="text-[11px] text-foreground/75 leading-snug line-clamp-1"><TokenizedConceptText text={deriveLabel(s.recommended_action, 80)} /></p>
+                        <p className="text-[11px] text-foreground/75 leading-snug line-clamp-1"><span>{deriveLabel(s.recommended_action, 80)}</span></p>
                       </div>
                     </button>
                   ))}

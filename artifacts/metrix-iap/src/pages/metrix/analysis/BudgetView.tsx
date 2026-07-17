@@ -42,8 +42,7 @@ export function BudgetView() {
         if (!summary) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Budget" tabs="analysis" />
-              <ScopeBanner account={acct} />
+              <ModuleHeader section={SECTION} title="Budget" tabs="analysis" account={acct} />
               <PendingState title="No budget data" message="Campaign spend totals appear once analysis is available." icon={Wallet} />
             </div>
           );
@@ -72,8 +71,8 @@ export function BudgetView() {
               subtitle="Spend allocation · by metric selection"
               table="campaign_summary, performance_by_cell"
               tabs="analysis"
+              account={acct}
             />
-            <ScopeBanner account={acct} />
             <MetricSelectionBar events={allEvents} isSelected={isSelected} onToggle={toggle} />
             <RangeScopeBar grainNote="Budget figures aggregate the account's full flight window — this import has no daily grain." />
 

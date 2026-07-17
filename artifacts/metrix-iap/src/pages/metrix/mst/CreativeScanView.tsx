@@ -36,8 +36,7 @@ export function CreativeScanView() {
         if (!mst || mst.status !== "active" || !mst.local_book2_library?.length) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Creative Scan" />
-              <ScopeBanner account={acct} />
+              <ModuleHeader section={SECTION} title="Creative Scan" account={acct} />
               <PendingState title="No scanned creatives" message={mst?.render_policy ?? "The creative scan populates once the local library is mapped."} icon={Library} />
             </div>
           );
@@ -77,8 +76,8 @@ export function CreativeScanView() {
               title="Creative Scan"
               subtitle="Scanned creative library · variable library"
               table="local_book2_library"
+              account={acct}
             />
-            <ScopeBanner account={acct} />
             <ModuleTabs
               tabs={[
                 { id: "library", label: "Concept library", count: library.length, Icon: Library },
