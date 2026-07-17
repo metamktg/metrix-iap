@@ -8,7 +8,7 @@ import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import {
   ShieldCheck, KeyRound, Radio, BarChart3, Layers, FileText, Grid3x3,
-  Zap, ArrowRight, ChevronDown, ChevronRight, ChevronLeft, ClipboardList,
+  Zap, ArrowRight, ChevronDown, ChevronRight,
 } from "lucide-react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -27,8 +27,6 @@ import { buildMetricCatalog, metricSourceFromCampaignSummary, metricById } from 
 import { useMetricSelection } from "@/hooks/useMetricSelection";
 import { MetricPickerButton } from "@/components/creative/MetricPicker";
 import { MetricDiagnosticModal } from "@/components/creative/MetricDiagnosticModal";
-import { TaskTrayPanel } from "@/components/deck/TaskTrayPanel";
-
 const IMPACT_RANK: Record<string, number> = { high: 3, medium: 2, low: 1, setup: 0 };
 
 // ── Main export ─────────────────────────────────────────────────────────
@@ -140,7 +138,6 @@ export function AdAccountOverview() {
   const { selected: selectedMetricIds, toggle, move, reset } = useMetricSelection(availableMetricIds);
   const [openMetricId, setOpenMetricId] = useState<string | null>(null);
   const [expandedMetricId, setExpandedMetricId] = useState<string | null>(null);
-  const [trayOpen, setTrayOpen] = useState(true);
   const [layerOpen, setLayerOpen] = useState(true);
   const openMetric = openMetricId ? metricById(metricCatalog, openMetricId) : null;
 
@@ -454,23 +451,6 @@ export function AdAccountOverview() {
           </SectionCard>
         </div>
 
-        {/* Right: Collapsible Task Tray */}
-        {trayOpen ? (
-          <div className="w-[232px] shrink-0 border-l border-border/40 flex flex-col min-h-0">
-            <TaskTrayPanel scopeId={account.id} cards={deckCards} onCollapse={() => setTrayOpen(false)} />
-          </div>
-        ) : (
-          <div className="w-7 shrink-0 border-l border-border/40 flex flex-col items-center py-3 gap-3">
-            <button
-              onClick={() => setTrayOpen(true)}
-              aria-label="Expand task tray"
-              className="w-5 h-5 flex items-center justify-center rounded text-muted-foreground/40 hover:text-muted-foreground/80 hover:bg-white/[0.06] transition-colors"
-            >
-              <ChevronLeft className="w-3 h-3" />
-            </button>
-            <ClipboardList className="w-3 h-3 text-muted-foreground/25" />
-          </div>
-        )}
       </div>
 
       <MetricDiagnosticModal

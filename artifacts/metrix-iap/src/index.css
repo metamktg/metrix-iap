@@ -121,8 +121,8 @@
   /* ── AppShell panel geometry — single-file reference for all shell dims ── */
   --sidebar-expanded: 216px;
   --sidebar-collapsed: 56px;
-  --tray-open: 264px;
-  --tray-closed: 32px;
+  --tray-open: 308px;
+  --tray-closed: 46px;
   --topbar-h: 44px;
 
   --mx-ease: cubic-bezier(0.2, 0.8, 0.2, 1);

@@ -46,7 +46,6 @@ import { rollupDnaFamilies } from "@/lib/creative-dna";
 import { VariableChip, familyLabel } from "../strategy/strategyShared";
 import type { CreativeCardStats } from "@/components/creative/CreativeCard";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
-import { TaskTrayPanel } from "@/components/deck/TaskTrayPanel";
 import { actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
 import type { SegmentId } from "@/lib/segment-analytics";
 import type { CellPerformanceRow, DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
@@ -681,7 +680,6 @@ export function IapLibraryView() {
                   kicker={`Creative cell · ${detail.cell_id}`}
                   title={detail.book2_concept_name}
                   onClose={() => setDetail(null)}
-                  taskTray={adAccountId ? <TaskTrayPanel scopeId={adAccountId} cards={deckCards} compact /> : undefined}
                   footer={(() => {
                     // Contextual strategy navigation: find the pillar/hypothesis
                     // that cites this cell so the link lands in exactly the right place.
