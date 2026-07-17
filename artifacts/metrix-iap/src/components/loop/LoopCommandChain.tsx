@@ -495,6 +495,7 @@ function CommandHub({
   analysisRunning,
   strategyRunning,
   briefsRunning,
+  analysisElapsedSeconds,
   strategyElapsedSeconds,
   briefsElapsedSeconds,
   strategyIsStale,
@@ -524,6 +525,7 @@ function CommandHub({
   analysisRunning: boolean;
   strategyRunning: boolean;
   briefsRunning: boolean;
+  analysisElapsedSeconds: number;
   strategyElapsedSeconds: number;
   briefsElapsedSeconds: number;
   strategyIsStale: boolean;
@@ -565,9 +567,9 @@ function CommandHub({
     || (stage === "strategy" && strategyRunning)
     || (stage === "briefs"   && briefsRunning);
 
-  const elapsedSeconds = stage === "strategy" ? strategyElapsedSeconds
-    : stage === "briefs" ? briefsElapsedSeconds
-    : 0;
+  const elapsedSeconds = stage === "analysis" ? analysisElapsedSeconds
+    : stage === "strategy" ? strategyElapsedSeconds
+    : briefsElapsedSeconds;
 
   const isComplete = stage === "analysis" ? analysisComplete
     : stage === "strategy" ? strategyComplete
@@ -875,6 +877,27 @@ export function LoopCommandChain({
   const strategyRunning = strategyGen.isRunning;
   const briefsRunning   = briefsGen.isRunning;
 
+  // ── Analysis elapsed-time counter ──────────────────────────────────────
+  // Mirrors the pattern in useGenerationRun: starts ticking when
+  // analysisRunning becomes true, resets when it becomes false.
+  const [analysisElapsedSeconds, setAnalysisElapsedSeconds] = useState(0);
+  const analysisRunningStartRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!analysisRunning) {
+      analysisRunningStartRef.current = null;
+      setAnalysisElapsedSeconds(0);
+      return;
+    }
+    if (analysisRunningStartRef.current === null) {
+      analysisRunningStartRef.current = Date.now();
+    }
+    const iv = setInterval(() => {
+      setAnalysisElapsedSeconds(Math.floor((Date.now() - analysisRunningStartRef.current!) / 1000));
+    }, 1000);
+    return () => clearInterval(iv);
+  }, [analysisRunning]);
+
   const strategy     = iap?.strategy ?? null;
   const briefBuilder = iap?.brief_builder ?? null;
   const loopStatus   = iap?.loop_status ?? null;
@@ -939,6 +962,7 @@ export function LoopCommandChain({
             isNext={!analysisComplete && !analysisRunning}
             isLocked={false}
             isActive={activeStage === "analysis"}
+            elapsedSeconds={analysisElapsedSeconds}
             onClick={() => toggle("analysis")}
           />
 
@@ -989,6 +1013,7 @@ export function LoopCommandChain({
           analysisRunning={analysisRunning}
           strategyRunning={strategyRunning}
           briefsRunning={briefsRunning}
+          analysisElapsedSeconds={analysisElapsedSeconds}
           strategyElapsedSeconds={strategyGen.elapsedSeconds}
           briefsElapsedSeconds={briefsGen.elapsedSeconds}
           strategyIsStale={strategyIsStale}
