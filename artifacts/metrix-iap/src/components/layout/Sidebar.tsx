@@ -120,16 +120,48 @@ function navigate(href: string, e: React.MouseEvent) {
 
 // ─── Tooltip (collapsed-mode hover label) ─────────────────────────────
 
-function CollapseTooltip({ label, sub }: { label: string; sub?: string }) {
+function CollapseTooltip({
+  label,
+  teaser,
+  isPlaceholder,
+}: {
+  label: string;
+  teaser: string;
+  isPlaceholder?: boolean;
+}) {
   return (
     <div className={cn(
       "absolute left-full top-1/2 -translate-y-1/2 ml-2 z-[100]",
       "pointer-events-none select-none",
       "bg-[hsl(222_61%_10%)] border border-border/50 rounded-md shadow-xl",
-      "px-2.5 py-1.5 whitespace-nowrap",
+      "px-2.5 py-1.5 max-w-[220px]",
     )}>
-      <div className="text-[12px] font-semibold text-foreground leading-tight">{label}</div>
-      {sub && <div className="text-[9px] text-muted-foreground/60 mt-0.5">{sub}</div>}
+      {isPlaceholder && (
+        <span className="inline-block text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/55 border border-border/35 px-1 py-0.5 rounded leading-none mb-1.5">
+          Coming Soon
+        </span>
+      )}
+      <div className="text-[12px] font-semibold text-foreground leading-tight whitespace-nowrap">{label}</div>
+      <div className="text-[10px] text-muted-foreground/65 mt-1 leading-snug whitespace-normal">{teaser}</div>
+    </div>
+  );
+}
+
+// ─── Tooltip for expanded placeholder items ────────────────────────────
+
+function ExpandedPlaceholderTooltip({ label, teaser }: { label: string; teaser: string }) {
+  return (
+    <div className={cn(
+      "absolute left-2 right-2 top-full mt-0.5 z-[100]",
+      "pointer-events-none select-none",
+      "bg-[hsl(222_61%_10%)] border border-border/50 rounded-md shadow-xl",
+      "px-2.5 py-2",
+    )}>
+      <span className="inline-block text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/55 border border-border/35 px-1 py-0.5 rounded leading-none mb-1.5">
+        Coming Soon
+      </span>
+      <div className="text-[11px] font-semibold text-foreground leading-tight">{label}</div>
+      <div className="text-[10px] text-muted-foreground/65 mt-1 leading-snug">{teaser}</div>
     </div>
   );
 }
@@ -181,7 +213,13 @@ function CollapsedItem({
             </span>
           )}
         </a>
-        {hovered && <CollapseTooltip label={section.label} sub={section.number} />}
+        {hovered && section.placeholder && section.teaser && (
+          <CollapseTooltip
+            label={section.label}
+            teaser={section.teaser}
+            isPlaceholder
+          />
+        )}
       </li>
       {/* Section group divider */}
       {COLLAPSED_DIVIDER_AFTER.has(section.id) && (
@@ -198,21 +236,29 @@ function CollapsedItem({
 function ChildRow({ child, count }: { child: NavChild; count: number | null }) {
   const [location] = useLocation();
   const active = isChildActive(child.to, location);
+  const [hovered, setHovered] = useState(false);
 
   return (
-    <li className="relative">
+    <li
+      className="relative"
+      onMouseEnter={child.placeholder ? () => setHovered(true) : undefined}
+      onMouseLeave={child.placeholder ? () => setHovered(false) : undefined}
+    >
       {active && (
         <span className="absolute left-0 top-[5px] bottom-[5px] w-0.5 bg-primary rounded-full" />
       )}
       <a
-        href={child.to}
-        onClick={(e) => navigate(child.to, e)}
+        href={child.placeholder ? undefined : child.to}
+        onClick={child.placeholder ? (e) => e.preventDefault() : (e) => navigate(child.to, e)}
         aria-current={active ? "page" : undefined}
+        aria-disabled={child.placeholder || undefined}
+        tabIndex={child.placeholder ? -1 : undefined}
         className={cn(
           "flex items-center gap-1.5 pl-3 pr-2 h-8 rounded-r text-[12px] transition-all",
           active
             ? "font-semibold text-foreground bg-primary/8"
-            : "text-foreground/65 hover:text-foreground hover:bg-[rgba(20,55,110,0.45)]"
+            : "text-foreground/65 hover:text-foreground hover:bg-[rgba(20,55,110,0.45)]",
+          child.placeholder && "opacity-40 cursor-not-allowed pointer-events-none"
         )}
       >
         <span className="flex-1 truncate leading-tight">{child.label}</span>
@@ -228,6 +274,9 @@ function ChildRow({ child, count }: { child: NavChild; count: number | null }) {
           <NavBadge count={count} badgeKey={child.badgeKey} />
         )}
       </a>
+      {hovered && child.teaser && (
+        <ExpandedPlaceholderTooltip label={child.label} teaser={child.teaser} />
+      )}
     </li>
   );
 }
@@ -339,9 +388,14 @@ function LeafSection({
   const [location] = useLocation();
   const active = isSectionActive(section, location);
   const to = section.to!;
+  const [hovered, setHovered] = useState(false);
 
   return (
-    <li className="relative">
+    <li
+      className="relative"
+      onMouseEnter={section.placeholder ? () => setHovered(true) : undefined}
+      onMouseLeave={section.placeholder ? () => setHovered(false) : undefined}
+    >
       {active && (
         <span className="absolute left-0 top-[6px] bottom-[6px] w-0.5 bg-primary rounded-full" />
       )}
@@ -379,6 +433,9 @@ function LeafSection({
           />
         )}
       </a>
+      {hovered && section.teaser && (
+        <ExpandedPlaceholderTooltip label={section.label} teaser={section.teaser} />
+      )}
     </li>
   );
 }
