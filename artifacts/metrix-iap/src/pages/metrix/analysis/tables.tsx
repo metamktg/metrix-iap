@@ -17,6 +17,13 @@ export function Th({ children, right }: { children: React.ReactNode; right?: boo
 }
 
 // ─── Column sorting ───────────────────────────────────────────────────
+// Sort state is intentionally ephemeral (component memory only).
+// It resets on page reload and on navigation away from the table.
+// This is a deliberate UX decision: analysis tables always open in their
+// default (data) order so users see a consistent baseline on every visit.
+// Do NOT lift this state to URL params or sessionStorage — stale sort
+// state across different accounts/date ranges would silently confuse the
+// displayed data.
 
 type SortDir = "asc" | "desc";
 type ColumnAccessor<Row> = { get: (r: Row) => number | string | null; defaultDir: SortDir };
