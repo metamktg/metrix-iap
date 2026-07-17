@@ -1,0 +1,36 @@
+Pull the branch claude/metrix-end-to-end-workflow-h7utq2 (PR #3) and verify it end to end
+against the live environment. Do not skip steps; report actual output for each.
+
+1. CONFIRM THE PUSH
+   - git fetch origin claude/metrix-end-to-end-workflow-h7utq2 && git checkout claude/metrix-end-to-end-workflow-h7utq2
+   - Confirm the latest commit is "Make manual-account analysis populate the full IAP experience end to end"
+     and that it touches artifacts/api-server/src/lib/analysisEngine.ts, generationEngine.ts, iapCsvSpec.ts.
+
+2. RUN THE GATES
+   - pnpm install, then pnpm run typecheck (must be clean)
+   - pnpm --filter @workspace/metrix-iap run test  → expect 19/19 files, 346/346 tests passing
+   - pnpm --filter @workspace/api-server run test src/lib/__tests__/analysisEngineSignals.test.ts
+     → expect 4/4 passing (this is the new end-to-end engine regression test)
+
+3. LIVE SMOKE TEST (restart the API server workflow first — dev does a full rebuild, not HMR)
+   a. Sign in and create a new manual ad account via Add Ad Account → "Upload manual reports".
+   b. Download both sample CSVs from the "Required columns" panels and re-upload them unmodified.
+      They MUST validate cleanly (this proves the sample-CSV header-quoting fix).
+   c. Stage a creative file and map it to the ad name "UGC_Testimonial_v1" from the sample data.
+   d. Run analysis with the "all" date range. Expected: run succeeds, window 2026-06-01 → 2026-06-01,
+      account flips to configured.
+   e. VERIFY THE CORE FIX: open Analysis → Audience and Analysis → Placements for this account.
+      Both must now show populated segment/placement rows from the uploaded CSVs — NOT
+      "No demographic signal" / "No placement signal". This was the main defect.
+   f. Open the account's creative/library surfaces and confirm the mapped creative renders.
+   g. Press "Generate strategy from analysis". Expected: pillars cite real numbers from the
+      uploaded data (spend/results/CTR per segment, placement, and ad name) — not generic filler.
+   h. Press "Generate briefs from strategy". With no real ICPs on a fresh manual account, expect
+      3–6 general-mode briefs (honest fallback, by design — not a 4×4 matrix).
+   i. Generate a report from Reports → New Report and confirm it snapshots the populated data.
+   j. GUARD CHECK: attempt POST /api/metrix/accounts/{bookster-or-littledata-id}/analysis-runs.
+      Expected: 422 "Manual analysis is only available for manual-report accounts." Confirm the
+      imported accounts' data is untouched.
+
+4. Report a pass/fail table for steps a–j with screenshots of the populated Audience and
+   Placements views. If any step fails, stop and report the exact error — do not patch around it.
