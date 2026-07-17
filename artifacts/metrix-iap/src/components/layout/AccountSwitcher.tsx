@@ -17,7 +17,7 @@ const STATUS_DOT: Record<string, string> = {
   unconfigured: "bg-muted-foreground/60",
 };
 
-export function AccountSwitcher() {
+export function AccountSwitcher({ compact = false }: { compact?: boolean }) {
   const { manager, adAccounts, selectedAccountType, activeAdAccountId, selectManager, selectAdAccount } = useAccount();
   const [open, setOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
@@ -31,29 +31,55 @@ export function AccountSwitcher() {
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <button
-          className={cn(
-            "w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md",
-            "hover:bg-white/[0.05] transition-colors text-left",
-            "border border-transparent hover:border-border/30",
-            "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
-          )}
-          aria-label={`Current account: ${triggerLabel}`}
-        >
-          <div className="shrink-0 w-6 h-6 rounded border border-primary/20 bg-primary/10 flex items-center justify-center">
-            {isManager ? <Building2 className="w-3 h-3 text-primary" /> : <Briefcase className="w-3 h-3 text-primary" />}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[12px] font-medium text-foreground truncate leading-tight">{triggerLabel}</span>
-              {!isManager && active && (
-                <span className={cn("shrink-0 w-1.5 h-1.5 rounded-full", STATUS_DOT[active.status] ?? "bg-muted-foreground/60")} />
-              )}
+        {compact ? (
+          /* Collapsed sidebar: icon-only button — shows active account type */
+          <button
+            className={cn(
+              "w-10 h-10 mx-auto rounded-lg flex items-center justify-center relative",
+              "hover:bg-primary/10 transition-colors",
+              "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+            )}
+            aria-label={`Switch account — currently: ${triggerLabel}`}
+            title={triggerLabel}
+          >
+            <div className="w-6 h-6 rounded border border-primary/20 bg-primary/10 flex items-center justify-center">
+              {isManager ? <Building2 className="w-3 h-3 text-primary" /> : <Briefcase className="w-3 h-3 text-primary" />}
             </div>
-            <div className="text-[10px] text-muted-foreground/70 leading-tight truncate">{triggerSub}</div>
-          </div>
-          <ChevronsUpDown className="shrink-0 w-3 h-3 text-muted-foreground/60" />
-        </button>
+            {/* Status dot for ad accounts */}
+            {!isManager && active && (
+              <span
+                className={cn(
+                  "absolute bottom-1.5 right-1.5 w-1.5 h-1.5 rounded-full ring-1 ring-background",
+                  STATUS_DOT[active.status] ?? "bg-muted-foreground/60"
+                )}
+              />
+            )}
+          </button>
+        ) : (
+          <button
+            className={cn(
+              "w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md",
+              "hover:bg-white/[0.05] transition-colors text-left",
+              "border border-transparent hover:border-border/30",
+              "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+            )}
+            aria-label={`Current account: ${triggerLabel}`}
+          >
+            <div className="shrink-0 w-6 h-6 rounded border border-primary/20 bg-primary/10 flex items-center justify-center">
+              {isManager ? <Building2 className="w-3 h-3 text-primary" /> : <Briefcase className="w-3 h-3 text-primary" />}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[12px] font-medium text-foreground truncate leading-tight">{triggerLabel}</span>
+                {!isManager && active && (
+                  <span className={cn("shrink-0 w-1.5 h-1.5 rounded-full", STATUS_DOT[active.status] ?? "bg-muted-foreground/60")} />
+                )}
+              </div>
+              <div className="text-[10px] text-muted-foreground/70 leading-tight truncate">{triggerSub}</div>
+            </div>
+            <ChevronsUpDown className="shrink-0 w-3 h-3 text-muted-foreground/60" />
+          </button>
+        )}
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="start" sideOffset={4} className="w-[212px] bg-[hsl(222_61%_7%)] border-border/50 shadow-2xl p-1 z-50">

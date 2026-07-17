@@ -8,7 +8,7 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getBriefBuilder, getStrategyData, getAnalysisData, getMST, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
 import {
-  ModuleHeader, ScopeBanner, ModuleTabs, ModuleScopeGate, PendingState,
+  ModuleHeader, ModuleTabs, ModuleScopeGate, PendingState,
   MetricTile, CaveatNote, CrossLink, useFocusParam, FlowCrumb, useFromParam,
   RangeScopeBar, NoDataInRangeState, StaleFocusNotice, deriveLabel,
 } from "../shared";
@@ -93,6 +93,7 @@ export function BriefBuilderView() {
               title="Brief Builder"
               subtitle="Briefs from message pillars · by asset format"
               table="draft_briefs, message_pillars"
+              account={acct}
               right={
                 <div className="flex items-center gap-2">
                   <ProvenanceBadge provenance={bb?.provenance} />
@@ -107,7 +108,6 @@ export function BriefBuilderView() {
                 </div>
               }
             />
-            <ScopeBanner account={acct} />
             <FlowCrumb {...fp} />
             {focus && !briefs.some((b) => b.id === focus) && (
               <StaleFocusNotice label="brief" />
@@ -123,7 +123,7 @@ export function BriefBuilderView() {
               <NoDataInRangeState what="draft briefs" />
             ) : (
             <>
-            <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="Draft briefs" value={String(briefs.length)} />
               <MetricTile label="Pillars covered" value={String(pillarsCovered)} sub={`of ${strategy?.message_pillars.length ?? 0} message pillars`} />
               <MetricTile label="Static" value={String(byFormat("static").length)} />
@@ -162,7 +162,7 @@ export function BriefBuilderView() {
                   )}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-dashboard-2 gap-3">
                   {shown.map((b) => (
                     <button
                       key={b.id}

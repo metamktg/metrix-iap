@@ -138,7 +138,7 @@ export function NotificationsView() {
 
       <div className="px-6 py-5 space-y-5 max-w-3xl">
         <SectionCard title="Channels" desc="Delivery channels · click to toggle">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-dashboard-2 gap-3">
             {channels.map((c) => (
               <div key={c.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
                 {c.id === "email" ? <Mail className="w-4 h-4 text-muted-foreground/70 shrink-0" /> : <MonitorSmartphone className="w-4 h-4 text-muted-foreground/70 shrink-0" />}

@@ -13,4 +13,6 @@ export interface AuthLoginInput {
      * @maxLength 200
      */
   password: string;
+  /** When true, the session cookie is set with a 30-day Max-Age. When false (default), the cookie is a session cookie cleared when the browser closes. */
+  rememberMe?: boolean;
 }

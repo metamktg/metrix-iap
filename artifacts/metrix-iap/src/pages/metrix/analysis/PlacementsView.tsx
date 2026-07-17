@@ -11,7 +11,7 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import {
-  ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
+  ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CaveatNote, fmtUSD, fmtNum, fmtPct, resultTerm,
   RangeScopeBar, NoDataInRangeState,
 } from "../shared";
@@ -164,7 +164,7 @@ function PlacementDetailDialog({ placement, v3Rows, c4eRows, accountRollup, onCl
 
         <div className="space-y-4">
           {/* Top-line with account-average benchmarks */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div className="grid grid-cols-dashboard-4-sm gap-2">
             {tiles.map(({ label, value, delta }) => (
               <div key={label} className="rounded-lg border border-border/40 bg-white/[0.02] px-3 py-2.5">
                 <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-0.5">{label}</div>
@@ -200,6 +200,7 @@ function ConversionTrackingSections({ cts }: { cts: ConversionTrackingSignal }) 
           desc={`Funnel actions attributed to the converting placement. ${windowLabel ?? ""}`.trim()}
           table="placement_performance (tracking_basis=conversion)"
         >
+          <CaveatNote text="Conversion-attributed rows — delivery spend not applicable for this tracking basis." />
           <ConversionFunnelTable rows={cts.placements.map((r) => ({ ...r, label: r.placement }))} labelHeader="Placement" />
         </SectionCard>
       )}
@@ -209,6 +210,7 @@ function ConversionTrackingSections({ cts }: { cts: ConversionTrackingSignal }) 
           desc="Funnel actions · by converting platform"
           table="platform_performance (tracking_basis=conversion)"
         >
+          <CaveatNote text="Conversion-attributed rows — delivery spend not applicable for this tracking basis." />
           <ConversionFunnelTable rows={cts.platforms.map((r) => ({ ...r, label: r.platform }))} labelHeader="Platform" />
         </SectionCard>
       )}
@@ -218,6 +220,7 @@ function ConversionTrackingSections({ cts }: { cts: ConversionTrackingSignal }) 
           desc="Funnel actions · by converting device"
           table="device_performance (tracking_basis=conversion)"
         >
+          <CaveatNote text="Conversion-attributed rows — delivery spend not applicable for this tracking basis." />
           <ConversionFunnelTable rows={cts.devices.map((r) => ({ ...r, label: r.device }))} labelHeader="Device" />
         </SectionCard>
       )}
@@ -270,8 +273,7 @@ export function PlacementsView() {
           if (!hasDelivery && !hasConversion) {
             return (
               <div className="flex-1 flex flex-col">
-                <ModuleHeader section={SECTION} title="Placements" tabs="analysis" />
-                <ScopeBanner account={acct} />
+                <ModuleHeader section={SECTION} title="Placements" tabs="analysis" account={acct} />
                 <PendingState title="No placement signal" message="Placement reads appear once delivery data exists for this account." icon={LayoutGrid} />
               </div>
             );
@@ -293,14 +295,14 @@ export function PlacementsView() {
                   subtitle="Conversion-attributed placement signal · no delivery-based runs yet"
                   table="placement_performance, platform_performance, device_performance"
                   tabs="analysis"
+                  account={acct}
                 />
-                <ScopeBanner account={acct} />
                 <RangeScopeBar grainNote="Conversion signal aggregates the export's full window — this import has no daily grain." />
                 {!rangeHasData ? (
                   <NoDataInRangeState what="placement data" />
                 ) : (
                   <>
-                    <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
                       <MetricTile label="Placements" value={fmtNum(pls.length)} />
                       <MetricTile label="Link clicks" value={fmtNum(totalClicks)} />
                       <MetricTile label="Purchases" value={fmtNum(totalPurchases)} />
@@ -333,15 +335,15 @@ export function PlacementsView() {
                 subtitle="Delivery by placement · re-rank by KPI · click for breakdown"
                 table="v3_placement_signal, c4e_placement_signal"
                 tabs="analysis"
+                account={acct}
               />
-              <ScopeBanner account={acct} />
               <RangeScopeBar grainNote="Placement signal aggregates each run's full flight window — this import has no daily grain." />
 
               {!rangeHasData ? (
                 <NoDataInRangeState what="placement data" />
               ) : (
               <>
-              <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
                 <MetricTile label="Placements" value={fmtNum(rollup.length)} />
                 <MetricTile label="Placement spend" value={fmtUSD(totalSpend, 0)} />
                 <MetricTile label={term.Plural} value={fmtNum(totalResults)} />
@@ -360,6 +362,7 @@ export function PlacementsView() {
                 <SectionCard
                   title="Spend by placement"
                   desc="V3 + C4E combined · spend share vs result share · longer green bar = over-delivers"
+                  right={<RankSortBar metrics={rankMetrics} activeId={activeMetric.id} onSelect={select} />}
                 >
                   {rollup.length > 1 && (
                     <div className="mb-4">
@@ -373,8 +376,6 @@ export function PlacementsView() {
                       />
                     </div>
                   )}
-
-                  <RankSortBar metrics={rankMetrics} activeId={activeMetric.id} onSelect={select} className="mb-3" />
 
                   <div className="space-y-1.5">
                     {ranked.map((s, idx) => {
@@ -412,7 +413,7 @@ export function PlacementsView() {
                                 </div>
                               )}
                             </div>
-                            <div className="flex-1 grid grid-cols-3 sm:grid-cols-5 gap-x-3 gap-y-1 min-w-0">
+                            <div className="flex-1 grid grid-cols-dashboard-5-kpi gap-x-3 gap-y-1 min-w-0">
                               <KpiStat label="Spend" value={fmtUSD(s.spend, 0)} highlight={activeMetric.id === "spend"} />
                               <KpiStat label={term.Plural} value={fmtNum(s.results)} highlight={activeMetric.id === "results"} />
                               <KpiStat label="CPA" value={s.cpa != null ? fmtUSD(s.cpa) : "—"} highlight={activeMetric.id === "cpa"} />

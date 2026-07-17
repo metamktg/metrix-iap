@@ -8,7 +8,7 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getStrategyData, getBriefBuilder } from "@/lib/data/metrixSeedAdapter";
 import {
-  ModuleHeader, ScopeBanner, ModuleTabs, ModuleScopeGate, PendingState,
+  ModuleHeader, ModuleTabs, ModuleScopeGate, PendingState,
   MetricTile, CrossLink, useFocusParam, FlowCrumb, useFromParam, LoopAction,
   RangeScopeBar, NoDataInRangeState, StaleFocusNotice, DetailReveal, deriveLabel,
 } from "../shared";
@@ -74,8 +74,7 @@ export function HypothesisQueueView() {
         if (!s) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Hypothesis Queue" tabs="strategy" />
-              <ScopeBanner account={acct} />
+              <ModuleHeader section={SECTION} title="Hypothesis Queue" tabs="strategy" account={acct} />
               <PendingState title="Strategy pending" message="No strategy has been derived for this account yet." />
             </div>
           );
@@ -100,8 +99,8 @@ export function HypothesisQueueView() {
               subtitle="Queued for validation or briefing"
               table="active_hypotheses, message_pillars"
               tabs="strategy"
+              account={acct}
             />
-            <ScopeBanner account={acct} />
             <FlowCrumb {...fp} />
             {focus && !s.active_hypotheses.some((h) => h.id === focus) && (
               <StaleFocusNotice label="hypothesis" />
@@ -112,7 +111,7 @@ export function HypothesisQueueView() {
               <NoDataInRangeState what="hypothesis data" />
             ) : (
             <>
-            <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="In queue" value={String(hyps.length)} />
               <MetricTile label="Ready for briefs" value={String(ready.length)} />
               <MetricTile label="Validation required" value={String(validating.length)} />
@@ -160,7 +159,7 @@ export function HypothesisQueueView() {
                             </span>
                           </div>
                           {facts.length > 0 && (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2.5 mt-3 pt-3 border-t border-border/20">
+                            <div className="grid grid-cols-dashboard-2 gap-x-4 gap-y-2.5 mt-3 pt-3 border-t border-border/20">
                               {facts.map((f) => (
                                 <HypFact key={f.label} label={f.label} value={f.value} Icon={f.Icon} />
                               ))}

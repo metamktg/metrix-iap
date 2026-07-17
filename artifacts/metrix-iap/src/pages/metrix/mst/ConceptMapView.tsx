@@ -8,7 +8,7 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAnalysisData, getStrategyData, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
 import {
-  ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
+  ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   CrossLink, fmtUSD, fmtNum, eventLabel,
 } from "../shared";
 import { VariableCodeChips } from "../analysis/tables";
@@ -52,8 +52,7 @@ export function ConceptMapView() {
         if (!a || a.performance_by_cell.length === 0) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Concept Map" />
-              <ScopeBanner account={acct} />
+              <ModuleHeader section={SECTION} title="Concept Map" account={acct} />
               <PendingState title="No concepts yet" message="Concepts appear once cell-level analysis is available." icon={Network} />
             </div>
           );
@@ -89,22 +88,22 @@ export function ConceptMapView() {
               title="Concept Map"
               subtitle="Concepts mapped to pillars"
               table="performance_by_cell, message_pillars"
+              account={acct}
             />
-            <ScopeBanner account={acct} />
             <RangeScopeBar grainNote="Concept groups aggregate each cell's full flight window — this import has no daily grain." />
 
             {!rangeHasData ? (
               <NoDataInRangeState what="concept data" />
             ) : (
             <>
-            <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="Concepts" value={String(groups.length)} />
               <MetricTile label="Creative cells" value={String(new Set(rowsInRange.map((r) => r.cell_id)).size)} />
               <MetricTile label="Strategy pillars" value={String(pillars.length)} />
               <MetricTile label="Concepts feeding pillars" value={String(linkedConcepts)} />
             </div>
 
-            <div className="px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-3 max-w-5xl">
+            <div className="px-6 py-5 grid grid-cols-dashboard-2 gap-3 max-w-5xl">
               {groups.map((g) => {
                 const linked = pillarsForGroup(g);
                 return (

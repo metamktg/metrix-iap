@@ -27,7 +27,7 @@ import {
   LIBRARY_METRIC_STORAGE_KEY, LIBRARY_DEFAULT_METRIC_IDS,
 } from "@/lib/data/metricsCatalog";
 import {
-  ModuleHeader, ScopeBanner, ModuleTabs, ModuleScopeGate, PendingState, FlowCrumb, LoopAction, useFromParam,
+  ModuleHeader, ModuleTabs, ModuleScopeGate, PendingState, FlowCrumb, LoopAction, useFromParam,
   MetricTile, CaveatNote, MetricSelectionBar, CrossLink, useFocusParam,
   readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel,
   RangeScopeBar, NoDataInRangeState, StaleFocusNotice,
@@ -46,7 +46,6 @@ import { rollupDnaFamilies } from "@/lib/creative-dna";
 import { VariableChip, familyLabel } from "../strategy/strategyShared";
 import type { CreativeCardStats } from "@/components/creative/CreativeCard";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
-import { TaskTrayPanel } from "@/components/deck/TaskTrayPanel";
 import { actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
 import type { SegmentId } from "@/lib/segment-analytics";
 import type { CellPerformanceRow, DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
@@ -212,8 +211,7 @@ export function IapLibraryView() {
           if (!a) {
             return (
               <div className="flex-1 flex flex-col">
-                <ModuleHeader section={SECTION} title="IAP Library" tabs="analysis" />
-                <ScopeBanner account={acct} />
+                <ModuleHeader section={SECTION} title="IAP Library" tabs="analysis" account={acct} />
                 <PendingState title="Analysis pending" message="No analysis data available for this account yet." />
               </div>
             );
@@ -293,8 +291,8 @@ export function IapLibraryView() {
                 subtitle="Cell & variable performance · by metric selection"
                 table="performance_by_cell, v3_variable_performance"
                 tabs="analysis"
+                account={acct}
               />
-              <ScopeBanner account={acct} />
               {focus && !a.performance_by_cell.some((r) => r.cell_id === focus) && (
                 <StaleFocusNotice label="creative cell" />
               )}
@@ -309,7 +307,7 @@ export function IapLibraryView() {
                 <div className="flex items-center justify-end mb-2">
                   <MetricPickerButton catalog={tileCatalog} selected={tileIds} onToggle={toggleTile} onMove={moveTile} onReset={resetTiles} />
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-dashboard-4 gap-3">
                   {tileIds.map((id) => {
                     const m = metricById(tileCatalog, id);
                     if (!m) return null;
@@ -450,7 +448,7 @@ export function IapLibraryView() {
                           {/* ── Performance cells ── */}
                           {totalCells > 0 && (
                             <>
-                              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                              <div className="grid grid-cols-dashboard-5-xl gap-3">
                                 {pagedCells.map((row) => (
                                   <div
                                     key={row.cell_id}
@@ -546,7 +544,7 @@ export function IapLibraryView() {
                               <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/40">
                                 Creative assets — no performance data yet ({creativeOnlyCellIds.length})
                               </p>
-                              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                              <div className="grid grid-cols-dashboard-5-xl gap-3">
                                 {creativeOnlyCellIds.map((cellId) => (
                                   <CreativeCard
                                     key={cellId}
@@ -572,7 +570,7 @@ export function IapLibraryView() {
                     <div>
                       <h3 className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Top checkout cells</h3>
                       {topCells.length ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                        <div className="grid grid-cols-dashboard-5-xl gap-3">
                           {uniqueCellRows(topCells).map((row) => (
                             <CreativeCard
                               key={row.cell_id}
@@ -621,7 +619,7 @@ export function IapLibraryView() {
                             DNA families in selection
                           </h3>
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+                        <div className="grid grid-cols-dashboard-4-xl gap-3">
                           {rollupDnaFamilies(variables).map((f) => (
                             <div
                               key={f.family}
@@ -682,7 +680,6 @@ export function IapLibraryView() {
                   kicker={`Creative cell · ${detail.cell_id}`}
                   title={detail.book2_concept_name}
                   onClose={() => setDetail(null)}
-                  taskTray={adAccountId ? <TaskTrayPanel scopeId={adAccountId} cards={deckCards} compact /> : undefined}
                   footer={(() => {
                     // Contextual strategy navigation: find the pillar/hypothesis
                     // that cites this cell so the link lands in exactly the right place.

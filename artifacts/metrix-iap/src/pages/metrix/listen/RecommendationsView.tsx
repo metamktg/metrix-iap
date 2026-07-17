@@ -8,7 +8,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getOptimizationLoop, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import { RecommendationDeck, actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
 import {
-  ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile, CaveatNote,
+  ModuleHeader, ModuleScopeGate, PendingState, MetricTile, CaveatNote,
   RangeScopeBar, NoDataInRangeState, LoopAction,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
@@ -68,15 +68,15 @@ export function RecommendationsView() {
               title="Recommendations"
               subtitle="Optimization loop · approval adds a manual task"
               table="recommendation_cards"
+              account={acct}
             />
-            <ScopeBanner account={acct} />
             <RangeScopeBar grainNote="Recommendations derive from the account's full flight window — this import has no daily grain." />
 
             {!rangeHasData ? (
               <NoDataInRangeState what="recommendations" />
             ) : (
             <>
-            <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="Recommendations" value={String(cards.length)} />
               <MetricTile label="High impact" value={String(highCount)} />
               <MetricTile label="Scopes" value={String(scopes.length)} sub={scopes.join(" · ") || "—"} />

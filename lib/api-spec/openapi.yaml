@@ -2949,6 +2949,10 @@ components:
           type: string
           minLength: 1
           maxLength: 200
+        rememberMe:
+          type: boolean
+          default: false
+          description: When true, the session cookie is set with a 30-day Max-Age. When false (default), the cookie is a session cookie cleared when the browser closes.
       required:
         - email
         - password

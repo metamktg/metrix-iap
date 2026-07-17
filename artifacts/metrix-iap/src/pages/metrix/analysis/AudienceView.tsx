@@ -10,7 +10,7 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import {
-  ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
+  ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, fmtUSD, fmtNum, fmtPct, resultTerm,
   RangeScopeBar, NoDataInRangeState,
 } from "../shared";
@@ -105,8 +105,7 @@ export function AudienceView() {
           if (rows.length === 0) {
             return (
               <div className="flex-1 flex flex-col">
-                <ModuleHeader section={SECTION} title="Audience" tabs="analysis" />
-                <ScopeBanner account={acct} />
+                <ModuleHeader section={SECTION} title="Audience" tabs="analysis" account={acct} />
                 <PendingState title="No demographic signal" message="The audience read appears once demographic result data exists." icon={Users} />
               </div>
             );
@@ -122,18 +121,18 @@ export function AudienceView() {
               <ModuleHeader
                 section={SECTION}
                 title="Audience"
+                account={acct}
                 subtitle={`Who converts: the demographic ${term.singular} signal by age band and gender. Click any segment to see the messaging it responds to.`}
                 table="demographic_registration_signal"
                 tabs="analysis"
               />
-              <ScopeBanner account={acct} />
               <RangeScopeBar grainNote="Demographic signal aggregates each cell's full flight window — this import has no daily grain." />
 
               {!rangeHasData ? (
                 <NoDataInRangeState what="audience data" />
               ) : (
               <>
-              <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
                 <MetricTile label="Segments" value={fmtNum(entries.length)} />
                 <MetricTile label="Signal spend" value={fmtUSD(totalSpend, 0)} />
                 <MetricTile label={term.Plural} value={fmtNum(totalResults)} />
@@ -153,9 +152,8 @@ export function AudienceView() {
                   title="Segment performance"
                   desc="All cells · re-rank by KPI · click a segment for drivers"
                   table="demographic_registration_signal"
+                  right={<RankSortBar metrics={rankMetrics} activeId={activeMetric.id} onSelect={select} />}
                 >
-                  <RankSortBar metrics={rankMetrics} activeId={activeMetric.id} onSelect={select} className="mb-3" />
-
                   <div className="space-y-2">
                     {ranked.map((e, idx) => {
                       const v = activeMetric.value(e);

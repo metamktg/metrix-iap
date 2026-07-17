@@ -118,6 +118,13 @@
   --mx-shadow-blue: 0 0 28px rgba(0, 128, 255, 0.28);
   --mx-shadow-cyan: 0 0 36px rgba(22, 217, 255, 0.24);
 
+  /* ── AppShell panel geometry — single-file reference for all shell dims ── */
+  --sidebar-expanded: 216px;
+  --sidebar-collapsed: 56px;
+  --tray-open: 308px;
+  --tray-closed: 46px;
+  --topbar-h: 44px;
+
   --mx-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --mx-fast: 140ms var(--mx-ease);
   --mx-med: 220ms var(--mx-ease);
@@ -660,5 +667,106 @@
   /* Priority glow for gold elements */
   .priority-glow {
     box-shadow: 0 0 12px hsl(44 92% 63% / 0.3);
+  }
+
+  /* ── Dashboard grid tokens ─────────────────────────────────────────
+     Named grid-column utilities with baked-in responsive collapse.
+     Replaces ad-hoc grid-cols-N + md:grid-cols-N pairs so breakpoint
+     choices are a single-file edit rather than scattered at every call site.
+
+     CONVENTION: Use these tokens for all responsive metric-tile and content
+     card grids in artifacts/metrix-iap/src/pages/metrix/. Do NOT introduce
+     new ad-hoc "grid-cols-N md:grid-cols-M" pairs — add a token here instead.
+
+     Token map:
+       grid-cols-dashboard-5    →  3 cols (base) → 5 cols (≥ 1024px)
+       grid-cols-dashboard-4    →  2 cols (base) → 4 cols (≥ 768px)
+       grid-cols-dashboard-3    →  2 cols (base) → 3 cols (≥ 768px)
+       grid-cols-dashboard-2    →  1 col  (base) → 2 cols (≥ 640px)
+       grid-cols-dashboard-4-xl →  2 cols (base) → 3 cols (≥ 768px) → 4 cols (≥ 1280px)
+       grid-cols-dashboard-5-xl  →  2 cols (base) → 3 cols (≥ 640px) → 4 cols (≥ 1024px) → 5 cols (≥ 1280px)
+       grid-cols-dashboard-2-lg  →  1 col  (base) → 2 cols (≥ 1024px)
+       grid-cols-dashboard-3-sm  →  1 col  (base) → 3 cols (≥ 640px)
+       grid-cols-dashboard-4-sm  →  2 cols (base) → 4 cols (≥ 640px)
+       grid-cols-dashboard-5-kpi →  3 cols (base) → 5 cols (≥ 640px)  [compact KPI stat row]
+       grid-cols-dashboard-playbook → 1 col (base) → 2 cols (≥ 640px) → 5 cols (≥ 1024px)
+  */
+  .grid-cols-dashboard-5 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    @media (width >= 1024px) {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+  }
+  .grid-cols-dashboard-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    @media (width >= 768px) {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+  .grid-cols-dashboard-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    @media (width >= 768px) {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  .grid-cols-dashboard-2 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+    @media (width >= 640px) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  .grid-cols-dashboard-4-xl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    @media (width >= 768px) {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    @media (width >= 1280px) {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+  .grid-cols-dashboard-5-xl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    @media (width >= 640px) {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    @media (width >= 1024px) {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    @media (width >= 1280px) {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+  }
+  .grid-cols-dashboard-2-lg {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+    @media (width >= 1024px) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  .grid-cols-dashboard-3-sm {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+    @media (width >= 640px) {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  .grid-cols-dashboard-4-sm {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    @media (width >= 640px) {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+  .grid-cols-dashboard-5-kpi {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    @media (width >= 640px) {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+  }
+  .grid-cols-dashboard-playbook {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+    @media (width >= 640px) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    @media (width >= 1024px) {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
   }
 }

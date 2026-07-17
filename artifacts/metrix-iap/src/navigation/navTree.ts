@@ -38,6 +38,8 @@ export type NavChild = {
   badgeKey?: NavBadgeKey;
   dataSource?: string;
   placeholder?: boolean;
+  /** One-sentence teaser shown in tooltip when placeholder is true. */
+  teaser?: string;
 };
 
 export type NavSection = {
@@ -57,6 +59,8 @@ export type NavSection = {
   badgeKey?: NavBadgeKey;
   dataSource?: string;
   placeholder?: boolean;
+  /** One-sentence teaser shown in tooltip when placeholder is true. */
+  teaser?: string;
 };
 
 /** Route an expandable section header navigates to on click. */
@@ -255,7 +259,7 @@ export const navTree: NavSection[] = [
     icon: "Bot",
     to: "/app/agent",
     badgeKey: "agent",
-    placeholder: true,
+    teaser: "Your AI strategist — analyzes patterns, surfaces winning tests, and drafts briefs autonomously.",
   },
   {
     id: "settings",

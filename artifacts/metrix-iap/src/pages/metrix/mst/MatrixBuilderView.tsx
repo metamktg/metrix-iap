@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getMST, getAnalysisData, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, ScopeBanner, ModuleScopeGate, CaveatNote, PendingState, CrossLink, readableVariables, RangeScopeBar, NoDataInRangeState } from "../shared";
+import { ModuleHeader, ModuleScopeGate, CaveatNote, PendingState, CrossLink, readableVariables, RangeScopeBar, NoDataInRangeState } from "../shared";
 import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
 import { useMstRangeScope } from "@/lib/date-scope";
 import { TilePerformanceModal } from "@/components/creative/TilePerformanceModal";
@@ -101,8 +101,7 @@ export function MatrixBuilderView() {
         if (!mst || mst.status !== "active" || !mst.historical_matrix_4x4) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Matrix Builder" />
-              <ScopeBanner account={acct} />
+              <ModuleHeader section={SECTION} title="Matrix Builder" account={acct} />
               <PendingState title="No matrix available" message={mst?.render_policy ?? "The matrix becomes available once historical data or imports exist."} icon={Grid3x3} />
             </div>
           );
@@ -116,8 +115,8 @@ export function MatrixBuilderView() {
               title="Matrix Builder"
               subtitle="Historical concept × shared-variable matrix"
               table="historical_matrix_4x4"
+              account={acct}
             />
-            <ScopeBanner account={acct} />
             <RangeScopeBar grainNote="The matrix is a historical structure; tile pop-ups show each cell's full flight-window performance — this import has no daily grain." />
             {!rangeHasData || !mstInRange ? (
               <NoDataInRangeState

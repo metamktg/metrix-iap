@@ -7,7 +7,7 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getMST, getAnalysisData, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
 import {
-  ModuleHeader, ScopeBanner, ModuleScopeGate, CaveatNote, PendingState, MetricTile,
+  ModuleHeader, ModuleScopeGate, CaveatNote, PendingState, MetricTile,
   CrossLink, readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel,
   RangeScopeBar, NoDataInRangeState,
 } from "../shared";
@@ -43,8 +43,7 @@ export function CrossmapResultsView() {
         if (!mst || mst.status !== "active" || !matrix || !analysis) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Crossmap Results" />
-              <ScopeBanner account={acct} />
+              <ModuleHeader section={SECTION} title="Crossmap Results" account={acct} />
               <PendingState title="No crossmap yet" message={mst?.render_policy ?? "Crossmap results appear once the matrix and performance data both exist."} icon={GitMerge} />
             </div>
           );
@@ -73,8 +72,8 @@ export function CrossmapResultsView() {
               title="Crossmap Results"
               subtitle="Planned cells × actual delivery"
               table="historical_matrix_4x4, performance_by_cell"
+              account={acct}
             />
-            <ScopeBanner account={acct} />
             <RangeScopeBar grainNote="Crossmap joins planned cells to full flight-window performance — this import has no daily grain." />
 
             {!rangeHasData || !mstInRange ? (
@@ -88,7 +87,7 @@ export function CrossmapResultsView() {
               />
             ) : (
             <>
-            <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="Planned cells" value={fmtNum(planned)} />
               <MetricTile label="Cells with data" value={fmtNum(ran.length)} sub={`${coveragePct.toFixed(0)}% matrix coverage`} />
               <MetricTile label="Crossmapped spend" value={fmtUSD(totalSpend, 0)} />

@@ -112,15 +112,22 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
 
   const selectManager = useCallback(() => {
     save({ type: "manager", adAccountId: persisted.adAccountId });
-    navigate("/");
-  }, [save, navigate, persisted.adAccountId]);
+    if (location === "/app/account") {
+      navigate("/");
+    }
+  }, [save, navigate, persisted.adAccountId, location]);
 
   const selectAdAccount = useCallback(
     (id: string) => {
+      if (persisted.type === "ad_account" && persisted.adAccountId === id) {
+        return;
+      }
       save({ type: "ad_account", adAccountId: id });
-      navigate("/app/account");
+      if (persisted.type === "manager" && location === "/") {
+        navigate("/app/account");
+      }
     },
-    [save, navigate]
+    [save, navigate, persisted.type, persisted.adAccountId, location]
   );
 
   const setActiveAdAccountId = useCallback(

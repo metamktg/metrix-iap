@@ -6,7 +6,7 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getBriefBuilder, getStrategyData } from "@/lib/data/metrixSeedAdapter";
 import {
-  ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile, CrossLink,
+  ModuleHeader, ModuleScopeGate, PendingState, MetricTile, CrossLink,
   RangeScopeBar, NoDataInRangeState,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
@@ -46,15 +46,15 @@ export function BriefHistoryView() {
               title="History"
               subtitle="All generated briefs · current status"
               table="draft_briefs"
+              account={acct}
             />
-            <ScopeBanner account={acct} />
             <RangeScopeBar grainNote="Brief history derives from the account's full flight window — this import has no daily grain." />
 
             {!rangeHasData ? (
               <NoDataInRangeState what="brief history" />
             ) : (
             <>
-            <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="Total briefs" value={String(briefs.length)} />
               <MetricTile label="Drafts" value={String(drafts)} />
               <MetricTile label="Finalized" value={String(finalized)} sub={finalized === 0 ? "none finalized yet" : undefined} />

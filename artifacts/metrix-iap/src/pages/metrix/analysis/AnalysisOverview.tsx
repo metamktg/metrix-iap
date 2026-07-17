@@ -7,7 +7,7 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAnalysisData, getCampaignSummary, getCoreControls, getMST } from "@/lib/data/metrixSeedAdapter";
 import {
-  ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
+  ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   CaveatNote, SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
   RangeScopeBar, NoDataInRangeState, DetailReveal, deriveLabel, LoopAction,
 } from "../shared";
@@ -37,8 +37,7 @@ export function AnalysisOverview() {
         if (!summary || !a) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Analysis Overview" tabs="analysis" />
-              <ScopeBanner account={acct} />
+              <ModuleHeader section={SECTION} title="Analysis Overview" tabs="analysis" account={acct} />
               <PendingState title="No analysis yet" message="Analysis appears once performance data is connected or imported." icon={LineChart} />
             </div>
           );
@@ -110,15 +109,15 @@ export function AnalysisOverview() {
               subtitle="Performance reads · drill-in modules"
               table="campaign_summary, performance_by_cell"
               tabs="analysis"
+              account={acct}
             />
-            <ScopeBanner account={acct} />
             <RangeScopeBar grainNote="Campaign totals cover the account's full flight window — this import has no daily grain." />
 
             {!rangeHasData ? (
               <NoDataInRangeState what="analysis data" />
             ) : (
             <>
-            <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               {scoped ? (
                 <>
                   <MetricTile label="Spend (in range)" value={fmtUSD(scoped.spend, 0)} sub="concept flights overlapping range" />
@@ -141,7 +140,7 @@ export function AnalysisOverview() {
 
               {controls && (
                 <SectionCard title="Core control reads" desc="Current control concept per funnel depth" table="core_reanalysis_read">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-dashboard-2 gap-3">
                     <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
                       <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5">Primary control</div>
                       <p className="text-[13px] font-semibold text-foreground">{resolveConceptName(controls.primary_control)}</p>
@@ -193,7 +192,7 @@ export function AnalysisOverview() {
               )}
 
               <SectionCard title="Analysis modules" desc="Same data · different slices">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-dashboard-2 gap-3">
                   {subpages.map((s) => (
                     <div key={s.to} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2">
                       <div className="flex items-center gap-2">

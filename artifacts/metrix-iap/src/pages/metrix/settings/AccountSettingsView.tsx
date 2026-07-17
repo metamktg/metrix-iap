@@ -9,7 +9,7 @@ import { useScopedAdAccountId, useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAdAccount, getReportBuilder } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, ScopeBanner, SectionCard, CaveatNote, PendingState, useFocusParam, DetailReveal } from "../shared";
+import { ModuleHeader, SectionCard, CaveatNote, PendingState, useFocusParam, DetailReveal } from "../shared";
 import { ConnectMetaDialog, ManualImportDialog, CreativeLibraryDialog } from "../ConnectAccountDialogs";
 import { AnalysisControls } from "../ManualAnalysisControls";
 import { AgentWaitlistSection } from "./AgentWaitlistSection";
@@ -239,8 +239,7 @@ export function AccountSettingsView() {
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
-      <ModuleHeader section={SECTION} title="Account" subtitle={`Configuration for ${account.name} under ${manager.name}.`} />
-      <ScopeBanner account={account} />
+      <ModuleHeader section={SECTION} title="Account" subtitle={`Configuration for ${account.name} under ${manager.name}.`} account={account} />
 
       <div className="px-6 py-5 space-y-5 max-w-3xl">
         {/* Session */}

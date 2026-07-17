@@ -8,7 +8,7 @@ import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import {
   ShieldCheck, KeyRound, Radio, BarChart3, Layers, FileText, Grid3x3,
-  Zap, ArrowRight, ChevronDown, ChevronRight, ChevronLeft, ClipboardList,
+  Zap, ArrowRight, ChevronDown, ChevronRight,
 } from "lucide-react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -18,7 +18,7 @@ import {
 } from "@/lib/data/metrixSeedAdapter";
 import { RecommendationDeck, actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
 import {
-  ModuleHeader, ScopeBanner, SectionCard, CaveatNote, DetailReveal, deriveLabel,
+  ModuleHeader, SectionCard, CaveatNote, DetailReveal, deriveLabel,
   UnconfiguredState, PendingState, fmtUSD, fmtNum, eventLabel, resultTerm,
 } from "./shared";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
@@ -27,8 +27,6 @@ import { buildMetricCatalog, metricSourceFromCampaignSummary, metricById } from 
 import { useMetricSelection } from "@/hooks/useMetricSelection";
 import { MetricPickerButton } from "@/components/creative/MetricPicker";
 import { MetricDiagnosticModal } from "@/components/creative/MetricDiagnosticModal";
-import { TaskTrayPanel } from "@/components/deck/TaskTrayPanel";
-
 const IMPACT_RANK: Record<string, number> = { high: 3, medium: 2, low: 1, setup: 0 };
 
 // ── Main export ─────────────────────────────────────────────────────────
@@ -55,6 +53,20 @@ export function AdAccountOverview() {
     [optLoop]
   );
 
+  // ── All hooks before any early return (Rules of Hooks) ─────────────
+  // cs may be null before the guards below; hooks receive an empty catalog
+  // in that case and will never be visible to the user.
+  const cs = account?.iap?.campaign_summary ?? null;
+  const metricCatalog = useMemo(
+    () => cs ? buildMetricCatalog(metricSourceFromCampaignSummary(cs)) : [],
+    [cs]
+  );
+  const availableMetricIds = useMemo(() => metricCatalog.map((m) => m.id), [metricCatalog]);
+  const { selected: selectedMetricIds, toggle, move, reset } = useMetricSelection(availableMetricIds);
+  const [openMetricId, setOpenMetricId] = useState<string | null>(null);
+  const [expandedMetricId, setExpandedMetricId] = useState<string | null>(null);
+  const [layerOpen, setLayerOpen] = useState(true);
+
   // ── Early-exit states ───────────────────────────────────────────────
 
   if (!account) {
@@ -80,8 +92,9 @@ export function AdAccountOverview() {
   }
 
   const core = account.iap.core_reanalysis_read ?? null;
-  const cs = account.iap.campaign_summary;
-  const events = Object.entries(cs.bottom_line_totals);
+  // cs is already defined above via account?.iap?.campaign_summary ?? null;
+  // after this guard account.iap is confirmed non-null so cs is non-null too.
+  const events = Object.entries(cs!.bottom_line_totals);
   const term = resultTerm(account);
 
   // core_reanalysis_read is nullable at runtime for freshly-analyzed accounts
@@ -134,14 +147,7 @@ export function AdAccountOverview() {
     (a, b) => (IMPACT_RANK[b.impact] ?? 0) - (IMPACT_RANK[a.impact] ?? 0)
   )[0];
 
-  // ── Metric catalog + selection ──────────────────────────────────────
-  const metricCatalog = useMemo(() => buildMetricCatalog(metricSourceFromCampaignSummary(cs)), [cs]);
-  const availableMetricIds = useMemo(() => metricCatalog.map((m) => m.id), [metricCatalog]);
-  const { selected: selectedMetricIds, toggle, move, reset } = useMetricSelection(availableMetricIds);
-  const [openMetricId, setOpenMetricId] = useState<string | null>(null);
-  const [expandedMetricId, setExpandedMetricId] = useState<string | null>(null);
-  const [trayOpen, setTrayOpen] = useState(true);
-  const [layerOpen, setLayerOpen] = useState(true);
+  // ── Derived from metric selection (non-hook) ────────────────────────
   const openMetric = openMetricId ? metricById(metricCatalog, openMetricId) : null;
 
   // ── Layer readiness ─────────────────────────────────────────────────
@@ -164,8 +170,8 @@ export function AdAccountOverview() {
         title={account.name}
         subtitle="Layer readiness · account focus · optimization loop"
         right={<span className="text-[10px] font-mono text-emerald-400/70 uppercase tracking-widest">Connected</span>}
+        account={account}
       />
-      <ScopeBanner account={account} />
 
       {/* ── Layer Status ─────────────────────────────────────────────── */}
       <div className="border-b border-border/40 shrink-0">
@@ -214,7 +220,7 @@ export function AdAccountOverview() {
 
         {/* Expanded cards */}
         {layerOpen && (
-          <div className="px-6 pb-3 grid grid-cols-5 gap-1.5">
+          <div className="px-6 pb-3 grid grid-cols-dashboard-5 gap-1.5">
             {layers.map((l) => (
               <button
                 key={l.name}
@@ -272,7 +278,7 @@ export function AdAccountOverview() {
               <h2 className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/55">Account Totals</h2>
               <MetricPickerButton catalog={metricCatalog} selected={selectedMetricIds} onToggle={toggle} onMove={move} onReset={reset} />
             </div>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-dashboard-4 gap-2">
               {selectedMetricIds.map((id) => {
                 const m = metricById(metricCatalog, id);
                 if (!m) return null;
@@ -328,7 +334,7 @@ export function AdAccountOverview() {
             title="Current focus"
             desc="Active sprint · top priority"
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-dashboard-2 gap-3">
               <div className="rounded-xl border border-purple-400/20 bg-purple-400/[0.03] p-4 hover:border-purple-400/30 transition-colors">
                 <div className="flex items-center gap-1.5 mb-2">
                   <Grid3x3 className="w-3.5 h-3.5 text-purple-300/80" />
@@ -374,7 +380,7 @@ export function AdAccountOverview() {
 
           {/* Results by event */}
           <SectionCard title="Results by event" desc="Conversion volume by event">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="grid grid-cols-dashboard-4-sm gap-2">
               {events.map(([key, e]) => (
                 <div key={key} className="rounded-lg border border-border/40 bg-white/[0.02] px-3 py-2.5">
                   <div className="text-[10px] font-semibold text-foreground/70 leading-tight mb-1.5 truncate">{eventLabel(key)}</div>
@@ -390,7 +396,7 @@ export function AdAccountOverview() {
 
           {/* Core controls */}
           <SectionCard title="Core controls" desc="Control creative per funnel stage" table="core_reanalysis_read">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-dashboard-2 gap-3">
               <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/[0.03] p-4 hover:border-emerald-400/30 transition-colors">
                 <div className="flex items-center gap-1.5 mb-2">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-400/80" />
@@ -454,23 +460,6 @@ export function AdAccountOverview() {
           </SectionCard>
         </div>
 
-        {/* Right: Collapsible Task Tray */}
-        {trayOpen ? (
-          <div className="w-[232px] shrink-0 border-l border-border/40 flex flex-col min-h-0">
-            <TaskTrayPanel scopeId={account.id} cards={deckCards} onCollapse={() => setTrayOpen(false)} />
-          </div>
-        ) : (
-          <div className="w-7 shrink-0 border-l border-border/40 flex flex-col items-center py-3 gap-3">
-            <button
-              onClick={() => setTrayOpen(true)}
-              aria-label="Expand task tray"
-              className="w-5 h-5 flex items-center justify-center rounded text-muted-foreground/40 hover:text-muted-foreground/80 hover:bg-white/[0.06] transition-colors"
-            >
-              <ChevronLeft className="w-3 h-3" />
-            </button>
-            <ClipboardList className="w-3 h-3 text-muted-foreground/25" />
-          </div>
-        )}
       </div>
 
       <MetricDiagnosticModal

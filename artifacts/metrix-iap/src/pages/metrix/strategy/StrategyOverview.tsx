@@ -7,7 +7,7 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getStrategyData, getBriefBuilder } from "@/lib/data/metrixSeedAdapter";
 import {
-  ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
+  ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CrossLink, fmtNum, LoopAction,
   RangeScopeBar, NoDataInRangeState, DetailReveal, deriveLabel,
 } from "../shared";
@@ -40,8 +40,7 @@ export function StrategyOverview() {
         if (!strategy || strategy.message_pillars.length === 0) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Strategy Overview" tabs="strategy" />
-              <ScopeBanner account={acct} />
+              <ModuleHeader section={SECTION} title="Strategy Overview" tabs="strategy" account={acct} />
               <PendingState title="No strategy yet" message="Strategy pillars derive from validated analysis reads." icon={Compass} />
               <div className="px-6 pb-6 space-y-3 max-w-lg mx-auto w-full text-center">
                 <GenerationErrorNote message={generation.lastError} />
@@ -98,6 +97,7 @@ export function StrategyOverview() {
               subtitle="Pillars · hypotheses · next moves"
               table="message_pillars, active_hypotheses"
               tabs="strategy"
+              account={acct}
               right={
                 <div className="flex items-center gap-2">
                   <ProvenanceBadge provenance={strategy.provenance} />
@@ -112,7 +112,6 @@ export function StrategyOverview() {
                 </div>
               }
             />
-            <ScopeBanner account={acct} />
             <RangeScopeBar grainNote="Strategy derives from the account's full flight window — this import has no daily grain." />
             {generation.lastError && (
               <div className="px-6 pt-4">
@@ -124,7 +123,7 @@ export function StrategyOverview() {
               <NoDataInRangeState what="strategy data" />
             ) : (
             <>
-            <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="Message pillars" value={fmtNum(pillars.length)} />
               <MetricTile label="Active hypotheses" value={fmtNum(hypotheses.length)} />
               <MetricTile label="In testing" value={fmtNum(testing)} />
@@ -133,7 +132,7 @@ export function StrategyOverview() {
 
             <div className="px-6 py-5 space-y-4 max-w-5xl">
               <SectionCard title="Message pillars" desc="Validated message directions" table="message_pillars">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-dashboard-3 gap-3">
                   {pillars.map((p, i) => {
                     const t = splitTitle(p.label);
                     return (
@@ -178,7 +177,7 @@ export function StrategyOverview() {
               )}
 
               <SectionCard title="Strategy modules" desc="Same strategy · different angles">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-dashboard-3 gap-3">
                   {subpages.map((s) => (
                     <div key={s.to} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2">
                       <div className="flex items-center gap-2">
