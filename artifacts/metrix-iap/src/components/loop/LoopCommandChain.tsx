@@ -19,16 +19,22 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
+import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
-import { useGetLatestAnalysisRun, useListWorkspaceReports, useListManualImports } from "@workspace/api-client-react";
+import {
+  useGetLatestAnalysisRun, getGetLatestAnalysisRunQueryKey,
+  useListWorkspaceReports, useListManualImports,
+  useStartManualAnalysisRun, getGetMetrixSeedQueryKey,
+} from "@workspace/api-client-react";
 import { useGenerationRun } from "@/components/generation/GenerationControls";
+import { useToast } from "@/hooks/use-toast";
 import type { AdAccount, StrategyData, BriefBuilder } from "@/lib/data/seedTypes";
 import { computeStaleStages } from "./staleStageDetection";
 import {
   BarChart3, Layers, FileText, Database, FileBarChart,
   CheckCircle2, Lock, Loader2, X,
   Upload, Link2, PlayCircle, RefreshCw,
-  AlertTriangle, Sparkles, ArrowRight, Clock, RotateCcw,
+  AlertTriangle, Sparkles, ArrowRight, Clock, RotateCcw, CalendarRange, Timer,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────
@@ -81,6 +87,15 @@ const STAGE_CONFIG = {
 } as const;
 
 const TOTAL_STAGES = 5;
+
+const DATE_RANGES = [
+  { id: "7d"  as const, label: "Last 7 days"  },
+  { id: "14d" as const, label: "Last 14 days" },
+  { id: "30d" as const, label: "Last 30 days" },
+  { id: "all" as const, label: "All data"     },
+];
+
+type AnalysisDateRange = "7d" | "14d" | "30d" | "all";
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -628,7 +643,12 @@ function CommandHub({
   loopStatus,
   accountPlatform,
   allLoopComplete,
+  stagedImportCount,
+  isLiveMeta,
+  analysisStarting,
+  analysisStartError,
   onNavigate,
+  onStartAnalysis,
   onGenerateStrategy,
   onGenerateBriefs,
 }: {
@@ -670,7 +690,12 @@ function CommandHub({
   loopStatus: { stage: string; window_start?: string | null; window_end?: string | null; generated_at?: string | null }[] | null;
   accountPlatform?: string;
   allLoopComplete: boolean;
+  stagedImportCount: number;
+  isLiveMeta: boolean;
+  analysisStarting: boolean;
+  analysisStartError: string | null;
   onNavigate: (path: string) => void;
+  onStartAnalysis: (range: AnalysisDateRange) => void;
   onGenerateStrategy: () => void;
   onGenerateBriefs: () => void;
 }) {
@@ -730,8 +755,9 @@ function CommandHub({
     onClose();
   }
 
-  // Pre-execution confirmation step for strategy / briefs
-  const [pendingConfirm, setPendingConfirm] = useState<"strategy" | "briefs" | null>(null);
+  // Pre-execution confirmation step for analysis / strategy / briefs
+  const [pendingConfirm, setPendingConfirm] = useState<"analysis" | "strategy" | "briefs" | null>(null);
+  const [localDateRange, setLocalDateRange] = useState<AnalysisDateRange>("30d");
 
   // Actions section content
   function Actions() {
@@ -777,19 +803,106 @@ function CommandHub({
       </div>
     );
 
-    if (stage === "analysis") return (
-      <div className="flex flex-wrap gap-1.5">
-        <button
-          onClick={() => goTo("/app/settings/account")}
-          className={cn(
-            "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
-            analysisComplete ? "mx-secondary-btn" : "mx-primary-btn",
+    if (stage === "analysis") {
+      if (pendingConfirm === "analysis") return (
+        <div className="flex flex-col gap-2.5">
+          {/* Data source context */}
+          <div className="rounded-lg border border-primary/15 bg-primary/[0.05] px-2.5 py-2 space-y-1">
+            <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/35">Data source</p>
+            <p className="text-label text-foreground/70 leading-relaxed">
+              {isLiveMeta
+                ? "Live Meta ad account connection"
+                : `Manual CSV imports · ${stagedImportCount} file${stagedImportCount === 1 ? "" : "s"} staged`}
+            </p>
+          </div>
+
+          {/* Date range picker (manual accounts only) */}
+          {!isLiveMeta && (
+            <div className="space-y-1.5">
+              <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/35 flex items-center gap-1">
+                <CalendarRange className="w-3 h-3" /> Date range
+              </p>
+              <div className="grid grid-cols-2 gap-1">
+                {DATE_RANGES.map((r) => (
+                  <button
+                    key={r.id}
+                    onClick={() => setLocalDateRange(r.id)}
+                    className={cn(
+                      "h-7 px-2 rounded-md border text-label font-medium transition-colors",
+                      localDateRange === r.id
+                        ? "border-primary/40 bg-primary/[0.08] text-primary"
+                        : "border-border/40 bg-white/[0.02] text-muted-foreground/70 hover:bg-white/[0.04]"
+                    )}
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
-        >
-          <PlayCircle className="w-3.5 h-3.5" /> Run Analysis
-        </button>
-      </div>
-    );
+
+          {/* Estimated wait time */}
+          <div className="flex items-center gap-1.5">
+            <Timer className="w-3 h-3 text-muted-foreground/35 shrink-0" />
+            <p className="text-[9px] text-muted-foreground/40 leading-relaxed">
+              Typical run time: 15–60 seconds
+            </p>
+          </div>
+
+          {/* Error message */}
+          {analysisStartError && (
+            <p className="text-label text-red-400 leading-relaxed">{analysisStartError}</p>
+          )}
+
+          {/* Confirm / Cancel */}
+          <div className="flex gap-1.5">
+            <button
+              onClick={async () => {
+                if (isLiveMeta) {
+                  setPendingConfirm(null);
+                  goTo("/app/settings/integrations");
+                } else {
+                  await onStartAnalysis(localDateRange);
+                  setPendingConfirm(null);
+                  onClose();
+                }
+              }}
+              disabled={analysisStarting}
+              className={cn(
+                "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-primary-btn",
+                analysisStarting && "opacity-60 cursor-not-allowed"
+              )}
+            >
+              {analysisStarting ? (
+                <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Starting…</>
+              ) : (
+                <><PlayCircle className="w-3.5 h-3.5" /> {isLiveMeta ? "Connect account" : "Run Analysis"}</>
+              )}
+            </button>
+            <button
+              onClick={() => setPendingConfirm(null)}
+              className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      );
+
+      return (
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            onClick={() => setPendingConfirm("analysis")}
+            className={cn(
+              "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
+              analysisComplete ? "mx-secondary-btn" : "mx-primary-btn",
+            )}
+          >
+            <PlayCircle className="w-3.5 h-3.5" /> {analysisComplete ? "Re-run Analysis" : "Run Analysis"}
+          </button>
+        </div>
+      );
+    }
 
     if (stage === "strategy") {
       if (pendingConfirm === "strategy") return (
@@ -1097,9 +1210,20 @@ export function LoopCommandChain({
   const [location, navigate] = useLocation();
   const [activeStage, setActiveStage] = useState<Stage | null>(null);
 
+  const queryClient = useQueryClient();
+  const { toast }   = useToast();
+
   const strategyGen = useGenerationRun(accountId, "strategy");
   const briefsGen   = useGenerationRun(accountId, "briefs");
-  const { data: latestAnalysisData } = useGetLatestAnalysisRun(accountId);
+
+  // Analysis run: poll every 2.5 s while a run is in flight.
+  const [analysisPolling, setAnalysisPolling] = useState(false);
+  const { data: latestAnalysisData, refetch: refetchAnalysis } = useGetLatestAnalysisRun(accountId, {
+    query: {
+      queryKey: getGetLatestAnalysisRunQueryKey(accountId),
+      refetchInterval: analysisPolling ? 2500 : false,
+    },
+  });
   const { data: reportsData }        = useListWorkspaceReports(managerId);
   const { data: manualImportsData }  = useListManualImports(accountId);
 
@@ -1156,6 +1280,52 @@ export function LoopCommandChain({
     }, 1000);
     return () => clearInterval(iv);
   }, [analysisRunning]);
+
+  // ── Analysis polling lifecycle ───────────────────────────────────────────
+  // Enables polling when a run starts, disables + invalidates seed when done.
+  const prevAnalysisStatusRef = useRef<string | null | undefined>(undefined);
+  const analysisToastRunIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    const status = analysisRun?.status;
+    if (status === "running") {
+      setAnalysisPolling(true);
+    } else if (analysisPolling && status) {
+      setAnalysisPolling(false);
+      void queryClient.invalidateQueries({ queryKey: getGetMetrixSeedQueryKey() });
+    }
+    // Toast once when a run transitions to success.
+    if (
+      status === "success" &&
+      analysisRun?.id &&
+      analysisToastRunIdRef.current !== analysisRun.id &&
+      prevAnalysisStatusRef.current === "running"
+    ) {
+      analysisToastRunIdRef.current = analysisRun.id;
+      toast({
+        title: "Analysis complete",
+        description:
+          analysisRun.date_start && analysisRun.date_end
+            ? `Data covers ${analysisRun.date_start} → ${analysisRun.date_end}.`
+            : "Performance data is ready.",
+        duration: 4000,
+      });
+    }
+    prevAnalysisStatusRef.current = status;
+  }, [analysisRun?.status, analysisRun?.id, analysisRun?.date_start, analysisRun?.date_end, analysisPolling, queryClient, toast]);
+
+  // ── Analysis run mutation (fired from CommandHub confirmation) ───────────
+  const startAnalysisMutation = useStartManualAnalysisRun();
+  const [analysisStartError, setAnalysisStartError]  = useState<string | null>(null);
+  const handleStartAnalysis = async (range: AnalysisDateRange) => {
+    setAnalysisStartError(null);
+    try {
+      await startAnalysisMutation.mutateAsync({ accountId, data: { date_range: range } });
+      await refetchAnalysis();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Could not start analysis — check your connection.";
+      setAnalysisStartError(msg);
+    }
+  };
 
   const strategy     = iap?.strategy ?? null;
   const briefBuilder = iap?.brief_builder ?? null;
@@ -1338,7 +1508,12 @@ export function LoopCommandChain({
           loopStatus={loopStatus}
           accountPlatform={account.platform}
           allLoopComplete={allLoopComplete}
+          stagedImportCount={stagedImportCount}
+          isLiveMeta={isLiveMeta}
+          analysisStarting={startAnalysisMutation.isPending}
+          analysisStartError={analysisStartError}
           onNavigate={navigate}
+          onStartAnalysis={(range) => void handleStartAnalysis(range)}
           onGenerateStrategy={() => strategyGen.start()}
           onGenerateBriefs={() => briefsGen.start()}
         />
