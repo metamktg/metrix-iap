@@ -1,6 +1,7 @@
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { TaskTray } from "./TaskTray";
+import { GlobalRunningBanner } from "./GlobalRunningBanner";
 import { useTaskTray } from "@/contexts/TaskTrayContext";
 
 interface AppShellProps {
@@ -16,6 +17,7 @@ export function AppShell({ children }: AppShellProps) {
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <Topbar />
+        <GlobalRunningBanner />
 
         <main className="flex-1 overflow-hidden flex">
           <div className="flex-1 overflow-auto flex flex-col min-w-0">
