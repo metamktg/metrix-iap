@@ -56,6 +56,7 @@ vi.mock("@workspace/api-client-react", () => ({
   useStartManualAnalysisRun: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useListWorkspaceReports: () => ({ data: { reports: [] } }),
   useListManualImports: () => ({ data: { imports: [] } }),
+  useListAnalysisRuns: () => ({ data: { runs: [] } }),
 }));
 
 vi.mock("@/components/generation/GenerationControls", () => ({
