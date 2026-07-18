@@ -28,6 +28,22 @@ const KIND_LABEL: Record<GenerationKind, string> = {
 // How often (ms) we poll the run status endpoint while a job is in flight.
 const POLL_INTERVAL_MS = 2500;
 
+// Estimated total duration (seconds) per generation kind.
+// Used to compute a smooth 0→95% progress estimate from elapsed time.
+const EXPECTED_SECONDS: Record<GenerationKind, number> = {
+  strategy: 75,
+  briefs:   90,
+};
+
+/** Quadratic ease-out: starts fast, decelerates as expected time approaches.
+ *  Returns 0–95 while running (never shows 100 — that snaps on completion). */
+function calcGenerationProgress(elapsedSeconds: number, kind: GenerationKind): number {
+  const expected = EXPECTED_SECONDS[kind];
+  const t = Math.min(elapsedSeconds / expected, 1);
+  const ease = 1 - Math.pow(1 - t, 2);
+  return Math.min(95, Math.round(ease * 95));
+}
+
 export function useGenerationRun(accountId: string | null, kind: GenerationKind) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -147,10 +163,15 @@ export function useGenerationRun(accountId: string | null, kind: GenerationKind)
     return () => clearInterval(iv);
   }, [isRunning]);
 
+  const progressPercent = isRunning
+    ? calcGenerationProgress(elapsedSeconds, kind)
+    : 0;
+
   return {
     start,
     isRunning,
     elapsedSeconds,
+    progressPercent,
     lastRun: run,
     lastError: run?.status === "error" ? (run.error_message ?? "Generation failed.") : null,
   };

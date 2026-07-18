@@ -119,6 +119,49 @@ function fmtElapsed(seconds: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+// ── Progress estimation ────────────────────────────────────────────────────
+// Converts elapsed seconds to a 0–95% estimate using quadratic ease-out.
+// Holds at 95% until the run settles (never displays 100 prematurely).
+
+const EXPECTED_SECONDS = { analysis: 45, strategy: 75, briefs: 90 } as const;
+
+function calcProgress(elapsed: number, expected: number): number {
+  const t = Math.min(elapsed / expected, 1);
+  const ease = 1 - Math.pow(1 - t, 2); // quadratic ease-out
+  return Math.min(95, Math.round(ease * 95));
+}
+
+const PHASE_LABELS: Record<"analysis" | "strategy" | "briefs", [number, string][]> = {
+  analysis: [
+    [0,  "Parsing performance data…"],
+    [22, "Computing cell metrics…"],
+    [50, "Building variable signals…"],
+    [78, "Finalizing output…"],
+  ],
+  strategy: [
+    [0,  "Loading analysis evidence…"],
+    [18, "Building message pillars…"],
+    [42, "Generating hypotheses…"],
+    [68, "Creating ICP profiles…"],
+    [88, "Finalizing strategy…"],
+  ],
+  briefs: [
+    [0,  "Loading strategy context…"],
+    [18, "Designing MST matrix…"],
+    [48, "Writing creative briefs…"],
+    [78, "Reviewing & refining…"],
+  ],
+};
+
+function getPhaseLabel(kind: "analysis" | "strategy" | "briefs", pct: number): string {
+  const phases = PHASE_LABELS[kind];
+  let label = phases[0][1];
+  for (const [threshold, text] of phases) {
+    if (pct >= threshold) label = text;
+  }
+  return label;
+}
+
 // ── Stat pill ─────────────────────────────────────────────────────────────
 
 function StatPill({ value, label }: { value: string | number; label?: string }) {
@@ -740,25 +783,43 @@ function CommandHub({
 
   // Actions section content
   function Actions() {
-    if (isRunning) return (
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-2">
-          <Loader2 className="w-3.5 h-3.5 text-amber-400/70 animate-spin shrink-0" />
-          <span className="text-label text-amber-400/55">Processing — views will update when complete</span>
-        </div>
-        {/* Elapsed time + indeterminate progress bar */}
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1 h-[3px] rounded-full overflow-hidden bg-amber-400/10">
-            <span className="absolute inset-y-0 w-1/3 bg-amber-400/45 rounded-full animate-[progress-slide_1.4s_ease-in-out_infinite]" />
+    if (isRunning) {
+      const activeKind = stage === "analysis" ? "analysis"
+        : stage === "strategy" ? "strategy"
+        : stage === "briefs"   ? "briefs"
+        : null;
+      const progressPct = activeKind
+        ? calcProgress(elapsedSeconds, EXPECTED_SECONDS[activeKind])
+        : 0;
+      const phaseLabel = activeKind ? getPhaseLabel(activeKind, progressPct) : "Processing…";
+      return (
+        <div className="flex flex-col gap-2.5">
+          {/* Phase label + percentage + elapsed */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <Loader2 className="w-3.5 h-3.5 text-amber-400/70 animate-spin shrink-0" />
+              <span className="text-label text-amber-400/65 font-medium truncate">{phaseLabel}</span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-[9px] font-bold tabular-nums text-amber-400/65">{progressPct}%</span>
+              {elapsedSeconds > 0 && (
+                <span className="text-[9px] font-mono tabular-nums text-amber-400/35 leading-none">
+                  {fmtElapsed(elapsedSeconds)}
+                </span>
+              )}
+            </div>
           </div>
-          {elapsedSeconds > 0 && (
-            <span className="text-[9px] font-mono tabular-nums text-amber-400/45 leading-none shrink-0">
-              {fmtElapsed(elapsedSeconds)}
-            </span>
-          )}
+          {/* Deterministic progress bar */}
+          <div className="relative h-[4px] rounded-full overflow-hidden bg-amber-400/10">
+            <span
+              className="absolute inset-y-0 left-0 bg-amber-400/50 rounded-full transition-[width] duration-1000 ease-out"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+          <p className="text-[9px] text-amber-400/40 leading-none">Views update automatically on completion</p>
         </div>
-      </div>
-    );
+      );
+    }
 
     if (stage === "data") return (
       <div className="flex flex-wrap gap-1.5">
@@ -886,13 +947,23 @@ function CommandHub({
     if (stage === "strategy") {
       if (pendingConfirm === "strategy") {
       const successRuns = analysisRuns.filter((r) => r.status === "success");
-      const displayRuns = successRuns.length > 0 ? successRuns : analysisRuns;
+      const candidateRuns = successRuns.length > 0 ? successRuns : analysisRuns;
+      // Show at most 3 runs (most recent first — API returns newest first)
+      const displayRuns = candidateRuns.slice(0, 3);
+      const hiddenCount  = candidateRuns.length - displayRuns.length;
       return (
         <div className="flex flex-col gap-2.5">
           <div>
-            <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/30 mb-1.5">
-              Ground strategy in
-            </p>
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/30">
+                Ground strategy in
+              </p>
+              {candidateRuns.length > 0 && (
+                <span className="text-[9px] text-muted-foreground/25">
+                  {candidateRuns.length} run{candidateRuns.length !== 1 ? "s" : ""} available
+                </span>
+              )}
+            </div>
             {displayRuns.length === 0 ? (
               <div className="rounded-lg border border-emerald-400/20 bg-emerald-400/[0.04] px-2.5 py-2">
                 <div className="flex items-center gap-1.5">
@@ -905,38 +976,60 @@ function CommandHub({
                 </div>
               </div>
             ) : (
-              <div className="rounded-lg border border-border/40 divide-y divide-border/30 overflow-hidden max-h-[160px] overflow-y-auto">
-                {displayRuns.map((run) => {
+              <div className="rounded-lg border border-border/40 divide-y divide-border/30 overflow-hidden">
+                {displayRuns.map((run, idx) => {
                   const isSel = selectedRunId === run.id;
                   const dateLabel = run.date_start && run.date_end
                     ? `${fmtDate(run.date_start)} – ${fmtDate(run.date_end)}`
                     : run.date_range ?? "Analysis";
+                  const isLatest = idx === 0 && successRuns.length > 0;
                   return (
                     <button
                       key={run.id}
                       onClick={() => setSelectedRunId(run.id)}
                       className={cn(
-                        "w-full flex items-center gap-2 px-2.5 py-1.5 text-left transition-colors",
+                        "w-full flex items-center gap-2 px-2.5 py-2 text-left transition-colors",
                         isSel
-                          ? "bg-emerald-400/[0.06] text-foreground/90"
+                          ? "bg-emerald-400/[0.07] text-foreground/90"
                           : "bg-transparent text-foreground/55 hover:bg-muted/30",
                       )}
                     >
                       <span className={cn(
-                        "w-2 h-2 rounded-full shrink-0",
-                        isSel ? "bg-emerald-400/70" : "border border-border/50",
+                        "w-2.5 h-2.5 rounded-full shrink-0 border transition-colors",
+                        isSel
+                          ? "bg-emerald-400/80 border-emerald-400/60"
+                          : "bg-transparent border-border/40",
                       )} />
                       <span className="text-label font-medium flex-1 truncate">{dateLabel}</span>
-                      {run.rows_ingested != null && (
-                        <span className="text-[9px] font-mono text-muted-foreground/40 shrink-0">
-                          {run.rows_ingested.toLocaleString()} rows
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {isLatest && (
+                          <span className="text-[8px] font-semibold uppercase tracking-wider text-emerald-400/60 bg-emerald-400/[0.08] border border-emerald-400/15 rounded px-1 py-0.5 leading-none">
+                            Latest
+                          </span>
+                        )}
+                        {run.rows_ingested != null && (
+                          <span className="text-[9px] font-mono text-muted-foreground/35">
+                            {run.rows_ingested.toLocaleString()} rows
+                          </span>
+                        )}
+                      </div>
                     </button>
                   );
                 })}
+                {hiddenCount > 0 && (
+                  <div className="px-2.5 py-1.5 bg-white/[0.01]">
+                    <span className="text-[9px] text-muted-foreground/25">
+                      +{hiddenCount} older run{hiddenCount !== 1 ? "s" : ""} not shown
+                    </span>
+                  </div>
+                )}
               </div>
             )}
+          </div>
+          {/* Estimated time hint */}
+          <div className="flex items-center gap-1.5">
+            <Timer className="w-3 h-3 text-muted-foreground/30 shrink-0" />
+            <p className="text-[9px] text-muted-foreground/35">Typical run time: 30–90 seconds</p>
           </div>
           <div className="flex gap-1.5">
             <button
@@ -1401,30 +1494,38 @@ export function LoopCommandChain({
           </span>
         </div>
 
-        {/* Running strip — persistent progress bar visible whenever any stage is active */}
-        {(analysisRunning || strategyRunning || briefsRunning) && (
-          <div className="flex flex-col gap-1 rounded-lg border border-amber-400/20 bg-amber-400/[0.04] px-2.5 py-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <Loader2 className="w-3 h-3 text-amber-400/70 animate-spin shrink-0" />
-                <span className="text-label text-amber-400/70 font-medium">
-                  {analysisRunning ? "Analysis" : strategyRunning ? "Strategy" : "Briefs"} processing
-                </span>
+        {/* Running strip — persistent progress indicator whenever any stage is active */}
+        {(analysisRunning || strategyRunning || briefsRunning) && (() => {
+          const activeKind: "analysis" | "strategy" | "briefs" = analysisRunning ? "analysis" : strategyRunning ? "strategy" : "briefs";
+          const activeElapsed = analysisRunning ? analysisElapsedSeconds : strategyRunning ? strategyGen.elapsedSeconds : briefsGen.elapsedSeconds;
+          const pct = calcProgress(activeElapsed, EXPECTED_SECONDS[activeKind]);
+          const phase = getPhaseLabel(activeKind, pct);
+          const stageLabel = activeKind.charAt(0).toUpperCase() + activeKind.slice(1);
+          return (
+            <div className="flex flex-col gap-1.5 rounded-lg border border-amber-400/20 bg-amber-400/[0.04] px-2.5 py-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Loader2 className="w-3 h-3 text-amber-400/70 animate-spin shrink-0" />
+                  <span className="text-label text-amber-400/65 font-medium truncate">
+                    <span className="text-amber-400/45">{stageLabel} · </span>{phase}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-[9px] font-bold tabular-nums text-amber-400/65">{pct}%</span>
+                  <span className="text-[9px] font-mono tabular-nums text-amber-400/35 leading-none">
+                    {fmtElapsed(activeElapsed)}
+                  </span>
+                </div>
               </div>
-              <span className="text-[9px] font-mono tabular-nums text-amber-400/50 leading-none">
-                {analysisRunning
-                  ? fmtElapsed(analysisElapsedSeconds)
-                  : strategyRunning
-                  ? fmtElapsed(strategyGen.elapsedSeconds)
-                  : fmtElapsed(briefsGen.elapsedSeconds)}
-              </span>
+              <div className="relative h-[3px] rounded-full overflow-hidden bg-amber-400/[0.08]">
+                <span
+                  className="absolute inset-y-0 left-0 bg-amber-400/50 rounded-full transition-[width] duration-1000 ease-out"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
             </div>
-            <div className="relative h-[3px] rounded-full overflow-hidden bg-amber-400/[0.08]">
-              <span className="absolute inset-y-0 w-1/3 bg-amber-400/45 rounded-full animate-[progress-slide_1.4s_ease-in-out_infinite]" />
-            </div>
-            <p className="text-[9px] text-amber-400/45 leading-none">Views update automatically on completion</p>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Six tiles + causal connectors */}
         <div className="flex items-center gap-0.5">
