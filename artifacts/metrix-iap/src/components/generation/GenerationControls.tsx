@@ -83,7 +83,7 @@ export function useGenerationRun(accountId: string | null, kind: GenerationKind)
   const briefsMutation = useGenerateAccountBriefs();
   const mutation = kind === "strategy" ? strategyMutation : briefsMutation;
 
-  const start = () => {
+  const start = (extraData?: { analysis_run_id?: string }) => {
     if (!accountId) return;
     // Guard against rapid double-taps: firingRef blocks the second call
     // synchronously (before any re-render); setFiring(true) triggers a
@@ -91,34 +91,36 @@ export function useGenerationRun(accountId: string | null, kind: GenerationKind)
     if (firingRef.current) return;
     firingRef.current = true;
     setFiring(true);
-    mutation.mutate(
-      { accountId },
-      {
-        onSuccess: () => {
-          firingRef.current = false;
-          setFiring(false);
-          setPolling(true);
-          void queryClient.invalidateQueries({
-            queryKey: getGetLatestGenerationRunQueryKey(accountId, kind),
-          });
-        },
-        onError: (err: unknown) => {
-          firingRef.current = false;
-          setFiring(false);
-          const message =
-            err instanceof ApiError
-              ? ((err.data as { message?: string } | null)?.message ?? err.message)
-              : err instanceof Error
-                ? err.message
-                : "Could not start the generation run.";
-          toast({
-            title: `Couldn't start ${KIND_LABEL[kind]} generation`,
-            description: message,
-            variant: "destructive",
-          });
-        },
+    const callbacks = {
+      onSuccess: () => {
+        firingRef.current = false;
+        setFiring(false);
+        setPolling(true);
+        void queryClient.invalidateQueries({
+          queryKey: getGetLatestGenerationRunQueryKey(accountId, kind),
+        });
       },
-    );
+      onError: (err: unknown) => {
+        firingRef.current = false;
+        setFiring(false);
+        const message =
+          err instanceof ApiError
+            ? ((err.data as { message?: string } | null)?.message ?? err.message)
+            : err instanceof Error
+              ? err.message
+              : "Could not start the generation run.";
+        toast({
+          title: `Couldn't start ${KIND_LABEL[kind]} generation`,
+          description: message,
+          variant: "destructive",
+        });
+      },
+    };
+    if (kind === "strategy") {
+      strategyMutation.mutate({ accountId, data: extraData }, callbacks);
+    } else {
+      briefsMutation.mutate({ accountId }, callbacks);
+    }
   };
 
   const isRunning = firing || mutation.isPending || polling || run?.status === "running";

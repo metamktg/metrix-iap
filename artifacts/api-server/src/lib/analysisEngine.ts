@@ -170,6 +170,18 @@ async function synthesizeRunFromReportPulls(accountId: string): Promise<ManualAn
 /** Latest run for an account, with dead 'running' rows honestly flipped to error.
  * Falls back to synthesizing a run from report_pulls when no manual run exists
  * (live-Meta accounts store their analysis results there instead). */
+export async function listAnalysisRuns(accountId: string): Promise<ManualAnalysisRun[]> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("manual_analysis_runs")
+    .select("*")
+    .eq("account_id", accountId)
+    .order("started_at", { ascending: false })
+    .limit(50);
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(runShape);
+}
+
 export async function getLatestAnalysisRun(accountId: string): Promise<ManualAnalysisRun | null> {
   const supabase = getSupabase();
   const { data, error } = await supabase

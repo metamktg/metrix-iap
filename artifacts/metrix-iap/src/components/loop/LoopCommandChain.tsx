@@ -23,9 +23,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import {
   useGetLatestAnalysisRun, getGetLatestAnalysisRunQueryKey,
+  useListAnalysisRuns,
   useListWorkspaceReports, useListManualImports,
   useStartManualAnalysisRun, getGetMetrixSeedQueryKey,
 } from "@workspace/api-client-react";
+import type { AnalysisRun } from "@workspace/api-client-react";
 import { useGenerationRun } from "@/components/generation/GenerationControls";
 import { useToast } from "@/hooks/use-toast";
 import type { AdAccount, StrategyData, BriefBuilder } from "@/lib/data/seedTypes";
@@ -602,6 +604,7 @@ function CommandHub({
   strategy,
   briefBuilder,
   analysisRun,
+  analysisRuns,
   strategyLastRun,
   briefsLastRun,
   loopStatus,
@@ -642,6 +645,7 @@ function CommandHub({
   strategy: StrategyData | null;
   briefBuilder: BriefBuilder | null;
   analysisRun: {
+    id?: string;
     status: string;
     date_start?: string | null;
     date_end?: string | null;
@@ -649,6 +653,7 @@ function CommandHub({
     finished_at?: string | null;
     error_message?: string | null;
   } | null;
+  analysisRuns: AnalysisRun[];
   strategyLastRun: { status: string; finished_at?: string | null; error_message?: string | null; model?: string | null } | null;
   briefsLastRun:   { status: string; finished_at?: string | null; error_message?: string | null } | null;
   loopStatus: { stage: string; window_start?: string | null; window_end?: string | null; generated_at?: string | null }[] | null;
@@ -660,7 +665,7 @@ function CommandHub({
   analysisStartError: string | null;
   onNavigate: (path: string) => void;
   onStartAnalysis: (range: AnalysisDateRange) => Promise<void>;
-  onGenerateStrategy: () => void;
+  onGenerateStrategy: (analysisRunId?: string) => void;
   onGenerateBriefs: () => void;
 }) {
   const popupRef = useRef<HTMLDivElement>(null);
@@ -722,6 +727,15 @@ function CommandHub({
   // Pre-execution confirmation step for analysis / strategy / briefs
   const [pendingConfirm, setPendingConfirm] = useState<"analysis" | "strategy" | "briefs" | null>(null);
   const [localDateRange, setLocalDateRange] = useState<AnalysisDateRange>("30d");
+  // Which analysis run the user wants to ground strategy in.
+  // Defaults to latest successful run when the confirmation panel opens.
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  useEffect(() => {
+    if (pendingConfirm === "strategy") {
+      const best = analysisRuns.find((r) => r.status === "success") ?? analysisRuns[0];
+      setSelectedRunId(best?.id ?? analysisRun?.id ?? null);
+    }
+  }, [pendingConfirm, analysisRuns, analysisRun?.id]);
 
   // Actions section content
   function Actions() {
@@ -869,34 +883,63 @@ function CommandHub({
     }
 
     if (stage === "strategy") {
-      if (pendingConfirm === "strategy") return (
+      if (pendingConfirm === "strategy") {
+      const successRuns = analysisRuns.filter((r) => r.status === "success");
+      const displayRuns = successRuns.length > 0 ? successRuns : analysisRuns;
+      return (
         <div className="flex flex-col gap-2.5">
-          {/* Analysis selection — shows which analysis run the strategy will be grounded in */}
           <div>
             <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/30 mb-1.5">
-              Based on analysis
+              Ground strategy in
             </p>
-            <div className="rounded-lg border border-emerald-400/20 bg-emerald-400/[0.04] px-2.5 py-2 space-y-1.5">
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400/60 shrink-0" />
-                <span className="text-label font-semibold text-foreground/75">
-                  {analysisRun?.date_start && analysisRun?.date_end
-                    ? `${fmtDate(analysisRun.date_start)} – ${fmtDate(analysisRun.date_end)}`
-                    : "Latest analysis run"}
-                </span>
+            {displayRuns.length === 0 ? (
+              <div className="rounded-lg border border-emerald-400/20 bg-emerald-400/[0.04] px-2.5 py-2">
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400/60 shrink-0" />
+                  <span className="text-label font-semibold text-foreground/75">
+                    {analysisRun?.date_start && analysisRun?.date_end
+                      ? `${fmtDate(analysisRun.date_start)} – ${fmtDate(analysisRun.date_end)}`
+                      : "Latest analysis"}
+                  </span>
+                </div>
               </div>
-              <div className="flex flex-wrap gap-1.5 pl-5">
-                {cellCount > 0 && <StatPill value={cellCount} label="cells" />}
-                {variableCount > 0 && <StatPill value={variableCount} label="variables" />}
-                {analysisRun?.rows_ingested != null && (
-                  <StatPill value={analysisRun.rows_ingested.toLocaleString()} label="rows" />
-                )}
+            ) : (
+              <div className="rounded-lg border border-border/40 divide-y divide-border/30 overflow-hidden max-h-[160px] overflow-y-auto">
+                {displayRuns.map((run) => {
+                  const isSel = selectedRunId === run.id;
+                  const dateLabel = run.date_start && run.date_end
+                    ? `${fmtDate(run.date_start)} – ${fmtDate(run.date_end)}`
+                    : run.date_range ?? "Analysis";
+                  return (
+                    <button
+                      key={run.id}
+                      onClick={() => setSelectedRunId(run.id)}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-2.5 py-1.5 text-left transition-colors",
+                        isSel
+                          ? "bg-emerald-400/[0.06] text-foreground/90"
+                          : "bg-transparent text-foreground/55 hover:bg-muted/30",
+                      )}
+                    >
+                      <span className={cn(
+                        "w-2 h-2 rounded-full shrink-0",
+                        isSel ? "bg-emerald-400/70" : "border border-border/50",
+                      )} />
+                      <span className="text-label font-medium flex-1 truncate">{dateLabel}</span>
+                      {run.rows_ingested != null && (
+                        <span className="text-[9px] font-mono text-muted-foreground/40 shrink-0">
+                          {run.rows_ingested.toLocaleString()} rows
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
-            </div>
+            )}
           </div>
           <div className="flex gap-1.5">
             <button
-              onClick={() => { setPendingConfirm(null); onGenerateStrategy(); onClose(); }}
+              onClick={() => { setPendingConfirm(null); onGenerateStrategy(selectedRunId ?? undefined); onClose(); }}
               className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-primary-btn"
             >
               <Sparkles className="w-3.5 h-3.5" /> Build Strategy
@@ -910,6 +953,7 @@ function CommandHub({
           </div>
         </div>
       );
+    }
       return (
         <div className="flex flex-wrap gap-1.5">
           <button
@@ -1203,6 +1247,7 @@ export function LoopCommandChain({
   });
   const { data: reportsData }        = useListWorkspaceReports(managerId);
   const { data: manualImportsData }  = useListManualImports(accountId);
+  const { data: analysisRunsData }   = useListAnalysisRuns(accountId);
 
   const analysisRun     = latestAnalysisData?.run ?? null;
   const strategyLastRun = strategyGen.lastRun ?? null;
@@ -1509,6 +1554,7 @@ export function LoopCommandChain({
           strategy={strategy}
           briefBuilder={briefBuilder}
           analysisRun={analysisRun}
+          analysisRuns={analysisRunsData?.runs ?? []}
           strategyLastRun={strategyLastRun}
           briefsLastRun={briefsLastRun}
           loopStatus={loopStatus}
@@ -1520,7 +1566,7 @@ export function LoopCommandChain({
           analysisStartError={analysisStartError}
           onNavigate={navigate}
           onStartAnalysis={handleStartAnalysis}
-          onGenerateStrategy={() => strategyGen.start()}
+          onGenerateStrategy={(runId) => strategyGen.start({ analysis_run_id: runId })}
           onGenerateBriefs={() => briefsGen.start()}
         />
       )}
