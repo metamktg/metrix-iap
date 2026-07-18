@@ -343,15 +343,11 @@ function StageIntelligence({
           <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/20" />
           <span className="text-[9px] text-muted-foreground/35">Enables Analysis</span>
         </div>
-        {dataComplete ? (
+        {dataComplete && (
           <div className="flex flex-wrap gap-1.5">
             <StatPill value={isLiveMeta ? "Live Meta" : "Manual"} label="source" />
             {cellCount > 0 && <StatPill value={cellCount} label="cells" />}
           </div>
-        ) : (
-          <p className="text-label text-muted-foreground/30 leading-relaxed">
-            Connect a live Meta ad account or upload exported CSV reports to begin.
-          </p>
         )}
       </div>
     );
@@ -400,11 +396,6 @@ function StageIntelligence({
           <ErrorBlock message={analysisRun.error_message} />
         )}
 
-        {!analysisComplete && !analysisRunning && !hasError && (
-          <p className="text-label text-muted-foreground/30 leading-relaxed">
-            Upload a CSV export or connect a Meta ad account, then run analysis.
-          </p>
-        )}
       </div>
     );
   }
@@ -460,18 +451,10 @@ function StageIntelligence({
         )}
 
         {strategyIsStale && !strategyRunning && (
-          <div className="flex items-start gap-2 rounded-lg border border-orange-400/20 bg-orange-400/[0.05] px-2.5 py-2">
-            <RotateCcw className="w-3.5 h-3.5 text-orange-400/70 mt-0.5 shrink-0" />
-            <p className="text-label text-orange-200/65 leading-relaxed">
-              Analysis data has been refreshed. Results here reflect the previous run.
-            </p>
+          <div className="flex items-center gap-1.5 rounded-lg border border-orange-400/20 bg-orange-400/[0.05] px-2.5 py-1.5">
+            <RotateCcw className="w-3 h-3 text-orange-400/70 shrink-0" />
+            <span className="text-label text-orange-200/60">Data refreshed · prev. results shown</span>
           </div>
-        )}
-
-        {!analysisComplete && (
-          <p className="text-label text-muted-foreground/30 leading-relaxed">
-            Run analysis first — strategy is built from the cell and variable results.
-          </p>
         )}
 
         {hasError && strategyLastRun?.error_message && (
@@ -527,18 +510,10 @@ function StageIntelligence({
       )}
 
       {briefsIsStale && !briefsRunning && (
-        <div className="flex items-start gap-2 rounded-lg border border-orange-400/20 bg-orange-400/[0.05] px-2.5 py-2">
-          <RotateCcw className="w-3.5 h-3.5 text-orange-400/70 mt-0.5 shrink-0" />
-          <p className="text-label text-orange-200/65 leading-relaxed">
-            Analysis data has been refreshed. Results here reflect the previous run.
-          </p>
+        <div className="flex items-center gap-1.5 rounded-lg border border-orange-400/20 bg-orange-400/[0.05] px-2.5 py-1.5">
+          <RotateCcw className="w-3 h-3 text-orange-400/70 shrink-0" />
+          <span className="text-label text-orange-200/60">Data refreshed · prev. results shown</span>
         </div>
-      )}
-
-      {!strategyComplete && (
-        <p className="text-label text-muted-foreground/30 leading-relaxed">
-          Generate strategy first — briefs are derived from the message pillars.
-        </p>
       )}
 
       {hasError && briefsLastRun?.error_message && (
@@ -570,16 +545,10 @@ function ReportIntelligence({
         <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/20" />
         <span className="text-[9px] text-muted-foreground/35">Deliverable</span>
       </div>
-      {reportComplete ? (
+      {reportComplete && (
         <div className="flex flex-wrap gap-1.5">
           <StatPill value={reportCount} label={reportCount === 1 ? "report" : "reports"} />
         </div>
-      ) : (
-        <p className="text-label text-muted-foreground/30 leading-relaxed">
-          {briefsComplete
-            ? "Generate a report to export performance insights for your client."
-            : "Complete the analysis + strategy + briefs stages first."}
-        </p>
       )}
     </div>
   );
@@ -595,15 +564,10 @@ function RerunIntelligence({ allLoopComplete }: { allLoopComplete: boolean }) {
         <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/20" />
         <span className="text-[9px] text-muted-foreground/35">Next cycle</span>
       </div>
-      {allLoopComplete ? (
-        <p className="text-label text-muted-foreground/30 leading-relaxed">
-          Loop complete. Upload updated data or pull fresh Meta results, then re-run
-          analysis to begin the next cycle.
-        </p>
-      ) : (
-        <p className="text-label text-muted-foreground/30 leading-relaxed">
-          Complete all five stages first — Data → Analysis → Strategy → Briefs → Report.
-        </p>
+      {allLoopComplete && (
+        <div className="flex flex-wrap gap-1.5">
+          <StatPill value="Loop complete" />
+        </div>
       )}
     </div>
   );
@@ -695,7 +659,7 @@ function CommandHub({
   analysisStarting: boolean;
   analysisStartError: string | null;
   onNavigate: (path: string) => void;
-  onStartAnalysis: (range: AnalysisDateRange) => void;
+  onStartAnalysis: (range: AnalysisDateRange) => Promise<void>;
   onGenerateStrategy: () => void;
   onGenerateBriefs: () => void;
 }) {
@@ -907,15 +871,28 @@ function CommandHub({
     if (stage === "strategy") {
       if (pendingConfirm === "strategy") return (
         <div className="flex flex-col gap-2.5">
-          <div className="rounded-lg border border-primary/15 bg-primary/[0.05] px-2.5 py-2 space-y-1">
-            <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/35">Grounded in</p>
-            <p className="text-label text-foreground/70 leading-relaxed">
-              Analysis run
-              {analysisRun?.date_start && analysisRun?.date_end
-                ? ` · ${fmtDate(analysisRun.date_start)} – ${fmtDate(analysisRun.date_end)}`
-                : ""}
-              {analysisRun?.rows_ingested != null ? ` · ${analysisRun.rows_ingested.toLocaleString()} rows` : ""}
+          {/* Analysis selection — shows which analysis run the strategy will be grounded in */}
+          <div>
+            <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/30 mb-1.5">
+              Based on analysis
             </p>
+            <div className="rounded-lg border border-emerald-400/20 bg-emerald-400/[0.04] px-2.5 py-2 space-y-1.5">
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400/60 shrink-0" />
+                <span className="text-label font-semibold text-foreground/75">
+                  {analysisRun?.date_start && analysisRun?.date_end
+                    ? `${fmtDate(analysisRun.date_start)} – ${fmtDate(analysisRun.date_end)}`
+                    : "Latest analysis run"}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1.5 pl-5">
+                {cellCount > 0 && <StatPill value={cellCount} label="cells" />}
+                {variableCount > 0 && <StatPill value={variableCount} label="variables" />}
+                {analysisRun?.rows_ingested != null && (
+                  <StatPill value={analysisRun.rows_ingested.toLocaleString()} label="rows" />
+                )}
+              </div>
+            </div>
           </div>
           <div className="flex gap-1.5">
             <button
@@ -1316,10 +1293,14 @@ export function LoopCommandChain({
   // ── Analysis run mutation (fired from CommandHub confirmation) ───────────
   const startAnalysisMutation = useStartManualAnalysisRun();
   const [analysisStartError, setAnalysisStartError]  = useState<string | null>(null);
-  const handleStartAnalysis = async (range: AnalysisDateRange) => {
+  const handleStartAnalysis = async (range: AnalysisDateRange): Promise<void> => {
     setAnalysisStartError(null);
     try {
       await startAnalysisMutation.mutateAsync({ accountId, data: { date_range: range } });
+      // Start polling immediately — don't wait for refetch to confirm "running"
+      // so there's no timing gap where the run exists on the server but
+      // analysisPolling is still false.
+      setAnalysisPolling(true);
       await refetchAnalysis();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Could not start analysis — check your connection.";
@@ -1373,6 +1354,31 @@ export function LoopCommandChain({
             {anyRunning ? "●" : completeCount === TOTAL_STAGES ? "✓" : `${completeCount}/${TOTAL_STAGES}`}
           </span>
         </div>
+
+        {/* Running strip — persistent progress bar visible whenever any stage is active */}
+        {(analysisRunning || strategyRunning || briefsRunning) && (
+          <div className="flex flex-col gap-1 rounded-lg border border-amber-400/20 bg-amber-400/[0.04] px-2.5 py-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Loader2 className="w-3 h-3 text-amber-400/70 animate-spin shrink-0" />
+                <span className="text-label text-amber-400/70 font-medium">
+                  {analysisRunning ? "Analysis" : strategyRunning ? "Strategy" : "Briefs"} processing
+                </span>
+              </div>
+              <span className="text-[9px] font-mono tabular-nums text-amber-400/50 leading-none">
+                {analysisRunning
+                  ? fmtElapsed(analysisElapsedSeconds)
+                  : strategyRunning
+                  ? fmtElapsed(strategyGen.elapsedSeconds)
+                  : fmtElapsed(briefsGen.elapsedSeconds)}
+              </span>
+            </div>
+            <div className="relative h-[3px] rounded-full overflow-hidden bg-amber-400/[0.08]">
+              <span className="absolute inset-y-0 w-1/3 bg-amber-400/45 rounded-full animate-[progress-slide_1.4s_ease-in-out_infinite]" />
+            </div>
+            <p className="text-[9px] text-amber-400/45 leading-none">Views update automatically on completion</p>
+          </div>
+        )}
 
         {/* Six tiles + causal connectors */}
         <div className="flex items-center gap-0.5">
@@ -1513,7 +1519,7 @@ export function LoopCommandChain({
           analysisStarting={startAnalysisMutation.isPending}
           analysisStartError={analysisStartError}
           onNavigate={navigate}
-          onStartAnalysis={(range) => void handleStartAnalysis(range)}
+          onStartAnalysis={handleStartAnalysis}
           onGenerateStrategy={() => strategyGen.start()}
           onGenerateBriefs={() => briefsGen.start()}
         />

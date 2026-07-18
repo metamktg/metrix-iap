@@ -243,7 +243,7 @@ export function AddAccountDialog({
                 </div>
               )}
               <div className="flex items-center justify-between pt-1">
-                <GhostBtn onClick={() => { setStep("choose"); setError(null); }}>
+                <GhostBtn onClick={() => { setStep("choose"); setError(null); setName(""); }}>
                   <ArrowLeft className="w-3.5 h-3.5" /> Back
                 </GhostBtn>
                 <PrimaryBtn onClick={() => void handleCreate()} disabled={createMutation.isPending || name.trim().length < 2}>
