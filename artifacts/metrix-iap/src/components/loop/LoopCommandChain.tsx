@@ -1,3 +1,4 @@
+// @refresh reset
 // ─── IAP Loop · Command Chain ─────────────────────────────────────────
 //
 // SIX stage tiles — pure state at a glance, no data on face.
