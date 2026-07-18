@@ -258,6 +258,30 @@ describe("manual_name step — Enter submits", () => {
     expect(screen.queryByText(/at least 2 characters/i)).toBeNull();
   });
 
+  it("name input is empty when returning to manual_name step after clicking Back", async () => {
+    const user = userEvent.setup();
+    renderDialog({ open: true, onOpenChange: vi.fn() });
+
+    // Navigate to manual_name step.
+    await user.click(screen.getByRole("button", { name: /Upload manual reports/i }));
+
+    // Type a name.
+    const input = screen.getByPlaceholderText(/Acme Skincare/i);
+    await user.click(input);
+    await user.type(input, "Typed Before Back");
+
+    // Click Back → returns to choose step.
+    await user.click(screen.getByRole("button", { name: /Back/i }));
+    expect(screen.queryByPlaceholderText(/Acme Skincare/i)).toBeNull();
+
+    // Navigate to manual_name step again.
+    await user.click(screen.getByRole("button", { name: /Upload manual reports/i }));
+
+    // Input must be empty — Back clears the name state.
+    const inputAgain = screen.getByPlaceholderText(/Acme Skincare/i);
+    expect((inputAgain as HTMLInputElement).value).toBe("");
+  });
+
   it("Tab from the name input reaches Back before Create account", async () => {
     const user = userEvent.setup();
     renderDialog({ open: true, onOpenChange: vi.fn() });
