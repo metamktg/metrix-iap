@@ -115,7 +115,8 @@ export function AddAccountDialog({
   };
 
   const finish = () => {
-    handleOpenChange(false);
+    onOpenChange(false);
+    reset();
     if (created) selectAdAccount(created.account_id);
   };
 

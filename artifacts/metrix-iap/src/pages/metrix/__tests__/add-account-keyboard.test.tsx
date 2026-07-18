@@ -31,6 +31,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 // ── Mutable per-test state ────────────────────────────────────────────────
 
 let mockMutateAsync: ReturnType<typeof vi.fn>;
+let mockSelectAdAccount: ReturnType<typeof vi.fn>;
 let mockImports: unknown[];
 
 // ── Mocks (hoisted before imports of the module under test) ──────────────
@@ -59,7 +60,7 @@ vi.mock("wouter", async (importOriginal) => {
 });
 
 vi.mock("@/contexts/AccountContext", () => ({
-  useAccount: () => ({ selectAdAccount: vi.fn() }),
+  useAccount: () => ({ selectAdAccount: mockSelectAdAccount }),
   AccountProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
@@ -135,6 +136,7 @@ beforeEach(() => {
   cleanup();
   mockImports = [];
   mockMutateAsync = vi.fn().mockResolvedValue({ account_id: "acct-test", name: "Acme" });
+  mockSelectAdAccount = vi.fn();
 });
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -426,5 +428,28 @@ describe("focus return after dialog closes", () => {
 
     // No Radix focus-guard sentinels should survive.
     expect(document.querySelectorAll("[data-radix-focus-guard]").length).toBe(0);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// 5. "Done — open account" navigates to the created account
+// ─────────────────────────────────────────────────────────────────────────
+
+describe("Done — open account button", () => {
+  it("calls selectAdAccount with the created account ID and closes the dialog", async () => {
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+
+    // Drive to the upload step (mockMutateAsync resolves with account_id "acct-test").
+    await reachUploadStep(user, onOpenChange);
+
+    const doneBtn = screen.getByRole("button", { name: /Done — open account/i });
+    await user.click(doneBtn);
+
+    // selectAdAccount must be called with the exact id returned by the create mutation.
+    expect(mockSelectAdAccount).toHaveBeenCalledWith("acct-test");
+
+    // The dialog must close.
+    expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 });
