@@ -10,6 +10,7 @@ import { userHasAccountAccess } from "./metrix";
 import {
   AnalysisError,
   getLatestAnalysisRun,
+  listAnalysisRuns,
   startManualAnalysis,
   syncAllCreativeLinksForAccount,
   computeCreativeLinkageSummary,
@@ -77,6 +78,18 @@ router.get("/metrix/manual-performance-csv-format", requireAuth, (_req, res) => 
     device_placement: buildIapCsvClassFormat("device_placement"),
     column_aliases: buildColumnAliasGuide(),
   });
+});
+
+router.get("/metrix/accounts/:accountId/analysis-runs", requireAuth, async (req, res) => {
+  const accountId = String(req.params["accountId"]);
+  try {
+    if (!(await guardAccess(req, res, accountId))) return;
+    const runs = await listAnalysisRuns(accountId);
+    res.json({ runs });
+  } catch (err) {
+    req.log.error({ err, accountId }, "Failed to list analysis runs");
+    res.status(502).json({ message: err instanceof Error ? err.message : "Could not list analysis runs." });
+  }
 });
 
 router.post("/metrix/accounts/:accountId/analysis-runs", requireAuth, async (req, res) => {

@@ -33,6 +33,7 @@ import type {
   AdminUserActionResult,
   AdminUserAdAccountsResult,
   AdminUsersResult,
+  AnalysisRunListResult,
   ApiError,
   AuthChangePasswordInput,
   AuthLoginInput,
@@ -44,6 +45,7 @@ import type {
   AuthUserResult,
   CreateAdAccountInput,
   CreateAdAccountResult,
+  GenerateStrategyInput,
   GeneratedReportCreateInput,
   GeneratedReportCreateResult,
   GeneratedReportDeleteResult,
@@ -734,6 +736,84 @@ export function useGetManualPerformanceCsvFormat<TData = Awaited<ReturnType<type
 
 
 
+export const getListAnalysisRunsUrl = (accountId: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/analysis-runs`
+}
+
+/**
+ * Returns every analysis run for the account ordered newest-first (running → error → success). Used to let the user pick which analysis run to ground strategy generation in. Requires access to the account.
+ * @summary List all analysis runs for an account
+ */
+export const listAnalysisRuns = async (accountId: string, options?: RequestInit): Promise<AnalysisRunListResult> => {
+
+  return customFetch<AnalysisRunListResult>(getListAnalysisRunsUrl(accountId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAnalysisRunsQueryKey = (accountId: string,) => {
+    return [
+    `/api/metrix/accounts/${accountId}/analysis-runs`
+    ] as const;
+    }
+
+
+export const getListAnalysisRunsQueryOptions = <TData = Awaited<ReturnType<typeof listAnalysisRuns>>, TError = ErrorType<ApiError>>(accountId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAnalysisRuns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAnalysisRunsQueryKey(accountId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAnalysisRuns>>> = ({ signal }) => listAnalysisRuns(accountId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: accountId !== null && accountId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAnalysisRuns>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAnalysisRunsQueryResult = NonNullable<Awaited<ReturnType<typeof listAnalysisRuns>>>
+export type ListAnalysisRunsQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary List all analysis runs for an account
+ */
+
+export function useListAnalysisRuns<TData = Awaited<ReturnType<typeof listAnalysisRuns>>, TError = ErrorType<ApiError>>(
+ accountId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAnalysisRuns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAnalysisRunsQueryOptions(accountId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getStartManualAnalysisRunUrl = (accountId: string,) => {
 
 
@@ -967,14 +1047,15 @@ export const getGenerateAccountStrategyUrl = (accountId: string,) => {
  * Starts an in-app Metrix engine run that generates message pillars and testing hypotheses grounded in the account's real analysis rows. Returns 202 with the run id immediately; poll the latest-run endpoint for the outcome. Generated rows carry source='generated' and never touch imported rows. Requires access to the account.
  * @summary Generate strategy (pillars + hypotheses) from the account's analysis data
  */
-export const generateAccountStrategy = async (accountId: string, options?: RequestInit): Promise<StartGenerationResult> => {
+export const generateAccountStrategy = async (accountId: string,
+    generateStrategyInput?: GenerateStrategyInput, options?: RequestInit): Promise<StartGenerationResult> => {
 
   return customFetch<StartGenerationResult>(getGenerateAccountStrategyUrl(accountId),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(generateStrategyInput)
   }
 );}
 
@@ -982,8 +1063,8 @@ export const generateAccountStrategy = async (accountId: string, options?: Reque
 
 
 export const getGenerateAccountStrategyMutationOptions = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateAccountStrategy>>, TError,{accountId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof generateAccountStrategy>>, TError,{accountId: string}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateAccountStrategy>>, TError,{accountId: string;data?: BodyType<GenerateStrategyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateAccountStrategy>>, TError,{accountId: string;data?: BodyType<GenerateStrategyInput>}, TContext> => {
 
 const mutationKey = ['generateAccountStrategy'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -995,10 +1076,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateAccountStrategy>>, {accountId: string}> = (props) => {
-          const {accountId} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateAccountStrategy>>, {accountId: string;data?: BodyType<GenerateStrategyInput>}> = (props) => {
+          const {accountId,data} = props ?? {};
 
-          return  generateAccountStrategy(accountId,requestOptions)
+          return  generateAccountStrategy(accountId,data,requestOptions)
         }
 
 
@@ -1009,18 +1090,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type GenerateAccountStrategyMutationResult = NonNullable<Awaited<ReturnType<typeof generateAccountStrategy>>>
-
+    export type GenerateAccountStrategyMutationBody = BodyType<GenerateStrategyInput> | undefined
     export type GenerateAccountStrategyMutationError = ErrorType<ApiError>
 
     /**
  * @summary Generate strategy (pillars + hypotheses) from the account's analysis data
  */
 export const useGenerateAccountStrategy = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateAccountStrategy>>, TError,{accountId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateAccountStrategy>>, TError,{accountId: string;data?: BodyType<GenerateStrategyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof generateAccountStrategy>>,
         TError,
-        {accountId: string},
+        {accountId: string;data?: BodyType<GenerateStrategyInput>},
         TContext
       > => {
       return useMutation(getGenerateAccountStrategyMutationOptions(options));

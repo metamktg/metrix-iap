@@ -646,15 +646,30 @@ export async function getLatestGenerationRun(
   return runShape(row);
 }
 
-async function startRun(accountId: string, kind: GenerationKind, createdBy: string): Promise<string> {
+async function startRun(
+  accountId: string,
+  kind: GenerationKind,
+  createdBy: string,
+  sourceAnalysisRunId?: string,
+): Promise<string> {
   const latest = await getLatestGenerationRun(accountId, kind);
   if (latest && latest.status === "running") {
     throw new GenerationError("A generation run is already in progress for this account.", 409);
   }
   const supabase = getSupabase();
+  const insertPayload: Record<string, unknown> = {
+    account_id: accountId,
+    kind,
+    status: "running",
+    model: GENERATION_MODEL,
+    created_by: createdBy,
+  };
+  if (sourceAnalysisRunId) {
+    insertPayload["source_analysis_run_id"] = sourceAnalysisRunId;
+  }
   const { data, error } = await supabase
     .from("generation_runs")
-    .insert({ account_id: accountId, kind, status: "running", model: GENERATION_MODEL, created_by: createdBy })
+    .insert(insertPayload)
     .select("id");
   if (error) {
     // Partial unique index on (account_id, kind) WHERE status='running'
@@ -724,11 +739,15 @@ async function upsertLoopStage(accountId: string, stage: string, runId: string):
  * immediately; the generation itself continues in the background and the
  * run row records the outcome.
  */
-export async function startStrategyGeneration(accountId: string, createdBy: string): Promise<string> {
+export async function startStrategyGeneration(
+  accountId: string,
+  createdBy: string,
+  sourceAnalysisRunId?: string,
+): Promise<string> {
   const account = await accountExists(accountId);
   if (!account) throw new GenerationError("Ad account not found.", 404);
   const { evidence, cellIds, icpIds } = await buildStrategyEvidence(accountId, String(account["name"] ?? accountId));
-  const runId = await startRun(accountId, "strategy", createdBy);
+  const runId = await startRun(accountId, "strategy", createdBy, sourceAnalysisRunId);
 
   // Run-scope generated ids so ids from different runs never collide —
   // a brief referencing GEN_PILLAR_<oldrun>_1 can never silently resolve

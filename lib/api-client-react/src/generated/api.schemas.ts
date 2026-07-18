@@ -656,6 +656,15 @@ export interface LatestAnalysisRunResult {
   run: AnalysisRun | null;
 }
 
+export interface AnalysisRunListResult {
+  runs: AnalysisRun[];
+}
+
+export interface GenerateStrategyInput {
+  /** ID of the specific analysis run to ground this strategy in. Optional — when omitted the engine uses the account's current analysis data. Stored as provenance on the generation run. */
+  analysis_run_id?: string | null;
+}
+
 export interface StartGenerationResult {
   run_id: string;
 }

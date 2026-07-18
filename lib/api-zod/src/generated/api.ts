@@ -246,6 +246,38 @@ export const GetManualPerformanceCsvFormatResponse = zod.object({
 
 
 /**
+ * Returns every analysis run for the account ordered newest-first (running → error → success). Used to let the user pick which analysis run to ground strategy generation in. Requires access to the account.
+ * @summary List all analysis runs for an account
+ */
+
+
+
+export const ListAnalysisRunsParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
+})
+
+export const ListAnalysisRunsResponse = zod.object({
+  "runs": zod.array(zod.object({
+  "id": zod.string(),
+  "account_id": zod.string(),
+  "status": zod.enum(['running', 'success', 'error']),
+  "date_range": zod.enum(['7d', '14d', '30d', 'all']),
+  "date_start": zod.string().nullish().describe('Resolved start date actually covered by this run (from the data itself).'),
+  "date_end": zod.string().nullish().describe('Resolved end date actually covered by this run (from the data itself).'),
+  "rows_ingested": zod.number().nullish(),
+  "imports_used": zod.number().nullish(),
+  "error_message": zod.string().nullish(),
+  "started_at": zod.string(),
+  "finished_at": zod.string().nullish(),
+  "creatives_linked": zod.number().nullish().describe('Number of staged creative assets successfully linked to ad rows (computed live from current DB state).'),
+  "creatives_total": zod.number().nullish().describe('Total number of staged creative asset ad-name mappings attempted.'),
+  "creatives_unlinked_names": zod.array(zod.string()).nullish().describe('Ad names from staged creative assets that could not be matched to any ads row.'),
+  "csv_warnings": zod.array(zod.string()).nullish().describe('Warnings produced during tolerant CSV column matching (auto-resolved aliases, missing columns, unrecognised columns that might map to expected ones). Null when parsing was clean. Present on successful runs that had non-fatal column issues.')
+}))
+})
+
+
+/**
  * Parses the account's staged performance_csv manual imports into performance data for the selected date window (7d/14d/30d/all — anchored to the latest date found in the uploaded data, not wall-clock time). Never runs automatically on upload — only from this explicit call. Returns 202 with the run id immediately; poll the latest-run endpoint for the outcome, including the exact date range analyzed. Requires access to the account.
  * @summary Manually run analysis over an account's staged performance CSVs
  */
@@ -324,6 +356,10 @@ export const GetLatestAnalysisRunResponse = zod.object({
 
 export const GenerateAccountStrategyParams = zod.object({
   "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
+})
+
+export const GenerateAccountStrategyBody = zod.object({
+  "analysis_run_id": zod.string().nullish().describe('ID of the specific analysis run to ground this strategy in. Optional — when omitted the engine uses the account\'s current analysis data. Stored as provenance on the generation run.')
 })
 
 export const GenerateAccountStrategyResponse = zod.object({
