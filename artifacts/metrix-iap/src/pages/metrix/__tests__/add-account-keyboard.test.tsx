@@ -227,6 +227,37 @@ describe("manual_name step — Enter submits", () => {
     expect(screen.getByText(/at least 2 characters/i)).toBeTruthy();
   });
 
+  it("Back button from manual_name navigates to choose step, removes name field, and clears error", async () => {
+    const user = userEvent.setup();
+    renderDialog({ open: true, onOpenChange: vi.fn() });
+
+    // Navigate to manual_name step.
+    await user.click(screen.getByRole("button", { name: /Upload manual reports/i }));
+
+    const input = screen.getByPlaceholderText(/Acme Skincare/i);
+
+    // Type a short (invalid) name to trigger the validation error first.
+    await user.click(input);
+    await user.type(input, "A");
+    await user.keyboard("{Enter}");
+
+    // Error banner must be present before we click Back.
+    expect(screen.getByText(/at least 2 characters/i)).toBeTruthy();
+
+    // Click Back.
+    await user.click(screen.getByRole("button", { name: /Back/i }));
+
+    // Verify we are back on the choose step — both choice buttons must be visible.
+    expect(screen.getByRole("button", { name: /Connect Meta Ad Account/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Upload manual reports/i })).toBeTruthy();
+
+    // The name input field must be gone (it belongs to the manual_name step).
+    expect(screen.queryByPlaceholderText(/Acme Skincare/i)).toBeNull();
+
+    // The error banner must be gone.
+    expect(screen.queryByText(/at least 2 characters/i)).toBeNull();
+  });
+
   it("Tab from the name input reaches Back before Create account", async () => {
     const user = userEvent.setup();
     renderDialog({ open: true, onOpenChange: vi.fn() });
