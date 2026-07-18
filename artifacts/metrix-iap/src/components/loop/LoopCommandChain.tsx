@@ -168,7 +168,7 @@ function StageTile({
       disabled={isLocked}
       className={cn(
         "relative flex flex-col items-center justify-center gap-2 py-3 px-2 rounded-xl flex-1 min-w-0 overflow-hidden",
-        "border transition-all duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40",
+        "border transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
         isLocked
           ? "border-border/8 bg-transparent opacity-25 cursor-not-allowed"
           : isActive
