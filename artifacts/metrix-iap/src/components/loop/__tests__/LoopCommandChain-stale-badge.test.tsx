@@ -49,7 +49,11 @@ const mockGenState = {
 vi.mock("@workspace/api-client-react", () => ({
   useGetLatestAnalysisRun: () => ({
     data: mockAnalysisState.run ? { run: mockAnalysisState.run } : null,
+    refetch: vi.fn(),
   }),
+  getGetLatestAnalysisRunQueryKey: () => ["analysis", "latest"],
+  getGetMetrixSeedQueryKey: () => ["metrix", "seed"],
+  useStartManualAnalysisRun: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useListWorkspaceReports: () => ({ data: { reports: [] } }),
   useListManualImports: () => ({ data: { imports: [] } }),
 }));
