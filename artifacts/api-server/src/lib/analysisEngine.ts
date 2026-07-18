@@ -26,6 +26,7 @@ import { invalidateMetrixSeedCache } from "./metrixSeedAssembly";
 import { logger } from "./logger";
 import { parseIapCsv, IapCsvFormatError, type IapCsvRow } from "./iapCsvParser";
 import { getAppBaseUrl } from "./appUrl";
+import { buildAnalysisCore } from "./analysisCore";
 
 export const STALE_ANALYSIS_RUN_MS = 10 * 60 * 1000;
 
@@ -321,6 +322,22 @@ export async function startManualAnalysis(
       const dateStart = scopedDates.reduce((min, d) => (d < min ? d : min), scopedDates[0]!);
       const dateEnd = scopedDates.reduce((max, d) => (d > max ? d : max), scopedDates[0]!);
 
+      // ── Analysis Core layer: run ingestion (the CSVs just parsed above),
+      // the bundle (scoped rows for this window), and the deterministic
+      // Analysis Core together as ONE pipeline — this is what populates the
+      // UI's Analysis section (cells/variables/segments/concepts/failure
+      // patterns + the core control read) BEFORE strategy generation can
+      // run against it. Pure computation; no DB writes yet.
+      const core = buildAnalysisCore({
+        accountId,
+        accountName: String(account["name"] ?? accountId),
+        dateStart,
+        dateEnd,
+        demoRows: scopedDemo,
+        placementRows: scopedPlacement,
+        sourceFiles: imports!.map((i) => String(i["filename"])),
+      });
+
       // ── Ad-level rows (ad_performance): aggregate the placement export
       // across its device/platform/placement dimensions to a per-ad/day row.
       const adBuckets = new Map<string, AggBucket & { campaign: string; adSet: string; adName: string; resultType: string; date: string }>();
@@ -394,6 +411,24 @@ export async function startManualAnalysis(
           .eq("account_id", accountId)
           .gte("date_start", dateStart)
           .lte("date_end", dateEnd);
+        if (del.error) throw new Error(del.error.message);
+      }
+
+      // Analysis Core layer (cells/variables/segments/concepts/failure
+      // patterns) is a DERIVED view of the whole selected window, not a
+      // per-day table — none of these tables' unique keys include a date,
+      // so re-running with a different window must fully replace this
+      // account's prior Analysis Core output rather than merge into it.
+      for (const table of [
+        "library_cell_performance",
+        "variable_performance",
+        "demographic_signal",
+        "placement_signal",
+        "concept_performance",
+        "concept_intelligence",
+        "failure_patterns",
+      ]) {
+        const del = await supabase.from(table).delete().eq("account_id", accountId);
         if (del.error) throw new Error(del.error.message);
       }
 
@@ -544,7 +579,61 @@ export async function startManualAnalysis(
       }));
       await insertChunked("device_performance", deviceRowsOut);
 
-      const totalRows = adRows.length + demographicRows.length + placementRowsOut.length + platformRowsOut.length + deviceRowsOut.length;
+      // ── Analysis Core layer output — this is what the Analysis section
+      // of the UI reads (performance_by_cell, v3_variable_performance,
+      // demographic_registration_signal, v3/c4e_placement_signal,
+      // concept_rollup, intelligence.concept_scores, core_reanalysis_read)
+      // and what strategy generation requires before it can run.
+      await insertChunked("library_cell_performance", core.libraryCellRows);
+      await insertChunked("variable_performance", core.variableRows);
+      await insertChunked("demographic_signal", core.demographicSignalRows);
+      await insertChunked("placement_signal", core.placementSignalRows);
+      await insertChunked("concept_performance", core.conceptPerformanceRows);
+      await insertChunked("concept_intelligence", core.conceptIntelligenceRows);
+      await insertChunked("failure_patterns", core.failurePatternRows);
+
+      for (const [module, payload] of [
+        ["core_reanalysis_read", core.coreReanalysisRead],
+        ["analysis_core_summary", core.analysisCoreSummary],
+      ] as const) {
+        const modUpsert = await supabase
+          .from("account_modules")
+          .upsert({ account_id: accountId, module, payload }, { onConflict: "account_id,module" });
+        if (modUpsert.error) throw new Error(modUpsert.error.message);
+      }
+
+      const generatedAt = new Date().toISOString();
+      for (const [stage, sourceFile, note] of [
+        [
+          "bundle_prep",
+          imports!.map((i) => String(i["filename"])).join(", "),
+          `Manual upload ingested + bundled for ${dateStart} → ${dateEnd} (${dateRange === "all" ? "all uploaded dates" : dateRange} window).`,
+        ],
+        [
+          "analysis_core",
+          null,
+          `Deterministic Analysis Core run in-app from the bundled window: ${core.libraryCellRows.length} cell(s), ${core.variableRows.length} variable row(s), ${core.conceptIntelligenceRows.length} concept(s), ${core.failurePatternRows.length} failure pattern(s).`,
+        ],
+      ] as const) {
+        const runUpsert = await supabase.from("iap_runs").upsert(
+          {
+            account_id: accountId,
+            stage,
+            status: "complete",
+            window_start: dateStart,
+            window_end: dateEnd,
+            generated_at: generatedAt,
+            source_file: sourceFile,
+            note,
+          },
+          { onConflict: "account_id,stage" },
+        );
+        if (runUpsert.error) throw new Error(runUpsert.error.message);
+      }
+
+      const totalRows =
+        adRows.length + demographicRows.length + placementRowsOut.length + platformRowsOut.length +
+        deviceRowsOut.length + core.totalRows;
 
       await supabase
         .from("ad_accounts")
@@ -552,7 +641,7 @@ export async function startManualAnalysis(
           status: "configured",
           overview_state: {
             title: "Analysis complete",
-            description: `Manual analysis processed ${totalRows} row(s) from ${imports!.length} file(s), covering ${dateStart} to ${dateEnd} (${dateRange === "all" ? "all uploaded dates" : dateRange} window). Re-run analysis after uploading new reports.`,
+            description: `Manual analysis ran ingestion, bundling and the Analysis Core together: ${totalRows} row(s) from ${imports!.length} file(s), covering ${dateStart} to ${dateEnd} (${dateRange === "all" ? "all uploaded dates" : dateRange} window). Re-run analysis after uploading new reports.`,
           },
         })
         .eq("id", accountId);
@@ -564,7 +653,7 @@ export async function startManualAnalysis(
         importsUsed: imports!.length,
       });
       invalidateMetrixSeedCache();
-      logger.info({ accountId, runId, rows: totalRows, dateStart, dateEnd }, "Manual analysis run succeeded");
+      logger.info({ accountId, runId, rows: totalRows, dateStart, dateEnd }, "Manual analysis run succeeded (ingestion + bundle + analysis core)");
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       logger.error({ err, accountId, runId }, "Manual analysis run failed");
