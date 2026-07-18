@@ -70,7 +70,15 @@ export function AddAccountDialog({
   };
 
   const handleOpenChange = (o: boolean) => {
-    if (!o && step === "manual_uploads" && hasStagedImports && !confirmingClose) {
+    if (!o && confirmingClose) {
+      // Esc or backdrop click while the "Leave without completing?" screen is
+      // showing must cancel it (return to the upload step), not close the outer
+      // dialog entirely.  This mirrors "Keep staging" and is the expected
+      // keyboard behaviour for a nested confirm flow.
+      setConfirmingClose(false);
+      return;
+    }
+    if (!o && step === "manual_uploads" && hasStagedImports) {
       setConfirmingClose(true);
       return;
     }
