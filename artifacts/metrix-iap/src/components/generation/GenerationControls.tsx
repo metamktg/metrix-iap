@@ -143,10 +143,16 @@ export function useGenerationRun(accountId: string | null, kind: GenerationKind)
 
   // ── Elapsed-time counter ─────────────────────────────────────────────────
   // Starts ticking when isRunning becomes true; resets when it becomes false.
+  // When the component mounts mid-run the counter is seeded from the run's
+  // server-side started_at so a page-reload doesn't restart at 0:00.
   // Gives the user a live signal that work is happening without needing the
   // hub open.
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const runningStartRef = useRef<number | null>(null);
+  // Keep the latest run.started_at available inside the effect without adding
+  // it to the deps array (we only need it for the one-time seeding).
+  const runStartedAtRef = useRef<string | null | undefined>(undefined);
+  runStartedAtRef.current = run?.started_at;
 
   useEffect(() => {
     if (!isRunning) {
@@ -155,7 +161,10 @@ export function useGenerationRun(accountId: string | null, kind: GenerationKind)
       return;
     }
     if (runningStartRef.current === null) {
-      runningStartRef.current = Date.now();
+      const serverTs = runStartedAtRef.current
+        ? new Date(runStartedAtRef.current).getTime()
+        : null;
+      runningStartRef.current = serverTs ?? Date.now();
     }
     const iv = setInterval(() => {
       setElapsedSeconds(Math.floor((Date.now() - runningStartRef.current!) / 1000));

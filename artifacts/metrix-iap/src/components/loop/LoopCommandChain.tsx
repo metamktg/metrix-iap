@@ -1409,8 +1409,14 @@ export function LoopCommandChain({
   // ── Analysis elapsed-time counter ──────────────────────────────────────
   // Mirrors the pattern in useGenerationRun: starts ticking when
   // analysisRunning becomes true, resets when it becomes false.
+  // When the component mounts mid-run the counter is seeded from the
+  // run's server-side started_at so a page-reload doesn't restart at 0:00.
   const [analysisElapsedSeconds, setAnalysisElapsedSeconds] = useState(0);
   const analysisRunningStartRef = useRef<number | null>(null);
+  // Keep the latest started_at available inside the effect without adding
+  // it to the deps array (we only need it for the one-time seeding).
+  const analysisRunStartedAtRef = useRef<string | null | undefined>(undefined);
+  analysisRunStartedAtRef.current = analysisRun?.started_at;
 
   useEffect(() => {
     if (!analysisRunning) {
@@ -1419,7 +1425,10 @@ export function LoopCommandChain({
       return;
     }
     if (analysisRunningStartRef.current === null) {
-      analysisRunningStartRef.current = Date.now();
+      const serverTs = analysisRunStartedAtRef.current
+        ? new Date(analysisRunStartedAtRef.current).getTime()
+        : null;
+      analysisRunningStartRef.current = serverTs ?? Date.now();
     }
     const iv = setInterval(() => {
       setAnalysisElapsedSeconds(Math.floor((Date.now() - analysisRunningStartRef.current!) / 1000));
