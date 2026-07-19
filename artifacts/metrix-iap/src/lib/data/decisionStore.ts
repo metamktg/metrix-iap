@@ -140,3 +140,11 @@ export function getAllApproved(): Array<{
 export function useDecisions() {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
+
+// ─── Test helpers (never import in production code) ───────────────────
+
+/** Reset in-memory store state. Only for use in unit tests. */
+export function _resetForTest() {
+  state = { records: {}, last: null };
+  emit();
+}
