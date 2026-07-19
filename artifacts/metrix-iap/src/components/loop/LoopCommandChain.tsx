@@ -1462,7 +1462,16 @@ export function LoopCommandChain({
   // ── Analysis run mutation (fired from CommandHub confirmation) ───────────
   const startAnalysisMutation = useStartManualAnalysisRun();
   const [analysisStartError, setAnalysisStartError]  = useState<string | null>(null);
+  // Double-tap guard: analysisFireRef blocks a second mutateAsync() call
+  // synchronously (before any re-render); analysisFiring drives the disabled
+  // state so the button disables in the very next render triggered by
+  // setAnalysisFiring(true) — before mutation.isPending catches up.
+  const analysisFireRef = useRef(false);
+  const [analysisFiring, setAnalysisFiring] = useState(false);
   const handleStartAnalysis = async (range: AnalysisDateRange): Promise<void> => {
+    if (analysisFireRef.current) return;
+    analysisFireRef.current = true;
+    setAnalysisFiring(true);
     setAnalysisStartError(null);
     try {
       await startAnalysisMutation.mutateAsync({ accountId, data: { date_range: range } });
@@ -1474,6 +1483,9 @@ export function LoopCommandChain({
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Could not start analysis — check your connection.";
       setAnalysisStartError(msg);
+    } finally {
+      analysisFireRef.current = false;
+      setAnalysisFiring(false);
     }
   };
 
@@ -1694,7 +1706,7 @@ export function LoopCommandChain({
           allLoopComplete={allLoopComplete}
           stagedImportCount={stagedImportCount}
           isLiveMeta={isLiveMeta}
-          analysisStarting={startAnalysisMutation.isPending}
+          analysisStarting={startAnalysisMutation.isPending || analysisFiring}
           analysisStartError={analysisStartError}
           onNavigate={navigate}
           onStartAnalysis={handleStartAnalysis}
