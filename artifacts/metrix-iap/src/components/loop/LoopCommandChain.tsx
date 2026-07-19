@@ -1363,7 +1363,7 @@ export function LoopCommandChain({
   // dataComplete and analysisComplete use DIFFERENT signals:
   //   Data     — source is connected (live Meta) OR manual files are staged OR analysis ran
   //   Analysis — result data exists from a completed analysis run
-  const isLiveMeta       = account.platform === "meta" || account.platform === "facebook";
+  const isLiveMeta       = ["meta", "facebook", "meta ads"].includes((account.platform ?? "").toLowerCase());
   const analysisComplete = cellCount + variableCount > 0;
   const dataComplete     = isLiveMeta || stagedImportCount > 0 || analysisComplete;
   const strategyComplete = pillarCount > 0;
