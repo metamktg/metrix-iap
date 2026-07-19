@@ -84,9 +84,21 @@ export function AdAccountOverview() {
 
   if (account.status !== "configured" || !account.iap) {
     return (
-      <div className="flex-1 flex flex-col">
-        <ModuleHeader section="Ad Account · 01" title={account.name} subtitle="Ad account overview" />
-        <UnconfiguredState account={account} />
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <ModuleHeader
+          section="Ad Account · 01"
+          title={account.name}
+          subtitle="Set up this account to begin the IAP loop"
+        />
+        {/* Show the IAP loop blueprint for all accounts — unconfigured accounts
+            see every stage locked/pending, giving the same structural frame
+            as a configured account and a clear picture of what comes next. */}
+        <div className="px-6 py-2 border-b border-border/40 shrink-0">
+          <LoopCommandChain accountId={account.id} account={account} managerId={seed.manager_account.id} />
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          <UnconfiguredState account={account} />
+        </div>
       </div>
     );
   }

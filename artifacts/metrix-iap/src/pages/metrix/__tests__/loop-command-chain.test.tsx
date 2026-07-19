@@ -229,11 +229,15 @@ describe("LoopCommandChain — configured account with no analysis run yet", () 
     expect(screen.getByText("IAP Loop")).toBeTruthy();
   });
 
-  it("shows 0/5 complete counter — no stages have data", () => {
+  it("shows 1/5 complete counter — Data stage is complete for a live Meta account", () => {
+    // fresh_account inherits platform "Meta Ads" from Bookster.
+    // isLiveMeta recognises "meta ads" as a live Meta connection, so the
+    // Data stage is complete (source connected) even without an analysis run.
+    // Counter: 1/5 (Data done; Analysis/Strategy/Briefs/Report still pending).
     const seed = seedWithNoAnalysisAccount();
     selectAccount("fresh_account");
     const { container } = renderOverview(seed);
-    expect(container.textContent).toContain("0/5");
+    expect(container.textContent).toContain("1/5");
   });
 
   it("Data stage tile is not locked — data is the entry point", () => {
@@ -244,12 +248,15 @@ describe("LoopCommandChain — configured account with no analysis run yet", () 
     expect(isDisabled(dataTile)).toBe(false);
   });
 
-  it("Analysis stage tile is locked — no data has been ingested yet", () => {
+  it("Analysis stage tile is NOT locked — Data is complete for a live Meta account", () => {
+    // isLiveMeta=true (platform "Meta Ads") → dataComplete=true → Analysis
+    // becomes the "next" step, not locked. Locked = disabled only when
+    // !dataComplete && !analysisComplete && !analysisRunning.
     const seed = seedWithNoAnalysisAccount();
     selectAccount("fresh_account");
     renderOverview(seed);
     const analysisTile = screen.getByRole("button", { name: /^analysis$/i });
-    expect(isDisabled(analysisTile)).toBe(true);
+    expect(isDisabled(analysisTile)).toBe(false);
   });
 
   it("Strategy stage tile is locked — analysis has not run", () => {
@@ -386,8 +393,10 @@ describe("LoopCommandChain — hooks-violation guard (hoisted useState/useMemo)"
   it("renders without throwing for an unconfigured account (SKOV Pet)", () => {
     selectAccount("skov_pet");
     const { container } = renderOverview();
-    // Unconfigured accounts get the UnconfiguredState — no IAP Loop visible
-    expect(container.textContent).not.toContain("IAP Loop");
+    // Unconfigured accounts now show the IAP Loop blueprint (all stages
+    // locked/pending) above the UnconfiguredState checklist — same structural
+    // frame as a configured account so every account sees the full loop.
+    expect(container.textContent).toContain("IAP Loop");
     expect(container.textContent).toContain("Connect Meta Ad Account");
   });
 

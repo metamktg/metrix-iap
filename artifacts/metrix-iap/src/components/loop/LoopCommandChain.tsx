@@ -381,7 +381,7 @@ function StageIntelligence({
   // ── Data intelligence ────────────────────────────────────────────────
 
   if (stage === "data") {
-    const isLiveMeta = accountPlatform === "meta" || accountPlatform === "facebook";
+    const isLiveMeta = ["meta", "facebook", "meta ads"].includes((accountPlatform ?? "").toLowerCase());
     return (
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-1.5 flex-wrap">
@@ -792,7 +792,7 @@ function CommandHub({
         ? calcProgress(elapsedSeconds, EXPECTED_SECONDS[activeKind])
         : 0;
       const phaseLabel = activeKind ? getPhaseLabel(activeKind, progressPct) : "Processing…";
-      return (
+      const progressView = (
         <div className="flex flex-col gap-2.5">
           {/* Phase label + percentage + elapsed */}
           <div className="flex items-center justify-between gap-2">
@@ -819,6 +819,36 @@ function CommandHub({
           <p className="text-[9px] text-amber-400/40 leading-none">Views update automatically on completion</p>
         </div>
       );
+      // Strategy and Briefs: keep the generate button visible but disabled while
+      // the run is in flight so the user can see what action is locked, and so
+      // tests can assert the disabled state with a standard toBeDisabled() query.
+      if (stage === "strategy") {
+        return (
+          <div className="flex flex-col gap-2">
+            {progressView}
+            <button
+              disabled
+              className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-primary-btn opacity-40 cursor-not-allowed"
+            >
+              <Sparkles className="w-3.5 h-3.5" /> Build Strategy
+            </button>
+          </div>
+        );
+      }
+      if (stage === "briefs") {
+        return (
+          <div className="flex flex-col gap-2">
+            {progressView}
+            <button
+              disabled
+              className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-primary-btn opacity-40 cursor-not-allowed"
+            >
+              <Sparkles className="w-3.5 h-3.5" /> Draft Briefs
+            </button>
+          </div>
+        );
+      }
+      return progressView;
     }
 
     if (stage === "data") return (
@@ -1363,7 +1393,7 @@ export function LoopCommandChain({
   // dataComplete and analysisComplete use DIFFERENT signals:
   //   Data     — source is connected (live Meta) OR manual files are staged OR analysis ran
   //   Analysis — result data exists from a completed analysis run
-  const isLiveMeta       = account.platform === "meta" || account.platform === "facebook";
+  const isLiveMeta       = ["meta", "facebook", "meta ads"].includes((account.platform ?? "").toLowerCase());
   const analysisComplete = cellCount + variableCount > 0;
   const dataComplete     = isLiveMeta || stagedImportCount > 0 || analysisComplete;
   const strategyComplete = pillarCount > 0;
@@ -1379,8 +1409,14 @@ export function LoopCommandChain({
   // ── Analysis elapsed-time counter ──────────────────────────────────────
   // Mirrors the pattern in useGenerationRun: starts ticking when
   // analysisRunning becomes true, resets when it becomes false.
+  // When the component mounts mid-run the counter is seeded from the
+  // run's server-side started_at so a page-reload doesn't restart at 0:00.
   const [analysisElapsedSeconds, setAnalysisElapsedSeconds] = useState(0);
   const analysisRunningStartRef = useRef<number | null>(null);
+  // Keep the latest started_at available inside the effect without adding
+  // it to the deps array (we only need it for the one-time seeding).
+  const analysisRunStartedAtRef = useRef<string | null | undefined>(undefined);
+  analysisRunStartedAtRef.current = analysisRun?.started_at;
 
   useEffect(() => {
     if (!analysisRunning) {
@@ -1389,7 +1425,10 @@ export function LoopCommandChain({
       return;
     }
     if (analysisRunningStartRef.current === null) {
-      analysisRunningStartRef.current = Date.now();
+      const serverTs = analysisRunStartedAtRef.current
+        ? new Date(analysisRunStartedAtRef.current).getTime()
+        : null;
+      analysisRunningStartRef.current = serverTs ?? Date.now();
     }
     const iv = setInterval(() => {
       setAnalysisElapsedSeconds(Math.floor((Date.now() - analysisRunningStartRef.current!) / 1000));
@@ -1399,24 +1438,48 @@ export function LoopCommandChain({
 
   // ── Analysis polling lifecycle ───────────────────────────────────────────
   // Enables polling when a run starts, disables + invalidates seed when done.
-  const prevAnalysisStatusRef = useRef<string | null | undefined>(undefined);
-  const analysisToastRunIdRef = useRef<string | null>(null);
+  //
+  // Two paths to seed invalidation:
+  //   A. Normal path — component was mounted when the run settled:
+  //      analysisPolling was true → run status left "running" → invalidate + stop polling.
+  //   B. Remount path — user navigated away mid-run, then returned after completion:
+  //      analysisPolling is false on remount (initial state), so path A is skipped.
+  //      We detect this by checking that the run is "success" but the seed hasn't
+  //      reflected the data yet (!analysisComplete), and guard against re-triggering
+  //      on every render with seedRefreshedForRunIdRef (tracks the last run id we
+  //      already invalidated for).
+  const prevAnalysisStatusRef    = useRef<string | null | undefined>(undefined);
+  const analysisToastRunIdRef    = useRef<string | null>(null);
+  const seedRefreshedForRunIdRef = useRef<string | null>(null);
   useEffect(() => {
     const status = analysisRun?.status;
+    const runId  = analysisRun?.id;
     if (status === "running") {
       setAnalysisPolling(true);
     } else if (analysisPolling && status) {
+      // Path A: polling was active, run just settled.
       setAnalysisPolling(false);
       void queryClient.invalidateQueries({ queryKey: getGetMetrixSeedQueryKey() });
+      if (runId) seedRefreshedForRunIdRef.current = runId;
+    } else if (
+      status === "success" &&
+      runId &&
+      seedRefreshedForRunIdRef.current !== runId &&
+      !analysisComplete
+    ) {
+      // Path B: component mounted (or user returned) after the run completed,
+      // but the seed bundle doesn't yet show the results. Invalidate once per run id.
+      seedRefreshedForRunIdRef.current = runId;
+      void queryClient.invalidateQueries({ queryKey: getGetMetrixSeedQueryKey() });
     }
-    // Toast once when a run transitions to success.
+    // Toast once when a run transitions to success (only when we were watching it run).
     if (
       status === "success" &&
-      analysisRun?.id &&
-      analysisToastRunIdRef.current !== analysisRun.id &&
+      runId &&
+      analysisToastRunIdRef.current !== runId &&
       prevAnalysisStatusRef.current === "running"
     ) {
-      analysisToastRunIdRef.current = analysisRun.id;
+      analysisToastRunIdRef.current = runId;
       toast({
         title: "Analysis complete",
         description:
@@ -1427,12 +1490,21 @@ export function LoopCommandChain({
       });
     }
     prevAnalysisStatusRef.current = status;
-  }, [analysisRun?.status, analysisRun?.id, analysisRun?.date_start, analysisRun?.date_end, analysisPolling, queryClient, toast]);
+  }, [analysisRun?.status, analysisRun?.id, analysisRun?.date_start, analysisRun?.date_end, analysisPolling, analysisComplete, queryClient, toast]);
 
   // ── Analysis run mutation (fired from CommandHub confirmation) ───────────
   const startAnalysisMutation = useStartManualAnalysisRun();
   const [analysisStartError, setAnalysisStartError]  = useState<string | null>(null);
+  // Double-tap guard: analysisFireRef blocks a second mutateAsync() call
+  // synchronously (before any re-render); analysisFiring drives the disabled
+  // state so the button disables in the very next render triggered by
+  // setAnalysisFiring(true) — before mutation.isPending catches up.
+  const analysisFireRef = useRef(false);
+  const [analysisFiring, setAnalysisFiring] = useState(false);
   const handleStartAnalysis = async (range: AnalysisDateRange): Promise<void> => {
+    if (analysisFireRef.current) return;
+    analysisFireRef.current = true;
+    setAnalysisFiring(true);
     setAnalysisStartError(null);
     try {
       await startAnalysisMutation.mutateAsync({ accountId, data: { date_range: range } });
@@ -1444,6 +1516,9 @@ export function LoopCommandChain({
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Could not start analysis — check your connection.";
       setAnalysisStartError(msg);
+    } finally {
+      analysisFireRef.current = false;
+      setAnalysisFiring(false);
     }
   };
 
@@ -1664,7 +1739,7 @@ export function LoopCommandChain({
           allLoopComplete={allLoopComplete}
           stagedImportCount={stagedImportCount}
           isLiveMeta={isLiveMeta}
-          analysisStarting={startAnalysisMutation.isPending}
+          analysisStarting={startAnalysisMutation.isPending || analysisFiring}
           analysisStartError={analysisStartError}
           onNavigate={navigate}
           onStartAnalysis={handleStartAnalysis}

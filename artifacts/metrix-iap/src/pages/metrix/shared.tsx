@@ -646,7 +646,7 @@ export function UnconfiguredState({ account }: { account: AdAccount }) {
   const [connectOpen, setConnectOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
 
-  const isManual = account.platform !== "meta" && account.platform !== "facebook";
+  const isManual = !["meta", "facebook", "meta ads"].includes((account.platform ?? "").toLowerCase());
   const { data: importsData } = useListManualImports(account.id);
   const imports = importsData?.imports ?? [];
   const csvsDone = isManual && (

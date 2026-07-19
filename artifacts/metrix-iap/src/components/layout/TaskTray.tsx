@@ -743,6 +743,30 @@ export function TaskTray() {
   );
 }
 
+// ─── Pure count helper (exported for unit tests) ──────────────────────
+
+/** Compute the tray badge count from raw item arrays. All inputs are
+ *  pre-sliced to their visible maximums so this stays a pure sum. */
+export function computeTrayCount({
+  approvedUndone,
+  hypotheses,
+  signals,
+  pendingDrafts,
+}: {
+  approvedUndone: number;
+  hypotheses: unknown[];
+  signals: unknown[];
+  pendingDrafts: unknown[];
+}): number {
+  return Math.min(
+    approvedUndone +
+      Math.min(hypotheses.length, 3) +
+      Math.min(signals.length, 2) +
+      pendingDrafts.length,
+    99
+  );
+}
+
 /** Badge count for the Topbar toggle — approved-undone + workflow items. */
 export function useTaskTrayCount(): number {
   useDecisions();
@@ -752,8 +776,5 @@ export function useTaskTrayCount(): number {
   const drafts = activeAdAccount?.iap?.brief_builder?.draft_briefs ?? [];
   const pendingDrafts = drafts.filter((b) => b.status !== "approved");
   const approvedUndone = getAllApproved().filter((i) => !i.done).length;
-  return Math.min(
-    approvedUndone + hypotheses.slice(0, 3).length + signals.slice(0, 2).length + pendingDrafts.length,
-    99
-  );
+  return computeTrayCount({ approvedUndone, hypotheses, signals, pendingDrafts });
 }
