@@ -792,7 +792,7 @@ function CommandHub({
         ? calcProgress(elapsedSeconds, EXPECTED_SECONDS[activeKind])
         : 0;
       const phaseLabel = activeKind ? getPhaseLabel(activeKind, progressPct) : "Processing…";
-      return (
+      const progressView = (
         <div className="flex flex-col gap-2.5">
           {/* Phase label + percentage + elapsed */}
           <div className="flex items-center justify-between gap-2">
@@ -819,6 +819,36 @@ function CommandHub({
           <p className="text-[9px] text-amber-400/40 leading-none">Views update automatically on completion</p>
         </div>
       );
+      // Strategy and Briefs: keep the generate button visible but disabled while
+      // the run is in flight so the user can see what action is locked, and so
+      // tests can assert the disabled state with a standard toBeDisabled() query.
+      if (stage === "strategy") {
+        return (
+          <div className="flex flex-col gap-2">
+            {progressView}
+            <button
+              disabled
+              className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-primary-btn opacity-40 cursor-not-allowed"
+            >
+              <Sparkles className="w-3.5 h-3.5" /> Build Strategy
+            </button>
+          </div>
+        );
+      }
+      if (stage === "briefs") {
+        return (
+          <div className="flex flex-col gap-2">
+            {progressView}
+            <button
+              disabled
+              className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-primary-btn opacity-40 cursor-not-allowed"
+            >
+              <Sparkles className="w-3.5 h-3.5" /> Draft Briefs
+            </button>
+          </div>
+        );
+      }
+      return progressView;
     }
 
     if (stage === "data") return (
