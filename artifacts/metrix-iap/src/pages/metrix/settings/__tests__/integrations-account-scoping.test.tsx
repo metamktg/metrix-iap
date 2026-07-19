@@ -38,10 +38,22 @@ vi.mock("@workspace/api-client-react", async (importOriginal) => {
   return {
     ...actual,
     useGetMetaConnection: vi.fn(() => ({ data: { connected: false }, isLoading: false })),
+    useListMetaAdAccounts: vi.fn(() => ({ data: undefined, isLoading: false, isError: false })),
+    useSelectMetaAdAccount: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+    useDisconnectMetaAccount: vi.fn((opts?: { mutation?: { onError?: (err: unknown) => void } }) => ({
+      mutate: () => opts?.mutation?.onError?.(new Error("Disconnect failed")),
+      isPending: false,
+    })),
+    useRunMetaReports: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+    useListMetaReportRows: vi.fn(() => ({ data: undefined, isLoading: false, isError: false })),
   };
 });
 
-import { useGetMetaConnection } from "@workspace/api-client-react";
+import {
+  useGetMetaConnection,
+  useListMetaAdAccounts,
+  useDisconnectMetaAccount,
+} from "@workspace/api-client-react";
 import { AccountProvider } from "@/contexts/AccountContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { IntegrationsView } from "../IntegrationsView";
@@ -75,6 +87,17 @@ beforeEach(() => {
     data: { connected: false },
     isLoading: false,
   } as ReturnType<typeof useGetMetaConnection>);
+  vi.mocked(useListMetaAdAccounts).mockReturnValue({
+    data: undefined,
+    isLoading: false,
+    isError: false,
+  } as ReturnType<typeof useListMetaAdAccounts>);
+  vi.mocked(useDisconnectMetaAccount).mockImplementation(
+    (opts?: { mutation?: { onError?: (err: unknown) => void } }) => ({
+      mutate: () => opts?.mutation?.onError?.(new Error("Disconnect failed")),
+      isPending: false,
+    }) as ReturnType<typeof useDisconnectMetaAccount>
+  );
 });
 
 // ── ad_account mode ──────────────────────────────────────────────────────────
@@ -222,5 +245,113 @@ describe("manager (agency) view", () => {
     expect(screen.getByTestId("button-disconnect-meta")).toBeTruthy();
     // And the connect button must not also appear (only one state at a time).
     expect(screen.queryByTestId("button-connect-meta-live")).toBeNull();
+  });
+
+  it("AccountPicker renders with pending_selection and the confirm button is disabled until an account is chosen", () => {
+    // pending_selection: true means OAuth completed but no account selected yet.
+    // The AccountPicker must render and its "Connect this account" button must
+    // be disabled (no choice made) until the user explicitly picks one.
+    vi.mocked(useGetMetaConnection).mockReturnValue({
+      data: {
+        connected: false,
+        pending_selection: true,
+        pilot_mode: true,
+      },
+      isLoading: false,
+    } as ReturnType<typeof useGetMetaConnection>);
+    // Two ad accounts available; neither is the pilot account so no auto-select.
+    vi.mocked(useListMetaAdAccounts).mockReturnValue({
+      data: {
+        accounts: [
+          { id: "act_aaa", name: "Brand Alpha", currency: "USD", timezone_name: "America/New_York" },
+          { id: "act_bbb", name: "Brand Beta", currency: "EUR", timezone_name: "Europe/London" },
+        ],
+        pilot_required_account_id: null,
+        pilot_required_account_present: false,
+      },
+      isLoading: false,
+      isError: false,
+    } as ReturnType<typeof useListMetaAdAccounts>);
+    select("manager", null);
+    renderView();
+
+    // AccountPicker section heading must be visible.
+    expect(screen.getByText(/Select the ad account to connect/i)).toBeTruthy();
+
+    // "Connect this account" button must be disabled before any selection.
+    const confirmBtn = screen.getByTestId("button-save-account-selection");
+    expect(confirmBtn).toBeTruthy();
+    expect((confirmBtn as HTMLButtonElement).disabled).toBe(true);
+
+    // Click one of the account rows to select it.
+    fireEvent.click(screen.getByTestId("button-pick-account-act_aaa"));
+
+    // After selection the button must become enabled.
+    expect((confirmBtn as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it("AccountPicker surfaces the pilot-account warning when pilot_required_account_present is false", () => {
+    // pilot_mode: true but the required pilot account is not present in the
+    // profile's accounts — a warning banner must appear to guide the user.
+    vi.mocked(useGetMetaConnection).mockReturnValue({
+      data: {
+        connected: false,
+        pending_selection: true,
+        pilot_mode: true,
+      },
+      isLoading: false,
+    } as ReturnType<typeof useGetMetaConnection>);
+    vi.mocked(useListMetaAdAccounts).mockReturnValue({
+      data: {
+        accounts: [
+          { id: "act_other", name: "Unrelated Account", currency: "USD", timezone_name: null },
+        ],
+        pilot_required_account_id: "act_pilot_123",
+        pilot_required_account_present: false,
+      },
+      isLoading: false,
+      isError: false,
+    } as ReturnType<typeof useListMetaAdAccounts>);
+    select("manager", null);
+    const { container } = renderView();
+
+    // The warning banner must mention the missing pilot account id.
+    expect(container.textContent).toContain("act_pilot_123");
+    // And it must explain that the account is not visible to this profile.
+    expect(container.textContent).toContain("not visible to this Meta profile");
+  });
+
+  it("disconnect mutation error surfaces an error message and is not silently swallowed", () => {
+    // When disconnect.mutate() triggers onError, the error message must appear
+    // in the UI — it must not be silently discarded.
+    vi.mocked(useGetMetaConnection).mockReturnValue({
+      data: {
+        connected: true,
+        account: {
+          ad_account_id: "act_123",
+          account_name: "Pilot Account",
+          token_status: "active",
+          currency: "USD",
+          timezone: "America/New_York",
+          connected_at: "2026-01-01T00:00:00Z",
+        },
+        reports: [],
+        pending_selection: false,
+        pilot_mode: true,
+      },
+      isLoading: false,
+    } as ReturnType<typeof useGetMetaConnection>);
+    select("manager", null);
+    renderView();
+
+    // Disconnect button must be present in the connected state.
+    const disconnectBtn = screen.getByTestId("button-disconnect-meta");
+    expect(disconnectBtn).toBeTruthy();
+
+    // Clicking Disconnect triggers mutate() which, via our mock, fires onError
+    // with a synthetic Error("Disconnect failed"). The component must surface
+    // the message rather than swallowing it.
+    fireEvent.click(disconnectBtn);
+    expect(document.body.textContent).toContain("Disconnect failed");
   });
 });
