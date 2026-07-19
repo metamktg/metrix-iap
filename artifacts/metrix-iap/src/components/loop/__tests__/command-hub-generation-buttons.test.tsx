@@ -1,17 +1,22 @@
 // ─── CommandHub — generation button disabled-while-running guard ────────────
 //
-// Confirms that the "Build Strategy" and "Draft Briefs" action buttons inside
-// the CommandHub are disabled while a generation run is in flight, and enabled
-// (present and not disabled) in the idle state.
+// Confirms that the "Build Strategy", "Draft Briefs", and "Run Analysis"
+// action buttons inside the CommandHub are disabled or absent while a run is
+// in flight, and enabled (present and not disabled) in the idle state.
 //
-// The implementation renders the button with `disabled` when isRunning is true
-// so users can see what action is locked — and so tests can assert the
-// disabled state with a standard toBeDisabled() query.
+// Strategy / Briefs: the implementation renders the button with `disabled`
+// when isRunning is true so users can see what action is locked — and so
+// tests can assert the disabled state with a standard toBeDisabled() query.
+//
+// Analysis: when analysisRunning is true the Actions() function returns only
+// the progress view (no button at all), so the test asserts the button is
+// absent from the DOM.
 //
 // Covered regressions:
-//   - Removing `disabled` from the running button → button becomes clickable
+//   - Removing `disabled` from a running button → button becomes clickable
 //   - Removing the isRunning check entirely → button fires a duplicate request
 //   - Bleed between stages (e.g. briefsRunning disables the strategy button)
+//   - Analysis "Run Analysis" button appearing while an analysis run is live
 //
 // Tests directly mount LoopCommandChain (not AdAccountOverview) following the
 // pattern in LoopCommandChain-stale-badge.test.tsx.
@@ -31,17 +36,21 @@ import type { AdAccount } from "@/lib/data/seedTypes";
 const mockGenState = {
   strategyRunning: false,
   briefsRunning:   false,
+  analysisRunning: false,
 };
 
 // ── Mocks ─────────────────────────────────────────────────────────────────
 
 vi.mock("@workspace/api-client-react", () => ({
-  useGetLatestAnalysisRun:         () => ({ data: null, refetch: vi.fn() }),
+  useGetLatestAnalysisRun:         () => ({
+    data: mockGenState.analysisRunning ? { run: { status: "running" } } : null,
+    refetch: vi.fn(),
+  }),
   getGetLatestAnalysisRunQueryKey: () => ["analysis", "latest"],
   getGetMetrixSeedQueryKey:        () => ["metrix", "seed"],
   useStartManualAnalysisRun:       () => ({ mutateAsync: vi.fn(), isPending: false }),
   useListWorkspaceReports:         () => ({ data: { reports: [] } }),
-  useListManualImports:            () => ({ data: { imports: [] } }),
+  useListManualImports:            () => ({ data: { imports: [{ id: "imp-1" }] } }),
   useListAnalysisRuns:             () => ({ data: { runs: [] } }),
 }));
 
@@ -135,6 +144,7 @@ beforeEach(() => {
   cleanup();
   mockGenState.strategyRunning = false;
   mockGenState.briefsRunning   = false;
+  mockGenState.analysisRunning = false;
 });
 
 // ── Strategy — idle state ──────────────────────────────────────────────────
@@ -268,6 +278,86 @@ describe("CommandHub Briefs stage — briefsRunning = true", () => {
     // A regression that confused stage assignments could bleed briefsRunning
     // into the strategy hub — verify the strategy button stays enabled.
     mockGenState.briefsRunning = true;
+    renderChain();
+    const strategyTile = getStageTile(document.body, "Strategy");
+    expect(strategyTile).not.toBeNull();
+    fireEvent.click(strategyTile!);
+    const btn = screen.getByRole("button", { name: /build strategy/i });
+    expect((btn as HTMLButtonElement).disabled).toBe(false);
+  });
+});
+
+// ── Analysis — idle state ──────────────────────────────────────────────────
+
+describe("CommandHub Analysis stage — idle (analysisRunning = false)", () => {
+  it("Run Analysis button is present and enabled in the idle state", () => {
+    renderChain();
+    const tile = getStageTile(document.body, "Analysis");
+    expect(tile).not.toBeNull();
+    fireEvent.click(tile!);
+    // In idle state the Actions section renders the "Run Analysis" (or
+    // "Re-run Analysis") button as a trigger for the confirmation panel.
+    const btn = screen.getByRole("button", { name: /(re-?run|run) analysis/i });
+    expect(btn).toBeTruthy();
+    expect((btn as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it("Actions section label reads 'Actions' (not 'Status') when idle", () => {
+    renderChain();
+    const tile = getStageTile(document.body, "Analysis");
+    fireEvent.click(tile!);
+    expect(screen.getByText("Actions")).toBeTruthy();
+    expect(screen.queryByText("Status")).toBeNull();
+  });
+});
+
+// ── Analysis — running: button must be absent ──────────────────────────────
+
+describe("CommandHub Analysis stage — analysisRunning = true", () => {
+  it("Run Analysis button is absent while analysis is running", () => {
+    // When analysisRunning is true the Actions() function returns only the
+    // progress view — no button is rendered at all for the analysis stage.
+    // A regression reintroducing the button would let users fire a second
+    // concurrent run; this test catches that scenario.
+    mockGenState.analysisRunning = true;
+    renderChain();
+    const tile = getStageTile(document.body, "Analysis");
+    expect(tile).not.toBeNull();
+    fireEvent.click(tile!);
+    expect(screen.queryByRole("button", { name: /(re-?run|run) analysis/i })).toBeNull();
+  });
+
+  it("shows 'Status' section label (not 'Actions') while analysis is running", () => {
+    mockGenState.analysisRunning = true;
+    renderChain();
+    const tile = getStageTile(document.body, "Analysis");
+    fireEvent.click(tile!);
+    expect(screen.getByText("Status")).toBeTruthy();
+    expect(screen.queryByText("Actions")).toBeNull();
+  });
+
+  it("progress phase label is visible in the hub while analysis is running", () => {
+    mockGenState.analysisRunning = true;
+    renderChain();
+    const tile = getStageTile(document.body, "Analysis");
+    fireEvent.click(tile!);
+    // PHASE_LABELS["analysis"] at 0% starts with "Parsing performance data…"
+    // Both the running strip and the hub panel show this label.
+    expect(screen.getAllByText(/parsing performance data/i).length).toBeGreaterThan(0);
+  });
+
+  it("Analysis tile itself is NOT disabled while running — running ≠ locked", () => {
+    mockGenState.analysisRunning = true;
+    renderChain();
+    const tile = getStageTile(document.body, "Analysis");
+    expect(tile).not.toBeNull();
+    expect((tile as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it("analysisRunning does not disable the Build Strategy button", () => {
+    // A regression that confused stage assignments could bleed analysisRunning
+    // into the strategy hub — verify the strategy button stays enabled.
+    mockGenState.analysisRunning = true;
     renderChain();
     const strategyTile = getStageTile(document.body, "Strategy");
     expect(strategyTile).not.toBeNull();
