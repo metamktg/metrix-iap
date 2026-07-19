@@ -3,6 +3,10 @@
 // panels when an ad account is scoped and shows them only in manager/agency
 // view. Prevents silent regressions from context changes that swap
 // selectedAccountType values.
+//
+// Also guards MetaLiveConnection: the live-connection banner and its
+// connect/disconnect controls must never appear when an ad account is scoped,
+// even when the Meta connection is active (connected: true).
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, cleanup, fireEvent, screen } from "@testing-library/react";
@@ -27,17 +31,17 @@ vi.mock("@/contexts/MetrixDataContext", () => ({
   MetrixDataProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-// Stub the live Meta connection query so the panel gating logic is
-// deterministic — no live connection, so the full panel set is in scope
-// when manager view is active.
+// Stub the live Meta connection query using vi.fn() so individual tests can
+// override the returned connection state without re-mocking the whole module.
 vi.mock("@workspace/api-client-react", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@workspace/api-client-react")>();
   return {
     ...actual,
-    useGetMetaConnection: () => ({ data: { connected: false }, isLoading: false }),
+    useGetMetaConnection: vi.fn(() => ({ data: { connected: false }, isLoading: false })),
   };
 });
 
+import { useGetMetaConnection } from "@workspace/api-client-react";
 import { AccountProvider } from "@/contexts/AccountContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { IntegrationsView } from "../IntegrationsView";
@@ -67,6 +71,10 @@ beforeEach(() => {
   cleanup();
   sessionStorage.clear();
   window.history.replaceState({}, "", "/");
+  vi.mocked(useGetMetaConnection).mockReturnValue({
+    data: { connected: false },
+    isLoading: false,
+  } as ReturnType<typeof useGetMetaConnection>);
 });
 
 // ── ad_account mode ──────────────────────────────────────────────────────────
@@ -103,6 +111,48 @@ describe("ad_account scoped", () => {
     expect(document.body.textContent).not.toContain("Agency view only");
     expect(document.body.textContent).toContain("Meta ad accounts");
   });
+
+  it("hides MetaLiveConnection connect controls even when Meta is not connected", () => {
+    vi.mocked(useGetMetaConnection).mockReturnValue({
+      data: { connected: false },
+      isLoading: false,
+    } as ReturnType<typeof useGetMetaConnection>);
+    select("ad_account", "bookster");
+    const { container } = renderView();
+    // The connect button must never appear in ad-account scope
+    expect(container.querySelector('[data-testid="button-connect-meta-live"]')).toBeNull();
+    expect(container.textContent).not.toContain("Live Meta connection");
+  });
+
+  it("hides MetaLiveConnection disconnect controls even when Meta is connected", () => {
+    // connected: true — the ConnectedPanel (with Disconnect button) would
+    // normally render in manager view. It must stay hidden in ad-account scope.
+    vi.mocked(useGetMetaConnection).mockReturnValue({
+      data: {
+        connected: true,
+        account: {
+          ad_account_id: "act_123",
+          account_name: "Pilot Account",
+          token_status: "active",
+          currency: "USD",
+          timezone: "America/New_York",
+          connected_at: "2026-01-01T00:00:00Z",
+        },
+        reports: [],
+        pending_selection: false,
+        pilot_mode: true,
+      },
+      isLoading: false,
+    } as ReturnType<typeof useGetMetaConnection>);
+    select("ad_account", "bookster");
+    const { container } = renderView();
+    // The "Agency view only" notice must be shown …
+    expect(container.textContent).toContain("Agency view only");
+    // … and neither the connect nor the disconnect button from
+    // MetaLiveConnection must be present anywhere in the rendered output.
+    expect(container.querySelector('[data-testid="button-connect-meta-live"]')).toBeNull();
+    expect(container.querySelector('[data-testid="button-disconnect-meta"]')).toBeNull();
+  });
 });
 
 // ── manager mode ─────────────────────────────────────────────────────────────
@@ -133,5 +183,44 @@ describe("manager (agency) view", () => {
     const { container } = renderView();
     expect(container.textContent).toContain("Meta ad accounts");
     expect(container.textContent).not.toContain("Agency view only");
+  });
+
+  it("shows the connect button when Meta is not connected", () => {
+    vi.mocked(useGetMetaConnection).mockReturnValue({
+      data: { connected: false },
+      isLoading: false,
+    } as ReturnType<typeof useGetMetaConnection>);
+    select("manager", null);
+    renderView();
+    // The "Connect with Meta" button must be present in the live-connection card.
+    expect(screen.getByTestId("button-connect-meta-live")).toBeTruthy();
+  });
+
+  it("shows the disconnect button when Meta is connected", () => {
+    // connected: true — the ConnectedPanel renders inside MetaLiveConnection.
+    vi.mocked(useGetMetaConnection).mockReturnValue({
+      data: {
+        connected: true,
+        account: {
+          ad_account_id: "act_123",
+          account_name: "Pilot Account",
+          token_status: "active",
+          currency: "USD",
+          timezone: "America/New_York",
+          connected_at: "2026-01-01T00:00:00Z",
+        },
+        reports: [],
+        pending_selection: false,
+        pilot_mode: true,
+      },
+      isLoading: false,
+    } as ReturnType<typeof useGetMetaConnection>);
+    select("manager", null);
+    renderView();
+    // The "Disconnect" button must be present: this is the live connection
+    // banner that must only appear in manager/agency view.
+    expect(screen.getByTestId("button-disconnect-meta")).toBeTruthy();
+    // And the connect button must not also appear (only one state at a time).
+    expect(screen.queryByTestId("button-connect-meta-live")).toBeNull();
   });
 });
