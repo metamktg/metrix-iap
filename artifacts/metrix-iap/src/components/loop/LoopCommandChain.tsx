@@ -381,7 +381,7 @@ function StageIntelligence({
   // ── Data intelligence ────────────────────────────────────────────────
 
   if (stage === "data") {
-    const isLiveMeta = accountPlatform === "meta" || accountPlatform === "facebook";
+    const isLiveMeta = ["meta", "facebook", "meta ads"].includes((accountPlatform ?? "").toLowerCase());
     return (
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-1.5 flex-wrap">
@@ -1438,24 +1438,48 @@ export function LoopCommandChain({
 
   // ── Analysis polling lifecycle ───────────────────────────────────────────
   // Enables polling when a run starts, disables + invalidates seed when done.
-  const prevAnalysisStatusRef = useRef<string | null | undefined>(undefined);
-  const analysisToastRunIdRef = useRef<string | null>(null);
+  //
+  // Two paths to seed invalidation:
+  //   A. Normal path — component was mounted when the run settled:
+  //      analysisPolling was true → run status left "running" → invalidate + stop polling.
+  //   B. Remount path — user navigated away mid-run, then returned after completion:
+  //      analysisPolling is false on remount (initial state), so path A is skipped.
+  //      We detect this by checking that the run is "success" but the seed hasn't
+  //      reflected the data yet (!analysisComplete), and guard against re-triggering
+  //      on every render with seedRefreshedForRunIdRef (tracks the last run id we
+  //      already invalidated for).
+  const prevAnalysisStatusRef    = useRef<string | null | undefined>(undefined);
+  const analysisToastRunIdRef    = useRef<string | null>(null);
+  const seedRefreshedForRunIdRef = useRef<string | null>(null);
   useEffect(() => {
     const status = analysisRun?.status;
+    const runId  = analysisRun?.id;
     if (status === "running") {
       setAnalysisPolling(true);
     } else if (analysisPolling && status) {
+      // Path A: polling was active, run just settled.
       setAnalysisPolling(false);
       void queryClient.invalidateQueries({ queryKey: getGetMetrixSeedQueryKey() });
+      if (runId) seedRefreshedForRunIdRef.current = runId;
+    } else if (
+      status === "success" &&
+      runId &&
+      seedRefreshedForRunIdRef.current !== runId &&
+      !analysisComplete
+    ) {
+      // Path B: component mounted (or user returned) after the run completed,
+      // but the seed bundle doesn't yet show the results. Invalidate once per run id.
+      seedRefreshedForRunIdRef.current = runId;
+      void queryClient.invalidateQueries({ queryKey: getGetMetrixSeedQueryKey() });
     }
-    // Toast once when a run transitions to success.
+    // Toast once when a run transitions to success (only when we were watching it run).
     if (
       status === "success" &&
-      analysisRun?.id &&
-      analysisToastRunIdRef.current !== analysisRun.id &&
+      runId &&
+      analysisToastRunIdRef.current !== runId &&
       prevAnalysisStatusRef.current === "running"
     ) {
-      analysisToastRunIdRef.current = analysisRun.id;
+      analysisToastRunIdRef.current = runId;
       toast({
         title: "Analysis complete",
         description:
@@ -1466,7 +1490,7 @@ export function LoopCommandChain({
       });
     }
     prevAnalysisStatusRef.current = status;
-  }, [analysisRun?.status, analysisRun?.id, analysisRun?.date_start, analysisRun?.date_end, analysisPolling, queryClient, toast]);
+  }, [analysisRun?.status, analysisRun?.id, analysisRun?.date_start, analysisRun?.date_end, analysisPolling, analysisComplete, queryClient, toast]);
 
   // ── Analysis run mutation (fired from CommandHub confirmation) ───────────
   const startAnalysisMutation = useStartManualAnalysisRun();
