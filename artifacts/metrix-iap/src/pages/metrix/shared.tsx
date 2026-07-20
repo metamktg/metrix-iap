@@ -641,6 +641,98 @@ export function DetailReveal({
 
 // ─── Unconfigured / pending states ────────────────────────────────────
 
+// ── Loop Checklist ──────────────────────────────────────────────────
+
+export interface LoopChecklistStep {
+  label: string;
+  done: boolean;
+  route?: string;
+}
+
+/**
+ * Compact checklist that shows ✓ / next / pending state for each step.
+ * Used in UnconfiguredState (setup flow) and as a sidebar progress widget
+ * on AdAccountOverview for configured accounts mid-loop.
+ */
+export function LoopChecklist({ steps }: { steps: LoopChecklistStep[] }) {
+  const [, navigate] = useLocation();
+  const doneCount = steps.filter((s) => s.done).length;
+  const nextIdx = steps.findIndex((s) => !s.done);
+
+  return (
+    <div className="rounded-xl border border-border/30 bg-white/[0.02] overflow-hidden">
+      {/* Header + fraction */}
+      <div className="px-3 py-2 border-b border-border/20 flex items-center gap-2">
+        <span className={cn(TYPE.label, "text-muted-foreground/50")}>Setup progress</span>
+        <div className="flex-1 h-px bg-border/20" />
+        <span className="text-[9px] font-mono tabular-nums text-muted-foreground/40">{doneCount}/{steps.length}</span>
+      </div>
+
+      {/* Progress bar — only shown when at least one step is done */}
+      {doneCount > 0 && (
+        <div className="px-3 pt-2 pb-0">
+          <div className="h-0.5 rounded-full bg-border/30 overflow-hidden">
+            <div
+              className="h-full bg-emerald-400/50 rounded-full transition-all"
+              style={{ width: `${Math.round((doneCount / steps.length) * 100)}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {steps.map((step, i) => {
+        const isNext = i === nextIdx;
+        const isLink = !!step.route;
+        const Tag = isLink ? "a" : "div";
+        return (
+          <Tag
+            key={i}
+            {...(isLink
+              ? {
+                  href: step.route,
+                  onClick: (e: React.MouseEvent) => { e.preventDefault(); navigate(step.route!); },
+                }
+              : {})}
+            className={cn(
+              "flex items-center gap-2 px-3 py-2 border-b border-border/15 last:border-0",
+              isLink ? "hover:bg-white/[0.03] transition-colors cursor-pointer" : "cursor-default",
+            )}
+          >
+            <div className={cn(
+              "w-4 h-4 rounded-full flex items-center justify-center shrink-0",
+              step.done
+                ? "text-emerald-400"
+                : isNext
+                  ? "border border-primary/50 bg-primary/[0.08]"
+                  : "border border-border/35 bg-white/[0.02]",
+            )}>
+              {step.done
+                ? <CheckCircle2 className="w-3.5 h-3.5" />
+                : isNext
+                  ? <ArrowRight className="w-2.5 h-2.5 text-primary/70" />
+                  : <span className="text-[8px] font-bold text-muted-foreground/30 tabular-nums leading-none">{i + 1}</span>
+              }
+            </div>
+            <span className={cn(
+              TYPE.caption, "leading-none",
+              step.done
+                ? "text-foreground/35 line-through"
+                : isNext
+                  ? "text-foreground/75 font-semibold"
+                  : "text-muted-foreground/45",
+            )}>
+              {step.label}
+            </span>
+            {isNext && step.route && (
+              <ArrowRight className="w-3 h-3 text-primary/40 ml-auto shrink-0" />
+            )}
+          </Tag>
+        );
+      })}
+    </div>
+  );
+}
+
 export function UnconfiguredState({ account }: { account: AdAccount }) {
   const s = account.overview_state;
   const [connectOpen, setConnectOpen] = useState(false);
@@ -655,21 +747,19 @@ export function UnconfiguredState({ account }: { account: AdAccount }) {
   );
   const creativesMapped = isManual && imports.filter((i) => i.kind === "creative_asset").some((a) => a.ad_names.length > 0);
 
-  const setupSteps = isManual
+  const setupSteps: LoopChecklistStep[] = isManual
     ? [
-        { label: "Name the account", desc: `Account created as "${account.name}"`, done: true },
-        { label: "Upload performance CSVs", desc: "Demographics + placements pivot exports — both required before analysis", done: csvsDone },
-        { label: "Map creative assets", desc: "Link image files to ads for visual analysis (optional)", done: creativesMapped },
-        { label: "Run analysis", desc: "Process your staged uploads into structured ad performance data", done: false },
+        { label: "Name the account", done: true },
+        { label: "Upload performance CSVs", done: csvsDone, route: "/app/settings/account" },
+        { label: "Map creative assets", done: creativesMapped, route: "/app/settings/account" },
+        { label: "Run analysis", done: false, route: "/app/settings/account" },
       ]
     : [
-        { label: "Connect data source", desc: "Link a live Meta account to pull ad performance data", done: false },
-        { label: "Run analysis", desc: "Pull and process live ad performance data for this account", done: false },
-        { label: "Generate strategy", desc: "AI-generated message pillars and hypotheses", done: false },
-        { label: "Generate briefs", desc: "Creative execution briefs per pillar and hypothesis", done: false },
+        { label: "Connect data source", done: false, route: "/app/settings/integrations" },
+        { label: "Run analysis", done: false, route: "/app/settings/account" },
+        { label: "Generate strategy", done: false, route: "/app/strategy/overview" },
+        { label: "Generate briefs", done: false, route: "/app/briefs/builder" },
       ];
-
-  const doneCount = setupSteps.filter((s) => s.done).length;
 
   return (
     <div className="flex-1 flex items-center justify-center py-16 px-6">
@@ -688,45 +778,7 @@ export function UnconfiguredState({ account }: { account: AdAccount }) {
         </div>
 
         {/* Guided setup checklist with live completion checkmarks */}
-        <div className="rounded-xl border border-border/30 bg-white/[0.02] overflow-hidden">
-          {/* Progress strip */}
-          {doneCount > 0 && (
-            <div className="px-4 py-2 border-b border-border/20 flex items-center gap-2">
-              <div className="flex-1 h-1 rounded-full bg-border/30 overflow-hidden">
-                <div
-                  className="h-full bg-emerald-400/50 rounded-full transition-all"
-                  style={{ width: `${Math.round((doneCount / setupSteps.length) * 100)}%` }}
-                />
-              </div>
-              <span className="text-[9px] font-mono tabular-nums text-muted-foreground/40">{doneCount}/{setupSteps.length}</span>
-            </div>
-          )}
-          {setupSteps.map((step, i) => (
-            <div
-              key={i}
-              className={cn(
-                "flex items-start gap-3 px-4 py-3 border-b border-border/20 last:border-0",
-                step.done && "opacity-60",
-              )}
-            >
-              <div className={cn(
-                "w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5",
-                step.done
-                  ? "text-emerald-400"
-                  : "border border-border/40 bg-white/[0.03]",
-              )}>
-                {step.done
-                  ? <CheckCircle2 className="w-4 h-4" />
-                  : <span className="text-[9px] font-bold text-muted-foreground/40 tabular-nums">{i + 1}</span>
-                }
-              </div>
-              <div className="min-w-0">
-                <p className={cn("text-caption font-semibold leading-none mb-0.5", step.done ? "text-foreground/50 line-through" : "text-foreground/70")}>{step.label}</p>
-                <p className="text-[10px] text-muted-foreground/45 leading-snug">{step.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+        <LoopChecklist steps={setupSteps} />
 
         {/* Actions */}
         <div className="flex items-center justify-center gap-2">

@@ -19,8 +19,9 @@ import { RecommendationDeck, actionGroupForScope, type DeckCard } from "@/compon
 import {
   ModuleHeader, SectionCard, CaveatNote, DetailReveal, deriveLabel,
   UnconfiguredState, PendingState, CrossLink, fmtUSD, fmtNum, eventLabel, resultTerm,
-  SkeletonTileRow,
+  SkeletonTileRow, LoopChecklist, type LoopChecklistStep,
 } from "./shared";
+import { useListWorkspaceReports } from "@workspace/api-client-react";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
 import { cn } from "@/lib/utils";
 import { buildMetricCatalog, metricSourceFromCampaignSummary, metricById } from "@/lib/data/metricsCatalog";
@@ -57,6 +58,7 @@ export function AdAccountOverview() {
 
   // ── Hooks hoisted above early returns (Rules of Hooks) ──────────────
   const isRefetching = useMetrixIsRefetching();
+  const { data: reportsData } = useListWorkspaceReports(seed.manager_account.id);
   const cs = account?.iap?.campaign_summary ?? null;
   const metricCatalog = useMemo(
     () => (cs ? buildMetricCatalog(metricSourceFromCampaignSummary(cs)) : []),
@@ -152,6 +154,22 @@ export function AdAccountOverview() {
   )[0];
 
   const openMetric = openMetricId ? metricById(metricCatalog, openMetricId) : null;
+
+  // ── Loop-checklist signals (same derivation as LoopCommandChain) ─────
+  const iap = account.iap;
+  const loopCellCount    = iap.analysis?.performance_by_cell?.length ?? 0;
+  const loopPillarCount  = iap.strategy?.message_pillars?.length ?? 0;
+  const loopBriefCount   = iap.brief_builder?.draft_briefs?.length ?? 0;
+  const loopReportCount  = (reportsData?.reports ?? []).filter((r) => r.ad_account_id === adAccountId).length;
+
+  const loopSteps: LoopChecklistStep[] = [
+    { label: "Data connected",       done: true,                    route: "/app/settings/account" },
+    { label: "Analysis run",         done: loopCellCount > 0,       route: "/app/analysis/overview" },
+    { label: "Strategy generated",   done: loopPillarCount > 0,     route: "/app/strategy/overview" },
+    { label: "Briefs generated",     done: loopBriefCount > 0,      route: "/app/briefs/builder" },
+    { label: "Report created",       done: loopReportCount > 0,     route: "/app/reports/new" },
+  ];
+  const allLoopComplete = loopSteps.every((s) => s.done);
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
@@ -369,7 +387,13 @@ export function AdAccountOverview() {
           </SectionCard>
         </div>
 
-
+        {/* Right: loop-progress checklist — only visible when loop is mid-flight */}
+        {!allLoopComplete && (
+          <div className="w-52 shrink-0 border-l border-border/30 overflow-y-auto py-3 px-3 space-y-2">
+            <p className={cn(TYPE.label, "text-muted-foreground/40 uppercase tracking-widest px-1 mb-1")}>Loop stages</p>
+            <LoopChecklist steps={loopSteps} />
+          </div>
+        )}
       </div>
 
       <MetricDiagnosticModal
