@@ -16,6 +16,7 @@ import {
   Layers,
   Bot,
   Settings2,
+  Info,
 } from "lucide-react";
 import { AccountSwitcher } from "./AccountSwitcher";
 import { DataSourceBadgeToggle } from "@/components/ui/DataSourceBadge";
@@ -137,6 +138,38 @@ function CollapseTooltip({
       <div className="text-body font-semibold text-foreground leading-tight whitespace-nowrap">{label}</div>
       {teaser && (
         <div className="text-label text-muted-foreground/65 mt-1 leading-snug whitespace-normal">{teaser}</div>
+      )}
+    </div>
+  );
+}
+
+// ─── Footer info tooltip (version / data mode) ─────────────────────────
+
+function FooterInfoTip() {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      className="relative flex items-center"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <button
+        type="button"
+        aria-label="Build info"
+        className="flex items-center gap-1 text-muted-foreground/35 hover:text-muted-foreground/65 transition-colors"
+      >
+        <Info className="w-3 h-3" />
+      </button>
+      {hovered && (
+        <div className={cn(
+          "absolute left-5 bottom-0 z-[100]",
+          "pointer-events-none select-none",
+          "bg-surface border border-border/50 rounded-md elevation-raised",
+          "px-2.5 py-1.5 whitespace-nowrap",
+        )}>
+          <div className="text-[9px] font-mono text-muted-foreground/60 tracking-wider">METRIX IAP v2.0-rc</div>
+          <div className="text-[9px] font-mono text-muted-foreground/50">SAMPLE / DEMO DATA</div>
+        </div>
       )}
     </div>
   );
@@ -479,22 +512,17 @@ export function Sidebar() {
             className="w-6 h-6 object-contain mx-logo-glow"
           />
         ) : (
-          <>
-            <div className="flex items-center gap-2">
-              <img
-                src={`${import.meta.env.BASE_URL}metrix-logo.png`}
-                alt="Metrix"
-                className="w-5 h-5 object-contain shrink-0 mx-logo-glow"
-              />
-              <span className="text-title font-bold tracking-tight text-foreground">METRIX</span>
-              <span className="text-[9px] font-mono text-muted-foreground/60 border border-border/50 px-1.5 py-0.5 rounded leading-none ml-0.5">
-                IAP
-              </span>
-            </div>
-            <p className="text-[9px] text-muted-foreground/55 mt-1 leading-tight tracking-wide">
-              Not more data. Better decisions.
-            </p>
-          </>
+          <div className="flex items-center gap-2">
+            <img
+              src={`${import.meta.env.BASE_URL}metrix-logo.png`}
+              alt="Metrix"
+              className="w-5 h-5 object-contain shrink-0 mx-logo-glow"
+            />
+            <span className="text-title font-bold tracking-tight text-foreground">METRIX</span>
+            <span className="text-[9px] font-mono text-muted-foreground/60 border border-border/50 px-1.5 py-0.5 rounded leading-none ml-0.5">
+              IAP
+            </span>
+          </div>
         )}
       </div>
 
@@ -507,12 +535,7 @@ export function Sidebar() {
         </div>
       ) : (
         <div className="shrink-0 border-b border-border/40 bg-white/[0.015]">
-          <div className="px-3 pt-2 pb-0.5">
-            <span className="text-[8px] font-mono uppercase tracking-[0.2em] text-muted-foreground/40 select-none">
-              Workspace
-            </span>
-          </div>
-          <div className="px-2 pb-2">
+          <div className="px-2 pt-2 pb-2">
             <AccountSwitcher />
           </div>
         </div>
@@ -561,14 +584,7 @@ export function Sidebar() {
       )}>
         {!collapsed && <DataSourceBadgeToggle />}
         {!collapsed && (
-          <div className="space-y-0.5">
-            <div className="text-[9px] text-muted-foreground/50 font-mono tracking-wider">
-              METRIX IAP v2.0-rc
-            </div>
-            <div className="text-[9px] text-muted-foreground/50 font-mono">
-              SAMPLE / DEMO DATA
-            </div>
-          </div>
+          <FooterInfoTip />
         )}
 
         {/* Collapse toggle */}

@@ -16,6 +16,7 @@ import {
   PendingState,
   CrossLink,
   deriveLabel,
+  InfoTooltip,
 } from "../shared";
 import {
   useGenerationRun,
@@ -66,19 +67,11 @@ export function StrategyHub() {
             />
 
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 max-w-5xl">
-              {/* Header row */}
-              <div className="flex items-end justify-between gap-4">
-                <div>
-                  <p className={cn(TYPE.label, "mb-1")}>Strategy · Runs</p>
-                  <h1 className="text-xl font-bold text-foreground tracking-tight">
-                    Strategy
-                  </h1>
-                  <p className={cn(TYPE.caption, "text-muted-foreground mt-0.5")}>
-                    {acct.name} · {pillars.length} pillar
-                    {pillars.length !== 1 ? "s" : ""} · {icpCount} ICP profile
-                    {icpCount !== 1 ? "s" : ""}
-                  </p>
-                </div>
+              {/* Action row */}
+              <div className="flex items-center justify-between gap-4">
+                <p className={cn(TYPE.caption, "text-muted-foreground")}>
+                  {pillars.length} pillar{pillars.length !== 1 ? "s" : ""} · {icpCount} ICP profile{icpCount !== 1 ? "s" : ""}
+                </p>
                 <GenerateButton
                   onClick={generation.start}
                   isRunning={generation.isRunning}
@@ -148,8 +141,7 @@ export function StrategyHub() {
                     <Activity className="w-4 h-4 text-primary shrink-0" />
                   )}
                   <p className={cn(TYPE.body, "text-foreground font-semibold")}>
-                    Strategy stage:{" "}
-                    <span className="capitalize">{strategyStage.status}</span>
+                    Stage: <span className="capitalize">{strategyStage.status}</span>
                   </p>
                   {generation.lastRun?.status === "success" && (
                     <ProvenanceBadge
@@ -212,21 +204,23 @@ export function StrategyHub() {
                     href: "/app/strategy/hypotheses",
                   },
                 ].map((l) => (
-                  <a
+                  <div
                     key={l.href}
-                    href={l.href}
-                    className="bg-card/60 border border-border/60 rounded-xl px-4 py-3 hover:border-primary/30 hover:bg-card transition-colors group"
+                    className="bg-card/60 border border-border/60 rounded-xl hover:border-primary/30 hover:bg-card transition-colors group"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className={cn(TYPE.body, "font-semibold text-foreground")}>
-                        {l.label}
-                      </span>
-                      <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-primary transition-colors" />
+                    <div className="flex items-center gap-1 px-4 py-3">
+                      <a
+                        href={l.href}
+                        className="flex-1 flex items-center justify-between gap-1 min-w-0"
+                      >
+                        <span className={cn(TYPE.body, "font-semibold text-foreground truncate")}>
+                          {l.label}
+                        </span>
+                        <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-primary transition-colors shrink-0" />
+                      </a>
+                      <InfoTooltip content={l.desc} />
                     </div>
-                    <p className={cn(TYPE.caption, "text-muted-foreground mt-0.5")}>
-                      {l.desc}
-                    </p>
-                  </a>
+                  </div>
                 ))}
               </div>
             </div>

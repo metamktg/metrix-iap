@@ -8,8 +8,9 @@ import { useMetrixSeed, useMetrixIsRefetching } from "@/contexts/MetrixDataConte
 import { getAdAccount, getAnalysisData, getCampaignSummary, getCoreControls, getMST } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
-  CaveatNote, SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
+  SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
   RangeScopeBar, NoDataInRangeState, DetailReveal, deriveLabel, LoopAction, SkeletonTileRow,
+  InfoTooltip,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { useCellRangeScope, sumInRange } from "@/lib/date-scope";
@@ -148,10 +149,15 @@ export function AnalysisOverview() {
             )}
 
             <div className="px-6 py-5 space-y-4 max-w-5xl">
-              {summary.data_caveat && <CaveatNote text={summary.data_caveat} />}
+              {summary.data_caveat && (
+                <div className="flex items-center gap-1">
+                  <span className="text-label text-muted-foreground/60">Data window</span>
+                  <InfoTooltip content={summary.data_caveat} />
+                </div>
+              )}
 
               {controls && (
-                <SectionCard title="Core control reads" desc="Current control concept per funnel depth" table="core_reanalysis_read">
+                <SectionCard title="Core control reads" desc="Control creative · per funnel depth" table="core_reanalysis_read">
                   <div className="grid grid-cols-dashboard-2 gap-3">
                     <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
                       <div className="text-label font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5">Primary control</div>

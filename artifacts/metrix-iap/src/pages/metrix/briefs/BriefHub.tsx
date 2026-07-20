@@ -12,6 +12,7 @@ import {
   PendingState,
   CrossLink,
   deriveLabel,
+  InfoTooltip,
 } from "../shared";
 import {
   useGenerationRun,
@@ -85,20 +86,11 @@ export function BriefHub() {
             />
 
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 max-w-5xl">
-              {/* Header row */}
-              <div className="flex items-end justify-between gap-4">
-                <div>
-                  <p className={cn(TYPE.label, "mb-1")}>
-                    Creative Briefs · Production
-                  </p>
-                  <h1 className="text-xl font-bold text-foreground tracking-tight">
-                    Creative Briefs
-                  </h1>
-                  <p className={cn(TYPE.caption, "text-muted-foreground mt-0.5")}>
-                    {acct.name} · {briefs.length} brief
-                    {briefs.length !== 1 ? "s" : ""} · {activeBriefs.length} active
-                  </p>
-                </div>
+              {/* Action row */}
+              <div className="flex items-center justify-between gap-4">
+                <p className={cn(TYPE.caption, "text-muted-foreground")}>
+                  {briefs.length} brief{briefs.length !== 1 ? "s" : ""} · {activeBriefs.length} active
+                </p>
                 <GenerateButton
                   onClick={generation.start}
                   isRunning={generation.isRunning}
@@ -145,8 +137,7 @@ export function BriefHub() {
                     <Activity className="w-4 h-4 text-primary shrink-0" />
                   )}
                   <p className={cn(TYPE.body, "text-foreground font-semibold")}>
-                    Briefs stage:{" "}
-                    <span className="capitalize">{briefsStage.status}</span>
+                    Stage: <span className="capitalize">{briefsStage.status}</span>
                   </p>
                   {generation.lastRun?.status === "success" && (
                     <ProvenanceBadge provenance="generated" />
@@ -202,7 +193,7 @@ export function BriefHub() {
                               </span>
                               <span
                                 className={cn(
-                                  "shrink-0 text-[10px] px-1.5 py-0.5 rounded border font-semibold leading-none capitalize",
+                                  "shrink-0 text-label px-1.5 py-0.5 rounded border font-semibold leading-none capitalize",
                                   STATUS_PILL[ns] ?? STATUS_PILL.draft,
                                 )}
                               >
@@ -237,21 +228,23 @@ export function BriefHub() {
                     href: "/app/briefs/history",
                   },
                 ].map((l) => (
-                  <a
+                  <div
                     key={l.href}
-                    href={l.href}
-                    className="bg-card/60 border border-border/60 rounded-xl px-4 py-3 hover:border-primary/30 hover:bg-card transition-colors group"
+                    className="bg-card/60 border border-border/60 rounded-xl hover:border-primary/30 hover:bg-card transition-colors group"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className={cn(TYPE.body, "font-semibold text-foreground")}>
-                        {l.label}
-                      </span>
-                      <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-primary transition-colors" />
+                    <div className="flex items-center gap-1 px-4 py-3">
+                      <a
+                        href={l.href}
+                        className="flex-1 flex items-center justify-between gap-1 min-w-0"
+                      >
+                        <span className={cn(TYPE.body, "font-semibold text-foreground truncate")}>
+                          {l.label}
+                        </span>
+                        <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-primary transition-colors shrink-0" />
+                      </a>
+                      <InfoTooltip content={l.desc} />
                     </div>
-                    <p className={cn(TYPE.caption, "text-muted-foreground mt-0.5")}>
-                      {l.desc}
-                    </p>
-                  </a>
+                  </div>
                 ))}
               </div>
             </div>

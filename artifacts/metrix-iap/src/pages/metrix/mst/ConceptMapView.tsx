@@ -92,7 +92,7 @@ export function ConceptMapView() {
               table="performance_by_cell, message_pillars"
               account={acct}
             />
-            <RangeScopeBar grainNote="Concept groups aggregate each cell's full flight window — this import has no daily grain." />
+            <RangeScopeBar />
 
             {!rangeHasData ? (
               <NoDataInRangeState what="concept data" />

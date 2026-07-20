@@ -21,6 +21,7 @@ import {
   LoopAction,
   SectionCard,
   deriveLabel,
+  InfoTooltip,
 } from "../shared";
 import { cn } from "@/lib/utils";
 import {
@@ -45,7 +46,7 @@ function StatusPill({ status }: { status: string }) {
   return (
     <span
       className={cn(
-        "text-[10px] font-semibold px-1.5 py-0.5 rounded border leading-none shrink-0 capitalize",
+        "text-label font-semibold px-1.5 py-0.5 rounded border leading-none shrink-0 capitalize",
         cls,
       )}
     >
@@ -105,20 +106,13 @@ export function AnalysisHub() {
             />
 
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 max-w-5xl">
-              {/* Header row */}
-              <div className="flex items-end justify-between gap-4">
-                <div>
-                  <p className={cn(TYPE.label, "mb-1")}>Analysis · IAP Runs</p>
-                  <h1 className="text-xl font-bold text-foreground tracking-tight">
-                    Analysis
-                  </h1>
-                  <p className={cn(TYPE.caption, "text-muted-foreground mt-0.5")}>
-                    {acct.name} ·{" "}
-                    {hasData
-                      ? `${cellCount} cell${cellCount !== 1 ? "s" : ""} in latest run`
-                      : "No analysis data yet"}
-                  </p>
-                </div>
+              {/* Action row */}
+              <div className="flex items-center justify-between gap-4">
+                <p className={cn(TYPE.caption, "text-muted-foreground")}>
+                  {hasData
+                    ? `${cellCount} cell${cellCount !== 1 ? "s" : ""} in latest run`
+                    : "No analysis data yet"}
+                </p>
                 <LoopAction
                   to="/app/analysis/library"
                   label="Run Analysis"
@@ -184,36 +178,24 @@ export function AnalysisHub() {
                   ) : (
                     <Activity className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                   )}
-                  <div className="min-w-0">
-                    <p className={cn(TYPE.body, "text-foreground font-semibold")}>
-                      Analysis stage:{" "}
-                      <span className="capitalize">{analysisStage.status}</span>
-                    </p>
-                    {controls?.primary_control_read && (
-                      <p
-                        className={cn(TYPE.caption, "text-muted-foreground mt-1 leading-relaxed")}
-                      >
-                        {deriveLabel(controls.primary_control_read, 120)}
-                      </p>
-                    )}
-                  </div>
+                  <p className={cn(TYPE.body, "text-foreground font-semibold")}>
+                    Stage: <span className="capitalize">{analysisStage.status}</span>
+                  </p>
                 </div>
               )}
 
-              {/* Primary control read */}
+              {/* Primary control */}
               {controls?.primary_control && (
                 <div className="bg-card/60 border border-primary/25 rounded-xl px-4 py-3.5">
-                  <p className={cn(TYPE.label, "text-primary mb-1.5")}>
-                    Primary Control
-                  </p>
-                  <p
-                    className={cn(
-                      TYPE.body,
-                      "text-foreground leading-relaxed",
-                    )}
-                  >
+                  <p className={cn(TYPE.label, "text-primary mb-1.5")}>Primary Control</p>
+                  <p className={cn(TYPE.body, "text-foreground leading-relaxed")}>
                     {controls.primary_control}
                   </p>
+                  {controls.primary_control_read && (
+                    <p className={cn(TYPE.caption, "text-muted-foreground mt-1.5 leading-relaxed")}>
+                      {deriveLabel(controls.primary_control_read, 140)}
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -261,26 +243,23 @@ export function AnalysisHub() {
                     href: "/app/analysis/budget",
                   },
                 ].map((l) => (
-                  <a
+                  <div
                     key={l.href}
-                    href={l.href}
-                    className="bg-card/60 border border-border/60 rounded-xl px-4 py-3 hover:border-primary/30 hover:bg-card transition-colors group"
+                    className="bg-card/60 border border-border/60 rounded-xl hover:border-primary/30 hover:bg-card transition-colors group"
                   >
-                    <div className="flex items-center justify-between">
-                      <span
-                        className={cn(
-                          TYPE.body,
-                          "font-semibold text-foreground",
-                        )}
+                    <div className="flex items-center gap-1 px-4 py-3">
+                      <a
+                        href={l.href}
+                        className="flex-1 flex items-center justify-between gap-1 min-w-0"
                       >
-                        {l.label}
-                      </span>
-                      <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-primary transition-colors" />
+                        <span className={cn(TYPE.body, "font-semibold text-foreground truncate")}>
+                          {l.label}
+                        </span>
+                        <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-primary transition-colors shrink-0" />
+                      </a>
+                      <InfoTooltip content={l.desc} />
                     </div>
-                    <p className={cn(TYPE.caption, "text-muted-foreground mt-0.5")}>
-                      {l.desc}
-                    </p>
-                  </a>
+                  </div>
                 ))}
               </div>
             </div>

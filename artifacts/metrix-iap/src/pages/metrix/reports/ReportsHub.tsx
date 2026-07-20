@@ -185,7 +185,7 @@ function QuickGenerate({
               onClick={() => setMode(m)}
               disabled={generating}
               className={cn(
-                "h-6 px-2.5 rounded text-[10px] font-semibold transition-colors",
+                "h-6 px-2.5 rounded text-label font-semibold transition-colors",
                 mode === m
                   ? "bg-white/[0.08] text-foreground"
                   : "text-muted-foreground/60 hover:text-foreground",

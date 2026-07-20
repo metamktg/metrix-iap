@@ -80,14 +80,15 @@ describe("navTree landing routes", () => {
     }
   });
 
-  it("Analysis and Strategy land on their Overview page (Overview is the parent route, not a child subtab)", () => {
+  it("Analysis and Strategy land on the Hub page (execution control center), with Overview as first child", () => {
     const analysis = navTree.find((s) => s.id === "analysis")!;
     const strategy = navTree.find((s) => s.id === "strategy")!;
-    expect(sectionLandingRoute(analysis)).toBe("/app/analysis/overview");
-    expect(sectionLandingRoute(strategy)).toBe("/app/strategy/overview");
-    // Overview is the section's primary parent route, not a nested subtab.
-    expect(analysis.children?.some((c) => c.id === "analysis-overview")).toBe(false);
-    expect(strategy.children?.some((c) => c.id === "strategy-overview")).toBe(false);
+    // Hub page is the landing — clicking the section header goes to the Hub.
+    expect(sectionLandingRoute(analysis)).toBe("/app/analysis");
+    expect(sectionLandingRoute(strategy)).toBe("/app/strategy");
+    // Overview is the first child (accordion item), not the parent route.
+    expect(analysis.children?.some((c) => c.id === "analysis-overview")).toBe(true);
+    expect(strategy.children?.some((c) => c.id === "strategy-overview")).toBe(true);
   });
 
   it("sections without an Overview child land on their first child", () => {
@@ -105,13 +106,12 @@ describe("Sidebar section headers", () => {
     expect(isExpanded(within(nav).getByLabelText("Analysis pages"))).toBe(false);
 
     fireEvent.click(within(nav).getByText("Analysis"));
-    expect(window.location.pathname).toBe("/app/analysis/overview");
+    expect(window.location.pathname).toBe("/app/analysis");
     const childList = within(nav).getByLabelText("Analysis pages");
     expect(isExpanded(childList)).toBe(true);
-    // Expanded children show the real subpages; Overview is the section header
-    // (parent route), not a child subtab — so it does not appear in the list.
+    // Expanded children show Overview first, then all analysis subpages.
+    expect(within(childList).getByText("Overview")).toBeTruthy();
     expect(within(childList).getByText("IAP Library")).toBeTruthy();
-    expect(within(childList).queryByText("Overview")).toBeNull();
   });
 
   it("a section without an Overview child navigates to its first child", () => {
@@ -137,8 +137,8 @@ describe("Sidebar section headers", () => {
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
   });
 
-  it("header link carries aria-current when its landing page is active", () => {
-    window.history.replaceState({}, "", "/app/analysis/overview");
+  it("header link carries aria-current when its landing page (Hub) is active", () => {
+    window.history.replaceState({}, "", "/app/analysis");
     renderWithProviders(<Sidebar />);
     const nav = screen.getByLabelText("Main workspace navigation");
     const header = within(nav).getByText("Analysis").closest("a")!;
