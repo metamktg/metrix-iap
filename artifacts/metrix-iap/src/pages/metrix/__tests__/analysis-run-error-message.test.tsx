@@ -8,13 +8,28 @@
 // errorMessage) or the JSX condition changes, these tests fail loudly.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, cleanup, screen } from "@testing-library/react";
+import { render, cleanup, screen, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // ── Per-test mutable state ─────────────────────────────────────────────────
 
 let mockRunStatus: string | null = null;
 let mockErrorMessage: string | null = null;
+
+type MockMappingEntry = {
+  canonical: string;
+  tier: string;
+  is_required: boolean;
+  found_as?: string | null;
+};
+type MockImport = {
+  id: string;
+  kind: string;
+  filename: string;
+  ad_names: string[];
+  mapping_summary: MockMappingEntry[];
+};
+let mockImports: MockImport[] = [];
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -46,7 +61,7 @@ vi.mock("@workspace/api-client-react", async (importOriginal) => {
       isPending: false,
     }),
     useListManualImports: () => ({
-      data: { imports: [] },
+      data: { imports: mockImports },
       refetch: vi.fn(),
     }),
     useGetManualPerformanceCsvFormat: () => ({ data: null }),
@@ -92,6 +107,7 @@ beforeEach(() => {
   cleanup();
   mockRunStatus = null;
   mockErrorMessage = null;
+  mockImports = [];
 });
 
 // ── Tests ──────────────────────────────────────────────────────────────────
@@ -139,5 +155,48 @@ describe("AnalysisControls — error run shows verbatim error_message", () => {
     const { container } = renderControls();
     // Condition is (status === "error" && error_message) — falsy message → no span
     expect(container.querySelector(".text-red-400\\/80")).toBeNull();
+  });
+
+  it("still shows verbatim error_message after user clicks 'Run anyway' and the run fails", () => {
+    // Arrange: a required breakdown column is missing in a staged performance CSV.
+    // This causes hasRequiredMissing = true, which soft-blocks the Run button and
+    // shows the amber/red warning panel with a "Run anyway" escape hatch.
+    mockImports = [
+      {
+        id: "imp-1",
+        kind: "performance_demo_csv",
+        filename: "demographics.csv",
+        ad_names: [],
+        mapping_summary: [
+          { canonical: "Age", tier: "missing", is_required: true, found_as: null },
+        ],
+      },
+    ];
+    // The run has already failed (simulates: user clicked "Run anyway" → run errored).
+    mockRunStatus = "error";
+    mockErrorMessage = "Required column 'Age' not found in Demographics CSV";
+
+    renderControls();
+
+    // The "Run anyway" escape-hatch button in the warning panel must be visible
+    // (forceRunAcknowledged is false on initial render → panel is shown).
+    const runAnywayBtn = screen.getByRole("button", { name: /run anyway/i });
+    expect(runAnywayBtn).toBeTruthy();
+
+    // The error_message from the failed run must already be present alongside
+    // the warning panel — the two surfaces must coexist.
+    expect(
+      screen.getByText("Required column 'Age' not found in Demographics CSV"),
+    ).toBeTruthy();
+
+    // Click "Run anyway" — sets forceRunAcknowledged = true, hiding the warning panel.
+    fireEvent.click(runAnywayBtn);
+
+    // After acknowledging, the error_message must remain visible.
+    // This guards against any forceRunAcknowledged state change accidentally
+    // hiding the error span (e.g. a bad conditional wrapping the status row).
+    expect(
+      screen.getByText("Required column 'Age' not found in Demographics CSV"),
+    ).toBeTruthy();
   });
 });
