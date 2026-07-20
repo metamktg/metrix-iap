@@ -94,6 +94,7 @@ const RUNTIME_EXPORTS: Array<keyof typeof shared> = [
   "SectionCard",
   "SkeletonBlock",
   "SkeletonTileRow",
+  "LoopChecklist",
 ];
 
 describe("shared.tsx exports — set equality", () => {
