@@ -34,9 +34,13 @@ import type {
 const SECTION = "Analysis · 03";
 
 // ─── Monthly trend builder ────────────────────────────────────────────
-// Buckets concept-flight data by overlapping month. Since no daily grain
-// exists, each concept's spend/results is attributed to every month its
-// flight window overlaps — honest aggregation, not interpolation.
+// Day-weighted prorating: each concept's spend/results is distributed
+// across months proportionally to the days that overlap — no duplication.
+// Example: a 60-day concept spanning Jan 15–Mar 15 with $6,000 spend:
+//   Jan → 16/60 days → $1,600; Feb → 28/60 → $2,800; Mar → 15/60 → $1,500.
+// Total stays $5,900 ≈ $6,000 (rounding). Honest, not duplicated.
+
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
 interface MonthBucket {
   month: string;
@@ -69,16 +73,22 @@ function buildMonthlyTrend(rollup: ConceptRollupRow[]): MonthBucket[] {
 
   return months
     .map((m) => {
-      const overlap = withDates.filter((r) => {
+      let spend = 0, results = 0;
+      for (const r of withDates) {
         const rS = toDt(r.date_start);
         const rE = toDt(r.date_end);
-        return rS <= m.end && rE >= m.start;
-      });
-      return {
-        month: m.label,
-        spend:   overlap.reduce((n, r) => n + (r.spend   ?? 0), 0),
-        results: overlap.reduce((n, r) => n + (r.results ?? 0), 0),
-      };
+        // Total concept days (inclusive)
+        const totalDays = Math.max(1, (rE.getTime() - rS.getTime()) / MS_PER_DAY + 1);
+        // Overlapping days with this month (inclusive)
+        const oS = rS < m.start ? m.start : rS;
+        const oE = rE > m.end   ? m.end   : rE;
+        if (oS > oE) continue;
+        const overlapDays = (oE.getTime() - oS.getTime()) / MS_PER_DAY + 1;
+        const ratio = overlapDays / totalDays;
+        spend   += (r.spend   ?? 0) * ratio;
+        results += (r.results ?? 0) * ratio;
+      }
+      return { month: m.label, spend, results };
     })
     .filter((m) => m.spend > 0 || m.results > 0);
 }
@@ -170,16 +180,22 @@ function ChartTooltipCard({ children }: { children: React.ReactNode }) {
 
 // ─── Spend trendline ─────────────────────────────────────────────────
 
+// Dual-axis trendline: spend (left, blue fill) + results (right, success line).
+// Separate Y-axes because the scales differ by orders of magnitude.
 function SpendTrendChart({ data }: { data: MonthBucket[] }) {
   if (data.length < 2) return null;
   return (
-    <div style={{ height: 200 }} aria-label="Monthly spend trendline">
+    <div style={{ height: 220 }} aria-label="Monthly spend and results trendline">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
+        <AreaChart data={data} margin={{ top: 4, right: 44, bottom: 0, left: 4 }}>
           <defs>
             <linearGradient id="aov-spend-gradient" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%"  stopColor="hsl(var(--primary))" stopOpacity={0.28} />
               <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.02} />
+            </linearGradient>
+            <linearGradient id="aov-results-gradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%"  stopColor="hsl(var(--metrix-success))" stopOpacity={0.18} />
+              <stop offset="95%" stopColor="hsl(var(--metrix-success))" stopOpacity={0.01} />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
@@ -189,12 +205,25 @@ function SpendTrendChart({ data }: { data: MonthBucket[] }) {
             tickLine={false}
             axisLine={false}
           />
+          {/* Left axis — spend in $k */}
           <YAxis
+            yAxisId="spend"
+            orientation="left"
             tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
             tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
             tickLine={false}
             axisLine={false}
             width={44}
+          />
+          {/* Right axis — results count */}
+          <YAxis
+            yAxisId="results"
+            orientation="right"
+            tickFormatter={(v: number) => fmtNum(v)}
+            tick={{ fill: "rgba(255,255,255,0.28)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
+            tickLine={false}
+            axisLine={false}
+            width={40}
           />
           <Tooltip
             cursor={{ stroke: "rgba(255,255,255,0.08)", strokeWidth: 1 }}
@@ -204,21 +233,30 @@ function SpendTrendChart({ data }: { data: MonthBucket[] }) {
               return (
                 <ChartTooltipCard>
                   <div className="font-semibold text-foreground mb-1">{label}</div>
-                  <div className="flex justify-between gap-4">
-                    <span className="text-muted-foreground">Spend</span>
-                    <span className="font-mono tabular-nums text-foreground">{fmtUSD(d.spend, 0)}</span>
-                  </div>
-                  {d.results > 0 && (
-                    <div className="flex justify-between gap-4">
-                      <span className="text-muted-foreground">Results</span>
-                      <span className="font-mono tabular-nums text-foreground">{fmtNum(d.results)}</span>
+                  <div className="space-y-0.5">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full shrink-0" style={{ background: "hsl(var(--primary))" }} />
+                        <span className="text-muted-foreground">Spend</span>
+                      </div>
+                      <span className="font-mono tabular-nums text-foreground">{fmtUSD(d.spend, 0)}</span>
                     </div>
-                  )}
+                    {d.results > 0 && (
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-2 h-2 rounded-full shrink-0" style={{ background: "hsl(var(--metrix-success))" }} />
+                          <span className="text-muted-foreground">Results</span>
+                        </div>
+                        <span className="font-mono tabular-nums text-foreground">{fmtNum(d.results)}</span>
+                      </div>
+                    )}
+                  </div>
                 </ChartTooltipCard>
               );
             }}
           />
           <Area
+            yAxisId="spend"
             type="monotone"
             dataKey="spend"
             name="Spend"
@@ -227,6 +265,18 @@ function SpendTrendChart({ data }: { data: MonthBucket[] }) {
             fill="url(#aov-spend-gradient)"
             dot={false}
             activeDot={{ r: 3, strokeWidth: 0, fill: "hsl(var(--primary))" }}
+          />
+          <Area
+            yAxisId="results"
+            type="monotone"
+            dataKey="results"
+            name="Results"
+            stroke="hsl(var(--metrix-success))"
+            strokeWidth={1.5}
+            strokeDasharray="4 2"
+            fill="url(#aov-results-gradient)"
+            dot={false}
+            activeDot={{ r: 3, strokeWidth: 0, fill: "hsl(var(--metrix-success))" }}
           />
         </AreaChart>
       </ResponsiveContainer>
@@ -252,7 +302,7 @@ function CellPerfBars({ items, sortBy, resultNoun }: {
   resultNoun: string;
 }) {
   if (items.length === 0) return null;
-  const h = Math.min(items.length * 34 + 32, 300);
+  const h = Math.min(items.length * 34 + 32, 260);
   return (
     <div style={{ height: h }} aria-label="Cell performance by spend">
       <ResponsiveContainer width="100%" height="100%">
@@ -603,9 +653,14 @@ export function AnalysisOverview() {
               <ModuleHeader section={SECTION} title="Analysis Overview" tabs="analysis" account={acct} />
               <PendingState
                 title="No analysis yet"
-                message="Analysis appears once performance data is connected or imported."
+                message="Analysis appears once performance data is connected and an analysis run completes for this account."
                 icon={LineChart}
-                action={<CrossLink to="/app/analysis/library" label="Import data or connect an account" />}
+                action={
+                  <div className="flex flex-col items-center gap-3">
+                    <LoopAction to="/app/analysis" icon="analysis" label="Run Analysis" />
+                    <CrossLink to="/app/analysis/library" label="Or import data manually" />
+                  </div>
+                }
               />
             </div>
           );
@@ -767,7 +822,8 @@ export function AnalysisOverview() {
                       {trendData.length >= 2 && (
                         <SectionCard
                           title="Spend by month"
-                          desc="Flight-window overlap per calendar month — not daily interpolation"
+                          desc="Day-prorated spend (blue) and results (green dashed) — dual axis"
+                          right={<CrossLink to="/app/analysis/budget" label="Budget →" />}
                         >
                           <SpendTrendChart data={trendData} />
                         </SectionCard>
@@ -776,6 +832,7 @@ export function AnalysisOverview() {
                         <SectionCard
                           title="By result type"
                           desc="Spend share across conversion event types"
+                          right={<CrossLink to="/app/analysis/library" label="Library →" />}
                         >
                           <SharePieChart
                             data={resultTypePie}
