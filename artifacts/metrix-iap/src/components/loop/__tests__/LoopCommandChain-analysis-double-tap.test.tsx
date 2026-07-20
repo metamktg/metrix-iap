@@ -9,7 +9,7 @@
 // mirrors the firingRef guard in useGenerationRun (GenerationControls.tsx).
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, cleanup, screen, fireEvent } from "@testing-library/react";
+import { render, cleanup, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import fs from "node:fs";
 import path from "node:path";
@@ -226,6 +226,44 @@ describe("LoopCommandChain — analysis run double-tap guard", () => {
     fireEvent.click(confirmBtn);
 
     expect(mockMutateAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it("confirm button is disabled immediately after the first click (before mutateAsync resolves)", async () => {
+    const seed = seedWithManualAccount();
+    selectAccount("manual_account");
+    renderOverview(seed);
+
+    // Open the Analysis Command Hub
+    const analysisTile = screen.getByRole("button", { name: /^analysis$/i });
+    fireEvent.click(analysisTile);
+
+    // Enter the confirmation panel
+    const runBtn = screen.getByRole("button", { name: /run analysis/i });
+    fireEvent.click(runBtn);
+
+    // Confirm button is present and enabled before the click
+    expect(screen.getByRole("button", { name: /run analysis/i })).toBeTruthy();
+    expect(
+      (screen.getByRole("button", { name: /run analysis/i }) as HTMLButtonElement).disabled
+    ).toBe(false);
+
+    // Click the confirm button — mutateAsync returns a never-resolving promise
+    // (set in beforeEach) so the run is permanently "in flight" for this test.
+    fireEvent.click(screen.getByRole("button", { name: /run analysis/i }));
+
+    // After setAnalysisFiring(true) propagates, the outer component passes
+    // analysisStarting={true} to CommandHub. CommandHub re-renders Actions,
+    // which replaces the button label with "Starting…" and sets disabled={true}.
+    //
+    // NOTE: Actions is defined inside CommandHub and rendered as <Actions />,
+    // so every re-render creates a new function reference, causing React to
+    // unmount + remount Actions and replace the button DOM node. We therefore
+    // re-query from screen rather than using a stale pre-click reference.
+    await waitFor(() => {
+      const startingBtn = screen.queryByRole("button", { name: /starting/i });
+      expect(startingBtn).toBeTruthy();
+      expect((startingBtn as HTMLButtonElement).disabled).toBe(true);
+    });
   });
 
   it("mutateAsync receives the selected date range on first call", () => {
