@@ -15,7 +15,7 @@ import {
   RangeScopeBar, NoDataInRangeState, DetailReveal, deriveLabel, InfoTooltip,
 } from "../shared";
 import {
-  VariableStackChips, VariableChip, IcpChips, PillarDetailSections, pillarHasDetails,
+  VariableStackChips, IcpChips, PillarDetailSections, pillarHasDetails,
   HypothesisLabel, HypothesisStatusBadge, HypothesisCodeChipsRow,
   VariableCombinationsGrid, playbookHasContent, ScalingPlaybookLanes,
 } from "./strategyShared";
@@ -26,7 +26,7 @@ import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/
 import { cn } from "@/lib/utils";
 import {
   Map, ChevronDown, FlaskConical, CheckSquare,
-  Square, Users, Lightbulb,
+  Square, Lightbulb,
 } from "lucide-react";
 import type { MessagePillar, ActiveHypothesis } from "@/lib/data/seedTypes";
 import { ConceptChip } from "@/components/concept/ConceptChip";
@@ -147,56 +147,24 @@ function PillarListCard({
         <div className="flex-1 min-w-0">
           <p
             className={cn(
-              "text-body font-semibold leading-tight line-clamp-2",
+              "text-body font-semibold leading-tight line-clamp-1",
               selected ? "text-foreground" : "text-foreground/80"
             )}
-            title={t.qualifier ? pillar.label : undefined}
+            title={pillar.label}
           >
             {t.main}
           </p>
-          {t.qualifier && (
-            <p className={cn(TYPE.label, "line-clamp-1 mt-0.5 text-muted-foreground/60")}>
-              {t.qualifier}
-            </p>
-          )}
         </div>
       </div>
 
-      {/* Cell count + ICP count */}
-      <div className="flex items-center gap-1.5 flex-wrap pl-4">
-        {pillar.source_cells.length > 0 && (
+      {/* Cell count — single stat */}
+      {pillar.source_cells.length > 0 && (
+        <div className="pl-4">
           <span className={cn(TYPE.label, "text-muted-foreground/50 tabular-nums")}>
             {pillar.source_cells.length} cell{pillar.source_cells.length !== 1 ? "s" : ""}
           </span>
-        )}
-        {(pillar.target_icps?.length ?? 0) > 0 && (
-          <span className={cn(TYPE.label, "text-muted-foreground/50 flex items-center gap-0.5")}>
-            <Users className="w-2.5 h-2.5" />
-            {pillar.target_icps!.length}
-          </span>
-        )}
-      </div>
-
-      {/* Variable chips — rendered directly to avoid nesting a ChipOverflow
-          <Popover><button> inside this <button>, which is invalid HTML */}
-      {(() => {
-        const entries = Object.entries(pillar.variable_stack).filter(([, v]) => Boolean(v));
-        const visible = entries.slice(0, 2);
-        const overflow = entries.length - visible.length;
-        if (!visible.length) return null;
-        return (
-          <div className="flex flex-wrap gap-1 pl-4">
-            {visible.map(([family, code]) => (
-              <VariableChip key={family} code={code as string} />
-            ))}
-            {overflow > 0 && (
-              <span className={cn(TYPE.label, "text-muted-foreground/60")}>
-                +{overflow}
-              </span>
-            )}
-          </div>
-        );
-      })()}
+        </div>
+      )}
     </button>
   );
 }
@@ -262,11 +230,6 @@ function HypCard({ h }: { h: ActiveHypothesis }) {
         <CrossLink to={`/app/strategy/hypotheses?focus=${h.id}`} label="Open" />
       </div>
       <HypothesisLabel label={h.label} isolated={h.isolated_variable} />
-      {h.risk && (
-        <p className={cn(TYPE.label, "text-red-300/70 line-clamp-1")} title={h.risk}>
-          Risk: {deriveLabel(h.risk, 50)}
-        </p>
-      )}
     </div>
   );
 }
@@ -286,7 +249,7 @@ function NextActionsPanel({
   queued: Set<string>;
   onToggleQueue: (id: string) => void;
 }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const pending = sortByPriority(
     hypotheses.filter((h) => !["ready_for_brief_builder"].includes(h.status.toLowerCase()))
   ).slice(0, 4);
