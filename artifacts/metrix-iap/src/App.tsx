@@ -26,21 +26,26 @@ import { Overview } from "@/pages/metrix/Overview";
 import { SignalView } from "@/pages/metrix/listen/SignalView";
 import { AlertsView } from "@/pages/metrix/listen/AlertsView";
 import { RecommendationsView } from "@/pages/metrix/listen/RecommendationsView";
+import { AnalysisHub } from "@/pages/metrix/analysis/AnalysisHub";
 import { AnalysisOverview } from "@/pages/metrix/analysis/AnalysisOverview";
 import { IapLibraryView } from "@/pages/metrix/analysis/IapLibraryView";
 import { AudienceView } from "@/pages/metrix/analysis/AudienceView";
 import { PlacementsView } from "@/pages/metrix/analysis/PlacementsView";
 import { BudgetView } from "@/pages/metrix/analysis/BudgetView";
+import { StrategyHub } from "@/pages/metrix/strategy/StrategyHub";
 import { StrategyOverview } from "@/pages/metrix/strategy/StrategyOverview";
 import { StrategyMapView } from "@/pages/metrix/strategy/StrategyMapView";
 import { AvatarsView } from "@/pages/metrix/strategy/AvatarsView";
 import { HypothesisQueueView } from "@/pages/metrix/strategy/HypothesisQueueView";
+import { BriefHub } from "@/pages/metrix/briefs/BriefHub";
 import { BriefBuilderView } from "@/pages/metrix/briefs/BriefBuilderView";
 import { BriefHistoryView } from "@/pages/metrix/briefs/BriefHistoryView";
+import { ReportsHub } from "@/pages/metrix/reports/ReportsHub";
 import { NewReportView } from "@/pages/metrix/reports/NewReportView";
 import { ReportHistoryView } from "@/pages/metrix/reports/ReportHistoryView";
 import { ExportsView } from "@/pages/metrix/reports/ExportsView";
 import { ReportSettingsView } from "@/pages/metrix/reports/ReportSettingsView";
+import { MSTHub } from "@/pages/metrix/mst/MSTHub";
 import { ConceptMapView } from "@/pages/metrix/mst/ConceptMapView";
 import { MatrixBuilderView } from "@/pages/metrix/mst/MatrixBuilderView";
 import { CreativeScanView } from "@/pages/metrix/mst/CreativeScanView";
@@ -80,6 +85,7 @@ export function Router() {
       <Route path="/app/listen/recommendations" component={RecommendationsView} />
 
       {/* ── 03 Analysis ───────────────────────────────────────────────── */}
+      <Route path="/app/analysis"            component={AnalysisHub} />
       <Route path="/app/analysis/overview"   component={AnalysisOverview} />
       <Route path="/app/analysis/library"    component={IapLibraryView} />
       <Route path="/app/analysis/audience"   component={AudienceView} />
@@ -87,22 +93,26 @@ export function Router() {
       <Route path="/app/analysis/budget"     component={BudgetView} />
 
       {/* ── 04 Strategy ───────────────────────────────────────────────── */}
+      <Route path="/app/strategy"            component={StrategyHub} />
       <Route path="/app/strategy/overview"   component={StrategyOverview} />
       <Route path="/app/strategy/map"        component={StrategyMapView} />
       <Route path="/app/strategy/avatars"    component={AvatarsView} />
       <Route path="/app/strategy/hypotheses" component={HypothesisQueueView} />
 
       {/* ── 05 Creative Briefs ────────────────────────────────────────── */}
+      <Route path="/app/briefs"         component={BriefHub} />
       <Route path="/app/briefs/builder" component={BriefBuilderView} />
       <Route path="/app/briefs/history" component={BriefHistoryView} />
 
       {/* ── 06 Report Builder ─────────────────────────────────────────── */}
+      <Route path="/app/reports"         component={ReportsHub} />
       <Route path="/app/reports/new"     component={NewReportView} />
       <Route path="/app/reports/history" component={ReportHistoryView} />
       <Route path="/app/reports/exports" component={ExportsView} />
       <Route path="/app/reports/settings" component={ReportSettingsView} />
 
       {/* ── 07 MST ────────────────────────────────────────────────────── */}
+      <Route path="/app/mst"               component={MSTHub} />
       <Route path="/app/mst/concept-map"   component={ConceptMapView} />
       <Route path="/app/mst/matrix"        component={MatrixBuilderView} />
       <Route path="/app/mst/creative-scan" component={CreativeScanView} />
@@ -120,14 +130,9 @@ export function Router() {
 
       {/* ── Legacy route redirects (old IA → new IA, zero dead ends) ──── */}
       <Route path="/app/listen">{() => <Redirect to="/app/listen/alerts" replace />}</Route>
-      <Route path="/app/analysis">{() => <Redirect to="/app/analysis/overview" replace />}</Route>
       <Route path="/app/analysis/concept-map">{() => <Redirect to="/app/mst/concept-map" replace />}</Route>
-      <Route path="/app/strategy">{() => <Redirect to="/app/strategy/overview" replace />}</Route>
       <Route path="/app/strategy/brief-builder">{() => <Redirect to="/app/briefs/builder" replace />}</Route>
-      <Route path="/app/briefs">{() => <Redirect to="/app/briefs/builder" replace />}</Route>
       <Route path="/app/report-builder">{() => <Redirect to="/app/reports/new" replace />}</Route>
-      <Route path="/app/reports">{() => <Redirect to="/app/reports/new" replace />}</Route>
-      <Route path="/app/mst">{() => <Redirect to="/app/mst/matrix" replace />}</Route>
       <Route path="/app/settings">{() => <Redirect to="/app/settings/account" replace />}</Route>
 
       {/* ── 404 ───────────────────────────────────────────────────────── */}
