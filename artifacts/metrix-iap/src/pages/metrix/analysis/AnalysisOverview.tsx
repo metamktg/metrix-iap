@@ -354,61 +354,71 @@ function CellPerfBars({ items, sortBy, resultNoun }: {
   );
 }
 
-// ─── Placement bar chart ──────────────────────────────────────────────
+// ─── Placement visual table ───────────────────────────────────────────
+// Each row shows: spend (proportional bar + value), CPA (color-coded badge),
+// CTR (badge) — so all three metrics are visible without a tooltip.
 
-function PlacementBars({ placements, resultNoun }: {
+function PlacementTable({ placements, resultNoun }: {
   placements: PlacementRollup[];
   resultNoun: string;
 }) {
   if (placements.length === 0) return null;
-  const h = Math.min(placements.length * 34 + 32, 260);
+  const maxSpend = Math.max(...placements.map((p) => p.spend), 1);
+
+  // Median CPA is used to colour-code badges (emerald < median × 0.85, rose > median × 1.15)
+  const cpas = placements.map((p) => p.cpa).filter((v): v is number => v != null).sort((a, b) => a - b);
+  const medCpa = cpas.length ? cpas[Math.floor(cpas.length / 2)] : null;
+
+  function cpaBadgeCls(cpa: number | null) {
+    if (cpa == null || medCpa == null) return "text-muted-foreground/50";
+    if (cpa <= medCpa * 0.85) return "text-emerald-400";
+    if (cpa <= medCpa * 1.15) return "text-foreground/70";
+    return "text-rose-400";
+  }
+
   return (
-    <div style={{ height: h }} aria-label="Spend by placement">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart
-          data={placements}
-          layout="vertical"
-          margin={{ top: 0, right: 52, bottom: 4, left: 4 }}
-          barSize={10}
-        >
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" horizontal={false} />
-          <XAxis
-            type="number"
-            tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
-            tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
-            tickLine={false}
-            axisLine={false}
-          />
-          <YAxis
-            type="category"
-            dataKey="placement"
-            width={118}
-            tick={{ fill: "rgba(255,255,255,0.65)", fontSize: 10 }}
-            tickLine={false}
-            axisLine={false}
-            tickFormatter={(v: string) => (v.length > 18 ? v.slice(0, 17) + "…" : v)}
-          />
-          <Tooltip
-            cursor={{ fill: "rgba(255,255,255,0.03)" }}
-            content={({ active, payload }) => {
-              if (!active || !payload?.length) return null;
-              const d = payload[0]?.payload as PlacementRollup;
-              return (
-                <ChartTooltipCard>
-                  <div className="font-semibold text-foreground mb-1 max-w-[220px]">{d.placement}</div>
-                  <div className="space-y-0.5">
-                    <div className="flex justify-between gap-4"><span className="text-muted-foreground">Spend</span><span className="font-mono tabular-nums text-foreground">{fmtUSD(d.spend, 0)}</span></div>
-                    <div className="flex justify-between gap-4"><span className="text-muted-foreground">{resultNoun}</span><span className="font-mono tabular-nums text-foreground">{fmtNum(d.results)}</span></div>
-                    {d.cpa != null && <div className="flex justify-between gap-4"><span className="text-muted-foreground">CPA</span><span className="font-mono tabular-nums text-foreground">{fmtUSD(d.cpa)}</span></div>}
-                    {d.ctr != null && <div className="flex justify-between gap-4"><span className="text-muted-foreground">Link CTR</span><span className="font-mono tabular-nums text-foreground">{fmtPct(d.ctr)}</span></div>}
-                  </div>
-                </ChartTooltipCard>
-              );
-            }}
-          />
-          <Bar dataKey="spend" fill="hsl(var(--metrix-cyan))" radius={[0, 3, 3, 0]} opacity={0.8} />
-        </BarChart>
-      </ResponsiveContainer>
+    <div className="space-y-2.5" aria-label="Placement performance: spend, CPA, CTR">
+      {placements.map((p) => (
+        <div key={p.placement} className="flex items-start gap-3">
+          {/* Spend bar column */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-1">
+              <span
+                className={cn(TYPE.caption, "text-foreground/75 truncate max-w-[160px]")}
+                title={p.placement}
+              >
+                {p.placement.length > 24 ? p.placement.slice(0, 23) + "…" : p.placement}
+              </span>
+              <span className={cn(TYPE.label, "font-mono tabular-nums text-muted-foreground/60 ml-2 shrink-0")}>
+                {fmtUSD(p.spend, 0)}
+              </span>
+            </div>
+            <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: `${(p.spend / maxSpend) * 100}%`,
+                  background: "hsl(var(--metrix-cyan) / 0.75)",
+                }}
+              />
+            </div>
+          </div>
+          {/* CPA badge */}
+          <div className="text-right shrink-0 w-[52px]">
+            <div className={cn(TYPE.label, "text-muted-foreground/40 mb-0.5")}>CPA</div>
+            <div className={cn(TYPE.caption, "font-mono font-semibold tabular-nums", cpaBadgeCls(p.cpa))}>
+              {p.cpa != null ? fmtUSD(p.cpa, 0) : "—"}
+            </div>
+          </div>
+          {/* CTR badge */}
+          <div className="text-right shrink-0 w-[42px]">
+            <div className={cn(TYPE.label, "text-muted-foreground/40 mb-0.5")}>CTR</div>
+            <div className={cn(TYPE.caption, "font-mono tabular-nums text-foreground/60")}>
+              {p.ctr != null ? fmtPct(p.ctr, 1) : "—"}
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -783,30 +793,55 @@ export function AnalysisOverview() {
               <NoDataInRangeState what="analysis data" />
             ) : (
               <>
-                {/* ── Metric tiles ─────────────────────────────────── */}
+                {/* ── Metric tiles + result type donut (inline) ──── */}
                 {isRefetching ? (
                   <div className="px-6 pt-5">
                     <SkeletonTileRow count={4} />
                   </div>
                 ) : (
-                  <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
-                    {scoped ? (
-                      <>
-                        <MetricTile label="Spend (in range)"    value={fmtUSD(scoped.spend, 0)} sub="concept flights overlapping range" />
-                        <MetricTile label="Link clicks (in range)" value={fmtNum(scoped.linkClicks)} />
-                        <MetricTile label="Results (in range)"  value={fmtNum(scoped.results)} />
-                        <MetricTile label="Concept flights"     value={String(scoped.concepts)} sub="overlapping selected range" />
-                      </>
-                    ) : (
-                      <>
-                        <MetricTile label="Total spend"   value={fmtUSD(summary.total_spend_usd, 0)} />
-                        <MetricTile label="Impressions"   value={fmtNum(summary.total_impressions)} />
-                        <MetricTile label="Link clicks"   value={fmtNum(summary.total_link_clicks)} />
-                        <MetricTile label="Link CTR"      value={fmtPct(summary.overall_link_ctr_pct)} />
-                      </>
+                  <div className="px-6 pt-5 flex gap-3 items-start">
+                    {/* Left: 4 tiles in a 2×2 grid */}
+                    <div className="flex-1 grid grid-cols-dashboard-4 gap-3">
+                      {scoped ? (
+                        <>
+                          <MetricTile label="Spend (in range)"       value={fmtUSD(scoped.spend, 0)} sub="concept flights overlapping range" />
+                          <MetricTile label="Link clicks (in range)" value={fmtNum(scoped.linkClicks)} />
+                          <MetricTile label="Results (in range)"     value={fmtNum(scoped.results)} />
+                          <MetricTile label="Concept flights"        value={String(scoped.concepts)} sub="overlapping selected range" />
+                        </>
+                      ) : (
+                        <>
+                          <MetricTile label="Total spend"  value={fmtUSD(summary.total_spend_usd, 0)} />
+                          <MetricTile label="Impressions"  value={fmtNum(summary.total_impressions)} />
+                          <MetricTile label="Link clicks"  value={fmtNum(summary.total_link_clicks)} />
+                          <MetricTile label="Link CTR"     value={fmtPct(summary.overall_link_ctr_pct)} />
+                        </>
+                      )}
+                    </div>
+                    {/* Right: result type donut — inline with tiles */}
+                    {resultTypePie.length > 0 && (
+                      <div className="w-[196px] shrink-0 rounded-xl border border-border/40 bg-white/[0.02] p-3 flex flex-col">
+                        <div className={cn(TYPE.label, "font-semibold uppercase tracking-[0.12em] text-muted-foreground/70 mb-1")}>
+                          By result type
+                        </div>
+                        <SharePieChart
+                          data={resultTypePie}
+                          unit="usd"
+                          height={148}
+                          showLegend={resultTypePie.length <= 3}
+                        />
+                        <div className="mt-1.5 flex justify-end">
+                          <CrossLink to="/app/analysis/library" label="Library →" />
+                        </div>
+                      </div>
                     )}
                   </div>
                 )}
+
+                {/* ── Secondary refresh action ──────────────────────── */}
+                <div className="px-6 pt-2 flex justify-end">
+                  <CrossLink to="/app/analysis" label="↻ Re-run analysis" />
+                </div>
 
                 <div className="px-6 py-5 space-y-4 max-w-5xl">
                   {summary.data_caveat && (
@@ -816,33 +851,15 @@ export function AnalysisOverview() {
                     </div>
                   )}
 
-                  {/* ── Spend trendline + Result type donut ──────── */}
-                  {(trendData.length >= 2 || resultTypePie.length > 0) && (
-                    <div className="grid grid-cols-[1fr_220px] gap-3">
-                      {trendData.length >= 2 && (
-                        <SectionCard
-                          title="Spend by month"
-                          desc="Day-prorated spend (blue) and results (green dashed) — dual axis"
-                          right={<CrossLink to="/app/analysis/budget" label="Budget →" />}
-                        >
-                          <SpendTrendChart data={trendData} />
-                        </SectionCard>
-                      )}
-                      {resultTypePie.length > 0 && (
-                        <SectionCard
-                          title="By result type"
-                          desc="Spend share across conversion event types"
-                          right={<CrossLink to="/app/analysis/library" label="Library →" />}
-                        >
-                          <SharePieChart
-                            data={resultTypePie}
-                            unit="usd"
-                            height={200}
-                            showLegend={resultTypePie.length <= 4}
-                          />
-                        </SectionCard>
-                      )}
-                    </div>
+                  {/* ── Spend trendline (spend + results, dual-axis) ─ */}
+                  {trendData.length >= 2 && (
+                    <SectionCard
+                      title="Spend by month"
+                      desc="Day-prorated spend (blue, left axis) and results (green dashed, right axis)"
+                      right={<CrossLink to="/app/analysis/budget" label="Budget →" />}
+                    >
+                      <SpendTrendChart data={trendData} />
+                    </SectionCard>
                   )}
 
                   {/* ── Cell performance bar chart ────────────────── */}
@@ -887,10 +904,10 @@ export function AnalysisOverview() {
                       {allPlacements.length > 0 && (
                         <SectionCard
                           title="Top placements"
-                          desc="V3 + C4E combined · spend · top 6"
+                          desc="V3 + C4E combined · spend bar, CPA badge, CTR badge · top 6"
                           right={<CrossLink to="/app/analysis/placements" label="Full →" />}
                         >
-                          <PlacementBars
+                          <PlacementTable
                             placements={allPlacements}
                             resultNoun={term.Plural}
                           />
