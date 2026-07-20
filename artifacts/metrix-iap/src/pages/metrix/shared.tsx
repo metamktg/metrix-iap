@@ -647,6 +647,7 @@ export interface LoopChecklistStep {
   label: string;
   done: boolean;
   route?: string;
+  onClick?: () => void;
 }
 
 /**
@@ -682,20 +683,22 @@ export function LoopChecklist({ steps }: { steps: LoopChecklistStep[] }) {
 
       {steps.map((step, i) => {
         const isNext = i === nextIdx;
-        const isLink = !!step.route;
-        const Tag = isLink ? "a" : "div";
+        const isAction = !!step.onClick || !!step.route;
+        const Tag = step.onClick ? "button" : step.route ? "a" : "div";
         return (
           <Tag
             key={i}
-            {...(isLink
-              ? {
-                  href: step.route,
-                  onClick: (e: React.MouseEvent) => { e.preventDefault(); navigate(step.route!); },
-                }
-              : {})}
+            {...(step.onClick
+              ? { type: "button" as const, onClick: step.onClick }
+              : step.route
+                ? {
+                    href: step.route,
+                    onClick: (e: React.MouseEvent) => { e.preventDefault(); navigate(step.route!); },
+                  }
+                : {})}
             className={cn(
-              "flex items-center gap-2 px-3 py-2 border-b border-border/15 last:border-0",
-              isLink ? "hover:bg-white/[0.03] transition-colors cursor-pointer" : "cursor-default",
+              "flex items-center gap-2 px-3 py-2 border-b border-border/15 last:border-0 w-full text-left",
+              isAction ? "hover:bg-white/[0.03] transition-colors cursor-pointer" : "cursor-default",
             )}
           >
             <div className={cn(
@@ -750,12 +753,12 @@ export function UnconfiguredState({ account }: { account: AdAccount }) {
   const setupSteps: LoopChecklistStep[] = isManual
     ? [
         { label: "Name the account", done: true },
-        { label: "Upload performance CSVs", done: csvsDone, route: "/app/settings/account" },
+        { label: "Upload performance CSVs", done: csvsDone, onClick: () => setImportOpen(true) },
         { label: "Map creative assets", done: creativesMapped, route: "/app/settings/account" },
         { label: "Run analysis", done: false, route: "/app/settings/account" },
       ]
     : [
-        { label: "Connect data source", done: false, route: "/app/settings/integrations" },
+        { label: "Connect data source", done: false, onClick: () => setConnectOpen(true) },
         { label: "Run analysis", done: false, route: "/app/settings/account" },
         { label: "Generate strategy", done: false, route: "/app/strategy/overview" },
         { label: "Generate briefs", done: false, route: "/app/briefs/builder" },
@@ -777,24 +780,8 @@ export function UnconfiguredState({ account }: { account: AdAccount }) {
           </p>
         </div>
 
-        {/* Guided setup checklist with live completion checkmarks */}
+        {/* Guided setup checklist — first actionable step opens its dialog inline */}
         <LoopChecklist steps={setupSteps} />
-
-        {/* Actions */}
-        <div className="flex items-center justify-center gap-2">
-          <button
-            onClick={() => setConnectOpen(true)}
-            className="flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary/15 border border-primary/30 text-title font-medium text-primary hover:bg-primary/25 transition-colors"
-          >
-            <Plug className="w-3.5 h-3.5" /> {s?.primary_action ?? "Connect Meta Ad Account"}
-          </button>
-          <button
-            onClick={() => setImportOpen(true)}
-            className="flex items-center gap-1.5 h-9 px-4 rounded-md border border-border/50 text-title font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
-          >
-            <FileUp className="w-3.5 h-3.5" /> {s?.secondary_action ?? "Add Manual Import"}
-          </button>
-        </div>
 
         {/* Switch account */}
         <div className="text-center space-y-1.5">

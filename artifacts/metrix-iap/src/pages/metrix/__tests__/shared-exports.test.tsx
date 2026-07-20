@@ -72,6 +72,7 @@ const RUNTIME_EXPORTS: Array<keyof typeof shared> = [
   "ClampedProse",
   "deriveLabel",
   "DetailReveal",
+  "LoopChecklist",
   "UnconfiguredState",
   "PendingState",
   "MetricTile",
