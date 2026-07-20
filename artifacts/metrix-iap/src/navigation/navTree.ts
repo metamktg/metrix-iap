@@ -111,7 +111,7 @@ export const navTree: NavSection[] = [
     number: "03",
     label: "Analysis",
     icon: "BarChart2",
-    landing: "/app/analysis/overview",
+    landing: "/app/analysis",
     children: [
       {
         id: "analysis-library",
@@ -144,7 +144,7 @@ export const navTree: NavSection[] = [
     number: "04",
     label: "Strategy",
     icon: "Compass",
-    landing: "/app/strategy/overview",
+    landing: "/app/strategy",
     children: [
       {
         id: "strategy-map",
@@ -171,6 +171,7 @@ export const navTree: NavSection[] = [
     number: "05",
     label: "Creative Briefs",
     icon: "FileText",
+    landing: "/app/briefs",
     children: [
       {
         id: "briefs-builder",
@@ -192,6 +193,7 @@ export const navTree: NavSection[] = [
     number: "06",
     label: "Report Builder",
     icon: "FileBarChart",
+    landing: "/app/reports",
     children: [
       {
         id: "reports-new",
@@ -224,6 +226,7 @@ export const navTree: NavSection[] = [
     number: "07",
     label: "MST",
     icon: "Layers",
+    landing: "/app/mst",
     children: [
       {
         id: "mst-concept-map",
