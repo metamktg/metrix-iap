@@ -137,8 +137,8 @@ export function SortableTh({
   );
 }
 
-export function Td({ children, right, className }: { children: React.ReactNode; right?: boolean; className?: string }) {
-  return <td className={cn("px-2.5 py-2 text-body text-foreground/85 align-top", right && "text-right tabular-nums", className)}>{children}</td>;
+export function Td({ children, right, className, style }: { children: React.ReactNode; right?: boolean; className?: string; style?: React.CSSProperties }) {
+  return <td style={style} className={cn("px-2.5 py-2 text-body text-foreground/85 align-top", right && "text-right tabular-nums", className)}>{children}</td>;
 }
 
 // ─── Virtual table body ───────────────────────────────────────────────
@@ -372,51 +372,79 @@ const DEMOGRAPHIC_COLUMNS: ColumnAccessors<DemographicRow> = {
 export function DemographicTable({
   rows,
   onSegmentClick,
+  heatmap = false,
 }: {
   rows: DemographicRow[];
   /** When provided, rows become clickable and open the segment drill-down. */
   onSegmentClick?: (segment: { age: string; gender: string }) => void;
+  /** When true, tints the Result/click column by CVR intensity with a colour legend. */
+  heatmap?: boolean;
 }) {
   const { sorted, sort, toggle, reset } = useColumnSort(rows, DEMOGRAPHIC_COLUMNS);
+  const maxCvr = heatmap
+    ? Math.max(...rows.map((r) => r.Result_per_link_click_pct ?? 0), 0.0001)
+    : 0;
   return (
-    <TableShell>
-      <thead className="sticky top-0 bg-surface-table z-10">
-        <tr className="border-b border-border/40">
-          <SortableTh sortKey="cell" sort={sort} onToggle={toggle} onReset={reset}>Cell</SortableTh>
-          <SortableTh sortKey="age" sort={sort} onToggle={toggle} onReset={reset}>Age</SortableTh>
-          <SortableTh sortKey="gender" sort={sort} onToggle={toggle} onReset={reset}>Gender</SortableTh>
-          <SortableTh right sortKey="spend" sort={sort} onToggle={toggle} onReset={reset}>Spend</SortableTh>
-          <SortableTh right sortKey="results" sort={sort} onToggle={toggle} onReset={reset}>Results</SortableTh>
-          <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle} onReset={reset}>CPA</SortableTh>
-          <SortableTh right sortKey="rpc" sort={sort} onToggle={toggle} onReset={reset}>Result/click</SortableTh>
-        </tr>
-      </thead>
-      <tbody>
-        {sorted.map((r, i) => (
-          <tr
-            key={r.cell_id + r.Age + r.Gender + i}
-            className={cn(
-              "border-b border-border/20 hover:bg-white/[0.02]",
-              onSegmentClick && "cursor-pointer active:bg-white/[0.04] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60"
-            )}
-            onClick={onSegmentClick ? () => onSegmentClick({ age: r.Age, gender: r.Gender }) : undefined}
-            role={onSegmentClick ? "button" : undefined}
-            tabIndex={onSegmentClick ? 0 : undefined}
-            onKeyDown={onSegmentClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSegmentClick({ age: r.Age, gender: r.Gender }); } } : undefined}
-            aria-label={onSegmentClick ? `Open segment for ${r.Age}, ${r.Gender}` : undefined}
-            data-testid={onSegmentClick ? `row-demographic-${r.Age}-${r.Gender}-${i}` : undefined}
-          >
-            <Td><span className="font-mono text-label text-muted-foreground/60">{r.cell_id}</span></Td>
-            <Td>{r.Age}</Td>
-            <Td className="capitalize">{r.Gender}</Td>
-            <Td right>{fmtUSD(r["Amount spent (USD)"])}</Td>
-            <Td right>{fmtNum(r.Results)}</Td>
-            <Td right>{r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}</Td>
-            <Td right>{fmtPct(r.Result_per_link_click_pct)}</Td>
+    <div>
+      {heatmap && maxCvr > 0 && (
+        <div className="flex items-center gap-2 px-3 py-1.5 border border-border/30 border-b-0 rounded-t-xl bg-white/[0.01] text-[9px] text-muted-foreground/55 font-mono">
+          <span className="uppercase tracking-widest">CVR</span>
+          <span className="text-muted-foreground/35">low</span>
+          <div
+            className="w-20 h-2 rounded-full"
+            style={{ background: "linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(52,211,153,0.30) 100%)" }}
+          />
+          <span className="text-muted-foreground/35">high</span>
+        </div>
+      )}
+      <TableShell>
+        <thead className="sticky top-0 bg-surface-table z-10">
+          <tr className="border-b border-border/40">
+            <SortableTh sortKey="cell" sort={sort} onToggle={toggle} onReset={reset}>Cell</SortableTh>
+            <SortableTh sortKey="age" sort={sort} onToggle={toggle} onReset={reset}>Age</SortableTh>
+            <SortableTh sortKey="gender" sort={sort} onToggle={toggle} onReset={reset}>Gender</SortableTh>
+            <SortableTh right sortKey="spend" sort={sort} onToggle={toggle} onReset={reset}>Spend</SortableTh>
+            <SortableTh right sortKey="results" sort={sort} onToggle={toggle} onReset={reset}>Results</SortableTh>
+            <SortableTh right sortKey="cpa" sort={sort} onToggle={toggle} onReset={reset}>CPA</SortableTh>
+            <SortableTh right sortKey="rpc" sort={sort} onToggle={toggle} onReset={reset}>Result/click</SortableTh>
           </tr>
-        ))}
-      </tbody>
-    </TableShell>
+        </thead>
+        <tbody>
+          {sorted.map((r, i) => {
+            const cvr = r.Result_per_link_click_pct ?? 0;
+            const intensity = heatmap && maxCvr > 0 ? Math.min(cvr / maxCvr, 1) : 0;
+            return (
+              <tr
+                key={r.cell_id + r.Age + r.Gender + i}
+                className={cn(
+                  "border-b border-border/20 hover:bg-white/[0.02]",
+                  onSegmentClick && "cursor-pointer active:bg-white/[0.04] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60"
+                )}
+                onClick={onSegmentClick ? () => onSegmentClick({ age: r.Age, gender: r.Gender }) : undefined}
+                role={onSegmentClick ? "button" : undefined}
+                tabIndex={onSegmentClick ? 0 : undefined}
+                onKeyDown={onSegmentClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSegmentClick({ age: r.Age, gender: r.Gender }); } } : undefined}
+                aria-label={onSegmentClick ? `Open segment for ${r.Age}, ${r.Gender}` : undefined}
+                data-testid={onSegmentClick ? `row-demographic-${r.Age}-${r.Gender}-${i}` : undefined}
+              >
+                <Td><span className="font-mono text-label text-muted-foreground/60">{r.cell_id}</span></Td>
+                <Td>{r.Age}</Td>
+                <Td className="capitalize">{r.Gender}</Td>
+                <Td right>{fmtUSD(r["Amount spent (USD)"])}</Td>
+                <Td right>{fmtNum(r.Results)}</Td>
+                <Td right>{r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}</Td>
+                <Td
+                  right
+                  style={intensity > 0 ? { background: `rgba(52,211,153,${(intensity * 0.28).toFixed(3)})` } : undefined}
+                >
+                  {fmtPct(r.Result_per_link_click_pct)}
+                </Td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </TableShell>
+    </div>
   );
 }
 
