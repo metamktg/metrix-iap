@@ -1593,41 +1593,121 @@ export function CreativeLibraryDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const queryClient = useQueryClient();
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [discarding, setDiscarding] = useState(false);
+  const [discardError, setDiscardError] = useState<string | null>(null);
+
   const availableAdNames = useMemo(
     () => Array.from(new Set((account.ads ?? []).map((a) => a.ad_name))).sort(),
     [account.ads]
   );
 
+  const { data: importsData } = useListManualImports(account.id);
+  const unmappedCreatives = (importsData?.imports ?? []).filter(
+    (i) => i.kind === "creative_asset" && i.ad_names.length === 0
+  );
+  const deleteMutation = useDeleteManualImport();
+
+  const doClose = () => {
+    onOpenChange(false);
+    queryClient.invalidateQueries({ queryKey: getGetMetrixSeedQueryKey() });
+  };
+
+  // All close paths (X button, click-outside, onDone) go through here so the
+  // guard fires consistently whenever unmapped creatives exist.
   const handleOpenChange = (o: boolean) => {
-    onOpenChange(o);
-    if (!o) {
-      queryClient.invalidateQueries({ queryKey: getGetMetrixSeedQueryKey() });
+    if (!o && unmappedCreatives.length > 0) {
+      setShowDiscardConfirm(true);
+      return;
     }
+    if (!o) doClose();
+    else onOpenChange(true);
+  };
+
+  const handleConfirmDiscard = async () => {
+    setDiscarding(true);
+    setDiscardError(null);
+    const failed: string[] = [];
+    try {
+      for (const asset of unmappedCreatives) {
+        try {
+          await deleteMutation.mutateAsync({ accountId: account.id, importId: asset.id });
+        } catch {
+          failed.push(asset.filename);
+        }
+      }
+    } finally {
+      setDiscarding(false);
+      // Refresh so the list reflects whichever deletes succeeded (avoids
+      // stale unmapped rows re-appearing on the next open or retry).
+      void queryClient.invalidateQueries({ queryKey: getListManualImportsQueryKey(account.id) });
+    }
+    if (failed.length > 0) {
+      // Stay open so the user can retry or map the remaining files.
+      setDiscardError(
+        `Could not delete ${failed.length === 1 ? `"${failed[0]}"` : `${failed.length} files`}. Try again or map ${failed.length === 1 ? "it" : "them"} manually.`
+      );
+      return;
+    }
+    setShowDiscardConfirm(false);
+    doClose();
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center">
-              <Images className="w-4 h-4 text-primary" />
+    <>
+      <AlertDialog open={showDiscardConfirm} onOpenChange={(o) => { if (!o && !discarding) setShowDiscardConfirm(false); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard unmapped files?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {unmappedCreatives.length === 1
+                ? "1 creative file has no ad mapping yet."
+                : `${unmappedCreatives.length} creative files have no ad mapping yet.`}{" "}
+              Closing now will permanently delete{" "}
+              {unmappedCreatives.length === 1 ? "it" : "them"} — this cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {discardError && (
+            <p className="px-1 text-caption text-destructive">{discardError}</p>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={discarding} onClick={() => { setShowDiscardConfirm(false); setDiscardError(null); }}>
+              Keep editing
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={discarding}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => void handleConfirmDiscard()}
+            >
+              {discarding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+              Discard {unmappedCreatives.length === 1 ? "file" : "files"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center">
+                <Images className="w-4 h-4 text-primary" />
+              </div>
             </div>
-          </div>
-          <DialogTitle className="text-base">Upload Creatives</DialogTitle>
-          <DialogDescription className="text-body leading-relaxed">
-            Add creative files to{" "}
-            <span className="text-foreground/80 font-medium">{account.name}</span> after the fact —
-            they render immediately and map to ads already in its IAP analysis.
-          </DialogDescription>
-        </DialogHeader>
-        <CreativeLibraryPanel
-          accountId={account.id}
-          availableAdNames={availableAdNames}
-          onDone={() => handleOpenChange(false)}
-        />
-      </DialogContent>
-    </Dialog>
+            <DialogTitle className="text-base">Upload Creatives</DialogTitle>
+            <DialogDescription className="text-body leading-relaxed">
+              Add creative files to{" "}
+              <span className="text-foreground/80 font-medium">{account.name}</span> after the fact —
+              they render immediately and map to ads already in its IAP analysis.
+            </DialogDescription>
+          </DialogHeader>
+          <CreativeLibraryPanel
+            accountId={account.id}
+            availableAdNames={availableAdNames}
+            onDone={() => handleOpenChange(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -1643,6 +1723,10 @@ export function ManualImportDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const queryClient = useQueryClient();
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [discarding, setDiscarding] = useState(false);
+  const [discardError, setDiscardError] = useState<string | null>(null);
+
   // Same real-ads registry the Creative Library dialog uses — keeps
   // dropdown mapping / auto-matching behavior identical across both
   // entry points instead of falling back to free-text here.
@@ -1651,37 +1735,112 @@ export function ManualImportDialog({
     [account.ads]
   );
 
+  const { data: importsData } = useListManualImports(account.id);
+  const unmappedCreatives = (importsData?.imports ?? []).filter(
+    (i) => i.kind === "creative_asset" && i.ad_names.length === 0
+  );
+  const deleteMutation = useDeleteManualImport();
+
+  const doClose = () => {
+    onOpenChange(false);
+    queryClient.invalidateQueries({ queryKey: getGetMetrixSeedQueryKey() });
+  };
+
+  // All close paths (X button, click-outside, onDone) go through here so the
+  // guard fires consistently whenever unmapped creatives exist.
   const handleOpenChange = (o: boolean) => {
-    onOpenChange(o);
-    if (!o) {
-      // Staged uploads may change account state downstream; keep the seed fresh.
-      queryClient.invalidateQueries({ queryKey: getGetMetrixSeedQueryKey() });
+    if (!o && unmappedCreatives.length > 0) {
+      setShowDiscardConfirm(true);
+      return;
     }
+    if (!o) doClose();
+    else onOpenChange(true);
+  };
+
+  const handleConfirmDiscard = async () => {
+    setDiscarding(true);
+    setDiscardError(null);
+    const failed: string[] = [];
+    try {
+      for (const asset of unmappedCreatives) {
+        try {
+          await deleteMutation.mutateAsync({ accountId: account.id, importId: asset.id });
+        } catch {
+          failed.push(asset.filename);
+        }
+      }
+    } finally {
+      setDiscarding(false);
+      // Refresh so the list reflects whichever deletes succeeded (avoids
+      // stale unmapped rows re-appearing on the next open or retry).
+      void queryClient.invalidateQueries({ queryKey: getListManualImportsQueryKey(account.id) });
+    }
+    if (failed.length > 0) {
+      // Stay open so the user can retry or map the remaining files.
+      setDiscardError(
+        `Could not delete ${failed.length === 1 ? `"${failed[0]}"` : `${failed.length} files`}. Try again or map ${failed.length === 1 ? "it" : "them"} manually.`
+      );
+      return;
+    }
+    setShowDiscardConfirm(false);
+    doClose();
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center">
-              <FileUp className="w-4 h-4 text-primary" />
+    <>
+      <AlertDialog open={showDiscardConfirm} onOpenChange={(o) => { if (!o && !discarding) setShowDiscardConfirm(false); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard unmapped files?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {unmappedCreatives.length === 1
+                ? "1 creative file has no ad mapping yet."
+                : `${unmappedCreatives.length} creative files have no ad mapping yet.`}{" "}
+              Closing now will permanently delete{" "}
+              {unmappedCreatives.length === 1 ? "it" : "them"} — this cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {discardError && (
+            <p className="px-1 text-caption text-destructive">{discardError}</p>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={discarding} onClick={() => { setShowDiscardConfirm(false); setDiscardError(null); }}>
+              Keep editing
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={discarding}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => void handleConfirmDiscard()}
+            >
+              {discarding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+              Discard {unmappedCreatives.length === 1 ? "file" : "files"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center">
+                <FileUp className="w-4 h-4 text-primary" />
+              </div>
             </div>
-          </div>
-          <DialogTitle className="text-base">Add Manual Import</DialogTitle>
-          <DialogDescription className="text-body leading-relaxed">
-            Upload the two required exports for{" "}
-            <span className="text-foreground/80 font-medium">{account.name}</span>, plus any
-            creative files. Files are staged for the analysis pipeline — performance data appears
-            only after you explicitly run analysis from the account's setup screen.
-          </DialogDescription>
-        </DialogHeader>
-        <ManualUploadPanel
-          accountId={account.id}
-          availableAdNames={availableAdNames}
-          onDone={() => handleOpenChange(false)}
-        />
-      </DialogContent>
-    </Dialog>
+            <DialogTitle className="text-base">Add Manual Import</DialogTitle>
+            <DialogDescription className="text-body leading-relaxed">
+              Upload the two required exports for{" "}
+              <span className="text-foreground/80 font-medium">{account.name}</span>, plus any
+              creative files. Files are staged for the analysis pipeline — performance data appears
+              only after you explicitly run analysis from the account's setup screen.
+            </DialogDescription>
+          </DialogHeader>
+          <ManualUploadPanel
+            accountId={account.id}
+            availableAdNames={availableAdNames}
+            onDone={() => handleOpenChange(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
