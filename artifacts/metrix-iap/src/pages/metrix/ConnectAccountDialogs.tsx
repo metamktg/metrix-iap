@@ -310,10 +310,47 @@ function UploadProgressBar({ pct, label }: { pct: number; label: string }) {
 }
 
 /**
- * Collapsible column-mapping summary panel shown after a CSV upload when
- * any non-exact column resolutions occurred. Green = confidence ≥ 0.85,
- * amber = 0.5–0.84, red = missing. Exact matches are omitted (happy path).
+ * Diff callout shown immediately after a CSV re-upload. Compares the new
+ * mapping_summary against the previously-staged file's summary and calls out:
+ *   - Columns that were missing but are now found (positive, green)
+ *   - Columns that were missing and are still missing (persistent, red)
+ * Only rendered when at least one previously-missing column changed state.
  */
+function CsvMappingDiffCallout({
+  diff,
+}: {
+  diff: { nowFound: string[]; stillMissing: string[] };
+}) {
+  if (diff.nowFound.length === 0 && diff.stillMissing.length === 0) return null;
+  return (
+    <div className="rounded-lg border border-border/40 bg-white/[0.02] p-3 space-y-2">
+      <div className="text-caption font-semibold text-foreground/75">After re-upload</div>
+      {diff.nowFound.length > 0 && (
+        <div className="space-y-1">
+          {diff.nowFound.map((col) => (
+            <div key={col} className="flex items-center gap-2 text-label">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span className="font-medium text-emerald-300">{col}</span>
+              <span className="text-emerald-400/55">— now found</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {diff.stillMissing.length > 0 && (
+        <div className="space-y-1">
+          {diff.stillMissing.map((col) => (
+            <div key={col} className="flex items-center gap-2 text-label">
+              <XCircle className="w-3.5 h-3.5 text-red-400/80 shrink-0" />
+              <span className="font-medium text-red-300">{col}</span>
+              <span className="text-red-400/55">— still missing</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CsvMappingPanel({ summary }: { summary: ColumnMappingSummaryEntry[] }) {
   const [open, setOpen] = useState(false);
 
@@ -453,6 +490,8 @@ function CsvSlotUpload({
   const [mappingSummary, setMappingSummary] = useState<ColumnMappingSummaryEntry[] | null>(
     staged?.mapping_summary && staged.mapping_summary.length > 0 ? staged.mapping_summary : null
   );
+  const [mappingDiff, setMappingDiff] = useState<{ nowFound: string[]; stillMissing: string[] } | null>(null);
+  const prevMappingSummaryRef = useRef<ColumnMappingSummaryEntry[] | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const deleteMutation = useDeleteManualImport();
 
@@ -470,7 +509,13 @@ function CsvSlotUpload({
    *  from the onChange handler before React state for `file` has settled. */
   const handleStage = async (fileToStage: File) => {
     setError(null);
+    // Capture the previous mapping summary before clearing so we can diff
+    // against it once the new file's summary arrives (re-upload scenario).
+    if (mappingSummary && mappingSummary.length > 0) {
+      prevMappingSummaryRef.current = mappingSummary;
+    }
     setMappingSummary(null);
+    setMappingDiff(null);
     onMismatch?.(null);
     if (fileToStage.size > MAX_UPLOAD_BYTES) {
       setError("File is too large — the limit is 8 MB.");
@@ -487,8 +532,27 @@ function CsvSlotUpload({
         { kind, filename: fileToStage.name, content_type: fileToStage.type || undefined, content_base64 },
         setUploadPct
       );
-      if (result.mapping_summary && result.mapping_summary.length > 0) {
-        setMappingSummary(result.mapping_summary);
+      const newSummary = result.mapping_summary ?? [];
+      if (newSummary.length > 0) {
+        setMappingSummary(newSummary);
+      }
+      // Diff against the previous file's summary if this is a re-upload.
+      const prev = prevMappingSummaryRef.current;
+      if (prev && prev.length > 0) {
+        const prevMissingCols = new Set(
+          prev.filter((e) => e.tier === "missing").map((e) => e.canonical)
+        );
+        if (prevMissingCols.size > 0) {
+          const newMissingCols = new Set(
+            newSummary.filter((e) => e.tier === "missing").map((e) => e.canonical)
+          );
+          const nowFound = [...prevMissingCols].filter((col) => !newMissingCols.has(col));
+          const stillMissing = [...prevMissingCols].filter((col) => newMissingCols.has(col));
+          if (nowFound.length > 0 || stillMissing.length > 0) {
+            setMappingDiff({ nowFound, stillMissing });
+          }
+        }
+        prevMappingSummaryRef.current = null;
       }
       setFile(null);
       if (fileRef.current) fileRef.current.value = "";
@@ -513,7 +577,12 @@ function CsvSlotUpload({
 
   const handleRemove = async () => {
     if (!staged) return;
+    // Preserve the current mapping summary so the next upload can diff against it.
+    if (mappingSummary && mappingSummary.length > 0) {
+      prevMappingSummaryRef.current = mappingSummary;
+    }
     setMappingSummary(null);
+    setMappingDiff(null);
     await deleteMutation.mutateAsync({ accountId, importId: staged.id });
     onRemoved();
   };
@@ -597,6 +666,8 @@ function CsvSlotUpload({
           {uploadPct !== null && <UploadProgressBar pct={uploadPct} label={`Uploading ${file?.name ?? title}…`} />}
         </>
       )}
+
+      {mappingDiff && <CsvMappingDiffCallout diff={mappingDiff} />}
 
       {mappingSummary && <CsvMappingPanel summary={mappingSummary} />}
 
