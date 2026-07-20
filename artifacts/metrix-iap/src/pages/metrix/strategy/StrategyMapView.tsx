@@ -4,7 +4,7 @@
 // columns. Next-actions panel below shows priority hypotheses for the
 // selected pillar with a local "Queue for test" affordance.
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getStrategyData, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
@@ -15,7 +15,7 @@ import {
   RangeScopeBar, NoDataInRangeState, DetailReveal, deriveLabel, InfoTooltip,
 } from "../shared";
 import {
-  VariableStackChips, IcpChips, PillarDetailSections, pillarHasDetails,
+  VariableStackChips, VariableChip, IcpChips, PillarDetailSections, pillarHasDetails,
   HypothesisLabel, HypothesisStatusBadge, HypothesisCodeChipsRow,
   VariableCombinationsGrid, playbookHasContent, ScalingPlaybookLanes,
 } from "./strategyShared";
@@ -71,6 +71,38 @@ function sortByPriority(hyps: ActiveHypothesis[]): ActiveHypothesis[] {
     const pb = PRIORITY_ORDER[b.status.toLowerCase()] ?? 5;
     return pa - pb;
   });
+}
+
+// ─── Resizable column handle ─────────────────────────────────────────
+
+function ResizeHandle({ onResize }: { onResize: (dx: number) => void }) {
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      let lastX = e.clientX;
+      const onMove = (ev: MouseEvent) => {
+        const dx = ev.clientX - lastX;
+        lastX = ev.clientX;
+        onResize(dx);
+      };
+      const onUp = () => {
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+      };
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    },
+    [onResize]
+  );
+  return (
+    <div
+      className="w-1.5 shrink-0 cursor-col-resize hover:bg-primary/30 active:bg-primary/60 transition-colors border-x border-border/20"
+      onMouseDown={handleMouseDown}
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Resize column"
+    />
+  );
 }
 
 // ─── Left column: compact pillar list card ────────────────────────────
@@ -145,10 +177,26 @@ function PillarListCard({
         )}
       </div>
 
-      {/* Variable stack chips (max 2, compact) */}
-      <div className="pl-4">
-        <VariableStackChips stack={pillar.variable_stack} maxVisible={2} />
-      </div>
+      {/* Variable chips — rendered directly to avoid nesting a ChipOverflow
+          <Popover><button> inside this <button>, which is invalid HTML */}
+      {(() => {
+        const entries = Object.entries(pillar.variable_stack).filter(([, v]) => Boolean(v));
+        const visible = entries.slice(0, 2);
+        const overflow = entries.length - visible.length;
+        if (!visible.length) return null;
+        return (
+          <div className="flex flex-wrap gap-1 pl-4">
+            {visible.map(([family, code]) => (
+              <VariableChip key={family} code={code as string} />
+            ))}
+            {overflow > 0 && (
+              <span className={cn(TYPE.label, "text-muted-foreground/60")}>
+                +{overflow}
+              </span>
+            )}
+          </div>
+        );
+      })()}
     </button>
   );
 }
@@ -329,6 +377,14 @@ export function StrategyMapView() {
 
   // Selection + panel state — must be at component top before any hook calls.
   const [selectedPillarId, setSelectedPillarId] = useState<string | null>(null);
+  const [leftWidth, setLeftWidth] = useState(210);
+  const [rightWidth, setRightWidth] = useState(260);
+  const handleLeftResize = useCallback((dx: number) => {
+    setLeftWidth((w) => Math.max(140, Math.min(320, w + dx)));
+  }, []);
+  const handleRightResize = useCallback((dx: number) => {
+    setRightWidth((w) => Math.max(180, Math.min(380, w - dx)));
+  }, []);
   const [queued, setQueued] = useState<Set<string>>(new Set());
   const [expandedPillarId, setExpandedPillarId] = useState<string | null>(null);
   const [segmentPillar, setSegmentPillar] = useState<MessagePillar | null>(null);
@@ -426,8 +482,8 @@ export function StrategyMapView() {
                 {/* ── Three-column map ──────────────────────────────────── */}
                 <div className="flex-1 flex min-h-0 overflow-hidden border-t border-border/30">
 
-                  {/* Left column — Pillars list */}
-                  <div className="w-[210px] shrink-0 overflow-y-auto border-r border-border/20 bg-white/[0.005]">
+                  {/* Left column — Pillars list (resizable) */}
+                  <div style={{ width: leftWidth }} className="shrink-0 overflow-y-auto bg-white/[0.005]">
                     <div className="px-3 py-2 border-b border-border/20 sticky top-0 bg-background/90 backdrop-blur-sm z-10">
                       <span className={cn(TYPE.label, "text-muted-foreground/60")}>
                         {pillars.length} pillar{pillars.length !== 1 ? "s" : ""}
@@ -444,8 +500,10 @@ export function StrategyMapView() {
                     ))}
                   </div>
 
+                  <ResizeHandle onResize={handleLeftResize} />
+
                   {/* Centre column — Source cells + variable legend */}
-                  <div className="flex-1 overflow-y-auto border-r border-border/20">
+                  <div className="flex-1 overflow-y-auto">
                     {/* Variable chip legend for selected pillar */}
                     <div className="px-4 py-2.5 border-b border-border/20 sticky top-0 bg-background/90 backdrop-blur-sm z-10 space-y-1.5">
                       <div className="flex items-center justify-between gap-2">
@@ -560,8 +618,10 @@ export function StrategyMapView() {
                     </div>
                   </div>
 
-                  {/* Right column — Hypotheses */}
-                  <div className="w-[260px] shrink-0 overflow-y-auto">
+                  <ResizeHandle onResize={handleRightResize} />
+
+                  {/* Right column — Hypotheses (resizable) */}
+                  <div style={{ width: rightWidth }} className="shrink-0 overflow-y-auto">
                     <div className="px-3 py-2 border-b border-border/20 sticky top-0 bg-background/90 backdrop-blur-sm z-10 flex items-center gap-2">
                       <FlaskConical className="w-3.5 h-3.5 text-muted-foreground/50" />
                       <span className={cn(TYPE.label, "text-muted-foreground/60")}>
