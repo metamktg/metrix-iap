@@ -688,7 +688,7 @@ export function LoopChecklist({ steps, allComplete = false }: { steps: LoopCheck
           <a
             href="/app/settings/account"
             onClick={(e) => { e.preventDefault(); navigate("/app/settings/account"); }}
-            className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary/80 hover:text-primary transition-colors"
+            className="inline-flex items-center gap-1 text-label font-semibold text-primary/80 hover:text-primary transition-colors"
           >
             Start re-run <ArrowRight className="w-3 h-3" />
           </a>

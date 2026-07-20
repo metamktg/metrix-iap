@@ -48,16 +48,13 @@ const navPaths: { label: string; to: string }[] = navTree.flatMap((section) => [
 ]);
 
 // Legacy IA paths and the routes they must redirect to.
+// Note: /app/analysis, /app/strategy, /app/briefs, /app/reports, /app/mst
+// are now real hub pages (execution control centers) — no redirect needed.
 const legacyRedirects: [string, string][] = [
   ["/app/listen", "/app/listen/alerts"],
-  ["/app/analysis", "/app/analysis/overview"],
   ["/app/analysis/concept-map", "/app/mst/concept-map"],
-  ["/app/strategy", "/app/strategy/overview"],
   ["/app/strategy/brief-builder", "/app/briefs/builder"],
-  ["/app/briefs", "/app/briefs/builder"],
   ["/app/report-builder", "/app/reports/new"],
-  ["/app/reports", "/app/reports/new"],
-  ["/app/mst", "/app/mst/matrix"],
   ["/app/settings", "/app/settings/account"],
 ];
 

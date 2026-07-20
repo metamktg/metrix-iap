@@ -114,6 +114,12 @@ export const navTree: NavSection[] = [
     landing: "/app/analysis",
     children: [
       {
+        id: "analysis-overview",
+        label: "Overview",
+        to: "/app/analysis/overview",
+        dataSource: "campaign_summary, performance_by_cell",
+      },
+      {
         id: "analysis-library",
         label: "IAP Library",
         to: "/app/analysis/library",
@@ -147,6 +153,12 @@ export const navTree: NavSection[] = [
     landing: "/app/strategy",
     children: [
       {
+        id: "strategy-overview",
+        label: "Overview",
+        to: "/app/strategy/overview",
+        dataSource: "message_pillars, performance_by_cell",
+      },
+      {
         id: "strategy-map",
         label: "Strategy Map",
         to: "/app/strategy/map",
@@ -174,6 +186,12 @@ export const navTree: NavSection[] = [
     landing: "/app/briefs",
     children: [
       {
+        id: "briefs-overview",
+        label: "Overview",
+        to: "/app/briefs",
+        dataSource: "draft_briefs",
+      },
+      {
         id: "briefs-builder",
         label: "Brief Builder",
         to: "/app/briefs/builder",
@@ -195,6 +213,12 @@ export const navTree: NavSection[] = [
     icon: "FileBarChart",
     landing: "/app/reports",
     children: [
+      {
+        id: "reports-overview",
+        label: "Overview",
+        to: "/app/reports",
+        dataSource: "report_sections, report_history",
+      },
       {
         id: "reports-new",
         label: "New Report",
@@ -227,7 +251,14 @@ export const navTree: NavSection[] = [
     label: "MST",
     icon: "Layers",
     landing: "/app/mst",
+    badgeKey: "mst",
     children: [
+      {
+        id: "mst-overview",
+        label: "Overview",
+        to: "/app/mst",
+        dataSource: "historical_matrix_4x4, performance_by_cell",
+      },
       {
         id: "mst-concept-map",
         label: "Concept Map",
@@ -238,7 +269,6 @@ export const navTree: NavSection[] = [
         id: "mst-matrix",
         label: "Matrix Builder",
         to: "/app/mst/matrix",
-        badgeKey: "mst",
         dataSource: "historical_matrix_4x4",
       },
       {

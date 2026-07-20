@@ -11,6 +11,7 @@ import {
   ModuleScopeGate,
   PendingState,
   CrossLink,
+  InfoTooltip,
 } from "../shared";
 import { cn } from "@/lib/utils";
 import {
@@ -69,19 +70,13 @@ export function MSTHub() {
             />
 
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 max-w-5xl">
-              {/* Header row */}
-              <div className="flex items-end justify-between gap-4">
-                <div>
-                  <p className={cn(TYPE.label, "mb-1")}>MST · Matrix Scaling</p>
-                  <h1 className="text-xl font-bold text-foreground tracking-tight">
-                    MST
-                  </h1>
-                  <p className={cn(TYPE.caption, "text-muted-foreground mt-0.5")}>
-                    {acct.name} · {totalCells} library cell
-                    {totalCells !== 1 ? "s" : ""} · {matrixCellCount} matrix cell
-                    {matrixCellCount !== 1 ? "s" : ""}
-                  </p>
-                </div>
+              {/* Action row */}
+              <div className="flex items-center justify-between gap-4">
+                <p className={cn(TYPE.caption, "text-muted-foreground")}>
+                  {acct.name} · {totalCells} library cell
+                  {totalCells !== 1 ? "s" : ""} · {matrixCellCount} matrix cell
+                  {matrixCellCount !== 1 ? "s" : ""}
+                </p>
                 <a
                   href="/app/mst/concept-map"
                   className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity"
@@ -198,21 +193,23 @@ export function MSTHub() {
                   { label: "Creative Scan", desc: "Variable pattern analysis", href: "/app/mst/creative-scan" },
                   { label: "Crossmap Results", desc: "Cross-concept performance", href: "/app/mst/crossmap" },
                 ].map((l) => (
-                  <a
+                  <div
                     key={l.href}
-                    href={l.href}
-                    className="bg-card/60 border border-border/60 rounded-xl px-4 py-3 hover:border-primary/30 hover:bg-card transition-colors group"
+                    className="bg-card/60 border border-border/60 rounded-xl hover:border-primary/30 hover:bg-card transition-colors group"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className={cn(TYPE.body, "font-semibold text-foreground")}>
-                        {l.label}
-                      </span>
-                      <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-primary transition-colors" />
+                    <div className="flex items-center gap-1 px-4 py-3">
+                      <a
+                        href={l.href}
+                        className="flex-1 flex items-center justify-between gap-1 min-w-0"
+                      >
+                        <span className={cn(TYPE.body, "font-semibold text-foreground truncate")}>
+                          {l.label}
+                        </span>
+                        <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-primary transition-colors shrink-0" />
+                      </a>
+                      <InfoTooltip content={l.desc} />
                     </div>
-                    <p className={cn(TYPE.caption, "text-muted-foreground mt-0.5")}>
-                      {l.desc}
-                    </p>
-                  </a>
+                  </div>
                 ))}
               </div>
             </div>
