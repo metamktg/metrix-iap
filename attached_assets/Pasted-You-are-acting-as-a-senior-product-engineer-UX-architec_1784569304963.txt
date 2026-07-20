@@ -1,0 +1,1016 @@
+You are acting as a senior product engineer, UX architect and design-systems lead working on Metrix IAP.
+
+Your task is to comprehensively revise the existing application based on the requirements below. This is an implementation task, not an audit or proposal. Inspect the current codebase, create a concrete implementation plan, execute the changes, validate the complete experience and fix regressions before finishing.
+
+PRODUCT INTENT
+
+Metrix is not meant to feel like another reporting dashboard.
+
+It is the decision layer for paid advertising. It converts fragmented marketing data into:
+
+1. Signals
+2. Analysis
+3. Decisions
+4. Strategy
+5. Hypotheses
+6. Creative briefs
+7. Tests
+8. Reports
+
+The core product principle is:
+
+“Decision first. Data second.”
+
+Every primary screen must answer, in this order:
+
+1. What changed?
+2. Why does it matter?
+3. What should the user do?
+4. How confident is Metrix?
+5. What evidence supports the recommendation?
+6. What remains unknown?
+
+Do not begin by redesigning individual cards in isolation. Fix the global application structure, hierarchy and shared components first, then revise each module.
+
+NON-NEGOTIABLE EXECUTION RULES
+
+- Inspect the complete route structure, shared layouts, database schema, generated types, API contracts, state models and design tokens before changing anything.
+- Create and follow a route-by-route implementation checklist.
+- Implement the revisions. Do not stop after producing recommendations.
+- Preserve all working data connections, authentication, authorization, account switching, URL parameters and existing functional workflows.
+- Do not delete working capabilities to make the interface appear cleaner.
+- Do not replace working functionality with placeholders, mock data or static UI.
+- Do not silently suppress backend errors. Fix their root causes and provide safe user-facing recovery states.
+- Do not expose database tables, schema fields, stack traces, internal object names or raw server errors to users.
+- Use reusable components and centralized design tokens. Do not solve the same design problem separately on each route.
+- Preserve old URLs through redirects or route aliases if navigation destinations are moved.
+- Use additive and reversible database migrations where schema changes are required.
+- Run typecheck, linting, automated tests and route-level regression checks before completion.
+- Do not consider the task complete while visible state contradictions, layout regressions or failing tests remain.
+- Do not ask broad design questions that can be resolved from these requirements. Only stop for a genuine blocker that would materially change product behaviour.
+
+PHASE 1: FIX TRUST AND STATE CORRECTNESS
+
+Complete these items before visual refinements.
+
+1. Correct all contradictory brief states.
+
+The current Brief History experience can show:
+
+- 0 drafts
+- 4 finalized
+- Individual records visibly marked DRAFT
+
+Create one authoritative brief-status model and use it everywhere.
+
+Supported statuses should be explicit and consistently derived, such as:
+
+- Generated
+- Draft
+- In review
+- Approved
+- Finalized
+- Archived
+
+Do not infer finalized status from the existence of a record.
+
+Update:
+
+- Summary counters
+- Brief cards
+- Brief Builder
+- History
+- Workflow panel
+- Filters
+- Any API responses and generated types
+
+2. Correct recommendation and action-count contradictions.
+
+Account Overview can currently show “No recommendations yet” while the workflow panel shows multiple pending actions.
+
+Define and separately calculate:
+
+- New signals
+- Pending recommendations
+- Approved actions
+- Ready-to-brief actions
+- Draft briefs
+- Active hypotheses
+- Completed actions
+
+Ensure every counter links to the exact records it counts.
+
+3. Fix strategy-generation failures at the source.
+
+The user-facing interface currently exposes errors involving:
+
+- source_analysis_run_id
+- generation_runs
+- schema cache
+
+Determine whether this is caused by a missing migration, stale generated type, incorrect query, environment mismatch or schema-cache issue.
+
+Fix the underlying problem.
+
+Then replace technical error output with a safe error state:
+
+Title:
+“Strategy generation couldn’t start”
+
+Body:
+“Your existing strategy is unchanged. Try again, or review the latest completed run.”
+
+Actions:
+
+- Try again
+- View latest strategy
+- Copy support reference
+
+Keep the technical error, trace ID and request context in internal logs only.
+
+Error notifications must not persist behind unrelated pages or dialogs.
+
+4. Replace internal developer language.
+
+Remove user-facing copy such as:
+
+- “real Brief Builder stage output”
+- “generated from strategy_map”
+- CORE_REANALYSIS_READ
+- CAMPAIGN_SUMMARY
+- generated_p1
+- raw schema or table terminology
+
+Use human-readable labels first. Make internal IDs available only inside a “Technical details” disclosure or copy-ID action.
+
+PHASE 2: REBUILD THE GLOBAL APPLICATION SHELL
+
+1. Primary navigation
+
+Restructure the left navigation as follows:
+
+HOME
+- Account Overview
+
+LISTEN
+- Alerts
+- Signals
+- Recommendations
+
+ANALYSIS
+- Overview
+- Creative Library
+- Audience
+- Placements
+- Budget
+
+STRATEGY
+- Overview
+- Strategy Map
+- Avatars / ICP
+- Hypothesis Queue
+- Briefs
+- Brief Builder
+- Brief History
+
+MST
+- Active Sprint
+- Concept Matrix
+- Results
+- History
+
+REPORTS
+- Report Builder
+- Scheduled Reports
+- Report History
+
+AGENT
+- Retain the existing Agent capability, but also make it available through a consistent global entry point.
+
+SETTINGS
+- Keep pinned to the bottom of the navigation.
+
+Creative Briefs must no longer compete as a separate primary section. Briefs are a downstream output of Strategy.
+
+Preserve existing Brief URLs through redirects or aliases.
+
+2. Navigation behaviour
+
+- The expanded sidebar must be wide enough to display labels without truncating “Creative Briefs,” “Report Builder” or “Hypothesis Queue.”
+- Support a collapsed icon-only state.
+- Provide tooltips for every collapsed icon.
+- Persist the user’s expanded or collapsed preference.
+- Maintain clear selected states for both parent and child routes.
+- Do not expand multiple navigation groups unless required for the current route.
+- Keep the account selector at the top.
+- Keep Settings and database/admin utilities separated from the main product workflow.
+- Add global search or a command palette for routes, accounts, reports, briefs, hypotheses and recent items.
+- Add recent items and saved or favourite destinations without cluttering the default sidebar.
+
+3. Account selector
+
+Retain:
+
+- Agency Overview
+- Account list
+- Configured/unconfigured state
+- Connection state
+- Add Ad Account
+
+Improve:
+
+- Make the entire selector row clearly clickable.
+- Use human-readable connection status.
+- Keep platform and setup state secondary.
+- Do not duplicate “Connected” in multiple areas of the same page.
+- Ensure switching accounts preserves the intended route when possible.
+- Provide a deliberate fallback when that route is unavailable for the selected account.
+
+4. Global header
+
+The global header should contain:
+
+- Breadcrumb
+- Account context when needed
+- Global date range
+- Search or command entry
+- Workflow inbox button with count
+- Notifications
+- User profile
+
+Remove duplicated date-window controls from the right workflow panel.
+
+Connection status should live primarily in the account selector or account context, not compete with global actions on every screen.
+
+5. Right workflow panel
+
+The workflow panel currently consumes too much horizontal space and duplicates controls.
+
+Revise it as follows:
+
+- Collapsed by default.
+- Retain a clearly visible action-count button in the global header or slim utility rail.
+- Expand only when the user opens it, selects an action or completes a relevant stage.
+- Persist the user’s panel preference.
+- Never overlay or obscure main content.
+- Recalculate the main content grid when it opens.
+- Do not duplicate global date controls.
+- Do not use the panel as a second navigation system.
+- Do not show Run Analysis on every route without context.
+- Prioritize actions by impact, confidence and workflow state.
+- Each action should show the affected entity, recommendation, evidence strength and next action.
+- Support assign, approve, dismiss, snooze, create hypothesis and create brief where appropriate.
+- Do not show both the full workflow panel and a separate full-height Loop Stages panel simultaneously.
+
+6. IAP loop
+
+Keep the IAP loop as proprietary product context, but simplify it.
+
+Stages:
+
+- Data
+- Analysis
+- Strategy
+- Briefs
+- Report
+- Re-run
+
+Requirements:
+
+- Use a compact stage status component.
+- Display the current stage and next required action.
+- Do not use it as duplicate navigation.
+- Do not allow completed, current and pending stages to rely only on colour.
+- Make stage status accessible through icon, label and text.
+- Show data freshness and last successful run.
+- Move detailed run history into an expandable panel.
+- On Account Overview, reduce the vertical footprint substantially.
+
+PHASE 3: CREATE A DECISION-FIRST PAGE TEMPLATE
+
+Build a shared page-header and decision-summary pattern for all major modules.
+
+Every major screen should support:
+
+1. Page title
+2. Priority Read
+3. Recommended action
+4. Estimated impact or affected scope
+5. Confidence
+6. Evidence quality or sample sufficiency
+7. Data freshness and date range
+8. Primary CTA
+9. Expandable evidence
+10. Expandable raw data
+
+Use four disclosure levels:
+
+LEVEL 1: DECISION
+- What changed
+- Why it matters
+- What to do
+- Impact
+- Confidence
+
+LEVEL 2: EXPLANATION
+- Reasoning
+- Affected audience, campaign, creative or placement
+- Comparison window
+- Limitations
+
+LEVEL 3: EVIDENCE
+- Supporting metrics
+- Variable combinations
+- Benchmarks
+- Creative assets
+- Sample size
+
+LEVEL 4: RAW DETAIL
+- Tables
+- Source rows
+- Internal IDs
+- Run metadata
+- Technical caveats
+
+Do not render all four levels with equal prominence.
+
+PHASE 4: REVISE EACH MODULE
+
+A. ACCOUNT OVERVIEW
+
+The Account Overview must become the executive and operator starting point.
+
+Above the fold, show:
+
+1. Priority Read
+2. Recommended Next Action
+3. Account health and data freshness
+4. Primary business outcome metrics
+5. Current sprint or active test
+
+Do not default to vanity metrics such as impressions and clicks as the primary executive read.
+
+Default metrics should favour:
+
+- Primary conversion event
+- CPA or CAC
+- Revenue or conversion value when available
+- ROAS or efficiency
+- Spend
+- Change versus comparison period
+
+Retain metric customization.
+
+The page should then show:
+
+- Top opportunity
+- Top risk
+- Current control
+- Registration or conversion control
+- Active sprint
+- Event funnel
+- Data caveats
+- Supporting account totals
+
+If recommendations are unavailable, explain why:
+
+- Analysis has not run
+- Evidence threshold not met
+- Data is incomplete
+- No material action detected
+
+Do not say “No recommendations yet” when recommendations exist elsewhere.
+
+B. LISTEN: ALERTS, SIGNALS AND RECOMMENDATIONS
+
+Clarify the taxonomy:
+
+Alerts:
+Urgent or material conditions requiring attention.
+
+Signals:
+Meaningful patterns or changes that may inform a decision.
+
+Recommendations:
+Actions Metrix proposes based on one or more signals.
+
+Alerts must function as a triage queue.
+
+Each alert should show:
+
+- Plain-language finding
+- Type
+- Severity
+- Estimated impact
+- Confidence
+- Sample sufficiency
+- Baseline or comparison
+- Magnitude of change
+- Affected spend, audience, creative or funnel stage
+- Generated time
+- Owner
+- Status
+- One primary action
+
+Support:
+
+- Filter
+- Sort
+- Assign
+- Approve
+- Dismiss
+- Snooze
+- Open evidence
+- Create hypothesis
+- Create brief where appropriate
+
+For anomaly-based alerts, show:
+
+- What historical norm or benchmark was used
+- How unusual the current value is
+- Which variables contributed
+- Whether the result is correlation, directional evidence or a validated control
+- What would invalidate the finding
+
+Replace technical data-caveat codes with human language.
+
+Example:
+
+Instead of:
+“CORE_REANALYSIS_READ”
+
+Use:
+“Checkout demographic data is incomplete”
+
+Then provide:
+“View technical details”
+
+C. ANALYSIS
+
+Create a clear Analysis Overview before the detailed modules.
+
+Analysis Overview should answer:
+
+- What are the strongest controls?
+- What is improving?
+- What is declining?
+- Which result is reliable?
+- Which result needs more data?
+- What should be investigated next?
+
+Creative Library:
+
+- Show actual creative thumbnails.
+- Connect performance results to the creative asset.
+- Support grid and table views.
+- Support filtering by concept, format, hook, tone, CTA, funnel stage, status and date.
+- Allow side-by-side comparison.
+- Show performance and confidence without overcrowding the card.
+- Open a detail drawer for full variable and performance evidence.
+
+Audience:
+
+- Summarize the highest-value segment insights before the table.
+- Add sample-size and confidence thresholds.
+- Flag low-volume rows.
+- Prevent one-result or extremely low-spend segments from appearing as validated winners.
+- Support sort and filter.
+- Keep raw demographic rows in the evidence layer.
+
+Placements and Budget:
+
+- Lead with allocation decisions and inefficiencies.
+- Show the decision before the complete table.
+- Distinguish “scale,” “reduce,” “validate” and “insufficient evidence.”
+- Make the affected spend and expected consequence clear.
+
+D. STRATEGY OVERVIEW
+
+Lead with:
+
+- The current strategic read
+- Top opportunity
+- Top risk
+- Top three recommended actions
+- What changed since the previous strategy run
+
+Move counts such as pillars, hypotheses, ICPs and briefs into secondary summary cards.
+
+Pillar coverage should show:
+
+- Pillar name
+- Strategic purpose
+- Current evidence
+- Coverage
+- Confidence
+- Missing variables
+- Next test
+
+Do not lead with internal pillar codes.
+
+E. STRATEGY MAP
+
+Preserve the current decision-rich structure, but improve hierarchy.
+
+Top section:
+
+- Top three decisions
+- Priority
+- Expected impact
+- Confidence
+- Primary CTA
+
+Secondary section:
+
+- Variable combinations
+- Scale
+- Optimize
+- Validate
+- Explore
+- Avoid or Rebuild
+
+Do not give every combination equal weight.
+
+Requirements:
+
+- Collapse supporting evidence by default.
+- Make long recommendation names readable without destructive truncation.
+- Provide tooltips or expansion for full text.
+- Keep category tags limited to the most important three.
+- Show sample size and comparison scope.
+- Connect each recommendation to its supporting analysis.
+- Allow queueing for test from the same interaction.
+- Make the difference between “High impact” and “High confidence” unmistakable.
+
+F. AVATARS / ICP
+
+Use human-readable avatar names as the primary label.
+
+Move codes such as CN_ICP_Achiever to technical metadata.
+
+Each avatar or ICP should initially show:
+
+- Segment name
+- Who they are
+- Performance summary
+- Message angle
+- Strongest creative variables
+- Recommendation
+- Confidence
+- Sample sufficiency
+
+Use “Click for details” on desktop, not “tap for details.”
+
+When expanded, show:
+
+- Real performance
+- Benchmark
+- Supporting cells
+- Creative DNA
+- Message angles
+- Top creative concepts
+- Ranked variables
+- Raw audience rows
+
+Low-sample protection is mandatory:
+
+- Show sample size.
+- Flag insufficient evidence.
+- Do not label a one-result segment as a validated winner.
+- Use thresholds consistently across cards, tables, recommendations and briefs.
+
+G. HYPOTHESIS QUEUE
+
+Treat this as an operational testing queue.
+
+Each hypothesis needs:
+
+- Plain-language hypothesis
+- Originating signal
+- Expected impact
+- Confidence
+- Evidence
+- Test design
+- Owner
+- Status
+- Priority
+- Date created
+- Success metric
+- Minimum evidence threshold
+- Next action
+
+Statuses should include:
+
+- Proposed
+- Approved
+- Queued
+- Running
+- Validated
+- Rejected
+- Inconclusive
+- Archived
+
+Support filtering, sorting, assignment and movement into MST.
+
+H. BRIEFS AND BRIEF BUILDER
+
+Brief Builder must feel like a production handoff tool, not a metadata viewer.
+
+Each brief should contain editable fields for:
+
+- Brief name
+- Objective
+- Audience or ICP
+- Funnel stage
+- Strategic pillar
+- Hypothesis
+- Core message
+- Hook
+- Angle
+- Tone
+- Proof
+- Offer
+- CTA
+- Format
+- Duration
+- Visual direction
+- Copy direction
+- Required variants
+- Asset requirements
+- What to preserve
+- What to avoid
+- Success metric
+- Owner
+- Approval state
+
+Show the source evidence without forcing users to inspect raw analysis.
+
+Every brief must link back to:
+
+- Originating signal
+- Analysis
+- Strategy pillar
+- ICP
+- Hypothesis
+- Strategy run
+
+Actions should include:
+
+- Edit
+- Save draft
+- Assign
+- Comment
+- Approve
+- Finalize
+- Duplicate
+- Export
+- Share
+- Archive
+- Send to MST when appropriate
+
+Do not make “Open Hypothesis Queue” the main action inside a brief detail drawer.
+
+Use the available drawer space productively. Avoid large blank panels.
+
+I. BRIEF HISTORY
+
+Correct all status counts.
+
+Add:
+
+- Search
+- Status filter
+- Format filter
+- Owner filter
+- Date filter
+- Strategy-run filter
+- Sort by created, updated or priority
+
+Every item should show:
+
+- Human-readable title
+- Thumbnail or format icon
+- Status
+- Format
+- Originating pillar
+- Created date
+- Last updated
+- Owner
+- Approval state
+- Source strategy run
+
+J. REPORTS
+
+Reports should translate Metrix decisions into shareable communication.
+
+Support:
+
+- Executive summary
+- Operator summary
+- Client-facing summary
+- Selected date range
+- Selected account
+- Included decisions
+- Included evidence
+- Live or frozen snapshot
+- Export
+- Share
+- Scheduled delivery
+- History
+
+Reports should not default to a raw dashboard export.
+
+K. MST
+
+Keep MST connected to the hypothesis workflow.
+
+A user should be able to follow:
+
+Signal → Recommendation → Hypothesis → Brief → MST → Result → Learning
+
+Show where every active test originated and where the learning will be written back.
+
+L. AGENT
+
+The Agent should be available globally.
+
+It should understand the current:
+
+- Account
+- Date range
+- Screen
+- Signal
+- Creative
+- ICP
+- Hypothesis
+- Brief
+- Report
+
+Allow contextual questions such as:
+
+- Why is this high confidence?
+- Show the supporting evidence.
+- What changed from the previous run?
+- Turn this into a hypothesis.
+- Draft a brief.
+- Explain this to an executive.
+- Show the technical calculation.
+
+Do not force users to leave their workflow to access the Agent.
+
+PHASE 5: DESIGN SYSTEM AND PREMIUM VISUAL LANGUAGE
+
+Keep the premium dark Metrix identity, but reduce visual noise.
+
+1. Colour
+
+Create semantic colour tokens.
+
+Use:
+
+- Metrix blue/cyan for primary interaction
+- Green for confirmed success or positive outcome
+- Amber for caution or incomplete evidence
+- Red for blocking error or destructive action
+- Purple only if it has one permanent semantic meaning
+- Neutral colours for structure and secondary metadata
+
+Do not use colour alone to communicate state.
+
+Reduce:
+
+- Excessive glow
+- Multiple bright borders
+- Gradient usage on secondary navigation
+- Simultaneous coloured tags
+- Coloured category and status systems that conflict
+
+2. Surfaces
+
+- Reduce unnecessary cards inside cards.
+- Use whitespace and typography before adding another border.
+- Maintain consistent border radius.
+- Use one standard border treatment.
+- Use elevation sparingly.
+- Avoid large empty containers.
+- Avoid wrapping one short data point in multiple nested surfaces.
+
+3. Typography
+
+Implement a centralized type scale.
+
+Recommended desktop scale:
+
+- Page title: 24 to 28px
+- Section heading: 17 to 20px
+- Card title: 15 to 16px
+- Body: 14 to 15px
+- Metadata: 12 to 13px with accessible contrast
+- Button text: 13 to 14px
+
+Requirements:
+
+- Use sentence case for user-facing content.
+- Reserve all-caps for short eyebrow labels and statuses.
+- Reserve monospace for IDs and technical detail.
+- Use tabular numerals for performance data.
+- Use approximately 1.4 to 1.5 line height for body copy.
+- Do not allow primary explanations to truncate without an accessible expansion.
+- Limit visible tags to three, then show “+N more.”
+
+4. Spacing
+
+Use a consistent 8px spacing system.
+
+Suggested values:
+
+- Page padding: 24px minimum on desktop
+- Section spacing: 24 to 32px
+- Card padding: 16 to 20px
+- Grid gap: 16px
+- Dense row height: minimum 40 to 44px
+- Primary interactive control height: approximately 40px or greater
+
+5. Buttons and interactions
+
+Standardize:
+
+- Primary button
+- Secondary button
+- Tertiary/text action
+- Destructive action
+- Icon button
+- Selected toggle
+- Disabled state
+- Loading state
+
+Each surface should have one obvious primary action.
+
+Do not style multiple adjacent actions as equally primary.
+
+PHASE 6: RESPONSIVENESS AND ACCESSIBILITY
+
+Validate at minimum:
+
+- 1920x1080
+- 1440x900
+- 1280x800
+- 1024px width
+- Narrow/mobile fallback where supported
+
+Requirements:
+
+- No page-level horizontal scrolling.
+- Data tables may use controlled internal horizontal scrolling where necessary.
+- Opening the workflow panel must not obscure content.
+- Long page titles and navigation labels must remain understandable.
+- Drawers and modals must fit within the viewport.
+- Primary actions must remain accessible at reduced heights.
+- Sticky elements must not overlap one another.
+
+Meet WCAG 2.2 AA expectations where applicable:
+
+- Normal text contrast of at least 4.5:1.
+- Essential UI and graphical component contrast of at least 3:1.
+- Pointer targets at least 24x24 CSS pixels or correctly spaced.
+- Visible keyboard focus.
+- Logical tab order.
+- Escape closes dialogs and drawers.
+- Focus is trapped inside open modals.
+- Focus returns to the triggering control after close.
+- Controls have accessible names.
+- State is not communicated by colour alone.
+- Screen-reader labels exist for icon-only controls.
+- Reduced-motion preference is respected.
+
+PHASE 7: LOADING, EMPTY AND ERROR STATES
+
+Create consistent shared states for:
+
+- Initial loading
+- Background refresh
+- Empty account
+- No analysis run
+- No material signal
+- Insufficient evidence
+- Partial data
+- Stale data
+- Disconnected source
+- Permission denied
+- Failed request
+- Generation in progress
+- Generation failed
+- Successful completion
+
+Loading states must preserve page structure and avoid major layout shifts.
+
+Empty states must explain:
+
+- What is missing
+- Why the screen is empty
+- What the user should do next
+
+Error states must explain:
+
+- What failed
+- Whether existing data is safe
+- What the user can do
+- How to retry
+- How to reference the failure for support
+
+Never expose raw backend errors.
+
+PHASE 8: ROLE-APPROPRIATE VIEWS
+
+Do not create three disconnected products.
+
+Create role-based saved views or density modes:
+
+EXECUTIVE VIEW
+- Account health
+- Business outcomes
+- Top opportunities
+- Top risks
+- Top decisions
+- Expected impact
+- Report and share actions
+
+OPERATOR VIEW
+- Full action queue
+- Evidence
+- Campaign and creative detail
+- Hypotheses
+- Briefs
+- MST
+- Raw data access
+
+GUIDED VIEW
+- Recommended next step
+- Definitions
+- Contextual help
+- Reduced visible controls
+- Confirmation before high-impact actions
+
+Retain access to the complete product according to permissions.
+
+PHASE 9: VALIDATION
+
+Before completion, test every major route and interaction.
+
+Required technical validation:
+
+- Typecheck passes
+- Lint passes
+- Unit tests pass
+- Integration tests pass
+- Existing loop tests pass
+- Database migrations apply cleanly
+- Generated API and schema types are synchronized
+- No console errors
+- No uncaught network errors
+- No raw server errors visible in the UI
+- No broken routes
+- Old brief URLs redirect correctly
+- Account switching works
+- Date-range changes work
+- Workflow counters match their underlying records
+- Brief counters match brief records
+- Strategy generation works
+- Retry states work
+- Sidebar state persists
+- Workflow-panel state persists
+- Drawers and modals handle focus correctly
+
+Required UX validation:
+
+- No truncated primary navigation labels
+- No unexplained internal IDs in primary UI
+- No duplicate global controls
+- No competing primary CTAs
+- No page-level horizontal overflow
+- No content hidden behind the workflow panel
+- No low-sample conclusion displayed as validated without a warning
+- No contradictory status labels
+- Every major screen contains a decision-first summary
+- Every recommendation links to supporting evidence
+- Every brief links back to its originating strategy and hypothesis
+- Every MST item links back to its originating brief or hypothesis
+
+DELIVERABLES
+
+When implementation is complete, provide:
+
+1. A concise summary of what was changed.
+2. The final navigation structure.
+3. A list of shared components and design tokens created or revised.
+4. All database or API changes.
+5. The root cause and resolution of the strategy-generation error.
+6. Confirmation of how contradictory status counts were resolved.
+7. A route-by-route validation checklist.
+8. Test results.
+9. Screenshots of the primary revised desktop states.
+10. Any remaining limitations that could not be safely resolved.
+
+Do not mark the task complete because the interface compiles.
+
+Done means the complete experience is coherent, decision-first, responsive, accessible, production-safe and internally consistent across all affected routes.
