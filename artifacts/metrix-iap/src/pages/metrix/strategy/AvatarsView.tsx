@@ -23,8 +23,12 @@ import {
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/SegmentGridModal";
 import { SegmentDrilldownModal } from "@/components/creative/SegmentDrilldownModal";
-import type { SegmentId } from "@/lib/segment-analytics";
-import { DemographicTable } from "../analysis/tables";
+import {
+  listSegments, computeSegmentTotals, deriveSegmentMetrics,
+  assessSegmentSignal, computeSegmentAttribution,
+  segmentLabel, segmentKey, scopeDemographicRows,
+  type SegmentId, type SegmentRawTotals, type SegmentDerivedMetrics, type SegmentSignal,
+} from "@/lib/segment-analytics";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import {
   Users, Fingerprint, DoorOpen, MessageSquareQuote, Compass,
@@ -615,6 +619,84 @@ function IcpProfileCard({
   );
 }
 
+// ─── Audience segment tile ────────────────────────────────────────────
+// Primary organizing authority: each demographic segment is a standalone
+// tile showing performance, confidence, best variable, and explore CTA.
+
+function AudienceSegmentTile({
+  seg, totals, derived, signal, bestVariableCode, onExplore,
+}: {
+  seg: SegmentId;
+  totals: SegmentRawTotals;
+  derived: SegmentDerivedMetrics;
+  signal: SegmentSignal;
+  bestVariableCode: string | null;
+  onExplore: () => void;
+}) {
+  const hasSpend = totals.spend != null && totals.spend > 0;
+  return (
+    <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-3">
+      {/* L1: identity + confidence badge */}
+      <div className="flex items-start justify-between gap-2">
+        <p className={cn(TYPE.title, "font-semibold text-foreground leading-snug")}>
+          {segmentLabel(seg)}
+        </p>
+        <span
+          title={
+            signal.low
+              ? signal.reasons.join(" ")
+              : "Sufficient spend and impressions for a reliable read."
+          }
+          className={cn(
+            "shrink-0 rounded border px-1.5 py-0.5",
+            TYPE.label,
+            signal.low
+              ? "border-amber-400/30 bg-amber-400/[0.08] text-amber-400"
+              : "border-emerald-400/30 bg-emerald-400/[0.08] text-emerald-400",
+          )}
+        >
+          {signal.low ? "low signal" : "signal ✓"}
+        </span>
+      </div>
+
+      {/* L1: 3 performance pills */}
+      {hasSpend ? (
+        <div className="grid grid-cols-3 gap-2">
+          <MetricPill label="Spend" value={fmtUSD(totals.spend!, 0)} />
+          <MetricPill label="CPA" value={derived.cpa != null ? fmtUSD(derived.cpa) : "—"} />
+          <MetricPill label="Link CVR" value={derived.cvr != null ? fmtPct(derived.cvr) : "—"} />
+        </div>
+      ) : (
+        <p className={cn(TYPE.caption, "text-muted-foreground/50")}>No spend data for this segment.</p>
+      )}
+
+      {/* L1: best variable signal */}
+      <div className="flex items-center gap-1.5 min-h-[1.25rem]">
+        <span className={cn(TYPE.label, "text-muted-foreground/50 normal-case")}>Top variable</span>
+        {bestVariableCode ? (
+          <VariableChip code={bestVariableCode} showCode={false} />
+        ) : (
+          <span className={cn(TYPE.label, "text-muted-foreground/30 normal-case")}>—</span>
+        )}
+      </div>
+
+      {/* Explore CTA */}
+      <button
+        type="button"
+        onClick={onExplore}
+        className={cn(
+          "mt-auto self-start inline-flex items-center gap-1",
+          TYPE.caption,
+          "font-medium text-primary hover:text-primary/80 transition-colors",
+        )}
+      >
+        Explore segment
+        <ArrowDownRight className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+}
+
 // ─── Combinations panel ───────────────────────────────────────────────
 // Two sub-tables:
 //  1. Top creative concepts by CPA (deduped by concept from performance_by_cell)
@@ -881,6 +963,42 @@ export function AvatarsView() {
     [analysis],
   );
 
+  // Audience segment list sorted by spend — the hierarchical tile authority
+  const segmentList = useMemo(
+    () => (analysis ? listSegments(analysis.demographic_registration_signal ?? []) : []),
+    [analysis],
+  );
+
+  // Per-segment pre-computed stats (totals, derived, signal, best variable)
+  const segmentStats = useMemo(() => {
+    if (!analysis || segmentList.length === 0) {
+      return new Map<string, {
+        totals: SegmentRawTotals; derived: SegmentDerivedMetrics;
+        signal: SegmentSignal; bestVariableCode: string | null;
+      }>();
+    }
+    const allRows = analysis.demographic_registration_signal ?? [];
+    const scoped = scopeDemographicRows(allRows, null);
+    const scopedTotals = computeSegmentTotals(scoped);
+    const result = new Map<string, {
+      totals: SegmentRawTotals; derived: SegmentDerivedMetrics;
+      signal: SegmentSignal; bestVariableCode: string | null;
+    }>();
+    for (const seg of segmentList) {
+      const segRows = scoped.filter((r) => r.Age === seg.age && r.Gender === seg.gender);
+      const totals = computeSegmentTotals(segRows);
+      const derived = deriveSegmentMetrics(totals);
+      const signal = assessSegmentSignal(totals, scopedTotals);
+      const attribution = computeSegmentAttribution(analysis, mst, seg, null);
+      const bestVariableCode =
+        attribution.available && attribution.variables.length > 0
+          ? attribution.variables[0].code
+          : null;
+      result.set(segmentKey(seg), { totals, derived, signal, bestVariableCode });
+    }
+    return result;
+  }, [analysis, mst, segmentList]);
+
   // Ads indexed by cell code for drawer ad breakdown
   const adsByCell = useMemo(() => {
     const ads = getAds(seed, adAccountId);
@@ -1020,10 +1138,37 @@ export function AvatarsView() {
                   <MetricTile label="Avatars" value={String(matrix?.columns.length ?? 0)} />
                   <MetricTile label="Message angles" value={String(matrix?.cells.length ?? 0)} sub="matrix cells" />
                   <MetricTile label="ICP profiles" value={String(icpProfiles.length)} sub="strategy map" />
-                  <MetricTile label="Audience rows" value={String(demo.length)} sub={`${term.singular} signal`} />
+                  <MetricTile label="Segments" value={String(segmentList.length)} sub="audience signal" />
                 </div>
 
                 <div className="px-6 py-5 space-y-4 max-w-5xl">
+                  {/* ── Audience segments — hierarchical tile authority ── */}
+                  {segmentList.length > 0 && (
+                    <SectionCard
+                      title="Audience segments"
+                      desc="Demographic signal · performance + confidence · explore"
+                      table="demographic_registration_signal"
+                    >
+                      <div className="grid grid-cols-dashboard-2 gap-3">
+                        {segmentList.map((seg) => {
+                          const stats = segmentStats.get(segmentKey(seg));
+                          if (!stats) return null;
+                          return (
+                            <AudienceSegmentTile
+                              key={segmentKey(seg)}
+                              seg={seg}
+                              totals={stats.totals}
+                              derived={stats.derived}
+                              signal={stats.signal}
+                              bestVariableCode={stats.bestVariableCode}
+                              onExplore={() => setAudienceSegment(seg)}
+                            />
+                          );
+                        })}
+                      </div>
+                    </SectionCard>
+                  )}
+
                   {/* ── Avatars view ── */}
                   {viewMode === "avatars" && matrix && (
                     <SectionCard
@@ -1098,27 +1243,6 @@ export function AvatarsView() {
                   {/* ── Combinations panel (always visible) ── */}
                   <CombosPanel analysis={analysis} resultNoun={term.singular} />
 
-                  {/* ── Audience signal (demographic heatmap) ── */}
-                  <SectionCard
-                    title="Audience signal"
-                    desc={`Demographic ${term.singular} signal · CVR heatmap`}
-                    table="demographic_registration_signal"
-                  >
-                    {demo.length ? (
-                      <DemographicTable
-                        rows={demo}
-                        onSegmentClick={analysis ? setAudienceSegment : undefined}
-                        heatmap
-                      />
-                    ) : (
-                      <PendingState
-                        title="No audience signal"
-                        message={`Demographic ${term.singular} signal appears once analysis is available.`}
-                        icon={Users}
-                        action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />}
-                      />
-                    )}
-                  </SectionCard>
                 </div>
               </>
             )}
