@@ -39,7 +39,7 @@ import { getReportBuilder } from "@/lib/data/metrixSeedAdapter";
 import { buildReportModel, serializeReportModel, downloadReportExport, parseReportModel } from "@/lib/reportExport";
 import {
   BarChart3, Layers, FileText, Database, FileBarChart,
-  CheckCircle2, Lock, Loader2, X,
+  CheckCircle2, XCircle, Lock, Loader2, X,
   Upload, Link2, PlayCircle, RefreshCw,
   AlertTriangle, Sparkles, ArrowRight, Clock, RotateCcw, CalendarRange, Timer,
 } from "lucide-react";
@@ -924,9 +924,37 @@ function CommandHub({
       );
     }
 
-    if (stage === "analysis") {
+    if (stage === "analysis" || stage === "rerun") {
       if (pendingConfirm === "analysis") return (
         <div className="flex flex-col gap-2.5">
+          {/* Last run context — shown when a prior run exists */}
+          {analysisRun && (analysisRun.status === "success" || analysisRun.status === "error") && (
+            <div className="rounded-lg border border-border/25 bg-white/[0.02] px-2.5 py-2 space-y-1">
+              <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/35">Last run</p>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {analysisRun.status === "success" ? (
+                  <span className="flex items-center gap-1 text-[9px] font-semibold text-emerald-400/70">
+                    <CheckCircle2 className="w-3 h-3" /> Complete
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 text-[9px] font-semibold text-red-400/70">
+                    <XCircle className="w-3 h-3" /> Failed
+                  </span>
+                )}
+                {analysisRun.date_start && analysisRun.date_end && (
+                  <span className="text-label text-foreground/55">
+                    {fmtDate(analysisRun.date_start)} – {fmtDate(analysisRun.date_end)}
+                  </span>
+                )}
+                {analysisRun.rows_ingested != null && (
+                  <span className="text-label font-mono text-muted-foreground/35 tabular-nums">
+                    {analysisRun.rows_ingested.toLocaleString()} rows
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Data source context */}
           <div className="rounded-lg border border-primary/15 bg-primary/[0.05] px-2.5 py-2 space-y-1">
             <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/35">Data source</p>
@@ -937,11 +965,11 @@ function CommandHub({
             </p>
           </div>
 
-          {/* Date range picker (manual accounts only) */}
+          {/* Date window picker (manual accounts only) */}
           {!isLiveMeta && (
             <div className="space-y-1.5">
               <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/35 flex items-center gap-1">
-                <CalendarRange className="w-3 h-3" /> Date range
+                <CalendarRange className="w-3 h-3" /> Date window
               </p>
               <div className="grid grid-cols-2 gap-1">
                 {DATE_RANGES.map((r) => (
@@ -1007,6 +1035,23 @@ function CommandHub({
               Cancel
             </button>
           </div>
+        </div>
+      );
+
+      if (stage === "rerun") return (
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            onClick={() => allLoopComplete && setPendingConfirm("analysis")}
+            disabled={!allLoopComplete}
+            className={cn(
+              "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
+              !allLoopComplete
+                ? "opacity-30 cursor-not-allowed mx-secondary-btn"
+                : "mx-primary-btn",
+            )}
+          >
+            <PlayCircle className="w-3.5 h-3.5" /> Re-run Analysis
+          </button>
         </div>
       );
 
@@ -1249,33 +1294,51 @@ function CommandHub({
       );
     }
 
-    if (stage === "rerun") return (
-      <div className="flex flex-wrap gap-1.5">
-        <button
-          onClick={() => goTo("/app/settings/account")}
-          disabled={!allLoopComplete}
-          className={cn(
-            "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
-            !allLoopComplete
-              ? "opacity-30 cursor-not-allowed mx-secondary-btn"
-              : "mx-primary-btn",
-          )}
-        >
-          <PlayCircle className="w-3.5 h-3.5" /> Run Analysis
-        </button>
-      </div>
-    );
-
     // briefs — confirmation step before firing
     if (pendingConfirm === "briefs") return (
       <div className="flex flex-col gap-2.5">
-        <div className="rounded-lg border border-primary/15 bg-primary/[0.05] px-2.5 py-2 space-y-1">
+        {/* Strategy context */}
+        <div className="rounded-lg border border-primary/15 bg-primary/[0.05] px-2.5 py-2 space-y-1.5">
           <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/35">Grounded in</p>
           <p className="text-label text-foreground/70 leading-relaxed">
             Strategy
             {strategyLastRun?.finished_at ? ` · generated ${fmtDate(strategyLastRun.finished_at)}` : ""}
             {strategyLastRun?.model ? ` · ${strategyLastRun.model}` : ""}
-            {pillarCount > 0 ? ` · ${pillarCount} pillar${pillarCount === 1 ? "" : "s"}` : ""}
+          </p>
+          {(pillarCount > 0 || hypothesisCount > 0 || icpCount > 0) && (
+            <div className="flex flex-wrap gap-1.5 pt-0.5">
+              {pillarCount > 0 && (
+                <span className="text-[9px] font-mono text-muted-foreground/45 bg-white/[0.04] border border-border/25 rounded px-1.5 py-0.5">
+                  {pillarCount} pillar{pillarCount === 1 ? "" : "s"}
+                </span>
+              )}
+              {hypothesisCount > 0 && (
+                <span className="text-[9px] font-mono text-muted-foreground/45 bg-white/[0.04] border border-border/25 rounded px-1.5 py-0.5">
+                  {hypothesisCount} hypothesis{hypothesisCount === 1 ? "" : "es"}
+                </span>
+              )}
+              {icpCount > 0 && (
+                <span className="text-[9px] font-mono text-muted-foreground/45 bg-white/[0.04] border border-border/25 rounded px-1.5 py-0.5">
+                  {icpCount} ICP{icpCount === 1 ? "" : "s"}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+        {/* Replacement warning */}
+        {briefCount > 0 && (
+          <div className="flex items-start gap-1.5 rounded-lg border border-amber-400/20 bg-amber-400/[0.04] px-2.5 py-2">
+            <AlertTriangle className="w-3 h-3 text-amber-400/60 mt-0.5 shrink-0" />
+            <p className="text-[9px] text-amber-400/70 leading-relaxed">
+              Replaces {briefCount} existing brief{briefCount === 1 ? "" : "s"} for this account
+            </p>
+          </div>
+        )}
+        {/* Estimated time */}
+        <div className="flex items-center gap-1.5">
+          <Timer className="w-3 h-3 text-muted-foreground/35 shrink-0" />
+          <p className="text-[9px] text-muted-foreground/40 leading-relaxed">
+            Typical run time: 30–90 seconds
           </p>
         </div>
         <div className="flex gap-1.5">
