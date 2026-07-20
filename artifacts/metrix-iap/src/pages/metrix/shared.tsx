@@ -654,8 +654,12 @@ export interface LoopChecklistStep {
  * Compact checklist that shows ✓ / next / pending state for each step.
  * Used in UnconfiguredState (setup flow) and as a sidebar progress widget
  * on AdAccountOverview for configured accounts mid-loop.
+ *
+ * When `allComplete` is true the list stays visible and a "Loop complete ✓"
+ * banner replaces the progress bar, with a "Start re-run" link so users
+ * know the sidebar is always useful — not just mid-flight.
  */
-export function LoopChecklist({ steps }: { steps: LoopChecklistStep[] }) {
+export function LoopChecklist({ steps, allComplete = false }: { steps: LoopChecklistStep[]; allComplete?: boolean }) {
   const [, navigate] = useLocation();
   const doneCount = steps.filter((s) => s.done).length;
   const nextIdx = steps.findIndex((s) => !s.done);
@@ -664,25 +668,47 @@ export function LoopChecklist({ steps }: { steps: LoopChecklistStep[] }) {
     <div className="rounded-xl border border-border/30 bg-white/[0.02] overflow-hidden">
       {/* Header + fraction */}
       <div className="px-3 py-2 border-b border-border/20 flex items-center gap-2">
-        <span className={cn(TYPE.label, "text-muted-foreground/50")}>Setup progress</span>
+        <span className={cn(TYPE.label, allComplete ? "text-emerald-400/70" : "text-muted-foreground/50")}>
+          {allComplete ? "Loop complete" : "Setup progress"}
+        </span>
         <div className="flex-1 h-px bg-border/20" />
         <span className="text-[9px] font-mono tabular-nums text-muted-foreground/40">{doneCount}/{steps.length}</span>
       </div>
 
-      {/* Progress bar — only shown when at least one step is done */}
-      {doneCount > 0 && (
-        <div className="px-3 pt-2 pb-0">
-          <div className="h-0.5 rounded-full bg-border/30 overflow-hidden">
-            <div
-              className="h-full bg-emerald-400/50 rounded-full transition-all"
-              style={{ width: `${Math.round((doneCount / steps.length) * 100)}%` }}
-            />
+      {/* Completion banner — shown when all steps are done */}
+      {allComplete ? (
+        <div className="px-3 py-2.5 border-b border-border/15">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <span className={cn(TYPE.caption, "text-emerald-400/90 font-semibold leading-none")}>Loop complete ✓</span>
           </div>
+          <p className={cn(TYPE.caption, "text-muted-foreground/55 leading-snug mb-2")}>
+            All stages finished. Ready for the next re-run cycle.
+          </p>
+          <a
+            href="/app/settings/account"
+            onClick={(e) => { e.preventDefault(); navigate("/app/settings/account"); }}
+            className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary/80 hover:text-primary transition-colors"
+          >
+            Start re-run <ArrowRight className="w-3 h-3" />
+          </a>
         </div>
+      ) : (
+        /* Progress bar — only shown when at least one step is done */
+        doneCount > 0 && (
+          <div className="px-3 pt-2 pb-0">
+            <div className="h-0.5 rounded-full bg-border/30 overflow-hidden">
+              <div
+                className="h-full bg-emerald-400/50 rounded-full transition-all"
+                style={{ width: `${Math.round((doneCount / steps.length) * 100)}%` }}
+              />
+            </div>
+          </div>
+        )
       )}
 
       {steps.map((step, i) => {
-        const isNext = i === nextIdx;
+        const isNext = !allComplete && i === nextIdx;
         const isAction = !!step.onClick || !!step.route;
         const Tag = step.onClick ? "button" : step.route ? "a" : "div";
         return (
@@ -698,7 +724,7 @@ export function LoopChecklist({ steps }: { steps: LoopChecklistStep[] }) {
                 : {})}
             className={cn(
               "flex items-center gap-2 px-3 py-2 border-b border-border/15 last:border-0 w-full text-left",
-              isAction ? "hover:bg-white/[0.03] transition-colors cursor-pointer" : "cursor-default",
+              isAction && !allComplete ? "hover:bg-white/[0.03] transition-colors cursor-pointer" : "cursor-default",
             )}
           >
             <div className={cn(

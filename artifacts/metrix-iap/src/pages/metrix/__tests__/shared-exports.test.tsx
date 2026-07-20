@@ -297,6 +297,25 @@ describe("shared.tsx display components — render checks (no context)", () => {
     expect(container.firstChild).not.toBeNull();
   });
 
+  it("LoopChecklist renders non-empty output (mid-loop)", () => {
+    const steps = [
+      { label: "Data connected", done: true, route: "/app/settings/account" },
+      { label: "Analysis run", done: false, route: "/app/analysis/overview" },
+    ];
+    const { container } = render(<shared.LoopChecklist steps={steps} />);
+    expect(container.firstChild).not.toBeNull();
+  });
+
+  it("LoopChecklist renders non-empty output (all complete)", () => {
+    const steps = [
+      { label: "Data connected", done: true, route: "/app/settings/account" },
+      { label: "Analysis run", done: true, route: "/app/analysis/overview" },
+    ];
+    const { container, getByText } = render(<shared.LoopChecklist steps={steps} allComplete />);
+    expect(container.firstChild).not.toBeNull();
+    expect(getByText("Loop complete ✓")).toBeTruthy();
+  });
+
   it("SectionTabBar renders non-empty output", () => {
     const { container } = render(<shared.SectionTabBar section="analysis" />);
     expect(container.firstChild).not.toBeNull();

@@ -387,13 +387,11 @@ export function AdAccountOverview() {
           </SectionCard>
         </div>
 
-        {/* Right: loop-progress checklist — only visible when loop is mid-flight */}
-        {!allLoopComplete && (
-          <div className="w-52 shrink-0 border-l border-border/30 overflow-y-auto py-3 px-3 space-y-2">
-            <p className={cn(TYPE.label, "text-muted-foreground/40 uppercase tracking-widest px-1 mb-1")}>Loop stages</p>
-            <LoopChecklist steps={loopSteps} />
-          </div>
-        )}
+        {/* Right: loop-progress checklist — always visible; shows completion state when all done */}
+        <div className="w-52 shrink-0 border-l border-border/30 overflow-y-auto py-3 px-3 space-y-2">
+          <p className={cn(TYPE.label, "text-muted-foreground/40 uppercase tracking-widest px-1 mb-1")}>Loop stages</p>
+          <LoopChecklist steps={loopSteps} allComplete={allLoopComplete} />
+        </div>
       </div>
 
       <MetricDiagnosticModal
