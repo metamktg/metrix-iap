@@ -7,9 +7,9 @@
 import { useMemo, useState } from "react";
 import { CheckCircle2, Plug, TrendingUp, Plus, ArrowRight } from "lucide-react";
 import { useAccount } from "@/contexts/AccountContext";
-import { useMetrixSeed } from "@/contexts/MetrixDataContext";
+import { useMetrixSeed, useMetrixIsRefetching } from "@/contexts/MetrixDataContext";
 import { getManagerOverview } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, MetricTile, SectionCard, ConfidenceBadge, DetailReveal, fmtUSD, fmtNum, eventLabel } from "./shared";
+import { ModuleHeader, MetricTile, SectionCard, ConfidenceBadge, DetailReveal, fmtUSD, fmtNum, eventLabel, SkeletonTileRow } from "./shared";
 import { AddAccountDialog } from "./AddAccountDialog";
 import { cn } from "@/lib/utils";
 import { buildMetricCatalog, metricSourceFromManagerTotals, metricById } from "@/lib/data/metricsCatalog";
@@ -43,6 +43,7 @@ function Badge({ text, cls }: { text: string; cls: string }) {
 export function ManagerOverview() {
   const { manager, adAccounts, selectAdAccount } = useAccount();
   const seed = useMetrixSeed();
+  const isRefetching = useMetrixIsRefetching();
   const [addOpen, setAddOpen] = useState(false);
   const data = getManagerOverview(seed);
   const totals = data.bottom_line_totals;
@@ -114,17 +115,21 @@ export function ManagerOverview() {
             <h2 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/60">Bottom-line totals</h2>
             <MetricPickerButton catalog={metricCatalog} selected={selectedMetricIds} onToggle={toggle} onMove={move} onReset={reset} />
           </div>
-          <div className="grid grid-cols-dashboard-4 gap-3">
-            {selectedMetricIds.map((id) => {
-              const m = metricById(metricCatalog, id);
-              if (!m) return null;
-              return (
-                <button key={id} onClick={() => setOpenMetricId(id)} className="text-left">
-                  <MetricTile label={m.label} value={m.formatted} />
-                </button>
-              );
-            })}
-          </div>
+          {isRefetching ? (
+            <SkeletonTileRow count={selectedMetricIds.length || 4} />
+          ) : (
+            <div className="grid grid-cols-dashboard-4 gap-3">
+              {selectedMetricIds.map((id) => {
+                const m = metricById(metricCatalog, id);
+                if (!m) return null;
+                return (
+                  <button key={id} onClick={() => setOpenMetricId(id)} className="text-left">
+                    <MetricTile label={m.label} value={m.formatted} />
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Results by event */}
