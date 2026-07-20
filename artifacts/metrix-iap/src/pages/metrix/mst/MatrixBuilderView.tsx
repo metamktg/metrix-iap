@@ -2,7 +2,7 @@
 // The 4×4 concept × shared-variable historical matrix for the account.
 // Diagonal roles highlight the primary (↘) and counter (↗) test paths.
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getMST, getAnalysisData, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
@@ -16,6 +16,23 @@ import type { MSTMatrix, MSTMatrixCell } from "@/lib/data/seedTypes";
 
 const SECTION = "MST · 07";
 
+// ─── CPA heatmap helpers ──────────────────────────────────────────────
+
+type CpaEff = "efficient" | "average" | "costly";
+
+const EFF_COLOR: Record<CpaEff, string> = {
+  efficient: "rgb(52,211,153)",
+  average:   "rgb(99,102,241)",
+  costly:    "rgb(251,191,36)",
+};
+
+function numMedianMatrix(arr: number[]): number {
+  if (!arr.length) return 0;
+  const s = [...arr].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+
 const ROW_COLOR: Record<string, string> = {
   "var(--green)": "border-emerald-400/30 bg-emerald-400/[0.04]",
   "var(--blue)": "border-blue-400/30 bg-blue-400/[0.04]",
@@ -23,7 +40,13 @@ const ROW_COLOR: Record<string, string> = {
   "var(--purple)": "border-purple-400/30 bg-purple-400/[0.04]",
 };
 
-export function MatrixGrid({ matrix, onCellClick }: { matrix: MSTMatrix; onCellClick?: (cell: MSTMatrixCell) => void }) {
+export function MatrixGrid({
+  matrix, onCellClick, cellHeatmap,
+}: {
+  matrix: MSTMatrix;
+  onCellClick?: (cell: MSTMatrixCell) => void;
+  cellHeatmap?: Map<string, { eff: CpaEff; color: string }>;
+}) {
   const cellOf = (col: string, row: string) => matrix.cells.find((c) => c.column_id === col && c.row_id === row);
   return (
     <div className="overflow-x-auto">
@@ -53,7 +76,7 @@ export function MatrixGrid({ matrix, onCellClick }: { matrix: MSTMatrix; onCellC
                     onClick={cell && onCellClick ? () => onCellClick(cell) : undefined}
                     aria-label={cell && onCellClick ? `Open performance for ${cell.cell_id}` : undefined}
                     className={cn(
-                      "m-0.5 p-2.5 rounded-lg border bg-white/[0.02] min-h-[112px] text-left",
+                      "relative overflow-hidden m-0.5 p-2.5 rounded-lg border bg-white/[0.02] min-h-[112px] text-left",
                       diag === "diag_down" && "border-primary/40 ring-1 ring-primary/15",
                       diag === "diag_up" && "border-teal-400/40 ring-1 ring-teal-400/15",
                       !diag && "border-border/40",
@@ -62,6 +85,15 @@ export function MatrixGrid({ matrix, onCellClick }: { matrix: MSTMatrix; onCellC
                   >
                     {cell ? (
                       <>
+                        {/* CPA efficiency stripe — top edge colour coded against account median */}
+                        {cellHeatmap?.has(cell.cell_id) && (
+                          <div
+                            className="absolute top-0 left-0 right-0 h-[3px] rounded-t-lg"
+                            style={{
+                              background: `linear-gradient(90deg, ${cellHeatmap.get(cell.cell_id)!.color}88 0%, ${cellHeatmap.get(cell.cell_id)!.color}22 100%)`,
+                            }}
+                          />
+                        )}
                         <div className="text-caption font-semibold text-primary leading-tight">{readableVariables(cell.concept_code)}</div>
                         {cell.plain_text.headline && <div className="text-body font-medium text-foreground mt-1 leading-tight">{cell.plain_text.headline}</div>}
                         <div className="text-body font-mono text-muted-foreground/80 mt-1.5">{cell.cell_id}</div>
@@ -90,6 +122,34 @@ export function MatrixBuilderView() {
     getMST(seed, adAccountId),
     getAnalysisData(seed, adAccountId)
   );
+
+  // CPA heatmap — computed here (outside render-prop) so hook rules are respected.
+  const analysisData = getAnalysisData(seed, adAccountId);
+  const cellHeatmap = useMemo(() => {
+    if (!analysisData) return new Map<string, { eff: CpaEff; color: string }>();
+    const grouped = new Map<string, { spend: number; results: number }>();
+    for (const row of analysisData.performance_by_cell) {
+      const prev = grouped.get(row.cell_id) ?? { spend: 0, results: 0 };
+      grouped.set(row.cell_id, {
+        spend: prev.spend + row["Amount spent (USD)"],
+        results: prev.results + row.Results,
+      });
+    }
+    const cpas: number[] = [];
+    for (const [, totals] of grouped) {
+      if (totals.results > 0) cpas.push(totals.spend / totals.results);
+    }
+    const med = numMedianMatrix(cpas);
+    const map = new Map<string, { eff: CpaEff; color: string }>();
+    for (const [cellId, totals] of grouped) {
+      const cpa = totals.results > 0 ? totals.spend / totals.results : null;
+      if (cpa == null || med <= 0) continue;
+      const ratio = cpa / med;
+      const eff: CpaEff = ratio < 0.85 ? "efficient" : ratio <= 1.15 ? "average" : "costly";
+      map.set(cellId, { eff, color: EFF_COLOR[eff] });
+    }
+    return map;
+  }, [analysisData]);
 
   return (
     <ModuleScopeGate section={SECTION} title="Matrix Builder" account={account}>
@@ -130,10 +190,16 @@ export function MatrixBuilderView() {
             ) : (
               <div className="px-6 py-5 space-y-4">
                 <CaveatNote text={mst.render_policy} />
-                <MatrixGrid matrix={matrix} onCellClick={setActiveCell} />
+                <MatrixGrid matrix={matrix} onCellClick={setActiveCell} cellHeatmap={cellHeatmap} />
                 <div className="flex items-center gap-4 text-caption text-muted-foreground/75 flex-wrap">
                   <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded border border-primary/40 ring-1 ring-primary/15 inline-block" /> Primary diagonal (↘)</span>
                   <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded border border-teal-400/40 ring-1 ring-teal-400/15 inline-block" /> Counter diagonal (↗)</span>
+                  {cellHeatmap.size > 0 && (
+                    <>
+                      <span className="flex items-center gap-1.5"><span className="w-3.5 h-[3px] rounded inline-block" style={{ background: EFF_COLOR.efficient }} /> Below-median CPA</span>
+                      <span className="flex items-center gap-1.5"><span className="w-3.5 h-[3px] rounded inline-block" style={{ background: EFF_COLOR.costly }} /> Above-median CPA</span>
+                    </>
+                  )}
                   <span className="text-muted-foreground/60">Click any tile for granular performance</span>
                   <span className="ml-auto"><CrossLink to="/app/mst/crossmap" label="See crossmap results" /></span>
                 </div>

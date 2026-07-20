@@ -185,10 +185,19 @@ export function BriefBuilderView() {
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-1.5 mb-2">
-                        <Sparkles className="w-3.5 h-3.5 text-primary/60" />
-                        <span className="text-caption text-muted-foreground/60">From pillar</span>
-                        <span className="text-caption font-medium text-foreground">{pillarOf(b.source_pillar)?.label ?? b.source_pillar}</span>
+                      {/* Pillar anchor + EVP line */}
+                      <div className="mb-2">
+                        <div className="flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-primary/60 shrink-0" />
+                          <span className="text-caption font-semibold text-foreground leading-snug line-clamp-1">
+                            {pillarOf(b.source_pillar)?.label ?? b.source_pillar}
+                          </span>
+                        </div>
+                        {pillarOf(b.source_pillar)?.plain_descriptor && (
+                          <p className="text-caption italic text-primary/55 leading-snug line-clamp-1 mt-0.5 pl-5">
+                            "{deriveLabel(pillarOf(b.source_pillar)!.plain_descriptor, 72)}"
+                          </p>
+                        )}
                       </div>
 
                       <p className="text-body text-foreground/80 leading-snug flex-1 line-clamp-2"><TokenizedConceptText text={deriveLabel(b.human_direction, 100)} /></p>
@@ -234,6 +243,11 @@ export function BriefBuilderView() {
                   <DrawerField label="Source pillar">
                     <p className="font-semibold text-foreground">{pillarOf(detail.source_pillar)!.label}</p>
                     <p className="italic text-primary/80 mt-0.5">"{pillarOf(detail.source_pillar)!.plain_descriptor}"</p>
+                    {pillarOf(detail.source_pillar)!.why_it_matters && (
+                      <p className="text-body text-foreground/70 mt-2 leading-relaxed">
+                        {pillarOf(detail.source_pillar)!.why_it_matters}
+                      </p>
+                    )}
                     <div className="mt-2 flex items-center gap-2">
                       {pillarOf(detail.source_pillar)!.source_cells.map((c) => (
                         <CrossLink key={c} to={`/app/analysis/library?focus=${c}`} label={`Cell ${c}`} />

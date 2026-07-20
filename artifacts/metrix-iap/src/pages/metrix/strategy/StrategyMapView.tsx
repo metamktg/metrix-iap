@@ -28,7 +28,7 @@ import {
   Map, ChevronDown, FlaskConical, CheckSquare,
   Square, Lightbulb,
 } from "lucide-react";
-import type { MessagePillar, ActiveHypothesis } from "@/lib/data/seedTypes";
+import type { MessagePillar, ActiveHypothesis, VariableCombination, ScalingPlaybook } from "@/lib/data/seedTypes";
 import { ConceptChip } from "@/components/concept/ConceptChip";
 import { useConceptRegistry } from "@/lib/concept-registry-context";
 import { TYPE } from "../typography";
@@ -323,6 +323,61 @@ function NextActionsPanel({
           {queued.size > 0 && (
             <div className="col-span-2 flex justify-end">
               <CrossLink to="/app/strategy/hypotheses" label="Manage queue →" />
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Footer: variable combinations + scaling playbook ─────────────────
+// Collapsible (default closed) so the three-column map gets full height.
+
+function FooterPanel({
+  combinations,
+  playbook,
+}: {
+  combinations: VariableCombination[];
+  playbook: ScalingPlaybook | null | undefined;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="shrink-0 border-t border-border/20">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="w-full flex items-center gap-2 px-6 py-2.5 hover:bg-white/[0.02] transition-colors text-left"
+      >
+        <span className={cn(TYPE.caption, "font-semibold text-foreground/70 flex-1")}>
+          Variable combinations · Scaling playbook
+        </span>
+        <ChevronDown
+          className={cn(
+            "w-3.5 h-3.5 text-muted-foreground/40 transition-transform",
+            open && "rotate-180"
+          )}
+        />
+      </button>
+      {open && (
+        <div className="px-6 pb-4 space-y-4 max-h-[45vh] overflow-y-auto">
+          {combinations.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5">
+                <h3 className="text-base font-semibold text-foreground">Variable combinations</h3>
+                <InfoTooltip content="Validated variable stacks with their real CPA / CVR reads and the engine's recommendation." />
+              </div>
+              <VariableCombinationsGrid combinations={combinations} />
+            </div>
+          )}
+          {playbookHasContent(playbook) && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5">
+                <h3 className="text-base font-semibold text-foreground">Scaling playbook</h3>
+                <InfoTooltip content="Where the analysis says to push, tune, prove, look next — and what to stay away from." />
+              </div>
+              <ScalingPlaybookLanes playbook={playbook!} />
             </div>
           )}
         </div>
@@ -640,28 +695,12 @@ export function StrategyMapView() {
                   />
                 )}
 
-                {/* ── Footer: variable combinations + loop action ───── */}
+                {/* ── Footer: variable combinations + scaling playbook (collapsible) ── */}
                 {(combinations.length > 0 || playbookHasContent(playbook)) && (
-                  <div className="shrink-0 border-t border-border/20 px-6 py-4 space-y-4 overflow-y-auto max-h-[50vh]">
-                    {combinations.length > 0 && (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-1.5">
-                          <h3 className="text-base font-semibold text-foreground">Variable combinations</h3>
-                          <InfoTooltip content="Validated variable stacks with their real CPA / CVR reads and the engine's recommendation." />
-                        </div>
-                        <VariableCombinationsGrid combinations={combinations} />
-                      </div>
-                    )}
-                    {playbookHasContent(playbook) && (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-1.5">
-                          <h3 className="text-base font-semibold text-foreground">Scaling playbook</h3>
-                          <InfoTooltip content="Where the analysis says to push, tune, prove, look next — and what to stay away from." />
-                        </div>
-                        <ScalingPlaybookLanes playbook={playbook!} />
-                      </div>
-                    )}
-                  </div>
+                  <FooterPanel
+                    combinations={combinations}
+                    playbook={playbook}
+                  />
                 )}
 
                 <div className="shrink-0 px-6 py-3 border-t border-border/20 flex items-center gap-4 flex-wrap">

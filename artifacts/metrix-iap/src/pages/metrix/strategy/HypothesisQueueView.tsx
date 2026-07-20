@@ -21,6 +21,7 @@ import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { Layers, FlaskConical, AlertTriangle, ArrowRight, Beaker, Crosshair, Target, TrendingUp } from "lucide-react";
 import type { ActiveHypothesis } from "@/lib/data/seedTypes";
 import { TokenizedConceptText } from "@/components/concept/ConceptChip";
+import { cn } from "@/lib/utils";
 
 const SECTION = "Strategy · 04";
 
@@ -51,6 +52,7 @@ export function HypothesisQueueView() {
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
   const [tab, setTab] = useState<Tab>("queue");
+  const [statusFilter, setStatusFilter] = useState<"all" | "ready" | "validation">("all");
   const focus = useFocusParam();
   const [detail, setDetail] = useState<ActiveHypothesis | null>(null);
   const { rangeHasData } = useDateRange();
@@ -130,54 +132,94 @@ export function HypothesisQueueView() {
                     action={<CrossLink to="/app/strategy/overview" label="Go to Strategy Overview" />}
                   />
                 ) : (
-                  <div className="space-y-2.5">
-                    {hyps.map((h) => {
-                      const facts = [
-                        h.isolated_variable && { label: "Isolates", value: h.isolated_variable, Icon: Crosshair },
-                        h.test_variant && { label: "Test variant", value: h.test_variant, Icon: Beaker },
-                        h.success_criteria && { label: "Success criteria", value: h.success_criteria, Icon: Target },
-                        h.expected_impact && { label: "Expected impact", value: h.expected_impact, Icon: TrendingUp },
-                      ].filter(Boolean) as { label: string; value: string; Icon: React.ComponentType<{ className?: string }> }[];
-                      return (
+                  <>
+                    {/* Status filter strip */}
+                    <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+                      {([
+                        { id: "all",        label: `All`,         count: hyps.length },
+                        { id: "ready",      label: `Ready`,       count: ready.length },
+                        { id: "validation", label: `Validation`,  count: validating.length },
+                      ] as const).map(({ id, label, count }) => (
                         <button
-                          key={h.id}
-                          onClick={() => setDetail(h)}
-                          className="w-full text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 hover:border-border/60 hover:bg-white/[0.03] transition-colors"
+                          key={id}
+                          onClick={() => setStatusFilter(id)}
+                          className={cn(
+                            "inline-flex items-center gap-1 h-6 px-2 rounded-full border text-label font-medium transition-colors",
+                            statusFilter === id
+                              ? "border-primary/40 bg-primary/10 text-primary"
+                              : "border-border/40 text-muted-foreground/60 hover:text-foreground/80",
+                          )}
                         >
-                          <div className="flex items-start gap-2">
-                            <div className="flex-1 min-w-0">
-                              {/* Density rule: chips first; the sentence drops to a
-                                  one-line caption (full prose in the tap drawer). */}
-                              <HypothesisCodeChipsRow label={h.label} />
-                              <p className="text-body text-foreground/80 leading-snug line-clamp-1 mt-1">{deriveLabel(h.label, 72)}</p>
-                              {h.source && (
-                                <div className="flex items-center gap-1.5 mt-1.5 text-caption text-muted-foreground/60">
-                                  <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/60" />
-                                  {h.source}
+                          {label}
+                          <span className={cn(
+                            "text-[9px] font-mono rounded px-0.5",
+                            statusFilter === id ? "text-primary/70" : "text-muted-foreground/40",
+                          )}>{count}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="space-y-2.5">
+                      {hyps
+                        .filter((h) =>
+                          statusFilter === "all" ? true
+                          : statusFilter === "ready" ? h.status === "ready_for_brief_builder"
+                          : h.status === "validation_required"
+                        )
+                        .map((h) => {
+                          // Show at most 2 facts inline; prioritise isolated variable then test variant.
+                          const inlineFacts = [
+                            h.isolated_variable && { label: "Isolates",    value: h.isolated_variable, Icon: Crosshair },
+                            h.test_variant      && { label: "Test variant", value: h.test_variant,      Icon: Beaker },
+                          ].filter(Boolean) as { label: string; value: string; Icon: React.ComponentType<{ className?: string }> }[];
+                          return (
+                            <button
+                              key={h.id}
+                              onClick={() => setDetail(h)}
+                              className="w-full text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 hover:border-border/60 hover:bg-white/[0.03] transition-colors"
+                            >
+                              <div className="flex items-start gap-2">
+                                <div className="flex-1 min-w-0">
+                                  {/* Density rule: chips first; the sentence drops to a
+                                      one-line caption (full prose in the tap drawer). */}
+                                  <HypothesisCodeChipsRow label={h.label} />
+                                  <p className="text-body text-foreground/80 leading-snug line-clamp-1 mt-1">{deriveLabel(h.label, 72)}</p>
+                                  {h.source && (
+                                    <div className="flex items-center gap-1.5 mt-1.5 text-caption text-muted-foreground/60">
+                                      <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/60" />
+                                      {h.source}
+                                    </div>
+                                  )}
+                                </div>
+                                <span className="shrink-0">
+                                  <HypothesisStatusBadge status={h.status} />
+                                </span>
+                              </div>
+
+                              {/* Inline fact strip — max 2 key facts, rest in drawer */}
+                              {inlineFacts.length > 0 && (
+                                <div className="flex items-center gap-4 mt-2.5 pt-2.5 border-t border-border/20 flex-wrap">
+                                  {inlineFacts.map((f) => (
+                                    <div key={f.label} className="flex items-center gap-1.5 min-w-0">
+                                      <f.Icon className="w-3 h-3 text-muted-foreground/45 shrink-0" />
+                                      <span className="text-[8px] font-mono uppercase tracking-widest text-muted-foreground/35 shrink-0">{f.label}</span>
+                                      <span className="text-caption text-foreground/70 truncate">{deriveLabel(f.value, 48)}</span>
+                                    </div>
+                                  ))}
                                 </div>
                               )}
-                            </div>
-                            <span className="shrink-0">
-                              <HypothesisStatusBadge status={h.status} />
-                            </span>
-                          </div>
-                          {facts.length > 0 && (
-                            <div className="grid grid-cols-dashboard-2 gap-x-4 gap-y-2.5 mt-3 pt-3 border-t border-border/20">
-                              {facts.map((f) => (
-                                <HypFact key={f.label} label={f.label} value={f.value} Icon={f.Icon} />
-                              ))}
-                            </div>
-                          )}
-                          {h.risk && (
-                            <div className="flex items-start gap-1.5 mt-3 pt-3 border-t border-border/20">
-                              <AlertTriangle className="w-3.5 h-3.5 text-amber-400/70 shrink-0 mt-0.5" />
-                              <p className="text-caption text-amber-400/80 leading-relaxed line-clamp-1">{deriveLabel(h.risk, 90)}</p>
-                            </div>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
+
+                              {h.risk && (
+                                <div className="flex items-start gap-1.5 mt-2.5 pt-2.5 border-t border-border/20">
+                                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400/70 shrink-0 mt-0.5" />
+                                  <p className="text-caption text-amber-400/80 leading-relaxed line-clamp-1">{deriveLabel(h.risk, 90)}</p>
+                                </div>
+                              )}
+                            </button>
+                          );
+                        })}
+                    </div>
+                  </>
                 )
               )}
 

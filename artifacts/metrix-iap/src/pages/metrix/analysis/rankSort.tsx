@@ -86,18 +86,67 @@ export function useRankMetric(storageKey: string, validIds: string[], defaultId:
   return { activeId, select };
 }
 
-/** Horizontal chip row: pick which KPI ranks the list. */
+/** Optional metric grouping for RankSortBar — adds eyebrow labels + separators. */
+export interface MetricGroup {
+  label: string;
+  ids: string[];
+}
+
+/** Horizontal chip row: pick which KPI ranks the list.
+ *  Pass `groups` to add labelled category separators (Performance / Traffic / Engagement). */
 export function RankSortBar<Row>({
   metrics,
   activeId,
   onSelect,
   className,
+  groups,
 }: {
   metrics: RankMetric<Row>[];
   activeId: string;
   onSelect: (id: string) => void;
   className?: string;
+  groups?: MetricGroup[];
 }) {
+  if (groups) {
+    return (
+      <div className={cn("flex flex-wrap items-center gap-x-2 gap-y-1", className)}>
+        {groups.map((g, gi) => {
+          const gMetrics = metrics.filter((m) => g.ids.includes(m.id));
+          if (gMetrics.length === 0) return null;
+          return (
+            <div key={g.label} className="flex items-center gap-1">
+              {gi > 0 && <span className="w-px h-3.5 bg-border/30 mx-0.5 shrink-0" />}
+              <span className="text-[8px] font-mono uppercase tracking-widest text-muted-foreground/30 mr-0.5">
+                {g.label}
+              </span>
+              {gMetrics.map((m) => {
+                const active = m.id === activeId;
+                return (
+                  <button
+                    key={m.id}
+                    onClick={() => onSelect(m.id)}
+                    data-testid={`rank-metric-${m.id}`}
+                    className={cn(
+                      "inline-flex items-center gap-1 h-6 px-2 rounded-full border text-label font-medium transition-colors",
+                      active
+                        ? "border-primary/40 bg-primary/10 text-foreground"
+                        : "border-border/40 bg-white/[0.01] text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.04]"
+                    )}
+                  >
+                    {m.label}
+                    {active && (m.direction === "asc"
+                      ? <ArrowUp className="w-3.5 h-3.5 text-primary/70" />
+                      : <ArrowDown className="w-3.5 h-3.5 text-primary/70" />)}
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <div className={cn("flex flex-wrap items-center gap-1", className)}>
       <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50 mr-1">

@@ -1168,32 +1168,6 @@ export function AvatarsView() {
                 </div>
 
                 <div className="px-6 py-5 space-y-4 max-w-5xl">
-                  {/* ── Audience segments — hierarchical tile authority ── */}
-                  {segmentList.length > 0 && (
-                    <SectionCard
-                      title="Audience segments"
-                      desc="Demographic signal · performance + confidence · explore"
-                      >
-                      <div className="grid grid-cols-dashboard-2 gap-3">
-                        {segmentList.map((seg) => {
-                          const stats = segmentStats.get(segmentKey(seg));
-                          if (!stats) return null;
-                          return (
-                            <AudienceSegmentTile
-                              key={segmentKey(seg)}
-                              seg={seg}
-                              totals={stats.totals}
-                              derived={stats.derived}
-                              signal={stats.signal}
-                              bestVariableCode={stats.bestVariableCode}
-                              onExplore={() => setAudienceSegment(seg)}
-                            />
-                          );
-                        })}
-                      </div>
-                    </SectionCard>
-                  )}
-
                   {/* ── Avatars view ── */}
                   {viewMode === "avatars" && matrix && (
                     <SectionCard
@@ -1260,6 +1234,32 @@ export function AvatarsView() {
                             />
                           ))
                         )}
+                      </div>
+                    </SectionCard>
+                  )}
+
+                  {/* ── Audience segments — hierarchical tile authority ── */}
+                  {segmentList.length > 0 && (
+                    <SectionCard
+                      title="Audience segments"
+                      desc="Demographic signal · performance + confidence · explore"
+                      >
+                      <div className="grid grid-cols-dashboard-2 gap-3">
+                        {segmentList.map((seg) => {
+                          const stats = segmentStats.get(segmentKey(seg));
+                          if (!stats) return null;
+                          return (
+                            <AudienceSegmentTile
+                              key={segmentKey(seg)}
+                              seg={seg}
+                              totals={stats.totals}
+                              derived={stats.derived}
+                              signal={stats.signal}
+                              bestVariableCode={stats.bestVariableCode}
+                              onExplore={() => setAudienceSegment(seg)}
+                            />
+                          );
+                        })}
                       </div>
                     </SectionCard>
                   )}
