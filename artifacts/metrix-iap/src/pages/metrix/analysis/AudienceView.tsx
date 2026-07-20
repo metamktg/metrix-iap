@@ -46,7 +46,7 @@ import {
 import { SegmentDrilldownModal } from "@/components/creative/SegmentDrilldownModal";
 import {
   RankSortBar, KpiStat, sortByRankMetric, useRankMetric,
-  rankBarPct, type RankMetric,
+  rankBarPct, type RankMetric, type MetricGroup,
 } from "./rankSort";
 
 // ── Types ─────────────────────────────────────────────────────────────
@@ -106,11 +106,17 @@ function buildRankMetrics(resultPlural: string): RankMetric<SegmentEntry>[] {
     { id: "spend",       label: "Spend",        direction: "desc", value: (e) => e.totals.spend,       format: (v) => fmtUSD(v, 0) },
     { id: "cpa",         label: "CPA",          direction: "asc",  value: (e) => e.derived.cpa,        format: fmtUSD },
     { id: "ctr",         label: "Link CTR",     direction: "desc", value: (e) => e.derived.ctr,        format: fmtPct },
+    { id: "impressions", label: "Impressions",  direction: "desc", value: (e) => e.totals.impressions, format: fmtNum },
     { id: "cvr",         label: "CVR",          direction: "desc", value: (e) => e.derived.cvr,        format: fmtPct },
     { id: "cpm",         label: "CPM",          direction: "asc",  value: (e) => e.derived.cpm,        format: fmtUSD },
-    { id: "impressions", label: "Impressions",  direction: "desc", value: (e) => e.totals.impressions, format: fmtNum },
   ];
 }
+
+const AUDIENCE_RANK_GROUPS: MetricGroup[] = [
+  { label: "Performance", ids: ["results", "spend", "cpa"] },
+  { label: "Traffic",     ids: ["ctr", "impressions"] },
+  { label: "Engagement",  ids: ["cvr", "cpm"] },
+];
 
 // ── View toggle ───────────────────────────────────────────────────────
 
@@ -471,7 +477,7 @@ function PocketGridTab({
         <p className={cn(TYPE.label, "text-muted-foreground/40")}>
           {ranked.length} pocket{ranked.length !== 1 ? "s" : ""}
         </p>
-        <RankSortBar metrics={rankMetrics} activeId={activeMetric.id} onSelect={onSelectMetric} />
+        <RankSortBar metrics={rankMetrics} activeId={activeMetric.id} onSelect={onSelectMetric} groups={AUDIENCE_RANK_GROUPS} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {ranked.map((e) => (
@@ -505,7 +511,7 @@ function RankedListTab({
     <SectionCard
       title="Segment performance"
       desc="All cells · re-rank by KPI · click a segment for drivers"
-      right={<RankSortBar metrics={rankMetrics} activeId={activeMetric.id} onSelect={onSelectMetric} />}
+      right={<RankSortBar metrics={rankMetrics} activeId={activeMetric.id} onSelect={onSelectMetric} groups={AUDIENCE_RANK_GROUPS} />}
     >
       <div className="space-y-2">
         {ranked.map((e, idx) => {
