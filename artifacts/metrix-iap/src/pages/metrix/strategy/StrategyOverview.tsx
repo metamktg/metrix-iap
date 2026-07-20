@@ -17,7 +17,7 @@ import { useDateRange } from "@/contexts/DateRangeContext";
 import {
   useGenerationRun, GenerateButton, ProvenanceBadge, GenerationErrorNote,
 } from "@/components/generation/GenerationControls";
-import { VariableStackChips, IcpChips, ScalingPlaybookLanes, playbookHasContent, HypothesisStatusBadge } from "./strategyShared";
+import { VariableStackChips, IcpChips, NormalizedRefItem, playbookHasContent, HypothesisStatusBadge } from "./strategyShared";
 import { splitTitle } from "@/lib/normalize";
 import { cn } from "@/lib/utils";
 import { Compass, Map, Users, ListChecks, ChevronDown } from "lucide-react";
@@ -235,11 +235,80 @@ function VariableFamilyHeatmap({ pillars }: { pillars: MessagePillar[] }) {
 
 // ─── Per-lane playbook with individual collapse ───────────────────────
 
+const COLLAPSIBLE_LANE_CONFIG: readonly { key: string; label: string; accent: string }[] = [
+  { key: "scale_now",          label: "Scale now", accent: "border-emerald-400/25 bg-emerald-400/[0.06] text-emerald-400" },
+  { key: "optimize",           label: "Optimize",  accent: "border-amber-400/25 bg-amber-400/[0.06] text-amber-300" },
+  { key: "validate",           label: "Validate",  accent: "border-blue-400/25 bg-blue-400/[0.06] text-blue-300" },
+  { key: "explore",            label: "Explore",   accent: "border-purple-400/25 bg-purple-400/[0.06] text-purple-300" },
+  { key: "avoid_combinations", label: "Avoid",     accent: "border-red-400/25 bg-red-400/[0.06] text-red-300" },
+];
+
 function CollapsiblePlaybook({ playbook }: { playbook: NonNullable<ReturnType<typeof getStrategyData>>["scaling_playbook"] }) {
   if (!playbook) return null;
+  // Track which lanes are collapsed; start all open
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
+  const activeLanes = COLLAPSIBLE_LANE_CONFIG.filter(({ key }) => {
+    const items = playbook[key];
+    return Array.isArray(items) && (items as unknown[]).length > 0;
+  });
+
   return (
     <SectionCard title="Scaling playbook" desc="Scale · optimize · validate · explore · avoid" table="scaling_playbook">
-      <ScalingPlaybookLanes playbook={playbook} />
+      <div className="space-y-2">
+        {activeLanes.map(({ key, label, accent }) => {
+          const items = playbook[key] as string[];
+          const isOpen = !collapsed.has(key);
+          return (
+            <div key={key} className={cn("rounded-xl border p-3", accent)}>
+              <button
+                type="button"
+                onClick={() =>
+                  setCollapsed((c) => {
+                    const next = new Set(c);
+                    if (next.has(key)) next.delete(key);
+                    else next.add(key);
+                    return next;
+                  })
+                }
+                aria-expanded={isOpen}
+                className="w-full flex items-center justify-between gap-2 text-left"
+              >
+                <span className={TYPE.label}>{label} · {items.length}</span>
+                <ChevronDown
+                  className={cn(
+                    "w-3.5 h-3.5 opacity-60 transition-transform shrink-0",
+                    isOpen && "rotate-180"
+                  )}
+                />
+              </button>
+              {isOpen && (
+                <ul className="mt-2.5 space-y-1.5 pl-0">
+                  {items.map((item, i) => (
+                    <li key={i}>
+                      <NormalizedRefItem text={item} eyebrow={label} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          );
+        })}
+        {typeof playbook.budget_reallocation_note === "string" &&
+          playbook.budget_reallocation_note && (
+            <div className="rounded-lg border border-border/30 bg-white/[0.015] p-3">
+              <div className={cn(TYPE.label, "mb-1 text-muted-foreground/60")}>
+                Budget reallocation
+              </div>
+              <DetailReveal
+                label={deriveLabel(playbook.budget_reallocation_note, 72)}
+                labelClassName={TYPE.body}
+                eyebrow="Budget reallocation"
+                sections={[{ text: playbook.budget_reallocation_note }]}
+              />
+            </div>
+          )}
+      </div>
     </SectionCard>
   );
 }
@@ -299,19 +368,24 @@ export function StrategyOverview() {
         const pillars = strategy.message_pillars;
         const hypotheses = strategy.active_hypotheses;
 
-        // Hypothesis categorisation
-        const testing = hypotheses.filter((h) => h.status.toLowerCase().includes("valid")).length;
-        const ready   = hypotheses.filter((h) => h.status === "ready_for_brief_builder").length;
-        const pending = hypotheses.length - testing - ready;
+        // Hypothesis categorisation — explicit set membership (no substring matching)
+        const HYP_TESTING = new Set(["validation_required"]);
+        const HYP_READY   = new Set(["ready_for_brief_builder"]);
+        const testing = hypotheses.filter((h) => HYP_TESTING.has(h.status.toLowerCase())).length;
+        const ready   = hypotheses.filter((h) => HYP_READY.has(h.status.toLowerCase())).length;
+        // "pending" = everything else (high/p1/medium/p2/low/p3 and any unknown status)
+        const pending = hypotheses.filter(
+          (h) => !HYP_TESTING.has(h.status.toLowerCase()) && !HYP_READY.has(h.status.toLowerCase())
+        ).length;
 
         const hypothesesFor = (pillarId: string) =>
           hypotheses.filter((h) => h.pillar_id === pillarId);
 
         // Hypothesis status donut data
         const hypStatusData = [
-          { name: "Ready for brief", value: ready },
-          { name: "Validation required", value: testing },
-          { name: "Pending", value: pending },
+          { name: "Ready for brief", value: ready   },
+          { name: "Validating",      value: testing  },
+          { name: "Pending",         value: pending  },
         ].filter((d) => d.value > 0);
 
         const subpages = [
