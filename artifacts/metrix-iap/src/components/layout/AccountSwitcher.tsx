@@ -37,7 +37,7 @@ export function AccountSwitcher({ compact = false }: { compact?: boolean }) {
             className={cn(
               "w-10 h-10 mx-auto rounded-lg flex items-center justify-center relative",
               "hover:bg-primary/10 transition-colors",
-              "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+              "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
             )}
             aria-label={`Switch account — currently: ${triggerLabel}`}
             title={triggerLabel}
@@ -61,7 +61,7 @@ export function AccountSwitcher({ compact = false }: { compact?: boolean }) {
               "w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md",
               "hover:bg-white/[0.05] transition-colors text-left",
               "border border-transparent hover:border-border/30",
-              "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+              "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
             )}
             aria-label={`Current account: ${triggerLabel}`}
           >
