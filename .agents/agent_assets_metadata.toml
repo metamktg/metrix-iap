@@ -155,3 +155,33 @@ id = "CNXbwCql0bK52x2n4zMX-"
 uri = "file://exports/east-coast-art-creatives.zip"
 type = "unspecified"
 title = "East Coast Art Studio — complete creative package (34 MB)"
+
+[[outputs]]
+id = "CFczTIDE466oumHuHr60G"
+uri = "file://screenshots/strategy-overview-1440.png"
+type = "image"
+title = "Strategy Overview — 1440px (pillar bars, donut, heatmap, per-lane playbook)"
+
+[[outputs]]
+id = "jPrK2wWiSmBcFFSLIMmFf"
+uri = "file://screenshots/strategy-map-1440.png"
+type = "image"
+title = "Strategy Map — 1440px (3-col resizable: pillars → cells → hypotheses)"
+
+[[outputs]]
+id = "_qYZQvEn5Ff6q118-DxLs"
+uri = "file://screenshots/strategy-map-1280.png"
+type = "image"
+title = "Strategy Map — 1280px (responsive breakpoint)"
+
+[[outputs]]
+id = "TYG--1Akw47HIw4a1oCyO"
+uri = "file://screenshots/audience-pockets-1440.png"
+type = "image"
+title = "Audience Intelligence — Pocket Grid 1440px (new 3-view design)"
+
+[[outputs]]
+id = "vu-qql3bpnujH4q05MVwM"
+uri = "file://screenshots/audience-pockets-1280.png"
+type = "image"
+title = "Audience Intelligence — Pocket Grid 1280px (responsive breakpoint)"
