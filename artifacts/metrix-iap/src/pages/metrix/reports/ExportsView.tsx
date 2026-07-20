@@ -129,7 +129,6 @@ export function ExportsView() {
               section={SECTION}
               title="Exports"
               subtitle="Formats · branding policy · delivered exports"
-              table="report_builder"
               account={acct}
             />
 

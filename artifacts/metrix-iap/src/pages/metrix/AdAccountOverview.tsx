@@ -318,7 +318,7 @@ export function AdAccountOverview() {
           </SectionCard>
 
           {/* Core controls */}
-          <SectionCard title="Core controls" desc="Control creative per funnel stage" table="core_reanalysis_read">
+          <SectionCard title="Core controls" desc="Control creative per funnel stage">
             <div className="grid grid-cols-dashboard-2 gap-3">
               <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/[0.03] p-4 hover:border-emerald-400/30 transition-colors">
                 <div className="flex items-center gap-1.5 mb-2">
@@ -387,9 +387,11 @@ export function AdAccountOverview() {
           </SectionCard>
         </div>
 
-        {/* Right: loop-progress checklist — always visible; shows completion state when all done */}
+        {/* Right: loop-progress checklist — always visible; hides label once all steps complete */}
         <div className="w-52 shrink-0 border-l border-border/30 overflow-y-auto py-3 px-3 space-y-2">
-          <p className={cn(TYPE.label, "text-muted-foreground/40 uppercase tracking-widest px-1 mb-1")}>Loop stages</p>
+          {!allLoopComplete && (
+            <p className={cn(TYPE.label, "text-muted-foreground/40 uppercase tracking-widest px-1 mb-1")}>Loop stages</p>
+          )}
           <LoopChecklist steps={loopSteps} allComplete={allLoopComplete} />
         </div>
       </div>

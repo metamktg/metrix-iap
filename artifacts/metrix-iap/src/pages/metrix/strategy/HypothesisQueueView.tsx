@@ -99,7 +99,6 @@ export function HypothesisQueueView() {
               section={SECTION}
               title="Hypothesis Queue"
               subtitle="Queued for validation or briefing"
-              table="active_hypotheses, message_pillars"
               tabs="strategy"
               account={acct}
             />

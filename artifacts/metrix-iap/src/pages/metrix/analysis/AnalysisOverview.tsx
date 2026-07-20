@@ -781,7 +781,6 @@ export function AnalysisOverview() {
               section={SECTION}
               title="Analysis Overview"
               subtitle="Performance reads · drill-in modules"
-              table="campaign_summary, performance_by_cell"
               tabs="analysis"
               account={acct}
             />
@@ -925,7 +924,7 @@ export function AnalysisOverview() {
 
                   {/* ── Core control reads ────────────────────────── */}
                   {controls && (
-                    <SectionCard title="Core control reads" desc="Control creative · per funnel depth" table="core_reanalysis_read">
+                    <SectionCard title="Core control reads" desc="Control creative · per funnel depth">
                       <div className="grid grid-cols-dashboard-2 gap-3">
                         <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
                           <div className="text-label font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5">Primary control</div>

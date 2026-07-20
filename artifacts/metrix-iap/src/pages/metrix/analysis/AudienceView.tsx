@@ -505,7 +505,6 @@ function RankedListTab({
     <SectionCard
       title="Segment performance"
       desc="All cells · re-rank by KPI · click a segment for drivers"
-      table="demographic_registration_signal"
       right={<RankSortBar metrics={rankMetrics} activeId={activeMetric.id} onSelect={onSelectMetric} />}
     >
       <div className="space-y-2">
@@ -656,7 +655,6 @@ export function AudienceView() {
                 title="Audience"
                 account={acct}
                 subtitle="Audience intelligence: who converts, where the funnel holds, and what creative each pocket responds to."
-                table="demographic_registration_signal"
                 tabs="analysis"
               />
               <RangeScopeBar grainNote="Demographic signal aggregates each cell's full flight window — no daily grain." />

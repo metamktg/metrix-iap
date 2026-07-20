@@ -293,7 +293,6 @@ export function IapLibraryView() {
                 section={SECTION}
                 title="IAP Library"
                 subtitle="Cell & variable performance · by metric selection"
-                table="performance_by_cell, v3_variable_performance"
                 tabs="analysis"
                 account={acct}
               />

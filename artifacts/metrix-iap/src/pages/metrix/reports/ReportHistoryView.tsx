@@ -218,7 +218,6 @@ export function ReportHistoryView() {
               section={SECTION}
               title="Report History"
               subtitle="All generated reports · newest first"
-              table="report_history"
               account={acct}
             />
 

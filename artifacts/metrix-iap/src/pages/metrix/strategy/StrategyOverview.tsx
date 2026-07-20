@@ -256,7 +256,7 @@ function CollapsiblePlaybook({ playbook }: { playbook: NonNullable<ReturnType<ty
   });
 
   return (
-    <SectionCard title="Scaling playbook" desc="Scale · optimize · validate · explore · avoid" table="scaling_playbook">
+    <SectionCard title="Scaling playbook" desc="Scale · optimize · validate · explore · avoid">
       <div className="space-y-2">
         {activeLanes.map(({ key, label, accent }) => {
           const items = playbook[key] as string[];
@@ -420,7 +420,6 @@ export function StrategyOverview() {
               section={SECTION}
               title="Strategy Overview"
               subtitle="Pillar coverage · hypothesis breakdown · variable map"
-              table="message_pillars, active_hypotheses"
               tabs="strategy"
               account={acct}
               right={
@@ -496,7 +495,7 @@ export function StrategyOverview() {
               )}
 
               {/* ── Pillar cards (enhanced) ────────────────────────── */}
-              <SectionCard title="Message pillars" desc="Validated message directions · click source cells to explore" table="message_pillars">
+              <SectionCard title="Message pillars" desc="Validated message directions · click source cells to explore">
                 <div className="grid grid-cols-dashboard-3 gap-3">
                   {pillars.map((p, i) => {
                     const t = splitTitle(p.label);

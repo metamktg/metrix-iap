@@ -61,7 +61,6 @@ export function SignalView() {
               section={SECTION}
               title="Signal"
               subtitle="Source-backed signals · latest analysis"
-              table="signal_cards"
               account={acct}
             />
             {focus && !signals.some((s) => s.id === focus) && (

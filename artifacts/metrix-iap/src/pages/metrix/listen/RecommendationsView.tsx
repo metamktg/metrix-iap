@@ -67,7 +67,6 @@ export function RecommendationsView() {
               section={SECTION}
               title="Recommendations"
               subtitle="Optimization loop · approval adds a manual task"
-              table="recommendation_cards"
               account={acct}
             />
             <RangeScopeBar grainNote="Recommendations derive from the account's full flight window — this import has no daily grain." />

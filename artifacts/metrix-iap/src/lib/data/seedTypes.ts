@@ -258,6 +258,32 @@ export interface StrategyData {
   scaling_playbook?: ScalingPlaybook | null;
 }
 
+// ─── Brief status ─────────────────────────────────────────────────────
+// Canonical lifecycle for creative briefs. Raw database values (including
+// legacy *_from_seed suffixes) are normalised to this enum before display.
+
+export type BriefStatus =
+  | "generated"
+  | "draft"
+  | "in-review"
+  | "approved"
+  | "finalized"
+  | "archived";
+
+/**
+ * Map any raw brief status string to a canonical `BriefStatus`.
+ * All *_from_seed variants and unknown values map to "draft".
+ */
+export function normalizeBriefStatus(raw: string): BriefStatus {
+  if (raw === "generated") return "generated";
+  if (raw === "in-review") return "in-review";
+  if (raw === "approved") return "approved";
+  if (raw === "produced" || raw === "finalized") return "finalized";
+  if (raw === "archived") return "archived";
+  // draft, draft_from_seed, validation_draft_from_seed, control_refresh_from_seed → all draft
+  return "draft";
+}
+
 export interface DraftBrief {
   id: string;
   source_pillar: string;

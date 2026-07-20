@@ -77,7 +77,6 @@ export const navTree: NavSection[] = [
     icon: "LayoutDashboard",
     to: "/",
     matchPaths: ["/app/account"],
-    dataSource: "core_reanalysis_read, campaign_summary",
   },
   {
     id: "listen",

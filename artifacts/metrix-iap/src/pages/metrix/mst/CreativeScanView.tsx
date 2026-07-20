@@ -77,7 +77,6 @@ export function CreativeScanView() {
               section={SECTION}
               title="Creative Scan"
               subtitle="Scanned creative library · variable library"
-              table="local_book2_library"
               account={acct}
             />
             <ModuleTabs

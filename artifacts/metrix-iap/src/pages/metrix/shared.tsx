@@ -189,7 +189,11 @@ export function resultTerm(account: AdAccount | null | undefined): ResultTerm {
   }
 
   // 2. Bottom-line totals event with the most results.
-  if (!dominant) {
+  // Only consult campaign-level aggregates when analysis has actually been run —
+  // accounts without performance_by_cell rows have no measured result type yet
+  // and must fall back to the neutral "result" rather than guessing from totals.
+  const hasAnalysisData = (iap?.analysis?.performance_by_cell?.length ?? 0) > 0;
+  if (!dominant && hasAnalysisData) {
     let max = -1;
     for (const [key, totals] of Object.entries(iap?.campaign_summary?.bottom_line_totals ?? {})) {
       const n = Number(totals?.results ?? 0);
@@ -201,7 +205,7 @@ export function resultTerm(account: AdAccount | null | undefined): ResultTerm {
   }
 
   // 3. Declared campaign result type.
-  if (!dominant) {
+  if (!dominant && hasAnalysisData) {
     dominant = iap?.campaign_summary?.campaign_windows?.find((w) => w.result_type)?.result_type ?? null;
   }
 

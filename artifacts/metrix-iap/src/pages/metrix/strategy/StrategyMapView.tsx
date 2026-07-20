@@ -431,7 +431,6 @@ export function StrategyMapView() {
               section={SECTION}
               title="Strategy Map"
               subtitle="Select a pillar to explore its source cells and hypotheses"
-              table="message_pillars, active_hypotheses, performance_by_cell"
               tabs="strategy"
               account={acct}
             />
