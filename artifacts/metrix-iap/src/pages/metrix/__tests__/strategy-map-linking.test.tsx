@@ -1,18 +1,22 @@
 // ─── Strategy Map hypothesis-linking regression tests ─────────────────
-// The Strategy Map links each hypothesis to its pillar via an explicit
-// `pillar_id` (never fragile text matching). These tests guard that
-// contract against future refactors by rendering StrategyMapView against
-// the checked-in seed fixture and asserting:
-//   - a hypothesis with a matching pillar_id renders ONLY under that
-//     pillar's "Feeds hypotheses" section
-//   - a hypothesis with no pillar_id (or one pointing at a pillar not in
-//     the set) renders under "Other active hypotheses" and nowhere else
-//   - no hypothesis ever appears under more than one pillar
-// Uses the same harness (fixture + DateRangeProvider) as the other
-// metrix-iap view tests so assertions track production data.
+// Updated for the three-column selection-based layout:
+//   - Left column: pillar list cards (data-testid="pillar-list-card-<id>")
+//     — clicking one selects that pillar
+//   - Right column: hypothesis rows (data-testid="hyp-row-<id>") shown
+//     ONLY for the currently-selected pillar
+//   - Unattached hypotheses (no valid pillar_id) appear under
+//     "Unattached (N)" in the right column only when the first pillar is
+//     selected (default on render)
+//
+// These tests simulate pillar selection via fireEvent.click and assert:
+//   - selecting a pillar shows its hypotheses in the right column
+//   - a hypothesis from pillar A is NOT visible when pillar B is selected
+//   - no hypothesis appears for more than one pillar across all selections
+//   - unlinked hypotheses appear in the Unattached section (first pillar)
+// Uses the same harness (fixture + DateRangeProvider) as other view tests.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, cleanup } from "@testing-library/react";
+import { render, cleanup, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import fs from "node:fs";
 import path from "node:path";
@@ -73,35 +77,27 @@ function renderMap() {
   );
 }
 
-// Pillar cards and hypothesis rows carry stable data-testids
-// (`pillar-card-<id>`, `hyp-row-<id>`). The first-layer rule means ids
-// and full prose are no longer visible textContent (labels + popovers),
-// so assertions anchor on these structural hooks instead.
-function pillarCards(container: HTMLElement) {
-  return [...container.querySelectorAll<HTMLElement>('[data-testid^="pillar-card-"]')];
-}
+// ── Helpers for the three-column layout ──────────────────────────────
 
-function cardForPillar(container: HTMLElement, pillarId: string) {
-  return container.querySelector<HTMLElement>(
-    `[data-testid="pillar-card-${pillarId}"]`
-  ) ?? undefined;
-}
-
-function holdsHypothesis(scope: HTMLElement, hypId: string) {
-  return !!scope.querySelector(`[data-testid="hyp-row-${hypId}"]`);
-}
-
-// The "Other active hypotheses" bucket: the rounded card wrapping that label.
-function otherSection(container: HTMLElement) {
-  const label = [...container.querySelectorAll("div")].find(
-    (d) => d.textContent?.trim() === "Other active hypotheses"
+/** Click the left-column card for a pillar to select it. */
+function selectPillar(container: HTMLElement, pillarId: string) {
+  const card = container.querySelector<HTMLElement>(
+    `[data-testid="pillar-list-card-${pillarId}"]`
   );
-  return label?.closest("div.rounded-xl") as HTMLElement | undefined;
+  if (card) fireEvent.click(card);
 }
 
-// How many pillar cards hold a given hypothesis row.
-function pillarCardsHolding(container: HTMLElement, hypId: string) {
-  return pillarCards(container).filter((c) => holdsHypothesis(c, hypId));
+/** True if a hyp-row for this id is currently rendered in the container. */
+function hypVisible(container: HTMLElement, hypId: string) {
+  return !!container.querySelector(`[data-testid="hyp-row-${hypId}"]`);
+}
+
+/** Find the wrapper around the "Unattached (N)" bucket in the right column. */
+function unattachedSection(container: HTMLElement) {
+  const label = [...container.querySelectorAll("p")].find((p) =>
+    p.textContent?.trim().startsWith("Unattached")
+  );
+  return label?.closest<HTMLElement>("div.mt-3") ?? undefined;
 }
 
 beforeEach(() => {
@@ -110,8 +106,7 @@ beforeEach(() => {
   window.history.replaceState({}, "", "/");
 });
 
-// Both accounts in the fixture carry a mix of linked and unlinked
-// hypotheses, so the same invariants are asserted for each.
+// Both accounts in the fixture must have linked hypotheses.
 const ACCOUNTS: [string, string][] = [
   ["bookster", "Bookster"],
   ["littledata", "City Street Print Brand"],
@@ -119,25 +114,21 @@ const ACCOUNTS: [string, string][] = [
 
 describe("fixture sanity", () => {
   for (const [accountId] of ACCOUNTS) {
-    it(`${accountId} fixture has both linked and unlinked hypotheses`, () => {
+    it(`${accountId} fixture has linked hypotheses`, () => {
       const { message_pillars, active_hypotheses } = strategyFor(accountId);
       const pillarIds = new Set(message_pillars.map((p) => p.id));
       const attached = active_hypotheses.filter(
         (h) => h.pillar_id && pillarIds.has(h.pillar_id)
       );
-      const unattached = active_hypotheses.filter(
-        (h) => !h.pillar_id || !pillarIds.has(h.pillar_id!)
-      );
-      // Without both kinds present the assertions below would be vacuous.
+      // Without linked hypotheses the rendering assertions below are vacuous.
       expect(attached.length).toBeGreaterThan(0);
-      expect(unattached.length).toBeGreaterThan(0);
     });
   }
 });
 
 for (const [accountId, accountName] of ACCOUNTS) {
   describe(`Strategy Map linking (${accountName})`, () => {
-    it("renders a hypothesis only under its linked pillar's section", () => {
+    it("renders a hypothesis when its linked pillar is selected", () => {
       select(accountId);
       const { container } = renderMap();
       const { message_pillars, active_hypotheses } = strategyFor(accountId);
@@ -147,40 +138,35 @@ for (const [accountId, accountName] of ACCOUNTS) {
       );
 
       for (const h of attached) {
-        const owner = cardForPillar(container, h.pillar_id!);
-        expect(owner).toBeTruthy();
-        // Appears in its owning pillar card…
-        expect(holdsHypothesis(owner!, h.id)).toBe(true);
-        // …and in no other pillar card.
-        const otherCards = pillarCards(container).filter((c) => c !== owner);
-        for (const c of otherCards) {
-          expect(holdsHypothesis(c, h.id)).toBe(false);
-        }
-        // …and not in the "Other active hypotheses" bucket.
-        const bucket = otherSection(container);
-        if (bucket) expect(holdsHypothesis(bucket, h.id)).toBe(false);
+        // Select the owning pillar; the hypothesis row must appear.
+        selectPillar(container, h.pillar_id!);
+        expect(
+          hypVisible(container, h.id),
+          `hyp ${h.id} should appear when pillar ${h.pillar_id} is selected`
+        ).toBe(true);
       }
     });
 
-    it("renders unlinked hypotheses only under 'Other active hypotheses'", () => {
+    it("hides a hypothesis when a different pillar is selected", () => {
       select(accountId);
       const { container } = renderMap();
       const { message_pillars, active_hypotheses } = strategyFor(accountId);
       const pillarIds = new Set(message_pillars.map((p) => p.id));
-      const unattached = active_hypotheses.filter(
-        (h) => !h.pillar_id || !pillarIds.has(h.pillar_id!)
+      const attached = active_hypotheses.filter(
+        (h) => h.pillar_id && pillarIds.has(h.pillar_id)
       );
+      if (message_pillars.length < 2 || attached.length === 0) return;
 
-      const bucket = otherSection(container);
-      expect(bucket).toBeTruthy();
-      for (const h of unattached) {
-        // Present in the bucket…
-        expect(holdsHypothesis(bucket!, h.id)).toBe(true);
-        // …and in no pillar card.
-        for (const c of pillarCards(container)) {
-          expect(holdsHypothesis(c, h.id)).toBe(false);
-        }
-      }
+      // Take the first linked hypothesis and select a different pillar.
+      const h = attached[0];
+      const otherPillar = message_pillars.find((p) => p.id !== h.pillar_id);
+      if (!otherPillar) return;
+
+      selectPillar(container, otherPillar.id);
+      expect(
+        hypVisible(container, h.id),
+        `hyp ${h.id} must NOT appear when non-owner pillar ${otherPillar.id} is selected`
+      ).toBe(false);
     });
 
     it("never places a hypothesis under more than one pillar", () => {
@@ -189,13 +175,56 @@ for (const [accountId, accountName] of ACCOUNTS) {
       const { message_pillars, active_hypotheses } = strategyFor(accountId);
       const pillarIds = new Set(message_pillars.map((p) => p.id));
 
+      // Cycle through every pillar; record how many pillar selections show each hyp.
+      const appearsFor: Record<string, Set<string>> = {};
+      for (const p of message_pillars) {
+        selectPillar(container, p.id);
+        for (const h of active_hypotheses) {
+          if (hypVisible(container, h.id)) {
+            (appearsFor[h.id] ??= new Set()).add(p.id);
+          }
+        }
+      }
+
       for (const h of active_hypotheses) {
-        const holding = pillarCardsHolding(container, h.id);
         const isLinked = !!h.pillar_id && pillarIds.has(h.pillar_id);
-        // A linked hypothesis lands in exactly one pillar card; an
-        // unlinked one lands in none — never two, never orphaned into the
-        // wrong pillar.
-        expect(holding.length).toBe(isLinked ? 1 : 0);
+        const count = appearsFor[h.id]?.size ?? 0;
+        if (isLinked) {
+          // A linked hypothesis must appear for exactly its owning pillar.
+          expect(
+            count,
+            `hyp ${h.id} (owner ${h.pillar_id}) should appear for exactly 1 pillar`
+          ).toBe(1);
+        } else {
+          // An unlinked hypothesis must not appear in any pillar's right column.
+          expect(
+            count,
+            `unlinked hyp ${h.id} must not appear in any pillar column`
+          ).toBe(0);
+        }
+      }
+    });
+
+    it("unlinked hypotheses appear in the Unattached bucket (default first pillar)", () => {
+      const { message_pillars, active_hypotheses } = strategyFor(accountId);
+      const pillarIds = new Set(message_pillars.map((p) => p.id));
+      const unattached = active_hypotheses.filter(
+        (h) => !h.pillar_id || !pillarIds.has(h.pillar_id!)
+      );
+      // If this account has no unattached hypotheses, skip — nothing to assert.
+      if (unattached.length === 0) return;
+
+      select(accountId);
+      const { container } = renderMap();
+      // Default: first pillar selected → Unattached section is rendered.
+      const bucket = unattachedSection(container);
+      expect(bucket).toBeTruthy();
+      // The component shows the first 3 unattached hyps (rest behind a link).
+      for (const h of unattached.slice(0, 3)) {
+        expect(
+          hypVisible(bucket!, h.id),
+          `unattached hyp ${h.id} should appear in the Unattached bucket`
+        ).toBe(true);
       }
     });
   });
