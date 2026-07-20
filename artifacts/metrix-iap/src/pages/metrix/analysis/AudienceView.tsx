@@ -23,7 +23,6 @@ import {
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed, useMetrixIsRefetching } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
-import type { DemographicRow } from "@/lib/data/seedTypes";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
@@ -37,7 +36,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
-  scopeDemographicRows, cellGrainRows,
+  scopeDemographicRows,
   listSegments, rowsForSegment,
   computeSegmentTotals, deriveSegmentMetrics,
   assessSegmentSignal, segmentLabel,
@@ -75,17 +74,6 @@ function numMedian(arr: number[]): number {
   const s = [...arr].sort((a, b) => a - b);
   const m = Math.floor(s.length / 2);
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
-}
-
-function topConcepts(cellRows: DemographicRow[], seg: SegmentId, max = 2): string[] {
-  const seen = new Set<string>();
-  for (const r of cellRows) {
-    if (r.Age === seg.age && r.Gender === seg.gender && r.book2_concept_name) {
-      seen.add(r.book2_concept_name);
-      if (seen.size >= max) break;
-    }
-  }
-  return Array.from(seen);
 }
 
 type CpaEff = "efficient" | "average" | "costly" | "unknown";
@@ -387,22 +375,19 @@ function IntelligenceMapTab({
   );
 }
 
-// ── Pocket Card ───────────────────────────────────────────────────────
+// ── Pocket Card — L1: efficiency stripe + name + CPA only ─────────────
+// Full KPI breakdown, spend share, and concept attribution are in the
+// SegmentDrilldownModal (L3) — opened by clicking any card.
 
 function PocketCard({
-  entry, cellRows, totalSpend, medianCpa, onSelect, resultPlural,
+  entry, medianCpa, onSelect,
 }: {
   entry: SegmentEntry;
-  cellRows: DemographicRow[];
-  totalSpend: number;
   medianCpa: number;
   onSelect: (seg: SegmentId) => void;
-  resultPlural: string;
 }) {
   const eff = cpaEff(entry.derived.cpa, medianCpa);
   const color = EFF_COLOR[eff];
-  const spendPct = totalSpend > 0 ? ((entry.totals.spend ?? 0) / totalSpend) * 100 : 0;
-  const concepts = topConcepts(cellRows, entry.seg, 2);
 
   return (
     <button
@@ -414,14 +399,14 @@ function PocketCard({
         "transition-all duration-100 group overflow-hidden flex flex-col"
       )}
     >
-      {/* Efficiency stripe */}
+      {/* Efficiency stripe — visual-only efficiency signal */}
       <div
         className="h-[3px] w-full shrink-0"
         style={{ background: `linear-gradient(90deg, ${color}55 0%, ${color}18 100%)` }}
       />
 
-      <div className="px-4 py-3.5 flex flex-col gap-2.5 flex-1">
-        {/* Header */}
+      <div className="px-4 py-3 flex flex-col gap-1.5 flex-1">
+        {/* L1: name + efficiency label + low-signal flag */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex flex-col gap-0.5 min-w-0">
             <span className={cn(TYPE.title, "font-bold text-foreground/90 truncate block")}>
@@ -453,68 +438,13 @@ function PocketCard({
           </span>
         </div>
 
-        {/* Spend share bar */}
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <span className={cn(TYPE.label, "text-muted-foreground/35")}>Spend share</span>
-            <span className={cn(TYPE.label, "text-muted-foreground/55 tabular-nums")}>
-              {spendPct.toFixed(1)}%
+        {/* L1: single primary metric — CPA */}
+        {entry.derived.cpa != null && (
+          <div className="flex items-baseline gap-1.5">
+            <span className={cn(TYPE.body, "font-semibold tabular-nums text-foreground/80")}>
+              {fmtUSD(entry.derived.cpa)}
             </span>
-          </div>
-          <div
-            className="h-[4px] rounded-full overflow-hidden"
-            style={{ background: "rgba(255,255,255,0.04)" }}
-            role="progressbar"
-            aria-valuenow={Math.round(spendPct)}
-            aria-valuemin={0}
-            aria-valuemax={100}
-          >
-            <div
-              className="h-full rounded-full"
-              style={{
-                width: `${Math.min(spendPct, 100)}%`,
-                backgroundColor: color,
-                opacity: 0.45,
-              }}
-            />
-          </div>
-        </div>
-
-        {/* KPI triad */}
-        <div className="grid grid-cols-3 gap-2">
-          {[
-            { label: "CPA",     value: entry.derived.cpa != null ? fmtUSD(entry.derived.cpa) : "—" },
-            { label: "CVR",     value: entry.derived.cvr != null ? fmtPct(entry.derived.cvr) : "—" },
-            { label: "Link CTR",value: entry.derived.ctr != null ? fmtPct(entry.derived.ctr) : "—" },
-          ].map(({ label, value }) => (
-            <div key={label} className="flex flex-col gap-0.5">
-              <span className={cn(TYPE.label, "text-muted-foreground/40")}>{label}</span>
-              <span className={cn(TYPE.body, "font-semibold tabular-nums text-foreground/80")}>{value}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Results + spend footer */}
-        <p className={cn(TYPE.label, "text-muted-foreground/45 tabular-nums")}>
-          {fmtNum(entry.totals.results)} {resultPlural.toLowerCase()}
-          {entry.totals.spend != null && ` · ${fmtUSD(entry.totals.spend, 0)}`}
-        </p>
-
-        {/* Concept attribution chips */}
-        {concepts.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {concepts.map((c) => (
-              <span
-                key={c}
-                className={cn(
-                  TYPE.label,
-                  "px-1.5 py-0.5 rounded-full border border-border/20 bg-white/[0.025] text-muted-foreground/45 truncate max-w-[130px]"
-                )}
-                title={c}
-              >
-                {c}
-              </span>
-            ))}
+            <span className={cn(TYPE.label, "text-muted-foreground/40")}>CPA</span>
           </div>
         )}
       </div>
@@ -525,24 +455,21 @@ function PocketCard({
 // ── Pocket Grid tab ───────────────────────────────────────────────────
 
 function PocketGridTab({
-  ranked, cellRows, totalSpend, medianCpa, onSelect,
-  rankMetrics, activeMetric, onSelectMetric, resultPlural,
+  ranked, medianCpa, onSelect,
+  rankMetrics, activeMetric, onSelectMetric,
 }: {
   ranked: SegmentEntry[];
-  cellRows: DemographicRow[];
-  totalSpend: number;
   medianCpa: number;
   onSelect: (seg: SegmentId) => void;
   rankMetrics: RankMetric<SegmentEntry>[];
   activeMetric: RankMetric<SegmentEntry>;
   onSelectMetric: (id: string) => void;
-  resultPlural: string;
 }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <p className={cn(TYPE.label, "text-muted-foreground/40")}>
-          {ranked.length} audience pocket{ranked.length !== 1 ? "s" : ""} — click any tile for messaging attribution
+          {ranked.length} pocket{ranked.length !== 1 ? "s" : ""}
         </p>
         <RankSortBar metrics={rankMetrics} activeId={activeMetric.id} onSelect={onSelectMetric} />
       </div>
@@ -551,11 +478,8 @@ function PocketGridTab({
           <PocketCard
             key={`${e.seg.age}|${e.seg.gender}`}
             entry={e}
-            cellRows={cellRows}
-            totalSpend={totalSpend}
             medianCpa={medianCpa}
             onSelect={onSelect}
-            resultPlural={resultPlural}
           />
         ))}
       </div>
@@ -674,11 +598,6 @@ export function AudienceView() {
     [analysis]
   );
 
-  const cellRows = useMemo(
-    () => cellGrainRows(analysis?.demographic_registration_signal ?? [], null),
-    [analysis]
-  );
-
   const entries = useMemo<SegmentEntry[]>(() => {
     const scopedTotals = computeSegmentTotals(scopedRows);
     return listSegments(scopedRows).map((seg) => {
@@ -784,14 +703,11 @@ export function AudienceView() {
                     {viewMode === "pockets" && (
                       <PocketGridTab
                         ranked={ranked}
-                        cellRows={cellRows}
-                        totalSpend={totalSpend}
                         medianCpa={medianCpa}
                         onSelect={setSelectedSeg}
                         rankMetrics={rankMetrics}
                         activeMetric={activeMetric}
                         onSelectMetric={select}
-                        resultPlural={term.Plural}
                       />
                     )}
 

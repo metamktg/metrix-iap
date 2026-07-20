@@ -11,7 +11,7 @@ import { getAdAccount, getStrategyData, getBriefBuilder } from "@/lib/data/metri
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CrossLink, fmtNum, LoopAction,
-  RangeScopeBar, NoDataInRangeState, DetailReveal, deriveLabel, SkeletonBlock,
+  RangeScopeBar, NoDataInRangeState, DetailReveal, deriveLabel, InfoTooltip, SkeletonBlock,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import {
@@ -42,9 +42,9 @@ const TIER_STYLE: Record<string, string> = {
 };
 
 const TIER_LABEL: Record<string, string> = {
-  high:   "High coverage",
-  medium: "Medium coverage",
-  low:    "Low coverage",
+  high:   "High",
+  medium: "Med",
+  low:    "Low",
 };
 
 // ─── Variable family definitions ─────────────────────────────────────
@@ -245,8 +245,10 @@ const COLLAPSIBLE_LANE_CONFIG: readonly { key: string; label: string; accent: st
 
 function CollapsiblePlaybook({ playbook }: { playbook: NonNullable<ReturnType<typeof getStrategyData>>["scaling_playbook"] }) {
   if (!playbook) return null;
-  // Track which lanes are collapsed; start all open
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  // Track which lanes are collapsed; start ALL collapsed — user expands on demand
+  const [collapsed, setCollapsed] = useState<Set<string>>(
+    new Set(COLLAPSIBLE_LANE_CONFIG.map((l) => l.key))
+  );
 
   const activeLanes = COLLAPSIBLE_LANE_CONFIG.filter(({ key }) => {
     const items = playbook[key];
@@ -523,16 +525,12 @@ export function StrategyOverview() {
                           {t.qualifier && <p className={cn(TYPE.caption, "line-clamp-1 mt-0.5")}>{t.qualifier}</p>}
                         </div>
 
-                        {/* Descriptor (truncated, reveal on click) */}
-                        <DetailReveal
-                          label={deriveLabel(p.plain_descriptor, 72)}
-                          labelClassName={TYPE.caption}
-                          eyebrow={p.label}
-                          sections={[
-                            { label: "Descriptor",       text: p.plain_descriptor },
-                            { label: "Funnel application", text: p.funnel_application ?? undefined },
-                          ]}
-                        />
+                        {/* Descriptor — L2 via info icon only */}
+                        {p.plain_descriptor && (
+                          <div className="flex items-center gap-1">
+                            <InfoTooltip content={deriveLabel(p.plain_descriptor, 90)} />
+                          </div>
+                        )}
 
                         {/* Source cell chips */}
                         {p.source_cells.length > 0 && (
@@ -607,8 +605,8 @@ export function StrategyOverview() {
                       <div className="flex items-center gap-2">
                         <s.Icon className="w-3.5 h-3.5 text-primary" />
                         <span className="text-title font-semibold text-foreground">{s.label}</span>
+                        <InfoTooltip content={s.desc} />
                       </div>
-                      <p className={TYPE.caption}>{s.desc}</p>
                       <div className="flex items-center justify-between mt-auto pt-1">
                         <span className="text-label font-mono text-muted-foreground/70">{s.stat}</span>
                         <CrossLink to={s.to} label="Open" />
