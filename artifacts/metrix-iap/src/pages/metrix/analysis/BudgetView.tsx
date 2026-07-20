@@ -4,13 +4,13 @@
 
 import { useMemo } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
-import { useMetrixSeed } from "@/contexts/MetrixDataContext";
+import { useMetrixSeed, useMetrixIsRefetching } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAnalysisData, getCampaignSummary } from "@/lib/data/metrixSeedAdapter";
 import { useMetricSelection } from "@/lib/metric-selection";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   CaveatNote, CrossLink, MetricSelectionBar, SectionCard, fmtUSD, fmtNum, fmtPct, eventLabel,
-  RangeScopeBar, NoDataInRangeState,
+  RangeScopeBar, NoDataInRangeState, SkeletonTileRow,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { useCellRangeScope } from "@/lib/date-scope";
@@ -21,6 +21,7 @@ const SECTION = "Analysis · 03";
 
 export function BudgetView() {
   const seed = useMetrixSeed();
+  const isRefetching = useMetrixIsRefetching();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
 
@@ -85,12 +86,18 @@ export function BudgetView() {
               <NoDataInRangeState what="budget data" />
             ) : (
             <>
-            <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
-              <MetricTile label="Total spend" value={fmtUSD(summary.total_spend_usd, 0)} />
-              <MetricTile label="Impressions" value={fmtNum(summary.total_impressions)} />
-              <MetricTile label="Link clicks" value={fmtNum(summary.total_link_clicks)} />
-              <MetricTile label="Link CTR" value={fmtPct(summary.overall_link_ctr_pct)} />
-            </div>
+            {isRefetching ? (
+              <div className="px-6 pt-5">
+                <SkeletonTileRow count={4} />
+              </div>
+            ) : (
+              <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
+                <MetricTile label="Total spend" value={fmtUSD(summary.total_spend_usd, 0)} />
+                <MetricTile label="Impressions" value={fmtNum(summary.total_impressions)} />
+                <MetricTile label="Link clicks" value={fmtNum(summary.total_link_clicks)} />
+                <MetricTile label="Link CTR" value={fmtPct(summary.overall_link_ctr_pct)} />
+              </div>
+            )}
 
             <div className="px-6 py-5 space-y-4 max-w-5xl">
               {summary.data_caveat && <CaveatNote text={summary.data_caveat} />}

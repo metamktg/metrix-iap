@@ -45,7 +45,7 @@ export function InlineAccountPicker({
             "inline-flex items-center gap-2 h-9 pl-3 pr-2.5 rounded-md",
             "border border-border/50 bg-white/[0.03] hover:bg-white/[0.06] transition-colors",
             "text-body font-medium text-foreground",
-            "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/40"
+            "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
           )}
         >
           <Briefcase className="w-3.5 h-3.5 text-primary shrink-0" />

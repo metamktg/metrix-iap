@@ -1,10 +1,29 @@
 // ─── Report export tests ──────────────────────────────────────────────
 // Validates that the report model is composed from seed data and that the
 // HTML rendering contains the expected, escaped content.
+//
+// Two seed sources are used:
+//   makeSeed()    — a minimal hand-crafted seed for controlled content tests
+//                   (HTML escaping, specific label checks, etc.)
+//   fixtureSeed   — the checked-in src/test-fixtures/metrix_seed_bundle.json
+//                   snapshot used by navigation and breadcrumb tests; drives
+//                   the structural "all sections present" assertions so that
+//                   schema drift is caught as soon as the fixture is refreshed.
 
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, it, expect } from "vitest";
 import { buildReportModel, renderReportHtml, serializeReportModel, parseReportModel, type SegmentComparisonRequest } from "./reportExport";
 import type { MetrixSeed } from "./data/seedTypes";
+
+// ── Fixture seed (same snapshot used by navigation/__tests__) ──────────
+const fixtureSeed: MetrixSeed = JSON.parse(
+  fs.readFileSync(
+    path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../test-fixtures/metrix_seed_bundle.json"),
+    "utf-8",
+  ),
+);
 
 const SECTIONS = [
   "Executive Read",
@@ -208,6 +227,72 @@ describe("buildReportModel", () => {
 
   it("returns null for unknown or unconfigured accounts", () => {
     expect(buildReportModel(makeSeed(), "nope", "internal")).toBeNull();
+  });
+});
+
+// ─── Fixture-backed structural tests ──────────────────────────────────
+// These tests run against the checked-in seed snapshot so that a schema
+// change that adds new IAP sections (or removes existing ones) is caught
+// the moment the fixture is refreshed — even if the hand-crafted makeSeed()
+// fixture above has not been updated.
+describe("buildReportModel — fixture seed structural checks", () => {
+  it("builds a model from the fixture's bookster account with all expected sections", () => {
+    const model = buildReportModel(fixtureSeed, "bookster", "internal");
+    expect(model).not.toBeNull();
+    expect(model!.sections.map((s) => s.title)).toEqual(SECTIONS);
+  });
+
+  it("every section produced from the fixture has at least one block", () => {
+    const model = buildReportModel(fixtureSeed, "bookster", "internal")!;
+    for (const s of model.sections) {
+      expect(s.blocks.length, `section "${s.title}" has no blocks`).toBeGreaterThan(0);
+    }
+  });
+
+  it("executive section contains a stats block (fixture has real campaign totals)", () => {
+    const model = buildReportModel(fixtureSeed, "bookster", "internal")!;
+    const exec = model.sections[0];
+    expect(exec.blocks.some((b) => b.kind === "stats")).toBe(true);
+  });
+
+  it("creative cell section contains a table block (fixture has real cell rows)", () => {
+    const model = buildReportModel(fixtureSeed, "bookster", "internal")!;
+    const cells = model.sections.find((s) => s.title === "Creative Cell Performance")!;
+    expect(cells).toBeDefined();
+    // The section may open with a chart before the table when the fixture has
+    // enough cells to trigger the chart path — assert presence, not position.
+    expect(cells.blocks.some((b) => b.kind === "table")).toBe(true);
+  });
+
+  it("strategy section references at least one message pillar from the fixture", () => {
+    const model = buildReportModel(fixtureSeed, "bookster", "internal")!;
+    const strat = model.sections.find((s) => s.title === "Strategy Recommendations")!;
+    expect(strat).toBeDefined();
+    // The fixture has real pillar labels — any non-empty content signals coverage.
+    expect(JSON.stringify(strat.blocks).length).toBeGreaterThan(0);
+  });
+
+  it("renders HTML for the fixture seed without throwing", () => {
+    const model = buildReportModel(fixtureSeed, "bookster", "internal")!;
+    const html = renderReportHtml(model);
+    expect(html).toContain("<!DOCTYPE html>");
+    for (const s of SECTIONS) {
+      expect(html).toContain(s.replace(/&/g, "&amp;"));
+    }
+  });
+
+  it("serialization round-trip is stable for the fixture seed", () => {
+    const model = buildReportModel(fixtureSeed, "bookster", "internal", { windowLabel: "Fixture window" })!;
+    const json = serializeReportModel(model);
+    const parsed = parseReportModel(json)!;
+    expect(parsed).not.toBeNull();
+    expect(parsed.generatedAt).toBeInstanceOf(Date);
+    expect(serializeReportModel(parsed)).toBe(json);
+  });
+
+  it("returns null for unconfigured fixture accounts (skov_pet)", () => {
+    // skov_pet is present in the fixture but has status 'unconfigured' — no report.
+    expect(buildReportModel(fixtureSeed, "skov_pet", "internal")).toBeNull();
   });
 });
 

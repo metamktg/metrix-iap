@@ -35,6 +35,7 @@ import {
   alphaComposite,
   relativeLuminance,
   contrastRatio,
+  parseFocusRingOpacities,
 } from "./wcag-contrast-helpers";
 
 // ─── Read design tokens live from the stylesheet ────────────────────────────
@@ -235,5 +236,155 @@ describe("StageTile focus ring contrast — LoopCommandChain (WCAG 2.1 SC 1.4.11
 
   it("StageTile focus ring is lighter than the background (ring is visible)", () => {
     expect(stageTileRingLum).toBeGreaterThan(bgLum);
+  });
+});
+
+// ─── AccountSwitcher focus rings (WCAG 2.1 SC 1.4.11) ───────────────────────
+//
+// AccountSwitcher renders two focusable buttons (compact icon-only and expanded
+// label trigger) each with an inline `focus-visible:ring-primary` class.
+// Both live in the sidebar on the dark --background surface.
+// The test reads the live source so any re-introduction of an opacity modifier
+// (e.g. ring-primary/40 → ~1.5:1, far below 3:1) will fail immediately.
+
+const accountSwitcherPath = resolve(
+  __dirname,
+  "../../../components/layout/AccountSwitcher.tsx",
+);
+const accountSwitcherSource = readFileSync(accountSwitcherPath, "utf-8");
+const accountSwitcherOpacities = parseFocusRingOpacities(
+  accountSwitcherSource,
+  "AccountSwitcher.tsx",
+);
+
+describe("AccountSwitcher focus ring contrast — sidebar buttons (WCAG 2.1 SC 1.4.11)", () => {
+  it("focus-visible:ring-primary class is present in AccountSwitcher", () => {
+    expect(accountSwitcherSource).toContain("focus-visible:ring-primary");
+  });
+
+  it("all AccountSwitcher focus rings have no opacity modifier, or modifier ≥85", () => {
+    // ring-primary/40 (the original value) yields ~1.5:1 on --background — well
+    // below WCAG AA 3:1. Only ≥85% opacity reliably clears the threshold.
+    for (const alpha of accountSwitcherOpacities) {
+      expect(Math.round(alpha * 100)).toBeGreaterThanOrEqual(85);
+    }
+  });
+
+  it("all AccountSwitcher focus rings meet ≥3:1 contrast on --background (WCAG AA)", () => {
+    for (const alpha of accountSwitcherOpacities) {
+      const ringRgb = alphaComposite(primaryRgb, bgRgb, alpha);
+      const ratio = contrastRatio(relativeLuminance(...ringRgb), bgLum);
+      expect(ratio).toBeGreaterThanOrEqual(3);
+    }
+  });
+});
+
+// ─── InlineAccountPicker focus ring (WCAG 2.1 SC 1.4.11) ────────────────────
+//
+// InlineAccountPicker renders a single focusable button with an inline
+// `focus-visible:ring-primary` class. It appears in empty-state panels on
+// the dark --background surface.
+
+const inlinePickerPath = resolve(
+  __dirname,
+  "../../../components/layout/InlineAccountPicker.tsx",
+);
+const inlinePickerSource = readFileSync(inlinePickerPath, "utf-8");
+const inlinePickerOpacities = parseFocusRingOpacities(
+  inlinePickerSource,
+  "InlineAccountPicker.tsx",
+);
+
+describe("InlineAccountPicker focus ring contrast — account picker button (WCAG 2.1 SC 1.4.11)", () => {
+  it("focus-visible:ring-primary class is present in InlineAccountPicker", () => {
+    expect(inlinePickerSource).toContain("focus-visible:ring-primary");
+  });
+
+  it("InlineAccountPicker focus ring has no opacity modifier, or modifier ≥85", () => {
+    for (const alpha of inlinePickerOpacities) {
+      expect(Math.round(alpha * 100)).toBeGreaterThanOrEqual(85);
+    }
+  });
+
+  it("InlineAccountPicker focus ring meets ≥3:1 contrast on --background (WCAG AA)", () => {
+    for (const alpha of inlinePickerOpacities) {
+      const ringRgb = alphaComposite(primaryRgb, bgRgb, alpha);
+      const ratio = contrastRatio(relativeLuminance(...ringRgb), bgLum);
+      expect(ratio).toBeGreaterThanOrEqual(3);
+    }
+  });
+});
+
+// ─── CreativeCard focus ring (WCAG 2.1 SC 1.4.11) ───────────────────────────
+//
+// CreativeCard renders a focusable card with `focus-visible:ring-primary` and
+// `ring-offset-background`. The ring appears against the dark --background
+// surface (the offset pushes it just outside the card border).
+
+const creativeCardPath = resolve(
+  __dirname,
+  "../../../components/creative/CreativeCard.tsx",
+);
+const creativeCardSource = readFileSync(creativeCardPath, "utf-8");
+const creativeCardOpacities = parseFocusRingOpacities(
+  creativeCardSource,
+  "CreativeCard.tsx",
+);
+
+describe("CreativeCard focus ring contrast — creative grid tile (WCAG 2.1 SC 1.4.11)", () => {
+  it("focus-visible:ring-primary class is present in CreativeCard", () => {
+    expect(creativeCardSource).toContain("focus-visible:ring-primary");
+  });
+
+  it("CreativeCard focus ring has no opacity modifier, or modifier ≥85", () => {
+    for (const alpha of creativeCardOpacities) {
+      expect(Math.round(alpha * 100)).toBeGreaterThanOrEqual(85);
+    }
+  });
+
+  it("CreativeCard focus ring meets ≥3:1 contrast on --background (WCAG AA)", () => {
+    // ring-offset-background means the ring sits against --background, not the
+    // card fill — test against the same dark surface as the global rule.
+    for (const alpha of creativeCardOpacities) {
+      const ringRgb = alphaComposite(primaryRgb, bgRgb, alpha);
+      const ratio = contrastRatio(relativeLuminance(...ringRgb), bgLum);
+      expect(ratio).toBeGreaterThanOrEqual(3);
+    }
+  });
+});
+
+// ─── CreativeExpandDialog age-band buttons focus ring (WCAG 2.1 SC 1.4.11) ──
+//
+// CreativeExpandDialog renders a list of age-band selector buttons with an
+// inline `focus-visible:ring-primary` class. They appear inside a dialog panel
+// which floats over the dark --background surface.
+
+const creativeExpandPath = resolve(
+  __dirname,
+  "../../../components/creative/CreativeExpandDialog.tsx",
+);
+const creativeExpandSource = readFileSync(creativeExpandPath, "utf-8");
+const creativeExpandOpacities = parseFocusRingOpacities(
+  creativeExpandSource,
+  "CreativeExpandDialog.tsx",
+);
+
+describe("CreativeExpandDialog focus ring contrast — age-band buttons (WCAG 2.1 SC 1.4.11)", () => {
+  it("focus-visible:ring-primary class is present in CreativeExpandDialog", () => {
+    expect(creativeExpandSource).toContain("focus-visible:ring-primary");
+  });
+
+  it("CreativeExpandDialog focus ring has no opacity modifier, or modifier ≥85", () => {
+    for (const alpha of creativeExpandOpacities) {
+      expect(Math.round(alpha * 100)).toBeGreaterThanOrEqual(85);
+    }
+  });
+
+  it("CreativeExpandDialog focus ring meets ≥3:1 contrast on --background (WCAG AA)", () => {
+    for (const alpha of creativeExpandOpacities) {
+      const ringRgb = alphaComposite(primaryRgb, bgRgb, alpha);
+      const ratio = contrastRatio(relativeLuminance(...ringRgb), bgLum);
+      expect(ratio).toBeGreaterThanOrEqual(3);
+    }
   });
 });

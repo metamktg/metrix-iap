@@ -310,10 +310,47 @@ function UploadProgressBar({ pct, label }: { pct: number; label: string }) {
 }
 
 /**
- * Collapsible column-mapping summary panel shown after a CSV upload when
- * any non-exact column resolutions occurred. Green = confidence ≥ 0.85,
- * amber = 0.5–0.84, red = missing. Exact matches are omitted (happy path).
+ * Diff callout shown immediately after a CSV re-upload. Compares the new
+ * mapping_summary against the previously-staged file's summary and calls out:
+ *   - Columns that were missing but are now found (positive, green)
+ *   - Columns that were missing and are still missing (persistent, red)
+ * Only rendered when at least one previously-missing column changed state.
  */
+function CsvMappingDiffCallout({
+  diff,
+}: {
+  diff: { nowFound: string[]; stillMissing: string[] };
+}) {
+  if (diff.nowFound.length === 0 && diff.stillMissing.length === 0) return null;
+  return (
+    <div className="rounded-lg border border-border/40 bg-white/[0.02] p-3 space-y-2">
+      <div className="text-caption font-semibold text-foreground/75">After re-upload</div>
+      {diff.nowFound.length > 0 && (
+        <div className="space-y-1">
+          {diff.nowFound.map((col) => (
+            <div key={col} className="flex items-center gap-2 text-label">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span className="font-medium text-emerald-300">{col}</span>
+              <span className="text-emerald-400/55">— now found</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {diff.stillMissing.length > 0 && (
+        <div className="space-y-1">
+          {diff.stillMissing.map((col) => (
+            <div key={col} className="flex items-center gap-2 text-label">
+              <XCircle className="w-3.5 h-3.5 text-red-400/80 shrink-0" />
+              <span className="font-medium text-red-300">{col}</span>
+              <span className="text-red-400/55">— still missing</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CsvMappingPanel({ summary }: { summary: ColumnMappingSummaryEntry[] }) {
   const [open, setOpen] = useState(false);
 
@@ -453,6 +490,8 @@ function CsvSlotUpload({
   const [mappingSummary, setMappingSummary] = useState<ColumnMappingSummaryEntry[] | null>(
     staged?.mapping_summary && staged.mapping_summary.length > 0 ? staged.mapping_summary : null
   );
+  const [mappingDiff, setMappingDiff] = useState<{ nowFound: string[]; stillMissing: string[] } | null>(null);
+  const prevMappingSummaryRef = useRef<ColumnMappingSummaryEntry[] | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const deleteMutation = useDeleteManualImport();
 
@@ -470,7 +509,13 @@ function CsvSlotUpload({
    *  from the onChange handler before React state for `file` has settled. */
   const handleStage = async (fileToStage: File) => {
     setError(null);
+    // Capture the previous mapping summary before clearing so we can diff
+    // against it once the new file's summary arrives (re-upload scenario).
+    if (mappingSummary && mappingSummary.length > 0) {
+      prevMappingSummaryRef.current = mappingSummary;
+    }
     setMappingSummary(null);
+    setMappingDiff(null);
     onMismatch?.(null);
     if (fileToStage.size > MAX_UPLOAD_BYTES) {
       setError("File is too large — the limit is 8 MB.");
@@ -487,8 +532,27 @@ function CsvSlotUpload({
         { kind, filename: fileToStage.name, content_type: fileToStage.type || undefined, content_base64 },
         setUploadPct
       );
-      if (result.mapping_summary && result.mapping_summary.length > 0) {
-        setMappingSummary(result.mapping_summary);
+      const newSummary = result.mapping_summary ?? [];
+      if (newSummary.length > 0) {
+        setMappingSummary(newSummary);
+      }
+      // Diff against the previous file's summary if this is a re-upload.
+      const prev = prevMappingSummaryRef.current;
+      if (prev && prev.length > 0) {
+        const prevMissingCols = new Set(
+          prev.filter((e) => e.tier === "missing").map((e) => e.canonical)
+        );
+        if (prevMissingCols.size > 0) {
+          const newMissingCols = new Set(
+            newSummary.filter((e) => e.tier === "missing").map((e) => e.canonical)
+          );
+          const nowFound = [...prevMissingCols].filter((col) => !newMissingCols.has(col));
+          const stillMissing = [...prevMissingCols].filter((col) => newMissingCols.has(col));
+          if (nowFound.length > 0 || stillMissing.length > 0) {
+            setMappingDiff({ nowFound, stillMissing });
+          }
+        }
+        prevMappingSummaryRef.current = null;
       }
       setFile(null);
       if (fileRef.current) fileRef.current.value = "";
@@ -513,7 +577,12 @@ function CsvSlotUpload({
 
   const handleRemove = async () => {
     if (!staged) return;
+    // Preserve the current mapping summary so the next upload can diff against it.
+    if (mappingSummary && mappingSummary.length > 0) {
+      prevMappingSummaryRef.current = mappingSummary;
+    }
     setMappingSummary(null);
+    setMappingDiff(null);
     await deleteMutation.mutateAsync({ accountId, importId: staged.id });
     onRemoved();
   };
@@ -597,6 +666,8 @@ function CsvSlotUpload({
           {uploadPct !== null && <UploadProgressBar pct={uploadPct} label={`Uploading ${file?.name ?? title}…`} />}
         </>
       )}
+
+      {mappingDiff && <CsvMappingDiffCallout diff={mappingDiff} />}
 
       {mappingSummary && <CsvMappingPanel summary={mappingSummary} />}
 
@@ -1522,41 +1593,121 @@ export function CreativeLibraryDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const queryClient = useQueryClient();
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [discarding, setDiscarding] = useState(false);
+  const [discardError, setDiscardError] = useState<string | null>(null);
+
   const availableAdNames = useMemo(
     () => Array.from(new Set((account.ads ?? []).map((a) => a.ad_name))).sort(),
     [account.ads]
   );
 
+  const { data: importsData } = useListManualImports(account.id);
+  const unmappedCreatives = (importsData?.imports ?? []).filter(
+    (i) => i.kind === "creative_asset" && i.ad_names.length === 0
+  );
+  const deleteMutation = useDeleteManualImport();
+
+  const doClose = () => {
+    onOpenChange(false);
+    queryClient.invalidateQueries({ queryKey: getGetMetrixSeedQueryKey() });
+  };
+
+  // All close paths (X button, click-outside, onDone) go through here so the
+  // guard fires consistently whenever unmapped creatives exist.
   const handleOpenChange = (o: boolean) => {
-    onOpenChange(o);
-    if (!o) {
-      queryClient.invalidateQueries({ queryKey: getGetMetrixSeedQueryKey() });
+    if (!o && unmappedCreatives.length > 0) {
+      setShowDiscardConfirm(true);
+      return;
     }
+    if (!o) doClose();
+    else onOpenChange(true);
+  };
+
+  const handleConfirmDiscard = async () => {
+    setDiscarding(true);
+    setDiscardError(null);
+    const failed: string[] = [];
+    try {
+      for (const asset of unmappedCreatives) {
+        try {
+          await deleteMutation.mutateAsync({ accountId: account.id, importId: asset.id });
+        } catch {
+          failed.push(asset.filename);
+        }
+      }
+    } finally {
+      setDiscarding(false);
+      // Refresh so the list reflects whichever deletes succeeded (avoids
+      // stale unmapped rows re-appearing on the next open or retry).
+      void queryClient.invalidateQueries({ queryKey: getListManualImportsQueryKey(account.id) });
+    }
+    if (failed.length > 0) {
+      // Stay open so the user can retry or map the remaining files.
+      setDiscardError(
+        `Could not delete ${failed.length === 1 ? `"${failed[0]}"` : `${failed.length} files`}. Try again or map ${failed.length === 1 ? "it" : "them"} manually.`
+      );
+      return;
+    }
+    setShowDiscardConfirm(false);
+    doClose();
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center">
-              <Images className="w-4 h-4 text-primary" />
+    <>
+      <AlertDialog open={showDiscardConfirm} onOpenChange={(o) => { if (!o && !discarding) setShowDiscardConfirm(false); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard unmapped files?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {unmappedCreatives.length === 1
+                ? "1 creative file has no ad mapping yet."
+                : `${unmappedCreatives.length} creative files have no ad mapping yet.`}{" "}
+              Closing now will permanently delete{" "}
+              {unmappedCreatives.length === 1 ? "it" : "them"} — this cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {discardError && (
+            <p className="px-1 text-caption text-destructive">{discardError}</p>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={discarding} onClick={() => { setShowDiscardConfirm(false); setDiscardError(null); }}>
+              Keep editing
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={discarding}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => void handleConfirmDiscard()}
+            >
+              {discarding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+              Discard {unmappedCreatives.length === 1 ? "file" : "files"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center">
+                <Images className="w-4 h-4 text-primary" />
+              </div>
             </div>
-          </div>
-          <DialogTitle className="text-base">Upload Creatives</DialogTitle>
-          <DialogDescription className="text-body leading-relaxed">
-            Add creative files to{" "}
-            <span className="text-foreground/80 font-medium">{account.name}</span> after the fact —
-            they render immediately and map to ads already in its IAP analysis.
-          </DialogDescription>
-        </DialogHeader>
-        <CreativeLibraryPanel
-          accountId={account.id}
-          availableAdNames={availableAdNames}
-          onDone={() => handleOpenChange(false)}
-        />
-      </DialogContent>
-    </Dialog>
+            <DialogTitle className="text-base">Upload Creatives</DialogTitle>
+            <DialogDescription className="text-body leading-relaxed">
+              Add creative files to{" "}
+              <span className="text-foreground/80 font-medium">{account.name}</span> after the fact —
+              they render immediately and map to ads already in its IAP analysis.
+            </DialogDescription>
+          </DialogHeader>
+          <CreativeLibraryPanel
+            accountId={account.id}
+            availableAdNames={availableAdNames}
+            onDone={() => handleOpenChange(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -1572,6 +1723,10 @@ export function ManualImportDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const queryClient = useQueryClient();
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [discarding, setDiscarding] = useState(false);
+  const [discardError, setDiscardError] = useState<string | null>(null);
+
   // Same real-ads registry the Creative Library dialog uses — keeps
   // dropdown mapping / auto-matching behavior identical across both
   // entry points instead of falling back to free-text here.
@@ -1580,37 +1735,112 @@ export function ManualImportDialog({
     [account.ads]
   );
 
+  const { data: importsData } = useListManualImports(account.id);
+  const unmappedCreatives = (importsData?.imports ?? []).filter(
+    (i) => i.kind === "creative_asset" && i.ad_names.length === 0
+  );
+  const deleteMutation = useDeleteManualImport();
+
+  const doClose = () => {
+    onOpenChange(false);
+    queryClient.invalidateQueries({ queryKey: getGetMetrixSeedQueryKey() });
+  };
+
+  // All close paths (X button, click-outside, onDone) go through here so the
+  // guard fires consistently whenever unmapped creatives exist.
   const handleOpenChange = (o: boolean) => {
-    onOpenChange(o);
-    if (!o) {
-      // Staged uploads may change account state downstream; keep the seed fresh.
-      queryClient.invalidateQueries({ queryKey: getGetMetrixSeedQueryKey() });
+    if (!o && unmappedCreatives.length > 0) {
+      setShowDiscardConfirm(true);
+      return;
     }
+    if (!o) doClose();
+    else onOpenChange(true);
+  };
+
+  const handleConfirmDiscard = async () => {
+    setDiscarding(true);
+    setDiscardError(null);
+    const failed: string[] = [];
+    try {
+      for (const asset of unmappedCreatives) {
+        try {
+          await deleteMutation.mutateAsync({ accountId: account.id, importId: asset.id });
+        } catch {
+          failed.push(asset.filename);
+        }
+      }
+    } finally {
+      setDiscarding(false);
+      // Refresh so the list reflects whichever deletes succeeded (avoids
+      // stale unmapped rows re-appearing on the next open or retry).
+      void queryClient.invalidateQueries({ queryKey: getListManualImportsQueryKey(account.id) });
+    }
+    if (failed.length > 0) {
+      // Stay open so the user can retry or map the remaining files.
+      setDiscardError(
+        `Could not delete ${failed.length === 1 ? `"${failed[0]}"` : `${failed.length} files`}. Try again or map ${failed.length === 1 ? "it" : "them"} manually.`
+      );
+      return;
+    }
+    setShowDiscardConfirm(false);
+    doClose();
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center">
-              <FileUp className="w-4 h-4 text-primary" />
+    <>
+      <AlertDialog open={showDiscardConfirm} onOpenChange={(o) => { if (!o && !discarding) setShowDiscardConfirm(false); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard unmapped files?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {unmappedCreatives.length === 1
+                ? "1 creative file has no ad mapping yet."
+                : `${unmappedCreatives.length} creative files have no ad mapping yet.`}{" "}
+              Closing now will permanently delete{" "}
+              {unmappedCreatives.length === 1 ? "it" : "them"} — this cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {discardError && (
+            <p className="px-1 text-caption text-destructive">{discardError}</p>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={discarding} onClick={() => { setShowDiscardConfirm(false); setDiscardError(null); }}>
+              Keep editing
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={discarding}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => void handleConfirmDiscard()}
+            >
+              {discarding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+              Discard {unmappedCreatives.length === 1 ? "file" : "files"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center">
+                <FileUp className="w-4 h-4 text-primary" />
+              </div>
             </div>
-          </div>
-          <DialogTitle className="text-base">Add Manual Import</DialogTitle>
-          <DialogDescription className="text-body leading-relaxed">
-            Upload the two required exports for{" "}
-            <span className="text-foreground/80 font-medium">{account.name}</span>, plus any
-            creative files. Files are staged for the analysis pipeline — performance data appears
-            only after you explicitly run analysis from the account's setup screen.
-          </DialogDescription>
-        </DialogHeader>
-        <ManualUploadPanel
-          accountId={account.id}
-          availableAdNames={availableAdNames}
-          onDone={() => handleOpenChange(false)}
-        />
-      </DialogContent>
-    </Dialog>
+            <DialogTitle className="text-base">Add Manual Import</DialogTitle>
+            <DialogDescription className="text-body leading-relaxed">
+              Upload the two required exports for{" "}
+              <span className="text-foreground/80 font-medium">{account.name}</span>, plus any
+              creative files. Files are staged for the analysis pipeline — performance data appears
+              only after you explicitly run analysis from the account's setup screen.
+            </DialogDescription>
+          </DialogHeader>
+          <ManualUploadPanel
+            accountId={account.id}
+            availableAdNames={availableAdNames}
+            onDone={() => handleOpenChange(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

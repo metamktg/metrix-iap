@@ -397,7 +397,7 @@ describe("LoopCommandChain — hooks-violation guard (hoisted useState/useMemo)"
     // locked/pending) above the UnconfiguredState checklist — same structural
     // frame as a configured account so every account sees the full loop.
     expect(container.textContent).toContain("IAP Loop");
-    expect(container.textContent).toContain("Connect Meta Ad Account");
+    expect(container.textContent).toContain("Connect data source");
   });
 
   it("renders without throwing for a manager view (no account selected)", () => {

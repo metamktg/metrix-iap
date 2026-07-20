@@ -8,12 +8,12 @@
 
 import { useMemo, useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
-import { useMetrixSeed } from "@/contexts/MetrixDataContext";
+import { useMetrixSeed, useMetrixIsRefetching } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CaveatNote, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
-  RangeScopeBar, NoDataInRangeState,
+  RangeScopeBar, NoDataInRangeState, SkeletonTileRow,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -232,6 +232,7 @@ function ConversionTrackingSections({ cts }: { cts: ConversionTrackingSignal }) 
 
 export function PlacementsView() {
   const seed = useMetrixSeed();
+  const isRefetching = useMetrixIsRefetching();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
   const analysis = getAnalysisData(seed, adAccountId);
@@ -307,16 +308,22 @@ export function PlacementsView() {
                   <NoDataInRangeState what="placement data" />
                 ) : (
                   <>
-                    <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
-                      <MetricTile label="Placements" value={fmtNum(pls.length)} />
-                      <MetricTile label="Link clicks" value={fmtNum(totalClicks)} />
-                      <MetricTile label="Purchases" value={fmtNum(totalPurchases)} />
-                      <MetricTile
-                        label="Top placement"
-                        value={top?.placement ?? "—"}
-                        sub={top ? `${fmtNum(top.purchases ?? 0)} purchases · ${fmtNum(top.link_clicks ?? 0)} link clicks` : undefined}
-                      />
-                    </div>
+                    {isRefetching ? (
+                      <div className="px-6 pt-5">
+                        <SkeletonTileRow count={4} />
+                      </div>
+                    ) : (
+                      <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
+                        <MetricTile label="Placements" value={fmtNum(pls.length)} />
+                        <MetricTile label="Link clicks" value={fmtNum(totalClicks)} />
+                        <MetricTile label="Purchases" value={fmtNum(totalPurchases)} />
+                        <MetricTile
+                          label="Top placement"
+                          value={top?.placement ?? "—"}
+                          sub={top ? `${fmtNum(top.purchases ?? 0)} purchases · ${fmtNum(top.link_clicks ?? 0)} link clicks` : undefined}
+                        />
+                      </div>
+                    )}
                     <div className="px-6 py-5 space-y-4 max-w-5xl">
                       <ConversionTrackingSections cts={cts} />
                     </div>
@@ -348,20 +355,26 @@ export function PlacementsView() {
                 <NoDataInRangeState what="placement data" />
               ) : (
               <>
-              <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
-                <MetricTile label="Placements" value={fmtNum(rollup.length)} />
-                <MetricTile label="Placement spend" value={fmtUSD(totalSpend, 0)} />
-                <MetricTile label={term.Plural} value={fmtNum(totalResults)} />
-                <MetricTile
-                  label={`Best · ${activeMetric.label}`}
-                  value={best?.placement ?? "—"}
-                  sub={
-                    best && activeMetric.value(best) != null
-                      ? `${activeMetric.format(activeMetric.value(best)!)} ${activeMetric.label.toLowerCase()}`
-                      : undefined
-                  }
-                />
-              </div>
+              {isRefetching ? (
+                <div className="px-6 pt-5">
+                  <SkeletonTileRow count={4} />
+                </div>
+              ) : (
+                <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
+                  <MetricTile label="Placements" value={fmtNum(rollup.length)} />
+                  <MetricTile label="Placement spend" value={fmtUSD(totalSpend, 0)} />
+                  <MetricTile label={term.Plural} value={fmtNum(totalResults)} />
+                  <MetricTile
+                    label={`Best · ${activeMetric.label}`}
+                    value={best?.placement ?? "—"}
+                    sub={
+                      best && activeMetric.value(best) != null
+                        ? `${activeMetric.format(activeMetric.value(best)!)} ${activeMetric.label.toLowerCase()}`
+                        : undefined
+                    }
+                  />
+                </div>
+              )}
 
               <div className="px-6 py-5 space-y-4 max-w-5xl">
                 <SectionCard

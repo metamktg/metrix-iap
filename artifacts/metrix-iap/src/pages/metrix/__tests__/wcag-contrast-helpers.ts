@@ -87,3 +87,35 @@ export function alphaComposite(
 export function hslTokenToRgb(tokenValue: string): [number, number, number] {
   return hslToRgb(...parseCssHslToken(tokenValue));
 }
+
+/**
+ * Scan a component source string for every `focus-visible:ring-primary` (or
+ * `focus-visible:ring-primary/<N>`) occurrence and return the opacity value in
+ * [0, 1] for each one.
+ *
+ * - No opacity modifier (`ring-primary`)    → 1.0 (full opacity, safe)
+ * - With modifier (`ring-primary/70`)       → 0.70
+ * - Class absent entirely                   → throws so missing rings are caught
+ *
+ * Use this to drive contrast assertions over every interactive tile that
+ * overrides the global focus ring with an inline Tailwind class.
+ */
+export function parseFocusRingOpacities(
+  source: string,
+  componentName = "<component>",
+): number[] {
+  if (!source.includes("focus-visible:ring-primary")) {
+    throw new Error(
+      `Could not find "focus-visible:ring-primary" in ${componentName} — ` +
+        "the focus-ring class may have been removed or renamed.",
+    );
+  }
+  const re = /focus-visible:ring-primary(?:\/(\d+))?/g;
+  const results: number[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(source)) !== null) {
+    const pct = m[1] !== undefined ? parseInt(m[1], 10) : 100;
+    results.push(pct / 100);
+  }
+  return results;
+}

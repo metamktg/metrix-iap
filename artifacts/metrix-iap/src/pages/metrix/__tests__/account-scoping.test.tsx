@@ -129,7 +129,7 @@ describe("SKOV Pet selected", () => {
     it(`${name} shows the unconfigured state`, () => {
       select("ad_account", "skov_pet");
       const { container } = renderView(View);
-      expect(container.textContent).toContain("Connect Meta Ad Account");
+      expect(container.textContent).toContain("Connect data source");
     });
   }
 });
@@ -155,10 +155,12 @@ describe("Manager selected", () => {
 });
 
 describe("Unconfigured-state actions (SKOV Pet)", () => {
-  it("Connect Meta Ad Account explains the real OAuth flow and hands off to Integrations", () => {
+  it("Connect data source checklist step explains the real OAuth flow and hands off to Integrations", () => {
     select("ad_account", "skov_pet");
     renderView(SignalView);
-    fireEvent.click(screen.getByRole("button", { name: /Connect Meta Ad Account/i }));
+    // The "Connect data source" checklist step is now the entry point — no
+    // separate action button. Clicking it opens ConnectMetaDialog inline.
+    fireEvent.click(screen.getByRole("button", { name: /Connect data source/i }));
     const dialog = screen.getByRole("dialog");
     expect(dialog.textContent).toContain("Authorize with Meta");
     expect(dialog.textContent).toContain("read-only ads access");
@@ -170,24 +172,11 @@ describe("Unconfigured-state actions (SKOV Pet)", () => {
   it("cancelling the connect dialog leaves the account unconfigured", () => {
     select("ad_account", "skov_pet");
     renderView(SignalView);
-    fireEvent.click(screen.getByRole("button", { name: /Connect Meta Ad Account/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Connect data source/i }));
     fireEvent.click(screen.getByRole("button", { name: /^Cancel$/i }));
     // Account must remain unconfigured — no performance data appears.
-    expect(document.body.textContent).toContain("Connect Meta Ad Account");
+    expect(document.body.textContent).toContain("Connect data source");
     expect(document.body.textContent).not.toContain("Bookster");
-  });
-
-  it("Add Manual Import opens the real staging upload dialog", () => {
-    select("ad_account", "skov_pet");
-    renderView(SignalView);
-    fireEvent.click(screen.getByRole("button", { name: /Add Manual Import/i }));
-    const dialog = screen.getByRole("dialog");
-    expect(dialog.textContent).toContain("Add Manual Import");
-    expect(dialog.textContent).toContain("Demographics CSV");
-    expect(dialog.textContent).toContain("Placements CSV");
-    // Files are staged raw for the analysis pipeline — never parsed into
-    // performance data at upload time.
-    expect(dialog.textContent).toContain("stored raw until an analysis run");
   });
 });
 

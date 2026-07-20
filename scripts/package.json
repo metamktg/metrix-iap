@@ -6,6 +6,8 @@
   "scripts": {
     "check:metrix-settings-api": "tsx ./src/check-metrix-settings-api.ts",
     "check:api-codegen-drift": "tsx ./src/check-api-codegen-drift.ts",
+    "check:seed-fixture-drift": "tsx ./src/check-seed-fixture-drift.ts",
+    "refresh:seed-fixture": "tsx ./src/check-seed-fixture-drift.ts --refresh",
     "smoke:api-server": "tsx ./src/smoke-api-server.ts",
     "smoke:metrix-iap-build": "tsx ./src/smoke-metrix-iap-build.ts",
     "smoke:metrix-iap-tests": "tsx ./src/smoke-metrix-iap-tests.ts",

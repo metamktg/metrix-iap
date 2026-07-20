@@ -4,12 +4,12 @@
 
 import { TYPE } from "../typography";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
-import { useMetrixSeed } from "@/contexts/MetrixDataContext";
+import { useMetrixSeed, useMetrixIsRefetching } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAnalysisData, getCampaignSummary, getCoreControls, getMST } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   CaveatNote, SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
-  RangeScopeBar, NoDataInRangeState, DetailReveal, deriveLabel, LoopAction,
+  RangeScopeBar, NoDataInRangeState, DetailReveal, deriveLabel, LoopAction, SkeletonTileRow,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { useCellRangeScope, sumInRange } from "@/lib/date-scope";
@@ -19,6 +19,7 @@ const SECTION = "Analysis · 03";
 
 export function AnalysisOverview() {
   const seed = useMetrixSeed();
+  const isRefetching = useMetrixIsRefetching();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
   const { rangeHasData } = useDateRange();
@@ -122,23 +123,29 @@ export function AnalysisOverview() {
               <NoDataInRangeState what="analysis data" />
             ) : (
             <>
-            <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
-              {scoped ? (
-                <>
-                  <MetricTile label="Spend (in range)" value={fmtUSD(scoped.spend, 0)} sub="concept flights overlapping range" />
-                  <MetricTile label="Link clicks (in range)" value={fmtNum(scoped.linkClicks)} />
-                  <MetricTile label="Results (in range)" value={fmtNum(scoped.results)} />
-                  <MetricTile label="Concept flights" value={String(scoped.concepts)} sub="overlapping selected range" />
-                </>
-              ) : (
-                <>
-                  <MetricTile label="Total spend" value={fmtUSD(summary.total_spend_usd, 0)} />
-                  <MetricTile label="Impressions" value={fmtNum(summary.total_impressions)} />
-                  <MetricTile label="Link clicks" value={fmtNum(summary.total_link_clicks)} />
-                  <MetricTile label="Link CTR" value={fmtPct(summary.overall_link_ctr_pct)} />
-                </>
-              )}
-            </div>
+            {isRefetching ? (
+              <div className="px-6 pt-5">
+                <SkeletonTileRow count={4} />
+              </div>
+            ) : (
+              <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
+                {scoped ? (
+                  <>
+                    <MetricTile label="Spend (in range)" value={fmtUSD(scoped.spend, 0)} sub="concept flights overlapping range" />
+                    <MetricTile label="Link clicks (in range)" value={fmtNum(scoped.linkClicks)} />
+                    <MetricTile label="Results (in range)" value={fmtNum(scoped.results)} />
+                    <MetricTile label="Concept flights" value={String(scoped.concepts)} sub="overlapping selected range" />
+                  </>
+                ) : (
+                  <>
+                    <MetricTile label="Total spend" value={fmtUSD(summary.total_spend_usd, 0)} />
+                    <MetricTile label="Impressions" value={fmtNum(summary.total_impressions)} />
+                    <MetricTile label="Link clicks" value={fmtNum(summary.total_link_clicks)} />
+                    <MetricTile label="Link CTR" value={fmtPct(summary.overall_link_ctr_pct)} />
+                  </>
+                )}
+              </div>
+            )}
 
             <div className="px-6 py-5 space-y-4 max-w-5xl">
               {summary.data_caveat && <CaveatNote text={summary.data_caveat} />}

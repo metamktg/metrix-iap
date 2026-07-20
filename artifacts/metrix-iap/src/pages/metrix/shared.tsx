@@ -641,6 +641,127 @@ export function DetailReveal({
 
 // ─── Unconfigured / pending states ────────────────────────────────────
 
+// ── Loop Checklist ──────────────────────────────────────────────────
+
+export interface LoopChecklistStep {
+  label: string;
+  done: boolean;
+  route?: string;
+  onClick?: () => void;
+}
+
+/**
+ * Compact checklist that shows ✓ / next / pending state for each step.
+ * Used in UnconfiguredState (setup flow) and as a sidebar progress widget
+ * on AdAccountOverview for configured accounts mid-loop.
+ *
+ * When `allComplete` is true the list stays visible and a "Loop complete ✓"
+ * banner replaces the progress bar, with a "Start re-run" link so users
+ * know the sidebar is always useful — not just mid-flight.
+ */
+export function LoopChecklist({ steps, allComplete = false }: { steps: LoopChecklistStep[]; allComplete?: boolean }) {
+  const [, navigate] = useLocation();
+  const doneCount = steps.filter((s) => s.done).length;
+  const nextIdx = steps.findIndex((s) => !s.done);
+
+  return (
+    <div className="rounded-xl border border-border/30 bg-white/[0.02] overflow-hidden">
+      {/* Header + fraction */}
+      <div className="px-3 py-2 border-b border-border/20 flex items-center gap-2">
+        <span className={cn(TYPE.label, allComplete ? "text-emerald-400/70" : "text-muted-foreground/50")}>
+          {allComplete ? "Loop complete" : "Setup progress"}
+        </span>
+        <div className="flex-1 h-px bg-border/20" />
+        <span className="text-[9px] font-mono tabular-nums text-muted-foreground/40">{doneCount}/{steps.length}</span>
+      </div>
+
+      {/* Completion banner — shown when all steps are done */}
+      {allComplete ? (
+        <div className="px-3 py-2.5 border-b border-border/15">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <span className={cn(TYPE.caption, "text-emerald-400/90 font-semibold leading-none")}>Loop complete ✓</span>
+          </div>
+          <p className={cn(TYPE.caption, "text-muted-foreground/55 leading-snug mb-2")}>
+            All stages finished. Ready for the next re-run cycle.
+          </p>
+          <a
+            href="/app/settings/account"
+            onClick={(e) => { e.preventDefault(); navigate("/app/settings/account"); }}
+            className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary/80 hover:text-primary transition-colors"
+          >
+            Start re-run <ArrowRight className="w-3 h-3" />
+          </a>
+        </div>
+      ) : (
+        /* Progress bar — only shown when at least one step is done */
+        doneCount > 0 && (
+          <div className="px-3 pt-2 pb-0">
+            <div className="h-0.5 rounded-full bg-border/30 overflow-hidden">
+              <div
+                className="h-full bg-emerald-400/50 rounded-full transition-all"
+                style={{ width: `${Math.round((doneCount / steps.length) * 100)}%` }}
+              />
+            </div>
+          </div>
+        )
+      )}
+
+      {steps.map((step, i) => {
+        const isNext = !allComplete && i === nextIdx;
+        const isAction = !!step.onClick || !!step.route;
+        const Tag = step.onClick ? "button" : step.route ? "a" : "div";
+        return (
+          <Tag
+            key={i}
+            {...(step.onClick
+              ? { type: "button" as const, onClick: step.onClick }
+              : step.route
+                ? {
+                    href: step.route,
+                    onClick: (e: React.MouseEvent) => { e.preventDefault(); navigate(step.route!); },
+                  }
+                : {})}
+            className={cn(
+              "flex items-center gap-2 px-3 py-2 border-b border-border/15 last:border-0 w-full text-left",
+              isAction && !allComplete ? "hover:bg-white/[0.03] transition-colors cursor-pointer" : "cursor-default",
+            )}
+          >
+            <div className={cn(
+              "w-4 h-4 rounded-full flex items-center justify-center shrink-0",
+              step.done
+                ? "text-emerald-400"
+                : isNext
+                  ? "border border-primary/50 bg-primary/[0.08]"
+                  : "border border-border/35 bg-white/[0.02]",
+            )}>
+              {step.done
+                ? <CheckCircle2 className="w-3.5 h-3.5" />
+                : isNext
+                  ? <ArrowRight className="w-2.5 h-2.5 text-primary/70" />
+                  : <span className="text-[8px] font-bold text-muted-foreground/30 tabular-nums leading-none">{i + 1}</span>
+              }
+            </div>
+            <span className={cn(
+              TYPE.caption, "leading-none",
+              step.done
+                ? "text-foreground/35 line-through"
+                : isNext
+                  ? "text-foreground/75 font-semibold"
+                  : "text-muted-foreground/45",
+            )}>
+              {step.label}
+            </span>
+            {isNext && step.route && (
+              <ArrowRight className="w-3 h-3 text-primary/40 ml-auto shrink-0" />
+            )}
+          </Tag>
+        );
+      })}
+    </div>
+  );
+}
+
 export function UnconfiguredState({ account }: { account: AdAccount }) {
   const s = account.overview_state;
   const [connectOpen, setConnectOpen] = useState(false);
@@ -655,21 +776,19 @@ export function UnconfiguredState({ account }: { account: AdAccount }) {
   );
   const creativesMapped = isManual && imports.filter((i) => i.kind === "creative_asset").some((a) => a.ad_names.length > 0);
 
-  const setupSteps = isManual
+  const setupSteps: LoopChecklistStep[] = isManual
     ? [
-        { label: "Name the account", desc: `Account created as "${account.name}"`, done: true },
-        { label: "Upload performance CSVs", desc: "Demographics + placements pivot exports — both required before analysis", done: csvsDone },
-        { label: "Map creative assets", desc: "Link image files to ads for visual analysis (optional)", done: creativesMapped },
-        { label: "Run analysis", desc: "Process your staged uploads into structured ad performance data", done: false },
+        { label: "Name the account", done: true },
+        { label: "Upload performance CSVs", done: csvsDone, onClick: () => setImportOpen(true) },
+        { label: "Map creative assets", done: creativesMapped, route: "/app/settings/account" },
+        { label: "Run analysis", done: false, route: "/app/settings/account" },
       ]
     : [
-        { label: "Connect data source", desc: "Link a live Meta account to pull ad performance data", done: false },
-        { label: "Run analysis", desc: "Pull and process live ad performance data for this account", done: false },
-        { label: "Generate strategy", desc: "AI-generated message pillars and hypotheses", done: false },
-        { label: "Generate briefs", desc: "Creative execution briefs per pillar and hypothesis", done: false },
+        { label: "Connect data source", done: false, onClick: () => setConnectOpen(true) },
+        { label: "Run analysis", done: false, route: "/app/settings/account" },
+        { label: "Generate strategy", done: false, route: "/app/strategy/overview" },
+        { label: "Generate briefs", done: false, route: "/app/briefs/builder" },
       ];
-
-  const doneCount = setupSteps.filter((s) => s.done).length;
 
   return (
     <div className="flex-1 flex items-center justify-center py-16 px-6">
@@ -687,62 +806,8 @@ export function UnconfiguredState({ account }: { account: AdAccount }) {
           </p>
         </div>
 
-        {/* Guided setup checklist with live completion checkmarks */}
-        <div className="rounded-xl border border-border/30 bg-white/[0.02] overflow-hidden">
-          {/* Progress strip */}
-          {doneCount > 0 && (
-            <div className="px-4 py-2 border-b border-border/20 flex items-center gap-2">
-              <div className="flex-1 h-1 rounded-full bg-border/30 overflow-hidden">
-                <div
-                  className="h-full bg-emerald-400/50 rounded-full transition-all"
-                  style={{ width: `${Math.round((doneCount / setupSteps.length) * 100)}%` }}
-                />
-              </div>
-              <span className="text-[9px] font-mono tabular-nums text-muted-foreground/40">{doneCount}/{setupSteps.length}</span>
-            </div>
-          )}
-          {setupSteps.map((step, i) => (
-            <div
-              key={i}
-              className={cn(
-                "flex items-start gap-3 px-4 py-3 border-b border-border/20 last:border-0",
-                step.done && "opacity-60",
-              )}
-            >
-              <div className={cn(
-                "w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5",
-                step.done
-                  ? "text-emerald-400"
-                  : "border border-border/40 bg-white/[0.03]",
-              )}>
-                {step.done
-                  ? <CheckCircle2 className="w-4 h-4" />
-                  : <span className="text-[9px] font-bold text-muted-foreground/40 tabular-nums">{i + 1}</span>
-                }
-              </div>
-              <div className="min-w-0">
-                <p className={cn("text-caption font-semibold leading-none mb-0.5", step.done ? "text-foreground/50 line-through" : "text-foreground/70")}>{step.label}</p>
-                <p className="text-[10px] text-muted-foreground/45 leading-snug">{step.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center justify-center gap-2">
-          <button
-            onClick={() => setConnectOpen(true)}
-            className="flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary/15 border border-primary/30 text-title font-medium text-primary hover:bg-primary/25 transition-colors"
-          >
-            <Plug className="w-3.5 h-3.5" /> {s?.primary_action ?? "Connect Meta Ad Account"}
-          </button>
-          <button
-            onClick={() => setImportOpen(true)}
-            className="flex items-center gap-1.5 h-9 px-4 rounded-md border border-border/50 text-title font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
-          >
-            <FileUp className="w-3.5 h-3.5" /> {s?.secondary_action ?? "Add Manual Import"}
-          </button>
-        </div>
+        {/* Guided setup checklist — first actionable step opens its dialog inline */}
+        <LoopChecklist steps={setupSteps} />
 
         {/* Switch account */}
         <div className="text-center space-y-1.5">
