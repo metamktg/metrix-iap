@@ -10,17 +10,19 @@ import {
   RangeScopeBar, NoDataInRangeState,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
+import { normalizeBriefStatus, type BriefStatus } from "@/lib/data/seedTypes";
 import { FileClock, FileText } from "lucide-react";
 
 const SECTION = "Creative Briefs · 05";
 
-const STATUS_LABEL: Record<string, string> = {
-  draft_from_seed: "Draft created from seed strategy",
-  validation_draft_from_seed: "Validation draft created from seed strategy",
-  control_refresh_from_seed: "Control-refresh draft created from seed strategy",
+const STATUS_DISPLAY: Record<BriefStatus, { label: string; className: string }> = {
+  draft:      { label: "Draft",      className: "text-amber-300 border-amber-400/20 bg-amber-400/10" },
+  generated:  { label: "Generated",  className: "text-sky-300 border-sky-400/20 bg-sky-400/10" },
+  "in-review":{ label: "In Review",  className: "text-orange-300 border-orange-400/20 bg-orange-400/10" },
+  approved:   { label: "Approved",   className: "text-green-300 border-green-400/20 bg-green-400/10" },
+  finalized:  { label: "Finalized",  className: "text-emerald-300 border-emerald-400/20 bg-emerald-400/10" },
+  archived:   { label: "Archived",   className: "text-muted-foreground/50 border-border/30 bg-white/[0.02]" },
 };
-
-const isDraftStatus = (status: string) => status.endsWith("_from_seed") || status.includes("draft");
 
 export function BriefHistoryView() {
   const seed = useMetrixSeed();
@@ -36,8 +38,11 @@ export function BriefHistoryView() {
         const strategy = getStrategyData(seed, adAccountId);
         const pillarLabel = (id: string) => strategy?.message_pillars.find((p) => p.id === id)?.label ?? id;
 
-        const drafts = briefs.filter((b) => isDraftStatus(b.status)).length;
-        const finalized = briefs.length - drafts;
+        const open = briefs.filter((b) => {
+          const s = normalizeBriefStatus(b.status);
+          return s !== "finalized" && s !== "archived";
+        }).length;
+        const finalized = briefs.filter((b) => normalizeBriefStatus(b.status) === "finalized").length;
 
         return (
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
@@ -45,7 +50,6 @@ export function BriefHistoryView() {
               section={SECTION}
               title="History"
               subtitle="All generated briefs · current status"
-              table="draft_briefs"
               account={acct}
             />
             <RangeScopeBar grainNote="Brief history derives from the account's full flight window — this import has no daily grain." />
@@ -56,7 +60,7 @@ export function BriefHistoryView() {
             <>
             <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="Total briefs" value={String(briefs.length)} />
-              <MetricTile label="Drafts" value={String(drafts)} />
+              <MetricTile label="Open" value={String(open)} />
               <MetricTile label="Finalized" value={String(finalized)} sub={finalized === 0 ? "none finalized yet" : undefined} />
               <MetricTile label="Formats" value={String(new Set(briefs.map((b) => b.asset_type)).size)} />
             </div>
@@ -71,26 +75,30 @@ export function BriefHistoryView() {
                 />
               ) : (
                 <div className="space-y-2.5">
-                  {briefs.map((b) => (
-                    <div key={b.id} className="flex items-start gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                      <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center shrink-0">
-                        <FileText className="w-3.5 h-3.5 text-muted-foreground/70" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-body font-semibold text-foreground leading-tight">{pillarLabel(b.source_pillar)}</p>
-                          <span className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/60 border border-border/40 px-1.5 py-0.5 rounded leading-none">{b.asset_type}</span>
+                  {briefs.map((b) => {
+                    const canonical = normalizeBriefStatus(b.status);
+                    const display = STATUS_DISPLAY[canonical];
+                    return (
+                      <div key={b.id} className="flex items-start gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
+                        <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center shrink-0">
+                          <FileText className="w-3.5 h-3.5 text-muted-foreground/70" />
                         </div>
-                        <p className="text-caption text-muted-foreground/60 mt-1 leading-relaxed">{STATUS_LABEL[b.status] ?? b.status}</p>
-                        <div className="mt-2">
-                          <CrossLink to={`/app/briefs/builder?focus=${b.id}`} label="Open in Brief Builder" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-body font-semibold text-foreground leading-tight">{pillarLabel(b.source_pillar)}</p>
+                            <span className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/60 border border-border/40 px-1.5 py-0.5 rounded leading-none">{b.asset_type}</span>
+                          </div>
+                          <p className="text-caption text-muted-foreground/60 mt-1 leading-relaxed">{display.label}</p>
+                          <div className="mt-2">
+                            <CrossLink to={`/app/briefs/builder?focus=${b.id}`} label="Open in Brief Builder" />
+                          </div>
                         </div>
+                        <span className={`shrink-0 text-[9px] font-semibold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none ${display.className}`}>
+                          {display.label}
+                        </span>
                       </div>
-                      <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-amber-300 border border-amber-400/20 bg-amber-400/10 px-1.5 py-0.5 rounded leading-none">
-                        Draft
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

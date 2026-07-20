@@ -189,7 +189,11 @@ export function resultTerm(account: AdAccount | null | undefined): ResultTerm {
   }
 
   // 2. Bottom-line totals event with the most results.
-  if (!dominant) {
+  // Only consult campaign-level aggregates when analysis has actually been run —
+  // accounts without performance_by_cell rows have no measured result type yet
+  // and must fall back to the neutral "result" rather than guessing from totals.
+  const hasAnalysisData = (iap?.analysis?.performance_by_cell?.length ?? 0) > 0;
+  if (!dominant && hasAnalysisData) {
     let max = -1;
     for (const [key, totals] of Object.entries(iap?.campaign_summary?.bottom_line_totals ?? {})) {
       const n = Number(totals?.results ?? 0);
@@ -201,7 +205,7 @@ export function resultTerm(account: AdAccount | null | undefined): ResultTerm {
   }
 
   // 3. Declared campaign result type.
-  if (!dominant) {
+  if (!dominant && hasAnalysisData) {
     dominant = iap?.campaign_summary?.campaign_windows?.find((w) => w.result_type)?.result_type ?? null;
   }
 
@@ -823,14 +827,16 @@ export function UnconfiguredState({ account }: { account: AdAccount }) {
   );
 }
 
-export function PendingState({ title, message, icon: Icon = Clock, action }: { title: string; message: string; icon?: React.ComponentType<{ className?: string }>; action?: React.ReactNode }) {
+export function PendingState({ title, message, icon: Icon = Clock, action }: { title: string; message?: string; icon?: React.ComponentType<{ className?: string }>; action?: React.ReactNode }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
       <div className="w-10 h-10 rounded-xl border border-border/40 bg-white/[0.03] flex items-center justify-center">
         <Icon className="w-4 h-4 text-muted-foreground/60" />
       </div>
-      <p className="text-callout font-semibold text-foreground/80">{title}</p>
-      <p className="text-body text-muted-foreground/70 max-w-xs">{message}</p>
+      <div className="flex items-center gap-1.5">
+        <p className="text-callout font-semibold text-foreground/80">{title}</p>
+        {message && <InfoTooltip content={message} />}
+      </div>
       {action && <div className="pt-1">{action}</div>}
     </div>
   );

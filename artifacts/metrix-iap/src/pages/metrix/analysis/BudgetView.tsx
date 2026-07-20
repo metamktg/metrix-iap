@@ -75,7 +75,6 @@ export function BudgetView() {
               section={SECTION}
               title="Budget"
               subtitle="Spend allocation · by metric selection"
-              table="campaign_summary, performance_by_cell"
               tabs="analysis"
               account={acct}
             />
@@ -105,8 +104,7 @@ export function BudgetView() {
               <SectionCard
                 title="Efficiency by result event"
                 desc="Spend & outcome · per result event"
-                table="bottom_line_totals"
-              >
+                >
                 {eventRows.length === 0 ? (
                   <PendingState title="No events selected" message="Select at least one result event above." action={<CrossLink to="/app/analysis/overview" label="Return to Overview" />} />
                 ) : (
@@ -129,8 +127,7 @@ export function BudgetView() {
               <SectionCard
                 title="Spend by concept"
                 desc="Current metric selection"
-                table="performance_by_cell"
-              >
+                >
                 {conceptRows.length === 0 ? (
                   <PendingState title="No concept spend" message="No cell rows match the current metric selection." action={<CrossLink to="/app/analysis/overview" label="Return to Overview" />} />
                 ) : (
@@ -154,8 +151,7 @@ export function BudgetView() {
                 <SectionCard
                   title="Placement spend"
                   desc="Spend & results · by placement"
-                  table="v3_placement_signal, c4e_placement_signal"
-                >
+                  >
                   <div className="space-y-5">
                     {a.v3_placement_signal.length > 0 && (
                       <div>

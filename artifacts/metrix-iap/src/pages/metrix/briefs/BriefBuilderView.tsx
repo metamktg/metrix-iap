@@ -92,7 +92,6 @@ export function BriefBuilderView() {
               section={SECTION}
               title="Brief Builder"
               subtitle="Briefs from message pillars · by asset format"
-              table="draft_briefs, message_pillars"
               account={acct}
               right={
                 <div className="flex items-center gap-2">

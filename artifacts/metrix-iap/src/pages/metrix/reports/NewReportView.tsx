@@ -199,7 +199,6 @@ export function NewReportView() {
               section={SECTION}
               title="New Report"
               subtitle="Client-ready report · from analysis & strategy"
-              table="reports"
               account={acct}
             />
             <ModuleTabs tabs={tabs} active={tab} onChange={setTab} />

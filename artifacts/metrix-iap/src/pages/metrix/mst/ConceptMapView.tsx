@@ -89,7 +89,6 @@ export function ConceptMapView() {
               section={SECTION}
               title="Concept Map"
               subtitle="Concepts mapped to pillars"
-              table="performance_by_cell, message_pillars"
               account={acct}
             />
             <RangeScopeBar />

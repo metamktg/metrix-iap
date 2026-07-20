@@ -115,7 +115,6 @@ export function MatrixBuilderView() {
               section={SECTION}
               title="Matrix Builder"
               subtitle="Historical concept × shared-variable matrix"
-              table="historical_matrix_4x4"
               account={acct}
             />
             <RangeScopeBar />

@@ -744,7 +744,6 @@ function CombosPanel({ analysis, resultNoun }: {
     <SectionCard
       title="Creative combos"
       desc="Concepts by CPA · placement × platform by CPA"
-      table="performance_by_cell"
     >
       <div className="space-y-4">
         {/* Sub-table 1: top concepts */}
@@ -1112,7 +1111,6 @@ export function AvatarsView() {
               section={SECTION}
               title="Avatars / ICP"
               subtitle="Matrix avatars · ICP profiles · audience signal"
-              table="historical_matrix_4x4, icp_profiles, demographic_registration_signal"
               tabs="strategy"
               account={acct}
             />
@@ -1147,8 +1145,7 @@ export function AvatarsView() {
                     <SectionCard
                       title="Audience segments"
                       desc="Demographic signal · performance + confidence · explore"
-                      table="demographic_registration_signal"
-                    >
+                      >
                       <div className="grid grid-cols-dashboard-2 gap-3">
                         {segmentList.map((seg) => {
                           const stats = segmentStats.get(segmentKey(seg));
@@ -1174,8 +1171,7 @@ export function AvatarsView() {
                     <SectionCard
                       title="Matrix avatars"
                       desc="Sorted by spend · tap any card for detail"
-                      table="historical_matrix_4x4"
-                    >
+                      >
                       <div className="grid grid-cols-dashboard-2 gap-3">
                         {sortedColumns.map((col) => {
                           const cells = cellsFor(col.id);
@@ -1210,8 +1206,7 @@ export function AvatarsView() {
                     <SectionCard
                       title="ICP profiles"
                       desc="Strategy-map customer profiles · real performance"
-                      table="icp_profiles"
-                    >
+                      >
                       <div className="space-y-3">
                         {filteredProfiles.length === 0 ? (
                           <p className={cn(TYPE.body, "text-muted-foreground/50 py-6 text-center")}>

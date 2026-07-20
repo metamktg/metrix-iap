@@ -49,7 +49,6 @@ export function AlertsView() {
               section={SECTION}
               title="Alerts"
               subtitle="High-impact signals · data caveats"
-              table="signal_cards, data_caveats"
               account={acct}
             />
             <RangeScopeBar grainNote="Alerts derive from the account's full flight window — this import has no daily grain." />

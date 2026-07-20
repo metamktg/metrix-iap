@@ -130,11 +130,11 @@ export function MSTHub() {
               {winningCells > 0 && (
                 <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-[hsl(var(--metrix-gold)/0.06)] border border-[hsl(var(--metrix-gold)/0.2)]">
                   <Trophy className="w-3.5 h-3.5 text-[hsl(var(--metrix-gold))] shrink-0 mt-0.5" />
-                  <p className={cn(TYPE.caption, "text-muted-foreground leading-relaxed")}>
+                  <p className={cn(TYPE.caption, "text-muted-foreground")}>
                     <span className="text-foreground font-semibold">
                       {winningCells} winning signal{winningCells !== 1 ? "s" : ""}
-                    </span>{" "}
-                    identified — view the crossmap to see transferable variable stacks.
+                    </span>
+                    {" "}identified.
                   </p>
                   <a
                     href="/app/mst/crossmap"
@@ -152,11 +152,11 @@ export function MSTHub() {
               {atRiskCells > 0 && (
                 <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-destructive/5 border border-destructive/20">
                   <AlertCircle className="w-3.5 h-3.5 text-destructive shrink-0 mt-0.5" />
-                  <p className={cn(TYPE.caption, "text-muted-foreground leading-relaxed")}>
+                  <p className={cn(TYPE.caption, "text-muted-foreground")}>
                     <span className="text-foreground font-semibold">
                       {atRiskCells} cell{atRiskCells !== 1 ? "s" : ""}
-                    </span>{" "}
-                    at risk — review in Creative Scan.
+                    </span>
+                    {" "}at risk.
                   </p>
                   <a
                     href="/app/mst/creative-scan"

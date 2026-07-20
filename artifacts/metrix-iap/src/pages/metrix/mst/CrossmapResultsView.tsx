@@ -73,7 +73,6 @@ export function CrossmapResultsView() {
               section={SECTION}
               title="Crossmap Results"
               subtitle="Planned cells × actual delivery"
-              table="historical_matrix_4x4, performance_by_cell"
               account={acct}
             />
             <RangeScopeBar />

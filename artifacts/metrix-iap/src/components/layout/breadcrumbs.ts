@@ -1,4 +1,4 @@
-import { navTree } from "@/navigation/navTree";
+import { navTree, type NavChild } from "@/navigation/navTree";
 
 export type BreadcrumbEntry = { label: string; to?: string };
 
@@ -24,19 +24,26 @@ export function buildBreadcrumbs(location: string, leadLabel: string, isManager:
         return crumbs;
       }
     }
-    // Section landing page — Overview acts as the section's primary parent
-    // route, not a nested subtab. When on the landing, the section label IS
-    // the leaf crumb (no separate "Overview" child crumb beneath it).
+    // Find the most specific (longest-path) child that matches the location.
+    // This prevents a short-path child like "/app/briefs" from shadowing
+    // deeper siblings like "/app/briefs/builder" via the startsWith check.
+    let bestChild: NavChild | null = null;
+    for (const child of section.children ?? []) {
+      if (location === child.to || location.startsWith(child.to + "/")) {
+        if (!bestChild || child.to.length > bestChild.to.length) {
+          bestChild = child;
+        }
+      }
+    }
+    if (bestChild) {
+      crumbs.push({ label: section.label, to: section.children![0]!.to });
+      crumbs.push({ label: bestChild.label, to: bestChild.to });
+      return crumbs;
+    }
+    // Fallback: unknown sub-paths under a section hub collapse to the section label.
     if (section.landing && (location === section.landing || location.startsWith(section.landing + "/"))) {
       crumbs.push({ label: section.label, to: section.landing });
       return crumbs;
-    }
-    for (const child of section.children ?? []) {
-      if (location === child.to || location.startsWith(child.to + "/")) {
-        crumbs.push({ label: section.label, to: section.children![0]!.to });
-        crumbs.push({ label: child.label, to: child.to });
-        return crumbs;
-      }
     }
   }
 

@@ -107,7 +107,6 @@ export function ReportSettingsView() {
         <SectionCard
           title="Default template"
           desc="Branding · format · audience defaults"
-          table="workspace_report_settings"
         >
           <div className="space-y-4 pt-1">
             <div className="space-y-1.5">
@@ -157,7 +156,6 @@ export function ReportSettingsView() {
         <SectionCard
           title="Scheduled sends"
           desc="Automatic delivery · on a cadence"
-          table="workspace_report_settings"
         >
           <div className="space-y-4 pt-1">
             <div className="flex items-center gap-3">

@@ -198,7 +198,6 @@ function ConversionTrackingSections({ cts }: { cts: ConversionTrackingSignal }) 
         <SectionCard
           title="Conversion-attributed placements"
           desc={`Funnel actions attributed to the converting placement. ${windowLabel ?? ""}`.trim()}
-          table="placement_performance (tracking_basis=conversion)"
         >
           <CaveatNote text="Conversion-attributed rows — delivery spend not applicable for this tracking basis." />
           <ConversionFunnelTable rows={cts.placements.map((r) => ({ ...r, label: r.placement }))} labelHeader="Placement" />
@@ -208,7 +207,6 @@ function ConversionTrackingSections({ cts }: { cts: ConversionTrackingSignal }) 
         <SectionCard
           title="Conversion-attributed platforms"
           desc="Funnel actions · by converting platform"
-          table="platform_performance (tracking_basis=conversion)"
         >
           <CaveatNote text="Conversion-attributed rows — delivery spend not applicable for this tracking basis." />
           <ConversionFunnelTable rows={cts.platforms.map((r) => ({ ...r, label: r.platform }))} labelHeader="Platform" />
@@ -218,7 +216,6 @@ function ConversionTrackingSections({ cts }: { cts: ConversionTrackingSignal }) 
         <SectionCard
           title="Conversion-attributed devices"
           desc="Funnel actions · by converting device"
-          table="device_performance (tracking_basis=conversion)"
         >
           <CaveatNote text="Conversion-attributed rows — delivery spend not applicable for this tracking basis." />
           <ConversionFunnelTable rows={cts.devices.map((r) => ({ ...r, label: r.device }))} labelHeader="Device" />
@@ -299,7 +296,6 @@ export function PlacementsView() {
                   section={SECTION}
                   title="Placements"
                   subtitle="Conversion-attributed placement signal · no delivery-based runs yet"
-                  table="placement_performance, platform_performance, device_performance"
                   tabs="analysis"
                   account={acct}
                 />
@@ -345,7 +341,6 @@ export function PlacementsView() {
                 section={SECTION}
                 title="Placements"
                 subtitle="Delivery by placement · re-rank by KPI · click for breakdown"
-                table="v3_placement_signal, c4e_placement_signal"
                 tabs="analysis"
                 account={acct}
               />
