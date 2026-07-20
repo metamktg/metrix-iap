@@ -3,7 +3,7 @@
 // Metrix-branded / white-label report composition, scoped to the account.
 // Sub-tabs: Report preview (Internal vs Client mode) | Branding & export.
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useAccount, useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getReportBuilder } from "@/lib/data/metrixSeedAdapter";
@@ -54,9 +54,18 @@ export function NewReportView() {
   const reportRange = override ?? globalRange;
 
   const { data: settings } = useGetReportSettings(manager.id);
+  // Double-tap guard: generateFireRef blocks a second createReport() call
+  // synchronously (before any re-render); generateFiring drives the disabled
+  // state so the button disables in the very next render triggered by
+  // setGenerateFiring(true) — before mutation.isPending catches up.
+  const generateFireRef = useRef(false);
+  const [generateFiring, setGenerateFiring] = useState(false);
+
   const { mutate: createReport, isPending: generating } = useCreateWorkspaceReport({
     mutation: {
       onSuccess: async (result) => {
+        generateFireRef.current = false;
+        setGenerateFiring(false);
         await queryClient.invalidateQueries({
           queryKey: getListWorkspaceReportsQueryKey(manager.id),
         });
@@ -78,6 +87,8 @@ export function NewReportView() {
         }
       },
       onError: () => {
+        generateFireRef.current = false;
+        setGenerateFiring(false);
         toast({
           variant: "destructive",
           title: "Couldn't generate the report",
@@ -98,15 +109,25 @@ export function NewReportView() {
   }
 
   function handleGenerate(rbSections: string[], chosenFormat: string) {
-    if (generating || !adAccountId) return;
+    if (generateFireRef.current || generating || !adAccountId) return;
+    generateFireRef.current = true;
+    setGenerateFiring(true);
     const selected = rbSections.filter((s) => !excludedSections.has(s));
-    if (selected.length === 0) return;
+    if (selected.length === 0) {
+      generateFireRef.current = false;
+      setGenerateFiring(false);
+      return;
+    }
     const windowLabel = reportRange ? formatIsoRange(reportRange) : null;
     const model = buildReportModel(seed, adAccountId, mode, {
       selectedSections: selected,
       windowLabel,
     });
-    if (!model) return;
+    if (!model) {
+      generateFireRef.current = false;
+      setGenerateFiring(false);
+      return;
+    }
     const branding = mode === "internal" ? "metrix" : "white_label";
     const summary = `${selected.length} of ${rbSections.length} sections · ${
       windowLabel ? `window ${windowLabel}` : "no data window"
@@ -326,7 +347,7 @@ export function NewReportView() {
                         <div className="flex items-center gap-3 flex-wrap">
                           <button
                             onClick={() => handleGenerate(rb.report_sections, chosenFormat)}
-                            disabled={generating || rb.report_sections.length - excludedSections.size === 0}
+                            disabled={generating || generateFiring || rb.report_sections.length - excludedSections.size === 0}
                             className="inline-flex items-center gap-2 h-9 px-4 rounded-md bg-primary text-primary-foreground text-body font-semibold transition-opacity hover:opacity-90 disabled:opacity-50"
                           >
                             {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
