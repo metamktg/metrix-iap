@@ -27,12 +27,16 @@ import {
   useListAnalysisRuns,
   useListWorkspaceReports, useListManualImports,
   useStartManualAnalysisRun, getGetMetrixSeedQueryKey,
+  useCreateWorkspaceReport, getListWorkspaceReportsQueryKey,
 } from "@workspace/api-client-react";
-import type { AnalysisRun } from "@workspace/api-client-react";
+import type { AnalysisRun, GeneratedReportCreateInput } from "@workspace/api-client-react";
 import { useGenerationRun } from "@/components/generation/GenerationControls";
 import { useToast } from "@/hooks/use-toast";
 import type { AdAccount, StrategyData, BriefBuilder } from "@/lib/data/seedTypes";
 import { computeStaleStages } from "./staleStageDetection";
+import { useMetrixSeed } from "@/contexts/MetrixDataContext";
+import { getReportBuilder } from "@/lib/data/metrixSeedAdapter";
+import { buildReportModel, serializeReportModel, downloadReportExport, parseReportModel } from "@/lib/reportExport";
 import {
   BarChart3, Layers, FileText, Database, FileBarChart,
   CheckCircle2, Lock, Loader2, X,
@@ -662,6 +666,10 @@ function CommandHub({
   onStartAnalysis,
   onGenerateStrategy,
   onGenerateBriefs,
+  reportGenerating,
+  reportError,
+  reportDone,
+  onGenerateReport,
 }: {
   stage: Stage;
   onClose: () => void;
@@ -711,6 +719,10 @@ function CommandHub({
   onStartAnalysis: (range: AnalysisDateRange) => Promise<void>;
   onGenerateStrategy: (analysisRunId?: string) => void;
   onGenerateBriefs: () => void;
+  reportGenerating: boolean;
+  reportError: string | null;
+  reportDone: boolean;
+  onGenerateReport: (mode: "internal" | "client") => void;
 }) {
   const popupRef = useRef<HTMLDivElement>(null);
 
@@ -724,7 +736,8 @@ function CommandHub({
 
   const isRunning = (stage === "analysis" && analysisRunning)
     || (stage === "strategy" && strategyRunning)
-    || (stage === "briefs"   && briefsRunning);
+    || (stage === "briefs"   && briefsRunning)
+    || (stage === "report"   && reportGenerating);
 
   const elapsedSeconds = stage === "analysis" ? analysisElapsedSeconds
     : stage === "strategy" ? strategyElapsedSeconds
@@ -768,12 +781,14 @@ function CommandHub({
     onClose();
   }
 
-  // Pre-execution confirmation step for analysis / strategy / briefs
-  const [pendingConfirm, setPendingConfirm] = useState<"analysis" | "strategy" | "briefs" | null>(null);
+  // Pre-execution confirmation step for analysis / strategy / briefs / report
+  const [pendingConfirm, setPendingConfirm] = useState<"analysis" | "strategy" | "briefs" | "report" | null>(null);
   const [localDateRange, setLocalDateRange] = useState<AnalysisDateRange>("30d");
   // Which analysis run the user wants to ground strategy in.
   // Defaults to latest successful run when the confirmation panel opens.
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  // Report delivery mode selection (internal vs client-facing)
+  const [reportMode, setReportMode] = useState<"internal" | "client">("internal");
   useEffect(() => {
     if (pendingConfirm === "strategy") {
       const best = analysisRuns.find((r) => r.status === "success") ?? analysisRuns[0];
@@ -844,6 +859,22 @@ function CommandHub({
               className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-primary-btn opacity-40 cursor-not-allowed"
             >
               <Sparkles className="w-3.5 h-3.5" /> Draft Briefs
+            </button>
+          </div>
+        );
+      }
+      if (stage === "report") {
+        return (
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-1.5">
+              <Loader2 className="w-3.5 h-3.5 text-amber-400/70 animate-spin shrink-0" />
+              <span className="text-label text-amber-400/65 font-medium">Composing report…</span>
+            </div>
+            <button
+              disabled
+              className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-primary-btn opacity-40 cursor-not-allowed"
+            >
+              <Sparkles className="w-3.5 h-3.5" /> Generate Report
             </button>
           </div>
         );
@@ -1116,31 +1147,107 @@ function CommandHub({
       );
     }
 
-    if (stage === "report") return (
-      <div className="flex flex-wrap gap-1.5">
-        <button
-          onClick={() => goTo("/app/reports/new")}
-          className={cn(
-            "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
-            reportComplete ? "mx-secondary-btn" : briefsComplete ? "mx-primary-btn" : "mx-secondary-btn opacity-50",
+    if (stage === "report") {
+      // ── Success ─────────────────────────────────────────────────────────
+      if (reportDone) return (
+        <div className="flex flex-col gap-2.5">
+          <div className="flex items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400/70 shrink-0" />
+            <span className="text-label text-emerald-400/65 font-medium">Report saved &amp; downloaded</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              onClick={() => goTo("/app/reports/history")}
+              className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-primary-btn"
+            >
+              View History
+            </button>
+            <button
+              onClick={() => goTo("/app/reports/new")}
+              className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
+            >
+              <RefreshCw className="w-3.5 h-3.5" /> New Report
+            </button>
+          </div>
+        </div>
+      );
+
+      // ── Confirmation step ────────────────────────────────────────────────
+      if (pendingConfirm === "report") return (
+        <div className="flex flex-col gap-2.5">
+          <div className="rounded-lg border border-primary/15 bg-primary/[0.05] px-2.5 py-2 space-y-1">
+            <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/35">Delivery mode</p>
+            <div className="flex items-center gap-1 rounded-md border border-border/40 p-0.5 w-fit mt-1.5">
+              {(["internal", "client"] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setReportMode(m)}
+                  className={cn(
+                    "h-6 px-2.5 rounded text-[9px] font-semibold transition-colors",
+                    reportMode === m
+                      ? "bg-white/[0.08] text-foreground"
+                      : "text-muted-foreground/60 hover:text-foreground",
+                  )}
+                >
+                  {m === "internal" ? "Internal" : "Client-facing"}
+                </button>
+              ))}
+            </div>
+            <p className="text-label text-muted-foreground/50 leading-relaxed pt-0.5">
+              {reportMode === "internal"
+                ? "Full Metrix branding · for the agency dashboard"
+                : "White-labeled for the client · removes Metrix marks"}
+            </p>
+          </div>
+          {reportError && (
+            <p className="text-label text-red-400 leading-relaxed">{reportError}</p>
           )}
-          disabled={!briefsComplete && !reportComplete}
-        >
-          {reportComplete
-            ? <><RefreshCw className="w-3.5 h-3.5" /> New Report</>
-            : <><Sparkles className="w-3.5 h-3.5" /> Generate Report</>
-          }
-        </button>
-        {reportComplete && (
+          <div className="flex gap-1.5">
+            <button
+              onClick={() => { setPendingConfirm(null); onGenerateReport(reportMode); onClose(); }}
+              className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-primary-btn"
+            >
+              <Sparkles className="w-3.5 h-3.5" /> Generate Report
+            </button>
+            <button
+              onClick={() => setPendingConfirm(null)}
+              className="inline-flex items-center text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      );
+
+      // ── Default: prompt to generate or view history ──────────────────────
+      return (
+        <div className="flex flex-wrap gap-1.5">
           <button
-            onClick={() => goTo("/app/reports/history")}
-            className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
+            onClick={() => briefsComplete && setPendingConfirm("report" as typeof pendingConfirm)}
+            disabled={!briefsComplete}
+            className={cn(
+              "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
+              !briefsComplete
+                ? "opacity-30 cursor-not-allowed mx-secondary-btn"
+                : reportComplete ? "mx-secondary-btn" : "mx-primary-btn",
+            )}
           >
-            View History
+            {reportComplete
+              ? <><RefreshCw className="w-3.5 h-3.5" /> New Report</>
+              : <><Sparkles className="w-3.5 h-3.5" /> Generate Report</>
+            }
           </button>
-        )}
-      </div>
-    );
+          {reportComplete && (
+            <button
+              onClick={() => goTo("/app/reports/history")}
+              className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
+            >
+              View History
+            </button>
+          )}
+        </div>
+      );
+    }
 
     if (stage === "rerun") return (
       <div className="flex flex-wrap gap-1.5">
@@ -1377,6 +1484,7 @@ export function LoopCommandChain({
 
   const queryClient = useQueryClient();
   const { toast }   = useToast();
+  const seed        = useMetrixSeed();
 
   const strategyGen = useGenerationRun(accountId, "strategy");
   const briefsGen   = useGenerationRun(accountId, "briefs");
@@ -1542,6 +1650,76 @@ export function LoopCommandChain({
     }
   };
 
+  // ── Report generation (fired from CommandHub confirmation) ───────────────
+  const [reportGenerating, setReportGenerating] = useState(false);
+  const [reportError, setReportError]           = useState<string | null>(null);
+  const [reportDone, setReportDone]             = useState(false);
+  const reportFireRef = useRef(false);
+
+  const { mutate: createReport } = useCreateWorkspaceReport({
+    mutation: {
+      onSuccess: async (result) => {
+        await queryClient.invalidateQueries({
+          queryKey: getListWorkspaceReportsQueryKey(managerId),
+        });
+        const model = parseReportModel(result.report.model_json);
+        if (model) {
+          await downloadReportExport(result.report.export_format, model);
+        }
+        setReportGenerating(false);
+        setReportDone(true);
+        reportFireRef.current = false;
+        toast({
+          title: "Report generated",
+          description: `"${result.report.title}" was saved to Report History.`,
+          duration: 4000,
+        });
+      },
+      onError: (err) => {
+        const msg = err instanceof Error ? err.message : "Could not generate the report — please try again.";
+        setReportError(msg);
+        setReportGenerating(false);
+        reportFireRef.current = false;
+      },
+    },
+  });
+
+  const handleGenerateReport = (mode: "internal" | "client") => {
+    if (reportFireRef.current) return;
+    const rb = getReportBuilder(seed, accountId);
+    if (!rb) return;
+    const windowLabel = analysisRun?.date_start && analysisRun?.date_end
+      ? `${analysisRun.date_start} – ${analysisRun.date_end}`
+      : null;
+    const model = buildReportModel(seed, accountId, mode, {
+      selectedSections: rb.report_sections,
+      windowLabel,
+    });
+    if (!model) return;
+    reportFireRef.current = true;
+    setReportGenerating(true);
+    setReportError(null);
+    setReportDone(false);
+    const branding = mode === "internal" ? "metrix" : "white_label";
+    const summary = `${rb.report_sections.length} sections · ${
+      windowLabel ? `window ${windowLabel}` : "no data window"
+    } · ${mode === "internal" ? "internal" : "client-facing"} delivery.`;
+    const body: GeneratedReportCreateInput = {
+      ad_account_id: accountId,
+      title: model.docTitle,
+      mode,
+      branding,
+      export_format: (rb.export_formats[0] ?? "pdf") as GeneratedReportCreateInput["export_format"],
+      section_count: rb.report_sections.length,
+      range_start: analysisRun?.date_start ?? null,
+      range_end: analysisRun?.date_end ?? null,
+      range_source: analysisRun?.date_start ? "global" : null,
+      summary,
+      model_json: serializeReportModel(model),
+    };
+    createReport({ workspaceId: managerId, data: body });
+  };
+
   const strategy     = iap?.strategy ?? null;
   const briefBuilder = iap?.brief_builder ?? null;
   const loopStatus   = iap?.loop_status ?? null;
@@ -1568,7 +1746,7 @@ export function LoopCommandChain({
   });
 
   const completeCount = [dataComplete, analysisComplete, strategyComplete, briefsComplete, reportComplete].filter(Boolean).length;
-  const anyRunning    = analysisRunning || strategyRunning || briefsRunning;
+  const anyRunning    = analysisRunning || strategyRunning || briefsRunning || reportGenerating;
 
   const toggle = (s: Stage) => setActiveStage((prev) => (prev === s ? null : s));
 
@@ -1695,10 +1873,10 @@ export function LoopCommandChain({
           <StageTile
             stage="report"
             isComplete={reportComplete}
-            isRunning={false}
+            isRunning={reportGenerating}
             isStale={false}
-            isNext={briefsComplete && !reportComplete}
-            isLocked={!briefsComplete && !reportComplete}
+            isNext={briefsComplete && !reportComplete && !reportGenerating}
+            isLocked={!briefsComplete && !reportComplete && !reportGenerating}
             isActive={activeStage === "report"}
             elapsedSeconds={0}
             onClick={() => toggle("report")}
@@ -1765,6 +1943,10 @@ export function LoopCommandChain({
           onStartAnalysis={handleStartAnalysis}
           onGenerateStrategy={(runId) => strategyGen.start({ analysis_run_id: runId })}
           onGenerateBriefs={() => briefsGen.start()}
+          reportGenerating={reportGenerating}
+          reportError={reportError}
+          reportDone={reportDone}
+          onGenerateReport={handleGenerateReport}
         />
       )}
     </>
