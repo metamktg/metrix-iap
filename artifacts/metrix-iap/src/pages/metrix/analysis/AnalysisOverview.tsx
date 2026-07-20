@@ -984,8 +984,8 @@ export function AnalysisOverview() {
                           <div className="flex items-center gap-2">
                             <s.Icon className="w-3.5 h-3.5 text-primary" />
                             <span className="text-title font-semibold text-foreground">{s.label}</span>
+                            <InfoTooltip content={s.desc} />
                           </div>
-                          <p className={TYPE.caption}>{s.desc}</p>
                           <div className="flex items-center justify-between mt-auto pt-1">
                             <span className="text-label font-mono text-muted-foreground/70">{s.stat}</span>
                             <CrossLink to={s.to} label="Open" />

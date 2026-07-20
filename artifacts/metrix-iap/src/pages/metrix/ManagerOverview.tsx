@@ -76,11 +76,7 @@ export function ManagerOverview() {
             </div>
             <div className="space-y-1.5">
               <h2 className="text-base font-semibold text-foreground">Add your first ad account</h2>
-              <p className="text-body text-muted-foreground/70 leading-relaxed">
-                Connect a live Meta ad account, or create a manual account and upload exported
-                reports. Every Metrix module scopes to a single ad account — analysis surfaces
-                stay honestly pending until real data is processed.
-              </p>
+              <p className="text-body text-muted-foreground/70">Connect Meta or upload reports.</p>
             </div>
             <button
               onClick={() => setAddOpen(true)}

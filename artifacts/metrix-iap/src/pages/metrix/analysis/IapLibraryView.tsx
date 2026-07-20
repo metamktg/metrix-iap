@@ -404,9 +404,7 @@ export function IapLibraryView() {
                           <p className="text-caption font-medium text-amber-300/90">
                             {unmappedCellIds.size} creative {unmappedCellIds.size === 1 ? "cell" : "cells"} not fully mapped to IAP library
                           </p>
-                          <p className="text-label text-muted-foreground/70 leading-relaxed">
-                            {unmappedCellIds.size === 1 ? "This cell has" : "These cells have"} performance data but no library entry — variable codes, copy, and creative assets may be missing.
-                          </p>
+                          <p className="text-label text-muted-foreground/70">Missing library entry — assets may be incomplete.</p>
                         </div>
                         <button
                           onClick={() => setCreativeLibraryOpen(true)}

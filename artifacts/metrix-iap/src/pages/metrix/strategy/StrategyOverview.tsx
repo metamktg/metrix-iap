@@ -358,9 +358,7 @@ export function StrategyOverview() {
                     runningLabel="Generating strategy…"
                   />
                 ) : (
-                  <p className="text-caption text-muted-foreground/70">
-                    Strategy generation needs analysis data — run the analysis pipeline for this account first.
-                  </p>
+                  <p className="text-caption text-muted-foreground/70">Needs completed analysis first.</p>
                 )}
               </div>
             </div>

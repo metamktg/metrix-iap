@@ -52,9 +52,7 @@ export function IntegrationsView() {
             <ArrowLeft className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground/40" />
             <div className="space-y-1.5">
               <p className="text-body font-medium text-foreground/80">Agency view only</p>
-              <p className="text-label leading-relaxed">
-                Ad account integrations are managed at the agency level. Switch to the agency view to connect accounts or manage imports.
-              </p>
+              <p className="text-label text-muted-foreground/60">Connect or manage integrations there.</p>
               <button
                 onClick={selectManager}
                 className="mt-2 inline-flex items-center gap-1.5 text-label font-semibold text-primary border border-primary/30 bg-primary/10 hover:bg-primary/15 rounded-lg px-3 py-1.5 transition-colors"
