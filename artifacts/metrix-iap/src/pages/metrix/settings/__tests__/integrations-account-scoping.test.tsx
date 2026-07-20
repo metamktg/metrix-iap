@@ -54,6 +54,7 @@ import {
   useListMetaAdAccounts,
   useSelectMetaAdAccount,
   useDisconnectMetaAccount,
+  useRunMetaReports,
 } from "@workspace/api-client-react";
 import { AccountProvider } from "@/contexts/AccountContext";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -102,6 +103,9 @@ beforeEach(() => {
       mutate: () => opts?.mutation?.onError?.(new Error("Disconnect failed")),
       isPending: false,
     }) as ReturnType<typeof useDisconnectMetaAccount>
+  );
+  vi.mocked(useRunMetaReports).mockImplementation(
+    () => ({ mutate: vi.fn(), isPending: false }) as unknown as ReturnType<typeof useRunMetaReports>
   );
 });
 
@@ -401,5 +405,74 @@ describe("manager (agency) view", () => {
     // the message rather than swallowing it.
     fireEvent.click(disconnectBtn);
     expect(document.body.textContent).toContain("Disconnect failed");
+  });
+
+  it('"Run report pulls" button is disabled while reports are pending', () => {
+    // isPending: true simulates an in-flight runReports mutation. The button
+    // must be disabled to prevent overlapping Meta API calls.
+    vi.mocked(useRunMetaReports).mockImplementation(
+      () => ({ mutate: vi.fn(), isPending: true }) as unknown as ReturnType<typeof useRunMetaReports>
+    );
+    vi.mocked(useGetMetaConnection).mockReturnValue({
+      data: {
+        connected: true,
+        account: {
+          ad_account_id: "act_123",
+          account_name: "Pilot Account",
+          token_status: "active",
+          currency: "USD",
+          timezone: "America/New_York",
+          connected_at: "2026-01-01T00:00:00Z",
+        },
+        reports: [],
+        pending_selection: false,
+        pilot_mode: true,
+      },
+      isLoading: false,
+    } as ReturnType<typeof useGetMetaConnection>);
+    select("manager", null);
+    renderView();
+
+    const runBtn = screen.getByTestId("button-run-reports");
+    expect(runBtn).toBeTruthy();
+    expect((runBtn as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("runReports mutation error surfaces an error message in the UI", () => {
+    // When runReports.mutate() triggers onError, the error banner must appear.
+    vi.mocked(useRunMetaReports).mockImplementation(
+      (opts?: { mutation?: { onError?: (err: unknown) => void } }) =>
+        ({
+          mutate: () => opts?.mutation?.onError?.(new Error("Report pull failed")),
+          isPending: false,
+        }) as unknown as ReturnType<typeof useRunMetaReports>
+    );
+    vi.mocked(useGetMetaConnection).mockReturnValue({
+      data: {
+        connected: true,
+        account: {
+          ad_account_id: "act_123",
+          account_name: "Pilot Account",
+          token_status: "active",
+          currency: "USD",
+          timezone: "America/New_York",
+          connected_at: "2026-01-01T00:00:00Z",
+        },
+        reports: [],
+        pending_selection: false,
+        pilot_mode: true,
+      },
+      isLoading: false,
+    } as ReturnType<typeof useGetMetaConnection>);
+    select("manager", null);
+    renderView();
+
+    const runBtn = screen.getByTestId("button-run-reports");
+    expect(runBtn).toBeTruthy();
+
+    // Clicking the button triggers mutate() which fires onError with a
+    // synthetic error. The component must surface the message.
+    fireEvent.click(runBtn);
+    expect(document.body.textContent).toContain("Report pull failed");
   });
 });
