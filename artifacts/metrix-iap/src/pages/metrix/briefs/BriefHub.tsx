@@ -89,8 +89,7 @@ export function BriefHub() {
               {/* Action row */}
               <div className="flex items-center justify-between gap-4">
                 <p className={cn(TYPE.caption, "text-muted-foreground")}>
-                  {acct.name} · {briefs.length} brief
-                  {briefs.length !== 1 ? "s" : ""} · {activeBriefs.length} active
+                  {briefs.length} brief{briefs.length !== 1 ? "s" : ""} · {activeBriefs.length} active
                 </p>
                 <GenerateButton
                   onClick={generation.start}
@@ -138,8 +137,7 @@ export function BriefHub() {
                     <Activity className="w-4 h-4 text-primary shrink-0" />
                   )}
                   <p className={cn(TYPE.body, "text-foreground font-semibold")}>
-                    Briefs stage:{" "}
-                    <span className="capitalize">{briefsStage.status}</span>
+                    Stage: <span className="capitalize">{briefsStage.status}</span>
                   </p>
                   {generation.lastRun?.status === "success" && (
                     <ProvenanceBadge provenance="generated" />

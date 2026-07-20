@@ -76,7 +76,7 @@ export function CrossmapResultsView() {
               table="historical_matrix_4x4, performance_by_cell"
               account={acct}
             />
-            <RangeScopeBar grainNote="Crossmap joins planned cells to full flight-window performance — this import has no daily grain." />
+            <RangeScopeBar />
 
             {!rangeHasData || !mstInRange ? (
               <NoDataInRangeState
@@ -128,7 +128,7 @@ export function CrossmapResultsView() {
                             {cell.plain_text.headline && <div className="text-label text-muted-foreground/60 mt-0.5">{cell.plain_text.headline}</div>}
                           </Td>
                           <Td className={cn(cell.diagonal_role === "diag_down" && "text-primary", cell.diagonal_role === "diag_up" && "text-teal-300")}>{diag}</Td>
-                          <Td className="text-muted-foreground/60" >Not run</Td>
+                          <Td className="text-muted-foreground/40">—</Td>
                           <Td right>—</Td>
                           <Td right>—</Td>
                           <Td right>—</Td>
@@ -163,12 +163,9 @@ export function CrossmapResultsView() {
                 </tbody>
               </TableShell>
 
-              <div className="flex items-center gap-4">
-                <span className="text-caption text-muted-foreground/60">Click any row for the tile's granular performance</span>
-                <span className="ml-auto flex items-center gap-4">
-                  <CrossLink to="/app/mst/matrix" label="Open the matrix" />
-                  <CrossLink to="/app/analysis/library" label="Full IAP library" />
-                </span>
+              <div className="flex items-center justify-end gap-4">
+                <CrossLink to="/app/mst/matrix" label="Open the matrix" />
+                <CrossLink to="/app/analysis/library" label="Full IAP library" />
               </div>
             </div>
             </>

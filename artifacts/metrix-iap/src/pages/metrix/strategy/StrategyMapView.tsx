@@ -110,7 +110,7 @@ export function StrategyMapView() {
               account={acct}
             />
             <FlowCrumb {...fp} />
-            <RangeScopeBar grainNote="Pillar evidence aggregates each cell's full flight window — this import has no daily grain." />
+            <RangeScopeBar />
 
             {!rangeHasData ? (
               <NoDataInRangeState what="strategy map data" />

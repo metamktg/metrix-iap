@@ -42,7 +42,6 @@ export function MatrixGrid({ matrix, onCellClick }: { matrix: MSTMatrix; onCellC
               <div className={cn("p-2 flex flex-col justify-center rounded-l-lg border-l-2 my-0.5", ROW_COLOR[row.color] ?? "border-border/40")}>
                 <div className="text-body font-semibold text-foreground">{row.id}</div>
                 <div className="text-caption text-muted-foreground/80 leading-tight mt-0.5">{readableVariables(row.shared)}</div>
-                <div className="text-caption font-mono text-muted-foreground/75 mt-0.5">{row.shared}</div>
               </div>
               {matrix.columns.map((col) => {
                 const cell = cellOf(col.id, row.id);
@@ -119,7 +118,7 @@ export function MatrixBuilderView() {
               table="historical_matrix_4x4"
               account={acct}
             />
-            <RangeScopeBar grainNote="The matrix is a historical structure; tile pop-ups show each cell's full flight-window performance — this import has no daily grain." />
+            <RangeScopeBar />
             {!rangeHasData || !mstInRange ? (
               <NoDataInRangeState
                 what="MST data"

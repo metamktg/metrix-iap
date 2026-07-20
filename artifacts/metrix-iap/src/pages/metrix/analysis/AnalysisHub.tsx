@@ -109,7 +109,6 @@ export function AnalysisHub() {
               {/* Action row */}
               <div className="flex items-center justify-between gap-4">
                 <p className={cn(TYPE.caption, "text-muted-foreground")}>
-                  {acct.name} ·{" "}
                   {hasData
                     ? `${cellCount} cell${cellCount !== 1 ? "s" : ""} in latest run`
                     : "No analysis data yet"}
@@ -179,36 +178,24 @@ export function AnalysisHub() {
                   ) : (
                     <Activity className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                   )}
-                  <div className="min-w-0">
-                    <p className={cn(TYPE.body, "text-foreground font-semibold")}>
-                      Analysis stage:{" "}
-                      <span className="capitalize">{analysisStage.status}</span>
-                    </p>
-                    {controls?.primary_control_read && (
-                      <p
-                        className={cn(TYPE.caption, "text-muted-foreground mt-1 leading-relaxed")}
-                      >
-                        {deriveLabel(controls.primary_control_read, 120)}
-                      </p>
-                    )}
-                  </div>
+                  <p className={cn(TYPE.body, "text-foreground font-semibold")}>
+                    Stage: <span className="capitalize">{analysisStage.status}</span>
+                  </p>
                 </div>
               )}
 
-              {/* Primary control read */}
+              {/* Primary control */}
               {controls?.primary_control && (
                 <div className="bg-card/60 border border-primary/25 rounded-xl px-4 py-3.5">
-                  <p className={cn(TYPE.label, "text-primary mb-1.5")}>
-                    Primary Control
-                  </p>
-                  <p
-                    className={cn(
-                      TYPE.body,
-                      "text-foreground leading-relaxed",
-                    )}
-                  >
+                  <p className={cn(TYPE.label, "text-primary mb-1.5")}>Primary Control</p>
+                  <p className={cn(TYPE.body, "text-foreground leading-relaxed")}>
                     {controls.primary_control}
                   </p>
+                  {controls.primary_control_read && (
+                    <p className={cn(TYPE.caption, "text-muted-foreground mt-1.5 leading-relaxed")}>
+                      {deriveLabel(controls.primary_control_read, 140)}
+                    </p>
+                  )}
                 </div>
               )}
 

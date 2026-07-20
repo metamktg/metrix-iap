@@ -73,9 +73,7 @@ export function MSTHub() {
               {/* Action row */}
               <div className="flex items-center justify-between gap-4">
                 <p className={cn(TYPE.caption, "text-muted-foreground")}>
-                  {acct.name} · {totalCells} library cell
-                  {totalCells !== 1 ? "s" : ""} · {matrixCellCount} matrix cell
-                  {matrixCellCount !== 1 ? "s" : ""}
+                  {totalCells} library cell{totalCells !== 1 ? "s" : ""} · {matrixCellCount} matrix cell{matrixCellCount !== 1 ? "s" : ""}
                 </p>
                 <a
                   href="/app/mst/concept-map"
@@ -123,8 +121,7 @@ export function MSTHub() {
                     <Activity className="w-4 h-4 text-primary shrink-0" />
                   )}
                   <p className={cn(TYPE.body, "text-foreground font-semibold")}>
-                    MST stage:{" "}
-                    <span className="capitalize">{mstStage.status}</span>
+                    Stage: <span className="capitalize">{mstStage.status}</span>
                   </p>
                 </div>
               )}

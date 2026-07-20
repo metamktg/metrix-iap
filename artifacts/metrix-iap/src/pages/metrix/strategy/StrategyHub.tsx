@@ -70,9 +70,7 @@ export function StrategyHub() {
               {/* Action row */}
               <div className="flex items-center justify-between gap-4">
                 <p className={cn(TYPE.caption, "text-muted-foreground")}>
-                  {acct.name} · {pillars.length} pillar
-                  {pillars.length !== 1 ? "s" : ""} · {icpCount} ICP profile
-                  {icpCount !== 1 ? "s" : ""}
+                  {pillars.length} pillar{pillars.length !== 1 ? "s" : ""} · {icpCount} ICP profile{icpCount !== 1 ? "s" : ""}
                 </p>
                 <GenerateButton
                   onClick={generation.start}
@@ -143,8 +141,7 @@ export function StrategyHub() {
                     <Activity className="w-4 h-4 text-primary shrink-0" />
                   )}
                   <p className={cn(TYPE.body, "text-foreground font-semibold")}>
-                    Strategy stage:{" "}
-                    <span className="capitalize">{strategyStage.status}</span>
+                    Stage: <span className="capitalize">{strategyStage.status}</span>
                   </p>
                   {generation.lastRun?.status === "success" && (
                     <ProvenanceBadge
