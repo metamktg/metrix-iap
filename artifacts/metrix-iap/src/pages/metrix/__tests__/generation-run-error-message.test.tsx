@@ -1,6 +1,6 @@
 // ─── Generation run error-message verbatim surfacing tests ───────────────
 //
-// Guards two error-surfacing paths in the generation layer:
+// Guards three error-surfacing paths in the generation layer:
 //
 //  1. GenerationErrorNote (pure component): "Last generation run failed: <msg>"
 //     must render the exact message prop — no truncation, no generic fallback.
@@ -9,17 +9,23 @@
 //     run.error_message when status === "error", falling back to a short
 //     sentinel only when error_message is absent — never silently returning null.
 //
+//  3. Polling-settlement toast: when a polled run transitions to "error", the
+//     toast description must equal run.error_message — not the generic fallback.
+//
 // Regression target: if the JSX text changes, the field name drifts, or the
 // null-coalescing logic flips, these tests fail loudly.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, cleanup, screen } from "@testing-library/react";
+import { render, cleanup, screen, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // ── Per-test mutable state ─────────────────────────────────────────────────
 
 let mockGenRunStatus: string | null = null;
 let mockGenErrorMessage: string | null = null;
+
+// Captured toast spy — shared so settlement tests can assert on it.
+const mockToastFn = vi.fn();
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -46,7 +52,7 @@ vi.mock("@workspace/api-client-react", async (importOriginal) => {
 });
 
 vi.mock("@/hooks/use-toast", () => ({
-  useToast: () => ({ toast: vi.fn() }),
+  useToast: () => ({ toast: mockToastFn }),
 }));
 
 // ── Imports (after mocks) ─────────────────────────────────────────────────
@@ -82,6 +88,7 @@ beforeEach(() => {
   cleanup();
   mockGenRunStatus = null;
   mockGenErrorMessage = null;
+  mockToastFn.mockClear();
 });
 
 // ── Tests ──────────────────────────────────────────────────────────────────
@@ -173,5 +180,124 @@ describe("useGenerationRun — lastError derived from run.error_message", () => 
     mockGenErrorMessage = null;
     renderHook("strategy");
     expect(screen.getByTestId("last-error").textContent).toBe("__null__");
+  });
+});
+
+// ── Stable harness component for settlement toast tests ───────────────────
+//
+// Must be declared at module scope so React sees a stable component identity
+// across rerender() calls. An inline function defined inside a helper creates
+// a new type per call, causing React to unmount/remount and losing hook state
+// (polling flag, settledRunIds ref) — which would prevent the settlement
+// effect from ever firing.
+
+function SettlementHarness({ kind }: { kind: GenerationKind }) {
+  useGenerationRun("acct-1", kind);
+  return null;
+}
+
+/**
+ * Renders SettlementHarness with a fresh QueryClient and returns the RTL
+ * rerender() helper pre-bound so callers can drive status transitions.
+ */
+function makeSettlementHarness(kind: GenerationKind) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, enabled: false } },
+  });
+  const utils = render(
+    <QueryClientProvider client={queryClient}>
+      <SettlementHarness kind={kind} />
+    </QueryClientProvider>,
+  );
+  const rerender = (nextKind: GenerationKind = kind) =>
+    utils.rerender(
+      <QueryClientProvider client={queryClient}>
+        <SettlementHarness kind={nextKind} />
+      </QueryClientProvider>,
+    );
+  return { rerender };
+}
+
+describe("useGenerationRun — polling-settlement toast shows real error_message", () => {
+  it("toast description equals run.error_message when polling settles to error (strategy)", async () => {
+    // Step 1: render with a running run — this triggers setPolling(true) in
+    // the hook's "keep polling while running" effect.
+    mockGenRunStatus = "running";
+    mockGenErrorMessage = null;
+    const { rerender } = makeSettlementHarness("strategy");
+    // Flush the synchronous effect that sets polling=true.
+    await act(async () => {});
+
+    // Step 2: transition the run to error with a known message.
+    // rerender() keeps the same QueryClient and SettlementHarness identity, so
+    // React preserves the hook instance (polling state + settledRunIds ref).
+    mockGenRunStatus = "error";
+    mockGenErrorMessage = "Zod validation failed: missing required field 'hypothesis'";
+    rerender();
+    await act(async () => {});
+
+    // The settlement effect fires: polling=true, status≠running, id unseen →
+    // toast is called with the real error_message, not the generic fallback.
+    expect(mockToastFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        description: "Zod validation failed: missing required field 'hypothesis'",
+        variant: "destructive",
+      }),
+    );
+  });
+
+  it("toast description equals run.error_message when polling settles to error (briefs)", async () => {
+    mockGenRunStatus = "running";
+    mockGenErrorMessage = null;
+    const { rerender } = makeSettlementHarness("briefs");
+    await act(async () => {});
+
+    mockGenRunStatus = "error";
+    mockGenErrorMessage = "Brief pillar IDs do not match strategy pillars";
+    rerender();
+    await act(async () => {});
+
+    expect(mockToastFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        description: "Brief pillar IDs do not match strategy pillars",
+        variant: "destructive",
+      }),
+    );
+  });
+
+  it("toast description falls back to generic message when error_message is null", async () => {
+    mockGenRunStatus = "running";
+    mockGenErrorMessage = null;
+    const { rerender } = makeSettlementHarness("strategy");
+    await act(async () => {});
+
+    mockGenRunStatus = "error";
+    mockGenErrorMessage = null;
+    rerender();
+    await act(async () => {});
+
+    expect(mockToastFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        description: "The generation run ended with an error.",
+        variant: "destructive",
+      }),
+    );
+  });
+
+  it("no destructive toast when polling settles to success", async () => {
+    mockGenRunStatus = "running";
+    mockGenErrorMessage = null;
+    const { rerender } = makeSettlementHarness("strategy");
+    await act(async () => {});
+
+    mockGenRunStatus = "success";
+    mockGenErrorMessage = null;
+    rerender();
+    await act(async () => {});
+
+    const destructiveCalls = mockToastFn.mock.calls.filter(
+      ([arg]) => (arg as { variant?: string }).variant === "destructive",
+    );
+    expect(destructiveCalls).toHaveLength(0);
   });
 });
