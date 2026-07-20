@@ -52,6 +52,7 @@ vi.mock("@workspace/api-client-react", async (importOriginal) => {
 import {
   useGetMetaConnection,
   useListMetaAdAccounts,
+  useSelectMetaAdAccount,
   useDisconnectMetaAccount,
 } from "@workspace/api-client-react";
 import { AccountProvider } from "@/contexts/AccountContext";
@@ -92,6 +93,10 @@ beforeEach(() => {
     isLoading: false,
     isError: false,
   } as ReturnType<typeof useListMetaAdAccounts>);
+  vi.mocked(useSelectMetaAdAccount).mockReturnValue({
+    mutate: vi.fn(),
+    isPending: false,
+  } as unknown as ReturnType<typeof useSelectMetaAdAccount>);
   vi.mocked(useDisconnectMetaAccount).mockImplementation(
     (opts?: { mutation?: { onError?: (err: unknown) => void } }) => ({
       mutate: () => opts?.mutation?.onError?.(new Error("Disconnect failed")),
@@ -319,6 +324,49 @@ describe("manager (agency) view", () => {
     expect(container.textContent).toContain("act_pilot_123");
     // And it must explain that the account is not visible to this profile.
     expect(container.textContent).toContain("not visible to this Meta profile");
+  });
+
+  it("AccountPicker 'Connect this account' button is disabled and mutate is not called while isPending is true", () => {
+    // Guard against double-submit: if isPending is true (a save is already in
+    // flight) the button must be disabled so a second click cannot fire mutate.
+    const mutate = vi.fn();
+    vi.mocked(useSelectMetaAdAccount).mockReturnValue({
+      mutate,
+      isPending: true,
+    } as unknown as ReturnType<typeof useSelectMetaAdAccount>);
+    vi.mocked(useGetMetaConnection).mockReturnValue({
+      data: {
+        connected: false,
+        pending_selection: true,
+        pilot_mode: true,
+      },
+      isLoading: false,
+    } as ReturnType<typeof useGetMetaConnection>);
+    vi.mocked(useListMetaAdAccounts).mockReturnValue({
+      data: {
+        accounts: [
+          { id: "act_aaa", name: "Brand Alpha", currency: "USD", timezone_name: "America/New_York" },
+        ],
+        pilot_required_account_id: null,
+        pilot_required_account_present: false,
+      },
+      isLoading: false,
+      isError: false,
+    } as ReturnType<typeof useListMetaAdAccounts>);
+    select("manager", null);
+    renderView();
+
+    // Pick the account row so `chosen` is set — this would normally enable the
+    // button, but isPending keeps it disabled.
+    fireEvent.click(screen.getByTestId("button-pick-account-act_aaa"));
+
+    const confirmBtn = screen.getByTestId("button-save-account-selection");
+    // Button must be disabled while a save is in flight.
+    expect((confirmBtn as HTMLButtonElement).disabled).toBe(true);
+
+    // Clicking a disabled button must not fire mutate.
+    fireEvent.click(confirmBtn);
+    expect(mutate).not.toHaveBeenCalled();
   });
 
   it("disconnect mutation error surfaces an error message and is not silently swallowed", () => {
