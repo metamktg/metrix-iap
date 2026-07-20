@@ -296,9 +296,8 @@ interface CellBarItem {
   resultType: string;
 }
 
-function CellPerfBars({ items, sortBy, resultNoun }: {
+function CellPerfBars({ items, resultNoun }: {
   items: CellBarItem[];
-  sortBy: CellSort;
   resultNoun: string;
 }) {
   if (items.length === 0) return null;
@@ -358,9 +357,8 @@ function CellPerfBars({ items, sortBy, resultNoun }: {
 // Each row shows: spend (proportional bar + value), CPA (color-coded badge),
 // CTR (badge) — so all three metrics are visible without a tooltip.
 
-function PlacementTable({ placements, resultNoun }: {
+function PlacementTable({ placements }: {
   placements: PlacementRollup[];
-  resultNoun: string;
 }) {
   if (placements.length === 0) return null;
   const maxSpend = Math.max(...placements.map((p) => p.spend), 1);
@@ -883,7 +881,6 @@ export function AnalysisOverview() {
                     >
                       <CellPerfBars
                         items={sortedCells}
-                        sortBy={cellSort}
                         resultNoun={term.Plural}
                       />
                     </SectionCard>
@@ -909,7 +906,6 @@ export function AnalysisOverview() {
                         >
                           <PlacementTable
                             placements={allPlacements}
-                            resultNoun={term.Plural}
                           />
                         </SectionCard>
                       )}
