@@ -8,7 +8,7 @@ import { TYPE } from "../typography";
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
-import { getAdAccount, getMST, getAnalysisData, getStrategyData } from "@/lib/data/metrixSeedAdapter";
+import { getAdAccount, getMST, getAnalysisData, getStrategyData, getAds } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ModuleScopeGate, PendingState,
   MetricTile, CrossLink, resultTerm, SectionCard, ConfidenceBadge,
@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import type {
   MSTMatrixColumn, MSTMatrixCell, ICPProfile, PlacementRow, AnalysisData,
+  AdRecord, ActiveHypothesis,
 } from "@/lib/data/seedTypes";
 import { cn } from "@/lib/utils";
 
@@ -382,10 +383,11 @@ function PlacementsAccordion({ rows }: { rows: PlacementRow[] }) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
+        title="Account-level placement signal — no per-profile breakdown available"
         className="flex items-center gap-1.5 text-caption font-medium text-muted-foreground/70 hover:text-foreground/80 transition-colors"
       >
         <MapPin className="w-3.5 h-3.5" />
-        Top placements
+        Account placements
         <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} />
       </button>
       {open && (
@@ -420,7 +422,7 @@ function PlacementsAccordion({ rows }: { rows: PlacementRow[] }) {
 
 function IcpProfileCard({
   profile, registerRef, flash, avatars, onAvatarClick, dna,
-  placementRows, avgCpa,
+  placementRows, avgCpa, hypotheses,
 }: {
   profile: ICPProfile;
   registerRef?: (el: HTMLDivElement | null) => void;
@@ -430,6 +432,7 @@ function IcpProfileCard({
   dna?: DnaVariable[];
   placementRows: PlacementRow[];
   avgCpa: number | null;
+  hypotheses?: ActiveHypothesis[];
 }) {
   const perf = profile.performance_data ?? null;
   const hasPerf = perf != null && (perf.spend != null || perf.cpa != null || perf.cvr_link_pct != null);
@@ -439,7 +442,9 @@ function IcpProfileCard({
     profile.demographic_foundation || profile.psychographic_profile ||
     profile.behavioral_signals || profile.funnel_entry_point,
   );
-  const hasCopy = Boolean(profile.message_resonance || (dna && dna.length > 0));
+  const hasCopy = Boolean(
+    profile.message_resonance || (dna && dna.length > 0) || (hypotheses && hypotheses.length > 0),
+  );
 
   function cpaColor(cpa: number | null): string {
     if (cpa == null || avgCpa == null || avgCpa <= 0) return "text-foreground/85";
@@ -531,6 +536,33 @@ function IcpProfileCard({
                     testId={`icp-dna-${profile.profile_id}`}
                   />
                 )}
+                {hypotheses && hypotheses.length > 0 && (
+                  <div>
+                    <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-1.5">
+                      Hypothesis test variants
+                    </p>
+                    <div className="space-y-1.5">
+                      {hypotheses.map((h) => (
+                        <div key={h.id} className="rounded-lg border border-border/25 bg-white/[0.015] px-3 py-2">
+                          {h.isolated_variable && (
+                            <span className="inline-block text-[9px] font-mono text-primary/70 border border-primary/25 px-1.5 py-0.5 rounded mb-1">
+                              {h.isolated_variable}
+                            </span>
+                          )}
+                          <DetailReveal
+                            label={deriveLabel(h.test_variant!, 64)}
+                            labelClassName={TYPE.body}
+                            eyebrow="Test variant"
+                            sections={[
+                              { text: h.test_variant! },
+                              ...(h.success_criteria ? [{ label: "Success criteria", text: h.success_criteria }] : []),
+                            ]}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -584,15 +616,17 @@ function IcpProfileCard({
 }
 
 // ─── Combinations panel ───────────────────────────────────────────────
-// Top-performing creative concepts by CPA from the cell performance data.
-// Deduped by concept name (best-CPA row per concept, results > 0 only).
+// Two sub-tables:
+//  1. Top creative concepts by CPA (deduped by concept from performance_by_cell)
+//  2. Top placement × platform combos by CPA (from v3_placement_signal)
 
 function CombosPanel({ analysis, resultNoun }: {
   analysis: AnalysisData | null | undefined;
   resultNoun: string;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const rows = useMemo(() => {
+
+  const conceptRows = useMemo(() => {
     const source = analysis?.performance_by_cell ?? [];
     const byCellId = new Map<string, typeof source[number]>();
     for (const r of source) {
@@ -613,56 +647,123 @@ function CombosPanel({ analysis, resultNoun }: {
     );
   }, [analysis]);
 
-  const visible = expanded ? rows : rows.slice(0, 10);
-  if (rows.length === 0) return null;
+  const placementRows = useMemo(() => {
+    const source = analysis?.v3_placement_signal ?? [];
+    return [...source]
+      .filter((r) => r.Results > 0 && r.CPA != null)
+      .sort((a, b) => (a.CPA ?? Infinity) - (b.CPA ?? Infinity));
+  }, [analysis]);
+
+  const visibleConcepts = expanded ? conceptRows : conceptRows.slice(0, 10);
+
+  if (conceptRows.length === 0 && placementRows.length === 0) return null;
 
   return (
-    <SectionCard title="Top combos" desc="Best-performing concepts by CPA" table="performance_by_cell">
-      <div className="rounded-xl border border-border/40 overflow-hidden bg-white/[0.015]">
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead className="sticky top-0 bg-surface-table z-10">
-              <tr className="border-b border-border/40">
-                <th className="text-label font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-3 py-2 text-left">Concept</th>
-                <th className="text-label font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-3 py-2 text-left">Cell</th>
-                <th className="text-label font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-3 py-2 text-right">Spend</th>
-                <th className="text-label font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-3 py-2 text-right">Results</th>
-                <th className="text-label font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-3 py-2 text-right">CPA</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visible.map((r, i) => (
-                <tr key={r.cell_id + i} className="border-b border-border/20 hover:bg-white/[0.02]">
-                  <td className="px-3 py-2 text-body text-foreground/85 font-medium max-w-[200px] truncate">
-                    {r.book2_concept_name}
-                  </td>
-                  <td className="px-3 py-2">
-                    <span className="text-[9px] font-mono text-muted-foreground/55 border border-border/30 px-1.5 py-0.5 rounded leading-none">
-                      {r.cell_id}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 text-right text-body tabular-nums text-foreground/70">
-                    {fmtUSD(r["Amount spent (USD)"], 0)}
-                  </td>
-                  <td className="px-3 py-2 text-right text-body tabular-nums text-foreground/70">
-                    {fmtNum(r.Results)} {resultNoun}
-                  </td>
-                  <td className="px-3 py-2 text-right text-body font-semibold tabular-nums text-foreground/85">
-                    {r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {rows.length > 10 && (
-          <button
-            onClick={() => setExpanded((o) => !o)}
-            className="w-full flex items-center justify-center gap-1.5 py-2.5 text-body font-medium text-muted-foreground/60 hover:text-foreground/80 hover:bg-white/[0.02] border-t border-border/30 transition-colors"
-          >
-            {expanded ? "Show fewer" : `Show all ${rows.length} combos`}
-            <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", expanded && "rotate-180")} />
-          </button>
+    <SectionCard
+      title="Creative combos"
+      desc="Concepts by CPA · placement × platform by CPA"
+      table="performance_by_cell"
+    >
+      <div className="space-y-4">
+        {/* Sub-table 1: top concepts */}
+        {conceptRows.length > 0 && (
+          <div>
+            <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-1.5">
+              Top concepts by CPA
+            </p>
+            <div className="rounded-xl border border-border/40 overflow-hidden bg-white/[0.015]">
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead className="sticky top-0 bg-surface-table z-10">
+                    <tr className="border-b border-border/40">
+                      <th className="text-label font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-3 py-2 text-left">Concept</th>
+                      <th className="text-label font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-3 py-2 text-left">Cell</th>
+                      <th className="text-label font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-3 py-2 text-right">Spend</th>
+                      <th className="text-label font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-3 py-2 text-right">Results</th>
+                      <th className="text-label font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-3 py-2 text-right">CPA</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visibleConcepts.map((r, i) => (
+                      <tr key={r.cell_id + i} className="border-b border-border/20 hover:bg-white/[0.02]">
+                        <td className="px-3 py-2 text-body text-foreground/85 font-medium max-w-[200px] truncate">
+                          {r.book2_concept_name}
+                        </td>
+                        <td className="px-3 py-2">
+                          <span className="text-[9px] font-mono text-muted-foreground/55 border border-border/30 px-1.5 py-0.5 rounded leading-none">
+                            {r.cell_id}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-right text-body tabular-nums text-foreground/70">
+                          {fmtUSD(r["Amount spent (USD)"], 0)}
+                        </td>
+                        <td className="px-3 py-2 text-right text-body tabular-nums text-foreground/70">
+                          {fmtNum(r.Results)} {resultNoun}
+                        </td>
+                        <td className="px-3 py-2 text-right text-body font-semibold tabular-nums text-foreground/85">
+                          {r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {conceptRows.length > 10 && (
+                <button
+                  onClick={() => setExpanded((o) => !o)}
+                  className="w-full flex items-center justify-center gap-1.5 py-2.5 text-body font-medium text-muted-foreground/60 hover:text-foreground/80 hover:bg-white/[0.02] border-t border-border/30 transition-colors"
+                >
+                  {expanded ? "Show fewer" : `Show all ${conceptRows.length} concepts`}
+                  <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", expanded && "rotate-180")} />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Sub-table 2: placement × platform */}
+        {placementRows.length > 0 && (
+          <div>
+            <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-1.5">
+              Top placements by CPA
+            </p>
+            <div className="rounded-xl border border-border/40 overflow-hidden bg-white/[0.015]">
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead className="sticky top-0 bg-surface-table z-10">
+                    <tr className="border-b border-border/40">
+                      <th className="text-label font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-3 py-2 text-left">Placement</th>
+                      <th className="text-label font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-3 py-2 text-left">Platform</th>
+                      <th className="text-label font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-3 py-2 text-right">Spend</th>
+                      <th className="text-label font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-3 py-2 text-right">Results</th>
+                      <th className="text-label font-mono uppercase tracking-widest text-muted-foreground/70 font-semibold px-3 py-2 text-right">CPA</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {placementRows.slice(0, 8).map((r, i) => (
+                      <tr key={r.Placement + r.Platform + i} className="border-b border-border/20 hover:bg-white/[0.02]">
+                        <td className="px-3 py-2 text-body text-foreground/85 font-medium max-w-[160px] truncate">
+                          {r.Placement}
+                        </td>
+                        <td className="px-3 py-2 text-body text-muted-foreground/70 capitalize">
+                          {r.Platform}
+                        </td>
+                        <td className="px-3 py-2 text-right text-body tabular-nums text-foreground/70">
+                          {fmtUSD(r["Amount spent (USD)"], 0)}
+                        </td>
+                        <td className="px-3 py-2 text-right text-body tabular-nums text-foreground/70">
+                          {fmtNum(r.Results)} {resultNoun}
+                        </td>
+                        <td className="px-3 py-2 text-right text-body font-semibold tabular-nums text-foreground/85">
+                          {r.CPA != null ? fmtUSD(r.CPA) : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </SectionCard>
@@ -740,7 +841,8 @@ export function AvatarsView() {
   const mst = getMST(seed, adAccountId);
   const matrix = mst?.historical_matrix_4x4 ?? null;
   const analysis = getAnalysisData(seed, adAccountId);
-  const icpProfiles = getStrategyData(seed, adAccountId)?.icp_profiles ?? [];
+  const strategyData = getStrategyData(seed, adAccountId);
+  const icpProfiles = strategyData?.icp_profiles ?? [];
   const term = resultTerm(account);
 
   const columnIds = useMemo(() => matrix?.columns.map((c) => c.id) ?? [], [matrix]);
@@ -779,6 +881,37 @@ export function AvatarsView() {
     [analysis],
   );
 
+  // Ads indexed by cell code for drawer ad breakdown
+  const adsByCell = useMemo(() => {
+    const ads = getAds(seed, adAccountId);
+    const map = new Map<string, AdRecord[]>();
+    for (const ad of ads) {
+      if (!ad.cell) continue;
+      const list = map.get(ad.cell) ?? [];
+      list.push(ad);
+      map.set(ad.cell, list);
+    }
+    return map;
+  }, [seed, adAccountId]);
+
+  // Hypothesis test variants indexed by profile_id (via pillar → target_icps)
+  const hypothesesByProfile = useMemo(() => {
+    const hyps = strategyData?.active_hypotheses ?? [];
+    const pillars = strategyData?.message_pillars ?? [];
+    const pillarTargets = new Map(pillars.map((p) => [p.id, p.target_icps ?? []]));
+    const result = new Map<string, ActiveHypothesis[]>();
+    for (const h of hyps) {
+      if (!h.test_variant) continue;
+      const targets = h.pillar_id ? (pillarTargets.get(h.pillar_id) ?? []) : [];
+      for (const profileId of targets) {
+        const list = result.get(profileId) ?? [];
+        list.push(h);
+        result.set(profileId, list);
+      }
+    }
+    return result;
+  }, [strategyData]);
+
   // ─── Sorted / filtered lists ───────────────────────────────────────
 
   const sortedColumns = useMemo(() => {
@@ -790,7 +923,11 @@ export function AvatarsView() {
         case "spend": return (pb.spend ?? 0) - (pa.spend ?? 0);
         case "cpa": return (pa.cpa ?? Infinity) - (pb.cpa ?? Infinity);
         case "cvr": return (pb.cvr ?? -1) - (pa.cvr ?? -1);
-        case "confidence": return 0;
+        case "confidence": {
+          const da = dnaByColumn.get(a.id);
+          const db = dnaByColumn.get(b.id);
+          return (db?.measuredCellIds.length ?? 0) - (da?.measuredCellIds.length ?? 0);
+        }
       }
     });
   }, [matrix, perfByColumn, sortBy]);
@@ -950,6 +1087,7 @@ export function AvatarsView() {
                               dna={dnaForProfile(p.profile_id)}
                               placementRows={placementRows}
                               avgCpa={avgCpa}
+                              hypotheses={hypothesesByProfile.get(p.profile_id)}
                             />
                           ))
                         )}
@@ -1014,6 +1152,78 @@ export function AvatarsView() {
                   </div>
                 }
               >
+                {(() => {
+                  const matchedAds: Array<AdRecord & { cell_id: string }> = detail.cells.flatMap((c) =>
+                    (adsByCell.get(c.cell_id) ?? []).map((ad) => ({ ...ad, cell_id: c.cell_id })),
+                  );
+                  const cellPerf = new Map(
+                    detail.cells.map((c) => {
+                      const rows = (analysis?.performance_by_cell ?? []).filter((r) => r.cell_id === c.cell_id);
+                      return [c.cell_id, {
+                        spend: rows.reduce((s, r) => s + r["Amount spent (USD)"], 0),
+                        results: rows.reduce((s, r) => s + r.Results, 0),
+                      }];
+                    }),
+                  );
+                  return (
+                    <DrawerField label={matchedAds.length > 0 ? `Matched ads (${matchedAds.length})` : "Matched ads"}>
+                      {matchedAds.length === 0 ? (
+                        <p className="text-caption text-muted-foreground/70">
+                          No ad records matched to this avatar's cells.
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {matchedAds.slice(0, 8).map((ad, i) => {
+                            const perf = cellPerf.get(ad.cell_id);
+                            return (
+                              <div
+                                key={ad.ad_name + i}
+                                className="flex items-start justify-between gap-2 border-b border-border/15 pb-1.5 last:border-0 last:pb-0"
+                              >
+                                <div className="min-w-0">
+                                  <p className="text-body font-medium text-foreground/85 truncate" title={ad.ad_name}>
+                                    {ad.ad_name}
+                                  </p>
+                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                    {ad.cell && (
+                                      <span className="text-[9px] font-mono border border-border/30 px-1 py-0.5 rounded text-muted-foreground/55">
+                                        {ad.cell}
+                                      </span>
+                                    )}
+                                    {ad.concept && (
+                                      <span className="text-label text-muted-foreground/55">{ad.concept}</span>
+                                    )}
+                                  </div>
+                                </div>
+                                {perf && (perf.spend > 0 || perf.results > 0) && (
+                                  <div className="flex items-center gap-3 shrink-0 tabular-nums text-right">
+                                    {perf.spend > 0 && (
+                                      <div>
+                                        <p className="text-label text-muted-foreground/50">Spend</p>
+                                        <p className="text-body text-foreground/70">{fmtUSD(perf.spend, 0)}</p>
+                                      </div>
+                                    )}
+                                    {perf.results > 0 && (
+                                      <div>
+                                        <p className="text-label text-muted-foreground/50">Results</p>
+                                        <p className="text-body text-foreground/70">{fmtNum(perf.results)}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                          {matchedAds.length > 8 && (
+                            <p className="text-label text-muted-foreground/50">
+                              +{matchedAds.length - 8} more ads in this avatar
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </DrawerField>
+                  );
+                })()}
                 {(() => {
                   const dna = dnaByColumn.get(detail.column.id);
                   if (!dna) return null;
