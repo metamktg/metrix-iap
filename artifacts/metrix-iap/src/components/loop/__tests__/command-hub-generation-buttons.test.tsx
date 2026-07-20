@@ -48,10 +48,16 @@ vi.mock("@workspace/api-client-react", () => ({
   }),
   getGetLatestAnalysisRunQueryKey: () => ["analysis", "latest"],
   getGetMetrixSeedQueryKey:        () => ["metrix", "seed"],
+  getListWorkspaceReportsQueryKey: () => ["reports", "list"],
   useStartManualAnalysisRun:       () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCreateWorkspaceReport:        () => ({ mutate: vi.fn(), isPending: false }),
   useListWorkspaceReports:         () => ({ data: { reports: [] } }),
   useListManualImports:            () => ({ data: { imports: [{ id: "imp-1" }] } }),
   useListAnalysisRuns:             () => ({ data: { runs: [] } }),
+}));
+
+vi.mock("@/contexts/MetrixDataContext", () => ({
+  useMetrixSeed: () => ({ accounts: [], manager: null }),
 }));
 
 vi.mock("@/components/generation/GenerationControls", () => ({
