@@ -851,27 +851,47 @@ function CommandHub({
       return progressView;
     }
 
-    if (stage === "data") return (
-      <div className="flex flex-wrap gap-1.5">
-        <button
-          onClick={() => goTo("/app/settings/account")}
-          className={cn(
-            "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
-            dataComplete ? "mx-secondary-btn" : "mx-primary-btn",
+    if (stage === "data") {
+      if (isLiveMeta) return (
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-1.5 rounded-lg border border-emerald-400/20 bg-emerald-400/[0.05] px-2.5 py-2">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400/70 shrink-0" />
+            <span className="text-label text-emerald-200/70 font-medium">Live Meta — connected</span>
+          </div>
+          <button
+            onClick={() => goTo("/app/settings/integrations")}
+            className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
+          >
+            <Link2 className="w-3.5 h-3.5" />
+            Manage connection
+          </button>
+        </div>
+      );
+      return (
+        <div className="flex flex-col gap-1.5">
+          {stagedImportCount > 0 && (
+            <div className="flex items-center gap-1.5 rounded-lg border border-emerald-400/20 bg-emerald-400/[0.05] px-2.5 py-2">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400/70 shrink-0" />
+              <span className="text-label text-emerald-200/70 font-medium">
+                {stagedImportCount} file{stagedImportCount === 1 ? "" : "s"} staged · awaiting analysis run
+              </span>
+            </div>
           )}
-        >
-          <Upload className="w-3.5 h-3.5" />
-          Upload CSV
-        </button>
-        <button
-          onClick={() => goTo("/app/settings/integrations")}
-          className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-secondary-btn"
-        >
-          <Link2 className="w-3.5 h-3.5" />
-          Connect Meta
-        </button>
-      </div>
-    );
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              onClick={() => goTo("/app/settings/account")}
+              className={cn(
+                "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
+                stagedImportCount > 0 ? "mx-secondary-btn" : "mx-primary-btn",
+              )}
+            >
+              <Upload className="w-3.5 h-3.5" />
+              Upload CSV
+            </button>
+          </div>
+        </div>
+      );
+    }
 
     if (stage === "analysis") {
       if (pendingConfirm === "analysis") return (
