@@ -5,8 +5,11 @@
 // codes stay as plain text.
 //
 // Matched pattern: \bC\d+[A-Z]\b — matrix concept codes like C2B, C4E.
-// Does NOT match CN_ProductDemo (variable codes) or C1 (column-only codes)
-// since those are not the interactive chip targets.
+// Case-insensitive (i flag): c4A, c2b, etc. from Meta ad exports are
+// normalised to uppercase before the registry lookup so they resolve to
+// the same chip as C4A, C2B. Does NOT match CN_ProductDemo (variable
+// codes) or C1 (column-only codes) since those are not the interactive
+// chip targets.
 
 import type { ConceptDescriptorEntry } from "@/lib/concept-registry-context";
 
@@ -14,12 +17,14 @@ export type TextToken  = { type: "text"; value: string };
 export type ChipToken  = { type: "chip"; code: string };
 export type ConceptToken = TextToken | ChipToken;
 
-const CONCEPT_CODE_RE = /\b(C\d+[A-Z])\b/g;
+const CONCEPT_CODE_RE = /\b(C\d+[A-Z])\b/gi;
 
 /**
  * Tokenize a string, producing text segments and chip segments for any
- * `C\d+[A-Z]` code that exists in `registry`. Unknown codes are left as
- * plain text so the output is always a faithful representation of `text`.
+ * `C\d+[A-Z]` code (case-insensitive) that exists in `registry`. The
+ * matched code is uppercased before the registry lookup so `c4A` resolves
+ * to the same chip as `C4A`. Unknown codes are left as plain text so the
+ * output is always a faithful representation of `text`.
  */
 export function tokenizeConceptCodes(
   text: string,
@@ -33,7 +38,7 @@ export function tokenizeConceptCodes(
   let match: RegExpExecArray | null;
 
   while ((match = CONCEPT_CODE_RE.exec(text)) !== null) {
-    const code = match[1]!;
+    const code = match[1]!.toUpperCase();
     if (!registry[code]) continue;
 
     if (match.index > lastIndex) {
@@ -61,7 +66,7 @@ export function hasConceptCode(
   CONCEPT_CODE_RE.lastIndex = 0;
   let match: RegExpExecArray | null;
   while ((match = CONCEPT_CODE_RE.exec(text)) !== null) {
-    if (registry[match[1]!]) return true;
+    if (registry[match[1]!.toUpperCase()]) return true;
   }
   return false;
 }
