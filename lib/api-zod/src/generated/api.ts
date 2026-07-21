@@ -316,6 +316,70 @@ export const SyncCreativeLinksResponse = zod.object({
 
 
 /**
+ * Stores a creative image or video against a specific cell identifier, bypassing the ad-name matching flow. Overwrites any previously uploaded cell creative. Busts the seed cache so the Library reflects the new asset immediately. Requires account access.
+ * @summary Upload a creative asset directly to a cell
+ */
+
+
+
+
+export const UploadCellCreativeParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.'),
+  "cellId": zod.coerce.string().min(1).describe('Creative cell identifier (e.g. C2B).')
+})
+
+
+
+
+
+
+export const UploadCellCreativeBody = zod.object({
+  "content_base64": zod.string().min(1).describe('Base64-encoded file content (max 8 MB decoded).'),
+  "filename": zod.string().min(1).describe('Original filename — used to detect video vs image by extension.'),
+  "content_type": zod.string().min(1).describe('MIME type (e.g. image\/png, video\/mp4).')
+})
+
+export const UploadCellCreativeResponse = zod.object({
+  "asset_url": zod.string().describe('Relative URL to serve the uploaded creative.'),
+  "cell_id": zod.string().describe('The cell identifier this creative is mapped to.')
+})
+
+
+/**
+ * Returns the raw image or video bytes for a manually uploaded cell creative. Returns 404 if no creative has been uploaded for this cell.
+ * @summary Serve the raw bytes of a cell creative
+ */
+
+
+
+
+export const GetCellCreativeParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.'),
+  "cellId": zod.coerce.string().min(1).describe('Creative cell identifier (e.g. C2B).')
+})
+
+export const GetCellCreativeResponse = zod.unknown()
+
+
+/**
+ * Deletes the cell creative override for the given cell, restoring the default creative or the placeholder. Busts the seed cache.
+ * @summary Remove a manually uploaded cell creative
+ */
+
+
+
+
+export const DeleteCellCreativeParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.'),
+  "cellId": zod.coerce.string().min(1).describe('Creative cell identifier (e.g. C2B).')
+})
+
+export const DeleteCellCreativeResponse = zod.object({
+  "deleted": zod.boolean()
+})
+
+
+/**
  * Returns the most recent manual analysis run for the account, or null when none exists. Runs stuck in 'running' past the staleness cutoff are honestly flipped to 'error'. Requires access to the account.
  * @summary Latest manual analysis run for an account
  */

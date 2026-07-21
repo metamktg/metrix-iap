@@ -1244,6 +1244,161 @@ router.get("/metrix/accounts/:accountId/manual-imports/:importId/file", requireA
   }
 });
 
+// ── Cell-level creative upload / serve / delete ───────────────────────────
+
+router.post("/metrix/accounts/:accountId/cells/:cellId/creative", requireAuth, async (req, res) => {
+  const accountId = String(req.params["accountId"]);
+  const cellId = String(req.params["cellId"]);
+  const { z } = await import("zod/v4");
+  const CellCreativeUploadBody = z.object({
+    content_base64: z.string().min(1),
+    filename: z.string().min(1),
+    content_type: z.string().min(1),
+  });
+  const parsed = CellCreativeUploadBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "filename, content_type, and base64 content are required." });
+    return;
+  }
+  const user = req.authUser!;
+  try {
+    if (user.role !== "admin" && !(await userHasAccountAccess(user.id, accountId))) {
+      res.status(403).json({ message: "You don't have access to this ad account." });
+      return;
+    }
+    const supabase = getSupabase();
+    const account = await supabase.from("ad_accounts").select("id").eq("id", accountId).limit(1);
+    if (account.error) throw new Error(account.error.message);
+    if (!account.data || account.data.length === 0) {
+      res.status(404).json({ message: "Ad account not found." });
+      return;
+    }
+    const b64 = parsed.data.content_base64.replace(/\s/g, "");
+    if (!BASE64_RE.test(b64)) {
+      res.status(400).json({ message: "File content is not valid base64." });
+      return;
+    }
+    const content = Buffer.from(b64, "base64");
+    if (content.length === 0) {
+      res.status(400).json({ message: "The uploaded file is empty." });
+      return;
+    }
+    if (content.length > MAX_MANUAL_IMPORT_BYTES) {
+      res.status(413).json({ message: "File is too large — the limit is 8 MB." });
+      return;
+    }
+    const hexBytes = `\\x${content.toString("hex")}`;
+    const upsert = await supabase.from("cell_creative_overrides").upsert(
+      {
+        account_id: accountId,
+        cell_id: cellId,
+        asset_bytes: hexBytes,
+        content_type: parsed.data.content_type,
+        filename: parsed.data.filename,
+        uploaded_at: new Date().toISOString(),
+      },
+      { onConflict: "account_id,cell_id" },
+    );
+    if (upsert.error) throw new Error(upsert.error.message);
+    invalidateMetrixSeedCache();
+    res.json({
+      asset_url: `/api/metrix/accounts/${accountId}/cells/${cellId}/creative`,
+      cell_id: cellId,
+    });
+  } catch (err) {
+    req.log.error({ err, accountId, cellId }, "Failed to upload cell creative");
+    res.status(502).json({ message: err instanceof Error ? err.message : "Upload failed." });
+  }
+});
+
+router.get("/metrix/accounts/:accountId/cells/:cellId/creative", requireAuth, async (req, res) => {
+  const accountId = String(req.params["accountId"]);
+  const cellId = String(req.params["cellId"]);
+  const user = req.authUser!;
+  try {
+    if (user.role !== "admin" && !(await userHasAccountAccess(user.id, accountId))) {
+      res.status(403).json({ message: "You don't have access to this ad account." });
+      return;
+    }
+    const supabase = getSupabase();
+    const row = await supabase
+      .from("cell_creative_overrides")
+      .select("asset_bytes, content_type, filename")
+      .eq("account_id", accountId)
+      .eq("cell_id", cellId)
+      .limit(1)
+      .maybeSingle();
+    if (row.error) throw new Error(row.error.message);
+    if (!row.data) {
+      res.status(404).json({ message: "No creative uploaded for this cell." });
+      return;
+    }
+    const hexStr = String(row.data["asset_bytes"] ?? "");
+    const buf = Buffer.from(hexStr.replace(/^\\x/, ""), "hex");
+    const contentType = String(row.data["content_type"] ?? "application/octet-stream");
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Cache-Control", "private, max-age=3600");
+    res.setHeader("Accept-Ranges", "bytes");
+    const rangeHeader = req.headers.range;
+    if (rangeHeader && contentType.startsWith("video/")) {
+      const match = /^bytes=(\d*)-(\d*)$/.exec(rangeHeader);
+      const total = buf.length;
+      const start = match?.[1] ? parseInt(match[1], 10) : 0;
+      const end = match?.[2] ? parseInt(match[2], 10) : total - 1;
+      if (Number.isNaN(start) || Number.isNaN(end) || start > end || end >= total) {
+        res.setHeader("Content-Range", `bytes */${total}`);
+        res.status(416).end();
+        return;
+      }
+      res.status(206);
+      res.setHeader("Content-Range", `bytes ${start}-${end}/${total}`);
+      res.setHeader("Content-Length", String(end - start + 1));
+      res.send(buf.subarray(start, end + 1));
+      return;
+    }
+    res.send(buf);
+  } catch (err) {
+    req.log.error({ err, accountId, cellId }, "Failed to serve cell creative");
+    res.status(502).json({ message: err instanceof Error ? err.message : "Could not fetch the creative." });
+  }
+});
+
+router.delete("/metrix/accounts/:accountId/cells/:cellId/creative", requireAuth, async (req, res) => {
+  const accountId = String(req.params["accountId"]);
+  const cellId = String(req.params["cellId"]);
+  const user = req.authUser!;
+  try {
+    if (user.role !== "admin" && !(await userHasAccountAccess(user.id, accountId))) {
+      res.status(403).json({ message: "You don't have access to this ad account." });
+      return;
+    }
+    const supabase = getSupabase();
+    const row = await supabase
+      .from("cell_creative_overrides")
+      .select("id")
+      .eq("account_id", accountId)
+      .eq("cell_id", cellId)
+      .limit(1)
+      .maybeSingle();
+    if (row.error) throw new Error(row.error.message);
+    if (!row.data) {
+      res.status(404).json({ message: "No creative uploaded for this cell." });
+      return;
+    }
+    const del = await supabase
+      .from("cell_creative_overrides")
+      .delete()
+      .eq("account_id", accountId)
+      .eq("cell_id", cellId);
+    if (del.error) throw new Error(del.error.message);
+    invalidateMetrixSeedCache();
+    res.json({ deleted: true });
+  } catch (err) {
+    req.log.error({ err, accountId, cellId }, "Failed to delete cell creative");
+    res.status(502).json({ message: err instanceof Error ? err.message : "Delete failed." });
+  }
+});
+
 router.post("/metrix/agent-waitlist", waitlistRateLimit, async (req, res) => {
   const parsed = JoinAgentWaitlistBody.safeParse(req.body);
   if (!parsed.success) {

@@ -16,7 +16,7 @@
 
 import { useMemo, useState, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { ImageOff, Maximize2, ExternalLink } from "lucide-react";
+import { ImageOff, Maximize2, ExternalLink, Upload } from "lucide-react";
 import { resolveVariableLabel, getVariablePrefix, PREFIX_COLORS } from "@/lib/variable-registry";
 import { CreativeExpandDialog } from "./CreativeExpandDialog";
 import { buildAdsManagerAdUrl } from "./AdsManagerLink";
@@ -222,6 +222,7 @@ export function CreativeCard({
   demographic,
   placements,
   onUploadCreatives,
+  onUploadCreative,
   onSegmentClick,
 }: {
   data: CreativeCardData;
@@ -231,6 +232,7 @@ export function CreativeCard({
   demographic?: DemographicRow[];
   placements?: PlacementRow[];
   onUploadCreatives?: () => void;
+  onUploadCreative?: (cellId: string) => void;
   onSegmentClick?: (segment: { age: string; gender: string }) => void;
   onFullBreakdownClick?: () => void;
 }) {
@@ -316,19 +318,32 @@ export function CreativeCard({
               <Maximize2 className="w-3.5 h-3.5" />
               Expand
             </button>
-            {adsUrl && (
-              <a
-                href={adsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                title="View in Ads Manager"
-                className="flex items-center gap-1 text-[9px] font-medium text-primary/80 hover:text-primary transition-colors"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                Ads Manager
-              </a>
-            )}
+            <div className="flex items-center gap-2">
+              {onUploadCreative && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onUploadCreative(data.conceptCode); }}
+                  title={data.assetUrl ? "Replace creative" : "Upload creative"}
+                  className="flex items-center gap-1 text-[9px] font-medium text-white/70 hover:text-white transition-colors"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  {data.assetUrl ? "Replace" : "Upload"}
+                </button>
+              )}
+              {adsUrl && (
+                <a
+                  href={adsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  title="View in Ads Manager"
+                  className="flex items-center gap-1 text-[9px] font-medium text-primary/80 hover:text-primary transition-colors"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  Ads Manager
+                </a>
+              )}
+            </div>
           </div>
         </div>
 

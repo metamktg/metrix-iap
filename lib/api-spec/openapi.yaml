@@ -460,6 +460,137 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/cells/{cellId}/creative:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+      - name: cellId
+        in: path
+        required: true
+        description: Creative cell identifier (e.g. C2B).
+        schema:
+          type: string
+          minLength: 1
+    post:
+      operationId: uploadCellCreative
+      tags: [metrix]
+      summary: Upload a creative asset directly to a cell
+      description: Stores a creative image or video against a specific cell identifier, bypassing the ad-name matching flow. Overwrites any previously uploaded cell creative. Busts the seed cache so the Library reflects the new asset immediately. Requires account access.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CellCreativeUploadInput"
+      responses:
+        "200":
+          description: Creative uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CellCreativeUploadResult"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "413":
+          description: File too large
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    get:
+      operationId: getCellCreative
+      tags: [metrix]
+      summary: Serve the raw bytes of a cell creative
+      description: Returns the raw image or video bytes for a manually uploaded cell creative. Returns 404 if no creative has been uploaded for this cell.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Creative file bytes
+          content:
+            application/*:
+              schema:
+                type: string
+                format: binary
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: No creative uploaded for this cell
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      operationId: deleteCellCreative
+      tags: [metrix]
+      summary: Remove a manually uploaded cell creative
+      description: Deletes the cell creative override for the given cell, restoring the default creative or the placeholder. Busts the seed cache.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Creative removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CellCreativeDeleteResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: No creative uploaded for this cell
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/accounts/{accountId}/analysis-runs/latest:
     parameters:
       - name: accountId
@@ -3346,6 +3477,38 @@ components:
         - linked
         - total
         - unlinked_names
+    CellCreativeUploadInput:
+      type: object
+      required: [content_base64, filename, content_type]
+      properties:
+        content_base64:
+          type: string
+          minLength: 1
+          description: Base64-encoded file content (max 8 MB decoded).
+        filename:
+          type: string
+          minLength: 1
+          description: Original filename — used to detect video vs image by extension.
+        content_type:
+          type: string
+          minLength: 1
+          description: MIME type (e.g. image/png, video/mp4).
+    CellCreativeUploadResult:
+      type: object
+      required: [asset_url, cell_id]
+      properties:
+        asset_url:
+          type: string
+          description: Relative URL to serve the uploaded creative.
+        cell_id:
+          type: string
+          description: The cell identifier this creative is mapped to.
+    CellCreativeDeleteResult:
+      type: object
+      required: [deleted]
+      properties:
+        deleted:
+          type: boolean
     LatestAnalysisRunResult:
       type: object
       properties:

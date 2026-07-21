@@ -50,6 +50,7 @@ import { actionGroupForScope, type DeckCard } from "@/components/deck/Recommenda
 import type { SegmentId } from "@/lib/segment-analytics";
 import type { CellPerformanceRow, DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 import { CreativeLibraryDialog } from "@/pages/metrix/ConnectAccountDialogs";
+import { CellCreativeUploadDialog } from "@/components/creative/CellCreativeUploadDialog";
 import { useConceptHighlight } from "@/lib/concept-registry-context";
 
 const SECTION = "Analysis · 03";
@@ -98,6 +99,7 @@ export function IapLibraryView() {
   useConceptHighlight(onHighlight);
   const [segmentsOpen, setSegmentsOpen] = useState(false);
   const [creativeLibraryOpen, setCreativeLibraryOpen] = useState(false);
+  const [uploadCellId, setUploadCellId] = useState<string | null>(null);
   const [groupByConcept, setGroupByConcept] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<10 | 25 | 50>(10);
@@ -427,6 +429,7 @@ export function IapLibraryView() {
                           unmappedCellIds={unmappedCellIds}
                           onDetail={(row) => setDetail(row)}
                           onUploadCreatives={() => setCreativeLibraryOpen(true)}
+                          onUploadCreative={adAccountId ? (cellId) => setUploadCellId(cellId) : undefined}
                         />
                       ) : (
                         <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." action={<CrossLink to="/app/analysis/overview" label="Back to Overview" />} />
@@ -469,6 +472,7 @@ export function IapLibraryView() {
                                       demographic={demoByCell.get(row.cell_id) ?? []}
                                       placements={allPlacements}
                                       onUploadCreatives={() => setCreativeLibraryOpen(true)}
+                                      onUploadCreative={adAccountId ? (cellId) => setUploadCellId(cellId) : undefined}
                                       onSegmentClick={(seg) => setCardSegment({ segment: seg, cellIds: [row.cell_id] })}
                                       onFullBreakdownClick={() => setCardGridCell(row)}
                                       expandFooter={(close) => (
@@ -554,6 +558,7 @@ export function IapLibraryView() {
                                     demographic={[]}
                                     placements={[]}
                                     onUploadCreatives={() => setCreativeLibraryOpen(true)}
+                                    onUploadCreative={adAccountId ? (id) => setUploadCellId(id) : undefined}
                                   />
                                 ))}
                               </div>
@@ -583,6 +588,7 @@ export function IapLibraryView() {
                               demographic={demoByCell.get(row.cell_id) ?? []}
                               placements={allPlacements}
                               onUploadCreatives={() => setCreativeLibraryOpen(true)}
+                              onUploadCreative={adAccountId ? (cellId) => setUploadCellId(cellId) : undefined}
                               onSegmentClick={(seg) => setCardSegment({ segment: seg, cellIds: [row.cell_id] })}
                               onFullBreakdownClick={() => setCardGridCell(row)}
                               expandFooter={(close) => (
@@ -843,6 +849,16 @@ export function IapLibraryView() {
           );
         }}
       </ModuleScopeGate>
+
+      {/* Cell-level creative upload dialog */}
+      {adAccountId && uploadCellId && (
+        <CellCreativeUploadDialog
+          open={uploadCellId != null}
+          onOpenChange={(v) => { if (!v) setUploadCellId(null); }}
+          accountId={adAccountId}
+          cellId={uploadCellId}
+        />
+      )}
 
       {/* Creative library sync dialog — invalidates seed query on close */}
       {account && (
