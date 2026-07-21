@@ -73,8 +73,8 @@ function parseVariableStack(framework: string | null | undefined): Record<string
 function conceptRefsFromIcps(targetIcps: string[] | undefined): string[] {
   const refs = new Set<string>();
   for (const icp of targetIcps ?? []) {
-    const m = icp.match(/_(C\d[A-Z]?)_/);
-    if (m?.[1]) refs.add(m[1]);
+    const m = icp.match(/_(C\d[A-Za-z]?)_/i);
+    if (m?.[1]) refs.add(m[1].toUpperCase());
   }
   return [...refs];
 }
@@ -475,13 +475,13 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
     if (String(meta["mode"] ?? row["mode"] ?? "") !== "matrix") continue;
     const tf = (b["testing_framework"] ?? {}) as Row;
     const sf = (b["strategic_foundation"] ?? {}) as Row;
-    const colMatch = String(tf["matrix_position"] ?? "").match(/^(C\d+)/);
+    const colMatch = String(tf["matrix_position"] ?? "").match(/^(C\d+)/i);
     const profileId = String(sf["target_icp"] ?? "").trim().split(/\s+/)[0] ?? "";
     // Trust only ids that actually exist for this account — this is
     // id-scheme-agnostic (ICP_BOOK*_*, LD-ICP-*, etc.), never a hardcoded
     // prefix. An unmatched or free-text position simply yields no link.
     if (!colMatch || !validProfileIds.has(profileId)) continue;
-    const colId = colMatch[1]!;
+    const colId = colMatch[1]!.toUpperCase();
     if (!columnProfileLinks.has(colId)) columnProfileLinks.set(colId, new Set());
     columnProfileLinks.get(colId)!.add(profileId);
   }
