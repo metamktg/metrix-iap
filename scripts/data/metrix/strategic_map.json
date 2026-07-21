@@ -142,6 +142,7 @@
   "testing_hypotheses": [
     {
       "hypothesis_id": "HYP_001",
+      "pillar_id": "PILLAR_TimeEfficiency",
       "statement": "We believe that isolating Row B (FW_BAB / product-demo) as a dedicated ad set within Concept C2 will lift CVR further because Row B already carries both the most spend and the strongest CPA cross-concept.",
       "control": "Current C2B_STC_APP_BOOK0_T2 ad",
       "test_variant": "New Row-B static execution, same ICP, new visual",
@@ -156,6 +157,7 @@
     },
     {
       "hypothesis_id": "HYP_002",
+      "pillar_id": "PILLAR_RationalValue",
       "statement": "We believe that confirming MMP/pixel health on the 3 zero-conversion campaigns will reveal a tracking gap rather than a genuine creative failure, because engagement (impressions/clicks) was present without a single downstream event across $2,963 of spend.",
       "control": "N/A - diagnostic, not creative test",
       "test_variant": "N/A",
@@ -170,6 +172,7 @@
     },
     {
       "hypothesis_id": "HYP_003",
+      "pillar_id": "PILLAR_MaleEfficiencyTest",
       "statement": "We believe that a dedicated Male 55-64 / Male 35-44 creative will outperform current overflow-driven CPA because these segments already convert best in the account without any purpose-built message.",
       "control": "Current broad targeting (no dedicated creative)",
       "test_variant": "New rational-tone, efficiency-led static",
@@ -184,6 +187,7 @@
     },
     {
       "hypothesis_id": "HYP_004",
+      "pillar_id": "PILLAR_RationalValue",
       "statement": "We believe replacing BOOK2 C2E and C4E with a C2B-mechanic-based execution will restore conversion because C2E/C4E are structurally different extension cells producing near-zero results on meaningful spend, while C2B (same concept family, core matrix cell) converts at 11.65% CVR.",
       "control": "C2B_STC_QF_BOOK2_T2",
       "test_variant": "New C2E/C4E replacement using C2B's proof mechanic",
