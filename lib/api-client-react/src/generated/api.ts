@@ -43,6 +43,9 @@ import type {
   AuthResetPasswordInput,
   AuthResetPasswordResult,
   AuthUserResult,
+  CellCreativeDeleteResult,
+  CellCreativeUploadInput,
+  CellCreativeUploadResult,
   CreateAdAccountInput,
   CreateAdAccountResult,
   GenerateStrategyInput,
@@ -955,6 +958,236 @@ export const useSyncCreativeLinks = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getSyncCreativeLinksMutationOptions(options));
+    }
+
+export const getUploadCellCreativeUrl = (accountId: string,
+    cellId: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/cells/${cellId}/creative`
+}
+
+/**
+ * Stores a creative image or video against a specific cell identifier, bypassing the ad-name matching flow. Overwrites any previously uploaded cell creative. Busts the seed cache so the Library reflects the new asset immediately. Requires account access.
+ * @summary Upload a creative asset directly to a cell
+ */
+export const uploadCellCreative = async (accountId: string,
+    cellId: string,
+    cellCreativeUploadInput: CellCreativeUploadInput, options?: RequestInit): Promise<CellCreativeUploadResult> => {
+
+  return customFetch<CellCreativeUploadResult>(getUploadCellCreativeUrl(accountId,cellId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(cellCreativeUploadInput)
+  }
+);}
+
+
+
+
+export const getUploadCellCreativeMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadCellCreative>>, TError,{accountId: string;cellId: string;data: BodyType<CellCreativeUploadInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadCellCreative>>, TError,{accountId: string;cellId: string;data: BodyType<CellCreativeUploadInput>}, TContext> => {
+
+const mutationKey = ['uploadCellCreative'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadCellCreative>>, {accountId: string;cellId: string;data: BodyType<CellCreativeUploadInput>}> = (props) => {
+          const {accountId,cellId,data} = props ?? {};
+
+          return  uploadCellCreative(accountId,cellId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadCellCreativeMutationResult = NonNullable<Awaited<ReturnType<typeof uploadCellCreative>>>
+    export type UploadCellCreativeMutationBody = BodyType<CellCreativeUploadInput>
+    export type UploadCellCreativeMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Upload a creative asset directly to a cell
+ */
+export const useUploadCellCreative = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadCellCreative>>, TError,{accountId: string;cellId: string;data: BodyType<CellCreativeUploadInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof uploadCellCreative>>,
+        TError,
+        {accountId: string;cellId: string;data: BodyType<CellCreativeUploadInput>},
+        TContext
+      > => {
+      return useMutation(getUploadCellCreativeMutationOptions(options));
+    }
+
+export const getGetCellCreativeUrl = (accountId: string,
+    cellId: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/cells/${cellId}/creative`
+}
+
+/**
+ * Returns the raw image or video bytes for a manually uploaded cell creative. Returns 404 if no creative has been uploaded for this cell.
+ * @summary Serve the raw bytes of a cell creative
+ */
+export const getCellCreative = async (accountId: string,
+    cellId: string, options?: RequestInit): Promise<Blob> => {
+
+  return customFetch<Blob>(getGetCellCreativeUrl(accountId,cellId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCellCreativeQueryKey = (accountId: string,
+    cellId: string,) => {
+    return [
+    `/api/metrix/accounts/${accountId}/cells/${cellId}/creative`
+    ] as const;
+    }
+
+
+export const getGetCellCreativeQueryOptions = <TData = Awaited<ReturnType<typeof getCellCreative>>, TError = ErrorType<ApiError>>(accountId: string,
+    cellId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCellCreative>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCellCreativeQueryKey(accountId,cellId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCellCreative>>> = ({ signal }) => getCellCreative(accountId,cellId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: accountId !== null && accountId !== undefined && cellId !== null && cellId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCellCreative>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCellCreativeQueryResult = NonNullable<Awaited<ReturnType<typeof getCellCreative>>>
+export type GetCellCreativeQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Serve the raw bytes of a cell creative
+ */
+
+export function useGetCellCreative<TData = Awaited<ReturnType<typeof getCellCreative>>, TError = ErrorType<ApiError>>(
+ accountId: string,
+    cellId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCellCreative>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCellCreativeQueryOptions(accountId,cellId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDeleteCellCreativeUrl = (accountId: string,
+    cellId: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/cells/${cellId}/creative`
+}
+
+/**
+ * Deletes the cell creative override for the given cell, restoring the default creative or the placeholder. Busts the seed cache.
+ * @summary Remove a manually uploaded cell creative
+ */
+export const deleteCellCreative = async (accountId: string,
+    cellId: string, options?: RequestInit): Promise<CellCreativeDeleteResult> => {
+
+  return customFetch<CellCreativeDeleteResult>(getDeleteCellCreativeUrl(accountId,cellId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteCellCreativeMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCellCreative>>, TError,{accountId: string;cellId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCellCreative>>, TError,{accountId: string;cellId: string}, TContext> => {
+
+const mutationKey = ['deleteCellCreative'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCellCreative>>, {accountId: string;cellId: string}> = (props) => {
+          const {accountId,cellId} = props ?? {};
+
+          return  deleteCellCreative(accountId,cellId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCellCreativeMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCellCreative>>>
+
+    export type DeleteCellCreativeMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Remove a manually uploaded cell creative
+ */
+export const useDeleteCellCreative = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCellCreative>>, TError,{accountId: string;cellId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCellCreative>>,
+        TError,
+        {accountId: string;cellId: string},
+        TContext
+      > => {
+      return useMutation(getDeleteCellCreativeMutationOptions(options));
     }
 
 export const getGetLatestAnalysisRunUrl = (accountId: string,) => {

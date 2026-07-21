@@ -652,6 +652,35 @@ export interface SyncCreativeLinksResult {
   unlinked_names: string[];
 }
 
+export interface CellCreativeUploadInput {
+  /**
+     * Base64-encoded file content (max 8 MB decoded).
+     * @minLength 1
+     */
+  content_base64: string;
+  /**
+     * Original filename — used to detect video vs image by extension.
+     * @minLength 1
+     */
+  filename: string;
+  /**
+     * MIME type (e.g. image/png, video/mp4).
+     * @minLength 1
+     */
+  content_type: string;
+}
+
+export interface CellCreativeUploadResult {
+  /** Relative URL to serve the uploaded creative. */
+  asset_url: string;
+  /** The cell identifier this creative is mapped to. */
+  cell_id: string;
+}
+
+export interface CellCreativeDeleteResult {
+  deleted: boolean;
+}
+
 export interface LatestAnalysisRunResult {
   run: AnalysisRun | null;
 }

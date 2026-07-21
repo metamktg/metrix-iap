@@ -109,6 +109,7 @@ export type AccountTables = {
   conceptIntelligence: Map<string, Row[]>;
   failurePatterns: Map<string, Row[]>;
   adsRegistry: Map<string, Row[]>;
+  cellCreativeOverrides: Map<string, Row[]>;
   accountModules: Row[];
   signalCards: Row[];
 };
@@ -195,6 +196,7 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
   const conceptIntelligence = forAccount(t.conceptIntelligence, accountId);
   const failurePatterns = forAccount(t.failurePatterns, accountId);
   const adsRegistry = forAccount(t.adsRegistry, accountId);
+  const cellCreativeOverrides = forAccount(t.cellCreativeOverrides, accountId);
 
   // ── Totals computed from real date-stamped rows ─────────────────────
   const byEvent: Record<string, Row> = {};
@@ -539,18 +541,55 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
     //
     // If creatives still show "No asset": run Re-sync creatives in IAP Library
     // (admin button) or POST /accounts/:id/sync-creative-links from the API.
-    ads: adsRegistry.map((r) => ({
-      ad_name: r["ad_name"],
-      book: r["book"] ?? null,
-      cell: r["cell"] ?? null,
-      concept: r["concept"] ?? null,
-      variation: r["variation"] ?? null,
-      test_id: r["test_id"] ?? null,
-      meta_ad_id: r["meta_ad_id"] ?? null,
-      creative_asset_url: r["creative_asset_url"] ?? null,
-      asset_filename: r["asset_filename"] ?? null,
-      asset_servable: r["asset_servable"] === true,
-    })),
+    ads: (() => {
+      // Build a map of cell_id → override URL+filename from cell_creative_overrides.
+      // These are direct per-cell uploads that bypass the ad-name matching flow.
+      const cellOverrideMap = new Map<string, { url: string; filename: string }>();
+      for (const o of cellCreativeOverrides) {
+        const cellId = String(o["cell_id"] ?? "");
+        if (cellId) {
+          cellOverrideMap.set(cellId, {
+            url: `/api/metrix/accounts/${accountId}/cells/${cellId}/creative`,
+            filename: String(o["filename"] ?? ""),
+          });
+        }
+      }
+      // Apply overrides to existing ad rows (replaces their creative URL).
+      const baseAds = adsRegistry.map((r) => {
+        const cellId = r["cell"] ? String(r["cell"]) : null;
+        const override = cellId ? cellOverrideMap.get(cellId) : undefined;
+        return {
+          ad_name: r["ad_name"],
+          book: r["book"] ?? null,
+          cell: cellId,
+          concept: r["concept"] ?? null,
+          variation: r["variation"] ?? null,
+          test_id: r["test_id"] ?? null,
+          meta_ad_id: r["meta_ad_id"] ?? null,
+          creative_asset_url: override ? override.url : (r["creative_asset_url"] ?? null),
+          asset_filename: override ? override.filename : (r["asset_filename"] ?? null),
+          asset_servable: override ? true : r["asset_servable"] === true,
+        };
+      });
+      // For cells with an override but no matching ad row (library-only cells),
+      // inject a synthetic ad record so primaryAdForCell can resolve the visual.
+      const adCellIds = new Set(baseAds.map((a) => a.cell).filter(Boolean));
+      const syntheticAds = [...cellOverrideMap.entries()]
+        .filter(([cellId]) => !adCellIds.has(cellId))
+        .map(([cellId, { url, filename }]) => ({
+          ad_name: `__cell_override_${cellId}`,
+          book: null,
+          cell: cellId,
+          concept: null,
+          variation: null,
+          test_id: null,
+          meta_ad_id: null,
+          creative_asset_url: url,
+          asset_filename: filename,
+          asset_servable: true,
+        }));
+      return [...baseAds, ...syntheticAds];
+    })(),
     iap: {
       metadata,
       core_reanalysis_read: coreRead,
@@ -660,6 +699,7 @@ export async function assembleMetrixSeed(): Promise<Row> {
     conceptIntelligenceAll,
     failurePatternsAll,
     adsRegistryAll,
+    cellCreativeOverridesAll,
   ] = await Promise.all([
     selectAll("app_config"),
     selectAll("ad_accounts", (q) => q.order("id")),
@@ -687,6 +727,8 @@ export async function assembleMetrixSeed(): Promise<Row> {
     selectAll("concept_intelligence", (q) => q.order("book").order("concept_code")),
     selectAll("failure_patterns", (q) => q.order("id")),
     selectAll("ads", (q) => q.order("ad_name")),
+    // Graceful: return [] if the table hasn't been created yet (pre-migration).
+    selectAll("cell_creative_overrides", (q) => q.order("uploaded_at")).catch(() => [] as Row[]),
   ]);
 
   if (adAccounts.length === 0 || adPerformanceAll.length === 0) {
@@ -843,6 +885,7 @@ export async function assembleMetrixSeed(): Promise<Row> {
     conceptIntelligence: groupByAccount(conceptIntelligenceAll),
     failurePatterns: groupByAccount(failurePatternsAll),
     adsRegistry: groupByAccount(adsRegistryAll),
+    cellCreativeOverrides: groupByAccount(cellCreativeOverridesAll),
     accountModules,
     signalCards,
   };

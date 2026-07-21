@@ -708,6 +708,29 @@ create unique index if not exists manual_analysis_runs_one_running
 alter table if exists manual_analysis_runs add column if not exists csv_warnings text;
 
 -- ─────────────────────────────────────────────────────────────────────
+-- Cell-level creative overrides (July 2026).
+--
+-- Stores a directly-uploaded creative asset keyed to a specific IAP cell
+-- (e.g. "C2B"), bypassing the ad-name matching flow. One row per
+-- (account_id, cell_id) pair — upsert on conflict replaces the asset.
+-- The seed assembly injects a servable URL for every override so the
+-- Library shows the uploaded image/video immediately after upload.
+-- ─────────────────────────────────────────────────────────────────────
+create table if not exists cell_creative_overrides (
+  id uuid primary key default gen_random_uuid(),
+  account_id text not null references ad_accounts(id),
+  cell_id text not null,
+  asset_bytes bytea not null,
+  content_type text not null,
+  filename text not null default '',
+  uploaded_at timestamptz not null default now(),
+  constraint cell_creative_overrides_account_cell_unique unique (account_id, cell_id)
+);
+
+create index if not exists cell_creative_overrides_account_idx
+  on cell_creative_overrides (account_id);
+
+-- ─────────────────────────────────────────────────────────────────────
 -- Row Level Security (platform integrity).
 --
 -- Every table in this importer schema holds either real ad-performance data
@@ -736,7 +759,8 @@ declare
     'variable_performance', 'demographic_signal', 'placement_signal', 'copy_library',
     'variable_registry', 'signal_cards', 'account_modules', 'app_config',
     'request_access', 'meta_oauth_pending', 'connected_ad_accounts', 'report_pulls',
-    'report_rows', 'generation_runs', 'manual_imports', 'manual_analysis_runs'
+    'report_rows', 'generation_runs', 'manual_imports', 'manual_analysis_runs',
+    'cell_creative_overrides'
   ];
 begin
   foreach t in array importer_tables loop

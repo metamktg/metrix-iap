@@ -50,6 +50,7 @@ interface AngleRowProps {
   rankKpi: CellRankKpi;
   onDetail: (row: CellPerformanceRow) => void;
   onUploadCreatives: () => void;
+  onUploadCreative?: (cellId: string) => void;
 }
 
 function AngleRow({
@@ -61,6 +62,7 @@ function AngleRow({
   rankKpi,
   onDetail,
   onUploadCreatives,
+  onUploadCreative,
 }: AngleRowProps) {
   const [showCells, setShowCells] = useState(false);
 
@@ -130,6 +132,7 @@ function AngleRow({
                   demographic={demoByCell.get(row.cell_id) ?? []}
                   placements={allPlacements}
                   onUploadCreatives={onUploadCreatives}
+                  onUploadCreative={onUploadCreative}
                   expandFooter={(close) => (
                     <button
                       onClick={() => { close(); onDetail(row); }}
@@ -159,6 +162,7 @@ interface ConceptFamilyCardProps {
   rankKpi: CellRankKpi;
   onDetail: (row: CellPerformanceRow) => void;
   onUploadCreatives: () => void;
+  onUploadCreative?: (cellId: string) => void;
 }
 
 function ConceptFamilyCard({
@@ -170,6 +174,7 @@ function ConceptFamilyCard({
   rankKpi,
   onDetail,
   onUploadCreatives,
+  onUploadCreative,
 }: ConceptFamilyCardProps) {
   const [expanded, setExpanded] = useState(false);
 
@@ -229,6 +234,7 @@ function ConceptFamilyCard({
               rankKpi={rankKpi}
               onDetail={onDetail}
               onUploadCreatives={onUploadCreatives}
+              onUploadCreative={onUploadCreative}
             />
           ))}
         </div>
@@ -252,6 +258,7 @@ export interface ConceptFamilyViewProps {
   rankKpi?: CellRankKpi;
   onDetail: (row: CellPerformanceRow) => void;
   onUploadCreatives: () => void;
+  onUploadCreative?: (cellId: string) => void;
 }
 
 export function ConceptFamilyView({
@@ -263,6 +270,7 @@ export function ConceptFamilyView({
   rankKpi = "cpa",
   onDetail,
   onUploadCreatives,
+  onUploadCreative,
 }: ConceptFamilyViewProps) {
   if (groups.length === 0) {
     return (
@@ -291,6 +299,7 @@ export function ConceptFamilyView({
           rankKpi={rankKpi}
           onDetail={onDetail}
           onUploadCreatives={onUploadCreatives}
+          onUploadCreative={onUploadCreative}
         />
       ))}
     </div>
