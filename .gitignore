@@ -47,3 +47,7 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Chat-uploaded assets and unrelated exports (never re-accumulate)
+attached_assets/
+exports/
