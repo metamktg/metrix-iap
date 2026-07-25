@@ -390,10 +390,10 @@
     "configured_ad_accounts": 3,
     "unconfigured_ad_accounts": 2,
     "bottom_line_totals": {
-      "spend_usd": 13596.32,
-      "impressions": 2577420,
+      "spend_usd": 15248.01,
+      "impressions": 2636728,
       "link_clicks": 10552,
-      "link_ctr_pct": 0.4094,
+      "link_ctr_pct": 0.4002,
       "result_totals_by_event": {
         "Mobile app installs": {
           "spend": 4766.02,
@@ -428,10 +428,10 @@
           "link_clicks": 677
         },
         "Website purchases": {
-          "spend": 5268.39,
+          "spend": 6920.08,
           "reach": 2205,
-          "impressions": 4522,
-          "results": 24,
+          "impressions": 63830,
+          "results": 26,
           "clicks_all": 5205,
           "link_clicks": 3830
         },
@@ -7665,16 +7665,16 @@
             "IAP-DEMO-MAIN-ECAS.csv, IAP-DEVICE-MAIN-ECAS.csv (Meta Ads Manager exports, 2026-07-25)"
           ],
           "account_totals": {
-            "reach": 1602,
-            "spend": 57.97,
-            "purchases": 0,
-            "clicks_all": 31,
-            "impressions": 1951,
-            "link_clicks": 23,
+            "note": "Combined: ECAS historical (May–Jun 2026) + Sprint 1 (Jul 2026)",
+            "spend": 1709.66,
+            "revenue": 300,
+            "purchases": 2,
+            "clicks_all": 1621,
+            "add_to_cart": 70,
+            "impressions": 61259,
+            "link_clicks": 1173,
             "result_type": "Website purchases",
-            "adds_to_cart": 0,
-            "checkouts_initiated": 0,
-            "purchases_conversion_value": 0
+            "initiate_checkout": 1
           },
           "manual_uploads": [
             {
@@ -7757,19 +7757,19 @@
         "campaign_summary": {
           "bottom_line_totals": {
             "Website purchases": {
-              "spend": 57.97,
+              "spend": 1709.66,
               "reach": 0,
-              "impressions": 1951,
-              "results": 0,
+              "impressions": 61259,
+              "results": 2,
               "clicks_all": 1621,
               "link_clicks": 1173
             }
           },
-          "total_spend_usd": 57.97,
-          "total_impressions": 1951,
+          "total_spend_usd": 1709.66,
+          "total_impressions": 61259,
           "total_link_clicks": 1173,
-          "overall_link_ctr_pct": 60.123,
-          "data_caveat": "Totals cover the full imported window 2026-05-03 → 2026-07-24. Account totals come from the account-level export; the ad-level table covers $1709.66 of the $57.97 account spend — the remainder sits on ads absent from the ad-level export. MST Sprint 1 is an invalid test: $57.97 / ~$1,000 committed budget, zero purchases or checkouts, 4/16 cells never delivered, unresolved Initiate Checkout tracking gap. No creative or avatar reads are actionable.",
+          "overall_link_ctr_pct": 1.9148,
+          "data_caveat": "Totals cover the full imported window 2026-05-03 → 2026-07-24. MST Sprint 1 is an invalid test: $57.97 / ~$1,000 committed budget, zero purchases or checkouts, 4/16 cells never delivered, unresolved Initiate Checkout tracking gap. No creative or avatar reads are actionable.",
           "window_start": "2026-05-03",
           "window_end": "2026-07-24",
           "campaign_windows": []
