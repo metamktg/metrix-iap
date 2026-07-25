@@ -1,0 +1,250 @@
+{
+  "report_metadata": {
+    "phase": "IAP_STRATEGY_MAP",
+    "account_id": "1202182091204847",
+    "client_id": "littledata",
+    "date_range": { "start": "2026-05-03", "end": "2026-06-26" },
+    "generated": "2026-07-09",
+    "generated_by": "METRIX strategy_map stage — agent-generated from the manually uploaded IAP-DEMO export, local client library v1.0.0 and the analysis_core intelligence report. No live account access; all numbers recomputed from the uploaded CSV.",
+    "inputs": [
+      "IAP-DEMO-1202182091204847.csv (2026-07-09 re-export, 5,503 rows, 54 ads, sums exactly to $1,651.69 / 59,308 impressions / 1,150 link clicks / 70 ATC / 2 purchases, $300 revenue)",
+      "IAP-DEVICE-1202182091204847.csv (2026-07-09 conversion-device re-export: platform × placement × conversion device funnel actions; no spend/impressions — delivery metrics are not device-attributable under conversion tracking)",
+      "local_client_library.json v1.0.0",
+      "campaign_intelligence.json (IAP_ANALYSIS_CORE)"
+    ],
+    "data_caveat": "Pre-signal account: 2 purchases on $1,651.69 (blended CPA $825.85), 61% of spend under Incremental attribution. Every creative/demographic read below is validation_required — this map organizes hypotheses for the initial MST, it does not declare winners."
+  },
+
+  "icp_profiles": [
+    {
+      "profile_id": "LD-ICP-GIFTBUYER-YOUNG",
+      "profile_name": "Young Adult Gift Buyer (buying FOR parent/partner)",
+      "demographic_foundation": "Male 25-34 — the account's 8th-largest segment ($123.70 spend, 6,835 impressions) yet it produced 1 of the 2 account purchases (2026-06-21, on the gift-narrative creative '1 Print Static'). Buyer is not the recipient: the purchase creative is written entirely about someone else's street.",
+      "psychographic_profile": "Shopping for an emotionally meaningful, non-generic gift for a parent or partner. Responds to recipient-reaction narratives ('watch their face light up'), not product specs or discounts. Gift anxiety — wants the gift to land, fears giving something forgettable.",
+      "behavioral_signals": "Converted on HK_Story + HK_Shock hook ('made a grown man cry' lineage) with a precisely-named street in the artwork. Zero purchases from this segment on catalog/offer creative despite broader delivery.",
+      "funnel_entry_point": "TOFU — cold, problem-aware gift seekers around gifting moments (Father's Day window in the data).",
+      "performance_data": {
+        "segment": "male 25-34",
+        "spend": 123.7,
+        "impressions": 6835,
+        "purchases": 1,
+        "share_of_account_spend_pct": 7.5,
+        "purchase_ad": "1 Print Static",
+        "purchase_date": "2026-06-21"
+      },
+      "message_resonance": "Emotional gift narrative (LD-CN-GIFT-MOMENT). The converting ad spent $107.24 total — the account's best purchase-per-dollar signal.",
+      "strategic_recommendation": "Primary ICP for MST cycle 1. Run gift-narrative cells broad and let delivery re-find younger gift buyers; do not hard-restrict age yet (delivery skew currently sends 52% of spend to 55+).",
+      "confidence_level": "validation_required"
+    },
+    {
+      "profile_id": "LD-ICP-SELF-DECORATOR-55PLUS",
+      "profile_name": "55+ Home Decorator (buying for self)",
+      "demographic_foundation": "55+ segments absorbed $851.70 (51.6% of account spend, ~24,400 impressions) and produced 1 purchase: female 55-64 on 'Multiple Pieces' (2026-05-06) — an authentic multi-print product spread with no discount overlay.",
+      "psychographic_profile": "Decorating their own home with meaningful places — cities of first trips, honeymoons, hometowns. Values perceived craftsmanship ('museum-quality paper', real wood frames) and authenticity; a real unstyled photo outperformed the polished discount grid for this segment.",
+      "behavioral_signals": "Converted on PR_Demonstration (real photo of framed prints leaned on furniture) with rational catalog-breadth copy. Zero purchases from the same segments on the 25%-off catalog grid ($364.86, 0 purchases account-wide).",
+      "funnel_entry_point": "TOFU/MOFU — solution-aware browsers; testimonial and quality-proof creative are natural MOFU/BOFU follow-ups for this ICP.",
+      "performance_data": {
+        "segment": "55+ (male + female + unknown)",
+        "spend": 851.7,
+        "impressions": 24402,
+        "purchases": 1,
+        "share_of_account_spend_pct": 51.6,
+        "purchase_ad": "Multiple Pieces",
+        "purchase_segment": "female 55-64",
+        "purchase_date": "2026-05-06"
+      },
+      "message_resonance": "Authentic product spread (LD-CN-PRODUCT-SPREAD) — real photo, no overlay, no discount. Secondary winning-stack hypothesis from analysis_core.",
+      "strategic_recommendation": "Secondary ICP for MST cycle 1. A/B real-photo spread vs catalog-grid mockup at equal budget with NO discount in either arm, per the analysis_core next-sprint recommendation.",
+      "confidence_level": "validation_required"
+    },
+    {
+      "profile_id": "LD-ICP-CITY-LOYALIST",
+      "profile_name": "Single-City Identity Loyalist (Nashville pilot)",
+      "demographic_foundation": "No converting segment yet. The two city-pride creatives ('Music Row Static - Pride' static + 'Blue Shirt UGC') spent $287.28 across 7,578 impressions with 0 reported purchases.",
+      "psychographic_profile": "Identity-driven local — buys the city as a badge ('NASHVILLE ART for a NASHVILLE LOVER'). Neighborhood name-stacking (Music Row, 12 South, Belle Meade) is the flattery mechanic.",
+      "behavioral_signals": "None validated. Analysis_core flags that broad (non-geo-targeted) delivery likely wasted the geo-specific message — the concept is untested, not disproven.",
+      "funnel_entry_point": "TOFU — geo-targeted cold audiences in the named city only.",
+      "performance_data": {
+        "segment": "not yet identified",
+        "spend": 287.28,
+        "impressions": 7578,
+        "purchases": 0,
+        "share_of_account_spend_pct": 17.4
+      },
+      "message_resonance": "Unproven. City-pride creative must be re-tested geo-tight before the concept is judged.",
+      "strategic_recommendation": "Hold out of MST cycle 1 budget. Run a separate geo-tight Nashville test before spending against this ICP again — do not kill on 0 purchases until attribution is reconciled.",
+      "confidence_level": "insufficient"
+    }
+  ],
+
+  "message_pillars": [
+    {
+      "pillar_id": "LD-PILLAR-PERSONAL-STORY",
+      "pillar_name": "Personal story made physical",
+      "strategic_purpose": "Turn a street into the protagonist of the recipient's life story. The gift lands because the place means something — the emotional core of the brand and the source of the account's best purchase-per-dollar signal.",
+      "target_icps": ["LD-ICP-GIFTBUYER-YOUNG"],
+      "funnel_application": "TOFU cold gift seekers; occasion overlays (Father's Day, anniversary, housewarming) are cycle-2 extensions of this pillar.",
+      "performance_evidence": "Pillar ads ('1 Print Static', '2 Print Static', '2 Print + Dads Gift'): $141.69 spend, 4,254 impressions, 1 of 2 account purchases. The converting ad alone: $107.24, 3,160 impressions, CPA $107.24 — vs $364.86 / 0 purchases on the discount grid. Validation_required (single purchase, mixed attribution).",
+      "messaging_framework": "FW_BAB + TN_Emotional + HK_Story + PR_Demonstration",
+      "execution_specifications": "Static, warm lifestyle photography, single print staged in a domestic scene, precisely-named street visible in the artwork, short copy (2-4 lines), recipient-reaction narrative, implicit personalization CTA ('Find his city'). Single copy variant per test cell — copy fragmentation (15-29 variants/ad) destroyed isolation in the historical window.",
+      "placement_strategy": "Directional only — conversion-based device export (2026-01-01 → 2026-07-09, wider than the demo window): link clicks skew 94.5% mobile (iphone 932 + android 211 + tablets 83 of 1,298); Feed carries 941 link clicks; the account's single tracked-checkout purchase path ran through Instagram Stories. No placement spend/impressions exist under conversion tracking, so no placement CPA/CTR — run broad placements; treat these splits as delivery hints, not performance reads.",
+      "scaling_guidance": "Scale-test candidate per analysis_core, but nothing scales from this window: validate through MST cycle 1 (gift-moment 3x3) first. No cell above 5% of budget for unproven variants."
+    },
+    {
+      "pillar_id": "LD-PILLAR-GALLERY-QUALITY",
+      "pillar_name": "Gallery quality, not a poster",
+      "strategic_purpose": "Neutralize the 'is this just a cheap poster?' objection with spec proof: heavyweight fine-art paper, archival inks, real wood frames, guarantee.",
+      "target_icps": ["LD-ICP-SELF-DECORATOR-55PLUS"],
+      "funnel_application": "BOFU retargeting — objection rebuttal for browsers who didn't buy.",
+      "performance_evidence": "'Good quality ad' (retargeting): $127.33, 3,286 impressions, 0 purchases. Analysis_core flags the retargeting pool size as unverified — the read is 'optimize after pool-size check', not 'failed'. Validation_required.",
+      "messaging_framework": "FW_PAS + TN_Assertive + HK_Question + PR_Demonstration",
+      "execution_specifications": "Macro product close-up (frame corner, paper texture), 'not a poster' spec language, guarantee + free shipping reassurance, dark-macro design system.",
+      "placement_strategy": "Unknown — placement metrics unavailable in this window.",
+      "scaling_guidance": "25% of budget to BOFU quality-rebuttal retargeting AFTER the pool-size check, per budget guidance. Do not scale prospecting with this pillar."
+    },
+    {
+      "pillar_id": "LD-PILLAR-BREADTH-CHOICE",
+      "pillar_name": "3,000 cities, breadth and choice",
+      "strategic_purpose": "Any place that matters is printable — hometown, college town, honeymoon coast. Breadth is the rational proof that the buyer's specific place exists in the catalog.",
+      "target_icps": ["LD-ICP-SELF-DECORATOR-55PLUS"],
+      "funnel_application": "TOFU/MOFU solution-aware browsers; the authentic-spread execution carries the pillar, the discount-grid execution is quarantined.",
+      "performance_evidence": "Pillar splits cleanly in the data: authentic spread ('Multiple Pieces' + '6 Images') $255.03, 15,174 impressions, 1 purchase (CPA $172.38 on the converting ad) — while the 25%-off catalog grid ('9 Image + Discount') burned $364.86 / 11,797 impressions / 0 purchases. Breadth converts when proven authentically, not via discount overlay. Validation_required.",
+      "messaging_framework": "FW_FAB + TN_Rational + HK_Benefit + PR_Demonstration",
+      "execution_specifications": "Real (non-mockup) photo of 5-9 framed prints leaned on furniture, catalog-breadth copy ('cities, coasts, and countries'), craftsmanship cues ('museum-quality paper'), NO discount overlay.",
+      "placement_strategy": "Unknown — placement metrics unavailable in this window.",
+      "scaling_guidance": "Part of the 60% validate allocation: A/B real-photo spread vs catalog-grid mockup at equal budget, no discount in either arm. Hold discount executions at ≤15% of budget pending attribution reconciliation."
+    },
+    {
+      "pillar_id": "LD-PILLAR-CITY-PRIDE",
+      "pillar_name": "City identity pride",
+      "strategic_purpose": "Sell the city as identity — neighborhood name-stacking flatters the local and makes the print a badge of belonging.",
+      "target_icps": ["LD-ICP-CITY-LOYALIST"],
+      "funnel_application": "TOFU, geo-targeted only. Broad delivery wastes the geo-specific flattery (LD-H3).",
+      "performance_evidence": "'Music Row Static - Pride' $233.55 / 6,476 impressions and 'Blue Shirt UGC' $53.73 / 1,102 impressions — $287.28 combined, 0 reported purchases across static and UGC formats. Untested geo-tight; do not judge the concept on broad delivery. Validation_required.",
+      "messaging_framework": "FW_FAB + TN_Aspirational + HK_Benefit + PR_SocialProof",
+      "execution_specifications": "One city per creative, neighborhood name-stack ('Music Row. Lower Broad. East Nash.'), local-identity call-out headline, lifestyle mockup or UGC talking-head format.",
+      "placement_strategy": "Unknown — placement metrics unavailable in this window.",
+      "scaling_guidance": "Zero MST-cycle-1 budget. Geo-tight Nashville re-test as a separate experiment before any further spend against this pillar."
+    },
+    {
+      "pillar_id": "LD-PILLAR-SOCIAL-PROOF",
+      "pillar_name": "Social proof and reviews",
+      "strategic_purpose": "Let customers sell it — verbatim testimonial quotes and review-count trust bars ('4.9, 450+ reviews') as the proof layer for hesitant buyers.",
+      "target_icps": ["LD-ICP-SELF-DECORATOR-55PLUS", "LD-ICP-GIFTBUYER-YOUNG"],
+      "funnel_application": "TOFU/MOFU — testimonial creative doubles as cold-traffic story and mid-funnel reassurance.",
+      "performance_evidence": "'1 Image Static - Best Sellers' (verbatim customer quote): $149.59, 6,707 impressions, 0 purchases. '2 Print + Dads Gift' (stat-question social proof): $11.62, 387 impressions, 0 purchases — below any read threshold. Validation_required.",
+      "messaging_framework": "FW_BAB + TN_Emotional + HK_Story + PR_Testimonial",
+      "execution_specifications": "First-person verbatim customer quote as primary text, single print in styled interior, or stat-question hook ('100 dads already have one. Does yours?') with review trust bar.",
+      "placement_strategy": "Unknown — placement metrics unavailable in this window.",
+      "scaling_guidance": "Test allocation only. Use as the proof row in MST cells rather than a standalone scaling pillar until a purchase signal exists."
+    }
+  ],
+
+  "testing_hypotheses": [
+    {
+      "hypothesis_id": "LD-H1",
+      "pillar_id": "LD-PILLAR-PERSONAL-STORY",
+      "statement": "Emotional gift-moment narrative (HK_Story/HK_Shock + TN_Emotional + precisely-named street) outconverts offer-led catalog creative for cold traffic.",
+      "control": "1 Print Static (LD-CN-GIFT-MOMENT, $107.24, 1 purchase)",
+      "test_variant": "Gift-moment MST cells: hook (Story/Shock vs Question vs Stat) x concept staging (kitchen gift scene vs unwrap moment vs recipient reaction), single copy variant per cell",
+      "isolated_variable": "Hook type x concept staging (copy architecture held constant)",
+      "sample_requirement": ">= 30 purchases per read after attribution is unified to 7DC/1DV, or a reconciled server-side purchase count per cell",
+      "duration": "14-day read windows per cell, standard attribution",
+      "success_criteria": "Gift-narrative cells beat the discount-grid control lineage on CPA at reconciled attribution; directional target: any cell CPA below the $107.24 historical single-purchase benchmark",
+      "risk": "Historical signal is n=1 purchase under mixed attribution — the control benchmark itself is validation_required",
+      "expected_impact": "Confirms the account's primary creative direction and unlocks cycle-2 occasion overlays (Father's Day analog, anniversary, housewarming)",
+      "failure_plan": "If no gift cell produces a purchase at 2x the historical CPA benchmark spend, fall back to the product-spread lane (LD-H2 secondary stack) as the primary direction",
+      "priority": "P1"
+    },
+    {
+      "hypothesis_id": "LD-H2",
+      "statement": "Two buyer paths exist: young gift buyers (25-34) respond to recipient-story creative; 55+ self-decorators respond to authentic product spreads. Messaging should split by ICP.",
+      "control": "Multiple Pieces (LD-CN-PRODUCT-SPREAD, $172.38, 1 purchase from female 55-64)",
+      "test_variant": "A/B: real-photo product spread vs catalog-grid mockup at equal budget, NO discount in either arm; run gift-narrative cells broad in parallel and watch which segments deliver purchases",
+      "isolated_variable": "Authenticity of product proof (real photo vs mockup), demographic delivery left broad",
+      "sample_requirement": ">= 30 purchases per arm at unified attribution; segment-level reads need reconciled server-side counts",
+      "duration": "14-day read windows",
+      "success_criteria": "Purchases cluster by ICP as predicted (gift narrative -> 25-34 buyers, authentic spread -> 55+), and real-photo beats mockup on CPA",
+      "risk": "52% of historical spend already skews 55+ — Advantage+ delivery may not re-find younger gift buyers without explicit budget separation",
+      "expected_impact": "Validates the two-ICP structure that the whole strategy map is built on",
+      "failure_plan": "If purchases don't split by ICP, collapse to a single blended audience strategy and rebuild ICPs from the converged segment data",
+      "priority": "P1"
+    },
+    {
+      "hypothesis_id": "LD-H3",
+      "pillar_id": "LD-PILLAR-CITY-PRIDE",
+      "statement": "Geo-specific city pride works only when geo-targeted tightly; broad delivery wastes it.",
+      "control": "Music Row Static - Pride ($233.55, 0 purchases on broad delivery)",
+      "test_variant": "Same city-pride creative re-run against Nashville-metro-only geo targeting",
+      "isolated_variable": "Geo targeting radius (broad vs city-tight), creative held constant",
+      "sample_requirement": "Enough Nashville-metro delivery for >= 15 purchases-equivalent signal at reconciled attribution; pool size must be verified first",
+      "duration": "14-day read window after geo pool verification",
+      "success_criteria": "Geo-tight delivery produces any purchase signal where broad delivery produced none on $287.28",
+      "risk": "Nashville metro pool may be too small for statistical reads at current budget levels; targeting data was unavailable in the historical export",
+      "expected_impact": "Decides whether city-pride becomes a scalable per-city playbook or gets shelved",
+      "failure_plan": "Shelve LD-PILLAR-CITY-PRIDE and reallocate its budget share to the validated gift/spread lanes",
+      "priority": "P2"
+    }
+  ],
+
+  "variable_combinations": [
+    {
+      "combination": "HK_Story + TN_Emotional + FW_BAB + SP_precisely-named",
+      "context": "The gift-moment purchase stack ('1 Print Static', male 25-34, 2026-06-21). CPA shown is a single-purchase read on $107.24 ad spend — directional only, not decision-grade.",
+      "cpa": 107.24,
+      "cvr_pct": null,
+      "confidence": "validation_required",
+      "recommendation": "Primary MST cycle-1 lane: isolate hook and staging around this stack."
+    },
+    {
+      "combination": "HK_Benefit + TN_Rational + FW_FAB + PR_Demonstration",
+      "context": "The authentic product-spread purchase stack ('Multiple Pieces', female 55-64, 2026-05-06). Real unstyled photo, no discount overlay. Single-purchase read on $172.38.",
+      "cpa": 172.38,
+      "cvr_pct": null,
+      "confidence": "validation_required",
+      "recommendation": "Secondary lane: A/B real-photo spread vs mockup grid at equal budget, no discount."
+    },
+    {
+      "combination": "HK_Benefit + TN_Assertive + OB_Price (25% discount overlay)",
+      "context": "The discount catalog grid ('9 Image + Discount'): $364.86 — 22% of account spend — 11,797 impressions, 0 reported purchases. Largest unconverted spend block; also trains delivery toward discount shoppers.",
+      "cpa": null,
+      "cvr_pct": null,
+      "confidence": "validation_required",
+      "recommendation": "Quarantine at minimal spend until attribution reconciliation confirms or clears it. Do not scale."
+    },
+    {
+      "combination": "HK_Benefit + TN_Aspirational + SP_precisely-named (geo-broad delivery)",
+      "context": "City-pride lane ('Music Row Static - Pride' + 'Blue Shirt UGC'): $287.28, 0 purchases — but delivered broad, not geo-tight, so the read tests delivery, not the concept.",
+      "cpa": null,
+      "cvr_pct": null,
+      "confidence": "insufficient",
+      "recommendation": "Re-test geo-tight (LD-H3) before judging; zero MST cycle-1 budget."
+    },
+    {
+      "combination": "HK_Story + TN_Emotional + PR_Testimonial (verbatim quote)",
+      "context": "In-room testimonial ('1 Image Static - Best Sellers'): $149.59, 6,707 impressions, 0 purchases. Untested as a proof row inside a structured matrix.",
+      "cpa": null,
+      "cvr_pct": null,
+      "confidence": "validation_required",
+      "recommendation": "Carry as the social-proof row variable in MST cells rather than standalone creative."
+    }
+  ],
+
+  "scaling_playbook": {
+    "source_policy": "Hypothesis allocation from the analysis_core budget guidance — pending reconciled attribution data. Nothing from the historical window scales.",
+    "validate": "60% of budget to gift-narrative and product-spread test cells (MST cycle 1 + the spread-vs-mockup A/B).",
+    "optimize": "25% to BOFU quality-rebuttal retargeting — only after the retargeting pool size behind 'Good quality ad' is verified.",
+    "hold": "15% max to discount/catalog concepts, quarantined pending attribution reconciliation.",
+    "guardrail": "No cell above 5% of budget for unproven new variants, per IAP validate rules. One primary text per test cell — historical copy fragmentation (15-29 variants per ad) made every copy read statistically meaningless.",
+    "structural_prerequisites": [
+      "Re-export with funnel columns (link clicks, ATC, IC, purchases, revenue) so buyer-intent and traffic-quality dimensions can run — DONE 2026-07-09 (dimension re-runs pending)",
+      "Unify attribution to 7DC/1DV; keep Incremental as a separate holdout read; reconcile against Shopify/LittleData server-side purchase counts",
+      "Verify retargeting pool size behind the quality-rebuttal lane"
+    ],
+    "do_not": [
+      "Do not scale anything from the historical window",
+      "Do not kill Music Row / UGC on 0 purchases until attribution is reconciled",
+      "Do not make live account changes without human approval — all recommendations pend client sign-off"
+    ]
+  }
+}

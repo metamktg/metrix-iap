@@ -109,7 +109,7 @@ beforeEach(() => {
 // Both accounts in the fixture must have linked hypotheses.
 const ACCOUNTS: [string, string][] = [
   ["bookster", "Bookster"],
-  ["littledata", "City Street Print Brand"],
+  ["ecas", "East Coast Art Studio"],
 ];
 
 describe("fixture sanity", () => {

@@ -1,0 +1,82 @@
+{
+  "briefs": [
+    {
+      "brief_metadata": {
+        "brief_id": "LD-B001",
+        "mode": "matrix",
+        "voice": "Emotional gift narrator — recipient-reaction storytelling",
+        "asset_type": "static",
+        "strategic_source": "littledata/strategic_map.json:LD-PILLAR-PERSONAL-STORY",
+        "priority": "P1",
+        "confidence": "validation_required"
+      },
+      "strategic_foundation": {
+        "data_insight": "LD-CN-GIFT-MOMENT produced 1 of the account's 2 purchases on $107.24 ad spend (male 25-34, 2026-06-21) — the best purchase-per-dollar signal in a pre-signal account ($1,651.69 / 2 purchases, 61% of spend under Incremental attribution). The signal is directional, not proven: this brief exists to validate it under clean test conditions.",
+        "target_icp": "LD-ICP-GIFTBUYER-YOUNG",
+        "message_pillar": "LD-PILLAR-PERSONAL-STORY",
+        "concept_code": "LD-CN-GIFT-MOMENT",
+        "angle_stack": "FW_BAB + TN_Emotional + HK_Story + SP_precisely-named",
+        "performance_benchmark": "Historical single-purchase read: CPA $107.24 (not decision-grade). Target: any cell producing a purchase below that benchmark at unified 7DC/1DV attribution; >= 30 purchases per read for a real verdict."
+      },
+      "testing_framework": {
+        "matrix_position": "Full 3x3 gift-moment MST (cycle 1) — hook axis x concept-staging axis, single copy variant per cell",
+        "matrix_naming_convention": "LD_GIFT_{HOOK}_{STAGING}_001 — hooks: STORY (Story/Shock), QUESTION, STAT; stagings: KITCHEN (kitchen gift scene), UNWRAP (unwrap moment), REACTION (recipient reaction)",
+        "hypothesis": "LD-H1",
+        "isolated_variable": "Hook type (HK_Story/Shock vs HK_Question vs HK_Stat) x concept staging (kitchen gift scene vs unwrap moment vs recipient reaction). Copy architecture, design system, CTA and street-name personalization held constant across all 9 cells.",
+        "control_reference": "1 Print Static",
+        "success_criteria": "Any cell CPA below the $107.24 historical benchmark at reconciled attribution; >= 30 purchases per read window before scale/kill calls",
+        "learning_objective": "Which hook x staging combination carries the gift-moment narrative — and does Advantage+ re-find 25-34 gift buyers when creative speaks to them (52% of historical spend skewed 55+)?"
+      },
+      "creative_specifications": {
+        "format": "Static",
+        "dimensions": "1080x1350 (Feed) + 1080x1920 (Stories/Reels)",
+        "duration": "N/A",
+        "placement": "Broad (Advantage+) — placement metrics were empty in the historical export, so no placement strategy is data-backed yet",
+        "safe_zones": "Standard Meta safe zones for Stories/Reels text",
+        "production_requirements": "Warm domestic scenes (LD-DS-WARM-LIFESTYLE), single framed street print as hero object, precisely-named real street visible in the artwork, recipient present or implied per staging axis"
+      },
+      "copy_architecture": {
+        "hook": "Axis under test — STORY: recipient-reaction narrative ('made a grown man cry' lineage); QUESTION: gift-anxiety opener ('Still hunting for a gift that means something?'); STAT: social momentum ('100 dads already have one. Does yours?')",
+        "problem_agitation_or_value_setup": "Generic gifts fall flat — the fear of giving something forgettable",
+        "product_solution": "Any American street as a museum-quality framed print: the block they grew up on, where life-changing moments happened",
+        "proof": "Narrative proof (recipient reaction) + 4.9-star / 450+ reviews trust bar as a constant footer element",
+        "cta": "Find their city (implicit personalization prompt, constant across all cells)"
+      },
+      "visual_direction": {
+        "composition": "Single print staged in a warm domestic scene; staging axis varies the scene (kitchen counter / mid-unwrap / recipient reacting), everything else constant",
+        "style_guide": "LD-DS-WARM-LIFESTYLE",
+        "color_palette": "Warm naturals, wood frame tones, soft daylight",
+        "typography": "Short emotional headline, 2-4 lines of body copy maximum",
+        "imagery": "Real streets with legible names; no discount overlays, no price flashes",
+        "avoid_list": [
+          "Discount/offer overlays (quarantined lane — $364.86, 0 purchases)",
+          "Catalog grids and multi-print spreads (separate LD-H2 test lane)",
+          "More than one primary text per cell — historical copy fragmentation (15-29 variants/ad) destroyed isolation"
+        ]
+      },
+      "production_checklist": [
+        "One primary text per cell — no Advantage+ text variant expansion",
+        "Isolated variables (hook, staging) clearly executed; all other elements match across cells",
+        "Naming convention LD_GIFT_{HOOK}_{STAGING}_001 followed",
+        "Precisely-named street legible in every asset",
+        "Unified 7DC/1DV attribution on the campaign before launch"
+      ],
+      "qa_requirements": [
+        "Copy-to-variable alignment scored per cell before launch",
+        "Row/column consistency checked: same staging across a row, same hook down a column",
+        "Confirm no discount language leaked into any cell",
+        "Human approval before launch — no live account changes without client sign-off"
+      ],
+      "performance_tracking": {
+        "campaign_structure": "Single MST campaign, 9 ad sets (one per cell), broad delivery, standard attribution",
+        "budget_allocation": "Within the 60% validate allocation; no cell above 5% of account budget per IAP validate rules",
+        "timeline": "14-day read windows; evaluate only after attribution reconciliation against server-side purchase counts",
+        "decision_rules": {
+          "scale_if": "Cell produces purchases below the $107.24 benchmark CPA at >= 30 reconciled purchases",
+          "iterate_if": "Purchase signal exists but above benchmark — iterate staging within the winning hook column",
+          "kill_if": "No cell produces a purchase at 2x benchmark spend — fall back to the product-spread lane (LD-H2) as primary direction"
+        }
+      }
+    }
+  ]
+}

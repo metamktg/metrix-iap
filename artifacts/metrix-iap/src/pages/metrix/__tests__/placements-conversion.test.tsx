@@ -61,16 +61,16 @@ beforeEach(() => {
   window.history.replaceState({}, "", "/");
 });
 
-describe("PlacementsView · LittleData (conversion-only)", () => {
-  it("fixture precondition: littledata has conversion signal but no delivery placement rows", () => {
-    const a = seed.ad_accounts.find((x: { id: string }) => x.id === "littledata");
+describe("PlacementsView · East Coast Art Studio (conversion-only)", () => {
+  it("fixture precondition: ecas has conversion signal but no delivery placement rows", () => {
+    const a = seed.ad_accounts.find((x: { id: string }) => x.id === "ecas");
     expect(a.iap.analysis.v3_placement_signal).toHaveLength(0);
     expect(a.iap.analysis.c4e_placement_signal).toHaveLength(0);
     expect(a.iap.analysis.conversion_tracking_signal.placements.length).toBeGreaterThan(0);
   });
 
   it("renders the conversion-attributed placement signal instead of an empty state", () => {
-    select("littledata");
+    select("ecas");
     renderView();
     expect(screen.queryByText("No placement signal")).toBeNull();
     expect(screen.getByText("Conversion-attributed placements")).toBeTruthy();
@@ -81,14 +81,14 @@ describe("PlacementsView · LittleData (conversion-only)", () => {
   });
 
   it("renders platform and device pivots from the same export", () => {
-    select("littledata");
+    select("ecas");
     renderView();
     expect(screen.getByText("Conversion-attributed platforms")).toBeTruthy();
     expect(screen.getByText("Conversion-attributed devices")).toBeTruthy();
   });
 
   it("never fabricates spend/CPA on the conversion surface", () => {
-    select("littledata");
+    select("ecas");
     renderView();
     expect(screen.queryByText("Placement spend")).toBeNull();
     expect(screen.queryByText("Spend by placement")).toBeNull();
