@@ -733,6 +733,12 @@ export function AnalysisOverview() {
         const lib = mst?.local_book2_library ?? [];
         const resolveConceptName = (id: string) =>
           lib.find((c) => c.cell_id === id)?.book2_concept_name ?? id;
+        // Resolve a concept CODE (e.g. "C2") → human name by finding any
+        // library cell whose id starts with that code prefix.
+        const resolveConceptCode = (code: string): string => {
+          const match = lib.find((c) => c.cell_id.startsWith(code));
+          return match?.book2_concept_name ?? code;
+        };
         const resolveControlText = (text: string, id: string) => {
           const name = resolveConceptName(id);
           return name === id ? text : text.replace(id, name);
@@ -752,21 +758,39 @@ export function AnalysisOverview() {
           .sort((a, b) => b.value - a.value);
 
         // ── Top cells ─────────────────────────────────────────────────
-        const cellsInRange = a.performance_by_cell;
-        const sortedCells: CellBarItem[] = [...cellsInRange]
-          .sort((x, y) =>
-            cellSort === "spend"
-              ? y["Amount spent (USD)"] - x["Amount spent (USD)"]
-              : (x.CPA_result ?? Infinity) - (y.CPA_result ?? Infinity)
-          )
-          .slice(0, 10)
-          .map((r) => ({
-            name:       r.book2_concept_name ?? r.cell_id,
-            spend:      r["Amount spent (USD)"],
-            cpa:        r.CPA_result,
-            results:    r.Results,
-            resultType: r["Result type"],
-          }));
+        // When a preset is active and data has loaded, use the concept_rows
+        // returned by the API (derived from ad_performance for the window).
+        // Otherwise fall back to the all-time seed performance_by_cell rows.
+        const sortedCells: CellBarItem[] = (preset !== "all" && presetData)
+          ? [...presetData.concept_rows]
+              .sort((x, y) =>
+                cellSort === "spend"
+                  ? y.spend - x.spend
+                  : (x.results > 0 ? x.spend / x.results : Infinity) -
+                    (y.results > 0 ? y.spend / y.results : Infinity)
+              )
+              .slice(0, 10)
+              .map((r) => ({
+                name:       resolveConceptCode(r.concept),
+                spend:      r.spend,
+                cpa:        r.results > 0 ? r.spend / r.results : null,
+                results:    r.results,
+                resultType: "",
+              }))
+          : [...a.performance_by_cell]
+              .sort((x, y) =>
+                cellSort === "spend"
+                  ? y["Amount spent (USD)"] - x["Amount spent (USD)"]
+                  : (x.CPA_result ?? Infinity) - (y.CPA_result ?? Infinity)
+              )
+              .slice(0, 10)
+              .map((r) => ({
+                name:       r.book2_concept_name ?? r.cell_id,
+                spend:      r["Amount spent (USD)"],
+                cpa:        r.CPA_result,
+                results:    r.Results,
+                resultType: r["Result type"],
+              }));
 
         // ── Placements (top 6 by spend) ───────────────────────────────
         // When a preset is active and data has loaded, use the API placement rows.
@@ -792,7 +816,7 @@ export function AnalysisOverview() {
           ? presetData.demographic_rows.map((r) => ({
               cell_id: "", "Ad name": "", Age: r.age, Gender: r.gender,
               "Amount spent (USD)": r.spend ?? 0,
-              Reach: 0, Impressions: r.impressions ?? 0,
+              Reach: 0, Impressions: 0,
               Results: r.results ?? 0, "Clicks (all)": 0, "Link clicks": r.link_clicks ?? 0,
               CPA_result: r.results && r.results > 0 && r.spend ? r.spend / r.results : null,
               CTR_link_pct: 0, Result_per_link_click_pct: 0,
@@ -922,10 +946,18 @@ export function AnalysisOverview() {
                   )}
 
                   {/* ── Cell performance bar chart ────────────────── */}
-                  {sortedCells.length > 0 && (
+                  {preset !== "all" && presetFetching ? (
+                    <SectionCard title="Top concepts by spend" desc="Loading…">
+                      <SkeletonTileRow count={3} />
+                    </SectionCard>
+                  ) : sortedCells.length > 0 && (
                     <SectionCard
-                      title="Top cells by spend"
-                      desc={`${term.Plural} · CPA · ${a.performance_by_cell.length} cells total`}
+                      title="Top concepts by spend"
+                      desc={
+                        preset !== "all" && presetData
+                          ? `${preset} window · ${sortedCells.length} concept${sortedCells.length !== 1 ? "s" : ""} · CPA`
+                          : `${term.Plural} · CPA · ${a.performance_by_cell.length} cells total`
+                      }
                       right={
                         <div className="flex items-center gap-2">
                           <SortToggle
