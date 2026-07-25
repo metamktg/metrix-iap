@@ -270,6 +270,36 @@ async function importLittleData(q: Q): Promise<number> {
     );
   }
 
+  // ── Concepts — aggregate spend/link_clicks/results from CSV ads ───────
+  // Inserts per-concept rows into concept_performance so the historical
+  // May–Jun window appears in concept_rollup and the date filter can
+  // distinguish this period from the Jul Sprint 1 data.
+  const ldConceptTotals = new Map<string, { spend: number; results: number; linkClicks: number }>();
+  for (const a of csvAds) {
+    const map = creativeByAd.get(a.adName) ?? null;
+    const stack = map?.variable_stack ?? {};
+    const code = ldConceptCode(stack.CN);
+    if (!code) continue;
+    let ct = ldConceptTotals.get(code);
+    if (!ct) { ct = { spend: 0, results: 0, linkClicks: 0 }; ldConceptTotals.set(code, ct); }
+    ct.spend   = round2(ct.spend + a.spend);
+    ct.results += a.results;
+    ct.linkClicks += a.linkClicks;
+  }
+  for (const c of library.local_concepts ?? []) {
+    const ct = ldConceptTotals.get(c.code);
+    const spend     = ct ? round2(ct.spend)     : null;
+    const results   = ct ? ct.results           : null;
+    const lc        = ct ? ct.linkClicks        : null;
+    await q(
+      `insert into concept_performance (account_id, book, concept, date_start, date_end, spend,
+         link_clicks, results, cpa, cvr_link_pct, confidence, mapped_in_library)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+      [ECAS_ACCOUNT_ID, null, c.code, windowStart, windowEnd,
+        spend, lc, results, cpaOf(spend, results), null, "insufficient", true],
+    );
+  }
+
   // ── Demographics ─────────────────────────────────────────────────────
   const accountSegments = [...csv.accountSegments.values()].sort((a, b) => b.spend - a.spend);
   let dIdx = 0;
