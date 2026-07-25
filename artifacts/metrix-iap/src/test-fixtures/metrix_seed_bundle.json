@@ -12459,152 +12459,450 @@
             "mapping_confidence": "medium"
           }
         ],
-        "historical_matrix_4x4": [
-          {
-            "hook": "Most \"custom\" prints are posters in disguise.",
-            "tone": "TN_Assertive",
-            "cell_id": "C1A",
-            "cta_code": "CTA_Buy",
-            "concept_id": "C1",
-            "row_variable": "A",
-            "proof_or_pain": "HP_CheapPoster"
-          },
-          {
-            "hook": "What do you give someone who has everything?",
-            "tone": "TN_Emotional",
-            "cell_id": "C1B",
-            "cta_code": "CTA_Buy",
-            "concept_id": "C1",
-            "row_variable": "B",
-            "proof_or_pain": "PR_Testimonial"
-          },
-          {
-            "hook": "There's a reason this gift never gets returned.",
-            "tone": "TN_Emotional",
-            "cell_id": "C1C",
-            "cta_code": "CTA_Buy",
-            "concept_id": "C1",
-            "row_variable": "C",
-            "proof_or_pain": "HP_ForgettableGift"
-          },
-          {
-            "hook": "Gallery-grade prints of 3,000+ cities. Made to order.",
-            "tone": "TN_Rational",
-            "cell_id": "C1D",
-            "cta_code": "CTA_ClaimOffer",
-            "concept_id": "C1",
-            "row_variable": "D",
-            "proof_or_pain": "HP_BareWalls"
-          },
-          {
-            "hook": "Last year I gave my parents a gift card. Never again.",
-            "tone": "TN_Assertive",
-            "cell_id": "C2A",
-            "cta_code": "CTA_Buy",
-            "concept_id": "C2",
-            "row_variable": "A",
-            "proof_or_pain": "HP_GenericGift"
-          },
-          {
-            "hook": "Three months in the new place. Still bare walls.",
-            "tone": "TN_Rational",
-            "cell_id": "C2B",
-            "cta_code": "CTA_Buy",
-            "concept_id": "C2",
-            "row_variable": "B",
-            "proof_or_pain": "PR_Testimonial"
-          },
-          {
-            "hook": "The gift they'll still talk about next year.",
-            "tone": "TN_Aspirational",
-            "cell_id": "C2C",
-            "cta_code": "CTA_Buy",
-            "concept_id": "C2",
-            "row_variable": "C",
-            "proof_or_pain": "HP_ForgettableGift"
-          },
-          {
-            "hook": "The block he grew up on. Framed on his wall now.",
-            "tone": "TN_Rational",
-            "cell_id": "C2D",
-            "cta_code": "CTA_ClaimOffer",
-            "concept_id": "C2",
-            "row_variable": "D",
-            "proof_or_pain": "HP_FadedMemory"
-          },
-          {
-            "hook": "Look closer. Those are real street names.",
-            "tone": "TN_Assertive",
-            "cell_id": "C3A",
-            "cta_code": "CTA_Buy",
-            "concept_id": "C3",
-            "row_variable": "A",
-            "proof_or_pain": "HP_BareWalls"
-          },
-          {
-            "hook": "Your city, the way you remember it.",
-            "tone": "TN_Emotional",
-            "cell_id": "C3B",
-            "cta_code": "CTA_Buy",
-            "concept_id": "C3",
-            "row_variable": "B",
-            "proof_or_pain": "PR_Testimonial"
-          },
-          {
-            "hook": "Some gifts get forgotten by Monday.",
-            "tone": "TN_Rational",
-            "cell_id": "C3C",
-            "cta_code": "CTA_Buy",
-            "concept_id": "C3",
-            "row_variable": "C",
-            "proof_or_pain": "HP_ForgettableGift"
-          },
-          {
-            "hook": "Not another gift-shop skyline.",
-            "tone": "TN_Aspirational",
-            "cell_id": "C3D",
-            "cta_code": "CTA_ClaimOffer",
-            "concept_id": "C3",
-            "row_variable": "D",
-            "proof_or_pain": "HP_CheapPoster"
-          },
-          {
-            "hook": "Every city you've loved, framed on one wall.",
-            "tone": "TN_Assertive",
-            "cell_id": "C4A",
-            "cta_code": "CTA_Buy",
-            "concept_id": "C4",
-            "row_variable": "A",
-            "proof_or_pain": "HP_FadedMemory"
-          },
-          {
-            "hook": "\"It's the city of our first trip together.\"",
-            "tone": "TN_Aspirational",
-            "cell_id": "C4B",
-            "cta_code": "CTA_Buy",
-            "concept_id": "C4",
-            "row_variable": "B",
-            "proof_or_pain": "PR_Testimonial"
-          },
-          {
-            "hook": "When did a gift last earn a spot on the wall?",
-            "tone": "TN_Rational",
-            "cell_id": "C4C",
-            "cta_code": "CTA_Buy",
-            "concept_id": "C4",
-            "row_variable": "C",
-            "proof_or_pain": "HP_ForgettableGift"
-          },
-          {
-            "hook": "Generic gifts don't survive the year. Walls do.",
-            "tone": "TN_Aspirational",
-            "cell_id": "C4D",
-            "cta_code": "CTA_ClaimOffer",
-            "concept_id": "C4",
-            "row_variable": "D",
-            "proof_or_pain": "HP_GenericGift"
-          }
-        ],
+        "historical_matrix_4x4": {
+          "rows": [
+            {
+              "id": "A",
+              "color": "var(--accent)",
+              "shared": "TN_Assertive"
+            },
+            {
+              "id": "B",
+              "color": "var(--accent)",
+              "shared": "TN_Emotional"
+            },
+            {
+              "id": "C",
+              "color": "var(--accent)",
+              "shared": "TN_Emotional"
+            },
+            {
+              "id": "D",
+              "color": "var(--accent)",
+              "shared": "TN_Rational"
+            }
+          ],
+          "cells": [
+            {
+              "row_id": "A",
+              "cell_id": "C1A",
+              "column_id": "C1",
+              "plain_text": {
+                "cta": "CTA_Buy",
+                "hook": "Most \"custom\" prints are posters in disguise.",
+                "tone": "TN_Assertive",
+                "primary": "Most \"custom\" prints are posters in disguise.",
+                "headline": "Most \"custom\" prints are posters in disguise.",
+                "proof_or_pain": "HP_CheapPoster"
+              },
+              "column_label": "GiftGiver45",
+              "concept_code": "C1",
+              "diagonal_role": "diagonal_down",
+              "variable_stack": {
+                "cn": "CN_Design_SinglePrintLifestyle",
+                "hk": "Most \"custom\" prints are posters in disguise.",
+                "hp": "HP_CheapPoster",
+                "tn": "TN_Assertive",
+                "cta": "CTA_Buy"
+              },
+              "row_shared_variable": "TN_Assertive"
+            },
+            {
+              "row_id": "B",
+              "cell_id": "C1B",
+              "column_id": "C1",
+              "plain_text": {
+                "cta": "CTA_Buy",
+                "hook": "What do you give someone who has everything?",
+                "tone": "TN_Emotional",
+                "primary": "What do you give someone who has everything?",
+                "headline": "What do you give someone who has everything?",
+                "proof_or_pain": "PR_Testimonial"
+              },
+              "column_label": "GiftGiver45",
+              "concept_code": "C1",
+              "diagonal_role": null,
+              "variable_stack": {
+                "cn": "CN_Design_SinglePrintLifestyle",
+                "hk": "What do you give someone who has everything?",
+                "hp": "PR_Testimonial",
+                "tn": "TN_Emotional",
+                "cta": "CTA_Buy"
+              },
+              "row_shared_variable": "TN_Emotional"
+            },
+            {
+              "row_id": "C",
+              "cell_id": "C1C",
+              "column_id": "C1",
+              "plain_text": {
+                "cta": "CTA_Buy",
+                "hook": "There's a reason this gift never gets returned.",
+                "tone": "TN_Emotional",
+                "primary": "There's a reason this gift never gets returned.",
+                "headline": "There's a reason this gift never gets returned.",
+                "proof_or_pain": "HP_ForgettableGift"
+              },
+              "column_label": "GiftGiver45",
+              "concept_code": "C1",
+              "diagonal_role": null,
+              "variable_stack": {
+                "cn": "CN_Design_SinglePrintLifestyle",
+                "hk": "There's a reason this gift never gets returned.",
+                "hp": "HP_ForgettableGift",
+                "tn": "TN_Emotional",
+                "cta": "CTA_Buy"
+              },
+              "row_shared_variable": "TN_Emotional"
+            },
+            {
+              "row_id": "D",
+              "cell_id": "C1D",
+              "column_id": "C1",
+              "plain_text": {
+                "cta": "CTA_ClaimOffer",
+                "hook": "Gallery-grade prints of 3,000+ cities. Made to order.",
+                "tone": "TN_Rational",
+                "primary": "Gallery-grade prints of 3,000+ cities. Made to order.",
+                "headline": "Gallery-grade prints of 3,000+ cities. Made to order.",
+                "proof_or_pain": "HP_BareWalls"
+              },
+              "column_label": "GiftGiver45",
+              "concept_code": "C1",
+              "diagonal_role": "diagonal_up",
+              "variable_stack": {
+                "cn": "CN_Design_SinglePrintLifestyle",
+                "hk": "Gallery-grade prints of 3,000+ cities. Made to order.",
+                "hp": "HP_BareWalls",
+                "tn": "TN_Rational",
+                "cta": "CTA_ClaimOffer"
+              },
+              "row_shared_variable": "TN_Rational"
+            },
+            {
+              "row_id": "A",
+              "cell_id": "C2A",
+              "column_id": "C2",
+              "plain_text": {
+                "cta": "CTA_Buy",
+                "hook": "Last year I gave my parents a gift card. Never again.",
+                "tone": "TN_Assertive",
+                "primary": "Last year I gave my parents a gift card. Never again.",
+                "headline": "Last year I gave my parents a gift card. Never again.",
+                "proof_or_pain": "HP_GenericGift"
+              },
+              "column_label": "Milestone2534",
+              "concept_code": "C2",
+              "diagonal_role": null,
+              "variable_stack": {
+                "cn": "CN_Design_RoomContext",
+                "hk": "Last year I gave my parents a gift card. Never again.",
+                "hp": "HP_GenericGift",
+                "tn": "TN_Assertive",
+                "cta": "CTA_Buy"
+              },
+              "row_shared_variable": "TN_Assertive"
+            },
+            {
+              "row_id": "B",
+              "cell_id": "C2B",
+              "column_id": "C2",
+              "plain_text": {
+                "cta": "CTA_Buy",
+                "hook": "Three months in the new place. Still bare walls.",
+                "tone": "TN_Rational",
+                "primary": "Three months in the new place. Still bare walls.",
+                "headline": "Three months in the new place. Still bare walls.",
+                "proof_or_pain": "PR_Testimonial"
+              },
+              "column_label": "Milestone2534",
+              "concept_code": "C2",
+              "diagonal_role": "diagonal_down",
+              "variable_stack": {
+                "cn": "CN_Design_RoomContext",
+                "hk": "Three months in the new place. Still bare walls.",
+                "hp": "PR_Testimonial",
+                "tn": "TN_Rational",
+                "cta": "CTA_Buy"
+              },
+              "row_shared_variable": "TN_Rational"
+            },
+            {
+              "row_id": "C",
+              "cell_id": "C2C",
+              "column_id": "C2",
+              "plain_text": {
+                "cta": "CTA_Buy",
+                "hook": "The gift they'll still talk about next year.",
+                "tone": "TN_Aspirational",
+                "primary": "The gift they'll still talk about next year.",
+                "headline": "The gift they'll still talk about next year.",
+                "proof_or_pain": "HP_ForgettableGift"
+              },
+              "column_label": "Milestone2534",
+              "concept_code": "C2",
+              "diagonal_role": "diagonal_up",
+              "variable_stack": {
+                "cn": "CN_Design_RoomContext",
+                "hk": "The gift they'll still talk about next year.",
+                "hp": "HP_ForgettableGift",
+                "tn": "TN_Aspirational",
+                "cta": "CTA_Buy"
+              },
+              "row_shared_variable": "TN_Aspirational"
+            },
+            {
+              "row_id": "D",
+              "cell_id": "C2D",
+              "column_id": "C2",
+              "plain_text": {
+                "cta": "CTA_ClaimOffer",
+                "hook": "The block he grew up on. Framed on his wall now.",
+                "tone": "TN_Rational",
+                "primary": "The block he grew up on. Framed on his wall now.",
+                "headline": "The block he grew up on. Framed on his wall now.",
+                "proof_or_pain": "HP_FadedMemory"
+              },
+              "column_label": "Milestone2534",
+              "concept_code": "C2",
+              "diagonal_role": null,
+              "variable_stack": {
+                "cn": "CN_Design_RoomContext",
+                "hk": "The block he grew up on. Framed on his wall now.",
+                "hp": "HP_FadedMemory",
+                "tn": "TN_Rational",
+                "cta": "CTA_ClaimOffer"
+              },
+              "row_shared_variable": "TN_Rational"
+            },
+            {
+              "row_id": "A",
+              "cell_id": "C3A",
+              "column_id": "C3",
+              "plain_text": {
+                "cta": "CTA_Buy",
+                "hook": "Look closer. Those are real street names.",
+                "tone": "TN_Assertive",
+                "primary": "Look closer. Those are real street names.",
+                "headline": "Look closer. Those are real street names.",
+                "proof_or_pain": "HP_BareWalls"
+              },
+              "column_label": "HometownSelf",
+              "concept_code": "C3",
+              "diagonal_role": null,
+              "variable_stack": {
+                "cn": "CN_Design_CityDetail",
+                "hk": "Look closer. Those are real street names.",
+                "hp": "HP_BareWalls",
+                "tn": "TN_Assertive",
+                "cta": "CTA_Buy"
+              },
+              "row_shared_variable": "TN_Assertive"
+            },
+            {
+              "row_id": "B",
+              "cell_id": "C3B",
+              "column_id": "C3",
+              "plain_text": {
+                "cta": "CTA_Buy",
+                "hook": "Your city, the way you remember it.",
+                "tone": "TN_Emotional",
+                "primary": "Your city, the way you remember it.",
+                "headline": "Your city, the way you remember it.",
+                "proof_or_pain": "PR_Testimonial"
+              },
+              "column_label": "HometownSelf",
+              "concept_code": "C3",
+              "diagonal_role": "diagonal_up",
+              "variable_stack": {
+                "cn": "CN_Design_CityDetail",
+                "hk": "Your city, the way you remember it.",
+                "hp": "PR_Testimonial",
+                "tn": "TN_Emotional",
+                "cta": "CTA_Buy"
+              },
+              "row_shared_variable": "TN_Emotional"
+            },
+            {
+              "row_id": "C",
+              "cell_id": "C3C",
+              "column_id": "C3",
+              "plain_text": {
+                "cta": "CTA_Buy",
+                "hook": "Some gifts get forgotten by Monday.",
+                "tone": "TN_Rational",
+                "primary": "Some gifts get forgotten by Monday.",
+                "headline": "Some gifts get forgotten by Monday.",
+                "proof_or_pain": "HP_ForgettableGift"
+              },
+              "column_label": "HometownSelf",
+              "concept_code": "C3",
+              "diagonal_role": "diagonal_down",
+              "variable_stack": {
+                "cn": "CN_Design_CityDetail",
+                "hk": "Some gifts get forgotten by Monday.",
+                "hp": "HP_ForgettableGift",
+                "tn": "TN_Rational",
+                "cta": "CTA_Buy"
+              },
+              "row_shared_variable": "TN_Rational"
+            },
+            {
+              "row_id": "D",
+              "cell_id": "C3D",
+              "column_id": "C3",
+              "plain_text": {
+                "cta": "CTA_ClaimOffer",
+                "hook": "Not another gift-shop skyline.",
+                "tone": "TN_Aspirational",
+                "primary": "Not another gift-shop skyline.",
+                "headline": "Not another gift-shop skyline.",
+                "proof_or_pain": "HP_CheapPoster"
+              },
+              "column_label": "HometownSelf",
+              "concept_code": "C3",
+              "diagonal_role": null,
+              "variable_stack": {
+                "cn": "CN_Design_CityDetail",
+                "hk": "Not another gift-shop skyline.",
+                "hp": "HP_CheapPoster",
+                "tn": "TN_Aspirational",
+                "cta": "CTA_ClaimOffer"
+              },
+              "row_shared_variable": "TN_Aspirational"
+            },
+            {
+              "row_id": "A",
+              "cell_id": "C4A",
+              "column_id": "C4",
+              "plain_text": {
+                "cta": "CTA_Buy",
+                "hook": "Every city you've loved, framed on one wall.",
+                "tone": "TN_Assertive",
+                "primary": "Every city you've loved, framed on one wall.",
+                "headline": "Every city you've loved, framed on one wall.",
+                "proof_or_pain": "HP_FadedMemory"
+              },
+              "column_label": "MemoryKeeperCouple",
+              "concept_code": "C4",
+              "diagonal_role": "diagonal_up",
+              "variable_stack": {
+                "cn": "CN_Design_MultiPrintGallery",
+                "hk": "Every city you've loved, framed on one wall.",
+                "hp": "HP_FadedMemory",
+                "tn": "TN_Assertive",
+                "cta": "CTA_Buy"
+              },
+              "row_shared_variable": "TN_Assertive"
+            },
+            {
+              "row_id": "B",
+              "cell_id": "C4B",
+              "column_id": "C4",
+              "plain_text": {
+                "cta": "CTA_Buy",
+                "hook": "\"It's the city of our first trip together.\"",
+                "tone": "TN_Aspirational",
+                "primary": "\"It's the city of our first trip together.\"",
+                "headline": "\"It's the city of our first trip together.\"",
+                "proof_or_pain": "PR_Testimonial"
+              },
+              "column_label": "MemoryKeeperCouple",
+              "concept_code": "C4",
+              "diagonal_role": null,
+              "variable_stack": {
+                "cn": "CN_Design_MultiPrintGallery",
+                "hk": "\"It's the city of our first trip together.\"",
+                "hp": "PR_Testimonial",
+                "tn": "TN_Aspirational",
+                "cta": "CTA_Buy"
+              },
+              "row_shared_variable": "TN_Aspirational"
+            },
+            {
+              "row_id": "C",
+              "cell_id": "C4C",
+              "column_id": "C4",
+              "plain_text": {
+                "cta": "CTA_Buy",
+                "hook": "When did a gift last earn a spot on the wall?",
+                "tone": "TN_Rational",
+                "primary": "When did a gift last earn a spot on the wall?",
+                "headline": "When did a gift last earn a spot on the wall?",
+                "proof_or_pain": "HP_ForgettableGift"
+              },
+              "column_label": "MemoryKeeperCouple",
+              "concept_code": "C4",
+              "diagonal_role": null,
+              "variable_stack": {
+                "cn": "CN_Design_MultiPrintGallery",
+                "hk": "When did a gift last earn a spot on the wall?",
+                "hp": "HP_ForgettableGift",
+                "tn": "TN_Rational",
+                "cta": "CTA_Buy"
+              },
+              "row_shared_variable": "TN_Rational"
+            },
+            {
+              "row_id": "D",
+              "cell_id": "C4D",
+              "column_id": "C4",
+              "plain_text": {
+                "cta": "CTA_ClaimOffer",
+                "hook": "Generic gifts don't survive the year. Walls do.",
+                "tone": "TN_Aspirational",
+                "primary": "Generic gifts don't survive the year. Walls do.",
+                "headline": "Generic gifts don't survive the year. Walls do.",
+                "proof_or_pain": "HP_GenericGift"
+              },
+              "column_label": "MemoryKeeperCouple",
+              "concept_code": "C4",
+              "diagonal_role": "diagonal_down",
+              "variable_stack": {
+                "cn": "CN_Design_MultiPrintGallery",
+                "hk": "Generic gifts don't survive the year. Walls do.",
+                "hp": "HP_GenericGift",
+                "tn": "TN_Aspirational",
+                "cta": "CTA_ClaimOffer"
+              },
+              "row_shared_variable": "TN_Aspirational"
+            }
+          ],
+          "columns": [
+            {
+              "id": "C1",
+              "icp": "ICP-ECAS-01",
+              "name": "GiftGiver45"
+            },
+            {
+              "id": "C2",
+              "icp": "ICP-ECAS-02",
+              "name": "Milestone2534"
+            },
+            {
+              "id": "C3",
+              "icp": "ICP-ECAS-03",
+              "name": "HometownSelf"
+            },
+            {
+              "id": "C4",
+              "icp": "ICP-ECAS-04",
+              "name": "MemoryKeeperCouple"
+            }
+          ],
+          "diagonal_up": [
+            "C1D",
+            "C2C",
+            "C3B",
+            "C4A"
+          ],
+          "diagonal_down": [
+            "C1A",
+            "C2B",
+            "C3C",
+            "C4D"
+          ]
+        },
         "source_artifacts": [
           "ecas-mst-sprint1-handoff.zip (Claude Code handoff, C1/C2 only, 13 files)",
           "drive-download-20260725T055530Z-1-001.zip (full Drive export, 20 files, all 16 cells represented but with filename/variant inconsistencies)",

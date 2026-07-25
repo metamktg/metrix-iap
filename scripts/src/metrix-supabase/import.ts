@@ -1162,7 +1162,67 @@ async function importEcas(q: Q): Promise<number> {
     ["mst", {
       status: str(ecasMst.status) ?? "active",
       render_policy: ecasMst.render_policy ?? null,
-      historical_matrix_4x4: ecasMst.historical_matrix_4x4 ?? null,
+      // Normalize ECAS's flat cell array into the MSTMatrix object shape the
+      // UI expects: { columns, rows, diagonal_down, diagonal_up, cells }.
+      // LittleData ships this shape already; ECAS Sprint 1 ships a flat list.
+      historical_matrix_4x4: (() => {
+        const flat: any[] = Array.isArray(ecasMst.historical_matrix_4x4)
+          ? ecasMst.historical_matrix_4x4 : [];
+        if (!flat.length) return ecasMst.historical_matrix_4x4 ?? null;
+        const colOrder = [...new Set(flat.map((c: any) => c.concept_id as string))].sort();
+        const rowOrder = [...new Set(flat.map((c: any) => c.row_variable as string))].sort();
+        const columns = colOrder.map((id) => {
+          const concept = conceptsByCode.get(id);
+          return { id, name: concept?.definition ?? id, icp: concept?.icp_id ?? null };
+        });
+        const rows = rowOrder.map((id) => {
+          // Use the C1 (first concept) cell's tone as the row's shared variable label
+          const lead = flat.find((c: any) => c.row_variable === id && c.concept_id === colOrder[0]);
+          const leadEntry = lead ? (creativeByCell.get(lead.cell_id?.toUpperCase() ?? "") ?? null) : null;
+          const shared = lead?.tone ?? leadEntry?.variable_stack?.TN ?? id;
+          return { id, shared, color: "var(--accent)" };
+        });
+        const normalizedCells = flat.map((c: any) => {
+          const colIdx = colOrder.indexOf(c.concept_id);
+          const rowIdx = rowOrder.indexOf(c.row_variable);
+          const diag = colIdx === rowIdx ? "diagonal_down"
+            : colIdx + rowIdx === colOrder.length - 1 ? "diagonal_up" : null;
+          const entry = creativeByCell.get(c.cell_id?.toUpperCase() ?? "") ?? null;
+          const vs = entry?.variable_stack ?? {};
+          const concept = conceptsByCode.get(c.concept_id);
+          return {
+            cell_id: c.cell_id,
+            column_id: c.concept_id,
+            row_id: c.row_variable,
+            column_label: concept?.definition ?? c.concept_id,
+            row_shared_variable: c.tone ?? vs.TN ?? c.row_variable,
+            diagonal_role: diag,
+            concept_code: c.concept_id,
+            variable_stack: {
+              cn: vs.CN ?? null,
+              hk: c.hook ?? vs.HK ?? null,
+              tn: c.tone ?? vs.TN ?? null,
+              hp: c.proof_or_pain ?? vs.HP ?? null,
+              cta: c.cta_code ?? vs.CTA ?? null,
+            },
+            plain_text: {
+              headline: c.hook ?? null,
+              primary: c.hook ?? null,
+              hook: c.hook ?? null,
+              tone: c.tone ?? null,
+              proof_or_pain: c.proof_or_pain ?? null,
+              cta: c.cta_code ?? null,
+            },
+          };
+        });
+        return {
+          columns,
+          rows,
+          diagonal_down: normalizedCells.filter((c) => c.diagonal_role === "diagonal_down").map((c) => c.cell_id),
+          diagonal_up: normalizedCells.filter((c) => c.diagonal_role === "diagonal_up").map((c) => c.cell_id),
+          cells: normalizedCells,
+        };
+      })(),
       source_artifacts: ecasMst.source_artifacts ?? [],
     }],
   ];
