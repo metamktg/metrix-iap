@@ -815,8 +815,8 @@ export async function startManualAnalysis(
       // Full-replace all concept_performance for this account so the grid
       // always reflects the latest analysis run.
       const extractConcept = (adName: string): string | null => {
-        const m = adName.match(/^([A-Z]\d+)(?=[A-Z_])/);
-        return m ? m[1]! : null;
+        const m = adName.match(/^([A-Za-z]\d+)(?=[A-Za-z_])/);
+        return m ? m[1]!.toUpperCase() : null;
       };
       const extractBook = (adName: string): string | null => {
         const m = adName.match(/BOOK\d+/i);
@@ -1033,8 +1033,8 @@ function withinViewPreset(date: string, preset: ViewPreset, maxDate: string): bo
 }
 
 function extractConceptCode(adName: string): string | null {
-  const m = String(adName).match(/^([A-Z]\d+)(?=[A-Z_])/);
-  return m ? m[1]! : null;
+  const m = String(adName).match(/^([A-Za-z]\d+)(?=[A-Za-z_])/);
+  return m ? m[1]!.toUpperCase() : null;
 }
 
 function extractBookCode(adName: string): string | null {
