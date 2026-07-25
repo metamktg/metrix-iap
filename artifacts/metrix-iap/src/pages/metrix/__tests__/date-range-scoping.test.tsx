@@ -120,28 +120,40 @@ describe("IAP Library respects the date range", () => {
   });
 });
 
-describe("Analysis Overview tiles respect the date range", () => {
+describe("Analysis Overview always shows all-time data", () => {
+  // Analysis views show results from a specific analysis run (CSV import →
+  // "Run Analysis"). The run's data is already aggregated over a flight
+  // window — no daily grain exists so date range filtering makes no sense.
+  // The topbar date picker does not appear on analysis views; tiles always
+  // show the full-window totals regardless of any date range state.
+
   const spendOf = (text: string | null) => {
-    // Extract the first $ amount following the spend tile label.
-    const m = /(?:Total spend|Spend \(in range\))\$([\d,]+)/.exec(text ?? "");
+    const m = /Total spend\$([\d,]+)/.exec(text ?? "");
     return m ? Number(m[1].replaceAll(",", "")) : null;
   };
 
-  it("in-range spend is lower than all-time spend", () => {
+  it("always shows Total spend regardless of the selected date range", () => {
     selectBookster();
     setRange(null);
     const all = renderView(AnalysisOverview);
-    const allSpend = spendOf(all.container.textContent);
+    const allText = all.container.textContent ?? "";
+    expect(allText).toContain("Total spend");
+    expect(allText).not.toContain("Spend (in range)");
+    const allSpend = spendOf(allText);
     expect(allSpend).not.toBeNull();
     cleanup();
 
     selectBookster();
     setRange({ customStart: LATE_RANGE.start, customEnd: LATE_RANGE.end });
     const narrowed = renderView(AnalysisOverview);
-    expect(narrowed.container.textContent).toContain("Spend (in range)");
-    const narrowedSpend = spendOf(narrowed.container.textContent);
+    const narrowedText = narrowed.container.textContent ?? "";
+    // Date range must not affect analysis views — always full-window data
+    expect(narrowedText).not.toContain("Spend (in range)");
+    expect(narrowedText).toContain("Total spend");
+    const narrowedSpend = spendOf(narrowedText);
     expect(narrowedSpend).not.toBeNull();
-    expect(narrowedSpend!).toBeLessThan(allSpend!);
+    // Spend is identical because date range has no effect here
+    expect(narrowedSpend).toBe(allSpend);
   });
 });
 

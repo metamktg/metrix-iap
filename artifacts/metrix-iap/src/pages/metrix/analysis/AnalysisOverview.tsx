@@ -13,11 +13,9 @@ import {
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
-  RangeScopeBar, NoDataInRangeState, DetailReveal, deriveLabel,
+  DetailReveal, deriveLabel,
   LoopAction, SkeletonTileRow, InfoTooltip, readableVariables, eventLabel,
 } from "../shared";
-import { useDateRange } from "@/contexts/DateRangeContext";
-import { useCellRangeScope, sumInRange } from "@/lib/date-scope";
 import { SharePieChart } from "@/components/charts/SharePieChart";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip,
@@ -640,9 +638,7 @@ export function AnalysisOverview() {
   const isRefetching   = useMetrixIsRefetching();
   const adAccountId    = useScopedAdAccountId();
   const account        = getAdAccount(seed, adAccountId);
-  const { rangeHasData } = useDateRange();
   const analysis       = getAnalysisData(seed, adAccountId);
-  const { range, narrowed, filterCells } = useCellRangeScope(analysis);
 
   const [cellSort, setCellSort] = useState<CellSort>("spend");
 
@@ -674,21 +670,8 @@ export function AnalysisOverview() {
           );
         }
 
-        // ── Range-scoped metric tiles ─────────────────────────────────
+        // ── Metric data ───────────────────────────────────────────────
         const rollup      = a.concept_rollup ?? [];
-        const rollupDates = (r: (typeof rollup)[number]) => ({ start: r.date_start, end: r.date_end });
-        const scoped = narrowed
-          ? {
-              spend:      sumInRange(rollup, range, rollupDates, (r) => r.spend),
-              linkClicks: sumInRange(rollup, range, rollupDates, (r) => r.link_clicks),
-              results:    sumInRange(rollup, range, rollupDates, (r) => r.results),
-              concepts:   rollup.filter((r) =>
-                range && r.date_start && r.date_end &&
-                !(r.date_end < range.start || r.date_start > range.end)
-              ).length,
-            }
-          : null;
-        const cellRowsInRange = filterCells(a.performance_by_cell).length;
 
         // ── MST lookup for control-name resolution ────────────────────
         const mst = getMST(seed, adAccountId);
@@ -714,7 +697,7 @@ export function AnalysisOverview() {
           .sort((a, b) => b.value - a.value);
 
         // ── Top cells ─────────────────────────────────────────────────
-        const cellsInRange = filterCells(a.performance_by_cell);
+        const cellsInRange = a.performance_by_cell;
         const sortedCells: CellBarItem[] = [...cellsInRange]
           .sort((x, y) =>
             cellSort === "spend"
@@ -748,9 +731,7 @@ export function AnalysisOverview() {
             label: "IAP Library",
             Icon: Library,
             desc: "Cell and variable performance across the account.",
-            stat: narrowed
-              ? `${cellRowsInRange} cell rows in range · ${a.v3_variable_performance.length} variable rows`
-              : `${a.performance_by_cell.length} cell rows · ${a.v3_variable_performance.length} variable rows`,
+            stat: `${a.performance_by_cell.length} cell rows · ${a.v3_variable_performance.length} variable rows`,
           },
           {
             to: "/app/analysis/audience",
@@ -784,12 +765,7 @@ export function AnalysisOverview() {
               tabs="analysis"
               account={acct}
             />
-            <RangeScopeBar grainNote="Campaign totals cover the account's full flight window — this import has no daily grain." />
-
-            {!rangeHasData ? (
-              <NoDataInRangeState what="analysis data" />
-            ) : (
-              <>
+            <>
                 {/* ── Metric tiles + result type donut (inline) ──── */}
                 {isRefetching ? (
                   <div className="px-6 pt-5">
@@ -799,21 +775,12 @@ export function AnalysisOverview() {
                   <div className="px-6 pt-5 flex gap-3 items-start">
                     {/* Left: 4 tiles in a 2×2 grid */}
                     <div className="flex-1 grid grid-cols-dashboard-4 gap-3">
-                      {scoped ? (
-                        <>
-                          <MetricTile label="Spend (in range)"       value={fmtUSD(scoped.spend, 0)} sub="concept flights overlapping range" />
-                          <MetricTile label="Link clicks (in range)" value={fmtNum(scoped.linkClicks)} />
-                          <MetricTile label="Results (in range)"     value={fmtNum(scoped.results)} />
-                          <MetricTile label="Concept flights"        value={String(scoped.concepts)} sub="overlapping selected range" />
-                        </>
-                      ) : (
                         <>
                           <MetricTile label="Total spend"  value={fmtUSD(summary.total_spend_usd, 0)} />
                           <MetricTile label="Impressions"  value={fmtNum(summary.total_impressions)} />
                           <MetricTile label="Link clicks"  value={fmtNum(summary.total_link_clicks)} />
                           <MetricTile label="Link CTR"     value={fmtPct(summary.overall_link_ctr_pct)} />
                         </>
-                      )}
                     </div>
                     {/* Right: result type donut — inline with tiles */}
                     {resultTypePie.length > 0 && (
@@ -863,7 +830,7 @@ export function AnalysisOverview() {
                   {sortedCells.length > 0 && (
                     <SectionCard
                       title="Top cells by spend"
-                      desc={`${term.Plural} · CPA · ${narrowed ? cellRowsInRange : a.performance_by_cell.length} cells total`}
+                      desc={`${term.Plural} · CPA · ${a.performance_by_cell.length} cells total`}
                       right={
                         <div className="flex items-center gap-2">
                           <SortToggle
@@ -1000,7 +967,6 @@ export function AnalysisOverview() {
                   </div>
                 </div>
               </>
-            )}
           </div>
         );
       }}

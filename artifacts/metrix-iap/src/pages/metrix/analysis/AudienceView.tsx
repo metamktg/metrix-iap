@@ -26,10 +26,9 @@ import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
-  RangeScopeBar, NoDataInRangeState, SkeletonTileRow,
+  SkeletonTileRow,
 } from "../shared";
 import { TYPE } from "../typography";
-import { useDateRange } from "@/contexts/DateRangeContext";
 import {
   Users, Map, LayoutGrid, List, ArrowRight,
   AlertTriangle, TrendingUp,
@@ -586,8 +585,6 @@ export function AudienceView() {
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
   const analysis = getAnalysisData(seed, adAccountId);
-  const { rangeHasData } = useDateRange();
-
   const [selectedSeg, setSelectedSeg] = useState<SegmentId | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     try { return (localStorage.getItem(VIEW_KEY) as ViewMode | null) ?? "pockets"; } catch { return "pockets"; }
@@ -663,12 +660,7 @@ export function AudienceView() {
                 subtitle="Audience intelligence: who converts, where the funnel holds, and what creative each pocket responds to."
                 tabs="analysis"
               />
-              <RangeScopeBar grainNote="Demographic signal aggregates each cell's full flight window — no daily grain." />
-
-              {!rangeHasData ? (
-                <NoDataInRangeState what="audience data" />
-              ) : (
-                <>
+              <>
                   {isRefetching ? (
                     <div className="px-6 pt-5"><SkeletonTileRow count={4} /></div>
                   ) : (
@@ -727,7 +719,6 @@ export function AudienceView() {
                     )}
                   </div>
                 </>
-              )}
             </div>
           );
         }}

@@ -8,7 +8,6 @@ import {
 import { useAccount } from "@/contexts/AccountContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { BrandLogo } from "@/components/brand/BrandMark";
-import { DateRangePicker } from "./DateRangePicker";
 import { useTaskTray } from "@/contexts/TaskTrayContext";
 import { useTaskTrayCount } from "./TaskTray";
 import { buildBreadcrumbs } from "./breadcrumbs";
@@ -176,9 +175,6 @@ export function Topbar() {
           );
         })}
       </nav>
-
-      {/* Global date range */}
-      <DateRangePicker />
 
       {/* Status */}
       {isManager ? (

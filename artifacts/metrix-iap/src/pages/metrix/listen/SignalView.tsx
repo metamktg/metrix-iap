@@ -10,9 +10,9 @@ import { getAdAccount, getListenSignals } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ConfidenceBadge, ModuleTabs, ModuleScopeGate,
   PendingState, MetricTile, ImpactBadge, ScopeBadge, CrossLink, useFocusParam,
-  RangeScopeBar, NoDataInRangeState, StaleFocusNotice, LoopAction, deriveLabel,
+  StaleFocusNotice, LoopAction, deriveLabel,
 } from "../shared";
-import { useDateRange } from "@/contexts/DateRangeContext";
+import { useGetMetaConnection } from "@workspace/api-client-react";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { Radio, ArrowRight } from "lucide-react";
 import type { SignalCard } from "@/lib/data/seedTypes";
@@ -30,7 +30,8 @@ export function SignalView() {
   const [tab, setTab] = useState<string>("all");
   const focus = useFocusParam();
   const [detail, setDetail] = useState<SignalCard | null>(null);
-  const { rangeHasData } = useDateRange();
+  const metaConnection = useGetMetaConnection();
+  const hasMetaConnection = metaConnection.data?.connected === true;
 
   const signals = getListenSignals(seed, adAccountId);
 
@@ -66,10 +67,13 @@ export function SignalView() {
             {focus && !signals.some((s) => s.id === focus) && (
               <StaleFocusNotice label="signal" />
             )}
-            <RangeScopeBar grainNote="Signals derive from the account's full flight window — this import has no daily grain." />
-
-            {!rangeHasData ? (
-              <NoDataInRangeState what="signals" />
+            {!hasMetaConnection ? (
+              <PendingState
+                title="Live insights require Meta connection"
+                message="Connect your Meta ad account to unlock real-time signals, alerts, and recommendations — the live intelligence layer of Metrix."
+                icon={Radio}
+                action={<CrossLink to="/app/settings/integrations" label="Connect Meta in Settings" />}
+              />
             ) : (
             <>
             <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">

@@ -9,10 +9,11 @@ import { getAdAccount, getOptimizationLoop, getAnalysisData } from "@/lib/data/m
 import { RecommendationDeck, actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile, CaveatNote,
-  RangeScopeBar, NoDataInRangeState, LoopAction,
+  LoopAction, CrossLink,
 } from "../shared";
-import { useDateRange } from "@/contexts/DateRangeContext";
+import { useGetMetaConnection } from "@workspace/api-client-react";
 import { SegmentGridModal } from "@/components/creative/SegmentGridModal";
+import { Lightbulb } from "lucide-react";
 import type { RecommendationCard } from "@/lib/data/seedTypes";
 
 const SECTION = "Listen · 02";
@@ -33,7 +34,8 @@ export function RecommendationsView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
-  const { rangeHasData } = useDateRange();
+  const metaConnection = useGetMetaConnection();
+  const hasMetaConnection = metaConnection.data?.connected === true;
   const [segmentCardId, setSegmentCardId] = useState<string | null>(null);
 
   return (
@@ -69,10 +71,13 @@ export function RecommendationsView() {
               subtitle="Optimization loop · approval adds a manual task"
               account={acct}
             />
-            <RangeScopeBar grainNote="Recommendations derive from the account's full flight window — this import has no daily grain." />
-
-            {!rangeHasData ? (
-              <NoDataInRangeState what="recommendations" />
+            {!hasMetaConnection ? (
+              <PendingState
+                title="Live insights require Meta connection"
+                message="Connect your Meta ad account to unlock AI-generated optimization recommendations from live performance data."
+                icon={Lightbulb}
+                action={<CrossLink to="/app/settings/integrations" label="Connect Meta in Settings" />}
+              />
             ) : (
             <>
             <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
