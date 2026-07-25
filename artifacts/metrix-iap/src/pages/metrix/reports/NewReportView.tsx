@@ -217,7 +217,7 @@ export function NewReportView() {
                         <span className="text-caption text-muted-foreground/60">No data window available</span>
                       )}
                       {override ? (
-                        <span className="text-[9px] font-semibold uppercase tracking-wide text-primary border border-primary/25 bg-primary/10 px-1.5 py-0.5 rounded leading-none">Override</span>
+                        <span className="mx-inline-badge mx-inline-badge--info">Override</span>
                       ) : (
                         <span className="text-label text-muted-foreground/60">inherited from the global date range ({rangeLabel})</span>
                       )}
@@ -295,7 +295,7 @@ export function NewReportView() {
                       <div className="flex items-center gap-2 mb-3">
                         <Palette className="w-3.5 h-3.5 text-primary" />
                         <span className="text-caption font-semibold text-foreground">{brandLabel}</span>
-                        <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/60">{brandSub}</span>
+                        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">{brandSub}</span>
                       </div>
                       <div className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Creative Signal Report</div>
                       <h2 className="text-lg font-semibold text-foreground mt-1">{acct.name} · {acct.platform}</h2>
@@ -373,7 +373,7 @@ export function NewReportView() {
                               >
                                 {FORMAT_LABEL[f] ?? f}
                                 {f === defaultFormat && (
-                                  <span className="text-[9px] font-normal text-muted-foreground/60">default</span>
+                                  <span className="text-label font-normal text-muted-foreground/60">default</span>
                                 )}
                               </button>
                             ))}

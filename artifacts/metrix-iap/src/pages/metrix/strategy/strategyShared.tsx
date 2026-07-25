@@ -44,7 +44,7 @@ export function VariableChip({ code, showCode = false }: { code: string; showCod
       )}
     >
       {resolveVariableLabel(code)}
-      {showCode && <span className="font-mono text-[8px] opacity-60">{code}</span>}
+      {showCode && <span className="font-mono text-label opacity-60">{code}</span>}
     </span>
   );
 }
@@ -354,7 +354,7 @@ export function HypothesisStatusBadge({ status }: { status: string }) {
   return (
     <span
       className={cn(
-        "inline-flex text-[9px] font-semibold border px-1.5 py-0.5 rounded leading-none",
+        "inline-flex text-label font-semibold border px-1.5 py-0.5 rounded leading-none",
         HYP_STATUS_STYLE[key] ?? "bg-muted text-muted-foreground/60 border-border/40",
       )}
     >
@@ -382,7 +382,7 @@ export function VariableCombinationsGrid({ combinations }: { combinations: Varia
             {c.recommendation && (
               <span
                 className={cn(
-                  "shrink-0 text-[9px] font-semibold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none",
+                  "shrink-0 text-label font-semibold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none",
                   RECO_STYLE[c.recommendation.toLowerCase()] ?? "bg-muted text-muted-foreground/60 border-border/40",
                 )}
               >
@@ -393,11 +393,11 @@ export function VariableCombinationsGrid({ combinations }: { combinations: Varia
           <CombinationChips combination={c.combination} />
           <div className="mt-auto pt-2 border-t border-border/20 flex items-center gap-4">
             <div>
-              <div className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">CPA</div>
+              <div className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70">CPA</div>
               <div className="text-sm font-bold text-foreground tabular-nums">{fmtMetric("usd_unit", c.cpa)}</div>
             </div>
             <div>
-              <div className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">CVR</div>
+              <div className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70">CVR</div>
               <div className="text-sm font-bold text-foreground tabular-nums">{fmtMetric("pct", c.cvr_pct)}</div>
             </div>
             {c.confidence && (

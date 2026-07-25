@@ -115,7 +115,7 @@ function IcpFact({ label, value, Icon }: {
     <div>
       <div className="flex items-center gap-1 mb-0.5">
         <Icon className="w-3.5 h-3.5 text-muted-foreground/60" />
-        <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
+        <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
       </div>
       {value.length > 72 ? (
         <DetailReveal
@@ -139,7 +139,7 @@ function DnaVariableLine({ v, resultNoun }: { v: DnaVariable; resultNoun: string
       <div className="flex items-center gap-2 min-w-0 flex-wrap">
         <VariableChip code={v.code} />
         {v.family && (
-          <span className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground/50">
+          <span className="text-label font-mono uppercase tracking-wider text-muted-foreground/50">
             {familyLabel(v.family)}
           </span>
         )}
@@ -163,14 +163,14 @@ function DnaChipStrip({ variables, label, testId }: { variables: DnaVariable[]; 
     <div data-testid={testId}>
       <div className="flex items-center gap-1 mb-1.5">
         <Dna className="w-3.5 h-3.5 text-primary/70" />
-        <span className="text-[8px] font-mono uppercase tracking-widest text-muted-foreground/60">{label}</span>
+        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">{label}</span>
       </div>
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
         {variables.slice(0, 3).map((v) => (
           <VariableChip key={v.code} code={v.code} showCode={false} />
         ))}
         {variables.length > 3 && (
-          <span className="text-[9px] text-muted-foreground/60">+{variables.length - 3} more</span>
+          <span className="text-label text-muted-foreground/60">+{variables.length - 3} more</span>
         )}
       </div>
     </div>
@@ -294,7 +294,7 @@ function AvatarCard({
           </div>
           <div className="min-w-0">
             <p className="text-title font-semibold text-foreground leading-tight whitespace-pre-line">{col.name}</p>
-            <span className="text-[9px] font-mono text-muted-foreground/60">{col.icp}</span>
+            <span className="text-label font-mono text-muted-foreground/60">{col.icp}</span>
           </div>
         </div>
 
@@ -357,7 +357,7 @@ function AvatarCard({
       {/* ICP profile links */}
       {matched.length > 0 && (
         <div className="px-4 pb-3 pt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border/20">
-          <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+          <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/60">
             ICP profile{matched.length === 1 ? "" : "s"}
           </span>
           {matched.map((p) => (
@@ -480,7 +480,7 @@ function IcpProfileCard({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-title font-semibold text-foreground leading-tight">{profile.profile_name}</p>
-          <span className="text-[9px] font-mono text-muted-foreground/60">{profile.profile_id}</span>
+          <span className="text-label font-mono text-muted-foreground/60">{profile.profile_id}</span>
         </div>
         {profile.confidence_level && <ConfidenceBadge value={profile.confidence_level} />}
       </div>
@@ -490,7 +490,7 @@ function IcpProfileCard({
         {hasPerf && (
           <div className="rounded-lg border border-border/30 bg-white/[0.015] p-3">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">Performance</span>
+              <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70">Performance</span>
               {perf?.confidence && <ConfidenceBadge value={perf.confidence} />}
             </div>
             <div className="grid grid-cols-3 gap-3">
@@ -529,7 +529,7 @@ function IcpProfileCard({
                     );
                   })()}
                 </div>
-                <div className="flex items-center justify-between mt-0.5 text-[9px] text-muted-foreground/35">
+                <div className="flex items-center justify-between mt-0.5 text-label text-muted-foreground/35">
                   <span>best</span>
                   <span>avg {fmtUSD(avgCpa)}</span>
                   <span>2×avg</span>
@@ -542,7 +542,7 @@ function IcpProfileCard({
         {/* 2. Recommendation */}
         {profile.strategic_recommendation && (
           <div className="rounded-lg border border-primary/20 bg-primary/[0.05] p-3">
-            <div className="text-[9px] font-semibold uppercase tracking-widest text-primary/80 mb-0.5">Recommendation</div>
+            <div className="text-label font-semibold uppercase tracking-widest text-primary/80 mb-0.5">Recommendation</div>
             <DetailReveal
               label={deriveLabel(profile.strategic_recommendation, 72)}
               labelClassName={TYPE.body}
@@ -586,14 +586,14 @@ function IcpProfileCard({
                 )}
                 {hypotheses && hypotheses.length > 0 && (
                   <div>
-                    <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-1.5">
+                    <p className="text-label font-semibold uppercase tracking-widest text-muted-foreground/60 mb-1.5">
                       Hypothesis test variants
                     </p>
                     <div className="space-y-1.5">
                       {hypotheses.map((h) => (
                         <div key={h.id} className="rounded-lg border border-border/25 bg-white/[0.015] px-3 py-2">
                           {h.isolated_variable && (
-                            <span className="inline-block text-[9px] font-mono text-primary/70 border border-primary/25 px-1.5 py-0.5 rounded mb-1">
+                            <span className="inline-block text-label font-mono text-primary/70 border border-primary/25 px-1.5 py-0.5 rounded mb-1">
                               {h.isolated_variable}
                             </span>
                           )}
@@ -643,7 +643,7 @@ function IcpProfileCard({
       {/* Avatar back-links */}
       {avatars && avatars.length > 0 && (
         <div className="mt-3 pt-3 border-t border-border/20 flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+          <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/60">
             Avatar{avatars.length === 1 ? "" : "s"}
           </span>
           {avatars.map((col) => (
@@ -1348,7 +1348,7 @@ export function AvatarsView() {
                                   </p>
                                   <div className="flex items-center gap-1.5 mt-0.5">
                                     {ad.cell && (
-                                      <span className="text-[9px] font-mono border border-border/30 px-1 py-0.5 rounded text-muted-foreground/55">
+                                      <span className="text-label font-mono border border-border/30 px-1 py-0.5 rounded text-muted-foreground/55">
                                         {ad.cell}
                                       </span>
                                     )}

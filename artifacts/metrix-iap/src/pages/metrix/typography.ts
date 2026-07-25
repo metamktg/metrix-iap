@@ -20,12 +20,15 @@
 // Full literal class strings so the Tailwind JIT scanner picks them up.
 
 export const TYPE = {
-  /** Uppercase eyebrow/section labels above titles or field groups. */
-  label: "text-label font-semibold uppercase tracking-widest text-muted-foreground/70",
+  /** Uppercase eyebrow/section labels above titles or field groups.
+   *  text-data-caption = #8796ac, 6.5:1 — intentional secondary, solid (no opacity blend). */
+  label: "text-label font-semibold uppercase tracking-widest text-data-caption",
   /** Card / list-item titles. */
   title: "text-title font-semibold text-foreground leading-snug",
-  /** Primary body prose inside cards and tiles. */
-  body: "text-body text-foreground/85 leading-relaxed",
-  /** Secondary/supporting prose: descriptions, sublines, meta text. */
-  caption: "text-caption text-muted-foreground/80 leading-relaxed",
+  /** Primary body prose inside cards and tiles.
+   *  text-data-body = #c6d2e5, 12.9:1 — clear readable prose, solid. */
+  body: "text-body leading-relaxed text-data-body",
+  /** Secondary/supporting prose: descriptions, sublines, meta text.
+   *  text-data-label = #aab6ca, 9.6:1 — crisp secondary text, solid (no opacity blend). */
+  caption: "text-caption leading-relaxed text-data-label",
 } as const;

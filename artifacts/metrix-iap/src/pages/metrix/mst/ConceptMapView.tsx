@@ -115,7 +115,7 @@ export function ConceptMapView() {
                   >
                     <div className="flex items-center gap-1.5 mb-1.5">
                       {g.cellIds.map((c) => (
-                        <span key={c} className="text-[9px] font-mono text-muted-foreground/70 border border-border/40 px-1 py-0.5 rounded leading-none">{c}</span>
+                        <span key={c} className="text-label font-mono text-muted-foreground/70 border border-border/40 px-1 py-0.5 rounded leading-none">{c}</span>
                       ))}
                     </div>
                     <p className="text-title font-semibold text-foreground leading-tight">{g.name}</p>
@@ -176,7 +176,7 @@ export function ConceptMapView() {
                   <div className="space-y-2">
                     {detail.cells.filter((r, i, arr) => arr.findIndex((x) => x.cell_id === r.cell_id) === i).map((r) => (
                       <div key={r.cell_id}>
-                        <span className="text-[9px] font-mono text-muted-foreground/70">{r.cell_id}</span>
+                        <span className="text-label font-mono text-muted-foreground/70">{r.cell_id}</span>
                         <VariableCodeChips row={r} />
                       </div>
                     ))}

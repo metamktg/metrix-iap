@@ -175,7 +175,7 @@ function QuickGenerate({
     <div className="flex flex-col gap-3">
       {/* Mode picker */}
       <div className="space-y-1.5">
-        <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40">
+        <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/40">
           Delivery mode
         </p>
         <div className="flex items-center gap-1 rounded-md border border-border/40 p-0.5 w-fit">
@@ -448,7 +448,7 @@ export function ReportsHub() {
                             </span>
                             <span
                               className={cn(
-                                "shrink-0 text-[9px] px-1.5 py-0.5 rounded border font-semibold leading-none capitalize",
+                                "shrink-0 text-label px-1.5 py-0.5 rounded border font-semibold leading-none capitalize",
                                 report.mode === "client"
                                   ? "bg-primary/10 text-primary border-primary/20"
                                   : "bg-border/20 text-muted-foreground border-border/40",
@@ -459,7 +459,7 @@ export function ReportsHub() {
                                 : "Internal"}
                             </span>
                             {report.export_format && (
-                              <span className="shrink-0 text-[9px] px-1.5 py-0.5 rounded border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 font-semibold leading-none flex items-center gap-0.5">
+                              <span className="shrink-0 text-label px-1.5 py-0.5 rounded border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 font-semibold leading-none flex items-center gap-0.5">
                                 <FileDown className="w-2.5 h-2.5" />
                                 {report.export_format.toUpperCase()}
                               </span>

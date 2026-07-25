@@ -424,7 +424,7 @@ function CsvMappingPanel({ summary }: { summary: ColumnMappingSummaryEntry[] }) 
                       )}
                       <span
                         className={cn(
-                          "ml-1.5 text-[9px] font-semibold uppercase tracking-wide",
+                          "ml-1.5 text-label font-semibold uppercase tracking-wide",
                           isHigh ? "text-emerald-400/80" : "text-amber-400/80"
                         )}
                       >
@@ -440,7 +440,7 @@ function CsvMappingPanel({ summary }: { summary: ColumnMappingSummaryEntry[] }) 
           {missing.length > 0 && (
             <div className={cn("pt-2 space-y-1", resolved.length > 0 && "mt-1")}>
               {missing.length > 0 && (
-                <p className="text-[9px] uppercase tracking-wide font-semibold text-muted-foreground/60 pb-0.5">
+                <p className="text-label uppercase tracking-wide font-semibold text-muted-foreground/60 pb-0.5">
                   Missing columns
                 </p>
               )}
@@ -610,7 +610,7 @@ function CsvSlotUpload({
         <div className="flex items-center gap-2 p-2 rounded-md border border-emerald-400/20 bg-emerald-400/[0.05]">
           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
           <span className="text-caption text-foreground/80 truncate">{staged.filename}</span>
-          <span className="text-[9px] font-semibold uppercase tracking-wide text-emerald-400/90 ml-auto shrink-0 mr-1">Staged</span>
+          <span className="text-label font-semibold uppercase tracking-wide text-emerald-400/90 ml-auto shrink-0 mr-1">Staged</span>
           <button
             onClick={() => void handleRemove()}
             disabled={deleteMutation.isPending}
@@ -770,7 +770,7 @@ function MatchMethodBadge({ method }: { method?: "id" | "fuzzy" | "guess" | null
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 text-[9px] font-medium px-1.5 py-0.5 rounded shrink-0",
+        "inline-flex items-center gap-1 text-label font-medium px-1.5 py-0.5 rounded shrink-0",
         config.className
       )}
     >
@@ -1351,7 +1351,7 @@ function PipelineProgress({
                 <div className={cn("text-label font-semibold leading-none", s.done ? "text-emerald-300/90" : s.active ? "text-foreground/90" : "text-muted-foreground/70")}>
                   {s.label}
                 </div>
-                <div className="text-[9px] text-muted-foreground/60 leading-none mt-0.5">{s.sublabel}</div>
+                <div className="text-label text-muted-foreground/60 leading-none mt-0.5">{s.sublabel}</div>
               </div>
             </div>
           </div>
@@ -1400,7 +1400,7 @@ export function ManualUploadPanel({
     return (
       <div className="space-y-3">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-muted-foreground/40">Step 2 of 2 — Review</span>
+          <span className="text-label font-bold uppercase tracking-[0.14em] text-muted-foreground/40">Step 2 of 2 — Review</span>
         </div>
         <PipelineProgress
           demoStaged={Boolean(demoImport)}
@@ -1478,7 +1478,7 @@ export function ManualUploadPanel({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-muted-foreground/40">Step 1 of 2 — Upload files</span>
+        <span className="text-label font-bold uppercase tracking-[0.14em] text-muted-foreground/40">Step 1 of 2 — Upload files</span>
       </div>
       <PipelineProgress
         demoStaged={Boolean(demoImport)}

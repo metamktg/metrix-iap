@@ -529,7 +529,7 @@ function RankedListTab({
               )}
             >
               <div className="flex items-center gap-2.5 mb-2.5">
-                <span className="w-4 shrink-0 font-mono text-muted-foreground/35 tabular-nums text-right text-[10px]">
+                <span className="w-4 shrink-0 font-mono text-muted-foreground/35 tabular-nums text-right text-label">
                   {idx + 1}
                 </span>
                 <span className={cn(TYPE.title, "font-semibold text-foreground/90 flex-1 truncate")}>
@@ -537,7 +537,7 @@ function RankedListTab({
                 </span>
                 {e.signal.low && (
                   <span
-                    className="inline-flex items-center gap-0.5 text-[8px] font-mono uppercase text-amber-300/65 shrink-0"
+                    className="inline-flex items-center gap-0.5 text-label font-mono uppercase text-amber-300/65 shrink-0"
                     title={e.signal.reasons.join(" ")}
                   >
                     <AlertTriangle className="w-3.5 h-3.5" /> Low

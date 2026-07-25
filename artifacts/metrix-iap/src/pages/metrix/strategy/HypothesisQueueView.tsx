@@ -40,7 +40,7 @@ function HypFact({
     <div className="min-w-0">
       <div className="flex items-center gap-1 mb-0.5">
         <Icon className="w-3.5 h-3.5 text-muted-foreground/60" />
-        <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
+        <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
       </div>
       <p className="text-caption text-foreground/80 leading-snug line-clamp-1">{deriveLabel(value, 56)}</p>
     </div>
@@ -152,7 +152,7 @@ export function HypothesisQueueView() {
                         >
                           {label}
                           <span className={cn(
-                            "text-[9px] font-mono rounded px-0.5",
+                            "text-label font-mono rounded px-0.5",
                             statusFilter === id ? "text-primary/70" : "text-muted-foreground/40",
                           )}>{count}</span>
                         </button>
@@ -202,7 +202,7 @@ export function HypothesisQueueView() {
                                   {inlineFacts.map((f) => (
                                     <div key={f.label} className="flex items-center gap-1.5 min-w-0">
                                       <f.Icon className="w-3 h-3 text-muted-foreground/45 shrink-0" />
-                                      <span className="text-[8px] font-mono uppercase tracking-widest text-muted-foreground/35 shrink-0">{f.label}</span>
+                                      <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/35 shrink-0">{f.label}</span>
                                       <span className="text-caption text-foreground/70 truncate">{deriveLabel(f.value, 48)}</span>
                                     </div>
                                   ))}

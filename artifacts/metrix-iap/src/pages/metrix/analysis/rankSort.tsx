@@ -116,7 +116,7 @@ export function RankSortBar<Row>({
           return (
             <div key={g.label} className="flex items-center gap-1">
               {gi > 0 && <span className="w-px h-3.5 bg-border/30 mx-0.5 shrink-0" />}
-              <span className="text-[8px] font-mono uppercase tracking-widest text-muted-foreground/30 mr-0.5">
+              <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/30 mr-0.5">
                 {g.label}
               </span>
               {gMetrics.map((m) => {
@@ -149,7 +149,7 @@ export function RankSortBar<Row>({
 
   return (
     <div className={cn("flex flex-wrap items-center gap-1", className)}>
-      <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50 mr-1">
+      <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/50 mr-1">
         Rank by
       </span>
       {metrics.map((m) => {
@@ -192,7 +192,7 @@ export function KpiStat({
 }) {
   return (
     <div className="min-w-0">
-      <div className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground/50 leading-none mb-1">
+      <div className="text-label font-mono uppercase tracking-wider text-muted-foreground/50 leading-none mb-1">
         {label}
       </div>
       <div

@@ -209,7 +209,7 @@ export function VariableCodeChips({ row }: { row: CellPerformanceRow }) {
   return (
     <div className="flex flex-wrap gap-1 mt-1">
       {codes.map((c) => (
-        <span key={c} className="text-[8px] font-mono text-muted-foreground/70 border border-border/30 px-1 py-0.5 rounded leading-none" title={readableVariables(c)}>
+        <span key={c} className="text-label font-mono text-muted-foreground/70 border border-border/30 px-1 py-0.5 rounded leading-none" title={readableVariables(c)}>
           {c}
         </span>
       ))}
@@ -246,7 +246,7 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
     >
       <Td>
         <div className="font-medium text-foreground">{r.book2_concept_name}</div>
-        <div className="text-[9px] font-mono text-muted-foreground/60 mt-0.5">{r.cell_id}{r.stage ? ` · ${r.stage}` : ""}</div>
+        <div className="text-label font-mono text-muted-foreground/60 mt-0.5">{r.cell_id}{r.stage ? ` · ${r.stage}` : ""}</div>
         <VariableCodeChips row={r} />
       </Td>
       <Td>{eventLabel(r["Result type"])}</Td>
@@ -321,7 +321,7 @@ export function VariableTable({
     >
       <Td>
         <div className="font-medium text-foreground">{readableVariables(r.variable_id)}</div>
-        <div className="text-[9px] font-mono text-muted-foreground/60 mt-0.5">{r.variable_id}</div>
+        <div className="text-label font-mono text-muted-foreground/60 mt-0.5">{r.variable_id}</div>
       </Td>
       <Td className="capitalize">{r.variable_family}</Td>
       <Td>{eventLabel(r["Result type"])}</Td>
@@ -387,7 +387,7 @@ export function DemographicTable({
   return (
     <div>
       {heatmap && maxCvr > 0 && (
-        <div className="flex items-center gap-2 px-3 py-1.5 border border-border/30 border-b-0 rounded-t-xl bg-white/[0.01] text-[9px] text-muted-foreground/55 font-mono">
+        <div className="flex items-center gap-2 px-3 py-1.5 border border-border/30 border-b-0 rounded-t-xl bg-white/[0.01] text-label text-muted-foreground/55 font-mono">
           <span className="uppercase tracking-widest">CVR</span>
           <span className="text-muted-foreground/35">low</span>
           <div
@@ -519,7 +519,7 @@ export function ConversionFunnelTable({ rows, labelHeader }: { rows: (Conversion
             <Td right>{r.adds_to_cart != null ? fmtNum(r.adds_to_cart) : "—"}</Td>
             <Td right>{r.checkouts_initiated != null ? fmtNum(r.checkouts_initiated) : "—"}</Td>
             <Td right>{r.purchases != null ? fmtNum(r.purchases) : "—"}</Td>
-            <Td>{r.confidence ? <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/60">{r.confidence.replace(/_/g, " ")}</span> : "—"}</Td>
+            <Td>{r.confidence ? <span className="text-label font-mono uppercase tracking-wider text-muted-foreground/60">{r.confidence.replace(/_/g, " ")}</span> : "—"}</Td>
           </tr>
         ))}
       </tbody>

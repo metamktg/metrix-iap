@@ -170,9 +170,9 @@ function getPhaseLabel(kind: "analysis" | "strategy" | "briefs", pct: number): s
 
 function StatPill({ value, label }: { value: string | number; label?: string }) {
   return (
-    <span className="inline-flex items-baseline gap-1 text-label tabular-nums bg-white/[0.04] border border-border/20 rounded-md px-2 py-1 leading-none">
-      <span className="font-bold text-foreground/70">{value}</span>
-      {label && <span className="text-muted-foreground/40 font-normal">{label}</span>}
+    <span className="inline-flex items-baseline gap-1 text-label tabular-nums bg-white/[0.08] border border-border/40 rounded-md px-2 py-1 leading-none">
+      <span className="font-bold text-foreground">{value}</span>
+      {label && <span className="text-muted-foreground/75 font-normal">{label}</span>}
     </span>
   );
 }
@@ -188,10 +188,10 @@ function DepBadge({
 }) {
   return (
     <span className={cn(
-      "inline-flex items-center gap-1 text-[9px] font-semibold rounded-md px-2 py-1 leading-none border",
+      "inline-flex items-center gap-1 text-label font-semibold rounded-md px-2 py-1 leading-none border",
       satisfied
-        ? "text-emerald-400/75 bg-emerald-400/[0.08] border-emerald-400/15"
-        : "text-muted-foreground/30 bg-white/[0.025] border-border/15",
+        ? "text-emerald-400 bg-emerald-400/[0.15] border-emerald-400/40"
+        : "text-muted-foreground/60 bg-white/[0.05] border-border/30",
     )}>
       {satisfied
         ? <CheckCircle2 className="w-3.5 h-3.5" />
@@ -235,18 +235,18 @@ function StageTile({
         "relative flex flex-col items-center justify-center gap-2 py-3 px-2 rounded-xl flex-1 min-w-0 overflow-hidden",
         "border transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
         isLocked
-          ? "border-border/8 bg-transparent opacity-25 cursor-not-allowed"
+          ? "border-border/15 bg-transparent opacity-35 cursor-not-allowed"
           : isActive
-          ? "border-primary/40 bg-primary/[0.1] shadow-sm shadow-primary/10 cursor-pointer"
+          ? "border-primary/55 bg-primary/[0.15] shadow-sm shadow-primary/20 cursor-pointer"
           : isRunning
-          ? "border-amber-400/30 bg-amber-400/[0.05] cursor-pointer"
+          ? "border-amber-400/55 bg-amber-400/[0.10] cursor-pointer"
           : isStale
-          ? "border-orange-400/30 bg-orange-400/[0.04] hover:border-orange-400/45 hover:bg-orange-400/[0.07] cursor-pointer"
+          ? "border-orange-400/50 bg-orange-400/[0.08] hover:border-orange-400/65 hover:bg-orange-400/[0.12] cursor-pointer"
           : isComplete
-          ? "border-emerald-400/20 bg-emerald-400/[0.03] hover:border-emerald-400/35 hover:bg-emerald-400/[0.06] cursor-pointer"
+          ? "border-emerald-400/40 bg-emerald-400/[0.07] hover:border-emerald-400/55 hover:bg-emerald-400/[0.12] cursor-pointer"
           : isNext
-          ? "border-primary/25 bg-primary/[0.04] hover:border-primary/40 hover:bg-primary/[0.08] cursor-pointer"
-          : "border-border/15 hover:border-border/30 cursor-pointer",
+          ? "border-primary/40 bg-primary/[0.08] hover:border-primary/55 hover:bg-primary/[0.12] cursor-pointer"
+          : "border-border/30 hover:border-border/50 cursor-pointer",
       )}
     >
       {/* Animated indeterminate progress bar — bottom edge, running only */}
@@ -263,43 +263,43 @@ function StageTile({
       <div className="relative flex items-center justify-center">
         <Icon className={cn(
           "w-4 h-4",
-          isLocked   ? "text-muted-foreground/30"
-            : isRunning  ? "text-amber-400/80"
-            : isStale    ? "text-orange-400/75"
-            : isComplete ? "text-emerald-400/70"
-            : isNext     ? "text-primary/70"
-            : "text-muted-foreground/30",
+          isLocked   ? "text-muted-foreground/45"
+            : isRunning  ? "text-amber-400"
+            : isStale    ? "text-orange-400"
+            : isComplete ? "text-emerald-400/90"
+            : isNext     ? "text-primary"
+            : "text-muted-foreground/45",
         )} />
         {/* State overlay badge — top-right of icon */}
         <span className="absolute -top-1 -right-1.5">
           {isRunning ? (
-            <Loader2 className="w-3.5 h-3.5 text-amber-400/90 animate-spin" />
+            <Loader2 className="w-3.5 h-3.5 text-amber-400 animate-spin" />
           ) : isStale ? (
-            <RotateCcw className="w-3.5 h-3.5 text-orange-400/85" />
+            <RotateCcw className="w-3.5 h-3.5 text-orange-400" />
           ) : isComplete ? (
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400/80" />
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
           ) : isNext ? (
-            <span className="block w-2 h-2 rounded-full bg-primary/70 animate-pulse" />
+            <span className="block w-2 h-2 rounded-full bg-primary animate-pulse" />
           ) : null}
         </span>
       </div>
 
       {/* Stage label — only text on the tile */}
       <span className={cn(
-        "text-[8px] font-bold uppercase tracking-[0.14em] leading-none",
-        isLocked   ? "text-muted-foreground/20"
-          : isRunning  ? "text-amber-400/60"
-          : isStale    ? "text-orange-400/55"
-          : isComplete ? "text-emerald-400/50"
-          : isNext     ? "text-primary/55"
-          : "text-muted-foreground/30",
+        "text-label font-bold uppercase tracking-[0.14em] leading-none",
+        isLocked   ? "text-muted-foreground/40"
+          : isRunning  ? "text-amber-400/90"
+          : isStale    ? "text-orange-400/85"
+          : isComplete ? "text-emerald-400/80"
+          : isNext     ? "text-primary/85"
+          : "text-muted-foreground/55",
       )}>
         {label}
       </span>
 
       {/* Elapsed time — replaces label when running */}
       {isRunning && elapsedSeconds !== undefined && (
-        <span className="text-[8px] font-mono tabular-nums text-amber-400/50 leading-none -mt-1">
+        <span className="text-label font-mono tabular-nums text-amber-400/80 leading-none -mt-1">
           {fmtElapsed(elapsedSeconds)}
         </span>
       )}
@@ -389,9 +389,9 @@ function StageIntelligence({
     return (
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[9px] text-muted-foreground/30 font-medium">Entry point</span>
-          <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/20" />
-          <span className="text-[9px] text-muted-foreground/35">Enables Analysis</span>
+          <span className="text-label text-data-caption font-medium">Entry point</span>
+          <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/45" />
+          <span className="text-label text-data-caption">Enables Analysis</span>
         </div>
         {dataComplete && (
           <div className="flex flex-wrap gap-1.5">
@@ -415,9 +415,9 @@ function StageIntelligence({
       <div className="flex flex-col gap-3">
         {/* Causal position */}
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[9px] text-muted-foreground/30 font-medium">Root stage</span>
-          <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/20" />
-          <span className="text-[9px] text-muted-foreground/35">Enables Strategy &amp; Briefs</span>
+          <span className="text-label text-data-caption font-medium">Root stage</span>
+          <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/45" />
+          <span className="text-label text-data-caption">Enables Strategy &amp; Briefs</span>
         </div>
 
         {/* Stats — only when there's data */}
@@ -436,7 +436,7 @@ function StageIntelligence({
 
         {/* Last run provenance */}
         {lastRun && (
-          <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground/30">
+          <div className="flex items-center gap-1.5 text-label text-data-caption">
             <Clock className="w-3.5 h-3.5 shrink-0" />
             <span>Last run {fmtFull(lastRun)}</span>
           </div>
@@ -471,8 +471,8 @@ function StageIntelligence({
             label={`Analysis${analysisWindow ? `: ${analysisWindow}` : ""}`}
             satisfied={analysisComplete}
           />
-          <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/20" />
-          <span className="text-[9px] text-muted-foreground/35">Enables Briefs</span>
+          <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/45" />
+          <span className="text-label text-data-caption">Enables Briefs</span>
         </div>
 
         {/* Stats */}
@@ -482,7 +482,7 @@ function StageIntelligence({
             {hypothesisCount > 0 && <StatPill value={hypothesisCount} label="hypotheses" />}
             {icpCount > 0 && <StatPill value={icpCount} label="ICPs" />}
             {isGenerated && (
-              <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-primary/60 bg-primary/[0.08] border border-primary/15 rounded-md px-2 py-1 leading-none">
+              <span className="inline-flex items-center gap-1 text-label font-semibold text-primary/85 bg-primary/[0.12] border border-primary/35 rounded-md px-2 py-1 leading-none">
                 <Sparkles className="w-3.5 h-3.5" /> Generated
               </span>
             )}
@@ -491,11 +491,11 @@ function StageIntelligence({
 
         {/* Provenance */}
         {genDate && (
-          <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground/30">
+          <div className="flex items-center gap-1.5 text-label text-data-caption">
             <Clock className="w-3.5 h-3.5 shrink-0" />
             <span>Generated {fmtFull(genDate)}</span>
             {strategyLastRun?.model && (
-              <span className="text-muted-foreground/20">· {strategyLastRun.model}</span>
+              <span className="text-muted-foreground/45">· {strategyLastRun.model}</span>
             )}
           </div>
         )}
@@ -544,7 +544,7 @@ function StageIntelligence({
             <StatPill key={t} value={t} />
           ))}
           {isGenerated && (
-            <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-primary/60 bg-primary/[0.08] border border-primary/15 rounded-md px-2 py-1 leading-none">
+            <span className="inline-flex items-center gap-1 text-label font-semibold text-primary/85 bg-primary/[0.12] border border-primary/35 rounded-md px-2 py-1 leading-none">
               <Sparkles className="w-3.5 h-3.5" /> Generated
             </span>
           )}
@@ -553,7 +553,7 @@ function StageIntelligence({
 
       {/* Provenance */}
       {genDate && (
-        <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground/30">
+        <div className="flex items-center gap-1.5 text-label text-data-caption">
           <Clock className="w-3.5 h-3.5 shrink-0" />
           <span>Generated {fmtFull(genDate)}</span>
         </div>
@@ -592,8 +592,8 @@ function ReportIntelligence({
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-1.5 flex-wrap">
         <DepBadge label="Briefs" satisfied={briefsComplete} />
-        <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/20" />
-        <span className="text-[9px] text-muted-foreground/35">Deliverable</span>
+        <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/45" />
+        <span className="text-label text-data-caption">Deliverable</span>
       </div>
       {reportComplete && (
         <div className="flex flex-wrap gap-1.5">
@@ -611,8 +611,8 @@ function RerunIntelligence({ allLoopComplete }: { allLoopComplete: boolean }) {
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-1.5 flex-wrap">
         <DepBadge label="Full loop complete" satisfied={allLoopComplete} />
-        <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/20" />
-        <span className="text-[9px] text-muted-foreground/35">Next cycle</span>
+        <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/45" />
+        <span className="text-label text-data-caption">Next cycle</span>
       </div>
       {allLoopComplete && (
         <div className="flex flex-wrap gap-1.5">
@@ -764,15 +764,15 @@ function CommandHub({
     : stage === "strategy" ? (analysisComplete ? "Ready to generate" : "Needs analysis")
     : (strategyComplete ? "Ready to generate" : "Needs strategy");
 
-  const statusClass = isRunning   ? "text-amber-400/80 bg-amber-400/10 border-amber-400/20"
-    : isStale       ? "text-orange-400/80 bg-orange-400/[0.08] border-orange-400/20"
-    : isComplete     ? "text-emerald-400/70 bg-emerald-400/[0.08] border-emerald-400/15"
+  const statusClass = isRunning   ? "text-amber-400 bg-amber-400/[0.15] border-amber-400/40"
+    : isStale       ? "text-orange-400 bg-orange-400/[0.14] border-orange-400/35"
+    : isComplete     ? "text-emerald-400/90 bg-emerald-400/[0.14] border-emerald-400/35"
     : (analysisComplete && stage === "strategy")
       || (strategyComplete && stage === "briefs")
       || (briefsComplete && stage === "report")
       || (allLoopComplete && stage === "rerun")
-    ? "text-primary/70 bg-primary/[0.08] border-primary/15"
-    : "text-muted-foreground/35 bg-white/[0.03] border-border/15";
+    ? "text-primary/90 bg-primary/[0.12] border-primary/35"
+    : "text-muted-foreground/65 bg-white/[0.05] border-border/30";
 
   const routes = STAGE_ROUTES[stage];
 

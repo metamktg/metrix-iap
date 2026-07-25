@@ -583,6 +583,193 @@
       radial-gradient(circle at 54% 40%, rgba(0, 136, 255, 0.22), transparent 44%),
       linear-gradient(180deg, rgba(8, 26, 58, 0.55), rgba(4, 11, 26, 0.2));
   }
+
+  /* ── KPI metric tile — accent-bar top stripe + number emphasis ──────
+     Inherits mx-card base geometry. Use for all KPI/metric tiles on
+     Overview, Analysis, and sub-pages. */
+  .mx-kpi-tile {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--mx-border-medium);
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(10, 20, 42, 0.72), rgba(5, 10, 22, 0.80));
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.05),
+      inset 0 0 0 1px rgba(255,255,255,0.01),
+      0 8px 24px rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(18px);
+    transition: transform var(--mx-fast), border-color var(--mx-fast), box-shadow var(--mx-fast);
+  }
+
+  /* Subtle 1px top highlight — replaces the loud blue→cyan gradient bar */
+  .mx-kpi-tile::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 14px 14px 0 0;
+    z-index: 1;
+  }
+
+  /* Minimal inner corner lift — no cyan glow */
+  .mx-kpi-tile::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.025) 0%, transparent 55%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .mx-kpi-tile:hover {
+    transform: translateY(-1px);
+    border-color: var(--mx-border-sharp);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.07),
+      0 14px 40px rgba(0, 0, 0, 0.36);
+  }
+
+  /* ── Hero card — lead/section-lead cards with stronger presence ─────
+     For primary content leads (e.g. Results by Event header, top module card).
+     Stronger border glow, radial top-left highlight, lighter background. */
+  .mx-card-hero {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 14px;
+    background: linear-gradient(160deg, rgba(11, 20, 42, 0.78), rgba(6, 11, 25, 0.86));
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.05),
+      inset 0 0 0 1px rgba(255,255,255,0.015),
+      0 10px 32px rgba(0, 0, 0, 0.32);
+    backdrop-filter: blur(22px);
+    transition: transform var(--mx-fast), border-color var(--mx-fast), box-shadow var(--mx-fast);
+  }
+
+  .mx-card-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 12% 0%, rgba(22, 217, 255, 0.22), transparent 38%),
+      linear-gradient(90deg, rgba(255,255,255,0.04), transparent 45%);
+    opacity: 0.65;
+    pointer-events: none;
+  }
+
+  .mx-card-hero:hover {
+    border-color: rgba(71, 163, 255, 0.44);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.09),
+      0 26px 72px rgba(0, 0, 0, 0.5),
+      0 0 60px rgba(0, 133, 255, 0.22);
+  }
+
+  /* ── Accent bar — top-of-card color stripe via ::before pseudo ──────
+     Apply to a positioned container. Swappable via --accent-bar-color.
+     Default: blue gradient. Variants: success (green), warning (gold),
+     danger (red). */
+  .mx-accent-bar {
+    --accent-bar-color: rgba(255, 255, 255, 0.07);
+    position: relative;
+  }
+
+  .mx-accent-bar::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--accent-bar-color);
+    border-radius: inherit;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    z-index: 1;
+  }
+
+  .mx-accent-bar--success { --accent-bar-color: rgba(52, 211, 111, 0.35); }
+  .mx-accent-bar--warning { --accent-bar-color: rgba(247, 201, 72, 0.35); }
+  .mx-accent-bar--danger  { --accent-bar-color: rgba(255, 79, 97, 0.35); }
+
+  /* ── Inline badge — standardized pill chip ──────────────────────────
+     Replaces ad-hoc badge styling for status chips, tier chips, etc.
+     Use color modifier classes for semantic coloring.
+     Base: text-label sizing, semibold, tracking-wide, rounded-full.
+     Border at 0.22 opacity gives a crisp pill edge without overpowering. */
+  .mx-inline-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.625rem;    /* text-label = 10px */
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--mx-text-soft);
+    white-space: nowrap;
+    text-transform: uppercase;
+  }
+
+  .mx-inline-badge--success {
+    background: hsl(141 68% 53% / 0.18);
+    color: hsl(141 68% 68%);
+    border-color: hsl(141 68% 53% / 0.48);
+  }
+
+  .mx-inline-badge--warning {
+    background: hsl(44 92% 63% / 0.18);
+    color: hsl(44 92% 72%);
+    border-color: hsl(44 92% 63% / 0.48);
+  }
+
+  .mx-inline-badge--danger {
+    background: hsl(354 100% 65% / 0.18);
+    color: hsl(354 100% 76%);
+    border-color: hsl(354 100% 65% / 0.48);
+  }
+
+  .mx-inline-badge--info {
+    background: hsl(222 100% 54% / 0.18);
+    color: hsl(216 100% 76%);
+    border-color: hsl(222 100% 54% / 0.48);
+  }
+
+  /* ── Section header — eyebrow + title + optional fragment subtitle ──
+     Enforces correct type roles for module and section headings. */
+  .mx-section-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .mx-section-header__eyebrow {
+    font-size: 0.625rem;   /* text-label */
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--mx-cyan-soft);
+    line-height: 1.4;
+  }
+
+  .mx-section-header__title {
+    font-size: 1.3125rem;  /* text-display = 21px */
+    font-weight: 700;
+    color: hsl(var(--text-primary));
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  .mx-section-header__sub {
+    font-size: 0.6875rem;  /* text-caption = 11px */
+    color: hsl(var(--text-muted));
+    line-height: 1.5;
+  }
 }
 
 @layer utilities {
@@ -604,6 +791,19 @@
   .text-stat    { font-size: 1.625rem;   line-height: 1.1; }  /* 26px */
   .text-bignum  { font-size: 1.75rem;    line-height: 1.1; }  /* 28px */
   .text-hero    { font-size: 2.5rem;     line-height: 1.0; }  /* 40px — oversized creative/display */
+
+  /* ── Solid-color data hierarchy — no opacity blending, predictable contrast ──
+     Contrast ratios on bg #050b18:
+       text-data-primary  #f5f8ff  18.5:1  — values, headings
+       text-data-body     #c6d2e5  12.9:1  — body prose
+       text-data-label    #aab6ca   9.6:1  — labels, captions, eyebrows
+       text-data-caption  #8796ac   6.5:1  — truly secondary / metadata
+     Use these in TYPE constants (typography.ts) instead of opacity-modified
+     text-muted-foreground, which yields unpredictable blended contrast. */
+  .text-data-primary { color: var(--mx-text-main); }    /* #f5f8ff — 18.5:1 */
+  .text-data-body    { color: var(--mx-text-soft); }    /* #c6d2e5 — 12.9:1 */
+  .text-data-label   { color: var(--mx-text-muted); }   /* #aab6ca —  9.6:1 */
+  .text-data-caption { color: var(--mx-text-faint); }   /* #8796ac —  6.5:1 */
 
   /* ── Metric number — tabular-nums for all KPI / stat values ─────── */
   .metric-num                   { font-variant-numeric: tabular-nums; }
@@ -712,6 +912,12 @@
   .text-metrix-blue { color: hsl(var(--metrix-blue)); }
   .text-success { color: hsl(var(--metrix-success)); }
   .text-danger { color: hsl(var(--metrix-danger)); }
+
+  /* ── Cyan accent — "live signal" layer ─────────────────────────────
+     text-accent: #16d9ff cyan for trend indicators, deltas, selected chips.
+     bg-accent-bar: subtle cyan surface tint for accent row backgrounds. */
+  .text-accent { color: #16d9ff; }
+  .bg-accent-bar { background-color: rgba(22, 217, 255, 0.08); }
 
   .bg-panel { background-color: hsl(var(--metrix-panel)); }
   .border-panel-border { border-color: hsl(var(--border)); }

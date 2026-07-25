@@ -145,7 +145,7 @@ export function AddAccountDialog({
                 );
               })}
             </div>
-            <span className="text-[9px] font-medium text-muted-foreground/40 tabular-nums">
+            <span className="text-label font-medium text-muted-foreground/40 tabular-nums">
               Step {stepNumber} of {totalSteps}
             </span>
           </div>
