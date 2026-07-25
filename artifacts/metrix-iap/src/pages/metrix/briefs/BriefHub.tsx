@@ -7,6 +7,10 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getBriefBuilder } from "@/lib/data/metrixSeedAdapter";
 import {
+  HubTldrCard,
+  HypothesisQueuePanel,
+} from "../PerformanceIntelligence";
+import {
   ModuleHeader,
   ModuleScopeGate,
   PendingState,
@@ -247,6 +251,12 @@ export function BriefHub() {
                   </div>
                 ))}
               </div>
+
+              {/* Performance Intelligence — panels self-guard on their own data */}
+              <section aria-label="Performance Intelligence" className="space-y-4">
+                <HubTldrCard accountId={adAccountId!} />
+                <HypothesisQueuePanel accountId={adAccountId!} />
+              </section>
             </div>
           </div>
         );
