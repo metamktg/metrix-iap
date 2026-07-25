@@ -825,34 +825,36 @@ async function importEcas(q: Q): Promise<number> {
     `${deviceCsv.platforms.size} platforms, ${deviceCsv.placements.size} placements.`,
   );
 
-  // ── Concepts — sum spend/results from ad_level_performance ───────────
-  const conceptTotals = new Map<string, { spend: number; results: number }>();
+  // ── Concepts — sum spend/link_clicks/results from ad_level_performance ─
+  const conceptTotals = new Map<string, { spend: number; linkClicks: number; results: number }>();
   for (const r of bundle.ad_level_performance ?? []) {
     const map = creativeByCell.get(String(r.ad_name).toUpperCase());
     const code = map?.concept_id ?? null;
     if (!code) continue;
     let ct = conceptTotals.get(code);
-    if (!ct) { ct = { spend: 0, results: 0 }; conceptTotals.set(code, ct); }
+    if (!ct) { ct = { spend: 0, linkClicks: 0, results: 0 }; conceptTotals.set(code, ct); }
     ct.spend = round2(ct.spend + Number(r.spend ?? 0));
+    ct.linkClicks += Number(r.link_clicks ?? 0);
     ct.results += Number(r.purchases ?? 0);
   }
   for (const c of library.local_concepts ?? []) {
     const ct = conceptTotals.get(c.code);
     const spend = ct ? round2(ct.spend) : null;
+    const lc = ct?.linkClicks ?? null;
     const results = ct?.results ?? null;
     await q(
       `insert into concept_performance (account_id, book, concept, date_start, date_end, spend,
          link_clicks, results, cpa, cvr_link_pct, confidence, mapped_in_library)
        values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
       [ECAS_ACCOUNT_ID, null, c.code, windowStart, windowEnd,
-        spend, null, results, cpaOf(spend, results), null, "insufficient", true],
+        spend, lc, results, cpaOf(spend, results), null, "insufficient", true],
     );
     await q(
       `insert into concept_intelligence (account_id, book, concept_code, mapped_in_library, spend,
          link_clicks, results, cpa, buying_intent_score, performance_lift_vs_baseline, performance_tier,
          confidence_level, what, why, so_what, now_what)
        values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
-      [ECAS_ACCOUNT_ID, null, c.code, true, spend, null, results, cpaOf(spend, results),
+      [ECAS_ACCOUNT_ID, null, c.code, true, spend, lc, results, cpaOf(spend, results),
         null, null, null, "insufficient", str(c.definition), str(c.evidence), null, null],
     );
   }

@@ -160,16 +160,6 @@
         "C1B"
       ]
     },
-    "C4E": {
-      "code": "C4E",
-      "descriptor": "Aspirational authority / learn like people you admire",
-      "book": "BOOK0",
-      "what": null,
-      "why": null,
-      "source_cells": [
-        "C4E"
-      ]
-    },
     "C1C": {
       "code": "C1C",
       "descriptor": "Concept C1 · C",
@@ -178,6 +168,16 @@
       "why": null,
       "source_cells": [
         "C1C"
+      ]
+    },
+    "C4E": {
+      "code": "C4E",
+      "descriptor": "Aspirational authority / learn like people you admire",
+      "book": "BOOK0",
+      "what": null,
+      "why": null,
+      "source_cells": [
+        "C4E"
       ]
     },
     "C1D": {
@@ -13996,7 +13996,7 @@
               "date_start": "2026-07-14",
               "date_end": "2026-07-24",
               "spend": 12.9,
-              "link_clicks": null,
+              "link_clicks": 5,
               "results": 0,
               "cpa": null,
               "cvr_link_pct": null,
@@ -14009,7 +14009,7 @@
               "date_start": "2026-07-14",
               "date_end": "2026-07-24",
               "spend": 3.97,
-              "link_clicks": null,
+              "link_clicks": 1,
               "results": 0,
               "cpa": null,
               "cvr_link_pct": null,
@@ -14022,7 +14022,7 @@
               "date_start": "2026-07-14",
               "date_end": "2026-07-24",
               "spend": 27.44,
-              "link_clicks": null,
+              "link_clicks": 12,
               "results": 0,
               "cpa": null,
               "cvr_link_pct": null,
@@ -14035,7 +14035,7 @@
               "date_start": "2026-07-14",
               "date_end": "2026-07-24",
               "spend": 13.66,
-              "link_clicks": null,
+              "link_clicks": 5,
               "results": 0,
               "cpa": null,
               "cvr_link_pct": null,
@@ -16659,7 +16659,7 @@
               "concept_code": "C1",
               "mapped_in_library": true,
               "spend": 12.9,
-              "link_clicks": null,
+              "link_clicks": 5,
               "results": 0,
               "cpa": null,
               "buying_intent_score": null,
@@ -16676,7 +16676,7 @@
               "concept_code": "C2",
               "mapped_in_library": true,
               "spend": 3.97,
-              "link_clicks": null,
+              "link_clicks": 1,
               "results": 0,
               "cpa": null,
               "buying_intent_score": null,
@@ -16693,7 +16693,7 @@
               "concept_code": "C3",
               "mapped_in_library": true,
               "spend": 27.44,
-              "link_clicks": null,
+              "link_clicks": 12,
               "results": 0,
               "cpa": null,
               "buying_intent_score": null,
@@ -16710,7 +16710,7 @@
               "concept_code": "C4",
               "mapped_in_library": true,
               "spend": 13.66,
-              "link_clicks": null,
+              "link_clicks": 5,
               "results": 0,
               "cpa": null,
               "buying_intent_score": null,
