@@ -942,6 +942,34 @@ async function importEcas(q: Q): Promise<number> {
   }
 
   // ── Account modules ──────────────────────────────────────────────────
+  // Combined account totals — historical (May–Jun) + Sprint 1 (Jul).
+  // The seed assembler uses iap_metadata.account_totals as the authoritative
+  // spend/impressions override; both periods must be included so the Account
+  // Totals tile in the UI reflects the full data window.
+  const ldBundleTotals = (
+    JSON.parse(readFileSync(join(LD_DIR, "normalized_data_bundle.json"), "utf8")) as any
+  ).account_totals as {
+    spend: number; impressions: number; purchases: number; link_clicks: number;
+    clicks_all: number; add_to_cart: number; initiate_checkout: number; revenue: number;
+  };
+  const s1Totals = bundle.account_totals as {
+    spend: number; impressions: number; link_clicks: number; clicks_all: number;
+    adds_to_cart?: number; checkouts_initiated?: number; purchases: number;
+    purchases_conversion_value?: number;
+  };
+  const combinedAccountTotals = {
+    spend:             round2(ldBundleTotals.spend + s1Totals.spend),
+    impressions:       ldBundleTotals.impressions + s1Totals.impressions,
+    link_clicks:       ldBundleTotals.link_clicks + s1Totals.link_clicks,
+    clicks_all:        ldBundleTotals.clicks_all + s1Totals.clicks_all,
+    purchases:         ldBundleTotals.purchases + s1Totals.purchases,
+    add_to_cart:       ldBundleTotals.add_to_cart + (s1Totals.adds_to_cart ?? 0),
+    initiate_checkout: ldBundleTotals.initiate_checkout + (s1Totals.checkouts_initiated ?? 0),
+    revenue:           round2(ldBundleTotals.revenue + (s1Totals.purchases_conversion_value ?? 0)),
+    result_type:       resultType,
+    note:              "Combined: ECAS historical (May–Jun 2026) + Sprint 1 (Jul 2026)",
+  };
+
   const ecasModules: Array<[string, unknown]> = [
     ["iap_metadata", {
       client_id: library.client_id,
@@ -951,7 +979,7 @@ async function importEcas(q: Q): Promise<number> {
       global_variables_used: library.global_variables_used,
       product_context: library.product_context,
       bundle_metadata: bundle.bundle_metadata,
-      account_totals: { ...bundle.account_totals, result_type: resultType },
+      account_totals: combinedAccountTotals,
       loop_run: intelligence.report_metadata,
       source_package: `ECAS IAP analysis package (East Coast Art Studio, ${windowStart} → ${windowEnd})`,
       manual_uploads: [
