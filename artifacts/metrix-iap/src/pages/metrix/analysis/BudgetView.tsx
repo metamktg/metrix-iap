@@ -63,7 +63,7 @@ export function BudgetView() {
         const conceptSpend = new Map<string, number>();
         for (const r of a?.performance_by_cell ?? []) {
           if (!selected.includes(r["Result type"])) continue;
-          if (!inRangeCell(r.cell_id)) continue;
+          if (!inRangeCell(r.cell_id, r.concept_variable)) continue;
           conceptSpend.set(r.book2_concept_name, (conceptSpend.get(r.book2_concept_name) ?? 0) + r["Amount spent (USD)"]);
         }
         const conceptRows = Array.from(conceptSpend.entries()).sort((x, y) => y[1] - x[1]);
