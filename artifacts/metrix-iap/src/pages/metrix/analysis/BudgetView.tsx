@@ -2,7 +2,7 @@
 // Spend allocation for the active ad account: campaign totals, per-event
 // efficiency (metric selection), spend by concept, and placement spend.
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed, useMetrixIsRefetching } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAnalysisData, getCampaignSummary } from "@/lib/data/metrixSeedAdapter";
@@ -10,8 +10,10 @@ import { useMetricSelection } from "@/lib/metric-selection";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   CaveatNote, CrossLink, MetricSelectionBar, SectionCard, fmtUSD, fmtNum, fmtPct, eventLabel,
-  SkeletonTileRow,
+  SkeletonTileRow, DatePresetBar, type ViewPreset,
 } from "../shared";
+import { getGetAnalysisSummaryQueryOptions } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
 import { PlacementTable } from "./tables";
 import { Wallet } from "lucide-react";
 
@@ -22,6 +24,12 @@ export function BudgetView() {
   const isRefetching = useMetrixIsRefetching();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
+  const [preset, setPreset] = useState<ViewPreset>("all");
+
+  const { data: presetData, isFetching: presetFetching } = useQuery({
+    ...getGetAnalysisSummaryQueryOptions(adAccountId ?? "", preset),
+    enabled: preset !== "all" && !!adAccountId,
+  });
 
   const summary = getCampaignSummary(seed, adAccountId);
   const allEvents = useMemo(
@@ -50,18 +58,30 @@ export function BudgetView() {
           );
         }
 
+        // When a preset is active use API bottom_line_totals; otherwise seed summary.
+        const activeBlt = preset !== "all" && presetData
+          ? presetData.totals.bottom_line_totals
+          : summary.bottom_line_totals;
+
         const eventRows = selected
-          .map((e) => ({ event: e, totals: summary.bottom_line_totals[e] }))
+          .map((e) => ({ event: e, totals: activeBlt[e] }))
           .filter((r) => r.totals != null);
 
-        // Spend by concept (from cell performance, dedupe cell spend across result types
-        // is not possible without raw rows — sum as reported per row).
-        const conceptSpend = new Map<string, number>();
-        for (const r of a?.performance_by_cell ?? []) {
-          if (!selected.includes(r["Result type"])) continue;
-          conceptSpend.set(r.book2_concept_name, (conceptSpend.get(r.book2_concept_name) ?? 0) + r["Amount spent (USD)"]);
-        }
-        const conceptRows = Array.from(conceptSpend.entries()).sort((x, y) => y[1] - x[1]);
+        // Spend by concept: when a preset is active use API concept rows (total spend
+        // across all result types — event filter not applicable at daily grain level).
+        // When "all", use performance_by_cell filtered by selected event types.
+        const conceptRows: [string, number][] = preset !== "all" && presetData
+          ? presetData.concept_rows
+              .map((r) => [`${r.book ?? ""} ${r.concept}`.trim(), r.spend] as [string, number])
+              .sort((x, y) => y[1] - x[1])
+          : (() => {
+              const conceptSpend = new Map<string, number>();
+              for (const r of a?.performance_by_cell ?? []) {
+                if (!selected.includes(r["Result type"])) continue;
+                conceptSpend.set(r.book2_concept_name, (conceptSpend.get(r.book2_concept_name) ?? 0) + r["Amount spent (USD)"]);
+              }
+              return Array.from(conceptSpend.entries()).sort((x, y) => y[1] - x[1]);
+            })();
         const maxConcept = Math.max(...conceptRows.map(([, v]) => v), 1);
 
         return (
@@ -74,17 +94,34 @@ export function BudgetView() {
               account={acct}
             />
             <MetricSelectionBar events={allEvents} isSelected={isSelected} onToggle={toggle} />
+            <DatePresetBar
+              value={preset}
+              onChange={setPreset}
+              availableWindow={presetData?.available_window}
+              isFetching={presetFetching}
+            />
             <>
-            {isRefetching ? (
+            {(isRefetching || (preset !== "all" && presetFetching)) ? (
               <div className="px-6 pt-5">
                 <SkeletonTileRow count={4} />
               </div>
             ) : (
               <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
-                <MetricTile label="Total spend" value={fmtUSD(summary.total_spend_usd, 0)} />
-                <MetricTile label="Impressions" value={fmtNum(summary.total_impressions)} />
-                <MetricTile label="Link clicks" value={fmtNum(summary.total_link_clicks)} />
-                <MetricTile label="Link CTR" value={fmtPct(summary.overall_link_ctr_pct)} />
+                {preset !== "all" && presetData ? (
+                  <>
+                    <MetricTile label="Total spend" value={fmtUSD(presetData.totals.total_spend_usd, 0)} />
+                    <MetricTile label="Impressions" value={fmtNum(presetData.totals.total_impressions)} />
+                    <MetricTile label="Link clicks" value={fmtNum(presetData.totals.total_link_clicks)} />
+                    <MetricTile label="Link CTR" value={fmtPct(presetData.totals.overall_link_ctr_pct)} />
+                  </>
+                ) : (
+                  <>
+                    <MetricTile label="Total spend" value={fmtUSD(summary.total_spend_usd, 0)} />
+                    <MetricTile label="Impressions" value={fmtNum(summary.total_impressions)} />
+                    <MetricTile label="Link clicks" value={fmtNum(summary.total_link_clicks)} />
+                    <MetricTile label="Link CTR" value={fmtPct(summary.overall_link_ctr_pct)} />
+                  </>
+                )}
               </div>
             )}
 

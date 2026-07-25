@@ -1173,6 +1173,65 @@ export function MetricSelectionBar({
   );
 }
 
+// ─── Date preset bar ─────────────────────────────────────────────────
+// Pill selector for 7d · 14d · 28d · 90d · All time, placed below the
+// ModuleHeader on analysis views. "All" uses seed totals (no API call);
+// other presets re-aggregate from daily rows on the server.
+
+export type ViewPreset = "7d" | "14d" | "28d" | "90d" | "all";
+export const VIEW_PRESETS: { value: ViewPreset; label: string }[] = [
+  { value: "7d",  label: "7d"  },
+  { value: "14d", label: "14d" },
+  { value: "28d", label: "28d" },
+  { value: "90d", label: "90d" },
+  { value: "all", label: "All time" },
+];
+
+export function DatePresetBar({
+  value,
+  onChange,
+  availableWindow,
+  isFetching,
+}: {
+  value: ViewPreset;
+  onChange: (p: ViewPreset) => void;
+  availableWindow?: { start: string; end: string } | null;
+  isFetching?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-2 flex-wrap px-6 py-2 border-b border-border/30 bg-white/[0.01]">
+      <span className="text-caption font-mono uppercase tracking-widest text-muted-foreground/70 shrink-0">
+        Window
+      </span>
+      <div className="flex items-center gap-1 flex-wrap">
+        {VIEW_PRESETS.map(({ value: v, label }) => (
+          <button
+            key={v}
+            onClick={() => onChange(v)}
+            aria-pressed={value === v}
+            className={cn(
+              "inline-flex items-center h-6 px-2.5 rounded-md border text-caption font-medium transition-colors",
+              value === v
+                ? "border-primary/40 bg-primary/10 text-primary"
+                : "border-border/40 text-muted-foreground/60 hover:text-foreground hover:bg-white/[0.03]"
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {availableWindow && (
+        <span className="text-caption text-muted-foreground/40 ml-1 tabular-nums">
+          data: {availableWindow.start} – {availableWindow.end}
+        </span>
+      )}
+      {isFetching && (
+        <span className="text-caption text-muted-foreground/50 ml-1 animate-pulse">loading…</span>
+      )}
+    </div>
+  );
+}
+
 // ─── Impact / scope badge styles (shared across Listen + decks) ───────
 
 export const IMPACT_STYLE: Record<string, string> = {

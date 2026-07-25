@@ -626,6 +626,53 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/analysis-summary/{preset}:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+      - name: preset
+        in: path
+        required: true
+        description: Date window preset to aggregate over — anchored to the latest date in stored rows (not wall-clock time).
+        schema:
+          $ref: "#/components/schemas/ViewPreset"
+    get:
+      operationId: getAnalysisSummary
+      tags: [metrix]
+      summary: Re-aggregate analysis data for a date preset window
+      description: Re-aggregates ad_performance, demographic_performance, and placement_performance rows for the requested date preset, anchored to the latest date stored for the account (not wall-clock time). Returns totals plus demographic, placement, and concept breakdowns. Used by the date preset filter on analysis views. Requires access to the account.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Re-aggregated data for the requested preset
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisSummaryResult"
+        "400":
+          description: Invalid preset value
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/accounts/{accountId}/generate/strategy:
     parameters:
       - name: accountId
@@ -3527,6 +3574,102 @@ components:
             $ref: "#/components/schemas/AnalysisRun"
       required:
         - runs
+    ViewPreset:
+      type: string
+      enum: [7d, 14d, 28d, 90d, all]
+      description: Date window for the analysis view filter, anchored to the latest date in stored ad_performance rows (not wall-clock time). "all" covers every stored row.
+    AnalysisSummaryWindow:
+      type: object
+      properties:
+        start:
+          type: string
+          description: Start date (YYYY-MM-DD)
+        end:
+          type: string
+          description: End date (YYYY-MM-DD)
+      required: [start, end]
+    AnalysisSummaryTotalsEventRow:
+      type: object
+      properties:
+        spend: { type: number }
+        reach: { type: number }
+        impressions: { type: number }
+        results: { type: number }
+        clicks_all: { type: number }
+        link_clicks: { type: number }
+      required: [spend, reach, impressions, results, clicks_all, link_clicks]
+    AnalysisSummaryTotals:
+      type: object
+      properties:
+        total_spend_usd: { type: number }
+        total_impressions: { type: number }
+        total_link_clicks: { type: number }
+        overall_link_ctr_pct: { type: number }
+        bottom_line_totals:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/AnalysisSummaryTotalsEventRow"
+      required: [total_spend_usd, total_impressions, total_link_clicks, overall_link_ctr_pct, bottom_line_totals]
+    AnalysisSummaryDemoRow:
+      type: object
+      properties:
+        age: { type: string }
+        gender: { type: string }
+        spend: { type: number, nullable: true }
+        results: { type: number, nullable: true }
+        impressions: { type: number, nullable: true }
+        link_clicks: { type: number, nullable: true }
+      required: [age, gender, spend, results, impressions, link_clicks]
+    AnalysisSummaryPlacementRow:
+      type: object
+      properties:
+        placement: { type: string }
+        spend: { type: number }
+        impressions: { type: number }
+        link_clicks: { type: number }
+        results: { type: number }
+      required: [placement, spend, impressions, link_clicks, results]
+    AnalysisSummaryConceptRow:
+      type: object
+      properties:
+        concept: { type: string }
+        book:
+          type: string
+          nullable: true
+        spend: { type: number }
+        results: { type: number }
+        link_clicks: { type: number }
+      required: [concept, book, spend, results, link_clicks]
+    AnalysisSummaryResult:
+      type: object
+      properties:
+        preset:
+          $ref: "#/components/schemas/ViewPreset"
+        available_window:
+          allOf:
+            - $ref: "#/components/schemas/AnalysisSummaryWindow"
+          nullable: true
+          description: Full date window available in stored rows for this account (min/max date_start).
+        active_window:
+          allOf:
+            - $ref: "#/components/schemas/AnalysisSummaryWindow"
+          nullable: true
+          description: Actual date window covered by this result after applying the preset filter.
+        totals:
+          $ref: "#/components/schemas/AnalysisSummaryTotals"
+        demographic_rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnalysisSummaryDemoRow"
+        placement_rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnalysisSummaryPlacementRow"
+        concept_rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnalysisSummaryConceptRow"
+      required: [preset, available_window, active_window, totals, demographic_rows, placement_rows, concept_rows]
     GenerateStrategyInput:
       type: object
       properties:

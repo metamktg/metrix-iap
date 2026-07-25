@@ -14,7 +14,10 @@ import {
   startManualAnalysis,
   syncAllCreativeLinksForAccount,
   computeCreativeLinkageSummary,
+  getAnalysisSummaryByPreset,
+  VIEW_PRESETS,
   type DateRangePreset,
+  type ViewPreset,
 } from "../lib/analysisEngine";
 import { buildIapCsvClassFormat, COLUMN_ALIASES } from "../lib/iapCsvSpec";
 
@@ -78,6 +81,27 @@ router.get("/metrix/manual-performance-csv-format", requireAuth, (_req, res) => 
     device_placement: buildIapCsvClassFormat("device_placement"),
     column_aliases: buildColumnAliasGuide(),
   });
+});
+
+// ─── View-level date preset summary ──────────────────────────────────────────
+// Re-aggregates from daily ad_performance / demographic_performance /
+// placement_performance rows for the chosen preset window. Anchored to the
+// latest date_start in stored rows — not wall-clock time.
+router.get("/metrix/accounts/:accountId/analysis-summary/:preset", requireAuth, async (req, res) => {
+  const accountId = String(req.params["accountId"]);
+  const preset = String(req.params["preset"] ?? "") as ViewPreset;
+  if (!VIEW_PRESETS.includes(preset)) {
+    res.status(400).json({ message: `preset must be one of: ${VIEW_PRESETS.join(", ")}.` });
+    return;
+  }
+  try {
+    if (!(await guardAccess(req, res, accountId))) return;
+    const result = await getAnalysisSummaryByPreset(accountId, preset);
+    res.json(result);
+  } catch (err) {
+    req.log.error({ err, accountId, preset }, "Failed to compute analysis summary by preset");
+    res.status(502).json({ message: err instanceof Error ? err.message : "Could not compute analysis summary." });
+  }
 });
 
 router.get("/metrix/accounts/:accountId/analysis-runs", requireAuth, async (req, res) => {

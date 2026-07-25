@@ -15,7 +15,10 @@ import {
   SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
   DetailReveal, deriveLabel,
   LoopAction, SkeletonTileRow, InfoTooltip, readableVariables, eventLabel,
+  DatePresetBar, type ViewPreset,
 } from "../shared";
+import { getGetAnalysisSummaryQueryOptions } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
 import { SharePieChart } from "@/components/charts/SharePieChart";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip,
@@ -641,6 +644,13 @@ export function AnalysisOverview() {
   const analysis       = getAnalysisData(seed, adAccountId);
 
   const [cellSort, setCellSort] = useState<CellSort>("spend");
+  const [preset, setPreset] = useState<ViewPreset>("all");
+
+  // Re-aggregate from daily rows when a non-"all" preset is selected.
+  const { data: presetData, isFetching: presetFetching } = useQuery({
+    ...getGetAnalysisSummaryQueryOptions(adAccountId ?? "", preset),
+    enabled: preset !== "all" && !!adAccountId,
+  });
 
   return (
     <ModuleScopeGate section={SECTION} title="Analysis Overview" account={account}>
@@ -714,15 +724,36 @@ export function AnalysisOverview() {
           }));
 
         // ── Placements (top 6 by spend) ───────────────────────────────
-        const allPlacements = rollupPlacements([
-          ...a.v3_placement_signal,
-          ...a.c4e_placement_signal,
-        ])
+        // When a preset is active and data has loaded, use the API placement rows.
+        const allPlacements = (preset !== "all" && presetData
+          ? presetData.placement_rows.map((r) => ({
+              placement: r.placement,
+              spend: r.spend,
+              results: r.results,
+              cpa: r.results > 0 ? r.spend / r.results : null,
+              ctr: r.impressions > 0 ? (r.link_clicks / r.impressions) * 100 : null,
+            }))
+          : rollupPlacements([
+              ...a.v3_placement_signal,
+              ...a.c4e_placement_signal,
+            ])
+        )
           .sort((x, y) => y.spend - x.spend)
           .slice(0, 6);
 
         // ── Demographic heatmap ───────────────────────────────────────
-        const heatmap = buildDemoHeatmap(a.demographic_registration_signal);
+        // When a preset is active and data has loaded, build heatmap from API rows.
+        const heatmapRows = preset !== "all" && presetData
+          ? presetData.demographic_rows.map((r) => ({
+              cell_id: "", "Ad name": "", Age: r.age, Gender: r.gender,
+              "Amount spent (USD)": r.spend ?? 0,
+              Reach: 0, Impressions: r.impressions ?? 0,
+              Results: r.results ?? 0, "Clicks (all)": 0, "Link clicks": r.link_clicks ?? 0,
+              CPA_result: r.results && r.results > 0 && r.spend ? r.spend / r.results : null,
+              CTR_link_pct: 0, Result_per_link_click_pct: 0,
+            }))
+          : a.demographic_registration_signal;
+        const heatmap = buildDemoHeatmap(heatmapRows);
 
         // ── Sub-page jump-off cards ───────────────────────────────────
         const subpages = [
@@ -766,8 +797,16 @@ export function AnalysisOverview() {
               account={acct}
             />
             <>
+                {/* ── Date preset bar ──────────────────────────────── */}
+                <DatePresetBar
+                  value={preset}
+                  onChange={setPreset}
+                  availableWindow={presetData?.available_window}
+                  isFetching={presetFetching}
+                />
+
                 {/* ── Metric tiles + result type donut (inline) ──── */}
-                {isRefetching ? (
+                {(isRefetching || (preset !== "all" && presetFetching)) ? (
                   <div className="px-6 pt-5">
                     <SkeletonTileRow count={4} />
                   </div>
@@ -776,10 +815,21 @@ export function AnalysisOverview() {
                     {/* Left: 4 tiles in a 2×2 grid */}
                     <div className="flex-1 grid grid-cols-dashboard-4 gap-3">
                         <>
-                          <MetricTile label="Total spend"  value={fmtUSD(summary.total_spend_usd, 0)} />
-                          <MetricTile label="Impressions"  value={fmtNum(summary.total_impressions)} />
-                          <MetricTile label="Link clicks"  value={fmtNum(summary.total_link_clicks)} />
-                          <MetricTile label="Link CTR"     value={fmtPct(summary.overall_link_ctr_pct)} />
+                          {preset !== "all" && presetData ? (
+                            <>
+                              <MetricTile label="Total spend"  value={fmtUSD(presetData.totals.total_spend_usd, 0)} />
+                              <MetricTile label="Impressions"  value={fmtNum(presetData.totals.total_impressions)} />
+                              <MetricTile label="Link clicks"  value={fmtNum(presetData.totals.total_link_clicks)} />
+                              <MetricTile label="Link CTR"     value={fmtPct(presetData.totals.overall_link_ctr_pct)} />
+                            </>
+                          ) : (
+                            <>
+                              <MetricTile label="Total spend"  value={fmtUSD(summary.total_spend_usd, 0)} />
+                              <MetricTile label="Impressions"  value={fmtNum(summary.total_impressions)} />
+                              <MetricTile label="Link clicks"  value={fmtNum(summary.total_link_clicks)} />
+                              <MetricTile label="Link CTR"     value={fmtPct(summary.overall_link_ctr_pct)} />
+                            </>
+                          )}
                         </>
                     </div>
                     {/* Right: result type donut — inline with tiles */}

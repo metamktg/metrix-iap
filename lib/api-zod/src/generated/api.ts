@@ -412,6 +412,67 @@ export const GetLatestAnalysisRunResponse = zod.object({
 
 
 /**
+ * Re-aggregates ad_performance, demographic_performance, and placement_performance rows for the requested date preset, anchored to the latest date stored for the account (not wall-clock time). Returns totals plus demographic, placement, and concept breakdowns. Used by the date preset filter on analysis views. Requires access to the account.
+ * @summary Re-aggregate analysis data for a date preset window
+ */
+
+
+
+export const GetAnalysisSummaryParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.'),
+  "preset": zod.enum(['7d', '14d', '28d', '90d', 'all']).describe('Date window preset to aggregate over — anchored to the latest date in stored rows (not wall-clock time).')
+})
+
+export const GetAnalysisSummaryResponse = zod.object({
+  "preset": zod.enum(['7d', '14d', '28d', '90d', 'all']).describe('Date window for the analysis view filter, anchored to the latest date in stored ad_performance rows (not wall-clock time). \"all\" covers every stored row.'),
+  "available_window": zod.object({
+  "start": zod.string().describe('Start date (YYYY-MM-DD)'),
+  "end": zod.string().describe('End date (YYYY-MM-DD)')
+}).nullable().describe('Full date window available in stored rows for this account (min\/max date_start).'),
+  "active_window": zod.object({
+  "start": zod.string().describe('Start date (YYYY-MM-DD)'),
+  "end": zod.string().describe('End date (YYYY-MM-DD)')
+}).nullable().describe('Actual date window covered by this result after applying the preset filter.'),
+  "totals": zod.object({
+  "total_spend_usd": zod.number(),
+  "total_impressions": zod.number(),
+  "total_link_clicks": zod.number(),
+  "overall_link_ctr_pct": zod.number(),
+  "bottom_line_totals": zod.record(zod.string(), zod.object({
+  "spend": zod.number(),
+  "reach": zod.number(),
+  "impressions": zod.number(),
+  "results": zod.number(),
+  "clicks_all": zod.number(),
+  "link_clicks": zod.number()
+}))
+}),
+  "demographic_rows": zod.array(zod.object({
+  "age": zod.string(),
+  "gender": zod.string(),
+  "spend": zod.number().nullable(),
+  "results": zod.number().nullable(),
+  "impressions": zod.number().nullable(),
+  "link_clicks": zod.number().nullable()
+})),
+  "placement_rows": zod.array(zod.object({
+  "placement": zod.string(),
+  "spend": zod.number(),
+  "impressions": zod.number(),
+  "link_clicks": zod.number(),
+  "results": zod.number()
+})),
+  "concept_rows": zod.array(zod.object({
+  "concept": zod.string(),
+  "book": zod.string().nullable(),
+  "spend": zod.number(),
+  "results": zod.number(),
+  "link_clicks": zod.number()
+}))
+})
+
+
+/**
  * Starts an in-app Metrix engine run that generates message pillars and testing hypotheses grounded in the account's real analysis rows. Returns 202 with the run id immediately; poll the latest-run endpoint for the outcome. Generated rows carry source='generated' and never touch imported rows. Requires access to the account.
  * @summary Generate strategy (pillars + hypotheses) from the account's analysis data
  */

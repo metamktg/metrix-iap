@@ -689,6 +689,83 @@ export interface AnalysisRunListResult {
   runs: AnalysisRun[];
 }
 
+/**
+ * Date window for the analysis view filter, anchored to the latest date in stored ad_performance rows (not wall-clock time). "all" covers every stored row.
+ */
+export type ViewPreset = typeof ViewPreset[keyof typeof ViewPreset];
+
+
+export const ViewPreset = {
+  '7d': '7d',
+  '14d': '14d',
+  '28d': '28d',
+  '90d': '90d',
+  all: 'all',
+} as const;
+
+export interface AnalysisSummaryWindow {
+  /** Start date (YYYY-MM-DD) */
+  start: string;
+  /** End date (YYYY-MM-DD) */
+  end: string;
+}
+
+export interface AnalysisSummaryTotalsEventRow {
+  spend: number;
+  reach: number;
+  impressions: number;
+  results: number;
+  clicks_all: number;
+  link_clicks: number;
+}
+
+export type AnalysisSummaryTotalsBottomLineTotals = {[key: string]: AnalysisSummaryTotalsEventRow};
+
+export interface AnalysisSummaryTotals {
+  total_spend_usd: number;
+  total_impressions: number;
+  total_link_clicks: number;
+  overall_link_ctr_pct: number;
+  bottom_line_totals: AnalysisSummaryTotalsBottomLineTotals;
+}
+
+export interface AnalysisSummaryDemoRow {
+  age: string;
+  gender: string;
+  spend: number | null;
+  results: number | null;
+  impressions: number | null;
+  link_clicks: number | null;
+}
+
+export interface AnalysisSummaryPlacementRow {
+  placement: string;
+  spend: number;
+  impressions: number;
+  link_clicks: number;
+  results: number;
+}
+
+export interface AnalysisSummaryConceptRow {
+  concept: string;
+  book: string | null;
+  spend: number;
+  results: number;
+  link_clicks: number;
+}
+
+export interface AnalysisSummaryResult {
+  preset: ViewPreset;
+  /** Full date window available in stored rows for this account (min/max date_start). */
+  available_window: AnalysisSummaryWindow | null;
+  /** Actual date window covered by this result after applying the preset filter. */
+  active_window: AnalysisSummaryWindow | null;
+  totals: AnalysisSummaryTotals;
+  demographic_rows: AnalysisSummaryDemoRow[];
+  placement_rows: AnalysisSummaryPlacementRow[];
+  concept_rows: AnalysisSummaryConceptRow[];
+}
+
 export interface GenerateStrategyInput {
   /** ID of the specific analysis run to ground this strategy in. Optional — when omitted the engine uses the account's current analysis data. Stored as provenance on the generation run. */
   analysis_run_id?: string | null;

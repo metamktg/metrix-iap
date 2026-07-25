@@ -6,15 +6,17 @@
 // placement to open a detail dialog benchmarked against the account
 // average with the full V3 + C4E rows.
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed, useMetrixIsRefetching } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CaveatNote, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
-  SkeletonTileRow,
+  SkeletonTileRow, DatePresetBar, type ViewPreset,
 } from "../shared";
+import { getGetAnalysisSummaryQueryOptions } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { SharePieChart } from "@/components/charts/SharePieChart";
 import { LayoutGrid, ChevronRight, BarChart2 } from "lucide-react";
@@ -226,6 +228,21 @@ function ConversionTrackingSections({ cts }: { cts: ConversionTrackingSignal }) 
 
 // ─── Main view ────────────────────────────────────────────────────────
 
+/** Build PlacementRollup[] directly from the preset API rows (already aggregated). */
+function rollupFromApiRows(rows: { placement: string; spend: number; impressions: number; link_clicks: number; results: number }[]): PlacementRollup[] {
+  return rows.map((r) => ({
+    placement: r.placement,
+    spend: r.spend,
+    results: r.results,
+    impressions: r.impressions,
+    linkClicks: r.link_clicks,
+    cpa: r.results > 0 ? r.spend / r.results : null,
+    ctr: r.impressions > 0 ? (r.link_clicks / r.impressions) * 100 : null,
+    cpm: r.impressions > 0 ? (r.spend / r.impressions) * 1000 : null,
+    cpc: r.link_clicks > 0 ? r.spend / r.link_clicks : null,
+  }));
+}
+
 export function PlacementsView() {
   const seed = useMetrixSeed();
   const isRefetching = useMetrixIsRefetching();
@@ -233,14 +250,22 @@ export function PlacementsView() {
   const account = getAdAccount(seed, adAccountId);
   const analysis = getAnalysisData(seed, adAccountId);
   const [selectedPlacement, setSelectedPlacement] = useState<string | null>(null);
+  const [preset, setPreset] = useState<ViewPreset>("all");
+
+  const { data: presetData, isFetching: presetFetching } = useQuery({
+    ...getGetAnalysisSummaryQueryOptions(adAccountId ?? "", preset),
+    enabled: preset !== "all" && !!adAccountId,
+  });
 
   const rollup = useMemo(
-    () =>
-      rollupPlacements([
+    () => {
+      if (preset !== "all" && presetData) return rollupFromApiRows(presetData.placement_rows);
+      return rollupPlacements([
         ...(analysis?.v3_placement_signal ?? []),
         ...(analysis?.c4e_placement_signal ?? []),
-      ]),
-    [analysis]
+      ]);
+    },
+    [preset, presetData, analysis]
   );
 
   const term = account ? resultTerm(account) : { singular: "result", plural: "results", Plural: "Results" };
@@ -337,7 +362,13 @@ export function PlacementsView() {
                 account={acct}
               />
               <>
-              {isRefetching ? (
+              <DatePresetBar
+                value={preset}
+                onChange={setPreset}
+                availableWindow={presetData?.available_window}
+                isFetching={presetFetching}
+              />
+              {(isRefetching || (preset !== "all" && presetFetching)) ? (
                 <div className="px-6 pt-5">
                   <SkeletonTileRow count={4} />
                 </div>
