@@ -13,9 +13,8 @@ import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CaveatNote, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
-  RangeScopeBar, NoDataInRangeState, SkeletonTileRow,
+  SkeletonTileRow,
 } from "../shared";
-import { useDateRange } from "@/contexts/DateRangeContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { SharePieChart } from "@/components/charts/SharePieChart";
 import { LayoutGrid, ChevronRight, BarChart2 } from "lucide-react";
@@ -233,8 +232,6 @@ export function PlacementsView() {
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
   const analysis = getAnalysisData(seed, adAccountId);
-  const { rangeHasData } = useDateRange();
-
   const [selectedPlacement, setSelectedPlacement] = useState<string | null>(null);
 
   const rollup = useMemo(
@@ -299,10 +296,6 @@ export function PlacementsView() {
                   tabs="analysis"
                   account={acct}
                 />
-                <RangeScopeBar grainNote="Conversion signal aggregates the export's full window — this import has no daily grain." />
-                {!rangeHasData ? (
-                  <NoDataInRangeState what="placement data" />
-                ) : (
                   <>
                     {isRefetching ? (
                       <div className="px-6 pt-5">
@@ -324,7 +317,6 @@ export function PlacementsView() {
                       <ConversionTrackingSections cts={cts} />
                     </div>
                   </>
-                )}
               </div>
             );
           }
@@ -344,11 +336,6 @@ export function PlacementsView() {
                 tabs="analysis"
                 account={acct}
               />
-              <RangeScopeBar grainNote="Placement signal aggregates each run's full flight window — this import has no daily grain." />
-
-              {!rangeHasData ? (
-                <NoDataInRangeState what="placement data" />
-              ) : (
               <>
               {isRefetching ? (
                 <div className="px-6 pt-5">
@@ -469,7 +456,6 @@ export function PlacementsView() {
                 {hasConversion && cts && <ConversionTrackingSections cts={cts} />}
               </div>
               </>
-              )}
             </div>
           );
         }}

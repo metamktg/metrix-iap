@@ -12,15 +12,13 @@ import { resolveInlineVariableCodes } from "@/lib/variable-registry";
 import {
   ModuleHeader, ModuleScopeGate, PendingState,
   CrossLink, fmtUSD, fmtNum, FlowCrumb, useFromParam, LoopAction,
-  RangeScopeBar, NoDataInRangeState, DetailReveal, deriveLabel, InfoTooltip,
+  DetailReveal, deriveLabel, InfoTooltip,
 } from "../shared";
 import {
   VariableStackChips, IcpChips, PillarDetailSections, pillarHasDetails,
   HypothesisLabel, HypothesisStatusBadge, HypothesisCodeChipsRow,
   VariableCombinationsGrid, playbookHasContent, ScalingPlaybookLanes,
 } from "./strategyShared";
-import { useDateRange } from "@/contexts/DateRangeContext";
-import { useCellRangeScope } from "@/lib/date-scope";
 import { splitTitle } from "@/lib/normalize";
 import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/SegmentGridModal";
 import { cn } from "@/lib/utils";
@@ -407,8 +405,6 @@ export function StrategyMapView() {
   const [expandedPillarId, setExpandedPillarId] = useState<string | null>(null);
   const [segmentPillar, setSegmentPillar] = useState<MessagePillar | null>(null);
 
-  const { rangeHasData } = useDateRange();
-  const { inRangeCell } = useCellRangeScope(getAnalysisData(seed, adAccountId));
   const fp = useFromParam();
 
   const toggleQueue = (id: string) =>
@@ -460,7 +456,7 @@ export function StrategyMapView() {
         // Source cells for selected pillar, with analysis data
         const cellEvidence = (cellId: string) => {
           const rows = (analysis?.performance_by_cell ?? []).filter(
-            (r) => r.cell_id === cellId && inRangeCell(r.cell_id, r.concept_variable)
+            (r) => r.cell_id === cellId
           );
           return {
             spend: rows.reduce((n, r) => n + r["Amount spent (USD)"], 0),
@@ -490,11 +486,6 @@ export function StrategyMapView() {
               account={acct}
             />
             <FlowCrumb {...fp} />
-            <RangeScopeBar />
-
-            {!rangeHasData ? (
-              <NoDataInRangeState what="strategy map data" />
-            ) : (
               <div className="flex-1 flex flex-col min-h-0">
                 {/* ── Three-column map ──────────────────────────────────── */}
                 <div className="flex-1 flex min-h-0 overflow-hidden border-t border-border/30">
@@ -715,7 +706,6 @@ export function StrategyMapView() {
                   />
                 </div>
               </div>
-            )}
 
             {segmentPillar && analysis && (
               <SegmentGridModal

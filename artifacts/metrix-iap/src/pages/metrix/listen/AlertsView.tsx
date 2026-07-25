@@ -11,9 +11,9 @@ import {
 import {
   ModuleHeader, ConfidenceBadge, ModuleScopeGate,
   PendingState, MetricTile, ImpactBadge, ScopeBadge, CrossLink,
-  RangeScopeBar, NoDataInRangeState, CaveatNote, deriveLabel, InfoTooltip,
+  CaveatNote, deriveLabel, InfoTooltip,
 } from "../shared";
-import { useDateRange } from "@/contexts/DateRangeContext";
+import { useGetMetaConnection } from "@workspace/api-client-react";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { AlertTriangle, BellOff } from "lucide-react";
 import type { SignalCard } from "@/lib/data/seedTypes";
@@ -26,7 +26,8 @@ export function AlertsView() {
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
   const [detail, setDetail] = useState<SignalCard | null>(null);
-  const { rangeHasData } = useDateRange();
+  const metaConnection = useGetMetaConnection();
+  const hasMetaConnection = metaConnection.data?.connected === true;
 
   return (
     <ModuleScopeGate section={SECTION} title="Alerts" account={account}>
@@ -51,10 +52,13 @@ export function AlertsView() {
               subtitle="High-impact signals · data caveats"
               account={acct}
             />
-            <RangeScopeBar grainNote="Alerts derive from the account's full flight window — this import has no daily grain." />
-
-            {!rangeHasData ? (
-              <NoDataInRangeState what="alerts" />
+            {!hasMetaConnection ? (
+              <PendingState
+                title="Live insights require Meta connection"
+                message="Connect your Meta ad account to unlock real-time alerts and high-impact optimization signals."
+                icon={BellOff}
+                action={<CrossLink to="/app/settings/integrations" label="Connect Meta in Settings" />}
+              />
             ) : (
             <>
             <div className="px-6 pt-5 grid grid-cols-dashboard-3 gap-3">
