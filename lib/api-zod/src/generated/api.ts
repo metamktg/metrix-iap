@@ -452,7 +452,6 @@ export const GetAnalysisSummaryResponse = zod.object({
   "gender": zod.string(),
   "spend": zod.number().nullable(),
   "results": zod.number().nullable(),
-  "impressions": zod.number().nullable(),
   "link_clicks": zod.number().nullable()
 })),
   "placement_rows": zod.array(zod.object({
