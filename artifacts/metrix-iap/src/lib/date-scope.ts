@@ -37,14 +37,26 @@ export function getConceptWindows(a: AnalysisData | null | undefined): Map<strin
  * Whether a creative cell's flight window overlaps the selected range.
  * Cells whose concept has no dated rollup entry always pass — we never
  * hide rows whose window is unknown.
+ *
+ * `conceptHint` — value of the row's `concept_variable` field. Only used
+ * when it resolves to a known concept in the windows map (e.g. LittleData
+ * historical cells where concept_variable IS the concept rollup code like
+ * "LD-CN-CATALOG-GRID", or Sprint-1 ECAS cells with "C1"/"C2"). Ignored
+ * when concept_variable holds a strategy-variable code that is not a
+ * concept rollup key (e.g. bookster's "CN_ProductDemo"), so the cell_id
+ * regex derivation takes over as the safe fallback.
  */
 export function cellInRange(
   windows: Map<string, IsoRange>,
   range: IsoRange | null,
-  cellId: string
+  cellId: string,
+  conceptHint?: string | null,
 ): boolean {
   if (!range) return true;
-  const concept = conceptForCell(cellId);
+  // Use hint only when it resolves to a known concept; fall back to cell_id regex.
+  const concept =
+    (conceptHint && windows.has(conceptHint) ? conceptHint : null) ??
+    conceptForCell(cellId);
   if (!concept) return true;
   const w = windows.get(concept);
   if (!w) return true;
@@ -113,14 +125,19 @@ export function useCellRangeScope(analysis: AnalysisData | null | undefined) {
   const windows = useMemo(() => getConceptWindows(analysis), [analysis]);
   const narrowed = preset !== "all";
 
+  // conceptHint: explicit concept code when the cell_id doesn't encode it
+  // (e.g. LittleData historical cells whose cell_id is an ad name).
   const inRangeCell = useCallback(
-    (cellId: string) => cellInRange(windows, range, cellId),
+    (cellId: string, conceptHint?: string | null) =>
+      cellInRange(windows, range, cellId, conceptHint),
     [windows, range]
   );
 
   const filterCells = useCallback(
     <T extends { cell_id: string }>(rows: T[]): T[] =>
-      narrowed ? rows.filter((r) => inRangeCell(r.cell_id)) : rows,
+      narrowed
+        ? rows.filter((r) => inRangeCell(r.cell_id, (r as Record<string, unknown>)["concept_variable"] as string | null))
+        : rows,
     [narrowed, inRangeCell]
   );
 

@@ -460,7 +460,7 @@ export function StrategyMapView() {
         // Source cells for selected pillar, with analysis data
         const cellEvidence = (cellId: string) => {
           const rows = (analysis?.performance_by_cell ?? []).filter(
-            (r) => r.cell_id === cellId && inRangeCell(r.cell_id)
+            (r) => r.cell_id === cellId && inRangeCell(r.cell_id, r.concept_variable)
           );
           return {
             spend: rows.reduce((n, r) => n + r["Amount spent (USD)"], 0),
