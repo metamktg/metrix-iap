@@ -6,6 +6,12 @@ import { TYPE } from "../typography";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import {
+  HubTldrCard,
+  StrategyDirectionStrip,
+  TipSignalsStrip,
+  HypothesisQueuePanel,
+} from "../PerformanceIntelligence";
+import {
   getAdAccount,
   getStrategyData,
   getBriefBuilder,
@@ -223,6 +229,14 @@ export function StrategyHub() {
                   </div>
                 ))}
               </div>
+
+              {/* Performance Intelligence — panels self-guard on their own data */}
+              <section aria-label="Performance Intelligence" className="space-y-4">
+                <HubTldrCard accountId={adAccountId!} />
+                <StrategyDirectionStrip accountId={adAccountId!} />
+                <TipSignalsStrip accountId={adAccountId!} />
+                <HypothesisQueuePanel accountId={adAccountId!} />
+              </section>
             </div>
           </div>
         );

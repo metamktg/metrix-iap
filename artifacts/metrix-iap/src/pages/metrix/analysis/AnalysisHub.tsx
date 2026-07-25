@@ -6,6 +6,13 @@ import { TYPE } from "../typography";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import {
+  HubTldrCard,
+  TopCreativeStrip,
+  TopAvatarPanel,
+  TopCopyStrip,
+  TopVariableStackStrip,
+} from "../PerformanceIntelligence";
+import {
   getAdAccount,
   getAnalysisData,
   getCampaignSummary,
@@ -262,6 +269,15 @@ export function AnalysisHub() {
                   </div>
                 ))}
               </div>
+
+              {/* Performance Intelligence — panels self-guard on their own data */}
+              <section aria-label="Performance Intelligence" className="space-y-4">
+                <HubTldrCard accountId={adAccountId!} />
+                <TopCreativeStrip accountId={adAccountId!} />
+                <TopAvatarPanel accountId={adAccountId!} />
+                <TopCopyStrip accountId={adAccountId!} />
+                <TopVariableStackStrip accountId={adAccountId!} />
+              </section>
             </div>
           </div>
         );

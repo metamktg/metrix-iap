@@ -10,8 +10,8 @@
 //     ]
 //   }
 // Location is per-account: scripts/data/metrix/meta_ads_export.json for
-// Bookster, scripts/data/metrix/littledata/meta_ads_export.json for
-// LittleData. The importer backfills ads.meta_ad_id /
+// Bookster, scripts/data/metrix/ecas/meta_ads_export.json for
+// East Coast Art Studio. The importer backfills ads.meta_ad_id /
 // ads.creative_asset_url (and ad_accounts.meta_ad_account_id) from it.
 // Absent file → columns stay NULL.
 //
