@@ -30,7 +30,10 @@ import {
 } from "lucide-react";
 import type {
   ConceptRollupRow, DemographicRow, PlacementRow, VariablePerformanceRow,
+  AnalysisData,
 } from "@/lib/data/seedTypes";
+import { SegmentDrilldownModal } from "@/components/creative/SegmentDrilldownModal";
+import type { SegmentId } from "@/lib/segment-analytics";
 
 const SECTION = "Analysis · 03";
 
@@ -425,13 +428,18 @@ function PlacementTable({ placements }: {
 // ─── Demographic heatmap grid ─────────────────────────────────────────
 // Age rows × gender columns coloured by CPA intensity.
 // Lower CPA = better = more green; higher CPA = worse = more amber.
+// Clicking a cell opens SegmentDrilldownModal for that age × gender segment.
 
 function DemoHeatmapGrid({
   heatmap,
+  analysis,
 }: {
   heatmap: ReturnType<typeof buildDemoHeatmap>;
+  analysis: AnalysisData;
 }) {
   const { cells, ages, genders, maxCpa, minCpa } = heatmap;
+  const [selectedSegment, setSelectedSegment] = useState<SegmentId | null>(null);
+
   if (cells.length === 0) return null;
 
   const getCell = (age: string, gender: string) =>
@@ -451,17 +459,32 @@ function DemoHeatmapGrid({
     return `rgba(251,191,36,${0.06 + (1 - t) * 0.14})`; // amber
   }
 
+  // Build the gridTemplateColumns string: label col + one col per gender.
+  // "unknown" gender gets a narrower 0.5fr; others get 1fr.
+  const colTemplate = [
+    "72px",
+    ...genders.map((g) => (g === "unknown" ? "0.5fr" : "1fr")),
+  ].join(" ");
+
   return (
     <div className="overflow-x-auto">
       <div className="min-w-[320px]">
         {/* Header */}
         <div
           className="grid gap-1 mb-1"
-          style={{ gridTemplateColumns: `72px repeat(${genders.length}, 1fr)` }}
+          style={{ gridTemplateColumns: colTemplate }}
         >
           <div />
           {genders.map((g) => (
-            <div key={g} className={cn(TYPE.label, "text-center capitalize py-1")}>{g}</div>
+            <div
+              key={g}
+              className={cn(
+                TYPE.label, "text-center capitalize py-1",
+                g === "unknown" && "text-muted-foreground/40",
+              )}
+            >
+              {g}
+            </div>
           ))}
         </div>
         {/* Rows */}
@@ -469,20 +492,30 @@ function DemoHeatmapGrid({
           <div
             key={age}
             className="grid gap-1 mb-1 items-stretch"
-            style={{ gridTemplateColumns: `72px repeat(${genders.length}, 1fr)` }}
+            style={{ gridTemplateColumns: colTemplate }}
           >
             <div className={cn(TYPE.caption, "text-muted-foreground/70 flex items-center pr-2 truncate")}>{age}</div>
             {genders.map((gender) => {
               const cell = getCell(age, gender);
+              const isEmpty = !cell;
               return (
-                <div
+                <button
                   key={gender}
-                  className="rounded-md px-1.5 py-2 text-center border border-white/[0.06] min-h-[44px] flex flex-col items-center justify-center"
+                  type="button"
+                  onClick={() => setSelectedSegment({ age, gender })}
+                  className={cn(
+                    "rounded-md px-1.5 py-2 text-center border border-white/[0.06] min-h-[44px] flex flex-col items-center justify-center",
+                    "cursor-pointer transition-opacity",
+                    isEmpty
+                      ? "hover:opacity-60"
+                      : "hover:brightness-125 hover:border-white/[0.14]",
+                    gender === "unknown" && "opacity-70 hover:opacity-90",
+                  )}
                   style={{ backgroundColor: cellBg(cell?.cpa ?? null) }}
                   title={
                     cell
-                      ? `${age} / ${gender}: ${cell.cpa != null ? fmtUSD(cell.cpa) + " CPA" : "no CPA"} · ${fmtUSD(cell.spend, 0)} spend · ${fmtNum(cell.results)} results`
-                      : "No data"
+                      ? `${age} / ${gender}: ${cell.cpa != null ? fmtUSD(cell.cpa) + " CPA" : "no CPA"} · ${fmtUSD(cell.spend, 0)} spend · ${fmtNum(cell.results)} results — click to drill down`
+                      : `${age} / ${gender}: No data — click to explore`
                   }
                 >
                   {cell ? (
@@ -497,15 +530,18 @@ function DemoHeatmapGrid({
                   ) : (
                     <div className="text-label text-muted-foreground/25">—</div>
                   )}
-                </div>
+                </button>
               );
             })}
           </div>
         ))}
         {/* Legend */}
-        <div className="flex items-center justify-end gap-2 mt-2">
-          <span className={cn(TYPE.label, "text-muted-foreground/45")}>CPA:</span>
+        <div className="flex items-center justify-between gap-2 mt-2">
+          <span className={cn(TYPE.label, "text-muted-foreground/35 italic")}>
+            Click any cell to explore segment attribution
+          </span>
           <div className="flex items-center gap-1.5">
+            <span className={cn(TYPE.label, "text-muted-foreground/45")}>CPA:</span>
             <div className="w-2.5 h-2.5 rounded-sm" style={{ background: "rgba(251,191,36,0.25)" }} />
             <span className={cn(TYPE.label)}>High</span>
             <div className="w-10 h-1 rounded-full mx-0.5" style={{ background: "linear-gradient(to right, rgba(251,191,36,0.25), rgba(52,211,153,0.35))" }} />
@@ -514,6 +550,15 @@ function DemoHeatmapGrid({
           </div>
         </div>
       </div>
+
+      {/* Segment drilldown modal — opened when a cell is clicked */}
+      <SegmentDrilldownModal
+        open={selectedSegment != null}
+        onClose={() => setSelectedSegment(null)}
+        segment={selectedSegment}
+        analysis={analysis}
+        cellIds={null}
+      />
     </div>
   );
 }
@@ -935,7 +980,7 @@ export function AnalysisOverview() {
                       desc="Age × gender — cell colour = CPA (green = lower = better) · hover for detail"
                       right={<CrossLink to="/app/analysis/audience" label="Full →" />}
                     >
-                      <DemoHeatmapGrid heatmap={heatmap} />
+                      <DemoHeatmapGrid heatmap={heatmap} analysis={a} />
                     </SectionCard>
                   )}
 
