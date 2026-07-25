@@ -3617,9 +3617,8 @@ components:
         gender: { type: string }
         spend: { type: number, nullable: true }
         results: { type: number, nullable: true }
-        impressions: { type: number, nullable: true }
         link_clicks: { type: number, nullable: true }
-      required: [age, gender, spend, results, impressions, link_clicks]
+      required: [age, gender, spend, results, link_clicks]
     AnalysisSummaryPlacementRow:
       type: object
       properties:

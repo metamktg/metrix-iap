@@ -58,7 +58,6 @@ export interface AnalysisSummaryDemoRow {
   gender: string;
   spend: number | null;
   results: number | null;
-  impressions: number | null;
   link_clicks: number | null;
 }
 
@@ -1139,30 +1138,28 @@ export async function getAnalysisSummaryByPreset(
   // ── Demographic rows ───────────────────────────────────────────────
   const { data: demoRows, error: demoErr } = await supabase
     .from("demographic_performance")
-    .select("date_start, age, gender, spend, results, impressions, link_clicks")
+    .select("date_start, age, gender, spend, results, link_clicks")
     .eq("account_id", accountId);
   if (demoErr) throw new Error(demoErr.message);
 
-  const demoMap = new Map<string, { spend: number; results: number; impressions: number; link_clicks: number }>();
+  const demoMap = new Map<string, { spend: number; results: number; link_clicks: number }>();
   for (const r of demoRows ?? []) {
     if (!withinViewPreset(String((r as any).date_start ?? ""), preset, maxDate)) continue;
     const key = `${String((r as any).age ?? "")}|${String((r as any).gender ?? "").toLowerCase()}`;
-    const d = demoMap.get(key) ?? { spend: 0, results: 0, impressions: 0, link_clicks: 0 };
+    const d = demoMap.get(key) ?? { spend: 0, results: 0, link_clicks: 0 };
     d.spend       += Number((r as any).spend ?? 0);
     d.results     += Number((r as any).results ?? 0);
-    d.impressions += Number((r as any).impressions ?? 0);
     d.link_clicks += Number((r as any).link_clicks ?? 0);
     demoMap.set(key, d);
   }
   const demographic_rows: AnalysisSummaryDemoRow[] = Array.from(demoMap.entries()).map(([key, v]) => {
     const [age, gender] = key.split("|");
     return {
-      age:          age ?? "",
-      gender:       gender ?? "",
-      spend:        v.spend,
-      results:      v.results,
-      impressions:  v.impressions,
-      link_clicks:  v.link_clicks,
+      age:        age ?? "",
+      gender:     gender ?? "",
+      spend:      v.spend,
+      results:    v.results,
+      link_clicks: v.link_clicks,
     };
   });
 

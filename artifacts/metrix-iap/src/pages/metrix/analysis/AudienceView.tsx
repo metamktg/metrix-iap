@@ -582,8 +582,10 @@ const SECTION = "Analysis · 03";
 const VIEW_KEY = "metrix.audience.view.v1";
 const RANK_KEY = "metrix.audience.rank.v1";
 
-/** Adapt API demographic rows → DemographicRow[] for existing analysis helpers. */
-function adaptApiDemoRows(rows: { age: string; gender: string; spend: number | null; results: number | null; impressions: number | null; link_clicks: number | null }[]): DemographicRow[] {
+/** Adapt API demographic rows → DemographicRow[] for existing analysis helpers.
+ * Note: demographic_performance does not store impressions — Impressions and
+ * CTR_link_pct are unavailable for preset windows and default to 0. */
+function adaptApiDemoRows(rows: { age: string; gender: string; spend: number | null; results: number | null; link_clicks: number | null }[]): DemographicRow[] {
   return rows.map((r) => ({
     cell_id: "",
     "Ad name": "",
@@ -591,12 +593,12 @@ function adaptApiDemoRows(rows: { age: string; gender: string; spend: number | n
     Gender: r.gender,
     "Amount spent (USD)": r.spend ?? 0,
     Reach: 0,
-    Impressions: r.impressions ?? 0,
+    Impressions: 0,
     Results: r.results ?? 0,
     "Clicks (all)": 0,
     "Link clicks": r.link_clicks ?? 0,
     CPA_result: r.results && r.results > 0 && r.spend ? r.spend / r.results : null,
-    CTR_link_pct: r.impressions && r.impressions > 0 && r.link_clicks ? (r.link_clicks / r.impressions) * 100 : 0,
+    CTR_link_pct: 0, // impressions not stored at demographic level
     Result_per_link_click_pct: r.link_clicks && r.link_clicks > 0 && r.results ? (r.results / r.link_clicks) * 100 : 0,
   }));
 }
