@@ -110,6 +110,7 @@ export function AnalysisHub() {
               section={SECTION}
               title="Analysis"
               account={acct}
+              tabs="analysis"
             />
 
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 max-w-5xl">
