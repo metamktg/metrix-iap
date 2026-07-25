@@ -101,7 +101,7 @@ export function SignalView() {
                     <button
                       key={s.id}
                       onClick={() => setDetail(s)}
-                      className="w-full text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 hover:border-border/60 hover:bg-white/[0.03] transition-colors"
+                      className="w-full text-left rounded-xl border border-border/55 bg-white/[0.04] p-4 hover:border-border/70 hover:bg-white/[0.06] transition-colors"
                     >
                       <div className="flex items-center gap-1.5 flex-wrap mb-2">
                         <ScopeBadge scope={s.scope} />
@@ -109,10 +109,10 @@ export function SignalView() {
                         <ConfidenceBadge value={s.confidence} />
                       </div>
                       <p className="text-title font-semibold text-foreground leading-snug"><TokenizedConceptText text={s.title} /></p>
-                      <p className="text-body text-muted-foreground/70 mt-1 leading-snug line-clamp-1"><span>{deriveLabel(s.rationale, 90)}</span></p>
-                      <div className="flex items-start gap-1.5 mt-3 pt-3 border-t border-border/20">
-                        <ArrowRight className="w-3.5 h-3.5 text-primary/60 shrink-0 mt-0.5" />
-                        <p className="text-caption text-foreground/75 leading-snug line-clamp-1"><span>{deriveLabel(s.recommended_action, 80)}</span></p>
+                      <p className="text-body text-data-label mt-1 leading-snug line-clamp-1"><span>{deriveLabel(s.rationale, 90)}</span></p>
+                      <div className="flex items-start gap-1.5 mt-3 pt-3 border-t border-border/35">
+                        <ArrowRight className="w-3.5 h-3.5 text-primary/85 shrink-0 mt-0.5" />
+                        <p className="text-caption text-foreground/90 leading-snug line-clamp-1"><span>{deriveLabel(s.recommended_action, 80)}</span></p>
                       </div>
                     </button>
                   ))}

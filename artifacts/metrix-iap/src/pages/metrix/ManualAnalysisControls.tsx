@@ -191,7 +191,7 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
           ) : (
             <>
               <div className="rounded-md border border-border/30 p-2">
-                <div className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/80 mb-1">
+                <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/80 mb-1">
                   Breakdown columns
                 </div>
                 <p className="text-caption text-foreground/80 leading-relaxed">
@@ -203,7 +203,7 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
                   <div key={g.name} className="flex items-start gap-2 p-2">
                     <span
                       className={cn(
-                        "shrink-0 text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded",
+                        "shrink-0 text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded",
                         g.required
                           ? "bg-primary/15 text-primary border border-primary/25"
                           : "bg-white/[0.04] text-muted-foreground/85 border border-border/30"
@@ -608,7 +608,7 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
     <li key={i} className="text-label leading-relaxed" style={{ color: p.isRequired && p.tier === "missing" ? "rgb(252 165 165 / 0.85)" : "rgb(253 230 138 / 0.75)" }}>
       <span
         className={cn(
-          "inline-block mr-1.5 px-1 py-px rounded text-[9px] font-semibold uppercase tracking-wide border",
+          "inline-block mr-1.5 px-1 py-px rounded text-label font-semibold uppercase tracking-wide border",
           p.tier === "missing" && p.isRequired
             ? "bg-red-500/15 border-red-400/40 text-red-300"
             : p.tier === "missing"

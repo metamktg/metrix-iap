@@ -486,15 +486,15 @@ function DemoHeatmapGrid({
                 >
                   {cell ? (
                     <>
-                      <div className="text-[10px] font-mono font-semibold tabular-nums text-foreground/85">
+                      <div className="text-label font-mono font-semibold tabular-nums text-foreground/85">
                         {cell.cpa != null ? fmtUSD(cell.cpa, 0) : "—"}
                       </div>
-                      <div className="text-[8px] font-mono text-muted-foreground/50 mt-0.5 tabular-nums">
+                      <div className="text-label font-mono text-muted-foreground/50 mt-0.5 tabular-nums">
                         {fmtUSD(cell.spend, 0)}
                       </div>
                     </>
                   ) : (
-                    <div className="text-[9px] text-muted-foreground/25">—</div>
+                    <div className="text-label text-muted-foreground/25">—</div>
                   )}
                 </div>
               );
@@ -943,7 +943,7 @@ export function AnalysisOverview() {
                             })()}
                           </div>
                           {resolveConceptName(controls.primary_control) !== controls.primary_control && (
-                            <p className="text-[9px] font-mono text-muted-foreground/40 mt-1.5">{controls.primary_control}</p>
+                            <p className="text-label font-mono text-muted-foreground/40 mt-1.5">{controls.primary_control}</p>
                           )}
                         </div>
                         {controls.registration_control && (() => {
@@ -967,7 +967,7 @@ export function AnalysisOverview() {
                                 );
                               })()}
                               {regName !== regId && (
-                                <p className="text-[9px] font-mono text-muted-foreground/40 mt-1.5">{regId}</p>
+                                <p className="text-label font-mono text-muted-foreground/40 mt-1.5">{regId}</p>
                               )}
                             </div>
                           );

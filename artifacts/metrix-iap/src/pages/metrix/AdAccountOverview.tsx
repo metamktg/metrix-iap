@@ -177,7 +177,7 @@ export function AdAccountOverview() {
         section="Ad Account · 01"
         title={account.name}
         subtitle="Command chain · focus · optimization"
-        right={<span className="text-label font-mono text-emerald-400/70 uppercase tracking-widest">Connected</span>}
+        right={<span className="text-label font-mono text-emerald-400/90 uppercase tracking-widest">Connected</span>}
         account={account}
       />
 
@@ -195,7 +195,7 @@ export function AdAccountOverview() {
           {/* Account Totals — metric accordions */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h2 className="text-label font-mono uppercase tracking-widest text-muted-foreground/55">Account Totals</h2>
+              <h2 className="text-label font-mono uppercase tracking-widest text-data-caption">Account Totals</h2>
               <MetricPickerButton catalog={metricCatalog} selected={selectedMetricIds} onToggle={toggle} onMove={move} onReset={reset} />
             </div>
             {isRefetching ? (
@@ -213,19 +213,19 @@ export function AdAccountOverview() {
                       className={cn(
                         "group flex flex-col text-left rounded-lg border px-3 py-2.5 transition-all",
                         isExpanded
-                          ? "border-primary/35 bg-primary/[0.08] rounded-b-none border-b-primary/15 shadow-sm shadow-primary/10"
-                          : "border-border/40 bg-white/[0.02] hover:border-border/60 hover:bg-white/[0.04]"
+                          ? "border-primary/45 bg-primary/[0.10] rounded-b-none border-b-primary/20 shadow-sm shadow-primary/15"
+                          : "border-border/55 bg-white/[0.04] hover:border-border/70 hover:bg-white/[0.06]"
                       )}
                     >
                       <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/55 truncate">{m.label}</span>
+                        <span className="text-label font-mono uppercase tracking-widest text-data-caption truncate">{m.label}</span>
                         <ChevronDown className={cn(
-                          "w-3.5 h-3.5 text-muted-foreground/30 transition-transform shrink-0",
-                          isExpanded && "rotate-180 text-primary/60"
+                          "w-3.5 h-3.5 text-muted-foreground/55 transition-transform shrink-0",
+                          isExpanded && "rotate-180 text-primary/80"
                         )} />
                       </div>
-                      <span className="text-base font-bold text-foreground tabular-nums leading-none">{m.formatted}</span>
-                      {m.sub && <span className="text-[9px] text-muted-foreground/50 mt-1 leading-tight truncate">{m.sub}</span>}
+                      <span className="text-stat metric-num leading-none">{m.formatted}</span>
+                      {m.sub && <span className="text-label text-muted-foreground/75 mt-1 leading-tight truncate">{m.sub}</span>}
                     </button>
                     {isExpanded && (
                       <div className="rounded-b-xl border border-t-0 border-primary/30 bg-primary/[0.04] px-4 py-3 space-y-2.5">
@@ -273,7 +273,7 @@ export function AdAccountOverview() {
                     </button>
                   </>
                 ) : (
-                  <p className="text-body text-muted-foreground/60 leading-relaxed">No active sprint — import data to begin.</p>
+                  <p className="text-body text-muted-foreground/80 leading-relaxed">No active sprint — import data to begin.</p>
                 )}
               </div>
 
@@ -290,12 +290,12 @@ export function AdAccountOverview() {
                       eyebrow="Next action"
                       sections={[{ label: "Recommended action", text: nextAction.recommended_action }]}
                     />
-                    <p className="text-label text-muted-foreground/60 mt-2.5">
+                    <p className="text-label text-muted-foreground/75 mt-2.5">
                       {recCards.length} recommendation{recCards.length === 1 ? "" : "s"} in the loop below ↓
                     </p>
                   </>
                 ) : (
-                  <p className="text-body text-muted-foreground/60 leading-relaxed">No recommendations yet.</p>
+                  <p className="text-body text-muted-foreground/80 leading-relaxed">No recommendations yet.</p>
                 )}
               </div>
             </div>
@@ -305,12 +305,12 @@ export function AdAccountOverview() {
           <SectionCard title="Results by event" desc="Conversion volume by event">
             <div className="grid grid-cols-dashboard-4-sm gap-2">
               {events.map(([key, e]) => (
-                <div key={key} className="rounded-lg border border-border/40 bg-white/[0.02] px-3 py-2.5">
-                  <div className="text-label font-semibold text-foreground/70 leading-tight mb-1.5 truncate">{eventLabel(key)}</div>
-                  <div className="text-lg font-bold text-foreground tabular-nums leading-none">{fmtNum(e.results)}</div>
-                  <div className="text-label text-muted-foreground/65 mt-2 space-y-0.5">
-                    <div>Spend <span className="text-foreground/70 font-medium">{fmtUSD(e.spend)}</span></div>
-                    <div>Clicks <span className="text-foreground/70 font-medium">{fmtNum(e.link_clicks)}</span></div>
+                <div key={key} className="mx-kpi-tile px-3 py-2.5">
+                  <div className="text-label font-semibold text-foreground/90 leading-tight mb-1.5 truncate">{eventLabel(key)}</div>
+                  <div className="text-stat metric-num leading-none">{fmtNum(e.results)}</div>
+                  <div className="text-label text-muted-foreground mt-2 space-y-0.5">
+                    <div>Spend <span className="text-foreground/90 font-medium">{fmtUSD(e.spend)}</span></div>
+                    <div>Clicks <span className="text-foreground/90 font-medium">{fmtNum(e.link_clicks)}</span></div>
                   </div>
                 </div>
               ))}
@@ -338,7 +338,7 @@ export function AdAccountOverview() {
                   );
                 })()}
                 {primaryControlName !== core.primary_control && (
-                  <p className="text-[9px] font-mono text-muted-foreground/40 mt-1.5">{core.primary_control}</p>
+                  <p className="text-label font-mono text-muted-foreground/40 mt-1.5">{core.primary_control}</p>
                 )}
               </div>
               {core.registration_control && (
@@ -360,7 +360,7 @@ export function AdAccountOverview() {
                     );
                   })()}
                   {registrationControlName !== core.registration_control && (
-                    <p className="text-[9px] font-mono text-muted-foreground/40 mt-1.5">{core.registration_control}</p>
+                    <p className="text-label font-mono text-muted-foreground/40 mt-1.5">{core.registration_control}</p>
                   )}
                 </div>
               )}

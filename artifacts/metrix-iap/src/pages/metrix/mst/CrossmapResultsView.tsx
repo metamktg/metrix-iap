@@ -146,7 +146,7 @@ export function CrossmapResultsView() {
 
               {/* Sort bar — ran cells rank by metric; non-ran always stay at bottom */}
               <div className="flex items-center justify-between gap-3 flex-wrap">
-                <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40">
+                <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/40">
                   Top performers
                 </span>
                 <RankSortBar

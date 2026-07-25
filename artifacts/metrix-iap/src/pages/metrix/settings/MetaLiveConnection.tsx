@@ -305,7 +305,7 @@ function AccountPicker({ pilotMode, onSelected }: { pilotMode: boolean; onSelect
               <div className="text-body font-semibold text-foreground flex items-center gap-2">
                 {a.name ?? a.id}
                 {isPilot && (
-                  <span className="text-[9px] font-semibold uppercase tracking-widest border border-primary/30 bg-primary/[0.08] text-primary px-1.5 py-0.5 rounded leading-none">
+                  <span className="mx-inline-badge mx-inline-badge--info">
                     Pilot account
                   </span>
                 )}

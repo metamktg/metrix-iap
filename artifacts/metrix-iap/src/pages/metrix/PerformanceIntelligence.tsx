@@ -807,7 +807,7 @@ export function TopVariableStackStrip({ accountId }: { accountId: string }) {
                 {combo.recommendation && (
                   <span
                     className={cn(
-                      "mt-2 inline-flex text-[9px] font-semibold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none",
+                      "mt-2 inline-flex text-label font-semibold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none",
                       RECO_BADGE[recoKey] ??
                         "bg-muted text-muted-foreground/60 border-border/40",
                     )}

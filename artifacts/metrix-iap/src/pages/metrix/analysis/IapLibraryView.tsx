@@ -512,7 +512,7 @@ export function IapLibraryView() {
                                         {n}
                                       </button>
                                     ))}
-                                    <span className="text-[9px] text-muted-foreground/35 ml-1">per page</span>
+                                    <span className="text-label text-muted-foreground/35 ml-1">per page</span>
                                   </div>
                                   {/* Prev / page indicator / Next */}
                                   {totalPages > 1 && (
@@ -640,30 +640,30 @@ export function IapLibraryView() {
                             >
                               <div className="flex items-center justify-between gap-2 mb-2">
                                 <span className="text-caption font-semibold text-foreground">{familyLabel(f.family)}</span>
-                                <span className="text-[9px] font-mono text-muted-foreground/60">
+                                <span className="text-label font-mono text-muted-foreground/60">
                                   {f.variableCount} variable{f.variableCount === 1 ? "" : "s"}
                                 </span>
                               </div>
                               <div className="flex items-center gap-4 tabular-nums">
                                 <div>
-                                  <div className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground/50 leading-none mb-1">Spend</div>
+                                  <div className="text-label font-mono uppercase tracking-wider text-muted-foreground/50 leading-none mb-1">Spend</div>
                                   <div className="text-caption font-semibold text-foreground/90">{fmtUSD(f.spend, 0)}</div>
                                 </div>
                                 <div>
-                                  <div className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground/50 leading-none mb-1">Results</div>
+                                  <div className="text-label font-mono uppercase tracking-wider text-muted-foreground/50 leading-none mb-1">Results</div>
                                   <div className="text-caption font-semibold text-foreground/90">{fmtNum(f.results)}</div>
                                 </div>
                                 <div>
-                                  <div className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground/50 leading-none mb-1">CPA</div>
+                                  <div className="text-label font-mono uppercase tracking-wider text-muted-foreground/50 leading-none mb-1">CPA</div>
                                   <div className="text-caption font-semibold text-foreground/90">{f.cpa != null ? fmtUSD(f.cpa) : "—"}</div>
                                 </div>
                               </div>
                               {f.top && (
                                 <div className="mt-2 pt-2 border-t border-border/20 flex items-center gap-1.5 flex-wrap">
-                                  <span className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground/50">Best read</span>
+                                  <span className="text-label font-mono uppercase tracking-wider text-muted-foreground/50">Best read</span>
                                   <VariableChip code={f.top.variableId} showCode={false} />
                                   {f.top.cpa != null && (
-                                    <span className="text-[9px] tabular-nums text-muted-foreground/70">{fmtUSD(f.top.cpa)} CPA</span>
+                                    <span className="text-label tabular-nums text-muted-foreground/70">{fmtUSD(f.top.cpa)} CPA</span>
                                   )}
                                 </div>
                               )}
@@ -745,7 +745,7 @@ export function IapLibraryView() {
                       ];
                       return stats.map((s) => (
                         <div key={s.label}>
-                          <div className="text-[8px] font-mono uppercase tracking-wider text-muted-foreground/50 leading-none mb-1">{s.label}</div>
+                          <div className="text-label font-mono uppercase tracking-wider text-muted-foreground/50 leading-none mb-1">{s.label}</div>
                           <div className="text-caption font-semibold tabular-nums text-foreground/90">{s.value}</div>
                         </div>
                       ));

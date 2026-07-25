@@ -131,14 +131,14 @@ function PlacementDetailDialog({ placement, v3Rows, c4eRows, accountRollup, onCl
             <div key={i} className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border/20 last:border-b-0 bg-white/[0.01]">
               <div className="min-w-0">
                 <div className="text-caption font-medium text-foreground truncate">{r.Placement}</div>
-                <div className="text-[9px] font-mono text-muted-foreground/50 mt-0.5">
+                <div className="text-label font-mono text-muted-foreground/50 mt-0.5">
                   {fmtNum(r.Impressions)} impr · {fmtNum(r["Link clicks"] ?? 0)} clicks
                   {r.CPA != null && ` · CPA ${fmtUSD(r.CPA)}`}
                 </div>
               </div>
               <div className="shrink-0 text-right">
                 <div className="text-caption font-semibold text-foreground tabular-nums">{fmtUSD(r["Amount spent (USD)"], 0)}</div>
-                <div className="text-[9px] text-muted-foreground/60">{fmtNum(r.Results)} results</div>
+                <div className="text-label text-muted-foreground/60">{fmtNum(r.Results)} results</div>
               </div>
             </div>
           ))}
@@ -166,11 +166,11 @@ function PlacementDetailDialog({ placement, v3Rows, c4eRows, accountRollup, onCl
           {/* Top-line with account-average benchmarks */}
           <div className="grid grid-cols-dashboard-4-sm gap-2">
             {tiles.map(({ label, value, delta }) => (
-              <div key={label} className="rounded-lg border border-border/40 bg-white/[0.02] px-3 py-2.5">
-                <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-0.5">{label}</div>
-                <div className="text-base font-bold text-foreground tabular-nums leading-none">{value}</div>
+              <div key={label} className="mx-kpi-tile px-3 py-2.5">
+                <div className="text-label font-mono uppercase tracking-widest text-muted-foreground/60 mb-0.5">{label}</div>
+                <div className="text-stat metric-num leading-none">{value}</div>
                 {delta && (
-                  <div className={cn("text-[9px] mt-1 leading-none", delta.good ? "text-emerald-300/80" : "text-amber-300/80")}>
+                  <div className={cn("text-label mt-1 leading-none", delta.good ? "text-accent" : "text-amber-300/80")}>
                     {delta.text}
                   </div>
                 )}
@@ -417,7 +417,7 @@ export function PlacementsView() {
                               {efficiency != null && (
                                 <div
                                   className={cn(
-                                    "text-[8px] font-mono uppercase tracking-wider mt-0.5",
+                                    "text-label font-mono uppercase tracking-wider mt-0.5",
                                     efficiency >= 1 ? "text-emerald-300/80" : "text-muted-foreground/50"
                                   )}
                                   title="Share of results ÷ share of spend — above 1× means this placement produces more than its budget share."
@@ -437,22 +437,22 @@ export function PlacementsView() {
                           </div>
                           <div className="mt-2 ml-8 space-y-1">
                             <div className="flex items-center gap-2">
-                              <span className="w-14 shrink-0 text-[8px] font-mono uppercase tracking-wider text-muted-foreground/40">Spend</span>
+                              <span className="w-14 shrink-0 text-label font-mono uppercase tracking-wider text-muted-foreground/40">Spend</span>
                               <div className="flex-1 h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
                                 <div className="h-full bg-primary/50 rounded-full" style={{ width: `${Math.max(spendShare, s.spend > 0 ? 2 : 0)}%` }} />
                               </div>
-                              <span className="w-9 shrink-0 text-right text-[8px] font-mono text-muted-foreground/50 tabular-nums">{spendShare.toFixed(0)}%</span>
+                              <span className="w-9 shrink-0 text-right text-label font-mono text-muted-foreground/50 tabular-nums">{spendShare.toFixed(0)}%</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="w-14 shrink-0 text-[8px] font-mono uppercase tracking-wider text-muted-foreground/40">{term.Plural}</span>
+                              <span className="w-14 shrink-0 text-label font-mono uppercase tracking-wider text-muted-foreground/40">{term.Plural}</span>
                               <div className="flex-1 h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
                                 <div className="h-full bg-emerald-400/60 rounded-full" style={{ width: `${Math.max(resultShare, s.results > 0 ? 2 : 0)}%` }} />
                               </div>
-                              <span className="w-9 shrink-0 text-right text-[8px] font-mono text-muted-foreground/50 tabular-nums">{resultShare.toFixed(0)}%</span>
+                              <span className="w-9 shrink-0 text-right text-label font-mono text-muted-foreground/50 tabular-nums">{resultShare.toFixed(0)}%</span>
                             </div>
                           </div>
                           {activeMetric.id !== "spend" && v != null && (
-                            <div className="mt-1.5 ml-8 text-[9px] text-muted-foreground/50 tabular-nums">
+                            <div className="mt-1.5 ml-8 text-label text-muted-foreground/50 tabular-nums">
                               Ranked by {activeMetric.label}: {activeMetric.format(v)}
                             </div>
                           )}

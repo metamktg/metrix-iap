@@ -97,7 +97,7 @@ function PillarCoverageStrip({
                   {t.main}
                 </span>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className={cn("text-[9px] font-semibold border px-1.5 py-0.5 rounded leading-none", TIER_STYLE[tier])}>
+                  <span className={cn("text-label font-semibold border px-1.5 py-0.5 rounded leading-none", TIER_STYLE[tier])}>
                     {p.source_cells.length} cell{p.source_cells.length !== 1 ? "s" : ""}
                   </span>
                   {hypCount > 0 && (
@@ -218,7 +218,7 @@ function VariableFamilyHeatmap({ pillars }: { pillars: MessagePillar[] }) {
                     }
                   >
                     {used && (
-                      <span className="text-[8px] font-semibold leading-none select-none">
+                      <span className="text-label font-semibold leading-none select-none">
                         {f.abbrev}
                       </span>
                     )}
@@ -511,7 +511,7 @@ export function StrategyOverview() {
                           <span className={cn(TYPE.label, "tabular-nums")}>
                             {String(i + 1).padStart(2, "0")}
                           </span>
-                          <span className={cn("text-[9px] font-semibold border px-1.5 py-0.5 rounded leading-none", TIER_STYLE[tier])}>
+                          <span className={cn("text-label font-semibold border px-1.5 py-0.5 rounded leading-none", TIER_STYLE[tier])}>
                             {TIER_LABEL[tier]}
                           </span>
                         </div>

@@ -409,7 +409,7 @@ function PendingInviteRow({
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-body font-medium text-foreground truncate">{invite.email}</span>
-          <span className="text-[9px] font-semibold uppercase tracking-wide text-amber-400 border border-amber-400/25 bg-amber-400/10 px-1.5 py-0.5 rounded leading-none">Invited</span>
+          <span className="mx-inline-badge mx-inline-badge--warning">Invited</span>
         </div>
         <div className="text-label text-muted-foreground/70 truncate">
           {error ? (
@@ -938,11 +938,11 @@ function TeamAccessViewInner() {
                     <div className="flex items-center gap-2">
                       <span className="text-body font-medium text-foreground truncate">{m.name}</span>
                       {m.disabled ? (
-                        <span className="text-[9px] font-semibold uppercase tracking-wide text-red-400 border border-red-400/25 bg-red-400/10 px-1.5 py-0.5 rounded leading-none">Removed</span>
+                        <span className="mx-inline-badge mx-inline-badge--danger">Removed</span>
                       ) : m.invited ? (
-                        <span className="text-[9px] font-semibold uppercase tracking-wide text-amber-400 border border-amber-400/25 bg-amber-400/10 px-1.5 py-0.5 rounded leading-none">Invited</span>
+                        <span className="mx-inline-badge mx-inline-badge--warning">Invited</span>
                       ) : m.hasAccount ? (
-                        <span className="text-[9px] font-semibold uppercase tracking-wide text-emerald-400 border border-emerald-400/25 bg-emerald-400/10 px-1.5 py-0.5 rounded leading-none">Active</span>
+                        <span className="mx-inline-badge mx-inline-badge--success">Active</span>
                       ) : null}
                     </div>
                     <div className="text-label text-muted-foreground/70 truncate">{m.email}</div>

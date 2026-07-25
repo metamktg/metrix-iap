@@ -323,12 +323,12 @@ export function ModuleHeader({
     <div className="shrink-0">
       <div className={cn("px-6 py-4", !tabs && "border-b border-border/40")}>
         <div className="flex items-start gap-3">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 mb-1">
-              <span className="text-label font-semibold uppercase tracking-[0.16em] text-muted-foreground/80">{sectionLabel}</span>
+          <div className="flex-1 min-w-0 mx-section-header">
+            <div className="flex items-center gap-1.5">
+              <span className="mx-section-header__eyebrow">{sectionLabel}</span>
               {subtitle && <InfoTooltip content={subtitle} />}
             </div>
-            <h1 className="text-display font-bold text-foreground leading-tight tracking-[-0.02em]">{title}</h1>
+            <h1 className="mx-section-header__title">{title}</h1>
           </div>
           <div className="shrink-0 pt-0.5 flex items-center gap-2">
             {account && (
@@ -676,7 +676,7 @@ export function LoopChecklist({ steps, allComplete = false }: { steps: LoopCheck
           {allComplete ? "Loop complete" : "Setup progress"}
         </span>
         <div className="flex-1 h-px bg-border/20" />
-        <span className="text-[9px] font-mono tabular-nums text-muted-foreground/40">{doneCount}/{steps.length}</span>
+        <span className="text-label font-mono tabular-nums text-muted-foreground/40">{doneCount}/{steps.length}</span>
       </div>
 
       {/* Completion banner — shown when all steps are done */}
@@ -743,7 +743,7 @@ export function LoopChecklist({ steps, allComplete = false }: { steps: LoopCheck
                 ? <CheckCircle2 className="w-3.5 h-3.5" />
                 : isNext
                   ? <ArrowRight className="w-2.5 h-2.5 text-primary/70" />
-                  : <span className="text-[8px] font-bold text-muted-foreground/30 tabular-nums leading-none">{i + 1}</span>
+                  : <span className="text-label font-bold text-muted-foreground/30 tabular-nums leading-none">{i + 1}</span>
               }
             </div>
             <span className={cn(
@@ -883,10 +883,10 @@ export function SkeletonTileRow({ count = 4 }: { count?: number }) {
 
 export function MetricTile({ label, value, sub }: { label: React.ReactNode; value: string; sub?: string }) {
   return (
-    <div className="mx-card p-4 transition-colors group-hover:border-primary/30 group-hover:bg-primary/[0.02]">
-      <div className="relative">
-        <div className="text-caption font-semibold uppercase tracking-[0.12em] text-muted-foreground/70 mb-2 truncate">{label}</div>
-        <div className="text-stat font-bold text-foreground tabular-nums leading-none tracking-[-0.035em]">{value}</div>
+    <div className="mx-kpi-tile p-4 transition-colors group-hover:border-primary/30">
+      <div className="relative z-10">
+        <div className="text-label font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-2 truncate">{label}</div>
+        <div className="text-bignum font-bold text-foreground metric-num leading-none tracking-[-0.035em]">{value}</div>
         {sub && <div className="text-caption text-muted-foreground/65 mt-2 leading-snug line-clamp-2">{sub}</div>}
       </div>
     </div>
@@ -1222,8 +1222,8 @@ export function SectionCard({
   right?: React.ReactNode;
 }) {
   return (
-    <section className="mx-card overflow-hidden">
-      <div className="relative flex items-center gap-2 px-3.5 py-1.5 border-b border-[rgba(120,170,255,0.10)]">
+    <section className="mx-card-hero overflow-hidden">
+      <div className="mx-accent-bar relative flex items-center gap-2 px-3.5 py-2 border-b border-[rgba(120,170,255,0.12)]">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <h3 className="text-title font-semibold text-foreground leading-tight">{title}</h3>
