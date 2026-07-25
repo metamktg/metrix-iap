@@ -1,0 +1,258 @@
+{
+  "bundle_metadata": {
+    "client_name": "East Coast Art Studio",
+    "client_id": "east-coast-art-studio",
+    "date_range": {
+      "start": "2026-07-14",
+      "end": "2026-07-24"
+    },
+    "account_id": "1202182091204847",
+    "objective": "OUTCOME_SALES",
+    "attribution_windows": "7-day click, 1-day view, or 1-day engaged-view",
+    "campaign_name": "ECAS_MST",
+    "campaign_id": "120248368491680327"
+  },
+  "account_totals": {
+    "spend": 57.97,
+    "impressions": 1951,
+    "reach": 1602,
+    "link_clicks": 23.0,
+    "clicks_all": 31.0,
+    "adds_to_cart": 0.0,
+    "checkouts_initiated": 0.0,
+    "purchases": 0.0,
+    "purchases_conversion_value": 0.0
+  },
+  "ad_level_performance": [
+    {
+      "ad_name": "C1A",
+      "matrix_cell": "C1A",
+      "meta_ad_id": "120248368761260327",
+      "spend": 1.01,
+      "impressions": 46,
+      "reach": 44,
+      "link_clicks": 0.0,
+      "clicks_all": 1.0,
+      "ctr_link_pct": 0.0,
+      "adds_to_cart": 0.0,
+      "checkouts_initiated": 0.0,
+      "purchases": 0.0,
+      "purchase_value": 0.0,
+      "roas": null,
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C1B",
+      "matrix_cell": "C1B",
+      "meta_ad_id": "120248368761270327",
+      "spend": 1.07,
+      "impressions": 47,
+      "reach": 39,
+      "link_clicks": 1.0,
+      "clicks_all": 1.0,
+      "ctr_link_pct": 2.13,
+      "adds_to_cart": 0.0,
+      "checkouts_initiated": 0.0,
+      "purchases": 0.0,
+      "purchase_value": 0.0,
+      "roas": null,
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C1D",
+      "matrix_cell": "C1D",
+      "meta_ad_id": "120248368756150327",
+      "spend": 10.82,
+      "impressions": 672,
+      "reach": 513,
+      "link_clicks": 4.0,
+      "clicks_all": 6.0,
+      "ctr_link_pct": 0.6,
+      "adds_to_cart": 0.0,
+      "checkouts_initiated": 0.0,
+      "purchases": 0.0,
+      "purchase_value": 0.0,
+      "roas": null,
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C2B",
+      "matrix_cell": "C2B",
+      "meta_ad_id": "120248369077860327",
+      "spend": 3.77,
+      "impressions": 280,
+      "reach": 213,
+      "link_clicks": 1.0,
+      "clicks_all": 2.0,
+      "ctr_link_pct": 0.36,
+      "adds_to_cart": 0.0,
+      "checkouts_initiated": 0.0,
+      "purchases": 0.0,
+      "purchase_value": 0.0,
+      "roas": null,
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C2C",
+      "matrix_cell": "C2C",
+      "meta_ad_id": "120248368953530327",
+      "spend": 0.2,
+      "impressions": 22,
+      "reach": 21,
+      "link_clicks": 0.0,
+      "clicks_all": 0.0,
+      "ctr_link_pct": 0.0,
+      "adds_to_cart": 0.0,
+      "checkouts_initiated": 0.0,
+      "purchases": 0.0,
+      "purchase_value": 0.0,
+      "roas": null,
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C3A",
+      "matrix_cell": "C3A",
+      "meta_ad_id": "120248368953500327",
+      "spend": 6.69,
+      "impressions": 151,
+      "reach": 136,
+      "link_clicks": 8.0,
+      "clicks_all": 9.0,
+      "ctr_link_pct": 5.3,
+      "adds_to_cart": 0.0,
+      "checkouts_initiated": 0.0,
+      "purchases": 0.0,
+      "purchase_value": 0.0,
+      "roas": null,
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C3B",
+      "matrix_cell": "C3B",
+      "meta_ad_id": "120248368953510327",
+      "spend": 10.84,
+      "impressions": 290,
+      "reach": 246,
+      "link_clicks": 3.0,
+      "clicks_all": 3.0,
+      "ctr_link_pct": 1.03,
+      "adds_to_cart": 0.0,
+      "checkouts_initiated": 0.0,
+      "purchases": 0.0,
+      "purchase_value": 0.0,
+      "roas": null,
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C3D",
+      "matrix_cell": "C3D",
+      "meta_ad_id": "120248368953470327",
+      "spend": 9.91,
+      "impressions": 137,
+      "reach": 131,
+      "link_clicks": 1.0,
+      "clicks_all": 3.0,
+      "ctr_link_pct": 0.73,
+      "adds_to_cart": 0.0,
+      "checkouts_initiated": 0.0,
+      "purchases": 0.0,
+      "purchase_value": 0.0,
+      "roas": null,
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C4B",
+      "matrix_cell": "C4B",
+      "meta_ad_id": "120248369515880327",
+      "spend": 10.08,
+      "impressions": 167,
+      "reach": 148,
+      "link_clicks": 1.0,
+      "clicks_all": 2.0,
+      "ctr_link_pct": 0.6,
+      "adds_to_cart": 0.0,
+      "checkouts_initiated": 0.0,
+      "purchases": 0.0,
+      "purchase_value": 0.0,
+      "roas": null,
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "C4C",
+      "matrix_cell": "C4C",
+      "meta_ad_id": "120248369515860327",
+      "spend": 0.15,
+      "impressions": 2,
+      "reach": 2,
+      "link_clicks": 1.0,
+      "clicks_all": 1.0,
+      "ctr_link_pct": 50.0,
+      "adds_to_cart": 0.0,
+      "checkouts_initiated": 0.0,
+      "purchases": 0.0,
+      "purchase_value": 0.0,
+      "roas": null,
+      "confidence": "insufficient"
+    },
+    {
+      "ad_name": "c4A",
+      "matrix_cell": "C4A",
+      "meta_ad_id": "120248369515870327",
+      "spend": 3.43,
+      "impressions": 137,
+      "reach": 109,
+      "link_clicks": 3.0,
+      "clicks_all": 3.0,
+      "ctr_link_pct": 2.19,
+      "adds_to_cart": 0.0,
+      "checkouts_initiated": 0.0,
+      "purchases": 0.0,
+      "purchase_value": 0.0,
+      "roas": null,
+      "confidence": "insufficient"
+    }
+  ],
+  "quality_flags": [
+    {
+      "severity": "critical",
+      "flag": "underspend",
+      "detail": "Spend recorded ($57.97) is 5.8% of the committed ~$1,000 pilot budget over an 11-day window intended as the live sprint."
+    },
+    {
+      "severity": "critical",
+      "flag": "zero_conversions",
+      "detail": "Zero purchases and zero checkouts_initiated across every delivering ad for the full window \u2014 consistent with the Initiate Checkout tracking bug flagged 2026-07-17, which does not appear resolved."
+    },
+    {
+      "severity": "critical",
+      "flag": "zero_delivery_cells",
+      "detail": "C2A, C2D, C3C, C4D show zero impressions in either export for the full window. Excluded from ad_level_performance per importer requirement that every ad_level_performance entry appear in the source CSV \u2014 these are absent from the CSV entirely, not zero-performing."
+    },
+    {
+      "severity": "medium",
+      "flag": "partial_reporting_cell",
+      "detail": "C1C appears in the device/placement export (52 link clicks, 1 add-to-cart) but has zero rows in the demographic export, so it is also excluded from ad_level_performance and account_totals. Its activity is real but unreconciled against spend."
+    },
+    {
+      "severity": "medium",
+      "flag": "naming_anomaly",
+      "detail": "One ad delivers under ad name \"c4A\" (lowercase) rather than canonical \"C4A\" \u2014 mapped to matrix_cell C4A here, but should be corrected in Ads Manager for traceability."
+    },
+    {
+      "severity": "high",
+      "flag": "cross_export_mismatch",
+      "detail": "Device/placement export reports 341 total link clicks and 7 total adds-to-cart account-wide, vs 23 and 0 in this (demographic-source) bundle. account_totals here is built from the DEMO CSV only per importer requirement; the device figures are not reconciled and should not be treated as more accurate without investigation."
+    },
+    {
+      "severity": "low",
+      "flag": "audience_skew_persists",
+      "detail": "45+ age segments account for ~66% of recorded spend, the same skew flagged in the pre-pilot account audit \u2014 the CBO/targeting fix does not appear to have fully resolved it at this spend level."
+    },
+    {
+      "severity": "info",
+      "flag": "statistical_noise",
+      "detail": "C4C: 1 link click on 2 impressions (50% CTR) \u2014 small-sample noise, not a real engagement signal."
+    }
+  ],
+  "purchase_events": []
+}

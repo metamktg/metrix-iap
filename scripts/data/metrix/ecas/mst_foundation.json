@@ -1,0 +1,306 @@
+{
+  "status": "sprint_in_progress_invalid_read \u2014 16/16 cells produced pre-launch, only 11/16 confirmed delivering with usable data, 0/16 have any conversion signal",
+  "render_policy": {
+    "primary_format": "4:5 (1080x1350)",
+    "secondary_format_required": "9:16 (1080x1920) \u2014 NONE PRODUCED YET for any cell",
+    "mobile_first": true,
+    "text_safe_zones_required_on_9x16": true
+  },
+  "historical_matrix_4x4": [
+    {
+      "cell_id": "C1A",
+      "concept_id": "C1",
+      "row_variable": "A",
+      "hook": "Most \"custom\" prints are posters in disguise.",
+      "tone": "TN_Assertive",
+      "proof_or_pain": "HP_CheapPoster",
+      "cta_code": "CTA_Buy"
+    },
+    {
+      "cell_id": "C1B",
+      "concept_id": "C1",
+      "row_variable": "B",
+      "hook": "What do you give someone who has everything?",
+      "tone": "TN_Emotional",
+      "proof_or_pain": "PR_Testimonial",
+      "cta_code": "CTA_Buy"
+    },
+    {
+      "cell_id": "C1C",
+      "concept_id": "C1",
+      "row_variable": "C",
+      "hook": "There's a reason this gift never gets returned.",
+      "tone": "TN_Emotional",
+      "proof_or_pain": "HP_ForgettableGift",
+      "cta_code": "CTA_Buy"
+    },
+    {
+      "cell_id": "C1D",
+      "concept_id": "C1",
+      "row_variable": "D",
+      "hook": "Gallery-grade prints of 3,000+ cities. Made to order.",
+      "tone": "TN_Rational",
+      "proof_or_pain": "HP_BareWalls",
+      "cta_code": "CTA_ClaimOffer"
+    },
+    {
+      "cell_id": "C2A",
+      "concept_id": "C2",
+      "row_variable": "A",
+      "hook": "Last year I gave my parents a gift card. Never again.",
+      "tone": "TN_Assertive",
+      "proof_or_pain": "HP_GenericGift",
+      "cta_code": "CTA_Buy"
+    },
+    {
+      "cell_id": "C2B",
+      "concept_id": "C2",
+      "row_variable": "B",
+      "hook": "Three months in the new place. Still bare walls.",
+      "tone": "TN_Rational",
+      "proof_or_pain": "PR_Testimonial",
+      "cta_code": "CTA_Buy"
+    },
+    {
+      "cell_id": "C2C",
+      "concept_id": "C2",
+      "row_variable": "C",
+      "hook": "The gift they'll still talk about next year.",
+      "tone": "TN_Aspirational",
+      "proof_or_pain": "HP_ForgettableGift",
+      "cta_code": "CTA_Buy"
+    },
+    {
+      "cell_id": "C2D",
+      "concept_id": "C2",
+      "row_variable": "D",
+      "hook": "The block he grew up on. Framed on his wall now.",
+      "tone": "TN_Rational",
+      "proof_or_pain": "HP_FadedMemory",
+      "cta_code": "CTA_ClaimOffer"
+    },
+    {
+      "cell_id": "C3A",
+      "concept_id": "C3",
+      "row_variable": "A",
+      "hook": "Look closer. Those are real street names.",
+      "tone": "TN_Assertive",
+      "proof_or_pain": "HP_BareWalls",
+      "cta_code": "CTA_Buy"
+    },
+    {
+      "cell_id": "C3B",
+      "concept_id": "C3",
+      "row_variable": "B",
+      "hook": "Your city, the way you remember it.",
+      "tone": "TN_Emotional",
+      "proof_or_pain": "PR_Testimonial",
+      "cta_code": "CTA_Buy"
+    },
+    {
+      "cell_id": "C3C",
+      "concept_id": "C3",
+      "row_variable": "C",
+      "hook": "Some gifts get forgotten by Monday.",
+      "tone": "TN_Rational",
+      "proof_or_pain": "HP_ForgettableGift",
+      "cta_code": "CTA_Buy"
+    },
+    {
+      "cell_id": "C3D",
+      "concept_id": "C3",
+      "row_variable": "D",
+      "hook": "Not another gift-shop skyline.",
+      "tone": "TN_Aspirational",
+      "proof_or_pain": "HP_CheapPoster",
+      "cta_code": "CTA_ClaimOffer"
+    },
+    {
+      "cell_id": "C4A",
+      "concept_id": "C4",
+      "row_variable": "A",
+      "hook": "Every city you've loved, framed on one wall.",
+      "tone": "TN_Assertive",
+      "proof_or_pain": "HP_FadedMemory",
+      "cta_code": "CTA_Buy"
+    },
+    {
+      "cell_id": "C4B",
+      "concept_id": "C4",
+      "row_variable": "B",
+      "hook": "\"It's the city of our first trip together.\"",
+      "tone": "TN_Aspirational",
+      "proof_or_pain": "PR_Testimonial",
+      "cta_code": "CTA_Buy"
+    },
+    {
+      "cell_id": "C4C",
+      "concept_id": "C4",
+      "row_variable": "C",
+      "hook": "When did a gift last earn a spot on the wall?",
+      "tone": "TN_Rational",
+      "proof_or_pain": "HP_ForgettableGift",
+      "cta_code": "CTA_Buy"
+    },
+    {
+      "cell_id": "C4D",
+      "concept_id": "C4",
+      "row_variable": "D",
+      "hook": "Generic gifts don't survive the year. Walls do.",
+      "tone": "TN_Aspirational",
+      "proof_or_pain": "HP_GenericGift",
+      "cta_code": "CTA_ClaimOffer"
+    }
+  ],
+  "source_artifacts": [
+    "ecas-mst-sprint1-handoff.zip (Claude Code handoff, C1/C2 only, 13 files)",
+    "drive-download-20260725T055530Z-1-001.zip (full Drive export, 20 files, all 16 cells represented but with filename/variant inconsistencies)",
+    "ECAS-MST-Sprint1-Creative-Board.html (design-stage mockup v1.0.0, superseded)"
+  ],
+  "local_library_cells": [
+    {
+      "cell_id": "C1A",
+      "concept_id": "C1",
+      "asset_filename": "C1A_CN_ICP_GiftGiver45_..._4x5.png (see local_client_library.json evidence_notes for known filename exceptions)",
+      "asset_path": "Google Drive / ECAS_MST folder (drive-download-20260725T055530Z-1-001.zip)",
+      "qa_mapping_status": "pass",
+      "mapping_confidence": "medium",
+      "notes": ""
+    },
+    {
+      "cell_id": "C1B",
+      "concept_id": "C1",
+      "asset_filename": "C1B_CN_ICP_GiftGiver45_..._4x5.png (see local_client_library.json evidence_notes for known filename exceptions)",
+      "asset_path": "Google Drive / ECAS_MST folder (drive-download-20260725T055530Z-1-001.zip)",
+      "qa_mapping_status": "pass",
+      "mapping_confidence": "medium",
+      "notes": ""
+    },
+    {
+      "cell_id": "C1C",
+      "concept_id": "C1",
+      "asset_filename": "C1C_CN_ICP_GiftGiver45_..._4x5.png (see local_client_library.json evidence_notes for known filename exceptions)",
+      "asset_path": "Google Drive / ECAS_MST folder (drive-download-20260725T055530Z-1-001.zip)",
+      "qa_mapping_status": "pass",
+      "mapping_confidence": "medium",
+      "notes": ""
+    },
+    {
+      "cell_id": "C1D",
+      "concept_id": "C1",
+      "asset_filename": "C1D_CN_ICP_GiftGiver45_..._4x5.png (see local_client_library.json evidence_notes for known filename exceptions)",
+      "asset_path": "Google Drive / ECAS_MST folder (drive-download-20260725T055530Z-1-001.zip)",
+      "qa_mapping_status": "pass",
+      "mapping_confidence": "medium",
+      "notes": ""
+    },
+    {
+      "cell_id": "C2A",
+      "concept_id": "C2",
+      "asset_filename": "C2A_CN_ICP_Milestone2534_..._4x5.png (see local_client_library.json evidence_notes for known filename exceptions)",
+      "asset_path": "Google Drive / ECAS_MST folder (drive-download-20260725T055530Z-1-001.zip)",
+      "qa_mapping_status": "pass",
+      "mapping_confidence": "medium",
+      "notes": ""
+    },
+    {
+      "cell_id": "C2B",
+      "concept_id": "C2",
+      "asset_filename": "C2B_CN_ICP_Milestone2534_..._4x5.png (see local_client_library.json evidence_notes for known filename exceptions)",
+      "asset_path": "Google Drive / ECAS_MST folder (drive-download-20260725T055530Z-1-001.zip)",
+      "qa_mapping_status": "pass",
+      "mapping_confidence": "medium",
+      "notes": ""
+    },
+    {
+      "cell_id": "C2C",
+      "concept_id": "C2",
+      "asset_filename": "C2C_CN_ICP_Milestone2534_..._4x5.png (see local_client_library.json evidence_notes for known filename exceptions)",
+      "asset_path": "Google Drive / ECAS_MST folder (drive-download-20260725T055530Z-1-001.zip)",
+      "qa_mapping_status": "pass",
+      "mapping_confidence": "medium",
+      "notes": ""
+    },
+    {
+      "cell_id": "C2D",
+      "concept_id": "C2",
+      "asset_filename": "C2D_CN_ICP_Milestone2534_..._4x5.png (see local_client_library.json evidence_notes for known filename exceptions)",
+      "asset_path": "Google Drive / ECAS_MST folder (drive-download-20260725T055530Z-1-001.zip)",
+      "qa_mapping_status": "pass",
+      "mapping_confidence": "medium",
+      "notes": ""
+    },
+    {
+      "cell_id": "C3A",
+      "concept_id": "C3",
+      "asset_filename": "C3A_CN_ICP_HometownSelf_..._4x5.png (see local_client_library.json evidence_notes for known filename exceptions)",
+      "asset_path": "Google Drive / ECAS_MST folder (drive-download-20260725T055530Z-1-001.zip)",
+      "qa_mapping_status": "pass",
+      "mapping_confidence": "medium",
+      "notes": ""
+    },
+    {
+      "cell_id": "C3B",
+      "concept_id": "C3",
+      "asset_filename": "C3B_CN_ICP_HometownSelf_..._4x5.png (see local_client_library.json evidence_notes for known filename exceptions)",
+      "asset_path": "Google Drive / ECAS_MST folder (drive-download-20260725T055530Z-1-001.zip)",
+      "qa_mapping_status": "flagged",
+      "mapping_confidence": "low",
+      "notes": "corrected: the file live in Ads Manager is 'C3B v2.png' (1122x1402, 4:5) per 2026-07-25 screenshot confirmation, not the canonically-named '..._T1.png' file (1024x1536, off-ratio, deprecated)."
+    },
+    {
+      "cell_id": "C3C",
+      "concept_id": "C3",
+      "asset_filename": "C3C_CN_ICP_HometownSelf_..._4x5.png (see local_client_library.json evidence_notes for known filename exceptions)",
+      "asset_path": "Google Drive / ECAS_MST folder (drive-download-20260725T055530Z-1-001.zip)",
+      "qa_mapping_status": "pass",
+      "mapping_confidence": "medium",
+      "notes": ""
+    },
+    {
+      "cell_id": "C3D",
+      "concept_id": "C3",
+      "asset_filename": "C3D_CN_ICP_HometownSelf_..._4x5.png (see local_client_library.json evidence_notes for known filename exceptions)",
+      "asset_path": "Google Drive / ECAS_MST folder (drive-download-20260725T055530Z-1-001.zip)",
+      "qa_mapping_status": "pass",
+      "mapping_confidence": "medium",
+      "notes": ""
+    },
+    {
+      "cell_id": "C4A",
+      "concept_id": "C4",
+      "asset_filename": "C4A_CN_ICP_MemoryKeeperCouple_..._4x5.png (see local_client_library.json evidence_notes for known filename exceptions)",
+      "asset_path": "Google Drive / ECAS_MST folder (drive-download-20260725T055530Z-1-001.zip)",
+      "qa_mapping_status": "pass",
+      "mapping_confidence": "medium",
+      "notes": ""
+    },
+    {
+      "cell_id": "C4B",
+      "concept_id": "C4",
+      "asset_filename": "C4B_CN_ICP_MemoryKeeperCouple_..._4x5.png (see local_client_library.json evidence_notes for known filename exceptions)",
+      "asset_path": "Google Drive / ECAS_MST folder (drive-download-20260725T055530Z-1-001.zip)",
+      "qa_mapping_status": "pass",
+      "mapping_confidence": "medium",
+      "notes": ""
+    },
+    {
+      "cell_id": "C4C",
+      "concept_id": "C4",
+      "asset_filename": "C4C_CN_ICP_MemoryKeeperCouple_..._4x5.png (see local_client_library.json evidence_notes for known filename exceptions)",
+      "asset_path": "Google Drive / ECAS_MST folder (drive-download-20260725T055530Z-1-001.zip)",
+      "qa_mapping_status": "pass",
+      "mapping_confidence": "medium",
+      "notes": ""
+    },
+    {
+      "cell_id": "C4D",
+      "concept_id": "C4",
+      "asset_filename": "C4D_CN_ICP_MemoryKeeperCouple_..._4x5.png (see local_client_library.json evidence_notes for known filename exceptions)",
+      "asset_path": "Google Drive / ECAS_MST folder (drive-download-20260725T055530Z-1-001.zip)",
+      "qa_mapping_status": "pass",
+      "mapping_confidence": "medium",
+      "notes": ""
+    }
+  ]
+}

@@ -1,0 +1,1300 @@
+{
+  "briefs": [
+    {
+      "brief_metadata": {
+        "brief_id": "ECAS-MST1-C1A",
+        "mode": "MST_matrix_cell",
+        "voice": "assertive/craft-led",
+        "asset_type": "static_4x5",
+        "strategic_source": "MST Sprint 1 matrix, local_client_library.json v1.4.0",
+        "priority": "standard",
+        "confidence": "produced_pre-launch, unproven"
+      },
+      "strategic_foundation": {
+        "data_insight": "hypothesis_only \u2014 no live performance data exists for this cell yet",
+        "target_icp": "ICP-ECAS-01 (GiftGiver45)",
+        "message_pillar": "MP-01",
+        "concept_code": "CN_Design_SinglePrintLifestyle",
+        "angle_stack": "TN_Assertive / HP_CheapPoster / CTA_Buy",
+        "performance_benchmark": "none established \u2014 account has zero validated conversions to date"
+      },
+      "testing_framework": {
+        "matrix_position": "C1A",
+        "matrix_naming_convention": "C1A_CN_ICP_GiftGiver45_CN_Design_SinglePrintLifestyle_HP_CheapPoster_..._4x5.png",
+        "hypothesis": "Isolating TN_Assertive in the A row position will reveal a directional signal for GiftGiver45 once delivery/tracking issues are resolved.",
+        "isolated_variable": "TN_Assertive",
+        "control_reference": "account baseline \u2014 not yet established",
+        "success_criteria": "\u226510% lift in overall_cvr vs matched cells at \u2265$100 spend / \u226510 conversions",
+        "learning_objective": "Determine whether A-row variable generalizes across all 4 ICPs or is avatar-specific to GiftGiver45"
+      },
+      "creative_specifications": {
+        "format": "static image",
+        "dimensions": "1080x1350 (4:5) \u2014 primary; 1080x1920 (9:16) required, not yet produced",
+        "duration": null,
+        "placement": "Feed, Instagram Reels, Stories (pending 9:16)",
+        "safe_zones": "text-safe zones required on 9:16 crop once produced",
+        "production_requirements": "real product photography only, no illustrated placeholders (per account rules)"
+      },
+      "copy_architecture": {
+        "hook": "Most \"custom\" prints are posters in disguise.",
+        "problem_agitation_or_value_setup": "HP_CheapPoster",
+        "product_solution": "Made to order, real wood frame, real matte paper, 3,000+ cities",
+        "proof": "PR_DataStat: 3,000+ CITIES \u00b7 MADE TO ORDER",
+        "cta": "SHOP NOW",
+        "headlines": [
+          "Not Another Poster",
+          "Real Wood, Real Paper"
+        ],
+        "primary_text": "Most \"custom\" prints are posters in a frame. Ours aren't.\nWe make every print to order: real matte fine-art paper, a real wood frame, not a plastic one that warps in a year.\nThe street they grew up on deserves better than a gift-shop print. Shop your city now."
+      },
+      "visual_direction": {
+        "composition": "CN_Design_SinglePrintLifestyle",
+        "style_guide": "gallery-grade, warm neutral tones, real wood frame, matte paper texture",
+        "color_palette": "warm neutrals, black CTA button (standardized)",
+        "typography": "ECAS wordmark serif/sans pairing per Creative Board spec",
+        "imagery": "real photography of framed print in lifestyle or room context",
+        "avoid_list": [
+          "emoji (any row)",
+          "\"Read why\" CTA (banned account-wide)",
+          "discount language outside Row D final line",
+          "fabricated or attributed testimonial names",
+          "invented social-proof counts \u2014 ship as [VERIFIED COUNT] until confirmed"
+        ]
+      },
+      "production_checklist": [
+        "Confirm asset is byte-identical to what's uploaded to Ads Manager (see local_client_library.json evidence_notes for known filename/version mismatches)",
+        "Confirm 4:5 ratio (1080x1350) exact \u2014 off-ratio renders must be discarded, not shipped",
+        "Generate matching 9:16 crop (outstanding for all 16 cells)",
+        "Run through metrix-mst-creative-scan before any Ads Manager upload"
+      ],
+      "qa_requirements": [
+        "No emoji present",
+        "CTA button solid black",
+        "No discount language outside Row D final line",
+        "Testimonial (if present) unattributed, \u226412 words",
+        "Social-proof count (if present) shipped as [VERIFIED COUNT] placeholder, not invented"
+      ],
+      "performance_tracking": {
+        "matrix_cell": "C1A",
+        "current_status": "insufficient_data \u2014 see campaign_intelligence.json",
+        "spend_to_date": null,
+        "conversions_to_date": 0
+      }
+    },
+    {
+      "brief_metadata": {
+        "brief_id": "ECAS-MST1-C1B",
+        "mode": "MST_matrix_cell",
+        "voice": "emotional",
+        "asset_type": "static_4x5",
+        "strategic_source": "MST Sprint 1 matrix, local_client_library.json v1.4.0",
+        "priority": "standard",
+        "confidence": "produced_pre-launch, unproven"
+      },
+      "strategic_foundation": {
+        "data_insight": "hypothesis_only \u2014 no live performance data exists for this cell yet",
+        "target_icp": "ICP-ECAS-01 (GiftGiver45)",
+        "message_pillar": "MP-03",
+        "concept_code": "CN_Design_SinglePrintLifestyle",
+        "angle_stack": "TN_Emotional / PR_Testimonial / CTA_Buy",
+        "performance_benchmark": "none established \u2014 account has zero validated conversions to date"
+      },
+      "testing_framework": {
+        "matrix_position": "C1B",
+        "matrix_naming_convention": "C1B_CN_ICP_GiftGiver45_CN_Design_SinglePrintLifestyle_PR_Testimonial_..._4x5.png",
+        "hypothesis": "Isolating TN_Emotional in the B row position will reveal a directional signal for GiftGiver45 once delivery/tracking issues are resolved.",
+        "isolated_variable": "PR_Testimonial",
+        "control_reference": "account baseline \u2014 not yet established",
+        "success_criteria": "\u226510% lift in overall_cvr vs matched cells at \u2265$100 spend / \u226510 conversions",
+        "learning_objective": "Determine whether B-row variable generalizes across all 4 ICPs or is avatar-specific to GiftGiver45"
+      },
+      "creative_specifications": {
+        "format": "static image",
+        "dimensions": "1080x1350 (4:5) \u2014 primary; 1080x1920 (9:16) required, not yet produced",
+        "duration": null,
+        "placement": "Feed, Instagram Reels, Stories (pending 9:16)",
+        "safe_zones": "text-safe zones required on 9:16 crop once produced",
+        "production_requirements": "real product photography only, no illustrated placeholders (per account rules)"
+      },
+      "copy_architecture": {
+        "hook": "What do you give someone who has everything?",
+        "problem_agitation_or_value_setup": "PR_Testimonial",
+        "product_solution": "Made to order, real wood frame, real matte paper, 3,000+ cities",
+        "proof": "PR_Testimonial",
+        "cta": "SHOP NOW",
+        "headlines": [
+          "What Do You Give Them?",
+          "Their Street, Framed"
+        ],
+        "primary_text": "What do you give someone who has everything?\n\"It's the city of our first trip together.\" Their street or their city, framed and made to order, real wood, real paper.\nShop now."
+      },
+      "visual_direction": {
+        "composition": "CN_Design_SinglePrintLifestyle",
+        "style_guide": "gallery-grade, warm neutral tones, real wood frame, matte paper texture",
+        "color_palette": "warm neutrals, black CTA button (standardized)",
+        "typography": "ECAS wordmark serif/sans pairing per Creative Board spec",
+        "imagery": "real photography of framed print in lifestyle or room context",
+        "avoid_list": [
+          "emoji (any row)",
+          "\"Read why\" CTA (banned account-wide)",
+          "discount language outside Row D final line",
+          "fabricated or attributed testimonial names",
+          "invented social-proof counts \u2014 ship as [VERIFIED COUNT] until confirmed"
+        ]
+      },
+      "production_checklist": [
+        "Confirm asset is byte-identical to what's uploaded to Ads Manager (see local_client_library.json evidence_notes for known filename/version mismatches)",
+        "Confirm 4:5 ratio (1080x1350) exact \u2014 off-ratio renders must be discarded, not shipped",
+        "Generate matching 9:16 crop (outstanding for all 16 cells)",
+        "Run through metrix-mst-creative-scan before any Ads Manager upload"
+      ],
+      "qa_requirements": [
+        "No emoji present",
+        "CTA button solid black",
+        "No discount language outside Row D final line",
+        "Testimonial (if present) unattributed, \u226412 words",
+        "Social-proof count (if present) shipped as [VERIFIED COUNT] placeholder, not invented"
+      ],
+      "performance_tracking": {
+        "matrix_cell": "C1B",
+        "current_status": "insufficient_data \u2014 see campaign_intelligence.json",
+        "spend_to_date": null,
+        "conversions_to_date": 0
+      }
+    },
+    {
+      "brief_metadata": {
+        "brief_id": "ECAS-MST1-C1C",
+        "mode": "MST_matrix_cell",
+        "voice": "emotional",
+        "asset_type": "static_4x5",
+        "strategic_source": "MST Sprint 1 matrix, local_client_library.json v1.4.0",
+        "priority": "standard",
+        "confidence": "produced_pre-launch, unproven"
+      },
+      "strategic_foundation": {
+        "data_insight": "hypothesis_only \u2014 no live performance data exists for this cell yet",
+        "target_icp": "ICP-ECAS-01 (GiftGiver45)",
+        "message_pillar": "MP-02",
+        "concept_code": "CN_Design_SinglePrintLifestyle",
+        "angle_stack": "TN_Emotional / HP_ForgettableGift / CTA_Buy",
+        "performance_benchmark": "none established \u2014 account has zero validated conversions to date"
+      },
+      "testing_framework": {
+        "matrix_position": "C1C",
+        "matrix_naming_convention": "C1C_CN_ICP_GiftGiver45_CN_Design_SinglePrintLifestyle_HP_ForgettableGift_..._4x5.png",
+        "hypothesis": "Isolating TN_Emotional in the C row position will reveal a directional signal for GiftGiver45 once delivery/tracking issues are resolved.",
+        "isolated_variable": "HP_ForgettableGift",
+        "control_reference": "account baseline \u2014 not yet established",
+        "success_criteria": "\u226510% lift in overall_cvr vs matched cells at \u2265$100 spend / \u226510 conversions",
+        "learning_objective": "Determine whether C-row variable generalizes across all 4 ICPs or is avatar-specific to GiftGiver45"
+      },
+      "creative_specifications": {
+        "format": "static image",
+        "dimensions": "1080x1350 (4:5) \u2014 primary; 1080x1920 (9:16) required, not yet produced",
+        "duration": null,
+        "placement": "Feed, Instagram Reels, Stories (pending 9:16)",
+        "safe_zones": "text-safe zones required on 9:16 crop once produced",
+        "production_requirements": "real product photography only, no illustrated placeholders (per account rules)"
+      },
+      "copy_architecture": {
+        "hook": "There's a reason this gift never gets returned.",
+        "problem_agitation_or_value_setup": "HP_ForgettableGift",
+        "product_solution": "Made to order, real wood frame, real matte paper, 3,000+ cities",
+        "proof": "PR_DataStat: 3,000+ CITIES \u00b7 MADE TO ORDER",
+        "cta": "SHOP NOW",
+        "headlines": [
+          "Never Gets Returned",
+          "Hung, Not Returned"
+        ],
+        "primary_text": "There's a reason this gift never gets returned.\nMost gifts vanish into a closet by February. This one hangs in the hallway and starts conversations, every time someone visits.\n[VERIFIED COUNT] prints hung and counting. Shop now."
+      },
+      "visual_direction": {
+        "composition": "CN_Design_SinglePrintLifestyle",
+        "style_guide": "gallery-grade, warm neutral tones, real wood frame, matte paper texture",
+        "color_palette": "warm neutrals, black CTA button (standardized)",
+        "typography": "ECAS wordmark serif/sans pairing per Creative Board spec",
+        "imagery": "real photography of framed print in lifestyle or room context",
+        "avoid_list": [
+          "emoji (any row)",
+          "\"Read why\" CTA (banned account-wide)",
+          "discount language outside Row D final line",
+          "fabricated or attributed testimonial names",
+          "invented social-proof counts \u2014 ship as [VERIFIED COUNT] until confirmed"
+        ]
+      },
+      "production_checklist": [
+        "Confirm asset is byte-identical to what's uploaded to Ads Manager (see local_client_library.json evidence_notes for known filename/version mismatches)",
+        "Confirm 4:5 ratio (1080x1350) exact \u2014 off-ratio renders must be discarded, not shipped",
+        "Generate matching 9:16 crop (outstanding for all 16 cells)",
+        "Run through metrix-mst-creative-scan before any Ads Manager upload"
+      ],
+      "qa_requirements": [
+        "No emoji present",
+        "CTA button solid black",
+        "No discount language outside Row D final line",
+        "Testimonial (if present) unattributed, \u226412 words",
+        "Social-proof count (if present) shipped as [VERIFIED COUNT] placeholder, not invented"
+      ],
+      "performance_tracking": {
+        "matrix_cell": "C1C",
+        "current_status": "insufficient_data \u2014 see campaign_intelligence.json",
+        "spend_to_date": null,
+        "conversions_to_date": 0
+      }
+    },
+    {
+      "brief_metadata": {
+        "brief_id": "ECAS-MST1-C1D",
+        "mode": "MST_matrix_cell",
+        "voice": "rational",
+        "asset_type": "static_4x5",
+        "strategic_source": "MST Sprint 1 matrix, local_client_library.json v1.4.0",
+        "priority": "standard",
+        "confidence": "produced_pre-launch, unproven"
+      },
+      "strategic_foundation": {
+        "data_insight": "hypothesis_only \u2014 no live performance data exists for this cell yet",
+        "target_icp": "ICP-ECAS-01 (GiftGiver45)",
+        "message_pillar": "offer close",
+        "concept_code": "CN_Design_SinglePrintLifestyle",
+        "angle_stack": "TN_Rational / HP_BareWalls / CTA_ClaimOffer",
+        "performance_benchmark": "none established \u2014 account has zero validated conversions to date"
+      },
+      "testing_framework": {
+        "matrix_position": "C1D",
+        "matrix_naming_convention": "C1D_CN_ICP_GiftGiver45_CN_Design_SinglePrintLifestyle_HP_BareWalls_..._4x5.png",
+        "hypothesis": "Isolating TN_Rational in the D row position will reveal a directional signal for GiftGiver45 once delivery/tracking issues are resolved.",
+        "isolated_variable": "HP_BareWalls",
+        "control_reference": "account baseline \u2014 not yet established",
+        "success_criteria": "\u226510% lift in overall_cvr vs matched cells at \u2265$100 spend / \u226510 conversions",
+        "learning_objective": "Determine whether D-row variable generalizes across all 4 ICPs or is avatar-specific to GiftGiver45"
+      },
+      "creative_specifications": {
+        "format": "static image",
+        "dimensions": "1080x1350 (4:5) \u2014 primary; 1080x1920 (9:16) required, not yet produced",
+        "duration": null,
+        "placement": "Feed, Instagram Reels, Stories (pending 9:16)",
+        "safe_zones": "text-safe zones required on 9:16 crop once produced",
+        "production_requirements": "real product photography only, no illustrated placeholders (per account rules)"
+      },
+      "copy_architecture": {
+        "hook": "Gallery-grade prints of 3,000+ cities. Made to order.",
+        "problem_agitation_or_value_setup": "HP_BareWalls",
+        "product_solution": "Made to order, real wood frame, real matte paper, 3,000+ cities",
+        "proof": "PR_DataStat: 3,000+ CITIES \u00b7 MADE TO ORDER",
+        "cta": "SHOP NOW + 25% off, Row D final line only",
+        "headlines": [
+          "Real Frames, Any City",
+          "Any Street, Any City"
+        ],
+        "primary_text": "Gallery-grade prints of 3,000+ cities, made to order.\nReal matte paper, real wood frames. Any street, any city, no gift-shop skylines. A finished wall that actually feels like theirs.\n25% off this week. Shop now."
+      },
+      "visual_direction": {
+        "composition": "CN_Design_SinglePrintLifestyle",
+        "style_guide": "gallery-grade, warm neutral tones, real wood frame, matte paper texture",
+        "color_palette": "warm neutrals, black CTA button (standardized)",
+        "typography": "ECAS wordmark serif/sans pairing per Creative Board spec",
+        "imagery": "real photography of framed print in lifestyle or room context",
+        "avoid_list": [
+          "emoji (any row)",
+          "\"Read why\" CTA (banned account-wide)",
+          "discount language outside Row D final line",
+          "fabricated or attributed testimonial names",
+          "invented social-proof counts \u2014 ship as [VERIFIED COUNT] until confirmed"
+        ]
+      },
+      "production_checklist": [
+        "Confirm asset is byte-identical to what's uploaded to Ads Manager (see local_client_library.json evidence_notes for known filename/version mismatches)",
+        "Confirm 4:5 ratio (1080x1350) exact \u2014 off-ratio renders must be discarded, not shipped",
+        "Generate matching 9:16 crop (outstanding for all 16 cells)",
+        "Run through metrix-mst-creative-scan before any Ads Manager upload"
+      ],
+      "qa_requirements": [
+        "No emoji present",
+        "CTA button solid black",
+        "No discount language outside Row D final line",
+        "Testimonial (if present) unattributed, \u226412 words",
+        "Social-proof count (if present) shipped as [VERIFIED COUNT] placeholder, not invented"
+      ],
+      "performance_tracking": {
+        "matrix_cell": "C1D",
+        "current_status": "insufficient_data \u2014 see campaign_intelligence.json",
+        "spend_to_date": null,
+        "conversions_to_date": 0
+      }
+    },
+    {
+      "brief_metadata": {
+        "brief_id": "ECAS-MST1-C2A",
+        "mode": "MST_matrix_cell",
+        "voice": "assertive/craft-led",
+        "asset_type": "static_4x5",
+        "strategic_source": "MST Sprint 1 matrix, local_client_library.json v1.4.0",
+        "priority": "standard",
+        "confidence": "produced_pre-launch, unproven"
+      },
+      "strategic_foundation": {
+        "data_insight": "hypothesis_only \u2014 no live performance data exists for this cell yet",
+        "target_icp": "ICP-ECAS-02 (Milestone2534)",
+        "message_pillar": "MP-01",
+        "concept_code": "CN_Design_RoomContext",
+        "angle_stack": "TN_Assertive / HP_GenericGift / CTA_Buy",
+        "performance_benchmark": "none established \u2014 account has zero validated conversions to date"
+      },
+      "testing_framework": {
+        "matrix_position": "C2A",
+        "matrix_naming_convention": "C2A_CN_ICP_Milestone2534_CN_Design_RoomContext_HP_GenericGift_..._4x5.png",
+        "hypothesis": "Isolating TN_Assertive in the A row position will reveal a directional signal for Milestone2534 once delivery/tracking issues are resolved.",
+        "isolated_variable": "TN_Assertive",
+        "control_reference": "account baseline \u2014 not yet established",
+        "success_criteria": "\u226510% lift in overall_cvr vs matched cells at \u2265$100 spend / \u226510 conversions",
+        "learning_objective": "Determine whether A-row variable generalizes across all 4 ICPs or is avatar-specific to Milestone2534"
+      },
+      "creative_specifications": {
+        "format": "static image",
+        "dimensions": "1080x1350 (4:5) \u2014 primary; 1080x1920 (9:16) required, not yet produced",
+        "duration": null,
+        "placement": "Feed, Instagram Reels, Stories (pending 9:16)",
+        "safe_zones": "text-safe zones required on 9:16 crop once produced",
+        "production_requirements": "real product photography only, no illustrated placeholders (per account rules)"
+      },
+      "copy_architecture": {
+        "hook": "Last year I gave my parents a gift card. Never again.",
+        "problem_agitation_or_value_setup": "HP_GenericGift",
+        "product_solution": "Made to order, real wood frame, real matte paper, 3,000+ cities",
+        "proof": "PR_DataStat: 3,000+ CITIES \u00b7 MADE TO ORDER",
+        "cta": "SHOP NOW",
+        "headlines": [
+          "Never Give A Gift Card",
+          "Not Another Generic Gift"
+        ],
+        "primary_text": "Last year I gave my parents a gift card. Never again.\nThis year: their street, framed in real wood, made to order. A gift that can't be generic by definition.\nIt's the one that gets hung in the hallway and talked about at every visit. Shop their city now."
+      },
+      "visual_direction": {
+        "composition": "CN_Design_RoomContext",
+        "style_guide": "gallery-grade, warm neutral tones, real wood frame, matte paper texture",
+        "color_palette": "warm neutrals, black CTA button (standardized)",
+        "typography": "ECAS wordmark serif/sans pairing per Creative Board spec",
+        "imagery": "real photography of framed print in lifestyle or room context",
+        "avoid_list": [
+          "emoji (any row)",
+          "\"Read why\" CTA (banned account-wide)",
+          "discount language outside Row D final line",
+          "fabricated or attributed testimonial names",
+          "invented social-proof counts \u2014 ship as [VERIFIED COUNT] until confirmed"
+        ]
+      },
+      "production_checklist": [
+        "Confirm asset is byte-identical to what's uploaded to Ads Manager (see local_client_library.json evidence_notes for known filename/version mismatches)",
+        "Confirm 4:5 ratio (1080x1350) exact \u2014 off-ratio renders must be discarded, not shipped",
+        "Generate matching 9:16 crop (outstanding for all 16 cells)",
+        "Run through metrix-mst-creative-scan before any Ads Manager upload"
+      ],
+      "qa_requirements": [
+        "No emoji present",
+        "CTA button solid black",
+        "No discount language outside Row D final line",
+        "Testimonial (if present) unattributed, \u226412 words",
+        "Social-proof count (if present) shipped as [VERIFIED COUNT] placeholder, not invented"
+      ],
+      "performance_tracking": {
+        "matrix_cell": "C2A",
+        "current_status": "insufficient_data \u2014 see campaign_intelligence.json",
+        "spend_to_date": null,
+        "conversions_to_date": 0
+      }
+    },
+    {
+      "brief_metadata": {
+        "brief_id": "ECAS-MST1-C2B",
+        "mode": "MST_matrix_cell",
+        "voice": "rational",
+        "asset_type": "static_4x5",
+        "strategic_source": "MST Sprint 1 matrix, local_client_library.json v1.4.0",
+        "priority": "standard",
+        "confidence": "produced_pre-launch, unproven"
+      },
+      "strategic_foundation": {
+        "data_insight": "hypothesis_only \u2014 no live performance data exists for this cell yet",
+        "target_icp": "ICP-ECAS-02 (Milestone2534)",
+        "message_pillar": "MP-03",
+        "concept_code": "CN_Design_RoomContext",
+        "angle_stack": "TN_Rational / PR_Testimonial / CTA_Buy",
+        "performance_benchmark": "none established \u2014 account has zero validated conversions to date"
+      },
+      "testing_framework": {
+        "matrix_position": "C2B",
+        "matrix_naming_convention": "C2B_CN_ICP_Milestone2534_CN_Design_RoomContext_PR_Testimonial_..._4x5.png",
+        "hypothesis": "Isolating TN_Rational in the B row position will reveal a directional signal for Milestone2534 once delivery/tracking issues are resolved.",
+        "isolated_variable": "PR_Testimonial",
+        "control_reference": "account baseline \u2014 not yet established",
+        "success_criteria": "\u226510% lift in overall_cvr vs matched cells at \u2265$100 spend / \u226510 conversions",
+        "learning_objective": "Determine whether B-row variable generalizes across all 4 ICPs or is avatar-specific to Milestone2534"
+      },
+      "creative_specifications": {
+        "format": "static image",
+        "dimensions": "1080x1350 (4:5) \u2014 primary; 1080x1920 (9:16) required, not yet produced",
+        "duration": null,
+        "placement": "Feed, Instagram Reels, Stories (pending 9:16)",
+        "safe_zones": "text-safe zones required on 9:16 crop once produced",
+        "production_requirements": "real product photography only, no illustrated placeholders (per account rules)"
+      },
+      "copy_architecture": {
+        "hook": "Three months in the new place. Still bare walls.",
+        "problem_agitation_or_value_setup": "PR_Testimonial",
+        "product_solution": "Made to order, real wood frame, real matte paper, 3,000+ cities",
+        "proof": "PR_Testimonial",
+        "cta": "SHOP NOW",
+        "headlines": [
+          "Still Staring At Bare Walls?",
+          "Framed. Ready To Hang."
+        ],
+        "primary_text": "Three months in the new place. Still bare walls.\n\"It's the city of our first trip together\" is the kind of print that finally makes a room feel like yours. Framed, ready to hang, ships in days.\nShop now."
+      },
+      "visual_direction": {
+        "composition": "CN_Design_RoomContext",
+        "style_guide": "gallery-grade, warm neutral tones, real wood frame, matte paper texture",
+        "color_palette": "warm neutrals, black CTA button (standardized)",
+        "typography": "ECAS wordmark serif/sans pairing per Creative Board spec",
+        "imagery": "real photography of framed print in lifestyle or room context",
+        "avoid_list": [
+          "emoji (any row)",
+          "\"Read why\" CTA (banned account-wide)",
+          "discount language outside Row D final line",
+          "fabricated or attributed testimonial names",
+          "invented social-proof counts \u2014 ship as [VERIFIED COUNT] until confirmed"
+        ]
+      },
+      "production_checklist": [
+        "Confirm asset is byte-identical to what's uploaded to Ads Manager (see local_client_library.json evidence_notes for known filename/version mismatches)",
+        "Confirm 4:5 ratio (1080x1350) exact \u2014 off-ratio renders must be discarded, not shipped",
+        "Generate matching 9:16 crop (outstanding for all 16 cells)",
+        "Run through metrix-mst-creative-scan before any Ads Manager upload"
+      ],
+      "qa_requirements": [
+        "No emoji present",
+        "CTA button solid black",
+        "No discount language outside Row D final line",
+        "Testimonial (if present) unattributed, \u226412 words",
+        "Social-proof count (if present) shipped as [VERIFIED COUNT] placeholder, not invented"
+      ],
+      "performance_tracking": {
+        "matrix_cell": "C2B",
+        "current_status": "insufficient_data \u2014 see campaign_intelligence.json",
+        "spend_to_date": null,
+        "conversions_to_date": 0
+      }
+    },
+    {
+      "brief_metadata": {
+        "brief_id": "ECAS-MST1-C2C",
+        "mode": "MST_matrix_cell",
+        "voice": "aspirational",
+        "asset_type": "static_4x5",
+        "strategic_source": "MST Sprint 1 matrix, local_client_library.json v1.4.0",
+        "priority": "standard",
+        "confidence": "produced_pre-launch, unproven"
+      },
+      "strategic_foundation": {
+        "data_insight": "hypothesis_only \u2014 no live performance data exists for this cell yet",
+        "target_icp": "ICP-ECAS-02 (Milestone2534)",
+        "message_pillar": "MP-02",
+        "concept_code": "CN_Design_RoomContext",
+        "angle_stack": "TN_Aspirational / HP_ForgettableGift / CTA_Buy",
+        "performance_benchmark": "none established \u2014 account has zero validated conversions to date"
+      },
+      "testing_framework": {
+        "matrix_position": "C2C",
+        "matrix_naming_convention": "C2C_CN_ICP_Milestone2534_CN_Design_RoomContext_HP_ForgettableGift_..._4x5.png",
+        "hypothesis": "Isolating TN_Aspirational in the C row position will reveal a directional signal for Milestone2534 once delivery/tracking issues are resolved.",
+        "isolated_variable": "HP_ForgettableGift",
+        "control_reference": "account baseline \u2014 not yet established",
+        "success_criteria": "\u226510% lift in overall_cvr vs matched cells at \u2265$100 spend / \u226510 conversions",
+        "learning_objective": "Determine whether C-row variable generalizes across all 4 ICPs or is avatar-specific to Milestone2534"
+      },
+      "creative_specifications": {
+        "format": "static image",
+        "dimensions": "1080x1350 (4:5) \u2014 primary; 1080x1920 (9:16) required, not yet produced",
+        "duration": null,
+        "placement": "Feed, Instagram Reels, Stories (pending 9:16)",
+        "safe_zones": "text-safe zones required on 9:16 crop once produced",
+        "production_requirements": "real product photography only, no illustrated placeholders (per account rules)"
+      },
+      "copy_architecture": {
+        "hook": "The gift they'll still talk about next year.",
+        "problem_agitation_or_value_setup": "HP_ForgettableGift",
+        "product_solution": "Made to order, real wood frame, real matte paper, 3,000+ cities",
+        "proof": "PR_DataStat: 3,000+ CITIES \u00b7 MADE TO ORDER",
+        "cta": "SHOP NOW",
+        "headlines": [
+          "The Gift They'll Remember",
+          "Not Forgotten By Monday"
+        ],
+        "primary_text": "Most milestone gifts are forgotten by Monday.\nThis one isn't: the street they grew up on, framed in real wood, made to order. 3,000+ cities available.\nShop their city now."
+      },
+      "visual_direction": {
+        "composition": "CN_Design_RoomContext",
+        "style_guide": "gallery-grade, warm neutral tones, real wood frame, matte paper texture",
+        "color_palette": "warm neutrals, black CTA button (standardized)",
+        "typography": "ECAS wordmark serif/sans pairing per Creative Board spec",
+        "imagery": "real photography of framed print in lifestyle or room context",
+        "avoid_list": [
+          "emoji (any row)",
+          "\"Read why\" CTA (banned account-wide)",
+          "discount language outside Row D final line",
+          "fabricated or attributed testimonial names",
+          "invented social-proof counts \u2014 ship as [VERIFIED COUNT] until confirmed"
+        ]
+      },
+      "production_checklist": [
+        "Confirm asset is byte-identical to what's uploaded to Ads Manager (see local_client_library.json evidence_notes for known filename/version mismatches)",
+        "Confirm 4:5 ratio (1080x1350) exact \u2014 off-ratio renders must be discarded, not shipped",
+        "Generate matching 9:16 crop (outstanding for all 16 cells)",
+        "Run through metrix-mst-creative-scan before any Ads Manager upload"
+      ],
+      "qa_requirements": [
+        "No emoji present",
+        "CTA button solid black",
+        "No discount language outside Row D final line",
+        "Testimonial (if present) unattributed, \u226412 words",
+        "Social-proof count (if present) shipped as [VERIFIED COUNT] placeholder, not invented"
+      ],
+      "performance_tracking": {
+        "matrix_cell": "C2C",
+        "current_status": "insufficient_data \u2014 see campaign_intelligence.json",
+        "spend_to_date": null,
+        "conversions_to_date": 0
+      }
+    },
+    {
+      "brief_metadata": {
+        "brief_id": "ECAS-MST1-C2D",
+        "mode": "MST_matrix_cell",
+        "voice": "rational",
+        "asset_type": "static_4x5",
+        "strategic_source": "MST Sprint 1 matrix, local_client_library.json v1.4.0",
+        "priority": "standard",
+        "confidence": "produced_pre-launch, unproven"
+      },
+      "strategic_foundation": {
+        "data_insight": "hypothesis_only \u2014 no live performance data exists for this cell yet",
+        "target_icp": "ICP-ECAS-02 (Milestone2534)",
+        "message_pillar": "offer close",
+        "concept_code": "CN_Design_RoomContext",
+        "angle_stack": "TN_Rational / HP_FadedMemory / CTA_ClaimOffer",
+        "performance_benchmark": "none established \u2014 account has zero validated conversions to date"
+      },
+      "testing_framework": {
+        "matrix_position": "C2D",
+        "matrix_naming_convention": "C2D_CN_ICP_Milestone2534_CN_Design_RoomContext_HP_FadedMemory_..._4x5.png",
+        "hypothesis": "Isolating TN_Rational in the D row position will reveal a directional signal for Milestone2534 once delivery/tracking issues are resolved.",
+        "isolated_variable": "HP_FadedMemory",
+        "control_reference": "account baseline \u2014 not yet established",
+        "success_criteria": "\u226510% lift in overall_cvr vs matched cells at \u2265$100 spend / \u226510 conversions",
+        "learning_objective": "Determine whether D-row variable generalizes across all 4 ICPs or is avatar-specific to Milestone2534"
+      },
+      "creative_specifications": {
+        "format": "static image",
+        "dimensions": "1080x1350 (4:5) \u2014 primary; 1080x1920 (9:16) required, not yet produced",
+        "duration": null,
+        "placement": "Feed, Instagram Reels, Stories (pending 9:16)",
+        "safe_zones": "text-safe zones required on 9:16 crop once produced",
+        "production_requirements": "real product photography only, no illustrated placeholders (per account rules)"
+      },
+      "copy_architecture": {
+        "hook": "The block he grew up on. Framed on his wall now.",
+        "problem_agitation_or_value_setup": "HP_FadedMemory",
+        "product_solution": "Made to order, real wood frame, real matte paper, 3,000+ cities",
+        "proof": "PR_DataStat: 3,000+ CITIES \u00b7 MADE TO ORDER",
+        "cta": "SHOP NOW + 25% off, Row D final line only",
+        "headlines": [
+          "The Block He Grew Up On",
+          "The Memory, Framed"
+        ],
+        "primary_text": "The block he grew up on. Framed on his wall now.\nReal wood frame, real matte paper, made to order. Pick the street, we handle the rest, ships in days.\n25% off this week. Shop now."
+      },
+      "visual_direction": {
+        "composition": "CN_Design_RoomContext",
+        "style_guide": "gallery-grade, warm neutral tones, real wood frame, matte paper texture",
+        "color_palette": "warm neutrals, black CTA button (standardized)",
+        "typography": "ECAS wordmark serif/sans pairing per Creative Board spec",
+        "imagery": "real photography of framed print in lifestyle or room context",
+        "avoid_list": [
+          "emoji (any row)",
+          "\"Read why\" CTA (banned account-wide)",
+          "discount language outside Row D final line",
+          "fabricated or attributed testimonial names",
+          "invented social-proof counts \u2014 ship as [VERIFIED COUNT] until confirmed"
+        ]
+      },
+      "production_checklist": [
+        "Confirm asset is byte-identical to what's uploaded to Ads Manager (see local_client_library.json evidence_notes for known filename/version mismatches)",
+        "Confirm 4:5 ratio (1080x1350) exact \u2014 off-ratio renders must be discarded, not shipped",
+        "Generate matching 9:16 crop (outstanding for all 16 cells)",
+        "Run through metrix-mst-creative-scan before any Ads Manager upload"
+      ],
+      "qa_requirements": [
+        "No emoji present",
+        "CTA button solid black",
+        "No discount language outside Row D final line",
+        "Testimonial (if present) unattributed, \u226412 words",
+        "Social-proof count (if present) shipped as [VERIFIED COUNT] placeholder, not invented"
+      ],
+      "performance_tracking": {
+        "matrix_cell": "C2D",
+        "current_status": "insufficient_data \u2014 see campaign_intelligence.json",
+        "spend_to_date": null,
+        "conversions_to_date": 0
+      }
+    },
+    {
+      "brief_metadata": {
+        "brief_id": "ECAS-MST1-C3A",
+        "mode": "MST_matrix_cell",
+        "voice": "assertive/craft-led",
+        "asset_type": "static_4x5",
+        "strategic_source": "MST Sprint 1 matrix, local_client_library.json v1.4.0",
+        "priority": "standard",
+        "confidence": "produced_pre-launch, unproven"
+      },
+      "strategic_foundation": {
+        "data_insight": "hypothesis_only \u2014 no live performance data exists for this cell yet",
+        "target_icp": "ICP-ECAS-03 (HometownSelf)",
+        "message_pillar": "MP-01",
+        "concept_code": "CN_Design_CityDetail",
+        "angle_stack": "TN_Assertive / HP_BareWalls / CTA_Buy",
+        "performance_benchmark": "none established \u2014 account has zero validated conversions to date"
+      },
+      "testing_framework": {
+        "matrix_position": "C3A",
+        "matrix_naming_convention": "C3A_CN_ICP_HometownSelf_CN_Design_CityDetail_HP_BareWalls_..._4x5.png",
+        "hypothesis": "Isolating TN_Assertive in the A row position will reveal a directional signal for HometownSelf once delivery/tracking issues are resolved.",
+        "isolated_variable": "TN_Assertive",
+        "control_reference": "account baseline \u2014 not yet established",
+        "success_criteria": "\u226510% lift in overall_cvr vs matched cells at \u2265$100 spend / \u226510 conversions",
+        "learning_objective": "Determine whether A-row variable generalizes across all 4 ICPs or is avatar-specific to HometownSelf"
+      },
+      "creative_specifications": {
+        "format": "static image",
+        "dimensions": "1080x1350 (4:5) \u2014 primary; 1080x1920 (9:16) required, not yet produced",
+        "duration": null,
+        "placement": "Feed, Instagram Reels, Stories (pending 9:16)",
+        "safe_zones": "text-safe zones required on 9:16 crop once produced",
+        "production_requirements": "real product photography only, no illustrated placeholders (per account rules)"
+      },
+      "copy_architecture": {
+        "hook": "Look closer. Those are real street names.",
+        "problem_agitation_or_value_setup": "HP_BareWalls",
+        "product_solution": "Made to order, real wood frame, real matte paper, 3,000+ cities",
+        "proof": "PR_DataStat: 3,000+ CITIES \u00b7 MADE TO ORDER",
+        "cta": "SHOP NOW",
+        "headlines": [
+          "Real Street Names, Framed",
+          "Not A Gift-Shop Skyline"
+        ],
+        "primary_text": "Look closer. Those are real street names.\nYour neighborhood, printed at gallery grade. Not a generic skyline print, the actual streets you know.\n3,000+ cities, made to order. Shop your city now."
+      },
+      "visual_direction": {
+        "composition": "CN_Design_CityDetail",
+        "style_guide": "gallery-grade, warm neutral tones, real wood frame, matte paper texture",
+        "color_palette": "warm neutrals, black CTA button (standardized)",
+        "typography": "ECAS wordmark serif/sans pairing per Creative Board spec",
+        "imagery": "real photography of framed print in lifestyle or room context",
+        "avoid_list": [
+          "emoji (any row)",
+          "\"Read why\" CTA (banned account-wide)",
+          "discount language outside Row D final line",
+          "fabricated or attributed testimonial names",
+          "invented social-proof counts \u2014 ship as [VERIFIED COUNT] until confirmed"
+        ]
+      },
+      "production_checklist": [
+        "Confirm asset is byte-identical to what's uploaded to Ads Manager (see local_client_library.json evidence_notes for known filename/version mismatches)",
+        "Confirm 4:5 ratio (1080x1350) exact \u2014 off-ratio renders must be discarded, not shipped",
+        "Generate matching 9:16 crop (outstanding for all 16 cells)",
+        "Run through metrix-mst-creative-scan before any Ads Manager upload"
+      ],
+      "qa_requirements": [
+        "No emoji present",
+        "CTA button solid black",
+        "No discount language outside Row D final line",
+        "Testimonial (if present) unattributed, \u226412 words",
+        "Social-proof count (if present) shipped as [VERIFIED COUNT] placeholder, not invented"
+      ],
+      "performance_tracking": {
+        "matrix_cell": "C3A",
+        "current_status": "insufficient_data \u2014 see campaign_intelligence.json",
+        "spend_to_date": null,
+        "conversions_to_date": 0
+      }
+    },
+    {
+      "brief_metadata": {
+        "brief_id": "ECAS-MST1-C3B",
+        "mode": "MST_matrix_cell",
+        "voice": "emotional",
+        "asset_type": "static_4x5",
+        "strategic_source": "MST Sprint 1 matrix, local_client_library.json v1.4.0",
+        "priority": "standard",
+        "confidence": "produced_pre-launch, unproven"
+      },
+      "strategic_foundation": {
+        "data_insight": "hypothesis_only \u2014 no live performance data exists for this cell yet",
+        "target_icp": "ICP-ECAS-03 (HometownSelf)",
+        "message_pillar": "MP-03",
+        "concept_code": "CN_Design_CityDetail",
+        "angle_stack": "TN_Emotional / PR_Testimonial / CTA_Buy",
+        "performance_benchmark": "none established \u2014 account has zero validated conversions to date"
+      },
+      "testing_framework": {
+        "matrix_position": "C3B",
+        "matrix_naming_convention": "C3B_CN_ICP_HometownSelf_CN_Design_CityDetail_PR_Testimonial_..._4x5.png",
+        "hypothesis": "Isolating TN_Emotional in the B row position will reveal a directional signal for HometownSelf once delivery/tracking issues are resolved.",
+        "isolated_variable": "PR_Testimonial",
+        "control_reference": "account baseline \u2014 not yet established",
+        "success_criteria": "\u226510% lift in overall_cvr vs matched cells at \u2265$100 spend / \u226510 conversions",
+        "learning_objective": "Determine whether B-row variable generalizes across all 4 ICPs or is avatar-specific to HometownSelf"
+      },
+      "creative_specifications": {
+        "format": "static image",
+        "dimensions": "1080x1350 (4:5) \u2014 primary; 1080x1920 (9:16) required, not yet produced",
+        "duration": null,
+        "placement": "Feed, Instagram Reels, Stories (pending 9:16)",
+        "safe_zones": "text-safe zones required on 9:16 crop once produced",
+        "production_requirements": "real product photography only, no illustrated placeholders (per account rules)"
+      },
+      "copy_architecture": {
+        "hook": "Your city, the way you remember it.",
+        "problem_agitation_or_value_setup": "PR_Testimonial",
+        "product_solution": "Made to order, real wood frame, real matte paper, 3,000+ cities",
+        "proof": "PR_Testimonial",
+        "cta": "SHOP NOW",
+        "headlines": [
+          "Your City, Remembered",
+          "The City You Grew Up In"
+        ],
+        "primary_text": "Your city, the way you remember it.\n\"It's the city of our first trip together,\" one customer told us. Pick your city, pick your size, we frame it in real wood.\nShop now, hang it where you'll see it every day."
+      },
+      "visual_direction": {
+        "composition": "CN_Design_CityDetail",
+        "style_guide": "gallery-grade, warm neutral tones, real wood frame, matte paper texture",
+        "color_palette": "warm neutrals, black CTA button (standardized)",
+        "typography": "ECAS wordmark serif/sans pairing per Creative Board spec",
+        "imagery": "real photography of framed print in lifestyle or room context",
+        "avoid_list": [
+          "emoji (any row)",
+          "\"Read why\" CTA (banned account-wide)",
+          "discount language outside Row D final line",
+          "fabricated or attributed testimonial names",
+          "invented social-proof counts \u2014 ship as [VERIFIED COUNT] until confirmed"
+        ]
+      },
+      "production_checklist": [
+        "Confirm asset is byte-identical to what's uploaded to Ads Manager (see local_client_library.json evidence_notes for known filename/version mismatches)",
+        "Confirm 4:5 ratio (1080x1350) exact \u2014 off-ratio renders must be discarded, not shipped",
+        "Generate matching 9:16 crop (outstanding for all 16 cells)",
+        "Run through metrix-mst-creative-scan before any Ads Manager upload"
+      ],
+      "qa_requirements": [
+        "No emoji present",
+        "CTA button solid black",
+        "No discount language outside Row D final line",
+        "Testimonial (if present) unattributed, \u226412 words",
+        "Social-proof count (if present) shipped as [VERIFIED COUNT] placeholder, not invented"
+      ],
+      "performance_tracking": {
+        "matrix_cell": "C3B",
+        "current_status": "insufficient_data \u2014 see campaign_intelligence.json",
+        "spend_to_date": null,
+        "conversions_to_date": 0
+      }
+    },
+    {
+      "brief_metadata": {
+        "brief_id": "ECAS-MST1-C3C",
+        "mode": "MST_matrix_cell",
+        "voice": "rational",
+        "asset_type": "static_4x5",
+        "strategic_source": "MST Sprint 1 matrix, local_client_library.json v1.4.0",
+        "priority": "standard",
+        "confidence": "produced_pre-launch, unproven"
+      },
+      "strategic_foundation": {
+        "data_insight": "hypothesis_only \u2014 no live performance data exists for this cell yet",
+        "target_icp": "ICP-ECAS-03 (HometownSelf)",
+        "message_pillar": "MP-02",
+        "concept_code": "CN_Design_CityDetail",
+        "angle_stack": "TN_Rational / HP_ForgettableGift / CTA_Buy",
+        "performance_benchmark": "none established \u2014 account has zero validated conversions to date"
+      },
+      "testing_framework": {
+        "matrix_position": "C3C",
+        "matrix_naming_convention": "C3C_CN_ICP_HometownSelf_CN_Design_CityDetail_HP_ForgettableGift_..._4x5.png",
+        "hypothesis": "Isolating TN_Rational in the C row position will reveal a directional signal for HometownSelf once delivery/tracking issues are resolved.",
+        "isolated_variable": "HP_ForgettableGift",
+        "control_reference": "account baseline \u2014 not yet established",
+        "success_criteria": "\u226510% lift in overall_cvr vs matched cells at \u2265$100 spend / \u226510 conversions",
+        "learning_objective": "Determine whether C-row variable generalizes across all 4 ICPs or is avatar-specific to HometownSelf"
+      },
+      "creative_specifications": {
+        "format": "static image",
+        "dimensions": "1080x1350 (4:5) \u2014 primary; 1080x1920 (9:16) required, not yet produced",
+        "duration": null,
+        "placement": "Feed, Instagram Reels, Stories (pending 9:16)",
+        "safe_zones": "text-safe zones required on 9:16 crop once produced",
+        "production_requirements": "real product photography only, no illustrated placeholders (per account rules)"
+      },
+      "copy_architecture": {
+        "hook": "Some gifts get forgotten by Monday.",
+        "problem_agitation_or_value_setup": "HP_ForgettableGift",
+        "product_solution": "Made to order, real wood frame, real matte paper, 3,000+ cities",
+        "proof": "PR_DataStat: 3,000+ CITIES \u00b7 MADE TO ORDER",
+        "cta": "SHOP NOW",
+        "headlines": [
+          "Not Forgotten By Monday",
+          "Any Street, Framed"
+        ],
+        "primary_text": "Some gifts get forgotten by Monday.\nWe turn any street into a framed print: real matte paper, real wood frame, made to order.\nFind the street, frame it, watch their face when it's on the wall."
+      },
+      "visual_direction": {
+        "composition": "CN_Design_CityDetail",
+        "style_guide": "gallery-grade, warm neutral tones, real wood frame, matte paper texture",
+        "color_palette": "warm neutrals, black CTA button (standardized)",
+        "typography": "ECAS wordmark serif/sans pairing per Creative Board spec",
+        "imagery": "real photography of framed print in lifestyle or room context",
+        "avoid_list": [
+          "emoji (any row)",
+          "\"Read why\" CTA (banned account-wide)",
+          "discount language outside Row D final line",
+          "fabricated or attributed testimonial names",
+          "invented social-proof counts \u2014 ship as [VERIFIED COUNT] until confirmed"
+        ]
+      },
+      "production_checklist": [
+        "Confirm asset is byte-identical to what's uploaded to Ads Manager (see local_client_library.json evidence_notes for known filename/version mismatches)",
+        "Confirm 4:5 ratio (1080x1350) exact \u2014 off-ratio renders must be discarded, not shipped",
+        "Generate matching 9:16 crop (outstanding for all 16 cells)",
+        "Run through metrix-mst-creative-scan before any Ads Manager upload"
+      ],
+      "qa_requirements": [
+        "No emoji present",
+        "CTA button solid black",
+        "No discount language outside Row D final line",
+        "Testimonial (if present) unattributed, \u226412 words",
+        "Social-proof count (if present) shipped as [VERIFIED COUNT] placeholder, not invented"
+      ],
+      "performance_tracking": {
+        "matrix_cell": "C3C",
+        "current_status": "insufficient_data \u2014 see campaign_intelligence.json",
+        "spend_to_date": null,
+        "conversions_to_date": 0
+      }
+    },
+    {
+      "brief_metadata": {
+        "brief_id": "ECAS-MST1-C3D",
+        "mode": "MST_matrix_cell",
+        "voice": "aspirational",
+        "asset_type": "static_4x5",
+        "strategic_source": "MST Sprint 1 matrix, local_client_library.json v1.4.0",
+        "priority": "standard",
+        "confidence": "produced_pre-launch, unproven"
+      },
+      "strategic_foundation": {
+        "data_insight": "hypothesis_only \u2014 no live performance data exists for this cell yet",
+        "target_icp": "ICP-ECAS-03 (HometownSelf)",
+        "message_pillar": "offer close",
+        "concept_code": "CN_Design_CityDetail",
+        "angle_stack": "TN_Aspirational / HP_CheapPoster / CTA_ClaimOffer",
+        "performance_benchmark": "none established \u2014 account has zero validated conversions to date"
+      },
+      "testing_framework": {
+        "matrix_position": "C3D",
+        "matrix_naming_convention": "C3D_CN_ICP_HometownSelf_CN_Design_CityDetail_HP_CheapPoster_..._4x5.png",
+        "hypothesis": "Isolating TN_Aspirational in the D row position will reveal a directional signal for HometownSelf once delivery/tracking issues are resolved.",
+        "isolated_variable": "HP_CheapPoster",
+        "control_reference": "account baseline \u2014 not yet established",
+        "success_criteria": "\u226510% lift in overall_cvr vs matched cells at \u2265$100 spend / \u226510 conversions",
+        "learning_objective": "Determine whether D-row variable generalizes across all 4 ICPs or is avatar-specific to HometownSelf"
+      },
+      "creative_specifications": {
+        "format": "static image",
+        "dimensions": "1080x1350 (4:5) \u2014 primary; 1080x1920 (9:16) required, not yet produced",
+        "duration": null,
+        "placement": "Feed, Instagram Reels, Stories (pending 9:16)",
+        "safe_zones": "text-safe zones required on 9:16 crop once produced",
+        "production_requirements": "real product photography only, no illustrated placeholders (per account rules)"
+      },
+      "copy_architecture": {
+        "hook": "Not another gift-shop skyline.",
+        "problem_agitation_or_value_setup": "HP_CheapPoster",
+        "product_solution": "Made to order, real wood frame, real matte paper, 3,000+ cities",
+        "proof": "PR_DataStat: 3,000+ CITIES \u00b7 MADE TO ORDER",
+        "cta": "SHOP NOW + 25% off, Row D final line only",
+        "headlines": [
+          "Not A Gift-Shop Skyline",
+          "Your Streets, Named"
+        ],
+        "primary_text": "Not another gift-shop skyline.\nMass-printed posters show cities nobody actually lives in. This shows your streets, named, at gallery grade. [VERIFIED COUNT] prints hung.\n25% off this week. Shop now."
+      },
+      "visual_direction": {
+        "composition": "CN_Design_CityDetail",
+        "style_guide": "gallery-grade, warm neutral tones, real wood frame, matte paper texture",
+        "color_palette": "warm neutrals, black CTA button (standardized)",
+        "typography": "ECAS wordmark serif/sans pairing per Creative Board spec",
+        "imagery": "real photography of framed print in lifestyle or room context",
+        "avoid_list": [
+          "emoji (any row)",
+          "\"Read why\" CTA (banned account-wide)",
+          "discount language outside Row D final line",
+          "fabricated or attributed testimonial names",
+          "invented social-proof counts \u2014 ship as [VERIFIED COUNT] until confirmed"
+        ]
+      },
+      "production_checklist": [
+        "Confirm asset is byte-identical to what's uploaded to Ads Manager (see local_client_library.json evidence_notes for known filename/version mismatches)",
+        "Confirm 4:5 ratio (1080x1350) exact \u2014 off-ratio renders must be discarded, not shipped",
+        "Generate matching 9:16 crop (outstanding for all 16 cells)",
+        "Run through metrix-mst-creative-scan before any Ads Manager upload"
+      ],
+      "qa_requirements": [
+        "No emoji present",
+        "CTA button solid black",
+        "No discount language outside Row D final line",
+        "Testimonial (if present) unattributed, \u226412 words",
+        "Social-proof count (if present) shipped as [VERIFIED COUNT] placeholder, not invented"
+      ],
+      "performance_tracking": {
+        "matrix_cell": "C3D",
+        "current_status": "insufficient_data \u2014 see campaign_intelligence.json",
+        "spend_to_date": null,
+        "conversions_to_date": 0
+      }
+    },
+    {
+      "brief_metadata": {
+        "brief_id": "ECAS-MST1-C4A",
+        "mode": "MST_matrix_cell",
+        "voice": "assertive/craft-led",
+        "asset_type": "static_4x5",
+        "strategic_source": "MST Sprint 1 matrix, local_client_library.json v1.4.0",
+        "priority": "standard",
+        "confidence": "produced_pre-launch, unproven"
+      },
+      "strategic_foundation": {
+        "data_insight": "hypothesis_only \u2014 no live performance data exists for this cell yet",
+        "target_icp": "ICP-ECAS-04 (MemoryKeeperCouple)",
+        "message_pillar": "MP-01",
+        "concept_code": "CN_Design_MultiPrintGallery",
+        "angle_stack": "TN_Assertive / HP_FadedMemory / CTA_Buy",
+        "performance_benchmark": "none established \u2014 account has zero validated conversions to date"
+      },
+      "testing_framework": {
+        "matrix_position": "C4A",
+        "matrix_naming_convention": "C4A_CN_ICP_MemoryKeeperCouple_CN_Design_MultiPrintGallery_HP_FadedMemory_..._4x5.png",
+        "hypothesis": "Isolating TN_Assertive in the A row position will reveal a directional signal for MemoryKeeperCouple once delivery/tracking issues are resolved.",
+        "isolated_variable": "TN_Assertive",
+        "control_reference": "account baseline \u2014 not yet established",
+        "success_criteria": "\u226510% lift in overall_cvr vs matched cells at \u2265$100 spend / \u226510 conversions",
+        "learning_objective": "Determine whether A-row variable generalizes across all 4 ICPs or is avatar-specific to MemoryKeeperCouple"
+      },
+      "creative_specifications": {
+        "format": "static image",
+        "dimensions": "1080x1350 (4:5) \u2014 primary; 1080x1920 (9:16) required, not yet produced",
+        "duration": null,
+        "placement": "Feed, Instagram Reels, Stories (pending 9:16)",
+        "safe_zones": "text-safe zones required on 9:16 crop once produced",
+        "production_requirements": "real product photography only, no illustrated placeholders (per account rules)"
+      },
+      "copy_architecture": {
+        "hook": "Every city you've loved, framed on one wall.",
+        "problem_agitation_or_value_setup": "HP_FadedMemory",
+        "product_solution": "Made to order, real wood frame, real matte paper, 3,000+ cities",
+        "proof": "PR_DataStat: 3,000+ CITIES \u00b7 MADE TO ORDER",
+        "cta": "SHOP NOW",
+        "headlines": [
+          "Every City, One Wall",
+          "From Camera Roll To Wall"
+        ],
+        "primary_text": "The places you've loved together live in a camera roll right now.\nPut them on the wall instead: real wood frames, real matte paper, made to order for each city you pick.\nBuild your gallery wall. Shop now."
+      },
+      "visual_direction": {
+        "composition": "CN_Design_MultiPrintGallery",
+        "style_guide": "gallery-grade, warm neutral tones, real wood frame, matte paper texture",
+        "color_palette": "warm neutrals, black CTA button (standardized)",
+        "typography": "ECAS wordmark serif/sans pairing per Creative Board spec",
+        "imagery": "real photography of framed print in lifestyle or room context",
+        "avoid_list": [
+          "emoji (any row)",
+          "\"Read why\" CTA (banned account-wide)",
+          "discount language outside Row D final line",
+          "fabricated or attributed testimonial names",
+          "invented social-proof counts \u2014 ship as [VERIFIED COUNT] until confirmed"
+        ]
+      },
+      "production_checklist": [
+        "Confirm asset is byte-identical to what's uploaded to Ads Manager (see local_client_library.json evidence_notes for known filename/version mismatches)",
+        "Confirm 4:5 ratio (1080x1350) exact \u2014 off-ratio renders must be discarded, not shipped",
+        "Generate matching 9:16 crop (outstanding for all 16 cells)",
+        "Run through metrix-mst-creative-scan before any Ads Manager upload"
+      ],
+      "qa_requirements": [
+        "No emoji present",
+        "CTA button solid black",
+        "No discount language outside Row D final line",
+        "Testimonial (if present) unattributed, \u226412 words",
+        "Social-proof count (if present) shipped as [VERIFIED COUNT] placeholder, not invented"
+      ],
+      "performance_tracking": {
+        "matrix_cell": "C4A",
+        "current_status": "insufficient_data \u2014 see campaign_intelligence.json",
+        "spend_to_date": null,
+        "conversions_to_date": 0
+      }
+    },
+    {
+      "brief_metadata": {
+        "brief_id": "ECAS-MST1-C4B",
+        "mode": "MST_matrix_cell",
+        "voice": "aspirational",
+        "asset_type": "static_4x5",
+        "strategic_source": "MST Sprint 1 matrix, local_client_library.json v1.4.0",
+        "priority": "standard",
+        "confidence": "produced_pre-launch, unproven"
+      },
+      "strategic_foundation": {
+        "data_insight": "hypothesis_only \u2014 no live performance data exists for this cell yet",
+        "target_icp": "ICP-ECAS-04 (MemoryKeeperCouple)",
+        "message_pillar": "MP-03",
+        "concept_code": "CN_Design_MultiPrintGallery",
+        "angle_stack": "TN_Aspirational / PR_Testimonial / CTA_Buy",
+        "performance_benchmark": "none established \u2014 account has zero validated conversions to date"
+      },
+      "testing_framework": {
+        "matrix_position": "C4B",
+        "matrix_naming_convention": "C4B_CN_ICP_MemoryKeeperCouple_CN_Design_MultiPrintGallery_PR_Testimonial_..._4x5.png",
+        "hypothesis": "Isolating TN_Aspirational in the B row position will reveal a directional signal for MemoryKeeperCouple once delivery/tracking issues are resolved.",
+        "isolated_variable": "PR_Testimonial",
+        "control_reference": "account baseline \u2014 not yet established",
+        "success_criteria": "\u226510% lift in overall_cvr vs matched cells at \u2265$100 spend / \u226510 conversions",
+        "learning_objective": "Determine whether B-row variable generalizes across all 4 ICPs or is avatar-specific to MemoryKeeperCouple"
+      },
+      "creative_specifications": {
+        "format": "static image",
+        "dimensions": "1080x1350 (4:5) \u2014 primary; 1080x1920 (9:16) required, not yet produced",
+        "duration": null,
+        "placement": "Feed, Instagram Reels, Stories (pending 9:16)",
+        "safe_zones": "text-safe zones required on 9:16 crop once produced",
+        "production_requirements": "real product photography only, no illustrated placeholders (per account rules)"
+      },
+      "copy_architecture": {
+        "hook": "\"It's the city of our first trip together.\"",
+        "problem_agitation_or_value_setup": "PR_Testimonial",
+        "product_solution": "Made to order, real wood frame, real matte paper, 3,000+ cities",
+        "proof": "PR_Testimonial",
+        "cta": "SHOP NOW",
+        "headlines": [
+          "Your First Trip, Framed",
+          "More Than A Phone Screen"
+        ],
+        "primary_text": "\"It's the city of our first trip together.\"\nThe places you've shared deserve more than a photo on a phone screen. Build the gallery wall of your story, print by print, real wood frames.\nShop now."
+      },
+      "visual_direction": {
+        "composition": "CN_Design_MultiPrintGallery",
+        "style_guide": "gallery-grade, warm neutral tones, real wood frame, matte paper texture",
+        "color_palette": "warm neutrals, black CTA button (standardized)",
+        "typography": "ECAS wordmark serif/sans pairing per Creative Board spec",
+        "imagery": "real photography of framed print in lifestyle or room context",
+        "avoid_list": [
+          "emoji (any row)",
+          "\"Read why\" CTA (banned account-wide)",
+          "discount language outside Row D final line",
+          "fabricated or attributed testimonial names",
+          "invented social-proof counts \u2014 ship as [VERIFIED COUNT] until confirmed"
+        ]
+      },
+      "production_checklist": [
+        "Confirm asset is byte-identical to what's uploaded to Ads Manager (see local_client_library.json evidence_notes for known filename/version mismatches)",
+        "Confirm 4:5 ratio (1080x1350) exact \u2014 off-ratio renders must be discarded, not shipped",
+        "Generate matching 9:16 crop (outstanding for all 16 cells)",
+        "Run through metrix-mst-creative-scan before any Ads Manager upload"
+      ],
+      "qa_requirements": [
+        "No emoji present",
+        "CTA button solid black",
+        "No discount language outside Row D final line",
+        "Testimonial (if present) unattributed, \u226412 words",
+        "Social-proof count (if present) shipped as [VERIFIED COUNT] placeholder, not invented"
+      ],
+      "performance_tracking": {
+        "matrix_cell": "C4B",
+        "current_status": "insufficient_data \u2014 see campaign_intelligence.json",
+        "spend_to_date": null,
+        "conversions_to_date": 0
+      }
+    },
+    {
+      "brief_metadata": {
+        "brief_id": "ECAS-MST1-C4C",
+        "mode": "MST_matrix_cell",
+        "voice": "rational",
+        "asset_type": "static_4x5",
+        "strategic_source": "MST Sprint 1 matrix, local_client_library.json v1.4.0",
+        "priority": "standard",
+        "confidence": "produced_pre-launch, unproven"
+      },
+      "strategic_foundation": {
+        "data_insight": "hypothesis_only \u2014 no live performance data exists for this cell yet",
+        "target_icp": "ICP-ECAS-04 (MemoryKeeperCouple)",
+        "message_pillar": "MP-02",
+        "concept_code": "CN_Design_MultiPrintGallery",
+        "angle_stack": "TN_Rational / HP_ForgettableGift / CTA_Buy",
+        "performance_benchmark": "none established \u2014 account has zero validated conversions to date"
+      },
+      "testing_framework": {
+        "matrix_position": "C4C",
+        "matrix_naming_convention": "C4C_CN_ICP_MemoryKeeperCouple_CN_Design_MultiPrintGallery_HP_ForgettableGift_..._4x5.png",
+        "hypothesis": "Isolating TN_Rational in the C row position will reveal a directional signal for MemoryKeeperCouple once delivery/tracking issues are resolved.",
+        "isolated_variable": "HP_ForgettableGift",
+        "control_reference": "account baseline \u2014 not yet established",
+        "success_criteria": "\u226510% lift in overall_cvr vs matched cells at \u2265$100 spend / \u226510 conversions",
+        "learning_objective": "Determine whether C-row variable generalizes across all 4 ICPs or is avatar-specific to MemoryKeeperCouple"
+      },
+      "creative_specifications": {
+        "format": "static image",
+        "dimensions": "1080x1350 (4:5) \u2014 primary; 1080x1920 (9:16) required, not yet produced",
+        "duration": null,
+        "placement": "Feed, Instagram Reels, Stories (pending 9:16)",
+        "safe_zones": "text-safe zones required on 9:16 crop once produced",
+        "production_requirements": "real product photography only, no illustrated placeholders (per account rules)"
+      },
+      "copy_architecture": {
+        "hook": "When did a gift last earn a spot on the wall?",
+        "problem_agitation_or_value_setup": "HP_ForgettableGift",
+        "product_solution": "Made to order, real wood frame, real matte paper, 3,000+ cities",
+        "proof": "PR_DataStat: 3,000+ CITIES \u00b7 MADE TO ORDER",
+        "cta": "SHOP NOW",
+        "headlines": [
+          "Earn A Spot On The Wall",
+          "Impossible To Duplicate"
+        ],
+        "primary_text": "When did a gift last earn a spot on the wall?\nTheir places, printed as a gallery set. Permanent, personal, impossible to duplicate. [VERIFIED COUNT] prints hung.\nShop now."
+      },
+      "visual_direction": {
+        "composition": "CN_Design_MultiPrintGallery",
+        "style_guide": "gallery-grade, warm neutral tones, real wood frame, matte paper texture",
+        "color_palette": "warm neutrals, black CTA button (standardized)",
+        "typography": "ECAS wordmark serif/sans pairing per Creative Board spec",
+        "imagery": "real photography of framed print in lifestyle or room context",
+        "avoid_list": [
+          "emoji (any row)",
+          "\"Read why\" CTA (banned account-wide)",
+          "discount language outside Row D final line",
+          "fabricated or attributed testimonial names",
+          "invented social-proof counts \u2014 ship as [VERIFIED COUNT] until confirmed"
+        ]
+      },
+      "production_checklist": [
+        "Confirm asset is byte-identical to what's uploaded to Ads Manager (see local_client_library.json evidence_notes for known filename/version mismatches)",
+        "Confirm 4:5 ratio (1080x1350) exact \u2014 off-ratio renders must be discarded, not shipped",
+        "Generate matching 9:16 crop (outstanding for all 16 cells)",
+        "Run through metrix-mst-creative-scan before any Ads Manager upload"
+      ],
+      "qa_requirements": [
+        "No emoji present",
+        "CTA button solid black",
+        "No discount language outside Row D final line",
+        "Testimonial (if present) unattributed, \u226412 words",
+        "Social-proof count (if present) shipped as [VERIFIED COUNT] placeholder, not invented"
+      ],
+      "performance_tracking": {
+        "matrix_cell": "C4C",
+        "current_status": "insufficient_data \u2014 see campaign_intelligence.json",
+        "spend_to_date": null,
+        "conversions_to_date": 0
+      }
+    },
+    {
+      "brief_metadata": {
+        "brief_id": "ECAS-MST1-C4D",
+        "mode": "MST_matrix_cell",
+        "voice": "aspirational",
+        "asset_type": "static_4x5",
+        "strategic_source": "MST Sprint 1 matrix, local_client_library.json v1.4.0",
+        "priority": "standard",
+        "confidence": "produced_pre-launch, unproven"
+      },
+      "strategic_foundation": {
+        "data_insight": "hypothesis_only \u2014 no live performance data exists for this cell yet",
+        "target_icp": "ICP-ECAS-04 (MemoryKeeperCouple)",
+        "message_pillar": "offer close",
+        "concept_code": "CN_Design_MultiPrintGallery",
+        "angle_stack": "TN_Aspirational / HP_GenericGift / CTA_ClaimOffer",
+        "performance_benchmark": "none established \u2014 account has zero validated conversions to date"
+      },
+      "testing_framework": {
+        "matrix_position": "C4D",
+        "matrix_naming_convention": "C4D_CN_ICP_MemoryKeeperCouple_CN_Design_MultiPrintGallery_HP_GenericGift_..._4x5.png",
+        "hypothesis": "Isolating TN_Aspirational in the D row position will reveal a directional signal for MemoryKeeperCouple once delivery/tracking issues are resolved.",
+        "isolated_variable": "HP_GenericGift",
+        "control_reference": "account baseline \u2014 not yet established",
+        "success_criteria": "\u226510% lift in overall_cvr vs matched cells at \u2265$100 spend / \u226510 conversions",
+        "learning_objective": "Determine whether D-row variable generalizes across all 4 ICPs or is avatar-specific to MemoryKeeperCouple"
+      },
+      "creative_specifications": {
+        "format": "static image",
+        "dimensions": "1080x1350 (4:5) \u2014 primary; 1080x1920 (9:16) required, not yet produced",
+        "duration": null,
+        "placement": "Feed, Instagram Reels, Stories (pending 9:16)",
+        "safe_zones": "text-safe zones required on 9:16 crop once produced",
+        "production_requirements": "real product photography only, no illustrated placeholders (per account rules)"
+      },
+      "copy_architecture": {
+        "hook": "Generic gifts don't survive the year. Walls do.",
+        "problem_agitation_or_value_setup": "HP_GenericGift",
+        "product_solution": "Made to order, real wood frame, real matte paper, 3,000+ cities",
+        "proof": "PR_DataStat: 3,000+ CITIES \u00b7 MADE TO ORDER",
+        "cta": "SHOP NOW + 25% off, Row D final line only",
+        "headlines": [
+          "Gifts Fade. Walls Don't.",
+          "Your Story, On The Wall"
+        ],
+        "primary_text": "Generic gifts don't survive the year. Walls do.\nTurn the places of your story into a gallery set: 3,000+ cities, made to order, real wood frames.\n25% off this week. Shop now."
+      },
+      "visual_direction": {
+        "composition": "CN_Design_MultiPrintGallery",
+        "style_guide": "gallery-grade, warm neutral tones, real wood frame, matte paper texture",
+        "color_palette": "warm neutrals, black CTA button (standardized)",
+        "typography": "ECAS wordmark serif/sans pairing per Creative Board spec",
+        "imagery": "real photography of framed print in lifestyle or room context",
+        "avoid_list": [
+          "emoji (any row)",
+          "\"Read why\" CTA (banned account-wide)",
+          "discount language outside Row D final line",
+          "fabricated or attributed testimonial names",
+          "invented social-proof counts \u2014 ship as [VERIFIED COUNT] until confirmed"
+        ]
+      },
+      "production_checklist": [
+        "Confirm asset is byte-identical to what's uploaded to Ads Manager (see local_client_library.json evidence_notes for known filename/version mismatches)",
+        "Confirm 4:5 ratio (1080x1350) exact \u2014 off-ratio renders must be discarded, not shipped",
+        "Generate matching 9:16 crop (outstanding for all 16 cells)",
+        "Run through metrix-mst-creative-scan before any Ads Manager upload"
+      ],
+      "qa_requirements": [
+        "No emoji present",
+        "CTA button solid black",
+        "No discount language outside Row D final line",
+        "Testimonial (if present) unattributed, \u226412 words",
+        "Social-proof count (if present) shipped as [VERIFIED COUNT] placeholder, not invented"
+      ],
+      "performance_tracking": {
+        "matrix_cell": "C4D",
+        "current_status": "insufficient_data \u2014 see campaign_intelligence.json",
+        "spend_to_date": null,
+        "conversions_to_date": 0
+      }
+    }
+  ]
+}

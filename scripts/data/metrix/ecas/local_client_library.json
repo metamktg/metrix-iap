@@ -1,0 +1,276 @@
+{
+  "client_id": "east-coast-art-studio",
+  "client_name": "East Coast Art Studio",
+  "library_version": "1.4.0",
+  "last_updated": "2026-07-25",
+  "source_files": [
+    "local_client_library.json (Drive, v1.3.0, 2026-07-12)",
+    "ecas-mst-sprint1-handoff.zip / HANDOFF.md (Claude Code handoff, 2026-07-12)",
+    "East Coast Art Studio \u2014 MST Sprint 1 Ad Copy (Drive doc, DRAFT section, last modified 2026-07-14)",
+    "ECAS-MST-Sprint1-Creative-Board.html (design-stage mockup, v1.0.0, 2026-07-09)",
+    "drive-download-20260725T055530Z-1-001.zip (full Drive creative folder export, 2026-07-25)",
+    "IAP-DEMO-MAIN-ECAS.csv, IAP-DEVICE-MAIN-ECAS.csv (Meta Ads Manager exports, 2026-07-25)"
+  ],
+  "global_variables_used": [
+    "CN_Design_CityDetail",
+    "CN_Design_MultiPrintGallery",
+    "CN_Design_RoomContext",
+    "CN_Design_SinglePrintLifestyle",
+    "CTA_Buy",
+    "CTA_ClaimOffer",
+    "HP_BareWalls",
+    "HP_CheapPoster",
+    "HP_FadedMemory",
+    "HP_ForgettableGift",
+    "HP_GenericGift",
+    "PR_Testimonial",
+    "TN_Aspirational",
+    "TN_Assertive",
+    "TN_Emotional",
+    "TN_Rational"
+  ],
+  "product_context": {
+    "business": "East Coast Art Studio",
+    "platform": "Shopify",
+    "website": "eastcoastartstudio.com",
+    "product": "Made-to-order, real-wood-framed street/city map prints across 3,000+ cities",
+    "primary_cta_copy": "SHOP NOW",
+    "cta_button_color": "solid black (standardized 2026-07-12)",
+    "offer": "25% off \u2014 Row D final line only, never in hook/headline"
+  },
+  "local_concepts": [
+    {
+      "code": "C1",
+      "icp_id": "ICP-ECAS-01",
+      "definition": "GiftGiver45",
+      "design_system": "CN_Design_SinglePrintLifestyle",
+      "landing_destination": "/collections/best-sellers",
+      "evidence": "hypothesis_only \u2014 reverse-engineered from the pre-pilot account audit (90% of prior spend skewed 45+/1 ad), not from a client-supplied audience baseline. No live MST performance data exists to validate or revise this yet."
+    },
+    {
+      "code": "C2",
+      "icp_id": "ICP-ECAS-02",
+      "definition": "Milestone2534",
+      "design_system": "CN_Design_RoomContext",
+      "landing_destination": "/collections/best-sellers",
+      "evidence": "hypothesis_only \u2014 reverse-engineered from the pre-pilot account audit (90% of prior spend skewed 45+/1 ad), not from a client-supplied audience baseline. No live MST performance data exists to validate or revise this yet."
+    },
+    {
+      "code": "C3",
+      "icp_id": "ICP-ECAS-03",
+      "definition": "HometownSelf",
+      "design_system": "CN_Design_CityDetail",
+      "landing_destination": "city collection page (never a single PDP for cold traffic)",
+      "evidence": "hypothesis_only \u2014 reverse-engineered from the pre-pilot account audit (90% of prior spend skewed 45+/1 ad), not from a client-supplied audience baseline. No live MST performance data exists to validate or revise this yet."
+    },
+    {
+      "code": "C4",
+      "icp_id": "ICP-ECAS-04",
+      "definition": "MemoryKeeperCouple",
+      "design_system": "CN_Design_MultiPrintGallery",
+      "landing_destination": "/collections/best-sellers",
+      "evidence": "hypothesis_only \u2014 reverse-engineered from the pre-pilot account audit (90% of prior spend skewed 45+/1 ad), not from a client-supplied audience baseline. No live MST performance data exists to validate or revise this yet."
+    }
+  ],
+  "creative_id_map": {
+    "C1A": {
+      "variable_stack": {
+        "CN": "CN_Design_SinglePrintLifestyle",
+        "HK": "Most \"custom\" prints are posters in disguise.",
+        "TN": "TN_Assertive",
+        "CTA": "CTA_Buy",
+        "HP": "HP_CheapPoster"
+      },
+      "concept_id": "C1",
+      "row": "A"
+    },
+    "C1B": {
+      "variable_stack": {
+        "CN": "CN_Design_SinglePrintLifestyle",
+        "HK": "What do you give someone who has everything?",
+        "TN": "TN_Emotional",
+        "CTA": "CTA_Buy",
+        "PR": "PR_Testimonial"
+      },
+      "concept_id": "C1",
+      "row": "B"
+    },
+    "C1C": {
+      "variable_stack": {
+        "CN": "CN_Design_SinglePrintLifestyle",
+        "HK": "There's a reason this gift never gets returned.",
+        "TN": "TN_Emotional",
+        "CTA": "CTA_Buy",
+        "HP": "HP_ForgettableGift"
+      },
+      "concept_id": "C1",
+      "row": "C"
+    },
+    "C1D": {
+      "variable_stack": {
+        "CN": "CN_Design_SinglePrintLifestyle",
+        "HK": "Gallery-grade prints of 3,000+ cities. Made to order.",
+        "TN": "TN_Rational",
+        "CTA": "CTA_ClaimOffer",
+        "HP": "HP_BareWalls"
+      },
+      "concept_id": "C1",
+      "row": "D"
+    },
+    "C2A": {
+      "variable_stack": {
+        "CN": "CN_Design_RoomContext",
+        "HK": "Last year I gave my parents a gift card. Never again.",
+        "TN": "TN_Assertive",
+        "CTA": "CTA_Buy",
+        "HP": "HP_GenericGift"
+      },
+      "concept_id": "C2",
+      "row": "A"
+    },
+    "C2B": {
+      "variable_stack": {
+        "CN": "CN_Design_RoomContext",
+        "HK": "Three months in the new place. Still bare walls.",
+        "TN": "TN_Rational",
+        "CTA": "CTA_Buy",
+        "PR": "PR_Testimonial"
+      },
+      "concept_id": "C2",
+      "row": "B"
+    },
+    "C2C": {
+      "variable_stack": {
+        "CN": "CN_Design_RoomContext",
+        "HK": "The gift they'll still talk about next year.",
+        "TN": "TN_Aspirational",
+        "CTA": "CTA_Buy",
+        "HP": "HP_ForgettableGift"
+      },
+      "concept_id": "C2",
+      "row": "C"
+    },
+    "C2D": {
+      "variable_stack": {
+        "CN": "CN_Design_RoomContext",
+        "HK": "The block he grew up on. Framed on his wall now.",
+        "TN": "TN_Rational",
+        "CTA": "CTA_ClaimOffer",
+        "HP": "HP_FadedMemory"
+      },
+      "concept_id": "C2",
+      "row": "D"
+    },
+    "C3A": {
+      "variable_stack": {
+        "CN": "CN_Design_CityDetail",
+        "HK": "Look closer. Those are real street names.",
+        "TN": "TN_Assertive",
+        "CTA": "CTA_Buy",
+        "HP": "HP_BareWalls"
+      },
+      "concept_id": "C3",
+      "row": "A"
+    },
+    "C3B": {
+      "variable_stack": {
+        "CN": "CN_Design_CityDetail",
+        "HK": "Your city, the way you remember it.",
+        "TN": "TN_Emotional",
+        "CTA": "CTA_Buy",
+        "PR": "PR_Testimonial"
+      },
+      "concept_id": "C3",
+      "row": "B"
+    },
+    "C3C": {
+      "variable_stack": {
+        "CN": "CN_Design_CityDetail",
+        "HK": "Some gifts get forgotten by Monday.",
+        "TN": "TN_Rational",
+        "CTA": "CTA_Buy",
+        "HP": "HP_ForgettableGift"
+      },
+      "concept_id": "C3",
+      "row": "C"
+    },
+    "C3D": {
+      "variable_stack": {
+        "CN": "CN_Design_CityDetail",
+        "HK": "Not another gift-shop skyline.",
+        "TN": "TN_Aspirational",
+        "CTA": "CTA_ClaimOffer",
+        "HP": "HP_CheapPoster"
+      },
+      "concept_id": "C3",
+      "row": "D"
+    },
+    "C4A": {
+      "variable_stack": {
+        "CN": "CN_Design_MultiPrintGallery",
+        "HK": "Every city you've loved, framed on one wall.",
+        "TN": "TN_Assertive",
+        "CTA": "CTA_Buy",
+        "HP": "HP_FadedMemory"
+      },
+      "concept_id": "C4",
+      "row": "A"
+    },
+    "C4B": {
+      "variable_stack": {
+        "CN": "CN_Design_MultiPrintGallery",
+        "HK": "\"It's the city of our first trip together.\"",
+        "TN": "TN_Aspirational",
+        "CTA": "CTA_Buy",
+        "PR": "PR_Testimonial"
+      },
+      "concept_id": "C4",
+      "row": "B"
+    },
+    "C4C": {
+      "variable_stack": {
+        "CN": "CN_Design_MultiPrintGallery",
+        "HK": "When did a gift last earn a spot on the wall?",
+        "TN": "TN_Rational",
+        "CTA": "CTA_Buy",
+        "HP": "HP_ForgettableGift"
+      },
+      "concept_id": "C4",
+      "row": "C"
+    },
+    "C4D": {
+      "variable_stack": {
+        "CN": "CN_Design_MultiPrintGallery",
+        "HK": "Generic gifts don't survive the year. Walls do.",
+        "TN": "TN_Aspirational",
+        "CTA": "CTA_ClaimOffer",
+        "HP": "HP_GenericGift"
+      },
+      "concept_id": "C4",
+      "row": "D"
+    }
+  },
+  "winning_patterns": [],
+  "failed_patterns": [],
+  "active_hypotheses": [
+    "Row A (TN_Assertive) isolates on quality/craft-led assertive tone across all four ICPs.",
+    "Row B (PR_Testimonial) isolates on unattributed customer-quote proof across all four ICPs.",
+    "Row C (HP_ForgettableGift) isolates on the forgettable/generic-gift pain point across all four ICPs.",
+    "Row D (CTA_ClaimOffer) isolates on offer-as-closer, never as hook, across all four ICPs.",
+    "Main diagonal (C1A/C2B/C3C/C4D) and counter diagonal (C1D/C2C/C3B/C4A) are the highest-confidence isolation read once live."
+  ],
+  "evidence_notes": [
+    "No live performance data exists yet \u2014 every evidence_grade above is produced_pre-launch, not a proven winner or failed pattern. Do not treat anything in creative_log as a performance signal until spend and conversion data comes back through metrix-mst-test-engine.",
+    "CORRECTION (2026-07-25): the physical asset delivering live for C3B is the file colloquially named 'C3B v2.png' (1122x1402, correct 4:5 ratio), confirmed against a user-supplied Ads Manager screenshot \u2014 NOT the canonically-named '..._T1.png' file (1024x1536, off-ratio), which should be treated as a deprecated reject despite carrying the proper filename. Rename before next batch.",
+    "One ad continues to deliver under ad name 'c4A' (lowercase) instead of canonical 'C4A' as of the 2026-07-25 Meta export \u2014 naming fix still outstanding.",
+    "C1C.png and a handful of other files in the 2026-07-25 Drive export sit under non-canonical filenames \u2014 a renaming pass is owed before the next handoff.",
+    "MST Sprint 1 delivered $57.97 of the committed ~$1,000 budget with zero conversions over 2026-07-14 to 2026-07-24 \u2014 see campaign_intelligence.json for the full read. No cell in this library should be marked proven or failed on this data."
+  ],
+  "account_rules": {
+    "discount_language": "Never in hook or headline, any row. Row D final line only, small type. Documented $40.54/ATC failure when this rule was broken historically.",
+    "testimonials": "Unattributed only, max 12 words, no fabricated named attribution.",
+    "social_proof_counts": "Ship as [VERIFIED COUNT] placeholder \u2014 evidence status NEEDS-VALIDATION until a real number is confirmed. Never invent a number.",
+    "emoji": "None, any row.",
+    "cta_banned_phrase": "\"Read why\" \u2014 banned account-wide."
+  }
+}
