@@ -26,8 +26,11 @@ import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
-  SkeletonTileRow,
+  SkeletonTileRow, DatePresetBar, type ViewPreset,
 } from "../shared";
+import { getGetAnalysisSummaryQueryOptions } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
+import type { DemographicRow } from "@/lib/data/seedTypes";
 import { TYPE } from "../typography";
 import {
   Users, Map, LayoutGrid, List, ArrowRight,
@@ -579,6 +582,25 @@ const SECTION = "Analysis · 03";
 const VIEW_KEY = "metrix.audience.view.v1";
 const RANK_KEY = "metrix.audience.rank.v1";
 
+/** Adapt API demographic rows → DemographicRow[] for existing analysis helpers. */
+function adaptApiDemoRows(rows: { age: string; gender: string; spend: number | null; results: number | null; impressions: number | null; link_clicks: number | null }[]): DemographicRow[] {
+  return rows.map((r) => ({
+    cell_id: "",
+    "Ad name": "",
+    Age: r.age,
+    Gender: r.gender,
+    "Amount spent (USD)": r.spend ?? 0,
+    Reach: 0,
+    Impressions: r.impressions ?? 0,
+    Results: r.results ?? 0,
+    "Clicks (all)": 0,
+    "Link clicks": r.link_clicks ?? 0,
+    CPA_result: r.results && r.results > 0 && r.spend ? r.spend / r.results : null,
+    CTR_link_pct: r.impressions && r.impressions > 0 && r.link_clicks ? (r.link_clicks / r.impressions) * 100 : 0,
+    Result_per_link_click_pct: r.link_clicks && r.link_clicks > 0 && r.results ? (r.results / r.link_clicks) * 100 : 0,
+  }));
+}
+
 export function AudienceView() {
   const seed = useMetrixSeed();
   const isRefetching = useMetrixIsRefetching();
@@ -589,15 +611,27 @@ export function AudienceView() {
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     try { return (localStorage.getItem(VIEW_KEY) as ViewMode | null) ?? "pockets"; } catch { return "pockets"; }
   });
+  const [preset, setPreset] = useState<ViewPreset>("all");
+
+  const { data: presetData, isFetching: presetFetching } = useQuery({
+    ...getGetAnalysisSummaryQueryOptions(adAccountId ?? "", preset),
+    enabled: preset !== "all" && !!adAccountId,
+  });
 
   const handleViewMode = useCallback((m: ViewMode) => {
     setViewMode(m);
     try { localStorage.setItem(VIEW_KEY, m); } catch { /* storage blocked */ }
   }, []);
 
+  // When a preset is active and data has loaded, use the API rows; otherwise seed rows.
+  const activeDemoRows = useMemo(() => {
+    if (preset !== "all" && presetData) return adaptApiDemoRows(presetData.demographic_rows);
+    return analysis?.demographic_registration_signal ?? [];
+  }, [preset, presetData, analysis]);
+
   const scopedRows = useMemo(
-    () => scopeDemographicRows(analysis?.demographic_registration_signal ?? [], null),
-    [analysis]
+    () => scopeDemographicRows(activeDemoRows, null),
+    [activeDemoRows]
   );
 
   const entries = useMemo<SegmentEntry[]>(() => {
@@ -661,7 +695,14 @@ export function AudienceView() {
                 tabs="analysis"
               />
               <>
-                  {isRefetching ? (
+                  <DatePresetBar
+                    value={preset}
+                    onChange={setPreset}
+                    availableWindow={presetData?.available_window}
+                    isFetching={presetFetching}
+                  />
+
+                  {(isRefetching || (preset !== "all" && presetFetching)) ? (
                     <div className="px-6 pt-5"><SkeletonTileRow count={4} /></div>
                   ) : (
                     <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">

@@ -34,6 +34,7 @@ import type {
   AdminUserAdAccountsResult,
   AdminUsersResult,
   AnalysisRunListResult,
+  AnalysisSummaryResult,
   ApiError,
   AuthChangePasswordInput,
   AuthLoginInput,
@@ -92,6 +93,7 @@ import type {
   UpdateMemberPermissionsResult,
   UpdateMemberStatusInput,
   UpdateMemberStatusResult,
+  ViewPreset,
   WaitlistApprovalResult,
   WaitlistEntriesResult,
   WaitlistRejectResult,
@@ -1256,6 +1258,89 @@ export function useGetLatestAnalysisRun<TData = Awaited<ReturnType<typeof getLat
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetLatestAnalysisRunQueryOptions(accountId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetAnalysisSummaryUrl = (accountId: string,
+    preset: ViewPreset,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/analysis-summary/${preset}`
+}
+
+/**
+ * Re-aggregates ad_performance, demographic_performance, and placement_performance rows for the requested date preset, anchored to the latest date stored for the account (not wall-clock time). Returns totals plus demographic, placement, and concept breakdowns. Used by the date preset filter on analysis views. Requires access to the account.
+ * @summary Re-aggregate analysis data for a date preset window
+ */
+export const getAnalysisSummary = async (accountId: string,
+    preset: ViewPreset, options?: RequestInit): Promise<AnalysisSummaryResult> => {
+
+  return customFetch<AnalysisSummaryResult>(getGetAnalysisSummaryUrl(accountId,preset),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAnalysisSummaryQueryKey = (accountId: string,
+    preset: ViewPreset,) => {
+    return [
+    `/api/metrix/accounts/${accountId}/analysis-summary/${preset}`
+    ] as const;
+    }
+
+
+export const getGetAnalysisSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getAnalysisSummary>>, TError = ErrorType<ApiError>>(accountId: string,
+    preset: ViewPreset, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAnalysisSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAnalysisSummaryQueryKey(accountId,preset);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAnalysisSummary>>> = ({ signal }) => getAnalysisSummary(accountId,preset, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: accountId !== null && accountId !== undefined && preset !== null && preset !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAnalysisSummary>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAnalysisSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getAnalysisSummary>>>
+export type GetAnalysisSummaryQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Re-aggregate analysis data for a date preset window
+ */
+
+export function useGetAnalysisSummary<TData = Awaited<ReturnType<typeof getAnalysisSummary>>, TError = ErrorType<ApiError>>(
+ accountId: string,
+    preset: ViewPreset, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAnalysisSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAnalysisSummaryQueryOptions(accountId,preset,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

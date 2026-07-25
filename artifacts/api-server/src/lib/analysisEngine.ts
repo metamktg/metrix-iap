@@ -32,6 +32,62 @@ export const STALE_ANALYSIS_RUN_MS = 10 * 60 * 1000;
 
 export type DateRangePreset = "7d" | "14d" | "30d" | "all";
 
+/** Preset for the view-level date filter (distinct from the analysis-run preset). */
+export type ViewPreset = "7d" | "14d" | "28d" | "90d" | "all";
+
+export const VIEW_PRESETS: ViewPreset[] = ["7d", "14d", "28d", "90d", "all"];
+
+export interface AnalysisSummaryWindow {
+  start: string;
+  end: string;
+}
+
+export interface AnalysisSummaryTotals {
+  total_spend_usd: number;
+  total_impressions: number;
+  total_link_clicks: number;
+  overall_link_ctr_pct: number;
+  bottom_line_totals: Record<
+    string,
+    { spend: number; reach: number; impressions: number; results: number; clicks_all: number; link_clicks: number }
+  >;
+}
+
+export interface AnalysisSummaryDemoRow {
+  age: string;
+  gender: string;
+  spend: number | null;
+  results: number | null;
+  impressions: number | null;
+  link_clicks: number | null;
+}
+
+export interface AnalysisSummaryPlacementRow {
+  placement: string;
+  spend: number;
+  impressions: number;
+  link_clicks: number;
+  results: number;
+}
+
+export interface AnalysisSummaryConceptRow {
+  concept: string;
+  book: string | null;
+  spend: number;
+  results: number;
+  link_clicks: number;
+}
+
+export interface AnalysisSummaryResult {
+  preset: ViewPreset;
+  available_window: AnalysisSummaryWindow | null;
+  active_window: AnalysisSummaryWindow | null;
+  totals: AnalysisSummaryTotals;
+  demographic_rows: AnalysisSummaryDemoRow[];
+  placement_rows: AnalysisSummaryPlacementRow[];
+  concept_rows: AnalysisSummaryConceptRow[];
+}
+
 export class AnalysisError extends Error {
   constructor(
     message: string,
@@ -952,4 +1008,204 @@ export async function startManualAnalysis(
   })();
 
   return runId;
+}
+
+// ─── View-level date preset summary ────────────────────────────────────
+// Re-aggregates ad_performance, demographic_performance, and
+// placement_performance rows for any ViewPreset window, anchored to the
+// latest date_start stored for the account (not wall-clock time).
+// Returns aggregated totals + demographic + placement + concept breakdowns.
+
+function viewPresetDays(preset: ViewPreset): number | null {
+  if (preset === "all") return null;
+  if (preset === "7d") return 7;
+  if (preset === "14d") return 14;
+  if (preset === "28d") return 28;
+  return 90; // "90d"
+}
+
+function withinViewPreset(date: string, preset: ViewPreset, maxDate: string): boolean {
+  if (preset === "all") return true;
+  const days = viewPresetDays(preset)!;
+  const max = new Date(`${maxDate}T00:00:00Z`).getTime();
+  const cutoff = max - (days - 1) * 24 * 60 * 60 * 1000;
+  const d = new Date(`${date}T00:00:00Z`).getTime();
+  return d >= cutoff && d <= max;
+}
+
+function extractConceptCode(adName: string): string | null {
+  const m = String(adName).match(/^([A-Z]\d+)(?=[A-Z_])/);
+  return m ? m[1]! : null;
+}
+
+function extractBookCode(adName: string): string | null {
+  const m = String(adName).match(/BOOK\d+/i);
+  return m ? m[0]!.toUpperCase() : null;
+}
+
+function roundN(v: number, digits = 4): number {
+  const f = Math.pow(10, digits);
+  return Math.round(v * f) / f;
+}
+
+export async function getAnalysisSummaryByPreset(
+  accountId: string,
+  preset: ViewPreset,
+): Promise<AnalysisSummaryResult> {
+  const supabase = getSupabase();
+
+  // ── Fetch ad_performance rows ─────────────────────────────────────
+  const { data: adRows, error: adErr } = await supabase
+    .from("ad_performance")
+    .select("date_start, spend, impressions, link_clicks, results, result_type, reach, clicks_all, ad_name")
+    .eq("account_id", accountId);
+  if (adErr) throw new Error(adErr.message);
+
+  if (!adRows || adRows.length === 0) {
+    return {
+      preset,
+      available_window: null,
+      active_window: null,
+      totals: { total_spend_usd: 0, total_impressions: 0, total_link_clicks: 0, overall_link_ctr_pct: 0, bottom_line_totals: {} },
+      demographic_rows: [],
+      placement_rows: [],
+      concept_rows: [],
+    };
+  }
+
+  // Determine the anchor (latest date in stored rows).
+  const allDates = adRows.map((r: any) => String(r.date_start ?? "")).filter(Boolean);
+  const maxDate = allDates.reduce((a, b) => (a > b ? a : b), allDates[0]!);
+  const minDate = allDates.reduce((a, b) => (a < b ? a : b), allDates[0]!);
+  const available_window: AnalysisSummaryWindow = { start: minDate, end: maxDate };
+
+  // Filter rows to the preset window.
+  const filtered = adRows.filter((r: any) => withinViewPreset(String(r.date_start ?? ""), preset, maxDate));
+
+  const activeStart = filtered.length > 0
+    ? filtered.map((r: any) => String(r.date_start ?? "")).reduce((a, b) => (a < b ? a : b))
+    : maxDate;
+  const active_window: AnalysisSummaryWindow = { start: activeStart, end: maxDate };
+
+  // Aggregate totals.
+  let totalSpend = 0, totalImpressions = 0, totalLinkClicks = 0;
+  const byEvent: Record<string, { spend: number; reach: number; impressions: number; results: number; clicks_all: number; link_clicks: number }> = {};
+
+  for (const r of filtered) {
+    const spend       = Number((r as any).spend ?? 0);
+    const impressions = Number((r as any).impressions ?? 0);
+    const linkClicks  = Number((r as any).link_clicks ?? 0);
+    const results     = Number((r as any).results ?? 0);
+    const reach       = Number((r as any).reach ?? 0);
+    const clicksAll   = Number((r as any).clicks_all ?? 0);
+    const event       = String((r as any).result_type ?? "unknown");
+
+    totalSpend       += spend;
+    totalImpressions += impressions;
+    totalLinkClicks  += linkClicks;
+
+    byEvent[event] ??= { spend: 0, reach: 0, impressions: 0, results: 0, clicks_all: 0, link_clicks: 0 };
+    byEvent[event]!.spend       += spend;
+    byEvent[event]!.reach       += reach;
+    byEvent[event]!.impressions += impressions;
+    byEvent[event]!.results     += results;
+    byEvent[event]!.clicks_all  += clicksAll;
+    byEvent[event]!.link_clicks += linkClicks;
+  }
+
+  const linkCtrPct = totalImpressions > 0 ? roundN((totalLinkClicks / totalImpressions) * 100) : 0;
+
+  // ── Concept rows (derived from ad_name) ────────────────────────────
+  const conceptMap = new Map<string, { book: string | null; spend: number; results: number; link_clicks: number }>();
+  for (const r of filtered) {
+    const concept = extractConceptCode(String((r as any).ad_name ?? ""));
+    if (!concept) continue;
+    const book = extractBookCode(String((r as any).ad_name ?? ""));
+    const key = `${book ?? ""}\x01${concept}`;
+    const c = conceptMap.get(key) ?? { book, spend: 0, results: 0, link_clicks: 0 };
+    c.spend       += Number((r as any).spend ?? 0);
+    c.results     += Number((r as any).results ?? 0);
+    c.link_clicks += Number((r as any).link_clicks ?? 0);
+    conceptMap.set(key, c);
+  }
+  const concept_rows: AnalysisSummaryConceptRow[] = Array.from(conceptMap.entries()).map(([key, v]) => ({
+    concept: key.split("\x01")[1]!,
+    book:    v.book,
+    spend:   roundN(v.spend),
+    results: v.results,
+    link_clicks: v.link_clicks,
+  }));
+
+  // ── Demographic rows ───────────────────────────────────────────────
+  const { data: demoRows, error: demoErr } = await supabase
+    .from("demographic_performance")
+    .select("date_start, age, gender, spend, results, impressions, link_clicks")
+    .eq("account_id", accountId);
+  if (demoErr) throw new Error(demoErr.message);
+
+  const demoMap = new Map<string, { spend: number; results: number; impressions: number; link_clicks: number }>();
+  for (const r of demoRows ?? []) {
+    if (!withinViewPreset(String((r as any).date_start ?? ""), preset, maxDate)) continue;
+    const key = `${String((r as any).age ?? "")}|${String((r as any).gender ?? "").toLowerCase()}`;
+    const d = demoMap.get(key) ?? { spend: 0, results: 0, impressions: 0, link_clicks: 0 };
+    d.spend       += Number((r as any).spend ?? 0);
+    d.results     += Number((r as any).results ?? 0);
+    d.impressions += Number((r as any).impressions ?? 0);
+    d.link_clicks += Number((r as any).link_clicks ?? 0);
+    demoMap.set(key, d);
+  }
+  const demographic_rows: AnalysisSummaryDemoRow[] = Array.from(demoMap.entries()).map(([key, v]) => {
+    const [age, gender] = key.split("|");
+    return {
+      age:          age ?? "",
+      gender:       gender ?? "",
+      spend:        v.spend,
+      results:      v.results,
+      impressions:  v.impressions,
+      link_clicks:  v.link_clicks,
+    };
+  });
+
+  // ── Placement rows (delivery-based only) ──────────────────────────
+  const { data: placRows, error: placErr } = await supabase
+    .from("placement_performance")
+    .select("date_start, placement, spend, impressions, link_clicks, results, tracking_basis")
+    .eq("account_id", accountId);
+  if (placErr) throw new Error(placErr.message);
+
+  const placMap = new Map<string, { spend: number; impressions: number; link_clicks: number; results: number }>();
+  for (const r of placRows ?? []) {
+    if ((r as any).tracking_basis === "conversion") continue; // delivery rows only
+    if (!withinViewPreset(String((r as any).date_start ?? ""), preset, maxDate)) continue;
+    const key = String((r as any).placement ?? "");
+    const p = placMap.get(key) ?? { spend: 0, impressions: 0, link_clicks: 0, results: 0 };
+    p.spend       += Number((r as any).spend ?? 0);
+    p.impressions += Number((r as any).impressions ?? 0);
+    p.link_clicks += Number((r as any).link_clicks ?? 0);
+    p.results     += Number((r as any).results ?? 0);
+    placMap.set(key, p);
+  }
+  const placement_rows: AnalysisSummaryPlacementRow[] = Array.from(placMap.entries()).map(([placement, v]) => ({
+    placement,
+    spend:       roundN(v.spend),
+    impressions: v.impressions,
+    link_clicks: v.link_clicks,
+    results:     v.results,
+  }));
+
+  return {
+    preset,
+    available_window,
+    active_window,
+    totals: {
+      total_spend_usd:      roundN(totalSpend),
+      total_impressions:    Math.round(totalImpressions),
+      total_link_clicks:    Math.round(totalLinkClicks),
+      overall_link_ctr_pct: linkCtrPct,
+      bottom_line_totals:   byEvent,
+    },
+    demographic_rows,
+    placement_rows,
+    concept_rows,
+  };
 }
