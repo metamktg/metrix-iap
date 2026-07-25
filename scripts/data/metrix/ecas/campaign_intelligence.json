@@ -1,0 +1,355 @@
+{
+  "report_metadata": {
+    "client": "East Coast Art Studio",
+    "campaign": "ECAS_MST",
+    "sprint": "MST Sprint 1",
+    "generated_at": "2026-07-25",
+    "date_range": {
+      "start": "2026-07-14",
+      "end": "2026-07-24"
+    },
+    "loop_run_module": "campaign_intelligence"
+  },
+  "executive_summary": {
+    "verdict": "INVALID TEST \u2014 do not action. Spend ($57.97) is 5.8% of the committed pilot budget, zero purchases or checkouts were recorded across an 11-day window, and 4 of 16 matrix cells never delivered at all. The blocking issues are operational (tracking + delivery), not creative or audience quality, and must be fixed before this sprint can produce a usable read on avatar, PMF, or variable-stack performance.",
+    "avatar_pmf_read": "Not evaluable this cycle. All four ICPs (GiftGiver45, Milestone2534, HometownSelf, MemoryKeeperCouple) have at least one cell with zero delivery, so no avatar can be fairly compared to the others yet. The one persistent signal worth carrying forward: recorded spend still skews ~66% toward the 45+ segment, which was the exact problem the pre-pilot CBO/targeting fix was meant to solve \u2014 worth a direct look at current campaign-level targeting settings, independent of the MST creative read.",
+    "communications_read": "Not evaluable \u2014 no conversion signal exists to judge message-market fit of any headline, hook, or proof treatment. The only directional (non-verdict) click signal: C3A (\"Look closer. Those are real street names.\", 5.3% link CTR on 151 impressions) and C1B (\"What do you give someone who has everything?\", 2.1% CTR) are the only cells with any above-baseline engagement \u2014 noted for visibility, explicitly not a basis for action.",
+    "variable_stack_read": "Not evaluable \u2014 see winning_variable_stack. All prior hypotheses (row isolation, diagonal reads) remain hypotheses; none can be promoted or retired on this data.",
+    "audience_performance_read": "Reach and impressions concentrate in the 45-54 and 55-64 male segments; ~66% of the $57.97 recorded spend sits in 45+ across genders. Traffic volume overall is too low (1,951 impressions, 23-341 link clicks depending on which export you trust) for any audience-segment conversion comparison."
+  },
+  "buyer_intent_funnel": [
+    {
+      "matrix_cell": "C3A",
+      "spend": 6.69,
+      "link_clicks": 8.0,
+      "click_to_atc_rate": null,
+      "atc_to_checkout_rate": null,
+      "checkout_to_purchase_rate": null,
+      "overall_cvr": 0.0,
+      "buying_intent_score": 8.0,
+      "funnel_drop_stage": "top_of_funnel \u2014 no add-to-cart recorded for any cell in the demographic source; cannot diagnose deeper funnel stages from this data",
+      "confidence": "insufficient"
+    },
+    {
+      "matrix_cell": "C1D",
+      "spend": 10.82,
+      "link_clicks": 4.0,
+      "click_to_atc_rate": null,
+      "atc_to_checkout_rate": null,
+      "checkout_to_purchase_rate": null,
+      "overall_cvr": 0.0,
+      "buying_intent_score": 4.0,
+      "funnel_drop_stage": "top_of_funnel \u2014 no add-to-cart recorded for any cell in the demographic source; cannot diagnose deeper funnel stages from this data",
+      "confidence": "insufficient"
+    },
+    {
+      "matrix_cell": "C3B",
+      "spend": 10.84,
+      "link_clicks": 3.0,
+      "click_to_atc_rate": null,
+      "atc_to_checkout_rate": null,
+      "checkout_to_purchase_rate": null,
+      "overall_cvr": 0.0,
+      "buying_intent_score": 3.0,
+      "funnel_drop_stage": "top_of_funnel \u2014 no add-to-cart recorded for any cell in the demographic source; cannot diagnose deeper funnel stages from this data",
+      "confidence": "insufficient"
+    },
+    {
+      "matrix_cell": "C4A",
+      "spend": 3.43,
+      "link_clicks": 3.0,
+      "click_to_atc_rate": null,
+      "atc_to_checkout_rate": null,
+      "checkout_to_purchase_rate": null,
+      "overall_cvr": 0.0,
+      "buying_intent_score": 3.0,
+      "funnel_drop_stage": "top_of_funnel \u2014 no add-to-cart recorded for any cell in the demographic source; cannot diagnose deeper funnel stages from this data",
+      "confidence": "insufficient"
+    },
+    {
+      "matrix_cell": "C1B",
+      "spend": 1.07,
+      "link_clicks": 1.0,
+      "click_to_atc_rate": null,
+      "atc_to_checkout_rate": null,
+      "checkout_to_purchase_rate": null,
+      "overall_cvr": 0.0,
+      "buying_intent_score": 1.0,
+      "funnel_drop_stage": "top_of_funnel \u2014 no add-to-cart recorded for any cell in the demographic source; cannot diagnose deeper funnel stages from this data",
+      "confidence": "insufficient"
+    },
+    {
+      "matrix_cell": "C2B",
+      "spend": 3.77,
+      "link_clicks": 1.0,
+      "click_to_atc_rate": null,
+      "atc_to_checkout_rate": null,
+      "checkout_to_purchase_rate": null,
+      "overall_cvr": 0.0,
+      "buying_intent_score": 1.0,
+      "funnel_drop_stage": "top_of_funnel \u2014 no add-to-cart recorded for any cell in the demographic source; cannot diagnose deeper funnel stages from this data",
+      "confidence": "insufficient"
+    },
+    {
+      "matrix_cell": "C3D",
+      "spend": 9.91,
+      "link_clicks": 1.0,
+      "click_to_atc_rate": null,
+      "atc_to_checkout_rate": null,
+      "checkout_to_purchase_rate": null,
+      "overall_cvr": 0.0,
+      "buying_intent_score": 1.0,
+      "funnel_drop_stage": "top_of_funnel \u2014 no add-to-cart recorded for any cell in the demographic source; cannot diagnose deeper funnel stages from this data",
+      "confidence": "insufficient"
+    },
+    {
+      "matrix_cell": "C4B",
+      "spend": 10.08,
+      "link_clicks": 1.0,
+      "click_to_atc_rate": null,
+      "atc_to_checkout_rate": null,
+      "checkout_to_purchase_rate": null,
+      "overall_cvr": 0.0,
+      "buying_intent_score": 1.0,
+      "funnel_drop_stage": "top_of_funnel \u2014 no add-to-cart recorded for any cell in the demographic source; cannot diagnose deeper funnel stages from this data",
+      "confidence": "insufficient"
+    },
+    {
+      "matrix_cell": "C4C",
+      "spend": 0.15,
+      "link_clicks": 1.0,
+      "click_to_atc_rate": null,
+      "atc_to_checkout_rate": null,
+      "checkout_to_purchase_rate": null,
+      "overall_cvr": 0.0,
+      "buying_intent_score": 1.0,
+      "funnel_drop_stage": "top_of_funnel \u2014 no add-to-cart recorded for any cell in the demographic source; cannot diagnose deeper funnel stages from this data",
+      "confidence": "insufficient"
+    },
+    {
+      "matrix_cell": "C1A",
+      "spend": 1.01,
+      "link_clicks": 0.0,
+      "click_to_atc_rate": null,
+      "atc_to_checkout_rate": null,
+      "checkout_to_purchase_rate": null,
+      "overall_cvr": null,
+      "buying_intent_score": 0.0,
+      "funnel_drop_stage": "top_of_funnel \u2014 no add-to-cart recorded for any cell in the demographic source; cannot diagnose deeper funnel stages from this data",
+      "confidence": "insufficient"
+    },
+    {
+      "matrix_cell": "C2C",
+      "spend": 0.2,
+      "link_clicks": 0.0,
+      "click_to_atc_rate": null,
+      "atc_to_checkout_rate": null,
+      "checkout_to_purchase_rate": null,
+      "overall_cvr": null,
+      "buying_intent_score": 0.0,
+      "funnel_drop_stage": "top_of_funnel \u2014 no add-to-cart recorded for any cell in the demographic source; cannot diagnose deeper funnel stages from this data",
+      "confidence": "insufficient"
+    }
+  ],
+  "traffic_quality_correlation": [
+    {
+      "matrix_cell": "C1A",
+      "ctr_all_pct": 2.17,
+      "ctr_link_pct": 0.0,
+      "classification": "insufficient_data \u2014 sample too small to classify (< 50 impressions)",
+      "note": "Cannot classify high_ctr_low_cvr / low_ctr_high_cvr / aligned_performance without any conversion data. This dimension requires purchase or checkout signal, which is absent account-wide."
+    },
+    {
+      "matrix_cell": "C1B",
+      "ctr_all_pct": 2.13,
+      "ctr_link_pct": 2.13,
+      "classification": "insufficient_data \u2014 sample too small to classify (< 50 impressions)",
+      "note": "Cannot classify high_ctr_low_cvr / low_ctr_high_cvr / aligned_performance without any conversion data. This dimension requires purchase or checkout signal, which is absent account-wide."
+    },
+    {
+      "matrix_cell": "C1D",
+      "ctr_all_pct": 0.89,
+      "ctr_link_pct": 0.6,
+      "classification": "insufficient_data",
+      "note": "Cannot classify high_ctr_low_cvr / low_ctr_high_cvr / aligned_performance without any conversion data. This dimension requires purchase or checkout signal, which is absent account-wide."
+    },
+    {
+      "matrix_cell": "C2B",
+      "ctr_all_pct": 0.71,
+      "ctr_link_pct": 0.36,
+      "classification": "insufficient_data",
+      "note": "Cannot classify high_ctr_low_cvr / low_ctr_high_cvr / aligned_performance without any conversion data. This dimension requires purchase or checkout signal, which is absent account-wide."
+    },
+    {
+      "matrix_cell": "C2C",
+      "ctr_all_pct": 0.0,
+      "ctr_link_pct": 0.0,
+      "classification": "insufficient_data \u2014 sample too small to classify (< 50 impressions)",
+      "note": "Cannot classify high_ctr_low_cvr / low_ctr_high_cvr / aligned_performance without any conversion data. This dimension requires purchase or checkout signal, which is absent account-wide."
+    },
+    {
+      "matrix_cell": "C3A",
+      "ctr_all_pct": 5.96,
+      "ctr_link_pct": 5.3,
+      "classification": "insufficient_data",
+      "note": "Cannot classify high_ctr_low_cvr / low_ctr_high_cvr / aligned_performance without any conversion data. This dimension requires purchase or checkout signal, which is absent account-wide."
+    },
+    {
+      "matrix_cell": "C3B",
+      "ctr_all_pct": 1.03,
+      "ctr_link_pct": 1.03,
+      "classification": "insufficient_data",
+      "note": "Cannot classify high_ctr_low_cvr / low_ctr_high_cvr / aligned_performance without any conversion data. This dimension requires purchase or checkout signal, which is absent account-wide."
+    },
+    {
+      "matrix_cell": "C3D",
+      "ctr_all_pct": 2.19,
+      "ctr_link_pct": 0.73,
+      "classification": "insufficient_data",
+      "note": "Cannot classify high_ctr_low_cvr / low_ctr_high_cvr / aligned_performance without any conversion data. This dimension requires purchase or checkout signal, which is absent account-wide."
+    },
+    {
+      "matrix_cell": "C4B",
+      "ctr_all_pct": 1.2,
+      "ctr_link_pct": 0.6,
+      "classification": "insufficient_data",
+      "note": "Cannot classify high_ctr_low_cvr / low_ctr_high_cvr / aligned_performance without any conversion data. This dimension requires purchase or checkout signal, which is absent account-wide."
+    },
+    {
+      "matrix_cell": "C4C",
+      "ctr_all_pct": 50.0,
+      "ctr_link_pct": 50.0,
+      "classification": "insufficient_data \u2014 sample too small to classify (< 50 impressions)",
+      "note": "Cannot classify high_ctr_low_cvr / low_ctr_high_cvr / aligned_performance without any conversion data. This dimension requires purchase or checkout signal, which is absent account-wide."
+    },
+    {
+      "matrix_cell": "C4A",
+      "ctr_all_pct": 2.19,
+      "ctr_link_pct": 2.19,
+      "classification": "insufficient_data",
+      "note": "Cannot classify high_ctr_low_cvr / low_ctr_high_cvr / aligned_performance without any conversion data. This dimension requires purchase or checkout signal, which is absent account-wide."
+    }
+  ],
+  "creative_dna_signals": {
+    "concept_CN": {
+      "C1": {
+        "cells_delivering": 3,
+        "cells_expected": 4,
+        "combined_spend": 12.9,
+        "combined_link_clicks": 5.0,
+        "confidence": "insufficient"
+      },
+      "C2": {
+        "cells_delivering": 2,
+        "cells_expected": 4,
+        "combined_spend": 3.97,
+        "combined_link_clicks": 1.0,
+        "confidence": "insufficient"
+      },
+      "C3": {
+        "cells_delivering": 3,
+        "cells_expected": 4,
+        "combined_spend": 27.44,
+        "combined_link_clicks": 12.0,
+        "confidence": "insufficient"
+      },
+      "C4": {
+        "cells_delivering": 3,
+        "cells_expected": 4,
+        "combined_spend": 13.66,
+        "combined_link_clicks": 5.0,
+        "confidence": "insufficient"
+      }
+    },
+    "row_TN": {
+      "A": {
+        "cells_delivering": 3,
+        "confidence": "insufficient"
+      },
+      "B": {
+        "cells_delivering": 4,
+        "confidence": "insufficient"
+      },
+      "C": {
+        "cells_delivering": 2,
+        "confidence": "insufficient"
+      },
+      "D": {
+        "cells_delivering": 2,
+        "confidence": "insufficient"
+      }
+    },
+    "note": "No concept or row has all 4 cells delivering (C2 and C4 are each missing one live cell; C3 is missing one). Cross-avatar row isolation is not evaluable until all 16 cells are live with real spend."
+  },
+  "performance_tiers": {
+    "tier_1_scale_winners": [],
+    "tier_2_optimize_candidates": [],
+    "tier_3_test_pivot": [],
+    "tier_4_eliminate": [],
+    "unclassified_insufficient_data": [
+      "C1A",
+      "C1B",
+      "C1D",
+      "C2B",
+      "C2C",
+      "C3A",
+      "C3B",
+      "C3D",
+      "C4B",
+      "C4C",
+      "C4A"
+    ],
+    "note": "No cell has enough spend or conversion volume to support a tier assignment per the tiering criteria (which require ROAS and buying-intent signal). All 11 delivering cells held as insufficient_data rather than force-assigned. C2A, C2D, C3C, C4D never delivered and are not creative failures \u2014 they're a delivery/setup gap, tracked separately in failure_patterns."
+  },
+  "failure_patterns": [
+    {
+      "segment_type": "technical/delivery",
+      "segment": "C2A, C2D, C3C, C4D",
+      "spend": 0.0,
+      "engagement_present": false,
+      "diagnosis": "technical \u2014 zero ad delivery for the full 11-day window; not a creative or audience failure. Check ad status/approval/budget delivery in Ads Manager.",
+      "wasted_spend": 0.0
+    },
+    {
+      "segment_type": "technical/tracking",
+      "segment": "account-wide",
+      "spend": 57.97,
+      "engagement_present": true,
+      "diagnosis": "technical \u2014 Initiate Checkout event does not appear to be firing (0 checkouts_initiated account-wide despite non-zero link clicks and, per the device export, non-zero add-to-cart activity). Flagged 2026-07-17, appears unresolved.",
+      "wasted_spend": 57.97
+    },
+    {
+      "segment_type": "data_quality",
+      "segment": "account-wide",
+      "spend": null,
+      "engagement_present": null,
+      "diagnosis": "The demographic and device/placement exports disagree on link clicks (23 vs 341) and adds-to-cart (0 vs 7) by a wide margin. Neither figure should be treated as ground truth until reconciled with an unbroken account-level export.",
+      "wasted_spend": null
+    }
+  ],
+  "winning_variable_stack": {
+    "status": "hypothesis_only \u2014 not proven",
+    "copy_theme": null,
+    "copy_angle": null,
+    "hook_type": null,
+    "demographic_segment": null,
+    "placement": null,
+    "creative_format": "4:5 static (only format currently produced; no 9:16 exists)",
+    "copy_length": null,
+    "cta_type": null,
+    "projected_combined_roas": null,
+    "confidence_level": "insufficient",
+    "carried_forward_hypotheses": [
+      "Row A (TN_Assertive) isolates on quality/craft-led assertive tone across all four ICPs.",
+      "Row B (PR_Testimonial) isolates on unattributed customer-quote proof across all four ICPs.",
+      "Row C (HP_ForgettableGift) isolates on the forgettable/generic-gift pain point across all four ICPs.",
+      "Row D (CTA_ClaimOffer) isolates on offer-as-closer, never as hook, across all four ICPs.",
+      "Main diagonal (C1A/C2B/C3C/C4D) and counter-diagonal (C1D/C2C/C3B/C4A) are the highest-confidence isolation read once live \u2014 but C3C sits on the main diagonal and has zero delivery, and C4A is live only under the naming anomaly, so neither diagonal is currently clean."
+    ]
+  },
+  "insight_confidence": {
+    "overall": "insufficient",
+    "basis": "No cell clears the $100 spend / 10 conversion minimum thresholds required for directional or high-confidence insight per metrix-analysis-core's own standard. Every insight in this report is labeled insufficient or, where a pattern is visible, explicitly flagged as directional-only and not actionable.",
+    "what_would_change_this": "Resolve the Initiate Checkout tracking gap, get all 16 cells delivering, and accumulate real spend against the ~$1,000 committed budget before re-running this analysis."
+  }
+}

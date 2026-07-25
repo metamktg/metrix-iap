@@ -1,0 +1,242 @@
+{
+  "icp_profiles": [
+    {
+      "profile_id": "ICP-ECAS-01",
+      "profile_name": "GiftGiver45",
+      "demographic_foundation": "Adults 45+ shopping for a gift for someone else (parent, sibling, longtime friend)",
+      "psychographic_profile": "Values craft/permanence over novelty; skeptical of \"generic\" personalized gifts",
+      "behavioral_signals": "hypothesis_only \u2014 not yet validated against live conversion data",
+      "funnel_entry_point": "/collections/best-sellers",
+      "performance_data": {
+        "cells_delivering": null,
+        "confidence": "insufficient \u2014 see campaign_intelligence.json"
+      },
+      "message_resonance": "Responds to assertive craft claims and forgettable-gift pain points",
+      "strategic_recommendation": "Hold current hypothesis. Do not reallocate budget toward or away from this ICP until MST Sprint 1 delivers a valid read (all cells live, tracking fixed).",
+      "confidence_level": "hypothesis"
+    },
+    {
+      "profile_id": "ICP-ECAS-02",
+      "profile_name": "Milestone2534",
+      "demographic_foundation": "Adults 25-34 in a life-stage transition (new home, new relationship, new job)",
+      "psychographic_profile": "Wants their space to feel intentional, not default/bare",
+      "behavioral_signals": "hypothesis_only \u2014 not yet validated against live conversion data",
+      "funnel_entry_point": "/collections/best-sellers",
+      "performance_data": {
+        "cells_delivering": null,
+        "confidence": "insufficient \u2014 see campaign_intelligence.json"
+      },
+      "message_resonance": "Responds to bare-walls pain point and testimonial-style social proof",
+      "strategic_recommendation": "Hold current hypothesis. Do not reallocate budget toward or away from this ICP until MST Sprint 1 delivers a valid read (all cells live, tracking fixed).",
+      "confidence_level": "hypothesis"
+    },
+    {
+      "profile_id": "ICP-ECAS-03",
+      "profile_name": "HometownSelf",
+      "demographic_foundation": "Self-purchasers buying for their own nostalgia/identity around a specific place",
+      "psychographic_profile": "Values authenticity and specificity \u2014 reacts against generic gift-shop iconography",
+      "behavioral_signals": "hypothesis_only \u2014 not yet validated against live conversion data",
+      "funnel_entry_point": "city collection page (never a single PDP for cold traffic)",
+      "performance_data": {
+        "cells_delivering": null,
+        "confidence": "insufficient \u2014 see campaign_intelligence.json"
+      },
+      "message_resonance": "Responds to curiosity hooks about real street-level detail",
+      "strategic_recommendation": "Hold current hypothesis. Do not reallocate budget toward or away from this ICP until MST Sprint 1 delivers a valid read (all cells live, tracking fixed).",
+      "confidence_level": "hypothesis"
+    },
+    {
+      "profile_id": "ICP-ECAS-04",
+      "profile_name": "MemoryKeeperCouple",
+      "demographic_foundation": "Couples/partners commemorating shared travel or shared history",
+      "psychographic_profile": "Frames purchase as relationship narrative, not decor",
+      "behavioral_signals": "hypothesis_only \u2014 not yet validated against live conversion data",
+      "funnel_entry_point": "/collections/best-sellers",
+      "performance_data": {
+        "cells_delivering": null,
+        "confidence": "insufficient \u2014 see campaign_intelligence.json"
+      },
+      "message_resonance": "Responds to \"story on the wall\" framing and testimonial proof",
+      "strategic_recommendation": "Hold current hypothesis. Do not reallocate budget toward or away from this ICP until MST Sprint 1 delivers a valid read (all cells live, tracking fixed).",
+      "confidence_level": "hypothesis"
+    }
+  ],
+  "message_pillars": [
+    {
+      "pillar_id": "MP-01",
+      "pillar_name": "Real materials, not mass-printed",
+      "strategic_purpose": "Differentiate from generic/cheap personalized-gift competitors",
+      "target_icps": [
+        "ICP-ECAS-01",
+        "ICP-ECAS-03"
+      ],
+      "funnel_application": "cold traffic, Row A/D",
+      "performance_evidence": "insufficient",
+      "messaging_framework": "PAS/FAB",
+      "execution_specifications": "real wood, real matte paper claims paired with craft-detail imagery",
+      "placement_strategy": "Feed, Reels",
+      "scaling_guidance": "hold \u2014 no validated evidence yet"
+    },
+    {
+      "pillar_id": "MP-02",
+      "pillar_name": "Gift that gets hung, not returned",
+      "strategic_purpose": "Address gift-giving anxiety directly (generic/forgettable gift pain)",
+      "target_icps": [
+        "ICP-ECAS-01",
+        "ICP-ECAS-02"
+      ],
+      "funnel_application": "Row C, mid-funnel",
+      "performance_evidence": "insufficient",
+      "messaging_framework": "PAS",
+      "execution_specifications": "forgettable-gift pain point framing",
+      "placement_strategy": "Feed",
+      "scaling_guidance": "hold \u2014 no validated evidence yet"
+    },
+    {
+      "pillar_id": "MP-03",
+      "pillar_name": "Story on the wall",
+      "strategic_purpose": "Reframe purchase as relationship/identity narrative rather than home decor",
+      "target_icps": [
+        "ICP-ECAS-03",
+        "ICP-ECAS-04"
+      ],
+      "funnel_application": "Row B, testimonial-led",
+      "performance_evidence": "insufficient",
+      "messaging_framework": "StoryBrand",
+      "execution_specifications": "unattributed testimonial quote card, \u226412 words",
+      "placement_strategy": "Feed, Stories",
+      "scaling_guidance": "hold \u2014 no validated evidence yet"
+    }
+  ],
+  "variable_combinations": [
+    {
+      "combination": "C1A = CN_Design_SinglePrintLifestyle x TN_Assertive x HP_CheapPoster x CTA_Buy",
+      "matrix_cell": "C1A",
+      "status": "produced_pre-launch, unproven",
+      "confidence": "insufficient"
+    },
+    {
+      "combination": "C1B = CN_Design_SinglePrintLifestyle x TN_Emotional x PR_Testimonial x CTA_Buy",
+      "matrix_cell": "C1B",
+      "status": "produced_pre-launch, unproven",
+      "confidence": "insufficient"
+    },
+    {
+      "combination": "C1C = CN_Design_SinglePrintLifestyle x TN_Emotional x HP_ForgettableGift x CTA_Buy",
+      "matrix_cell": "C1C",
+      "status": "produced_pre-launch, unproven",
+      "confidence": "insufficient"
+    },
+    {
+      "combination": "C1D = CN_Design_SinglePrintLifestyle x TN_Rational x HP_BareWalls x CTA_ClaimOffer",
+      "matrix_cell": "C1D",
+      "status": "produced_pre-launch, unproven",
+      "confidence": "insufficient"
+    },
+    {
+      "combination": "C2A = CN_Design_RoomContext x TN_Assertive x HP_GenericGift x CTA_Buy",
+      "matrix_cell": "C2A",
+      "status": "produced_pre-launch, unproven",
+      "confidence": "insufficient"
+    },
+    {
+      "combination": "C2B = CN_Design_RoomContext x TN_Rational x PR_Testimonial x CTA_Buy",
+      "matrix_cell": "C2B",
+      "status": "produced_pre-launch, unproven",
+      "confidence": "insufficient"
+    },
+    {
+      "combination": "C2C = CN_Design_RoomContext x TN_Aspirational x HP_ForgettableGift x CTA_Buy",
+      "matrix_cell": "C2C",
+      "status": "produced_pre-launch, unproven",
+      "confidence": "insufficient"
+    },
+    {
+      "combination": "C2D = CN_Design_RoomContext x TN_Rational x HP_FadedMemory x CTA_ClaimOffer",
+      "matrix_cell": "C2D",
+      "status": "produced_pre-launch, unproven",
+      "confidence": "insufficient"
+    },
+    {
+      "combination": "C3A = CN_Design_CityDetail x TN_Assertive x HP_BareWalls x CTA_Buy",
+      "matrix_cell": "C3A",
+      "status": "produced_pre-launch, unproven",
+      "confidence": "insufficient"
+    },
+    {
+      "combination": "C3B = CN_Design_CityDetail x TN_Emotional x PR_Testimonial x CTA_Buy",
+      "matrix_cell": "C3B",
+      "status": "produced_pre-launch, unproven",
+      "confidence": "insufficient"
+    },
+    {
+      "combination": "C3C = CN_Design_CityDetail x TN_Rational x HP_ForgettableGift x CTA_Buy",
+      "matrix_cell": "C3C",
+      "status": "produced_pre-launch, unproven",
+      "confidence": "insufficient"
+    },
+    {
+      "combination": "C3D = CN_Design_CityDetail x TN_Aspirational x HP_CheapPoster x CTA_ClaimOffer",
+      "matrix_cell": "C3D",
+      "status": "produced_pre-launch, unproven",
+      "confidence": "insufficient"
+    },
+    {
+      "combination": "C4A = CN_Design_MultiPrintGallery x TN_Assertive x HP_FadedMemory x CTA_Buy",
+      "matrix_cell": "C4A",
+      "status": "produced_pre-launch, unproven",
+      "confidence": "insufficient"
+    },
+    {
+      "combination": "C4B = CN_Design_MultiPrintGallery x TN_Aspirational x PR_Testimonial x CTA_Buy",
+      "matrix_cell": "C4B",
+      "status": "produced_pre-launch, unproven",
+      "confidence": "insufficient"
+    },
+    {
+      "combination": "C4C = CN_Design_MultiPrintGallery x TN_Rational x HP_ForgettableGift x CTA_Buy",
+      "matrix_cell": "C4C",
+      "status": "produced_pre-launch, unproven",
+      "confidence": "insufficient"
+    },
+    {
+      "combination": "C4D = CN_Design_MultiPrintGallery x TN_Aspirational x HP_GenericGift x CTA_ClaimOffer",
+      "matrix_cell": "C4D",
+      "status": "produced_pre-launch, unproven",
+      "confidence": "insufficient"
+    }
+  ],
+  "testing_hypotheses": [
+    {
+      "hypothesis_id": "H-01",
+      "statement": "We believe that isolating TN_Assertive craft/quality tone in Row A will outperform baseline across all four ICPs because early creative signal (directional CTR on C3A, C1B) suggests assertive framing draws initial engagement, though this is not yet conversion-validated.",
+      "control": "account average CTR/CVR (not yet established \u2014 insufficient conversion history)",
+      "test_variant": "Row A cells (C1A-C4A)",
+      "isolated_variable": "TN_Assertive",
+      "sample_requirement": "\u2265$100 spend and \u226510 conversions per cell",
+      "duration": "extend current sprint until thresholds are met",
+      "success_criteria": "Row A cells show \u226510% lift in overall_cvr vs Row B/C/D at matched spend",
+      "risk": "low \u2014 no budget change required, just continued delivery",
+      "expected_impact": "unknown pending data",
+      "failure_plan": "if no lift after thresholds are met, deprioritize Row A allocation next cycle",
+      "priority": "high",
+      "pillar_id": "MP-01"
+    },
+    {
+      "hypothesis_id": "H-02",
+      "statement": "We believe that fixing the Initiate Checkout tracking gap will surface conversion data currently invisible to Meta's optimization algorithm because zero checkouts have been recorded for 11 days despite non-zero click and (per the device export) add-to-cart activity.",
+      "control": "current tracking setup",
+      "test_variant": "corrected pixel/CAPI event firing",
+      "isolated_variable": "tracking implementation, not creative",
+      "sample_requirement": "N/A \u2014 operational fix",
+      "duration": "immediate",
+      "success_criteria": "checkouts_initiated > 0 within 48 hours of fix",
+      "risk": "none \u2014 this is a bug fix, not a strategic bet",
+      "expected_impact": "high \u2014 unblocks all downstream MST analysis",
+      "failure_plan": "escalate to Meta support / re-audit CAPI implementation",
+      "priority": "critical",
+      "pillar_id": null
+    }
+  ],
+  "scaling_playbook": null
+}

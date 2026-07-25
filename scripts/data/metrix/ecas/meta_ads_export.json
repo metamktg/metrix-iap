@@ -1,0 +1,49 @@
+{
+  "account_id": "1202182091204847",
+  "ads": {
+    "C1A": {
+      "metaAdId": "120248368761260327",
+      "creativeAssetUrl": null
+    },
+    "C1D": {
+      "metaAdId": "120248368756150327",
+      "creativeAssetUrl": null
+    },
+    "C2C": {
+      "metaAdId": "120248368953530327",
+      "creativeAssetUrl": null
+    },
+    "C1B": {
+      "metaAdId": "120248368761270327",
+      "creativeAssetUrl": null
+    },
+    "C2B": {
+      "metaAdId": "120248369077860327",
+      "creativeAssetUrl": null
+    },
+    "C4A": {
+      "metaAdId": "120248369515870327",
+      "creativeAssetUrl": null
+    },
+    "C3D": {
+      "metaAdId": "120248368953470327",
+      "creativeAssetUrl": null
+    },
+    "C4B": {
+      "metaAdId": "120248369515880327",
+      "creativeAssetUrl": null
+    },
+    "C3A": {
+      "metaAdId": "120248368953500327",
+      "creativeAssetUrl": null
+    },
+    "C3B": {
+      "metaAdId": "120248368953510327",
+      "creativeAssetUrl": null
+    },
+    "C4C": {
+      "metaAdId": "120248369515860327",
+      "creativeAssetUrl": null
+    }
+  }
+}
