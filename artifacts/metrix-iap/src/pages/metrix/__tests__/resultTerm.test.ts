@@ -22,8 +22,8 @@ describe("resultTerm", () => {
     });
   });
 
-  it("derives 'purchase' for LittleData", () => {
-    expect(resultTerm(account("littledata"))).toEqual({
+  it("derives 'purchase' for East Coast Art Studio (ecas)", () => {
+    expect(resultTerm(account("ecas"))).toEqual({
       singular: "purchase",
       plural: "purchases",
       Singular: "Purchase",

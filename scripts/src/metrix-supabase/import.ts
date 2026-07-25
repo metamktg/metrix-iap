@@ -62,6 +62,13 @@ const ECAS_DIR = join(DATA_DIR, "ecas");
 const ECAS_DEMO_CSV = "IAP-DEMO-1202182091204847.csv";
 const ECAS_DEVICE_CSV = "IAP-DEVICE-1202182091204847.csv";
 
+// Historical ECAS data (May–Jun 2026) — originally imported under the provisional
+// account name "City Street Print Brand" / account id "littledata". Re-imported
+// under the canonical ecas account so both analysis periods live in one place.
+const LD_DIR = join(DATA_DIR, "littledata");
+const LD_DEMO_CSV = "IAP-DEMO-1202182091204847.csv";
+const LD_DEVICE_CSV = "IAP-DEVICE-1202182091204847.csv";
+
 function readJson(file: string): any {
   // normalized_data_bundle.json contains bare NaN tokens (source-run artifact);
   // NaN carries no value — treat as null rather than fabricating a number.
@@ -79,8 +86,398 @@ const str = (v: unknown): string | null => (v === null || v === undefined ? null
 
 type Q = (text: string, values?: unknown[]) => Promise<pg.QueryResult>;
 
+// Extracts a LD-CN-* concept code from a variable stack CN field.
+const ldConceptCode = (v: unknown): string | null => {
+  const m = /^LD-CN-[A-Z0-9-]+/.exec(String(v ?? ""));
+  return m ? m[0] : null;
+};
+
+// ── Historical ECAS data (May–Jun 2026) ──────────────────────────────────────
+// Originally analysed under the provisional account name "City Street Print
+// Brand". Re-imported under the canonical ecas account id so both analysis
+// periods — the initial May–Jun API test and the Jul MSTm Sprint 1 — live
+// together in one account. The ad_accounts row is shared (upserted by
+// importEcas, which runs after this function).
+async function importLittleData(q: Q): Promise<number> {
+  const required = [
+    "normalized_data_bundle.json", "campaign_intelligence.json", "local_client_library.json",
+    "strategic_map.json", "creative_briefs.json", "mst_foundation.json",
+    LD_DEMO_CSV, LD_DEVICE_CSV,
+  ];
+  const missing = required.filter((f) => !existsSync(join(LD_DIR, f)));
+  if (missing.length > 0) {
+    throw new Error(`ECAS historical (littledata) package incomplete — missing ${missing.join(", ")} in ${LD_DIR}`);
+  }
+  const readLd = (file: string): any =>
+    JSON.parse(readFileSync(join(LD_DIR, file), "utf8").replace(/\bNaN\b/g, "null"));
+  const bundle = readLd("normalized_data_bundle.json");
+  const intelligence = readLd("campaign_intelligence.json");
+  const library = readLd("local_client_library.json");
+  const ldStrategy = readLd("strategic_map.json");
+  const ldBriefs = readLd("creative_briefs.json");
+  const ldMst = readLd("mst_foundation.json");
+
+  const windowStart: string = bundle.bundle_metadata.date_range.start;
+  const windowEnd: string = bundle.bundle_metadata.date_range.end;
+  const resultType: string = str(bundle.bundle_metadata.objective) ?? "Website purchases";
+  const metaAdAccountId = str(bundle.bundle_metadata.account_id)?.replace(/^act_/, "") ?? null;
+
+  // ── Optional per-account Meta ads export (creative assets / ad ids) ──
+  const ldMetaExport = loadMetaAdsExport(LD_DIR, ECAS_ACCOUNT_ID);
+  const mismatch = exportAccountMismatchError(ldMetaExport.metaAdAccountId, metaAdAccountId, "ECAS historical");
+  if (mismatch) throw new Error(mismatch);
+
+  // ── Manual upload: parse + verify the IAP-DEMO CSV ──────────────────
+  const csv = parseLdDemoCsv(readFileSync(join(LD_DIR, LD_DEMO_CSV), "utf8"));
+  const csvAds = [...csv.ads.values()].sort((a, b) => b.spend - a.spend);
+  const csvTotals = summarizeLdDemoAds(csvAds);
+  const { spend: csvSpend, impressions: csvImpressions, results: csvResults,
+    linkClicks: csvLinkClicks, clicksAll: csvClicksAll, addsToCart: csvAtc,
+    checkoutsInitiated: csvCheckouts, purchases: csvPurchases, purchaseValue: csvPurchaseValue } = csvTotals;
+  verifyLdDemoReconciliation(csvTotals, bundle.account_totals);
+  const bundleAdNames = (bundle.ad_level_performance ?? []).map((r: any) => String(r.ad_name));
+  const missingFromCsv = bundleAdNames.filter((name: string) => !csv.ads.has(name));
+  if (missingFromCsv.length > 0) {
+    throw new Error(`ECAS historical demo CSV is missing package ads: ${missingFromCsv.join(", ")}`);
+  }
+  console.log(
+    `ECAS historical manual upload verified: ${csv.rowCount} CSV rows, ${csvAds.length} ads, ` +
+    `$${csvSpend} / ${csvImpressions} imp / ${csvLinkClicks} link clicks / ${csvAtc} ATC / ${csvResults} purchases ` +
+    `($${csvPurchaseValue}) — matches account totals exactly.`,
+  );
+
+  // ── Manual upload: parse + verify the IAP-DEVICE CSV (conversion) ───
+  const deviceCsv = parseLdDeviceCsv(readFileSync(join(LD_DIR, LD_DEVICE_CSV), "utf8"));
+  const deviceTotals = summarizeLdDeviceCsv(deviceCsv);
+  const { purchases: devPurchases, checkoutsInitiated: devCheckouts, linkClicks: devLinkClicks } = deviceTotals;
+  verifyLdDeviceReconciliation(deviceTotals, csvTotals);
+  console.log(
+    `ECAS historical device upload verified: ${deviceCsv.rowCount} rows (conversion-based tracking, window ` +
+    `${deviceCsv.window.start} → ${deviceCsv.window.end}), ${devLinkClicks} link clicks across ` +
+    `${deviceCsv.devices.size} conversion devices / ${deviceCsv.platforms.size} platforms / ${deviceCsv.placements.size} placements; ` +
+    `${devPurchases} purchases + ${devCheckouts} checkouts match the demographic export.`,
+  );
+
+  const cpaOf = (spend: number | null, purchases: number | null): number | null =>
+    spend !== null && purchases !== null && purchases > 0
+      ? Math.round((spend / purchases) * 100) / 100
+      : null;
+  const pctOf = (numerator: number, denominator: number): number | null =>
+    denominator > 0 ? Math.round((numerator / denominator) * 100 * 10000) / 10000 : null;
+  const cpmOf = (spend: number, impressions: number): number | null =>
+    impressions > 0 ? round2((spend / impressions) * 1000) : null;
+
+  const conceptsByCode = new Map<string, any>();
+  for (const c of library.local_concepts ?? []) conceptsByCode.set(c.code, c);
+  const creativeByAd = new Map<string, any>();
+  for (const c of library.creative_id_map ?? []) creativeByAd.set(c.ad_name, c);
+  const bundleByAd = new Map<string, any>();
+  for (const r of bundle.ad_level_performance ?? []) bundleByAd.set(String(r.ad_name), r);
+
+  // ── ad_performance + ads for ALL CSV ads ────────────────────────────
+  let adPerfCount = 0;
+  let ldBackfilledIds = 0;
+  let ldBackfilledAssets = 0;
+  for (const a of csvAds) {
+    const map = creativeByAd.get(a.adName) ?? null;
+    const stack = map?.variable_stack ?? {};
+    const conceptCode = ldConceptCode(stack.CN);
+    const bundleRow = bundleByAd.get(a.adName) ?? null;
+    const spend = round2(a.spend);
+    const purchases = a.results;
+    const confidence = str(bundleRow?.confidence) ?? (spend < 50 ? "insufficient" : "validation_required");
+    const campaignName = a.campaigns.size > 0 ? [...a.campaigns].sort().join(" + ") : null;
+    const adSetName = a.adSets.size > 0 ? [...a.adSets].sort().join(" + ") : null;
+    const backfill = ldMetaExport.byAdName.get(a.adName) ?? null;
+    const resolved = resolveLdMetaAdId(a.adIds, backfill?.metaAdId);
+    const metaAdId = resolved.metaAdId;
+    if (resolved.source === "export") ldBackfilledIds++;
+    if (resolved.ignoredExportId) {
+      console.warn(
+        `ECAS historical ${META_EXPORT_FILE}: meta_ad_id ${resolved.ignoredExportId} for "${a.adName}" is not among the ` +
+        `CSV-observed Ad IDs (${[...a.adIds].join(", ")}) — ignoring the export id for this ad.`,
+      );
+    }
+    const creativeAssetUrl = backfill?.creativeAssetUrl ?? null;
+    if (creativeAssetUrl) ldBackfilledAssets++;
+    await q(
+      `insert into ad_performance (account_id, book, campaign_name, ad_set_name, ad_name, cell, concept,
+         variation, test_id, result_type, date_start, date_end, spend, impressions, reach, clicks_all,
+         link_clicks, results, cpa, ctr_link_pct, cvr_link_pct, cpm, confidence)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)`,
+      [ECAS_ACCOUNT_ID, null, campaignName, adSetName, a.adName, a.adName, conceptCode, null, null, resultType,
+        windowStart, windowEnd, spend, a.impressions, null, a.clicksAll, a.linkClicks, purchases,
+        cpaOf(spend, purchases), pctOf(a.linkClicks, a.impressions), pctOf(purchases, a.linkClicks),
+        cpmOf(spend, a.impressions), confidence],
+    );
+    adPerfCount++;
+
+    await q(
+      `insert into ads (account_id, ad_name, book, cell, concept, variation, test_id,
+         meta_ad_id, creative_asset_url, asset_filename, asset_path, asset_servable)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+      [ECAS_ACCOUNT_ID, a.adName, null, a.adName, conceptCode, null, null,
+        metaAdId, creativeAssetUrl, map ? str(map.asset) : null, null, Boolean(creativeAssetUrl)],
+    );
+  }
+  if (ldMetaExport.byAdName.size > 0) {
+    const unmatched = unmatchedExportAdNames(ldMetaExport.byAdName.keys(), (n) => csv.ads.has(n));
+    console.log(`ECAS historical meta export backfill: ${ldBackfilledIds} ads got meta_ad_id, ${ldBackfilledAssets} got creative_asset_url.`);
+    if (unmatched.length > 0) {
+      console.warn(`ECAS historical ${META_EXPORT_FILE} contains ${unmatched.length} unmatched ad_name(s): ${unmatched.slice(0, 10).join(", ")}${unmatched.length > 10 ? ", …" : ""}`);
+    }
+  }
+
+  // ── Per-ad library cells ─────────────────────────────────────────────
+  for (const r of bundle.ad_level_performance ?? []) {
+    const map = creativeByAd.get(r.ad_name) ?? null;
+    const stack = map?.variable_stack ?? {};
+    const conceptCode = ldConceptCode(stack.CN);
+    const concept = conceptCode ? conceptsByCode.get(conceptCode) : null;
+    const spend = num(r.spend);
+    const purchases = num(r.purchases);
+    const iapRead = [
+      `Confidence: ${r.confidence}. Pre-signal window — ${bundle.account_totals.purchases} account purchases on $${bundle.account_totals.spend} total spend; no winner/loser calls yet.`,
+      concept?.evidence ? `Concept evidence: ${concept.evidence}.` : null,
+    ].filter(Boolean).join(" ");
+    const csvAd = csv.ads.get(String(r.ad_name))!;
+    const cellPayload: Record<string, unknown> = {
+      cell_id: r.ad_name,
+      "Result type": resultType,
+      "Amount spent (USD)": spend,
+      Reach: null,
+      Impressions: num(r.impressions),
+      Results: purchases,
+      "Clicks (all)": csvAd.clicksAll,
+      "Link clicks": csvAd.linkClicks,
+      CPA_result: cpaOf(spend, purchases),
+      CTR_link_pct: pctOf(csvAd.linkClicks, csvAd.impressions),
+      Result_per_link_click_pct: pctOf(csvAd.results, csvAd.linkClicks),
+      book2_concept_name: concept?.name ?? r.ad_name,
+      iap_read: iapRead,
+    };
+    if (stack.HK) cellPayload["hook_variable"] = str(stack.HK);
+    if (stack.TN) cellPayload["tone_variable"] = str(stack.TN);
+    if (stack.FW) cellPayload["framework_variable"] = str(stack.FW);
+    if (conceptCode) cellPayload["concept_variable"] = conceptCode;
+    if (stack.HP) cellPayload["pain_proof_variable"] = str(stack.HP);
+    if (stack.PR) cellPayload["proof_variable"] = str(stack.PR);
+    if (stack.CTA) cellPayload["cta_variable"] = str(stack.CTA);
+    await q(
+      `insert into library_cell_performance (account_id, cell_id, result_type, date_start, date_end, payload)
+       values ($1,$2,$3,$4,$5,$6)`,
+      [ECAS_ACCOUNT_ID, r.ad_name, resultType, windowStart, windowEnd, JSON.stringify(cellPayload)],
+    );
+  }
+
+  // ── Demographics ─────────────────────────────────────────────────────
+  const accountSegments = [...csv.accountSegments.values()].sort((a, b) => b.spend - a.spend);
+  let dIdx = 0;
+  const demoSignalRow = (cellId: string, adName: string, seg: LdSegmentAgg) => ({
+    cell_id: cellId,
+    "Ad name": adName,
+    Age: seg.age,
+    Gender: seg.gender,
+    "Result type": resultType,
+    "Amount spent (USD)": round2(seg.spend),
+    Reach: null,
+    Impressions: seg.impressions,
+    Results: seg.results,
+    "Clicks (all)": seg.clicksAll,
+    "Link clicks": seg.linkClicks,
+    CPA_result: cpaOf(round2(seg.spend), seg.results),
+    CTR_link_pct: pctOf(seg.linkClicks, seg.impressions),
+    Result_per_link_click_pct: pctOf(seg.results, seg.linkClicks),
+  });
+  for (const seg of accountSegments) {
+    const spend = round2(seg.spend);
+    await q(
+      `insert into demographic_performance (account_id, gender, age, date_start, date_end, spend,
+         link_clicks, results, cpa, cvr_link_pct, confidence)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+      [ECAS_ACCOUNT_ID, seg.gender, seg.age, windowStart, windowEnd, spend, seg.linkClicks, seg.results,
+        cpaOf(spend, seg.results), pctOf(seg.results, seg.linkClicks), "validation_required"],
+    );
+    await q(
+      `insert into demographic_signal (account_id, cell_id, ad_name, age, gender, date_start, date_end, row_index, payload)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+      [ECAS_ACCOUNT_ID, "ACCOUNT", "All ads (manual demographic upload)", seg.age, seg.gender,
+        windowStart, windowEnd, dIdx++,
+        JSON.stringify(demoSignalRow("ACCOUNT", "All ads (manual demographic upload)", seg))],
+    );
+  }
+  const signalAds = new Set<string>([
+    ...csvAds.slice(0, 10).map((a) => a.adName),
+    ...csvAds.filter((a) => a.results > 0).map((a) => a.adName),
+  ]);
+  for (const a of csvAds) {
+    if (!signalAds.has(a.adName)) continue;
+    const segs = [...a.segments.values()].sort((x, y) => y.spend - x.spend);
+    for (const seg of segs) {
+      await q(
+        `insert into demographic_signal (account_id, cell_id, ad_name, age, gender, date_start, date_end, row_index, payload)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+        [ECAS_ACCOUNT_ID, a.adName, a.adName, seg.age, seg.gender,
+          windowStart, windowEnd, dIdx++, JSON.stringify(demoSignalRow(a.adName, a.adName, seg))],
+      );
+    }
+  }
+
+  // ── Device / platform / placement (conversion-based) ────────────────
+  const convRows = (bucket: Map<string, LdConversionAgg>) =>
+    [...bucket.values()].sort((a, b) => b.linkClicks - a.linkClicks);
+  for (const d of convRows(deviceCsv.devices)) {
+    await q(
+      `insert into device_performance (account_id, device, date_start, date_end, spend, impressions,
+         results, cpa, confidence, link_clicks, adds_to_cart, checkouts_initiated, purchases, tracking_basis)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+      [ECAS_ACCOUNT_ID, d.key, deviceCsv.window.start, deviceCsv.window.end, null, null,
+        d.purchases, null, "validation_required", d.linkClicks, d.addsToCart, d.checkoutsInitiated,
+        d.purchases, "conversion"],
+    );
+  }
+  for (const p of convRows(deviceCsv.platforms)) {
+    await q(
+      `insert into platform_performance (account_id, platform, date_start, date_end, spend, impressions,
+         results, cpa, confidence, link_clicks, adds_to_cart, checkouts_initiated, purchases, tracking_basis)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+      [ECAS_ACCOUNT_ID, p.key, deviceCsv.window.start, deviceCsv.window.end, null, null,
+        p.purchases, null, "validation_required", p.linkClicks, p.addsToCart, p.checkoutsInitiated,
+        p.purchases, "conversion"],
+    );
+  }
+  for (const pl of convRows(deviceCsv.placements)) {
+    await q(
+      `insert into placement_performance (account_id, placement, date_start, date_end, spend, impressions,
+         results, cpa, confidence, link_clicks, adds_to_cart, checkouts_initiated, purchases, tracking_basis)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+      [ECAS_ACCOUNT_ID, pl.key, deviceCsv.window.start, deviceCsv.window.end, null, null,
+        pl.purchases, null, "validation_required", pl.linkClicks, pl.addsToCart, pl.checkoutsInitiated,
+        pl.purchases, "conversion"],
+    );
+  }
+
+  // ── Strategy Map outputs ─────────────────────────────────────────────
+  for (const p of ldStrategy.icp_profiles ?? []) {
+    await q(
+      `insert into icp_profiles (account_id, profile_id, profile_name, confidence_level, payload)
+       values ($1,$2,$3,$4,$5)`,
+      [ECAS_ACCOUNT_ID, p.profile_id, str(p.profile_name), str(p.confidence_level), JSON.stringify(p)],
+    );
+  }
+  for (const p of ldStrategy.message_pillars ?? []) {
+    await q(
+      `insert into message_pillars (account_id, pillar_id, pillar_name, payload) values ($1,$2,$3,$4)`,
+      [ECAS_ACCOUNT_ID, p.pillar_id, str(p.pillar_name), JSON.stringify(p)],
+    );
+  }
+  for (const v of ldStrategy.variable_combinations ?? []) {
+    await q(
+      `insert into variable_combinations (account_id, combination, context, cpa, cvr_pct, confidence, recommendation)
+       values ($1,$2,$3,$4,$5,$6,$7) on conflict (account_id, combination) do nothing`,
+      [ECAS_ACCOUNT_ID, v.combination, str(v.context), num(v.cpa), num(v.cvr_pct), str(v.confidence), str(v.recommendation)],
+    );
+  }
+  for (const h of ldStrategy.testing_hypotheses ?? []) {
+    await q(
+      `insert into testing_hypotheses (account_id, hypothesis_id, statement, control_ref, test_variant,
+         isolated_variable, sample_requirement, duration, success_criteria, risk, expected_impact, failure_plan, priority, pillar_id)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+      [ECAS_ACCOUNT_ID, h.hypothesis_id, str(h.statement), str(h.control), str(h.test_variant),
+        str(h.isolated_variable), str(h.sample_requirement), str(h.duration), str(h.success_criteria),
+        str(h.risk), str(h.expected_impact), str(h.failure_plan), str(h.priority), h.pillar_id ?? null],
+    );
+  }
+
+  // ── Brief Builder outputs ────────────────────────────────────────────
+  for (const b of ldBriefs.briefs ?? []) {
+    const meta = b.brief_metadata ?? {};
+    await q(
+      `insert into imported_creative_briefs (account_id, brief_id, mode, book, asset_type, priority, confidence, payload)
+       values ($1,$2,$3,$4,$5,$6,$7,$8)`,
+      [ECAS_ACCOUNT_ID, meta.brief_id, str(meta.mode), null,
+        str(meta.asset_type), str(meta.priority), str(meta.confidence), JSON.stringify(b)],
+    );
+  }
+
+  // ── Local library cells (retro-mapped historical ads) ───────────────
+  let ldCellIdx = 0;
+  for (const cell of ldMst.local_library_cells ?? []) {
+    await q(
+      `insert into library_cells (account_id, cell_id, concept_id, asset_filename, asset_path,
+         qa_mapping_status, mapping_confidence, row_index, payload)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+      [ECAS_ACCOUNT_ID, cell.cell_id, str(cell.concept_id), str(cell.asset_filename), str(cell.asset_path),
+        str(cell.qa_mapping_status), str(cell.mapping_confidence), ldCellIdx++, JSON.stringify(cell)],
+    );
+  }
+
+  // ── Account modules ──────────────────────────────────────────────────
+  // Note: importEcas runs after this and will upsert the same module keys
+  // with the current (Jul 2026) analysis data — those overwrites are intentional.
+  const ldModules: Array<[string, unknown]> = [
+    ["iap_metadata_historical", {
+      client_name: library.client_name,
+      library_version: library.library_version,
+      bundle_metadata: bundle.bundle_metadata,
+      account_totals: { ...bundle.account_totals, result_type: resultType },
+      loop_run: intelligence.report_metadata,
+      source_package: `ECAS historical analysis package (East Coast Art Studio, ${windowStart} → ${windowEnd})`,
+      note: "Historical May–Jun 2026 data from initial API test period, prior to formal MSTm onboarding.",
+    }],
+    ["mst_historical", {
+      status: str(ldMst.status) ?? "active",
+      render_policy: str(ldMst.render_policy),
+      historical_matrix_4x4: ldMst.historical_matrix_4x4 ?? null,
+      source_artifacts: ldMst.source_artifacts ?? [],
+    }],
+  ];
+  for (const [module, payload] of ldModules) {
+    await q(
+      `insert into account_modules (account_id, module, payload) values ($1,$2,$3)
+       on conflict (account_id, module) do update set payload = excluded.payload`,
+      [ECAS_ACCOUNT_ID, module, JSON.stringify(payload)],
+    );
+  }
+
+  // ── IAP loop stage bookkeeping (historical period) ───────────────────
+  const ldRuns: Array<[string, string, string | null, string | null]> = [
+    ["bundle_prep", "complete", "littledata/normalized_data_bundle.json",
+      "Historical May–Jun 2026 API test data. Re-export 2026-07-09 added funnel columns (link clicks, ATC, checkouts, revenue). All 54 ads reconcile exactly with account totals."],
+    ["analysis_core", "complete", "littledata/campaign_intelligence.json",
+      "Initial analysis run (2026-07-09). Pre-signal: 2 purchases on $1,400 spend. Click-depth metrics real from re-export; device tracking conversion-based."],
+    ["strategy_map", "complete", "littledata/strategic_map.json",
+      "3 ICPs, 5 message pillars, 3 hypotheses, retro-mapped 3×3 MST foundation. All reads validation_required."],
+    ["brief_builder", "complete", "littledata/creative_briefs.json",
+      "Initial MST brief LD-B001. Awaiting creative production."],
+    ["creative_scan", "pending", null,
+      "Not yet run — superseded by MSTm Sprint 1 (ecas formal analysis package)."],
+    ["optimization_loop", "pending", null,
+      "Not yet run — superseded by MSTm Sprint 1 (ecas formal analysis package)."],
+  ];
+  for (const [stage, status, source, note] of ldRuns) {
+    await q(
+      `insert into iap_runs (account_id, stage, status, window_start, window_end, generated_at, source_file, note)
+       values ($1,$2,$3,$4,$5,$6,$7,$8)
+       on conflict (account_id, stage) do update set status=excluded.status, window_start=excluded.window_start,
+         window_end=excluded.window_end, generated_at=excluded.generated_at, source_file=excluded.source_file, note=excluded.note`,
+      [ECAS_ACCOUNT_ID, stage, status, windowStart, windowEnd,
+        status === "complete" ? (str(intelligence.report_metadata?.generated) ?? null) : null,
+        source, note],
+    );
+  }
+
+  return adPerfCount;
+}
 
 async function importEcas(q: Q): Promise<number> {
+  // Query starting row_index offsets for all tables shared with importLittleData
+  // (which writes to the same ecas account_id and runs first).
+  const libCellsBase = await q(
+    `select coalesce(max(row_index) + 1, 0) as next from library_cells where account_id = $1`,
+    [ECAS_ACCOUNT_ID],
+  ).then((r) => r.rows[0].next as number);
+
   const required = [
     "normalized_data_bundle.json", "campaign_intelligence.json", "local_client_library.json",
     "strategic_map.json", "creative_briefs.json", "mst_foundation.json",
@@ -302,8 +699,14 @@ async function importEcas(q: Q): Promise<number> {
   }
 
   // ── Demographics ─────────────────────────────────────────────────────
+  // Start row_index after any rows already inserted by importLittleData for
+  // this account (both functions write to the same ecas account_id).
+  const dIdxBase = (await q(
+    `select coalesce(max(row_index) + 1, 0) as next from demographic_signal where account_id = $1`,
+    [ECAS_ACCOUNT_ID],
+  )).rows[0].next as number;
   const accountSegments = [...csv.accountSegments.values()].sort((a, b) => b.spend - a.spend);
-  let dIdx = 0;
+  let dIdx = dIdxBase;
   const demoSignalRow = (cellId: string, adName: string, seg: LdSegmentAgg) => ({
     cell_id: cellId,
     "Ad name": adName,
@@ -496,7 +899,7 @@ async function importEcas(q: Q): Promise<number> {
   }
 
   // ── MST foundation: library cells (16, one per matrix cell) ─────────
-  let ecasCellIdx = 0;
+  let ecasCellIdx = libCellsBase;
   for (const cell of ecasMst.local_library_cells ?? []) {
     await q(
       `insert into library_cells (account_id, cell_id, concept_id, asset_filename, asset_path,
@@ -660,7 +1063,9 @@ async function importEcas(q: Q): Promise<number> {
   for (const [stage, status, source, note] of ecasRuns) {
     await q(
       `insert into iap_runs (account_id, stage, status, window_start, window_end, generated_at, source_file, note)
-       values ($1,$2,$3,$4,$5,$6,$7,$8)`,
+       values ($1,$2,$3,$4,$5,$6,$7,$8)
+       on conflict (account_id, stage) do update set status=excluded.status, window_start=excluded.window_start,
+         window_end=excluded.window_end, generated_at=excluded.generated_at, source_file=excluded.source_file, note=excluded.note`,
       [ECAS_ACCOUNT_ID, stage, status, windowStart, windowEnd,
         status === "complete" ? (str(intelligence.report_metadata?.generated_at) ?? null) : null,
         source, note],
@@ -1131,7 +1536,11 @@ async function main() {
       );
     }
 
-    // ── East Coast Art Studio (second account, same transaction) ──────
+    // ── East Coast Art Studio — historical period (May–Jun 2026) ────────
+    const ldAdPerfCount = await importLittleData(q);
+    console.log(`ECAS historical: imported ${ldAdPerfCount} ad_performance rows for account '${ECAS_ACCOUNT_ID}' (May–Jun 2026).`);
+
+    // ── East Coast Art Studio — MSTm Sprint 1 (Jul 2026) ─────────────
     const ecasAdPerfCount = await importEcas(q);
     console.log(`ECAS: imported ${ecasAdPerfCount} ad_performance rows for account '${ECAS_ACCOUNT_ID}'.`);
 
