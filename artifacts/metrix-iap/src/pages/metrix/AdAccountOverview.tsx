@@ -141,7 +141,7 @@ export function AdAccountOverview() {
   const primaryControlName = resolveConceptName(core.primary_control);
   const registrationControlName = core.registration_control ? resolveConceptName(core.registration_control) : null;
 
-  const matrixCellCount = mst?.historical_matrix_4x4?.cells.length ?? 0;
+  const matrixCellCount = mst?.historical_matrix_4x4?.cells?.length ?? 0;
   // local_book2_library may contain multiple rows per cell_id (aspect
   // variants such as Feed / Square / Story) — count distinct concepts so the
   // number matches the cards shown on the Creative Scan page.
