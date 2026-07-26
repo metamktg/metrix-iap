@@ -284,12 +284,12 @@ function IntelligenceMapTab({
         {(["efficient", "average", "costly"] as CpaEff[]).map((eff) => (
           <div key={eff} className="flex items-center gap-1.5">
             <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: EFF_COLOR[eff] }} />
-            <span className={cn(TYPE.label, "text-muted-foreground/55")}>
+            <span className={cn(TYPE.label, "text-muted-foreground/70")}>
               {eff === "efficient" ? "Below-median CPA" : eff === "costly" ? "Above-median CPA" : "Near-median CPA"}
             </span>
           </div>
         ))}
-        <span className={cn(TYPE.label, "text-muted-foreground/35")}>· Bubble size = spend share</span>
+        <span className={cn(TYPE.label, "text-muted-foreground/65")}>· Bubble size = spend share</span>
       </div>
 
       {/* Chart + quadrant overlay */}
@@ -309,28 +309,28 @@ function IntelligenceMapTab({
                 right ? "right-2 items-end text-right" : "left-2 items-start"
               )}
             >
-              <span className={cn(TYPE.label, "font-semibold text-muted-foreground/20")}>{label}</span>
-              <span className={cn(TYPE.label, "text-muted-foreground/12 hidden sm:block")}>{sub}</span>
+              <span className={cn(TYPE.label, "font-semibold text-muted-foreground/40")}>{label}</span>
+              <span className={cn(TYPE.label, "text-muted-foreground/40 hidden sm:block")}>{sub}</span>
             </div>
           ))}
         </div>
 
         <ResponsiveContainer width="100%" height="100%">
           <ScatterChart margin={{ top: 10, right: 20, bottom: 50, left: 60 }}>
-            <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.04)" />
+            <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.10)" />
             <XAxis
               dataKey="x"
               type="number"
               domain={["auto", "auto"]}
               tickFormatter={(v: number) => `${v.toFixed(1)}%`}
-              tick={{ fill: "rgba(148,163,184,0.55)", fontSize: 10 }}
-              axisLine={{ stroke: "rgba(255,255,255,0.05)" }}
+              tick={{ fill: "rgba(148,163,184,0.70)", fontSize: 10 }}
+              axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
               tickLine={false}
               label={{
                 value: "Link CTR — ad engagement →",
                 position: "insideBottom",
                 offset: -30,
-                fill: "rgba(148,163,184,0.4)",
+                fill: "rgba(148,163,184,0.70)",
                 fontSize: 10,
               }}
             />
@@ -339,32 +339,32 @@ function IntelligenceMapTab({
               type="number"
               domain={["auto", "auto"]}
               tickFormatter={(v: number) => `${v.toFixed(1)}%`}
-              tick={{ fill: "rgba(148,163,184,0.55)", fontSize: 10 }}
-              axisLine={{ stroke: "rgba(255,255,255,0.05)" }}
+              tick={{ fill: "rgba(148,163,184,0.70)", fontSize: 10 }}
+              axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
               tickLine={false}
               label={{
                 value: "CVR — conversion efficiency →",
                 angle: -90,
                 position: "insideLeft",
                 offset: 50,
-                fill: "rgba(148,163,184,0.4)",
+                fill: "rgba(148,163,184,0.70)",
                 fontSize: 10,
               }}
             />
             {medCtr > 0 && (
               <ReferenceLine
                 x={medCtr}
-                stroke="rgba(99,102,241,0.22)"
+                stroke="rgba(99,102,241,0.30)"
                 strokeDasharray="4 3"
-                label={{ value: "median", position: "insideTopRight", fill: "rgba(99,102,241,0.35)", fontSize: 9 }}
+                label={{ value: "median", position: "insideTopRight", fill: "rgba(99,102,241,0.70)", fontSize: 9 }}
               />
             )}
             {medCvr > 0 && (
               <ReferenceLine
                 y={medCvr}
-                stroke="rgba(99,102,241,0.22)"
+                stroke="rgba(99,102,241,0.30)"
                 strokeDasharray="4 3"
-                label={{ value: "median", position: "insideTopRight", fill: "rgba(99,102,241,0.35)", fontSize: 9 }}
+                label={{ value: "median", position: "insideTopRight", fill: "rgba(99,102,241,0.70)", fontSize: 9 }}
               />
             )}
             <Tooltip content={<MapTooltip />} cursor={false} />
@@ -374,7 +374,7 @@ function IntelligenceMapTab({
       </div>
 
       {unplottable.length > 0 && (
-        <p className={cn(TYPE.label, "text-muted-foreground/30")}>
+        <p className={cn(TYPE.label, "text-muted-foreground/55")}>
           {unplottable.length} segment{unplottable.length > 1 ? "s" : ""} omitted — missing CTR/CVR:{" "}
           {unplottable.map((e) => segmentLabel(e.seg)).join(", ")}
         </p>
@@ -402,15 +402,18 @@ function PocketCard({
       onClick={() => onSelect(entry.seg)}
       data-testid={`row-audience-segment-${entry.seg.age}-${entry.seg.gender}`}
       className={cn(
-        "w-full text-left rounded-xl border border-border/30 bg-white/[0.012]",
-        "hover:border-primary/25 hover:bg-primary/[0.02] active:scale-[0.997]",
+        "w-full text-left rounded-xl border border-border/30",
+        "hover:border-primary/25 active:scale-[0.997]",
         "transition-all duration-100 group overflow-hidden flex flex-col"
       )}
+      style={{
+        background: `linear-gradient(135deg, ${color}10 0%, ${color}06 60%, rgba(255,255,255,0.01) 100%)`,
+      }}
     >
       {/* Efficiency stripe — visual-only efficiency signal */}
       <div
         className="h-[3px] w-full shrink-0"
-        style={{ background: `linear-gradient(90deg, ${color}55 0%, ${color}18 100%)` }}
+        style={{ background: `linear-gradient(90deg, ${color}77 0%, ${color}22 100%)` }}
       />
 
       <div className="px-4 py-3 flex flex-col gap-1.5 flex-1">
@@ -498,7 +501,7 @@ function PocketGridTab({
 // ── Ranked List tab ───────────────────────────────────────────────────
 
 function RankedListTab({
-  ranked, activeMetric, onSelect, onSelectMetric, rankMetrics, resultPlural,
+  ranked, activeMetric, onSelect, onSelectMetric, rankMetrics, resultPlural, medianCpa,
 }: {
   ranked: SegmentEntry[];
   activeMetric: RankMetric<SegmentEntry>;
@@ -506,6 +509,7 @@ function RankedListTab({
   onSelectMetric: (id: string) => void;
   rankMetrics: RankMetric<SegmentEntry>[];
   resultPlural: string;
+  medianCpa: number;
 }) {
   const metricValues = ranked.map((e) => activeMetric.value(e));
 
@@ -519,6 +523,8 @@ function RankedListTab({
         {ranked.map((e, idx) => {
           const v = activeMetric.value(e);
           const barPct = rankBarPct(v, metricValues, activeMetric.direction);
+          const eff = cpaEff(e.derived.cpa, medianCpa);
+          const accentColor = EFF_COLOR[eff];
           return (
             <button
               key={e.seg.age + e.seg.gender}
@@ -529,6 +535,7 @@ function RankedListTab({
                 "hover:border-primary/30 hover:bg-primary/[0.03] active:scale-[0.998]",
                 "transition-all duration-100 group"
               )}
+              style={{ borderLeftColor: accentColor, borderLeftWidth: "3px" }}
             >
               <div className="flex items-center gap-2.5 mb-2.5">
                 <span className="w-4 shrink-0 font-mono text-muted-foreground/35 tabular-nums text-right text-label">
@@ -757,6 +764,7 @@ export function AudienceView() {
                         onSelectMetric={select}
                         rankMetrics={rankMetrics}
                         resultPlural={term.Plural}
+                        medianCpa={medianCpa}
                       />
                     )}
                   </div>

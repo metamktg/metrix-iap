@@ -101,6 +101,15 @@ export function CrossmapResultsView() {
         const totalSpend = ran.reduce((n, j) => n + j.spend, 0);
         const totalResults = ran.reduce((n, j) => n + j.results, 0);
 
+        // Tint precomputation for heatmap columns
+        const allPerfSpends = ran.flatMap((j) => j.perf.map((p) => p["Amount spent (USD)"]));
+        const maxPerfSpend = allPerfSpends.length > 0 ? Math.max(...allPerfSpends) : 1;
+        const allPerfResults = ran.flatMap((j) => j.perf.map((p) => p.Results));
+        const maxPerfResults = allPerfResults.length > 0 ? Math.max(...allPerfResults) : 1;
+        const allPerfCpas = ran.flatMap((j) => j.perf.map((p) => p.CPA_result).filter((v): v is number => v != null));
+        const minPerfCpa = allPerfCpas.length > 0 ? Math.min(...allPerfCpas) : 0;
+        const maxPerfCpa = allPerfCpas.length > 0 ? Math.max(...allPerfCpas) : 0;
+
         // Sort: ran cells always come before non-ran; within ran, sort by active metric.
         const rows = [...joined].sort((a, b) => {
           if (a.ran !== b.ran) return Number(b.ran) - Number(a.ran);
@@ -177,7 +186,7 @@ export function CrossmapResultsView() {
                         <tr
                           key={cell.cell_id}
                           onClick={() => setActiveCell(cell)}
-                          className="border-b border-border/20 cursor-pointer hover:bg-white/[0.02]"
+                          className="border-b border-border/30 cursor-pointer hover:bg-white/[0.04]"
                         >
                           <Td><span className="font-mono text-caption text-muted-foreground/75">{cell.cell_id}</span></Td>
                           <Td>
@@ -193,29 +202,43 @@ export function CrossmapResultsView() {
                         </tr>
                       );
                     }
-                    return perf.map((r, i) => (
-                      <tr
-                        key={cell.cell_id + r["Result type"]}
-                        onClick={() => setActiveCell(cell)}
-                        className="border-b border-border/20 cursor-pointer hover:bg-white/[0.02]"
-                      >
-                        <Td>{i === 0 ? <span className="font-mono text-caption text-foreground/85">{cell.cell_id}</span> : null}</Td>
-                        <Td>
-                          {i === 0 && (
-                            <>
-                              <div className="font-medium text-foreground">{readableVariables(cell.concept_code)}</div>
-                              {cell.plain_text.headline && <div className="text-label text-muted-foreground/70 mt-0.5">{cell.plain_text.headline}</div>}
-                            </>
-                          )}
-                        </Td>
-                        <Td className={cn(cell.diagonal_role === "diag_down" && "text-interactive", cell.diagonal_role === "diag_up" && "text-teal-300")}>{i === 0 ? diag : null}</Td>
-                        <Td>{eventLabel(r["Result type"])}</Td>
-                        <Td right>{fmtUSD(r["Amount spent (USD)"])}</Td>
-                        <Td right>{fmtNum(r.Results)}</Td>
-                        <Td right>{r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}</Td>
-                        <Td right>{fmtPct(r.CTR_link_pct)}</Td>
-                      </tr>
-                    ));
+                    return perf.map((r, i) => {
+                      const spendIntensity = maxPerfSpend > 0 ? r["Amount spent (USD)"] / maxPerfSpend : 0;
+                      const resultsIntensity = maxPerfResults > 0 ? r.Results / maxPerfResults : 0;
+                      const cpaIntensity =
+                        r.CPA_result != null && maxPerfCpa > minPerfCpa
+                          ? 1 - (r.CPA_result - minPerfCpa) / (maxPerfCpa - minPerfCpa)
+                          : 0;
+                      return (
+                        <tr
+                          key={cell.cell_id + r["Result type"]}
+                          onClick={() => setActiveCell(cell)}
+                          className="border-b border-border/30 cursor-pointer hover:bg-white/[0.04]"
+                        >
+                          <Td>{i === 0 ? <span className="font-mono text-caption text-foreground/85">{cell.cell_id}</span> : null}</Td>
+                          <Td>
+                            {i === 0 && (
+                              <>
+                                <div className="font-medium text-foreground">{readableVariables(cell.concept_code)}</div>
+                                {cell.plain_text.headline && <div className="text-label text-muted-foreground/70 mt-0.5">{cell.plain_text.headline}</div>}
+                              </>
+                            )}
+                          </Td>
+                          <Td className={cn(cell.diagonal_role === "diag_down" && "text-interactive", cell.diagonal_role === "diag_up" && "text-teal-300")}>{i === 0 ? diag : null}</Td>
+                          <Td>{eventLabel(r["Result type"])}</Td>
+                          <Td right style={spendIntensity > 0 ? { background: `rgba(99,102,241,${(spendIntensity * 0.20).toFixed(3)})` } : undefined}>
+                            {fmtUSD(r["Amount spent (USD)"])}
+                          </Td>
+                          <Td right style={resultsIntensity > 0 ? { background: `rgba(52,211,153,${(resultsIntensity * 0.18).toFixed(3)})` } : undefined}>
+                            {fmtNum(r.Results)}
+                          </Td>
+                          <Td right style={cpaIntensity > 0 ? { background: `rgba(52,211,153,${(cpaIntensity * 0.20).toFixed(3)})` } : undefined}>
+                            {r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
+                          </Td>
+                          <Td right>{fmtPct(r.CTR_link_pct)}</Td>
+                        </tr>
+                      );
+                    });
                   })}
                 </tbody>
               </TableShell>

@@ -109,7 +109,7 @@ export function SortableTh({
           aria-label={`Sort by ${String(children)}${active ? (sort!.dir === "asc" ? ", currently ascending" : ", currently descending") : ""}`}
           className={cn(
             "inline-flex items-center gap-0.5 text-label font-mono uppercase tracking-widest font-semibold transition-colors",
-            active ? "text-foreground" : "text-muted-foreground/70 hover:text-foreground",
+            active ? "text-foreground" : "text-muted-foreground/90 hover:text-foreground",
             right && "flex-row-reverse"
           )}
         >
@@ -230,33 +230,56 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
   const { sorted, sort, toggle, reset } = useColumnSort(rows, CELL_COLUMNS);
   const scrollRef = useRef<HTMLDivElement>(null);
   const useVirtual = sorted.length > VIRTUAL_THRESHOLD;
+  const [heatmapOn, setHeatmapOn] = useState(false);
 
-  const renderRow = (r: CellPerformanceRow, _i: number) => (
-    <tr
-      key={r.cell_id + r["Result type"]}
-      className={cn(
-        "border-b border-border/20 hover:bg-white/[0.02]",
-        onRowClick && "cursor-pointer active:bg-white/[0.04] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60"
-      )}
-      onClick={onRowClick ? () => onRowClick(r) : undefined}
-      role={onRowClick ? "button" : undefined}
-      tabIndex={onRowClick ? 0 : undefined}
-      onKeyDown={onRowClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onRowClick(r); } } : undefined}
-      aria-label={onRowClick ? `Open details for ${r.book2_concept_name ?? r.cell_id}` : undefined}
-    >
-      <Td>
-        <div className="font-medium text-foreground">{r.book2_concept_name}</div>
-        <div className="text-label font-mono text-muted-foreground/60 mt-0.5">{r.cell_id}{r.stage ? ` · ${r.stage}` : ""}</div>
-        <VariableCodeChips row={r} />
-      </Td>
-      <Td>{eventLabel(r["Result type"])}</Td>
-      <Td right>{fmtUSD(r["Amount spent (USD)"])}</Td>
-      <Td right>{fmtNum(r.Results)}</Td>
-      <Td right>{r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}</Td>
-      <Td right>{fmtPct(r.CTR_link_pct)}</Td>
-      <Td right>{fmtPct(r.Result_per_link_click_pct)}</Td>
-    </tr>
+  // Heatmap precomputation
+  const maxSpend = useMemo(
+    () => (heatmapOn ? Math.max(...rows.map((r) => r["Amount spent (USD)"]), 0.0001) : 0),
+    [rows, heatmapOn]
   );
+  const { minCpa: cellMinCpa, maxCpa: cellMaxCpa } = useMemo(() => {
+    if (!heatmapOn) return { minCpa: 0, maxCpa: 0 };
+    const cpas = rows.map((r) => r.CPA_result).filter((v): v is number => v != null);
+    return { minCpa: cpas.length ? Math.min(...cpas) : 0, maxCpa: cpas.length ? Math.max(...cpas) : 0 };
+  }, [rows, heatmapOn]);
+
+  const renderRow = (r: CellPerformanceRow, _i: number) => {
+    const spendIntensity = heatmapOn && maxSpend > 0 ? r["Amount spent (USD)"] / maxSpend : 0;
+    const cpaIntensity =
+      heatmapOn && r.CPA_result != null && cellMaxCpa > cellMinCpa
+        ? 1 - (r.CPA_result - cellMinCpa) / (cellMaxCpa - cellMinCpa)
+        : 0;
+    return (
+      <tr
+        key={r.cell_id + r["Result type"]}
+        className={cn(
+          "border-b border-border/30 hover:bg-white/[0.04]",
+          onRowClick && "cursor-pointer active:bg-white/[0.06] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60"
+        )}
+        onClick={onRowClick ? () => onRowClick(r) : undefined}
+        role={onRowClick ? "button" : undefined}
+        tabIndex={onRowClick ? 0 : undefined}
+        onKeyDown={onRowClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onRowClick(r); } } : undefined}
+        aria-label={onRowClick ? `Open details for ${r.book2_concept_name ?? r.cell_id}` : undefined}
+      >
+        <Td>
+          <div className="font-medium text-foreground">{r.book2_concept_name}</div>
+          <div className="text-label font-mono text-muted-foreground/60 mt-0.5">{r.cell_id}{r.stage ? ` · ${r.stage}` : ""}</div>
+          <VariableCodeChips row={r} />
+        </Td>
+        <Td>{eventLabel(r["Result type"])}</Td>
+        <Td right style={spendIntensity > 0 ? { background: `rgba(99,102,241,${(spendIntensity * 0.22).toFixed(3)})` } : undefined}>
+          {fmtUSD(r["Amount spent (USD)"])}
+        </Td>
+        <Td right>{fmtNum(r.Results)}</Td>
+        <Td right style={cpaIntensity > 0 ? { background: `rgba(52,211,153,${(cpaIntensity * 0.22).toFixed(3)})` } : undefined}>
+          {r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
+        </Td>
+        <Td right>{fmtPct(r.CTR_link_pct)}</Td>
+        <Td right>{fmtPct(r.Result_per_link_click_pct)}</Td>
+      </tr>
+    );
+  };
 
   const thead = (
     <thead className="sticky top-0 bg-surface-table z-10">
@@ -273,13 +296,41 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
   );
 
   return (
-    <TableShellInner scrollRef={scrollRef}>
-      {thead}
-      {useVirtual
-        ? <VirtualTableBody rows={sorted} scrollRef={scrollRef} renderRow={renderRow} />
-        : <tbody>{sorted.map((r) => renderRow(r, 0))}</tbody>
-      }
-    </TableShellInner>
+    <div className="space-y-1.5">
+      {/* Heatmap toggle toolbar */}
+      <div className="flex items-center justify-end">
+        <button
+          onClick={() => setHeatmapOn((h) => !h)}
+          className={cn(
+            "h-6 px-2.5 rounded-md text-label font-mono uppercase tracking-widest transition-colors",
+            heatmapOn
+              ? "bg-primary/20 text-interactive border border-primary/30"
+              : "text-muted-foreground/70 border border-border/30 hover:text-muted-foreground hover:border-border/60"
+          )}
+        >
+          Heatmap
+        </button>
+      </div>
+      {heatmapOn && (
+        <div className="flex items-center gap-3 px-2 text-label text-muted-foreground/65 font-mono">
+          <div className="flex items-center gap-1.5">
+            <div className="w-10 h-2 rounded-full" style={{ background: "linear-gradient(90deg, rgba(99,102,241,0.04) 0%, rgba(99,102,241,0.22) 100%)" }} />
+            <span>Spend intensity</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-10 h-2 rounded-full" style={{ background: "linear-gradient(90deg, rgba(52,211,153,0.04) 0%, rgba(52,211,153,0.22) 100%)" }} />
+            <span>Low → high CPA efficiency</span>
+          </div>
+        </div>
+      )}
+      <TableShellInner scrollRef={scrollRef}>
+        {thead}
+        {useVirtual
+          ? <VirtualTableBody rows={sorted} scrollRef={scrollRef} renderRow={renderRow} />
+          : <tbody>{sorted.map((r) => renderRow(r, 0))}</tbody>
+        }
+      </TableShellInner>
+    </div>
   );
 }
 
@@ -304,34 +355,67 @@ export function VariableTable({
   const { sorted, sort, toggle, reset } = useColumnSort(rows, VARIABLE_COLUMNS);
   const scrollRef = useRef<HTMLDivElement>(null);
   const useVirtual = sorted.length > VIRTUAL_THRESHOLD;
+  const [heatmapOn, setHeatmapOn] = useState(false);
 
-  const renderRow = (r: VariablePerformanceRow, i: number) => (
-    <tr
-      key={r.variable_id + r["Result type"] + i}
-      className={cn(
-        "border-b border-border/20 hover:bg-white/[0.02]",
-        onRowClick && "cursor-pointer active:bg-white/[0.04] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60"
-      )}
-      onClick={onRowClick ? () => onRowClick(r) : undefined}
-      role={onRowClick ? "button" : undefined}
-      tabIndex={onRowClick ? 0 : undefined}
-      onKeyDown={onRowClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onRowClick(r); } } : undefined}
-      title={onRowClick ? "Open variable drill-down" : undefined}
-      data-testid={onRowClick ? `row-variable-${r.variable_id}-${i}` : undefined}
-    >
-      <Td>
-        <div className="font-medium text-foreground">{readableVariables(r.variable_id)}</div>
-        <div className="text-label font-mono text-muted-foreground/60 mt-0.5">{r.variable_id}</div>
-      </Td>
-      <Td className="capitalize">{r.variable_family}</Td>
-      <Td>{eventLabel(r["Result type"])}</Td>
-      <Td right>{fmtUSD(r["Amount spent (USD)"])}</Td>
-      <Td right>{fmtNum(r.unique_ads)}</Td>
-      <Td right>{fmtNum(r.Results)}</Td>
-      <Td right>{r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}</Td>
-      <Td right>{fmtPct(r.CTR_link_pct)}</Td>
-    </tr>
+  // Heatmap precomputation
+  const maxSpend = useMemo(
+    () => (heatmapOn ? Math.max(...rows.map((r) => r["Amount spent (USD)"]), 0.0001) : 0),
+    [rows, heatmapOn]
   );
+  const { minCpa: varMinCpa, maxCpa: varMaxCpa } = useMemo(() => {
+    if (!heatmapOn) return { minCpa: 0, maxCpa: 0 };
+    const cpas = rows.map((r) => r.CPA_result).filter((v): v is number => v != null);
+    return { minCpa: cpas.length ? Math.min(...cpas) : 0, maxCpa: cpas.length ? Math.max(...cpas) : 0 };
+  }, [rows, heatmapOn]);
+
+  const renderRow = (r: VariablePerformanceRow, i: number) => {
+    const spendIntensity = heatmapOn && maxSpend > 0 ? r["Amount spent (USD)"] / maxSpend : 0;
+    const cpaIntensity =
+      heatmapOn && r.CPA_result != null && varMaxCpa > varMinCpa
+        ? 1 - (r.CPA_result - varMinCpa) / (varMaxCpa - varMinCpa)
+        : 0;
+    return (
+      <tr
+        key={r.variable_id + r["Result type"] + i}
+        className={cn(
+          "border-b border-border/30 hover:bg-white/[0.04]",
+          onRowClick && "cursor-pointer active:bg-white/[0.06] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60"
+        )}
+        onClick={onRowClick ? () => onRowClick(r) : undefined}
+        role={onRowClick ? "button" : undefined}
+        tabIndex={onRowClick ? 0 : undefined}
+        onKeyDown={onRowClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onRowClick(r); } } : undefined}
+        title={onRowClick ? "Open variable drill-down" : undefined}
+        data-testid={onRowClick ? `row-variable-${r.variable_id}-${i}` : undefined}
+      >
+        <Td>
+          <div className="font-medium text-foreground">{readableVariables(r.variable_id)}</div>
+          <div className="text-label font-mono text-muted-foreground/60 mt-0.5">{r.variable_id}</div>
+        </Td>
+        <Td className="capitalize">{r.variable_family}</Td>
+        <Td>{eventLabel(r["Result type"])}</Td>
+        <Td right style={spendIntensity > 0 ? { background: `rgba(99,102,241,${(spendIntensity * 0.22).toFixed(3)})` } : undefined}>
+          <div className="flex flex-col gap-0.5">
+            <span>{fmtUSD(r["Amount spent (USD)"])}</span>
+            {heatmapOn && maxSpend > 0 && (
+              <div className="h-[3px] rounded-full bg-white/[0.06] overflow-hidden">
+                <div
+                  className="h-full rounded-full"
+                  style={{ width: `${spendIntensity * 100}%`, background: "rgba(99,102,241,0.65)" }}
+                />
+              </div>
+            )}
+          </div>
+        </Td>
+        <Td right>{fmtNum(r.unique_ads)}</Td>
+        <Td right>{fmtNum(r.Results)}</Td>
+        <Td right style={cpaIntensity > 0 ? { background: `rgba(52,211,153,${(cpaIntensity * 0.22).toFixed(3)})` } : undefined}>
+          {r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
+        </Td>
+        <Td right>{fmtPct(r.CTR_link_pct)}</Td>
+      </tr>
+    );
+  };
 
   const thead = (
     <thead className="sticky top-0 bg-surface-table z-10">
@@ -349,13 +433,41 @@ export function VariableTable({
   );
 
   return (
-    <TableShellInner scrollRef={scrollRef}>
-      {thead}
-      {useVirtual
-        ? <VirtualTableBody rows={sorted} scrollRef={scrollRef} renderRow={renderRow} />
-        : <tbody>{sorted.map((r, i) => renderRow(r, i))}</tbody>
-      }
-    </TableShellInner>
+    <div className="space-y-1.5">
+      {/* Heatmap toggle toolbar */}
+      <div className="flex items-center justify-end">
+        <button
+          onClick={() => setHeatmapOn((h) => !h)}
+          className={cn(
+            "h-6 px-2.5 rounded-md text-label font-mono uppercase tracking-widest transition-colors",
+            heatmapOn
+              ? "bg-primary/20 text-interactive border border-primary/30"
+              : "text-muted-foreground/70 border border-border/30 hover:text-muted-foreground hover:border-border/60"
+          )}
+        >
+          Heatmap
+        </button>
+      </div>
+      {heatmapOn && (
+        <div className="flex items-center gap-3 px-2 text-label text-muted-foreground/65 font-mono">
+          <div className="flex items-center gap-1.5">
+            <div className="w-10 h-2 rounded-full" style={{ background: "linear-gradient(90deg, rgba(99,102,241,0.04) 0%, rgba(99,102,241,0.22) 100%)" }} />
+            <span>Spend intensity</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-10 h-2 rounded-full" style={{ background: "linear-gradient(90deg, rgba(52,211,153,0.04) 0%, rgba(52,211,153,0.22) 100%)" }} />
+            <span>Low → high CPA efficiency</span>
+          </div>
+        </div>
+      )}
+      <TableShellInner scrollRef={scrollRef}>
+        {thead}
+        {useVirtual
+          ? <VirtualTableBody rows={sorted} scrollRef={scrollRef} renderRow={renderRow} />
+          : <tbody>{sorted.map((r, i) => renderRow(r, i))}</tbody>
+        }
+      </TableShellInner>
+    </div>
   );
 }
 
@@ -387,14 +499,14 @@ export function DemographicTable({
   return (
     <div>
       {heatmap && maxCvr > 0 && (
-        <div className="flex items-center gap-2 px-3 py-1.5 border border-border/30 border-b-0 rounded-t-xl bg-white/[0.01] text-label text-muted-foreground/55 font-mono">
+        <div className="flex items-center gap-2 px-3 py-1.5 border border-border/30 border-b-0 rounded-t-xl bg-white/[0.01] text-label text-muted-foreground/65 font-mono">
           <span className="uppercase tracking-widest">CVR</span>
-          <span className="text-muted-foreground/35">low</span>
+          <span className="text-muted-foreground/65">low</span>
           <div
             className="w-20 h-2 rounded-full"
             style={{ background: "linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(52,211,153,0.30) 100%)" }}
           />
-          <span className="text-muted-foreground/35">high</span>
+          <span className="text-muted-foreground/65">high</span>
         </div>
       )}
       <TableShell>
@@ -417,8 +529,8 @@ export function DemographicTable({
               <tr
                 key={r.cell_id + r.Age + r.Gender + i}
                 className={cn(
-                  "border-b border-border/20 hover:bg-white/[0.02]",
-                  onSegmentClick && "cursor-pointer active:bg-white/[0.04] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60"
+                  "border-b border-border/30 hover:bg-white/[0.04]",
+                  onSegmentClick && "cursor-pointer active:bg-white/[0.06] focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60"
                 )}
                 onClick={onSegmentClick ? () => onSegmentClick({ age: r.Age, gender: r.Gender }) : undefined}
                 role={onSegmentClick ? "button" : undefined}
@@ -471,7 +583,7 @@ export function PlacementTable({ rows }: { rows: PlacementRow[] }) {
       </thead>
       <tbody>
         {sorted.map((r, i) => (
-          <tr key={r.Placement + r.Platform + i} className="border-b border-border/20 hover:bg-white/[0.02] active:bg-white/[0.04]">
+          <tr key={r.Placement + r.Platform + i} className="border-b border-border/30 hover:bg-white/[0.04] active:bg-white/[0.06]">
             <Td className="font-medium text-foreground">{r.Placement}</Td>
             <Td className="capitalize">{r.Platform}</Td>
             <Td right>{fmtUSD(r["Amount spent (USD)"])}</Td>

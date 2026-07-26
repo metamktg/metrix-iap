@@ -132,7 +132,7 @@ export function SharePieChart({
               iconType="circle"
               iconSize={8}
               formatter={(value) => (
-                <span className="text-label text-muted-foreground/70">{value}</span>
+                <span className="text-label text-muted-foreground/80">{value}</span>
               )}
             />
           )}
@@ -147,7 +147,7 @@ export function SharePieChart({
                 className="w-2 h-2 rounded-full shrink-0"
                 style={{ backgroundColor: PALETTE_VARS[i % PALETTE_VARS.length] }}
               />
-              <span className="text-label text-muted-foreground/70">{d.name}</span>
+              <span className="text-label text-muted-foreground/80">{d.name}</span>
             </div>
           ))}
         </div>

@@ -211,10 +211,10 @@ function SpendTrendChart({ data }: { data: MonthBucket[] }) {
               <stop offset="95%" stopColor="hsl(var(--metrix-success))" stopOpacity={0.01} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.10)" vertical={false} />
           <XAxis
             dataKey="month"
-            tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
+            tick={{ fill: "rgba(255,255,255,0.70)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
             tickLine={false}
             axisLine={false}
           />
@@ -223,7 +223,7 @@ function SpendTrendChart({ data }: { data: MonthBucket[] }) {
             yAxisId="spend"
             orientation="left"
             tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
-            tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
+            tick={{ fill: "rgba(255,255,255,0.70)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
             tickLine={false}
             axisLine={false}
             width={44}
@@ -233,7 +233,7 @@ function SpendTrendChart({ data }: { data: MonthBucket[] }) {
             yAxisId="results"
             orientation="right"
             tickFormatter={(v: number) => fmtNum(v)}
-            tick={{ fill: "rgba(255,255,255,0.28)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
+            tick={{ fill: "rgba(255,255,255,0.70)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
             tickLine={false}
             axisLine={false}
             width={40}
@@ -339,11 +339,11 @@ function CellPerfBars({ items, resultNoun }: {
           margin={{ top: 0, right: 56, bottom: 4, left: 4 }}
           barSize={11}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" horizontal={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.10)" horizontal={false} />
           <XAxis
             type="number"
             tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
-            tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
+            tick={{ fill: "rgba(255,255,255,0.70)", fontSize: 9, fontFamily: "ui-monospace,monospace" }}
             tickLine={false}
             axisLine={false}
           />
@@ -351,7 +351,7 @@ function CellPerfBars({ items, resultNoun }: {
             type="category"
             dataKey="name"
             width={130}
-            tick={{ fill: "rgba(255,255,255,0.65)", fontSize: 10 }}
+            tick={{ fill: "rgba(255,255,255,0.70)", fontSize: 10 }}
             tickLine={false}
             axisLine={false}
             tickFormatter={(v: string) => (v.length > 20 ? v.slice(0, 19) + "…" : v)}
