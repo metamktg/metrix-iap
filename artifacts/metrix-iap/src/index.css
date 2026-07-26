@@ -77,6 +77,7 @@
   --color-text-primary: hsl(var(--text-primary));
   --color-text-secondary: hsl(var(--text-secondary));
   --color-text-muted: hsl(var(--text-muted));
+  --color-text-interactive: var(--mx-text-interactive);
   --color-status-success: hsl(var(--status-success));
   --color-status-warning: hsl(var(--status-warning));
   --color-status-danger: hsl(var(--status-danger));
@@ -150,6 +151,8 @@
   --mx-text-muted: #aab6ca;
   --mx-text-soft: #c6d2e5;
   --mx-text-faint: #8796ac;
+  /* Interactive text — WCAG AA+ on dark bg (#050b18), ~6.5:1 contrast */
+  --mx-text-interactive: #5c9bff;
 
   --mx-success: #35d96f;
   --mx-danger: #ff4f61;
@@ -339,6 +342,8 @@
   --status-warning: 44 92% 63%;
   --status-danger: 354 100% 65%;
   --status-info: 222 100% 54%;
+  /* Same as :root — app is always dark */
+  --mx-text-interactive: #5c9bff;
 
   --shadow-2xs: 0 1px 2px 0 rgba(0,0,0,0.5);
   --shadow-xs: 0 1px 3px 0 rgba(0,0,0,0.6);

@@ -190,7 +190,7 @@ export function SegmentGridModal({
                         <div className="text-[8px] text-muted-foreground/50 capitalize">{p.Platform}</div>
                       </th>
                     ))}
-                    <th className="text-right text-[9px] font-mono uppercase tracking-widest text-primary/70 font-semibold px-2.5 py-2">
+                    <th className="text-right text-[9px] font-mono uppercase tracking-widest text-interactive/70 font-semibold px-2.5 py-2">
                       Blended
                     </th>
                   </tr>
@@ -225,7 +225,7 @@ export function SegmentGridModal({
                   {/* Placement marginal row (account level) */}
                   <tr className="border-t border-border/40 bg-white/[0.015]">
                     <td className="px-2.5 py-2">
-                      <div className="text-label font-mono uppercase tracking-wide text-primary/70">All avatars</div>
+                      <div className="text-label font-mono uppercase tracking-wide text-interactive/70">All avatars</div>
                       <div className="text-[8px] text-muted-foreground/60">placement marginals · account level</div>
                     </td>
                     {placements.map(({ row: p, totals }) => {

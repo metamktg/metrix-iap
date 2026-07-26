@@ -238,7 +238,7 @@ function VariableFamilyHeatmap({ pillars }: { pillars: MessagePillar[] }) {
 const COLLAPSIBLE_LANE_CONFIG: readonly { key: string; label: string; accent: string }[] = [
   { key: "scale_now",          label: "Scale now", accent: "border-emerald-400/25 bg-emerald-400/[0.06] text-emerald-400" },
   { key: "optimize",           label: "Optimize",  accent: "border-amber-400/25 bg-amber-400/[0.06] text-amber-300" },
-  { key: "validate",           label: "Validate",  accent: "border-blue-400/25 bg-blue-400/[0.06] text-blue-300" },
+  { key: "validate",           label: "Validate",  accent: "border-[#16d9ff]/25 bg-[#16d9ff]/[0.06] text-[#62e6ff]" },
   { key: "explore",            label: "Explore",   accent: "border-purple-400/25 bg-purple-400/[0.06] text-purple-300" },
   { key: "avoid_combinations", label: "Avoid",     accent: "border-red-400/25 bg-red-400/[0.06] text-red-300" },
 ];
@@ -561,7 +561,7 @@ export function StrategyOverview() {
                             <button
                               onClick={() => setExpandedPillars((e) => ({ ...e, [p.id]: !isOpen }))}
                               aria-expanded={isOpen}
-                              className="inline-flex items-center gap-1 text-caption font-medium text-primary hover:text-primary/80 transition-colors w-full"
+                              className="inline-flex items-center gap-1 text-caption font-semibold text-interactive hover:text-interactive/80 transition-colors w-full"
                             >
                               <ChevronDown className={cn("w-3 h-3 transition-transform shrink-0", isOpen && "rotate-180")} />
                               <span>{linked.length} hypothes{linked.length !== 1 ? "es" : "is"}</span>
@@ -600,7 +600,7 @@ export function StrategyOverview() {
                   {subpages.map((s) => (
                     <div key={s.to} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2">
                       <div className="flex items-center gap-2">
-                        <s.Icon className="w-3.5 h-3.5 text-primary" />
+                        <s.Icon className="w-3.5 h-3.5 text-interactive" />
                         <span className="text-title font-semibold text-foreground">{s.label}</span>
                         <InfoTooltip content={s.desc} />
                       </div>

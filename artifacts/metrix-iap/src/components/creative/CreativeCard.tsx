@@ -337,7 +337,7 @@ export function CreativeCard({
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
                   title="View in Ads Manager"
-                  className="flex items-center gap-1 text-[9px] font-medium text-primary/80 hover:text-primary transition-colors"
+                  className="flex items-center gap-1 text-[9px] font-medium text-interactive/80 hover:text-interactive transition-colors"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   Ads Manager

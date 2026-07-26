@@ -138,7 +138,7 @@ function SegmentMetricPicker({
                     on ? "border-primary/50 bg-primary/20" : "border-border/40"
                   )}
                 >
-                  {on && <Check className="w-3.5 h-3.5 text-primary" />}
+                  {on && <Check className="w-3.5 h-3.5 text-interactive" />}
                   {disabled && !on && <Ban className="w-3.5 h-3.5 text-muted-foreground/50" />}
                 </span>
                 <span className="min-w-0 flex-1">
@@ -477,13 +477,13 @@ function CompareSortTh({
     >
       <span className="inline-flex items-center gap-1 justify-end">
         {align === "left" && (active ? (
-          dir === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-primary/70" /> : <ArrowDown className="w-3.5 h-3.5 text-primary/70" />
+          dir === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-interactive/70" /> : <ArrowDown className="w-3.5 h-3.5 text-interactive/70" />
         ) : (
           <ArrowDown className="w-3.5 h-3.5 opacity-0 group-hover:opacity-30 transition-opacity" />
         ))}
         {children}
         {align === "right" && (active ? (
-          dir === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-primary/70" /> : <ArrowDown className="w-3.5 h-3.5 text-primary/70" />
+          dir === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-interactive/70" /> : <ArrowDown className="w-3.5 h-3.5 text-interactive/70" />
         ) : (
           <ArrowDown className="w-3.5 h-3.5 opacity-0 group-hover:opacity-30 transition-opacity" />
         ))}
@@ -562,7 +562,7 @@ function CompareMetricTable({
                 Metric
               </CompareSortTh>
               <CompareSortTh sortKey="a" current={sortKey} dir={sortDir} onSort={handleSort}>
-                <span className="text-primary/70 normal-case">{label}</span>
+                <span className="text-interactive/70 normal-case">{label}</span>
               </CompareSortTh>
               <th className="text-[9px] font-mono uppercase tracking-widest font-semibold px-2 py-2 text-center text-muted-foreground/40 w-[64px]">
                 Δ
@@ -879,7 +879,7 @@ export function SegmentDrilldownModal({
                             {c.copy?.primary && (
                               <p className="text-label text-muted-foreground/65 leading-relaxed line-clamp-2 italic">
                                 &ldquo;{c.copy.primary}&rdquo;
-                                {c.copy.cta && <span className="not-italic text-primary/60 ml-1">&rarr; {c.copy.cta}</span>}
+                                {c.copy.cta && <span className="not-italic text-interactive/60 ml-1">&rarr; {c.copy.cta}</span>}
                               </p>
                             )}
                             {/* Variable chips */}

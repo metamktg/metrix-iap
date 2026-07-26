@@ -93,7 +93,7 @@ export function StrategyHub() {
                     label: "Message Pillars",
                     value: pillars.length,
                     icon: Map,
-                    color: "text-primary",
+                    color: "text-interactive",
                   },
                   {
                     label: "ICP Profiles",
@@ -144,7 +144,7 @@ export function StrategyHub() {
                   {strategyStage.status === "complete" ? (
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                   ) : (
-                    <Activity className="w-4 h-4 text-primary shrink-0" />
+                    <Activity className="w-4 h-4 text-interactive shrink-0" />
                   )}
                   <p className={cn(TYPE.body, "text-foreground font-semibold")}>
                     Stage: <span className="capitalize">{strategyStage.status}</span>
@@ -160,7 +160,7 @@ export function StrategyHub() {
               {/* Lead pillar */}
               {pillars[0] && (
                 <div className="bg-card/60 border border-primary/25 rounded-xl px-4 py-3.5">
-                  <p className={cn(TYPE.label, "text-primary mb-1.5")}>
+                  <p className={cn(TYPE.label, "text-interactive mb-1.5")}>
                     Lead Message Pillar
                   </p>
                   <p className={cn(TYPE.body, "text-foreground font-semibold")}>
@@ -222,7 +222,7 @@ export function StrategyHub() {
                         <span className={cn(TYPE.body, "font-semibold text-foreground truncate")}>
                           {l.label}
                         </span>
-                        <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-primary transition-colors shrink-0" />
+                        <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-interactive transition-colors shrink-0" />
                       </a>
                       <InfoTooltip content={l.desc} />
                     </div>

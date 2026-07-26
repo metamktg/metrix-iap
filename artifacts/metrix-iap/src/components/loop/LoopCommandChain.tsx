@@ -267,7 +267,7 @@ function StageTile({
             : isRunning  ? "text-amber-400"
             : isStale    ? "text-orange-400"
             : isComplete ? "text-emerald-400/90"
-            : isNext     ? "text-primary"
+            : isNext     ? "text-interactive"
             : "text-muted-foreground/45",
         )} />
         {/* State overlay badge — top-right of icon */}
@@ -291,7 +291,7 @@ function StageTile({
           : isRunning  ? "text-amber-400/90"
           : isStale    ? "text-orange-400/85"
           : isComplete ? "text-emerald-400/80"
-          : isNext     ? "text-primary/85"
+          : isNext     ? "text-interactive/85"
           : "text-muted-foreground/55",
       )}>
         {label}
@@ -1502,14 +1502,14 @@ function CommandHub({
                   <span className={cn(
                     "text-caption font-semibold leading-none",
                     !isAccessible ? "text-muted-foreground/40"
-                      : isCurrent ? "text-primary/80"
+                      : isCurrent ? "text-interactive/80"
                       : "text-foreground/65 group-hover:text-foreground/85",
                   )}>
                     {r.label}
                   </span>
                   <span className={cn(
                     "text-[9px] leading-none",
-                    isCurrent ? "text-primary/45" : "text-muted-foreground/30",
+                    isCurrent ? "text-interactive/45" : "text-muted-foreground/30",
                   )}>
                     {r.desc}
                   </span>
@@ -1823,7 +1823,7 @@ export function LoopCommandChain({
             "text-[9px] font-mono tabular-nums tracking-widest",
             anyRunning          ? "text-amber-400/55"
               : completeCount === TOTAL_STAGES ? "text-emerald-400/45"
-              : completeCount > 0   ? "text-primary/40"
+              : completeCount > 0   ? "text-interactive/40"
               : "text-muted-foreground/22",
           )}>
             {anyRunning ? "●" : completeCount === TOTAL_STAGES ? "✓" : `${completeCount}/${TOTAL_STAGES}`}
@@ -1947,7 +1947,7 @@ export function LoopCommandChain({
 
           <ArrowRight className={cn(
             "w-2.5 h-2.5 shrink-0 transition-colors",
-            allLoopComplete ? "text-primary/20" : "text-muted-foreground/10",
+            allLoopComplete ? "text-interactive/20" : "text-muted-foreground/10",
           )} />
 
           <StageTile

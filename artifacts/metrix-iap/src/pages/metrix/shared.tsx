@@ -226,7 +226,7 @@ export function ConfidenceBadge({ value }: { value: string }) {
       : c.level === "high"
         ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/20"
         : v.includes("validation") || v.includes("required")
-          ? "bg-blue-400/10 text-blue-300 border-blue-400/20"
+          ? "bg-[#16d9ff]/10 text-[#62e6ff] border-[#16d9ff]/20"
           : c.level === "directional"
             ? "bg-purple-400/10 text-purple-300 border-purple-400/20"
             : c.level === "medium"
@@ -364,7 +364,7 @@ export function RangeScopeBar({ grainNote }: { grainNote?: string }) {
   return (
     <div className="flex items-center gap-2 flex-wrap px-6 py-2 border-b border-border/30 bg-white/[0.01]">
       {compare && compareRange && (
-        <span className="inline-flex items-center gap-1 text-caption text-primary/80 tabular-nums">
+        <span className="inline-flex items-center gap-1 text-caption text-interactive/80 tabular-nums">
           <ArrowLeftRight className="w-3.5 h-3.5 shrink-0 opacity-70" />
           vs {formatIsoRange(compareRange)}
         </span>
@@ -486,7 +486,7 @@ export function DenseText({
         type="button"
         onClick={() => setExpanded((v) => !v)}
         aria-expanded={expanded}
-        className="mt-0.5 inline-flex items-center gap-0.5 text-label font-medium text-primary/80 hover:text-primary transition-colors"
+        className="mt-0.5 inline-flex items-center gap-0.5 text-label font-semibold text-interactive/80 hover:text-interactive transition-colors"
       >
         {expanded ? "Less" : "More"}
         <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-150", expanded && "rotate-180")} />
@@ -619,7 +619,7 @@ export function DetailReveal({
           </span>
           <Info
             aria-hidden
-            className="w-3.5 h-3.5 shrink-0 mt-1 text-muted-foreground/45 group-hover:text-primary/80 transition-colors"
+            className="w-3.5 h-3.5 shrink-0 mt-1 text-muted-foreground/45 group-hover:text-interactive/80 transition-colors"
           />
         </button>
       </PopoverTrigger>
@@ -693,7 +693,7 @@ export function LoopChecklist({ steps, allComplete = false }: { steps: LoopCheck
           <a
             href="/app/settings/account"
             onClick={(e) => { e.preventDefault(); navigate("/app/settings/account"); }}
-            className="inline-flex items-center gap-1 text-label font-semibold text-primary/80 hover:text-primary transition-colors"
+            className="inline-flex items-center gap-1 text-label font-semibold text-interactive/80 hover:text-interactive transition-colors"
           >
             Start re-run <ArrowRight className="w-3 h-3" />
           </a>
@@ -743,7 +743,7 @@ export function LoopChecklist({ steps, allComplete = false }: { steps: LoopCheck
               {step.done
                 ? <CheckCircle2 className="w-3.5 h-3.5" />
                 : isNext
-                  ? <ArrowRight className="w-2.5 h-2.5 text-primary/70" />
+                  ? <ArrowRight className="w-2.5 h-2.5 text-interactive/70" />
                   : <span className="text-label font-bold text-muted-foreground/30 tabular-nums leading-none">{i + 1}</span>
               }
             </div>
@@ -758,7 +758,7 @@ export function LoopChecklist({ steps, allComplete = false }: { steps: LoopCheck
               {step.label}
             </span>
             {isNext && step.route && (
-              <ArrowRight className="w-3 h-3 text-primary/40 ml-auto shrink-0" />
+              <ArrowRight className="w-3 h-3 text-interactive/40 ml-auto shrink-0" />
             )}
           </Tag>
         );
@@ -976,7 +976,7 @@ export function CrossLink({ to, label }: { to: string; label: string }) {
   return (
     <button
       onClick={() => navigate(to)}
-      className="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg bg-primary/12 border border-primary/30 text-primary hover:bg-primary/20 hover:border-primary/50 transition-all shadow-sm shadow-primary/5"
+      className="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg bg-primary/12 border border-primary/30 text-interactive hover:bg-primary/20 hover:border-primary/50 transition-all shadow-sm shadow-primary/5"
     >
       {label}
       <ArrowRight className="w-3.5 h-3.5" />
@@ -1161,7 +1161,7 @@ export function MetricSelectionBar({
             className={cn(
               "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-body font-medium transition-colors",
               on
-                ? "border-primary/30 bg-primary/10 text-primary"
+                ? "border-primary/30 bg-primary/10 text-interactive"
                 : "border-border/40 text-muted-foreground/60 hover:text-foreground hover:bg-white/[0.03]"
             )}
           >
@@ -1278,7 +1278,7 @@ export function DataWindowBar({
           className={cn(
             "inline-flex items-center h-6 px-2.5 rounded-md border text-caption font-medium transition-colors",
             selectedKey === null
-              ? "border-primary/40 bg-primary/10 text-primary"
+              ? "border-primary/40 bg-primary/10 text-interactive"
               : "border-border/40 text-muted-foreground/60 hover:text-foreground hover:bg-white/[0.03]",
           )}
         >
@@ -1296,7 +1296,7 @@ export function DataWindowBar({
               className={cn(
                 "inline-flex items-center h-6 px-2.5 rounded-md border text-caption font-medium transition-colors",
                 pressed
-                  ? "border-primary/40 bg-primary/10 text-primary"
+                  ? "border-primary/40 bg-primary/10 text-interactive"
                   : "border-border/40 text-muted-foreground/60 hover:text-foreground hover:bg-white/[0.03]",
               )}
             >
@@ -1321,7 +1321,7 @@ export const IMPACT_STYLE: Record<string, string> = {
   high: "bg-red-400/10 text-red-300 border-red-400/20",
   medium: "bg-amber-400/10 text-amber-300 border-amber-400/20",
   low: "bg-muted text-muted-foreground/60 border-border/40",
-  setup: "bg-primary/10 text-primary border-primary/20",
+  setup: "bg-primary/10 text-interactive border-primary/20",
 };
 
 export const SCOPE_STYLE: Record<string, string> = {
@@ -1329,7 +1329,7 @@ export const SCOPE_STYLE: Record<string, string> = {
   funnel: "bg-teal-500/10 text-teal-300 border-teal-500/20",
   placement: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
   mst: "bg-purple-500/10 text-purple-300 border-purple-500/20",
-  ad_account: "bg-primary/10 text-primary border-primary/20",
+  ad_account: "bg-primary/10 text-interactive border-primary/20",
 };
 
 export function ImpactBadge({ impact }: { impact: string }) {

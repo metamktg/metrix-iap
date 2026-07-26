@@ -221,7 +221,7 @@ export function AdAccountOverview() {
                         <span className="text-label font-mono uppercase tracking-widest text-data-caption truncate">{m.label}</span>
                         <ChevronDown className={cn(
                           "w-3.5 h-3.5 text-muted-foreground/55 transition-transform shrink-0",
-                          isExpanded && "rotate-180 text-primary/80"
+                          isExpanded && "rotate-180 text-interactive/80"
                         )} />
                       </div>
                       <span className="text-stat metric-num leading-none">{m.formatted}</span>
@@ -235,7 +235,7 @@ export function AdAccountOverview() {
                         </p>
                         <button
                           onClick={() => { setOpenMetricId(id); setExpandedMetricId(null); }}
-                          className="inline-flex items-center gap-1.5 text-caption font-semibold text-primary hover:text-primary/80 transition-colors"
+                          className="inline-flex items-center gap-1.5 text-caption font-semibold text-interactive hover:text-interactive/80 transition-colors"
                         >
                           Diagnose full breakdown <ArrowRight className="w-3.5 h-3.5" />
                         </button>
@@ -279,7 +279,7 @@ export function AdAccountOverview() {
 
               <div className="rounded-xl border border-primary/20 bg-primary/[0.04] p-4 hover:border-primary/30 transition-colors">
                 <div className="flex items-center gap-1.5 mb-2">
-                  <Zap className="w-3.5 h-3.5 text-primary/80" />
+                  <Zap className="w-3.5 h-3.5 text-interactive/80" />
                   <span className="text-caption font-semibold text-foreground">Next action</span>
                 </div>
                 {nextAction ? (
@@ -344,7 +344,7 @@ export function AdAccountOverview() {
               {core.registration_control && (
                 <div className="rounded-xl border border-blue-400/20 bg-blue-400/[0.03] p-4 hover:border-blue-400/30 transition-colors">
                   <div className="flex items-center gap-1.5 mb-2">
-                    <KeyRound className="w-3.5 h-3.5 text-blue-300/80" />
+                    <KeyRound className="w-3.5 h-3.5 text-[#62e6ff]/80" />
                     <span className="text-caption font-semibold text-foreground">{term.Singular} control</span>
                   </div>
                   <p className="text-title font-semibold text-foreground mb-1">{registrationControlName ?? core.registration_control}</p>

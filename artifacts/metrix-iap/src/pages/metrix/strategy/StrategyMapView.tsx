@@ -187,7 +187,7 @@ function SourceCellCard({
         {registry[cellId] ? (
           <ConceptChip code={cellId} />
         ) : (
-          <span className="text-label font-mono font-semibold text-primary/80 border border-primary/20 bg-primary/[0.04] px-1.5 py-0.5 rounded leading-none">
+          <span className="text-label font-mono font-semibold text-interactive/80 border border-primary/20 bg-primary/[0.04] px-1.5 py-0.5 rounded leading-none">
             {cellId}
           </span>
         )}
@@ -584,7 +584,7 @@ export function StrategyMapView() {
                               )
                             }
                             aria-expanded={expandedPillarId === selected.id}
-                            className="inline-flex items-center gap-1 text-caption font-medium text-primary hover:text-primary/80 transition-colors"
+                            className="inline-flex items-center gap-1 text-caption font-semibold text-interactive hover:text-interactive/80 transition-colors"
                           >
                             <ChevronDown
                               className={cn(

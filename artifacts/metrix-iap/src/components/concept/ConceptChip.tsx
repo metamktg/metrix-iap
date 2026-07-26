@@ -54,7 +54,7 @@ export function ConceptChip({ code, className }: ConceptChipProps) {
           className={
             className ??
             "inline-flex items-center gap-0.5 text-label font-semibold " +
-            "text-primary border border-primary/30 bg-primary/[0.08] " +
+            "text-interactive border border-primary/30 bg-primary/[0.08] " +
             "hover:bg-primary/[0.18] px-1.5 py-0.5 rounded leading-none " +
             "cursor-pointer transition-colors align-baseline"
           }

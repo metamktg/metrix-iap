@@ -372,7 +372,7 @@ function DemographicsTab({
 
               {/* M/F inline values */}
               <div className="flex items-center gap-3 mt-1.5">
-                <span className="flex items-center gap-1 text-label text-blue-300/80">
+                <span className="flex items-center gap-1 text-label text-[#62e6ff]/80">
                   <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60 shrink-0" />
                   M {metric === "spend" ? usd(mSpend) : num(mRes)}
                 </span>
@@ -381,7 +381,7 @@ function DemographicsTab({
                   F {metric === "spend" ? usd(fSpend) : num(fRes)}
                 </span>
                 {isActive && (
-                  <span className="ml-auto text-[9px] font-mono uppercase tracking-wider text-primary/70">
+                  <span className="ml-auto text-[9px] font-mono uppercase tracking-wider text-interactive/70">
                     Selected ↑
                   </span>
                 )}
@@ -406,7 +406,7 @@ function DemographicsTab({
           <div className="grid grid-cols-2 divide-x divide-border/30">
             {([
               {
-                label: "Male", dot: "bg-blue-400", color: "text-blue-300",
+                label: "Male", dot: "bg-blue-400", color: "text-[#62e6ff]",
                 spend: activeBucket.male, results: activeBucket.maleResults,
                 cpa: activeBucket.maleCpa, ctr: activeBucket.maleCtr,
                 reach: activeBucket.maleReach, gender: activeBucket.maleGender,
@@ -449,7 +449,7 @@ function DemographicsTab({
                     className={cn(
                       "w-full text-label font-medium rounded-md border py-1.5 transition-colors",
                       g.label === "Male"
-                        ? "border-blue-400/25 text-blue-300/80 hover:bg-blue-400/10"
+                        ? "border-[#16d9ff]/25 text-[#62e6ff]/80 hover:bg-[#16d9ff]/10"
                         : "border-rose-400/25 text-rose-300/80 hover:bg-rose-400/10"
                     )}
                   >

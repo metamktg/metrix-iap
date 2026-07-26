@@ -62,7 +62,7 @@ function AccountMenu({
       <div className="px-3.5 py-3 border-b border-border/40">
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-lg bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0">
-            <span className="text-label font-bold text-primary leading-none">{initials}</span>
+            <span className="text-label font-bold text-interactive leading-none">{initials}</span>
           </div>
           <div className="min-w-0">
             <p className="text-caption font-semibold text-foreground/90 truncate leading-tight">

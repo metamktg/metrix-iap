@@ -48,7 +48,7 @@ export function InlineAccountPicker({
             "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
           )}
         >
-          <Briefcase className="w-3.5 h-3.5 text-primary shrink-0" />
+          <Briefcase className="w-3.5 h-3.5 text-interactive shrink-0" />
           <span>{label}</span>
           <ChevronsUpDown className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
         </button>
@@ -67,7 +67,7 @@ export function InlineAccountPicker({
               onClick={() => { setOpen(false); setActiveAdAccountId(a.id); }}
             >
               <div className={cn("w-5 h-5 rounded border flex items-center justify-center shrink-0", isActive ? "bg-primary/15 border-primary/25" : "bg-white/[0.04] border-border/30")}>
-                <Briefcase className={cn("w-3.5 h-3.5", isActive ? "text-primary" : "text-muted-foreground/70")} />
+                <Briefcase className={cn("w-3.5 h-3.5", isActive ? "text-interactive" : "text-muted-foreground/70")} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className={cn("text-caption font-medium leading-tight truncate", isActive ? "text-foreground" : "text-foreground/80")}>{a.name}</div>
@@ -78,7 +78,7 @@ export function InlineAccountPicker({
                   <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/70 border border-border/40 px-1 py-0.5 rounded leading-none">Setup</span>
                 )}
                 <span className={cn("w-1.5 h-1.5 rounded-full", STATUS_DOT[a.status] ?? "bg-muted-foreground/60")} />
-                {isActive && <Check className="w-3.5 h-3.5 text-primary" />}
+                {isActive && <Check className="w-3.5 h-3.5 text-interactive" />}
               </div>
             </DropdownMenuItem>
           );

@@ -106,14 +106,14 @@ export function HubTldrCard({ accountId }: { accountId: string }) {
   return (
     <div className="rounded-xl border border-primary/20 bg-primary/[0.04] overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-2.5 border-b border-primary/15">
-        <Zap className="w-3.5 h-3.5 text-primary shrink-0" />
-        <span className={cn(TYPE.label, "text-primary flex-1")}>
+        <Zap className="w-3.5 h-3.5 text-interactive shrink-0" />
+        <span className={cn(TYPE.label, "text-interactive flex-1")}>
           TL;DR · {rTerm.Plural} signal
         </span>
         <button
           type="button"
           onClick={() => setCollapsed((v) => !v)}
-          className="p-0.5 text-primary/50 hover:text-primary transition-colors"
+          className="p-0.5 text-interactive/50 hover:text-interactive transition-colors"
           aria-label={collapsed ? "Expand" : "Collapse"}
         >
           <ChevronDown
@@ -126,7 +126,7 @@ export function HubTldrCard({ accountId }: { accountId: string }) {
         <button
           type="button"
           onClick={dismiss}
-          className="p-0.5 text-primary/50 hover:text-primary transition-colors"
+          className="p-0.5 text-interactive/50 hover:text-interactive transition-colors"
           aria-label="Dismiss"
         >
           <X className="w-3.5 h-3.5" />
@@ -493,7 +493,7 @@ export function TopAvatarPanel({ accountId }: { accountId: string }) {
                   className={cn(
                     "px-2 py-0.5 text-label font-semibold transition-colors",
                     genderFilter === g
-                      ? "bg-primary/15 text-primary"
+                      ? "bg-primary/15 text-interactive"
                       : "text-muted-foreground/60 hover:text-foreground/80",
                   )}
                 >
@@ -513,7 +513,7 @@ export function TopAvatarPanel({ accountId }: { accountId: string }) {
               className={cn(
                 "px-2 py-0.5 rounded text-label font-semibold border transition-colors",
                 ageBandFilter === "all"
-                  ? "bg-primary/15 text-primary border-primary/25"
+                  ? "bg-primary/15 text-interactive border-primary/25"
                   : "border-border/40 text-muted-foreground/60 hover:text-foreground/80",
               )}
             >
@@ -527,7 +527,7 @@ export function TopAvatarPanel({ accountId }: { accountId: string }) {
                 className={cn(
                   "px-2 py-0.5 rounded text-label font-semibold border transition-colors",
                   ageBandFilter === band
-                    ? "bg-primary/15 text-primary border-primary/25"
+                    ? "bg-primary/15 text-interactive border-primary/25"
                     : "border-border/40 text-muted-foreground/60 hover:text-foreground/80",
                 )}
               >
@@ -553,7 +553,7 @@ export function TopAvatarPanel({ accountId }: { accountId: string }) {
                 >
                   <div className="flex items-start gap-2 mb-2">
                     <div className="w-7 h-7 rounded-lg border border-primary/25 bg-primary/[0.08] flex items-center justify-center shrink-0 mt-0.5">
-                      <Users className="w-3.5 h-3.5 text-primary/70" />
+                      <Users className="w-3.5 h-3.5 text-interactive/70" />
                     </div>
                     <p
                       className={cn(
@@ -732,7 +732,7 @@ const RECO_BADGE: Record<string, string> = {
   optimize:
     "bg-amber-400/10 text-amber-300 border-amber-400/20",
   validate:
-    "bg-blue-400/10 text-blue-300 border-blue-400/20",
+    "bg-[#16d9ff]/10 text-[#62e6ff] border-[#16d9ff]/20",
   avoid:
     "bg-red-400/10 text-red-300 border-red-400/20",
 };
@@ -854,8 +854,8 @@ const DIRECTION_LANES = [
   {
     key: "validate" as const,
     label: "Validate",
-    accent: "text-blue-300",
-    border: "border-blue-500/20 bg-blue-500/[0.04]",
+    accent: "text-[#62e6ff]",
+    border: "border-[#16d9ff]/20 bg-[#16d9ff]/[0.04]",
   },
   {
     key: "avoid_combinations" as const,
@@ -1056,7 +1056,7 @@ export function HypothesisQueuePanel({ accountId }: { accountId: string }) {
         <div className="mt-3 pt-3 border-t border-border/20">
           <a
             href="/app/briefs"
-            className="inline-flex items-center gap-1 text-body font-semibold text-primary/80 hover:text-primary transition-colors"
+            className="inline-flex items-center gap-1 text-body font-semibold text-interactive/80 hover:text-interactive transition-colors"
           >
             View all in Briefs
             <ArrowUpRight className="w-3.5 h-3.5" />
