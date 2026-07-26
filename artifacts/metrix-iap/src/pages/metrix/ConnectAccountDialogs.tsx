@@ -1412,6 +1412,17 @@ export function ManualUploadPanel({
   const guessedImports = guessedCreativeImports(imports);
   const bothRequiredStaged = Boolean(demoImport && placementImport);
 
+  // Auto-advance to review/run step once when both required CSVs are already
+  // staged — reopening the dialog (e.g. from Analysis Hub or Library) skips
+  // the upload step and lands straight on Run Analysis.
+  const hasAutoAdvancedRef = useRef(false);
+  useEffect(() => {
+    if (!hasAutoAdvancedRef.current && bothRequiredStaged) {
+      setStep("review");
+      hasAutoAdvancedRef.current = true;
+    }
+  }, [bothRequiredStaged]);
+
   // Ad names actually seen aren't known client-side (CSVs are staged raw,
   // not parsed) — mismatch warnings are informational only, based on
   // whatever ad names other staged creatives already carry.
