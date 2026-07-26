@@ -1072,19 +1072,31 @@ export async function getAnalysisSummaryByPreset(
     };
   }
 
-  // Determine the anchor (latest date in stored rows).
+  // Determine the available window (full extent of stored rows).
   const allDates = adRows.map((r: any) => String(r.date_start ?? "")).filter(Boolean);
   const maxDate = allDates.reduce((a, b) => (a > b ? a : b), allDates[0]!);
   const minDate = allDates.reduce((a, b) => (a < b ? a : b), allDates[0]!);
   const available_window: AnalysisSummaryWindow = { start: minDate, end: maxDate };
 
-  // Filter rows to the preset window.
-  const filtered = adRows.filter((r: any) => withinViewPreset(String(r.date_start ?? ""), preset, maxDate));
+  // Anchor preset windows to today (wall-clock), not maxDate.
+  // "Last 7 days" means the last 7 calendar days from now — if the account's
+  // most recent data is older than 7 days, the 7d view correctly shows $0.
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const anchor = preset === "all" ? maxDate : todayStr;
 
-  const activeStart = filtered.length > 0
-    ? filtered.map((r: any) => String(r.date_start ?? "")).reduce((a, b) => (a < b ? a : b))
-    : maxDate;
-  const active_window: AnalysisSummaryWindow = { start: activeStart, end: maxDate };
+  // Filter rows to the preset window.
+  const filtered = adRows.filter((r: any) => withinViewPreset(String(r.date_start ?? ""), preset, anchor));
+
+  const filteredDates = filtered.map((r: any) => String(r.date_start ?? "")).filter(Boolean);
+  const activeStart = filteredDates.length > 0
+    ? filteredDates.reduce((a, b) => (a < b ? a : b))
+    : null;
+  const activeEnd = filteredDates.length > 0
+    ? filteredDates.reduce((a, b) => (a > b ? a : b))
+    : null;
+  const active_window: AnalysisSummaryWindow | null = activeStart && activeEnd
+    ? { start: activeStart, end: activeEnd }
+    : null;
 
   // Aggregate totals.
   let totalSpend = 0, totalImpressions = 0, totalLinkClicks = 0;
@@ -1144,7 +1156,7 @@ export async function getAnalysisSummaryByPreset(
 
   const demoMap = new Map<string, { spend: number; results: number; link_clicks: number }>();
   for (const r of demoRows ?? []) {
-    if (!withinViewPreset(String((r as any).date_start ?? ""), preset, maxDate)) continue;
+    if (!withinViewPreset(String((r as any).date_start ?? ""), preset, anchor)) continue;
     const key = `${String((r as any).age ?? "")}|${String((r as any).gender ?? "").toLowerCase()}`;
     const d = demoMap.get(key) ?? { spend: 0, results: 0, link_clicks: 0 };
     d.spend       += Number((r as any).spend ?? 0);
@@ -1173,7 +1185,7 @@ export async function getAnalysisSummaryByPreset(
   const placMap = new Map<string, { spend: number; impressions: number; link_clicks: number; results: number }>();
   for (const r of placRows ?? []) {
     if ((r as any).tracking_basis === "conversion") continue; // delivery rows only
-    if (!withinViewPreset(String((r as any).date_start ?? ""), preset, maxDate)) continue;
+    if (!withinViewPreset(String((r as any).date_start ?? ""), preset, anchor)) continue;
     const key = String((r as any).placement ?? "");
     const p = placMap.get(key) ?? { spend: 0, impressions: 0, link_clicks: 0, results: 0 };
     p.spend       += Number((r as any).spend ?? 0);
