@@ -158,7 +158,10 @@ function DnaVariableLine({ v, resultNoun }: { v: DnaVariable; resultNoun: string
 // ─── DNA chip strip ───────────────────────────────────────────────────
 
 function DnaChipStrip({ variables, label, testId }: { variables: DnaVariable[]; label: string; testId: string }) {
+  const [expanded, setExpanded] = useState(false);
   if (variables.length === 0) return null;
+  const visible = expanded ? variables : variables.slice(0, 3);
+  const overflow = variables.length - 3;
   return (
     <div data-testid={testId}>
       <div className="flex items-center gap-1 mb-1.5">
@@ -166,11 +169,26 @@ function DnaChipStrip({ variables, label, testId }: { variables: DnaVariable[]; 
         <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">{label}</span>
       </div>
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-        {variables.slice(0, 3).map((v) => (
+        {visible.map((v) => (
           <VariableChip key={v.code} code={v.code} showCode={false} />
         ))}
-        {variables.length > 3 && (
-          <span className="text-label text-muted-foreground/60">+{variables.length - 3} more</span>
+        {!expanded && overflow > 0 && (
+          <button
+            type="button"
+            onClick={() => setExpanded(true)}
+            className="rounded-full border border-border/40 bg-white/[0.03] text-xs px-2 py-0.5 text-muted-foreground/60 hover:text-foreground/80 hover:border-border/60 transition-colors"
+          >
+            +{overflow} more
+          </button>
+        )}
+        {expanded && variables.length > 3 && (
+          <button
+            type="button"
+            onClick={() => setExpanded(false)}
+            className="rounded-full border border-border/40 bg-white/[0.03] text-xs px-2 py-0.5 text-muted-foreground/60 hover:text-foreground/80 hover:border-border/60 transition-colors"
+          >
+            − less
+          </button>
         )}
       </div>
     </div>
@@ -872,6 +890,83 @@ function CombosPanel({ analysis, resultNoun }: {
   );
 }
 
+// ─── Drawer ad list ───────────────────────────────────────────────────
+// Owns the showAll state so it can live in a component rather than an IIFE.
+
+function DrawerAdList({
+  matchedAds,
+  cellPerf,
+  resultNoun,
+}: {
+  matchedAds: Array<AdRecord & { cell_id: string }>;
+  cellPerf: Map<string, { spend: number; results: number }>;
+  resultNoun: string;
+}) {
+  const [showAll, setShowAll] = useState(false);
+  if (matchedAds.length === 0) {
+    return (
+      <p className="text-caption text-muted-foreground/70">
+        No ad records matched to this avatar's cells.
+      </p>
+    );
+  }
+  const visible = showAll ? matchedAds : matchedAds.slice(0, 8);
+  return (
+    <div className="space-y-2">
+      {visible.map((ad, i) => {
+        const perf = cellPerf.get(ad.cell_id);
+        return (
+          <div
+            key={ad.ad_name + i}
+            className="flex items-start justify-between gap-2 border-b border-border/15 pb-1.5 last:border-0 last:pb-0"
+          >
+            <div className="min-w-0">
+              <p className="text-body font-medium text-foreground/85 truncate" title={ad.ad_name}>
+                {ad.ad_name}
+              </p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                {ad.cell && (
+                  <span className="text-label font-mono border border-border/30 px-1 py-0.5 rounded text-muted-foreground/55">
+                    {ad.cell}
+                  </span>
+                )}
+                {ad.concept && (
+                  <span className="text-label text-muted-foreground/55">{ad.concept}</span>
+                )}
+              </div>
+            </div>
+            {perf && (perf.spend > 0 || perf.results > 0) && (
+              <div className="flex items-center gap-3 shrink-0 tabular-nums text-right">
+                {perf.spend > 0 && (
+                  <div>
+                    <p className="text-label text-muted-foreground/50">Spend</p>
+                    <p className="text-body text-foreground/70">{fmtUSD(perf.spend, 0)}</p>
+                  </div>
+                )}
+                {perf.results > 0 && (
+                  <div>
+                    <p className="text-label text-muted-foreground/50">Results</p>
+                    <p className="text-body text-foreground/70">{fmtNum(perf.results)}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+      {matchedAds.length > 8 && (
+        <button
+          type="button"
+          onClick={() => setShowAll((v) => !v)}
+          className="text-xs text-interactive underline-offset-2 hover:underline"
+        >
+          {showAll ? "Show fewer" : `Show all ${matchedAds.length} ads`}
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ─── Main view ────────────────────────────────────────────────────────
 
 export function AvatarsView() {
@@ -1329,60 +1424,11 @@ export function AvatarsView() {
                   );
                   return (
                     <DrawerField label={matchedAds.length > 0 ? `Matched ads (${matchedAds.length})` : "Matched ads"}>
-                      {matchedAds.length === 0 ? (
-                        <p className="text-caption text-muted-foreground/70">
-                          No ad records matched to this avatar's cells.
-                        </p>
-                      ) : (
-                        <div className="space-y-2">
-                          {matchedAds.slice(0, 8).map((ad, i) => {
-                            const perf = cellPerf.get(ad.cell_id);
-                            return (
-                              <div
-                                key={ad.ad_name + i}
-                                className="flex items-start justify-between gap-2 border-b border-border/15 pb-1.5 last:border-0 last:pb-0"
-                              >
-                                <div className="min-w-0">
-                                  <p className="text-body font-medium text-foreground/85 truncate" title={ad.ad_name}>
-                                    {ad.ad_name}
-                                  </p>
-                                  <div className="flex items-center gap-1.5 mt-0.5">
-                                    {ad.cell && (
-                                      <span className="text-label font-mono border border-border/30 px-1 py-0.5 rounded text-muted-foreground/55">
-                                        {ad.cell}
-                                      </span>
-                                    )}
-                                    {ad.concept && (
-                                      <span className="text-label text-muted-foreground/55">{ad.concept}</span>
-                                    )}
-                                  </div>
-                                </div>
-                                {perf && (perf.spend > 0 || perf.results > 0) && (
-                                  <div className="flex items-center gap-3 shrink-0 tabular-nums text-right">
-                                    {perf.spend > 0 && (
-                                      <div>
-                                        <p className="text-label text-muted-foreground/50">Spend</p>
-                                        <p className="text-body text-foreground/70">{fmtUSD(perf.spend, 0)}</p>
-                                      </div>
-                                    )}
-                                    {perf.results > 0 && (
-                                      <div>
-                                        <p className="text-label text-muted-foreground/50">Results</p>
-                                        <p className="text-body text-foreground/70">{fmtNum(perf.results)}</p>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                          {matchedAds.length > 8 && (
-                            <p className="text-label text-muted-foreground/50">
-                              +{matchedAds.length - 8} more ads in this avatar
-                            </p>
-                          )}
-                        </div>
-                      )}
+                      <DrawerAdList
+                        matchedAds={matchedAds}
+                        cellPerf={cellPerf}
+                        resultNoun={term.plural}
+                      />
                     </DrawerField>
                   );
                 })()}

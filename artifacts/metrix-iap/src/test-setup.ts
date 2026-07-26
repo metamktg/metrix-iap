@@ -15,6 +15,11 @@
 //   jsdom has no matchMedia implementation; a minimal stub prevents the
 //     TypeError: window.matchMedia is not a function
 //   that would otherwise surface on chart-bearing views.
+//
+// Embla carousel rules:
+//   useEmblaCarousel calls IntersectionObserver during mount to track which
+//   slides are in view. jsdom has no IntersectionObserver implementation;
+//   a no-op stub keeps any page that mounts a Carousel renderable in tests.
 
 class ResizeObserverStub {
   observe() {}
@@ -25,6 +30,17 @@ class ResizeObserverStub {
 if (typeof globalThis.ResizeObserver === "undefined") {
   globalThis.ResizeObserver =
     ResizeObserverStub as unknown as typeof ResizeObserver;
+}
+
+class IntersectionObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
+if (typeof globalThis.IntersectionObserver === "undefined") {
+  globalThis.IntersectionObserver =
+    IntersectionObserverStub as unknown as typeof IntersectionObserver;
 }
 
 if (typeof window !== "undefined" && typeof window.matchMedia === "undefined") {
