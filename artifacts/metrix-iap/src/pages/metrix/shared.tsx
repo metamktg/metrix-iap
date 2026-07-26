@@ -1233,75 +1233,79 @@ export function DatePresetBar({
   );
 }
 
-// ─── IAP run picker bar ───────────────────────────────────────────────
-// Replaces the date-preset bar on manual-upload accounts. Shows available
-// analysis runs; selecting one scopes the overview to that run's data.
+// ─── Data-window picker bar ───────────────────────────────────────────
+// Replaces the old run-picker. Driven by actual ad_performance data via
+// getAccountAnalysisDataWindows — not by manual_analysis_runs metadata.
+// Accounts with ≤60 days show one date-range pill; accounts with >60 days
+// get one pill per month. ECAS (and any future account) shows whatever
+// date buckets actually exist in the database.
 
-type RunSummary = {
-  id: string;
-  date_start?: string | null;
-  date_end?: string | null;
-  status: string;
-  rows_ingested?: number | null;
+export type DataWindowSelection = { start: string; end: string };
+
+type DataWindowItem = {
+  label: string;
+  start: string;
+  end: string;
+  spend: number;
+  rows: number;
 };
 
-function fmtRunDate(d: string | null | undefined): string {
-  if (!d) return "?";
-  return new Date(d + "T00:00:00Z").toLocaleDateString("en-US", {
-    month: "short", day: "numeric", timeZone: "UTC",
-  });
+function windowKey(w: DataWindowItem) {
+  return `${w.start}|${w.end}`;
 }
 
-export function RunPickerBar({
-  runs,
-  selectedRunId,
+export function DataWindowBar({
+  windows,
+  selected,
   onSelect,
   isFetching,
 }: {
-  runs: RunSummary[];
-  selectedRunId: string | null;
-  onSelect: (runId: string | null) => void;
+  windows: DataWindowItem[];
+  selected: DataWindowSelection | null;
+  onSelect: (w: DataWindowSelection | null) => void;
   isFetching?: boolean;
 }) {
-  const successRuns = runs.filter((r) => r.status === "success" && r.date_start && r.date_end);
+  const selectedKey = selected ? `${selected.start}|${selected.end}` : null;
   return (
     <div className="flex items-center gap-2 flex-wrap px-6 py-2 border-b border-border/30 bg-white/[0.01]">
       <span className="text-caption font-mono uppercase tracking-widest text-muted-foreground/70 shrink-0">
-        Run
+        Period
       </span>
       <div className="flex items-center gap-1 flex-wrap">
         <button
           onClick={() => onSelect(null)}
-          aria-pressed={selectedRunId === null}
+          aria-pressed={selectedKey === null}
           className={cn(
             "inline-flex items-center h-6 px-2.5 rounded-md border text-caption font-medium transition-colors",
-            selectedRunId === null
+            selectedKey === null
               ? "border-primary/40 bg-primary/10 text-primary"
               : "border-border/40 text-muted-foreground/60 hover:text-foreground hover:bg-white/[0.03]",
           )}
         >
           All data
         </button>
-        {successRuns.map((run) => (
-          <button
-            key={run.id}
-            onClick={() => onSelect(run.id)}
-            aria-pressed={selectedRunId === run.id}
-            className={cn(
-              "inline-flex items-center h-6 px-2.5 rounded-md border text-caption font-medium transition-colors",
-              selectedRunId === run.id
-                ? "border-primary/40 bg-primary/10 text-primary"
-                : "border-border/40 text-muted-foreground/60 hover:text-foreground hover:bg-white/[0.03]",
-            )}
-          >
-            {fmtRunDate(run.date_start)} – {fmtRunDate(run.date_end)}
-            {run.rows_ingested != null && (
-              <span className="ml-1 opacity-50">({run.rows_ingested.toLocaleString()}r)</span>
-            )}
-          </button>
-        ))}
-        {successRuns.length === 0 && (
-          <span className="text-caption text-muted-foreground/40 italic">No completed runs</span>
+        {windows.map((w) => {
+          const key     = windowKey(w);
+          const pressed = selectedKey === key;
+          return (
+            <button
+              key={key}
+              onClick={() => onSelect({ start: w.start, end: w.end })}
+              aria-pressed={pressed}
+              title={`${w.rows.toLocaleString()} rows · $${w.spend.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} spend`}
+              className={cn(
+                "inline-flex items-center h-6 px-2.5 rounded-md border text-caption font-medium transition-colors",
+                pressed
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : "border-border/40 text-muted-foreground/60 hover:text-foreground hover:bg-white/[0.03]",
+              )}
+            >
+              {w.label}
+            </button>
+          );
+        })}
+        {windows.length === 0 && !isFetching && (
+          <span className="text-caption text-muted-foreground/40 italic">No data uploaded yet</span>
         )}
       </div>
       {isFetching && (

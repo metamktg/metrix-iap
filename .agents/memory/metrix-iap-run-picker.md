@@ -1,37 +1,48 @@
 ---
-name: Metrix IAP run picker
-description: Architecture decision replacing DatePresetBar with RunPickerBar on manual-upload accounts; key implementation gotchas.
+name: Metrix IAP data-window picker
+description: Architecture of the Analysis Overview date filter — how accounts get their period pills, what endpoints power them, and why run metadata is not used.
 ---
 
-## Rule
-Manual-upload accounts show a **RunPickerBar** (not DatePresetBar) on the Analysis Overview. Selecting a run scopes the overview to that run's date window via `GET /metrix/accounts/:accountId/analysis-summary/run/:runId`. "All data" pill shows seed totals.
+## The DataWindowBar (was: RunPickerBar)
 
-**Why:** Manual uploads are fixed historical snapshots. Calendar-relative presets ("last 7 days") return $0 or no differentiation because account data windows don't overlap today. The meaningful filter is "which upload run am I looking at."
+The Analysis Overview filter bar was refactored from a run-metadata-driven picker to a data-driven picker:
 
-## Implementation notes
+- **Component**: `DataWindowBar` in `shared.tsx` (renamed from `RunPickerBar`)
+- **Data source**: `GET /metrix/accounts/:accountId/analysis-data-windows` → `getAccountAnalysisDataWindows` in `analysisEngine.ts`
+- **Engine**: queries `ad_performance` directly — NOT `manual_analysis_runs`
+- **Bucketing**: ≤60 days of data → single window pill; >60 days → one pill per calendar month
+- **Selecting a period**: calls `GET /analysis-summary/daterange/:start/:end` → `getAnalysisSummaryByDateRange`
 
-### Route ordering
-`/analysis-summary/run/:runId` must be registered **before** `/:preset` in the Express router even though they have different segment counts. The path-param pattern `:preset` can match the literal segment "run" if route order is wrong.
+**Why:** `manual_analysis_runs` is upload-event metadata and can be duplicate, stale, or missing (e.g. ECAS had no run records but had actual data). `ad_performance` is always authoritative.
 
-### Codegen workflow
-After editing `openapi.yaml`, run the actual pnpm codegen (NOT npx):
+## Route ordering (critical)
+
+Both literal routes must be registered **before** the `/:preset` wildcard in Express:
+
 ```
-pnpm --filter @workspace/api-spec run codegen
+/analysis-summary/daterange/:start/:end  ← before /:preset
+/analysis-summary/run/:runId             ← before /:preset
+/analysis-summary/:preset                ← catch-all (LAST)
 ```
-Then immediately re-run `api-codegen-drift` to confirm sync. Hand-editing generated files without running codegen produces drift failures — orval's formatting (prettier + specific function signatures) never matches hand-written additions exactly.
 
-### orval `clean: true` HMR side-effect
-Running codegen in-place causes orval to delete+rewrite generated files while Vite is watching them. This triggers mass HMR invalidations and a transient "useAuth must be used within an AuthProvider" error in the browser. It resolves on the next page refresh — it is not a code bug.
+## Orval codegen — path params vs query params
 
-### Type mismatch: AnalysisRun vs RunSummary
-`AnalysisRun` (from generated types) has `date_start?: string | null` (with `undefined`). The `RunSummary` prop type in `RunPickerBar` must use `string | null | undefined` (i.e. optional) for `date_start`/`date_end`, and `fmtRunDate` must accept `string | null | undefined`.
+For the daterange endpoint, `start` and `end` are **path params**, not query params.
 
-### useListAnalysisRuns options
-Passing `{ query: { enabled: boolean } }` to `useListAnalysisRuns` fails tsc — `UseQueryOptions` requires `queryKey` when supplied. Drop the options entirely; the hook's default `enabled: !!accountId` guard is sufficient.
+**Why:** When an operation has both path params AND query params, orval generates:
+- A Zod schema `FooParams` in `api.ts` (for path params)
+- A TypeScript type `FooParams` in `types/` (for query params)
 
-## Key files
-- `analysisEngine.ts` — `getAnalysisSummaryByRunId(accountId, runId)` added
-- `metrixAnalysis.ts` — `/analysis-summary/run/:runId` route registered before `/:preset`
-- `openapi.yaml` — `/metrix/accounts/{accountId}/analysis-summary/run/{runId}` path
-- `shared.tsx` — `RunPickerBar` component (replaces `DatePresetBar` on analysis overview)
-- `AnalysisOverview.tsx` — `selectedRunId` state replaces `preset`; uses `useListAnalysisRuns` + `getGetAnalysisSummaryByRunQueryOptions`
+Both get re-exported from `index.ts` → TS2308 collision.
+
+**Fix:** Use path segments for date range: `/daterange/{start}/{end}`. Then only one `FooParams` exists (the Zod schema for path params). No `types/fooParams.ts` is generated for query params.
+
+## Shared engine helper
+
+`_computeAnalysisSummaryForDateRange(accountId, start, end)` is the private shared implementation. Both public wrappers delegate to it:
+- `getAnalysisSummaryByRunId` — looks up dates from `manual_analysis_runs`, then calls helper
+- `getAnalysisSummaryByDateRange` — caller provides dates directly
+
+## Codegen reminder
+
+After any openapi.yaml change: `pnpm --filter @workspace/api-spec run codegen` (never `npx orval`), then re-run `api-codegen-drift` to confirm in sync.
