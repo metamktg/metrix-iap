@@ -85,7 +85,7 @@ export function Router() {
       <Route path="/app/listen/recommendations" component={RecommendationsView} />
 
       {/* ── 03 Analysis ───────────────────────────────────────────────── */}
-      <Route path="/app/analysis">{() => <Redirect to="/app/analysis/overview" replace />}</Route>
+      <Route path="/app/analysis"         component={AnalysisHub} />
       <Route path="/app/analysis/overview"   component={AnalysisOverview} />
       <Route path="/app/analysis/library"    component={IapLibraryView} />
       <Route path="/app/analysis/audience"   component={AudienceView} />

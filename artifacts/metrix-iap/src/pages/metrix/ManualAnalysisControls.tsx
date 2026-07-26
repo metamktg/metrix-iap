@@ -76,11 +76,12 @@ function RunAnalysisBtn({
   );
 }
 
-export type IapCsvClassKey = "demographic" | "device_placement";
+export type IapCsvClassKey = "demographic" | "device_placement" | "ad_summary";
 
 const CSV_CLASS_TITLES: Record<IapCsvClassKey, string> = {
   demographic: "Demographics CSV",
   device_placement: "Placements CSV",
+  ad_summary: "Ad Summary CSV",
 };
 
 /**
@@ -562,7 +563,9 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
   // Only performance CSVs carry a mapping_summary; creatives don't.
   const csvImports = imports.filter(
     (imp) =>
-      (imp.kind === "performance_demo_csv" || imp.kind === "performance_placement_csv") &&
+      (imp.kind === "performance_demo_csv" ||
+        imp.kind === "performance_placement_csv" ||
+        imp.kind === "performance_ad_summary_csv") &&
       imp.mapping_summary &&
       imp.mapping_summary.length > 0
   );
@@ -579,7 +582,11 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
   const problems: ProblemEntry[] = [];
   for (const imp of csvImports) {
     const label =
-      imp.kind === "performance_demo_csv" ? "Demographics CSV" : "Placements CSV";
+      imp.kind === "performance_demo_csv"
+        ? "Demographics CSV"
+        : imp.kind === "performance_placement_csv"
+        ? "Placements CSV"
+        : "Ad Summary CSV";
     for (const entry of imp.mapping_summary ?? []) {
       if (entry.tier === "missing" || entry.tier === "inferred") {
         problems.push({
@@ -723,7 +730,9 @@ export function AnalysisControls({
   // When true, we soft-block the Run button with a warning (escape hatch kept).
   const hasRequiredMissing = (importsData?.imports ?? []).some(
     (imp) =>
-      (imp.kind === "performance_demo_csv" || imp.kind === "performance_placement_csv") &&
+      (imp.kind === "performance_demo_csv" ||
+        imp.kind === "performance_placement_csv" ||
+        imp.kind === "performance_ad_summary_csv") &&
       imp.mapping_summary?.some((e) => e.tier === "missing" && e.is_required)
   );
   const [forceRunAcknowledged, setForceRunAcknowledged] = useState(false);

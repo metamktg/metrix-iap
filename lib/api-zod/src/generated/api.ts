@@ -238,6 +238,16 @@ export const GetManualPerformanceCsvFormatResponse = zod.object({
 })),
   "sample_csv": zod.string()
 }),
+  "ad_summary": zod.object({
+  "report_name": zod.string().describe('Exact Meta pivot report template name this CSV must match.'),
+  "breakdown_columns": zod.array(zod.string()),
+  "metric_groups": zod.array(zod.object({
+  "name": zod.string(),
+  "required": zod.boolean(),
+  "columns": zod.array(zod.string())
+})),
+  "sample_csv": zod.string()
+}),
   "column_aliases": zod.array(zod.object({
   "canonical": zod.string().describe('The exact column name as required by the Metrix spec (currency placeholder resolved to plain label for display).'),
   "aliases": zod.array(zod.string()).describe('Alias variants accepted by the CSV parser (title-cased for readability).')
