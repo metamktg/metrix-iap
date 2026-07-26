@@ -2,6 +2,7 @@
 // Command center for the Analysis layer of the loop:
 // recent run status, KPIs, execution CTA, quick links to all sub-pages.
 
+import { useState } from "react";
 import { TYPE } from "../typography";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -25,17 +26,19 @@ import {
   CrossLink,
   fmtUSD,
   fmtPct,
-  LoopAction,
   SectionCard,
   deriveLabel,
   InfoTooltip,
 } from "../shared";
+import { ManualImportDialog } from "../ConnectAccountDialogs";
 import { cn } from "@/lib/utils";
 import {
   BarChart3,
   ArrowUpRight,
   Activity,
   CheckCircle2,
+  PlayCircle,
+  ArrowRight,
 } from "lucide-react";
 
 const SECTION = "Analysis · 03";
@@ -84,8 +87,10 @@ export function AnalysisHub() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
+  const [importOpen, setImportOpen] = useState(false);
 
   return (
+    <>
     <ModuleScopeGate section={SECTION} title="Analysis" account={account}>
       {() => {
         const acct = account!;
@@ -121,11 +126,14 @@ export function AnalysisHub() {
                     ? `${cellCount} cell${cellCount !== 1 ? "s" : ""} in latest run`
                     : "No analysis data yet"}
                 </p>
-                <LoopAction
-                  to="/app/analysis/library"
-                  label="Run Analysis"
-                  icon="analysis"
-                />
+                <button
+                  onClick={() => setImportOpen(true)}
+                  className="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-lg border transition-all bg-primary text-white border-primary hover:bg-primary/90 shadow-md shadow-primary/25 hover:shadow-primary/35"
+                >
+                  <PlayCircle className="w-4 h-4 shrink-0" />
+                  Upload &amp; Run Analysis
+                  <ArrowRight className="w-3.5 h-3.5 opacity-75 ml-0.5" />
+                </button>
               </div>
 
               {/* KPI strip */}
@@ -284,5 +292,13 @@ export function AnalysisHub() {
         );
       }}
     </ModuleScopeGate>
+    {account && (
+      <ManualImportDialog
+        account={account}
+        open={importOpen}
+        onOpenChange={setImportOpen}
+      />
+    )}
+    </>
   );
 }

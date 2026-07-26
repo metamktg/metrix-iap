@@ -10,7 +10,7 @@
 // the library refreshes automatically.
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { Images, Dna, RefreshCw, AlertTriangle } from "lucide-react";
+import { Images, Dna, RefreshCw, AlertTriangle, PlayCircle } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -49,7 +49,7 @@ import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
 import type { SegmentId } from "@/lib/segment-analytics";
 import type { CellPerformanceRow, DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
-import { CreativeLibraryDialog } from "@/pages/metrix/ConnectAccountDialogs";
+import { CreativeLibraryDialog, ManualImportDialog } from "@/pages/metrix/ConnectAccountDialogs";
 import { CellCreativeUploadDialog } from "@/components/creative/CellCreativeUploadDialog";
 import { useConceptHighlight } from "@/lib/concept-registry-context";
 
@@ -97,6 +97,7 @@ export function IapLibraryView() {
     }, 50);
   }, []);
   useConceptHighlight(onHighlight);
+  const [importOpen, setImportOpen] = useState(false);
   const [segmentsOpen, setSegmentsOpen] = useState(false);
   const [creativeLibraryOpen, setCreativeLibraryOpen] = useState(false);
   const [uploadCellId, setUploadCellId] = useState<string | null>(null);
@@ -377,6 +378,13 @@ export function IapLibraryView() {
                         : "Re-sync creatives"}
                     </button>
                   )}
+                  <button
+                    onClick={() => setImportOpen(true)}
+                    className="flex items-center gap-1.5 text-label font-medium text-foreground/80 hover:text-foreground border border-primary/30 hover:border-primary/50 bg-primary/[0.07] hover:bg-primary/[0.12] px-2.5 py-1.5 rounded-md transition-colors"
+                  >
+                    <PlayCircle className="w-3.5 h-3.5 text-interactive" />
+                    Upload &amp; Run Analysis
+                  </button>
                   <button
                     onClick={() => setCreativeLibraryOpen(true)}
                     className="flex items-center gap-1.5 text-label font-medium text-muted-foreground/70 hover:text-foreground border border-border/40 hover:border-border/60 bg-white/[0.02] hover:bg-white/[0.04] px-2.5 py-1.5 rounded-md transition-colors"
@@ -866,6 +874,15 @@ export function IapLibraryView() {
           account={account}
           open={creativeLibraryOpen}
           onOpenChange={setCreativeLibraryOpen}
+        />
+      )}
+
+      {/* Manual CSV upload + run analysis dialog */}
+      {account && (
+        <ManualImportDialog
+          account={account}
+          open={importOpen}
+          onOpenChange={setImportOpen}
         />
       )}
     </>
