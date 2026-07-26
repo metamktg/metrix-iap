@@ -98,7 +98,7 @@ export function BriefBuilderView() {
                   <ProvenanceBadge provenance={bb?.provenance} />
                   {hasPillars && (
                     <GenerateButton
-                      onClick={generation.start}
+                      onClick={() => generation.start()}
                       isRunning={generation.isRunning}
                       label="Draft Briefs"
                       runningLabel="Generating…"
@@ -114,7 +114,7 @@ export function BriefBuilderView() {
             <RangeScopeBar grainNote="Briefs derive from the account's full flight window — this import has no daily grain." />
             {generation.lastError && (
               <div className="px-6 pt-4">
-                <GenerationErrorNote message={generation.lastError} onRetry={generation.start} />
+                <GenerationErrorNote message={generation.lastError} onRetry={() => generation.start()} />
               </div>
             )}
 
@@ -160,7 +160,7 @@ export function BriefBuilderView() {
                   {tab === "static" && hasPillars && briefs.length === 0 && (
                     <div className="text-center">
                       <GenerateButton
-                        onClick={generation.start}
+                        onClick={() => generation.start()}
                         isRunning={generation.isRunning}
                         label="Generate briefs from strategy"
                         runningLabel="Generating briefs…"

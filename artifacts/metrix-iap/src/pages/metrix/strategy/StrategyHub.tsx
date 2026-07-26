@@ -79,7 +79,7 @@ export function StrategyHub() {
                   {pillars.length} pillar{pillars.length !== 1 ? "s" : ""} · {icpCount} ICP profile{icpCount !== 1 ? "s" : ""}
                 </p>
                 <GenerateButton
-                  onClick={generation.start}
+                  onClick={() => generation.start()}
                   isRunning={generation.isRunning}
                   label="Generate Strategy"
                   runningLabel="Generating…"
