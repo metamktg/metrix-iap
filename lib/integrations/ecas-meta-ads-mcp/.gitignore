@@ -1,0 +1,6 @@
+# Structured mutation log — local record, not source.
+logs/
+
+# Approved creatives are staged locally per deployment batch, never committed here.
+creatives/*
+!creatives/.gitkeep

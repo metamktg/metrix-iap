@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0",
+  "client": "East Coast Art Studio",
+  "mode": "dry_run",
+  "account": {
+    "ad_account_id": "${META_AD_ACCOUNT_ID}",
+    "page_id": "${META_PAGE_ID}",
+    "instagram_actor_id": "${META_INSTAGRAM_ACTOR_ID}",
+    "pixel_id": "${META_PIXEL_ID}"
+  },
+  "campaign": {
+    "name": "ECAS | MST Sprint 2 | Static | YYYY-MM",
+    "objective": "OUTCOME_SALES",
+    "status": "PAUSED",
+    "special_ad_categories": []
+  },
+  "adset": {
+    "name": "REPLACE_WITH_APPROVED_ADSET_NAME",
+    "status": "PAUSED",
+    "daily_budget_minor_units": "REPLACE_WITH_APPROVED_BUDGET",
+    "billing_event": "IMPRESSIONS",
+    "optimization_goal": "OFFSITE_CONVERSIONS",
+    "conversion_event": "PURCHASE",
+    "destination_type": "WEBSITE",
+    "attribution_spec": "REPLACE_WITH_APPROVED_ATTRIBUTION",
+    "targeting": "REPLACE_WITH_APPROVED_TARGETING_OBJECT"
+  },
+  "ads": [
+    {
+      "concept_id": "C5D",
+      "filename": "C5D_4x5.png",
+      "name": "C5D_4x5",
+      "status": "PAUSED",
+      "primary_text": "REPLACE_WITH_APPROVED_PRIMARY_TEXT",
+      "headline": "REPLACE_WITH_APPROVED_HEADLINE",
+      "description": "",
+      "cta": "SHOP_NOW",
+      "destination_url": "https://eastcoastartstudio.com/collections/best-sellers",
+      "url_tags": "utm_source=meta&utm_medium=paid_social&utm_campaign=ecas_mst_sprint2&utm_content=C5D_4x5"
+    }
+  ]
+}

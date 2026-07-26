@@ -1,0 +1,23 @@
+{
+  "name": "@workspace/ecas-meta-ads-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Private local MCP server for validating and (later, under a separate approval gate) deploying East Coast Art Studio Meta ad campaigns from Claude Code.",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "dry-run": "tsx src/dry-run.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "dotenv": "^17.4.2",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsx": "catalog:",
+    "vitest": "^4.1.10"
+  }
+}
