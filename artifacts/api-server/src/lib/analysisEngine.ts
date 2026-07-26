@@ -565,11 +565,12 @@ export async function startManualAnalysis(
     .from("manual_imports")
     .select("id, filename, content, kind")
     .eq("account_id", accountId)
-    .in("kind", ["performance_demo_csv", "performance_placement_csv"]);
+    .in("kind", ["performance_demo_csv", "performance_placement_csv", "performance_ad_summary_csv"]);
   if (importsErr) throw new Error(importsErr.message);
 
   const demoImports = (imports ?? []).filter((i) => i["kind"] === "performance_demo_csv");
   const placementImports = (imports ?? []).filter((i) => i["kind"] === "performance_placement_csv");
+  const summaryImports = (imports ?? []).filter((i) => i["kind"] === "performance_ad_summary_csv");
   if (demoImports.length === 0 || placementImports.length === 0) {
     const missing = [
       demoImports.length === 0 ? "Demographics export" : null,
@@ -636,15 +637,34 @@ export async function startManualAnalysis(
           throw new AnalysisError(`Placements file "${imp["filename"]}": ${detail}`, 422);
         }
       }
+      // Optional: ad-level summary export (one row per ad per day, full spend).
+      // When present it becomes the primary source for ad_performance spend,
+      // overriding the privacy-limited spend from the demographic export.
+      const summaryRows: IapCsvRow[] = [];
+      for (const imp of summaryImports) {
+        const text = decodeStagedContent(String(imp["content"]));
+        try {
+          const result = parseIapCsv(text, "ad_summary");
+          summaryRows.push(...result.rows);
+          for (const w of result.warnings) {
+            allCsvWarnings.push(`[Ad Summary "${imp["filename"]}"] ${w}`);
+          }
+        } catch (err) {
+          const detail = err instanceof IapCsvFormatError ? err.message : String(err);
+          throw new AnalysisError(`Ad Summary file "${imp["filename"]}": ${detail}`, 422);
+        }
+      }
 
       const allDates = [
         ...demoRows.map((r) => r.breakdowns["Date"]!),
         ...placementRows.map((r) => r.breakdowns["Date"]!),
+        ...summaryRows.map((r) => r.breakdowns["Date"]!),
       ];
       const maxDate = allDates.reduce((max, d) => (d > max ? d : max), allDates[0]!);
 
       const scopedDemo = demoRows.filter((r) => withinRange(r.breakdowns["Date"]!, dateRange, maxDate));
       const scopedPlacement = placementRows.filter((r) => withinRange(r.breakdowns["Date"]!, dateRange, maxDate));
+      const scopedSummary = summaryRows.filter((r) => withinRange(r.breakdowns["Date"]!, dateRange, maxDate));
       if (scopedDemo.length === 0 || scopedPlacement.length === 0) {
         throw new AnalysisError(
           `No rows fall within the selected "${dateRange}" window (latest data is ${maxDate}). Try "all" or a wider range.`,
@@ -655,6 +675,7 @@ export async function startManualAnalysis(
       const scopedDates = [
         ...scopedDemo.map((r) => r.breakdowns["Date"]!),
         ...scopedPlacement.map((r) => r.breakdowns["Date"]!),
+        ...scopedSummary.map((r) => r.breakdowns["Date"]!),
       ];
       const dateStart = scopedDates.reduce((min, d) => (d < min ? d : min), scopedDates[0]!);
       const dateEnd = scopedDates.reduce((max, d) => (d > max ? d : max), scopedDates[0]!);
@@ -681,6 +702,27 @@ export async function startManualAnalysis(
         accumulate(demoAdBuckets.get(key)!, row);
       }
 
+      // ── Ad-level aggregation from ad_summary export (full spend) ────────
+      // The ad_summary export has one row per ad per day and carries spend
+      // unaffected by iOS privacy limits (unlike the demographic export which
+      // only shows demographically-attributable spend). When present, it becomes
+      // the primary spend source for ad_performance rows.
+      const summaryAdBuckets = new Map<
+        string,
+        AggBucket & { campaign: string; adSet: string; adName: string; date: string }
+      >();
+      for (const row of scopedSummary) {
+        const campaign = row.breakdowns["Campaign name"] ?? "";
+        const adSet = row.breakdowns["Ad set name"] ?? "";
+        const adName = row.breakdowns["Ad name"]!;
+        const date = row.breakdowns["Date"]!;
+        const key = [campaign, adName, date].join("\u0001");
+        if (!summaryAdBuckets.has(key)) {
+          summaryAdBuckets.set(key, { ...emptyBucket(), campaign, adSet, adName, date });
+        }
+        accumulate(summaryAdBuckets.get(key)!, row);
+      }
+
       // ── Ad-level rows (ad_performance): aggregate the placement export
       // across its device/platform/placement dimensions to a per-ad/day row.
       // Spend/results/resultType are filled from the demo aggregation when
@@ -697,24 +739,33 @@ export async function startManualAnalysis(
         }
         accumulate(adBuckets.get(key)!, row);
       }
-      // Supplement from the demo aggregation: fill spend/results/resultType
-      // for any ad bucket the placement export left financially empty.
+      // Supplement from the ad_summary (preferred) then demo aggregation:
+      // fill spend/results/resultType for any ad bucket the placement export
+      // left financially empty. Priority: summary > demo > null.
       for (const b of adBuckets.values()) {
-        const demoKey = [b.campaign, b.adName, b.date].join("\u0001");
-        const demo = demoAdBuckets.get(demoKey);
-        if (demo) {
-          if (b.spend === null) b.spend = demo.spend;
-          if (b.results === null) b.results = demo.results;
-          if (!b.resultType) b.resultType = demo.resultType ?? "";
-          if (b.linkClicks === null) b.linkClicks = demo.linkClicks;
-          if (b.clicksAll === null) b.clicksAll = demo.clicksAll;
+        const adKey = [b.campaign, b.adName, b.date].join("\u0001");
+        const summary = summaryAdBuckets.get(adKey);
+        const demo = demoAdBuckets.get(adKey);
+        const preferred = summary ?? demo;
+        if (preferred) {
+          if (b.spend === null) b.spend = preferred.spend;
+          if (b.results === null) b.results = preferred.results;
+          if (!b.resultType) b.resultType = preferred.resultType ?? "";
+          if (b.linkClicks === null) b.linkClicks = preferred.linkClicks;
+          if (b.clicksAll === null) b.clicksAll = preferred.clicksAll;
         }
         // Use a stable fallback only when result type is genuinely absent from
-        // both exports — avoids the misleading "Results" column-header literal.
+        // all exports — avoids the misleading "Results" column-header literal.
         if (!b.resultType) b.resultType = "unknown";
       }
+      // Surface summary-only ad/days (in ad_summary but absent from placement).
+      for (const [key, sum] of summaryAdBuckets) {
+        if (!adBuckets.has(key)) {
+          adBuckets.set(key, { ...sum, resultType: sum.resultType ?? "unknown" });
+        }
+      }
       // Also surface demo-only ad/days (ads present in demo but absent from
-      // placement) so no spend rows are silently dropped.
+      // both placement and ad_summary) so no spend rows are silently dropped.
       for (const [key, demo] of demoAdBuckets) {
         if (!adBuckets.has(key)) {
           adBuckets.set(key, { ...demo, resultType: demo.resultType ?? "unknown" });

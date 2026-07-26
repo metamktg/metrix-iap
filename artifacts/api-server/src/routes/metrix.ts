@@ -876,6 +876,9 @@ const BASE64_RE = /^[A-Za-z0-9+/\-_]+={0,2}$/;
 const PERFORMANCE_CSV_CLASS: Record<string, IapCsvClass> = {
   performance_demo_csv: "demographic",
   performance_placement_csv: "device_placement",
+  // Ad-level summary: one row per ad per day, full spend (not privacy-limited).
+  // Optional — supplements the required demo + placement exports.
+  performance_ad_summary_csv: "ad_summary",
 };
 
 router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (req, res) => {

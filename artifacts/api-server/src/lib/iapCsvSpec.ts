@@ -175,10 +175,25 @@ export const DEVICE_PLACEMENT_BREAKDOWN_COLUMNS: readonly string[] = [
   "Placement",
 ];
 
-export type IapCsvClass = "demographic" | "device_placement";
+/**
+ * Ad-level summary breakdown columns: no demographic (Gender/Age) or
+ * device/placement breakdown dimensions. One row per ad per day — the only
+ * format from Meta that carries full spend unaffected by iOS privacy limits.
+ */
+export const AD_SUMMARY_BREAKDOWN_COLUMNS: readonly string[] = [
+  "Date",
+  "Campaign ID",
+  "Campaign name",
+  "Ad set ID",
+  "Ad set name",
+  "Ad ID",
+  "Ad name",
+];
+
+export type IapCsvClass = "demographic" | "device_placement" | "ad_summary";
 
 export type IapCsvClassSpec = {
-  className: "IAP_DEMOGRAPHIC_TEXT_SIGNAL" | "IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL";
+  className: "IAP_DEMOGRAPHIC_TEXT_SIGNAL" | "IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL" | "IAP_AD_SUMMARY";
   breakdownColumns: readonly string[];
   /** Breakdown columns that must have a value on every row (Date, Ad name are load-bearing). */
   requiredBreakdownColumns: readonly string[];
@@ -194,6 +209,12 @@ export const IAP_CSV_CLASS_SPECS: Record<IapCsvClass, IapCsvClassSpec> = {
     className: "IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL",
     breakdownColumns: DEVICE_PLACEMENT_BREAKDOWN_COLUMNS,
     requiredBreakdownColumns: ["Date", "Campaign name", "Ad name", "Impression device", "Platform", "Placement"],
+  },
+  ad_summary: {
+    className: "IAP_AD_SUMMARY",
+    breakdownColumns: AD_SUMMARY_BREAKDOWN_COLUMNS,
+    // Ad name is required; Campaign name used for bucketing but tolerated blank
+    requiredBreakdownColumns: ["Date", "Ad name"],
   },
 };
 
@@ -523,6 +544,9 @@ export function suggestCanonicalForUnknown(
 export const CSV_CLASS_SIGNATURE_COLUMNS: Record<IapCsvClass, readonly string[]> = {
   demographic: ["Gender", "Age"],
   device_placement: ["Placement", "Impression device"],
+  // ad_summary has no exclusive signature columns — it is the absence of the
+  // above that identifies it (and it is always uploaded via its own kind slot).
+  ad_summary: [],
 };
 
 /**
@@ -542,6 +566,33 @@ export function detectCsvClassMismatch(
   headers: string[],
   expectedClass: IapCsvClass,
 ): string | null {
+  if (expectedClass === "ad_summary") {
+    // ad_summary must NOT contain demographic or device/placement exclusive columns.
+    const demoMatched = CSV_CLASS_SIGNATURE_COLUMNS.demographic.filter(
+      (col) => findColumnInHeader(headers, col) !== null,
+    );
+    if (demoMatched.length > 0) {
+      const quotedCols = demoMatched.map((c) => `"${c}"`).join(", ");
+      return (
+        `This file looks like a Demographic pivot export — it contains ${quotedCols}, ` +
+        `which only appears in that pivot type. ` +
+        `Upload it as the Demographics CSV instead, and provide an ad-level summary export here.`
+      );
+    }
+    const deviceMatched = CSV_CLASS_SIGNATURE_COLUMNS.device_placement.filter(
+      (col) => findColumnInHeader(headers, col) !== null,
+    );
+    if (deviceMatched.length > 0) {
+      const quotedCols = deviceMatched.map((c) => `"${c}"`).join(", ");
+      return (
+        `This file looks like a Device/Placement pivot export — it contains ${quotedCols}, ` +
+        `which only appears in that pivot type. ` +
+        `Upload it as the Device/Placement CSV instead, and provide an ad-level summary export here.`
+      );
+    }
+    return null;
+  }
+
   const otherClass: IapCsvClass = expectedClass === "demographic" ? "device_placement" : "demographic";
   const otherSignature = CSV_CLASS_SIGNATURE_COLUMNS[otherClass];
 
@@ -612,12 +663,15 @@ function buildSampleRow(breakdowns: Record<string, string>, baseValues: Record<s
  *   device_placement → "Placement", "Impression device"
  */
 export function detectCsvClassFromHeaders(headers: string[]): IapCsvClass | null {
+  // Check classes that have exclusive signature columns first.
   for (const cls of ["demographic", "device_placement"] as const) {
     const signatures = CSV_CLASS_SIGNATURE_COLUMNS[cls];
     if (signatures.some((col) => findColumnInHeader(headers, col) !== null)) {
       return cls;
     }
   }
+  // ad_summary has no exclusive signature columns — return null; callers rely
+  // on the upload kind slot to identify these files rather than auto-detection.
   return null;
 }
 
@@ -640,7 +694,11 @@ export function checkDuplicateCsvClasses(
   const demoClass = demoDetected.find((c) => c !== null) ?? null;
   const placementClass = placementDetected.find((c) => c !== null) ?? null;
   if (demoClass !== null && placementClass !== null && demoClass === placementClass) {
-    const missingClass: IapCsvClass = demoClass === "demographic" ? "device_placement" : "demographic";
+    // When both slots have the same class, the missing one is the other
+    // primary pivot class (ad_summary never appears via header detection so
+    // it can't be the duplicated class here).
+    const missingClass: IapCsvClass =
+      demoClass === "demographic" ? "device_placement" : "demographic";
     return { duplicatedClass: demoClass, missingClass };
   }
   return null;
@@ -649,6 +707,7 @@ export function checkDuplicateCsvClasses(
 const CSV_CLASS_LABEL: Record<IapCsvClass, string> = {
   demographic: "Demographic (Gender/Age)",
   device_placement: "Device/Placement (Impression device, Platform, Placement)",
+  ad_summary: "Ad Summary (ad-level, no demographic or placement breakdown)",
 };
 
 /** Human-readable label for a CSV class, for use in error messages. */
@@ -662,6 +721,7 @@ export function buildIapCsvClassFormat(csvClass: IapCsvClass): IapCsvClassFormat
   const header = [...spec.breakdownColumns, ...BASE_METRICS.map(resolveCurrencyColumn)];
 
   const isDemo = csvClass === "demographic";
+  const isSummary = csvClass === "ad_summary";
   const commonBreakdowns: Record<string, string> = {
     Date: "2026-06-01",
     "Campaign ID": "6001",
@@ -673,9 +733,13 @@ export function buildIapCsvClassFormat(csvClass: IapCsvClass): IapCsvClassFormat
   };
   const breakdownSample1: Record<string, string> = isDemo
     ? { ...commonBreakdowns, Gender: "female", Age: "25-34", Text: "" }
+    : isSummary
+    ? { ...commonBreakdowns }
     : { ...commonBreakdowns, "Impression device": "iphone", Platform: "facebook", Placement: "feed" };
   const breakdownSample2: Record<string, string> = isDemo
     ? { ...breakdownSample1, Gender: "male", Age: "35-44" }
+    : isSummary
+    ? { ...commonBreakdowns, Date: "2026-06-02" }
     : { ...breakdownSample1, "Impression device": "android_smartphone", Platform: "instagram", Placement: "story" };
 
   const baseSample1: Record<string, string> = {};
