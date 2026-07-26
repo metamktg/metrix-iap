@@ -11,6 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   useCreateManualAdAccount,
   useListManualImports,
+  getListManualImportsQueryKey,
   getGetMetrixSeedQueryKey,
   ApiError,
   type CreateAdAccountResult,
@@ -57,7 +58,13 @@ export function AddAccountDialog({
   const createMutation = useCreateManualAdAccount();
 
   const { data: stagedImportsData } = useListManualImports(
-    created?.account_id ?? ""
+    created?.account_id ?? "",
+    {
+      query: {
+        queryKey: getListManualImportsQueryKey(created?.account_id ?? ""),
+        enabled: !!created?.account_id,
+      },
+    }
   );
   const hasStagedImports = (stagedImportsData?.imports?.length ?? 0) > 0;
 
