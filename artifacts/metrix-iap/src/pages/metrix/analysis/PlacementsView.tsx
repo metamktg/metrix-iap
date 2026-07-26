@@ -6,7 +6,7 @@
 // placement to open a detail dialog benchmarked against the account
 // average with the full V3 + C4E rows.
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed, useMetrixIsRefetching } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
@@ -19,7 +19,7 @@ import { getGetAnalysisSummaryQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { SharePieChart } from "@/components/charts/SharePieChart";
-import { LayoutGrid, ChevronRight, BarChart2 } from "lucide-react";
+import { LayoutGrid, ChevronRight, BarChart2, PieChart } from "lucide-react";
 import type { ConversionTrackingSignal, PlacementRow } from "@/lib/data/seedTypes";
 import { ConversionFunnelTable } from "./tables";
 import { cn } from "@/lib/utils";
@@ -251,6 +251,7 @@ export function PlacementsView() {
   const analysis = getAnalysisData(seed, adAccountId);
   const [selectedPlacement, setSelectedPlacement] = useState<string | null>(null);
   const [preset, setPreset] = useState<ViewPreset>("all");
+  const [showShareChart, setShowShareChart] = useState(false);
 
   const { data: presetData, isFetching: presetFetching } = useQuery({
     ...getGetAnalysisSummaryQueryOptions(adAccountId ?? "", preset),
@@ -350,7 +351,6 @@ export function PlacementsView() {
           const totalSpend = rollup.reduce((n, s) => n + s.spend, 0);
           const totalResults = rollup.reduce((n, s) => n + s.results, 0);
           const best = ranked[0];
-          const maxMetricValue = Math.max(...ranked.map((p) => activeMetric.value(p) ?? 0), 0);
 
           return (
             <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
@@ -392,18 +392,36 @@ export function PlacementsView() {
               <div className="px-6 py-5 space-y-4 max-w-5xl">
                 <SectionCard
                   title="Spend by placement"
-                  desc="V3 + C4E combined · spend share vs result share · longer green bar = over-delivers"
-                  right={<RankSortBar metrics={rankMetrics} activeId={activeMetric.id} onSelect={select} />}
+                  desc="V3 + C4E combined · spend vs result share · click for breakdown"
+                  right={
+                    <div className="flex items-center gap-2">
+                      {rollup.length > 1 && (
+                        <button
+                          onClick={() => setShowShareChart((v) => !v)}
+                          className={cn(
+                            "flex items-center gap-1.5 h-7 px-2.5 rounded-md text-label font-medium transition-colors border",
+                            showShareChart
+                              ? "border-primary/30 bg-primary/10 text-interactive"
+                              : "border-border/30 bg-white/[0.02] text-muted-foreground/55 hover:text-foreground/80"
+                          )}
+                          aria-pressed={showShareChart}
+                          title="Toggle spend share chart"
+                        >
+                          <PieChart className="w-3 h-3" />
+                          Share
+                        </button>
+                      )}
+                      <RankSortBar metrics={rankMetrics} activeId={activeMetric.id} onSelect={select} />
+                    </div>
+                  }
                 >
-                  {rollup.length > 1 && (
-                    <div className="mb-4">
-                      <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60 mb-1">
-                        Share of spend
-                      </p>
+                  {/* Spend share pie — disclosed on demand */}
+                  {showShareChart && rollup.length > 1 && (
+                    <div className="mb-4 pb-4 border-b border-border/20">
                       <SharePieChart
                         data={rollup.map((s) => ({ name: s.placement, value: s.spend }))}
                         unit="usd"
-                        height={200}
+                        height={180}
                       />
                     </div>
                   )}
@@ -414,7 +432,6 @@ export function PlacementsView() {
                       const resultShare = totalResults > 0 ? (s.results / totalResults) * 100 : 0;
                       const efficiency =
                         spendShare > 0 && totalResults > 0 ? resultShare / spendShare : null;
-                      const v = activeMetric.value(s);
                       return (
                         <button
                           key={s.placement}
@@ -435,12 +452,12 @@ export function PlacementsView() {
                               {efficiency != null && (
                                 <div
                                   className={cn(
-                                    "text-label font-mono uppercase tracking-wider mt-0.5",
-                                    efficiency >= 1 ? "text-emerald-300/80" : "text-muted-foreground/50"
+                                    "text-label font-mono mt-0.5",
+                                    efficiency >= 1 ? "text-emerald-300/70" : "text-muted-foreground/40"
                                   )}
-                                  title="Share of results ÷ share of spend — above 1× means this placement produces more than its budget share."
+                                  title="Share of results ÷ share of spend"
                                 >
-                                  {efficiency.toFixed(1)}× result efficiency
+                                  {efficiency.toFixed(1)}× efficiency
                                 </div>
                               )}
                             </div>
@@ -448,39 +465,27 @@ export function PlacementsView() {
                               <KpiStat label="Spend" value={fmtUSD(s.spend, 0)} highlight={activeMetric.id === "spend"} />
                               <KpiStat label={term.Plural} value={fmtNum(s.results)} highlight={activeMetric.id === "results"} />
                               <KpiStat label="CPA" value={s.cpa != null ? fmtUSD(s.cpa) : "—"} highlight={activeMetric.id === "cpa"} />
-                              <KpiStat label="Link CTR" value={s.ctr != null ? fmtPct(s.ctr) : "—"} highlight={activeMetric.id === "ctr"} />
+                              <KpiStat label="CTR" value={s.ctr != null ? fmtPct(s.ctr) : "—"} highlight={activeMetric.id === "ctr"} />
                               <KpiStat label="CPM" value={s.cpm != null ? fmtUSD(s.cpm) : "—"} highlight={activeMetric.id === "cpm"} />
                             </div>
                             <ChevronRight className="w-3.5 h-3.5 shrink-0 text-muted-foreground/40 group-hover:text-primary/60 transition-colors" />
                           </div>
-                          <div className="mt-2 ml-8 space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="w-14 shrink-0 text-label font-mono uppercase tracking-wider text-muted-foreground/40">Spend</span>
-                              <div className="flex-1 h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
-                                <div className="h-full bg-primary/50 rounded-full" style={{ width: `${Math.max(spendShare, s.spend > 0 ? 2 : 0)}%` }} />
-                              </div>
-                              <span className="w-9 shrink-0 text-right text-label font-mono text-muted-foreground/50 tabular-nums">{spendShare.toFixed(0)}%</span>
+                          {/* Compact dual-bar — spend blue, results green */}
+                          <div className="mt-2 ml-8 space-y-0.5">
+                            <div className="h-1 rounded-full bg-white/[0.04] overflow-hidden">
+                              <div className="h-full bg-primary/45 rounded-full" style={{ width: `${Math.max(spendShare, s.spend > 0 ? 2 : 0)}%` }} />
                             </div>
-                            <div className="flex items-center gap-2">
-                              <span className="w-14 shrink-0 text-label font-mono uppercase tracking-wider text-muted-foreground/40">{term.Plural}</span>
-                              <div className="flex-1 h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
-                                <div className="h-full bg-emerald-400/60 rounded-full" style={{ width: `${Math.max(resultShare, s.results > 0 ? 2 : 0)}%` }} />
-                              </div>
-                              <span className="w-9 shrink-0 text-right text-label font-mono text-muted-foreground/50 tabular-nums">{resultShare.toFixed(0)}%</span>
+                            <div className="h-1 rounded-full bg-white/[0.04] overflow-hidden">
+                              <div className="h-full bg-emerald-400/55 rounded-full" style={{ width: `${Math.max(resultShare, s.results > 0 ? 2 : 0)}%` }} />
                             </div>
                           </div>
-                          {activeMetric.id !== "spend" && v != null && (
-                            <div className="mt-1.5 ml-8 text-label text-muted-foreground/50 tabular-nums">
-                              Ranked by {activeMetric.label}: {activeMetric.format(v)}
-                            </div>
-                          )}
                         </button>
                       );
                     })}
                   </div>
-                  <p className="mt-3 text-label text-muted-foreground/50 flex items-center gap-1">
-                    <BarChart2 className="w-3.5 h-3.5" />
-                    {v3.length} V3 rows + {c4e.length} C4E rows · click any placement for the full breakdown
+                  <p className="mt-3 text-label text-muted-foreground/45 flex items-center gap-1.5">
+                    <BarChart2 className="w-3.5 h-3.5 shrink-0" />
+                    {v3.length} V3 + {c4e.length} C4E rows · blue bar = spend share · green = result share · click for detail
                   </p>
                 </SectionCard>
 

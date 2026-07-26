@@ -15,7 +15,8 @@ import {
 import { getGetAnalysisSummaryQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
 import { PlacementTable } from "./tables";
-import { Wallet } from "lucide-react";
+import { Wallet, ChevronDown, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const SECTION = "Analysis · 03";
 
@@ -25,6 +26,7 @@ export function BudgetView() {
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
   const [preset, setPreset] = useState<ViewPreset>("all");
+  const [showPlacements, setShowPlacements] = useState(false);
 
   const { data: presetData, isFetching: presetFetching } = useQuery({
     ...getGetAnalysisSummaryQueryOptions(adAccountId ?? "", preset),
@@ -130,21 +132,30 @@ export function BudgetView() {
 
               <SectionCard
                 title="Efficiency by result event"
-                desc="Spend & outcome · per result event"
-                >
+                desc="Spend · results · CPA per event type"
+              >
                 {eventRows.length === 0 ? (
                   <PendingState title="No events selected" message="Select at least one result event above." action={<CrossLink to="/app/analysis/overview" label="Return to Overview" />} />
                 ) : (
-                  <div className="grid grid-cols-dashboard-3 gap-3">
+                  <div className="rounded-xl border border-border/40 overflow-hidden">
+                    {/* Compact header row */}
+                    <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-6 px-3 py-2 border-b border-border/30 bg-white/[0.015]">
+                      <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/55">Event</span>
+                      <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/55 text-right">Spend</span>
+                      <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/55 text-right">Results</span>
+                      <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/55 text-right">CPA</span>
+                      <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/55 text-right">Clicks</span>
+                    </div>
                     {eventRows.map(({ event, totals }) => (
-                      <div key={event} className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                        <p className="text-caption font-semibold text-foreground mb-2">{eventLabel(event)}</p>
-                        <div className="space-y-1.5 text-caption tabular-nums">
-                          <div className="flex justify-between"><span className="text-muted-foreground/70">Spend</span><span className="text-foreground/85">{fmtUSD(totals.spend, 0)}</span></div>
-                          <div className="flex justify-between"><span className="text-muted-foreground/70">Results</span><span className="text-foreground/85">{fmtNum(totals.results)}</span></div>
-                          <div className="flex justify-between"><span className="text-muted-foreground/70">CPA</span><span className="text-foreground/85">{totals.results > 0 ? fmtUSD(totals.spend / totals.results) : "—"}</span></div>
-                          <div className="flex justify-between"><span className="text-muted-foreground/70">Link clicks</span><span className="text-foreground/85">{fmtNum(totals.link_clicks)}</span></div>
-                        </div>
+                      <div
+                        key={event}
+                        className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-6 px-3 py-2.5 border-b border-border/15 last:border-b-0 hover:bg-white/[0.02] transition-colors"
+                      >
+                        <span className="text-body font-medium text-foreground/90 truncate">{eventLabel(event)}</span>
+                        <span className="text-body font-mono tabular-nums text-foreground/80 text-right">{fmtUSD(totals.spend, 0)}</span>
+                        <span className="text-body font-mono tabular-nums text-foreground/80 text-right">{fmtNum(totals.results)}</span>
+                        <span className="text-body font-mono tabular-nums text-foreground/80 text-right">{totals.results > 0 ? fmtUSD(totals.spend / totals.results) : "—"}</span>
+                        <span className="text-body font-mono tabular-nums text-muted-foreground/60 text-right">{fmtNum(totals.link_clicks)}</span>
                       </div>
                     ))}
                   </div>
@@ -175,25 +186,43 @@ export function BudgetView() {
               </SectionCard>
 
               {a && (a.v3_placement_signal.length > 0 || a.c4e_placement_signal.length > 0) && (
-                <SectionCard
-                  title="Placement spend"
-                  desc="Spend & results · by placement"
+                <div className="rounded-xl border border-border/30 bg-white/[0.01] overflow-hidden">
+                  <button
+                    onClick={() => setShowPlacements((v) => !v)}
+                    className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-white/[0.02] transition-colors group"
+                    aria-expanded={showPlacements}
                   >
-                  <div className="space-y-5">
-                    {a.v3_placement_signal.length > 0 && (
-                      <div>
-                        <h4 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">V3 placement signal</h4>
-                        <PlacementTable rows={a.v3_placement_signal} />
-                      </div>
-                    )}
-                    {a.c4e_placement_signal.length > 0 && (
-                      <div>
-                        <h4 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">C4E placement signal</h4>
-                        <PlacementTable rows={a.c4e_placement_signal} />
-                      </div>
-                    )}
-                  </div>
-                </SectionCard>
+                    <div className="text-left">
+                      <span className="text-body font-semibold text-foreground/80">Placement spend</span>
+                      <span className="text-label text-muted-foreground/45 ml-2">
+                        {a.v3_placement_signal.length + a.c4e_placement_signal.length} rows
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <CrossLink to="/app/analysis/placements" label="Full breakdown →" />
+                      {showPlacements
+                        ? <ChevronDown className="w-4 h-4 text-muted-foreground/50 group-hover:text-foreground/70 transition-colors" />
+                        : <ChevronRight className="w-4 h-4 text-muted-foreground/50 group-hover:text-foreground/70 transition-colors" />
+                      }
+                    </div>
+                  </button>
+                  {showPlacements && (
+                    <div className="border-t border-border/20 px-4 pb-4 pt-3 space-y-4">
+                      {a.v3_placement_signal.length > 0 && (
+                        <div>
+                          <h4 className="text-label font-mono uppercase tracking-widest text-muted-foreground/50 mb-2">V3 signal</h4>
+                          <PlacementTable rows={a.v3_placement_signal} />
+                        </div>
+                      )}
+                      {a.c4e_placement_signal.length > 0 && (
+                        <div>
+                          <h4 className="text-label font-mono uppercase tracking-widest text-muted-foreground/50 mb-2">C4E signal</h4>
+                          <PlacementTable rows={a.c4e_placement_signal} />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
             </>

@@ -724,8 +724,7 @@ export function AudienceView() {
                   )}
 
                   <div className="px-6 py-5 space-y-5 max-w-5xl">
-                    <div className="flex items-center justify-between gap-3 flex-wrap">
-                      <h2 className="text-base font-semibold text-foreground/80">Audience Pockets</h2>
+                    <div className="flex items-center justify-end gap-3">
                       <ViewToggle mode={viewMode} onChange={handleViewMode} />
                     </div>
 
