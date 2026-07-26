@@ -128,7 +128,9 @@ beforeAll(async () => {
       resolve();
     });
   });
-});
+// beforeAll timeout raised to 30 s: getMetrixSeedFromSupabase() can exceed
+// the default 10 s hookTimeout when Supabase is cold.
+}, 30_000);
 
 afterAll(async () => {
   await db
@@ -145,7 +147,9 @@ afterAll(async () => {
   await db.delete(usersTable).where(eq(usersTable.id, adminUserId));
   await db.delete(usersTable).where(eq(usersTable.id, memberUserId));
   await db.delete(usersTable).where(eq(usersTable.id, otherMemberUserId));
-  await close();
+  // Guard: if beforeAll timed out before the server was started, close is
+  // still the uninitialized module-level let (undefined). Skip gracefully.
+  if (typeof close === "function") await close();
   await pool.end();
 });
 

@@ -921,6 +921,46 @@ export async function startManualAnalysis(
         c.linkClicks += Number(row.link_clicks ?? 0);
       }
       if (conceptMap.size > 0) {
+        // ── Stage 2 Analysis Core: pre-compute intelligence fields ──────────
+        // These are deterministic formulas applied to the aggregated concept data.
+
+        // 1. mapped_in_library: resolve concept codes against the client library.
+        //    Non-fatal — if the query fails, all concepts stay unmapped (false).
+        const libraryConceptsSet = new Set<string>();
+        try {
+          const libResp = await supabase
+            .from("library_cells")
+            .select("cell_id, concept_id")
+            .eq("account_id", accountId);
+          if (!libResp.error && libResp.data) {
+            for (const row of libResp.data) {
+              // cell_id like "C2E" → concept "C2"; concept_id like "C2" is used directly
+              const fromCell = extractConcept(String(row.cell_id ?? ""));
+              if (fromCell) libraryConceptsSet.add(fromCell);
+              const fromConceptId = String(row.concept_id ?? "").trim().toUpperCase();
+              if (fromConceptId) libraryConceptsSet.add(fromConceptId);
+            }
+          }
+        } catch (_) {
+          // non-fatal: mapped_in_library will be false for all concepts
+        }
+
+        // 2. Book-level blended CPA (baseline): total spend / total results per book.
+        //    Used to compute lift vs. baseline for each concept.
+        const bookTotalSpend = new Map<string, number>();
+        const bookTotalResults = new Map<string, number>();
+        for (const c of conceptMap.values()) {
+          const bk = c.book ?? "";
+          bookTotalSpend.set(bk, (bookTotalSpend.get(bk) ?? 0) + c.spend);
+          bookTotalResults.set(bk, (bookTotalResults.get(bk) ?? 0) + c.results);
+        }
+        const getBlendedCpa = (book: string | null): number | null => {
+          const bk = book ?? "";
+          const s = bookTotalSpend.get(bk) ?? 0;
+          const r = bookTotalResults.get(bk) ?? 0;
+          return r > 0 ? s / r : null;
+        };
+
         const delConcept = await supabase.from("concept_performance").delete().eq("account_id", accountId);
         if (delConcept.error) throw new Error(delConcept.error.message);
         const conceptRows = Array.from(conceptMap.values()).map((c) => {
@@ -928,6 +968,43 @@ export async function startManualAnalysis(
           const results = c.results > 0 ? c.results : null;
           const cpa = spend !== null && results !== null && results > 0 ? spend / results : null;
           const cvrLinkPct = c.linkClicks > 0 && results !== null ? (results / c.linkClicks) * 100 : null;
+
+          // buying_intent_score: combines result volume with engagement signal
+          const buyingIntentScore = c.results * 10 + c.linkClicks;
+
+          // performance_lift_vs_baseline: positive = concept is cheaper than book average
+          const blendedCpa = getBlendedCpa(c.book);
+          const liftVsBaseline =
+            cpa !== null && blendedCpa !== null && blendedCpa > 0
+              ? (blendedCpa - cpa) / blendedCpa
+              : null;
+
+          // performance_tier: 1-4 bucketed by lift threshold
+          //   Tier 1 (Scale):    lift ≥ +10%  — concept CPA at least 10% below account baseline
+          //   Tier 2 (Optimize): lift in [0%, +10%)  — on or slightly below baseline
+          //   Tier 3 (Hold):     lift in [-20%, 0%)  — up to 20% above baseline, still viable
+          //   Tier 4 (Eliminate):lift < -20%  — concept CPA more than 20% worse than baseline
+          let performanceTier: string | null = null;
+          if (liftVsBaseline !== null) {
+            if (liftVsBaseline >= 0.10) performanceTier = "1 - Scale Winners";
+            else if (liftVsBaseline >= 0) performanceTier = "2 - Optimize";
+            else if (liftVsBaseline >= -0.20) performanceTier = "3 - Hold";
+            else performanceTier = "4 - Eliminate";
+          } else if (c.results === 0) {
+            performanceTier = "4 - Eliminate"; // zero results = no signal
+          }
+
+          // confidence_level: based on spend volume and result sample size
+          //   high:                 spend ≥ $500 AND results ≥ 30
+          //   medium:               spend ≥ $100 AND results ≥ 5
+          //   low:                  any spend with at least 1 result
+          //   validation_required:  no results yet
+          let confidenceLevel: string;
+          if (c.spend >= 500 && c.results >= 30) confidenceLevel = "high";
+          else if (c.spend >= 100 && c.results >= 5) confidenceLevel = "medium";
+          else if (c.spend > 0 && c.results >= 1) confidenceLevel = "low";
+          else confidenceLevel = "validation_required";
+
           return {
             account_id: accountId,
             book: c.book,
@@ -939,10 +1016,90 @@ export async function startManualAnalysis(
             results,
             cpa,
             cvr_link_pct: cvrLinkPct,
-            mapped_in_library: false,
+            mapped_in_library: libraryConceptsSet.has(c.concept),
+            buying_intent_score: buyingIntentScore > 0 ? buyingIntentScore : null,
+            performance_lift_vs_baseline:
+              liftVsBaseline !== null ? liftVsBaseline.toFixed(4) : null,
+            performance_tier: performanceTier,
+            confidence_level: confidenceLevel,
           };
         });
         await insertChunked("concept_performance", conceptRows);
+      }
+
+      // ── Stage 2: Variable-level performance ─────────────────────────────
+      // Extract raw variable tokens from ad names (all underscore-delimited tokens
+      // that are not the cell/concept code, BOOK label, or test-round suffix).
+      // Example: "C2E_STC_QF_BOOK2_T1" → tokens ["STC", "QF"]
+      // Tokens are written to variable_performance so the generation engine has
+      // real variable-level evidence when building strategy and briefs.
+      await updateProgress(runId, 82, "Computing variable performance");
+      const isSkippedAdToken = (t: string): boolean =>
+        /^[A-Za-z]\d+[A-Za-z]*$/.test(t) || // cell/concept codes: C2, C2E, C2EA
+        /^BOOK\d+$/i.test(t) ||              // BOOK0, BOOK2
+        /^T\d+$/i.test(t) ||                 // T1, T2 (test round)
+        /^\d+$/.test(t);                     // purely numeric tokens
+
+      const varPerfMap = new Map<
+        string,
+        { spend: number; results: number; linkClicks: number; adCount: number }
+      >();
+      for (const row of adRows) {
+        const tokens = String(row.ad_name ?? "")
+          .split("_")
+          .map((t) => t.trim().toUpperCase())
+          .filter((t) => t.length > 0 && !isSkippedAdToken(t));
+        for (const token of tokens) {
+          if (!varPerfMap.has(token)) {
+            varPerfMap.set(token, { spend: 0, results: 0, linkClicks: 0, adCount: 0 });
+          }
+          const v = varPerfMap.get(token)!;
+          v.spend += Number(row.spend ?? 0);
+          v.results += Number(row.results ?? 0);
+          v.linkClicks += Number(row.link_clicks ?? 0);
+          v.adCount += 1;
+        }
+      }
+      if (varPerfMap.size > 0) {
+        // Derive the most common result_type for this account's ad rows
+        const rtCounts = new Map<string, number>();
+        for (const row of adRows) {
+          const rt = String(row.result_type ?? "unknown");
+          rtCounts.set(rt, (rtCounts.get(rt) ?? 0) + 1);
+        }
+        const accountResultType =
+          [...rtCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "unknown";
+
+        // Full-replace variable_performance for this account
+        const delVar = await supabase
+          .from("variable_performance")
+          .delete()
+          .eq("account_id", accountId);
+        if (delVar.error) throw new Error(delVar.error.message);
+
+        const varRows = Array.from(varPerfMap.entries()).map(([token, v]) => {
+          const cpa = v.results > 0 ? v.spend / v.results : null;
+          const cvrLinkPct =
+            v.linkClicks > 0 && v.results > 0 ? (v.results / v.linkClicks) * 100 : null;
+          return {
+            account_id: accountId,
+            variable_family: "raw_token",
+            variable_id: token,
+            result_type: accountResultType,
+            date_start: dateStart,
+            date_end: dateEnd,
+            payload: {
+              variable_id: token,
+              spend: v.spend > 0 ? v.spend : null,
+              results: v.results > 0 ? v.results : null,
+              link_clicks: v.linkClicks > 0 ? v.linkClicks : null,
+              cpa,
+              cvr_link_pct: cvrLinkPct,
+              ad_count: v.adCount,
+            },
+          };
+        });
+        await insertChunked("variable_performance", varRows);
       }
 
       await updateProgress(runId, 84, "Linking creative assets");

@@ -36,3 +36,4 @@
 - [Metrix IAP headless login quirk](metrix-headless-login.md) — login succeeds but URL stays on /login (shows 404 shell); don't waitForURL, just goto target routes directly after a short wait.
 - [Design token scale (metrix-iap)](design-token-scale.md) — formal type scale utilities in index.css @layer utilities; batch-replace text-[Npx] with named classes; semantic surface/border/text/status tokens.
 - [Breadcrumbs best-match child routing](breadcrumbs-best-match.md) — navTree landing paths (e.g. /app/briefs) share prefix with siblings; use longest-path child win to prevent shadowing; landing as exact-then-prefix fallback for unknown sub-paths.
+- [Metrix Analysis Core Stage 2](metrix-analysis-stage2.md) — Stage 2 intelligence fields (tiers, scores, lift, confidence, mapped_in_library, variable_performance) now computed by analysisEngine.ts after Stage 1 ingestion; all deterministic math.
