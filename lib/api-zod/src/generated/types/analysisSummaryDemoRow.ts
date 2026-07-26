@@ -11,6 +11,5 @@ export interface AnalysisSummaryDemoRow {
   gender: string;
   spend: number | null;
   results: number | null;
-  impressions: number | null;
   link_clicks: number | null;
 }
