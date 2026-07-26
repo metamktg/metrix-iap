@@ -1475,6 +1475,30 @@ export function ManualUploadPanel({
           </div>
         </div>
 
+        {/* Spend coverage notice — shown when Ad Summary CSV is absent */}
+        {!summaryImport && (
+          <div className="rounded-lg border border-amber-400/25 bg-amber-400/[0.05] p-3 space-y-1.5">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0 space-y-1">
+                <div className="text-caption font-semibold text-amber-200">Spend totals will be underreported</div>
+                <p className="text-label text-amber-100/65 leading-relaxed">
+                  Meta's demographic export only captures ~10–15% of actual spend — iOS privacy attribution limits
+                  prevent the rest from being assigned to a gender/age segment. Upload an{" "}
+                  <strong className="text-amber-200/90">Ad Summary CSV</strong> (ad-level, no breakdown) from Meta
+                  Ads Manager to get accurate spend figures across all your ads.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setStep("upload")}
+              className="text-caption text-amber-300/80 underline underline-offset-2 hover:text-amber-200 transition-colors"
+            >
+              ← Go back and add Ad Summary CSV
+            </button>
+          </div>
+        )}
+
         <GuessedMatchesCallout
           accountId={accountId}
           guessedImports={guessedImports}
