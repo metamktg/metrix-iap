@@ -51,7 +51,13 @@ const analysis = bookster.iap.analysis;
 const windows = getConceptWindows(analysis);
 const c2 = windows.get("C2")!;
 const c4 = windows.get("C4")!;
-const LATE_RANGE = { start: "2026-07-01", end: "2026-07-07" };
+// All concepts in the current fixture share the same data window
+// (2026-05-02 → 2026-07-12 when analysis runs over the full CSV period).
+// POST_DATA_RANGE is after all concept flights end; IN_DATA_RANGE is well
+// within the data window so all concepts are included.
+const POST_DATA_RANGE = { start: "2026-08-01", end: "2026-08-07" };
+/** @deprecated kept as alias so other tests that still use LATE_RANGE can be updated gradually */
+const LATE_RANGE = POST_DATA_RANGE;
 
 function selectBookster() {
   sessionStorage.setItem(ACCOUNT_KEY, JSON.stringify({ type: "ad_account", adAccountId: "bookster" }));
@@ -97,14 +103,18 @@ beforeEach(() => {
 });
 
 describe("fixture sanity", () => {
-  it("C4's flight ends before the late range; C2 overlaps it", () => {
-    expect(c4.end < LATE_RANGE.start).toBe(true);
-    expect(c2.end >= LATE_RANGE.start).toBe(true);
+  it("all concepts' flights end before the post-data range", () => {
+    // When analysis covers the full data period, all concepts share the same
+    // date window. Both C4 and C2 end before POST_DATA_RANGE starts.
+    expect(c4.end < POST_DATA_RANGE.start).toBe(true);
+    expect(c2.end < POST_DATA_RANGE.start).toBe(true);
   });
 });
 
 describe("IAP Library respects the date range", () => {
-  it("shows C4E on 'all' but drops it in the late range", () => {
+  it("shows C4E and C2B on 'all' but both drop in the post-data range", () => {
+    // All concepts share the same flight window; a range after all flights
+    // end must exclude every concept cell.
     selectBookster();
     setRange(null);
     const all = renderView(IapLibraryView);
@@ -113,10 +123,11 @@ describe("IAP Library respects the date range", () => {
     cleanup();
 
     selectBookster();
-    setRange({ customStart: LATE_RANGE.start, customEnd: LATE_RANGE.end });
+    setRange({ customStart: POST_DATA_RANGE.start, customEnd: POST_DATA_RANGE.end });
     const narrowed = renderView(IapLibraryView);
+    // Both C4E and C2B end before the post-data range → both excluded.
     expect(narrowed.container.textContent).not.toContain("C4E");
-    expect(narrowed.container.textContent).toContain("C2B");
+    expect(narrowed.container.textContent).not.toContain("C2B");
   });
 });
 
@@ -158,7 +169,7 @@ describe("Analysis Overview always shows all-time data", () => {
 });
 
 describe("Concept Map respects the date range", () => {
-  it("drops concepts whose flights miss the range", () => {
+  it("drops all concepts when the range falls after all flight windows", () => {
     selectBookster();
     setRange(null);
     const all = renderView(ConceptMapView);
@@ -166,27 +177,29 @@ describe("Concept Map respects the date range", () => {
     expect(allText).toContain("C4E");
     cleanup();
 
+    // POST_DATA_RANGE is after all concept flights end → all concepts drop.
     selectBookster();
-    setRange({ customStart: LATE_RANGE.start, customEnd: LATE_RANGE.end });
+    setRange({ customStart: POST_DATA_RANGE.start, customEnd: POST_DATA_RANGE.end });
     const narrowed = renderView(ConceptMapView);
     expect(narrowed.container.textContent).not.toContain("C4E");
+    expect(narrowed.container.textContent).not.toContain("C2B");
   });
 });
 
 describe("Crossmap Results respects the date range", () => {
-  // In this fixture only C2B joins matrix ↔ performance rows, and C2's
-  // flight spans the whole window — so a late range keeps the join
-  // intact while the MST gate handles ranges that miss the window
-  // entirely (covered below).
-  it("keeps in-range cell joins when the range overlaps the MST window", () => {
+  // With all concepts sharing the same flight window (2026-05-02 → 2026-07-12),
+  // a range within the data window keeps C2B in scope; a range entirely after
+  // the window triggers the MST gate (handled in the no-data-in-range section).
+  it("keeps in-range cell joins when the range overlaps the data window", () => {
+    // Use a date range within the data window so all concept flights are still active.
+    const withinData = { start: "2026-06-01", end: "2026-06-30" };
     selectBookster();
-    setRange({ customStart: LATE_RANGE.start, customEnd: LATE_RANGE.end });
+    setRange({ customStart: withinData.start, customEnd: withinData.end });
     const { container } = renderView(CrossmapResultsView);
     const text = container.textContent ?? "";
     expect(text).toContain("Planned cells");
     expect(text).toContain("C2B");
-    // Joined spend matches the all-time render because the only joined
-    // cell (C2B) is still in range — no data is fabricated or dropped.
+    // Joined spend matches the all-time render because C2B is still in range.
     const spendNarrow = /Crossmapped spend\$([\d,]+)/.exec(text)?.[1];
     cleanup();
     selectBookster();

@@ -1089,13 +1089,24 @@ export async function startManualAnalysis(
             date_start: dateStart,
             date_end: dateEnd,
             payload: {
+              // Payload must match VariablePerformanceRow (client seedTypes) so
+              // report export, top-checkout rollups, and other consumers can read
+              // these rows without a transform.
+              variable_family: "raw_token",
               variable_id: token,
-              spend: v.spend > 0 ? v.spend : null,
-              results: v.results > 0 ? v.results : null,
-              link_clicks: v.linkClicks > 0 ? v.linkClicks : null,
-              cpa,
-              cvr_link_pct: cvrLinkPct,
-              ad_count: v.adCount,
+              "Result type": accountResultType,
+              "Amount spent (USD)": v.spend,
+              // Reach / Impressions / Clicks (all) are not available at the token
+              // level — set to 0 so numeric consumers don't receive undefined.
+              Reach: 0,
+              Impressions: 0,
+              "Clicks (all)": 0,
+              "Link clicks": v.linkClicks,
+              Results: v.results,
+              unique_ads: v.adCount,
+              CPA_result: cpa,
+              CTR_link_pct: cvrLinkPct ?? 0,
+              Result_per_link_click_pct: cvrLinkPct ?? 0,
             },
           };
         });
