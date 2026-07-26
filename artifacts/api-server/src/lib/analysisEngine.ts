@@ -1218,3 +1218,168 @@ export async function getAnalysisSummaryByPreset(
     concept_rows,
   };
 }
+
+// ─── Run-scoped summary (IAP run picker) ───────────────────────────────
+// Re-aggregates the same tables as getAnalysisSummaryByPreset, but scoped
+// to the date window of a specific manual_analysis_run. Used by the run
+// picker on manual-upload accounts — not time-relative, fully deterministic.
+
+export async function getAnalysisSummaryByRunId(
+  accountId: string,
+  runId: string,
+): Promise<AnalysisSummaryResult> {
+  const supabase = getSupabase();
+
+  const { data: runs, error: runErr } = await supabase
+    .from("manual_analysis_runs")
+    .select("date_start, date_end")
+    .eq("account_id", accountId)
+    .eq("id", runId)
+    .limit(1);
+  if (runErr) throw new AnalysisError(runErr.message, 500);
+  if (!runs || runs.length === 0) throw new AnalysisError("Analysis run not found", 404);
+
+  const runDateStart = String(runs[0]!["date_start"] ?? "");
+  const runDateEnd   = String(runs[0]!["date_end"]   ?? "");
+  if (!runDateStart || !runDateEnd) throw new AnalysisError("Run has no date range", 400);
+
+  const available_window: AnalysisSummaryWindow = { start: runDateStart, end: runDateEnd };
+
+  // ── ad_performance ────────────────────────────────────────────────
+  const { data: adRows, error: adErr } = await supabase
+    .from("ad_performance")
+    .select("date_start, spend, impressions, link_clicks, results, result_type, reach, clicks_all, ad_name")
+    .eq("account_id", accountId)
+    .gte("date_start", runDateStart)
+    .lte("date_start", runDateEnd);
+  if (adErr) throw new Error(adErr.message);
+
+  if (!adRows || adRows.length === 0) {
+    return {
+      preset: "all" as ViewPreset,
+      available_window,
+      active_window: null,
+      totals: { total_spend_usd: 0, total_impressions: 0, total_link_clicks: 0, overall_link_ctr_pct: 0, bottom_line_totals: {} },
+      demographic_rows: [],
+      placement_rows: [],
+      concept_rows: [],
+    };
+  }
+
+  let totalSpend = 0, totalImpressions = 0, totalLinkClicks = 0;
+  const byEvent: Record<string, { spend: number; reach: number; impressions: number; results: number; clicks_all: number; link_clicks: number }> = {};
+
+  for (const r of adRows) {
+    const spend       = Number((r as any).spend ?? 0);
+    const impressions = Number((r as any).impressions ?? 0);
+    const linkClicks  = Number((r as any).link_clicks ?? 0);
+    const results     = Number((r as any).results ?? 0);
+    const reach       = Number((r as any).reach ?? 0);
+    const clicksAll   = Number((r as any).clicks_all ?? 0);
+    const event       = String((r as any).result_type ?? "unknown");
+    totalSpend       += spend;
+    totalImpressions += impressions;
+    totalLinkClicks  += linkClicks;
+    byEvent[event] ??= { spend: 0, reach: 0, impressions: 0, results: 0, clicks_all: 0, link_clicks: 0 };
+    byEvent[event]!.spend       += spend;
+    byEvent[event]!.reach       += reach;
+    byEvent[event]!.impressions += impressions;
+    byEvent[event]!.results     += results;
+    byEvent[event]!.clicks_all  += clicksAll;
+    byEvent[event]!.link_clicks += linkClicks;
+  }
+
+  const linkCtrPct = totalImpressions > 0 ? roundN((totalLinkClicks / totalImpressions) * 100) : 0;
+
+  // ── Concept rows ──────────────────────────────────────────────────
+  const conceptMap = new Map<string, { book: string | null; spend: number; results: number; link_clicks: number }>();
+  for (const r of adRows) {
+    const concept = extractConceptCode(String((r as any).ad_name ?? ""));
+    if (!concept) continue;
+    const book = extractBookCode(String((r as any).ad_name ?? ""));
+    const key  = `${book ?? ""}\x01${concept}`;
+    const c    = conceptMap.get(key) ?? { book, spend: 0, results: 0, link_clicks: 0 };
+    c.spend       += Number((r as any).spend ?? 0);
+    c.results     += Number((r as any).results ?? 0);
+    c.link_clicks += Number((r as any).link_clicks ?? 0);
+    conceptMap.set(key, c);
+  }
+  const concept_rows: AnalysisSummaryConceptRow[] = Array.from(conceptMap.entries()).map(([key, v]) => ({
+    concept: key.split("\x01")[1]!,
+    book:    v.book,
+    spend:   roundN(v.spend),
+    results: v.results,
+    link_clicks: v.link_clicks,
+  }));
+
+  // ── Demographic rows ──────────────────────────────────────────────
+  const { data: demoRows, error: demoErr } = await supabase
+    .from("demographic_performance")
+    .select("date_start, age, gender, spend, results, link_clicks")
+    .eq("account_id", accountId)
+    .gte("date_start", runDateStart)
+    .lte("date_start", runDateEnd);
+  if (demoErr) throw new Error(demoErr.message);
+
+  const demoMap = new Map<string, { spend: number; results: number; link_clicks: number }>();
+  for (const r of demoRows ?? []) {
+    const key = `${String((r as any).age ?? "")}|${String((r as any).gender ?? "").toLowerCase()}`;
+    const d   = demoMap.get(key) ?? { spend: 0, results: 0, link_clicks: 0 };
+    d.spend       += Number((r as any).spend ?? 0);
+    d.results     += Number((r as any).results ?? 0);
+    d.link_clicks += Number((r as any).link_clicks ?? 0);
+    demoMap.set(key, d);
+  }
+  const demographic_rows: AnalysisSummaryDemoRow[] = Array.from(demoMap.entries()).map(([key, v]) => {
+    const [age, gender] = key.split("|");
+    return { age: age ?? "", gender: gender ?? "", spend: v.spend, results: v.results, link_clicks: v.link_clicks };
+  });
+
+  // ── Placement rows ────────────────────────────────────────────────
+  const { data: placRows, error: placErr } = await supabase
+    .from("placement_performance")
+    .select("date_start, placement, spend, impressions, link_clicks, results, tracking_basis")
+    .eq("account_id", accountId)
+    .gte("date_start", runDateStart)
+    .lte("date_start", runDateEnd);
+  if (placErr) throw new Error(placErr.message);
+
+  const placMap = new Map<string, { spend: number; impressions: number; link_clicks: number; results: number }>();
+  for (const r of placRows ?? []) {
+    if ((r as any).tracking_basis === "conversion") continue;
+    const key = String((r as any).placement ?? "");
+    const p   = placMap.get(key) ?? { spend: 0, impressions: 0, link_clicks: 0, results: 0 };
+    p.spend       += Number((r as any).spend ?? 0);
+    p.impressions += Number((r as any).impressions ?? 0);
+    p.link_clicks += Number((r as any).link_clicks ?? 0);
+    p.results     += Number((r as any).results ?? 0);
+    placMap.set(key, p);
+  }
+  const placement_rows: AnalysisSummaryPlacementRow[] = Array.from(placMap.entries()).map(([placement, v]) => ({
+    placement,
+    spend:       roundN(v.spend),
+    impressions: v.impressions,
+    link_clicks: v.link_clicks,
+    results:     v.results,
+  }));
+
+  const adDates    = adRows.map((r: any) => String(r.date_start ?? "")).filter(Boolean);
+  const activeStart = adDates.reduce((a, b) => (a < b ? a : b), runDateStart);
+  const activeEnd   = adDates.reduce((a, b) => (a > b ? a : b), runDateEnd);
+
+  return {
+    preset: "all" as ViewPreset,
+    available_window,
+    active_window: { start: activeStart, end: activeEnd },
+    totals: {
+      total_spend_usd:      roundN(totalSpend),
+      total_impressions:    Math.round(totalImpressions),
+      total_link_clicks:    Math.round(totalLinkClicks),
+      overall_link_ctr_pct: linkCtrPct,
+      bottom_line_totals:   byEvent,
+    },
+    demographic_rows,
+    placement_rows,
+    concept_rows,
+  };
+}
