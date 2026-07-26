@@ -720,6 +720,10 @@ export function AnalysisControls({
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fakeProgressRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const calledDoneRef = useRef(false);
+  // Captured once when the query first settles — the run ID that already existed
+  // before the user interacted. Prevents onDone/toast from firing for pre-existing
+  // completed runs (e.g. when the dialog auto-opens with CSVs already staged).
+  const initialRunIdRef = useRef<string | null | undefined>(undefined); // undefined = not yet settled
 
   const guessedImports = guessedCreativeImports(importsData?.imports ?? []);
 
@@ -785,10 +789,21 @@ export function AnalysisControls({
   const { toast } = useToast();
   const toastedRunIdRef = useRef<string | null>(null);
 
-  // Toast once when a run first transitions to success.
+  // Capture the run ID present the first time the query settles.
+  // Any run with this ID was already complete before the user interacted —
+  // we suppress auto-close and toast for it so they don't fire on dialog open.
+  useEffect(() => {
+    if (initialRunIdRef.current !== undefined) return; // set once
+    if (latest === undefined) return;                  // query still loading
+    initialRunIdRef.current = run?.id ?? null;
+  }, [latest, run?.id]);
+
+  // Toast once when a NEW run (started this session) transitions to success.
   useEffect(() => {
     if (run?.status !== "success" || !run.id || toastedRunIdRef.current === run.id) return;
     toastedRunIdRef.current = run.id;
+    // Don't toast for the run that was already complete when the dialog opened.
+    if (run.id === initialRunIdRef.current) return;
     toast({
       title: "Analysis complete",
       description:
@@ -799,14 +814,16 @@ export function AnalysisControls({
     });
   }, [run?.status, run?.id, run?.date_start, run?.date_end, toast]);
 
-  // Fire onDone once when the run transitions to success.
+  // Fire onDone once when a NEW run (started this session) transitions to success.
   useEffect(() => {
     if (run?.status !== "success" || !onDone || calledDoneRef.current) return;
+    // Don't auto-close for a run that was already complete when the dialog opened.
+    if (run?.id === initialRunIdRef.current) return;
     calledDoneRef.current = true;
     // Small delay so the user can see the success state before the dialog closes.
     const t = setTimeout(onDone, 1400);
     return () => clearTimeout(t);
-  }, [run?.status, onDone]);
+  }, [run?.status, run?.id, onDone]);
 
   const handleRun = async () => {
     setError(null);
