@@ -11,6 +11,7 @@ import type { IapCsvClassFormat } from './iapCsvClassFormat';
 export interface ManualPerformanceCsvFormat {
   demographic: IapCsvClassFormat;
   device_placement: IapCsvClassFormat;
+  ad_summary: IapCsvClassFormat;
   /** Known accepted column name variants for the most commonly misnamed columns, derived from the server COLUMN_ALIASES map. Collapsed reference guide for the upload UI. */
   column_aliases: ColumnAliasEntry[];
 }

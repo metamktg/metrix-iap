@@ -3572,6 +3572,8 @@ components:
           $ref: "#/components/schemas/IapCsvClassFormat"
         device_placement:
           $ref: "#/components/schemas/IapCsvClassFormat"
+        ad_summary:
+          $ref: "#/components/schemas/IapCsvClassFormat"
         column_aliases:
           type: array
           items:
@@ -3580,6 +3582,7 @@ components:
       required:
         - demographic
         - device_placement
+        - ad_summary
         - column_aliases
     StartAnalysisInput:
       type: object

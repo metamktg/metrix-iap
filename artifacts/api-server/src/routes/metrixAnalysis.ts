@@ -82,6 +82,7 @@ router.get("/metrix/manual-performance-csv-format", requireAuth, (_req, res) => 
   res.json({
     demographic: buildIapCsvClassFormat("demographic"),
     device_placement: buildIapCsvClassFormat("device_placement"),
+    ad_summary: buildIapCsvClassFormat("ad_summary"),
     column_aliases: buildColumnAliasGuide(),
   });
 });

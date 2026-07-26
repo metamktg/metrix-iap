@@ -275,7 +275,13 @@ function stageManualImportWithProgress(
   });
 }
 
-const CSV_SLOTS: { kind: "performance_demo_csv" | "performance_placement_csv"; csvClass: IapCsvClassKey; title: string; desc: string }[] = [
+const CSV_SLOTS: {
+  kind: "performance_demo_csv" | "performance_placement_csv" | "performance_ad_summary_csv";
+  csvClass: IapCsvClassKey;
+  title: string;
+  desc: string;
+  optional?: boolean;
+}[] = [
   {
     kind: "performance_demo_csv",
     csvClass: "demographic",
@@ -287,6 +293,13 @@ const CSV_SLOTS: { kind: "performance_demo_csv" | "performance_placement_csv"; c
     csvClass: "device_placement",
     title: "Placements CSV",
     desc: "Exact export of the IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL pivot template (device/platform/placement breakdowns).",
+  },
+  {
+    kind: "performance_ad_summary_csv",
+    csvClass: "ad_summary",
+    title: "Ad Summary CSV",
+    desc: "Ad-level export with no breakdown (one row per ad per day). Provides full spend unaffected by iOS privacy limits — fixes underreported spend totals from the Demographics CSV.",
+    optional: true,
   },
 ];
 
@@ -462,6 +475,7 @@ function CsvMappingPanel({ summary }: { summary: ColumnMappingSummaryEntry[] }) 
 }
 
 function CsvSlotUpload({
+  optional,
   accountId,
   kind,
   csvClass,
@@ -474,10 +488,11 @@ function CsvSlotUpload({
   onMismatch,
 }: {
   accountId: string;
-  kind: "performance_demo_csv" | "performance_placement_csv";
+  kind: "performance_demo_csv" | "performance_placement_csv" | "performance_ad_summary_csv";
   csvClass: IapCsvClassKey;
   title: string;
   desc: string;
+  optional?: boolean;
   staged: ManualImport | null;
   onStaged: () => void;
   onRemoved: () => void;
@@ -599,7 +614,12 @@ function CsvSlotUpload({
       <div className="flex items-start gap-3 p-3 rounded-lg border border-border/40 bg-white/[0.02]">
         <FileSpreadsheet className={cn("w-4 h-4 shrink-0 mt-0.5", staged ? "text-emerald-400" : "text-muted-foreground/85")} />
         <div className="min-w-0 flex-1">
-          <div className="text-body font-semibold text-foreground">{title} <span className="text-red-400/80 font-normal">*required</span></div>
+          <div className="text-body font-semibold text-foreground">
+            {title}{" "}
+            {optional
+              ? <span className="text-muted-foreground/60 font-normal">(optional)</span>
+              : <span className="text-red-400/80 font-normal">*required</span>}
+          </div>
           <p className="text-caption text-muted-foreground/85 leading-relaxed mt-0.5">{desc}</p>
         </div>
       </div>
@@ -1387,6 +1407,7 @@ export function ManualUploadPanel({
 
   const demoImport = imports.find((i) => i.kind === "performance_demo_csv") ?? null;
   const placementImport = imports.find((i) => i.kind === "performance_placement_csv") ?? null;
+  const summaryImport = imports.find((i) => i.kind === "performance_ad_summary_csv") ?? null;
   const creativeAssets = imports.filter((i) => i.kind === "creative_asset");
   const guessedImports = guessedCreativeImports(imports);
   const bothRequiredStaged = Boolean(demoImport && placementImport);
@@ -1420,6 +1441,12 @@ export function ManualUploadPanel({
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
               <span className="text-foreground/80 truncate">Placements — {placementImport?.filename}</span>
             </div>
+            {summaryImport && (
+              <div className="flex items-center gap-2 text-caption">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span className="text-foreground/80 truncate">Ad Summary — {summaryImport.filename}</span>
+              </div>
+            )}
             {creativeAssets.length > 0 ? (
               creativeAssets.map((a) => (
                 <div key={a.id} className="flex items-center gap-2 text-caption">
@@ -1494,7 +1521,14 @@ export function ManualUploadPanel({
           csvClass={slot.csvClass}
           title={slot.title}
           desc={slot.desc}
-          staged={slot.kind === "performance_demo_csv" ? demoImport : placementImport}
+          optional={slot.optional}
+          staged={
+            slot.kind === "performance_demo_csv"
+              ? demoImport
+              : slot.kind === "performance_placement_csv"
+              ? placementImport
+              : summaryImport
+          }
           onStaged={() => { setHighlightSlot(null); refresh(); }}
           onRemoved={refresh}
           highlightAsTarget={highlightSlot === slot.csvClass}
