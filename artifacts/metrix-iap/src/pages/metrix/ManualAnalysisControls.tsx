@@ -728,6 +728,12 @@ export function AnalysisControls({
   const run = latest?.run ?? null;
   const isRunning = run?.status === "running";
 
+  // True when an Ad Summary CSV is staged — this provides full spend data unaffected
+  // by iOS privacy attribution limits (demographic exports only capture ~10-15% of spend).
+  const hasSummary = (importsData?.imports ?? []).some(
+    (imp) => imp.kind === "performance_ad_summary_csv"
+  );
+
   // Detect whether any required breakdown column is missing across staged CSVs.
   // When true, we soft-block the Run button with a warning (escape hatch kept).
   const hasRequiredMissing = (importsData?.imports ?? []).some(
@@ -838,6 +844,23 @@ export function AnalysisControls({
       </div>
 
       <MappingHealthBanner imports={importsData?.imports ?? []} />
+
+      {/* Spend coverage notice — shown when Ad Summary CSV is absent */}
+      {!hasSummary && !isRunning && (
+        <div className="rounded-lg border border-amber-400/25 bg-amber-400/[0.05] p-3 space-y-1">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0 space-y-1">
+              <div className="text-caption font-semibold text-amber-200">Spend will be underreported without Ad Summary CSV</div>
+              <p className="text-label text-amber-100/65 leading-relaxed">
+                Meta's demographic export only captures ~10–15% of actual spend — the rest is unattributable due to iOS
+                privacy limits. Upload an <strong className="text-amber-200/90">Ad Summary CSV</strong> (ad-level, no
+                demographic/device breakdown) to unlock full spend totals.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <GuessedMatchesCallout
         accountId={accountId}
