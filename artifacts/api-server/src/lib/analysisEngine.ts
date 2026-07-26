@@ -931,6 +931,14 @@ export async function startManualAnalysis(
           concept: extractConcept(adName),
           book: extractBook(adName),
         }));
+        // IMPORTANT: ignoreDuplicates: true is critical here — it preserves
+        // creative_asset_url and asset_filename on existing rows so any
+        // previously synced creative links survive a re-import or re-analysis.
+        // Never change this to ignoreDuplicates: false (or a merge-mode upsert
+        // without explicit column selection), as it would wipe those URLs and
+        // cause every library card to regress to the "No asset" placeholder.
+        // If you must update other columns on conflict, add them explicitly to
+        // an onConflictDoUpdate merge list and keep creative_asset_url OUT of it.
         const adsUpsert = await supabase
           .from("ads")
           .upsert(adRegistryRows, { onConflict: "account_id,ad_name", ignoreDuplicates: true });

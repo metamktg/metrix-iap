@@ -14,6 +14,8 @@
 // passed through so the client can surface them.
 
 import { getSupabase } from "./supabase";
+import { syncAllCreativeLinksForAccount } from "./analysisEngine";
+import { logger } from "./logger";
 
 type Row = Record<string, any>;
 
@@ -44,6 +46,49 @@ export function groupByAccount(rows: Row[]): Map<string, Row[]> {
     map.get(id)!.push(r);
   }
   return map;
+}
+
+/**
+ * Pure helper: given a list of manual_imports rows (kind=creative_asset,
+ * with non-null ad_names) and the current ads table rows, returns the
+ * account_ids that have at least one creative import mapping but none of
+ * the mapped ad_names have a non-null creative_asset_url. These accounts
+ * have had their creative links wiped (e.g. by a re-import upsert) and
+ * need syncAllCreativeLinksForAccount to restore them.
+ *
+ * Exported for unit testing — keeps the detection logic as a pure function
+ * independent of Supabase calls.
+ */
+export function detectAccountsNeedingCreativeSync(
+  manualImports: Row[],
+  ads: Row[],
+): string[] {
+  // Regression diagnosis (three known vectors that land here):
+  //   (a) Re-import / analysis wipe: ads.upsert with ignoreDuplicates:false
+  //       resets creative_asset_url to NULL on existing rows — sync is not
+  //       re-triggered automatically so URLs stay NULL until the next UI action.
+  //   (b) Seed assembly reads whatever creative_asset_url is in ads at build
+  //       time. If it's NULL, the seed ships NULL and every card shows a placeholder.
+  //   (c) mapped_ad_names string drift: if ad_names in manual_imports diverged
+  //       from ads.ad_name (case, trimming, re-import rename) then the sync
+  //       call itself has no rows to UPDATE and returns 0 linked — the ad row
+  //       exists but the URL never gets set.
+  const importsByAccount = groupByAccount(manualImports);
+  const adsByAccount = groupByAccount(ads);
+  const needSync: string[] = [];
+  for (const [accountId, imports] of importsByAccount) {
+    const allMappedNames = imports.flatMap(
+      (imp) => (imp["ad_names"] as string[] | null) ?? [],
+    );
+    if (allMappedNames.length === 0) continue;
+    const mappedNameSet = new Set(allMappedNames);
+    const accountAds = adsByAccount.get(accountId) ?? [];
+    const hasLinkedAd = accountAds.some(
+      (ad) => mappedNameSet.has(String(ad["ad_name"] ?? "")) && ad["creative_asset_url"] != null,
+    );
+    if (!hasLinkedAd) needSync.push(accountId);
+  }
+  return needSync;
 }
 
 const forAccount = (grouped: Map<string, Row[]>, accountId: string): Row[] =>
@@ -197,6 +242,27 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
   const failurePatterns = forAccount(t.failurePatterns, accountId);
   const adsRegistry = forAccount(t.adsRegistry, accountId);
   const cellCreativeOverrides = forAccount(t.cellCreativeOverrides, accountId);
+
+  // ── Warn on mapped_ad_names mismatches (regression detector) ────────
+  // If a library cell declares mapped_ad_names but NONE of those names
+  // exist in the current ads registry for this account, the card will show
+  // a "No asset" placeholder. This can happen when the ad_names strings
+  // in manual_imports diverged from ads.ad_name (case change, re-import
+  // rename, or a wipe that wasn't re-synced). Log a structured warning so
+  // the regression is detectable in server logs before a user reports it.
+  const adNameSet = new Set(adsRegistry.map((r) => String(r["ad_name"] ?? "")));
+  for (const lc of libraryCells) {
+    const payload = (lc["payload"] ?? {}) as Row;
+    const mappedNames = (payload["mapped_ad_names"] as string[] | null | undefined) ?? [];
+    if (mappedNames.length === 0) continue;
+    const hasMatch = mappedNames.some((n) => adNameSet.has(n));
+    if (!hasMatch) {
+      logger.warn(
+        { accountId, cellId: lc["cell_id"], unmatchedNames: mappedNames },
+        "seed assembly: mapped_ad_names produced zero ad matches — cell will show 'No asset' placeholder",
+      );
+    }
+  }
 
   // ── Totals computed from real date-stamped rows ─────────────────────
   const byEvent: Record<string, Row> = {};
@@ -700,6 +766,7 @@ export async function assembleMetrixSeed(): Promise<Row> {
     failurePatternsAll,
     adsRegistryAll,
     cellCreativeOverridesAll,
+    manualImportsCreativeAll,
   ] = await Promise.all([
     selectAll("app_config"),
     selectAll("ad_accounts", (q) => q.order("id")),
@@ -729,12 +796,65 @@ export async function assembleMetrixSeed(): Promise<Row> {
     selectAll("ads", (q) => q.order("ad_name")),
     // Graceful: return [] if the table hasn't been created yet (pre-migration).
     selectAll("cell_creative_overrides", (q) => q.order("uploaded_at")).catch(() => [] as Row[]),
+    // creative_asset manual_imports: used for auto-heal detection only; rows
+    // with null ad_names are excluded because they carry no mapping to fix.
+    selectAll("manual_imports", (q) =>
+      q.eq("kind", "creative_asset").not("ad_names", "is", null),
+    ).catch(() => [] as Row[]),
   ]);
 
   if (adAccounts.length === 0 || adPerformanceAll.length === 0) {
     throw new Error(
       "Supabase holds no imported Metrix data yet. Run: pnpm --filter @workspace/scripts run import:metrix",
     );
+  }
+
+  // ── Auto-heal: sync creative links for accounts that need it ────────
+  // Detect accounts where creative_asset manual_imports exist (with mapped
+  // ad_names) but none of those ad_names have creative_asset_url set.
+  // This catches three regression vectors:
+  //   (a) Re-import / analysis wipe: a prior ads upsert reset creative_asset_url
+  //       to NULL (e.g. ignoreDuplicates:false instead of true) and sync was
+  //       never re-triggered — the column stayed NULL.
+  //   (b) Seed building without self-healing: buildMetrixSeed read NULL from the
+  //       ads table and shipped NULL in every AdRecord, so every card showed
+  //       the placeholder. No check existed to catch this before emitting.
+  //   (c) mapped_ad_names drift: ad_names strings in manual_imports diverged
+  //       from ads.ad_name so syncAllCreativeLinksForAccount matched 0 rows
+  //       and the URL was never written (names diverge on re-import renaming,
+  //       case changes, or trimming differences). The warn below catches this.
+  //
+  // syncAllCreativeLinksForAccount is idempotent and O(imports), not
+  // O(all-ads), so calling it here is safe for accounts with creative uploads.
+  const accountsNeedingSync = detectAccountsNeedingCreativeSync(manualImportsCreativeAll, adsRegistryAll);
+  let finalAdsRegistryAll = adsRegistryAll;
+  if (accountsNeedingSync.length > 0) {
+    logger.info({ accountsNeedingSync }, "metrixSeedAssembly: auto-healing creative links for accounts with wiped URLs");
+    for (const accountId of accountsNeedingSync) {
+      try {
+        const summary = await syncAllCreativeLinksForAccount(accountId);
+        logger.info(
+          { accountId, linked: summary.linked, total: summary.total, unlinked: summary.unlinked_names.length },
+          "metrixSeedAssembly: creative link auto-heal complete",
+        );
+      } catch (err) {
+        logger.warn({ accountId, err }, "metrixSeedAssembly: creative link auto-heal failed (non-fatal)");
+      }
+    }
+    // Re-fetch ads for the healed accounts so the seed assembly picks up
+    // the newly written creative_asset_url values instead of the stale NULLs.
+    try {
+      const freshAds = await selectAll("ads", (q) =>
+        q.in("account_id", accountsNeedingSync).order("ad_name"),
+      );
+      const healedSet = new Set(accountsNeedingSync);
+      finalAdsRegistryAll = [
+        ...adsRegistryAll.filter((r) => !healedSet.has(String(r["account_id"] ?? ""))),
+        ...freshAds,
+      ];
+    } catch (err) {
+      logger.warn({ err }, "metrixSeedAssembly: failed to re-fetch ads after auto-heal (non-fatal, stale data used)");
+    }
   }
 
   // ── Global concept registry ────────────────────────────────────────
@@ -884,7 +1004,7 @@ export async function assembleMetrixSeed(): Promise<Row> {
     iapRuns: groupByAccount(iapRunsAll),
     conceptIntelligence: groupByAccount(conceptIntelligenceAll),
     failurePatterns: groupByAccount(failurePatternsAll),
-    adsRegistry: groupByAccount(adsRegistryAll),
+    adsRegistry: groupByAccount(finalAdsRegistryAll),
     cellCreativeOverrides: groupByAccount(cellCreativeOverridesAll),
     accountModules,
     signalCards,
