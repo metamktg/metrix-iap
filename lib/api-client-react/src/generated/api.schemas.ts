@@ -765,6 +765,25 @@ export interface AnalysisSummaryResult {
   concept_rows: AnalysisSummaryConceptRow[];
 }
 
+export interface AccountAnalysisDataWindow {
+  /** Human-readable label (e.g. "March 2026" or "May 2 – Jun 18") */
+  label: string;
+  /** Start date YYYY-MM-DD */
+  start: string;
+  /** End date YYYY-MM-DD */
+  end: string;
+  /** Total spend in this window */
+  spend: number;
+  /** Number of ad_performance rows in this window */
+  rows: number;
+}
+
+export interface AccountAnalysisDataWindowsResult {
+  windows: AccountAnalysisDataWindow[];
+  /** Days from earliest to latest data point */
+  total_span_days: number;
+}
+
 export interface GenerateStrategyInput {
   /** ID of the specific analysis run to ground this strategy in. Optional — when omitted the engine uses the account's current analysis data. Stored as provenance on the generation run. */
   analysis_run_id?: string | null;

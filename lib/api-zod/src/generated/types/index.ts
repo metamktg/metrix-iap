@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './accountAnalysisDataWindow';
+export * from './accountAnalysisDataWindowsResult';
 export * from './adminAdAccount';
 export * from './adminAdAccountsResult';
 export * from './adminCreateUserInput';

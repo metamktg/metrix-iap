@@ -680,6 +680,94 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/analysis-summary/daterange/{start}/{end}:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+      - name: start
+        in: path
+        required: true
+        description: Start date YYYY-MM-DD
+        schema:
+          type: string
+      - name: end
+        in: path
+        required: true
+        description: End date YYYY-MM-DD
+        schema:
+          type: string
+    get:
+      operationId: getAnalysisSummaryByDateRange
+      tags: [metrix]
+      summary: Re-aggregate analysis data for an explicit date range
+      description: Filters ad_performance, demographic_performance, and placement_performance to the provided date range. Used by DataWindowBar for both single-window and monthly-bucket filter pills. Path params avoid query-param Params-type name collision in orval codegen.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Re-aggregated data for the given date range
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisSummaryResult"
+        "400":
+          description: Missing or invalid date params
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/analysis-data-windows:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+    get:
+      operationId: getAccountAnalysisDataWindows
+      tags: [metrix]
+      summary: List available date windows from actual ad_performance data
+      description: Queries ad_performance directly to find the actual available date windows for an account. Groups into monthly buckets when data spans > 60 days. Does NOT use manual_analysis_runs metadata. Used by DataWindowBar on Analysis Overview.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Available date windows based on actual data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountAnalysisDataWindowsResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/accounts/{accountId}/analysis-summary/{preset}:
     parameters:
       - name: accountId
@@ -3723,6 +3811,36 @@ components:
           items:
             $ref: "#/components/schemas/AnalysisSummaryConceptRow"
       required: [preset, available_window, active_window, totals, demographic_rows, placement_rows, concept_rows]
+    AccountAnalysisDataWindow:
+      type: object
+      required: [label, start, end, spend, rows]
+      properties:
+        label:
+          type: string
+          description: Human-readable label (e.g. "March 2026" or "May 2 – Jun 18")
+        start:
+          type: string
+          description: Start date YYYY-MM-DD
+        end:
+          type: string
+          description: End date YYYY-MM-DD
+        spend:
+          type: number
+          description: Total spend in this window
+        rows:
+          type: integer
+          description: Number of ad_performance rows in this window
+    AccountAnalysisDataWindowsResult:
+      type: object
+      required: [windows, total_span_days]
+      properties:
+        windows:
+          type: array
+          items:
+            $ref: "#/components/schemas/AccountAnalysisDataWindow"
+        total_span_days:
+          type: integer
+          description: Days from earliest to latest data point
     GenerateStrategyInput:
       type: object
       properties:

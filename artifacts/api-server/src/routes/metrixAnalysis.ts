@@ -16,6 +16,8 @@ import {
   computeCreativeLinkageSummary,
   getAnalysisSummaryByPreset,
   getAnalysisSummaryByRunId,
+  getAnalysisSummaryByDateRange,
+  getAccountAnalysisDataWindows,
   VIEW_PRESETS,
   type DateRangePreset,
   type ViewPreset,
@@ -106,6 +108,52 @@ router.get("/metrix/accounts/:accountId/analysis-summary/run/:runId", requireAut
     }
     req.log.error({ err, accountId, runId }, "Failed to compute analysis summary by run");
     res.status(502).json({ message: err instanceof Error ? err.message : "Could not compute analysis summary." });
+  }
+});
+
+// ─── Date-range summary ───────────────────────────────────────────────────────
+// Caller passes explicit ?start=YYYY-MM-DD&end=YYYY-MM-DD query params.
+// Used by DataWindowBar for both single-window and monthly-bucket selections.
+// Must be registered BEFORE the :preset wildcard route.
+router.get("/metrix/accounts/:accountId/analysis-summary/daterange/:start/:end", requireAuth, async (req, res) => {
+  const accountId = String(req.params["accountId"]);
+  const start     = String(req.params["start"] ?? "");
+  const end       = String(req.params["end"]   ?? "");
+  if (!start || !end) {
+    res.status(400).json({ message: "start and end query params are required (YYYY-MM-DD)." });
+    return;
+  }
+  try {
+    if (!(await guardAccess(req, res, accountId))) return;
+    const result = await getAnalysisSummaryByDateRange(accountId, start, end);
+    res.json(result);
+  } catch (err) {
+    if (err instanceof AnalysisError) {
+      res.status(err.statusCode).json({ message: err.message });
+      return;
+    }
+    req.log.error({ err, accountId, start, end }, "Failed to compute date-range analysis summary");
+    res.status(502).json({ message: err instanceof Error ? err.message : "Could not compute analysis summary." });
+  }
+});
+
+// ─── Data-window discovery ────────────────────────────────────────────────────
+// Returns the actual available date windows for an account, derived from
+// ad_performance data (not run metadata). Used by DataWindowBar on the
+// Analysis Overview to populate filter options.
+router.get("/metrix/accounts/:accountId/analysis-data-windows", requireAuth, async (req, res) => {
+  const accountId = String(req.params["accountId"]);
+  try {
+    if (!(await guardAccess(req, res, accountId))) return;
+    const result = await getAccountAnalysisDataWindows(accountId);
+    res.json(result);
+  } catch (err) {
+    if (err instanceof AnalysisError) {
+      res.status(err.statusCode).json({ message: err.message });
+      return;
+    }
+    req.log.error({ err, accountId }, "Failed to get analysis data windows");
+    res.status(502).json({ message: err instanceof Error ? err.message : "Could not fetch data windows." });
   }
 });
 

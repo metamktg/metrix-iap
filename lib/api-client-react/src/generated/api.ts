@@ -20,6 +20,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AccountAnalysisDataWindowsResult,
   AdminAdAccountsResult,
   AdminCreateUserInput,
   AdminCreateUserResult,
@@ -1341,6 +1342,172 @@ export function useGetAnalysisSummaryByRun<TData = Awaited<ReturnType<typeof get
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetAnalysisSummaryByRunQueryOptions(accountId,runId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetAnalysisSummaryByDateRangeUrl = (accountId: string,
+    start: string,
+    end: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/analysis-summary/daterange/${start}/${end}`
+}
+
+/**
+ * Filters ad_performance, demographic_performance, and placement_performance to the provided date range. Used by DataWindowBar for both single-window and monthly-bucket filter pills. Path params avoid query-param Params-type name collision in orval codegen.
+ * @summary Re-aggregate analysis data for an explicit date range
+ */
+export const getAnalysisSummaryByDateRange = async (accountId: string,
+    start: string,
+    end: string, options?: RequestInit): Promise<AnalysisSummaryResult> => {
+
+  return customFetch<AnalysisSummaryResult>(getGetAnalysisSummaryByDateRangeUrl(accountId,start,end),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAnalysisSummaryByDateRangeQueryKey = (accountId: string,
+    start: string,
+    end: string,) => {
+    return [
+    `/api/metrix/accounts/${accountId}/analysis-summary/daterange/${start}/${end}`
+    ] as const;
+    }
+
+
+export const getGetAnalysisSummaryByDateRangeQueryOptions = <TData = Awaited<ReturnType<typeof getAnalysisSummaryByDateRange>>, TError = ErrorType<ApiError>>(accountId: string,
+    start: string,
+    end: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAnalysisSummaryByDateRange>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAnalysisSummaryByDateRangeQueryKey(accountId,start,end);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAnalysisSummaryByDateRange>>> = ({ signal }) => getAnalysisSummaryByDateRange(accountId,start,end, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: accountId !== null && accountId !== undefined && start !== null && start !== undefined && end !== null && end !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAnalysisSummaryByDateRange>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAnalysisSummaryByDateRangeQueryResult = NonNullable<Awaited<ReturnType<typeof getAnalysisSummaryByDateRange>>>
+export type GetAnalysisSummaryByDateRangeQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Re-aggregate analysis data for an explicit date range
+ */
+
+export function useGetAnalysisSummaryByDateRange<TData = Awaited<ReturnType<typeof getAnalysisSummaryByDateRange>>, TError = ErrorType<ApiError>>(
+ accountId: string,
+    start: string,
+    end: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAnalysisSummaryByDateRange>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAnalysisSummaryByDateRangeQueryOptions(accountId,start,end,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetAccountAnalysisDataWindowsUrl = (accountId: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/analysis-data-windows`
+}
+
+/**
+ * Queries ad_performance directly to find the actual available date windows for an account. Groups into monthly buckets when data spans > 60 days. Does NOT use manual_analysis_runs metadata. Used by DataWindowBar on Analysis Overview.
+ * @summary List available date windows from actual ad_performance data
+ */
+export const getAccountAnalysisDataWindows = async (accountId: string, options?: RequestInit): Promise<AccountAnalysisDataWindowsResult> => {
+
+  return customFetch<AccountAnalysisDataWindowsResult>(getGetAccountAnalysisDataWindowsUrl(accountId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAccountAnalysisDataWindowsQueryKey = (accountId: string,) => {
+    return [
+    `/api/metrix/accounts/${accountId}/analysis-data-windows`
+    ] as const;
+    }
+
+
+export const getGetAccountAnalysisDataWindowsQueryOptions = <TData = Awaited<ReturnType<typeof getAccountAnalysisDataWindows>>, TError = ErrorType<ApiError>>(accountId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAccountAnalysisDataWindows>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAccountAnalysisDataWindowsQueryKey(accountId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAccountAnalysisDataWindows>>> = ({ signal }) => getAccountAnalysisDataWindows(accountId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: accountId !== null && accountId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAccountAnalysisDataWindows>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAccountAnalysisDataWindowsQueryResult = NonNullable<Awaited<ReturnType<typeof getAccountAnalysisDataWindows>>>
+export type GetAccountAnalysisDataWindowsQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary List available date windows from actual ad_performance data
+ */
+
+export function useGetAccountAnalysisDataWindows<TData = Awaited<ReturnType<typeof getAccountAnalysisDataWindows>>, TError = ErrorType<ApiError>>(
+ accountId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAccountAnalysisDataWindows>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAccountAnalysisDataWindowsQueryOptions(accountId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

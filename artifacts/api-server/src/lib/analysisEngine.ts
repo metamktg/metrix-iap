@@ -1219,39 +1219,27 @@ export async function getAnalysisSummaryByPreset(
   };
 }
 
-// ─── Run-scoped summary (IAP run picker) ───────────────────────────────
-// Re-aggregates the same tables as getAnalysisSummaryByPreset, but scoped
-// to the date window of a specific manual_analysis_run. Used by the run
-// picker on manual-upload accounts — not time-relative, fully deterministic.
+// ─── Date-range summary engine ────────────────────────────────────────────────
+// Single shared implementation driving every date-scoped summary endpoint.
+// Takes explicit start/end dates (YYYY-MM-DD) — callers supply them.
+// Never reads manual_analysis_runs; those are just upload-event metadata.
 
-export async function getAnalysisSummaryByRunId(
+async function _computeAnalysisSummaryForDateRange(
   accountId: string,
-  runId: string,
+  start: string,
+  end: string,
 ): Promise<AnalysisSummaryResult> {
   const supabase = getSupabase();
 
-  const { data: runs, error: runErr } = await supabase
-    .from("manual_analysis_runs")
-    .select("date_start, date_end")
-    .eq("account_id", accountId)
-    .eq("id", runId)
-    .limit(1);
-  if (runErr) throw new AnalysisError(runErr.message, 500);
-  if (!runs || runs.length === 0) throw new AnalysisError("Analysis run not found", 404);
-
-  const runDateStart = String(runs[0]!["date_start"] ?? "");
-  const runDateEnd   = String(runs[0]!["date_end"]   ?? "");
-  if (!runDateStart || !runDateEnd) throw new AnalysisError("Run has no date range", 400);
-
-  const available_window: AnalysisSummaryWindow = { start: runDateStart, end: runDateEnd };
+  const available_window: AnalysisSummaryWindow = { start, end };
 
   // ── ad_performance ────────────────────────────────────────────────
   const { data: adRows, error: adErr } = await supabase
     .from("ad_performance")
     .select("date_start, spend, impressions, link_clicks, results, result_type, reach, clicks_all, ad_name")
     .eq("account_id", accountId)
-    .gte("date_start", runDateStart)
-    .lte("date_start", runDateEnd);
+    .gte("date_start", start)
+    .lte("date_start", end);
   if (adErr) throw new Error(adErr.message);
 
   if (!adRows || adRows.length === 0) {
@@ -1317,8 +1305,8 @@ export async function getAnalysisSummaryByRunId(
     .from("demographic_performance")
     .select("date_start, age, gender, spend, results, link_clicks")
     .eq("account_id", accountId)
-    .gte("date_start", runDateStart)
-    .lte("date_start", runDateEnd);
+    .gte("date_start", start)
+    .lte("date_start", end);
   if (demoErr) throw new Error(demoErr.message);
 
   const demoMap = new Map<string, { spend: number; results: number; link_clicks: number }>();
@@ -1340,8 +1328,8 @@ export async function getAnalysisSummaryByRunId(
     .from("placement_performance")
     .select("date_start, placement, spend, impressions, link_clicks, results, tracking_basis")
     .eq("account_id", accountId)
-    .gte("date_start", runDateStart)
-    .lte("date_start", runDateEnd);
+    .gte("date_start", start)
+    .lte("date_start", end);
   if (placErr) throw new Error(placErr.message);
 
   const placMap = new Map<string, { spend: number; impressions: number; link_clicks: number; results: number }>();
@@ -1363,9 +1351,9 @@ export async function getAnalysisSummaryByRunId(
     results:     v.results,
   }));
 
-  const adDates    = adRows.map((r: any) => String(r.date_start ?? "")).filter(Boolean);
-  const activeStart = adDates.reduce((a, b) => (a < b ? a : b), runDateStart);
-  const activeEnd   = adDates.reduce((a, b) => (a > b ? a : b), runDateEnd);
+  const adDates     = adRows.map((r: any) => String(r.date_start ?? "")).filter(Boolean);
+  const activeStart = adDates.reduce((a, b) => (a < b ? a : b), start);
+  const activeEnd   = adDates.reduce((a, b) => (a > b ? a : b), end);
 
   return {
     preset: "all" as ViewPreset,
@@ -1382,4 +1370,149 @@ export async function getAnalysisSummaryByRunId(
     placement_rows,
     concept_rows,
   };
+}
+
+// ─── Public summary wrappers ──────────────────────────────────────────────────
+
+/** Run-scoped: looks up the run's date window from manual_analysis_runs, then delegates. */
+export async function getAnalysisSummaryByRunId(
+  accountId: string,
+  runId: string,
+): Promise<AnalysisSummaryResult> {
+  const supabase = getSupabase();
+  const { data: runs, error } = await supabase
+    .from("manual_analysis_runs")
+    .select("date_start, date_end")
+    .eq("account_id", accountId)
+    .eq("id", runId)
+    .limit(1);
+  if (error) throw new AnalysisError(error.message, 500);
+  if (!runs || runs.length === 0) throw new AnalysisError("Analysis run not found", 404);
+  const start = String(runs[0]!["date_start"] ?? "");
+  const end   = String(runs[0]!["date_end"]   ?? "");
+  if (!start || !end) throw new AnalysisError("Run has no date range", 400);
+  return _computeAnalysisSummaryForDateRange(accountId, start, end);
+}
+
+/** Date-range: caller supplies explicit start/end dates (YYYY-MM-DD). */
+export async function getAnalysisSummaryByDateRange(
+  accountId: string,
+  start: string,
+  end: string,
+): Promise<AnalysisSummaryResult> {
+  if (!start || !end) throw new AnalysisError("start and end date params are required", 400);
+  return _computeAnalysisSummaryForDateRange(accountId, start, end);
+}
+
+// ─── Data-window discovery ────────────────────────────────────────────────────
+// Queries ad_performance DIRECTLY to return the actual available date windows
+// for an account. Source of truth for DataWindowBar — does NOT depend on
+// manual_analysis_runs (which can be duplicate, stale, or missing).
+// Groups into monthly buckets when data spans > 60 days.
+
+export type AccountAnalysisDataWindow = {
+  label: string; // "March 2026" | "May 2 – Jun 18"
+  start: string; // YYYY-MM-DD
+  end: string;   // YYYY-MM-DD
+  spend: number; // total spend in this window
+  rows: number;  // number of ad_performance rows
+};
+
+export type AccountAnalysisDataWindowsResult = {
+  windows: AccountAnalysisDataWindow[];
+  total_span_days: number;
+};
+
+export async function getAccountAnalysisDataWindows(
+  accountId: string,
+): Promise<AccountAnalysisDataWindowsResult> {
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase
+    .from("ad_performance")
+    .select("date_start, spend")
+    .eq("account_id", accountId)
+    .order("date_start");
+  if (error) throw new AnalysisError(error.message, 500);
+  if (!data || data.length === 0) return { windows: [], total_span_days: 0 };
+
+  // Aggregate spend + row count per distinct date
+  const byDate = new Map<string, { spend: number; rows: number }>();
+  for (const r of data) {
+    const d = String((r as any).date_start ?? "");
+    if (!d) continue;
+    const cur = byDate.get(d) ?? { spend: 0, rows: 0 };
+    cur.spend += Number((r as any).spend ?? 0);
+    cur.rows  += 1;
+    byDate.set(d, cur);
+  }
+
+  const dates = Array.from(byDate.keys()).sort();
+  if (dates.length === 0) return { windows: [], total_span_days: 0 };
+
+  const earliest = dates[0]!;
+  const latest   = dates[dates.length - 1]!;
+  const spanDays =
+    Math.round(
+      (new Date(latest + "T00:00:00Z").getTime() - new Date(earliest + "T00:00:00Z").getTime()) /
+        86_400_000,
+    ) + 1;
+
+  const fmtDate = (d: string) =>
+    new Date(d + "T00:00:00Z").toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      timeZone: "UTC",
+    });
+
+  // Single window when data span ≤ 60 days
+  if (spanDays <= 60) {
+    let totalSpend = 0;
+    let totalRows  = 0;
+    for (const v of byDate.values()) {
+      totalSpend += v.spend;
+      totalRows  += v.rows;
+    }
+    return {
+      windows: [
+        {
+          label: `${fmtDate(earliest)} – ${fmtDate(latest)}`,
+          start: earliest,
+          end:   latest,
+          spend: roundN(totalSpend),
+          rows:  totalRows,
+        },
+      ],
+      total_span_days: spanDays,
+    };
+  }
+
+  // Monthly buckets when data spans > 60 days
+  const monthMap = new Map<string, { spend: number; rows: number; start: string; end: string }>();
+  for (const d of dates) {
+    const month = d.substring(0, 7); // "YYYY-MM"
+    const v     = byDate.get(d)!;
+    const cur   = monthMap.get(month) ?? { spend: 0, rows: 0, start: d, end: d };
+    cur.spend += v.spend;
+    cur.rows  += v.rows;
+    if (d < cur.start) cur.start = d;
+    if (d > cur.end)   cur.end   = d;
+    monthMap.set(month, cur);
+  }
+
+  const windows: AccountAnalysisDataWindow[] = Array.from(monthMap.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([month, v]) => ({
+      label: new Date(month + "-01T00:00:00Z").toLocaleDateString("en-US", {
+        month:    "long",
+        year:     "numeric",
+        timeZone: "UTC",
+      }),
+      start: v.start,
+      end:   v.end,
+      spend: roundN(v.spend),
+      rows:  v.rows,
+    }));
+
+  return { windows, total_span_days: spanDays };
 }

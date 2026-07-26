@@ -15,11 +15,12 @@ import {
   SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
   DetailReveal, deriveLabel,
   LoopAction, SkeletonTileRow, InfoTooltip, readableVariables, eventLabel,
-  RunPickerBar,
+  DataWindowBar,
+  type DataWindowSelection,
 } from "../shared";
 import {
-  getGetAnalysisSummaryByRunQueryOptions,
-  useListAnalysisRuns,
+  getGetAnalysisSummaryByDateRangeQueryOptions,
+  getGetAccountAnalysisDataWindowsQueryOptions,
 } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
 import { SharePieChart } from "@/components/charts/SharePieChart";
@@ -692,15 +693,22 @@ export function AnalysisOverview() {
   const analysis       = getAnalysisData(seed, adAccountId);
 
   const [cellSort, setCellSort] = useState<CellSort>("spend");
-  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  const [selectedWindow, setSelectedWindow] = useState<DataWindowSelection | null>(null);
 
-  // Fetch available analysis runs for the run picker.
-  const { data: runsData } = useListAnalysisRuns(adAccountId ?? "");
+  // Fetch available date windows from actual ad_performance data (not run metadata).
+  const { data: windowsData, isFetching: windowsFetching } = useQuery({
+    ...getGetAccountAnalysisDataWindowsQueryOptions(adAccountId ?? ""),
+    enabled: !!adAccountId,
+  });
 
-  // Fetch re-aggregated data when a specific run is selected.
+  // Fetch re-aggregated data when a specific window is selected.
   const { data: runData, isFetching: runFetching } = useQuery({
-    ...getGetAnalysisSummaryByRunQueryOptions(adAccountId ?? "", selectedRunId ?? ""),
-    enabled: !!selectedRunId && !!adAccountId,
+    ...getGetAnalysisSummaryByDateRangeQueryOptions(
+      adAccountId ?? "",
+      selectedWindow?.start ?? "",
+      selectedWindow?.end ?? "",
+    ),
+    enabled: !!selectedWindow && !!adAccountId,
   });
 
   return (
@@ -767,7 +775,7 @@ export function AnalysisOverview() {
         // When a preset is active and data has loaded, use the concept_rows
         // returned by the API (derived from ad_performance for the window).
         // Otherwise fall back to the all-time seed performance_by_cell rows.
-        const sortedCells: CellBarItem[] = (selectedRunId && runData)
+        const sortedCells: CellBarItem[] = (selectedWindow && runData)
           ? [...runData.concept_rows]
               .sort((x, y) =>
                 cellSort === "spend"
@@ -800,7 +808,7 @@ export function AnalysisOverview() {
 
         // ── Placements (top 6 by spend) ───────────────────────────────
         // When a run is selected and data has loaded, use the API placement rows.
-        const allPlacements = (selectedRunId && runData
+        const allPlacements = (selectedWindow && runData
           ? runData.placement_rows.map((r) => ({
               placement: r.placement,
               spend: r.spend,
@@ -818,7 +826,7 @@ export function AnalysisOverview() {
 
         // ── Demographic heatmap ───────────────────────────────────────
         // When a run is selected and data has loaded, build heatmap from API rows.
-        const heatmapRows = selectedRunId && runData
+        const heatmapRows = selectedWindow && runData
           ? runData.demographic_rows.map((r) => ({
               cell_id: "", "Ad name": "", Age: r.age, Gender: r.gender,
               "Amount spent (USD)": r.spend ?? 0,
@@ -872,16 +880,16 @@ export function AnalysisOverview() {
               account={acct}
             />
             <>
-                {/* ── IAP run picker ────────────────────────────────── */}
-                <RunPickerBar
-                  runs={runsData?.runs ?? []}
-                  selectedRunId={selectedRunId}
-                  onSelect={setSelectedRunId}
-                  isFetching={runFetching}
+                {/* ── Data-window picker ──────────────────────────────── */}
+                <DataWindowBar
+                  windows={windowsData?.windows ?? []}
+                  selected={selectedWindow}
+                  onSelect={setSelectedWindow}
+                  isFetching={windowsFetching}
                 />
 
                 {/* ── Metric tiles + result type donut (inline) ──── */}
-                {(isRefetching || (!!selectedRunId && runFetching)) ? (
+                {(isRefetching || (!!selectedWindow && runFetching)) ? (
                   <div className="px-6 pt-5">
                     <SkeletonTileRow count={4} />
                   </div>
@@ -890,7 +898,7 @@ export function AnalysisOverview() {
                     {/* Left: 4 tiles in a 2×2 grid */}
                     <div className="flex-1 grid grid-cols-dashboard-4 gap-3">
                         <>
-                          {selectedRunId && runData ? (
+                          {selectedWindow && runData ? (
                             <>
                               <MetricTile label="Total spend"  value={fmtUSD(runData.totals.total_spend_usd, 0)} />
                               <MetricTile label="Impressions"  value={fmtNum(runData.totals.total_impressions)} />
@@ -952,7 +960,7 @@ export function AnalysisOverview() {
                   )}
 
                   {/* ── Cell performance bar chart ────────────────── */}
-                  {!!selectedRunId && runFetching ? (
+                  {!!selectedWindow && runFetching ? (
                     <SectionCard title="Top concepts by spend" desc="Loading…">
                       <SkeletonTileRow count={3} />
                     </SectionCard>
@@ -960,7 +968,7 @@ export function AnalysisOverview() {
                     <SectionCard
                       title="Top concepts by spend"
                       desc={
-                        selectedRunId && runData
+                        selectedWindow && runData
                           ? `${sortedCells.length} concept${sortedCells.length !== 1 ? "s" : ""} · run window · CPA`
                           : `${term.Plural} · CPA · ${a.performance_by_cell.length} cells total`
                       }

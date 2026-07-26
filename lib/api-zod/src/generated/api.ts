@@ -473,6 +473,90 @@ export const GetAnalysisSummaryByRunResponse = zod.object({
 
 
 /**
+ * Filters ad_performance, demographic_performance, and placement_performance to the provided date range. Used by DataWindowBar for both single-window and monthly-bucket filter pills. Path params avoid query-param Params-type name collision in orval codegen.
+ * @summary Re-aggregate analysis data for an explicit date range
+ */
+
+
+
+export const GetAnalysisSummaryByDateRangeParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.'),
+  "start": zod.coerce.string().describe('Start date YYYY-MM-DD'),
+  "end": zod.coerce.string().describe('End date YYYY-MM-DD')
+})
+
+export const GetAnalysisSummaryByDateRangeResponse = zod.object({
+  "preset": zod.enum(['7d', '14d', '28d', '90d', 'all']).describe('Date window for the analysis view filter, anchored to the latest date in stored ad_performance rows (not wall-clock time). \"all\" covers every stored row.'),
+  "available_window": zod.object({
+  "start": zod.string().describe('Start date (YYYY-MM-DD)'),
+  "end": zod.string().describe('End date (YYYY-MM-DD)')
+}).nullable().describe('Full date window available in stored rows for this account (min\/max date_start).'),
+  "active_window": zod.object({
+  "start": zod.string().describe('Start date (YYYY-MM-DD)'),
+  "end": zod.string().describe('End date (YYYY-MM-DD)')
+}).nullable().describe('Actual date window covered by this result after applying the preset filter.'),
+  "totals": zod.object({
+  "total_spend_usd": zod.number(),
+  "total_impressions": zod.number(),
+  "total_link_clicks": zod.number(),
+  "overall_link_ctr_pct": zod.number(),
+  "bottom_line_totals": zod.record(zod.string(), zod.object({
+  "spend": zod.number(),
+  "reach": zod.number(),
+  "impressions": zod.number(),
+  "results": zod.number(),
+  "clicks_all": zod.number(),
+  "link_clicks": zod.number()
+}))
+}),
+  "demographic_rows": zod.array(zod.object({
+  "age": zod.string(),
+  "gender": zod.string(),
+  "spend": zod.number().nullable(),
+  "results": zod.number().nullable(),
+  "link_clicks": zod.number().nullable()
+})),
+  "placement_rows": zod.array(zod.object({
+  "placement": zod.string(),
+  "spend": zod.number(),
+  "impressions": zod.number(),
+  "link_clicks": zod.number(),
+  "results": zod.number()
+})),
+  "concept_rows": zod.array(zod.object({
+  "concept": zod.string(),
+  "book": zod.string().nullable(),
+  "spend": zod.number(),
+  "results": zod.number(),
+  "link_clicks": zod.number()
+}))
+})
+
+
+/**
+ * Queries ad_performance directly to find the actual available date windows for an account. Groups into monthly buckets when data spans > 60 days. Does NOT use manual_analysis_runs metadata. Used by DataWindowBar on Analysis Overview.
+ * @summary List available date windows from actual ad_performance data
+ */
+
+
+
+export const GetAccountAnalysisDataWindowsParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
+})
+
+export const GetAccountAnalysisDataWindowsResponse = zod.object({
+  "windows": zod.array(zod.object({
+  "label": zod.string().describe('Human-readable label (e.g. \"March 2026\" or \"May 2 – Jun 18\")'),
+  "start": zod.string().describe('Start date YYYY-MM-DD'),
+  "end": zod.string().describe('End date YYYY-MM-DD'),
+  "spend": zod.number().describe('Total spend in this window'),
+  "rows": zod.number().describe('Number of ad_performance rows in this window')
+})),
+  "total_span_days": zod.number().describe('Days from earliest to latest data point')
+})
+
+
+/**
  * Re-aggregates ad_performance, demographic_performance, and placement_performance rows for the requested date preset, anchored to the latest date stored for the account (not wall-clock time). Returns totals plus demographic, placement, and concept breakdowns. Used by the date preset filter on analysis views. Requires access to the account.
  * @summary Re-aggregate analysis data for a date preset window
  */
