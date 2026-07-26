@@ -387,6 +387,12 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
       cvr_link_pct: r["cvr_link_pct"] === null ? null : Number(r["cvr_link_pct"]),
       confidence: r["confidence"],
       mapped_in_library: r["mapped_in_library"],
+      // Stage 2 Analysis Core fields — populated after each analysis run
+      buying_intent_score: r["buying_intent_score"] === null || r["buying_intent_score"] === undefined
+        ? null : Number(r["buying_intent_score"]),
+      performance_lift_vs_baseline: r["performance_lift_vs_baseline"] ?? null,
+      performance_tier: r["performance_tier"] ?? null,
+      confidence_level: r["confidence_level"] ?? null,
     })),
   };
 

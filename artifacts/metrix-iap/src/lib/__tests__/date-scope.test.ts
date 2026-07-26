@@ -66,20 +66,25 @@ describe("getConceptWindows", () => {
 describe("cellInRange", () => {
   const windows = getConceptWindows(analysis);
   const c2 = windows.get("C2")!;
-  const c4 = windows.get("C4")!;
 
   it("includes a cell whose concept window overlaps the range", () => {
     expect(cellInRange(windows, { start: c2.start, end: c2.start }, "C2B")).toBe(true);
   });
 
   it("excludes a cell whose concept window misses the range", () => {
-    // A range strictly after C4's window must exclude C4 cells.
-    expect(c4.end < c2.end).toBe(true);
+    // Use synthetic windows to test the helper logic directly, independent of
+    // the fixture's date distribution (which may have all concepts sharing the
+    // same window when analysis covers a full data period).
+    const synthWindows = new Map([
+      ["C4", { start: "2026-05-01", end: "2026-06-30" }],
+      ["C2", { start: "2026-05-01", end: "2026-07-31" }],
+    ]);
     const after = { start: "2026-07-01", end: "2026-07-07" };
-    expect(after.start > c4.end).toBe(true);
-    expect(cellInRange(windows, after, "C4E")).toBe(false);
-    // ...while C2 cells (window runs through 2026-07-07) stay in.
-    expect(cellInRange(windows, after, "C2B")).toBe(true);
+    // C4's window ends 2026-06-30, before the range start → excluded.
+    expect(after.start > "2026-06-30").toBe(true);
+    expect(cellInRange(synthWindows, after, "C4E")).toBe(false);
+    // C2's window extends to 2026-07-31, overlapping the range → included.
+    expect(cellInRange(synthWindows, after, "C2B")).toBe(true);
   });
 
   it("keeps cells with unknown windows (never hide undatable rows)", () => {
@@ -102,14 +107,23 @@ describe("sumInRange", () => {
   });
 
   it("narrowing the range reduces the sum when flights fall outside it", () => {
-    const all = sumInRange(rollup, null, dates, (r) => r.spend);
+    // Use synthetic rollup to test the helper's exclusion logic independent of
+    // the fixture's actual date distribution, which may have all concepts sharing
+    // the same window when analysis covers a full data period.
+    const synthRollup = [
+      { concept: "C4", date_start: "2026-05-01", date_end: "2026-06-30", spend: 100, results: 5 },
+      { concept: "C2", date_start: "2026-05-01", date_end: "2026-07-31", spend: 200, results: 10 },
+    ];
+    const synthDates = (r: (typeof synthRollup)[number]) => ({ start: r.date_start, end: r.date_end });
+    const all = sumInRange(synthRollup, null, synthDates, (r) => r.spend);
     const narrowed = sumInRange(
-      rollup,
+      synthRollup,
       { start: "2026-07-01", end: "2026-07-07" },
-      dates,
+      synthDates,
       (r) => r.spend
     );
-    // C4 flights (ending 2026-06-27) drop out, so the sum must shrink.
+    // C4 flights end 2026-06-30, before the range → drop out.
+    // C2 flights continue through 2026-07-31 → stay in.
     expect(narrowed).toBeLessThan(all);
     expect(narrowed).toBeGreaterThan(0);
   });

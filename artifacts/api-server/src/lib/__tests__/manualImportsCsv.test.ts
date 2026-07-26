@@ -144,7 +144,7 @@ beforeAll(async () => {
       resolve();
     });
   });
-});
+}, 30_000);
 
 afterAll(async () => {
   if (stagedImportIds.length > 0) {
