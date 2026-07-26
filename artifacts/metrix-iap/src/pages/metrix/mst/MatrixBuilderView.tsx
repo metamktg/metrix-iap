@@ -41,11 +41,13 @@ const ROW_COLOR: Record<string, string> = {
 };
 
 export function MatrixGrid({
-  matrix, onCellClick, cellHeatmap,
+  matrix, onCellClick, cellHeatmap, cellDensity,
 }: {
   matrix: MSTMatrix;
   onCellClick?: (cell: MSTMatrixCell) => void;
   cellHeatmap?: Map<string, { eff: CpaEff; color: string }>;
+  /** When provided, each cell is tinted by spend-share (0–1); absent keys = no spend data */
+  cellDensity?: Map<string, number>;
 }) {
   const cellOf = (col: string, row: string) => matrix.cells.find((c) => c.column_id === col && c.row_id === row);
   return (
@@ -70,18 +72,28 @@ export function MatrixGrid({
                 const cell = cellOf(col.id, row.id);
                 const diag = cell?.diagonal_role;
                 const Tag = cell && onCellClick ? "button" : "div";
+                // Density overlay state for this cell
+                const densityIntensity = cell && cellDensity ? (cellDensity.get(cell.cell_id) ?? null) : null;
+                const noSpendData = cell && cellDensity != null && !cellDensity.has(cell.cell_id);
                 return (
                   <Tag
                     key={col.id + row.id}
                     onClick={cell && onCellClick ? () => onCellClick(cell) : undefined}
                     aria-label={cell && onCellClick ? `Open performance for ${cell.cell_id}` : undefined}
                     className={cn(
-                      "relative overflow-hidden m-0.5 p-2.5 rounded-lg border bg-white/[0.02] min-h-[112px] text-left",
+                      "relative overflow-hidden m-0.5 p-2.5 rounded-lg border min-h-[112px] text-left",
                       diag === "diag_down" && "border-primary/40 ring-1 ring-primary/15",
                       diag === "diag_up" && "border-teal-400/40 ring-1 ring-teal-400/15",
-                      !diag && "border-border/40",
-                      cell && onCellClick && "cursor-pointer hover:bg-white/[0.05] hover:border-primary/40 transition-colors"
+                      !diag && (noSpendData ? "border-border/30 border-dashed" : "border-border/40"),
+                      cell && onCellClick && "cursor-pointer hover:border-primary/40 transition-colors"
                     )}
+                    style={{
+                      background: densityIntensity != null
+                        ? `rgba(59,130,246,${(densityIntensity * 0.18).toFixed(3)})`
+                        : noSpendData
+                          ? "rgba(255,255,255,0.008)"
+                          : "rgba(255,255,255,0.02)",
+                    }}
                   >
                     {cell ? (
                       <>
@@ -118,6 +130,7 @@ export function MatrixBuilderView() {
   const account = getAdAccount(seed, adAccountId);
   const { rangeHasData, range } = useDateRange();
   const [activeCell, setActiveCell] = useState<MSTMatrixCell | null>(null);
+  const [densityOverlay, setDensityOverlay] = useState(false);
   const { mstRange, mstInRange } = useMstRangeScope(
     getMST(seed, adAccountId),
     getAnalysisData(seed, adAccountId)
@@ -150,6 +163,21 @@ export function MatrixBuilderView() {
     }
     return map;
   }, [analysisData]);
+
+  // Density overlay — spend share per cell (0–1) for the proportional blue tint.
+  const cellDensityMap = useMemo(() => {
+    if (!analysisData || !densityOverlay) return undefined;
+    const grouped = new Map<string, number>();
+    for (const row of analysisData.performance_by_cell) {
+      grouped.set(row.cell_id, (grouped.get(row.cell_id) ?? 0) + row["Amount spent (USD)"]);
+    }
+    const maxSpend = Math.max(...grouped.values(), 0.0001);
+    const normalized = new Map<string, number>();
+    for (const [cellId, spend] of grouped) {
+      normalized.set(cellId, spend / maxSpend);
+    }
+    return normalized;
+  }, [analysisData, densityOverlay]);
 
   return (
     <ModuleScopeGate section={SECTION} title="Matrix Builder" account={account}>
@@ -190,7 +218,7 @@ export function MatrixBuilderView() {
             ) : (
               <div className="px-6 py-5 space-y-4">
                 <CaveatNote text={mst.render_policy} />
-                <MatrixGrid matrix={matrix} onCellClick={setActiveCell} cellHeatmap={cellHeatmap} />
+                <MatrixGrid matrix={matrix} onCellClick={setActiveCell} cellHeatmap={cellHeatmap} cellDensity={cellDensityMap} />
                 <div className="flex items-center gap-4 text-caption text-muted-foreground/75 flex-wrap">
                   <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded border border-primary/40 ring-1 ring-primary/15 inline-block" /> Primary diagonal (↘)</span>
                   <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded border border-teal-400/40 ring-1 ring-teal-400/15 inline-block" /> Counter diagonal (↗)</span>
@@ -200,8 +228,27 @@ export function MatrixBuilderView() {
                       <span className="flex items-center gap-1.5"><span className="w-3.5 h-[3px] rounded inline-block" style={{ background: EFF_COLOR.costly }} /> Above-median CPA</span>
                     </>
                   )}
+                  {densityOverlay && (
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-3.5 h-3.5 rounded inline-block" style={{ background: "rgba(59,130,246,0.45)" }} />
+                      Spend density — dashed = no data
+                    </span>
+                  )}
                   <span className="text-muted-foreground/60">Click any tile for granular performance</span>
-                  <span className="ml-auto"><CrossLink to="/app/mst/crossmap" label="See crossmap results" /></span>
+                  <span className="ml-auto flex items-center gap-3">
+                    <button
+                      onClick={() => setDensityOverlay((d) => !d)}
+                      className={cn(
+                        "h-6 px-2.5 rounded-md text-label font-mono uppercase tracking-widest transition-colors",
+                        densityOverlay
+                          ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                          : "text-muted-foreground/70 border border-border/30 hover:text-muted-foreground hover:border-border/60"
+                      )}
+                    >
+                      Density
+                    </button>
+                    <CrossLink to="/app/mst/crossmap" label="See crossmap results" />
+                  </span>
                 </div>
               </div>
             )}
