@@ -200,6 +200,13 @@ create table if not exists concept_performance (
 -- already nullable.
 alter table concept_performance alter column book drop not null;
 
+-- Stage 2 Analysis Core fields — added after initial table creation.
+-- Idempotent: ADD COLUMN IF NOT EXISTS is a no-op when already present.
+alter table concept_performance add column if not exists buying_intent_score numeric;
+alter table concept_performance add column if not exists performance_lift_vs_baseline text;
+alter table concept_performance add column if not exists performance_tier text;
+alter table concept_performance add column if not exists confidence_level text;
+
 create table if not exists campaign_windows (
   id bigint generated always as identity primary key,
   account_id text not null references ad_accounts(id),
