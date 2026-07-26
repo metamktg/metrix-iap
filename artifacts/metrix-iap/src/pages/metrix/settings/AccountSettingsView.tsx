@@ -37,7 +37,7 @@ function SessionSection() {
   return (
     <SectionCard title="Your session" desc="Currently signed-in account">
       <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
-        <UserCircle2 className="w-4 h-4 text-primary shrink-0" />
+        <UserCircle2 className="w-4 h-4 text-interactive shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="text-body font-medium text-foreground truncate" data-testid="text-session-email">{user.email}</div>
           <div className="text-label text-muted-foreground/85">Signed in</div>
@@ -314,7 +314,7 @@ export function AccountSettingsView() {
         {rb && (
           <SectionCard title="White-label & branding" desc="Client-facing report branding">
             <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
-              <Palette className="w-4 h-4 text-primary shrink-0" />
+              <Palette className="w-4 h-4 text-interactive shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="text-body font-medium text-foreground capitalize">{rb.default_branding} branding</div>
                 <div className="text-label text-muted-foreground/85">White-label {rb.white_label_supported ? "supported" : "unavailable"} · formats: {rb.export_formats.join(", ")}</div>

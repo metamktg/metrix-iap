@@ -63,7 +63,7 @@ function RunAnalysisBtn({
         "flex items-center gap-1.5 h-8 px-3 rounded-md border text-caption font-medium transition-colors",
         warning
           ? "bg-amber-400/15 border-amber-400/40 text-amber-200"
-          : "bg-primary/15 border-primary/30 text-primary",
+          : "bg-primary/15 border-primary/30 text-interactive",
         disabled
           ? "opacity-60 cursor-not-allowed"
           : warning
@@ -205,7 +205,7 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
                       className={cn(
                         "shrink-0 text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded",
                         g.required
-                          ? "bg-primary/15 text-primary border border-primary/25"
+                          ? "bg-primary/15 text-interactive border border-primary/25"
                           : "bg-white/[0.04] text-muted-foreground/85 border border-border/30"
                       )}
                     >
@@ -222,7 +222,7 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
               </div>
               <button
                 onClick={downloadSample}
-                className="flex items-center gap-1.5 text-caption font-medium text-primary hover:underline"
+                className="flex items-center gap-1.5 text-caption font-medium text-interactive hover:underline"
               >
                 <Download className="w-3.5 h-3.5" /> Download a sample CSV
               </button>
@@ -828,7 +828,7 @@ export function AnalysisControls({
             className={cn(
               "h-8 px-2 rounded-md border text-caption font-medium transition-colors",
               dateRange === r.id
-                ? "border-primary/40 bg-primary/[0.08] text-primary"
+                ? "border-primary/40 bg-primary/[0.08] text-interactive"
                 : "border-border/40 bg-white/[0.02] text-muted-foreground/85 hover:bg-white/[0.04]",
               isRunning && "opacity-50 cursor-not-allowed"
             )}

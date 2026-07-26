@@ -63,7 +63,7 @@ function TrayAnalysisUnconfigured({ accountId }: { accountId: string }) {
     <div className="mx-4 rounded-xl border border-border/50 bg-white/[0.025] overflow-hidden">
       {/* Header stripe */}
       <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/30 bg-primary/[0.04]">
-        <CalendarRange className="w-3.5 h-3.5 text-primary/80 shrink-0" />
+        <CalendarRange className="w-3.5 h-3.5 text-interactive/80 shrink-0" />
         <span className="text-caption font-semibold text-foreground/80 flex-1">IAP Analysis</span>
         <span className="text-[9px] font-mono uppercase tracking-widest text-amber-400/70 border border-amber-400/25 bg-amber-400/[0.08] rounded px-1.5 py-0.5 leading-none">
           Setup required
@@ -77,7 +77,7 @@ function TrayAnalysisUnconfigured({ accountId }: { accountId: string }) {
         <div className="grid grid-cols-2 gap-1.5">
           <button
             onClick={() => navigate(`/app/account?account=${accountId}`)}
-            className="flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg bg-primary/15 border border-primary/30 text-caption font-semibold text-primary hover:bg-primary/25 transition-colors"
+            className="flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg bg-primary/15 border border-primary/30 text-caption font-semibold text-interactive hover:bg-primary/25 transition-colors"
           >
             <UploadCloud className="w-3.5 h-3.5" />
             Upload CSV
@@ -145,7 +145,7 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
     <div className="mx-4 rounded-xl border border-border/50 bg-white/[0.025] overflow-hidden">
       {/* Header stripe */}
       <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/30 bg-primary/[0.04]">
-        <CalendarRange className="w-3.5 h-3.5 text-primary/80 shrink-0" />
+        <CalendarRange className="w-3.5 h-3.5 text-interactive/80 shrink-0" />
         <span className="text-caption font-semibold text-foreground/80 flex-1">Run Analysis</span>
         {run?.status === "success" && (
           <span className="flex items-center gap-0.5 text-[9px] font-semibold text-emerald-400">
@@ -197,7 +197,7 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
               className={cn(
                 "h-7 rounded-lg border text-label font-semibold transition-colors",
                 dateRange === r.id
-                  ? "border-primary/50 bg-primary/15 text-primary"
+                  ? "border-primary/50 bg-primary/15 text-interactive"
                   : "border-border/35 bg-white/[0.02] text-foreground/50 hover:bg-white/[0.05] hover:text-foreground/75",
                 isRunning && "opacity-40 cursor-not-allowed"
               )}
@@ -233,7 +233,7 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
             className={cn(
               "w-full flex items-center justify-center gap-2 h-8 rounded-lg text-body font-semibold transition-colors",
               isRunning || startMutation.isPending
-                ? "bg-primary/10 border border-primary/20 text-primary/50 cursor-not-allowed"
+                ? "bg-primary/10 border border-primary/20 text-interactive/50 cursor-not-allowed"
                 : "bg-primary text-primary-foreground hover:bg-primary/90"
             )}
           >
@@ -289,7 +289,7 @@ function TraySection({
           {title}
         </span>
         {count != null && count > 0 && (
-          <span className="text-[9px] font-mono text-primary bg-primary/12 border border-primary/20 rounded px-1 leading-tight tabular-nums">
+          <span className="text-[9px] font-mono text-interactive bg-primary/12 border border-primary/20 rounded px-1 leading-tight tabular-nums">
             {count}
           </span>
         )}
@@ -454,7 +454,7 @@ function EmptySlot({
       {nudgeLabel && nudgeTo && (
         <button
           onClick={() => navigate(nudgeTo)}
-          className="text-label text-primary/70 hover:text-primary font-medium transition-colors flex items-center gap-1"
+          className="text-label text-interactive/70 hover:text-interactive font-semibold transition-colors flex items-center gap-1"
         >
           {nudgeLabel}
           <ArrowRight className="w-3.5 h-3.5" />
@@ -564,7 +564,7 @@ export function TaskTray() {
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50 bg-white/[0.02]">
         <div className="w-7 h-7 rounded-lg bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0">
-          <ClipboardList className="w-4 h-4 text-primary" />
+          <ClipboardList className="w-4 h-4 text-interactive" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-label font-mono text-muted-foreground/50 uppercase tracking-widest leading-none mb-0.5">

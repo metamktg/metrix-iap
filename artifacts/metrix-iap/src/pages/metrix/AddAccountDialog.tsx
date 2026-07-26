@@ -156,7 +156,7 @@ export function AddAccountDialog({
             <DialogHeader>
               <div className="flex items-center gap-2 mb-1">
                 <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center">
-                  <Plus className="w-4 h-4 text-primary" />
+                  <Plus className="w-4 h-4 text-interactive" />
                 </div>
               </div>
               <DialogTitle className="text-base">Add Ad Account</DialogTitle>
@@ -175,7 +175,7 @@ export function AddAccountDialog({
                 className="w-full flex items-start gap-3 p-3.5 rounded-lg border border-border/40 bg-white/[0.02] hover:border-primary/40 hover:bg-primary/[0.04] transition-colors text-left"
               >
                 <div className="w-9 h-9 rounded-lg border border-primary/25 bg-primary/10 flex items-center justify-center shrink-0">
-                  <Plug className="w-4 h-4 text-primary" />
+                  <Plug className="w-4 h-4 text-interactive" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-title font-semibold text-foreground">Connect Meta Ad Account</div>
@@ -212,7 +212,7 @@ export function AddAccountDialog({
             <DialogHeader>
               <div className="flex items-center gap-2 mb-1">
                 <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center">
-                  <FileUp className="w-4 h-4 text-primary" />
+                  <FileUp className="w-4 h-4 text-interactive" />
                 </div>
               </div>
               <DialogTitle className="text-base">Name the ad account</DialogTitle>

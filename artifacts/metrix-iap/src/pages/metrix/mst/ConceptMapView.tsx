@@ -129,10 +129,10 @@ export function ConceptMapView() {
                     </div>
 
                     <div className="mt-3 pt-3 border-t border-border/20 flex items-center gap-1.5 flex-wrap">
-                      <Layers className="w-3.5 h-3.5 text-primary/50" />
+                      <Layers className="w-3.5 h-3.5 text-interactive/50" />
                       {linked.length ? (
                         linked.map((p) => (
-                          <span key={p.id} className="text-label text-primary/80 border border-primary/20 bg-primary/[0.06] px-1.5 py-0.5 rounded leading-none">{p.label}</span>
+                          <span key={p.id} className="text-label text-interactive/80 border border-primary/20 bg-primary/[0.06] px-1.5 py-0.5 rounded leading-none">{p.label}</span>
                         ))
                       ) : (
                         <span className="text-label text-muted-foreground/60">No pillar linked yet</span>
@@ -186,7 +186,7 @@ export function ConceptMapView() {
                   .filter((p) => p.source_cells.some((c) => detail.cellIds.includes(c)))
                   .map((p) => (
                     <DrawerField key={p.id} label={`Pillar · ${p.label}`}>
-                      <p className="italic text-primary/80">"{p.plain_descriptor}"</p>
+                      <p className="italic text-interactive/80">"{p.plain_descriptor}"</p>
                       <p className="mt-1 text-caption text-muted-foreground/70">{p.why_it_matters}</p>
                     </DrawerField>
                   ))}

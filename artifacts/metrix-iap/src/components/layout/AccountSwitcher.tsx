@@ -43,7 +43,7 @@ export function AccountSwitcher({ compact = false }: { compact?: boolean }) {
             title={triggerLabel}
           >
             <div className="w-6 h-6 rounded border border-primary/20 bg-primary/10 flex items-center justify-center">
-              {isManager ? <Building2 className="w-3.5 h-3.5 text-primary" /> : <Briefcase className="w-3.5 h-3.5 text-primary" />}
+              {isManager ? <Building2 className="w-3.5 h-3.5 text-interactive" /> : <Briefcase className="w-3.5 h-3.5 text-interactive" />}
             </div>
             {/* Status dot for ad accounts */}
             {!isManager && active && (
@@ -66,7 +66,7 @@ export function AccountSwitcher({ compact = false }: { compact?: boolean }) {
             aria-label={`Current account: ${triggerLabel}`}
           >
             <div className="shrink-0 w-6 h-6 rounded border border-primary/20 bg-primary/10 flex items-center justify-center">
-              {isManager ? <Building2 className="w-3.5 h-3.5 text-primary" /> : <Briefcase className="w-3.5 h-3.5 text-primary" />}
+              {isManager ? <Building2 className="w-3.5 h-3.5 text-interactive" /> : <Briefcase className="w-3.5 h-3.5 text-interactive" />}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
@@ -89,13 +89,13 @@ export function AccountSwitcher({ compact = false }: { compact?: boolean }) {
           onClick={() => { setOpen(false); selectManager(); }}
         >
           <div className={cn("w-5 h-5 rounded border flex items-center justify-center shrink-0", isManager ? "bg-primary/15 border-primary/25" : "bg-white/[0.04] border-border/30")}>
-            <Building2 className={cn("w-3.5 h-3.5", isManager ? "text-primary" : "text-muted-foreground/70")} />
+            <Building2 className={cn("w-3.5 h-3.5", isManager ? "text-interactive" : "text-muted-foreground/70")} />
           </div>
           <div className="flex-1 min-w-0">
             <div className={cn("text-caption font-medium leading-tight", isManager ? "text-foreground" : "text-foreground/70")}>{manager.name}</div>
             <div className="text-[9px] text-muted-foreground/70 leading-tight">Agency Overview</div>
           </div>
-          {isManager && <Check className="w-3.5 h-3.5 text-primary shrink-0" />}
+          {isManager && <Check className="w-3.5 h-3.5 text-interactive shrink-0" />}
         </DropdownMenuItem>
 
         <DropdownMenuSeparator className="my-1 bg-border/30" />
@@ -112,7 +112,7 @@ export function AccountSwitcher({ compact = false }: { compact?: boolean }) {
               onClick={() => { setOpen(false); selectAdAccount(a.id); }}
             >
               <div className={cn("w-5 h-5 rounded border flex items-center justify-center shrink-0", isActive ? "bg-primary/15 border-primary/25" : "bg-white/[0.04] border-border/30")}>
-                <Briefcase className={cn("w-3.5 h-3.5", isActive ? "text-primary" : "text-muted-foreground/70")} />
+                <Briefcase className={cn("w-3.5 h-3.5", isActive ? "text-interactive" : "text-muted-foreground/70")} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className={cn("text-caption font-medium leading-tight truncate", isActive ? "text-foreground" : "text-foreground/70")}>{a.name}</div>
@@ -123,7 +123,7 @@ export function AccountSwitcher({ compact = false }: { compact?: boolean }) {
                   <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/60 border border-border/40 px-1 py-0.5 rounded leading-none">Setup</span>
                 )}
                 <span className={cn("w-1.5 h-1.5 rounded-full", STATUS_DOT[a.status] ?? "bg-muted-foreground/60")} />
-                {isActive && <Check className="w-3.5 h-3.5 text-primary" />}
+                {isActive && <Check className="w-3.5 h-3.5 text-interactive" />}
               </div>
             </DropdownMenuItem>
           );

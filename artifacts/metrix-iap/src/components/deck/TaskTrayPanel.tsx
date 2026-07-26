@@ -29,7 +29,7 @@ export function TaskTrayPanel({
         "flex items-center gap-2 border-b border-border/40 shrink-0 bg-white/[0.01]",
         compact ? "px-3 py-2" : "px-3 py-2.5"
       )}>
-        <ClipboardList className={cn("text-primary/80 shrink-0", compact ? "w-3.5 h-3.5" : "w-3.5 h-3.5")} />
+        <ClipboardList className={cn("text-interactive/80 shrink-0", compact ? "w-3.5 h-3.5" : "w-3.5 h-3.5")} />
         <span className={cn(
           "font-bold uppercase tracking-widest text-foreground/70",
           compact ? "text-[9px]" : "text-label"

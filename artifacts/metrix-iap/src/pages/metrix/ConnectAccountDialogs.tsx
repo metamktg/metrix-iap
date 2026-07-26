@@ -106,7 +106,7 @@ export function PrimaryBtn({
         "flex items-center gap-1.5 h-9 px-4 rounded-md border text-body font-medium transition-colors",
         disabled
           ? "border-border/40 text-muted-foreground/80 cursor-not-allowed"
-          : "bg-primary/15 border-primary/30 text-primary hover:bg-primary/25"
+          : "bg-primary/15 border-primary/30 text-interactive hover:bg-primary/25"
       )}
     >
       {children}
@@ -146,7 +146,7 @@ export function ConnectMetaDialog({
         <DialogHeader>
           <div className="flex items-center gap-2 mb-1">
             <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center">
-              <Plug className="w-4 h-4 text-primary" />
+              <Plug className="w-4 h-4 text-interactive" />
             </div>
           </div>
           <DialogTitle className="text-base">Connect Meta Ad Account</DialogTitle>
@@ -175,7 +175,7 @@ export function ConnectMetaDialog({
             },
           ].map(({ Icon, title, desc }) => (
             <div key={title} className="flex items-start gap-3 p-3 rounded-lg border border-border/40 bg-white/[0.02]">
-              <Icon className="w-4 h-4 text-primary/80 shrink-0 mt-0.5" />
+              <Icon className="w-4 h-4 text-interactive/80 shrink-0 mt-0.5" />
               <div className="min-w-0">
                 <div className="text-body font-semibold text-foreground">{title}</div>
                 <p className="text-caption text-muted-foreground/85 leading-relaxed mt-0.5">{desc}</p>
@@ -649,7 +649,7 @@ function CsvSlotUpload({
             )}
           >
             {uploadPct !== null ? (
-              <Loader2 className="w-4 h-4 text-primary animate-spin" />
+              <Loader2 className="w-4 h-4 text-interactive animate-spin" />
             ) : highlightAsTarget ? (
               <Upload className="w-4 h-4 text-amber-400" />
             ) : (
@@ -762,7 +762,7 @@ function AdNameDropdownPicker({
 function MatchMethodBadge({ method }: { method?: "id" | "fuzzy" | "guess" | null }) {
   if (!method) return null;
   const config = {
-    id: { icon: Hash, label: "Matched by ID code", className: "bg-primary/10 text-primary" },
+    id: { icon: Hash, label: "Matched by ID code", className: "bg-primary/10 text-interactive" },
     fuzzy: { icon: Sparkles, label: "Matched by filename similarity", className: "bg-white/[0.06] text-muted-foreground/85" },
     guess: { icon: Sparkles, label: "Best guess — please review", className: "bg-amber-400/10 text-amber-300" },
   }[method];
@@ -1146,7 +1146,7 @@ function CreativeUploadSection({
         )}
       >
         {isUploading ? (
-          <Loader2 className="w-4 h-4 text-primary animate-spin" />
+          <Loader2 className="w-4 h-4 text-interactive animate-spin" />
         ) : (
           <Upload className="w-4 h-4 text-muted-foreground/85" />
         )}
@@ -1201,7 +1201,7 @@ function CreativeUploadSection({
               <button
                 onClick={() => void handleAutoMapAll()}
                 disabled={autoMapping}
-                className="shrink-0 flex items-center gap-1 h-6 px-2 rounded border border-primary/30 bg-primary/10 text-label font-medium text-primary hover:bg-primary/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="shrink-0 flex items-center gap-1 h-6 px-2 rounded border border-primary/30 bg-primary/10 text-label font-medium text-interactive hover:bg-primary/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 {autoMapping ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1449,7 +1449,7 @@ export function ManualUploadPanel({
         <div className="rounded-lg border border-primary/20 bg-primary/[0.04] p-3 space-y-3">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-md bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0">
-              <Database className="w-3.5 h-3.5 text-primary" />
+              <Database className="w-3.5 h-3.5 text-interactive" />
             </div>
             <div>
               <div className="text-body font-semibold text-foreground">Run first analysis</div>
@@ -1554,7 +1554,7 @@ export function CreativeLibraryPanel({
   return (
     <div className="space-y-3">
       <div className="flex items-start gap-2.5 p-3 rounded-lg border border-primary/20 bg-primary/[0.04]">
-        <ListChecks className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+        <ListChecks className="w-4 h-4 text-interactive shrink-0 mt-0.5" />
         <p className="text-caption text-foreground/80 leading-relaxed">
           Map each file to an ad from this account's existing analysis using the dropdown below —
           mappings save immediately, no separate confirm step.
@@ -1690,7 +1690,7 @@ export function CreativeLibraryDialog({
           <DialogHeader>
             <div className="flex items-center gap-2 mb-1">
               <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center">
-                <Images className="w-4 h-4 text-primary" />
+                <Images className="w-4 h-4 text-interactive" />
               </div>
             </div>
             <DialogTitle className="text-base">Upload Creatives</DialogTitle>
@@ -1823,7 +1823,7 @@ export function ManualImportDialog({
           <DialogHeader>
             <div className="flex items-center gap-2 mb-1">
               <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center">
-                <FileUp className="w-4 h-4 text-primary" />
+                <FileUp className="w-4 h-4 text-interactive" />
               </div>
             </div>
             <DialogTitle className="text-base">Add Manual Import</DialogTitle>

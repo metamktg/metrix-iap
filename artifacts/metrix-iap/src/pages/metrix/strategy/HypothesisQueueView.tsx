@@ -146,14 +146,14 @@ export function HypothesisQueueView() {
                           className={cn(
                             "inline-flex items-center gap-1 h-6 px-2 rounded-full border text-label font-medium transition-colors",
                             statusFilter === id
-                              ? "border-primary/40 bg-primary/10 text-primary"
+                              ? "border-primary/40 bg-primary/10 text-interactive"
                               : "border-border/40 text-muted-foreground/60 hover:text-foreground/80",
                           )}
                         >
                           {label}
                           <span className={cn(
                             "text-label font-mono rounded px-0.5",
-                            statusFilter === id ? "text-primary/70" : "text-muted-foreground/40",
+                            statusFilter === id ? "text-interactive/70" : "text-muted-foreground/40",
                           )}>{count}</span>
                         </button>
                       ))}
@@ -243,7 +243,7 @@ export function HypothesisQueueView() {
                           <div className="mt-1">
                             <DetailReveal
                               label={deriveLabel(p.plain_descriptor, 72)}
-                              labelClassName="text-body text-primary/80 italic"
+                              labelClassName="text-body text-interactive/80 italic"
                               eyebrow={p.label}
                               sections={[
                                 { label: "Descriptor", text: p.plain_descriptor },

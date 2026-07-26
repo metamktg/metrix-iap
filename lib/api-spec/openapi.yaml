@@ -3343,7 +3343,7 @@ components:
       properties:
         kind:
           type: string
-          enum: [performance_demo_csv, performance_placement_csv, creative_asset]
+          enum: [performance_demo_csv, performance_placement_csv, performance_ad_summary_csv, creative_asset]
         filename:
           type: string
           minLength: 1
@@ -3452,7 +3452,7 @@ components:
           type: string
         kind:
           type: string
-          enum: [performance_demo_csv, performance_placement_csv, creative_asset]
+          enum: [performance_demo_csv, performance_placement_csv, performance_ad_summary_csv, creative_asset]
         filename:
           type: string
         content_type:

@@ -335,7 +335,7 @@ export function IapLibraryView() {
                     aria-pressed={groupByConcept}
                     className={`flex items-center gap-1.5 text-label font-medium border px-2.5 py-1.5 rounded-md transition-colors ${
                       groupByConcept
-                        ? "border-primary/50 bg-primary/10 text-primary"
+                        ? "border-primary/50 bg-primary/10 text-interactive"
                         : "border-border/40 bg-white/[0.02] text-muted-foreground/70 hover:text-foreground hover:border-border/60 hover:bg-white/[0.04]"
                     }`}
                   >
@@ -505,7 +505,7 @@ export function IapLibraryView() {
                                         onClick={() => setPageSize(n)}
                                         className={`text-label font-medium px-2 py-1 rounded transition-colors ${
                                           pageSize === n
-                                            ? "bg-primary/15 text-primary"
+                                            ? "bg-primary/15 text-interactive"
                                             : "text-muted-foreground/50 hover:text-foreground hover:bg-white/[0.04]"
                                         }`}
                                       >
@@ -621,7 +621,7 @@ export function IapLibraryView() {
                       {/* Family rollup: which DNA families carry the account */}
                       <div>
                         <div className="flex items-center gap-1.5 mb-2">
-                          <Dna className="w-3.5 h-3.5 text-primary/70" />
+                          <Dna className="w-3.5 h-3.5 text-interactive/70" />
                           <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/60">
                             DNA families in selection
                           </h3>

@@ -55,7 +55,7 @@ export function IntegrationsView() {
               <p className="text-label text-muted-foreground/60">Connect or manage integrations there.</p>
               <button
                 onClick={selectManager}
-                className="mt-2 inline-flex items-center gap-1.5 text-label font-semibold text-primary border border-primary/30 bg-primary/10 hover:bg-primary/15 rounded-lg px-3 py-1.5 transition-colors"
+                className="mt-2 inline-flex items-center gap-1.5 text-label font-semibold text-interactive border border-primary/30 bg-primary/10 hover:bg-primary/15 rounded-lg px-3 py-1.5 transition-colors"
               >
                 <ArrowLeft className="w-3 h-3" /> Switch to agency view
               </button>

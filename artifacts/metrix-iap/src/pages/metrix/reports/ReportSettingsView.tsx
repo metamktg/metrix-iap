@@ -47,7 +47,7 @@ function OptionRow<T extends string>({
           className={cn(
             "flex items-center gap-1.5 px-2.5 h-7 rounded-md border text-caption font-medium transition-colors",
             value === opt
-              ? "border-primary/40 bg-primary/10 text-primary"
+              ? "border-primary/40 bg-primary/10 text-interactive"
               : "border-border/40 text-foreground/70 hover:text-foreground hover:bg-white/5",
             disabled && "opacity-50 pointer-events-none"
           )}

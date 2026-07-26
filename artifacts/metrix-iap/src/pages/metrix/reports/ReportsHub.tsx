@@ -340,7 +340,7 @@ export function ReportsHub() {
                   {
                     label: "Client-facing",
                     value: clientCount,
-                    color: "text-primary",
+                    color: "text-interactive",
                   },
                 ].map((kpi) => (
                   <div
@@ -417,7 +417,7 @@ export function ReportsHub() {
                       href="/app/reports/history"
                       className={cn(
                         TYPE.caption,
-                        "text-primary hover:text-primary/80 transition-colors flex items-center gap-1",
+                        "text-interactive hover:text-primary/80 transition-colors flex items-center gap-1",
                       )}
                     >
                       Full history <ArrowUpRight className="w-3 h-3" />
@@ -450,7 +450,7 @@ export function ReportsHub() {
                               className={cn(
                                 "shrink-0 text-label px-1.5 py-0.5 rounded border font-semibold leading-none capitalize",
                                 report.mode === "client"
-                                  ? "bg-primary/10 text-primary border-primary/20"
+                                  ? "bg-primary/10 text-interactive border-primary/20"
                                   : "bg-border/20 text-muted-foreground border-border/40",
                               )}
                             >

@@ -97,6 +97,7 @@ const RUNTIME_EXPORTS: Array<keyof typeof shared> = [
   "LoopChecklist",
   "VIEW_PRESETS",
   "DatePresetBar",
+  "DataWindowBar",
 ];
 
 describe("shared.tsx exports — set equality", () => {

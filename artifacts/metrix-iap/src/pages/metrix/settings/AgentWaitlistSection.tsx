@@ -135,7 +135,7 @@ export function AgentWaitlistSection() {
             <button
               type="submit"
               disabled={!keyInput.trim()}
-              className="h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-caption font-medium text-primary hover:bg-primary/25 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+              className="h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-caption font-medium text-interactive hover:bg-primary/25 transition-colors disabled:opacity-40 disabled:pointer-events-none"
               data-testid="button-unlock-waitlist"
             >
               Unlock
@@ -263,7 +263,7 @@ export function AgentWaitlistSection() {
                             <button
                               onClick={() => approveMutation.mutate(entry.id)}
                               disabled={approveMutation.isPending}
-                              className="flex items-center gap-1 h-6 px-2 rounded border border-primary/30 bg-primary/10 text-label font-medium text-primary hover:bg-primary/20 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                              className="flex items-center gap-1 h-6 px-2 rounded border border-primary/30 bg-primary/10 text-label font-medium text-interactive hover:bg-primary/20 transition-colors disabled:opacity-40 disabled:pointer-events-none"
                               data-testid={`button-approve-${entry.email}`}
                             >
                               {isApproving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
@@ -326,7 +326,7 @@ export function AgentWaitlistSection() {
                             <button
                               onClick={() => approveMutation.mutate(entry.id)}
                               disabled={approveMutation.isPending}
-                              className="flex items-center gap-1 h-6 px-2 rounded border border-primary/30 bg-primary/10 text-label font-medium text-primary hover:bg-primary/20 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                              className="flex items-center gap-1 h-6 px-2 rounded border border-primary/30 bg-primary/10 text-label font-medium text-interactive hover:bg-primary/20 transition-colors disabled:opacity-40 disabled:pointer-events-none"
                               data-testid={`button-approve-${entry.email}`}
                             >
                               {isApproving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}

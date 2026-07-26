@@ -621,7 +621,7 @@ function CompactVariableTable({ rows }: { rows: VariablePerformanceRow[] }) {
                   className={cn(
                     "text-label font-mono uppercase tracking-widest transition-colors whitespace-nowrap",
                     sortKey === c.key
-                      ? "text-primary"
+                      ? "text-interactive"
                       : "text-muted-foreground/60 hover:text-foreground/80",
                   )}
                 >
@@ -672,7 +672,7 @@ function SortToggle({
           className={cn(
             "px-2.5 py-1 rounded-md text-label font-medium transition-colors whitespace-nowrap",
             active === o.key
-              ? "bg-primary/20 text-primary"
+              ? "bg-primary/20 text-interactive"
               : "text-muted-foreground/60 hover:text-foreground/80",
           )}
         >
@@ -1090,7 +1090,7 @@ export function AnalysisOverview() {
                       {subpages.map((s) => (
                         <div key={s.to} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2">
                           <div className="flex items-center gap-2">
-                            <s.Icon className="w-3.5 h-3.5 text-primary" />
+                            <s.Icon className="w-3.5 h-3.5 text-interactive" />
                             <span className="text-title font-semibold text-foreground">{s.label}</span>
                             <InfoTooltip content={s.desc} />
                           </div>

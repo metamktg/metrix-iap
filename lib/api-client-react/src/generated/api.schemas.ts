@@ -390,6 +390,7 @@ export type ManualImportInputKind = typeof ManualImportInputKind[keyof typeof Ma
 export const ManualImportInputKind = {
   performance_demo_csv: 'performance_demo_csv',
   performance_placement_csv: 'performance_placement_csv',
+  performance_ad_summary_csv: 'performance_ad_summary_csv',
   creative_asset: 'creative_asset',
 } as const;
 
@@ -491,6 +492,7 @@ export type ManualImportKind = typeof ManualImportKind[keyof typeof ManualImport
 export const ManualImportKind = {
   performance_demo_csv: 'performance_demo_csv',
   performance_placement_csv: 'performance_placement_csv',
+  performance_ad_summary_csv: 'performance_ad_summary_csv',
   creative_asset: 'creative_asset',
 } as const;
 

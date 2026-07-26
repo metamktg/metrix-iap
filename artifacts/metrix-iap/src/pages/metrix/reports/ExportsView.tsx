@@ -150,9 +150,9 @@ export function ExportsView() {
                         )}
                       >
                         {busyKey === key ? (
-                          <Loader2 className="w-4 h-4 text-primary shrink-0 animate-spin" />
+                          <Loader2 className="w-4 h-4 text-interactive shrink-0 animate-spin" />
                         ) : (
-                          <FileDown className="w-4 h-4 text-primary shrink-0" />
+                          <FileDown className="w-4 h-4 text-interactive shrink-0" />
                         )}
                         <div>
                           <div className="text-body font-medium text-foreground">{FORMAT_LABEL[f] ?? f}</div>
@@ -187,7 +187,7 @@ export function ExportsView() {
                           <div className="text-body font-medium text-foreground truncate">{r.title}</div>
                           <div className="text-label font-mono text-muted-foreground/70">
                             {fmtDate(r.generated_at)} · {r.mode === "client" ? "Client-facing" : "Internal"}
-                            {r.modelJson && <span className="text-primary/80"> · saved snapshot</span>}
+                            {r.modelJson && <span className="text-interactive/80"> · saved snapshot</span>}
                           </div>
                         </div>
                         {r.export_format && (
@@ -198,7 +198,7 @@ export function ExportsView() {
                               "flex items-center gap-1.5 text-label font-semibold uppercase border px-2 py-1 rounded leading-none shrink-0 transition-colors disabled:opacity-60",
                               doneKey === r.key
                                 ? "text-emerald-400 border-emerald-400/25 bg-emerald-400/10"
-                                : "text-primary border-primary/25 bg-primary/10 hover:bg-primary/20"
+                                : "text-interactive border-primary/25 bg-primary/10 hover:bg-primary/20"
                             )}
                           >
                             {busyKey === r.key ? (

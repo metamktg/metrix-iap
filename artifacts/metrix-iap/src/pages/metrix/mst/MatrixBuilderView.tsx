@@ -94,7 +94,7 @@ export function MatrixGrid({
                             }}
                           />
                         )}
-                        <div className="text-caption font-semibold text-primary leading-tight">{readableVariables(cell.concept_code)}</div>
+                        <div className="text-caption font-semibold text-interactive leading-tight">{readableVariables(cell.concept_code)}</div>
                         {cell.plain_text.headline && <div className="text-body font-medium text-foreground mt-1 leading-tight">{cell.plain_text.headline}</div>}
                         <div className="text-body font-mono text-muted-foreground/80 mt-1.5">{cell.cell_id}</div>
                       </>

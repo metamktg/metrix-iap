@@ -95,7 +95,7 @@ function CopyButton({ value }: { value: string }) {
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       }}
-      className="inline-flex items-center gap-1 text-label text-primary hover:text-primary/80 transition-colors"
+      className="inline-flex items-center gap-1 text-label text-interactive hover:text-primary/80 transition-colors"
       data-testid="button-copy-temp-password"
     >
       {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
@@ -613,7 +613,7 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
       <div className="w-full max-w-md rounded-xl border border-border/40 bg-background shadow-2xl">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/30">
           <div className="flex items-center gap-2">
-            <UserPlus className="w-4 h-4 text-primary shrink-0" />
+            <UserPlus className="w-4 h-4 text-interactive shrink-0" />
             <span className="text-body font-semibold text-foreground">Add user</span>
           </div>
           <button
@@ -696,7 +696,7 @@ function AddUserDialog({ onClose, onCreated }: { onClose: () => void; onCreated:
                     className={cn(
                       "h-7 px-3 rounded-md border text-label font-medium transition-colors capitalize",
                       role === r
-                        ? "border-primary/50 bg-primary/15 text-primary"
+                        ? "border-primary/50 bg-primary/15 text-interactive"
                         : "border-border/40 text-muted-foreground hover:text-foreground hover:bg-white/5",
                     )}
                   >
@@ -1095,7 +1095,7 @@ function UsersSection() {
         </div>
         <button
           onClick={() => setShowAddUser(true)}
-          className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-primary/40 bg-primary/10 text-label font-medium text-primary hover:bg-primary/20 transition-colors"
+          className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-primary/40 bg-primary/10 text-label font-medium text-interactive hover:bg-primary/20 transition-colors"
           data-testid="button-add-user"
         >
           <UserPlus className="w-3.5 h-3.5" />

@@ -92,7 +92,7 @@ export function MetricPickerButton({
                     on ? "border-primary/50 bg-primary/20" : "border-border/40"
                   )}
                 >
-                  {on && <Check className="w-3.5 h-3.5 text-primary" />}
+                  {on && <Check className="w-3.5 h-3.5 text-interactive" />}
                 </span>
                 <span className="text-caption text-foreground/85 flex-1 min-w-0 truncate">{m.label}</span>
                 <span className="text-label text-muted-foreground/50 tabular-nums">{m.formatted}</span>

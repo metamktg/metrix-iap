@@ -224,7 +224,7 @@ export function VariableDrilldownModal({
                       {v.primary && <p className="text-caption text-foreground/85 leading-relaxed">{v.primary}</p>}
                       {v.secondary && <p className="text-label text-muted-foreground/70 leading-relaxed">{v.secondary}</p>}
                       {v.cta && (
-                        <span className="inline-block text-[9px] font-medium text-primary/80 border border-primary/20 bg-primary/[0.06] px-1.5 py-0.5 rounded">
+                        <span className="inline-block text-[9px] font-medium text-interactive/80 border border-primary/20 bg-primary/[0.06] px-1.5 py-0.5 rounded">
                           {v.cta}
                         </span>
                       )}
@@ -246,7 +246,7 @@ export function VariableDrilldownModal({
               </p>
               <button
                 onClick={() => { onClose(); navigate("/app/strategy/map"); }}
-                className="shrink-0 inline-flex items-center gap-1.5 h-7 px-3 rounded-md bg-primary/10 border border-primary/25 text-label font-semibold text-primary/90 hover:bg-primary/15 hover:border-primary/40 transition-colors"
+                className="shrink-0 inline-flex items-center gap-1.5 h-7 px-3 rounded-md bg-primary/10 border border-primary/25 text-label font-semibold text-interactive/90 hover:bg-primary/15 hover:border-primary/40 transition-colors"
               >
                 <Sparkles className="w-3.5 h-3.5" />
                 Strategy Map

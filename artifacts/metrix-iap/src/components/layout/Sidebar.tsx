@@ -69,8 +69,8 @@ function saveCollapsed(v: boolean) {
 const BADGE_STYLE: Record<string, { base: string; shape: string }> = {
   alerts:      { base: "bg-destructive/15 text-destructive border-destructive/20",        shape: "rounded" },
   signals:     { base: "bg-amber-400 text-amber-950 border-amber-400/80",                  shape: "rounded-full" },
-  suggestions: { base: "bg-primary/15 text-primary border-primary/30",                     shape: "rounded-full" },
-  briefs:      { base: "bg-primary/12 text-primary border-primary/30",                     shape: "rounded-full" },
+  suggestions: { base: "bg-primary/15 text-interactive border-primary/30",                     shape: "rounded-full" },
+  briefs:      { base: "bg-primary/12 text-interactive border-primary/30",                     shape: "rounded-full" },
   mst:         { base: "bg-white/[0.04] text-muted-foreground/55 border-border/35",        shape: "rounded" },
   agent:       { base: "bg-white/[0.04] text-muted-foreground/55 border-border/35",        shape: "rounded" },
 };
@@ -225,7 +225,7 @@ function CollapsedItem({
           className={cn(
             "flex items-center justify-center w-10 h-10 mx-auto rounded-lg transition-all relative overflow-hidden",
             active
-              ? "bg-primary/25 text-primary border border-primary/35 shadow-sm shadow-primary/20"
+              ? "bg-primary/25 text-interactive border border-primary/35 shadow-sm shadow-primary/20"
               : "text-foreground/45 hover:text-foreground/90 hover:bg-white/[0.07]",
             section.placeholder && "opacity-40 cursor-not-allowed pointer-events-none"
           )}

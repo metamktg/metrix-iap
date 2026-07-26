@@ -69,7 +69,7 @@ export const stageManualImportBodyFilenameMax = 255;
 
 
 export const StageManualImportBody = zod.object({
-  "kind": zod.enum(['performance_demo_csv', 'performance_placement_csv', 'creative_asset']),
+  "kind": zod.enum(['performance_demo_csv', 'performance_placement_csv', 'performance_ad_summary_csv', 'creative_asset']),
   "filename": zod.string().min(1).max(stageManualImportBodyFilenameMax),
   "content_type": zod.string().optional().describe('Original MIME type of the uploaded file, if known.'),
   "content_base64": zod.string().min(1).describe('Base64-encoded file content. Max 8 MB decoded.'),
@@ -113,7 +113,7 @@ export const ListManualImportsResponse = zod.object({
   "imports": zod.array(zod.object({
   "id": zod.string(),
   "account_id": zod.string(),
-  "kind": zod.enum(['performance_demo_csv', 'performance_placement_csv', 'creative_asset']),
+  "kind": zod.enum(['performance_demo_csv', 'performance_placement_csv', 'performance_ad_summary_csv', 'creative_asset']),
   "filename": zod.string(),
   "content_type": zod.string().nullish(),
   "size_bytes": zod.number(),
@@ -158,7 +158,7 @@ export const UpdateManualImportAdNamesBody = zod.object({
 export const UpdateManualImportAdNamesResponse = zod.object({
   "id": zod.string(),
   "account_id": zod.string(),
-  "kind": zod.enum(['performance_demo_csv', 'performance_placement_csv', 'creative_asset']),
+  "kind": zod.enum(['performance_demo_csv', 'performance_placement_csv', 'performance_ad_summary_csv', 'creative_asset']),
   "filename": zod.string(),
   "content_type": zod.string().nullish(),
   "size_bytes": zod.number(),

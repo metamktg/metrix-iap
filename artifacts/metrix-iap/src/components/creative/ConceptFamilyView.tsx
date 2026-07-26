@@ -197,7 +197,7 @@ function ConceptFamilyCard({
           expanded ? "border-primary/40 bg-primary/10" : "border-border/40"
         )}>
           {expanded
-            ? <ChevronDown className="w-3.5 h-3.5 text-primary/80" />
+            ? <ChevronDown className="w-3.5 h-3.5 text-interactive/80" />
             : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60" />}
         </span>
 

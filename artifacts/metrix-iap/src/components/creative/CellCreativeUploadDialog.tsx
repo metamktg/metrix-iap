@@ -123,7 +123,7 @@ export function CellCreativeUploadDialog({
       <DialogContent className="max-w-xs">
         <DialogHeader>
           <DialogTitle className="text-sm font-semibold">
-            Upload creative · <span className="font-mono text-primary">{cellId}</span>
+            Upload creative · <span className="font-mono text-interactive">{cellId}</span>
           </DialogTitle>
         </DialogHeader>
 

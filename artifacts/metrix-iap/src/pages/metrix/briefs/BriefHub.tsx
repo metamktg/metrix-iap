@@ -39,7 +39,7 @@ const STATUS_BAR: Record<string, string> = {
 const STATUS_PILL: Record<string, string> = {
   draft: "bg-muted text-muted-foreground border-border/40",
   "in-review": "bg-yellow-400/10 text-yellow-400 border-yellow-400/20",
-  approved: "bg-primary/10 text-primary border-primary/20",
+  approved: "bg-primary/10 text-interactive border-primary/20",
   produced:
     "bg-[hsl(var(--metrix-cyan)/0.12)] text-[hsl(var(--metrix-cyan))] border-[hsl(var(--metrix-cyan)/0.3)]",
   archived: "bg-muted text-muted-foreground/60 border-border/30",
@@ -108,7 +108,7 @@ export function BriefHub() {
                 {[
                   { label: "Draft", value: draftCount, color: "text-muted-foreground" },
                   { label: "In Review", value: inReviewCount, color: "text-yellow-400" },
-                  { label: "Approved", value: approvedCount, color: "text-primary" },
+                  { label: "Approved", value: approvedCount, color: "text-interactive" },
                   { label: "Produced", value: producedCount, color: "text-[hsl(var(--metrix-success))]" },
                 ].map((kpi) => (
                   <div
@@ -138,7 +138,7 @@ export function BriefHub() {
                   {briefsStage.status === "complete" ? (
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                   ) : (
-                    <Activity className="w-4 h-4 text-primary shrink-0" />
+                    <Activity className="w-4 h-4 text-interactive shrink-0" />
                   )}
                   <p className={cn(TYPE.body, "text-foreground font-semibold")}>
                     Stage: <span className="capitalize">{briefsStage.status}</span>
@@ -169,7 +169,7 @@ export function BriefHub() {
                       href="/app/briefs/builder"
                       className={cn(
                         TYPE.caption,
-                        "text-primary hover:text-primary/80 transition-colors flex items-center gap-1",
+                        "text-interactive hover:text-primary/80 transition-colors flex items-center gap-1",
                       )}
                     >
                       All briefs <ArrowUpRight className="w-3 h-3" />

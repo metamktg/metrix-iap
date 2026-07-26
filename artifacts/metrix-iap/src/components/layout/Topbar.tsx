@@ -62,7 +62,7 @@ function AccountMenu({
       <div className="px-3.5 py-3 border-b border-border/40">
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-lg bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0">
-            <span className="text-label font-bold text-primary leading-none">{initials}</span>
+            <span className="text-label font-bold text-interactive leading-none">{initials}</span>
           </div>
           <div className="min-w-0">
             <p className="text-caption font-semibold text-foreground/90 truncate leading-tight">
@@ -203,7 +203,7 @@ export function Topbar() {
         className={cn(
           "relative w-7 h-7 rounded flex items-center justify-center transition-colors",
           open
-            ? "bg-primary/15 border border-primary/25 text-primary hover:bg-primary/20"
+            ? "bg-primary/15 border border-primary/25 text-interactive hover:bg-primary/20"
             : "text-muted-foreground hover:text-foreground hover:bg-white/5"
         )}
       >
@@ -240,8 +240,8 @@ export function Topbar() {
             className={cn(
               "w-7 h-7 rounded flex items-center justify-center transition-colors",
               menuOpen
-                ? "bg-primary/25 border border-primary/40 text-primary"
-                : "bg-primary/15 border border-primary/20 text-primary hover:bg-primary/20"
+                ? "bg-primary/25 border border-primary/40 text-interactive"
+                : "bg-primary/15 border border-primary/20 text-interactive hover:bg-primary/20"
             )}
           >
             <span className="text-label font-bold leading-none">{initials}</span>

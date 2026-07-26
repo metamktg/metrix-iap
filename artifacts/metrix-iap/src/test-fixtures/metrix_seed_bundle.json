@@ -392,8 +392,8 @@
     "bottom_line_totals": {
       "spend_usd": 15248.01,
       "impressions": 2636728,
-      "link_clicks": 10552,
-      "link_ctr_pct": 0.4002,
+      "link_clicks": 9423,
+      "link_ctr_pct": 0.3574,
       "result_totals_by_event": {
         "Mobile app installs": {
           "spend": 4766.02,
@@ -428,12 +428,12 @@
           "link_clicks": 677
         },
         "Website purchases": {
-          "spend": 6920.08,
-          "reach": 2205,
-          "impressions": 63830,
-          "results": 26,
-          "clicks_all": 5205,
-          "link_clicks": 3830
+          "spend": 5268.39,
+          "reach": 2623,
+          "impressions": 3095,
+          "results": 24,
+          "clicks_all": 3615,
+          "link_clicks": 2721
         },
         "unknown": {
           "spend": 0,
@@ -441,7 +441,7 @@
           "impressions": 0,
           "results": 0,
           "clicks_all": 0,
-          "link_clicks": 273
+          "link_clicks": 550
         },
         "Website checkouts initiated": {
           "spend": 327.1,
@@ -450,14 +450,6 @@
           "results": 33,
           "clicks_all": 445,
           "link_clicks": 304
-        },
-        "Results": {
-          "spend": 0,
-          "reach": 0,
-          "impressions": 0,
-          "results": 0,
-          "clicks_all": 0,
-          "link_clicks": 297
         }
       }
     },
@@ -7329,6 +7321,18 @@
           "asset_servable": false
         },
         {
+          "ad_name": "C1C",
+          "book": null,
+          "cell": "C1C",
+          "concept": "C1",
+          "variation": null,
+          "test_id": null,
+          "meta_ad_id": null,
+          "creative_asset_url": null,
+          "asset_filename": null,
+          "asset_servable": false
+        },
+        {
           "ad_name": "C1D",
           "book": null,
           "cell": "C1D",
@@ -7757,20 +7761,28 @@
         "campaign_summary": {
           "bottom_line_totals": {
             "Website purchases": {
-              "spend": 1709.66,
+              "spend": 57.97,
+              "reach": 418,
+              "impressions": 524,
+              "results": 0,
+              "clicks_all": 31,
+              "link_clicks": 64
+            },
+            "unknown": {
+              "spend": 0,
               "reach": 0,
-              "impressions": 61259,
-              "results": 2,
-              "clicks_all": 1621,
-              "link_clicks": 1173
+              "impressions": 0,
+              "results": 0,
+              "clicks_all": 0,
+              "link_clicks": 277
             }
           },
           "total_spend_usd": 1709.66,
           "total_impressions": 61259,
-          "total_link_clicks": 1173,
-          "overall_link_ctr_pct": 1.9148,
-          "data_caveat": "Totals cover the full imported window 2026-05-03 → 2026-07-24. MST Sprint 1 is an invalid test: $57.97 / ~$1,000 committed budget, zero purchases or checkouts, 4/16 cells never delivered, unresolved Initiate Checkout tracking gap. No creative or avatar reads are actionable.",
-          "window_start": "2026-05-03",
+          "total_link_clicks": 341,
+          "overall_link_ctr_pct": 0.5567,
+          "data_caveat": "Totals cover the full imported window 2026-07-14 → 2026-07-24. Account totals come from the account-level export; the ad-level table covers $57.97 of the $1709.66 account spend — the remainder sits on ads absent from the ad-level export. MST Sprint 1 is an invalid test: $57.97 / ~$1,000 committed budget, zero purchases or checkouts, 4/16 cells never delivered, unresolved Initiate Checkout tracking gap. No creative or avatar reads are actionable.",
+          "window_start": "2026-07-14",
           "window_end": "2026-07-24",
           "campaign_windows": []
         },
@@ -13557,433 +13569,73 @@
           "c4e_placement_signal": [],
           "conversion_tracking_signal": {
             "tracking_basis": "conversion",
-            "window_start": "2026-01-01",
-            "window_end": "2026-07-09",
+            "window_start": "2026-07-21",
+            "window_end": "2026-07-21",
             "note": "Conversion-based tracking: funnel actions are attributed to the converting device/platform/placement. Spend and impressions are not device-attributable under this tracking, so no CPA/CTR exist here. The export window may differ from the account's campaign window — treat cross-surface comparisons as directional.",
             "devices": [
               {
                 "device": "iphone",
-                "date_start": "2026-01-01",
-                "date_end": "2026-07-09",
-                "link_clicks": 932,
-                "adds_to_cart": 0,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "validation_required"
+                "date_start": "2026-07-21",
+                "date_end": "2026-07-21",
+                "link_clicks": 33,
+                "adds_to_cart": 6,
+                "checkouts_initiated": null,
+                "purchases": null,
+                "confidence": null
               },
               {
                 "device": "iphone",
-                "date_start": "2026-07-14",
-                "date_end": "2026-07-24",
-                "link_clicks": 242,
-                "adds_to_cart": 0,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "insufficient"
-              },
-              {
-                "device": "android_smartphone",
-                "date_start": "2026-01-01",
-                "date_end": "2026-07-09",
-                "link_clicks": 211,
-                "adds_to_cart": 0,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "validation_required"
-              },
-              {
-                "device": "ipad",
-                "date_start": "2026-01-01",
-                "date_end": "2026-07-09",
-                "link_clicks": 73,
-                "adds_to_cart": 0,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "validation_required"
-              },
-              {
-                "device": "desktop",
-                "date_start": "2026-01-01",
-                "date_end": "2026-07-09",
-                "link_clicks": 70,
-                "adds_to_cart": 0,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "validation_required"
-              },
-              {
-                "device": "android_smartphone",
-                "date_start": "2026-07-14",
-                "date_end": "2026-07-24",
-                "link_clicks": 50,
-                "adds_to_cart": 0,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "insufficient"
-              },
-              {
-                "device": "desktop",
-                "date_start": "2026-07-14",
-                "date_end": "2026-07-24",
-                "link_clicks": 33,
-                "adds_to_cart": 0,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "insufficient"
-              },
-              {
-                "device": "ipad",
-                "date_start": "2026-07-14",
-                "date_end": "2026-07-24",
-                "link_clicks": 16,
-                "adds_to_cart": 0,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "insufficient"
-              },
-              {
-                "device": "android_tablet",
-                "date_start": "2026-01-01",
-                "date_end": "2026-07-09",
-                "link_clicks": 10,
-                "adds_to_cart": 0,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "validation_required"
-              },
-              {
-                "device": "other",
-                "date_start": "2026-01-01",
-                "date_end": "2026-07-09",
-                "link_clicks": 2,
-                "adds_to_cart": 0,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "validation_required"
-              },
-              {
-                "device": "unknown",
-                "date_start": "2026-01-01",
-                "date_end": "2026-07-09",
-                "link_clicks": 0,
-                "adds_to_cart": 71,
-                "checkouts_initiated": 1,
-                "purchases": 2,
-                "confidence": "validation_required"
-              },
-              {
-                "device": "unknown",
-                "date_start": "2026-07-14",
-                "date_end": "2026-07-24",
-                "link_clicks": 0,
-                "adds_to_cart": 7,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "insufficient"
+                "date_start": "2026-07-16",
+                "date_end": "2026-07-16",
+                "link_clicks": 13,
+                "adds_to_cart": 1,
+                "checkouts_initiated": null,
+                "purchases": null,
+                "confidence": null
               }
             ],
             "platforms": [
               {
                 "platform": "facebook",
-                "date_start": "2026-01-01",
-                "date_end": "2026-07-09",
-                "link_clicks": 787,
-                "adds_to_cart": 50,
-                "checkouts_initiated": 0,
-                "purchases": 1,
-                "confidence": "validation_required"
-              },
-              {
-                "platform": "instagram",
-                "date_start": "2026-01-01",
-                "date_end": "2026-07-09",
-                "link_clicks": 459,
-                "adds_to_cart": 21,
-                "checkouts_initiated": 1,
-                "purchases": 1,
-                "confidence": "validation_required"
-              },
-              {
-                "platform": "facebook",
-                "date_start": "2026-07-14",
-                "date_end": "2026-07-24",
-                "link_clicks": 175,
+                "date_start": "2026-07-21",
+                "date_end": "2026-07-21",
+                "link_clicks": 26,
                 "adds_to_cart": 6,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "insufficient"
-              },
-              {
-                "platform": "instagram",
-                "date_start": "2026-07-14",
-                "date_end": "2026-07-24",
-                "link_clicks": 160,
-                "adds_to_cart": 0,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "insufficient"
-              },
-              {
-                "platform": "audience_network",
-                "date_start": "2026-01-01",
-                "date_end": "2026-07-09",
-                "link_clicks": 33,
-                "adds_to_cart": 0,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "validation_required"
+                "checkouts_initiated": null,
+                "purchases": null,
+                "confidence": null
               },
               {
                 "platform": "threads",
-                "date_start": "2026-01-01",
-                "date_end": "2026-07-09",
-                "link_clicks": 19,
-                "adds_to_cart": 0,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "validation_required"
-              },
-              {
-                "platform": "threads",
-                "date_start": "2026-07-14",
-                "date_end": "2026-07-24",
-                "link_clicks": 6,
+                "date_start": "2026-07-16",
+                "date_end": "2026-07-16",
+                "link_clicks": 3,
                 "adds_to_cart": 1,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "insufficient"
+                "checkouts_initiated": null,
+                "purchases": null,
+                "confidence": null
               }
             ],
             "placements": [
               {
                 "placement": "Feed",
-                "date_start": "2026-01-01",
-                "date_end": "2026-07-09",
-                "link_clicks": 941,
-                "adds_to_cart": 55,
-                "checkouts_initiated": 0,
-                "purchases": 1,
-                "confidence": "validation_required"
-              },
-              {
-                "placement": "Feed",
-                "date_start": "2026-07-14",
-                "date_end": "2026-07-24",
-                "link_clicks": 239,
+                "date_start": "2026-07-21",
+                "date_end": "2026-07-21",
+                "link_clicks": 33,
                 "adds_to_cart": 6,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "insufficient"
-              },
-              {
-                "placement": "Instagram Stories",
-                "date_start": "2026-01-01",
-                "date_end": "2026-07-09",
-                "link_clicks": 140,
-                "adds_to_cart": 9,
-                "checkouts_initiated": 1,
-                "purchases": 1,
-                "confidence": "validation_required"
-              },
-              {
-                "placement": "Facebook Reels",
-                "date_start": "2026-01-01",
-                "date_end": "2026-07-09",
-                "link_clicks": 62,
-                "adds_to_cart": 1,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "validation_required"
-              },
-              {
-                "placement": "Instagram Stories",
-                "date_start": "2026-07-14",
-                "date_end": "2026-07-24",
-                "link_clicks": 55,
-                "adds_to_cart": 0,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "insufficient"
-              },
-              {
-                "placement": "Instagram Reels",
-                "date_start": "2026-01-01",
-                "date_end": "2026-07-09",
-                "link_clicks": 49,
-                "adds_to_cart": 4,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "validation_required"
-              },
-              {
-                "placement": "Search results",
-                "date_start": "2026-01-01",
-                "date_end": "2026-07-09",
-                "link_clicks": 35,
-                "adds_to_cart": 2,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "validation_required"
-              },
-              {
-                "placement": "Native, banner & interstitial",
-                "date_start": "2026-01-01",
-                "date_end": "2026-07-09",
-                "link_clicks": 32,
-                "adds_to_cart": 0,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "validation_required"
+                "checkouts_initiated": null,
+                "purchases": null,
+                "confidence": null
               },
               {
                 "placement": "Threads feed",
-                "date_start": "2026-01-01",
-                "date_end": "2026-07-09",
-                "link_clicks": 19,
-                "adds_to_cart": 0,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "validation_required"
-              },
-              {
-                "placement": "Instagram Reels",
-                "date_start": "2026-07-14",
-                "date_end": "2026-07-24",
-                "link_clicks": 18,
-                "adds_to_cart": 0,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "insufficient"
-              },
-              {
-                "placement": "Facebook Reels",
-                "date_start": "2026-07-14",
-                "date_end": "2026-07-24",
-                "link_clicks": 17,
-                "adds_to_cart": 0,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "insufficient"
-              },
-              {
-                "placement": "Marketplace",
-                "date_start": "2026-01-01",
-                "date_end": "2026-07-09",
-                "link_clicks": 12,
-                "adds_to_cart": 0,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "validation_required"
-              },
-              {
-                "placement": "Threads feed",
-                "date_start": "2026-07-14",
-                "date_end": "2026-07-24",
-                "link_clicks": 6,
-                "adds_to_cart": 1,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "insufficient"
-              },
-              {
-                "placement": "Facebook profile feed",
-                "date_start": "2026-01-01",
-                "date_end": "2026-07-09",
+                "date_start": "2026-07-16",
+                "date_end": "2026-07-16",
                 "link_clicks": 3,
-                "adds_to_cart": 0,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "validation_required"
-              },
-              {
-                "placement": "Facebook Stories",
-                "date_start": "2026-01-01",
-                "date_end": "2026-07-09",
-                "link_clicks": 2,
-                "adds_to_cart": 0,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "validation_required"
-              },
-              {
-                "placement": "Ads on Facebook Reels",
-                "date_start": "2026-07-14",
-                "date_end": "2026-07-24",
-                "link_clicks": 2,
-                "adds_to_cart": 0,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "insufficient"
-              },
-              {
-                "placement": "Search results",
-                "date_start": "2026-07-14",
-                "date_end": "2026-07-24",
-                "link_clicks": 2,
-                "adds_to_cart": 0,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "insufficient"
-              },
-              {
-                "placement": "Right column",
-                "date_start": "2026-01-01",
-                "date_end": "2026-07-09",
-                "link_clicks": 1,
-                "adds_to_cart": 0,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "validation_required"
-              },
-              {
-                "placement": "Ads on Facebook Reels",
-                "date_start": "2026-01-01",
-                "date_end": "2026-07-09",
-                "link_clicks": 1,
-                "adds_to_cart": 0,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "validation_required"
-              },
-              {
-                "placement": "Rewarded video",
-                "date_start": "2026-01-01",
-                "date_end": "2026-07-09",
-                "link_clicks": 1,
-                "adds_to_cart": 0,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "validation_required"
-              },
-              {
-                "placement": "Right column",
-                "date_start": "2026-07-14",
-                "date_end": "2026-07-24",
-                "link_clicks": 1,
-                "adds_to_cart": 0,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "insufficient"
-              },
-              {
-                "placement": "Facebook Stories",
-                "date_start": "2026-07-14",
-                "date_end": "2026-07-24",
-                "link_clicks": 1,
-                "adds_to_cart": 0,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "insufficient"
-              },
-              {
-                "placement": "In-stream reels",
-                "date_start": "2026-01-01",
-                "date_end": "2026-07-09",
-                "link_clicks": 0,
-                "adds_to_cart": 0,
-                "checkouts_initiated": 0,
-                "purchases": 0,
-                "confidence": "validation_required"
+                "adds_to_cart": 1,
+                "checkouts_initiated": null,
+                "purchases": null,
+                "confidence": null
               }
             ]
           },
@@ -13995,13 +13647,13 @@
               "concept": "C1",
               "date_start": "2026-07-14",
               "date_end": "2026-07-24",
-              "spend": 12.9,
-              "link_clicks": 5,
-              "results": 0,
+              "spend": 12.900000000000002,
+              "link_clicks": 57,
+              "results": null,
               "cpa": null,
               "cvr_link_pct": null,
-              "confidence": "insufficient",
-              "mapped_in_library": true
+              "confidence": null,
+              "mapped_in_library": false
             },
             {
               "book": null,
@@ -14010,141 +13662,37 @@
               "date_end": "2026-07-24",
               "spend": 3.97,
               "link_clicks": 1,
-              "results": 0,
+              "results": null,
               "cpa": null,
               "cvr_link_pct": null,
-              "confidence": "insufficient",
-              "mapped_in_library": true
+              "confidence": null,
+              "mapped_in_library": false
             },
             {
               "book": null,
               "concept": "C3",
               "date_start": "2026-07-14",
               "date_end": "2026-07-24",
-              "spend": 27.44,
-              "link_clicks": 12,
-              "results": 0,
+              "spend": 27.439999999999998,
+              "link_clicks": 26,
+              "results": null,
               "cpa": null,
               "cvr_link_pct": null,
-              "confidence": "insufficient",
-              "mapped_in_library": true
+              "confidence": null,
+              "mapped_in_library": false
             },
             {
               "book": null,
               "concept": "C4",
               "date_start": "2026-07-14",
               "date_end": "2026-07-24",
-              "spend": 13.66,
-              "link_clicks": 5,
-              "results": 0,
+              "spend": 13.659999999999998,
+              "link_clicks": 257,
+              "results": null,
               "cpa": null,
               "cvr_link_pct": null,
-              "confidence": "insufficient",
-              "mapped_in_library": true
-            },
-            {
-              "book": null,
-              "concept": "LD-CN-CATALOG-GRID",
-              "date_start": "2026-05-03",
-              "date_end": "2026-06-26",
-              "spend": 364.86,
-              "link_clicks": 259,
-              "results": 0,
-              "cpa": null,
-              "cvr_link_pct": null,
-              "confidence": "insufficient",
-              "mapped_in_library": true
-            },
-            {
-              "book": null,
-              "concept": "LD-CN-CITY-PRIDE",
-              "date_start": "2026-05-03",
-              "date_end": "2026-06-26",
-              "spend": 287.28,
-              "link_clicks": 174,
-              "results": 0,
-              "cpa": null,
-              "cvr_link_pct": null,
-              "confidence": "insufficient",
-              "mapped_in_library": true
-            },
-            {
-              "book": null,
-              "concept": "LD-CN-DAD-SOCIALPROOF",
-              "date_start": "2026-05-03",
-              "date_end": "2026-06-26",
-              "spend": 11.62,
-              "link_clicks": 3,
-              "results": 0,
-              "cpa": null,
-              "cvr_link_pct": null,
-              "confidence": "insufficient",
-              "mapped_in_library": true
-            },
-            {
-              "book": null,
-              "concept": "LD-CN-GIFT-MOMENT",
-              "date_start": "2026-05-03",
-              "date_end": "2026-06-26",
-              "spend": 107.24,
-              "link_clicks": 64,
-              "results": 1,
-              "cpa": 107.24,
-              "cvr_link_pct": null,
-              "confidence": "insufficient",
-              "mapped_in_library": true
-            },
-            {
-              "book": null,
-              "concept": "LD-CN-HIS-HERS",
-              "date_start": "2026-05-03",
-              "date_end": "2026-06-26",
-              "spend": 22.83,
-              "link_clicks": 7,
-              "results": 0,
-              "cpa": null,
-              "cvr_link_pct": null,
-              "confidence": "insufficient",
-              "mapped_in_library": true
-            },
-            {
-              "book": null,
-              "concept": "LD-CN-LIFESTYLE-TESTIMONIAL",
-              "date_start": "2026-05-03",
-              "date_end": "2026-06-26",
-              "spend": 149.59,
-              "link_clicks": 160,
-              "results": 0,
-              "cpa": null,
-              "cvr_link_pct": null,
-              "confidence": "insufficient",
-              "mapped_in_library": true
-            },
-            {
-              "book": null,
-              "concept": "LD-CN-PRODUCT-SPREAD",
-              "date_start": "2026-05-03",
-              "date_end": "2026-06-26",
-              "spend": 255.03,
-              "link_clicks": 234,
-              "results": 1,
-              "cpa": 255.03,
-              "cvr_link_pct": null,
-              "confidence": "insufficient",
-              "mapped_in_library": true
-            },
-            {
-              "book": null,
-              "concept": "LD-CN-QUALITY-REBUTTAL",
-              "date_start": "2026-05-03",
-              "date_end": "2026-06-26",
-              "spend": 127.33,
-              "link_clicks": 81,
-              "results": 0,
-              "cpa": null,
-              "cvr_link_pct": null,
-              "confidence": "insufficient",
-              "mapped_in_library": true
+              "confidence": null,
+              "mapped_in_library": false
             }
           ]
         },
@@ -24920,14 +24468,6 @@
         "core_reanalysis_read": null,
         "campaign_summary": {
           "bottom_line_totals": {
-            "Results": {
-              "spend": 0,
-              "reach": 0,
-              "impressions": 0,
-              "results": 0,
-              "clicks_all": 0,
-              "link_clicks": 297
-            },
             "Website purchases": {
               "spend": 743.3,
               "reach": 111,
@@ -24939,10 +24479,10 @@
           },
           "total_spend_usd": 743.3,
           "total_impressions": 137,
-          "total_link_clicks": 594,
-          "overall_link_ctr_pct": 433.5766,
-          "data_caveat": "Totals cover the full imported window 2026-06-14 → 2026-07-13.",
-          "window_start": "2026-06-14",
+          "total_link_clicks": 297,
+          "overall_link_ctr_pct": 216.7883,
+          "data_caveat": "Totals cover the full imported window 2026-06-30 → 2026-07-13.",
+          "window_start": "2026-06-30",
           "window_end": "2026-07-13",
           "campaign_windows": []
         },
@@ -24954,20 +24494,10 @@
           "c4e_placement_signal": [],
           "conversion_tracking_signal": {
             "tracking_basis": "conversion",
-            "window_start": "2026-06-21",
-            "window_end": "2026-06-21",
+            "window_start": "2026-07-05",
+            "window_end": "2026-07-05",
             "note": "Conversion-based tracking: funnel actions are attributed to the converting device/platform/placement. Spend and impressions are not device-attributable under this tracking, so no CPA/CTR exist here. The export window may differ from the account's campaign window — treat cross-surface comparisons as directional.",
             "devices": [
-              {
-                "device": "iphone",
-                "date_start": "2026-06-21",
-                "date_end": "2026-06-21",
-                "link_clicks": 27,
-                "adds_to_cart": 18,
-                "checkouts_initiated": 5,
-                "purchases": null,
-                "confidence": null
-              },
               {
                 "device": "iphone",
                 "date_start": "2026-07-05",
@@ -24975,16 +24505,6 @@
                 "link_clicks": 26,
                 "adds_to_cart": 12,
                 "checkouts_initiated": 5,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "device": "iphone",
-                "date_start": "2026-06-22",
-                "date_end": "2026-06-22",
-                "link_clicks": 19,
-                "adds_to_cart": 4,
-                "checkouts_initiated": 3,
                 "purchases": null,
                 "confidence": null
               },
@@ -25010,41 +24530,11 @@
               },
               {
                 "device": "iphone",
-                "date_start": "2026-06-24",
-                "date_end": "2026-06-24",
-                "link_clicks": 15,
-                "adds_to_cart": 28,
-                "checkouts_initiated": 9,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "device": "iphone",
-                "date_start": "2026-06-20",
-                "date_end": "2026-06-20",
-                "link_clicks": 13,
-                "adds_to_cart": 16,
-                "checkouts_initiated": 10,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "device": "iphone",
                 "date_start": "2026-07-02",
                 "date_end": "2026-07-02",
                 "link_clicks": 13,
                 "adds_to_cart": 17,
                 "checkouts_initiated": 7,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "device": "iphone",
-                "date_start": "2026-06-28",
-                "date_end": "2026-06-28",
-                "link_clicks": 12,
-                "adds_to_cart": 15,
-                "checkouts_initiated": 4,
                 "purchases": null,
                 "confidence": null
               },
@@ -25070,61 +24560,11 @@
               },
               {
                 "device": "iphone",
-                "date_start": "2026-06-25",
-                "date_end": "2026-06-25",
-                "link_clicks": 11,
-                "adds_to_cart": 55,
-                "checkouts_initiated": 11,
-                "purchases": 1,
-                "confidence": null
-              },
-              {
-                "device": "android_smartphone",
-                "date_start": "2026-06-21",
-                "date_end": "2026-06-21",
-                "link_clicks": 11,
-                "adds_to_cart": 3,
-                "checkouts_initiated": 2,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "device": "iphone",
                 "date_start": "2026-06-30",
                 "date_end": "2026-06-30",
                 "link_clicks": 11,
                 "adds_to_cart": 8,
                 "checkouts_initiated": 4,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "device": "iphone",
-                "date_start": "2026-06-26",
-                "date_end": "2026-06-26",
-                "link_clicks": 10,
-                "adds_to_cart": 4,
-                "checkouts_initiated": 2,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "device": "iphone",
-                "date_start": "2026-06-27",
-                "date_end": "2026-06-27",
-                "link_clicks": 10,
-                "adds_to_cart": 28,
-                "checkouts_initiated": 6,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "device": "iphone",
-                "date_start": "2026-06-15",
-                "date_end": "2026-06-15",
-                "link_clicks": 10,
-                "adds_to_cart": 6,
-                "checkouts_initiated": 1,
                 "purchases": null,
                 "confidence": null
               },
@@ -25140,71 +24580,11 @@
               },
               {
                 "device": "android_smartphone",
-                "date_start": "2026-06-26",
-                "date_end": "2026-06-26",
-                "link_clicks": 9,
-                "adds_to_cart": 13,
-                "checkouts_initiated": 7,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "device": "android_smartphone",
-                "date_start": "2026-06-15",
-                "date_end": "2026-06-15",
-                "link_clicks": 9,
-                "adds_to_cart": 3,
-                "checkouts_initiated": 2,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "device": "android_smartphone",
                 "date_start": "2026-06-30",
                 "date_end": "2026-06-30",
                 "link_clicks": 9,
                 "adds_to_cart": 5,
                 "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "device": "iphone",
-                "date_start": "2026-06-23",
-                "date_end": "2026-06-23",
-                "link_clicks": 8,
-                "adds_to_cart": 9,
-                "checkouts_initiated": 4,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "device": "iphone",
-                "date_start": "2026-06-19",
-                "date_end": "2026-06-19",
-                "link_clicks": 8,
-                "adds_to_cart": 2,
-                "checkouts_initiated": 2,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "device": "iphone",
-                "date_start": "2026-06-17",
-                "date_end": "2026-06-17",
-                "link_clicks": 8,
-                "adds_to_cart": 4,
-                "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "device": "iphone",
-                "date_start": "2026-06-14",
-                "date_end": "2026-06-14",
-                "link_clicks": 8,
-                "adds_to_cart": 12,
-                "checkouts_initiated": 2,
                 "purchases": null,
                 "confidence": null
               },
@@ -25215,16 +24595,6 @@
                 "link_clicks": 8,
                 "adds_to_cart": 5,
                 "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "device": "android_smartphone",
-                "date_start": "2026-06-23",
-                "date_end": "2026-06-23",
-                "link_clicks": 7,
-                "adds_to_cart": 6,
-                "checkouts_initiated": 3,
                 "purchases": null,
                 "confidence": null
               },
@@ -25264,36 +24634,6 @@
                 "date_end": "2026-07-04",
                 "link_clicks": 7,
                 "adds_to_cart": 5,
-                "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "device": "android_smartphone",
-                "date_start": "2026-06-25",
-                "date_end": "2026-06-25",
-                "link_clicks": 5,
-                "adds_to_cart": 1,
-                "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "device": "android_smartphone",
-                "date_start": "2026-06-28",
-                "date_end": "2026-06-28",
-                "link_clicks": 5,
-                "adds_to_cart": 1,
-                "checkouts_initiated": 3,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "device": "android_smartphone",
-                "date_start": "2026-06-22",
-                "date_end": "2026-06-22",
-                "link_clicks": 5,
-                "adds_to_cart": 4,
                 "checkouts_initiated": 1,
                 "purchases": null,
                 "confidence": null
@@ -25349,116 +24689,6 @@
                 "confidence": null
               },
               {
-                "device": "desktop",
-                "date_start": "2026-06-24",
-                "date_end": "2026-06-24",
-                "link_clicks": 3,
-                "adds_to_cart": null,
-                "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "device": "iphone",
-                "date_start": "2026-06-29",
-                "date_end": "2026-06-29",
-                "link_clicks": 3,
-                "adds_to_cart": 18,
-                "checkouts_initiated": 5,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "device": "android_smartphone",
-                "date_start": "2026-06-14",
-                "date_end": "2026-06-14",
-                "link_clicks": 3,
-                "adds_to_cart": 2,
-                "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "device": "ipad",
-                "date_start": "2026-06-29",
-                "date_end": "2026-06-29",
-                "link_clicks": 2,
-                "adds_to_cart": 2,
-                "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "device": "desktop",
-                "date_start": "2026-06-29",
-                "date_end": "2026-06-29",
-                "link_clicks": 2,
-                "adds_to_cart": 7,
-                "checkouts_initiated": 2,
-                "purchases": 1,
-                "confidence": null
-              },
-              {
-                "device": "desktop",
-                "date_start": "2026-06-28",
-                "date_end": "2026-06-28",
-                "link_clicks": 2,
-                "adds_to_cart": 7,
-                "checkouts_initiated": 2,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "device": "android_smartphone",
-                "date_start": "2026-06-20",
-                "date_end": "2026-06-20",
-                "link_clicks": 2,
-                "adds_to_cart": 1,
-                "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "device": "desktop",
-                "date_start": "2026-06-22",
-                "date_end": "2026-06-22",
-                "link_clicks": 2,
-                "adds_to_cart": 3,
-                "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "device": "iphone",
-                "date_start": "2026-06-16",
-                "date_end": "2026-06-16",
-                "link_clicks": 2,
-                "adds_to_cart": 12,
-                "checkouts_initiated": 7,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "device": "other",
-                "date_start": "2026-06-16",
-                "date_end": "2026-06-16",
-                "link_clicks": null,
-                "adds_to_cart": 2,
-                "checkouts_initiated": 2,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "device": "other",
-                "date_start": "2026-06-17",
-                "date_end": "2026-06-17",
-                "link_clicks": null,
-                "adds_to_cart": 6,
-                "checkouts_initiated": 3,
-                "purchases": null,
-                "confidence": null
-              },
-              {
                 "device": "ipad",
                 "date_start": "2026-07-10",
                 "date_end": "2026-07-10",
@@ -25470,16 +24700,6 @@
               }
             ],
             "platforms": [
-              {
-                "platform": "facebook",
-                "date_start": "2026-06-21",
-                "date_end": "2026-06-21",
-                "link_clicks": 27,
-                "adds_to_cart": 6,
-                "checkouts_initiated": 2,
-                "purchases": null,
-                "confidence": null
-              },
               {
                 "platform": "facebook",
                 "date_start": "2026-07-01",
@@ -25522,16 +24742,6 @@
               },
               {
                 "platform": "facebook",
-                "date_start": "2026-06-22",
-                "date_end": "2026-06-22",
-                "link_clicks": 19,
-                "adds_to_cart": 7,
-                "checkouts_initiated": 4,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "platform": "facebook",
                 "date_start": "2026-06-30",
                 "date_end": "2026-06-30",
                 "link_clicks": 17,
@@ -25552,62 +24762,12 @@
               },
               {
                 "platform": "facebook",
-                "date_start": "2026-06-24",
-                "date_end": "2026-06-24",
-                "link_clicks": 16,
-                "adds_to_cart": 2,
-                "checkouts_initiated": 2,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "platform": "facebook",
-                "date_start": "2026-06-26",
-                "date_end": "2026-06-26",
-                "link_clicks": 15,
-                "adds_to_cart": 10,
-                "checkouts_initiated": 6,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "platform": "facebook",
-                "date_start": "2026-06-28",
-                "date_end": "2026-06-28",
-                "link_clicks": 15,
-                "adds_to_cart": 11,
-                "checkouts_initiated": 4,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "platform": "instagram",
-                "date_start": "2026-06-21",
-                "date_end": "2026-06-21",
-                "link_clicks": 15,
-                "adds_to_cart": 15,
-                "checkouts_initiated": 5,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "platform": "facebook",
                 "date_start": "2026-07-10",
                 "date_end": "2026-07-10",
                 "link_clicks": 15,
                 "adds_to_cart": 11,
                 "checkouts_initiated": 3,
                 "purchases": 1,
-                "confidence": null
-              },
-              {
-                "platform": "facebook",
-                "date_start": "2026-06-27",
-                "date_end": "2026-06-27",
-                "link_clicks": 13,
-                "adds_to_cart": 12,
-                "checkouts_initiated": 4,
-                "purchases": null,
                 "confidence": null
               },
               {
@@ -25632,16 +24792,6 @@
               },
               {
                 "platform": "facebook",
-                "date_start": "2026-06-25",
-                "date_end": "2026-06-25",
-                "link_clicks": 12,
-                "adds_to_cart": 3,
-                "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "platform": "facebook",
                 "date_start": "2026-07-12",
                 "date_end": "2026-07-12",
                 "link_clicks": 12,
@@ -25651,71 +24801,11 @@
                 "confidence": null
               },
               {
-                "platform": "instagram",
-                "date_start": "2026-06-15",
-                "date_end": "2026-06-15",
-                "link_clicks": 11,
-                "adds_to_cart": 2,
-                "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "platform": "instagram",
-                "date_start": "2026-06-23",
-                "date_end": "2026-06-23",
-                "link_clicks": 10,
-                "adds_to_cart": 9,
-                "checkouts_initiated": 3,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "platform": "instagram",
-                "date_start": "2026-06-24",
-                "date_end": "2026-06-24",
-                "link_clicks": 9,
-                "adds_to_cart": 26,
-                "checkouts_initiated": 8,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "platform": "facebook",
-                "date_start": "2026-06-20",
-                "date_end": "2026-06-20",
-                "link_clicks": 9,
-                "adds_to_cart": 8,
-                "checkouts_initiated": 5,
-                "purchases": null,
-                "confidence": null
-              },
-              {
                 "platform": "facebook",
                 "date_start": "2026-07-02",
                 "date_end": "2026-07-02",
                 "link_clicks": 9,
                 "adds_to_cart": 4,
-                "checkouts_initiated": 2,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "platform": "instagram",
-                "date_start": "2026-06-22",
-                "date_end": "2026-06-22",
-                "link_clicks": 8,
-                "adds_to_cart": 4,
-                "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "platform": "facebook",
-                "date_start": "2026-06-14",
-                "date_end": "2026-06-14",
-                "link_clicks": 8,
-                "adds_to_cart": 7,
                 "checkouts_initiated": 2,
                 "purchases": null,
                 "confidence": null
@@ -25742,101 +24832,11 @@
               },
               {
                 "platform": "instagram",
-                "date_start": "2026-06-25",
-                "date_end": "2026-06-25",
-                "link_clicks": 7,
-                "adds_to_cart": 51,
-                "checkouts_initiated": 10,
-                "purchases": 1,
-                "confidence": null
-              },
-              {
-                "platform": "facebook",
-                "date_start": "2026-06-15",
-                "date_end": "2026-06-15",
-                "link_clicks": 7,
-                "adds_to_cart": 7,
-                "checkouts_initiated": 2,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "platform": "instagram",
                 "date_start": "2026-07-01",
                 "date_end": "2026-07-01",
                 "link_clicks": 7,
                 "adds_to_cart": 6,
                 "checkouts_initiated": 6,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "platform": "facebook",
-                "date_start": "2026-06-23",
-                "date_end": "2026-06-23",
-                "link_clicks": 6,
-                "adds_to_cart": 6,
-                "checkouts_initiated": 4,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "platform": "instagram",
-                "date_start": "2026-06-29",
-                "date_end": "2026-06-29",
-                "link_clicks": 6,
-                "adds_to_cart": 18,
-                "checkouts_initiated": 4,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "platform": "instagram",
-                "date_start": "2026-06-20",
-                "date_end": "2026-06-20",
-                "link_clicks": 6,
-                "adds_to_cart": 9,
-                "checkouts_initiated": 6,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "platform": "instagram",
-                "date_start": "2026-06-26",
-                "date_end": "2026-06-26",
-                "link_clicks": 4,
-                "adds_to_cart": 7,
-                "checkouts_initiated": 3,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "platform": "facebook",
-                "date_start": "2026-06-29",
-                "date_end": "2026-06-29",
-                "link_clicks": 4,
-                "adds_to_cart": 9,
-                "checkouts_initiated": 4,
-                "purchases": 1,
-                "confidence": null
-              },
-              {
-                "platform": "instagram",
-                "date_start": "2026-06-28",
-                "date_end": "2026-06-28",
-                "link_clicks": 4,
-                "adds_to_cart": 12,
-                "checkouts_initiated": 5,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "platform": "instagram",
-                "date_start": "2026-06-14",
-                "date_end": "2026-06-14",
-                "link_clicks": 4,
-                "adds_to_cart": 7,
-                "checkouts_initiated": 1,
                 "purchases": null,
                 "confidence": null
               },
@@ -25847,46 +24847,6 @@
                 "link_clicks": 4,
                 "adds_to_cart": 5,
                 "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "platform": "instagram",
-                "date_start": "2026-06-27",
-                "date_end": "2026-06-27",
-                "link_clicks": 3,
-                "adds_to_cart": 16,
-                "checkouts_initiated": 2,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "platform": "instagram",
-                "date_start": "2026-06-19",
-                "date_end": "2026-06-19",
-                "link_clicks": 3,
-                "adds_to_cart": 1,
-                "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "platform": "facebook",
-                "date_start": "2026-06-17",
-                "date_end": "2026-06-17",
-                "link_clicks": 3,
-                "adds_to_cart": 4,
-                "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "platform": "instagram",
-                "date_start": "2026-06-16",
-                "date_end": "2026-06-16",
-                "link_clicks": 3,
-                "adds_to_cart": 11,
-                "checkouts_initiated": 6,
                 "purchases": null,
                 "confidence": null
               },
@@ -25911,42 +24871,12 @@
                 "confidence": null
               },
               {
-                "platform": "audience_network",
-                "date_start": "2026-06-25",
-                "date_end": "2026-06-25",
-                "link_clicks": 2,
-                "adds_to_cart": 2,
-                "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "platform": "facebook",
-                "date_start": "2026-06-16",
-                "date_end": "2026-06-16",
-                "link_clicks": 2,
-                "adds_to_cart": 1,
-                "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
                 "platform": "instagram",
                 "date_start": "2026-07-10",
                 "date_end": "2026-07-10",
                 "link_clicks": 2,
                 "adds_to_cart": 4,
                 "checkouts_initiated": 3,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "platform": "threads",
-                "date_start": "2026-06-19",
-                "date_end": "2026-06-19",
-                "link_clicks": 1,
-                "adds_to_cart": 1,
-                "checkouts_initiated": 1,
                 "purchases": null,
                 "confidence": null
               },
@@ -25959,39 +24889,9 @@
                 "checkouts_initiated": 1,
                 "purchases": null,
                 "confidence": null
-              },
-              {
-                "platform": "unknown",
-                "date_start": "2026-06-16",
-                "date_end": "2026-06-16",
-                "link_clicks": null,
-                "adds_to_cart": 2,
-                "checkouts_initiated": 2,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "platform": "unknown",
-                "date_start": "2026-06-17",
-                "date_end": "2026-06-17",
-                "link_clicks": null,
-                "adds_to_cart": 6,
-                "checkouts_initiated": 3,
-                "purchases": null,
-                "confidence": null
               }
             ],
             "placements": [
-              {
-                "placement": "Feed",
-                "date_start": "2026-06-21",
-                "date_end": "2026-06-21",
-                "link_clicks": 34,
-                "adds_to_cart": 14,
-                "checkouts_initiated": 4,
-                "purchases": null,
-                "confidence": null
-              },
               {
                 "placement": "Feed",
                 "date_start": "2026-07-05",
@@ -26014,16 +24914,6 @@
               },
               {
                 "placement": "Feed",
-                "date_start": "2026-06-22",
-                "date_end": "2026-06-22",
-                "link_clicks": 22,
-                "adds_to_cart": 11,
-                "checkouts_initiated": 5,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "placement": "Feed",
                 "date_start": "2026-07-06",
                 "date_end": "2026-07-06",
                 "link_clicks": 22,
@@ -26034,31 +24924,11 @@
               },
               {
                 "placement": "Feed",
-                "date_start": "2026-06-24",
-                "date_end": "2026-06-24",
-                "link_clicks": 21,
-                "adds_to_cart": 28,
-                "checkouts_initiated": 10,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "placement": "Feed",
                 "date_start": "2026-07-04",
                 "date_end": "2026-07-04",
                 "link_clicks": 20,
                 "adds_to_cart": 5,
                 "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "placement": "Feed",
-                "date_start": "2026-06-26",
-                "date_end": "2026-06-26",
-                "link_clicks": 19,
-                "adds_to_cart": 17,
-                "checkouts_initiated": 9,
                 "purchases": null,
                 "confidence": null
               },
@@ -26074,26 +24944,6 @@
               },
               {
                 "placement": "Feed",
-                "date_start": "2026-06-28",
-                "date_end": "2026-06-28",
-                "link_clicks": 17,
-                "adds_to_cart": 21,
-                "checkouts_initiated": 8,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "placement": "Feed",
-                "date_start": "2026-06-25",
-                "date_end": "2026-06-25",
-                "link_clicks": 16,
-                "adds_to_cart": 37,
-                "checkouts_initiated": 6,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "placement": "Feed",
                 "date_start": "2026-06-30",
                 "date_end": "2026-06-30",
                 "link_clicks": 15,
@@ -26104,70 +24954,10 @@
               },
               {
                 "placement": "Feed",
-                "date_start": "2026-06-23",
-                "date_end": "2026-06-23",
-                "link_clicks": 13,
-                "adds_to_cart": 15,
-                "checkouts_initiated": 7,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "placement": "Feed",
-                "date_start": "2026-06-27",
-                "date_end": "2026-06-27",
-                "link_clicks": 13,
-                "adds_to_cart": 26,
-                "checkouts_initiated": 5,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "placement": "Feed",
                 "date_start": "2026-07-07",
                 "date_end": "2026-07-07",
                 "link_clicks": 12,
                 "adds_to_cart": 5,
-                "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "placement": "Feed",
-                "date_start": "2026-06-15",
-                "date_end": "2026-06-15",
-                "link_clicks": 11,
-                "adds_to_cart": 8,
-                "checkouts_initiated": 2,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "placement": "Feed",
-                "date_start": "2026-06-20",
-                "date_end": "2026-06-20",
-                "link_clicks": 10,
-                "adds_to_cart": 16,
-                "checkouts_initiated": 10,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "placement": "Feed",
-                "date_start": "2026-06-29",
-                "date_end": "2026-06-29",
-                "link_clicks": 9,
-                "adds_to_cart": 25,
-                "checkouts_initiated": 7,
-                "purchases": 1,
-                "confidence": null
-              },
-              {
-                "placement": "Feed",
-                "date_start": "2026-06-19",
-                "date_end": "2026-06-19",
-                "link_clicks": 9,
-                "adds_to_cart": 1,
                 "checkouts_initiated": 1,
                 "purchases": null,
                 "confidence": null
@@ -26204,36 +24994,6 @@
               },
               {
                 "placement": "Feed",
-                "date_start": "2026-06-14",
-                "date_end": "2026-06-14",
-                "link_clicks": 6,
-                "adds_to_cart": 7,
-                "checkouts_initiated": 2,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "placement": "Instagram Stories",
-                "date_start": "2026-06-21",
-                "date_end": "2026-06-21",
-                "link_clicks": 5,
-                "adds_to_cart": 3,
-                "checkouts_initiated": 2,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "placement": "Instagram Stories",
-                "date_start": "2026-06-15",
-                "date_end": "2026-06-15",
-                "link_clicks": 5,
-                "adds_to_cart": 1,
-                "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "placement": "Feed",
                 "date_start": "2026-07-09",
                 "date_end": "2026-07-09",
                 "link_clicks": 5,
@@ -26243,60 +25003,10 @@
                 "confidence": null
               },
               {
-                "placement": "Instagram Stories",
-                "date_start": "2026-06-20",
-                "date_end": "2026-06-20",
-                "link_clicks": 4,
-                "adds_to_cart": 1,
-                "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
                 "placement": "Facebook Reels",
                 "date_start": "2026-07-01",
                 "date_end": "2026-07-01",
                 "link_clicks": 4,
-                "adds_to_cart": 4,
-                "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "placement": "Feed",
-                "date_start": "2026-06-17",
-                "date_end": "2026-06-17",
-                "link_clicks": 3,
-                "adds_to_cart": 4,
-                "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "placement": "Instagram Stories",
-                "date_start": "2026-06-25",
-                "date_end": "2026-06-25",
-                "link_clicks": 2,
-                "adds_to_cart": 16,
-                "checkouts_initiated": 5,
-                "purchases": 1,
-                "confidence": null
-              },
-              {
-                "placement": "Native, banner & interstitial",
-                "date_start": "2026-06-25",
-                "date_end": "2026-06-25",
-                "link_clicks": 2,
-                "adds_to_cart": 2,
-                "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "placement": "Instagram Reels",
-                "date_start": "2026-06-21",
-                "date_end": "2026-06-21",
-                "link_clicks": 2,
                 "adds_to_cart": 4,
                 "checkouts_initiated": 1,
                 "purchases": null,
@@ -26324,76 +25034,6 @@
               },
               {
                 "placement": "Facebook Reels",
-                "date_start": "2026-06-25",
-                "date_end": "2026-06-25",
-                "link_clicks": 1,
-                "adds_to_cart": 1,
-                "checkouts_initiated": null,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "placement": "Instagram Reels",
-                "date_start": "2026-06-29",
-                "date_end": "2026-06-29",
-                "link_clicks": 1,
-                "adds_to_cart": 2,
-                "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "placement": "Facebook Reels",
-                "date_start": "2026-06-27",
-                "date_end": "2026-06-27",
-                "link_clicks": 1,
-                "adds_to_cart": 2,
-                "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "placement": "Instagram Stories",
-                "date_start": "2026-06-28",
-                "date_end": "2026-06-28",
-                "link_clicks": 1,
-                "adds_to_cart": 2,
-                "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "placement": "Threads feed",
-                "date_start": "2026-06-19",
-                "date_end": "2026-06-19",
-                "link_clicks": 1,
-                "adds_to_cart": 1,
-                "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "placement": "Feed",
-                "date_start": "2026-06-16",
-                "date_end": "2026-06-16",
-                "link_clicks": 1,
-                "adds_to_cart": 12,
-                "checkouts_initiated": 7,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "placement": "Instagram Stories",
-                "date_start": "2026-06-14",
-                "date_end": "2026-06-14",
-                "link_clicks": 1,
-                "adds_to_cart": 7,
-                "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "placement": "Facebook Reels",
                 "date_start": "2026-07-10",
                 "date_end": "2026-07-10",
                 "link_clicks": 1,
@@ -26429,26 +25069,6 @@
                 "link_clicks": 1,
                 "adds_to_cart": 1,
                 "checkouts_initiated": 1,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "placement": "Unknown",
-                "date_start": "2026-06-16",
-                "date_end": "2026-06-16",
-                "link_clicks": null,
-                "adds_to_cart": 2,
-                "checkouts_initiated": 2,
-                "purchases": null,
-                "confidence": null
-              },
-              {
-                "placement": "Unknown",
-                "date_start": "2026-06-17",
-                "date_end": "2026-06-17",
-                "link_clicks": null,
-                "adds_to_cart": 6,
-                "checkouts_initiated": 3,
                 "purchases": null,
                 "confidence": null
               },

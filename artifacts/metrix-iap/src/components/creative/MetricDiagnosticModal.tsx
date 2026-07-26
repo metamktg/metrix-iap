@@ -230,7 +230,7 @@ export function MetricDiagnosticModal({
                               {fmtUSD(c.spend, 0)} · {fmtNum(c.results)} results
                             </div>
                           </div>
-                          <ArrowRight className="w-3.5 h-3.5 text-primary/60 shrink-0" />
+                          <ArrowRight className="w-3.5 h-3.5 text-interactive/60 shrink-0" />
                         </button>
                       ))}
                     </div>

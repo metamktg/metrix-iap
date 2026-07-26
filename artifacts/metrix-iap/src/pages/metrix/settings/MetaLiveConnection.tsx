@@ -160,7 +160,7 @@ export function MetaLiveConnection() {
 
         {connection && !connection.connected && !connection.pending_selection && (
           <div className="flex items-start gap-3 p-3 rounded-lg border border-border/40 bg-white/[0.02]">
-            <ShieldCheck className="w-4 h-4 text-primary/80 shrink-0 mt-0.5" />
+            <ShieldCheck className="w-4 h-4 text-interactive/80 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
               <div className="text-body font-semibold text-foreground">No Meta account connected</div>
               <p className="text-caption text-muted-foreground/85 leading-relaxed mt-0.5">
@@ -172,7 +172,7 @@ export function MetaLiveConnection() {
             <button
               onClick={handleConnect}
               disabled={connecting}
-              className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-caption font-medium text-primary hover:bg-primary/25 transition-colors shrink-0 disabled:opacity-50"
+              className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-caption font-medium text-interactive hover:bg-primary/25 transition-colors shrink-0 disabled:opacity-50"
               data-testid="button-connect-meta-live"
             >
               {connecting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plug className="w-3.5 h-3.5" />}
@@ -316,7 +316,7 @@ function AccountPicker({ pilotMode, onSelected }: { pilotMode: boolean; onSelect
                 {a.timezone_name ? ` · ${a.timezone_name}` : ""}
               </div>
             </div>
-            {isChosen && <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />}
+            {isChosen && <CheckCircle2 className="w-4 h-4 text-interactive shrink-0" />}
           </button>
         );
       })}
@@ -341,7 +341,7 @@ function AccountPicker({ pilotMode, onSelected }: { pilotMode: boolean; onSelect
           className={cn(
             "flex items-center gap-1.5 h-9 px-4 rounded-md border text-body font-medium transition-colors",
             chosen && !select.isPending
-              ? "bg-primary/15 border-primary/30 text-primary hover:bg-primary/25"
+              ? "bg-primary/15 border-primary/30 text-interactive hover:bg-primary/25"
               : "border-border/40 text-muted-foreground/80 cursor-not-allowed",
           )}
           data-testid="button-save-account-selection"
@@ -441,7 +441,7 @@ function ConnectedPanel({
         <button
           onClick={() => runReports.mutate()}
           disabled={runReports.isPending || account.token_status === "expired"}
-          className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-caption font-medium text-primary hover:bg-primary/25 transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-caption font-medium text-interactive hover:bg-primary/25 transition-colors disabled:opacity-50"
           data-testid="button-run-reports"
         >
           {runReports.isPending ? (

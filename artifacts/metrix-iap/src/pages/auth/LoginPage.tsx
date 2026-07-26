@@ -130,7 +130,7 @@ export function LoginPage() {
         <div className="space-y-2.5">
           <a
             href="/www/#request-access"
-            className="w-full h-9 rounded-md border border-primary/30 bg-primary/10 text-body font-medium text-primary hover:bg-primary/20 transition-colors flex items-center justify-center gap-1.5"
+            className="w-full h-9 rounded-md border border-primary/30 bg-primary/10 text-body font-medium text-interactive hover:bg-primary/20 transition-colors flex items-center justify-center gap-1.5"
             data-testid="link-request-access"
           >
             Request access <ArrowRight className="w-3.5 h-3.5" />
