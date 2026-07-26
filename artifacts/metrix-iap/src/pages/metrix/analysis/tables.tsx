@@ -116,9 +116,9 @@ export function SortableTh({
           {children}
           {active &&
             (sort!.dir === "asc" ? (
-              <ArrowUp className="w-3.5 h-3.5 text-primary/70" />
+              <ArrowUp className="w-3.5 h-3.5 text-interactive/70" />
             ) : (
-              <ArrowDown className="w-3.5 h-3.5 text-primary/70" />
+              <ArrowDown className="w-3.5 h-3.5 text-interactive/70" />
             ))}
         </button>
         {active && onReset && (

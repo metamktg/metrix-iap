@@ -46,7 +46,7 @@ function StatusPill({ status }: { status: string }) {
     s === "success" || s === "completed"
       ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
       : s === "running"
-        ? "bg-primary/10 text-primary border-primary/20"
+        ? "bg-primary/10 text-interactive border-primary/20"
         : s === "error" || s === "failed"
           ? "bg-destructive/10 text-destructive border-destructive/20"
           : "bg-muted text-muted-foreground border-border/40";
@@ -144,7 +144,7 @@ export function AnalysisHub() {
                   {
                     label: "Link CTR",
                     value: linkCtr != null ? fmtPct(linkCtr) : "—",
-                    color: linkCtr != null && linkCtr >= 1.5 ? "text-primary" : "text-foreground",
+                    color: linkCtr != null && linkCtr >= 1.5 ? "text-interactive" : "text-foreground",
                   },
                   {
                     label: "Cells Analysed",
@@ -184,7 +184,7 @@ export function AnalysisHub() {
                   {analysisStage.status === "complete" ? (
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                   ) : (
-                    <Activity className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                    <Activity className="w-4 h-4 text-interactive shrink-0 mt-0.5" />
                   )}
                   <p className={cn(TYPE.body, "text-foreground font-semibold")}>
                     Stage: <span className="capitalize">{analysisStage.status}</span>
@@ -195,7 +195,7 @@ export function AnalysisHub() {
               {/* Primary control */}
               {controls?.primary_control && (
                 <div className="bg-card/60 border border-primary/25 rounded-xl px-4 py-3.5">
-                  <p className={cn(TYPE.label, "text-primary mb-1.5")}>Primary Control</p>
+                  <p className={cn(TYPE.label, "text-interactive mb-1.5")}>Primary Control</p>
                   <p className={cn(TYPE.body, "text-foreground leading-relaxed")}>
                     {controls.primary_control}
                   </p>

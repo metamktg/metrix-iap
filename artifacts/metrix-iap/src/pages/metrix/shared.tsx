@@ -1213,7 +1213,7 @@ export function DatePresetBar({
             className={cn(
               "inline-flex items-center h-6 px-2.5 rounded-md border text-caption font-medium transition-colors",
               value === v
-                ? "border-primary/40 bg-primary/10 text-primary"
+                ? "border-primary/40 bg-primary/10 text-interactive"
                 : "border-border/40 text-muted-foreground/60 hover:text-foreground hover:bg-white/[0.03]"
             )}
           >

@@ -188,13 +188,13 @@ export function BriefBuilderView() {
                       {/* Pillar anchor + EVP line */}
                       <div className="mb-2">
                         <div className="flex items-center gap-1.5">
-                          <Sparkles className="w-3.5 h-3.5 text-primary/60 shrink-0" />
+                          <Sparkles className="w-3.5 h-3.5 text-interactive/60 shrink-0" />
                           <span className="text-caption font-semibold text-foreground leading-snug line-clamp-1">
                             {pillarOf(b.source_pillar)?.label ?? b.source_pillar}
                           </span>
                         </div>
                         {pillarOf(b.source_pillar)?.plain_descriptor && (
-                          <p className="text-caption italic text-primary/55 leading-snug line-clamp-1 mt-0.5 pl-5">
+                          <p className="text-caption italic text-interactive/55 leading-snug line-clamp-1 mt-0.5 pl-5">
                             "{deriveLabel(pillarOf(b.source_pillar)!.plain_descriptor, 72)}"
                           </p>
                         )}
@@ -242,7 +242,7 @@ export function BriefBuilderView() {
                 {pillarOf(detail.source_pillar) && (
                   <DrawerField label="Source pillar">
                     <p className="font-semibold text-foreground">{pillarOf(detail.source_pillar)!.label}</p>
-                    <p className="italic text-primary/80 mt-0.5">"{pillarOf(detail.source_pillar)!.plain_descriptor}"</p>
+                    <p className="italic text-interactive/80 mt-0.5">"{pillarOf(detail.source_pillar)!.plain_descriptor}"</p>
                     {pillarOf(detail.source_pillar)!.why_it_matters && (
                       <p className="text-body text-foreground/70 mt-2 leading-relaxed">
                         {pillarOf(detail.source_pillar)!.why_it_matters}

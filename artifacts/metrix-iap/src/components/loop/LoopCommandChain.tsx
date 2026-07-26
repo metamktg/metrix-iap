@@ -482,7 +482,7 @@ function StageIntelligence({
             {hypothesisCount > 0 && <StatPill value={hypothesisCount} label="hypotheses" />}
             {icpCount > 0 && <StatPill value={icpCount} label="ICPs" />}
             {isGenerated && (
-              <span className="inline-flex items-center gap-1 text-label font-semibold text-primary/85 bg-primary/[0.12] border border-primary/35 rounded-md px-2 py-1 leading-none">
+              <span className="inline-flex items-center gap-1 text-label font-semibold text-interactive/85 bg-primary/[0.12] border border-primary/35 rounded-md px-2 py-1 leading-none">
                 <Sparkles className="w-3.5 h-3.5" /> Generated
               </span>
             )}
@@ -544,7 +544,7 @@ function StageIntelligence({
             <StatPill key={t} value={t} />
           ))}
           {isGenerated && (
-            <span className="inline-flex items-center gap-1 text-label font-semibold text-primary/85 bg-primary/[0.12] border border-primary/35 rounded-md px-2 py-1 leading-none">
+            <span className="inline-flex items-center gap-1 text-label font-semibold text-interactive/85 bg-primary/[0.12] border border-primary/35 rounded-md px-2 py-1 leading-none">
               <Sparkles className="w-3.5 h-3.5" /> Generated
             </span>
           )}
@@ -771,7 +771,7 @@ function CommandHub({
       || (strategyComplete && stage === "briefs")
       || (briefsComplete && stage === "report")
       || (allLoopComplete && stage === "rerun")
-    ? "text-primary/90 bg-primary/[0.12] border-primary/35"
+    ? "text-interactive/90 bg-primary/[0.12] border-primary/35"
     : "text-muted-foreground/65 bg-white/[0.05] border-border/30";
 
   const routes = STAGE_ROUTES[stage];
@@ -979,7 +979,7 @@ function CommandHub({
                     className={cn(
                       "h-7 px-2 rounded-md border text-label font-medium transition-colors",
                       localDateRange === r.id
-                        ? "border-primary/40 bg-primary/[0.08] text-primary"
+                        ? "border-primary/40 bg-primary/[0.08] text-interactive"
                         : "border-border/40 bg-white/[0.02] text-muted-foreground/70 hover:bg-white/[0.04]"
                     )}
                   >

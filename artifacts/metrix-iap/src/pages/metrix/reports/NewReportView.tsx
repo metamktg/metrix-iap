@@ -259,7 +259,7 @@ export function NewReportView() {
                         {override && (
                           <button
                             onClick={() => setOverride(null)}
-                            className="text-label font-medium text-primary/80 hover:text-primary transition-colors"
+                            className="text-label font-medium text-interactive/80 hover:text-primary transition-colors"
                           >
                             Reset to global range
                           </button>
@@ -293,7 +293,7 @@ export function NewReportView() {
                   <div className="rounded-xl border border-border/40 bg-white/[0.015] overflow-hidden">
                     <div className="px-6 py-5 border-b border-border/30 bg-gradient-to-br from-primary/[0.05] to-transparent">
                       <div className="flex items-center gap-2 mb-3">
-                        <Palette className="w-3.5 h-3.5 text-primary" />
+                        <Palette className="w-3.5 h-3.5 text-interactive" />
                         <span className="text-caption font-semibold text-foreground">{brandLabel}</span>
                         <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">{brandSub}</span>
                       </div>
@@ -405,7 +405,7 @@ export function NewReportView() {
                   <SectionCard title="Branding" desc="White-labeling · client delivery">
                     <div className="flex items-center gap-4 flex-wrap">
                       <div className={cn("flex items-center gap-2 px-3 py-2 rounded-lg border", "border-primary/25 bg-primary/8")}>
-                        <Palette className="w-3.5 h-3.5 text-primary" />
+                        <Palette className="w-3.5 h-3.5 text-interactive" />
                         <div>
                           <div className="text-caption font-medium text-foreground capitalize">{rb.default_branding} branding</div>
                           <div className="text-label text-muted-foreground/70">Default on first load</div>
@@ -457,7 +457,7 @@ export function NewReportView() {
 
                   <button
                     onClick={() => setTab("preview")}
-                    className="inline-flex items-center gap-1.5 text-caption font-medium text-primary/80 hover:text-primary transition-colors"
+                    className="inline-flex items-center gap-1.5 text-caption font-medium text-interactive/80 hover:text-primary transition-colors"
                   >
                     <Eye className="w-3.5 h-3.5" /> Back to report preview
                   </button>

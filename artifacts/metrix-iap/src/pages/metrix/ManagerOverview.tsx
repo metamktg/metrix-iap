@@ -22,7 +22,7 @@ const IMPACT_STYLE: Record<string, string> = {
   high: "bg-red-400/10 text-red-300 border-red-400/20",
   medium: "bg-amber-400/10 text-amber-300 border-amber-400/20",
   low: "bg-muted text-muted-foreground/60 border-border/40",
-  setup: "bg-primary/10 text-primary border-primary/20",
+  setup: "bg-primary/10 text-interactive border-primary/20",
 };
 
 const SCOPE_STYLE: Record<string, string> = {
@@ -72,7 +72,7 @@ export function ManagerOverview() {
         <div className="flex-1 flex items-center justify-center px-6 py-12">
           <div className="max-w-md w-full text-center space-y-5">
             <div className="w-12 h-12 rounded-xl border border-primary/25 bg-primary/10 flex items-center justify-center mx-auto">
-              <Plug className="w-5 h-5 text-primary" />
+              <Plug className="w-5 h-5 text-interactive" />
             </div>
             <div className="space-y-1.5">
               <h2 className="text-base font-semibold text-foreground">Add your first ad account</h2>
@@ -80,7 +80,7 @@ export function ManagerOverview() {
             </div>
             <button
               onClick={() => setAddOpen(true)}
-              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary/15 border border-primary/30 text-primary text-body font-medium hover:bg-primary/25 transition-colors"
+              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary/15 border border-primary/30 text-interactive text-body font-medium hover:bg-primary/25 transition-colors"
             >
               <Plus className="w-3.5 h-3.5" /> Add Ad Account
             </button>
@@ -134,7 +134,7 @@ export function ManagerOverview() {
             {events.map(([key, e]) => (
               <div key={key} className="rounded-lg border border-border/40 bg-white/[0.02] p-3.5">
                 <div className="flex items-center gap-1.5 mb-2">
-                  <TrendingUp className="w-3.5 h-3.5 text-primary/60" />
+                  <TrendingUp className="w-3.5 h-3.5 text-interactive/60" />
                   <span className="text-caption font-medium text-foreground leading-tight">{eventLabel(key)}</span>
                 </div>
                 <div className="text-section font-semibold text-foreground tabular-nums leading-none">{fmtNum(e.results)}</div>
@@ -197,7 +197,7 @@ export function ManagerOverview() {
               {data.recommendation_cards.map((c) => (
                 <div key={c.id} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col">
                   <div className="flex items-center gap-1.5 flex-wrap mb-2">
-                    <Badge text={c.manager_card_descriptor ?? accountName(c.account_id)} cls="bg-primary/10 text-primary border-primary/20" />
+                    <Badge text={c.manager_card_descriptor ?? accountName(c.account_id)} cls="bg-primary/10 text-interactive border-primary/20" />
                     <Badge text={c.scope} cls={SCOPE_STYLE[c.scope] ?? "bg-muted text-muted-foreground/60 border-border/40"} />
                     <Badge text={`${c.impact} impact`} cls={IMPACT_STYLE[c.impact] ?? IMPACT_STYLE.low} />
                     <ConfidenceBadge value={c.confidence} />
@@ -221,7 +221,7 @@ export function ManagerOverview() {
                   />
                   <button
                     onClick={() => selectAdAccount(c.account_id)}
-                    className="mt-3 self-start inline-flex items-center gap-1 text-caption font-medium text-primary/80 hover:text-primary transition-colors"
+                    className="mt-3 self-start inline-flex items-center gap-1 text-caption font-medium text-interactive/80 hover:text-primary transition-colors"
                   >
                     Open {accountName(c.account_id)} <ArrowRight className="w-3.5 h-3.5" />
                   </button>

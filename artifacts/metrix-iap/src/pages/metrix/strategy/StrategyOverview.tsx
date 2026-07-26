@@ -541,7 +541,7 @@ export function StrategyOverview() {
                                   window.history.pushState({}, "", `/app/analysis/library?focus=${c}`);
                                   window.dispatchEvent(new PopStateEvent("popstate"));
                                 }}
-                                className="text-label font-mono text-primary/80 hover:text-primary border border-primary/20 hover:border-primary/40 bg-primary/[0.04] px-1.5 py-0.5 rounded leading-none transition-colors"
+                                className="text-label font-mono text-interactive/80 hover:text-primary border border-primary/20 hover:border-primary/40 bg-primary/[0.04] px-1.5 py-0.5 rounded leading-none transition-colors"
                               >
                                 {c}
                               </a>

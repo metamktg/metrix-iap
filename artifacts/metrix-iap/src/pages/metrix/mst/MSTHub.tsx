@@ -87,7 +87,7 @@ export function MSTHub() {
               <div className="grid grid-cols-4 gap-2.5">
                 {[
                   { label: "Library Cells", value: totalCells, color: "text-foreground" },
-                  { label: "Matrix Cells", value: matrixCellCount, color: "text-primary" },
+                  { label: "Matrix Cells", value: matrixCellCount, color: "text-interactive" },
                   { label: "Winning Signals", value: winningCells, color: "text-[hsl(var(--metrix-success))]" },
                   { label: "At Risk", value: atRiskCells, color: atRiskCells > 0 ? "text-destructive" : "text-foreground" },
                 ].map((kpi) => (
@@ -118,7 +118,7 @@ export function MSTHub() {
                   {mstStage.status === "complete" ? (
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                   ) : (
-                    <Activity className="w-4 h-4 text-primary shrink-0" />
+                    <Activity className="w-4 h-4 text-interactive shrink-0" />
                   )}
                   <p className={cn(TYPE.body, "text-foreground font-semibold")}>
                     Stage: <span className="capitalize">{mstStage.status}</span>

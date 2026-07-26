@@ -102,7 +102,7 @@ function PermissionToggleRow({
       <div
         className={cn(
           "w-4 h-4 rounded shrink-0 mt-0.5 border flex items-center justify-center",
-          checked ? "border-primary bg-primary/20 text-primary" : "border-border/50",
+          checked ? "border-primary bg-primary/20 text-interactive" : "border-border/50",
         )}
       >
         {checked && <Check className="w-3.5 h-3.5" />}
@@ -216,7 +216,7 @@ function AddMemberDialog({
       <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center mb-1">
-            <UserPlus className="w-4 h-4 text-primary" />
+            <UserPlus className="w-4 h-4 text-interactive" />
           </div>
           <DialogTitle className="text-base">Add member</DialogTitle>
           <DialogDescription className="text-body leading-relaxed">
@@ -254,7 +254,7 @@ function AddMemberDialog({
                   className={cn(
                     "h-9 rounded-md border text-body font-medium transition-colors",
                     role === r.id
-                      ? "border-primary/30 bg-primary/[0.08] text-primary"
+                      ? "border-primary/30 bg-primary/[0.08] text-interactive"
                       : "border-border/40 bg-white/[0.02] text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"
                   )}
                   data-testid={`button-invite-role-${r.id}`}
@@ -512,7 +512,7 @@ function MemberPermissionsCell({
         className={cn(
           "h-5 px-1.5 rounded border text-label font-medium transition-colors disabled:opacity-40",
           manageTeam
-            ? "border-primary/30 bg-primary/[0.08] text-primary"
+            ? "border-primary/30 bg-primary/[0.08] text-interactive"
             : "border-border/40 bg-white/[0.02] text-muted-foreground hover:text-foreground",
         )}
         data-testid={`toggle-manage-team-${email}`}
@@ -526,7 +526,7 @@ function MemberPermissionsCell({
         className={cn(
           "h-5 px-1.5 rounded border text-label font-medium transition-colors disabled:opacity-40",
           viewAgencyRollups
-            ? "border-primary/30 bg-primary/[0.08] text-primary"
+            ? "border-primary/30 bg-primary/[0.08] text-interactive"
             : "border-border/40 bg-white/[0.02] text-muted-foreground hover:text-foreground",
         )}
         data-testid={`toggle-view-agency-rollups-${email}`}
@@ -618,7 +618,7 @@ function MemberAdAccountsCell({
           className={cn(
             "flex items-center gap-1 h-5 px-1.5 rounded border text-label font-medium transition-colors disabled:opacity-40 disabled:pointer-events-none",
             editing
-              ? "border-primary/30 bg-primary/[0.08] text-primary"
+              ? "border-primary/30 bg-primary/[0.08] text-interactive"
               : "border-dashed border-border/40 text-muted-foreground hover:text-foreground hover:border-border/70",
           )}
           data-testid={`button-edit-accounts-${email}`}
@@ -911,7 +911,7 @@ function TeamAccessViewInner() {
         right={
           <button
             onClick={() => setInviteOpen(true)}
-            className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-caption font-medium text-primary hover:bg-primary/25 transition-colors"
+            className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-caption font-medium text-interactive hover:bg-primary/25 transition-colors"
             data-testid="button-invite-member"
           >
             <UserPlus className="w-3.5 h-3.5" /> Add member
@@ -949,7 +949,7 @@ function TeamAccessViewInner() {
                   </div>
                   <span className={cn(
                     "text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none",
-                    m.role === "owner" ? "text-primary border-primary/25 bg-primary/10" : "text-foreground/75 border-border/40 bg-white/[0.03]"
+                    m.role === "owner" ? "text-interactive border-primary/25 bg-primary/10" : "text-foreground/75 border-border/40 bg-white/[0.03]"
                   )}>
                     {m.role}
                   </span>

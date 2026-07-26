@@ -204,7 +204,7 @@ function CompareSegmentPicker({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
-          className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-primary/25 bg-primary/[0.06] text-caption font-medium text-primary/85 hover:text-primary hover:bg-primary/10 transition-colors"
+          className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-primary/25 bg-primary/[0.06] text-caption font-medium text-interactive/85 hover:text-primary hover:bg-primary/10 transition-colors"
           data-testid="button-segment-compare"
         >
           <GitCompareArrows className="w-3.5 h-3.5" />
@@ -985,7 +985,7 @@ export function SegmentDrilldownModal({
                 onClose();
                 if (onNextStep) { onNextStep(); } else { navigate("/app/strategy/map"); }
               }}
-              className="shrink-0 inline-flex items-center gap-1.5 h-7 px-3 rounded-md bg-primary/10 border border-primary/25 text-label font-semibold text-primary/90 hover:bg-primary/15 hover:border-primary/40 transition-colors"
+              className="shrink-0 inline-flex items-center gap-1.5 h-7 px-3 rounded-md bg-primary/10 border border-primary/25 text-label font-semibold text-interactive/90 hover:bg-primary/15 hover:border-primary/40 transition-colors"
             >
               <Sparkles className="w-3.5 h-3.5" />
               Strategy Map

@@ -115,7 +115,7 @@ export function SignalView() {
                       <p className="text-title font-semibold text-foreground leading-snug"><TokenizedConceptText text={s.title} /></p>
                       <p className="text-body text-data-label mt-1 leading-snug line-clamp-1"><span>{deriveLabel(s.rationale, 90)}</span></p>
                       <div className="flex items-start gap-1.5 mt-3 pt-3 border-t border-border/35">
-                        <ArrowRight className="w-3.5 h-3.5 text-primary/85 shrink-0 mt-0.5" />
+                        <ArrowRight className="w-3.5 h-3.5 text-interactive/85 shrink-0 mt-0.5" />
                         <p className="text-caption text-foreground/90 leading-snug line-clamp-1"><span>{deriveLabel(s.recommended_action, 80)}</span></p>
                       </div>
                     </button>

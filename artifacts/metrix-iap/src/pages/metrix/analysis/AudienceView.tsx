@@ -144,7 +144,7 @@ function ViewToggle({ mode, onChange }: { mode: ViewMode; onChange: (m: ViewMode
             "flex items-center gap-1.5 h-7 px-3 rounded-md transition-colors",
             TYPE.label, "font-medium",
             mode === id
-              ? "bg-primary/20 text-primary"
+              ? "bg-primary/20 text-interactive"
               : "text-muted-foreground/55 hover:text-muted-foreground"
           )}
         >

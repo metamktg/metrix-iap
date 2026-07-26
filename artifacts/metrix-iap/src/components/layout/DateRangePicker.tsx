@@ -69,7 +69,7 @@ export function DateRangePicker() {
           <span className="hidden md:inline tabular-nums">{rangeLabel}</span>
           <span className="md:hidden">{PRESET_LABELS[preset]}</span>
           {compare && (
-            <span className="text-[8px] font-semibold uppercase tracking-wide text-primary border border-primary/25 bg-primary/10 px-1 py-0.5 rounded leading-none">
+            <span className="text-[8px] font-semibold uppercase tracking-wide text-interactive border border-primary/25 bg-primary/10 px-1 py-0.5 rounded leading-none">
               vs prev
             </span>
           )}
@@ -95,7 +95,7 @@ export function DateRangePicker() {
               className={cn(
                 "w-full flex items-center gap-2 px-2 h-8 rounded text-body transition-colors",
                 preset === p
-                  ? "text-primary bg-primary/10 font-medium"
+                  ? "text-interactive bg-primary/10 font-medium"
                   : "text-foreground/75 hover:text-foreground hover:bg-white/5"
               )}
             >
@@ -131,7 +131,7 @@ export function DateRangePicker() {
           <button
             onClick={applyCustom}
             disabled={!draftStart || !draftEnd}
-            className="w-full h-7 rounded-md bg-primary/15 border border-primary/30 text-caption font-medium text-primary hover:bg-primary/25 transition-colors disabled:opacity-40"
+            className="w-full h-7 rounded-md bg-primary/15 border border-primary/30 text-caption font-medium text-interactive hover:bg-primary/25 transition-colors disabled:opacity-40"
           >
             Apply custom range
           </button>

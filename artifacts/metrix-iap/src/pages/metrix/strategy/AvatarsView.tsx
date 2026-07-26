@@ -162,7 +162,7 @@ function DnaChipStrip({ variables, label, testId }: { variables: DnaVariable[]; 
   return (
     <div data-testid={testId}>
       <div className="flex items-center gap-1 mb-1.5">
-        <Dna className="w-3.5 h-3.5 text-primary/70" />
+        <Dna className="w-3.5 h-3.5 text-interactive/70" />
         <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">{label}</span>
       </div>
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
@@ -200,7 +200,7 @@ function SortFilterBar({
             className={cn(
               "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-body font-medium transition-colors",
               viewMode === m
-                ? "bg-primary/15 text-primary"
+                ? "bg-primary/15 text-interactive"
                 : "text-muted-foreground/60 hover:text-foreground/80"
             )}
           >
@@ -225,7 +225,7 @@ function SortFilterBar({
             className={cn(
               "px-2 py-0.5 rounded text-body font-medium transition-colors border",
               sortBy === k
-                ? "border-primary/40 bg-primary/10 text-primary"
+                ? "border-primary/40 bg-primary/10 text-interactive"
                 : "border-transparent text-muted-foreground/60 hover:text-foreground/80 hover:border-border/30"
             )}
           >
@@ -290,7 +290,7 @@ function AvatarCard({
         {/* L1: identity */}
         <div className="flex items-center gap-2 mb-3">
           <div className="w-8 h-8 rounded-lg border border-primary/25 bg-primary/[0.08] flex items-center justify-center shrink-0">
-            <Users className="w-4 h-4 text-primary/70" />
+            <Users className="w-4 h-4 text-interactive/70" />
           </div>
           <div className="min-w-0">
             <p className="text-title font-semibold text-foreground leading-tight whitespace-pre-line">{col.name}</p>
@@ -335,7 +335,7 @@ function AvatarCard({
             className="w-full flex items-center justify-between px-4 py-2 hover:bg-white/[0.02] transition-colors"
           >
             <div className="flex items-center gap-1.5">
-              <Dna className="w-3.5 h-3.5 text-primary/60" />
+              <Dna className="w-3.5 h-3.5 text-interactive/60" />
               <span className="text-label font-semibold text-muted-foreground/70 uppercase tracking-widest">
                 Creative DNA
               </span>
@@ -364,7 +364,7 @@ function AvatarCard({
             <button
               key={p.profile_id}
               onClick={() => onScrollProfile(p.profile_id)}
-              className="inline-flex items-center gap-1 text-caption font-medium text-primary hover:text-primary/80 transition-colors"
+              className="inline-flex items-center gap-1 text-caption font-medium text-interactive hover:text-primary/80 transition-colors"
               data-testid={`link-avatar-icp-${p.profile_id}`}
             >
               {p.profile_name}
@@ -542,7 +542,7 @@ function IcpProfileCard({
         {/* 2. Recommendation */}
         {profile.strategic_recommendation && (
           <div className="rounded-lg border border-primary/20 bg-primary/[0.05] p-3">
-            <div className="text-label font-semibold uppercase tracking-widest text-primary/80 mb-0.5">Recommendation</div>
+            <div className="text-label font-semibold uppercase tracking-widest text-interactive/80 mb-0.5">Recommendation</div>
             <DetailReveal
               label={deriveLabel(profile.strategic_recommendation, 72)}
               labelClassName={TYPE.body}
@@ -593,7 +593,7 @@ function IcpProfileCard({
                       {hypotheses.map((h) => (
                         <div key={h.id} className="rounded-lg border border-border/25 bg-white/[0.015] px-3 py-2">
                           {h.isolated_variable && (
-                            <span className="inline-block text-label font-mono text-primary/70 border border-primary/25 px-1.5 py-0.5 rounded mb-1">
+                            <span className="inline-block text-label font-mono text-interactive/70 border border-primary/25 px-1.5 py-0.5 rounded mb-1">
                               {h.isolated_variable}
                             </span>
                           )}
@@ -623,7 +623,7 @@ function IcpProfileCard({
               type="button"
               onClick={() => setTheoryOpen((o) => !o)}
               aria-expanded={theoryOpen}
-              className="inline-flex items-center gap-1 text-caption font-medium text-primary hover:text-primary/80 transition-colors"
+              className="inline-flex items-center gap-1 text-caption font-medium text-interactive hover:text-primary/80 transition-colors"
             >
               <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", theoryOpen && "rotate-180")} />
               {theoryOpen ? "Hide profile theory" : "Profile theory"}
@@ -650,7 +650,7 @@ function IcpProfileCard({
             <button
               key={col.id}
               onClick={() => onAvatarClick?.(col.id)}
-              className="inline-flex items-center gap-1 text-caption font-medium text-primary hover:text-primary/80 transition-colors"
+              className="inline-flex items-center gap-1 text-caption font-medium text-interactive hover:text-primary/80 transition-colors"
               data-testid={`link-icp-avatar-${col.id}`}
             >
               {col.name.replace(/\n/g, " ")}
@@ -731,7 +731,7 @@ function AudienceSegmentTile({
         className={cn(
           "mt-auto self-start inline-flex items-center gap-1",
           TYPE.caption,
-          "font-medium text-primary hover:text-primary/80 transition-colors",
+          "font-medium text-interactive hover:text-primary/80 transition-colors",
         )}
       >
         Explore segment
@@ -1302,7 +1302,7 @@ export function AvatarsView() {
                           setViewMode("profiles");
                           setPendingProfileScroll(p.profile_id);
                         }}
-                        className="inline-flex items-center gap-1 text-caption font-medium text-primary hover:text-primary/80 transition-colors"
+                        className="inline-flex items-center gap-1 text-caption font-medium text-interactive hover:text-primary/80 transition-colors"
                         data-testid={`link-drawer-icp-${p.profile_id}`}
                       >
                         View ICP: {p.profile_name}

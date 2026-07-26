@@ -48,15 +48,15 @@ const IMPACT_STYLE: Record<string, string> = {
   high: "bg-red-400/10 text-red-300 border-red-400/20",
   medium: "bg-amber-400/10 text-amber-300 border-amber-400/20",
   low: "bg-muted text-muted-foreground/60 border-border/40",
-  setup: "bg-primary/10 text-primary border-primary/20",
+  setup: "bg-primary/10 text-interactive border-primary/20",
 };
 
 const SCOPE_STYLE: Record<string, string> = {
   creative: "bg-amber-500/10 text-amber-300 border-amber-500/20",
   funnel: "bg-teal-500/10 text-teal-300 border-teal-500/20",
   placement: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
-  ad_account: "bg-primary/10 text-primary border-primary/20",
-  campaign: "bg-primary/10 text-primary border-primary/20",
+  ad_account: "bg-primary/10 text-interactive border-primary/20",
+  campaign: "bg-primary/10 text-interactive border-primary/20",
 };
 
 function Badge({ text, cls }: { text: string; cls: string }) {
@@ -138,7 +138,7 @@ function DetailDrawer({
               <div>
                 <button
                   onClick={() => onSegments(card)}
-                  className="inline-flex items-center gap-1.5 text-caption font-medium text-primary border border-primary/30 bg-primary/10 hover:bg-primary/15 rounded-md px-2.5 py-1.5 transition-colors"
+                  className="inline-flex items-center gap-1.5 text-caption font-medium text-interactive border border-primary/30 bg-primary/10 hover:bg-primary/15 rounded-md px-2.5 py-1.5 transition-colors"
                 >
                   <LayoutGrid className="w-3.5 h-3.5" />
                   Avatar × placement drill-down
@@ -164,7 +164,7 @@ function DetailDrawer({
           </button>
           <button
             onClick={() => { onApprove(); onClose(); }}
-            className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded bg-primary/15 border border-primary/30 text-body font-medium text-primary hover:bg-primary/25 transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded bg-primary/15 border border-primary/30 text-body font-medium text-interactive hover:bg-primary/25 transition-colors"
           >
             <Check className="w-3.5 h-3.5" /> Approve
           </button>
@@ -380,7 +380,7 @@ export function RecommendationDeck({
                 "text-[9px] font-bold px-1.5 py-0.5 rounded-full",
                 t.id === "tray" ? "bg-emerald-400/15 text-emerald-400"
                   : t.id === "dismissed" ? "bg-muted text-muted-foreground/60"
-                  : "bg-primary/15 text-primary"
+                  : "bg-primary/15 text-interactive"
               )}>{t.count}</span>
             )}
           </button>
@@ -453,7 +453,7 @@ export function RecommendationDeck({
               <div className="flex justify-center mt-3">
                 <button
                   onClick={() => onSegments(pending[0])}
-                  className="inline-flex items-center gap-1.5 text-caption font-medium text-primary/90 hover:text-primary border border-primary/25 bg-primary/[0.06] hover:bg-primary/10 rounded-md px-2.5 py-1.5 transition-colors"
+                  className="inline-flex items-center gap-1.5 text-caption font-medium text-interactive/90 hover:text-primary border border-primary/25 bg-primary/[0.06] hover:bg-primary/10 rounded-md px-2.5 py-1.5 transition-colors"
                 >
                   <LayoutGrid className="w-3.5 h-3.5" />
                   Avatar × placement for this card

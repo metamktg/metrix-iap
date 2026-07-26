@@ -135,8 +135,8 @@ export function RankSortBar<Row>({
                   >
                     {m.label}
                     {active && (m.direction === "asc"
-                      ? <ArrowUp className="w-3.5 h-3.5 text-primary/70" />
-                      : <ArrowDown className="w-3.5 h-3.5 text-primary/70" />)}
+                      ? <ArrowUp className="w-3.5 h-3.5 text-interactive/70" />
+                      : <ArrowDown className="w-3.5 h-3.5 text-interactive/70" />)}
                   </button>
                 );
               })}
@@ -169,9 +169,9 @@ export function RankSortBar<Row>({
             {m.label}
             {active &&
               (m.direction === "asc" ? (
-                <ArrowUp className="w-3.5 h-3.5 text-primary/70" />
+                <ArrowUp className="w-3.5 h-3.5 text-interactive/70" />
               ) : (
-                <ArrowDown className="w-3.5 h-3.5 text-primary/70" />
+                <ArrowDown className="w-3.5 h-3.5 text-interactive/70" />
               ))}
           </button>
         );
@@ -198,7 +198,7 @@ export function KpiStat({
       <div
         className={cn(
           "text-caption font-semibold tabular-nums leading-none truncate",
-          highlight ? "text-primary" : "text-foreground/90"
+          highlight ? "text-interactive" : "text-foreground/90"
         )}
       >
         {value}

@@ -69,7 +69,7 @@ function WaitlistForm() {
 
   return (
     <form onSubmit={submit} className="p-4 rounded-xl border border-primary/25 bg-primary/[0.04]">
-      <div className="text-label font-mono uppercase tracking-widest text-primary/60 mb-2">
+      <div className="text-label font-mono uppercase tracking-widest text-interactive/60 mb-2">
         Join the waitlist
       </div>
       <p className="text-caption text-muted-foreground/60 mb-3 leading-relaxed">
@@ -90,7 +90,7 @@ function WaitlistForm() {
         <button
           type="submit"
           disabled={mutation.isPending}
-          className="h-9 px-4 rounded-lg bg-primary/15 border border-primary/30 text-body font-medium text-primary hover:bg-primary/25 transition-colors disabled:opacity-50 flex items-center gap-1.5 shrink-0"
+          className="h-9 px-4 rounded-lg bg-primary/15 border border-primary/30 text-body font-medium text-interactive hover:bg-primary/25 transition-colors disabled:opacity-50 flex items-center gap-1.5 shrink-0"
         >
           {mutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowRight className="w-3.5 h-3.5" />}
           Join
@@ -138,9 +138,9 @@ export function MetrixAgent() {
               {/* Icon + badge */}
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl border border-primary/30 bg-primary/10 flex items-center justify-center">
-                  <Brain className="w-5 h-5 text-primary" />
+                  <Brain className="w-5 h-5 text-interactive" />
                 </div>
-                <span className="text-label font-semibold uppercase tracking-widest border border-primary/25 bg-primary/[0.08] text-primary/80 px-2 py-1 rounded">
+                <span className="text-label font-semibold uppercase tracking-widest border border-primary/25 bg-primary/[0.08] text-interactive/80 px-2 py-1 rounded">
                   Coming soon
                 </span>
               </div>

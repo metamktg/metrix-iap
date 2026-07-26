@@ -207,7 +207,7 @@ export function NotificationsView() {
 
         <SectionCard title="Digest" desc="Scheduled summary · all ad accounts">
           <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
-            <CalendarClock className="w-4 h-4 text-primary shrink-0" />
+            <CalendarClock className="w-4 h-4 text-interactive shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="text-body font-medium text-foreground capitalize">{notifications.digest.frequency} · {notifications.digest.day}</div>
               <div className="text-label text-muted-foreground/70 mt-0.5">{notifications.digest.description}</div>

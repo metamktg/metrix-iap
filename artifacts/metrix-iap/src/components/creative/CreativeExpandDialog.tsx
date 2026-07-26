@@ -202,7 +202,7 @@ function OverviewTab({ data }: { data: CreativeCardData }) {
           {data.primaryText && <p className="text-body text-foreground/85 leading-relaxed">{data.primaryText}</p>}
           {data.secondaryText && <p className="text-caption text-muted-foreground/60 leading-relaxed">{data.secondaryText}</p>}
           {data.cta && (
-            <span className="inline-flex text-label font-semibold text-primary border border-primary/25 bg-primary/10 px-2 py-1 rounded">
+            <span className="inline-flex text-label font-semibold text-interactive border border-primary/25 bg-primary/10 px-2 py-1 rounded">
               CTA · {data.cta}
             </span>
           )}

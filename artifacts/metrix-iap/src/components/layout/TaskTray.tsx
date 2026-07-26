@@ -77,7 +77,7 @@ function TrayAnalysisUnconfigured({ accountId }: { accountId: string }) {
         <div className="grid grid-cols-2 gap-1.5">
           <button
             onClick={() => navigate(`/app/account?account=${accountId}`)}
-            className="flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg bg-primary/15 border border-primary/30 text-caption font-semibold text-primary hover:bg-primary/25 transition-colors"
+            className="flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg bg-primary/15 border border-primary/30 text-caption font-semibold text-interactive hover:bg-primary/25 transition-colors"
           >
             <UploadCloud className="w-3.5 h-3.5" />
             Upload CSV
@@ -197,7 +197,7 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
               className={cn(
                 "h-7 rounded-lg border text-label font-semibold transition-colors",
                 dateRange === r.id
-                  ? "border-primary/50 bg-primary/15 text-primary"
+                  ? "border-primary/50 bg-primary/15 text-interactive"
                   : "border-border/35 bg-white/[0.02] text-foreground/50 hover:bg-white/[0.05] hover:text-foreground/75",
                 isRunning && "opacity-40 cursor-not-allowed"
               )}
@@ -233,7 +233,7 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
             className={cn(
               "w-full flex items-center justify-center gap-2 h-8 rounded-lg text-body font-semibold transition-colors",
               isRunning || startMutation.isPending
-                ? "bg-primary/10 border border-primary/20 text-primary/50 cursor-not-allowed"
+                ? "bg-primary/10 border border-primary/20 text-interactive/50 cursor-not-allowed"
                 : "bg-primary text-primary-foreground hover:bg-primary/90"
             )}
           >
@@ -289,7 +289,7 @@ function TraySection({
           {title}
         </span>
         {count != null && count > 0 && (
-          <span className="text-[9px] font-mono text-primary bg-primary/12 border border-primary/20 rounded px-1 leading-tight tabular-nums">
+          <span className="text-[9px] font-mono text-interactive bg-primary/12 border border-primary/20 rounded px-1 leading-tight tabular-nums">
             {count}
           </span>
         )}
