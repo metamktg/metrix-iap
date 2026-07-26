@@ -114,6 +114,10 @@ export type ManualAnalysisRun = {
   creatives_unlinked_names: string[] | null;
   /** Warnings produced during tolerant CSV parsing (auto-resolved aliases, missing columns, etc.). Null when parsing was clean. */
   csv_warnings: string[] | null;
+  /** Live progress percentage 0–100. Updated at each pipeline stage. 0 = idle/just started, 100 = complete. */
+  progress_pct: number;
+  /** Human-readable label for the current pipeline stage. Empty string when idle or complete. */
+  progress_stage: string;
 };
 
 export type CreativeLinkageSummary = {
@@ -149,6 +153,8 @@ const runShape = (r: Row): ManualAnalysisRun => {
     creatives_total: null,
     creatives_unlinked_names: null,
     csv_warnings: csvWarnings,
+    progress_pct: typeof r["progress_pct"] === "number" ? Number(r["progress_pct"]) : 0,
+    progress_stage: r["progress_stage"] ? String(r["progress_stage"]) : "",
   };
 };
 
@@ -219,6 +225,8 @@ async function synthesizeRunFromReportPulls(accountId: string): Promise<ManualAn
     creatives_total: null,
     creatives_unlinked_names: null,
     csv_warnings: null,
+    progress_pct: 0,
+    progress_stage: "",
   };
 }
 
@@ -317,6 +325,22 @@ async function finishRun(
     })
     .eq("id", runId);
   if (error) throw new Error(error.message);
+}
+
+/**
+ * Fire-and-forget per-stage progress update.
+ * Non-fatal: a progress write failure must never abort the analysis pipeline.
+ */
+async function updateProgress(runId: string, pct: number, stage: string): Promise<void> {
+  try {
+    const supabase = getSupabase();
+    await supabase
+      .from("manual_analysis_runs")
+      .update({ progress_pct: pct, progress_stage: stage })
+      .eq("id", runId);
+  } catch {
+    // Silently ignore — progress display is non-critical
+  }
 }
 
 /** Deletes every output table's rows this specific run wrote (partial-output cleanup on failure/staleness). */
@@ -608,6 +632,7 @@ export async function startManualAnalysis(
 
   void (async () => {
     try {
+      await updateProgress(runId, 5, "Parsing demographics export");
       const allCsvWarnings: string[] = [];
       const demoRows: IapCsvRow[] = [];
       for (const imp of demoImports) {
@@ -623,6 +648,7 @@ export async function startManualAnalysis(
           throw new AnalysisError(`Demographics file "${imp["filename"]}": ${detail}`, 422);
         }
       }
+      await updateProgress(runId, 20, "Parsing placements export");
       const placementRows: IapCsvRow[] = [];
       for (const imp of placementImports) {
         const text = decodeStagedContent(String(imp["content"]));
@@ -640,6 +666,9 @@ export async function startManualAnalysis(
       // Optional: ad-level summary export (one row per ad per day, full spend).
       // When present it becomes the primary source for ad_performance spend,
       // overriding the privacy-limited spend from the demographic export.
+      if (summaryImports.length > 0) {
+        await updateProgress(runId, 36, "Parsing ad summary export");
+      }
       const summaryRows: IapCsvRow[] = [];
       for (const imp of summaryImports) {
         const text = decodeStagedContent(String(imp["content"]));
@@ -655,6 +684,7 @@ export async function startManualAnalysis(
         }
       }
 
+      await updateProgress(runId, 50, "Building performance aggregates");
       const allDates = [
         ...demoRows.map((r) => r.breakdowns["Date"]!),
         ...placementRows.map((r) => r.breakdowns["Date"]!),
@@ -810,6 +840,7 @@ export async function startManualAnalysis(
       // Full refresh of this manual account's output rows within the
       // selected window — safe because manual accounts are never written
       // to by the offline importer.
+      await updateProgress(runId, 62, "Clearing previous data window");
       const del1 = await supabase
         .from("ad_performance")
         .delete()
@@ -840,6 +871,7 @@ export async function startManualAnalysis(
         }
       };
 
+      await updateProgress(runId, 68, "Writing ad performance rows");
       const adRows = Array.from(adBuckets.values()).map((b) => ({
         account_id: accountId,
         campaign_name: b.campaign,
@@ -860,6 +892,7 @@ export async function startManualAnalysis(
       }));
       await insertChunked("ad_performance", adRows);
 
+      await updateProgress(runId, 78, "Writing concept performance");
       // ── Concept-level aggregates (concept_performance) ──────────────────
       // Derive concept code from ad_name: "C2E_STC_QF_BOOK2_T1" → "C2".
       // Also extract the book label ("BOOK2") for grouping.
@@ -912,6 +945,7 @@ export async function startManualAnalysis(
         await insertChunked("concept_performance", conceptRows);
       }
 
+      await updateProgress(runId, 84, "Linking creative assets");
       // Upsert each unique ad_name into the ads registry so that
       // syncCreativeAssetLinks can later UPDATE creative_asset_url on them.
       // ignoreDuplicates preserves any existing meta_ad_id / creative_asset_url.
@@ -955,6 +989,7 @@ export async function startManualAnalysis(
         }
       }
 
+      await updateProgress(runId, 90, "Writing demographic & placement data");
       const demographicRows = Array.from(demoBuckets.values()).map((b) => ({
         account_id: accountId,
         gender: b.gender,
@@ -1032,6 +1067,7 @@ export async function startManualAnalysis(
 
       const totalRows = adRows.length + demographicRows.length + placementRowsOut.length + platformRowsOut.length + deviceRowsOut.length;
 
+      await updateProgress(runId, 97, "Finalizing");
       await supabase
         .from("ad_accounts")
         .update({

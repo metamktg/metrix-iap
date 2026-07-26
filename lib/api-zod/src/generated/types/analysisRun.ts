@@ -30,4 +30,8 @@ export interface AnalysisRun {
   creatives_unlinked_names?: string[] | null;
   /** Warnings produced during tolerant CSV column matching (auto-resolved aliases, missing columns, unrecognised columns that might map to expected ones). Null when parsing was clean. Present on successful runs that had non-fatal column issues. */
   csv_warnings?: string[] | null;
+  /** Live progress percentage (0–100) while the run is executing. Updated at each pipeline stage. 0 when idle or just started; 100 on success. */
+  progress_pct?: number;
+  /** Human-readable label for the current pipeline stage (e.g. "Parsing demographics export"). Empty string when idle or complete. */
+  progress_stage?: string;
 }

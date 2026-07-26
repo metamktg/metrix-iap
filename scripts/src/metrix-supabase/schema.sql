@@ -707,6 +707,12 @@ create unique index if not exists manual_analysis_runs_one_running
 -- CSV column warnings from tolerant parsing (JSON-encoded string array, nullable).
 alter table if exists manual_analysis_runs add column if not exists csv_warnings text;
 
+-- Real-time per-stage progress tracking for in-flight runs.
+-- progress_pct: 0–100 updated at each pipeline stage; 0 = idle/just started, 100 = complete.
+-- progress_stage: human-readable label for the active stage ("Parsing demographics export", etc.).
+alter table if exists manual_analysis_runs add column if not exists progress_pct integer not null default 0;
+alter table if exists manual_analysis_runs add column if not exists progress_stage text not null default '';
+
 -- ─────────────────────────────────────────────────────────────────────
 -- Cell-level creative overrides (July 2026).
 --
