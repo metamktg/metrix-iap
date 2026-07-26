@@ -626,6 +626,60 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/analysis-summary/run/{runId}:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+      - name: runId
+        in: path
+        required: true
+        description: ID of the manual_analysis_run to scope results to.
+        schema:
+          type: string
+          minLength: 1
+    get:
+      operationId: getAnalysisSummaryByRun
+      tags: [metrix]
+      summary: Re-aggregate analysis data for a specific analysis run's date window
+      description: Filters ad_performance, demographic_performance, and placement_performance to the date window of the given manual_analysis_run. Returns the same shape as getAnalysisSummary. Used by the IAP run picker on manual-upload accounts.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Re-aggregated data for the run's date window
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisSummaryResult"
+        "400":
+          description: Run has no date range
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Analysis run not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/accounts/{accountId}/analysis-summary/{preset}:
     parameters:
       - name: accountId

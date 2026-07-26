@@ -15,9 +15,12 @@ import {
   SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
   DetailReveal, deriveLabel,
   LoopAction, SkeletonTileRow, InfoTooltip, readableVariables, eventLabel,
-  DatePresetBar, type ViewPreset,
+  RunPickerBar,
 } from "../shared";
-import { getGetAnalysisSummaryQueryOptions } from "@workspace/api-client-react";
+import {
+  getGetAnalysisSummaryByRunQueryOptions,
+  useListAnalysisRuns,
+} from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
 import { SharePieChart } from "@/components/charts/SharePieChart";
 import {
@@ -689,12 +692,15 @@ export function AnalysisOverview() {
   const analysis       = getAnalysisData(seed, adAccountId);
 
   const [cellSort, setCellSort] = useState<CellSort>("spend");
-  const [preset, setPreset] = useState<ViewPreset>("all");
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
 
-  // Re-aggregate from daily rows when a non-"all" preset is selected.
-  const { data: presetData, isFetching: presetFetching } = useQuery({
-    ...getGetAnalysisSummaryQueryOptions(adAccountId ?? "", preset),
-    enabled: preset !== "all" && !!adAccountId,
+  // Fetch available analysis runs for the run picker.
+  const { data: runsData } = useListAnalysisRuns(adAccountId ?? "");
+
+  // Fetch re-aggregated data when a specific run is selected.
+  const { data: runData, isFetching: runFetching } = useQuery({
+    ...getGetAnalysisSummaryByRunQueryOptions(adAccountId ?? "", selectedRunId ?? ""),
+    enabled: !!selectedRunId && !!adAccountId,
   });
 
   return (
@@ -761,8 +767,8 @@ export function AnalysisOverview() {
         // When a preset is active and data has loaded, use the concept_rows
         // returned by the API (derived from ad_performance for the window).
         // Otherwise fall back to the all-time seed performance_by_cell rows.
-        const sortedCells: CellBarItem[] = (preset !== "all" && presetData)
-          ? [...presetData.concept_rows]
+        const sortedCells: CellBarItem[] = (selectedRunId && runData)
+          ? [...runData.concept_rows]
               .sort((x, y) =>
                 cellSort === "spend"
                   ? y.spend - x.spend
@@ -793,9 +799,9 @@ export function AnalysisOverview() {
               }));
 
         // ── Placements (top 6 by spend) ───────────────────────────────
-        // When a preset is active and data has loaded, use the API placement rows.
-        const allPlacements = (preset !== "all" && presetData
-          ? presetData.placement_rows.map((r) => ({
+        // When a run is selected and data has loaded, use the API placement rows.
+        const allPlacements = (selectedRunId && runData
+          ? runData.placement_rows.map((r) => ({
               placement: r.placement,
               spend: r.spend,
               results: r.results,
@@ -811,9 +817,9 @@ export function AnalysisOverview() {
           .slice(0, 6);
 
         // ── Demographic heatmap ───────────────────────────────────────
-        // When a preset is active and data has loaded, build heatmap from API rows.
-        const heatmapRows = preset !== "all" && presetData
-          ? presetData.demographic_rows.map((r) => ({
+        // When a run is selected and data has loaded, build heatmap from API rows.
+        const heatmapRows = selectedRunId && runData
+          ? runData.demographic_rows.map((r) => ({
               cell_id: "", "Ad name": "", Age: r.age, Gender: r.gender,
               "Amount spent (USD)": r.spend ?? 0,
               Reach: 0, Impressions: 0,
@@ -866,16 +872,16 @@ export function AnalysisOverview() {
               account={acct}
             />
             <>
-                {/* ── Date preset bar ──────────────────────────────── */}
-                <DatePresetBar
-                  value={preset}
-                  onChange={setPreset}
-                  availableWindow={presetData?.available_window}
-                  isFetching={presetFetching}
+                {/* ── IAP run picker ────────────────────────────────── */}
+                <RunPickerBar
+                  runs={runsData?.runs ?? []}
+                  selectedRunId={selectedRunId}
+                  onSelect={setSelectedRunId}
+                  isFetching={runFetching}
                 />
 
                 {/* ── Metric tiles + result type donut (inline) ──── */}
-                {(isRefetching || (preset !== "all" && presetFetching)) ? (
+                {(isRefetching || (!!selectedRunId && runFetching)) ? (
                   <div className="px-6 pt-5">
                     <SkeletonTileRow count={4} />
                   </div>
@@ -884,12 +890,12 @@ export function AnalysisOverview() {
                     {/* Left: 4 tiles in a 2×2 grid */}
                     <div className="flex-1 grid grid-cols-dashboard-4 gap-3">
                         <>
-                          {preset !== "all" && presetData ? (
+                          {selectedRunId && runData ? (
                             <>
-                              <MetricTile label="Total spend"  value={fmtUSD(presetData.totals.total_spend_usd, 0)} />
-                              <MetricTile label="Impressions"  value={fmtNum(presetData.totals.total_impressions)} />
-                              <MetricTile label="Link clicks"  value={fmtNum(presetData.totals.total_link_clicks)} />
-                              <MetricTile label="Link CTR"     value={fmtPct(presetData.totals.overall_link_ctr_pct)} />
+                              <MetricTile label="Total spend"  value={fmtUSD(runData.totals.total_spend_usd, 0)} />
+                              <MetricTile label="Impressions"  value={fmtNum(runData.totals.total_impressions)} />
+                              <MetricTile label="Link clicks"  value={fmtNum(runData.totals.total_link_clicks)} />
+                              <MetricTile label="Link CTR"     value={fmtPct(runData.totals.overall_link_ctr_pct)} />
                             </>
                           ) : (
                             <>
@@ -946,7 +952,7 @@ export function AnalysisOverview() {
                   )}
 
                   {/* ── Cell performance bar chart ────────────────── */}
-                  {preset !== "all" && presetFetching ? (
+                  {!!selectedRunId && runFetching ? (
                     <SectionCard title="Top concepts by spend" desc="Loading…">
                       <SkeletonTileRow count={3} />
                     </SectionCard>
@@ -954,8 +960,8 @@ export function AnalysisOverview() {
                     <SectionCard
                       title="Top concepts by spend"
                       desc={
-                        preset !== "all" && presetData
-                          ? `${preset} window · ${sortedCells.length} concept${sortedCells.length !== 1 ? "s" : ""} · CPA`
+                        selectedRunId && runData
+                          ? `${sortedCells.length} concept${sortedCells.length !== 1 ? "s" : ""} · run window · CPA`
                           : `${term.Plural} · CPA · ${a.performance_by_cell.length} cells total`
                       }
                       right={

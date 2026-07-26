@@ -15,6 +15,7 @@ import {
   syncAllCreativeLinksForAccount,
   computeCreativeLinkageSummary,
   getAnalysisSummaryByPreset,
+  getAnalysisSummaryByRunId,
   VIEW_PRESETS,
   type DateRangePreset,
   type ViewPreset,
@@ -81,6 +82,31 @@ router.get("/metrix/manual-performance-csv-format", requireAuth, (_req, res) => 
     device_placement: buildIapCsvClassFormat("device_placement"),
     column_aliases: buildColumnAliasGuide(),
   });
+});
+
+// ─── Run-scoped summary (IAP run picker) ─────────────────────────────────────
+// Scopes the summary to the date window of a specific manual_analysis_run.
+// Must be registered BEFORE the :preset route to prevent Express matching
+// "run" as a preset value.
+router.get("/metrix/accounts/:accountId/analysis-summary/run/:runId", requireAuth, async (req, res) => {
+  const accountId = String(req.params["accountId"]);
+  const runId     = String(req.params["runId"] ?? "");
+  if (!runId) {
+    res.status(400).json({ message: "runId is required." });
+    return;
+  }
+  try {
+    if (!(await guardAccess(req, res, accountId))) return;
+    const result = await getAnalysisSummaryByRunId(accountId, runId);
+    res.json(result);
+  } catch (err) {
+    if (err instanceof AnalysisError) {
+      res.status(err.statusCode).json({ message: err.message });
+      return;
+    }
+    req.log.error({ err, accountId, runId }, "Failed to compute analysis summary by run");
+    res.status(502).json({ message: err instanceof Error ? err.message : "Could not compute analysis summary." });
+  }
 });
 
 // ─── View-level date preset summary ──────────────────────────────────────────

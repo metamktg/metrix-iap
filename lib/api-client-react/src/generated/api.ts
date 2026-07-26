@@ -1270,6 +1270,89 @@ export function useGetLatestAnalysisRun<TData = Awaited<ReturnType<typeof getLat
 
 
 
+export const getGetAnalysisSummaryByRunUrl = (accountId: string,
+    runId: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/analysis-summary/run/${runId}`
+}
+
+/**
+ * Filters ad_performance, demographic_performance, and placement_performance to the date window of the given manual_analysis_run. Returns the same shape as getAnalysisSummary. Used by the IAP run picker on manual-upload accounts.
+ * @summary Re-aggregate analysis data for a specific analysis run's date window
+ */
+export const getAnalysisSummaryByRun = async (accountId: string,
+    runId: string, options?: RequestInit): Promise<AnalysisSummaryResult> => {
+
+  return customFetch<AnalysisSummaryResult>(getGetAnalysisSummaryByRunUrl(accountId,runId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAnalysisSummaryByRunQueryKey = (accountId: string,
+    runId: string,) => {
+    return [
+    `/api/metrix/accounts/${accountId}/analysis-summary/run/${runId}`
+    ] as const;
+    }
+
+
+export const getGetAnalysisSummaryByRunQueryOptions = <TData = Awaited<ReturnType<typeof getAnalysisSummaryByRun>>, TError = ErrorType<ApiError>>(accountId: string,
+    runId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAnalysisSummaryByRun>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAnalysisSummaryByRunQueryKey(accountId,runId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAnalysisSummaryByRun>>> = ({ signal }) => getAnalysisSummaryByRun(accountId,runId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: accountId !== null && accountId !== undefined && runId !== null && runId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAnalysisSummaryByRun>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAnalysisSummaryByRunQueryResult = NonNullable<Awaited<ReturnType<typeof getAnalysisSummaryByRun>>>
+export type GetAnalysisSummaryByRunQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Re-aggregate analysis data for a specific analysis run's date window
+ */
+
+export function useGetAnalysisSummaryByRun<TData = Awaited<ReturnType<typeof getAnalysisSummaryByRun>>, TError = ErrorType<ApiError>>(
+ accountId: string,
+    runId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAnalysisSummaryByRun>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAnalysisSummaryByRunQueryOptions(accountId,runId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getGetAnalysisSummaryUrl = (accountId: string,
     preset: ViewPreset,) => {
 
