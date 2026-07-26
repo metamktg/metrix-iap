@@ -7,6 +7,7 @@
 import { describe, it, expect } from "vitest";
 import {
   buildAccountObject,
+  detectAccountsNeedingCreativeSync,
   groupByAccount,
   type AccountTables,
 } from "../metrixSeedAssembly";
@@ -541,5 +542,85 @@ describe("buildAccountObject", () => {
       t,
     );
     expect(obj["listen"]["signal_cards"].map((c: Row) => c["id"])).toEqual(["c1"]);
+  });
+});
+
+// ─── Creative-link auto-heal detection ────────────────────────────────────────
+// Regression guard: detectAccountsNeedingCreativeSync identifies accounts
+// where creative_asset manual_imports exist but none of the mapped ad_names
+// have a creative_asset_url set — the condition that causes every library card
+// to show the "No asset" placeholder after a re-import or analysis wipe.
+
+describe("detectAccountsNeedingCreativeSync", () => {
+  it("flags an account where creative imports exist but all mapped ads have null creative_asset_url", () => {
+    // Regression vector (b): seed assembler reads null from ads and ships null
+    // in every AdRecord without self-healing first.
+    const manualImports: Row[] = [
+      { account_id: "acct_1", kind: "creative_asset", ad_names: ["Summer Sale v1", "Summer Sale v2"] },
+    ];
+    const ads: Row[] = [
+      { account_id: "acct_1", ad_name: "Summer Sale v1", creative_asset_url: null },
+      { account_id: "acct_1", ad_name: "Summer Sale v2", creative_asset_url: null },
+    ];
+    expect(detectAccountsNeedingCreativeSync(manualImports, ads)).toEqual(["acct_1"]);
+  });
+
+  it("does NOT flag an account where at least one mapped ad already has creative_asset_url set", () => {
+    // Partial link is sufficient: sync will fill in the rest; no duplicate work.
+    const manualImports: Row[] = [
+      { account_id: "acct_2", kind: "creative_asset", ad_names: ["Ad A", "Ad B"] },
+    ];
+    const ads: Row[] = [
+      { account_id: "acct_2", ad_name: "Ad A", creative_asset_url: "/api/metrix/accounts/acct_2/manual-imports/abc/file" },
+      { account_id: "acct_2", ad_name: "Ad B", creative_asset_url: null },
+    ];
+    expect(detectAccountsNeedingCreativeSync(manualImports, ads)).toEqual([]);
+  });
+
+  it("skips creative imports with empty ad_names arrays (no mapping to heal)", () => {
+    const manualImports: Row[] = [
+      { account_id: "acct_3", kind: "creative_asset", ad_names: [] },
+    ];
+    const ads: Row[] = [];
+    expect(detectAccountsNeedingCreativeSync(manualImports, ads)).toEqual([]);
+  });
+
+  it("flags only the affected account when multiple accounts co-exist", () => {
+    const manualImports: Row[] = [
+      { account_id: "bookster", kind: "creative_asset", ad_names: ["C2B_T3", "C4E_T1"] },
+      { account_id: "healthy",  kind: "creative_asset", ad_names: ["Hero Ad"] },
+    ];
+    const ads: Row[] = [
+      // bookster: both mapped ads have null URL — needs healing
+      { account_id: "bookster", ad_name: "C2B_T3", creative_asset_url: null },
+      { account_id: "bookster", ad_name: "C4E_T1", creative_asset_url: null },
+      // healthy: one mapped ad already linked
+      { account_id: "healthy",  ad_name: "Hero Ad", creative_asset_url: "/api/metrix/accounts/healthy/manual-imports/xyz/file" },
+    ];
+    const result = detectAccountsNeedingCreativeSync(manualImports, ads);
+    expect(result).toEqual(["bookster"]);
+  });
+
+  it("flags an account when mapped ad names exist but no ads rows exist at all (regression vector a: wipe)", () => {
+    // Regression vector (a): re-import deleted and re-inserted ads rows without
+    // preserving creative_asset_url — the column reset to null on all rows.
+    const manualImports: Row[] = [
+      { account_id: "wiped", kind: "creative_asset", ad_names: ["C2B_T3"] },
+    ];
+    // ads table has the row but creative_asset_url was wiped
+    const ads: Row[] = [
+      { account_id: "wiped", ad_name: "C2B_T3", creative_asset_url: null },
+    ];
+    expect(detectAccountsNeedingCreativeSync(manualImports, ads)).toEqual(["wiped"]);
+  });
+
+  it("handles null ad_names gracefully and does not flag the account", () => {
+    // Rows with null ad_names are excluded upstream by the Supabase query filter;
+    // the pure function should still be robust if they sneak through.
+    const manualImports: Row[] = [
+      { account_id: "acct_4", kind: "creative_asset", ad_names: null },
+    ];
+    const ads: Row[] = [];
+    expect(detectAccountsNeedingCreativeSync(manualImports, ads)).toEqual([]);
   });
 });

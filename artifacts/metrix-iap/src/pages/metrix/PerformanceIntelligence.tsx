@@ -18,6 +18,13 @@
 import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { TYPE } from "./typography";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselPrevious,
+  CarouselNext,
+} from "@/components/ui/carousel";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import {
   getAdAccount,
@@ -65,6 +72,57 @@ import type {
   PlacementRow,
   VariablePerformanceRow,
 } from "@/lib/data/seedTypes";
+
+// ─── HorizontalStrip ─────────────────────────────────────────────────
+// Wraps Carousel to show `visibleCount` items at a time with prev/next
+// arrow buttons and a "Showing X of Y" count badge. Buttons are rendered
+// only when there are more items than the visible count.
+
+function HorizontalStrip({
+  items,
+  totalCount,
+  visibleCount = 3,
+  ariaLabel,
+}: {
+  items: React.ReactNode[];
+  totalCount: number;
+  visibleCount?: number;
+  ariaLabel?: string;
+}) {
+  const hasMore = items.length > visibleCount;
+  const basisClass =
+    visibleCount === 4 ? "basis-1/4" :
+    visibleCount === 2 ? "basis-1/2" : "basis-1/3";
+
+  return (
+    <Carousel opts={{ align: "start" }} aria-label={ariaLabel}>
+      <div className="flex items-center justify-between mb-2">
+        <span className={cn(TYPE.label, "normal-case text-muted-foreground/50 tracking-normal")}>
+          Showing {Math.min(visibleCount, totalCount)} of {totalCount}
+        </span>
+        {hasMore && (
+          <div className="flex items-center gap-1">
+            <CarouselPrevious
+              aria-label="Previous"
+              className="static h-6 w-6 left-auto top-auto translate-y-0"
+            />
+            <CarouselNext
+              aria-label="Next"
+              className="static h-6 w-6 right-auto top-auto translate-y-0"
+            />
+          </div>
+        )}
+      </div>
+      <CarouselContent className="-ml-2.5">
+        {items.map((item, i) => (
+          <CarouselItem key={i} className={cn("pl-2.5", basisClass)}>
+            {item}
+          </CarouselItem>
+        ))}
+      </CarouselContent>
+    </Carousel>
+  );
+}
 
 // ─── TLDR card ──────────────────────────────────────────────────────
 
@@ -211,8 +269,7 @@ export function TopCreativeStrip({ accountId }: { accountId: string }) {
   const topCellCards = useMemo(() => {
     const perfRows = analysis?.performance_by_cell ?? [];
     const topRows = primaryCellRows(perfRows)
-      .sort((a, b) => cellResultRate(b) - cellResultRate(a))
-      .slice(0, 3);
+      .sort((a, b) => cellResultRate(b) - cellResultRate(a));
     return topRows.map((row) => ({
       row,
       card: cardFromCell(row.cell_id, { perfRows, mst, ads, metaAdAccountId }),
@@ -237,10 +294,10 @@ export function TopCreativeStrip({ accountId }: { accountId: string }) {
     <>
       <SectionCard
         title="Top Creative"
-        desc="Top 3 cells by result rate (results ÷ impressions) from the latest analysis run"
+        desc="Top cells by result rate (results ÷ impressions) from the latest analysis run"
       >
-        <div className="grid grid-cols-3 gap-2.5">
-          {topCellCards.map(({ row, card }) => {
+        <HorizontalStrip
+          items={topCellCards.map(({ row, card }) => {
             const rate = cellResultRate(row);
             const cpa = row.CPA_result;
             const spend = row["Amount spent (USD)"];
@@ -248,7 +305,7 @@ export function TopCreativeStrip({ accountId }: { accountId: string }) {
               <button
                 key={row.cell_id}
                 onClick={() => openExpand(row.cell_id)}
-                className="text-left rounded-lg border border-border/40 bg-white/[0.02] p-3 hover:border-primary/30 hover:bg-primary/[0.04] transition-colors"
+                className="w-full text-left rounded-lg border border-border/40 bg-white/[0.02] p-3 hover:border-primary/30 hover:bg-primary/[0.04] transition-colors"
               >
                 <CreativeThumbnail
                   assetUrl={card.assetUrl}
@@ -302,7 +359,9 @@ export function TopCreativeStrip({ accountId }: { accountId: string }) {
               </button>
             );
           })}
-        </div>
+          totalCount={topCellCards.length}
+          ariaLabel="Top Creative"
+        />
       </SectionCard>
 
       {expandData && (
@@ -468,8 +527,7 @@ export function TopAvatarPanel({ accountId }: { accountId: string }) {
           if (b !== ageBandFilter) return false;
         }
         return true;
-      })
-      .slice(0, 3);
+      });
   }, [sortedProfiles, genderFilter, ageBandFilter]);
 
   if ((strategy?.icp_profiles ?? []).length === 0) return null;
@@ -542,14 +600,14 @@ export function TopAvatarPanel({ accountId }: { accountId: string }) {
             No profiles match this filter.
           </p>
         ) : (
-          <div className="grid grid-cols-3 gap-2.5">
-            {filtered.map((profile) => {
+          <HorizontalStrip
+            items={filtered.map((profile) => {
               const perf = profile.performance_data;
               return (
                 <button
                   key={profile.profile_id}
                   onClick={() => setDetail(profile)}
-                  className="text-left rounded-lg border border-border/40 bg-white/[0.02] p-3 hover:border-primary/30 hover:bg-primary/[0.04] transition-colors"
+                  className="w-full text-left rounded-lg border border-border/40 bg-white/[0.02] p-3 hover:border-primary/30 hover:bg-primary/[0.04] transition-colors"
                 >
                   <div className="flex items-start gap-2 mb-2">
                     <div className="w-7 h-7 rounded-lg border border-primary/25 bg-primary/[0.08] flex items-center justify-center shrink-0 mt-0.5">
@@ -594,7 +652,9 @@ export function TopAvatarPanel({ accountId }: { accountId: string }) {
                 </button>
               );
             })}
-          </div>
+            totalCount={filtered.length}
+            ariaLabel="Top Avatars"
+          />
         )}
       </SectionCard>
 
@@ -660,8 +720,7 @@ export function TopCopyStrip({ accountId }: { accountId: string }) {
     const perfRows = analysis?.performance_by_cell ?? [];
     return [...pillars]
       .map((p) => ({ pillar: p, spend: pillarSpend(p, perfRows) }))
-      .sort((a, b) => b.spend - a.spend)
-      .slice(0, 3);
+      .sort((a, b) => b.spend - a.spend);
   }, [strategy, analysis]);
 
   if (!strategy || topPillars.length === 0) return null;
@@ -670,14 +729,14 @@ export function TopCopyStrip({ accountId }: { accountId: string }) {
     <>
       <SectionCard
         title="Top Copy"
-        desc="Top 3 message pillars ranked by matched spend across their source cells"
+        desc="Top message pillars ranked by matched spend across their source cells"
       >
-        <div className="grid grid-cols-3 gap-2.5">
-          {topPillars.map(({ pillar, spend }) => (
+        <HorizontalStrip
+          items={topPillars.map(({ pillar, spend }) => (
             <button
               key={pillar.id}
               onClick={() => setDetail({ pillar, spend })}
-              className="text-left rounded-lg border border-border/40 bg-white/[0.02] p-3 flex flex-col gap-2 hover:border-primary/30 hover:bg-primary/[0.04] transition-colors"
+              className="w-full text-left rounded-lg border border-border/40 bg-white/[0.02] p-3 flex flex-col gap-2 hover:border-primary/30 hover:bg-primary/[0.04] transition-colors"
             >
               <div className="flex items-start justify-between gap-1">
                 <p
@@ -708,7 +767,9 @@ export function TopCopyStrip({ accountId }: { accountId: string }) {
               </div>
             </button>
           ))}
-        </div>
+          totalCount={topPillars.length}
+          ariaLabel="Top Copy"
+        />
       </SectionCard>
 
       {detail && (
@@ -747,8 +808,7 @@ export function TopVariableStackStrip({ accountId }: { accountId: string }) {
     const combos = strategy?.variable_combinations ?? [];
     return [...combos]
       .filter((c) => c.cpa != null)
-      .sort((a, b) => (a.cpa ?? Infinity) - (b.cpa ?? Infinity))
-      .slice(0, 3);
+      .sort((a, b) => (a.cpa ?? Infinity) - (b.cpa ?? Infinity));
   }, [strategy]);
 
   if (!strategy || topCombos.length === 0) return null;
@@ -757,10 +817,10 @@ export function TopVariableStackStrip({ accountId }: { accountId: string }) {
     <>
       <SectionCard
         title="Top Variable Stacks"
-        desc="Top 3 variable combinations by CPA (best performing first)"
+        desc="Top variable combinations by CPA (best performing first)"
       >
-        <div className="grid grid-cols-3 gap-2.5">
-          {topCombos.map((combo, i) => {
+        <HorizontalStrip
+          items={topCombos.map((combo, i) => {
             const codes = combo.combination.split(/\s*\+\s*/).filter(Boolean);
             const firstCode = codes[0] ?? null;
             const recoKey = combo.recommendation?.toLowerCase() ?? "";
@@ -771,7 +831,7 @@ export function TopVariableStackStrip({ accountId }: { accountId: string }) {
                   if (firstCode && analysis) setOpenCode(firstCode);
                 }}
                 disabled={!firstCode || !analysis}
-                className="text-left rounded-lg border border-border/40 bg-white/[0.02] p-3 hover:border-primary/30 hover:bg-primary/[0.04] transition-colors disabled:opacity-60 disabled:cursor-default"
+                className="w-full text-left rounded-lg border border-border/40 bg-white/[0.02] p-3 hover:border-primary/30 hover:bg-primary/[0.04] transition-colors disabled:opacity-60 disabled:cursor-default"
               >
                 <div className="flex flex-wrap gap-1 mb-2.5">
                   {codes.slice(0, 4).map((code) => (
@@ -818,7 +878,9 @@ export function TopVariableStackStrip({ accountId }: { accountId: string }) {
               </button>
             );
           })}
-        </div>
+          totalCount={topCombos.length}
+          ariaLabel="Top Variable Stacks"
+        />
       </SectionCard>
 
       {openCode && analysis && (

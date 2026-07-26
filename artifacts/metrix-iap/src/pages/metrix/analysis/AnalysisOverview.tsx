@@ -26,8 +26,9 @@ import { useQuery } from "@tanstack/react-query";
 import { SharePieChart } from "@/components/charts/SharePieChart";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, CartesianGrid,
+  ResponsiveContainer, CartesianGrid, Brush,
 } from "recharts";
+import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import {
   LineChart, Library, Users, LayoutGrid, Wallet,
@@ -191,9 +192,13 @@ function ChartTooltipCard({ children }: { children: React.ReactNode }) {
 // Dual-axis trendline: spend (left, blue fill) + results (right, success line).
 // Separate Y-axes because the scales differ by orders of magnitude.
 function SpendTrendChart({ data }: { data: MonthBucket[] }) {
+  const [brushRange, setBrushRange] = useState<{ startIndex: number; endIndex: number }>({
+    startIndex: 0,
+    endIndex: Math.max(0, data.length - 1),
+  });
   if (data.length < 2) return null;
   return (
-    <div style={{ height: 220 }} aria-label="Monthly spend and results trendline">
+    <div style={{ height: 254 }} aria-label="Monthly spend and results trendline">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 4, right: 44, bottom: 0, left: 4 }}>
           <defs>
@@ -285,6 +290,21 @@ function SpendTrendChart({ data }: { data: MonthBucket[] }) {
             fill="url(#aov-results-gradient)"
             dot={false}
             activeDot={{ r: 3, strokeWidth: 0, fill: "hsl(var(--metrix-success))" }}
+          />
+          <Brush
+            dataKey="month"
+            height={24}
+            travellerWidth={7}
+            startIndex={brushRange.startIndex}
+            endIndex={brushRange.endIndex}
+            stroke="hsl(var(--primary) / 0.35)"
+            fill="rgba(0,0,0,0.25)"
+            aria-label="Drag to zoom the date range"
+            onChange={(range) => {
+              if (range && range.startIndex != null && range.endIndex != null) {
+                setBrushRange({ startIndex: range.startIndex, endIndex: range.endIndex });
+              }
+            }}
           />
         </AreaChart>
       </ResponsiveContainer>
@@ -437,9 +457,11 @@ function PlacementTable({ placements }: {
 function DemoHeatmapGrid({
   heatmap,
   analysis,
+  goalCpa,
 }: {
   heatmap: ReturnType<typeof buildDemoHeatmap>;
   analysis: AnalysisData;
+  goalCpa?: number | null;
 }) {
   const { cells, ages, genders, maxCpa, minCpa } = heatmap;
   const [selectedSegment, setSelectedSegment] = useState<SegmentId | null>(null);
@@ -457,6 +479,13 @@ function DemoHeatmapGrid({
 
   function cellBg(cpa: number | null): string {
     if (cpa == null) return "rgba(255,255,255,0.02)";
+    // Goal-relative coloring when goalCpa is provided
+    if (goalCpa != null && goalCpa > 0) {
+      if (cpa <= goalCpa * 0.9)  return "rgba(52,211,153,0.32)";  // emerald — at/below goal
+      if (cpa >= goalCpa * 1.1)  return "rgba(251,191,36,0.24)";  // amber — above goal
+      return "rgba(99,102,241,0.20)";                             // indigo — neutral band ±10%
+    }
+    // Fallback: min/max relative coloring
     const t = intensity(cpa);
     if (t >= 0.65) return `rgba(52,211,153,${0.08 + t * 0.26})`; // emerald
     if (t >= 0.35) return `rgba(99,102,241,${0.06 + t * 0.14})`; // indigo mid
@@ -694,6 +723,8 @@ export function AnalysisOverview() {
 
   const [cellSort, setCellSort] = useState<CellSort>("spend");
   const [selectedWindow, setSelectedWindow] = useState<DataWindowSelection | null>(null);
+  const [topN, setTopN] = useState(10);
+  const [goalCpa, setGoalCpa] = useState<number | null>(null);
 
   // Fetch available date windows from actual ad_performance data (not run metadata).
   const { data: windowsData, isFetching: windowsFetching } = useQuery({
@@ -783,7 +814,7 @@ export function AnalysisOverview() {
                   : (x.results > 0 ? x.spend / x.results : Infinity) -
                     (y.results > 0 ? y.spend / y.results : Infinity)
               )
-              .slice(0, 10)
+              .slice(0, topN)
               .map((r) => ({
                 name:       resolveConceptCode(r.concept),
                 spend:      r.spend,
@@ -797,7 +828,7 @@ export function AnalysisOverview() {
                   ? y["Amount spent (USD)"] - x["Amount spent (USD)"]
                   : (x.CPA_result ?? Infinity) - (y.CPA_result ?? Infinity)
               )
-              .slice(0, 10)
+              .slice(0, topN)
               .map((r) => ({
                 name:       r.book2_concept_name ?? r.cell_id,
                 spend:      r["Amount spent (USD)"],
@@ -837,6 +868,16 @@ export function AnalysisOverview() {
             }))
           : a.demographic_registration_signal;
         const heatmap = buildDemoHeatmap(heatmapRows);
+
+        // ── Goal-CPA default: median of heatmap cell CPAs ─────────────
+        const heatmapCpas = heatmap.cells
+          .map((c) => c.cpa)
+          .filter((v): v is number => v != null)
+          .sort((a, b) => a - b);
+        const medianCpa = heatmapCpas.length
+          ? heatmapCpas[Math.floor(heatmapCpas.length / 2)]
+          : null;
+        const effectiveGoalCpa = goalCpa ?? medianCpa;
 
         // ── Sub-page jump-off cards ───────────────────────────────────
         const subpages = [
@@ -973,7 +1014,22 @@ export function AnalysisOverview() {
                           : `${term.Plural} · CPA · ${a.performance_by_cell.length} cells total`
                       }
                       right={
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
+                          {/* Top-N slider */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-label text-muted-foreground/60 whitespace-nowrap">
+                              Top N: <span className="text-foreground/80 font-mono">{topN}</span>
+                            </span>
+                            <Slider
+                              aria-label="Number of top concepts to display"
+                              min={5}
+                              max={25}
+                              step={5}
+                              value={[topN]}
+                              onValueChange={([v]) => setTopN(v)}
+                              className="w-24"
+                            />
+                          </div>
                           <SortToggle
                             options={[
                               { key: "spend" as CellSort, label: "Spend" },
@@ -1023,10 +1079,35 @@ export function AnalysisOverview() {
                   {heatmap.cells.length > 0 && (
                     <SectionCard
                       title="Audience heatmap"
-                      desc="Age × gender — cell colour = CPA (green = lower = better) · hover for detail"
-                      right={<CrossLink to="/app/analysis/audience" label="Full →" />}
+                      desc={
+                        effectiveGoalCpa != null
+                          ? `Age × gender · goal CPA ${fmtUSD(effectiveGoalCpa, 0)} · emerald ≤ goal, amber > goal`
+                          : "Age × gender — cell colour = CPA (green = lower = better) · hover for detail"
+                      }
+                      right={
+                        <div className="flex items-center gap-3">
+                          {/* Goal-CPA slider */}
+                          {medianCpa != null && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-label text-muted-foreground/60 whitespace-nowrap">
+                                Goal CPA: <span className="text-foreground/80 font-mono">{fmtUSD(effectiveGoalCpa ?? medianCpa, 0)}</span>
+                              </span>
+                              <Slider
+                                aria-label="Goal CPA threshold for heatmap coloring"
+                                min={Math.round(heatmap.minCpa)}
+                                max={Math.round(heatmap.maxCpa)}
+                                step={Math.max(1, Math.round((heatmap.maxCpa - heatmap.minCpa) / 20))}
+                                value={[Math.round(effectiveGoalCpa ?? medianCpa)]}
+                                onValueChange={([v]) => setGoalCpa(v)}
+                                className="w-28"
+                              />
+                            </div>
+                          )}
+                          <CrossLink to="/app/analysis/audience" label="Full →" />
+                        </div>
+                      }
                     >
-                      <DemoHeatmapGrid heatmap={heatmap} analysis={a} />
+                      <DemoHeatmapGrid heatmap={heatmap} analysis={a} goalCpa={effectiveGoalCpa} />
                     </SectionCard>
                   )}
 

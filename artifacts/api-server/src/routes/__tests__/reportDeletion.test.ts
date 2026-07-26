@@ -94,15 +94,17 @@ beforeAll(async () => {
       resolve();
     });
   });
-});
+}, 30_000);
 
 afterAll(async () => {
-  await db
-    .delete(workspaceReportsTable)
-    .where(eq(workspaceReportsTable.createdByUserId, testUserId));
-  await db.delete(userSessionsTable).where(eq(userSessionsTable.userId, testUserId));
-  await db.delete(usersTable).where(eq(usersTable.id, testUserId));
-  await close();
+  if (testUserId) {
+    await db
+      .delete(workspaceReportsTable)
+      .where(eq(workspaceReportsTable.createdByUserId, testUserId));
+    await db.delete(userSessionsTable).where(eq(userSessionsTable.userId, testUserId));
+    await db.delete(usersTable).where(eq(usersTable.id, testUserId));
+  }
+  if (typeof close === "function") await close();
   await pool.end();
 });
 
