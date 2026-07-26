@@ -4,6 +4,13 @@
 // documents. Runs DDL (schema.sql) then replaces all imported rows per
 // account inside a single transaction.
 //
+// Manual dev tool, hardcoded to these two pilot accounts (ACCOUNT_ID /
+// LD_ACCOUNT_ID below) — run by hand from a local data export, not part of
+// either in-app ingestion path (manual CSV upload → analysisEngine.ts, or
+// the live Meta connection → metaConnect.ts). Not a production pipeline;
+// don't add new accounts here — use one of the two in-app paths instead.
+//
+
 // Sources (scripts/data/metrix/):
 //   normalized_data_bundle.json   — Bundle Prep output (BOOK0 + BOOK2)
 //   campaign_intelligence.json    — Analysis Core output

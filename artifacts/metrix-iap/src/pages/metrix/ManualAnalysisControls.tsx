@@ -15,13 +15,12 @@ import {
   useGetLatestAnalysisRun,
   useListManualImports,
   useUpdateManualImportAdNames,
-  getGetMetrixSeedQueryKey,
   getListManualImportsQueryKey,
   ApiError,
   type AnalysisRun,
   type ManualImport,
 } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useAnalysisRunTracker } from "@/contexts/AnalysisRunTrackerContext";
 import { cn } from "@/lib/utils";
 import {
   FileText,
@@ -300,12 +299,16 @@ export function GuessedMatchesCallout({
 /**
  * Explicit, manual analysis trigger for an account's staged CSVs.
  * Nothing here runs automatically — the user must pick a date range and
- * press "Run analysis". Polls the latest run every 2.5s while running.
+ * press "Run analysis". Polls the latest run every 2.5s while this panel
+ * is open (badge display only) — the app-wide dashboard cache invalidation
+ * and completion toast are owned by AnalysisRunTrackerContext, which keeps
+ * watching the run even if the user navigates away from this page before
+ * it finishes.
  */
 export function AnalysisControls({ accountId }: { accountId: string }) {
   const [dateRange, setDateRange] = useState<"7d" | "14d" | "30d" | "all">("30d");
   const [error, setError] = useState<string | null>(null);
-  const queryClient = useQueryClient();
+  const { watchRun } = useAnalysisRunTracker();
   const startMutation = useStartManualAnalysisRun();
   const { data: latest, refetch } = useGetLatestAnalysisRun(accountId);
   const { data: importsData, refetch: refetchImports } = useListManualImports(accountId);
@@ -325,7 +328,6 @@ export function AnalysisControls({ accountId }: { accountId: string }) {
     if (!isRunning && pollRef.current) {
       clearInterval(pollRef.current);
       pollRef.current = null;
-      queryClient.invalidateQueries({ queryKey: getGetMetrixSeedQueryKey() });
     }
     return () => {
       if (pollRef.current) {
@@ -333,12 +335,13 @@ export function AnalysisControls({ accountId }: { accountId: string }) {
         pollRef.current = null;
       }
     };
-  }, [isRunning, refetch, queryClient]);
+  }, [isRunning, refetch]);
 
   const handleRun = async () => {
     setError(null);
     try {
       await startMutation.mutateAsync({ accountId, data: { date_range: dateRange } });
+      watchRun(accountId);
       await refetch();
     } catch (err) {
       setError(
@@ -353,7 +356,7 @@ export function AnalysisControls({ accountId }: { accountId: string }) {
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/85 shrink-0" />
-        <span className="text-[11px] font-medium text-foreground">Date range to analyze</span>
+        <span className="text-[11px] font-medium text-foreground">Data window to process from your uploads</span>
       </div>
       <div className="grid grid-cols-2 gap-1.5">
         {DATE_RANGES.map((r) => (

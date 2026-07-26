@@ -11,6 +11,9 @@ import {
 } from "lucide-react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
+import { useDateRange } from "@/contexts/DateRangeContext";
+import { eventTotalsInRange } from "@/lib/date-scope";
+import type { CampaignSummary } from "@/lib/data/seedTypes";
 import {
   getAdAccount, getListenSignals, getAnalysisData, getStrategyData,
   getReportBuilder, getMST,
@@ -79,7 +82,30 @@ export function AdAccountOverview() {
   }
 
   const core = account.iap.core_reanalysis_read;
-  const cs = account.iap.campaign_summary;
+  const accountIap = account.iap;
+  const { range, preset } = useDateRange();
+  const narrowed = preset !== "all";
+  const cs: CampaignSummary = useMemo(() => {
+    const base = accountIap.campaign_summary;
+    if (!narrowed || !base.daily_totals) return base;
+    const bottom_line_totals = eventTotalsInRange(base.daily_totals, range);
+    let totalSpendUsd = 0;
+    let totalImpressions = 0;
+    let totalLinkClicks = 0;
+    for (const t of Object.values(bottom_line_totals)) {
+      totalSpendUsd += t.spend;
+      totalImpressions += t.impressions;
+      totalLinkClicks += t.link_clicks;
+    }
+    return {
+      ...base,
+      bottom_line_totals,
+      total_spend_usd: totalSpendUsd,
+      total_impressions: totalImpressions,
+      total_link_clicks: totalLinkClicks,
+      overall_link_ctr_pct: totalImpressions > 0 ? (totalLinkClicks / totalImpressions) * 100 : 0,
+    };
+  }, [accountIap, narrowed, range]);
   const events = Object.entries(cs.bottom_line_totals);
   const term = resultTerm(account);
 

@@ -337,6 +337,13 @@ export interface CampaignWindow {
   spend: number | null;
 }
 
+/** One account's per-day, per-result-event totals — the same rows bottom_line_totals sums across the whole window, kept at daily grain so the Overview tiles can honor the global date-range filter. Absent on seeds assembled before this field existed. */
+export interface DailyEventTotal extends SeedResultEventTotals {
+  date_start: string;
+  date_end: string;
+  result_type: string;
+}
+
 export interface CampaignSummary {
   bottom_line_totals: Record<string, SeedResultEventTotals>;
   total_spend_usd: number;
@@ -347,6 +354,7 @@ export interface CampaignSummary {
   window_start?: string;
   window_end?: string;
   campaign_windows?: CampaignWindow[];
+  daily_totals?: DailyEventTotal[];
 }
 
 // ─── Listen ───────────────────────────────────────────────────────────

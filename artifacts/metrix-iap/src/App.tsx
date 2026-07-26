@@ -12,6 +12,7 @@ import { AdminWaitlistPage } from "@/pages/admin/AdminWaitlistPage";
 import { Loader2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TaskTrayProvider } from "@/contexts/TaskTrayContext";
+import { AnalysisRunTrackerProvider } from "@/contexts/AnalysisRunTrackerContext";
 import {
   RESET_PASSWORD_PATH,
   FORGOT_PASSWORD_PATH,
@@ -177,17 +178,19 @@ export function AuthGate() {
 
   return (
     <MetrixDataProvider>
-      <ConceptRegistryProvider>
-        <AccountProvider>
-          <DateRangeProvider>
-            <TaskTrayProvider>
-              <AppShell>
-                <Router />
-              </AppShell>
-            </TaskTrayProvider>
-          </DateRangeProvider>
-        </AccountProvider>
-      </ConceptRegistryProvider>
+      <AnalysisRunTrackerProvider>
+        <ConceptRegistryProvider>
+          <AccountProvider>
+            <DateRangeProvider>
+              <TaskTrayProvider>
+                <AppShell>
+                  <Router />
+                </AppShell>
+              </TaskTrayProvider>
+            </DateRangeProvider>
+          </AccountProvider>
+        </ConceptRegistryProvider>
+      </AnalysisRunTrackerProvider>
     </MetrixDataProvider>
   );
 }

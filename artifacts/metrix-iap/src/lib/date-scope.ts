@@ -8,7 +8,7 @@
 // per-day numbers.
 
 import { useMemo, useCallback } from "react";
-import type { AnalysisData, MST } from "@/lib/data/seedTypes";
+import type { AnalysisData, MST, DailyEventTotal, SeedResultEventTotals } from "@/lib/data/seedTypes";
 import { rangesOverlap, isoMin, isoMax, useDateRange, type IsoRange } from "@/contexts/DateRangeContext";
 
 /** Concept code for a creative cell id: "C2B" → "C2". */
@@ -100,6 +100,33 @@ export function sumInRange<T>(
     }
   }
   return sum;
+}
+
+/**
+ * Groups one or more accounts' per-day event totals back into the
+ * bottom_line_totals shape, keeping only rows that overlap `range`. Pass
+ * `range: null` to include everything (the "all" preset never narrows).
+ * Used to make Account/Manager Overview KPI tiles honor the global
+ * date-range filter the same way every other view's rows already do.
+ */
+export function eventTotalsInRange(
+  dailyTotals: DailyEventTotal[],
+  range: IsoRange | null
+): Record<string, SeedResultEventTotals> {
+  const out: Record<string, SeedResultEventTotals> = {};
+  for (const row of dailyTotals) {
+    if (range && !rangesOverlap(range, row.date_start, row.date_end)) continue;
+    const bucket = (out[row.result_type] ??= {
+      spend: 0, reach: 0, impressions: 0, results: 0, clicks_all: 0, link_clicks: 0,
+    });
+    bucket.spend += row.spend;
+    bucket.reach += row.reach;
+    bucket.impressions += row.impressions;
+    bucket.results += row.results;
+    bucket.clicks_all += row.clicks_all;
+    bucket.link_clicks += row.link_clicks;
+  }
+  return out;
 }
 
 // ─── React hook: cell-level range scoping ─────────────────────────────

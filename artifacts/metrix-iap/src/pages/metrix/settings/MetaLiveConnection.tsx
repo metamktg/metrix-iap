@@ -15,8 +15,10 @@ import {
   useDisconnectMetaAccount,
   useListMetaReportRows,
   getListMetaReportRowsQueryKey,
+  getGetMetrixSeedQueryKey,
   ApiError,
 } from "@workspace/api-client-react";
+import { toast } from "@/hooks/use-toast";
 import type {
   MetaAdAccount,
   MetaConnectedAccount,
@@ -374,12 +376,30 @@ function ConnectedPanel({
 
   const runReports = useRunMetaReports({
     mutation: {
-      onSuccess: () => {
+      onSuccess: (data) => {
         setRunError(null);
         onReportsRan();
         for (const rc of REPORT_CLASSES) {
           void queryClient.invalidateQueries({
             queryKey: getListMetaReportRowsQueryKey({ report_class: rc }),
+          });
+        }
+        // The server only bridges pulled rows into the dashboard tables
+        // (ad_performance etc.) when every report class in this run
+        // succeeded — mirror that condition here rather than assuming it.
+        const pulls = data?.pulls ?? [];
+        const allSucceeded = pulls.length > 0 && pulls.every((p) => p.status === "success");
+        if (allSucceeded) {
+          void queryClient.invalidateQueries({ queryKey: getGetMetrixSeedQueryKey() });
+          toast({
+            title: "Live delivery data available",
+            description: `Spend, impressions, reach, CTR and CPM from ${data.date_range_start} to ${data.date_range_end} are now on the dashboard. Conversion results (CPA/CVR) require a manual export.`,
+          });
+        } else {
+          toast({
+            title: "Report pull incomplete",
+            description: "One or both report pulls failed, so the dashboard wasn't updated. Check the status below and try again.",
+            variant: "destructive",
           });
         }
       },

@@ -214,6 +214,37 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
     totalImpressions += Number(r["impressions"] ?? 0);
     totalLinkClicks += Number(r["link_clicks"] ?? 0);
   }
+
+  // ── Per-day-per-event totals (Part A5: date-range-filterable Overview
+  // tiles). ad_performance already carries date_start/date_end per row —
+  // this just groups it one level coarser than the ad-level table without
+  // losing the daily grain, so the client can filter Account/Manager
+  // Overview totals by the selected date range the same way every other
+  // view already filters its own rows. Always ad-level-only (never
+  // affected by the account_totals override below) — consistent with
+  // every other date-filtered surface in the app.
+  const dailyTotalsByKey = new Map<string, Row>();
+  for (const r of adPerformance) {
+    const event = r["result_type"] as string;
+    const key = [r["date_start"], r["date_end"], event].join("");
+    if (!dailyTotalsByKey.has(key)) {
+      dailyTotalsByKey.set(key, {
+        date_start: r["date_start"],
+        date_end: r["date_end"],
+        result_type: event,
+        spend: 0, reach: 0, impressions: 0, results: 0, clicks_all: 0, link_clicks: 0,
+      });
+    }
+    const bucket = dailyTotalsByKey.get(key)!;
+    bucket["spend"] += Number(r["spend"] ?? 0);
+    bucket["reach"] += Number(r["reach"] ?? 0);
+    bucket["impressions"] += Number(r["impressions"] ?? 0);
+    bucket["results"] += Number(r["results"] ?? 0);
+    bucket["clicks_all"] += Number(r["clicks_all"] ?? 0);
+    bucket["link_clicks"] += Number(r["link_clicks"] ?? 0);
+  }
+  const dailyTotals = Array.from(dailyTotalsByKey.values()).map((b) => ({ ...b, spend: round(b["spend"]) }));
+
   // ── Account-level totals override (bundle-prep exports) ─────────────
   // Some import packages carry authoritative account-level totals that
   // exceed the ad-level table (ads absent from that export still spent).
@@ -551,6 +582,7 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
         data_caveat: dataCaveat,
         window_start: windowStart,
         window_end: windowEnd,
+        daily_totals: dailyTotals,
         campaign_windows: campaignWindows.map((w) => ({
           campaign_name: w["campaign_name"],
           book: w["book"],

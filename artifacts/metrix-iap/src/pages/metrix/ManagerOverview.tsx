@@ -8,7 +8,10 @@ import { useMemo, useState } from "react";
 import { CheckCircle2, Plug, TrendingUp, Plus, ArrowRight } from "lucide-react";
 import { useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
+import { useDateRange } from "@/contexts/DateRangeContext";
+import { eventTotalsInRange } from "@/lib/date-scope";
 import { getManagerOverview } from "@/lib/data/metrixSeedAdapter";
+import type { ManagerBottomLineTotals } from "@/lib/data/seedTypes";
 import { ModuleHeader, MetricTile, SectionCard, ConfidenceBadge, fmtUSD, fmtNum, eventLabel } from "./shared";
 import { AddAccountDialog } from "./AddAccountDialog";
 import { cn } from "@/lib/utils";
@@ -45,7 +48,33 @@ export function ManagerOverview() {
   const seed = useMetrixSeed();
   const [addOpen, setAddOpen] = useState(false);
   const data = getManagerOverview(seed);
-  const totals = data.bottom_line_totals;
+  const { range, preset } = useDateRange();
+  const narrowed = preset !== "all";
+  const totals: ManagerBottomLineTotals = useMemo(() => {
+    const base = data.bottom_line_totals;
+    if (!narrowed) return base;
+    const allDaily = adAccounts.flatMap((a) => a.iap?.campaign_summary?.daily_totals ?? []);
+    // No account has per-day data yet (seed predates daily_totals) — fall
+    // back to the whole-window totals rather than showing a false zero.
+    if (allDaily.length === 0) return base;
+    const result_totals_by_event = eventTotalsInRange(allDaily, range);
+    let spend_usd = 0;
+    let impressions = 0;
+    let link_clicks = 0;
+    for (const t of Object.values(result_totals_by_event)) {
+      spend_usd += t.spend;
+      impressions += t.impressions;
+      link_clicks += t.link_clicks;
+    }
+    return {
+      ...base,
+      result_totals_by_event,
+      spend_usd,
+      impressions,
+      link_clicks,
+      link_ctr_pct: impressions > 0 ? (link_clicks / impressions) * 100 : 0,
+    };
+  }, [data.bottom_line_totals, adAccounts, narrowed, range]);
   const events = Object.entries(totals.result_totals_by_event);
 
   // Map account_id → display name so each rec shows its source account.

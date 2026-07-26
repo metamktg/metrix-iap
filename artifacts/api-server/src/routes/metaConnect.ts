@@ -25,6 +25,7 @@ import {
 import {
   REPORT_CLASSES,
   type ReportClass,
+  type NormalizedReportRow,
   buildOauthDialogUrl,
   exchangeCodeForToken,
   exchangeForLongLivedToken,
@@ -37,6 +38,7 @@ import {
   buildMetricMappingStatus,
   sanitizeMetaPayload,
 } from "../lib/metaGraph";
+import { runAggregation, metaDemoRowToAgg, metaPlacementRowToAgg } from "../lib/analysisEngine";
 
 const router: IRouter = Router();
 
@@ -464,6 +466,8 @@ router.post("/metrix/meta/run-reports", requireAuth, async (req, res) => {
     const supabase = getSupabase();
     const range = last30dRange();
     const pulls: unknown[] = [];
+    const normalizedByClass: Partial<Record<ReportClass, NormalizedReportRow[]>> = {};
+    const classStatus: Partial<Record<ReportClass, "success" | "error">> = {};
 
     // Both report classes use the same exact date range and are stored
     // separately — never merged before storage.
@@ -481,6 +485,7 @@ router.post("/metrix/meta/run-reports", requireAuth, async (req, res) => {
         );
         const normalized = rawRows.map((r) => normalizeInsightRow(r, reportClass as ReportClass));
         const mappingStatus = buildMetricMappingStatus(normalized);
+        normalizedByClass[reportClass as ReportClass] = normalized;
 
         const { data: pullData, error: pullError } = await supabase
           .from("report_pulls")
@@ -533,6 +538,7 @@ router.post("/metrix/meta/run-reports", requireAuth, async (req, res) => {
           { reportClass, rowCount: normalized.length },
           "Meta report pull completed",
         );
+        classStatus[reportClass as ReportClass] = "success";
         pulls.push({
           report_class: reportClass,
           status: "success",
@@ -545,6 +551,7 @@ router.post("/metrix/meta/run-reports", requireAuth, async (req, res) => {
       } catch (err) {
         const message = err instanceof Error ? err.message : "Report pull failed.";
         req.log.error({ err, reportClass }, "Meta report pull failed");
+        classStatus[reportClass as ReportClass] = "error";
 
         if (pullId) {
           // Mark the existing pull as failed and drop any partial rows so
@@ -584,6 +591,56 @@ router.post("/metrix/meta/run-reports", requireAuth, async (req, res) => {
           row_count: 0,
           error_message: message,
         });
+      }
+    }
+
+    // Bridge into the dashboard's tables — only when BOTH report classes
+    // succeeded in this run (mirrors the manual engine's "both CSVs
+    // required" rule). Delivery metrics only: Results/CPA/CVR stay honestly
+    // null (see metaDemoRowToAgg/metaPlacementRowToAgg) since Meta's raw
+    // Insights API can't identify which action type is "the Result" the
+    // way an Ads Manager CSV export does. A bridge failure is logged loudly
+    // but never retroactively marks the (already-real) report_pulls rows as
+    // failed — the raw pull and the dashboard bridge are separate concerns.
+    const bothClassesSucceeded = REPORT_CLASSES.every((rc) => classStatus[rc] === "success");
+    if (bothClassesSucceeded) {
+      try {
+        const demoAgg = (normalizedByClass["IAP_DEMOGRAPHIC_TEXT_SIGNAL"] ?? [])
+          .filter((r) => r.date && r.dimensions["gender"] && r.dimensions["age"])
+          .map(metaDemoRowToAgg);
+        const placementAgg = (normalizedByClass["IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL"] ?? [])
+          .filter((r) => r.date && r.ad_name && r.campaign_name)
+          .map(metaPlacementRowToAgg);
+        if (demoAgg.length > 0 && placementAgg.length > 0) {
+          await runAggregation(connection.ad_account_id, demoAgg, placementAgg, range.start, range.end);
+          const configure = await supabase
+            .from("ad_accounts")
+            .update({
+              status: "configured",
+              overview_state: {
+                title: "Live delivery data available",
+                description:
+                  `Delivery metrics (spend, impressions, reach, CTR, CPM) from your live Meta connection cover ${range.start} to ${range.end}. ` +
+                  `Conversion results (CPA/CVR) aren't available from a live connection yet — upload a manual export in Settings → Account to see them.`,
+              },
+            })
+            .eq("id", connection.ad_account_id);
+          if (configure.error) {
+            req.log.error({ err: configure.error.message }, "Failed to mark Meta-connected account as configured");
+          } else {
+            invalidateMetrixSeedCache();
+          }
+        } else {
+          req.log.warn(
+            { accountId: connection.ad_account_id },
+            "Meta report pull succeeded but yielded no rows usable for the dashboard bridge",
+          );
+        }
+      } catch (bridgeErr) {
+        req.log.error(
+          { err: bridgeErr, accountId: connection.ad_account_id },
+          "Failed to bridge Meta report rows into dashboard tables",
+        );
       }
     }
 
