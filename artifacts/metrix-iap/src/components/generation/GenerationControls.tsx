@@ -100,6 +100,16 @@ export function useGenerationRun(accountId: string | null, kind: GenerationKind)
   const mutation = kind === "strategy" ? strategyMutation : briefsMutation;
 
   const start = (extraData?: { analysis_run_id?: string }) => {
+    // Guard: when passed directly as an onClick handler, extraData is a React
+    // SyntheticEvent that carries the DOM element — discard it so we never
+    // accidentally JSON.stringify a circular HTMLButtonElement reference.
+    if (
+      extraData != null &&
+      typeof extraData === "object" &&
+      ("nativeEvent" in extraData || "currentTarget" in extraData)
+    ) {
+      extraData = undefined;
+    }
     if (!accountId) return;
     // Guard against rapid double-taps: firingRef blocks the second call
     // synchronously (before any re-render); setFiring(true) triggers a

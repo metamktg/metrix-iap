@@ -96,7 +96,7 @@ export function BriefHub() {
                   {briefs.length} brief{briefs.length !== 1 ? "s" : ""} · {activeBriefs.length} active
                 </p>
                 <GenerateButton
-                  onClick={generation.start}
+                  onClick={() => generation.start()}
                   isRunning={generation.isRunning}
                   label="Generate Briefs"
                   runningLabel="Generating…"

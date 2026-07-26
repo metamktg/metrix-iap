@@ -349,10 +349,10 @@ export function StrategyOverview() {
                 </div>
               )}
               <div className="px-6 pb-6 space-y-3 max-w-lg mx-auto w-full text-center">
-                <GenerationErrorNote message={generation.lastError} onRetry={generation.start} />
+                <GenerationErrorNote message={generation.lastError} onRetry={() => generation.start()} />
                 {hasAnalysis ? (
                   <GenerateButton
-                    onClick={generation.start}
+                    onClick={() => generation.start()}
                     isRunning={generation.isRunning}
                     label="Generate strategy from analysis"
                     runningLabel="Generating strategy…"
@@ -425,7 +425,7 @@ export function StrategyOverview() {
                   <ProvenanceBadge provenance={strategy.provenance} />
                   {hasAnalysis && (
                     <GenerateButton
-                      onClick={generation.start}
+                      onClick={() => generation.start()}
                       isRunning={generation.isRunning}
                       label="Build Strategy"
                       runningLabel="Generating…"
@@ -437,7 +437,7 @@ export function StrategyOverview() {
             <RangeScopeBar grainNote="Strategy derives from the account's full flight window — this import has no daily grain." />
             {generation.lastError && (
               <div className="px-6 pt-4">
-                <GenerationErrorNote message={generation.lastError} onRetry={generation.start} />
+                <GenerationErrorNote message={generation.lastError} onRetry={() => generation.start()} />
               </div>
             )}
 
