@@ -48,6 +48,10 @@ args = "metrix-iap-nav-routes"
 task = "workflow.run"
 args = "seed-fixture-drift"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "text-primary-contrast"
+
 [[workflows.workflow]]
 name = "api-smoke"
 author = "agent"
@@ -132,6 +136,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm --filter @workspace/scripts run check:seed-fixture-drift"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "text-primary-contrast"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/scripts run check:text-primary-contrast"
 
 [workflows.workflow.metadata]
 isValidation = true
