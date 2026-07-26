@@ -52,6 +52,10 @@ args = "seed-fixture-drift"
 task = "workflow.run"
 args = "text-primary-contrast"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "css-token-contrast"
+
 [[workflows.workflow]]
 name = "api-smoke"
 author = "agent"
@@ -147,6 +151,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm --filter @workspace/scripts run check:text-primary-contrast"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "css-token-contrast"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/scripts run check:css-token-contrast"
 
 [workflows.workflow.metadata]
 isValidation = true
