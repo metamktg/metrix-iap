@@ -1731,25 +1731,32 @@ export function CreativeLibraryDialog({
         </AlertDialogContent>
       </AlertDialog>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center">
-                <Images className="w-4 h-4 text-interactive" />
+        <DialogContent
+          className="flex flex-col max-w-md max-h-[90vh] p-0 gap-0"
+          onPointerDownOutside={(e) => e.preventDefault()}
+        >
+          <div className="flex-none px-6 pt-6 pb-4">
+            <DialogHeader>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center">
+                  <Images className="w-4 h-4 text-interactive" />
+                </div>
               </div>
-            </div>
-            <DialogTitle className="text-base">Upload Creatives</DialogTitle>
-            <DialogDescription className="text-body leading-relaxed">
-              Add creative files to{" "}
-              <span className="text-foreground/80 font-medium">{account.name}</span> after the fact —
-              they render immediately and map to ads already in its IAP analysis.
-            </DialogDescription>
-          </DialogHeader>
-          <CreativeLibraryPanel
-            accountId={account.id}
-            availableAdNames={availableAdNames}
-            onDone={() => handleOpenChange(false)}
-          />
+              <DialogTitle className="text-base">Upload Creatives</DialogTitle>
+              <DialogDescription className="text-body leading-relaxed">
+                Add creative files to{" "}
+                <span className="text-foreground/80 font-medium">{account.name}</span> after the fact —
+                they render immediately and map to ads already in its IAP analysis.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6">
+            <CreativeLibraryPanel
+              accountId={account.id}
+              availableAdNames={availableAdNames}
+              onDone={() => handleOpenChange(false)}
+            />
+          </div>
         </DialogContent>
       </Dialog>
     </>
@@ -1864,26 +1871,33 @@ export function ManualImportDialog({
         </AlertDialogContent>
       </AlertDialog>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center">
-                <FileUp className="w-4 h-4 text-interactive" />
+        <DialogContent
+          className="flex flex-col max-w-md max-h-[90vh] p-0 gap-0"
+          onPointerDownOutside={(e) => e.preventDefault()}
+        >
+          <div className="flex-none px-6 pt-6 pb-4">
+            <DialogHeader>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center">
+                  <FileUp className="w-4 h-4 text-interactive" />
+                </div>
               </div>
-            </div>
-            <DialogTitle className="text-base">Add Manual Import</DialogTitle>
-            <DialogDescription className="text-body leading-relaxed">
-              Upload the two required exports for{" "}
-              <span className="text-foreground/80 font-medium">{account.name}</span>, plus any
-              creative files. Files are staged for the analysis pipeline — performance data appears
-              only after you explicitly run analysis from the account's setup screen.
-            </DialogDescription>
-          </DialogHeader>
-          <ManualUploadPanel
-            accountId={account.id}
-            availableAdNames={availableAdNames}
-            onDone={() => handleOpenChange(false)}
-          />
+              <DialogTitle className="text-base">Add Manual Import</DialogTitle>
+              <DialogDescription className="text-body leading-relaxed">
+                Upload the two required exports for{" "}
+                <span className="text-foreground/80 font-medium">{account.name}</span>, plus any
+                creative files. Files are staged for the analysis pipeline — performance data appears
+                only after you explicitly run analysis from the account's setup screen.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6">
+            <ManualUploadPanel
+              accountId={account.id}
+              availableAdNames={availableAdNames}
+              onDone={() => handleOpenChange(false)}
+            />
+          </div>
         </DialogContent>
       </Dialog>
     </>
