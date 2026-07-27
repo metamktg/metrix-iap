@@ -1,1 +1,3 @@
-RLS policy files (Blueprint v2.0 §12) — pending pass, required before any app connects to real data.
+RLS policy files (Blueprint v2.0 §12) — deployed.
+
+`20260709000100_rls_all_tables.sql` is applied by `pnpm --filter @workspace/scripts run migrate:metrix-official` and re-applied on every run (idempotent, unlike `supabase/migrations/` which is checksummed/immutable). It enables RLS on all 22 official tables and defines the security-definer tenancy helpers (`metrix_user_is_client_member`, `metrix_user_is_client_writer`, `metrix_user_in_org`, `metrix_client_id_of_run`) plus the `learning_registry` gate trigger. Coverage is asserted by `artifacts/api-server/src/lib/__tests__/metrixOfficialSecurity.test.ts`.

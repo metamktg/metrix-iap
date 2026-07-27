@@ -443,3 +443,19 @@ drop trigger if exists trg_learning_registry_gate on learning_registry;
 create trigger trg_learning_registry_gate
   before insert or update on learning_registry
   for each row execute function public.metrix_enforce_learning_gate();
+
+-- ---------------------------------------------------------------------------
+-- Migration tracking table (_metrix_migrations, created imperatively by
+-- migrate.ts — not one of the 22 official tables, so it was never covered
+-- above). It carries no client data and no app code ever needs to reach it
+-- via PostgREST, but it defaults to the same anon/authenticated DML grants
+-- as every other public table and RLS was never turned on for it — so the
+-- publishable anon key could read, insert, update, delete, or truncate the
+-- migration ledger. Same hard-401 treatment as the importer schema
+-- (scripts/src/metrix-supabase/schema.sql): enable RLS with no policies and
+-- revoke the default grants. The migrator connects with a superuser/
+-- service-role Postgres URL (BYPASSRLS), so this does not affect it.
+-- ---------------------------------------------------------------------------
+
+alter table if exists public._metrix_migrations enable row level security;
+revoke all on public._metrix_migrations from anon, authenticated;
