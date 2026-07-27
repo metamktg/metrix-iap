@@ -15,6 +15,7 @@
     "smoke:metrix-iap-build": "tsx ./src/smoke-metrix-iap-build.ts",
     "smoke:metrix-iap-tests": "tsx ./src/smoke-metrix-iap-tests.ts",
     "smoke:marketing-build": "tsx ./src/smoke-marketing-build.ts",
+    "smoke:marketing-e2e": "tsx ./src/smoke-marketing-e2e.ts",
     "import:metrix": "tsx ./src/metrix-supabase/import.ts",
     "create:user": "tsx ./src/create-user.ts",
     "mirror:auth-users": "tsx ./src/metrix-official/mirror-auth-users.ts",
