@@ -47,7 +47,6 @@ export function RequestAccessForm() {
       { data: values },
       {
         onSuccess: (data) => {
-          // Pass status to thanks page via query string
           setLocation(`/thanks?status=${data.status}&email=${encodeURIComponent(data.email)}`);
         },
       }
@@ -55,9 +54,9 @@ export function RequestAccessForm() {
   }
 
   return (
-    <div className="mx-card p-6 md:p-8 w-full max-w-lg mx-auto">
-      <div className="mb-6 text-center">
-        <h3 className="text-2xl font-bold text-white mb-2">{COPY.form.headline}</h3>
+    <div className="border border-[var(--mx-border-strong)] bg-black/60 backdrop-blur rounded-2xl p-6 md:p-8 w-full max-w-lg mx-auto">
+      <div className="mb-6">
+        <h3 className="text-xl font-bold text-white mb-1">{COPY.form.headline}</h3>
         <p className="text-[var(--mx-text-muted)] text-sm">{COPY.form.subheadline}</p>
       </div>
 
@@ -73,6 +72,7 @@ export function RequestAccessForm() {
             </Alert>
           )}
 
+          {/* Name — first for conversion */}
           <FormField
             control={form.control}
             name="full_name"
@@ -87,21 +87,23 @@ export function RequestAccessForm() {
             )}
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Work Email</FormLabel>
-                  <FormControl>
-                    <Input type="email" placeholder="jane@agency.com" className="bg-[var(--mx-bg-deep)] border-[var(--mx-border-soft)]" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          {/* Email — second for conversion */}
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Work Email</FormLabel>
+                <FormControl>
+                  <Input type="email" placeholder="jane@agency.com" className="bg-[var(--mx-bg-deep)] border-[var(--mx-border-soft)]" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
+          {/* Phone + Business Type */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               control={form.control}
               name="phone"
@@ -115,9 +117,7 @@ export function RequestAccessForm() {
                 </FormItem>
               )}
             />
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               control={form.control}
               name="business_type"
@@ -140,22 +140,24 @@ export function RequestAccessForm() {
                 </FormItem>
               )}
             />
-
-            <FormField
-              control={form.control}
-              name="industry"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Industry</FormLabel>
-                  <FormControl>
-                    <Input placeholder="E-commerce, SaaS..." className="bg-[var(--mx-bg-deep)] border-[var(--mx-border-soft)]" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </div>
 
+          {/* Industry */}
+          <FormField
+            control={form.control}
+            name="industry"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Industry</FormLabel>
+                <FormControl>
+                  <Input placeholder="E-commerce, SaaS..." className="bg-[var(--mx-bg-deep)] border-[var(--mx-border-soft)]" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Monthly Ad Spend */}
           <FormField
             control={form.control}
             name="avg_monthly_ad_spend"
@@ -180,13 +182,14 @@ export function RequestAccessForm() {
             )}
           />
 
+          {/* Optional links */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               control={form.control}
               name="website"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Website (Optional)</FormLabel>
+                  <FormLabel>Website <span className="text-[var(--mx-text-faint)] font-normal">(Optional)</span></FormLabel>
                   <FormControl>
                     <Input placeholder="https://..." className="bg-[var(--mx-bg-deep)] border-[var(--mx-border-soft)]" {...field} />
                   </FormControl>
@@ -200,7 +203,7 @@ export function RequestAccessForm() {
               name="linkedin"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>LinkedIn (Optional)</FormLabel>
+                  <FormLabel>LinkedIn <span className="text-[var(--mx-text-faint)] font-normal">(Optional)</span></FormLabel>
                   <FormControl>
                     <Input placeholder="https://linkedin.com/..." className="bg-[var(--mx-bg-deep)] border-[var(--mx-border-soft)]" {...field} />
                   </FormControl>

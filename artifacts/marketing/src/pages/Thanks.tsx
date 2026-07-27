@@ -1,10 +1,9 @@
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { CheckCircle2, ArrowRight } from "lucide-react";
 import { COPY, BOOK_DEMO_URL } from "../content";
 import { BrandMark } from "../components/BrandMark";
 
 export default function Thanks() {
-  const [location] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
   const status = searchParams.get("status");
   
@@ -28,12 +27,12 @@ export default function Thanks() {
           <h1 className="text-4xl font-extrabold text-white mb-4">
             {isAlreadyRequested ? COPY.thanks.alreadyRequested : COPY.thanks.headline}
           </h1>
-          <p className="text-xl text-[var(--mx-text-soft)] mb-12 max-w-md mx-auto">
+          <p className="text-lg text-[var(--mx-text-soft)] mb-12 max-w-md mx-auto leading-relaxed">
             {COPY.thanks.message}
           </p>
 
           <div className="bg-black/30 border border-[var(--mx-border-soft)] rounded-xl p-8 text-left mb-12">
-            <h3 className="text-lg font-bold text-white mb-6 uppercase tracking-wider text-center">{COPY.thanks.stepsHeadline}</h3>
+            <h3 className="text-sm font-bold text-white mb-6 uppercase tracking-wider text-center">{COPY.thanks.stepsHeadline}</h3>
             <div className="space-y-6">
               {COPY.thanks.steps.map((step, index) => (
                 <div key={index} className="flex gap-4">
@@ -54,14 +53,14 @@ export default function Thanks() {
               href={BOOK_DEMO_URL} 
               target="_blank" 
               rel="noreferrer" 
-              className="mx-primary-btn px-8 py-4 w-full sm:w-auto text-lg"
+              className="mx-secondary-btn px-8 py-4 w-full sm:w-auto text-base"
             >
               {COPY.form.secondaryButton}
-              <ArrowRight className="w-5 h-5" />
+              <ArrowRight className="w-4 h-4" />
             </a>
             <Link 
               href="/" 
-              className="mx-secondary-btn px-8 py-4 w-full sm:w-auto text-lg"
+              className="mx-secondary-btn px-8 py-4 w-full sm:w-auto text-base"
             >
               Return Home
             </Link>
