@@ -30,9 +30,15 @@ export default function Home() {
       {/* Navbar */}
       <header className="w-full px-6 py-4 flex justify-between items-center mx-topbar fixed top-0 z-50">
         <BrandMark />
-        <div className="flex gap-4 items-center">
+        <div className="flex gap-3 items-center">
           <a href={BOOK_DEMO_URL} target="_blank" rel="noreferrer" className="mx-secondary-btn px-4 py-2 text-sm hidden md:inline-flex">
             {COPY.form.secondaryButton}
+          </a>
+          <a
+            href="/login"
+            className="px-4 py-2 text-sm font-semibold text-[var(--mx-cyan)] border border-[var(--mx-border-strong)] rounded-lg bg-[var(--mx-cyan)]/[0.07] hover:bg-[var(--mx-cyan)]/[0.14] transition-colors"
+          >
+            Log in →
           </a>
         </div>
       </header>

@@ -879,6 +879,10 @@ const PERFORMANCE_CSV_CLASS: Record<string, IapCsvClass> = {
   // Ad-level summary: one row per ad per day, full spend (not privacy-limited).
   // Optional — supplements the required demo + placement exports.
   performance_ad_summary_csv: "ad_summary",
+  // Conversion device: distinct Meta pivot from impression device.
+  // Rows carry only conversion metrics (no spend/impressions) and must be
+  // kept separate to avoid tracking_basis collisions with impression-device rows.
+  performance_conversion_device_csv: "conversion_device",
 };
 
 router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (req, res) => {

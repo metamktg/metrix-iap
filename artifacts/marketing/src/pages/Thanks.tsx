@@ -16,6 +16,12 @@ export default function Thanks() {
         <Link href="/" className="cursor-pointer">
           <BrandMark />
         </Link>
+        <a
+          href="/login"
+          className="px-4 py-2 text-sm font-semibold text-[var(--mx-cyan)] border border-[var(--mx-border-strong)] rounded-lg bg-[var(--mx-cyan)]/[0.07] hover:bg-[var(--mx-cyan)]/[0.14] transition-colors"
+        >
+          Log in →
+        </a>
       </header>
 
       <main className="flex-1 flex items-center justify-center w-full px-6 py-32">

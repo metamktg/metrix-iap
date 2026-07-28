@@ -16,6 +16,7 @@ import {
   BASE_METRICS,
   OPTIONAL_METRICS,
   CORE_BASE_METRICS,
+  CREATIVE_METADATA_COLUMNS,
   headerMatchesColumn,
   slugifyColumn,
   findColumnInHeader,
@@ -40,6 +41,12 @@ export type IapCsvRow = {
   base: Record<string, number | string | null>;
   /** Ecommerce/Service/App metrics observed in this file's header, keyed by slug. Absent metrics are simply not keys here — never fabricated as 0/null. */
   extra: Record<string, number | string | null>;
+  /**
+   * Ad creative metadata columns (string-valued), keyed by column name.
+   * Only populated for ad_summary rows when those columns are present.
+   * Never fabricated — absent columns are not included.
+   */
+  creativeMetadata?: Record<string, string>;
 };
 
 /**
@@ -443,6 +450,36 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
   // Optional metrics: use simple exact match (they are truly optional)
   const optionalMetricsPresent = OPTIONAL_METRICS.filter((col) => colIndex.has(col));
 
+  // Creative metadata columns (only for ad_summary): use same resolution cascade
+  // as breakdown columns so aliases like "body text" → "Ad creative body text" work.
+  const isAdSummary = csvClass === "ad_summary";
+  const creativeMetaIdx = new Map<string, number>(); // canonical → rawHeader index
+  if (isAdSummary) {
+    for (const col of CREATIVE_METADATA_COLUMNS) {
+      const match = findColumnInHeader(headerStrings, col);
+      if (match) {
+        const idx = rawHeader.findIndex((h) => h.trim() === match.headerValue);
+        creativeMetaIdx.set(col, idx);
+        claimedHeaderValues.add(match.headerValue);
+        if (match.via !== "exact") {
+          columnMappings[col] = match;
+          warnings.push(
+            `Creative metadata column "${col}" auto-matched from "${match.headerValue}" (via ${match.via} match).`,
+          );
+        }
+        summaryMap.set(col, {
+          canonical: col,
+          foundAs: match.headerValue,
+          confidence: match.confidence,
+          method: match.method,
+          tier: matchTier(match),
+          isRequired: false,
+        });
+      }
+      // Creative metadata columns are truly optional — do NOT add to missingColumns when absent.
+    }
+  }
+
   // ── Parse rows ────────────────────────────────────────────────────────
   const rows: IapCsvRow[] = [];
   for (let li = 1; li < lines.length; li++) {
@@ -486,7 +523,19 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
       extra[slugifyColumn(col)] = parseNumericCell(idx !== undefined ? cells[idx] : undefined);
     }
 
-    rows.push({ breakdowns, base, extra });
+    // ── Creative metadata (ad_summary only) ─────────────────────────────
+    let creativeMetadata: Record<string, string> | undefined;
+    if (isAdSummary && creativeMetaIdx.size > 0) {
+      creativeMetadata = {};
+      for (const [col, idx] of creativeMetaIdx) {
+        const raw = cells[idx];
+        const val = raw !== undefined && raw.trim() !== "" ? raw.trim() : "";
+        if (val) creativeMetadata[col] = val;
+      }
+      if (Object.keys(creativeMetadata).length === 0) creativeMetadata = undefined;
+    }
+
+    rows.push({ breakdowns, base, extra, ...(creativeMetadata ? { creativeMetadata } : {}) });
   }
 
   if (rows.length === 0) {

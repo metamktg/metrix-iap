@@ -589,12 +589,13 @@ export async function startManualAnalysis(
     .from("manual_imports")
     .select("id, filename, content, kind")
     .eq("account_id", accountId)
-    .in("kind", ["performance_demo_csv", "performance_placement_csv", "performance_ad_summary_csv"]);
+    .in("kind", ["performance_demo_csv", "performance_placement_csv", "performance_ad_summary_csv", "performance_conversion_device_csv"]);
   if (importsErr) throw new Error(importsErr.message);
 
   const demoImports = (imports ?? []).filter((i) => i["kind"] === "performance_demo_csv");
   const placementImports = (imports ?? []).filter((i) => i["kind"] === "performance_placement_csv");
   const summaryImports = (imports ?? []).filter((i) => i["kind"] === "performance_ad_summary_csv");
+  const conversionDeviceImports = (imports ?? []).filter((i) => i["kind"] === "performance_conversion_device_csv");
   if (demoImports.length === 0 || placementImports.length === 0) {
     const missing = [
       demoImports.length === 0 ? "Demographics export" : null,
@@ -684,11 +685,33 @@ export async function startManualAnalysis(
         }
       }
 
+      // Optional: conversion device export (one row per ad/device per day, conversion-only metrics).
+      // These rows carry only conversion data (no spend/impressions) and are stored in
+      // device_performance with tracking_basis='conversion' and device_kind='conversion'.
+      if (conversionDeviceImports.length > 0) {
+        await updateProgress(runId, 42, "Parsing conversion device export");
+      }
+      const conversionDeviceRows: IapCsvRow[] = [];
+      for (const imp of conversionDeviceImports) {
+        const text = decodeStagedContent(String(imp["content"]));
+        try {
+          const result = parseIapCsv(text, "conversion_device");
+          conversionDeviceRows.push(...result.rows);
+          for (const w of result.warnings) {
+            allCsvWarnings.push(`[Conversion Device "${imp["filename"]}"] ${w}`);
+          }
+        } catch (err) {
+          const detail = err instanceof IapCsvFormatError ? err.message : String(err);
+          throw new AnalysisError(`Conversion Device file "${imp["filename"]}": ${detail}`, 422);
+        }
+      }
+
       await updateProgress(runId, 50, "Building performance aggregates");
       const allDates = [
         ...demoRows.map((r) => r.breakdowns["Date"]!),
         ...placementRows.map((r) => r.breakdowns["Date"]!),
         ...summaryRows.map((r) => r.breakdowns["Date"]!),
+        ...conversionDeviceRows.map((r) => r.breakdowns["Date"]!),
       ];
       const maxDate = allDates.reduce((max, d) => (d > max ? d : max), allDates[0]!);
 
@@ -702,10 +725,12 @@ export async function startManualAnalysis(
         );
       }
 
+      const scopedConversionDevice = conversionDeviceRows.filter((r) => withinRange(r.breakdowns["Date"]!, dateRange, maxDate));
       const scopedDates = [
         ...scopedDemo.map((r) => r.breakdowns["Date"]!),
         ...scopedPlacement.map((r) => r.breakdowns["Date"]!),
         ...scopedSummary.map((r) => r.breakdowns["Date"]!),
+        ...scopedConversionDevice.map((r) => r.breakdowns["Date"]!),
       ];
       const dateStart = scopedDates.reduce((min, d) => (d < min ? d : min), scopedDates[0]!);
       const dateEnd = scopedDates.reduce((max, d) => (d > max ? d : max), scopedDates[0]!);
@@ -741,6 +766,10 @@ export async function startManualAnalysis(
         string,
         AggBucket & { campaign: string; adSet: string; adName: string; date: string }
       >();
+      // Creative metadata: collect the most-recently-seen metadata per ad name.
+      // Same ad can appear across multiple rows (different dates) — metadata should
+      // be consistent, so we just take the first non-empty value per column.
+      const adCreativeMetadata = new Map<string, Record<string, string>>();
       for (const row of scopedSummary) {
         const campaign = row.breakdowns["Campaign name"] ?? "";
         const adSet = row.breakdowns["Ad set name"] ?? "";
@@ -751,6 +780,14 @@ export async function startManualAnalysis(
           summaryAdBuckets.set(key, { ...emptyBucket(), campaign, adSet, adName, date });
         }
         accumulate(summaryAdBuckets.get(key)!, row);
+        // Collect creative metadata (merge, keeping first non-empty value per column)
+        if (row.creativeMetadata && Object.keys(row.creativeMetadata).length > 0) {
+          const existing = adCreativeMetadata.get(adName) ?? {};
+          for (const [col, val] of Object.entries(row.creativeMetadata)) {
+            if (!existing[col] && val) existing[col] = val;
+          }
+          adCreativeMetadata.set(adName, existing);
+        }
       }
 
       // ── Ad-level rows (ad_performance): aggregate the placement export
@@ -872,24 +909,28 @@ export async function startManualAnalysis(
       };
 
       await updateProgress(runId, 68, "Writing ad performance rows");
-      const adRows = Array.from(adBuckets.values()).map((b) => ({
-        account_id: accountId,
-        campaign_name: b.campaign,
-        ad_set_name: b.adSet || null,
-        ad_name: b.adName,
-        result_type: b.resultType,
-        date_start: b.date,
-        date_end: b.date,
-        spend: b.spend,
-        impressions: b.impressions,
-        reach: b.reach,
-        clicks_all: b.clicksAll,
-        link_clicks: b.linkClicks,
-        results: b.results,
-        ...derivedRates(b.spend, b.impressions, b.linkClicks, b.results),
-        manual_analysis_run_id: runId,
-        extra_metrics: Object.keys(b.extra).length > 0 ? b.extra : null,
-      }));
+      const adRows = Array.from(adBuckets.values()).map((b) => {
+        const creativeMeta = adCreativeMetadata.get(b.adName);
+        return {
+          account_id: accountId,
+          campaign_name: b.campaign,
+          ad_set_name: b.adSet || null,
+          ad_name: b.adName,
+          result_type: b.resultType,
+          date_start: b.date,
+          date_end: b.date,
+          spend: b.spend,
+          impressions: b.impressions,
+          reach: b.reach,
+          clicks_all: b.clicksAll,
+          link_clicks: b.linkClicks,
+          results: b.results,
+          ...derivedRates(b.spend, b.impressions, b.linkClicks, b.results),
+          manual_analysis_run_id: runId,
+          extra_metrics: Object.keys(b.extra).length > 0 ? b.extra : null,
+          ad_creative_metadata: creativeMeta && Object.keys(creativeMeta).length > 0 ? creativeMeta : null,
+        };
+      });
       await insertChunked("ad_performance", adRows);
 
       await updateProgress(runId, 78, "Writing concept performance");
@@ -1229,11 +1270,43 @@ export async function startManualAnalysis(
         checkouts_initiated: b.checkoutsInitiated,
         purchases: b.purchases,
         tracking_basis: trackingBasis(b),
+        device_kind: "impression",
         extra_metrics: Object.keys(b.extra).length > 0 ? b.extra : null,
       }));
-      await insertChunked("device_performance", deviceRowsOut);
 
-      const totalRows = adRows.length + demographicRows.length + placementRowsOut.length + platformRowsOut.length + deviceRowsOut.length;
+      // ── Conversion-device rows: aggregate by device per day ───────────────
+      // These rows have no spend/impressions — they carry only conversion counts.
+      // Stored with tracking_basis='conversion' and device_kind='conversion' so
+      // they are distinguishable from impression-device rows.
+      const convDeviceBuckets = new Map<string, AggBucket & { device: string; date: string }>();
+      for (const row of scopedConversionDevice) {
+        const date = row.breakdowns["Date"]!;
+        const device = row.breakdowns["Conversion device"]!;
+        const dKey = [device, date].join("\u0001");
+        if (!convDeviceBuckets.has(dKey)) convDeviceBuckets.set(dKey, { ...emptyBucket(), device, date });
+        accumulate(convDeviceBuckets.get(dKey)!, row);
+      }
+      const convDeviceRowsOut = Array.from(convDeviceBuckets.values()).map((b) => ({
+        account_id: accountId,
+        device: b.device,
+        date_start: b.date,
+        date_end: b.date,
+        spend: null,
+        impressions: null,
+        results: b.results,
+        cpa: null,
+        link_clicks: b.linkClicks,
+        adds_to_cart: b.addsToCart,
+        checkouts_initiated: b.checkoutsInitiated,
+        purchases: b.purchases,
+        tracking_basis: "conversion",
+        device_kind: "conversion",
+        extra_metrics: Object.keys(b.extra).length > 0 ? b.extra : null,
+      }));
+
+      await insertChunked("device_performance", [...deviceRowsOut, ...convDeviceRowsOut]);
+
+      const totalRows = adRows.length + demographicRows.length + placementRowsOut.length + platformRowsOut.length + deviceRowsOut.length + convDeviceRowsOut.length;
 
       await updateProgress(runId, 97, "Finalizing");
       await supabase

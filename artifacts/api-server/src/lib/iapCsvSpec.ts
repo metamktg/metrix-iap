@@ -9,6 +9,19 @@
 // Meta pivot export column headers verbatim (only the {ACCOUNT_CURRENCY}
 // placeholder in "Amount spent" varies per account currency).
 
+/**
+ * Ad creative metadata columns: string-valued fields from the Ad Summary export
+ * that carry creative content rather than numeric performance metrics.
+ * These are accepted in the ad_summary slot and stored in ad_creative_metadata.
+ */
+export const CREATIVE_METADATA_COLUMNS: readonly string[] = [
+  "Ad creative body text",
+  "Ad creative headline",
+  "Ad creative call to action type",
+  "Ad creative link destination",
+  "Ad creative link caption",
+];
+
 export const BASE_METRICS: readonly string[] = [
   "Amount spent ({ACCOUNT_CURRENCY})",
   "Reach",
@@ -176,6 +189,20 @@ export const DEVICE_PLACEMENT_BREAKDOWN_COLUMNS: readonly string[] = [
 ];
 
 /**
+ * Conversion device breakdown columns: same as device/placement but uses
+ * "Conversion device" (the device where the conversion happened) rather than
+ * "Impression device" (where the ad was shown). These rows carry only conversion
+ * metrics — no spend or impressions — and must be kept in a separate slot to
+ * avoid tracking_basis collisions with impression-device rows.
+ */
+export const CONVERSION_DEVICE_BREAKDOWN_COLUMNS: readonly string[] = [
+  "Date",
+  "Campaign name",
+  "Ad name",
+  "Conversion device",
+];
+
+/**
  * Ad-level summary breakdown columns: no demographic (Gender/Age) or
  * device/placement breakdown dimensions. One row per ad per day — the only
  * format from Meta that carries full spend unaffected by iOS privacy limits.
@@ -190,10 +217,10 @@ export const AD_SUMMARY_BREAKDOWN_COLUMNS: readonly string[] = [
   "Ad name",
 ];
 
-export type IapCsvClass = "demographic" | "device_placement" | "ad_summary";
+export type IapCsvClass = "demographic" | "device_placement" | "ad_summary" | "conversion_device";
 
 export type IapCsvClassSpec = {
-  className: "IAP_DEMOGRAPHIC_TEXT_SIGNAL" | "IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL" | "IAP_AD_SUMMARY";
+  className: "IAP_DEMOGRAPHIC_TEXT_SIGNAL" | "IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL" | "IAP_AD_SUMMARY" | "IAP_CONVERSION_DEVICE_SIGNAL";
   breakdownColumns: readonly string[];
   /** Breakdown columns that must have a value on every row (Date, Ad name are load-bearing). */
   requiredBreakdownColumns: readonly string[];
@@ -215,6 +242,11 @@ export const IAP_CSV_CLASS_SPECS: Record<IapCsvClass, IapCsvClassSpec> = {
     breakdownColumns: AD_SUMMARY_BREAKDOWN_COLUMNS,
     // Ad name is required; Campaign name used for bucketing but tolerated blank
     requiredBreakdownColumns: ["Date", "Ad name"],
+  },
+  conversion_device: {
+    className: "IAP_CONVERSION_DEVICE_SIGNAL",
+    breakdownColumns: CONVERSION_DEVICE_BREAKDOWN_COLUMNS,
+    requiredBreakdownColumns: ["Date", "Campaign name", "Ad name", "Conversion device"],
   },
 };
 
@@ -331,6 +363,39 @@ export const COLUMN_ALIASES: Record<string, string> = {
   "ad placement": "Placement",
   "placement type": "Placement",
 
+  // ── Conversion device breakdown ───────────────────────────────────────
+  // Only appears in the conversion-device pivot (distinct from impression device)
+  "conv. device": "Conversion device",
+  "converting device": "Conversion device",
+  "device (conversion)": "Conversion device",
+
+  // ── Ad creative metadata columns ──────────────────────────────────────
+  // Body text / description variants
+  "body text": "Ad creative body text",
+  "ad body text": "Ad creative body text",
+  "creative body text": "Ad creative body text",
+  "description": "Ad creative body text",
+  "ad description": "Ad creative body text",
+  "creative description": "Ad creative body text",
+  // Headline variants
+  "headline": "Ad creative headline",
+  "ad headline": "Ad creative headline",
+  "creative headline": "Ad creative headline",
+  // Call to action variants
+  "call to action": "Ad creative call to action type",
+  "cta": "Ad creative call to action type",
+  "call to action type": "Ad creative call to action type",
+  "ad cta": "Ad creative call to action type",
+  // Link destination / website URL
+  "website url": "Ad creative link destination",
+  "landing page url": "Ad creative link destination",
+  "link destination": "Ad creative link destination",
+  "destination url": "Ad creative link destination",
+  // Link caption
+  "link caption": "Ad creative link caption",
+  "caption": "Ad creative link caption",
+  "ad caption": "Ad creative link caption",
+
   // ── Frequency ────────────────────────────────────────────────────────
   "avg. frequency": "Frequency",
   "average frequency": "Frequency",
@@ -359,6 +424,34 @@ export const COLUMN_ALIASES: Record<string, string> = {
   "video p75": "Video plays at 75%",
   "video p95": "Video plays at 95%",
   "video p100": "Video plays at 100%",
+};
+
+/**
+ * Signal weights for each canonical column used in the Confidence Report grade.
+ * Weights reflect how much each column contributes to signal analysis quality.
+ * Columns not listed here have weight 0 (cosmetic / supplementary).
+ * All listed weights must sum to 1.0.
+ */
+export const SIGNAL_WEIGHTS: Record<string, number> = {
+  "Amount spent ({ACCOUNT_CURRENCY})": 0.20,
+  "Results": 0.18,
+  "Impressions": 0.10,
+  "CTR (link click-through rate)": 0.07,
+  "Link clicks": 0.07,
+  "Reach": 0.06,
+  "CPM (cost per 1,000 impressions)": 0.05,
+  "Cost per result": 0.05,
+  "Video average play time": 0.03,
+  "ThruPlays": 0.03,
+  "Landing page views": 0.03,
+  "Clicks (all)": 0.02,
+  "CTR (all)": 0.02,
+  "Frequency": 0.02,
+  "Result type": 0.02,
+  "Ad creative body text": 0.01,
+  "Ad creative headline": 0.01,
+  "Conversion device": 0.01,
+  // total = 1.00
 };
 
 /** How a CSV header was resolved to a canonical column name. */
@@ -547,6 +640,8 @@ export const CSV_CLASS_SIGNATURE_COLUMNS: Record<IapCsvClass, readonly string[]>
   // ad_summary has no exclusive signature columns — it is the absence of the
   // above that identifies it (and it is always uploaded via its own kind slot).
   ad_summary: [],
+  // conversion_device is identified by the exclusive "Conversion device" column
+  conversion_device: ["Conversion device"],
 };
 
 /**
@@ -567,7 +662,7 @@ export function detectCsvClassMismatch(
   expectedClass: IapCsvClass,
 ): string | null {
   if (expectedClass === "ad_summary") {
-    // ad_summary must NOT contain demographic or device/placement exclusive columns.
+    // ad_summary must NOT contain demographic, device/placement, or conversion-device exclusive columns.
     const demoMatched = CSV_CLASS_SIGNATURE_COLUMNS.demographic.filter(
       (col) => findColumnInHeader(headers, col) !== null,
     );
@@ -588,6 +683,42 @@ export function detectCsvClassMismatch(
         `This file looks like a Device/Placement pivot export — it contains ${quotedCols}, ` +
         `which only appears in that pivot type. ` +
         `Upload it as the Device/Placement CSV instead, and provide an ad-level summary export here.`
+      );
+    }
+    const convMatched = CSV_CLASS_SIGNATURE_COLUMNS.conversion_device.filter(
+      (col) => findColumnInHeader(headers, col) !== null,
+    );
+    if (convMatched.length > 0) {
+      const quotedCols = convMatched.map((c) => `"${c}"`).join(", ");
+      return (
+        `This file looks like a Conversion Device pivot export — it contains ${quotedCols}, ` +
+        `which only appears in that pivot type. ` +
+        `Upload it as the Conversion Device CSV instead, and provide an ad-level summary export here.`
+      );
+    }
+    return null;
+  }
+
+  if (expectedClass === "conversion_device") {
+    // conversion_device must NOT contain demographic or device/placement exclusive columns
+    const demoMatched = CSV_CLASS_SIGNATURE_COLUMNS.demographic.filter(
+      (col) => findColumnInHeader(headers, col) !== null,
+    );
+    if (demoMatched.length > 0) {
+      const quotedCols = demoMatched.map((c) => `"${c}"`).join(", ");
+      return (
+        `This file looks like a Demographic pivot export — it contains ${quotedCols}. ` +
+        `Upload it as the Demographics CSV instead.`
+      );
+    }
+    const deviceMatched = CSV_CLASS_SIGNATURE_COLUMNS.device_placement.filter(
+      (col) => findColumnInHeader(headers, col) !== null,
+    );
+    if (deviceMatched.length > 0) {
+      const quotedCols = deviceMatched.map((c) => `"${c}"`).join(", ");
+      return (
+        `This file looks like a Device/Placement pivot export — it contains ${quotedCols}. ` +
+        `Upload it as the Placements CSV instead.`
       );
     }
     return null;
@@ -664,7 +795,7 @@ function buildSampleRow(breakdowns: Record<string, string>, baseValues: Record<s
  */
 export function detectCsvClassFromHeaders(headers: string[]): IapCsvClass | null {
   // Check classes that have exclusive signature columns first.
-  for (const cls of ["demographic", "device_placement"] as const) {
+  for (const cls of ["demographic", "device_placement", "conversion_device"] as const) {
     const signatures = CSV_CLASS_SIGNATURE_COLUMNS[cls];
     if (signatures.some((col) => findColumnInHeader(headers, col) !== null)) {
       return cls;
@@ -708,6 +839,7 @@ const CSV_CLASS_LABEL: Record<IapCsvClass, string> = {
   demographic: "Demographic (Gender/Age)",
   device_placement: "Device/Placement (Impression device, Platform, Placement)",
   ad_summary: "Ad Summary (ad-level, no demographic or placement breakdown)",
+  conversion_device: "Conversion Device (conversion-based device breakdown, no spend/impressions)",
 };
 
 /** Human-readable label for a CSV class, for use in error messages. */
@@ -718,10 +850,18 @@ export function iapCsvClassLabel(cls: IapCsvClass): string {
 /** Builds the user-facing format spec (columns + a valid sample CSV) for one CSV class. */
 export function buildIapCsvClassFormat(csvClass: IapCsvClass): IapCsvClassFormat {
   const spec = IAP_CSV_CLASS_SPECS[csvClass];
-  const header = [...spec.breakdownColumns, ...BASE_METRICS.map(resolveCurrencyColumn)];
-
   const isDemo = csvClass === "demographic";
   const isSummary = csvClass === "ad_summary";
+  const isConversion = csvClass === "conversion_device";
+
+  // For conversion_device, only breakdown + conversion metrics (no spend/impressions columns)
+  // For ad_summary, include creative metadata columns in addition to base metrics
+  const CONVERSION_METRIC_COLS = ["Results", "Result type", "Cost per result"] as const;
+  const baseMetricCols = isConversion ? [] : BASE_METRICS.map(resolveCurrencyColumn);
+  const conversionMetricCols = isConversion ? [...CONVERSION_METRIC_COLS] : [];
+  const creativeMeta = isSummary ? CREATIVE_METADATA_COLUMNS : [];
+  const header = [...spec.breakdownColumns, ...baseMetricCols, ...conversionMetricCols, ...creativeMeta];
+
   const commonBreakdowns: Record<string, string> = {
     Date: "2026-06-01",
     "Campaign ID": "6001",
@@ -735,62 +875,106 @@ export function buildIapCsvClassFormat(csvClass: IapCsvClass): IapCsvClassFormat
     ? { ...commonBreakdowns, Gender: "female", Age: "25-34", Text: "" }
     : isSummary
     ? { ...commonBreakdowns }
+    : isConversion
+    ? { Date: "2026-06-01", "Campaign name": "Prospecting - Broad", "Ad name": "UGC_Testimonial_v1", "Conversion device": "iphone" }
     : { ...commonBreakdowns, "Impression device": "iphone", Platform: "facebook", Placement: "feed" };
   const breakdownSample2: Record<string, string> = isDemo
     ? { ...breakdownSample1, Gender: "male", Age: "35-44" }
     : isSummary
     ? { ...commonBreakdowns, Date: "2026-06-02" }
+    : isConversion
+    ? { Date: "2026-06-01", "Campaign name": "Prospecting - Broad", "Ad name": "UGC_Testimonial_v1", "Conversion device": "android_smartphone" }
     : { ...breakdownSample1, "Impression device": "android_smartphone", Platform: "instagram", Placement: "story" };
 
   const baseSample1: Record<string, string> = {};
   const baseSample2: Record<string, string> = {};
-  for (const col of BASE_METRICS) {
-    const label = resolveCurrencyColumn(col);
-    if (col === "Amount spent ({ACCOUNT_CURRENCY})") {
-      baseSample1[label] = "42.50";
-      baseSample2[label] = "55.10";
-    } else if (col === "Result type") {
-      baseSample1[label] = "Purchases";
-      baseSample2[label] = "Purchases";
-    } else if (col === "Result value type") {
-      baseSample1[label] = "";
-      baseSample2[label] = "";
-    } else if (col === "Impressions") {
-      baseSample1[label] = "5100";
-      baseSample2[label] = "6200";
-    } else if (col === "Reach") {
-      baseSample1[label] = "4800";
-      baseSample2[label] = "5850";
-    } else if (col === "Link clicks") {
-      baseSample1[label] = "180";
-      baseSample2[label] = "210";
-    } else if (col === "Clicks (all)") {
-      baseSample1[label] = "205";
-      baseSample2[label] = "240";
-    } else if (col === "Results") {
-      baseSample1[label] = "3";
-      baseSample2[label] = "5";
-    } else {
-      baseSample1[label] = "";
-      baseSample2[label] = "";
+
+  if (!isConversion) {
+    for (const col of BASE_METRICS) {
+      const label = resolveCurrencyColumn(col);
+      if (col === "Amount spent ({ACCOUNT_CURRENCY})") {
+        baseSample1[label] = "42.50";
+        baseSample2[label] = "55.10";
+      } else if (col === "Result type") {
+        baseSample1[label] = "Purchases";
+        baseSample2[label] = "Purchases";
+      } else if (col === "Result value type") {
+        baseSample1[label] = "";
+        baseSample2[label] = "";
+      } else if (col === "Impressions") {
+        baseSample1[label] = "5100";
+        baseSample2[label] = "6200";
+      } else if (col === "Reach") {
+        baseSample1[label] = "4800";
+        baseSample2[label] = "5850";
+      } else if (col === "Link clicks") {
+        baseSample1[label] = "180";
+        baseSample2[label] = "210";
+      } else if (col === "Clicks (all)") {
+        baseSample1[label] = "205";
+        baseSample2[label] = "240";
+      } else if (col === "Results") {
+        baseSample1[label] = "3";
+        baseSample2[label] = "5";
+      } else {
+        baseSample1[label] = "";
+        baseSample2[label] = "";
+      }
     }
   }
 
+  // For conversion_device, add conversion-only metric samples
+  const conversionSample1: Record<string, string> = {};
+  const conversionSample2: Record<string, string> = {};
+  if (isConversion) {
+    conversionSample1["Results"] = "3";
+    conversionSample2["Results"] = "5";
+    conversionSample1["Result type"] = "Purchases";
+    conversionSample2["Result type"] = "Purchases";
+  }
+
+  // Creative metadata samples for ad_summary
+  const creativeSample1: Record<string, string> = {};
+  const creativeSample2: Record<string, string> = {};
+  if (isSummary) {
+    creativeSample1["Ad creative body text"] = "Try it risk-free today.";
+    creativeSample2["Ad creative body text"] = "Limited time offer.";
+    creativeSample1["Ad creative headline"] = "The #1 App for Results";
+    creativeSample2["Ad creative headline"] = "Start Your Free Trial";
+    creativeSample1["Ad creative call to action type"] = "INSTALL_MOBILE_APP";
+    creativeSample2["Ad creative call to action type"] = "INSTALL_MOBILE_APP";
+    creativeSample1["Ad creative link destination"] = "https://example.com/lp1";
+    creativeSample2["Ad creative link destination"] = "https://example.com/lp2";
+    creativeSample1["Ad creative link caption"] = "";
+    creativeSample2["Ad creative link caption"] = "";
+  }
+
+  const combined1 = { ...baseSample1, ...conversionSample1, ...creativeSample1 };
+  const combined2 = { ...baseSample2, ...conversionSample2, ...creativeSample2 };
+
   const rows = [
-    buildSampleRow(breakdownSample1, baseSample1),
-    buildSampleRow(breakdownSample2, baseSample2),
+    buildSampleRow(breakdownSample1, combined1),
+    buildSampleRow(breakdownSample2, combined2),
   ];
   const sampleCsv = [header.join(","), ...rows.map((r) => r.map((c) => (c.includes(",") ? `"${c}"` : c)).join(","))].join("\n");
+
+  const metricGroups: IapCsvMetricGroup[] = isConversion
+    ? [
+        { name: "Conversion Metrics", required: true, columns: ["Results", "Result type", "Cost per result"] },
+        { name: "App (optional)", required: false, columns: APP_METRICS },
+      ]
+    : [
+        { name: "Base", required: true, columns: BASE_METRICS.map(resolveCurrencyColumn) },
+        ...(isSummary ? [{ name: "Ad Creative Metadata", required: false, columns: CREATIVE_METADATA_COLUMNS as readonly string[] }] : []),
+        { name: "Ecommerce", required: false, columns: ECOMMERCE_METRICS },
+        { name: "Service", required: false, columns: SERVICE_METRICS },
+        { name: "App", required: false, columns: APP_METRICS },
+      ];
 
   return {
     report_name: spec.className,
     breakdown_columns: spec.breakdownColumns,
-    metric_groups: [
-      { name: "Base", required: true, columns: BASE_METRICS.map(resolveCurrencyColumn) },
-      { name: "Ecommerce", required: false, columns: ECOMMERCE_METRICS },
-      { name: "Service", required: false, columns: SERVICE_METRICS },
-      { name: "App", required: false, columns: APP_METRICS },
-    ],
+    metric_groups: metricGroups,
     sample_csv: sampleCsv,
   };
 }

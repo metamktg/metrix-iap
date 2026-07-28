@@ -276,7 +276,7 @@ function stageManualImportWithProgress(
 }
 
 const CSV_SLOTS: {
-  kind: "performance_demo_csv" | "performance_placement_csv" | "performance_ad_summary_csv";
+  kind: "performance_demo_csv" | "performance_placement_csv" | "performance_ad_summary_csv" | "performance_conversion_device_csv";
   csvClass: IapCsvClassKey;
   title: string;
   desc: string;
@@ -299,6 +299,13 @@ const CSV_SLOTS: {
     csvClass: "ad_summary",
     title: "Ad Summary CSV",
     desc: "Ad-level export with no breakdown (one row per ad per day). Provides full spend unaffected by iOS privacy limits — fixes underreported spend totals from the Demographics CSV.",
+    optional: true,
+  },
+  {
+    kind: "performance_conversion_device_csv",
+    csvClass: "conversion_device",
+    title: "Conversion Device CSV",
+    desc: "Conversion Device pivot export from Meta Ads Manager. Rows carry only conversion metrics (no spend/impressions). Kept separate from the Placements CSV to avoid data collisions.",
     optional: true,
   },
 ];
@@ -488,7 +495,7 @@ function CsvSlotUpload({
   onMismatch,
 }: {
   accountId: string;
-  kind: "performance_demo_csv" | "performance_placement_csv" | "performance_ad_summary_csv";
+  kind: "performance_demo_csv" | "performance_placement_csv" | "performance_ad_summary_csv" | "performance_conversion_device_csv";
   csvClass: IapCsvClassKey;
   title: string;
   desc: string;
@@ -1408,6 +1415,7 @@ export function ManualUploadPanel({
   const demoImport = imports.find((i) => i.kind === "performance_demo_csv") ?? null;
   const placementImport = imports.find((i) => i.kind === "performance_placement_csv") ?? null;
   const summaryImport = imports.find((i) => i.kind === "performance_ad_summary_csv") ?? null;
+  const conversionDeviceImport = imports.find((i) => i.kind === "performance_conversion_device_csv") ?? null;
   const creativeAssets = imports.filter((i) => i.kind === "creative_asset");
   const guessedImports = guessedCreativeImports(imports);
   const bothRequiredStaged = Boolean(demoImport && placementImport);
@@ -1456,6 +1464,12 @@ export function ManualUploadPanel({
               <div className="flex items-center gap-2 text-caption">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                 <span className="text-foreground/80 truncate">Ad Summary — {summaryImport.filename}</span>
+              </div>
+            )}
+            {conversionDeviceImport && (
+              <div className="flex items-center gap-2 text-caption">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span className="text-foreground/80 truncate">Conversion Device — {conversionDeviceImport.filename}</span>
               </div>
             )}
             {creativeAssets.length > 0 ? (
@@ -1562,7 +1576,9 @@ export function ManualUploadPanel({
               ? demoImport
               : slot.kind === "performance_placement_csv"
               ? placementImport
-              : summaryImport
+              : slot.kind === "performance_ad_summary_csv"
+              ? summaryImport
+              : conversionDeviceImport
           }
           onStaged={() => { setHighlightSlot(null); refresh(); }}
           onRemoved={refresh}

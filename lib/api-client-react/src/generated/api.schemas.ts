@@ -391,6 +391,7 @@ export const ManualImportInputKind = {
   performance_demo_csv: 'performance_demo_csv',
   performance_placement_csv: 'performance_placement_csv',
   performance_ad_summary_csv: 'performance_ad_summary_csv',
+  performance_conversion_device_csv: 'performance_conversion_device_csv',
   creative_asset: 'creative_asset',
 } as const;
 
@@ -493,6 +494,7 @@ export const ManualImportKind = {
   performance_demo_csv: 'performance_demo_csv',
   performance_placement_csv: 'performance_placement_csv',
   performance_ad_summary_csv: 'performance_ad_summary_csv',
+  performance_conversion_device_csv: 'performance_conversion_device_csv',
   creative_asset: 'creative_asset',
 } as const;
 
@@ -584,6 +586,8 @@ export interface ManualPerformanceCsvFormat {
   demographic: IapCsvClassFormat;
   device_placement: IapCsvClassFormat;
   ad_summary: IapCsvClassFormat;
+  /** Format spec for the optional Conversion Device pivot export (conversion-only metrics, no spend/impressions). Upload to the performance_conversion_device_csv slot. */
+  conversion_device?: IapCsvClassFormat;
   /** Known accepted column name variants for the most commonly misnamed columns, derived from the server COLUMN_ALIASES map. Collapsed reference guide for the upload UI. */
   column_aliases: ColumnAliasEntry[];
 }
