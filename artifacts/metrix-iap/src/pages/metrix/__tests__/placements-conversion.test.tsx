@@ -34,7 +34,7 @@ import { PlacementsView } from "../analysis/PlacementsView";
 const SESSION_KEY = "metrix_active_account_v1";
 
 function select(adAccountId: string) {
-  sessionStorage.setItem(SESSION_KEY, JSON.stringify({ type: "ad_account", adAccountId }));
+  localStorage.setItem(SESSION_KEY, JSON.stringify({ type: "ad_account", adAccountId }));
 }
 
 function renderView() {
@@ -57,6 +57,7 @@ function renderView() {
 beforeEach(() => {
   cleanup();
   sessionStorage.clear();
+  localStorage.clear();
   window.history.replaceState({}, "", "/");
 });
 
@@ -99,9 +100,12 @@ describe("PlacementsView · Bookster (delivery-based, unchanged)", () => {
   it("still renders the V3/C4E delivery sections", () => {
     select("bookster");
     renderView();
-    expect(screen.getByText("V3 placement signal")).toBeTruthy();
-    expect(screen.getByText("C4E placement signal")).toBeTruthy();
+    // Current view copy: a "Spend by placement" section plus a combined
+    // V3 + C4E placement table with a per-row drilldown affordance.
     expect(screen.getByText("Spend by placement")).toBeTruthy();
+    expect(
+      screen.getAllByText(/V3 rows? \+ .* C4E rows?/).length
+    ).toBeGreaterThan(0);
     expect(screen.queryByText("No placement signal")).toBeNull();
   });
 });

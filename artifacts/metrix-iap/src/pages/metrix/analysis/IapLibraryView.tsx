@@ -25,7 +25,7 @@ import {
   LIBRARY_METRIC_STORAGE_KEY, LIBRARY_DEFAULT_METRIC_IDS,
 } from "@/lib/data/metricsCatalog";
 import {
-  ModuleHeader, ScopeBanner, ModuleTabs, ModuleScopeGate, PendingState, FlowCrumb, LoopAction, useFromParam,
+  ModuleHeader, ScopeBanner, ModuleTabs, ModuleScopeGate, PendingState, FlowCrumb, LoopAction, useFromParam, useTabParam,
   MetricTile, CaveatNote, MetricSelectionBar, CrossLink, useFocusParam,
   readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel,
   RangeScopeBar, NoDataInRangeState, StaleFocusNotice,
@@ -67,7 +67,7 @@ export function IapLibraryView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
-  const [tab, setTab] = useState<Tab>("cells");
+  const [tab, setTab] = useTabParam<Tab>("cells", ["cells", "top", "variables"]);
   const focus = useFocusParam();
   const [detail, setDetail] = useState<CellPerformanceRow | null>(null);
 

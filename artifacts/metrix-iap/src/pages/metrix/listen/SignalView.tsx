@@ -8,7 +8,7 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getListenSignals } from "@/lib/data/metrixSeedAdapter";
 import {
-  ModuleHeader, ScopeBanner, ConfidenceBadge, ModuleTabs, ModuleScopeGate,
+  ModuleHeader, ScopeBanner, ConfidenceBadge, ModuleTabs, ModuleScopeGate, useTabParam,
   PendingState, MetricTile, ImpactBadge, ScopeBadge, CrossLink, useFocusParam,
   RangeScopeBar, NoDataInRangeState, StaleFocusNotice,
 } from "../shared";
@@ -27,7 +27,7 @@ export function SignalView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
-  const [tab, setTab] = useState<string>("all");
+  const [tab, setTab] = useTabParam("all");
   const focus = useFocusParam();
   const [detail, setDetail] = useState<SignalCard | null>(null);
   const { rangeHasData } = useDateRange();
@@ -52,7 +52,10 @@ export function SignalView() {
           { id: "all", label: "All signals", count: signals.length },
           ...present.map((s) => ({ id: s, label: SCOPE_LABEL[s] ?? s, count: signals.filter((x) => x.scope === s).length })),
         ];
-        const shown = tab === "all" ? signals : signals.filter((x) => x.scope === tab);
+        // Tab ids are dynamic (derived from present scopes) — an id from a
+        // stale shared link falls back to "all" rather than an empty list.
+        const active = tabs.some((t) => t.id === tab) ? tab : "all";
+        const shown = active === "all" ? signals : signals.filter((x) => x.scope === active);
         const highCount = signals.filter((s) => s.impact === "high").length;
 
         return (
@@ -81,7 +84,7 @@ export function SignalView() {
             </div>
 
             <div className="mt-4">
-              {signals.length > 0 && <ModuleTabs tabs={tabs} active={tab} onChange={setTab} />}
+              {signals.length > 0 && <ModuleTabs tabs={tabs} active={active} onChange={setTab} />}
             </div>
 
             <div className="px-6 py-5 max-w-3xl">

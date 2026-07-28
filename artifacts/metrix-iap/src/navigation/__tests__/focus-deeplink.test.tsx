@@ -52,7 +52,7 @@ beforeEach(() => {
 });
 
 describe("seed sanity", () => {
-  it("has focusable items in the bookster seed data", () => {
+  it("has focusable items in the bookster seed data", async () => {
     expect(cell?.cell_id).toBeTruthy();
     expect(hypothesis?.id).toBeTruthy();
     expect(brief?.id).toBeTruthy();
@@ -61,8 +61,8 @@ describe("seed sanity", () => {
 });
 
 describe("IAP Library ?focus=<cell_id>", () => {
-  it("opens the drill-down drawer on the focused cell", () => {
-    const { container } = renderAt(
+  it("opens the drill-down drawer on the focused cell", async () => {
+    const { container } = await renderAt(
       `/app/analysis/library?focus=${cell.cell_id}`
     );
     const header = drawerHeader(container);
@@ -71,13 +71,13 @@ describe("IAP Library ?focus=<cell_id>", () => {
     within(header!).getByText(cell.book2_concept_name);
   });
 
-  it("does not open a drawer without a focus param", () => {
-    const { container } = renderAt("/app/analysis/library");
+  it("does not open a drawer without a focus param", async () => {
+    const { container } = await renderAt("/app/analysis/library");
     expect(drawerHeader(container)).toBeNull();
   });
 
-  it("does not open a drawer for an unknown focus id", () => {
-    const { container } = renderAt(
+  it("does not open a drawer for an unknown focus id", async () => {
+    const { container } = await renderAt(
       "/app/analysis/library?focus=__no_such_cell__"
     );
     expect(drawerHeader(container)).toBeNull();
@@ -85,27 +85,27 @@ describe("IAP Library ?focus=<cell_id>", () => {
 });
 
 describe("Brief Builder ?focus=<brief id>", () => {
-  it("opens the drill-down drawer on the focused brief", () => {
-    const { container } = renderAt(`/app/briefs/builder?focus=${brief.id}`);
+  it("opens the drill-down drawer on the focused brief", async () => {
+    const { container } = await renderAt(`/app/briefs/builder?focus=${brief.id}`);
     const header = drawerHeader(container);
     expect(header).not.toBeNull();
     within(header!).getByText(`Brief · ${brief.asset_type}`);
   });
 
-  it("switches to the focused brief's format tab", () => {
-    const { container } = renderAt(`/app/briefs/builder?focus=${brief.id}`);
+  it("switches to the focused brief's format tab", async () => {
+    const { container } = await renderAt(`/app/briefs/builder?focus=${brief.id}`);
     // The focused brief's card must be rendered in the active tab's grid
     // (cards render only for the selected format tab).
     expect(container.textContent).toContain(brief.human_direction);
   });
 
-  it("does not open a drawer without a focus param", () => {
-    const { container } = renderAt("/app/briefs/builder");
+  it("does not open a drawer without a focus param", async () => {
+    const { container } = await renderAt("/app/briefs/builder");
     expect(drawerHeader(container)).toBeNull();
   });
 
-  it("does not open a drawer for an unknown focus id", () => {
-    const { container } = renderAt(
+  it("does not open a drawer for an unknown focus id", async () => {
+    const { container } = await renderAt(
       "/app/briefs/builder?focus=__no_such_brief__"
     );
     expect(drawerHeader(container)).toBeNull();
@@ -113,8 +113,8 @@ describe("Brief Builder ?focus=<brief id>", () => {
 });
 
 describe("Hypothesis Queue ?focus=<hypothesis id>", () => {
-  it("opens the drill-down drawer on the focused hypothesis", () => {
-    const { container } = renderAt(
+  it("opens the drill-down drawer on the focused hypothesis", async () => {
+    const { container } = await renderAt(
       `/app/strategy/hypotheses?focus=${hypothesis.id}`
     );
     const header = drawerHeader(container);
@@ -123,13 +123,13 @@ describe("Hypothesis Queue ?focus=<hypothesis id>", () => {
     within(header!).getByText(hypothesis.label);
   });
 
-  it("does not open a drawer without a focus param", () => {
-    const { container } = renderAt("/app/strategy/hypotheses");
+  it("does not open a drawer without a focus param", async () => {
+    const { container } = await renderAt("/app/strategy/hypotheses");
     expect(drawerHeader(container)).toBeNull();
   });
 
-  it("does not open a drawer for an unknown focus id", () => {
-    const { container } = renderAt(
+  it("does not open a drawer for an unknown focus id", async () => {
+    const { container } = await renderAt(
       "/app/strategy/hypotheses?focus=__no_such_hypothesis__"
     );
     expect(drawerHeader(container)).toBeNull();
@@ -137,21 +137,21 @@ describe("Hypothesis Queue ?focus=<hypothesis id>", () => {
 });
 
 describe("Listen Signal ?focus=<signal id>", () => {
-  it("opens the drill-down drawer on the focused signal", () => {
-    const { container } = renderAt(`/app/listen/signal?focus=${signal.id}`);
+  it("opens the drill-down drawer on the focused signal", async () => {
+    const { container } = await renderAt(`/app/listen/signal?focus=${signal.id}`);
     const header = drawerHeader(container);
     expect(header).not.toBeNull();
     within(header!).getByText("Signal");
     within(header!).getByText(signal.title);
   });
 
-  it("does not open a drawer without a focus param", () => {
-    const { container } = renderAt("/app/listen/signal");
+  it("does not open a drawer without a focus param", async () => {
+    const { container } = await renderAt("/app/listen/signal");
     expect(drawerHeader(container)).toBeNull();
   });
 
-  it("does not open a drawer for an unknown focus id", () => {
-    const { container } = renderAt(
+  it("does not open a drawer for an unknown focus id", async () => {
+    const { container } = await renderAt(
       "/app/listen/signal?focus=__no_such_signal__"
     );
     expect(drawerHeader(container)).toBeNull();
@@ -165,8 +165,8 @@ describe("Listen Signal ?focus=<signal id>", () => {
 // refactor might introduce from being silently consumed.
 
 describe("focus param name", () => {
-  it("ignores a differently-named query param", () => {
-    const { container } = renderAt(
+  it("ignores a differently-named query param", async () => {
+    const { container } = await renderAt(
       `/app/analysis/library?highlight=${cell.cell_id}`
     );
     expect(drawerHeader(container)).toBeNull();

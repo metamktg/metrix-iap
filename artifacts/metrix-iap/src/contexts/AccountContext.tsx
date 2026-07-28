@@ -41,8 +41,10 @@ interface AccountContextValue {
 const AccountContext = createContext<AccountContextValue | null>(null);
 
 function loadPersisted(): PersistShape {
+  // localStorage so the selection survives new tabs and restarts; falls
+  // back to the legacy sessionStorage slot once (pre-migration sessions).
   try {
-    const raw = sessionStorage.getItem(SESSION_KEY);
+    const raw = localStorage.getItem(SESSION_KEY) ?? sessionStorage.getItem(SESSION_KEY);
     if (raw) return JSON.parse(raw);
   } catch {
     /* ignore */
@@ -89,14 +91,23 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
       // Unknown account id in the URL — fall back to manager mode.
       return { type: "manager", adAccountId: null };
     }
-    return loadPersisted();
+    const stored = loadPersisted();
+    // A persisted id that no longer resolves (revoked grant, deleted
+    // account) falls back to manager mode, same as the URL path above.
+    if (
+      stored.type === "ad_account" &&
+      !adAccounts.some((a) => a.id === stored.adAccountId)
+    ) {
+      return { type: "manager", adAccountId: null };
+    }
+    return stored;
   });
 
   // Persist the selection and keep the URL's ?account= param in sync so the
   // current view stays shareable/bookmarkable across in-app navigation.
   useEffect(() => {
     try {
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(persisted));
+      localStorage.setItem(SESSION_KEY, JSON.stringify(persisted));
     } catch {
       /* ignore */
     }

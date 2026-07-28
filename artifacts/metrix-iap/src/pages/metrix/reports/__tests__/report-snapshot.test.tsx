@@ -79,7 +79,7 @@ const downloadMock = vi.mocked(downloadReportExport);
 const SESSION_KEY = "metrix_active_account_v1";
 
 function selectBookster() {
-  sessionStorage.setItem(
+  localStorage.setItem(
     SESSION_KEY,
     JSON.stringify({ type: "ad_account", adAccountId: "bookster" })
   );
@@ -128,6 +128,7 @@ function makeArchivedModel(): ReportModel {
 beforeEach(() => {
   cleanup();
   sessionStorage.clear();
+  localStorage.clear();
   window.history.replaceState({}, "", "/");
   mutateMock.mockClear();
   downloadMock.mockClear();

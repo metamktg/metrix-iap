@@ -7,7 +7,7 @@ import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getMST, getAnalysisData, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, ScopeBanner, ModuleScopeGate, ModuleTabs, CaveatNote, PendingState, readableVariables, RangeScopeBar, NoDataInRangeState, CrossLink } from "../shared";
+import { ModuleHeader, ScopeBanner, ModuleScopeGate, ModuleTabs, CaveatNote, PendingState, readableVariables, RangeScopeBar, NoDataInRangeState, CrossLink, useTabParam } from "../shared";
 import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
 import { useMstRangeScope } from "@/lib/date-scope";
 import { CreativeCard } from "@/components/creative/CreativeCard";
@@ -20,7 +20,7 @@ export function CreativeScanView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
-  const [tab, setTab] = useState<string>("library");
+  const [tab, setTab] = useTabParam("library", ["library", "variables"]);
   const { rangeHasData, range } = useDateRange();
   const { mstRange, mstInRange } = useMstRangeScope(
     getMST(seed, adAccountId),

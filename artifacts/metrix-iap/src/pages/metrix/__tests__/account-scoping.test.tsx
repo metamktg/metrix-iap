@@ -89,7 +89,7 @@ const SELF_GATED_VIEWS: [string, React.ComponentType][] = [
 ];
 
 function select(type: "manager" | "ad_account", adAccountId: string | null) {
-  sessionStorage.setItem(SESSION_KEY, JSON.stringify({ type, adAccountId }));
+  localStorage.setItem(SESSION_KEY, JSON.stringify({ type, adAccountId }));
 }
 
 function renderView(View: React.ComponentType) {
@@ -112,6 +112,7 @@ function renderView(View: React.ComponentType) {
 beforeEach(() => {
   cleanup();
   sessionStorage.clear();
+  localStorage.clear();
   window.history.replaceState({}, "", "/");
 });
 
