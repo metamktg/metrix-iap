@@ -459,3 +459,27 @@ create trigger trg_learning_registry_gate
 
 alter table if exists public._metrix_migrations enable row level security;
 revoke all on public._metrix_migrations from anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Tenancy helpers: close public RPC exposure (Supabase security advisor
+-- WARN 0028/0029). `revoke all on function ... from public` above only
+-- revokes the implicit PUBLIC-pseudo-role grant — it does not touch a
+-- direct grant made straight to `anon`, which is how these ended up
+-- callable via /rest/v1/rpc/<fn> by unauthenticated callers. Currently
+-- harmless (every helper gates on auth.uid(), null for anon, so they only
+-- ever return false/deny) but there is no reason to leave a superuser-
+-- rights function reachable by the public internet. `authenticated` still
+-- needs EXECUTE: RLS policies above call these helpers as the querying
+-- role, not as the function owner.
+--
+-- metrix_enforce_learning_gate is a BEFORE INSERT/UPDATE trigger function,
+-- never meant to be called directly at all — revoke from every role.
+-- Trigger firing does not require EXECUTE on the trigger function, so this
+-- does not affect trg_learning_registry_gate.
+-- ---------------------------------------------------------------------------
+
+revoke execute on function public.metrix_user_is_client_member(uuid) from anon;
+revoke execute on function public.metrix_user_is_client_writer(uuid) from anon;
+revoke execute on function public.metrix_user_in_org(uuid) from anon;
+revoke execute on function public.metrix_client_id_of_run(uuid) from anon;
+revoke all on function public.metrix_enforce_learning_gate() from public, anon, authenticated, service_role;
