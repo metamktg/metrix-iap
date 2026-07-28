@@ -383,6 +383,286 @@ async function main() {
         }
       },
     );
+    // ── Test 8: Link CTR 'avg' reference line appears with ≥2 concept rows ──
+    // The bookster fixture ships with an empty performance_by_cell, so all
+    // previous tests hit only the stat-fallback branch.  This test injects
+    // three synthetic concept rows into a modified copy of the seed so that
+    // concepts.length >= 2 (hasChart = true) and the ReferenceLine with the
+    // "avg" label is rendered.  The bookster campaign_summary already carries
+    // a non-null overall_link_ctr_pct so refValue will be non-null too.
+    await test(
+      '"Link CTR" tile: avg reference line appears in chart when ≥2 concept rows exist',
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        try {
+          // Build a modified seed: inject 3 concept rows into bookster's
+          // performance_by_cell so concepts.length >= 2 and hasChart = true.
+          const modifiedSeed = JSON.parse(SEED_FIXTURE_BODY);
+          const bookster = modifiedSeed.ad_accounts.find(
+            (a: { id: string }) => a.id === ACCOUNT,
+          );
+          // Patch overall_link_ctr_pct to a realistic value that falls inside
+          // the chart domain for our injected rows (which have CTR ~1.6–2.0%).
+          // The fixture carries 154250 (a data-quality artefact) which puts the
+          // ReferenceLine completely outside the auto-scaled XAxis domain, so
+          // Recharts omits the label SVG node entirely.
+          bookster.iap.campaign_summary.overall_link_ctr_pct = 1.83;
+          bookster.iap.analysis.performance_by_cell = [
+            {
+              cell_id: "c_alpha",
+              "Result type": "Mobile app installs",
+              "Amount spent (USD)": 1200,
+              Reach: 40000,
+              Impressions: 80000,
+              Results: 120,
+              "Clicks (all)": 2000,
+              "Link clicks": 1600,
+              CPA_result: 10.0,
+              CTR_link_pct: 2.0,
+              Result_per_link_click_pct: 7.5,
+              book2_concept_name: "Concept Alpha",
+            },
+            {
+              cell_id: "c_beta",
+              "Result type": "Mobile app installs",
+              "Amount spent (USD)": 900,
+              Reach: 30000,
+              Impressions: 60000,
+              Results: 80,
+              "Clicks (all)": 1500,
+              "Link clicks": 1200,
+              CPA_result: 11.25,
+              CTR_link_pct: 2.0,
+              Result_per_link_click_pct: 6.7,
+              book2_concept_name: "Concept Beta",
+            },
+            {
+              cell_id: "c_gamma",
+              "Result type": "Mobile app installs",
+              "Amount spent (USD)": 700,
+              Reach: 22000,
+              Impressions: 44000,
+              Results: 55,
+              "Clicks (all)": 900,
+              "Link clicks": 720,
+              CPA_result: 12.73,
+              CTR_link_pct: 1.64,
+              Result_per_link_click_pct: 7.6,
+              book2_concept_name: "Concept Gamma",
+            },
+          ];
+
+          await page.route("**/api/metrix/auth/me", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify({
+                user: {
+                  id: "test-user",
+                  email: "demo@metrix.app",
+                  role: "admin",
+                  must_change_password: false,
+                  workspace_id: "metrix_manager",
+                },
+              }),
+            }),
+          );
+          await page.route("**/api/metrix/seed", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify(modifiedSeed),
+            }),
+          );
+          await page.route("**/api/metrix/workspaces/*/reports", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify({ reports: [] }),
+            }),
+          );
+
+          await page.goto(`${BASE}/app/account?account=${ACCOUNT}`, {
+            waitUntil: "domcontentloaded",
+          });
+
+          await page
+            .getByText("Account Totals", { exact: false })
+            .waitFor({ state: "visible", timeout: 20_000 });
+
+          // "Link CTR" is a default tile — no localStorage override needed.
+          const tileBtn = page
+            .locator("button")
+            .filter({ hasText: "Link CTR" })
+            .first();
+          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
+          await tileBtn.hover();
+
+          const diagnoseBtn = page.getByText("Diagnose full breakdown");
+          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
+
+          const bodyText = (await page.locator("body").textContent()) ?? "";
+
+          // Chart branch must render ("Top concepts" heading).
+          assert(
+            bodyText.includes("Top concepts"),
+            `Link CTR popover must render the chart ("Top concepts") when ≥2 concept rows ` +
+              `exist. Body text did not contain "Top concepts".`,
+          );
+
+          // ReferenceLine label "avg" must be present (SVG text nodes are
+          // included in element.textContent).
+          assert(
+            bodyText.includes("avg"),
+            `Link CTR chart must render the "avg" reference line when metric.value is ` +
+              `non-null. Body text did not contain "avg".`,
+          );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+
+    // ── Test 9: CPA 'avg' reference line appears with ≥2 concept rows ────────
+    // Same injection strategy as Test 8 but for the CPA (blended) tile.
+    // cpaBlended = total_spend / total_results — bookster's campaign_summary
+    // already has both so the tile value is non-null; refValue is non-null too.
+    await test(
+      '"CPA (blended)" tile: avg reference line appears in chart when ≥2 concept rows exist',
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        try {
+          // Select the CPA tile before the app initialises.
+          await page.addInitScript(() => {
+            localStorage.setItem(
+              "metrix.overview.metric_tiles.v1",
+              JSON.stringify(["cpa_blended"]),
+            );
+          });
+
+          const modifiedSeed = JSON.parse(SEED_FIXTURE_BODY);
+          const bookster = modifiedSeed.ad_accounts.find(
+            (a: { id: string }) => a.id === ACCOUNT,
+          );
+          bookster.iap.analysis.performance_by_cell = [
+            {
+              cell_id: "c_alpha",
+              "Result type": "Mobile app installs",
+              "Amount spent (USD)": 1200,
+              Reach: 40000,
+              Impressions: 80000,
+              Results: 120,
+              "Clicks (all)": 2000,
+              "Link clicks": 1600,
+              CPA_result: 10.0,
+              CTR_link_pct: 2.0,
+              Result_per_link_click_pct: 7.5,
+              book2_concept_name: "Concept Alpha",
+            },
+            {
+              cell_id: "c_beta",
+              "Result type": "Mobile app installs",
+              "Amount spent (USD)": 900,
+              Reach: 30000,
+              Impressions: 60000,
+              Results: 80,
+              "Clicks (all)": 1500,
+              "Link clicks": 1200,
+              CPA_result: 11.25,
+              CTR_link_pct: 2.0,
+              Result_per_link_click_pct: 6.7,
+              book2_concept_name: "Concept Beta",
+            },
+            {
+              cell_id: "c_gamma",
+              "Result type": "Mobile app installs",
+              "Amount spent (USD)": 700,
+              Reach: 22000,
+              Impressions: 44000,
+              Results: 55,
+              "Clicks (all)": 900,
+              "Link clicks": 720,
+              CPA_result: 12.73,
+              CTR_link_pct: 1.64,
+              Result_per_link_click_pct: 7.6,
+              book2_concept_name: "Concept Gamma",
+            },
+          ];
+
+          await page.route("**/api/metrix/auth/me", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify({
+                user: {
+                  id: "test-user",
+                  email: "demo@metrix.app",
+                  role: "admin",
+                  must_change_password: false,
+                  workspace_id: "metrix_manager",
+                },
+              }),
+            }),
+          );
+          await page.route("**/api/metrix/seed", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify(modifiedSeed),
+            }),
+          );
+          await page.route("**/api/metrix/workspaces/*/reports", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify({ reports: [] }),
+            }),
+          );
+
+          await page.goto(`${BASE}/app/account?account=${ACCOUNT}`, {
+            waitUntil: "domcontentloaded",
+          });
+
+          await page
+            .getByText("Account Totals", { exact: false })
+            .waitFor({ state: "visible", timeout: 20_000 });
+
+          const tileBtn = page
+            .locator("button")
+            .filter({ hasText: "CPA (blended)" })
+            .first();
+          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
+          await tileBtn.hover();
+
+          const diagnoseBtn = page.getByText("Diagnose full breakdown");
+          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
+
+          const bodyText = (await page.locator("body").textContent()) ?? "";
+
+          // Chart branch must render ("Top concepts" heading).
+          assert(
+            bodyText.includes("Top concepts"),
+            `CPA popover must render the chart ("Top concepts") when ≥2 concept rows exist. ` +
+              `Body text did not contain "Top concepts".`,
+          );
+
+          // ReferenceLine label "avg" must be present.
+          assert(
+            bodyText.includes("avg"),
+            `CPA chart must render the "avg" reference line when metric.value is non-null. ` +
+              `Body text did not contain "avg".`,
+          );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
   } finally {
     await browser.close();
   }
