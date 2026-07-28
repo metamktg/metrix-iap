@@ -33,7 +33,7 @@ export function MatrixGrid({ matrix, onCellClick }: { matrix: MSTMatrix; onCellC
           {matrix.columns.map((c) => (
             <div key={c.id} className="p-2 text-center">
               <div className="text-[12px] font-semibold text-foreground leading-tight whitespace-pre-line">{c.name}</div>
-              <div className="text-[11px] font-mono text-muted-foreground/80 mt-1">{c.id}</div>
+              <div className="text-[9px] font-mono text-muted-foreground/40 mt-1">{c.id}</div>
             </div>
           ))}
 
@@ -42,7 +42,7 @@ export function MatrixGrid({ matrix, onCellClick }: { matrix: MSTMatrix; onCellC
               <div className={cn("p-2 flex flex-col justify-center rounded-l-lg border-l-2 my-0.5", ROW_COLOR[row.color] ?? "border-border/40")}>
                 <div className="text-[12px] font-semibold text-foreground">{row.id}</div>
                 <div className="text-[11px] text-muted-foreground/80 leading-tight mt-0.5">{readableVariables(row.shared)}</div>
-                <div className="text-[11px] font-mono text-muted-foreground/75 mt-0.5">{row.shared}</div>
+                <div className="text-[9px] font-mono text-muted-foreground/40 mt-0.5">{row.shared}</div>
               </div>
               {matrix.columns.map((col) => {
                 const cell = cellOf(col.id, row.id);
@@ -63,10 +63,13 @@ export function MatrixGrid({ matrix, onCellClick }: { matrix: MSTMatrix; onCellC
                   >
                     {cell ? (
                       <>
-                        <div className="text-[11px] font-semibold text-primary leading-tight">{readableVariables(cell.concept_code)}</div>
-                        {cell.plain_text.headline && <div className="text-[12px] font-medium text-foreground mt-1 leading-tight">{cell.plain_text.headline}</div>}
+                        {/* Eyebrow: smaller and lighter than the headline below it so the
+                            two don't compete for the same read — the headline is the point,
+                            the category is context. */}
+                        <div className="text-[9px] font-semibold uppercase tracking-[0.1em] text-primary/80 leading-tight">{readableVariables(cell.concept_code)}</div>
+                        {cell.plain_text.headline && <div className="text-[12px] font-semibold text-foreground mt-1 leading-tight">{cell.plain_text.headline}</div>}
                         {cell.plain_text.primary && <div className="text-[11px] text-muted-foreground/80 mt-1 leading-snug line-clamp-3">{cell.plain_text.primary}</div>}
-                        <div className="text-[12px] font-mono text-muted-foreground/80 mt-1.5">{cell.cell_id}</div>
+                        <div className="text-[9px] font-mono text-muted-foreground/40 mt-1.5">{cell.cell_id}</div>
                       </>
                     ) : (
                       <div className="text-[11px] text-muted-foreground/60">—</div>
