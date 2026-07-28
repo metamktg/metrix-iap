@@ -8,7 +8,7 @@ import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import {
   ShieldCheck, KeyRound, Grid3x3,
-  Zap, ArrowRight, Info,
+  Zap, ArrowRight,
 } from "lucide-react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed, useMetrixIsRefetching } from "@/contexts/MetrixDataContext";
@@ -214,12 +214,9 @@ export function AdAccountOverview() {
                   >
                     <button
                       onClick={() => setOpenMetricId(id)}
-                      className="group flex flex-col text-left rounded-lg border px-3 py-2.5 transition-all border-border/55 bg-white/[0.04] hover:border-border/70 hover:bg-white/[0.06] w-full"
+                      className="flex flex-col text-left rounded-lg border px-3 py-2.5 pr-7 transition-all border-border/55 bg-white/[0.04] hover:border-border/70 hover:bg-white/[0.06] w-full"
                     >
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="text-label font-mono uppercase tracking-widest text-data-caption truncate">{m.label}</span>
-                        <Info className="w-3 h-3 text-muted-foreground/40 group-hover:text-muted-foreground/70 transition-colors shrink-0" />
-                      </div>
+                      <span className="text-label font-mono uppercase tracking-widest text-data-caption truncate mb-1">{m.label}</span>
                       <span className="text-stat metric-num leading-none">{m.formatted}</span>
                       {m.sub && <span className="text-label text-muted-foreground/75 mt-1 leading-tight truncate">{m.sub}</span>}
                     </button>
