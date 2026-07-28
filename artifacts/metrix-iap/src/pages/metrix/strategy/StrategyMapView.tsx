@@ -148,7 +148,7 @@ export function StrategyMapView() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <StageLabel Icon={Layers}>Pillar</StageLabel>
-                          <span className="text-[11px] font-mono text-muted-foreground/80">{p.id}</span>
+                          <span className="text-[9px] font-mono text-muted-foreground/40">{p.id}</span>
                         </div>
                         <h3 className="text-[18px] font-semibold text-foreground leading-tight mt-1.5">{p.label}</h3>
                         <p className="text-[12.5px] text-foreground/85 mt-1.5 leading-relaxed">{p.plain_descriptor}</p>
