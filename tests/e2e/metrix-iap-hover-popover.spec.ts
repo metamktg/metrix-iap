@@ -6,6 +6,9 @@
 //      or the stat-fallback text when fewer than two concept rows exist.
 //   2. The "Diagnose full breakdown" footer link inside the popover opens the
 //      MetricDiagnosticModal dialog.
+//   3. The CPA (blended) tile — popover header shows the correct metric label.
+//   4. A result-event tile (Mobile app installs) — popover header shows the
+//      event label.
 //
 // API calls are intercepted with page.route() so no live API server is needed.
 // The seed fixture comes from the checked-in test snapshot.
@@ -226,6 +229,154 @@ async function main() {
           assert(
             headerText?.includes("Metric diagnostic") ?? false,
             `Expected "Metric diagnostic" in the modal header, got: "${headerText}"`,
+          );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+
+    // ── Test 6: CPA (blended) tile popover ────────────────────────────────
+    // CPA uses amber bar colour and sorts ascending (lower is better).
+    // This test confirms the popover renders for the CPA metric and that the
+    // header shows the correct label.  The bookster fixture has no
+    // cell_performance_rows so the fallback path is exercised.
+    await test(
+      '"CPA (blended)" tile: hover popover shows correct metric label',
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        try {
+          // Pre-seed localStorage so the CPA tile is selected before the app
+          // initialises — useMetricSelection reads this key on first render.
+          await page.addInitScript(() => {
+            localStorage.setItem(
+              "metrix.overview.metric_tiles.v1",
+              JSON.stringify(["cpa_blended"]),
+            );
+          });
+
+          await mockApis(ctx);
+          await page.goto(`${BASE}/app/account?account=${ACCOUNT}`, {
+            waitUntil: "domcontentloaded",
+          });
+
+          await page
+            .getByText("Account Totals", { exact: false })
+            .waitFor({ state: "visible", timeout: 20_000 });
+
+          // Find the CPA tile button.
+          const tileBtn = page
+            .locator("button")
+            .filter({ hasText: "CPA (blended)" })
+            .first();
+          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
+          await tileBtn.hover();
+
+          // Wait for the popover footer link — present regardless of chart vs
+          // fallback branch.
+          const diagnoseBtn = page.getByText("Diagnose full breakdown");
+          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
+
+          // The popover header label element must show the correct metric label.
+          // Using the data-testid scopes this assertion to the popover header,
+          // not the tile button which also contains the label text.
+          const headerLabel = page.locator(
+            '[data-testid="metric-popover-header-label"]',
+          );
+          await headerLabel.waitFor({ state: "visible", timeout: 3_000 });
+          const headerText = (await headerLabel.textContent()) ?? "";
+          assert(
+            headerText.includes("CPA (blended)"),
+            `Popover header must show "CPA (blended)", got: "${headerText}"`,
+          );
+
+          // Chart or stat fallback must be present.
+          const bodyText = (await page.locator("body").textContent()) ?? "";
+          const hasChart = bodyText.includes("Top concepts");
+          const hasFallback =
+            bodyText.includes("No concept rows available") ||
+            bodyText.includes("Only one concept found");
+          assert(
+            hasChart || hasFallback,
+            `CPA popover must contain "Top concepts" or a fallback message.`,
+          );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+
+    // ── Test 7: result-event tile popover ─────────────────────────────────
+    // Result-event metrics filter cellRows by their eventKey.  This test
+    // confirms the popover renders for a result-event tile and that the
+    // event label appears in the popover header.
+    //
+    // "Mobile app installs" is the highest-result event for the bookster
+    // fixture (453 results).  Its eventLabel() returns the key as-is because
+    // it is not in the EVENT_LABEL map.
+    await test(
+      '"Mobile app installs" result-event tile: hover popover shows event label',
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        try {
+          // Pre-seed localStorage so the result-event tile is selected before
+          // the app initialises.
+          await page.addInitScript(() => {
+            localStorage.setItem(
+              "metrix.overview.metric_tiles.v1",
+              JSON.stringify(["result:Mobile app installs"]),
+            );
+          });
+
+          await mockApis(ctx);
+          await page.goto(`${BASE}/app/account?account=${ACCOUNT}`, {
+            waitUntil: "domcontentloaded",
+          });
+
+          await page
+            .getByText("Account Totals", { exact: false })
+            .waitFor({ state: "visible", timeout: 20_000 });
+
+          // Find the result-event tile button.
+          const tileBtn = page
+            .locator("button")
+            .filter({ hasText: "Mobile app installs" })
+            .first();
+          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
+          await tileBtn.hover();
+
+          // Wait for the popover footer link.
+          const diagnoseBtn = page.getByText("Diagnose full breakdown");
+          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
+
+          // The popover header label element must show the event label.
+          // Scoped to data-testid so we don't accidentally match the tile
+          // button text (which also contains the same label string).
+          const headerLabel = page.locator(
+            '[data-testid="metric-popover-header-label"]',
+          );
+          await headerLabel.waitFor({ state: "visible", timeout: 3_000 });
+          const headerText = (await headerLabel.textContent()) ?? "";
+          assert(
+            headerText.includes("Mobile app installs"),
+            `Popover header must show "Mobile app installs", got: "${headerText}"`,
+          );
+
+          // Chart or stat fallback must be present.
+          const bodyText = (await page.locator("body").textContent()) ?? "";
+          const hasChart = bodyText.includes("Top concepts");
+          const hasFallback =
+            bodyText.includes("No concept rows available") ||
+            bodyText.includes("Only one concept found");
+          assert(
+            hasChart || hasFallback,
+            `Result-event popover must contain "Top concepts" or a fallback message.`,
           );
         } finally {
           await ctx.close();

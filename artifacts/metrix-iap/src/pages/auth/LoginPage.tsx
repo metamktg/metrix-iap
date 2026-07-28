@@ -95,6 +95,7 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen bg-background flex items-stretch">
+
       {/* ── LEFT PANEL — value proposition (lg+) ─────────────────────────── */}
       <div
         className="hidden lg:flex flex-col w-1/2 border-r border-white/[0.06] relative overflow-hidden"
@@ -116,25 +117,25 @@ export function LoginPage() {
           }}
         />
 
-        <div className="relative z-10 flex flex-col h-full px-12 py-12">
+        <div className="relative z-10 flex flex-col h-full px-12 py-10">
 
           {/* ── Brand mark ─────────────────────────────────────────────── */}
           <div className="flex items-center gap-3">
-            <BrandLogo className="w-9 h-9" />
-            <span className="text-[22px] font-bold tracking-tight text-white" style={{ letterSpacing: "-0.02em" }}>
+            <BrandLogo className="w-8 h-8" />
+            <span className="text-xl font-bold tracking-tight text-white" style={{ letterSpacing: "-0.02em" }}>
               metrix
             </span>
           </div>
 
-          {/* ── Main content — pushes to vertical center ───────────────── */}
-          <div className="flex-1 flex flex-col space-y-10 pt-12 pb-4 text-left justify-center items-end">
+          {/* ── Main content — vertically centered ─────────────────────── */}
+          <div className="flex-1 flex flex-col justify-center space-y-9 py-10">
 
             {/* Headline */}
-            <div className="space-y-5">
+            <div className="space-y-4">
               <p className="text-[11px] font-semibold tracking-[0.2em] uppercase text-white/40">
                 Performance Intelligence Platform
               </p>
-              <h1 className="text-[2.6rem] font-bold leading-[1.1] tracking-tight text-white">
+              <h1 className="text-[2.4rem] font-bold leading-[1.1] tracking-tight text-white">
                 Performance
                 <br />
                 intelligence for
@@ -144,7 +145,7 @@ export function LoginPage() {
                 to move{" "}
                 <span className="text-interactive">faster.</span>
               </h1>
-              <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-white/40 mt-1">
+              <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-white/40">
                 TEST.&nbsp;&nbsp;OPTIMIZE.&nbsp;&nbsp;SCALE.&nbsp;&nbsp;REPEAT.
               </p>
             </div>
@@ -182,18 +183,18 @@ export function LoginPage() {
               ))}
             </div>
 
-            {/* CTAs */}
-            <div className="flex flex-col gap-2.5 pt-1">
+            {/* CTAs — horizontal inline row */}
+            <div className="flex items-center gap-3">
               <a
                 href="/www/#request-access"
-                className="inline-flex items-center justify-center gap-2 h-11 px-6 rounded-lg bg-primary text-primary-foreground text-[13px] font-semibold hover:bg-primary/90 transition-all shadow-lg"
+                className="inline-flex items-center gap-2 h-10 px-5 rounded-lg bg-primary text-primary-foreground text-[13px] font-semibold hover:bg-primary/90 transition-all"
                 style={{ boxShadow: "0 0 20px hsl(222 100% 54% / 0.35)" }}
               >
-                Request Demo Access <ArrowRight className="w-4 h-4" />
+                Request Demo Access <ArrowRight className="w-3.5 h-3.5" />
               </a>
               <a
                 href="/www/"
-                className="inline-flex items-center justify-center gap-1.5 h-9 px-4 rounded-lg border border-white/[0.12] text-[13px] text-white/60 hover:text-white/90 hover:border-white/20 transition-colors"
+                className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg border border-white/[0.12] text-[13px] text-white/60 hover:text-white/90 hover:border-white/20 transition-colors"
               >
                 See More <ArrowRight className="w-3.5 h-3.5" />
               </a>
@@ -206,31 +207,38 @@ export function LoginPage() {
           </p>
         </div>
       </div>
+
       {/* ── RIGHT PANEL — login form ──────────────────────────────────────── */}
+      {/*
+        Mobile/tablet: justify-start + pt-10 so content flows from the top.
+        Desktop (lg+): justify-center so the form is vertically centred in the panel.
+      */}
       <div
-        className="flex-1 flex flex-col items-center justify-center px-6 py-12"
+        className="flex-1 flex flex-col items-center justify-start pt-10 lg:justify-center lg:pt-0 px-6 pb-12 overflow-y-auto"
         style={{ background: "hsl(222 22% 6%)" }}
       >
         {/* Mobile-only compact brand + CTA strip */}
-        <div className="lg:hidden w-full max-w-sm mb-10 space-y-4 pb-8 border-b border-white/[0.07]">
+        <div className="lg:hidden w-full max-w-[400px] mb-8 pb-6 border-b border-white/[0.07] space-y-3">
           <div className="flex items-center gap-2.5">
             <BrandLogo className="w-8 h-8" />
             <span className="text-lg font-bold tracking-tight text-white">metrix</span>
           </div>
-          <p className="text-sm text-white/50">Performance intelligence for marketers who need to move faster.</p>
+          <p className="text-[13px] text-white/50 leading-snug">
+            Performance intelligence for marketers who need to move faster.
+          </p>
           <a
             href="/www/#request-access"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-interactive hover:opacity-80 transition-opacity"
+            className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-interactive hover:opacity-80 transition-opacity"
           >
             Request Demo Access <ArrowRight className="w-3.5 h-3.5" />
           </a>
         </div>
 
-        <div className="w-full max-w-[340px] space-y-7">
+        <div className="w-full max-w-[400px] space-y-6">
 
           {/* Form heading */}
           <div className="space-y-1.5">
-            <h2 className="text-2xl font-bold text-white tracking-tight" style={{ letterSpacing: "-0.02em" }}>
+            <h2 className="text-[1.6rem] font-bold text-white tracking-tight" style={{ letterSpacing: "-0.02em" }}>
               Sign in
             </h2>
             <p className="text-[13px] text-white/45">
@@ -255,7 +263,7 @@ export function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@company.com"
-                className="w-full h-10 px-3.5 rounded-lg text-[13px] text-white placeholder:text-white/25 focus:outline-none transition-colors"
+                className="w-full h-11 px-3.5 rounded-lg text-[13px] text-white placeholder:text-white/25 focus:outline-none transition-colors"
                 style={{
                   background: "hsl(222 30% 11%)",
                   border: "1px solid hsl(222 20% 20%)",
@@ -290,7 +298,7 @@ export function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••"
-                className="w-full h-10 px-3.5 rounded-lg text-[13px] text-white placeholder:text-white/25 focus:outline-none transition-colors"
+                className="w-full h-11 px-3.5 rounded-lg text-[13px] text-white placeholder:text-white/25 focus:outline-none transition-colors"
                 style={{
                   background: "hsl(222 30% 11%)",
                   border: "1px solid hsl(222 20% 20%)",
@@ -319,8 +327,8 @@ export function LoginPage() {
             <button
               type="submit"
               disabled={isLoggingIn || !email.trim() || !password}
-              className="w-full h-10 rounded-lg bg-primary text-primary-foreground text-[13px] font-semibold hover:bg-primary/90 transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2"
-              style={{ boxShadow: "0 0 16px hsl(222 100% 54% / 0.25)" }}
+              className="w-full h-11 rounded-lg bg-primary text-primary-foreground text-[13px] font-semibold hover:bg-primary/90 transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2"
+              style={{ boxShadow: "0 0 16px hsl(222 100% 54% / 0.3)" }}
               data-testid="button-login"
             >
               {isLoggingIn ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
@@ -341,7 +349,7 @@ export function LoginPage() {
           <div className="space-y-2">
             <a
               href="/www/#request-access"
-              className="w-full h-10 rounded-lg border border-primary/30 bg-primary/[0.08] text-[13px] font-semibold text-interactive hover:bg-primary/[0.14] transition-colors flex items-center justify-center gap-2"
+              className="w-full h-11 rounded-lg border border-primary/30 bg-primary/[0.08] text-[13px] font-semibold text-interactive hover:bg-primary/[0.14] transition-colors flex items-center justify-center gap-2"
               data-testid="link-request-access"
             >
               Request access <ArrowRight className="w-3.5 h-3.5" />
@@ -353,16 +361,14 @@ export function LoginPage() {
           </div>
 
           {/* Create Account */}
-          <div>
-            <button
-              type="button"
-              onClick={() => navigate(CREATE_ACCOUNT_PATH)}
-              className="w-full h-10 rounded-lg border border-white/[0.10] text-[13px] font-semibold text-white/55 hover:text-white/80 hover:border-white/20 transition-colors flex items-center justify-center"
-              data-testid="button-create-account"
-            >
-              Create Account
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => navigate(CREATE_ACCOUNT_PATH)}
+            className="w-full h-11 rounded-lg border border-white/[0.10] text-[13px] font-semibold text-white/55 hover:text-white/80 hover:border-white/20 transition-colors flex items-center justify-center"
+            data-testid="button-create-account"
+          >
+            Create Account
+          </button>
 
           {/* Marketing site link — desktop only (mobile has it above) */}
           <div className="text-center hidden lg:block">

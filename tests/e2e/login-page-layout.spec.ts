@@ -6,8 +6,8 @@
 //      strip is visible; link-marketing-site is not visible (desktop-only).
 //   3. Desktop (1280 × 800): left value-prop panel is visible; mobile brand
 //      strip is not visible; link-marketing-site is visible.
-//   4. The "Create Account" button is disabled (aria-disabled + HTML disabled)
-//      and not interactive at both viewports.
+//   4. The "Create Account" button is present and enabled (interactive) at
+//      both viewports — the Create Account flow was enabled for beta launch.
 //
 // The /api/metrix/auth/me call is intercepted so no real API server is needed
 // — a 401 response causes the app to render the login page immediately.
@@ -173,7 +173,7 @@ async function main() {
       }
     });
 
-    await test("Create Account button is disabled and aria-disabled on mobile", async () => {
+    await test("Create Account button is present and enabled on mobile", async () => {
       const ctx = await browser.newContext({
         viewport: { width: 375, height: 812 },
       });
@@ -184,11 +184,16 @@ async function main() {
         await waitForLoginPage(page);
 
         const btn = page.locator('[data-testid="button-create-account"]');
-        const ariaDisabled = await btn.getAttribute("aria-disabled");
-        assert(ariaDisabled === "true", `Expected aria-disabled="true", got "${ariaDisabled}"`);
+        await btn.waitFor({ state: "visible", timeout: 5_000 });
 
         const isDisabled = await btn.isDisabled();
-        assert(isDisabled, "Create Account button should be disabled (not interactive)");
+        assert(!isDisabled, "Create Account button should be enabled (Create Account flow is active)");
+
+        const ariaDisabled = await btn.getAttribute("aria-disabled");
+        assert(
+          ariaDisabled === null || ariaDisabled === "false",
+          `Create Account button should not carry aria-disabled="true", got "${ariaDisabled}"`,
+        );
       } finally {
         await ctx.close();
       }
@@ -281,7 +286,7 @@ async function main() {
       }
     });
 
-    await test("Create Account button is disabled and aria-disabled on desktop", async () => {
+    await test("Create Account button is present and enabled on desktop", async () => {
       const ctx = await browser.newContext({
         viewport: { width: 1280, height: 800 },
       });
@@ -292,11 +297,16 @@ async function main() {
         await waitForLoginPage(page);
 
         const btn = page.locator('[data-testid="button-create-account"]');
-        const ariaDisabled = await btn.getAttribute("aria-disabled");
-        assert(ariaDisabled === "true", `Expected aria-disabled="true", got "${ariaDisabled}"`);
+        await btn.waitFor({ state: "visible", timeout: 5_000 });
 
         const isDisabled = await btn.isDisabled();
-        assert(isDisabled, "Create Account button should be disabled (not interactive)");
+        assert(!isDisabled, "Create Account button should be enabled (Create Account flow is active)");
+
+        const ariaDisabled = await btn.getAttribute("aria-disabled");
+        assert(
+          ariaDisabled === null || ariaDisabled === "false",
+          `Create Account button should not carry aria-disabled="true", got "${ariaDisabled}"`,
+        );
       } finally {
         await ctx.close();
       }

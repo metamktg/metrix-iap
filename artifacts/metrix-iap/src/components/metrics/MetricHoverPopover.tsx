@@ -137,7 +137,10 @@ export function MetricHoverPopover({ metric, cellRows, onDiagnose, children }: M
       >
         {/* Header */}
         <div className="px-3 pt-3 pb-2 border-b border-border/40">
-          <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-0.5">
+          <div
+            className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-0.5"
+            data-testid="metric-popover-header-label"
+          >
             {metric.label}
           </div>
           <div className="text-stat metric-num leading-none">{metric.formatted}</div>
