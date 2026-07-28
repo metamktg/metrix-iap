@@ -140,25 +140,39 @@ export function AnalysisOverview() {
               {controls && (
                 <SectionCard title="Core control reads" desc="The current control concept for each funnel depth." table="core_reanalysis_read">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                      <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5">Primary control</div>
-                      <p className="text-[13px] font-semibold text-foreground">{resolveConceptName(controls.primary_control)}</p>
-                      <p className="text-[11px] text-muted-foreground/80 mt-1.5 leading-relaxed">{resolveControlText(controls.primary_control_read, controls.primary_control)}</p>
-                      {resolveConceptName(controls.primary_control) !== controls.primary_control && (
-                        <p className="text-[9px] font-mono text-muted-foreground/40 mt-1.5">{controls.primary_control}</p>
-                      )}
-                    </div>
+                    {(() => {
+                      const primaryName = resolveConceptName(controls.primary_control);
+                      const primaryResolved = primaryName !== controls.primary_control;
+                      return (
+                        <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
+                          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5">Primary control</div>
+                          {/* Unresolved codes (no human name in local_book2_library) render
+                              de-emphasized instead of borrowing the resolved-name treatment —
+                              a raw composite ID is not a headline. */}
+                          <p className={primaryResolved ? "text-[13px] font-semibold text-foreground" : "text-[11px] font-mono text-muted-foreground/70"}>
+                            {primaryName}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground/80 mt-1.5 leading-relaxed">{resolveControlText(controls.primary_control_read, controls.primary_control)}</p>
+                          {primaryResolved && (
+                            <p className="text-[9px] font-mono text-muted-foreground/40 mt-1.5">{controls.primary_control}</p>
+                          )}
+                        </div>
+                      );
+                    })()}
                     {controls.registration_control && (() => {
                       const regId = controls.registration_control!;
                       const regName = resolveConceptName(regId);
+                      const regResolved = regName !== regId;
                       return (
                         <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
                           <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5">{term.Singular} control</div>
-                          <p className="text-[13px] font-semibold text-foreground">{regName}</p>
+                          <p className={regResolved ? "text-[13px] font-semibold text-foreground" : "text-[11px] font-mono text-muted-foreground/70"}>
+                            {regName}
+                          </p>
                           {controls.registration_control_read && (
                             <p className="text-[11px] text-muted-foreground/80 mt-1.5 leading-relaxed">{resolveControlText(controls.registration_control_read, regId)}</p>
                           )}
-                          {regName !== regId && (
+                          {regResolved && (
                             <p className="text-[9px] font-mono text-muted-foreground/40 mt-1.5">{regId}</p>
                           )}
                         </div>

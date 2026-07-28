@@ -100,7 +100,10 @@ export function AdAccountOverview() {
     return text.replace(id, name);
   };
   const primaryControlName = resolveConceptName(core.primary_control);
+  const primaryControlResolved = primaryControlName !== core.primary_control;
   const registrationControlName = core.registration_control ? resolveConceptName(core.registration_control) : null;
+  const registrationControlResolved =
+    registrationControlName !== null && registrationControlName !== core.registration_control;
 
   const cellCount = analysis?.performance_by_cell.length ?? 0;
   const variableCount = analysis?.v3_variable_performance.length ?? 0;
@@ -344,9 +347,11 @@ export function AdAccountOverview() {
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-400/80" />
                   <span className="text-[11px] font-semibold text-foreground">Primary control</span>
                 </div>
-                <p className="text-[13px] font-semibold text-foreground mb-1">{primaryControlName}</p>
+                <p className={primaryControlResolved ? "text-[13px] font-semibold text-foreground mb-1" : "text-[11px] font-mono text-muted-foreground/70 mb-1"}>
+                  {primaryControlName}
+                </p>
                 <p className="text-[12px] text-foreground/80 leading-relaxed">{resolveControlText(core.primary_control_read, core.primary_control)}</p>
-                {primaryControlName !== core.primary_control && (
+                {primaryControlResolved && (
                   <p className="text-[9px] font-mono text-muted-foreground/40 mt-1.5">{core.primary_control}</p>
                 )}
               </div>
@@ -356,11 +361,13 @@ export function AdAccountOverview() {
                     <KeyRound className="w-3.5 h-3.5 text-blue-300/80" />
                     <span className="text-[11px] font-semibold text-foreground">{term.Singular} control</span>
                   </div>
-                  <p className="text-[13px] font-semibold text-foreground mb-1">{registrationControlName ?? core.registration_control}</p>
+                  <p className={registrationControlResolved ? "text-[13px] font-semibold text-foreground mb-1" : "text-[11px] font-mono text-muted-foreground/70 mb-1"}>
+                    {registrationControlName ?? core.registration_control}
+                  </p>
                   {core.registration_control_read && core.registration_control && (
                     <p className="text-[12px] text-foreground/80 leading-relaxed">{resolveControlText(core.registration_control_read, core.registration_control)}</p>
                   )}
-                  {registrationControlName !== core.registration_control && (
+                  {registrationControlResolved && (
                     <p className="text-[9px] font-mono text-muted-foreground/40 mt-1.5">{core.registration_control}</p>
                   )}
                 </div>
