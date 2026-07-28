@@ -10,7 +10,7 @@ import { getAdAccount, getListenSignals } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ConfidenceBadge, ModuleTabs, ModuleScopeGate,
   PendingState, MetricTile, ImpactBadge, ScopeBadge, CrossLink, useFocusParam,
-  StaleFocusNotice, LoopAction, deriveLabel,
+  StaleFocusNotice, LoopAction, deriveLabel, ConnectionNudgeBanner,
 } from "../shared";
 import { useGetMetaConnection } from "@workspace/api-client-react";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
@@ -67,14 +67,7 @@ export function SignalView() {
             {focus && !signals.some((s) => s.id === focus) && (
               <StaleFocusNotice label="signal" />
             )}
-            {!hasMetaConnection ? (
-              <PendingState
-                title="Live insights require Meta connection"
-                message="Connect your Meta ad account to unlock real-time signals, alerts, and recommendations — the live intelligence layer of Metrix."
-                icon={Radio}
-                action={<CrossLink to="/app/settings/integrations" label="Connect Meta in Settings" />}
-              />
-            ) : (
+            <ConnectionNudgeBanner hasMetaConnection={hasMetaConnection} />
             <>
             <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="Active" value={String(signals.length)} sub="signals" />
@@ -130,7 +123,6 @@ export function SignalView() {
               )}
             </div>
             </>
-            )}
 
             {detail && (
               <InfoDrawer

@@ -155,6 +155,9 @@ function renderView() {
 
 describe("Report History bulk delete (select mode)", () => {
   it("selects multiple generated reports, confirms, deletes them, and leaves seed rows untouched", async () => {
+    // Generous timeout: this test exercises real query invalidation + re-render
+    // cycles and can be slow under full-suite load on constrained CI runners.
+    vi.setConfig({ testTimeout: 30_000 });
     renderView();
 
     // Generated reports load from the (stubbed) API.

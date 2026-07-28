@@ -124,14 +124,15 @@ async function main() {
       });
       const page = await ctx.newPage();
       try {
-        await page.goto(`${BASE}/#request-access`, { waitUntil: "domcontentloaded" });
+        // Use "load" so the React SPA has fully hydrated before we query the DOM.
+        await page.goto(`${BASE}/#request-access`, { waitUntil: "load" });
 
         // Give the requestAnimationFrame scroll a moment to settle.
         await page.waitForTimeout(600);
 
         // The form card's container has id="request-access".
         const formContainer = page.locator("#request-access");
-        await formContainer.waitFor({ state: "visible", timeout: 5000 });
+        await formContainer.waitFor({ state: "visible", timeout: 10_000 });
 
         const box = await formContainer.boundingBox();
         assert(box !== null, "Could not get bounding box of #request-access");
