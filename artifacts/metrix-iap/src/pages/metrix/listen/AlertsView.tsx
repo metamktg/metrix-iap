@@ -21,6 +21,14 @@ import { TokenizedConceptText } from "@/components/concept/ConceptChip";
 
 const SECTION = "Listen · 02";
 
+// Caveat `source` values are the seed's internal field names, not copy —
+// give each a human label so the caveat card doesn't show a raw snake_case
+// key as if it were a category tag.
+const CAVEAT_SOURCE_LABEL: Record<string, string> = {
+  core_reanalysis_read: "Core reanalysis",
+  campaign_summary: "Campaign summary",
+};
+
 export function AlertsView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
@@ -102,7 +110,7 @@ export function AlertsView() {
                           <div key={c.id} className="rounded-xl border border-amber-400/15 bg-amber-400/[0.04] p-4">
                             <div className="flex items-center gap-1.5 mb-2">
                               <Database className="w-3.5 h-3.5 text-amber-400/80" />
-                              <span className="text-[9px] font-mono uppercase tracking-widest text-amber-400/60">{c.source}</span>
+                              <span className="text-[9px] font-semibold uppercase tracking-widest text-amber-400/60">{CAVEAT_SOURCE_LABEL[c.source] ?? c.source}</span>
                             </div>
                             <p className="text-[12px] text-amber-400/85 leading-relaxed"><TokenizedConceptText text={c.text} /></p>
                           </div>
