@@ -73,7 +73,11 @@ const runShape = (r: Row): ManualAnalysisRun => ({
 
 async function accountExists(accountId: string): Promise<Row | null> {
   const supabase = getSupabase();
-  const { data, error } = await supabase.from("ad_accounts").select("id, name").eq("id", accountId).limit(1);
+  const { data, error } = await supabase
+    .from("ad_accounts")
+    .select("id, name, source_status")
+    .eq("id", accountId)
+    .limit(1);
   if (error) throw new Error(error.message);
   return data && data.length > 0 ? data[0]! : null;
 }
@@ -252,6 +256,16 @@ export async function startManualAnalysis(
 ): Promise<string> {
   const account = await accountExists(accountId);
   if (!account) throw new AnalysisError("Ad account not found.", 404);
+  // The run's full-refresh deletes assume this account's performance and
+  // signal rows are owned exclusively by manual analysis. Imported accounts
+  // (offline importer) and live Meta accounts own their rows elsewhere —
+  // running a manual analysis against them would destroy that data.
+  if (account["source_status"] !== "manual_reports") {
+    throw new AnalysisError(
+      "Manual analysis is only available for manual-report accounts. This account's data is managed by its own import pipeline.",
+      422,
+    );
+  }
 
   const supabase = getSupabase();
   const { data: imports, error: importsErr } = await supabase
@@ -346,6 +360,30 @@ export async function startManualAnalysis(
         const key = [gender, age, date].join("\u0001");
         if (!demoBuckets.has(key)) demoBuckets.set(key, { ...emptyBucket(), gender, age, date });
         accumulate(demoBuckets.get(key)!, row);
+      }
+
+      // ── Window-level signal buckets (whole selected window, no daily
+      // grain): these feed the importer-shaped signal tables the Analysis
+      // UI (Audience / Placements) and the strategy evidence pack read.
+      // Without them a manual account's analysis would populate totals but
+      // leave those surfaces permanently empty.
+      const demoWindowBuckets = new Map<string, AggBucket & { gender: string; age: string }>();
+      for (const row of scopedDemo) {
+        const gender = row.breakdowns["Gender"]!;
+        const age = row.breakdowns["Age"]!;
+        const key = [gender, age].join("");
+        if (!demoWindowBuckets.has(key)) demoWindowBuckets.set(key, { ...emptyBucket(), gender, age });
+        accumulate(demoWindowBuckets.get(key)!, row);
+      }
+      const placementWindowBuckets = new Map<string, AggBucket & { placement: string; platform: string }>();
+      for (const row of scopedPlacement) {
+        const placement = row.breakdowns["Placement"]!;
+        const platform = row.breakdowns["Platform"]!;
+        const key = [placement, platform].join("");
+        if (!placementWindowBuckets.has(key)) {
+          placementWindowBuckets.set(key, { ...emptyBucket(), placement, platform });
+        }
+        accumulate(placementWindowBuckets.get(key)!, row);
       }
 
       // ── Device/placement/platform rows: aggregate placement export by
@@ -543,6 +581,99 @@ export async function startManualAnalysis(
         extra_metrics: Object.keys(b.extra).length > 0 ? b.extra : null,
       }));
       await insertChunked("device_performance", deviceRowsOut);
+
+      // ── Signal tables (what the Analysis UI + strategy evidence read) ──
+      // Full per-account refresh: the source guard above ensures this
+      // account's signal rows are owned exclusively by manual analysis, and
+      // a full replace keeps row_index unique-constraint collisions with a
+      // previous run impossible. Payload shapes mirror the offline importer
+      // (DemographicRow / PlacementRow) so every existing render path and
+      // the strategy evidence pack work unchanged.
+      const pctOr = (numerator: number | null, denominator: number | null): number | null =>
+        numerator !== null && denominator !== null && denominator > 0
+          ? (numerator / denominator) * 100
+          : null;
+      const cpaOr = (spend: number | null, results: number | null): number | null =>
+        spend !== null && results !== null && results > 0 ? spend / results : null;
+
+      const delDemoSignal = await supabase.from("demographic_signal").delete().eq("account_id", accountId);
+      if (delDemoSignal.error) throw new Error(delDemoSignal.error.message);
+      const delPlacementSignal = await supabase
+        .from("placement_signal")
+        .delete()
+        .eq("account_id", accountId)
+        .eq("signal_scope", "v3");
+      if (delPlacementSignal.error) throw new Error(delPlacementSignal.error.message);
+
+      const MANUAL_DEMO_AD_NAME = "All ads (manual demographic upload)";
+      const demoSignalRows = Array.from(demoWindowBuckets.values())
+        .sort((a, b) => (b.spend ?? 0) - (a.spend ?? 0))
+        .map((b, i) => ({
+          account_id: accountId,
+          cell_id: "ACCOUNT",
+          ad_name: MANUAL_DEMO_AD_NAME,
+          age: b.age,
+          gender: b.gender,
+          date_start: dateStart,
+          date_end: dateEnd,
+          row_index: i,
+          payload: {
+            cell_id: "ACCOUNT",
+            "Ad name": MANUAL_DEMO_AD_NAME,
+            Age: b.age,
+            Gender: b.gender,
+            "Result type": b.resultType,
+            "Amount spent (USD)": b.spend,
+            Reach: b.reach,
+            Impressions: b.impressions,
+            Results: b.results,
+            "Clicks (all)": b.clicksAll,
+            "Link clicks": b.linkClicks,
+            CPA_result: cpaOr(b.spend, b.results),
+            CTR_link_pct: pctOr(b.linkClicks, b.impressions),
+            Result_per_link_click_pct: pctOr(b.results, b.linkClicks),
+          },
+        }));
+      await insertChunked("demographic_signal", demoSignalRows);
+
+      const placementSignalRows = Array.from(placementWindowBuckets.values())
+        .sort((a, b) => (b.spend ?? 0) - (a.spend ?? 0))
+        .map((b, i) => ({
+          account_id: accountId,
+          signal_scope: "v3",
+          placement: b.placement,
+          platform: b.platform,
+          date_start: dateStart,
+          date_end: dateEnd,
+          row_index: i,
+          payload: {
+            Placement: b.placement,
+            Platform: b.platform,
+            "Amount spent (USD)": b.spend,
+            Impressions: b.impressions,
+            "Link clicks": b.linkClicks,
+            Results: b.results,
+            CPA: cpaOr(b.spend, b.results),
+            CTR_link_pct: pctOr(b.linkClicks, b.impressions),
+          },
+        }));
+      await insertChunked("placement_signal", placementSignalRows);
+
+      // Register the loop stage so the account's IAP loop status reflects
+      // that its Analysis Core equivalent has really run.
+      const loopUpsert = await supabase.from("iap_runs").upsert(
+        {
+          account_id: accountId,
+          stage: "analysis_core",
+          status: "complete",
+          window_start: dateStart,
+          window_end: dateEnd,
+          generated_at: new Date().toISOString(),
+          note: `Manual analysis run ${runId}.`,
+        },
+        { onConflict: "account_id,stage" },
+      );
+      if (loopUpsert.error) throw new Error(loopUpsert.error.message);
 
       const totalRows = adRows.length + demographicRows.length + placementRowsOut.length + platformRowsOut.length + deviceRowsOut.length;
 

@@ -164,7 +164,7 @@ type StrategyEvidence = {
 };
 
 async function buildStrategyEvidence(accountId: string, accountName: string): Promise<StrategyEvidence> {
-  const [cellRows, varRows, demoRows, placementRows, deviceRows, platformRows, placementPerfRows, conceptRows, icpRows, moduleRows] =
+  const [cellRows, varRows, demoRows, placementRows, deviceRows, platformRows, placementPerfRows, conceptRows, icpRows, moduleRows, adPerfRows] =
     await Promise.all([
       rowsFor("library_cell_performance", accountId),
       rowsFor("variable_performance", accountId),
@@ -176,6 +176,7 @@ async function buildStrategyEvidence(accountId: string, accountName: string): Pr
       rowsFor("concept_performance", accountId),
       rowsFor("icp_profiles", accountId),
       rowsFor("account_modules", accountId, (q) => q.eq("module", "iap_metadata")),
+      rowsFor("ad_performance", accountId),
     ]);
 
   const cells = cellRows
@@ -189,7 +190,37 @@ async function buildStrategyEvidence(accountId: string, accountName: string): Pr
   const hasSignals =
     demoRows.length + placementRows.length + deviceRows.length + platformRows.length + placementPerfRows.length > 0;
 
-  if (cells.length === 0 && variables.length === 0 && !hasSignals) {
+  // Per-ad rollup: the creative-level evidence for accounts without a mapped
+  // cell library (manual-upload accounts). Ad names carry the creative
+  // concept/angle vocabulary, so without this the model would see totals but
+  // no creative-level signal at all.
+  const adRollup = (() => {
+    if (cells.length > 0 || adPerfRows.length === 0) return [];
+    const byAd = new Map<string, { ad_name: string; result_type: string; spend: number; impressions: number; link_clicks: number; results: number }>();
+    for (const r of adPerfRows) {
+      const adName = String(r["ad_name"] ?? "");
+      if (!adName) continue;
+      const resultType = String(r["result_type"] ?? "Results");
+      const key = `${adName}${resultType}`;
+      const agg = byAd.get(key) ?? { ad_name: adName, result_type: resultType, spend: 0, impressions: 0, link_clicks: 0, results: 0 };
+      agg.spend += num(r["spend"]);
+      agg.impressions += num(r["impressions"]);
+      agg.link_clicks += num(r["link_clicks"]);
+      agg.results += num(r["results"]);
+      byAd.set(key, agg);
+    }
+    return [...byAd.values()]
+      .sort((a, b) => b.results - a.results || b.spend - a.spend)
+      .slice(0, 40)
+      .map((a) => ({
+        ...a,
+        cpa: a.results > 0 ? a.spend / a.results : null,
+        ctr_link_pct: a.impressions > 0 ? (a.link_clicks / a.impressions) * 100 : null,
+        cvr_link_pct: a.link_clicks > 0 ? (a.results / a.link_clicks) * 100 : null,
+      }));
+  })();
+
+  if (cells.length === 0 && variables.length === 0 && !hasSignals && adRollup.length === 0) {
     throw new GenerationError(
       "This account has no analysis data yet — run or import an analysis before building strategy.",
       422,
@@ -215,6 +246,14 @@ async function buildStrategyEvidence(accountId: string, accountName: string): Pr
     account: { id: accountId, name: accountName },
     top_cells: cells,
     variable_performance: variables,
+    ...(adRollup.length > 0
+      ? {
+          ad_rollup: {
+            note: "Per-ad performance over the analyzed window (accounts without a mapped cell library). Ad names carry the creative concept/angle vocabulary — ground creative-level claims here.",
+            ads: adRollup,
+          },
+        }
+      : {}),
     demographic_signal: demoRows.map((r) => r["payload"]).slice(0, 25),
     placement_signal: placementRows.map((r) => r["payload"]).slice(0, 25),
     conversion_tracking: {

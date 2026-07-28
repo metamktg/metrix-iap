@@ -96,12 +96,15 @@ describe("PlacementsView · LittleData (conversion-only)", () => {
 });
 
 describe("PlacementsView · Bookster (delivery-based, unchanged)", () => {
-  it("still renders the V3/C4E delivery sections", () => {
+  it("still renders the delivery rollup built from the V3/C4E signal", () => {
     select("bookster");
     renderView();
-    expect(screen.getByText("V3 placement signal")).toBeTruthy();
-    expect(screen.getByText("C4E placement signal")).toBeTruthy();
+    // The redesigned view rolls V3 + C4E into one delivery section; its
+    // provenance still names both source tables.
     expect(screen.getByText("Spend by placement")).toBeTruthy();
+    expect(
+      screen.getByText(/Where delivery happened and what each placement produced/)
+    ).toBeTruthy();
     expect(screen.queryByText("No placement signal")).toBeNull();
   });
 });
