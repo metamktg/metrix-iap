@@ -40,6 +40,7 @@ import type {
   AuthChangePasswordInput,
   AuthLoginInput,
   AuthLogoutResult,
+  AuthRegisterInput,
   AuthRequestPasswordResetInput,
   AuthRequestPasswordResetResult,
   AuthResetPasswordInput,
@@ -3728,6 +3729,77 @@ export const useAuthResetPassword = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getAuthResetPasswordMutationOptions(options));
+    }
+
+export const getAuthRegisterUrl = () => {
+
+
+
+
+  return `/api/metrix/auth/register`
+}
+
+/**
+ * Creates a new user account and immediately logs the user in by setting a session cookie. Returns the new authenticated user. Rejects with 409 when the email is already in use.
+ * @summary Create a new user account
+ */
+export const authRegister = async (authRegisterInput: AuthRegisterInput, options?: RequestInit): Promise<AuthUserResult> => {
+
+  return customFetch<AuthUserResult>(getAuthRegisterUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(authRegisterInput)
+  }
+);}
+
+
+
+
+export const getAuthRegisterMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authRegister>>, TError,{data: BodyType<AuthRegisterInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof authRegister>>, TError,{data: BodyType<AuthRegisterInput>}, TContext> => {
+
+const mutationKey = ['authRegister'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof authRegister>>, {data: BodyType<AuthRegisterInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  authRegister(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AuthRegisterMutationResult = NonNullable<Awaited<ReturnType<typeof authRegister>>>
+    export type AuthRegisterMutationBody = BodyType<AuthRegisterInput>
+    export type AuthRegisterMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Create a new user account
+ */
+export const useAuthRegister = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof authRegister>>, TError,{data: BodyType<AuthRegisterInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof authRegister>>,
+        TError,
+        {data: BodyType<AuthRegisterInput>},
+        TContext
+      > => {
+      return useMutation(getAuthRegisterMutationOptions(options));
     }
 
 export const getListWorkspaceInvitesUrl = (workspaceId: string,) => {

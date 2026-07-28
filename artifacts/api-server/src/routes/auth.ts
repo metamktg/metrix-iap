@@ -10,6 +10,7 @@ import {
   AuthRequestPasswordResetResponse,
   AuthResetPasswordBody,
   AuthResetPasswordResponse,
+  AuthRegisterBody,
 } from "@workspace/api-zod";
 import { db, usersTable, userSessionsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
@@ -261,6 +262,67 @@ router.post("/metrix/auth/reset-password", loginRateLimit, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "Password reset failed");
     res.status(503).json({ message: "Authentication service unavailable." });
+  }
+});
+
+router.post("/metrix/auth/register", loginRateLimit, async (req, res) => {
+  const parsed = AuthRegisterBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "A valid email and a password of at least 8 characters are required." });
+    return;
+  }
+  const email = parsed.data.email.trim().toLowerCase();
+  const displayName = parsed.data.display_name?.trim() || null;
+
+  try {
+    const [existing] = await db
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(eq(usersTable.email, email))
+      .limit(1);
+
+    if (existing) {
+      res.status(409).json({ message: "An account with that email already exists." });
+      return;
+    }
+
+    const passwordHash = await hashPassword(parsed.data.password);
+    const [newUser] = await db
+      .insert(usersTable)
+      .values({
+        email,
+        displayName,
+        passwordHash,
+        mustChangePassword: false,
+        role: "member",
+      })
+      .returning();
+
+    if (!newUser) {
+      req.log.error({ email }, "User insert returned no row");
+      res.status(503).json({ message: "Account creation failed. Please try again." });
+      return;
+    }
+
+    const { token, expiresAt } = await createSession(newUser.id);
+    // Registration uses a session cookie (no remember-me on first sign-up).
+    setSessionCookie(req, res, token, expiresAt, false);
+
+    req.log.info({ userId: newUser.id, email }, "new account registered");
+
+    const data = AuthLoginResponse.parse({
+      user: {
+        email: newUser.email,
+        must_change_password: newUser.mustChangePassword,
+        role: newUser.role,
+        manage_team: newUser.role === "admin" || newUser.canManageTeam,
+        view_agency_rollups: newUser.role === "admin" || newUser.canViewAgencyRollups,
+      },
+    });
+    res.json(data);
+  } catch (err) {
+    req.log.error({ err }, "Registration failed");
+    res.status(503).json({ message: "Account creation failed. Please try again." });
   }
 });
 

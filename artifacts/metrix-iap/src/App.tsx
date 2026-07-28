@@ -8,6 +8,7 @@ import { LoginPage } from "@/pages/auth/LoginPage";
 import { ChangePasswordPage } from "@/pages/auth/ChangePasswordPage";
 import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage";
 import { ResetPasswordPage } from "@/pages/auth/ResetPasswordPage";
+import { CreateAccountPage } from "@/pages/auth/CreateAccountPage";
 import { AdminWaitlistPage } from "@/pages/admin/AdminWaitlistPage";
 import { Loader2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
@@ -16,6 +17,7 @@ import {
   RESET_PASSWORD_PATH,
   FORGOT_PASSWORD_PATH,
   ADMIN_PATH,
+  CREATE_ACCOUNT_PATH,
 } from "@/navigation/preLoginRoutes";
 
 // Seed-hydrated Metrix pages (manager → ad-account hierarchy)
@@ -153,6 +155,12 @@ export function AuthGate() {
   // The admin console has its own password gate — independent of user auth.
   if (location === ADMIN_PATH) {
     return <AdminWaitlistPage />;
+  }
+
+  // Account creation — open to logged-out visitors; redirect in if already signed in.
+  if (location === CREATE_ACCOUNT_PATH) {
+    if (!isLoading && user) return <Redirect to="/" replace />;
+    return <CreateAccountPage onBack={() => navigate("/", { replace: true })} />;
   }
 
   if (isLoading) {

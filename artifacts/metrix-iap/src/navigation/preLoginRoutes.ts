@@ -15,9 +15,13 @@ export const FORGOT_PASSWORD_PATH = "/forgot-password";
 // The admin console has its own password gate — independent of user auth.
 export const ADMIN_PATH = "/admin";
 
+// Account creation — available to logged-out visitors at beta launch.
+export const CREATE_ACCOUNT_PATH = "/create-account";
+
 // Every route AuthGate renders before mounting the authenticated Router.
 export const PRE_LOGIN_ROUTE_PATHS: ReadonlySet<string> = new Set([
   RESET_PASSWORD_PATH,
   FORGOT_PASSWORD_PATH,
   ADMIN_PATH,
+  CREATE_ACCOUNT_PATH,
 ]);

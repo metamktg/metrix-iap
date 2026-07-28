@@ -1149,6 +1149,34 @@ export const AuthResetPasswordResponse = zod.object({
 
 
 /**
+ * Creates a new user account and immediately logs the user in by setting a session cookie. Returns the new authenticated user. Rejects with 409 when the email is already in use.
+ * @summary Create a new user account
+ */
+export const authRegisterBodyPasswordMin = 8;
+export const authRegisterBodyPasswordMax = 200;
+
+export const authRegisterBodyDisplayNameMax = 120;
+
+
+
+export const AuthRegisterBody = zod.object({
+  "email": zod.string().email(),
+  "password": zod.string().min(authRegisterBodyPasswordMin).max(authRegisterBodyPasswordMax),
+  "display_name": zod.string().max(authRegisterBodyDisplayNameMax).optional().describe('Optional display name for the new user.')
+})
+
+export const AuthRegisterResponse = zod.object({
+  "user": zod.object({
+  "email": zod.string(),
+  "must_change_password": zod.boolean(),
+  "role": zod.enum(['admin', 'member']).describe('admin sees every ad account (agency team); member sees only accounts they have been granted.'),
+  "manage_team": zod.boolean().describe('Can invite\/remove members and assign asset access. Always true for admin.'),
+  "view_agency_rollups": zod.boolean().describe('Can see manager-level totals\/rollups across all ad accounts. Always true for admin.')
+})
+})
+
+
+/**
  * Returns invites created for this workspace, newest first. Requires a logged-in session with access to the workspace.
  * @summary List pending workspace invites
  */

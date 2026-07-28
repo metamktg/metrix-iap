@@ -50,6 +50,7 @@ export * from './authChangePasswordInput';
 export * from './authLoginInput';
 export * from './authLogoutResult';
 export * from './authLogoutResultStatus';
+export * from './authRegisterInput';
 export * from './authRequestPasswordResetInput';
 export * from './authRequestPasswordResetResult';
 export * from './authRequestPasswordResetResultStatus';
