@@ -11,7 +11,7 @@ import { ModuleHeader, ScopeBanner, ModuleScopeGate, ModuleTabs, CaveatNote, Pen
 import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
 import { useMstRangeScope } from "@/lib/date-scope";
 import { CreativeCard } from "@/components/creative/CreativeCard";
-import { cardFromCell } from "@/lib/creative-assembly";
+import { cardFromLibraryCell } from "@/lib/creative-assembly";
 import { Library, Tags } from "lucide-react";
 
 const SECTION = "MST · 07";
@@ -99,10 +99,18 @@ export function CreativeScanView() {
 
               {tab === "library" && (
                 <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
-                  {library.map((c) => (
+                  {library.map((c, i) => (
                     <CreativeCard
-                      key={c.cell_id + c.book2_concept_name}
-                      data={cardFromCell(c.cell_id, {
+                      // local_book2_library carries one row per physical asset format
+                      // (Feed/Square/Story, etc.) — the same cell_id legitimately
+                      // repeats across rows, so it isn't a unique key on its own.
+                      key={`${c.cell_id}-${(c as { asset_format?: string }).asset_format}-${i}`}
+                      // cardFromLibraryCell (not cardFromCell) — this card must be
+                      // built from THIS row, not re-resolved by cell_id. cardFromCell
+                      // re-looks-up "the" library cell by id and returns the first
+                      // match every time, which would render every asset-format
+                      // variant of a cell as an identical copy of the first one.
+                      data={cardFromLibraryCell(c, c.cell_id, {
                         perfRows: getAnalysisData(seed, adAccountId)?.performance_by_cell,
                         mst,
                         ...getCreativeLinkContext(seed, adAccountId),
