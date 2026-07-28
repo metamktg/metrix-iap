@@ -60,6 +60,10 @@ args = "css-token-contrast"
 task = "workflow.run"
 args = "text-muted-contrast"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "marketing-form-e2e"
+
 [[workflows.workflow]]
 name = "api-smoke"
 author = "agent"
@@ -177,6 +181,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm --filter @workspace/scripts run check:text-muted-contrast"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "marketing-form-e2e"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/scripts run smoke:marketing-e2e"
 
 [workflows.workflow.metadata]
 isValidation = true

@@ -1381,3 +1381,25 @@ export function SectionCard({
     </section>
   );
 }
+
+/**
+ * Slim informational banner shown when there is no live Meta connection.
+ * Renders null when `hasMetaConnection` is true so it disappears cleanly.
+ */
+export function ConnectionNudgeBanner({ hasMetaConnection }: { hasMetaConnection: boolean }) {
+  const [, navigate] = useLocation();
+  if (hasMetaConnection) return null;
+  return (
+    <div className="mx-6 mt-4 flex items-center gap-2.5 rounded-lg border border-border/40 bg-white/[0.03] px-4 py-2.5 text-sm text-muted-foreground/80">
+      <Plug className="w-3.5 h-3.5 shrink-0 text-muted-foreground/50" />
+      <span className="flex-1">Connect Meta in Settings to enable live data refresh.</span>
+      <button
+        onClick={() => navigate("/app/settings/integrations")}
+        className="shrink-0 text-interactive hover:text-interactive/80 font-medium transition-colors"
+      >
+        Go to Integrations
+        <ArrowRight className="inline w-3 h-3 ml-1" />
+      </button>
+    </div>
+  );
+}

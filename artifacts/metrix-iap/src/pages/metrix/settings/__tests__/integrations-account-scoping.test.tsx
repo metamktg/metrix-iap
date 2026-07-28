@@ -1,8 +1,7 @@
 // ─── IntegrationsView · account-scoping regression tests ──────────────
-// Asserts that the Integrations page correctly hides ad-account connection
-// panels when an ad account is scoped and shows them only in manager/agency
-// view. Prevents silent regressions from context changes that swap
-// selectedAccountType values.
+// Asserts that the Integrations page renders the per-account config panel
+// (AdAccountIntegrationsPanel) when an ad account is scoped, and the full
+// agency overview when in manager mode.
 //
 // Also guards MetaLiveConnection: the live-connection banner and its
 // connect/disconnect controls must never appear when an ad account is scoped,
@@ -46,6 +45,11 @@ vi.mock("@workspace/api-client-react", async (importOriginal) => {
     })),
     useRunMetaReports: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
     useListMetaReportRows: vi.fn(() => ({ data: undefined, isLoading: false, isError: false })),
+    // ManualImportDialog hooks
+    useStageManualImport: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
+    useListManualImports: vi.fn(() => ({ data: { imports: [] }, isLoading: false, refetch: vi.fn() })),
+    useUpdateManualImportAdNames: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
+    useDeleteManualImport: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
   };
 });
 
@@ -112,36 +116,95 @@ beforeEach(() => {
 // ── ad_account mode ──────────────────────────────────────────────────────────
 
 describe("ad_account scoped", () => {
-  it('shows the "Agency view only" notice', () => {
+  it("shows the per-account config panel with the account name", () => {
+    // "bookster" maps to the "Bookster" ad account in the seed fixture.
     select("ad_account", "bookster");
     const { container } = renderView();
-    expect(container.textContent).toContain("Agency view only");
+    // The panel must show the account's name.
+    expect(container.textContent).toContain("Bookster");
+    // The old "Agency view only" dead-end notice must no longer appear.
+    expect(container.textContent).not.toContain("Agency view only");
   });
 
-  it("does not render the Meta ad accounts list", () => {
+  it("does not render the agency-level ad account list", () => {
     select("ad_account", "bookster");
     const { container } = renderView();
-    expect(container.textContent).not.toContain("Meta ad accounts");
+    // The "Ad account configurations" section card is only in agency view.
+    expect(container.textContent).not.toContain("Ad account configurations");
   });
 
-  it("does not render the Manual imports section", () => {
+  it("does not render the agency Manual imports section card", () => {
     select("ad_account", "bookster");
     const { container } = renderView();
+    // The agency-level SectionCard titled "Manual imports" must not appear.
+    // (The per-account panel has a "Manual import" button, which is intentional.)
     expect(container.textContent).not.toContain("Manual imports");
   });
 
-  it('renders a "Switch to agency view" button that calls selectManager', () => {
+  it("shows the platform badge for the scoped ad account", () => {
+    // "bookster" has platform "Meta Ads" in the seed fixture.
+    select("ad_account", "bookster");
+    const { container } = renderView();
+    // The platform label must appear as the sub-line beneath the account name.
+    expect(container.textContent).toContain("Meta Ads");
+  });
+
+  it("shows the correct connection status chip for a configured account", () => {
+    // "bookster" has status "configured" → chip must read "Connected".
+    select("ad_account", "bookster");
+    const { container } = renderView();
+    expect(container.textContent).toContain("Connected");
+  });
+
+  it("shows the 'Not connected' chip for an unconfigured account", () => {
+    // "manual_OO2Jaeb2PBfu" has status "unconfigured".
+    select("ad_account", "manual_OO2Jaeb2PBfu");
+    const { container } = renderView();
+    expect(container.textContent).toContain("Not connected");
+    expect(container.textContent).not.toContain('"Connected"');
+  });
+
+  it("opens the ManualImportDialog when the Manual import button is clicked", () => {
     select("ad_account", "bookster");
     renderView();
-    const btn = screen.getByRole("button", { name: /Switch to agency view/i });
+    // The Manual import button must be present in the panel.
+    const btn = screen.getByTestId("button-manual-import-integrations");
     expect(btn).toBeTruthy();
-    // Clicking must flip the selection back to manager mode; the button's
-    // onClick is wired directly to selectManager from AccountContext.
+    // Clicking it must open the dialog — the dialog title "Add Manual Import"
+    // must become visible in the document.
     fireEvent.click(btn);
-    // After switching, the agency-view notice must disappear and the full
-    // integrations list must appear.
+    expect(document.body.textContent).toContain("Add Manual Import");
+  });
+
+  it('renders an "Agency-wide integration settings" crosslink that calls selectManager', () => {
+    select("ad_account", "bookster");
+    renderView();
+    // The crosslink must be present.
+    const link = screen.getByRole("button", { name: /Agency-wide integration settings/i });
+    expect(link).toBeTruthy();
+    // Clicking it must flip the selection back to manager mode so the full
+    // agency view becomes visible.
+    fireEvent.click(link);
     expect(document.body.textContent).not.toContain("Agency view only");
-    expect(document.body.textContent).toContain("Meta ad accounts");
+    expect(document.body.textContent).toContain("Ad account configurations");
+  });
+
+  it("clicking the agency-wide link removes the ?account= URL param", () => {
+    // Navigate with the account param set, simulating how the crosslink
+    // from Listen/Alerts/Signals lands users on the integrations page.
+    window.history.replaceState({}, "", "/app/settings/integrations?account=bookster");
+    select("ad_account", "bookster");
+    renderView();
+
+    // Verify the param is initially present.
+    expect(new URLSearchParams(window.location.search).get("account")).toBe("bookster");
+
+    const link = screen.getByRole("button", { name: /Agency-wide integration settings/i });
+    fireEvent.click(link);
+
+    // After selectManager the context writes null back to the URL param,
+    // which should result in the ?account= param being absent.
+    expect(new URLSearchParams(window.location.search).get("account")).toBeNull();
   });
 
   it("hides MetaLiveConnection connect controls even when Meta is not connected", () => {
@@ -151,7 +214,7 @@ describe("ad_account scoped", () => {
     } as ReturnType<typeof useGetMetaConnection>);
     select("ad_account", "bookster");
     const { container } = renderView();
-    // The connect button must never appear in ad-account scope
+    // The connect button must never appear in ad-account scope.
     expect(container.querySelector('[data-testid="button-connect-meta-live"]')).toBeNull();
     expect(container.textContent).not.toContain("Live Meta connection");
   });
@@ -178,9 +241,9 @@ describe("ad_account scoped", () => {
     } as ReturnType<typeof useGetMetaConnection>);
     select("ad_account", "bookster");
     const { container } = renderView();
-    // The "Agency view only" notice must be shown …
-    expect(container.textContent).toContain("Agency view only");
-    // … and neither the connect nor the disconnect button from
+    // The per-account panel must be shown…
+    expect(container.textContent).toContain("Bookster");
+    // …and neither the connect nor the disconnect button from
     // MetaLiveConnection must be present anywhere in the rendered output.
     expect(container.querySelector('[data-testid="button-connect-meta-live"]')).toBeNull();
     expect(container.querySelector('[data-testid="button-disconnect-meta"]')).toBeNull();
@@ -190,10 +253,10 @@ describe("ad_account scoped", () => {
 // ── manager mode ─────────────────────────────────────────────────────────────
 
 describe("manager (agency) view", () => {
-  it("shows the Meta ad accounts section", () => {
+  it("shows the Ad account configurations section", () => {
     select("manager", null);
     const { container } = renderView();
-    expect(container.textContent).toContain("Meta ad accounts");
+    expect(container.textContent).toContain("Ad account configurations");
   });
 
   it("shows the Manual imports section", () => {
@@ -213,8 +276,14 @@ describe("manager (agency) view", () => {
     // panel must still render in manager mode regardless.
     select("manager", "bookster");
     const { container } = renderView();
-    expect(container.textContent).toContain("Meta ad accounts");
+    expect(container.textContent).toContain("Ad account configurations");
     expect(container.textContent).not.toContain("Agency view only");
+  });
+
+  it("shows the Agency OAuth connection label", () => {
+    select("manager", null);
+    const { container } = renderView();
+    expect(container.textContent).toContain("Agency OAuth connection");
   });
 
   it("shows the connect button when Meta is not connected", () => {

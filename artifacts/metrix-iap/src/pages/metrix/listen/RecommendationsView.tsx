@@ -9,11 +9,10 @@ import { getAdAccount, getOptimizationLoop, getAnalysisData } from "@/lib/data/m
 import { RecommendationDeck, actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile, CaveatNote,
-  LoopAction, CrossLink,
+  LoopAction, CrossLink, ConnectionNudgeBanner,
 } from "../shared";
 import { useGetMetaConnection } from "@workspace/api-client-react";
 import { SegmentGridModal } from "@/components/creative/SegmentGridModal";
-import { Lightbulb } from "lucide-react";
 import type { RecommendationCard } from "@/lib/data/seedTypes";
 
 const SECTION = "Listen · 02";
@@ -71,14 +70,7 @@ export function RecommendationsView() {
               subtitle="Optimization loop · approval adds a manual task"
               account={acct}
             />
-            {!hasMetaConnection ? (
-              <PendingState
-                title="Live insights require Meta connection"
-                message="Connect your Meta ad account to unlock AI-generated optimization recommendations from live performance data."
-                icon={Lightbulb}
-                action={<CrossLink to="/app/settings/integrations" label="Connect Meta in Settings" />}
-              />
-            ) : (
+            <ConnectionNudgeBanner hasMetaConnection={hasMetaConnection} />
             <>
             <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="Recommendations" value={String(cards.length)} />
@@ -105,7 +97,6 @@ export function RecommendationsView() {
               )}
             </div>
             </>
-            )}
 
             {segmentCard && analysis && (
               <SegmentGridModal

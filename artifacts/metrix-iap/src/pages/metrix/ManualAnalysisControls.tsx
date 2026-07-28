@@ -27,6 +27,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { guessedCreativeImports } from "./manualImportUtils";
+import { ImportConfidenceReport } from "./ImportConfidenceReport";
 import { cn } from "@/lib/utils";
 import {
   FileText,
@@ -76,12 +77,13 @@ function RunAnalysisBtn({
   );
 }
 
-export type IapCsvClassKey = "demographic" | "device_placement" | "ad_summary";
+export type IapCsvClassKey = "demographic" | "device_placement" | "ad_summary" | "conversion_device";
 
 const CSV_CLASS_TITLES: Record<IapCsvClassKey, string> = {
   demographic: "Demographics CSV",
   device_placement: "Placements CSV",
   ad_summary: "Ad Summary CSV",
+  conversion_device: "Conversion Device CSV",
 };
 
 /**
@@ -565,7 +567,8 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
     (imp) =>
       (imp.kind === "performance_demo_csv" ||
         imp.kind === "performance_placement_csv" ||
-        imp.kind === "performance_ad_summary_csv") &&
+        imp.kind === "performance_ad_summary_csv" ||
+        imp.kind === "performance_conversion_device_csv") &&
       imp.mapping_summary &&
       imp.mapping_summary.length > 0
   );
@@ -586,7 +589,9 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
         ? "Demographics CSV"
         : imp.kind === "performance_placement_csv"
         ? "Placements CSV"
-        : "Ad Summary CSV";
+        : imp.kind === "performance_ad_summary_csv"
+        ? "Ad Summary CSV"
+        : "Conversion Device CSV";
     for (const entry of imp.mapping_summary ?? []) {
       if (entry.tier === "missing" || entry.tier === "inferred") {
         problems.push({
@@ -740,7 +745,8 @@ export function AnalysisControls({
     (imp) =>
       (imp.kind === "performance_demo_csv" ||
         imp.kind === "performance_placement_csv" ||
-        imp.kind === "performance_ad_summary_csv") &&
+        imp.kind === "performance_ad_summary_csv" ||
+        imp.kind === "performance_conversion_device_csv") &&
       imp.mapping_summary?.some((e) => e.tier === "missing" && e.is_required)
   );
   const [forceRunAcknowledged, setForceRunAcknowledged] = useState(false);
@@ -1002,6 +1008,10 @@ export function AnalysisControls({
             queryClient.invalidateQueries({ queryKey: getGetMetrixSeedQueryKey() });
           }}
         />
+      )}
+
+      {run && run.status === "success" && (
+        <ImportConfidenceReport imports={importsData?.imports ?? []} />
       )}
 
       <p className="text-label text-muted-foreground/75 leading-relaxed">

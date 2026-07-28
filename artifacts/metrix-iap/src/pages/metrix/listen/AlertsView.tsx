@@ -11,7 +11,7 @@ import {
 import {
   ModuleHeader, ConfidenceBadge, ModuleScopeGate,
   PendingState, MetricTile, ImpactBadge, ScopeBadge, CrossLink,
-  CaveatNote, deriveLabel, InfoTooltip,
+  CaveatNote, deriveLabel, InfoTooltip, ConnectionNudgeBanner,
 } from "../shared";
 import { useGetMetaConnection } from "@workspace/api-client-react";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
@@ -52,14 +52,7 @@ export function AlertsView() {
               subtitle="High-impact signals · data caveats"
               account={acct}
             />
-            {!hasMetaConnection ? (
-              <PendingState
-                title="Live insights require Meta connection"
-                message="Connect your Meta ad account to unlock real-time alerts and high-impact optimization signals."
-                icon={BellOff}
-                action={<CrossLink to="/app/settings/integrations" label="Connect Meta in Settings" />}
-              />
-            ) : (
+            <ConnectionNudgeBanner hasMetaConnection={hasMetaConnection} />
             <>
             <div className="px-6 pt-5 grid grid-cols-dashboard-3 gap-3">
               <MetricTile
@@ -120,7 +113,6 @@ export function AlertsView() {
               )}
             </div>
             </>
-            )}
 
             {detail && (
               <InfoDrawer

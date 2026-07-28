@@ -3343,7 +3343,7 @@ components:
       properties:
         kind:
           type: string
-          enum: [performance_demo_csv, performance_placement_csv, performance_ad_summary_csv, creative_asset]
+          enum: [performance_demo_csv, performance_placement_csv, performance_ad_summary_csv, performance_conversion_device_csv, creative_asset]
         filename:
           type: string
           minLength: 1
@@ -3452,7 +3452,7 @@ components:
           type: string
         kind:
           type: string
-          enum: [performance_demo_csv, performance_placement_csv, performance_ad_summary_csv, creative_asset]
+          enum: [performance_demo_csv, performance_placement_csv, performance_ad_summary_csv, performance_conversion_device_csv, creative_asset]
         filename:
           type: string
         content_type:
@@ -3574,6 +3574,9 @@ components:
           $ref: "#/components/schemas/IapCsvClassFormat"
         ad_summary:
           $ref: "#/components/schemas/IapCsvClassFormat"
+        conversion_device:
+          $ref: "#/components/schemas/IapCsvClassFormat"
+          description: Format spec for the optional Conversion Device pivot export (conversion-only metrics, no spend/impressions). Upload to the performance_conversion_device_csv slot.
         column_aliases:
           type: array
           items:

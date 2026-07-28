@@ -69,7 +69,7 @@ export const stageManualImportBodyFilenameMax = 255;
 
 
 export const StageManualImportBody = zod.object({
-  "kind": zod.enum(['performance_demo_csv', 'performance_placement_csv', 'performance_ad_summary_csv', 'creative_asset']),
+  "kind": zod.enum(['performance_demo_csv', 'performance_placement_csv', 'performance_ad_summary_csv', 'performance_conversion_device_csv', 'creative_asset']),
   "filename": zod.string().min(1).max(stageManualImportBodyFilenameMax),
   "content_type": zod.string().optional().describe('Original MIME type of the uploaded file, if known.'),
   "content_base64": zod.string().min(1).describe('Base64-encoded file content. Max 8 MB decoded.'),
@@ -113,7 +113,7 @@ export const ListManualImportsResponse = zod.object({
   "imports": zod.array(zod.object({
   "id": zod.string(),
   "account_id": zod.string(),
-  "kind": zod.enum(['performance_demo_csv', 'performance_placement_csv', 'performance_ad_summary_csv', 'creative_asset']),
+  "kind": zod.enum(['performance_demo_csv', 'performance_placement_csv', 'performance_ad_summary_csv', 'performance_conversion_device_csv', 'creative_asset']),
   "filename": zod.string(),
   "content_type": zod.string().nullish(),
   "size_bytes": zod.number(),
@@ -158,7 +158,7 @@ export const UpdateManualImportAdNamesBody = zod.object({
 export const UpdateManualImportAdNamesResponse = zod.object({
   "id": zod.string(),
   "account_id": zod.string(),
-  "kind": zod.enum(['performance_demo_csv', 'performance_placement_csv', 'performance_ad_summary_csv', 'creative_asset']),
+  "kind": zod.enum(['performance_demo_csv', 'performance_placement_csv', 'performance_ad_summary_csv', 'performance_conversion_device_csv', 'creative_asset']),
   "filename": zod.string(),
   "content_type": zod.string().nullish(),
   "size_bytes": zod.number(),
@@ -248,6 +248,16 @@ export const GetManualPerformanceCsvFormatResponse = zod.object({
 })),
   "sample_csv": zod.string()
 }),
+  "conversion_device": zod.object({
+  "report_name": zod.string().describe('Exact Meta pivot report template name this CSV must match.'),
+  "breakdown_columns": zod.array(zod.string()),
+  "metric_groups": zod.array(zod.object({
+  "name": zod.string(),
+  "required": zod.boolean(),
+  "columns": zod.array(zod.string())
+})),
+  "sample_csv": zod.string()
+}).optional().describe('Format spec for the optional Conversion Device pivot export (conversion-only metrics, no spend\/impressions). Upload to the performance_conversion_device_csv slot.'),
   "column_aliases": zod.array(zod.object({
   "canonical": zod.string().describe('The exact column name as required by the Metrix spec (currency placeholder resolved to plain label for display).'),
   "aliases": zod.array(zod.string()).describe('Alias variants accepted by the CSV parser (title-cased for readability).')

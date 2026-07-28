@@ -98,6 +98,7 @@ const RUNTIME_EXPORTS: Array<keyof typeof shared> = [
   "VIEW_PRESETS",
   "DatePresetBar",
   "DataWindowBar",
+  "ConnectionNudgeBanner",
 ];
 
 describe("shared.tsx exports — set equality", () => {
