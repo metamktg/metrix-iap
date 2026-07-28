@@ -17,6 +17,14 @@ import type { AdAccount } from "@/lib/data/seedTypes";
 
 const SECTION = "Settings · 09";
 
+// a.source_status is a free-form string (seedTypes.ts has no enum for it) —
+// seen holding internal import-pipeline tags like "imported_from_iap_loop_package"
+// rather than a user-facing status word. Humanize any non-empty value instead
+// of showing the raw snake_case token verbatim.
+function humanizeSourceStatus(status: string): string {
+  return status.replace(/_/g, " ").trim();
+}
+
 export function IntegrationsView() {
   const seed = useMetrixSeed();
   const { manager } = useAccount();
@@ -55,7 +63,7 @@ export function IntegrationsView() {
                   <div className="flex-1 min-w-0">
                     <div className="text-[12px] font-medium text-foreground">{a.name}</div>
                     <div className="text-[10px] text-muted-foreground/85">
-                      {a.platform} · {configured ? (a.source_status ?? "connected") : "not connected"}
+                      {a.platform} · {configured ? (a.source_status ? humanizeSourceStatus(a.source_status) : "connected") : "not connected"}
                     </div>
                   </div>
                   <span
