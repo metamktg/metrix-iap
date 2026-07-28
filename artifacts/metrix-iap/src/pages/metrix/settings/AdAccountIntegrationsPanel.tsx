@@ -4,14 +4,17 @@
 // Includes a crosslink to switch to the agency-level view.
 
 import { useState } from "react";
-import { CheckCircle2, Circle, Plug, FileUp, Copy, ArrowLeft, ExternalLink } from "lucide-react";
+import { CheckCircle2, Circle, Plug, FileUp, Copy, ArrowLeft, ExternalLink, Wifi } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAccount } from "@/contexts/AccountContext";
 import { ConnectMetaDialog, ManualImportDialog } from "../ConnectAccountDialogs";
+import { useGetMetaConnection } from "@workspace/api-client-react";
 import type { AdAccount } from "@/lib/data/seedTypes";
 
 export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) {
   const { selectManager } = useAccount();
+  const liveConnection = useGetMetaConnection();
+  const hasLiveConnection = liveConnection.data?.connected === true;
   const [connectOpen, setConnectOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -88,15 +91,25 @@ export function AdAccountIntegrationsPanel({ account }: { account: AdAccount }) 
       </div>
 
       {/* Action buttons */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         {!configured && (
-          <button
-            onClick={() => setConnectOpen(true)}
-            className="flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary border border-primary text-body font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-md shadow-primary/25"
-            data-testid="button-connect-account-integrations"
-          >
-            <Plug className="w-4 h-4" /> Connect
-          </button>
+          hasLiveConnection ? (
+            <div
+              className="flex items-center gap-2 h-9 px-4 rounded-md border border-emerald-400/30 bg-emerald-400/10 text-body text-emerald-400"
+              data-testid="live-connection-note-integrations"
+            >
+              <Wifi className="w-4 h-4 shrink-0" />
+              <span>Live connection active — manage in agency settings</span>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConnectOpen(true)}
+              className="flex items-center gap-1.5 h-9 px-4 rounded-md bg-primary border border-primary text-body font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-md shadow-primary/25"
+              data-testid="button-connect-account-integrations"
+            >
+              <Plug className="w-4 h-4" /> Connect
+            </button>
+          )
         )}
         <button
           onClick={() => setImportOpen(true)}
