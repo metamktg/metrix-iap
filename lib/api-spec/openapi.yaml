@@ -1746,6 +1746,43 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/auth/register:
+    post:
+      operationId: authRegister
+      tags: [metrix]
+      summary: Create a new user account
+      description: Creates a new user account and immediately logs the user in by setting a session cookie. Returns the new authenticated user. Rejects with 409 when the email is already in use.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthRegisterInput"
+      responses:
+        "200":
+          description: Account created and logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUserResult"
+        "400":
+          description: Invalid input (email format, password too short)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Email already in use
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/workspaces/{workspaceId}/invites:
     parameters:
       - name: workspaceId
@@ -3996,6 +4033,23 @@ components:
           enum: [reset]
       required:
         - status
+    AuthRegisterInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+          maxLength: 200
+        display_name:
+          type: string
+          maxLength: 120
+          description: Optional display name for the new user.
+      required:
+        - email
+        - password
     WaitlistEntriesResult:
       type: object
       properties:

@@ -8,6 +8,7 @@ import { useLocation } from "wouter";
 import { ApiError } from "@workspace/api-client-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { BrandLogo } from "@/components/brand/BrandMark";
+import { CREATE_ACCOUNT_PATH } from "@/navigation/preLoginRoutes";
 
 // ── Value proposition copy (mirrors marketing site COPY) ─────────────────
 const FEATURES = [
@@ -97,7 +98,7 @@ export function LoginPage() {
 
       {/* ── LEFT PANEL — value proposition (lg+) ─────────────────────────── */}
       <div
-        className="hidden lg:flex flex-col w-[48%] max-w-2xl border-r border-white/[0.06] relative overflow-hidden"
+        className="hidden lg:flex flex-col w-1/2 border-r border-white/[0.06] relative overflow-hidden"
         style={{
           background:
             "radial-gradient(ellipse 70% 55% at 30% 15%, hsl(222 100% 54% / 0.18) 0%, transparent 70%), " +
@@ -353,21 +354,16 @@ export function LoginPage() {
             </p>
           </div>
 
-          {/* Create Account — disabled stub */}
-          <div className="space-y-1.5">
+          {/* Create Account */}
+          <div>
             <button
               type="button"
-              disabled
-              aria-disabled="true"
-              title="Account creation is not yet available — coming at beta launch"
-              className="w-full h-10 rounded-lg border border-white/[0.06] text-[13px] font-semibold text-white/20 opacity-50 cursor-not-allowed flex items-center justify-center"
+              onClick={() => navigate(CREATE_ACCOUNT_PATH)}
+              className="w-full h-10 rounded-lg border border-white/[0.10] text-[13px] font-semibold text-white/55 hover:text-white/80 hover:border-white/20 transition-colors flex items-center justify-center"
               data-testid="button-create-account"
             >
               Create Account
             </button>
-            <p className="text-[11px] text-white/25 text-center">
-              Beta feature — coming soon
-            </p>
           </div>
 
           {/* Marketing site link — desktop only (mobile has it above) */}

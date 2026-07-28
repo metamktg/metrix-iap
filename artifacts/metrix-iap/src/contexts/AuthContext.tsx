@@ -26,6 +26,8 @@ interface AuthContextValue {
   login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   logout: () => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  /** Directly hydrate the auth cache (e.g. after account registration). */
+  setUser: (user: AuthUser) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -76,9 +78,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [queryClient],
   );
 
+  const setUser = useCallback(
+    (user: AuthUser) => {
+      queryClient.setQueryData(getAuthMeQueryKey(), user);
+    },
+    [queryClient],
+  );
+
   return (
     <AuthContext.Provider
-      value={{ user: data ?? null, isLoading, login, logout, changePassword }}
+      value={{ user: data ?? null, isLoading, login, logout, changePassword, setUser }}
     >
       {children}
     </AuthContext.Provider>

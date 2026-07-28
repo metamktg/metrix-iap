@@ -925,6 +925,20 @@ export interface AuthResetPasswordResult {
   status: AuthResetPasswordResultStatus;
 }
 
+export interface AuthRegisterInput {
+  email: string;
+  /**
+     * @minLength 8
+     * @maxLength 200
+     */
+  password: string;
+  /**
+     * Optional display name for the new user.
+     * @maxLength 120
+     */
+  display_name?: string;
+}
+
 export interface WaitlistEntriesResult {
   entries: WaitlistEntry[];
   total: number;
