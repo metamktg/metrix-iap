@@ -14,6 +14,7 @@
     "smoke:api-server": "tsx ./src/smoke-api-server.ts",
     "smoke:metrix-iap-build": "tsx ./src/smoke-metrix-iap-build.ts",
     "smoke:metrix-iap-tests": "tsx ./src/smoke-metrix-iap-tests.ts",
+    "smoke:login-page-layout": "tsx ./src/smoke-login-page-layout.ts",
     "smoke:marketing-build": "tsx ./src/smoke-marketing-build.ts",
     "smoke:marketing-e2e": "tsx ./src/smoke-marketing-e2e.ts",
     "import:metrix": "tsx ./src/metrix-supabase/import.ts",

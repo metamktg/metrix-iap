@@ -1,9 +1,13 @@
-// Smoke check for the Metrix IAP vitest suite.
+// Smoke check for the Metrix IAP vitest suite + login page layout e2e.
 //
-// Runs `vitest run` for the metrix-iap package and asserts all tests pass.
-// Catches the class of regression where a jsdom environment bug (missing
-// polyfill, broken mock, etc.) causes test failures that would otherwise
-// only be noticed manually.
+// 1. Runs `vitest run` for the metrix-iap package and asserts all tests pass.
+//    Catches the class of regression where a jsdom environment bug (missing
+//    polyfill, broken mock, etc.) causes test failures that would otherwise
+//    only be noticed manually.
+//
+// 2. Runs the Playwright login page layout spec (smoke:login-page-layout)
+//    which boots the metrix-iap dev server and verifies the split-panel
+//    layout at mobile (375 px) and desktop (1280 px) widths.
 //
 // Run: pnpm --filter @workspace/scripts run smoke:metrix-iap-tests
 
@@ -22,18 +26,13 @@ function fail(message: string, extra?: string): never {
   process.exit(1);
 }
 
-async function main() {
-  console.log("Running @workspace/metrix-iap vitest suite...");
-  await new Promise<void>((resolve, reject) => {
-    const child = spawn(
-      "pnpm",
-      ["--filter", "@workspace/metrix-iap", "run", "test"],
-      {
-        cwd: repoRoot,
-        env: process.env,
-        stdio: ["ignore", "pipe", "pipe"],
-      },
-    );
+function spawnScript(label: string, args: string[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn("pnpm", args, {
+      cwd: repoRoot,
+      env: process.env,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
     let output = "";
     child.stdout.on("data", (d: Buffer) => {
       output += d;
@@ -50,16 +49,39 @@ async function main() {
       } else {
         reject(
           new Error(
-            `vitest exited with code ${code}\n--- output ---\n${output || "(no output)"}`,
+            `${label} exited with code ${code}\n--- output ---\n${output || "(no output)"}`,
           ),
         );
       }
     });
-  }).catch((err) => {
+  });
+}
+
+async function main() {
+  // ── Step 1: vitest unit/component tests ──────────────────────────────────
+  console.log("Running @workspace/metrix-iap vitest suite...");
+  await spawnScript("vitest", [
+    "--filter",
+    "@workspace/metrix-iap",
+    "run",
+    "test",
+  ]).catch((err) => {
     fail("Metrix IAP test suite failed", String(err?.message ?? err));
   });
+  console.log("\nPASS  Metrix IAP vitest suite passed");
 
-  console.log("\nPASS  Metrix IAP test suite passed");
+  // ── Step 2: Playwright login page layout e2e ─────────────────────────────
+  console.log("\nRunning login page layout e2e...");
+  await spawnScript("smoke:login-page-layout", [
+    "--filter",
+    "@workspace/scripts",
+    "run",
+    "smoke:login-page-layout",
+  ]).catch((err) => {
+    fail("Login page layout e2e failed", String(err?.message ?? err));
+  });
+
+  console.log("\nPASS  All Metrix IAP smoke checks passed");
   process.exit(0);
 }
 
