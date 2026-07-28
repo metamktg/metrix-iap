@@ -95,7 +95,6 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen bg-background flex items-stretch">
-
       {/* ── LEFT PANEL — value proposition (lg+) ─────────────────────────── */}
       <div
         className="hidden lg:flex flex-col w-1/2 border-r border-white/[0.06] relative overflow-hidden"
@@ -117,18 +116,18 @@ export function LoginPage() {
           }}
         />
 
-        <div className="relative z-10 flex flex-col h-full px-12 py-12">
+        <div className="relative z-10 flex flex-col h-full px-12 py-12 pt-[0px] pb-[0px] mt-[35px] mb-[35px] justify-start items-end">
 
           {/* ── Brand mark ─────────────────────────────────────────────── */}
           <div className="flex items-center gap-3">
             <BrandLogo className="w-9 h-9" />
-            <span className="text-[22px] font-bold tracking-tight text-white" style={{ letterSpacing: "-0.02em" }}>
+            <span className="text-[22px] font-bold tracking-tight text-white text-right" style={{ letterSpacing: "-0.02em" }}>
               metrix
             </span>
           </div>
 
           {/* ── Main content — pushes to vertical center ───────────────── */}
-          <div className="flex-1 flex flex-col justify-center space-y-10 pt-12 pb-4">
+          <div className="flex-1 flex flex-col space-y-10 pt-12 pb-4 text-left justify-center items-end">
 
             {/* Headline */}
             <div className="space-y-5">
@@ -207,7 +206,6 @@ export function LoginPage() {
           </p>
         </div>
       </div>
-
       {/* ── RIGHT PANEL — login form ──────────────────────────────────────── */}
       <div
         className="flex-1 flex flex-col items-center justify-center px-6 py-12"
