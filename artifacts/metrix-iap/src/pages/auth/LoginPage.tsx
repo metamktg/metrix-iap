@@ -98,7 +98,7 @@ export function LoginPage() {
 
       {/* ── LEFT PANEL — value proposition (lg+) ─────────────────────────── */}
       <div
-        className="hidden lg:flex flex-col w-[48%] max-w-2xl border-r border-white/[0.06] relative overflow-hidden"
+        className="hidden lg:flex flex-col w-1/2 border-r border-white/[0.06] relative overflow-hidden"
         style={{
           background:
             "radial-gradient(ellipse 70% 55% at 30% 15%, hsl(222 100% 54% / 0.18) 0%, transparent 70%), " +
