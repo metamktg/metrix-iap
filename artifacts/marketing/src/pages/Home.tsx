@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { Link } from "wouter";
 import { COPY, BOOK_DEMO_URL } from "../content";
 import { RequestAccessForm } from "../components/RequestAccessForm";
 import { BrandMark } from "../components/BrandMark";
@@ -112,8 +113,13 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="w-full py-8 text-center text-sm text-[var(--mx-text-faint)] border-t border-[var(--mx-border-soft)] mt-auto relative z-10">
-        &copy; {new Date().getFullYear()} Metrix Intelligence Platform. All rights reserved.
+      <footer className="w-full py-8 flex flex-col items-center gap-3 text-center text-sm text-[var(--mx-text-faint)] border-t border-[var(--mx-border-soft)] mt-auto relative z-10">
+        <div className="flex gap-6">
+          <Link href="/privacy" className="hover:text-white">Privacy Policy</Link>
+          <Link href="/terms" className="hover:text-white">Terms of Service</Link>
+          <Link href="/data-deletion" className="hover:text-white">Data Deletion</Link>
+        </div>
+        <p>&copy; {new Date().getFullYear()} Metrix Intelligence Platform. All rights reserved.</p>
       </footer>
     </div>
   );
