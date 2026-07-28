@@ -20,10 +20,17 @@ export function ConceptChip({ code, className }: ConceptChipProps) {
   const entry = useConceptDescriptor(code);
   const descriptor = entry?.descriptor ?? code;
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = (e: React.SyntheticEvent) => {
     e.stopPropagation();
     const focusCell = entry?.source_cells?.[0] ?? code;
     navigate(`/app/analysis/library?focus=${encodeURIComponent(focusCell)}`);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleClick(e);
+    }
   };
 
   const handleMouseEnter = () => {
@@ -33,9 +40,19 @@ export function ConceptChip({ code, className }: ConceptChipProps) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <button
-          type="button"
+        {/*
+          Chips render inline inside card/row text that is itself a <button>
+          (see TokenizedConceptText usages) — a real <button> here would be
+          invalid nested interactive HTML and double-fire the outer click via
+          bubbling. A span with button semantics + explicit key handling
+          keeps it clickable, hoverable, and keyboard-accessible without
+          nesting.
+        */}
+        <span
+          role="button"
+          tabIndex={0}
           onClick={handleClick}
+          onKeyDown={handleKeyDown}
           onMouseEnter={handleMouseEnter}
           className={
             className ??
@@ -47,7 +64,7 @@ export function ConceptChip({ code, className }: ConceptChipProps) {
           aria-label={`Concept ${code}: ${descriptor}`}
         >
           {descriptor}
-        </button>
+        </span>
       </TooltipTrigger>
       <TooltipContent
         side="top"
