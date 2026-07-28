@@ -209,6 +209,7 @@ OR used standalone when the avatar focus IS the primary structural approach.
 
 Best Practice: When both apply, prioritize the structural format as primary
 concept code and indicate avatar focus through ICP targeting or secondary tagging.
+
 ---
 
 ## **Master Angle Variables**
@@ -719,6 +720,7 @@ CTA codes are **OPTIONAL** angle variables (0-1 per creative).
 - **REASON:** Clarifies distinction from PR_Testimonial (both are social proof)
 - **EFFECTIVE:** [8th November, 2025]
 - **MIGRATION:** Historical data tagged PR_SocialProof should be updated to PR_MassProof
+
 ---
 
 ## **Quick Reference Tables**
