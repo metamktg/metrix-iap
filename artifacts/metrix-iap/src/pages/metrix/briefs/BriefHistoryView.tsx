@@ -22,6 +22,15 @@ const STATUS_LABEL: Record<string, string> = {
 
 const isDraftStatus = (status: string) => status.endsWith("_from_seed") || status.includes("draft");
 
+// Fallback for any status value STATUS_LABEL doesn't have prose for yet
+// (e.g. this account's briefs use "generated_p1"/"generated_p2", which
+// isn't one of the _from_seed variants above) — humanize it into words
+// instead of showing the raw snake_case status verbatim.
+function humanizeStatus(status: string): string {
+  const spaced = status.replace(/_/g, " ").trim();
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
 export function BriefHistoryView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
@@ -76,7 +85,7 @@ export function BriefHistoryView() {
                           <p className="text-[12px] font-semibold text-foreground leading-tight">{pillarLabel(b.source_pillar)}</p>
                           <span className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground/60 border border-border/40 px-1.5 py-0.5 rounded leading-none">{b.asset_type}</span>
                         </div>
-                        <p className="text-[11px] text-muted-foreground/60 mt-1 leading-relaxed">{STATUS_LABEL[b.status] ?? b.status}</p>
+                        <p className="text-[11px] text-muted-foreground/60 mt-1 leading-relaxed">{STATUS_LABEL[b.status] ?? humanizeStatus(b.status)}</p>
                         <div className="mt-2">
                           <CrossLink to={`/app/briefs/builder?focus=${b.id}`} label="Open in Brief Builder" />
                         </div>
