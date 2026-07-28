@@ -117,7 +117,8 @@ export function LoginPage() {
           }}
         />
 
-        <div className="relative z-10 flex flex-col h-full px-12 py-10">
+        {/* Centred content column — mirrors the right panel's max-w approach */}
+        <div className="relative z-10 flex flex-col h-full py-10 max-w-[620px] mx-auto w-full px-10">
 
           {/* ── Brand mark ─────────────────────────────────────────────── */}
           <div className="flex items-center gap-3">
@@ -210,15 +211,14 @@ export function LoginPage() {
 
       {/* ── RIGHT PANEL — login form ──────────────────────────────────────── */}
       {/*
-        Mobile/tablet: justify-start + pt-10 so content flows from the top.
-        Desktop (lg+): justify-center so the form is vertically centred in the panel.
+        Outer div is just the scrollable region. Inner div uses min-h-full so
+        justify-center always centres the form when content fits, and the outer
+        scrolls when it doesn't — works correctly at every breakpoint.
       */}
-      <div
-        className="flex-1 flex flex-col items-center justify-start pt-10 lg:justify-center lg:pt-0 px-6 pb-12 overflow-y-auto"
-        style={{ background: "hsl(222 22% 6%)" }}
-      >
+      <div className="flex-1 overflow-y-auto" style={{ background: "hsl(222 22% 6%)" }}>
+      <div className="min-h-full flex flex-col items-center justify-center px-6 py-12">
         {/* Mobile-only compact brand + CTA strip */}
-        <div className="lg:hidden w-full max-w-[400px] mb-8 pb-6 border-b border-white/[0.07] space-y-3">
+        <div className="lg:hidden w-full max-w-[480px] mb-8 pb-6 border-b border-white/[0.07] space-y-3">
           <div className="flex items-center gap-2.5">
             <BrandLogo className="w-8 h-8" />
             <span className="text-lg font-bold tracking-tight text-white">metrix</span>
@@ -234,7 +234,7 @@ export function LoginPage() {
           </a>
         </div>
 
-        <div className="w-full max-w-[400px] space-y-6">
+        <div className="w-full max-w-[480px] space-y-6">
 
           {/* Form heading */}
           <div className="space-y-1.5">
@@ -381,7 +381,8 @@ export function LoginPage() {
             </a>
           </div>
         </div>
-      </div>
+      </div>{/* end min-h-full inner */}
+      </div>{/* end overflow-y-auto outer */}
     </div>
   );
 }
