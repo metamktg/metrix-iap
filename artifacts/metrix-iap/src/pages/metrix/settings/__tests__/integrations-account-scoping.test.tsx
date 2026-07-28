@@ -45,6 +45,11 @@ vi.mock("@workspace/api-client-react", async (importOriginal) => {
     })),
     useRunMetaReports: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
     useListMetaReportRows: vi.fn(() => ({ data: undefined, isLoading: false, isError: false })),
+    // ManualImportDialog hooks
+    useStageManualImport: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
+    useListManualImports: vi.fn(() => ({ data: { imports: [] }, isLoading: false, refetch: vi.fn() })),
+    useUpdateManualImportAdNames: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
+    useDeleteManualImport: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
   };
 });
 
@@ -136,6 +141,41 @@ describe("ad_account scoped", () => {
     expect(container.textContent).not.toContain("Manual imports");
   });
 
+  it("shows the platform badge for the scoped ad account", () => {
+    // "bookster" has platform "Meta Ads" in the seed fixture.
+    select("ad_account", "bookster");
+    const { container } = renderView();
+    // The platform label must appear as the sub-line beneath the account name.
+    expect(container.textContent).toContain("Meta Ads");
+  });
+
+  it("shows the correct connection status chip for a configured account", () => {
+    // "bookster" has status "configured" → chip must read "Connected".
+    select("ad_account", "bookster");
+    const { container } = renderView();
+    expect(container.textContent).toContain("Connected");
+  });
+
+  it("shows the 'Not connected' chip for an unconfigured account", () => {
+    // "manual_OO2Jaeb2PBfu" has status "unconfigured".
+    select("ad_account", "manual_OO2Jaeb2PBfu");
+    const { container } = renderView();
+    expect(container.textContent).toContain("Not connected");
+    expect(container.textContent).not.toContain('"Connected"');
+  });
+
+  it("opens the ManualImportDialog when the Manual import button is clicked", () => {
+    select("ad_account", "bookster");
+    renderView();
+    // The Manual import button must be present in the panel.
+    const btn = screen.getByTestId("button-manual-import-integrations");
+    expect(btn).toBeTruthy();
+    // Clicking it must open the dialog — the dialog title "Add Manual Import"
+    // must become visible in the document.
+    fireEvent.click(btn);
+    expect(document.body.textContent).toContain("Add Manual Import");
+  });
+
   it('renders an "Agency-wide integration settings" crosslink that calls selectManager', () => {
     select("ad_account", "bookster");
     renderView();
@@ -147,6 +187,24 @@ describe("ad_account scoped", () => {
     fireEvent.click(link);
     expect(document.body.textContent).not.toContain("Agency view only");
     expect(document.body.textContent).toContain("Ad account configurations");
+  });
+
+  it("clicking the agency-wide link removes the ?account= URL param", () => {
+    // Navigate with the account param set, simulating how the crosslink
+    // from Listen/Alerts/Signals lands users on the integrations page.
+    window.history.replaceState({}, "", "/app/settings/integrations?account=bookster");
+    select("ad_account", "bookster");
+    renderView();
+
+    // Verify the param is initially present.
+    expect(new URLSearchParams(window.location.search).get("account")).toBe("bookster");
+
+    const link = screen.getByRole("button", { name: /Agency-wide integration settings/i });
+    fireEvent.click(link);
+
+    // After selectManager the context writes null back to the URL param,
+    // which should result in the ?account= param being absent.
+    expect(new URLSearchParams(window.location.search).get("account")).toBeNull();
   });
 
   it("hides MetaLiveConnection connect controls even when Meta is not connected", () => {
