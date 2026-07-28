@@ -116,12 +116,12 @@ export function LoginPage() {
           }}
         />
 
-        <div className="relative z-10 flex flex-col h-full px-12 py-12 pt-[0px] pb-[0px] mt-[35px] mb-[35px] justify-start items-end">
+        <div className="relative z-10 flex flex-col h-full px-12 py-12">
 
           {/* ── Brand mark ─────────────────────────────────────────────── */}
           <div className="flex items-center gap-3">
             <BrandLogo className="w-9 h-9" />
-            <span className="text-[22px] font-bold tracking-tight text-white text-right" style={{ letterSpacing: "-0.02em" }}>
+            <span className="text-[22px] font-bold tracking-tight text-white" style={{ letterSpacing: "-0.02em" }}>
               metrix
             </span>
           </div>
