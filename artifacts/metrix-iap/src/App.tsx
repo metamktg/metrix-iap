@@ -30,6 +30,7 @@ import { SignalView } from "@/pages/metrix/listen/SignalView";
 import { AlertsView } from "@/pages/metrix/listen/AlertsView";
 import { RecommendationsView } from "@/pages/metrix/listen/RecommendationsView";
 import { AnalysisHub } from "@/pages/metrix/analysis/AnalysisHub";
+import { FindingsView } from "@/pages/metrix/analysis/FindingsView";
 import { AnalysisOverview } from "@/pages/metrix/analysis/AnalysisOverview";
 import { IapLibraryView } from "@/pages/metrix/analysis/IapLibraryView";
 import { AudienceView } from "@/pages/metrix/analysis/AudienceView";
@@ -98,7 +99,7 @@ export function Router() {
       <Route path="/app/account"    component={Overview} />
 
       {/* ── New placeholder routes ────────────────────────────────────── */}
-      <Route path="/app/analyze/findings">{() => <ComingSoonStub label="Findings" />}</Route>
+      <Route path="/app/analyze/findings" component={FindingsView} />
       <Route path="/app/act/queue">{() => <ComingSoonStub label="Action Queue" />}</Route>
       <Route path="/app/analyze">{() => <Redirect to="/app/analyze/findings" replace />}</Route>
       <Route path="/app/act">{() => <Redirect to="/app/act/queue" replace />}</Route>

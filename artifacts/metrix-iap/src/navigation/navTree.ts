@@ -87,8 +87,6 @@ export const navTree: NavSection[] = [
         id: "analyze-findings",
         label: "Findings",
         to: "/app/analyze/findings",
-        placeholder: true,
-        teaser: "AI-generated verdict panel — surfaces your top insight in one sentence.",
       },
       {
         id: "analyze-audience",
