@@ -19,6 +19,12 @@
 //      avatar segment row — catches silent empty-grid regressions.
 //   8. Result-event guard: "Avatar × placement breakdown" button is absent for
 //      result-event metrics; the info notice renders in its place.
+//   13a. SegmentGridModal placement marginals — spend metric: "All avatars" row
+//      shows dollar values (not "—") in placement cells, catching silent regressions
+//      in the spend case of metricValueForSegment().
+//   13b. SegmentGridModal placement marginals — link_ctr metric: "All avatars" row
+//      shows percentage values (not "—") in placement cells, catching regressions
+//      in the link_ctr case of metricValueForSegment().
 //
 // API calls are intercepted with page.route() so no live API server is needed.
 // The seed fixture comes from the checked-in test snapshot.
@@ -1076,6 +1082,188 @@ async function main() {
             bodyText.includes("All avatars"),
             'SegmentGridModal must render the "All avatars" placement-marginal ' +
               "footer row when avatar segments exist.",
+          );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+
+    // ── Test 13a: SegmentGridModal placement marginals — spend metric ─────────
+    // Opens SegmentGridModal via the "Total spend" tile (default tile, no
+    // localStorage override needed).  Asserts:
+    //   • "All avatars" placement-marginal row is present (sub-label visible)
+    //   • Placement cells show dollar values (spend = usd(t.spend, 0)) rather
+    //     than the "—" sentinel that would appear if metricValueForSegment()
+    //     hit an unhandled branch.
+    // The bookster fixture ships 19 v3 + 19 c4e placement rows so topPlacements()
+    // will always return columns with non-zero spend.
+    await test(
+      "SegmentGridModal placement marginals — spend metric shows dollar values in 'All avatars' row",
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        try {
+          await mockApis(ctx);
+          await page.goto(`${BASE}/app/account?account=${ACCOUNT}`, {
+            waitUntil: "domcontentloaded",
+          });
+
+          await page
+            .getByText("Account Totals", { exact: false })
+            .waitFor({ state: "visible", timeout: 20_000 });
+
+          // Hover the "Total spend" tile.
+          const tileBtn = page
+            .locator("button")
+            .filter({ hasText: "Total spend" })
+            .first();
+          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
+          await tileBtn.hover();
+
+          // Open MetricDiagnosticModal via the footer link.
+          const diagnoseBtn = page.getByText("Diagnose full breakdown");
+          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
+          await diagnoseBtn.click();
+
+          const diagnosticHeader = page.getByText("Metric diagnostic", {
+            exact: false,
+          });
+          await diagnosticHeader.waitFor({ state: "visible", timeout: 8_000 });
+
+          // Open SegmentGridModal via the drilldown button.
+          const segmentBtn = page.getByRole("button", {
+            name: "Avatar × placement breakdown",
+          });
+          await segmentBtn.waitFor({ state: "visible", timeout: 5_000 });
+          await segmentBtn.click();
+
+          // Wait for SegmentGridModal to open.
+          const segmentTitle = page.getByText(
+            "Total spend — avatar × placement",
+            { exact: false },
+          );
+          await segmentTitle.waitFor({ state: "visible", timeout: 8_000 });
+
+          // Locate the "All avatars" placement-marginal footer row inside the
+          // dialog and read its full text content.
+          const dialog = page.locator('[role="dialog"]').last();
+          const allAvatarsRow = dialog
+            .locator("tr")
+            .filter({ hasText: "All avatars" });
+          await allAvatarsRow.waitFor({ state: "visible", timeout: 5_000 });
+
+          const rowText = (await allAvatarsRow.textContent()) ?? "";
+
+          // Sub-label confirms we found the right row.
+          assert(
+            rowText.includes("placement marginals"),
+            `"All avatars" row must contain the "placement marginals" sub-label. ` +
+              `Row text: "${rowText}"`,
+          );
+
+          // For the spend metric, metricValueForSegment() returns usd(t.spend, 0)
+          // which formats as "$X" or "$X,XXX".  The row must include at least one
+          // dollar sign — a missing "$" means all placement cells rendered "—",
+          // signalling a broken metricValueForSegment() branch.
+          assert(
+            rowText.includes("$"),
+            `"All avatars" row for the spend metric must contain at least one dollar ` +
+              `value in the placement cells. Row text: "${rowText}"`,
+          );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+
+    // ── Test 13b: SegmentGridModal placement marginals — link_ctr metric ──────
+    // Same flow as 13a but uses the "Link CTR" tile (another default tile so no
+    // localStorage override needed).  Asserts:
+    //   • "All avatars" placement-marginal row is present
+    //   • Placement cells show percentage values (link_ctr = "X.XX%") rather than
+    //     "—", which would indicate an unhandled switch case in metricValueForSegment().
+    // The fixture placement rows carry both Link clicks and Impressions so the
+    // link_ctr branch (impressions > 0 → percentage) should produce real values.
+    await test(
+      "SegmentGridModal placement marginals — link_ctr metric shows percentage values in 'All avatars' row",
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        try {
+          // "Link CTR" is one of the four default metric tiles — no localStorage
+          // override needed.
+          await mockApis(ctx);
+          await page.goto(`${BASE}/app/account?account=${ACCOUNT}`, {
+            waitUntil: "domcontentloaded",
+          });
+
+          await page
+            .getByText("Account Totals", { exact: false })
+            .waitFor({ state: "visible", timeout: 20_000 });
+
+          // Hover the "Link CTR" tile.
+          const tileBtn = page
+            .locator("button")
+            .filter({ hasText: "Link CTR" })
+            .first();
+          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
+          await tileBtn.hover();
+
+          // Open MetricDiagnosticModal.
+          const diagnoseBtn = page.getByText("Diagnose full breakdown");
+          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
+          await diagnoseBtn.click();
+
+          const diagnosticHeader = page.getByText("Metric diagnostic", {
+            exact: false,
+          });
+          await diagnosticHeader.waitFor({ state: "visible", timeout: 8_000 });
+
+          // Open SegmentGridModal via the drilldown button.
+          const segmentBtn = page.getByRole("button", {
+            name: "Avatar × placement breakdown",
+          });
+          await segmentBtn.waitFor({ state: "visible", timeout: 5_000 });
+          await segmentBtn.click();
+
+          // Wait for SegmentGridModal to open — title will include the metric label.
+          const segmentTitle = page.getByText(
+            "Link CTR — avatar × placement",
+            { exact: false },
+          );
+          await segmentTitle.waitFor({ state: "visible", timeout: 8_000 });
+
+          // Locate the "All avatars" placement-marginal footer row inside the
+          // SegmentGridModal dialog (use `.last()` because MetricDiagnosticModal
+          // may still be stacked behind it as a second dialog).
+          const dialog = page.locator('[role="dialog"]').last();
+          const allAvatarsRow = dialog
+            .locator("tr")
+            .filter({ hasText: "All avatars" });
+          await allAvatarsRow.waitFor({ state: "visible", timeout: 5_000 });
+
+          const rowText = (await allAvatarsRow.textContent()) ?? "";
+
+          // Sub-label confirms we found the right row.
+          assert(
+            rowText.includes("placement marginals"),
+            `"All avatars" row must contain the "placement marginals" sub-label. ` +
+              `Row text: "${rowText}"`,
+          );
+
+          // For the link_ctr metric, metricValueForSegment() computes
+          // (linkClicks / impressions) * 100 and formats as "X.XX%".  At least
+          // one placement cell must show a "%" — if all cells show "—" the
+          // switch case is broken or the arithmetic produced null unexpectedly.
+          assert(
+            rowText.includes("%"),
+            `"All avatars" row for the link_ctr metric must contain at least one ` +
+              `percentage value in the placement cells. Row text: "${rowText}"`,
           );
         } finally {
           await ctx.close();
