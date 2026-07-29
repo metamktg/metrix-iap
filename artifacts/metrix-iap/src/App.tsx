@@ -23,6 +23,7 @@ import { AccountProvider } from "@/contexts/AccountContext";
 import { DateRangeProvider } from "@/contexts/DateRangeContext";
 import { ConceptRegistryProvider } from "@/lib/concept-registry-context";
 import { Overview } from "@/pages/metrix/Overview";
+import { ListenCommandCenter } from "@/pages/metrix/listen/ListenCommandCenter";
 import { SignalView } from "@/pages/metrix/listen/SignalView";
 import { AlertsView } from "@/pages/metrix/listen/AlertsView";
 import { RecommendationsView } from "@/pages/metrix/listen/RecommendationsView";
@@ -89,6 +90,7 @@ export function Router() {
       <Route path="/app/account"    component={Overview} />
 
       {/* ── 02 Listen ─────────────────────────────────────────────────── */}
+      <Route path="/app/listen"                 component={ListenCommandCenter} />
       <Route path="/app/listen/alerts"          component={AlertsView} />
       <Route path="/app/listen/signal"          component={SignalView} />
       <Route path="/app/listen/recommendations" component={RecommendationsView} />
@@ -148,7 +150,6 @@ export function Router() {
       <Route path="/app/settings/billing"       component={BillingView} />
 
       {/* ── Legacy route redirects (old IA → new IA, zero dead ends) ──── */}
-      <Route path="/app/listen">{() => <Redirect to="/app/listen/alerts" replace />}</Route>
       <Route path="/app/analysis/overview">{() => <Redirect to="/app/analysis/performance" replace />}</Route>
       <Route path="/app/analysis/concept-map">{() => <Redirect to="/app/mst/cross-map" replace />}</Route>
       <Route path="/app/mst/concept-map">{() => <Redirect to="/app/mst/cross-map" replace />}</Route>
