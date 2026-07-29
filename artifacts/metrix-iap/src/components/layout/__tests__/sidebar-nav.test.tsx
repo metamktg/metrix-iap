@@ -80,20 +80,20 @@ describe("navTree landing routes", () => {
     }
   });
 
-  it("Analysis and Strategy land on the Hub page (execution control center), with Overview as first child", () => {
-    const analysis = navTree.find((s) => s.id === "analysis")!;
-    const strategy = navTree.find((s) => s.id === "strategy")!;
-    // Hub page is the landing — clicking the section header goes to the Hub.
-    expect(sectionLandingRoute(analysis)).toBe("/app/analysis");
-    expect(sectionLandingRoute(strategy)).toBe("/app/strategy");
-    // Overview is the first child (accordion item), not the parent route.
-    expect(analysis.children?.some((c) => c.id === "analysis-overview")).toBe(true);
-    expect(strategy.children?.some((c) => c.id === "strategy-overview")).toBe(true);
+  it("Analyze and Act land on their hub page, with the first child as the accordion item", () => {
+    const analyze = navTree.find((s) => s.id === "analyze")!;
+    const act = navTree.find((s) => s.id === "act")!;
+    // Hub page is the landing — clicking the section header goes to the hub.
+    expect(sectionLandingRoute(analyze)).toBe("/app/analyze");
+    expect(sectionLandingRoute(act)).toBe("/app/act");
+    // First children exist in accordion.
+    expect(analyze.children?.some((c) => c.id === "analyze-findings")).toBe(true);
+    expect(act.children?.some((c) => c.id === "act-queue")).toBe(true);
   });
 
-  it("sections without an Overview child land on their first child", () => {
-    const listen = navTree.find((s) => s.id === "listen")!;
-    expect(sectionLandingRoute(listen)).toBe(listen.children![0].to);
+  it("Settings lands on its first child since it has no explicit landing", () => {
+    const settings = navTree.find((s) => s.id === "settings")!;
+    expect(sectionLandingRoute(settings)).toBe(settings.children![0].to);
   });
 });
 
@@ -102,46 +102,46 @@ describe("Sidebar section headers", () => {
     renderWithProviders(<Sidebar />);
     const nav = screen.getByLabelText("Main workspace navigation");
 
-    // Analysis children hidden initially (not on an analysis route)
-    expect(isExpanded(within(nav).getByLabelText("Analysis pages"))).toBe(false);
+    // Analyze children hidden initially (not on an analyze route)
+    expect(isExpanded(within(nav).getByLabelText("Analyze pages"))).toBe(false);
 
-    fireEvent.click(within(nav).getByText("Analysis"));
-    expect(window.location.pathname).toBe("/app/analysis");
-    const childList = within(nav).getByLabelText("Analysis pages");
+    fireEvent.click(within(nav).getByText("Analyze"));
+    expect(window.location.pathname).toBe("/app/analyze");
+    const childList = within(nav).getByLabelText("Analyze pages");
     expect(isExpanded(childList)).toBe(true);
-    // Expanded children show Overview first, then all analysis subpages.
-    expect(within(childList).getByText("Overview")).toBeTruthy();
-    expect(within(childList).getByText("IAP Library")).toBeTruthy();
+    // Expanded children show the Analyze sub-sections.
+    expect(within(childList).getByText("Audience")).toBeTruthy();
+    expect(within(childList).getByText("Placements")).toBeTruthy();
   });
 
-  it("a section without an Overview child navigates to its first child", () => {
+  it("Settings section navigates to its first child when header clicked", () => {
     renderWithProviders(<Sidebar />);
     const nav = screen.getByLabelText("Main workspace navigation");
-    fireEvent.click(within(nav).getByText("Listen"));
-    expect(window.location.pathname).toBe("/app/listen/alerts");
-    const childList = within(nav).getByLabelText("Listen pages");
+    fireEvent.click(within(nav).getByText("Settings"));
+    expect(window.location.pathname).toBe("/app/settings/account");
+    const childList = within(nav).getByLabelText("Settings pages");
     expect(isExpanded(childList)).toBe(true);
-    expect(within(childList).getByText("Signal")).toBeTruthy();
+    expect(within(childList).getByText("Billing")).toBeTruthy();
   });
 
   it("the chevron toggles expansion without navigating", () => {
     renderWithProviders(<Sidebar />);
     const nav = screen.getByLabelText("Main workspace navigation");
-    const toggle = within(nav).getByLabelText("Expand Strategy section");
+    const toggle = within(nav).getByLabelText("Expand Act section");
     fireEvent.click(toggle);
     expect(window.location.pathname).toBe("/");
-    expect(isExpanded(within(nav).getByLabelText("Strategy pages"))).toBe(true);
+    expect(isExpanded(within(nav).getByLabelText("Act pages"))).toBe(true);
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
     fireEvent.click(toggle);
-    expect(isExpanded(within(nav).getByLabelText("Strategy pages"))).toBe(false);
+    expect(isExpanded(within(nav).getByLabelText("Act pages"))).toBe(false);
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
   });
 
-  it("header link carries aria-current when its landing page (Hub) is active", () => {
-    window.history.replaceState({}, "", "/app/analysis");
+  it("header link carries aria-current when its landing page is active", () => {
+    window.history.replaceState({}, "", "/app/analyze");
     renderWithProviders(<Sidebar />);
     const nav = screen.getByLabelText("Main workspace navigation");
-    const header = within(nav).getByText("Analysis").closest("a")!;
+    const header = within(nav).getByText("Analyze").closest("a")!;
     expect(header.getAttribute("aria-current")).toBe("page");
   });
 });
