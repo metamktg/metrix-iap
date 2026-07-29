@@ -18,6 +18,7 @@
     "smoke:marketing-build": "tsx ./src/smoke-marketing-build.ts",
     "smoke:marketing-e2e": "tsx ./src/smoke-marketing-e2e.ts",
     "smoke:metrix-iap-hover-popover": "tsx ./src/smoke-metrix-iap-hover-popover.ts",
+    "smoke:metrix-iap-home-screen": "tsx ./src/smoke-metrix-iap-home-screen.ts",
     "import:metrix": "tsx ./src/metrix-supabase/import.ts",
     "create:user": "tsx ./src/create-user.ts",
     "mirror:auth-users": "tsx ./src/metrix-official/mirror-auth-users.ts",
