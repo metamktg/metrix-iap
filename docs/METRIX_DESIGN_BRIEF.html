@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Metrix IAP — Design Brief & UI Reference</title>
+<style>
+  :root {
+    --bg-deep:    #020711;
+    --bg-main:    #050b18;
+    --bg-panel:   rgba(8,18,38,0.82);
+    --bg-card:    rgba(9,24,50,0.72);
+    --blue:       #155dff;
+    --blue-bright:#1f8fff;
+    --cyan:       #16d9ff;
+    --cyan-soft:  #62e6ff;
+    --indigo:     #183bff;
+    --interactive:#5c9bff;
+    --text-main:  #f5f8ff;
+    --text-soft:  #c6d2e5;
+    --text-muted: #aab6ca;
+    --text-faint: #8796ac;
+    --success:    #35d96f;
+    --danger:     #ff4f61;
+    --warning:    #f7c948;
+    --gold:       #f7c948;
+    --border-soft:  rgba(86,140,255,0.18);
+    --border-med:   rgba(71,163,255,0.32);
+    --border-strong:rgba(0,188,255,0.55);
+    --radius:     14px;
+    --radius-sm:  8px;
+    --radius-lg:  20px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+    background:
+      radial-gradient(circle at 52% 8%,  rgba(0,119,255,0.18), transparent 32%),
+      radial-gradient(circle at 86% 18%, rgba(22,217,255,0.08), transparent 26%),
+      linear-gradient(180deg, #020711 0%, #050b18 48%, #020711 100%);
+    color: var(--text-main);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: "";
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(circle at center, black 0%, transparent 76%);
+    opacity: 0.35; z-index: 0;
+  }
+
+  /* ── Layout ── */
+  .page { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 64px 32px 128px; }
+
+  /* ── Typography ── */
+  h1 { font-size: 2.8rem; font-weight: 800; letter-spacing: -0.035em; line-height: 1.08; }
+  h2 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 20px; color: var(--text-main); }
+  h3 { font-size: 1rem;   font-weight: 700; letter-spacing: -0.01em;  margin-bottom: 12px; color: var(--text-soft); }
+  h4 { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 8px; }
+  p  { color: var(--text-soft); font-size: 0.9rem; line-height: 1.7; }
+
+  code {
+    font-family: "SF Mono", "Fira Code", monospace;
+    font-size: 0.78rem;
+    background: rgba(21,93,255,0.12);
+    border: 1px solid rgba(21,93,255,0.20);
+    color: var(--cyan-soft);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+
+  /* ── Sections ── */
+  .section { margin-bottom: 72px; }
+  .section-rule {
+    border: none;
+    border-top: 1px solid var(--border-soft);
+    margin-bottom: 40px;
+  }
+
+  /* ── Cards ── */
+  .card {
+    position: relative; overflow: hidden;
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius);
+    background: linear-gradient(180deg, rgba(10,28,58,0.78), rgba(5,13,29,0.84));
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.045),
+      0 18px 50px rgba(0,0,0,0.34),
+      0 0 38px rgba(0,104,255,0.08);
+    backdrop-filter: blur(18px);
+    padding: 24px;
+  }
+  .card::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(circle at 18% 0%, rgba(0,188,255,0.18), transparent 34%),
+      linear-gradient(90deg, rgba(255,255,255,0.035), transparent 40%);
+    opacity: 0.5;
+  }
+  .card-inner { position: relative; z-index: 1; }
+
+  /* ── Grid helpers ── */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+  @media (max-width: 700px) {
+    .grid2, .grid3, .grid4 { grid-template-columns: 1fr; }
+  }
+
+  /* ── Hero ── */
+  .hero { padding: 72px 0 56px; border-bottom: 1px solid var(--border-soft); margin-bottom: 64px; }
+  .hero-eyebrow {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.22em;
+    text-transform: uppercase; color: rgba(255,255,255,0.35);
+    margin-bottom: 20px;
+  }
+  .hero-eyebrow span { width: 28px; height: 1px; background: rgba(255,255,255,0.25); display:block; }
+  .hero h1 .accent {
+    background: linear-gradient(95deg, #5c9bff, #16d9ff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .hero-sub { font-size: 1rem; color: var(--text-muted); margin-top: 16px; max-width: 540px; line-height: 1.7; }
+  .version-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: rgba(21,93,255,0.12);
+    border: 1px solid rgba(21,93,255,0.28);
+    color: var(--interactive);
+    padding: 4px 12px; border-radius: 999px;
+    margin-top: 20px;
+  }
+
+  /* ── TOC ── */
+  .toc {
+    background: rgba(8,18,38,0.6);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius);
+    padding: 24px 28px;
+    margin-bottom: 64px;
+  }
+  .toc h4 { margin-bottom: 14px; }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin-bottom: 6px; }
+  .toc a { color: var(--interactive); font-size: 0.87rem; text-decoration: none; }
+  .toc a:hover { color: var(--cyan-soft); }
+
+  /* ── Color swatches ── */
+  .swatch-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+  .swatch {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+    min-width: 90px;
+  }
+  .swatch-block {
+    width: 56px; height: 56px; border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  }
+  .swatch-label { font-size: 0.72rem; color: var(--text-faint); line-height: 1.4; }
+  .swatch-hex   { font-size: 0.7rem; font-family: monospace; color: var(--text-muted); }
+
+  /* ── Token table ── */
+  .token-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-top: 12px; }
+  .token-table th {
+    text-align: left; padding: 8px 12px; font-size: 0.7rem; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint);
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .token-table td { padding: 7px 12px; border-bottom: 1px solid rgba(86,140,255,0.07); vertical-align: top; }
+  .token-table tr:hover td { background: rgba(21,93,255,0.04); }
+  .token-table .tname { color: var(--cyan-soft); font-family: monospace; }
+  .token-table .tval  { color: var(--text-muted); font-family: monospace; font-size: 0.78rem; }
+  .token-table .tdesc { color: var(--text-faint); }
+
+  /* ── Typography scale ── */
+  .type-row { display: flex; align-items: baseline; gap: 16px; padding: 10px 0; border-bottom: 1px solid rgba(86,140,255,0.07); }
+  .type-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); width: 110px; flex-shrink: 0; }
+  .type-sample { color: var(--text-main); }
+
+  /* ── Nav ── */
+  .nav-section-list { list-style: none; display: flex; flex-direction: column; gap: 4px; margin-top: 12px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px; border-radius: 10px;
+    border: 1px solid transparent;
+    font-size: 0.87rem;
+  }
+  .nav-item.active {
+    background: linear-gradient(135deg, rgba(21,93,255,0.96), rgba(22,217,255,0.72));
+    border-color: rgba(120,210,255,0.58);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.24), 0 0 24px rgba(0,133,255,0.42);
+    color: #fff;
+  }
+  .nav-item.inactive { color: var(--text-muted); }
+  .nav-item.inactive:hover { background: rgba(21,93,255,0.08); color: var(--text-soft); }
+  .nav-num  { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em; opacity: 0.5; width: 20px; }
+  .nav-icon { width: 16px; height: 16px; opacity: 0.7; }
+
+  /* ── Component demos ── */
+  .demo-row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 12px; margin-top: 16px; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 0 18px; height: 36px; border-radius: 10px;
+    font-size: 0.82rem; font-weight: 600; cursor: pointer;
+    border: none; transition: all 0.14s ease;
+  }
+  .btn-primary {
+    background: var(--blue); color: #fff;
+    box-shadow: 0 0 20px rgba(21,93,255,0.38), 0 2px 8px rgba(21,93,255,0.22);
+  }
+  .btn-outline {
+    background: transparent; color: var(--text-soft);
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+  .btn-ghost { background: transparent; color: var(--interactive); border: 1px solid rgba(21,93,255,0.25); background: rgba(21,93,255,0.07); }
+  .btn-danger { background: rgba(255,79,97,0.12); color: var(--danger); border: 1px solid rgba(255,79,97,0.25); }
+  .btn-sm { height: 28px; padding: 0 12px; font-size: 0.75rem; border-radius: 7px; }
+  .btn-lg { height: 44px; padding: 0 24px; font-size: 0.9rem; border-radius: 12px; }
+
+  .badge {
+    display: inline-flex; align-items: center; padding: 2px 9px;
+    border-radius: 999px; font-size: 0.7rem; font-weight: 700;
+    letter-spacing: 0.08em; border: 1px solid transparent;
+  }
+  .badge-blue    { background: rgba(21,93,255,0.15); color: var(--interactive); border-color: rgba(21,93,255,0.28); }
+  .badge-cyan    { background: rgba(22,217,255,0.12); color: var(--cyan-soft); border-color: rgba(22,217,255,0.25); }
+  .badge-success { background: rgba(53,217,111,0.12); color: var(--success); border-color: rgba(53,217,111,0.25); }
+  .badge-danger  { background: rgba(255,79,97,0.12); color: var(--danger); border-color: rgba(255,79,97,0.25); }
+  .badge-warning { background: rgba(247,201,72,0.12); color: var(--warning); border-color: rgba(247,201,72,0.25); }
+  .badge-muted   { background: rgba(255,255,255,0.05); color: var(--text-faint); border-color: rgba(255,255,255,0.08); }
+
+  .input-demo {
+    width: 280px; height: 40px; padding: 0 14px;
+    border-radius: 10px; border: 1px solid rgba(86,140,255,0.22);
+    background: rgba(10,26,54,0.7); color: var(--text-main);
+    font-size: 0.84rem; outline: none;
+  }
+  .input-demo:focus {
+    border-color: rgba(21,93,255,0.6);
+    box-shadow: 0 0 0 3px rgba(21,93,255,0.09);
+  }
+
+  /* ── Metric tile ── */
+  .metric-tile {
+    padding: 18px 20px; border-radius: 14px;
+    border: 1px solid var(--border-soft);
+    background: linear-gradient(180deg, rgba(10,28,58,0.78), rgba(5,13,29,0.84));
+    min-width: 140px;
+  }
+  .metric-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 6px; }
+  .metric-value { font-size: 1.6rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.03em; line-height: 1; }
+  .metric-delta { font-size: 0.74rem; font-weight: 600; margin-top: 5px; }
+  .delta-up   { color: var(--success); }
+  .delta-down { color: var(--danger); }
+
+  /* ── Shell diagram ── */
+  .shell-diagram {
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: rgba(2,7,17,0.9);
+    font-size: 0.75rem;
+  }
+  .shell-topbar {
+    height: 44px; display: flex; align-items: center; padding: 0 16px; gap: 8px;
+    background: linear-gradient(180deg, rgba(6,14,30,0.88), rgba(4,10,22,0.82));
+    border-bottom: 1px solid var(--border-soft);
+    color: var(--text-muted);
+  }
+  .shell-body { display: flex; }
+  .shell-sidebar {
+    width: 56px; padding: 12px 0; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    background: linear-gradient(180deg, rgba(8,17,36,0.92), rgba(3,8,18,0.96));
+    border-right: 1px solid var(--border-soft);
+    min-height: 200px;
+  }
+  .shell-sidebar.expanded { width: 216px; align-items: flex-start; padding: 12px 8px; }
+  .shell-nav-dot { width: 28px; height: 28px; border-radius: 8px; background: rgba(255,255,255,0.04); }
+  .shell-nav-row { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; width: 100%; color: var(--text-faint); }
+  .shell-nav-row.active-row { background: linear-gradient(135deg,rgba(21,93,255,0.9),rgba(22,217,255,0.65)); color: #fff; }
+  .shell-content {
+    flex: 1; padding: 20px; color: var(--text-faint);
+    font-size: 0.72rem; line-height: 1.8;
+  }
+  .shell-tray {
+    width: 46px; background: rgba(3,8,18,0.88);
+    border-left: 1px solid var(--border-soft);
+    display: flex; flex-direction: column; align-items: center; padding: 12px 0; gap: 4px;
+    color: var(--text-faint); font-size: 0.65rem;
+  }
+  .dim-tag {
+    display: inline-block; font-size: 0.65rem; font-family: monospace;
+    background: rgba(21,93,255,0.1); border: 1px solid rgba(21,93,255,0.2);
+    color: var(--interactive); padding: 1px 6px; border-radius: 4px; margin: 2px;
+  }
+
+  /* ── Page map ── */
+  .page-map { display: flex; flex-direction: column; gap: 6px; }
+  .pm-section { border: 1px solid var(--border-soft); border-radius: 10px; overflow: hidden; }
+  .pm-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+    background: rgba(10,28,58,0.5);
+    font-size: 0.82rem; font-weight: 600; color: var(--text-soft);
+    border-bottom: 1px solid rgba(86,140,255,0.08);
+  }
+  .pm-children { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 14px; }
+  .pm-child {
+    font-size: 0.75rem; color: var(--text-faint);
+    background: rgba(21,93,255,0.06);
+    border: 1px solid rgba(21,93,255,0.14);
+    padding: 3px 10px; border-radius: 6px;
+  }
+  .pm-num { font-size: 0.65rem; font-weight: 700; color: var(--text-faint); opacity: 0.7; width: 24px; }
+
+  /* ── Login layout diagram ── */
+  .login-diagram {
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    display: flex;
+    height: 320px;
+    font-size: 0.72rem;
+  }
+  .login-left {
+    flex: 1;
+    padding: 24px;
+    background:
+      radial-gradient(ellipse 90% 65% at 15% -5%, rgba(21,93,255,0.20) 0%, transparent 60%),
+      radial-gradient(ellipse 55% 45% at 85% 105%, rgba(21,93,255,0.10) 0%, transparent 55%),
+      hsl(222 28% 7%);
+    border-right: 1px solid rgba(255,255,255,0.05);
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .login-right {
+    flex: 1; padding: 24px;
+    background: hsl(222 22% 6%);
+    display: flex; flex-direction: column; gap: 10px; justify-content: center;
+  }
+  .login-brand { display: flex; align-items: center; gap: 6px; color: var(--text-main); font-weight: 700; font-size: 0.85rem; }
+  .login-logo { width: 22px; height: 22px; background: var(--blue); border-radius: 5px; }
+  .login-headline { font-size: 1.1rem; font-weight: 800; line-height: 1.2; letter-spacing: -0.025em; }
+  .login-headline .g { background: linear-gradient(90deg,#5c9bff,#16d9ff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .login-feat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; flex: 1; align-items: center; }
+  .login-feat {
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px; padding: 7px 9px; font-size: 0.65rem;
+    background: linear-gradient(145deg, rgba(30,55,100,0.75), rgba(15,30,55,0.75));
+    color: var(--text-muted);
+  }
+  .login-input {
+    height: 32px; border-radius: 10px;
+    background: rgba(30,55,100,0.5);
+    border: 1px solid rgba(86,140,255,0.22);
+    padding: 0 10px; font-size: 0.7rem; color: var(--text-muted);
+    display: flex; align-items: center;
+  }
+  .login-btn-primary {
+    height: 32px; border-radius: 10px; background: var(--blue);
+    color: #fff; font-size: 0.72rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 18px rgba(21,93,255,0.35);
+  }
+  .login-lbl { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 2px; }
+
+  /* ── Spec callout ── */
+  .callout {
+    display: flex; gap: 12px; padding: 14px 18px;
+    border: 1px solid rgba(247,201,72,0.22);
+    border-radius: 10px;
+    background: rgba(247,201,72,0.05);
+    font-size: 0.82rem; color: var(--text-soft);
+    margin: 14px 0;
+  }
+  .callout-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+  .callout.info   { border-color: rgba(21,93,255,0.28); background: rgba(21,93,255,0.05); }
+  .callout.success{ border-color: rgba(53,217,111,0.22); background: rgba(53,217,111,0.05); }
+
+  /* ── Spec table ── */
+  .spec-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-top: 12px; }
+  .spec-table th { text-align: left; padding: 8px 12px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); border-bottom: 1px solid var(--border-soft); }
+  .spec-table td { padding: 7px 12px; border-bottom: 1px solid rgba(86,140,255,0.06); color: var(--text-soft); vertical-align: top; }
+  .spec-table td:first-child { color: var(--text-main); font-weight: 600; }
+
+  /* ── Glassmorphism pattern ── */
+  .glass-demo {
+    padding: 20px; border-radius: 14px;
+    border: 1px solid rgba(86,140,255,0.18);
+    background: linear-gradient(180deg, rgba(10,28,58,0.78), rgba(5,13,29,0.84));
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.045),
+      0 18px 50px rgba(0,0,0,0.34),
+      0 0 38px rgba(0,104,255,0.08);
+    backdrop-filter: blur(18px);
+    position: relative; overflow: hidden;
+  }
+  .glass-demo::before {
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background: radial-gradient(circle at 18% 0%, rgba(0,188,255,0.18), transparent 34%),
+      linear-gradient(90deg, rgba(255,255,255,0.035), transparent 40%);
+    opacity: 0.5;
+  }
+  .glass-inner { position: relative; z-index: 1; }
+
+  /* ── Surface depth scale ── */
+  .surface-scale { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .surface-chip {
+    padding: 12px 16px; border-radius: 10px; font-size: 0.72rem; min-width: 120px;
+    border: 1px solid rgba(86,140,255,0.12); color: var(--text-muted);
+  }
+  .surface-chip .s-label { font-weight: 700; color: var(--text-soft); margin-bottom: 3px; }
+  .surface-chip .s-val   { font-family: monospace; font-size: 0.68rem; opacity: 0.7; }
+
+  /* ── Footer ── */
+  .doc-footer {
+    margin-top: 80px; padding-top: 28px;
+    border-top: 1px solid var(--border-soft);
+    font-size: 0.72rem; color: var(--text-faint);
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ══ HERO ══════════════════════════════════════════════════════════ -->
+  <div class="hero">
+    <div class="hero-eyebrow"><span></span> UI Design System Reference</div>
+    <h1>Metrix <span class="accent">IAP</span><br>Design Brief</h1>
+    <p class="hero-sub">Complete visual language, design token reference, component catalogue, and layout architecture for the Metrix Intelligence & Analytics Platform.</p>
+    <div class="version-badge">● Design System v2.0 · Dark Command-Center Cockpit · July 2026</div>
+  </div>
+
+  <!-- ══ TOC ══════════════════════════════════════════════════════════ -->
+  <div class="toc">
+    <h4>Contents</h4>
+    <ol>
+      <li><a href="#brand">Brand Identity</a></li>
+      <li><a href="#colors">Color System</a></li>
+      <li><a href="#typography">Typography</a></li>
+      <li><a href="#tokens">Design Tokens — Complete Reference</a></li>
+      <li><a href="#surfaces">Surface & Depth Scale</a></li>
+      <li><a href="#shell">App Shell Layout</a></li>
+      <li><a href="#navigation">Navigation Architecture</a></li>
+      <li><a href="#components">Core Components</a></li>
+      <li><a href="#patterns">UI Patterns — Glassmorphism & Cards</a></li>
+      <li><a href="#login">Login Page Design</a></li>
+      <li><a href="#motion">Motion & Transitions</a></li>
+      <li><a href="#pages">Full Page Inventory</a></li>
+    </ol>
+  </div>
+
+  <!-- ══ 1. BRAND ══════════════════════════════════════════════════════ -->
+  <div class="section" id="brand">
+    <h2>01 — Brand Identity</h2>
+    <hr class="section-rule" />
+    <div class="grid2">
+      <div class="card">
+        <div class="card-inner">
+          <h3>Concept</h3>
+          <p><strong style="color:var(--text-main)">Dark Command-Center Cockpit.</strong> Metrix is a performance intelligence platform for media buyers and performance marketers. The UI is designed to feel like mission-control software — authoritative, precise, and data-dense — not a typical SaaS dashboard.</p>
+          <br/>
+          <p>Deep navy blacks, electric blue intelligence highlights, and a restrained use of color signal data hierarchy. Every surface earns its place; decoration is functional or absent.</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-inner">
+          <h3>Personality</h3>
+          <table class="spec-table">
+            <tr><td>Voice</td><td>Direct, expert, confident. No fluff.</td></tr>
+            <tr><td>Visual tone</td><td>Precision instrument, not consumer app.</td></tr>
+            <tr><td>Density</td><td>High — data-dense layouts, tight spacing.</td></tr>
+            <tr><td>Motion</td><td>Purposeful only — 140–220ms, ease-out.</td></tr>
+            <tr><td>Audience</td><td>Media buyers, performance marketers, growth leads.</td></tr>
+            <tr><td>Tagline</td><td>"Performance intelligence for marketers who need to move faster."</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="callout info" style="margin-top:16px">
+      <span class="callout-icon">ℹ</span>
+      <span>The app is <strong>always dark-mode only</strong>. There is no light mode variant. All CSS tokens are defined once in <code>:root</code> with no <code>.dark</code> override needed. The <code>.dark</code> class block in <code>index.css</code> mirrors the root values as a Tailwind compatibility shim.</span>
+    </div>
+  </div>
+
+  <!-- ══ 2. COLORS ══════════════════════════════════════════════════════ -->
+  <div class="section" id="colors">
+    <h2>02 — Color System</h2>
+    <hr class="section-rule" />
+
+    <h3>Primary Palette</h3>
+    <div class="swatch-row">
+      <div class="swatch"><div class="swatch-block" style="background:#020711"></div><div class="swatch-label">BG Deep</div><div class="swatch-hex">#020711</div></div>
+      <div class="swatch"><div class="swatch-block" style="background:#050b18"></div><div class="swatch-label">BG Main</div><div class="swatch-hex">#050b18</div></div>
+      <div class="swatch"><div class="swatch-block" style="background:rgba(8,18,38,0.82)"></div><div class="swatch-label">BG Panel</div><div class="swatch-hex">rgba(8,18,38,.82)</div></div>
+      <div class="swatch"><div class="swatch-block" style="background:#155dff"></div><div class="swatch-label">Electric Blue</div><div class="swatch-hex">#155dff</div></div>
+      <div class="swatch"><div class="swatch-block" style="background:#1f8fff"></div><div class="swatch-label">Blue Bright</div><div class="swatch-hex">#1f8fff</div></div>
+      <div class="swatch"><div class="swatch-block" style="background:#183bff"></div><div class="swatch-label">Indigo</div><div class="swatch-hex">#183bff</div></div>
+      <div class="swatch"><div class="swatch-block" style="background:#16d9ff"></div><div class="swatch-label">Cyan</div><div class="swatch-hex">#16d9ff</div></div>
+      <div class="swatch"><div class="swatch-block" style="background:#62e6ff"></div><div class="swatch-label">Cyan Soft</div><div class="swatch-hex">#62e6ff</div></div>
+      <div class="swatch"><div class="swatch-block" style="background:#5c9bff"></div><div class="swatch-label">Interactive</div><div class="swatch-hex">#5c9bff</div></div>
+    </div>
+
+    <h3 style="margin-top:28px">Text Hierarchy</h3>
+    <div class="swatch-row">
+      <div class="swatch"><div class="swatch-block" style="background:#f5f8ff"></div><div class="swatch-label">Primary</div><div class="swatch-hex">#f5f8ff</div></div>
+      <div class="swatch"><div class="swatch-block" style="background:#c6d2e5"></div><div class="swatch-label">Soft</div><div class="swatch-hex">#c6d2e5</div></div>
+      <div class="swatch"><div class="swatch-block" style="background:#aab6ca"></div><div class="swatch-label">Muted</div><div class="swatch-hex">#aab6ca</div></div>
+      <div class="swatch"><div class="swatch-block" style="background:#8796ac"></div><div class="swatch-label">Faint</div><div class="swatch-hex">#8796ac</div></div>
+    </div>
+
+    <h3 style="margin-top:28px">Status & Brand Accents</h3>
+    <div class="swatch-row">
+      <div class="swatch"><div class="swatch-block" style="background:#35d96f"></div><div class="swatch-label">Success</div><div class="swatch-hex">#35d96f</div></div>
+      <div class="swatch"><div class="swatch-block" style="background:#ff4f61"></div><div class="swatch-label">Danger</div><div class="swatch-hex">#ff4f61</div></div>
+      <div class="swatch"><div class="swatch-block" style="background:#f7c948"></div><div class="swatch-label">Warning / Gold</div><div class="swatch-hex">#f7c948</div></div>
+      <div class="swatch"><div class="swatch-block" style="background:#155dff"></div><div class="swatch-label">Info / Blue</div><div class="swatch-hex">#155dff</div></div>
+    </div>
+
+    <h3 style="margin-top:28px">Border Hierarchy</h3>
+    <div class="swatch-row">
+      <div class="swatch"><div class="swatch-block" style="background:rgba(86,140,255,0.18); border:1px solid rgba(86,140,255,0.4)"></div><div class="swatch-label">Soft</div><div class="swatch-hex">rgba(86,140,255,.18)</div></div>
+      <div class="swatch"><div class="swatch-block" style="background:rgba(71,163,255,0.32); border:1px solid rgba(71,163,255,0.5)"></div><div class="swatch-label">Medium</div><div class="swatch-hex">rgba(71,163,255,.32)</div></div>
+      <div class="swatch"><div class="swatch-block" style="background:rgba(0,188,255,0.55); border:1px solid rgba(0,188,255,0.7)"></div><div class="swatch-label">Strong</div><div class="swatch-hex">rgba(0,188,255,.55)</div></div>
+    </div>
+
+    <h3 style="margin-top:28px">Chart Colors (in order)</h3>
+    <div class="swatch-row">
+      <div class="swatch"><div class="swatch-block" style="background:#155dff"></div><div class="swatch-label">Chart 1</div><div class="swatch-hex">hsl(222 100% 54%)</div></div>
+      <div class="swatch"><div class="swatch-block" style="background:#16d9ff"></div><div class="swatch-label">Chart 2</div><div class="swatch-hex">hsl(190 100% 54%)</div></div>
+      <div class="swatch"><div class="swatch-block" style="background:#f7c948"></div><div class="swatch-label">Chart 3</div><div class="swatch-hex">hsl(44 92% 63%)</div></div>
+      <div class="swatch"><div class="swatch-block" style="background:#35d96f"></div><div class="swatch-label">Chart 4</div><div class="swatch-hex">hsl(141 68% 53%)</div></div>
+      <div class="swatch"><div class="swatch-block" style="background:#ff4f61"></div><div class="swatch-label">Chart 5</div><div class="swatch-hex">hsl(354 100% 65%)</div></div>
+    </div>
+  </div>
+
+  <!-- ══ 3. TYPOGRAPHY ═════════════════════════════════════════════════ -->
+  <div class="section" id="typography">
+    <h2>03 — Typography</h2>
+    <hr class="section-rule" />
+
+    <div class="callout info">
+      <span class="callout-icon">ℹ</span>
+      <span>Font stacks are injected via CSS variables. The app uses OpenType features <code>cv02 cv03 cv04 cv11</code> and <code>antialiased</code> rendering. Icon stroke-width is normalised to <code>1.5</code> globally via <code>svg.lucide</code>.</span>
+    </div>
+
+    <div style="margin-top:20px">
+      <div class="type-row"><span class="type-label">Display / H1</span><span class="type-sample" style="font-size:2.4rem;font-weight:800;letter-spacing:-0.035em;line-height:1.08">Performance faster.</span></div>
+      <div class="type-row"><span class="type-label">Heading / H2</span><span class="type-sample" style="font-size:1.5rem;font-weight:700;letter-spacing:-0.025em">Analysis Overview</span></div>
+      <div class="type-row"><span class="type-label">Sub-heading</span><span class="type-sample" style="font-size:1.1rem;font-weight:600;letter-spacing:-0.015em">Sprint Test Results</span></div>
+      <div class="type-row"><span class="type-label">Body / Default</span><span class="type-sample" style="font-size:0.9rem">Structured rapid testing identifies what moves performance.</span></div>
+      <div class="type-row"><span class="type-label">Small / UI</span><span class="type-sample" style="font-size:0.82rem;color:var(--text-soft)">Ad set name · Campaign period · Date range</span></div>
+      <div class="type-row"><span class="type-label">Label / Uppercase</span><span class="type-sample" style="font-size:0.7rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--text-faint)">Impressions &nbsp;·&nbsp; CPA &nbsp;·&nbsp; ROAS</span></div>
+      <div class="type-row"><span class="type-label">Metric Value</span><span class="type-sample" style="font-size:2rem;font-weight:800;letter-spacing:-0.04em">+34%</span></div>
+      <div class="type-row"><span class="type-label">Section Eyebrow</span><span class="type-sample" style="font-size:0.72rem;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:#9fdcff">PERFORMANCE INTELLIGENCE PLATFORM</span></div>
+      <div class="type-row"><span class="type-label">Monospace / Code</span><span class="type-sample" style="font-family:monospace;font-size:0.8rem;color:var(--cyan-soft)">concept_id · cell_code · result_type</span></div>
+    </div>
+  </div>
+
+  <!-- ══ 4. DESIGN TOKENS ══════════════════════════════════════════════ -->
+  <div class="section" id="tokens">
+    <h2>04 — Design Tokens — Complete Reference</h2>
+    <hr class="section-rule" />
+
+    <h3>Semantic Color Tokens (HSL channel values)</h3>
+    <table class="token-table">
+      <thead><tr><th>Token</th><th>Value (HSL channels)</th><th>Use</th></tr></thead>
+      <tbody>
+        <tr><td class="tname">--background</td><td class="tval">221 66% 6%</td><td class="tdesc">Page background #050b18</td></tr>
+        <tr><td class="tname">--foreground</td><td class="tval">222 100% 97%</td><td class="tdesc">Primary text #f5f8ff</td></tr>
+        <tr><td class="tname">--card</td><td class="tval">218 65% 10%</td><td class="tdesc">Glass navy card surface</td></tr>
+        <tr><td class="tname">--primary</td><td class="tval">222 100% 54%</td><td class="tdesc">Electric blue #155dff — buttons, active states</td></tr>
+        <tr><td class="tname">--secondary</td><td class="tval">218 55% 15%</td><td class="tdesc">Subtle glass surface</td></tr>
+        <tr><td class="tname">--muted</td><td class="tval">219 45% 16%</td><td class="tdesc">Muted panel background</td></tr>
+        <tr><td class="tname">--muted-foreground</td><td class="tval">216 28% 78%</td><td class="tdesc">Muted text — WCAG AA (≥4.5:1)</td></tr>
+        <tr><td class="tname">--accent</td><td class="tval">218 55% 17%</td><td class="tdesc">Slightly elevated panel</td></tr>
+        <tr><td class="tname">--destructive</td><td class="tval">354 100% 65%</td><td class="tdesc">Danger red #ff4f61</td></tr>
+        <tr><td class="tname">--border</td><td class="tval">221 53% 20%</td><td class="tdesc">Standard border</td></tr>
+        <tr><td class="tname">--input</td><td class="tval">221 50% 26%</td><td class="tdesc">Input field border</td></tr>
+        <tr><td class="tname">--ring</td><td class="tval">222 100% 54%</td><td class="tdesc">Focus ring = primary blue</td></tr>
+        <tr><td class="tname">--sidebar</td><td class="tval">220 79% 4%</td><td class="tdesc">Deepest layer #020711</td></tr>
+        <tr><td class="tname">--popover</td><td class="tval">219 65% 9%</td><td class="tdesc">Dropdown / popover background</td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="margin-top:28px">Raw Metrix Brand Tokens (CSS hex/rgba)</h3>
+    <table class="token-table">
+      <thead><tr><th>Token</th><th>Value</th><th>Use</th></tr></thead>
+      <tbody>
+        <tr><td class="tname">--mx-bg-deep</td><td class="tval">#020711</td><td class="tdesc">Deepest background — sidebar, modal</td></tr>
+        <tr><td class="tname">--mx-bg-main</td><td class="tval">#050b18</td><td class="tdesc">Main page background</td></tr>
+        <tr><td class="tname">--mx-bg-panel</td><td class="tval">rgba(8,18,38,.82)</td><td class="tdesc">Translucent glass panel</td></tr>
+        <tr><td class="tname">--mx-blue</td><td class="tval">#155dff</td><td class="tdesc">Primary brand blue</td></tr>
+        <tr><td class="tname">--mx-blue-bright</td><td class="tval">#1f8fff</td><td class="tdesc">Hover / elevated blue</td></tr>
+        <tr><td class="tname">--mx-cyan</td><td class="tval">#16d9ff</td><td class="tdesc">Intelligence accent / charts</td></tr>
+        <tr><td class="tname">--mx-cyan-soft</td><td class="tval">#62e6ff</td><td class="tdesc">Code, chip labels, sub-highlights</td></tr>
+        <tr><td class="tname">--mx-indigo</td><td class="tval">#183bff</td><td class="tdesc">Deep blue gradient endpoint</td></tr>
+        <tr><td class="tname">--mx-text-interactive</td><td class="tval">#5c9bff</td><td class="tdesc">Links / interactive text — ~6.5:1 on bg</td></tr>
+        <tr><td class="tname">--mx-success</td><td class="tval">#35d96f</td><td class="tdesc">Positive delta / success state</td></tr>
+        <tr><td class="tname">--mx-danger</td><td class="tval">#ff4f61</td><td class="tdesc">Negative delta / error state</td></tr>
+        <tr><td class="tname">--mx-warning</td><td class="tval">#f7c948</td><td class="tdesc">Caution / gold accent</td></tr>
+        <tr><td class="tname">--mx-border-soft</td><td class="tval">rgba(86,140,255,.18)</td><td class="tdesc">Default card / panel border</td></tr>
+        <tr><td class="tname">--mx-border-medium</td><td class="tval">rgba(71,163,255,.32)</td><td class="tdesc">Hover / active border</td></tr>
+        <tr><td class="tname">--mx-border-strong</td><td class="tval">rgba(0,188,255,.55)</td><td class="tdesc">Focus / selected border</td></tr>
+        <tr><td class="tname">--mx-shadow-blue</td><td class="tval">0 0 28px rgba(0,128,255,.28)</td><td class="tdesc">Blue ambient glow</td></tr>
+        <tr><td class="tname">--mx-shadow-cyan</td><td class="tval">0 0 36px rgba(22,217,255,.24)</td><td class="tdesc">Cyan ambient glow</td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="margin-top:28px">Spacing / Radius Tokens</h3>
+    <table class="token-table">
+      <thead><tr><th>Token</th><th>Value</th><th>Use</th></tr></thead>
+      <tbody>
+        <tr><td class="tname">--radius</td><td class="tval">14px</td><td class="tdesc">Base radius — cards, panels</td></tr>
+        <tr><td class="tname">--radius-sm</td><td class="tval">calc(radius - 4px) = 10px</td><td class="tdesc">Badges, chips, small containers</td></tr>
+        <tr><td class="tname">--radius-md</td><td class="tval">calc(radius - 2px) = 12px</td><td class="tdesc">Buttons, inputs</td></tr>
+        <tr><td class="tname">--radius-lg</td><td class="tval">14px</td><td class="tdesc">Standard card</td></tr>
+        <tr><td class="tname">--radius-xl</td><td class="tval">calc(radius + 4px) = 18px</td><td class="tdesc">Large modals, sheet panels</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ══ 5. SURFACES ═══════════════════════════════════════════════════ -->
+  <div class="section" id="surfaces">
+    <h2>05 — Surface &amp; Depth Scale</h2>
+    <hr class="section-rule" />
+    <p>The UI uses a 7-level surface depth system. Deeper surfaces host more privileged / overlay content. Always layer lighter surfaces on top of darker ones.</p>
+    <div class="surface-scale">
+      <div class="surface-chip" style="background:hsl(219 55% 13%)"><div class="s-label">surface-raised</div><div class="s-val">219 55% 13%</div><div style="font-size:0.65rem;opacity:0.6;margin-top:3px">Sub-panels, chips</div></div>
+      <div class="surface-chip" style="background:hsl(218 65% 10%)"><div class="s-label">surface</div><div class="s-val">218 65% 10%</div><div style="font-size:0.65rem;opacity:0.6;margin-top:3px">Card-level panels</div></div>
+      <div class="surface-chip" style="background:hsl(222 55% 8%)"><div class="s-label">surface-sidebar</div><div class="s-val">222 55% 8%</div><div style="font-size:0.65rem;opacity:0.6;margin-top:3px">Nav shell, topbar</div></div>
+      <div class="surface-chip" style="background:hsl(222 61% 7%)"><div class="s-label">surface-overlay</div><div class="s-val">222 61% 7%</div><div style="font-size:0.65rem;opacity:0.6;margin-top:3px">Popovers, dropdowns</div></div>
+      <div class="surface-chip" style="background:hsl(222 55% 7%)"><div class="s-label">surface-table</div><div class="s-val">222 55% 7%</div><div style="font-size:0.65rem;opacity:0.6;margin-top:3px">Sticky table headers</div></div>
+      <div class="surface-chip" style="background:hsl(222 61% 6%)"><div class="s-label">surface-deep</div><div class="s-val">222 61% 6%</div><div style="font-size:0.65rem;opacity:0.6;margin-top:3px">Modals, slide-overs</div></div>
+      <div class="surface-chip" style="background:hsl(222 65% 5%)"><div class="s-label">surface-preview</div><div class="s-val">222 65% 5%</div><div style="font-size:0.65rem;opacity:0.6;margin-top:3px">Creative preview bg</div></div>
+    </div>
+  </div>
+
+  <!-- ══ 6. APP SHELL ══════════════════════════════════════════════════ -->
+  <div class="section" id="shell">
+    <h2>06 — App Shell Layout</h2>
+    <hr class="section-rule" />
+
+    <p>The app shell is a fixed-geometry layout with four named zones. All dimensions are single-sourced from CSS tokens.</p>
+
+    <div style="margin:20px 0">
+      <h4>Shell Dimensions</h4>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">
+        <span class="dim-tag">--topbar-h: 44px</span>
+        <span class="dim-tag">--sidebar-expanded: 216px</span>
+        <span class="dim-tag">--sidebar-collapsed: 56px</span>
+        <span class="dim-tag">--tray-open: 308px</span>
+        <span class="dim-tag">--tray-closed: 46px</span>
+      </div>
+    </div>
+
+    <div class="shell-diagram">
+      <div class="shell-topbar">
+        <span style="background:var(--blue);width:18px;height:18px;border-radius:4px;display:block"></span>
+        <span style="font-weight:700;font-size:0.8rem;color:var(--text-main)">metrix</span>
+        <span style="flex:1"></span>
+        <span style="background:rgba(255,255,255,0.06);border-radius:6px;padding:3px 10px;">▸ Ad Account Name</span>
+        <span style="width:24px;height:24px;border-radius:50%;background:rgba(21,93,255,0.3);margin-left:8px"></span>
+        <span style="font-size:0.65rem;color:var(--text-faint);margin-left:4px">Topbar · h=44px</span>
+      </div>
+      <div class="shell-body">
+        <div class="shell-sidebar expanded">
+          <div class="shell-nav-row active-row"><span style="font-size:0.65rem">●</span><span>01 Overview</span></div>
+          <div class="shell-nav-row"><span style="font-size:0.65rem">○</span><span>02 Listen</span></div>
+          <div class="shell-nav-row"><span style="font-size:0.65rem">○</span><span>03 Analysis</span></div>
+          <div class="shell-nav-row"><span style="font-size:0.65rem">○</span><span>04 Strategy</span></div>
+          <div class="shell-nav-row"><span style="font-size:0.65rem">○</span><span>05 Briefs</span></div>
+          <div style="font-size:0.6rem;color:var(--text-faint);padding:6px 8px;margin-top:auto">Sidebar · w=216px / 56px</div>
+        </div>
+        <div class="shell-content">
+          <strong style="color:var(--text-soft)">Main content area</strong><br/>
+          Scrollable. Padding varies by page.<br/>Takes remaining width between sidebar and task tray.<br/><br/>
+          <span style="color:var(--interactive)">← flex-1 →</span>
+        </div>
+        <div class="shell-tray">
+          <span>☰</span>
+          <span style="margin-top:4px">Task</span>
+          <span>Tray</span>
+          <span style="margin-top:8px;font-size:0.6rem;opacity:0.5">46px</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px">
+      <table class="spec-table">
+        <thead><tr><th>Zone</th><th>Class / Token</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>Topbar</td><td><code>.mx-topbar</code></td><td>Fixed 44px strip. Glass blur. Account switcher, user avatar, topbar actions.</td></tr>
+          <tr><td>Sidebar</td><td><code>.mx-sidebar</code></td><td>Collapsible 216px↔56px. Dark glass. 9-section nav with numbered labels and icons.</td></tr>
+          <tr><td>Content</td><td><code>flex-1</code></td><td>Scrollable main area. Page-specific padding. Houses all data views.</td></tr>
+          <tr><td>Task Tray</td><td><code>--tray-*</code></td><td>Right rail 46px→308px. Slide-over checklist / agent task panel.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══ 7. NAVIGATION ════════════════════════════════════════════════ -->
+  <div class="section" id="navigation">
+    <h2>07 — Navigation Architecture</h2>
+    <hr class="section-rule" />
+    <p>9 locked sections. Navigation is defined in a single source of truth file (<code>navTree.ts</code>) consumed by <code>Sidebar.tsx</code>. No nav data lives elsewhere.</p>
+
+    <div style="margin-top:20px" class="grid2">
+      <ul class="nav-section-list">
+        <li class="nav-item active"><span class="nav-num">01</span><span class="nav-icon">⊞</span><span>Overview</span></li>
+        <li class="nav-item inactive"><span class="nav-num">02</span><span class="nav-icon">◉</span><span>Listen</span></li>
+        <li class="nav-item inactive"><span class="nav-num">03</span><span class="nav-icon">↗</span><span>Analysis</span></li>
+        <li class="nav-item inactive"><span class="nav-num">04</span><span class="nav-icon">◎</span><span>Strategy</span></li>
+        <li class="nav-item inactive"><span class="nav-num">05</span><span class="nav-icon">☰</span><span>Creative Briefs</span></li>
+        <li class="nav-item inactive"><span class="nav-num">06</span><span class="nav-icon">⊟</span><span>Report Builder</span></li>
+        <li class="nav-item inactive"><span class="nav-num">07</span><span class="nav-icon">⊕</span><span>MST</span></li>
+        <li class="nav-item inactive" style="opacity:0.5"><span class="nav-num">08</span><span class="nav-icon">⬡</span><span>Metrix Agent <span class="badge badge-muted" style="margin-left:6px">Soon</span></span></li>
+        <li class="nav-item inactive"><span class="nav-num">09</span><span class="nav-icon">⚙</span><span>Settings</span></li>
+      </ul>
+
+      <div>
+        <h4>Nav CSS Patterns</h4>
+        <table class="spec-table" style="margin-top:8px">
+          <tr><td>Active section</td><td><code>.mx-nav-active</code> — blue→cyan gradient + glow</td></tr>
+          <tr><td>Active child</td><td><code>.mx-nav-child-active</code> — left-rail blue tint</td></tr>
+          <tr><td>Section label</td><td><code>.mx-section-label</code> — cyan-tinted 0.72rem uppercase</td></tr>
+          <tr><td>Badge keys</td><td><code>signals · briefs · mst · agent</code></td></tr>
+          <tr><td>Placeholder items</td><td>Dimmed + tooltip teaser — never hidden</td></tr>
+          <tr><td>Deep-links</td><td><code>?focus=</code> param — never <code>#hash</code></td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 8. COMPONENTS ═════════════════════════════════════════════════ -->
+  <div class="section" id="components">
+    <h2>08 — Core Components</h2>
+    <hr class="section-rule" />
+
+    <h3>Buttons</h3>
+    <div class="demo-row">
+      <button class="btn btn-primary">Primary Action</button>
+      <button class="btn btn-outline">Outline</button>
+      <button class="btn btn-ghost">Ghost / Request Access</button>
+      <button class="btn btn-danger">Destructive</button>
+      <button class="btn btn-primary btn-sm">Small</button>
+      <button class="btn btn-primary btn-lg">Large (44px)</button>
+    </div>
+    <div class="callout" style="margin-top:14px">
+      <span class="callout-icon">⚡</span>
+      <span>Primary buttons carry a stacked <code>box-shadow</code> glow: <code>0 0 20–28px rgba(21,93,255,.38), 0 2px 8px rgba(21,93,255,.22)</code>. This glow intensifies on hover. Disabled state: <code>opacity: 0.35</code> + <code>pointer-events: none</code>.</span>
+    </div>
+
+    <h3 style="margin-top:28px">Badges &amp; Status Chips</h3>
+    <div class="demo-row">
+      <span class="badge badge-blue">Blue</span>
+      <span class="badge badge-cyan">Cyan</span>
+      <span class="badge badge-success">+34% ROAS</span>
+      <span class="badge badge-danger">–18% CPA</span>
+      <span class="badge badge-warning">Caution</span>
+      <span class="badge badge-muted">Coming Soon</span>
+    </div>
+
+    <h3 style="margin-top:28px">Form Inputs</h3>
+    <div class="demo-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+      <div>
+        <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-faint);margin-bottom:5px">Email</div>
+        <input class="input-demo" type="text" placeholder="you@company.com" />
+      </div>
+      <div>
+        <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-faint);margin-bottom:5px">Password</div>
+        <input class="input-demo" type="password" placeholder="••••••••••••" />
+      </div>
+    </div>
+    <div class="callout info" style="margin-top:12px">
+      <span class="callout-icon">ℹ</span>
+      <span>Inputs: <code>h-11 (44px)</code>, <code>rounded-xl</code>, <code>bg hsl(222 32% 12%)</code>, border <code>hsl(222 22% 19%)</code>. Focus ring: border shifts to <code>hsl(222 100% 58% / 0.55)</code> + <code>box-shadow 0 0 0 3px hsl(222 100% 54% / 0.09)</code>.</span>
+    </div>
+
+    <h3 style="margin-top:28px">Metric Tiles</h3>
+    <div class="demo-row">
+      <div class="metric-tile">
+        <div class="metric-label">Total Spend</div>
+        <div class="metric-value">$8.2K</div>
+        <div class="metric-delta delta-up">↑ +12% vs prior</div>
+      </div>
+      <div class="metric-tile">
+        <div class="metric-label">Avg. ROAS</div>
+        <div class="metric-value">+34%</div>
+        <div class="metric-delta delta-up">↑ Top quartile</div>
+      </div>
+      <div class="metric-tile">
+        <div class="metric-label">CPA</div>
+        <div class="metric-value">$42.80</div>
+        <div class="metric-delta delta-down">↓ –18% reduction</div>
+      </div>
+      <div class="metric-tile">
+        <div class="metric-label">Impressions</div>
+        <div class="metric-value">2.4M</div>
+        <div class="metric-delta" style="color:var(--text-faint)">214 campaigns</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 9. PATTERNS ═══════════════════════════════════════════════════ -->
+  <div class="section" id="patterns">
+    <h2>09 — UI Patterns — Glassmorphism &amp; Cards</h2>
+    <hr class="section-rule" />
+
+    <h3>Standard Glass Card (<code>.mx-card</code>)</h3>
+    <div class="glass-demo" style="max-width:480px">
+      <div class="glass-inner">
+        <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-faint);margin-bottom:8px">Signal Card Example</div>
+        <div style="font-size:1.1rem;font-weight:700;color:var(--text-main);margin-bottom:6px">UGC Testimonial v3 outperforming</div>
+        <div style="font-size:0.83rem;color:var(--text-soft);line-height:1.6">CPA –22% vs. account mean across all ad sets in 28d window. Top creative by ROAS lift this sprint.</div>
+        <div style="margin-top:14px;display:flex;gap:8px"><span class="badge badge-success">High Confidence</span><span class="badge badge-cyan">Stage 2</span></div>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:16px">
+      <span class="callout-icon">🎨</span>
+      <span><strong>Card anatomy:</strong> <code>border: 1px solid rgba(86,140,255,.18)</code> · <code>border-radius: 14px</code> · <code>background: linear-gradient(180deg, rgba(10,28,58,.78), rgba(5,13,29,.84))</code> · <code>backdrop-filter: blur(18px)</code> · inner <code>::before</code> pseudo adds radial highlight at 18% 0% and a left-edge shimmer. Hover lifts <code>translateY(-1px)</code> and darkens border to <code>--mx-border-medium</code>.</span>
+    </div>
+
+    <h3 style="margin-top:28px">Body Background Composition</h3>
+    <div style="font-size:0.82rem;color:var(--text-soft);line-height:1.8;background:rgba(8,18,38,0.5);border:1px solid var(--border-soft);border-radius:10px;padding:16px;margin-top:8px;font-family:monospace">
+      radial-gradient(circle at 52% 8%, rgba(0,119,255,0.18), transparent 32%),<br/>
+      radial-gradient(circle at 86% 18%, rgba(22,217,255,0.08), transparent 26%),<br/>
+      linear-gradient(180deg, #020711 0%, #050b18 48%, #020711 100%)<br/><br/>
+      + <code>::before</code> pseudo — faint 44px precision grid, masked to center at 76% opacity=0.35
+    </div>
+  </div>
+
+  <!-- ══ 10. LOGIN ══════════════════════════════════════════════════════ -->
+  <div class="section" id="login">
+    <h2>10 — Login Page Design</h2>
+    <hr class="section-rule" />
+    <p>Full-screen 50/50 split layout. Left panel is brand/value proposition (hidden on mobile). Right panel is the auth form. No border-radius on the outermost container — fills the viewport edge-to-edge.</p>
+
+    <div class="login-diagram" style="margin-top:20px">
+      <!-- Left -->
+      <div class="login-left">
+        <div class="login-brand"><div class="login-logo"></div>metrix</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+          <span style="width:16px;height:1px;background:rgba(255,255,255,0.25);display:block"></span>
+          <span style="font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.3)">Performance Intelligence Platform</span>
+        </div>
+        <div class="login-headline">
+          Performance intelligence for marketers who need to move <span class="g">faster.</span>
+        </div>
+        <div class="login-feat-grid">
+          <div class="login-feat">⟳ Sprint Test System<br/><span style="opacity:0.6">Structured rapid testing.</span></div>
+          <div class="login-feat">◉ Signal Detection<br/><span style="opacity:0.6">Identify what moves performance.</span></div>
+          <div class="login-feat">↗ Actionable Intelligence<br/><span style="opacity:0.6">Decisions, not reports.</span></div>
+          <div class="login-feat">⊕ Scale With Confidence<br/><span style="opacity:0.6">Repeatable growth.</span></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:4px">
+          <div style="background:var(--blue);color:#fff;padding:5px 12px;border-radius:8px;font-size:0.68rem;font-weight:700;box-shadow:0 0 16px rgba(21,93,255,0.45)">Request Demo →</div>
+          <div style="border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);padding:5px 10px;border-radius:8px;font-size:0.68rem">See More →</div>
+        </div>
+      </div>
+      <!-- Right -->
+      <div class="login-right">
+        <div style="font-size:1.1rem;font-weight:800;letter-spacing:-0.025em;">Sign in</div>
+        <div style="font-size:0.68rem;color:var(--text-faint)">Welcome back — enter your credentials below.</div>
+        <div>
+          <div class="login-lbl">Email</div>
+          <div class="login-input" style="color:rgba(255,255,255,0.2)">you@company.com</div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between"><span class="login-lbl">Password</span><span style="font-size:0.6rem;color:var(--interactive)">Forgot password?</span></div>
+          <div class="login-input" style="color:rgba(255,255,255,0.2)">••••••••••••</div>
+        </div>
+        <div class="login-btn-primary">Sign in</div>
+        <div style="border-top:1px solid rgba(255,255,255,0.05);padding-top:10px">
+          <div style="font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.2);text-align:center;margin-bottom:6px">No Account?</div>
+          <div style="border:1px solid rgba(21,93,255,0.22);background:rgba(21,93,255,0.07);color:var(--interactive);border-radius:8px;height:28px;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:600">Request access →</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px">
+      <h4>Left Panel Overlay Stack</h4>
+      <table class="spec-table">
+        <tr><td>Layer 1 — Base</td><td><code>hsl(222 28% 7%)</code> — dark navy solid</td></tr>
+        <tr><td>Layer 2 — Glow A</td><td><code>radial-gradient(ellipse 90% 65% at 15% -5%, hsl(222 100% 54% / 0.20))</code> — top-left spotlight</td></tr>
+        <tr><td>Layer 3 — Glow B</td><td><code>radial-gradient(ellipse 55% 45% at 85% 105%, hsl(222 100% 60% / 0.10))</code> — bottom-right ambient</td></tr>
+        <tr><td>Layer 4 — Dot grid</td><td><code>radial-gradient(circle, hsl(222 80% 75% / 0.18) 1px, transparent 1px)</code> at 28px · masked radially</td></tr>
+        <tr><td>Headline accent</td><td><code>linear-gradient(95deg, hsl(215 100% 72%), hsl(195 100% 68%))</code> on "faster." via <code>-webkit-background-clip: text</code></td></tr>
+      </table>
+
+      <h4 style="margin-top:20px">Right Panel Spec</h4>
+      <table class="spec-table">
+        <tr><td>Background</td><td><code>hsl(222 22% 6%)</code> — slightly lighter than left panel</td></tr>
+        <tr><td>Form max-width</td><td><code>480px</code>, centred via <code>min-h-full flex-col items-center justify-center</code></td></tr>
+        <tr><td>Section separator</td><td><code>border-t border-white/[0.05]</code> above "No account?" block</td></tr>
+        <tr><td>Primary CTA border</td><td><code>1px solid rgba(21,93,255,.22)</code> · <code>bg hsl(222 100% 54% / 0.07)</code></td></tr>
+        <tr><td>Mobile breakpoint</td><td>Left panel hidden (<code>lg:hidden</code>). Brand strip + tagline + CTA link appear at top of right panel.</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══ 11. MOTION ════════════════════════════════════════════════════ -->
+  <div class="section" id="motion">
+    <h2>11 — Motion &amp; Transitions</h2>
+    <hr class="section-rule" />
+    <table class="spec-table">
+      <thead><tr><th>Token</th><th>Value</th><th>Use</th></tr></thead>
+      <tbody>
+        <tr><td><code>--mx-ease</code></td><td><code>cubic-bezier(0.2, 0.8, 0.2, 1)</code></td><td>All standard UI motion — fast start, soft landing</td></tr>
+        <tr><td><code>--mx-fast</code></td><td><code>140ms var(--mx-ease)</code></td><td>Hover states, border/shadow changes, icon swaps</td></tr>
+        <tr><td><code>--mx-med</code></td><td><code>220ms var(--mx-ease)</code></td><td>Panel expansions, sidebar collapse, tray slide</td></tr>
+        <tr><td><code>--transition-speed</code></td><td><code>200ms</code> / <code>0ms</code> reduced-motion</td><td>Components read this for WCAG reduced-motion compliance</td></tr>
+      </tbody>
+    </table>
+    <div class="callout success" style="margin-top:14px">
+      <span class="callout-icon">✓</span>
+      <span>All animated components check <code>prefers-reduced-motion</code> via <code>--transition-speed: 0ms</code> override. Never animate content that is purely decorative at speeds faster than 140ms.</span>
+    </div>
+  </div>
+
+  <!-- ══ 12. PAGE INVENTORY ════════════════════════════════════════════ -->
+  <div class="section" id="pages">
+    <h2>12 — Full Page Inventory</h2>
+    <hr class="section-rule" />
+
+    <div class="page-map">
+      <div class="pm-section">
+        <div class="pm-head"><span class="pm-num">AUTH</span> Authentication</div>
+        <div class="pm-children">
+          <span class="pm-child">Login</span>
+          <span class="pm-child">Create Account</span>
+          <span class="pm-child">Forgot Password</span>
+          <span class="pm-child">Reset Password</span>
+          <span class="pm-child">Change Password</span>
+        </div>
+      </div>
+      <div class="pm-section">
+        <div class="pm-head"><span class="pm-num">01</span> Overview</div>
+        <div class="pm-children">
+          <span class="pm-child">Manager Overview (multi-account)</span>
+          <span class="pm-child">Ad Account Overview (single)</span>
+          <span class="pm-child">Performance Intelligence Hub</span>
+        </div>
+      </div>
+      <div class="pm-section">
+        <div class="pm-head"><span class="pm-num">02</span> Listen</div>
+        <div class="pm-children">
+          <span class="pm-child">Alerts</span>
+          <span class="pm-child">Signal</span>
+          <span class="pm-child">Recommendations</span>
+        </div>
+      </div>
+      <div class="pm-section">
+        <div class="pm-head"><span class="pm-num">03</span> Analysis</div>
+        <div class="pm-children">
+          <span class="pm-child">Analysis Hub</span>
+          <span class="pm-child">Overview (DataWindowBar)</span>
+          <span class="pm-child">IAP Library</span>
+          <span class="pm-child">Audience</span>
+          <span class="pm-child">Placements</span>
+          <span class="pm-child">Budget Insight</span>
+        </div>
+      </div>
+      <div class="pm-section">
+        <div class="pm-head"><span class="pm-num">04</span> Strategy</div>
+        <div class="pm-children">
+          <span class="pm-child">Strategy Hub</span>
+          <span class="pm-child">Strategy Overview</span>
+          <span class="pm-child">Strategy Map</span>
+          <span class="pm-child">Avatars · ICP</span>
+          <span class="pm-child">Hypothesis Queue</span>
+        </div>
+      </div>
+      <div class="pm-section">
+        <div class="pm-head"><span class="pm-num">05</span> Creative Briefs</div>
+        <div class="pm-children">
+          <span class="pm-child">Brief Hub</span>
+          <span class="pm-child">Brief Builder</span>
+          <span class="pm-child">Brief History</span>
+        </div>
+      </div>
+      <div class="pm-section">
+        <div class="pm-head"><span class="pm-num">06</span> Report Builder</div>
+        <div class="pm-children">
+          <span class="pm-child">Reports Hub</span>
+          <span class="pm-child">New Report</span>
+          <span class="pm-child">Report History</span>
+          <span class="pm-child">Report Settings</span>
+          <span class="pm-child">Exports</span>
+        </div>
+      </div>
+      <div class="pm-section">
+        <div class="pm-head"><span class="pm-num">07</span> MST — Metrix Sprint Test</div>
+        <div class="pm-children">
+          <span class="pm-child">MST Hub</span>
+          <span class="pm-child">Concept Map</span>
+          <span class="pm-child">Matrix Builder</span>
+          <span class="pm-child">Creative Scan</span>
+          <span class="pm-child">Crossmap Results</span>
+        </div>
+      </div>
+      <div class="pm-section">
+        <div class="pm-head"><span class="pm-num">08</span> Metrix Agent</div>
+        <div class="pm-children">
+          <span class="pm-child" style="opacity:0.5">Coming Soon — Waitlist</span>
+        </div>
+      </div>
+      <div class="pm-section">
+        <div class="pm-head"><span class="pm-num">09</span> Settings</div>
+        <div class="pm-children">
+          <span class="pm-child">Account Settings</span>
+          <span class="pm-child">Ad Account Integrations</span>
+          <span class="pm-child">Team &amp; Access</span>
+          <span class="pm-child">Notifications</span>
+          <span class="pm-child">Billing</span>
+        </div>
+      </div>
+      <div class="pm-section">
+        <div class="pm-head"><span class="pm-num">ADM</span> Admin</div>
+        <div class="pm-children">
+          <span class="pm-child">Admin Waitlist Management</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:20px">
+      <span class="callout-icon">📌</span>
+      <div>
+        <strong>Key component groups:</strong><br/>
+        <code>layout/</code> — AppShell, Sidebar, Topbar, TaskTray, Breadcrumbs, AccountSwitcher, MetricHoverPopover<br/>
+        <code>metrics/</code> — Metric tiles, diagnostic modals, segment grid modals, chart overlays<br/>
+        <code>concept/</code> — ConceptChip, concept grouping views<br/>
+        <code>creative/</code> — CreativeVisual, ad asset cards<br/>
+        <code>charts/</code> — Recharts wrappers (bar, line, area) with Metrix token theming<br/>
+        <code>generation/</code> — Brief / analysis generation UI, stage indicators<br/>
+        <code>loop/</code> — Closed-loop checklist, command chain<br/>
+        <code>deck/</code> — Report deck / slide export components<br/>
+        <code>ui/</code> — shadcn/ui base components (Button, Dialog, Popover, Table, etc.) with Metrix token overrides
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ FOOTER ═════════════════════════════════════════════════════════ -->
+  <div class="doc-footer">
+    <span>Metrix IAP Design Brief — v2.0 — Generated July 2026</span>
+    <span>Dark Command-Center Cockpit · Electric Blue #155dff · Cyan #16d9ff</span>
+    <span>METRIX.AD · For internal / handoff use</span>
+  </div>
+
+</div>
+</body>
+</html>
