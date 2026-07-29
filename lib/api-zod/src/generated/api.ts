@@ -53,6 +53,27 @@ export const CreateManualAdAccountResponse = zod.object({
 
 
 /**
+ * Sets ecommerce/lead_gen/service/app on the ad account, so downstream terminal-metric reads (Budget, Ad Performance, Exports) branch on cohort instead of assuming ROAS/purchase. Required by the UI before the first analysis run. Requires access to the account.
+ * @summary Set the account's business-model cohort
+ */
+
+
+
+export const SetAccountCohortParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
+})
+
+export const SetAccountCohortBody = zod.object({
+  "cohort": zod.enum(['ecommerce', 'lead_gen', 'service', 'app'])
+})
+
+export const SetAccountCohortResponse = zod.object({
+  "account_id": zod.string(),
+  "cohort": zod.enum(['ecommerce', 'lead_gen', 'service', 'app'])
+})
+
+
+/**
  * Stores an uploaded file as a staged import for the account. Two performance CSV kinds are required (performance_demo_csv, performance_placement_csv — matching the exact IAP_DEMOGRAPHIC_TEXT_SIGNAL / IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL Meta pivot export templates) plus any number of individually-staged creative_asset files (never a ZIP). Files are staged for the analysis pipeline — they are never parsed into performance data at upload time (no fabricated data). Requires access to the account.
  * @summary Stage a manual report or creative upload for an ad account
  */

@@ -73,6 +73,59 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/cohort:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+    patch:
+      operationId: setAccountCohort
+      tags: [metrix]
+      summary: Set the account's business-model cohort
+      description: Sets ecommerce/lead_gen/service/app on the ad account, so downstream terminal-metric reads (Budget, Ad Performance, Exports) branch on cohort instead of assuming ROAS/purchase. Required by the UI before the first analysis run. Requires access to the account.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetAccountCohortInput"
+      responses:
+        "200":
+          description: Cohort set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetAccountCohortResult"
+        "400":
+          description: Invalid cohort value
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/accounts/{accountId}/manual-imports:
     parameters:
       - name: accountId
@@ -2749,6 +2802,25 @@ components:
         - account_id
         - name
         - status
+    SetAccountCohortInput:
+      type: object
+      properties:
+        cohort:
+          type: string
+          enum: [ecommerce, lead_gen, service, app]
+      required:
+        - cohort
+    SetAccountCohortResult:
+      type: object
+      properties:
+        account_id:
+          type: string
+        cohort:
+          type: string
+          enum: [ecommerce, lead_gen, service, app]
+      required:
+        - account_id
+        - cohort
     ManualImportInput:
       type: object
       properties:

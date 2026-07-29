@@ -75,6 +75,8 @@ import type {
   RunMetaReportsResult,
   SelectMetaAdAccountInput,
   SelectMetaAdAccountResult,
+  SetAccountCohortInput,
+  SetAccountCohortResult,
   StageStatusResult,
   StartAnalysisInput,
   StartGenerationResult,
@@ -270,6 +272,78 @@ export const useCreateManualAdAccount = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getCreateManualAdAccountMutationOptions(options));
+    }
+
+export const getSetAccountCohortUrl = (accountId: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/cohort`
+}
+
+/**
+ * Sets ecommerce/lead_gen/service/app on the ad account, so downstream terminal-metric reads (Budget, Ad Performance, Exports) branch on cohort instead of assuming ROAS/purchase. Required by the UI before the first analysis run. Requires access to the account.
+ * @summary Set the account's business-model cohort
+ */
+export const setAccountCohort = async (accountId: string,
+    setAccountCohortInput: SetAccountCohortInput, options?: RequestInit): Promise<SetAccountCohortResult> => {
+
+  return customFetch<SetAccountCohortResult>(getSetAccountCohortUrl(accountId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(setAccountCohortInput)
+  }
+);}
+
+
+
+
+export const getSetAccountCohortMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setAccountCohort>>, TError,{accountId: string;data: BodyType<SetAccountCohortInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setAccountCohort>>, TError,{accountId: string;data: BodyType<SetAccountCohortInput>}, TContext> => {
+
+const mutationKey = ['setAccountCohort'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setAccountCohort>>, {accountId: string;data: BodyType<SetAccountCohortInput>}> = (props) => {
+          const {accountId,data} = props ?? {};
+
+          return  setAccountCohort(accountId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetAccountCohortMutationResult = NonNullable<Awaited<ReturnType<typeof setAccountCohort>>>
+    export type SetAccountCohortMutationBody = BodyType<SetAccountCohortInput>
+    export type SetAccountCohortMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Set the account's business-model cohort
+ */
+export const useSetAccountCohort = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setAccountCohort>>, TError,{accountId: string;data: BodyType<SetAccountCohortInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setAccountCohort>>,
+        TError,
+        {accountId: string;data: BodyType<SetAccountCohortInput>},
+        TContext
+      > => {
+      return useMutation(getSetAccountCohortMutationOptions(options));
     }
 
 export const getStageManualImportUrl = (accountId: string,) => {

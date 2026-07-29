@@ -309,6 +309,35 @@ export interface CreateAdAccountResult {
   status: CreateAdAccountResultStatus;
 }
 
+export type SetAccountCohortInputCohort = typeof SetAccountCohortInputCohort[keyof typeof SetAccountCohortInputCohort];
+
+
+export const SetAccountCohortInputCohort = {
+  ecommerce: 'ecommerce',
+  lead_gen: 'lead_gen',
+  service: 'service',
+  app: 'app',
+} as const;
+
+export interface SetAccountCohortInput {
+  cohort: SetAccountCohortInputCohort;
+}
+
+export type SetAccountCohortResultCohort = typeof SetAccountCohortResultCohort[keyof typeof SetAccountCohortResultCohort];
+
+
+export const SetAccountCohortResultCohort = {
+  ecommerce: 'ecommerce',
+  lead_gen: 'lead_gen',
+  service: 'service',
+  app: 'app',
+} as const;
+
+export interface SetAccountCohortResult {
+  account_id: string;
+  cohort: SetAccountCohortResultCohort;
+}
+
 export type ManualImportInputKind = typeof ManualImportInputKind[keyof typeof ManualImportInputKind];
 
 

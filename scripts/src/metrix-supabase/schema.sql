@@ -26,6 +26,15 @@ create table if not exists ad_accounts (
 -- Idempotent backfill for databases created before meta_ad_account_id existed.
 alter table ad_accounts add column if not exists meta_ad_account_id text;
 
+-- Business-model cohort (ecommerce | lead_gen | service | app). Nullable
+-- until the agency sets it — the UI requires it before the first analysis
+-- run so downstream terminal-metric reads (Budget, Ad Performance,
+-- Exports) branch on cohort instead of assuming ROAS/purchase. Enum
+-- validity is enforced at the app layer, not a DB check constraint, to
+-- match this schema's existing style (source_status, status, etc. are
+-- plain text here too).
+alter table ad_accounts add column if not exists cohort text;
+
 -- Ad-level registry. `meta_ad_id` and `creative_asset_url` are nullable by
 -- design: no Meta ad_id exists anywhere in the current package (only
 -- ad_name), and asset_path values are non-servable local paths. When real

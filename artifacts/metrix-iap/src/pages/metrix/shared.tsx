@@ -74,14 +74,32 @@ const RESULT_NOUNS: Array<[RegExp, string, string]> = [
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
+/** Cohort's terminal-metric noun — used before any event-name pattern
+ * matching, so an explicitly-set cohort always wins over inference. */
+const COHORT_NOUN: Record<string, [string, string]> = {
+  ecommerce: ["purchase", "purchases"],
+  lead_gen: ["lead", "leads"],
+  service: ["booking", "bookings"],
+  app: ["install", "installs"],
+};
+
 /**
- * Derive the account's result noun from its own analysis data: the
- * dominant "Result type" across creative-cell rows (what the analysis
- * actually measured), falling back to the bottom-line totals event with
- * the most results, then the campaign windows' declared result type.
- * Falls back to the neutral "result".
+ * Derive the account's result noun. An explicitly-set cohort (Analysis
+ * command center → Business model) wins outright — this is the fix for
+ * the ecommerce-hardcoding defect, where ROAS/CPA/purchase-funnel copy
+ * was assumed for every account regardless of business model. Absent a
+ * cohort, falls back to inferring from the account's own analysis data:
+ * the dominant "Result type" across creative-cell rows (what the
+ * analysis actually measured), then the bottom-line totals event with
+ * the most results, then the campaign windows' declared result type,
+ * then the neutral "result".
  */
 export function resultTerm(account: AdAccount | null | undefined): ResultTerm {
+  if (account?.cohort && COHORT_NOUN[account.cohort]) {
+    const [singular, plural] = COHORT_NOUN[account.cohort]!;
+    return { singular, plural, Singular: capitalize(singular), Plural: capitalize(plural) };
+  }
+
   const iap = account?.iap;
   let dominant: string | null = null;
 

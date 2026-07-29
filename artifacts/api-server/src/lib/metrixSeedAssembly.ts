@@ -169,6 +169,7 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
       platform: account["platform"] ?? "Meta Ads",
       ...(account["overview_state"] ? { overview_state: account["overview_state"] } : {}),
       ...(account["meta_ad_account_id"] ? { meta_ad_account_id: account["meta_ad_account_id"] } : {}),
+      cohort: account["cohort"] ?? null,
       iap: null,
       mst: modules.get("mst") ?? { status: "not_available" },
     };
@@ -524,6 +525,7 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
     // Numeric Meta ad account id (no "act_" prefix) for Ads Manager deep
     // links. Null until a raw Meta export supplies it via the importer.
     meta_ad_account_id: account["meta_ad_account_id"] ?? null,
+    cohort: account["cohort"] ?? null,
     // Ad registry: ad_name → cell/concept plus meta_ad_id and
     // creative_asset_url once backfilled. Nullable fields stay null in the
     // current import — the client renders honest pending states for them.
