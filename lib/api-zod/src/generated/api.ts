@@ -281,7 +281,14 @@ export const GetLatestAnalysisRunResponse = zod.object({
   "imports_used": zod.number().nullish(),
   "error_message": zod.string().nullish(),
   "started_at": zod.string(),
-  "finished_at": zod.string().nullish()
+  "finished_at": zod.string().nullish(),
+  "reconciliation": zod.array(zod.object({
+  "metric_key": zod.enum(['spend', 'results']),
+  "demographic_total": zod.number(),
+  "placement_total": zod.number(),
+  "delta_pct": zod.number(),
+  "flagged": zod.boolean()
+})).describe('Cross-checks the demographic export\'s totals against the placement export\'s totals for this run — both are pivot slices of the same underlying campaigns, so a large delta flags a real data-integrity problem (mismatched date ranges, partial exports, wrong file uploaded).')
 }).nullable()
 })
 

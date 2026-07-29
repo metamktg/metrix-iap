@@ -3046,12 +3046,38 @@ components:
         finished_at:
           type: string
           nullable: true
+        reconciliation:
+          type: array
+          description: Cross-checks the demographic export's totals against the placement export's totals for this run — both are pivot slices of the same underlying campaigns, so a large delta flags a real data-integrity problem (mismatched date ranges, partial exports, wrong file uploaded).
+          items:
+            $ref: "#/components/schemas/ReconciliationRow"
       required:
         - id
         - account_id
         - status
         - date_range
         - started_at
+        - reconciliation
+    ReconciliationRow:
+      type: object
+      properties:
+        metric_key:
+          type: string
+          enum: [spend, results]
+        demographic_total:
+          type: number
+        placement_total:
+          type: number
+        delta_pct:
+          type: number
+        flagged:
+          type: boolean
+      required:
+        - metric_key
+        - demographic_total
+        - placement_total
+        - delta_pct
+        - flagged
     LatestAnalysisRunResult:
       type: object
       properties:

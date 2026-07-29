@@ -109,6 +109,8 @@ export * from './metrixSeedBundleVariableRegistryItem';
 export * from './metrixSeedBundleWorkspaceSettings';
 export * from './notificationPrefsResult';
 export * from './notificationPrefsUpdateInput';
+export * from './reconciliationRow';
+export * from './reconciliationRowMetricKey';
 export * from './reportSettingsResult';
 export * from './reportSettingsUpdateInput';
 export * from './reportSettingsUpdateInputDefaultBranding';

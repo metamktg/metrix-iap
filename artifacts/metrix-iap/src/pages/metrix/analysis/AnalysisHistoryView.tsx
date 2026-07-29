@@ -9,7 +9,13 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount } from "@/lib/data/metrixSeedAdapter";
 import { useGetLatestAnalysisRun, getGetLatestAnalysisRunQueryKey } from "@workspace/api-client-react";
 import { ModuleHeader, ScopeBanner, ModuleScopeGate, SectionCard, PendingState, CaveatNote } from "../shared";
-import { History, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { History, CheckCircle2, XCircle, Loader2, AlertTriangle } from "lucide-react";
+
+const METRIC_LABEL: Record<string, string> = { spend: "Spend", results: "Results" };
+
+function fmtTotal(n: number): string {
+  return n.toLocaleString("en-US", { maximumFractionDigits: 0 });
+}
 
 const SECTION = "Analysis · 03";
 
@@ -67,6 +73,35 @@ export function AnalysisHistoryView() {
                 {run.error_message && (
                   <p className="text-[11px] text-red-400/90 mt-3">{run.error_message}</p>
                 )}
+              </SectionCard>
+            )}
+
+            {run && run.reconciliation.length > 0 && (
+              <SectionCard
+                title="Data integrity"
+                desc="The demographic and placement exports are cross-checked against each other — both are pivot slices of the same underlying campaigns, so their totals should match."
+                table="import_metric_reconciliation"
+              >
+                <div className="space-y-2">
+                  {run.reconciliation.map((r) => (
+                    <div
+                      key={r.metric_key}
+                      className={
+                        "flex items-center gap-3 rounded-lg border p-3 " +
+                        (r.flagged ? "border-amber-400/25 bg-amber-400/[0.05]" : "border-border/30 bg-white/[0.02]")
+                      }
+                    >
+                      {r.flagged ? <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" /> : <CheckCircle2 className="w-4 h-4 text-emerald-400/70 shrink-0" />}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[12px] font-medium text-foreground">{METRIC_LABEL[r.metric_key] ?? r.metric_key}</div>
+                        <div className="text-[10px] text-muted-foreground/70 mt-0.5">
+                          Demographic export: {fmtTotal(r.demographic_total)} · Placement export: {fmtTotal(r.placement_total)}
+                          {r.flagged && ` · ${r.delta_pct.toFixed(1)}% apart`}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </SectionCard>
             )}
           </div>

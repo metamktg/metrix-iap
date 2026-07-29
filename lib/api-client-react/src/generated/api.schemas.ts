@@ -529,6 +529,22 @@ export const AnalysisRunDateRange = {
   all: 'all',
 } as const;
 
+export type ReconciliationRowMetricKey = typeof ReconciliationRowMetricKey[keyof typeof ReconciliationRowMetricKey];
+
+
+export const ReconciliationRowMetricKey = {
+  spend: 'spend',
+  results: 'results',
+} as const;
+
+export interface ReconciliationRow {
+  metric_key: ReconciliationRowMetricKey;
+  demographic_total: number;
+  placement_total: number;
+  delta_pct: number;
+  flagged: boolean;
+}
+
 export interface AnalysisRun {
   id: string;
   account_id: string;
@@ -543,6 +559,8 @@ export interface AnalysisRun {
   error_message?: string | null;
   started_at: string;
   finished_at?: string | null;
+  /** Cross-checks the demographic export's totals against the placement export's totals for this run — both are pivot slices of the same underlying campaigns, so a large delta flags a real data-integrity problem (mismatched date ranges, partial exports, wrong file uploaded). */
+  reconciliation: ReconciliationRow[];
 }
 
 export interface LatestAnalysisRunResult {

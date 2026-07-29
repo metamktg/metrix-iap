@@ -7,6 +7,7 @@
  */
 import type { AnalysisRunDateRange } from './analysisRunDateRange';
 import type { AnalysisRunStatus } from './analysisRunStatus';
+import type { ReconciliationRow } from './reconciliationRow';
 
 export interface AnalysisRun {
   id: string;
@@ -22,4 +23,6 @@ export interface AnalysisRun {
   error_message?: string | null;
   started_at: string;
   finished_at?: string | null;
+  /** Cross-checks the demographic export's totals against the placement export's totals for this run — both are pivot slices of the same underlying campaigns, so a large delta flags a real data-integrity problem (mismatched date ranges, partial exports, wrong file uploaded). */
+  reconciliation: ReconciliationRow[];
 }

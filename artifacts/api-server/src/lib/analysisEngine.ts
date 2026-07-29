@@ -41,6 +41,14 @@ export class AnalysisError extends Error {
   }
 }
 
+export type ReconciliationRow = {
+  metric_key: "spend" | "results";
+  demographic_total: number;
+  placement_total: number;
+  delta_pct: number;
+  flagged: boolean;
+};
+
 export type ManualAnalysisRun = {
   id: string;
   account_id: string;
@@ -53,11 +61,12 @@ export type ManualAnalysisRun = {
   error_message: string | null;
   started_at: string;
   finished_at: string | null;
+  reconciliation: ReconciliationRow[];
 };
 
 type Row = Record<string, any>;
 
-const runShape = (r: Row): ManualAnalysisRun => ({
+const runShape = (r: Row, reconciliation: ReconciliationRow[] = []): ManualAnalysisRun => ({
   id: String(r["id"]),
   account_id: String(r["account_id"]),
   status: r["status"],
@@ -69,7 +78,27 @@ const runShape = (r: Row): ManualAnalysisRun => ({
   error_message: r["error_message"] ?? null,
   started_at: String(r["started_at"]),
   finished_at: r["finished_at"] ?? null,
+  reconciliation,
 });
+
+async function fetchReconciliation(runId: string): Promise<ReconciliationRow[]> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("import_metric_reconciliation")
+    .select("metric_key, demographic_total, placement_total, delta_pct, flagged")
+    .eq("manual_analysis_run_id", runId);
+  if (error) {
+    logger.warn({ err: error, runId }, "Failed to read reconciliation rows (non-fatal)");
+    return [];
+  }
+  return (data ?? []).map((r) => ({
+    metric_key: r["metric_key"],
+    demographic_total: Number(r["demographic_total"]),
+    placement_total: Number(r["placement_total"]),
+    delta_pct: Number(r["delta_pct"]),
+    flagged: Boolean(r["flagged"]),
+  }));
+}
 
 async function accountExists(accountId: string): Promise<Row | null> {
   const supabase = getSupabase();
@@ -105,7 +134,8 @@ export async function getLatestAnalysisRun(accountId: string): Promise<ManualAna
     await deleteRunOutputs(String(row["id"]));
     return runShape(updated?.[0] ?? { ...row, status: "error" });
   }
-  return runShape(row);
+  const reconciliation = await fetchReconciliation(String(row["id"]));
+  return runShape(row, reconciliation);
 }
 
 async function startRun(accountId: string, dateRange: DateRangePreset, createdBy: string): Promise<string> {
@@ -230,6 +260,55 @@ function accumulate(bucket: AggBucket, row: IapCsvRow): void {
   }
 }
 
+/** Sums a base numeric field across raw parsed CSV rows (pre-bucketing). */
+function sumRawField(rows: IapCsvRow[], field: string): number {
+  return rows.reduce((sum, r) => sum + (num(r.base[field]) ?? 0), 0);
+}
+
+const RECONCILIATION_TOLERANCE_PCT = 2;
+
+/**
+ * Cross-checks the demographic and placement exports against each other:
+ * both are pivot slices of the same underlying campaign performance for
+ * the scoped window, so their spend/results totals should match. Writes
+ * one row per metric to import_metric_reconciliation, flagged when the
+ * delta exceeds tolerance. Never throws — a reconciliation failure must
+ * not fail the analysis run itself.
+ */
+async function writeReconciliation(
+  runId: string,
+  accountId: string,
+  scopedDemo: IapCsvRow[],
+  scopedPlacement: IapCsvRow[],
+): Promise<void> {
+  try {
+    const supabase = getSupabase();
+    const metrics: { key: "spend" | "results"; field: string }[] = [
+      { key: "spend", field: "amount_spent" },
+      { key: "results", field: "results" },
+    ];
+    const rows = metrics.map(({ key, field }) => {
+      const demoTotal = sumRawField(scopedDemo, field);
+      const placementTotal = sumRawField(scopedPlacement, field);
+      const base = Math.max(Math.abs(demoTotal), Math.abs(placementTotal));
+      const deltaPct = base > 0 ? (Math.abs(demoTotal - placementTotal) / base) * 100 : 0;
+      return {
+        manual_analysis_run_id: runId,
+        account_id: accountId,
+        metric_key: key,
+        demographic_total: demoTotal,
+        placement_total: placementTotal,
+        delta_pct: deltaPct,
+        flagged: deltaPct > RECONCILIATION_TOLERANCE_PCT,
+      };
+    });
+    const ins = await supabase.from("import_metric_reconciliation").insert(rows);
+    if (ins.error) throw new Error(ins.error.message);
+  } catch (err) {
+    logger.warn({ err, accountId, runId }, "Reconciliation check failed (non-fatal)");
+  }
+}
+
 function derivedRates(spend: number | null, impressions: number | null, linkClicks: number | null, results: number | null) {
   return {
     cpa: results !== null && results > 0 && spend !== null ? spend / results : null,
@@ -320,6 +399,11 @@ export async function startManualAnalysis(
       ];
       const dateStart = scopedDates.reduce((min, d) => (d < min ? d : min), scopedDates[0]!);
       const dateEnd = scopedDates.reduce((max, d) => (d > max ? d : max), scopedDates[0]!);
+
+      // Cross-check the two required exports against each other before
+      // writing performance rows — a genuine, available consistency check
+      // (both exports are pivot slices of the same underlying campaigns).
+      await writeReconciliation(runId, accountId, scopedDemo, scopedPlacement);
 
       // ── Ad-level rows (ad_performance): aggregate the placement export
       // across its device/platform/placement dimensions to a per-ad/day row.
