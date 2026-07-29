@@ -8,13 +8,13 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getReportBuilder, getReportHistory } from "@/lib/data/metrixSeedAdapter";
 import { buildReportModel, downloadReportExport, parseReportModel, type BrandingMode } from "@/lib/reportExport";
 import { ModuleHeader, ScopeBanner, ModuleScopeGate, SectionCard, CaveatNote, PendingState, CrossLink } from "../shared";
-import { FORMAT_LABEL } from "./NewReportView";
+import { FORMAT_LABEL } from "./ReportBuilderView";
 import { cn } from "@/lib/utils";
 import { FileDown, FileText, Check, Loader2 } from "lucide-react";
 import { useListWorkspaceReports } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 
-const SECTION = "Reports · 06";
+const SECTION = "Reports · 07";
 
 function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
@@ -216,7 +216,7 @@ export function ExportsView() {
               </SectionCard>
 
               <div className="flex items-center gap-4">
-                <CrossLink to="/app/reports/new" label="Compose a new report" />
+                <CrossLink to="/app/reports/builder" label="Compose a new report" />
                 <CrossLink to="/app/reports/history" label="Full report history" />
               </div>
             </div>

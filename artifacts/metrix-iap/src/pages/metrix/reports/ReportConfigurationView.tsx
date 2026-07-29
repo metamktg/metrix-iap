@@ -12,7 +12,7 @@ import { ModuleHeader, SectionCard, CaveatNote, CrossLink } from "../shared";
 import { cn } from "@/lib/utils";
 import { FileText, Palette, CalendarClock, Building2, Users, Check } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { FORMAT_LABEL } from "./NewReportView";
+import { FORMAT_LABEL } from "./ReportBuilderView";
 import {
   useGetReportSettings,
   useUpdateReportSettings,
@@ -22,7 +22,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
-const SECTION = "Reports · 06";
+const SECTION = "Reports · 07";
 
 function OptionRow<T extends string>({
   options,
@@ -60,7 +60,7 @@ function OptionRow<T extends string>({
   );
 }
 
-export function ReportSettingsView() {
+export function ReportConfigurationView() {
   const seed = useMetrixSeed();
   const { manager, adAccounts } = useAccount();
   const queryClient = useQueryClient();
@@ -101,7 +101,7 @@ export function ReportSettingsView() {
 
   return (
     <div className="flex-1 flex flex-col">
-      <ModuleHeader section={SECTION} title="Report Settings" />
+      <ModuleHeader section={SECTION} title="Configuration" />
 
       <div className="flex-1 overflow-y-auto p-6 space-y-4 max-w-3xl">
         <SectionCard
@@ -214,7 +214,7 @@ export function ReportSettingsView() {
 
         <div className="flex items-center gap-2">
           <FileText className="w-3 h-3 text-muted-foreground/60" />
-          <CrossLink to="/app/reports/new" label="Compose a report with these defaults" />
+          <CrossLink to="/app/reports/builder" label="Compose a report with these defaults" />
         </div>
       </div>
     </div>

@@ -21,7 +21,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 
-const SECTION = "Reports · 06";
+const SECTION = "Reports · 07";
 
 export const FORMAT_LABEL: Record<string, string> = {
   pdf: "PDF",
@@ -32,7 +32,7 @@ export const FORMAT_LABEL: Record<string, string> = {
 type Tab = "preview" | "branding";
 type Mode = "internal" | "client";
 
-export function NewReportView() {
+export function ReportBuilderView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
@@ -150,14 +150,14 @@ export function NewReportView() {
   }
 
   return (
-    <ModuleScopeGate section={SECTION} title="New Report" account={account}>
+    <ModuleScopeGate section={SECTION} title="Report Builder" account={account}>
       {() => {
         const acct = account!;
         const rb = getReportBuilder(seed, adAccountId);
         if (!rb) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="New Report" />
+              <ModuleHeader section={SECTION} title="Report Builder" />
               <ScopeBanner account={acct} />
               <PendingState title="Report Builder pending" message="No report template is available for this account yet." icon={FileText} />
             </div>
@@ -178,7 +178,7 @@ export function NewReportView() {
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
             <ModuleHeader
               section={SECTION}
-              title="New Report"
+              title="Report Builder"
               subtitle="Compose a client-ready report from this account's analysis and strategy."
               table="reports"
             />

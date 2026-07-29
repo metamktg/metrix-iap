@@ -2,7 +2,7 @@
 // Generated reports are persisted as a serialized ReportModel snapshot
 // (model_json) and re-downloaded from that snapshot — never re-composed
 // from current seed data. These tests pin down both halves of that flow:
-//   - NewReportView's Generate posts a valid, parseable snapshot
+//   - ReportBuilderView's Generate posts a valid, parseable snapshot
 //   - the post-generate download uses the server-returned snapshot
 //   - ReportHistoryView downloads stored snapshots verbatim
 // Uses the checked-in seed fixture served by the API in production.
@@ -65,7 +65,7 @@ vi.mock("@workspace/api-client-react", async (importOriginal) => {
 import { AccountProvider } from "@/contexts/AccountContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DateRangeProvider } from "@/contexts/DateRangeContext";
-import { NewReportView } from "../NewReportView";
+import { ReportBuilderView } from "../ReportBuilderView";
 import { ReportHistoryView } from "../ReportHistoryView";
 import {
   parseReportModel,
@@ -136,10 +136,10 @@ beforeEach(() => {
   listedReports = [];
 });
 
-describe("NewReportView · Generate", () => {
+describe("ReportBuilderView · Generate", () => {
   it("POSTs a snapshot that parses back into a valid ReportModel", () => {
     selectBookster();
-    renderView(NewReportView);
+    renderView(ReportBuilderView);
 
     fireEvent.click(screen.getByRole("button", { name: /Generate report/i }));
 
@@ -166,7 +166,7 @@ describe("NewReportView · Generate", () => {
 
   it("downloads the server-returned snapshot after a successful generate", async () => {
     selectBookster();
-    renderView(NewReportView);
+    renderView(ReportBuilderView);
 
     fireEvent.click(screen.getByRole("button", { name: /Generate report/i }));
     const { data } = mutateMock.mock.calls[0][0] as { data: Record<string, unknown> };

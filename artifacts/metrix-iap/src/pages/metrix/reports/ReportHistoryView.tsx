@@ -9,7 +9,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getReportHistory } from "@/lib/data/metrixSeedAdapter";
 import { buildReportModel, downloadReportExport, parseReportModel, type BrandingMode } from "@/lib/reportExport";
 import { ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile, CrossLink, fmtNum } from "../shared";
-import { FORMAT_LABEL } from "./NewReportView";
+import { FORMAT_LABEL } from "./ReportBuilderView";
 import { cn } from "@/lib/utils";
 import { History, FileText, Building2, Users, FileDown, Check, Loader2, Trash2, X } from "lucide-react";
 import {
@@ -32,7 +32,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-const SECTION = "Reports · 06";
+const SECTION = "Reports · 07";
 
 function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
@@ -204,7 +204,7 @@ export function ReportHistoryView() {
               <ScopeBanner account={acct} />
               <PendingState title="No reports yet" message="Reports you compose and export will appear here." icon={History} />
               <div className="px-6 pb-6 text-center">
-                <CrossLink to="/app/reports/new" label="Compose the first report" />
+                <CrossLink to="/app/reports/builder" label="Compose the first report" />
               </div>
             </div>
           );
@@ -466,7 +466,7 @@ export function ReportHistoryView() {
               </AlertDialog>
 
               <div className="flex items-center gap-4 pt-1">
-                <CrossLink to="/app/reports/new" label="Compose a new report" />
+                <CrossLink to="/app/reports/builder" label="Compose a new report" />
                 <CrossLink to="/app/reports/exports" label="Export formats" />
               </div>
             </div>

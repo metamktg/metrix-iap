@@ -244,7 +244,7 @@ export function TaskTray() {
             <TrayNavLink to="/app/analysis/library" label="IAP Library" icon={Zap} />
             <TrayNavLink to="/app/strategy/map" label="Strategy Map" icon={Zap} />
             <TrayNavLink to="/app/mst/sprints" label="MST Sprints" icon={Zap} />
-            <TrayNavLink to="/app/reports/new" label="New Report" icon={Zap} />
+            <TrayNavLink to="/app/reports" label="Reports" icon={Zap} />
           </div>
         </TraySection>
       </div>

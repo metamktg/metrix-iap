@@ -45,10 +45,11 @@ import { CreativeLibraryView } from "@/pages/metrix/creative/CreativeLibraryView
 import { CreativeBriefBuilderView } from "@/pages/metrix/creative/CreativeBriefBuilderView";
 import { CreativeScanView } from "@/pages/metrix/creative/CreativeScanView";
 import { CreativeImportExportView } from "@/pages/metrix/creative/CreativeImportExportView";
-import { NewReportView } from "@/pages/metrix/reports/NewReportView";
+import { ReportsCommandCenter } from "@/pages/metrix/reports/ReportsCommandCenter";
+import { ReportBuilderView } from "@/pages/metrix/reports/ReportBuilderView";
 import { ReportHistoryView } from "@/pages/metrix/reports/ReportHistoryView";
 import { ExportsView } from "@/pages/metrix/reports/ExportsView";
-import { ReportSettingsView } from "@/pages/metrix/reports/ReportSettingsView";
+import { ReportConfigurationView } from "@/pages/metrix/reports/ReportConfigurationView";
 import { MstCommandCenter } from "@/pages/metrix/mst/MstCommandCenter";
 import { MstCrossMapView } from "@/pages/metrix/mst/MstCrossMapView";
 import { MstSprintsView } from "@/pages/metrix/mst/MstSprintsView";
@@ -114,10 +115,11 @@ export function Router() {
       <Route path="/app/creative/import-export" component={CreativeImportExportView} />
 
       {/* ── 06 Report Builder ─────────────────────────────────────────── */}
-      <Route path="/app/reports/new"     component={NewReportView} />
-      <Route path="/app/reports/history" component={ReportHistoryView} />
-      <Route path="/app/reports/exports" component={ExportsView} />
-      <Route path="/app/reports/settings" component={ReportSettingsView} />
+      <Route path="/app/reports"              component={ReportsCommandCenter} />
+      <Route path="/app/reports/builder"      component={ReportBuilderView} />
+      <Route path="/app/reports/configuration" component={ReportConfigurationView} />
+      <Route path="/app/reports/history"      component={ReportHistoryView} />
+      <Route path="/app/reports/exports"      component={ExportsView} />
 
       {/* ── 07 MST ────────────────────────────────────────────────────── */}
       <Route path="/app/mst"                component={MstCommandCenter} />
@@ -148,8 +150,9 @@ export function Router() {
       <Route path="/app/briefs/history">{() => <Redirect to="/app/creative" replace />}</Route>
       <Route path="/app/briefs">{() => <Redirect to="/app/creative" replace />}</Route>
       <Route path="/app/mst/creative-scan">{() => <Redirect to="/app/creative/scan" replace />}</Route>
-      <Route path="/app/report-builder">{() => <Redirect to="/app/reports/new" replace />}</Route>
-      <Route path="/app/reports">{() => <Redirect to="/app/reports/new" replace />}</Route>
+      <Route path="/app/report-builder">{() => <Redirect to="/app/reports/builder" replace />}</Route>
+      <Route path="/app/reports/new">{() => <Redirect to="/app/reports/builder" replace />}</Route>
+      <Route path="/app/reports/settings">{() => <Redirect to="/app/reports/configuration" replace />}</Route>
       <Route path="/app/settings">{() => <Redirect to="/app/settings/account" replace />}</Route>
 
       {/* ── 404 ───────────────────────────────────────────────────────── */}
