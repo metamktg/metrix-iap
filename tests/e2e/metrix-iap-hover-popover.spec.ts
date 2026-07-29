@@ -25,9 +25,18 @@
 //   13b. SegmentGridModal placement marginals — link_ctr metric: "All avatars" row
 //      shows percentage values (not "—") in placement cells, catching regressions
 //      in the link_ctr case of metricValueForSegment().
-//  14. SegmentGridModal empty-state: when demographic_registration_signal is [],
+//   14. SegmentGridModal empty-state: when demographic_registration_signal is [],
 //      the modal renders "No demographic rows for this selection" and omits the
 //      grid table — catches regressions in the zero-row branch.
+//   15a. SegmentGridModal avatar blended column — impressions metric: "Blended"
+//      header is present and the first avatar row's blended cell shows a non-empty
+//      integer value (num(t.impressions)), not "—".
+//   15b. SegmentGridModal avatar blended column — link_clicks metric: "Blended"
+//      header is present and the first avatar row's blended cell shows a non-empty
+//      integer value (num(t.linkClicks)), not "—".
+//   15c. SegmentGridModal avatar blended column — cpa_blended metric: "Blended"
+//      header is present and the first avatar row's blended cell starts with "$"
+//      (usd() dollar format), not "—".
 //
 // API calls are intercepted with page.route() so no live API server is needed.
 // The seed fixture comes from the checked-in test snapshot.
@@ -1580,6 +1589,303 @@ async function main() {
             !bodyText.includes("Avatar segment"),
             'SegmentGridModal must not render the grid table ("Avatar segment" header) ' +
               "when avatars.length === 0.",
+          );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+    // ── Test 15a: SegmentGridModal avatar blended column — impressions metric ──
+    // Opens SegmentGridModal for the "Impressions" default tile and asserts:
+    //   • The "Blended" column header is visible in the dialog.
+    //   • The first avatar-segment row's blended cell shows a non-empty
+    //     formatted integer (num(t.impressions)) rather than "—", catching
+    //     any silent regression in the impressions case of metricValueForSegment().
+    // The bookster fixture has 62 demographic rows so at least one avatar
+    // segment exists and the grid table is rendered.
+    await test(
+      "SegmentGridModal avatar blended column — impressions metric shows a numeric value",
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        try {
+          // "Impressions" is one of the four default metric tiles — no
+          // localStorage override needed.
+          await mockApis(ctx);
+          await page.goto(`${BASE}/app/account?account=${ACCOUNT}`, {
+            waitUntil: "domcontentloaded",
+          });
+
+          await page
+            .getByText("Account Totals", { exact: false })
+            .waitFor({ state: "visible", timeout: 20_000 });
+
+          // Hover the "Impressions" tile to open the hover popover.
+          const tileBtn = page
+            .locator("button")
+            .filter({ hasText: "Impressions" })
+            .first();
+          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
+          await tileBtn.hover();
+
+          // Open MetricDiagnosticModal via the footer link.
+          const diagnoseBtn = page.getByText("Diagnose full breakdown");
+          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
+          await diagnoseBtn.click();
+
+          const diagnosticHeader = page.getByText("Metric diagnostic", {
+            exact: false,
+          });
+          await diagnosticHeader.waitFor({ state: "visible", timeout: 8_000 });
+
+          // Click "Avatar × placement breakdown" to open SegmentGridModal.
+          const segmentBtn = page.getByRole("button", {
+            name: "Avatar × placement breakdown",
+          });
+          await segmentBtn.waitFor({ state: "visible", timeout: 5_000 });
+          await segmentBtn.click();
+
+          // Wait for SegmentGridModal — title includes the metric label.
+          const segmentTitle = page.getByText(
+            "Impressions — avatar × placement",
+            { exact: false },
+          );
+          await segmentTitle.waitFor({ state: "visible", timeout: 8_000 });
+
+          const dialog = page.locator('[role="dialog"]').last();
+
+          // "Blended" column header must be visible in the modal.
+          const blendedHeader = dialog.locator("th").filter({ hasText: "Blended" });
+          await blendedHeader.waitFor({ state: "visible", timeout: 5_000 });
+          const blendedHeaderText = (await blendedHeader.textContent()) ?? "";
+          assert(
+            blendedHeaderText.includes("Blended"),
+            `SegmentGridModal must render a "Blended" column header for the ` +
+              `impressions metric. Got: "${blendedHeaderText}"`,
+          );
+
+          // First avatar-segment row (not the "All avatars" footer) — its last
+          // <td> is the blended cell.  metricValueForSegment(impressions) calls
+          // num(t.impressions), which returns a formatted integer.  The cell's
+          // textContent is "{display} {metricLabel}\n{spend} · {results} res",
+          // so "Impressions" (the metric label) must appear AND the display must
+          // not be the "—" sentinel value.
+          const firstAvatarRow = dialog.locator("tbody tr").first();
+          await firstAvatarRow.waitFor({ state: "visible", timeout: 5_000 });
+          const blendedCell = firstAvatarRow.locator("td").last();
+          const cellText = (await blendedCell.textContent()) ?? "";
+
+          assert(
+            cellText.includes("Impressions"),
+            `First avatar row's blended cell must contain the metric label ` +
+              `"Impressions". Got: "${cellText}"`,
+          );
+          // The blended display value must not be the "—" sentinel — that would
+          // indicate metricValueForSegment() returned null for a non-null segment.
+          assert(
+            !cellText.startsWith("—"),
+            `First avatar row's blended cell must not show "—" for the ` +
+              `impressions metric (impressions > 0 should yield a real number). ` +
+              `Got: "${cellText}"`,
+          );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+
+    // ── Test 15b: SegmentGridModal avatar blended column — link_clicks metric ──
+    // Same as 15a but for the "Link clicks" default tile, which exercises the
+    // link_clicks case of metricValueForSegment() (num(t.linkClicks)).
+    await test(
+      "SegmentGridModal avatar blended column — link_clicks metric shows a numeric value",
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        try {
+          // "Link clicks" is one of the four default metric tiles — no
+          // localStorage override needed.
+          await mockApis(ctx);
+          await page.goto(`${BASE}/app/account?account=${ACCOUNT}`, {
+            waitUntil: "domcontentloaded",
+          });
+
+          await page
+            .getByText("Account Totals", { exact: false })
+            .waitFor({ state: "visible", timeout: 20_000 });
+
+          // Hover the "Link clicks" tile.
+          const tileBtn = page
+            .locator("button")
+            .filter({ hasText: "Link clicks" })
+            .first();
+          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
+          await tileBtn.hover();
+
+          // Open MetricDiagnosticModal.
+          const diagnoseBtn = page.getByText("Diagnose full breakdown");
+          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
+          await diagnoseBtn.click();
+
+          const diagnosticHeader = page.getByText("Metric diagnostic", {
+            exact: false,
+          });
+          await diagnosticHeader.waitFor({ state: "visible", timeout: 8_000 });
+
+          // Open SegmentGridModal.
+          const segmentBtn = page.getByRole("button", {
+            name: "Avatar × placement breakdown",
+          });
+          await segmentBtn.waitFor({ state: "visible", timeout: 5_000 });
+          await segmentBtn.click();
+
+          const segmentTitle = page.getByText(
+            "Link clicks — avatar × placement",
+            { exact: false },
+          );
+          await segmentTitle.waitFor({ state: "visible", timeout: 8_000 });
+
+          const dialog = page.locator('[role="dialog"]').last();
+
+          // "Blended" column header must be visible.
+          const blendedHeader = dialog.locator("th").filter({ hasText: "Blended" });
+          await blendedHeader.waitFor({ state: "visible", timeout: 5_000 });
+          const blendedHeaderText = (await blendedHeader.textContent()) ?? "";
+          assert(
+            blendedHeaderText.includes("Blended"),
+            `SegmentGridModal must render a "Blended" column header for the ` +
+              `link_clicks metric. Got: "${blendedHeaderText}"`,
+          );
+
+          // First avatar-segment row — blended cell must contain the metric
+          // label "Link clicks" and must not show the "—" sentinel value.
+          // metricValueForSegment(link_clicks) calls num(t.linkClicks) which
+          // produces a positive integer for any row with link click data.
+          const firstAvatarRow = dialog.locator("tbody tr").first();
+          await firstAvatarRow.waitFor({ state: "visible", timeout: 5_000 });
+          const blendedCell = firstAvatarRow.locator("td").last();
+          const cellText = (await blendedCell.textContent()) ?? "";
+
+          assert(
+            cellText.includes("Link clicks"),
+            `First avatar row's blended cell must contain the metric label ` +
+              `"Link clicks". Got: "${cellText}"`,
+          );
+          assert(
+            !cellText.startsWith("—"),
+            `First avatar row's blended cell must not show "—" for the ` +
+              `link_clicks metric (linkClicks > 0 should yield a real number). ` +
+              `Got: "${cellText}"`,
+          );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+
+    // ── Test 15c: SegmentGridModal avatar blended column — cpa_blended metric ──
+    // Opens SegmentGridModal for the "CPA (blended)" tile.  The blended column
+    // for each avatar segment runs metricValueForSegment(cpa_blended) which
+    // computes spend / results and formats as a dollar value (usd(v)).
+    // Asserts:
+    //   • "Blended" column header is present.
+    //   • The first avatar-segment row's blended cell starts with "$" (a dollar-
+    //     formatted value), not "—" (which would signal null results or a bug).
+    await test(
+      "SegmentGridModal avatar blended column — cpa_blended metric shows a dollar value",
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        try {
+          // "CPA (blended)" is not a default tile — inject via localStorage
+          // so the tile is selected before the app initialises.
+          await page.addInitScript(() => {
+            localStorage.setItem(
+              "metrix.overview.metric_tiles.v1",
+              JSON.stringify(["cpa_blended"]),
+            );
+          });
+
+          await mockApis(ctx);
+          await page.goto(`${BASE}/app/account?account=${ACCOUNT}`, {
+            waitUntil: "domcontentloaded",
+          });
+
+          await page
+            .getByText("Account Totals", { exact: false })
+            .waitFor({ state: "visible", timeout: 20_000 });
+
+          // Hover the "CPA (blended)" tile.
+          const tileBtn = page
+            .locator("button")
+            .filter({ hasText: "CPA (blended)" })
+            .first();
+          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
+          await tileBtn.hover();
+
+          // Open MetricDiagnosticModal.
+          const diagnoseBtn = page.getByText("Diagnose full breakdown");
+          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
+          await diagnoseBtn.click();
+
+          const diagnosticHeader = page.getByText("Metric diagnostic", {
+            exact: false,
+          });
+          await diagnosticHeader.waitFor({ state: "visible", timeout: 8_000 });
+
+          // Open SegmentGridModal.
+          const segmentBtn = page.getByRole("button", {
+            name: "Avatar × placement breakdown",
+          });
+          await segmentBtn.waitFor({ state: "visible", timeout: 5_000 });
+          await segmentBtn.click();
+
+          const segmentTitle = page.getByText(
+            "CPA (blended) — avatar × placement",
+            { exact: false },
+          );
+          await segmentTitle.waitFor({ state: "visible", timeout: 8_000 });
+
+          const dialog = page.locator('[role="dialog"]').last();
+
+          // "Blended" column header must be visible.
+          const blendedHeader = dialog.locator("th").filter({ hasText: "Blended" });
+          await blendedHeader.waitFor({ state: "visible", timeout: 5_000 });
+          const blendedHeaderText = (await blendedHeader.textContent()) ?? "";
+          assert(
+            blendedHeaderText.includes("Blended"),
+            `SegmentGridModal must render a "Blended" column header for the ` +
+              `cpa_blended metric. Got: "${blendedHeaderText}"`,
+          );
+
+          // First avatar-segment row — blended cell must contain the metric
+          // label "CPA (blended)" and the display value must start with "$".
+          // metricValueForSegment(cpa_blended) computes spend / results via
+          // usd(v).  The bookster demographic rows have Results > 0 so the
+          // CPA formula yields a real dollar value for every avatar segment.
+          const firstAvatarRow = dialog.locator("tbody tr").first();
+          await firstAvatarRow.waitFor({ state: "visible", timeout: 5_000 });
+          const blendedCell = firstAvatarRow.locator("td").last();
+          const cellText = (await blendedCell.textContent()) ?? "";
+
+          assert(
+            cellText.includes("CPA (blended)"),
+            `First avatar row's blended cell must contain the metric label ` +
+              `"CPA (blended)". Got: "${cellText}"`,
+          );
+          // The dollar sign "$" must appear as the first character of the
+          // blended display value (usd() output) — if "$" is absent at the
+          // start, blended.display is either "—" (null results) or a wrong format.
+          assert(
+            cellText.startsWith("$"),
+            `First avatar row's blended cell must start with "$" for the ` +
+              `cpa_blended metric (usd() format). Got: "${cellText}"`,
           );
         } finally {
           await ctx.close();
