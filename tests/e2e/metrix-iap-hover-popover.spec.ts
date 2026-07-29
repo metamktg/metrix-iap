@@ -25,6 +25,9 @@
 //   13b. SegmentGridModal placement marginals — link_ctr metric: "All avatars" row
 //      shows percentage values (not "—") in placement cells, catching regressions
 //      in the link_ctr case of metricValueForSegment().
+//  14. SegmentGridModal empty-state: when demographic_registration_signal is [],
+//      the modal renders "No demographic rows for this selection" and omits the
+//      grid table — catches regressions in the zero-row branch.
 //
 // API calls are intercepted with page.route() so no live API server is needed.
 // The seed fixture comes from the checked-in test snapshot.
@@ -1407,6 +1410,176 @@ async function main() {
             ),
             'The result-event info notice ("Avatar × placement breakdown isn\'t available for") ' +
               "must appear in place of the drilldown button.",
+          );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+    // ── Test 14: SegmentGridModal empty-state when demographic_registration_signal is [] ──
+    // Builds a seed where demographic_registration_signal is an empty array so
+    // buildAvatarSegments() returns [] and avatars.length === 0.  The modal must
+    // render the "No demographic rows for this selection" message and must NOT
+    // render the grid table.  Catches regressions in the empty-state branch
+    // (wrong message text, missing container, or a JS crash on zero rows).
+    await test(
+      "SegmentGridModal: empty-state renders when no demographic rows exist",
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        try {
+          // Build a seed with:
+          //   • 3 concept rows so MetricDiagnosticModal shows the full body
+          //     (metric.value non-null) and renders the "Avatar × placement
+          //     breakdown" drilldown button.
+          //   • demographic_registration_signal: [] so SegmentGridModal takes
+          //     the empty-state branch (avatars.length === 0).
+          const modifiedSeed = JSON.parse(SEED_FIXTURE_BODY);
+          const bookster = modifiedSeed.ad_accounts.find(
+            (a: { id: string }) => a.id === ACCOUNT,
+          );
+          bookster.iap.analysis.performance_by_cell = [
+            {
+              cell_id: "c_alpha",
+              "Result type": "Mobile app installs",
+              "Amount spent (USD)": 1200,
+              Reach: 40000,
+              Impressions: 80000,
+              Results: 120,
+              "Clicks (all)": 2000,
+              "Link clicks": 1600,
+              CPA_result: 10.0,
+              CTR_link_pct: 2.0,
+              Result_per_link_click_pct: 7.5,
+              book2_concept_name: "Concept Alpha",
+            },
+            {
+              cell_id: "c_beta",
+              "Result type": "Mobile app installs",
+              "Amount spent (USD)": 900,
+              Reach: 30000,
+              Impressions: 60000,
+              Results: 80,
+              "Clicks (all)": 1500,
+              "Link clicks": 1200,
+              CPA_result: 11.25,
+              CTR_link_pct: 2.0,
+              Result_per_link_click_pct: 6.7,
+              book2_concept_name: "Concept Beta",
+            },
+            {
+              cell_id: "c_gamma",
+              "Result type": "Mobile app installs",
+              "Amount spent (USD)": 700,
+              Reach: 22000,
+              Impressions: 44000,
+              Results: 55,
+              "Clicks (all)": 900,
+              "Link clicks": 720,
+              CPA_result: 12.73,
+              CTR_link_pct: 1.64,
+              Result_per_link_click_pct: 7.6,
+              book2_concept_name: "Concept Gamma",
+            },
+          ];
+          // Clear the demographic signal so avatars.length === 0.
+          bookster.iap.analysis.demographic_registration_signal = [];
+
+          await page.route("**/api/metrix/auth/me", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify({
+                user: {
+                  id: "test-user",
+                  email: "demo@metrix.app",
+                  role: "admin",
+                  must_change_password: false,
+                  workspace_id: "metrix_manager",
+                },
+              }),
+            }),
+          );
+          await page.route("**/api/metrix/seed", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify(modifiedSeed),
+            }),
+          );
+          await page.route("**/api/metrix/workspaces/*/reports", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify({ reports: [] }),
+            }),
+          );
+
+          await page.goto(`${BASE}/app/account?account=${ACCOUNT}`, {
+            waitUntil: "domcontentloaded",
+          });
+
+          // Wait for the metric grid.
+          await page
+            .getByText("Account Totals", { exact: false })
+            .waitFor({ state: "visible", timeout: 20_000 });
+
+          // Hover the "Total spend" tile to open the hover popover.
+          const tileBtn = page
+            .locator("button")
+            .filter({ hasText: "Total spend" })
+            .first();
+          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
+          await tileBtn.hover();
+
+          // Click "Diagnose full breakdown" to open MetricDiagnosticModal.
+          const diagnoseBtn = page.getByText("Diagnose full breakdown");
+          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
+          await diagnoseBtn.click();
+
+          // Wait for MetricDiagnosticModal to open.
+          const diagnosticHeader = page.getByText("Metric diagnostic", {
+            exact: false,
+          });
+          await diagnosticHeader.waitFor({ state: "visible", timeout: 8_000 });
+
+          // Click the "Avatar × placement breakdown" drilldown button to open
+          // SegmentGridModal with the empty demographic signal.
+          const segmentBtn = page.getByRole("button", {
+            name: "Avatar × placement breakdown",
+          });
+          await segmentBtn.waitFor({ state: "visible", timeout: 5_000 });
+          await segmentBtn.click();
+
+          // SegmentGridModal's dialog title must appear — confirms the modal
+          // opened and did not crash on zero rows.
+          const segmentTitle = page.getByText(
+            "Total spend — avatar × placement",
+            { exact: false },
+          );
+          await segmentTitle.waitFor({ state: "visible", timeout: 8_000 });
+
+          // The empty-state message must be visible.
+          const emptyMsg = page.getByText(
+            "No demographic rows for this selection",
+            { exact: false },
+          );
+          await emptyMsg.waitFor({ state: "visible", timeout: 5_000 });
+
+          const bodyText = (await page.locator("body").textContent()) ?? "";
+          assert(
+            bodyText.includes("No demographic rows for this selection"),
+            'SegmentGridModal empty-state must show "No demographic rows for this selection".',
+          );
+
+          // The grid table must NOT be rendered in the empty-state branch.
+          // SegmentGridModal's table contains the "Avatar segment" column header.
+          assert(
+            !bodyText.includes("Avatar segment"),
+            'SegmentGridModal must not render the grid table ("Avatar segment" header) ' +
+              "when avatars.length === 0.",
           );
         } finally {
           await ctx.close();
