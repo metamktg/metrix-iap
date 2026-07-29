@@ -30,7 +30,7 @@ import { AccountProvider } from "@/contexts/AccountContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DateRangeProvider } from "@/contexts/DateRangeContext";
 import { Sidebar } from "../Sidebar";
-import { AnalysisOverview } from "@/pages/metrix/analysis/AnalysisOverview";
+import { AdPerformanceView } from "@/pages/metrix/analysis/AdPerformanceView";
 import { navTree, sectionLandingRoute } from "@/navigation/navTree";
 
 const SESSION_KEY = "metrix_active_account_v1";
@@ -146,7 +146,7 @@ describe("Sidebar section headers", () => {
 describe("Inline account picker", () => {
   it("appears in the no-account state and populates the page in place", () => {
     sessionStorage.setItem(SESSION_KEY, JSON.stringify({ type: "manager", adAccountId: null }));
-    renderWithProviders(<AnalysisOverview />);
+    renderWithProviders(<AdPerformanceView />);
 
     expect(screen.getByText("No ad account selected")).toBeTruthy();
     openDropdown(screen.getByText("Choose ad account").closest("button")!);
@@ -171,7 +171,7 @@ describe("Inline account picker", () => {
       SESSION_KEY,
       JSON.stringify({ type: "ad_account", adAccountId: unconfigured.id })
     );
-    renderWithProviders(<AnalysisOverview />);
+    renderWithProviders(<AdPerformanceView />);
 
     openDropdown(screen.getByText("Switch ad account").closest("button")!);
     // The currently selected unconfigured account is excluded from the list

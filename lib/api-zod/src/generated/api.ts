@@ -266,6 +266,38 @@ export const GetLatestAnalysisRunResponse = zod.object({
 
 
 /**
+ * Composes the account's latest analysis run, latest strategy generation run, latest briefs generation run, and current brief count into one shape the frontend gates the Analysis → Strategy → Creative → MST loop on. Adds no new run tables — reads the existing manual_analysis_runs and generation_runs records. Requires access to the account.
+ * @summary Loop stage status for an account (hard-gating source of truth)
+ */
+
+
+
+export const GetAccountStageStatusParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
+})
+
+export const GetAccountStageStatusResponse = zod.object({
+  "analysis": zod.object({
+  "status": zod.enum(['none', 'running', 'success', 'error']),
+  "last_run_at": zod.string().nullable(),
+  "date_range": zod.union([zod.literal('7d'),zod.literal('14d'),zod.literal('30d'),zod.literal('all'),zod.literal(null)]).nullable()
+}),
+  "strategy": zod.object({
+  "status": zod.enum(['none', 'running', 'success', 'error']),
+  "last_run_at": zod.string().nullable()
+}),
+  "briefs": zod.object({
+  "status": zod.enum(['none', 'running', 'success', 'error']),
+  "last_run_at": zod.string().nullable(),
+  "count": zod.number()
+}),
+  "mst": zod.object({
+  "unlocked": zod.boolean()
+})
+})
+
+
+/**
  * Starts an in-app Metrix engine run that generates message pillars and testing hypotheses grounded in the account's real analysis rows. Returns 202 with the run id immediately; poll the latest-run endpoint for the outcome. Generated rows carry source='generated' and never touch imported rows. Requires access to the account.
  * @summary Generate strategy (pillars + hypotheses) from the account's analysis data
  */

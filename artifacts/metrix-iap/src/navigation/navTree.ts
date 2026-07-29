@@ -2,16 +2,21 @@
 // All labels, routes, badge keys, and placeholder flags live here.
 // Sidebar.tsx consumes this — no nav data defined elsewhere.
 //
-// Locked 9-section information architecture (user-specified):
-//   1 Overview
-//   2 Listen          → Alerts / Signal / Recommendations
-//   3 Analysis        → Overview / IAP Library / Audience / Placements / Budget Insight
-//   4 Strategy        → Overview / Strategy Map / Avatars · ICP / Hypothesis Queue
-//   5 Creative Briefs → Brief Builder / History
-//   6 Report Builder  → New Report / Report History / Exports
-//   7 MST             → Concept Map / Matrix Builder / Creative Scan / Crossmap Results
-//   8 Metrix Agent    (Coming Soon — waitlist)
-//   9 Settings        → Account / Integrations / Team & Access / Notifications / Billing
+// Locked 10-section information architecture (user-specified — the IAP
+// loop expressed directly in navigation). Every expandable section's
+// PARENT route is a command center: execution + run history + a loop-hub
+// nav, never charts. Analytical depth lives only in child pages.
+//
+//   1  Overview    → IAP Loop / Updates
+//   2  Listen      → Alerts / Signal / Recommendations  (parent = TL;DR)
+//   3  Analysis    → Ad Performance / IAP Library / Audience / Placements / Budget / History
+//   4  Strategy    → Overview / Strategy Map / Avatars·ICP·PMF / Communications / Hypothesis Queue / History
+//   5  Creative    → Library / Brief Builder / Creative Scan / Import & Export
+//   6  MST         → Cross-Map / Sprints / Performance / Direction
+//   7  Reports     → Report Builder / Configuration / History
+//   8  Exports     → Analysis / Strategy JSON / Reports / Brief   (premium-gated)
+//   9  Action      → Agent   (Coming Soon)
+//   10 Settings    → General / Users & Permissions / Security / Integrations / Billing
 
 export type NavBadgeKey =
   | "signals"
@@ -28,7 +33,8 @@ export type NavIconName =
   | "FileText"
   | "FileBarChart"
   | "Layers"
-  | "Bot"
+  | "Download"
+  | "Zap"
   | "Settings2";
 
 export type NavChild = {
@@ -52,7 +58,8 @@ export type NavSection = {
   // Expandable section: renders children list
   children?: NavChild[];
   // Landing route for an expandable section header (e.g. the section's
-  // Overview page). Falls back to the first child's route when unset.
+  // command-center / pulse page). Falls back to the first child's route
+  // when unset.
   landing?: string;
   badgeKey?: NavBadgeKey;
   dataSource?: string;
@@ -71,15 +78,31 @@ export const navTree: NavSection[] = [
     number: "01",
     label: "Overview",
     icon: "LayoutDashboard",
-    to: "/",
+    landing: "/",
     matchPaths: ["/app/account"],
     dataSource: "core_reanalysis_read, campaign_summary",
+    children: [
+      {
+        id: "overview-loop",
+        label: "IAP Loop",
+        to: "/app/overview/loop",
+        dataSource: "stage_status (per account)",
+      },
+      {
+        id: "overview-updates",
+        label: "Updates",
+        to: "/app/overview/updates",
+        dataSource: "platform_updates",
+        placeholder: true,
+      },
+    ],
   },
   {
     id: "listen",
     number: "02",
     label: "Listen",
     icon: "Radio",
+    landing: "/app/listen",
     children: [
       {
         id: "listen-alerts",
@@ -107,8 +130,14 @@ export const navTree: NavSection[] = [
     number: "03",
     label: "Analysis",
     icon: "BarChart2",
-    landing: "/app/analysis/overview",
+    landing: "/app/analysis",
     children: [
+      {
+        id: "analysis-performance",
+        label: "Ad Performance",
+        to: "/app/analysis/performance",
+        dataSource: "campaign_summary, performance_by_cell",
+      },
       {
         id: "analysis-library",
         label: "IAP Library",
@@ -129,9 +158,15 @@ export const navTree: NavSection[] = [
       },
       {
         id: "analysis-budget",
-        label: "Budget Insight",
+        label: "Budget",
         to: "/app/analysis/budget",
         dataSource: "campaign_summary, performance_by_cell",
+      },
+      {
+        id: "analysis-history",
+        label: "History",
+        to: "/app/analysis/history",
+        dataSource: "manual_analysis_runs",
       },
     ],
   },
@@ -140,8 +175,14 @@ export const navTree: NavSection[] = [
     number: "04",
     label: "Strategy",
     icon: "Compass",
-    landing: "/app/strategy/overview",
+    landing: "/app/strategy",
     children: [
+      {
+        id: "strategy-overview",
+        label: "Overview",
+        to: "/app/strategy/overview",
+        dataSource: "message_pillars, active_hypotheses",
+      },
       {
         id: "strategy-map",
         label: "Strategy Map",
@@ -150,9 +191,16 @@ export const navTree: NavSection[] = [
       },
       {
         id: "strategy-avatars",
-        label: "Avatars / ICP",
+        label: "Avatars / ICP / PMF",
         to: "/app/strategy/avatars",
         dataSource: "historical_matrix_4x4, demographic_registration_signal",
+      },
+      {
+        id: "strategy-communications",
+        label: "Communications",
+        to: "/app/strategy/communications",
+        dataSource: "message_pillars, performance_by_cell",
+        placeholder: true,
       },
       {
         id: "strategy-hypotheses",
@@ -160,130 +208,191 @@ export const navTree: NavSection[] = [
         to: "/app/strategy/hypotheses",
         dataSource: "active_hypotheses, message_pillars",
       },
+      {
+        id: "strategy-history",
+        label: "History",
+        to: "/app/strategy/history",
+        dataSource: "generation_runs",
+      },
     ],
   },
   {
-    id: "briefs",
+    id: "creative",
     number: "05",
-    label: "Creative Briefs",
+    label: "Creative",
     icon: "FileText",
+    landing: "/app/creative",
     children: [
       {
-        id: "briefs-builder",
+        id: "creative-library",
+        label: "Library",
+        to: "/app/creative/library",
+        dataSource: "local_book2_library, imported_creative_briefs",
+        placeholder: true,
+      },
+      {
+        id: "creative-builder",
         label: "Brief Builder",
-        to: "/app/briefs/builder",
+        to: "/app/creative/builder",
         badgeKey: "briefs",
         dataSource: "draft_briefs",
       },
       {
-        id: "briefs-history",
-        label: "History",
-        to: "/app/briefs/history",
-        dataSource: "draft_briefs",
-      },
-    ],
-  },
-  {
-    id: "reports",
-    number: "06",
-    label: "Report Builder",
-    icon: "FileBarChart",
-    children: [
-      {
-        id: "reports-new",
-        label: "New Report",
-        to: "/app/reports/new",
-        dataSource: "report_sections",
+        id: "creative-scan",
+        label: "Creative Scan",
+        to: "/app/creative/scan",
+        dataSource: "local_book2_library",
       },
       {
-        id: "reports-history",
-        label: "Report History",
-        to: "/app/reports/history",
-        dataSource: "report_history",
-      },
-      {
-        id: "reports-exports",
-        label: "Exports",
-        to: "/app/reports/exports",
-        dataSource: "report_history, export_formats",
-      },
-      {
-        id: "reports-settings",
-        label: "Settings",
-        to: "/app/reports/settings",
-        dataSource: "report_builder defaults + workspace overrides",
+        id: "creative-import-export",
+        label: "Import & Export",
+        to: "/app/creative/import-export",
+        dataSource: "manual_imports",
+        placeholder: true,
       },
     ],
   },
   {
     id: "mst",
-    number: "07",
+    number: "06",
     label: "MST",
     icon: "Layers",
+    landing: "/app/mst",
     children: [
       {
-        id: "mst-concept-map",
-        label: "Concept Map",
-        to: "/app/mst/concept-map",
-        dataSource: "performance_by_cell, message_pillars",
+        id: "mst-cross-map",
+        label: "Cross-Map",
+        to: "/app/mst/cross-map",
+        dataSource: "performance_by_cell, message_pillars, historical_matrix_4x4",
       },
       {
-        id: "mst-matrix",
-        label: "Matrix Builder",
-        to: "/app/mst/matrix",
+        id: "mst-sprints",
+        label: "Sprints",
+        to: "/app/mst/sprints",
         badgeKey: "mst",
         dataSource: "historical_matrix_4x4",
       },
       {
-        id: "mst-creative-scan",
-        label: "Creative Scan",
-        to: "/app/mst/creative-scan",
-        dataSource: "local_book2_library",
+        id: "mst-performance",
+        label: "Performance",
+        to: "/app/mst/performance",
+        dataSource: "historical_matrix_4x4, performance_by_cell",
+        placeholder: true,
       },
       {
-        id: "mst-crossmap",
-        label: "Crossmap Results",
-        to: "/app/mst/crossmap",
-        dataSource: "historical_matrix_4x4, performance_by_cell",
+        id: "mst-direction",
+        label: "Direction",
+        to: "/app/mst/direction",
+        dataSource: "optimization_loop",
+        placeholder: true,
       },
     ],
   },
   {
-    id: "agent",
+    id: "reports",
+    number: "07",
+    label: "Reports",
+    icon: "FileBarChart",
+    landing: "/app/reports",
+    children: [
+      {
+        id: "reports-builder",
+        label: "Report Builder",
+        to: "/app/reports/builder",
+        dataSource: "report_sections",
+      },
+      {
+        id: "reports-configuration",
+        label: "Configuration",
+        to: "/app/reports/configuration",
+        dataSource: "report_builder defaults + workspace overrides",
+      },
+      {
+        id: "reports-history",
+        label: "History",
+        to: "/app/reports/history",
+        dataSource: "report_history",
+      },
+    ],
+  },
+  {
+    id: "exports",
     number: "08",
-    label: "Agent",
-    icon: "Bot",
-    to: "/app/agent",
-    badgeKey: "agent",
+    label: "Exports",
+    icon: "Download",
+    landing: "/app/exports",
+    children: [
+      {
+        id: "exports-analysis",
+        label: "Analysis",
+        to: "/app/exports/analysis",
+        dataSource: "performance_by_cell, v3_variable_performance",
+      },
+      {
+        id: "exports-strategy",
+        label: "Strategy JSON",
+        to: "/app/exports/strategy",
+        dataSource: "message_pillars, active_hypotheses",
+      },
+      {
+        id: "exports-reports",
+        label: "Reports",
+        to: "/app/exports/reports",
+        dataSource: "report_history, export_formats",
+      },
+      {
+        id: "exports-brief",
+        label: "Brief",
+        to: "/app/exports/brief",
+        dataSource: "draft_briefs",
+      },
+    ],
+  },
+  {
+    id: "action",
+    number: "09",
+    label: "Action",
+    icon: "Zap",
+    landing: "/app/action",
     placeholder: true,
+    children: [
+      {
+        id: "action-agent",
+        label: "Agent",
+        to: "/app/action/agent",
+        badgeKey: "agent",
+        placeholder: true,
+      },
+    ],
   },
   {
     id: "settings",
-    number: "09",
+    number: "10",
     label: "Settings",
     icon: "Settings2",
+    landing: "/app/settings/general",
     children: [
       {
-        id: "settings-account",
-        label: "Account",
-        to: "/app/settings/account",
+        id: "settings-general",
+        label: "General",
+        to: "/app/settings/general",
+      },
+      {
+        id: "settings-users",
+        label: "Users & Permissions",
+        to: "/app/settings/users",
+        dataSource: "workspace_settings",
+      },
+      {
+        id: "settings-security",
+        label: "Security",
+        to: "/app/settings/security",
       },
       {
         id: "settings-integrations",
         label: "Integrations",
         to: "/app/settings/integrations",
-      },
-      {
-        id: "settings-team",
-        label: "Team & Access",
-        to: "/app/settings/team",
-        dataSource: "workspace_settings",
-      },
-      {
-        id: "settings-notifications",
-        label: "Notifications",
-        to: "/app/settings/notifications",
-        dataSource: "workspace_settings",
+        dataSource: "manual_imports",
       },
       {
         id: "settings-billing",

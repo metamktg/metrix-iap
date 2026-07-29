@@ -552,6 +552,74 @@ export interface GenerationRun {
   finished_at?: string | null;
 }
 
+export type StageStatusResultAnalysisStatus = typeof StageStatusResultAnalysisStatus[keyof typeof StageStatusResultAnalysisStatus];
+
+
+export const StageStatusResultAnalysisStatus = {
+  none: 'none',
+  running: 'running',
+  success: 'success',
+  error: 'error',
+} as const;
+
+export type StageStatusResultAnalysisDateRange = typeof StageStatusResultAnalysisDateRange[keyof typeof StageStatusResultAnalysisDateRange] | null;
+
+
+export const StageStatusResultAnalysisDateRange = {
+  '7d': '7d',
+  '14d': '14d',
+  '30d': '30d',
+  all: 'all',
+} as const;
+
+export type StageStatusResultAnalysis = {
+  status: StageStatusResultAnalysisStatus;
+  last_run_at: string | null;
+  date_range: StageStatusResultAnalysisDateRange;
+};
+
+export type StageStatusResultStrategyStatus = typeof StageStatusResultStrategyStatus[keyof typeof StageStatusResultStrategyStatus];
+
+
+export const StageStatusResultStrategyStatus = {
+  none: 'none',
+  running: 'running',
+  success: 'success',
+  error: 'error',
+} as const;
+
+export type StageStatusResultStrategy = {
+  status: StageStatusResultStrategyStatus;
+  last_run_at: string | null;
+};
+
+export type StageStatusResultBriefsStatus = typeof StageStatusResultBriefsStatus[keyof typeof StageStatusResultBriefsStatus];
+
+
+export const StageStatusResultBriefsStatus = {
+  none: 'none',
+  running: 'running',
+  success: 'success',
+  error: 'error',
+} as const;
+
+export type StageStatusResultBriefs = {
+  status: StageStatusResultBriefsStatus;
+  last_run_at: string | null;
+  count: number;
+};
+
+export type StageStatusResultMst = {
+  unlocked: boolean;
+};
+
+export interface StageStatusResult {
+  analysis: StageStatusResultAnalysis;
+  strategy: StageStatusResultStrategy;
+  briefs: StageStatusResultBriefs;
+  mst: StageStatusResultMst;
+}
+
 export interface LatestGenerationRunResult {
   run: GenerationRun | null;
 }

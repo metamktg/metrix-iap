@@ -1,6 +1,9 @@
-// ─── Analysis · Overview ──────────────────────────────────────────────
-// Entry point for the Analysis section: campaign totals, the core
-// control reads, and jump-offs into each analysis subpage.
+// ─── Analysis · Ad Performance ──────────────────────────────────────────
+// The charts/tiles read surface for Analysis (formerly "Overview"):
+// campaign totals, the core control reads, and jump-offs into each
+// analysis subpage. The Analysis command center (AnalysisCommandCenter,
+// mounted at the parent /app/analysis route) owns execution + run
+// history — this page is read-only.
 
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -16,7 +19,7 @@ import { LineChart, Library, Users, LayoutGrid, Wallet } from "lucide-react";
 
 const SECTION = "Analysis · 03";
 
-export function AnalysisOverview() {
+export function AdPerformanceView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
@@ -25,7 +28,7 @@ export function AnalysisOverview() {
   const { range, narrowed, filterCells } = useCellRangeScope(analysis);
 
   return (
-    <ModuleScopeGate section={SECTION} title="Analysis Overview" account={account}>
+    <ModuleScopeGate section={SECTION} title="Ad Performance" account={account}>
       {() => {
         const acct = account!;
         const term = resultTerm(acct);
@@ -36,7 +39,7 @@ export function AnalysisOverview() {
         if (!summary || !a) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Analysis Overview" />
+              <ModuleHeader section={SECTION} title="Ad Performance" />
               <ScopeBanner account={acct} />
               <PendingState title="No analysis yet" message="Analysis appears once performance data is connected or imported." icon={LineChart} />
             </div>
@@ -94,7 +97,7 @@ export function AnalysisOverview() {
           },
           {
             to: "/app/analysis/budget",
-            label: "Budget Insight",
+            label: "Budget",
             Icon: Wallet,
             desc: "Spend allocation by result event, concept, and placement.",
             stat: `${fmtUSD(summary.total_spend_usd, 0)} analyzed`,
@@ -105,7 +108,7 @@ export function AnalysisOverview() {
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
             <ModuleHeader
               section={SECTION}
-              title="Analysis Overview"
+              title="Ad Performance"
               subtitle="What the account's performance data says, and where to drill in."
               table="campaign_summary, performance_by_cell"
             />

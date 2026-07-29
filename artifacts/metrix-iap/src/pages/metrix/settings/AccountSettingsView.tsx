@@ -8,9 +8,8 @@ import { useScopedAdAccountId, useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAdAccount, getReportBuilder } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, ScopeBanner, SectionCard, CaveatNote, PendingState, useFocusParam } from "../shared";
+import { ModuleHeader, ScopeBanner, SectionCard, CaveatNote, PendingState, CrossLink, useFocusParam } from "../shared";
 import { ConnectMetaDialog, ManualImportDialog, CreativeLibraryDialog } from "../ConnectAccountDialogs";
-import { AnalysisControls } from "../ManualAnalysisControls";
 import { AgentWaitlistSection } from "./AgentWaitlistSection";
 import { cn } from "@/lib/utils";
 import { Plug, FileUp, Palette, ShieldCheck, CheckCircle2, Circle, UserCircle2, LogOut, Loader2, KeyRound, Images } from "lucide-react";
@@ -302,11 +301,16 @@ export function AccountSettingsView() {
           </div>
         </SectionCard>
 
-        {/* Analysis — the only place a date range is chosen, and analysis is
-            only ever triggered by this explicit button. */}
-        <SectionCard title="Run analysis" desc="Pick a date range and explicitly analyze the staged manual uploads. Never runs automatically.">
-          <AnalysisControls accountId={account.id} />
-        </SectionCard>
+        {/* Analysis execution now lives in the Analysis command center. */}
+        {configured && (
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
+            <div className="min-w-0">
+              <div className="text-[12px] font-medium text-foreground">Run analysis</div>
+              <div className="text-[10px] text-muted-foreground/85">Moved to the Analysis command center.</div>
+            </div>
+            <CrossLink to="/app/analysis" label="Go to Analysis" />
+          </div>
+        )}
 
         {/* White-label */}
         {rb && (

@@ -33,7 +33,7 @@ import { AccountProvider } from "@/contexts/AccountContext";
 import { DateRangeProvider } from "@/contexts/DateRangeContext";
 import { getConceptWindows } from "@/lib/date-scope";
 import { IapLibraryView } from "../analysis/IapLibraryView";
-import { AnalysisOverview } from "../analysis/AnalysisOverview";
+import { AdPerformanceView } from "../analysis/AdPerformanceView";
 import { ConceptMapView } from "../mst/ConceptMapView";
 import { CrossmapResultsView } from "../mst/CrossmapResultsView";
 import { MatrixBuilderView } from "../mst/MatrixBuilderView";
@@ -129,14 +129,14 @@ describe("Analysis Overview tiles respect the date range", () => {
   it("in-range spend is lower than all-time spend", () => {
     selectBookster();
     setRange(null);
-    const all = renderView(AnalysisOverview);
+    const all = renderView(AdPerformanceView);
     const allSpend = spendOf(all.container.textContent);
     expect(allSpend).not.toBeNull();
     cleanup();
 
     selectBookster();
     setRange({ customStart: LATE_RANGE.start, customEnd: LATE_RANGE.end });
-    const narrowed = renderView(AnalysisOverview);
+    const narrowed = renderView(AdPerformanceView);
     expect(narrowed.container.textContent).toContain("Spend (in range)");
     const narrowedSpend = spendOf(narrowed.container.textContent);
     expect(narrowedSpend).not.toBeNull();

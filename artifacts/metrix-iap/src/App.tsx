@@ -26,11 +26,13 @@ import { Overview } from "@/pages/metrix/Overview";
 import { SignalView } from "@/pages/metrix/listen/SignalView";
 import { AlertsView } from "@/pages/metrix/listen/AlertsView";
 import { RecommendationsView } from "@/pages/metrix/listen/RecommendationsView";
-import { AnalysisOverview } from "@/pages/metrix/analysis/AnalysisOverview";
+import { AnalysisCommandCenter } from "@/pages/metrix/analysis/AnalysisCommandCenter";
+import { AdPerformanceView } from "@/pages/metrix/analysis/AdPerformanceView";
 import { IapLibraryView } from "@/pages/metrix/analysis/IapLibraryView";
 import { AudienceView } from "@/pages/metrix/analysis/AudienceView";
 import { PlacementsView } from "@/pages/metrix/analysis/PlacementsView";
 import { BudgetView } from "@/pages/metrix/analysis/BudgetView";
+import { AnalysisHistoryView } from "@/pages/metrix/analysis/AnalysisHistoryView";
 import { StrategyOverview } from "@/pages/metrix/strategy/StrategyOverview";
 import { StrategyMapView } from "@/pages/metrix/strategy/StrategyMapView";
 import { AvatarsView } from "@/pages/metrix/strategy/AvatarsView";
@@ -80,11 +82,13 @@ export function Router() {
       <Route path="/app/listen/recommendations" component={RecommendationsView} />
 
       {/* ── 03 Analysis ───────────────────────────────────────────────── */}
-      <Route path="/app/analysis/overview"   component={AnalysisOverview} />
+      <Route path="/app/analysis"            component={AnalysisCommandCenter} />
+      <Route path="/app/analysis/performance" component={AdPerformanceView} />
       <Route path="/app/analysis/library"    component={IapLibraryView} />
       <Route path="/app/analysis/audience"   component={AudienceView} />
       <Route path="/app/analysis/placements" component={PlacementsView} />
       <Route path="/app/analysis/budget"     component={BudgetView} />
+      <Route path="/app/analysis/history"    component={AnalysisHistoryView} />
 
       {/* ── 04 Strategy ───────────────────────────────────────────────── */}
       <Route path="/app/strategy/overview"   component={StrategyOverview} />
@@ -120,8 +124,8 @@ export function Router() {
 
       {/* ── Legacy route redirects (old IA → new IA, zero dead ends) ──── */}
       <Route path="/app/listen">{() => <Redirect to="/app/listen/alerts" replace />}</Route>
-      <Route path="/app/analysis">{() => <Redirect to="/app/analysis/overview" replace />}</Route>
-      <Route path="/app/analysis/concept-map">{() => <Redirect to="/app/mst/concept-map" replace />}</Route>
+      <Route path="/app/analysis/overview">{() => <Redirect to="/app/analysis/performance" replace />}</Route>
+      <Route path="/app/analysis/concept-map">{() => <Redirect to="/app/mst/cross-map" replace />}</Route>
       <Route path="/app/strategy">{() => <Redirect to="/app/strategy/overview" replace />}</Route>
       <Route path="/app/strategy/brief-builder">{() => <Redirect to="/app/briefs/builder" replace />}</Route>
       <Route path="/app/briefs">{() => <Redirect to="/app/briefs/builder" replace />}</Route>

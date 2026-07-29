@@ -422,6 +422,41 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/stage-status:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+    get:
+      operationId: getAccountStageStatus
+      tags: [metrix]
+      summary: Loop stage status for an account (hard-gating source of truth)
+      description: Composes the account's latest analysis run, latest strategy generation run, latest briefs generation run, and current brief count into one shape the frontend gates the Analysis → Strategy → Creative → MST loop on. Adds no new run tables — reads the existing manual_analysis_runs and generation_runs records. Requires access to the account.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Stage status for this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StageStatusResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/accounts/{accountId}/generate/strategy:
     parameters:
       - name: accountId
@@ -2937,6 +2972,56 @@ components:
         - kind
         - status
         - started_at
+    StageStatusResult:
+      type: object
+      properties:
+        analysis:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [none, running, success, error]
+            last_run_at:
+              type: string
+              nullable: true
+            date_range:
+              type: string
+              nullable: true
+              enum: [7d, 14d, 30d, all, null]
+          required: [status, last_run_at, date_range]
+        strategy:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [none, running, success, error]
+            last_run_at:
+              type: string
+              nullable: true
+          required: [status, last_run_at]
+        briefs:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [none, running, success, error]
+            last_run_at:
+              type: string
+              nullable: true
+            count:
+              type: integer
+          required: [status, last_run_at, count]
+        mst:
+          type: object
+          properties:
+            unlocked:
+              type: boolean
+          required: [unlocked]
+      required:
+        - analysis
+        - strategy
+        - briefs
+        - mst
     LatestGenerationRunResult:
       type: object
       properties:

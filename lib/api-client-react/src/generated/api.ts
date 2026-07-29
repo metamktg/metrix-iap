@@ -73,6 +73,7 @@ import type {
   RunMetaReportsResult,
   SelectMetaAdAccountInput,
   SelectMetaAdAccountResult,
+  StageStatusResult,
   StartAnalysisInput,
   StartGenerationResult,
   UpdateManualImportAdNamesInput,
@@ -865,6 +866,84 @@ export function useGetLatestAnalysisRun<TData = Awaited<ReturnType<typeof getLat
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetLatestAnalysisRunQueryOptions(accountId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetAccountStageStatusUrl = (accountId: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/stage-status`
+}
+
+/**
+ * Composes the account's latest analysis run, latest strategy generation run, latest briefs generation run, and current brief count into one shape the frontend gates the Analysis → Strategy → Creative → MST loop on. Adds no new run tables — reads the existing manual_analysis_runs and generation_runs records. Requires access to the account.
+ * @summary Loop stage status for an account (hard-gating source of truth)
+ */
+export const getAccountStageStatus = async (accountId: string, options?: RequestInit): Promise<StageStatusResult> => {
+
+  return customFetch<StageStatusResult>(getGetAccountStageStatusUrl(accountId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAccountStageStatusQueryKey = (accountId: string,) => {
+    return [
+    `/api/metrix/accounts/${accountId}/stage-status`
+    ] as const;
+    }
+
+
+export const getGetAccountStageStatusQueryOptions = <TData = Awaited<ReturnType<typeof getAccountStageStatus>>, TError = ErrorType<ApiError>>(accountId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAccountStageStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAccountStageStatusQueryKey(accountId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAccountStageStatus>>> = ({ signal }) => getAccountStageStatus(accountId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: accountId !== null && accountId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAccountStageStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAccountStageStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getAccountStageStatus>>>
+export type GetAccountStageStatusQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Loop stage status for an account (hard-gating source of truth)
+ */
+
+export function useGetAccountStageStatus<TData = Awaited<ReturnType<typeof getAccountStageStatus>>, TError = ErrorType<ApiError>>(
+ accountId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAccountStageStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAccountStageStatusQueryOptions(accountId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

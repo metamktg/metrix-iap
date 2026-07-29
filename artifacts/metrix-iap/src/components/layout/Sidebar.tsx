@@ -14,7 +14,8 @@ import {
   FileText,
   FileBarChart,
   Layers,
-  Bot,
+  Download,
+  Zap,
   Settings2,
 } from "lucide-react";
 import { AccountSwitcher } from "./AccountSwitcher";
@@ -34,7 +35,8 @@ const ICONS: Record<NavIconName, React.ComponentType<{ className?: string }>> = 
   FileText,
   FileBarChart,
   Layers,
-  Bot,
+  Download,
+  Zap,
   Settings2,
 };
 
@@ -133,7 +135,7 @@ function CollapseTooltip({ label, sub }: { label: string; sub?: string }) {
 // ─── Collapsed icon button ─────────────────────────────────────────────
 
 // IDs after which a thin section divider is inserted in collapsed mode
-const COLLAPSED_DIVIDER_AFTER = new Set(["overview", "analysis", "reports", "mst"]);
+const COLLAPSED_DIVIDER_AFTER = new Set(["overview", "analysis", "mst", "exports"]);
 
 function CollapsedItem({
   section,

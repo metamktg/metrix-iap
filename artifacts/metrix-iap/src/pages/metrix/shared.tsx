@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { useLocation, useSearch } from "wouter";
 import { ConnectMetaDialog, ManualImportDialog } from "./ConnectAccountDialogs";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
-import { Plug, FileUp, Clock, Database, Info, ArrowRight, CheckSquare, Square, CalendarRange, CalendarX2, AlertTriangle, ChevronDown, ChevronLeft, Sparkles, Map as MapIcon } from "lucide-react";
+import { Plug, FileUp, Clock, Database, Info, ArrowRight, CheckSquare, Square, CalendarRange, CalendarX2, AlertTriangle, ChevronDown, ChevronLeft, Sparkles, Map as MapIcon, Lock, Loader2, CircleCheck, CircleX, Circle } from "lucide-react";
 import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
 import { DataSourceBadge } from "@/components/ui/DataSourceBadge";
 import { resolveVariableLabel } from "@/lib/variable-registry";
@@ -441,6 +441,40 @@ export function ModuleScopeGate({
   return <>{children()}</>;
 }
 
+// ─── Prerequisite gate ─────────────────────────────────────────────────
+// Hard gating between loop stages (e.g. Strategy requires a completed
+// Analysis run). Composes *inside* ModuleScopeGate's children() so an
+// unscoped/unconfigured account is still caught first. Children are a
+// render function — never evaluated while the prerequisite is unmet.
+
+export function PrerequisiteGate({
+  met,
+  title,
+  message,
+  ctaLabel,
+  ctaTo,
+  children,
+}: {
+  met: boolean;
+  title: string;
+  message: string;
+  ctaLabel?: string;
+  ctaTo?: string;
+  children: () => React.ReactNode;
+}) {
+  if (!met) {
+    return (
+      <PendingState
+        title={title}
+        message={message}
+        icon={Lock}
+        action={ctaTo && ctaLabel ? <CrossLink to={ctaTo} label={ctaLabel} /> : undefined}
+      />
+    );
+  }
+  return <>{children()}</>;
+}
+
 // ─── Cross-module link ────────────────────────────────────────────────
 // Visible pill button — navigates to another module. Use whenever a
 // UI surface should surface a clear actionable jump to a sibling module.
@@ -487,6 +521,94 @@ export function LoopAction({
       <ArrowRight className="w-3.5 h-3.5 opacity-75 ml-0.5" />
     </button>
   );
+}
+
+// ─── Loop hub (command-center stage strip) ─────────────────────────────
+// Every command center renders this row: the 6 loop stages, the current
+// one highlighted, each a link to that stage's command center. Locked
+// stages (prerequisite unmet) are visibly disabled, never hidden — the
+// loop's shape stays constant across every account.
+
+export type LoopStageStatus = "locked" | "none" | "running" | "success" | "error";
+
+export interface LoopStageInfo {
+  id: string;
+  label: string;
+  to: string;
+  status: LoopStageStatus;
+}
+
+const STAGE_DOT: Record<LoopStageStatus, React.ComponentType<{ className?: string }>> = {
+  locked: Lock,
+  none: Circle,
+  running: Loader2,
+  success: CircleCheck,
+  error: CircleX,
+};
+
+const STAGE_DOT_CLASS: Record<LoopStageStatus, string> = {
+  locked: "text-muted-foreground/40",
+  none: "text-muted-foreground/50",
+  running: "text-amber-400 animate-spin",
+  success: "text-emerald-400",
+  error: "text-red-400",
+};
+
+export function StageLoopHub({ stages, current }: { stages: LoopStageInfo[]; current?: string }) {
+  const [, navigate] = useLocation();
+  return (
+    <div className="flex items-center gap-1 flex-wrap px-6 py-3 border-b border-border/30 bg-white/[0.01]">
+      {stages.map((s, i) => {
+        const Dot = STAGE_DOT[s.status];
+        const isCurrent = s.id === current;
+        const locked = s.status === "locked";
+        return (
+          <div key={s.id} className="flex items-center gap-1">
+            {i > 0 && <ArrowRight className="w-3 h-3 text-muted-foreground/25 shrink-0 mx-0.5" />}
+            <button
+              onClick={() => !locked && navigate(s.to)}
+              disabled={locked}
+              className={cn(
+                "inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border text-[12px] font-medium transition-colors",
+                isCurrent
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : locked
+                    ? "border-border/25 text-muted-foreground/40 cursor-not-allowed"
+                    : "border-border/40 text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.03]"
+              )}
+            >
+              <Dot className={cn("w-3 h-3 shrink-0", STAGE_DOT_CLASS[s.status])} />
+              {s.label}
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Loop stage list (shared shape for the 5 gated command centers) ────
+// Minimal structural type — not imported from useStageStatus — so shared.tsx
+// stays independent of the hooks layer.
+
+export interface StageStatusLike {
+  analysis: { status: LoopStageStatus | "none" };
+  strategy: { status: LoopStageStatus | "none" };
+  briefs: { status: LoopStageStatus | "none"; count: number };
+  mst: { unlocked: boolean };
+}
+
+/** Builds the 5-stage Analysis→Strategy→Creative→MST→Reports row every command center renders. */
+export function buildLoopStages(s: StageStatusLike): LoopStageInfo[] {
+  const analysisOk = s.analysis.status === "success";
+  const strategyOk = s.strategy.status === "success";
+  return [
+    { id: "analysis", label: "Analysis", to: "/app/analysis", status: s.analysis.status as LoopStageStatus },
+    { id: "strategy", label: "Strategy", to: "/app/strategy", status: analysisOk ? (s.strategy.status as LoopStageStatus) : "locked" },
+    { id: "creative", label: "Creative", to: "/app/creative", status: strategyOk ? (s.briefs.status as LoopStageStatus) : "locked" },
+    { id: "mst", label: "MST", to: "/app/mst", status: s.mst.unlocked ? "none" : "locked" },
+    { id: "reports", label: "Reports", to: "/app/reports", status: analysisOk ? "none" : "locked" },
+  ];
 }
 
 // ─── Flow back-navigation ─────────────────────────────────────────────
