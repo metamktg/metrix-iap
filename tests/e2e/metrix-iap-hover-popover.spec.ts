@@ -9,6 +9,11 @@
 //   3. The CPA (blended) tile — popover header shows the correct metric label.
 //   4. A result-event tile (Mobile app installs) — popover header shows the
 //      event label.
+//   5. MetricDiagnosticModal concept list — standard metric (spend): modal shows
+//      ≥2 concept rows under "Top IAP library concepts" when performance_by_cell
+//      is populated.
+//   6. MetricDiagnosticModal concept list — result-event metric (Mobile app
+//      installs): modal shows ≥2 concept rows scoped to the event type.
 //
 // API calls are intercepted with page.route() so no live API server is needed.
 // The seed fixture comes from the checked-in test snapshot.
@@ -657,6 +662,320 @@ async function main() {
             bodyText.includes("avg"),
             `CPA chart must render the "avg" reference line when metric.value is non-null. ` +
               `Body text did not contain "avg".`,
+          );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+
+    // ── Test 10: MetricDiagnosticModal concept list — standard metric ────────
+    // Opens the modal via "Diagnose full breakdown" on the "Total spend" tile
+    // with 3 synthetic concept rows injected.  Asserts the modal's concept list
+    // section ("Top IAP library concepts driving this metric") is visible and
+    // at least two concept-name rows appear — catching regressions in data
+    // mapping, empty-concepts path, or missing refValue inside the modal.
+    await test(
+      'MetricDiagnosticModal: standard metric (spend) shows ≥2 concept rows',
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        try {
+          // Inject 3 concept rows so the modal renders the concept list branch.
+          const modifiedSeed = JSON.parse(SEED_FIXTURE_BODY);
+          const bookster = modifiedSeed.ad_accounts.find(
+            (a: { id: string }) => a.id === ACCOUNT,
+          );
+          bookster.iap.analysis.performance_by_cell = [
+            {
+              cell_id: "c_alpha",
+              "Result type": "Mobile app installs",
+              "Amount spent (USD)": 1200,
+              Reach: 40000,
+              Impressions: 80000,
+              Results: 120,
+              "Clicks (all)": 2000,
+              "Link clicks": 1600,
+              CPA_result: 10.0,
+              CTR_link_pct: 2.0,
+              Result_per_link_click_pct: 7.5,
+              book2_concept_name: "Concept Alpha",
+            },
+            {
+              cell_id: "c_beta",
+              "Result type": "Mobile app installs",
+              "Amount spent (USD)": 900,
+              Reach: 30000,
+              Impressions: 60000,
+              Results: 80,
+              "Clicks (all)": 1500,
+              "Link clicks": 1200,
+              CPA_result: 11.25,
+              CTR_link_pct: 2.0,
+              Result_per_link_click_pct: 6.7,
+              book2_concept_name: "Concept Beta",
+            },
+            {
+              cell_id: "c_gamma",
+              "Result type": "Mobile app installs",
+              "Amount spent (USD)": 700,
+              Reach: 22000,
+              Impressions: 44000,
+              Results: 55,
+              "Clicks (all)": 900,
+              "Link clicks": 720,
+              CPA_result: 12.73,
+              CTR_link_pct: 1.64,
+              Result_per_link_click_pct: 7.6,
+              book2_concept_name: "Concept Gamma",
+            },
+          ];
+
+          await page.route("**/api/metrix/auth/me", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify({
+                user: {
+                  id: "test-user",
+                  email: "demo@metrix.app",
+                  role: "admin",
+                  must_change_password: false,
+                  workspace_id: "metrix_manager",
+                },
+              }),
+            }),
+          );
+          await page.route("**/api/metrix/seed", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify(modifiedSeed),
+            }),
+          );
+          await page.route("**/api/metrix/workspaces/*/reports", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify({ reports: [] }),
+            }),
+          );
+
+          await page.goto(`${BASE}/app/account?account=${ACCOUNT}`, {
+            waitUntil: "domcontentloaded",
+          });
+
+          await page
+            .getByText("Account Totals", { exact: false })
+            .waitFor({ state: "visible", timeout: 20_000 });
+
+          // Hover the "Total spend" tile to open its popover.
+          const tileBtn = page
+            .locator("button")
+            .filter({ hasText: "Total spend" })
+            .first();
+          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
+          await tileBtn.hover();
+
+          // Click the "Diagnose full breakdown" footer link.
+          const diagnoseBtn = page.getByText("Diagnose full breakdown");
+          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
+          await diagnoseBtn.click();
+
+          // Wait for the MetricDiagnosticModal to appear.
+          const dialogHeader = page.getByText("Metric diagnostic", { exact: false });
+          await dialogHeader.waitFor({ state: "visible", timeout: 8_000 });
+
+          // The concept-list section heading must be present — this confirms the
+          // modal took the concepts.length >= 1 branch (not the empty-state path).
+          const conceptHeading = page.getByText(
+            "Top IAP library concepts driving this metric",
+            { exact: false },
+          );
+          await conceptHeading.waitFor({ state: "visible", timeout: 5_000 });
+
+          // Both injected concept names must appear as rows in the list.
+          const bodyText = (await page.locator("body").textContent()) ?? "";
+          assert(
+            bodyText.includes("Concept Alpha"),
+            `MetricDiagnosticModal (spend) must show "Concept Alpha" in concept list. ` +
+              `Body text did not contain it.`,
+          );
+          assert(
+            bodyText.includes("Concept Beta"),
+            `MetricDiagnosticModal (spend) must show "Concept Beta" in concept list. ` +
+              `Body text did not contain it.`,
+          );
+
+          // Confirm ≥2 concept-row buttons are rendered inside the modal dialog.
+          const dialog = page.locator('[role="dialog"]');
+          const conceptRows = dialog.locator('button').filter({ hasText: /Concept/ });
+          const rowCount = await conceptRows.count();
+          assert(
+            rowCount >= 2,
+            `MetricDiagnosticModal (spend) must render ≥2 concept rows, got ${rowCount}.`,
+          );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+
+    // ── Test 11: MetricDiagnosticModal concept list — result-event metric ────
+    // Same flow as Test 10 but uses the "Mobile app installs" result-event tile.
+    // The modal scopes concepts via topConceptsForMetric() with isResultEvent=true,
+    // filtering by eventKey — a different code path from standard metrics.
+    await test(
+      'MetricDiagnosticModal: result-event metric (Mobile app installs) shows ≥2 concept rows',
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        try {
+          // Select the result-event tile before the app initialises.
+          await page.addInitScript(() => {
+            localStorage.setItem(
+              "metrix.overview.metric_tiles.v1",
+              JSON.stringify(["result:Mobile app installs"]),
+            );
+          });
+
+          // Inject 3 concept rows for "Mobile app installs" so the result-event
+          // filtering path returns ≥2 concepts.
+          const modifiedSeed = JSON.parse(SEED_FIXTURE_BODY);
+          const bookster = modifiedSeed.ad_accounts.find(
+            (a: { id: string }) => a.id === ACCOUNT,
+          );
+          bookster.iap.analysis.performance_by_cell = [
+            {
+              cell_id: "c_alpha",
+              "Result type": "Mobile app installs",
+              "Amount spent (USD)": 1200,
+              Reach: 40000,
+              Impressions: 80000,
+              Results: 120,
+              "Clicks (all)": 2000,
+              "Link clicks": 1600,
+              CPA_result: 10.0,
+              CTR_link_pct: 2.0,
+              Result_per_link_click_pct: 7.5,
+              book2_concept_name: "Concept Alpha",
+            },
+            {
+              cell_id: "c_beta",
+              "Result type": "Mobile app installs",
+              "Amount spent (USD)": 900,
+              Reach: 30000,
+              Impressions: 60000,
+              Results: 80,
+              "Clicks (all)": 1500,
+              "Link clicks": 1200,
+              CPA_result: 11.25,
+              CTR_link_pct: 2.0,
+              Result_per_link_click_pct: 6.7,
+              book2_concept_name: "Concept Beta",
+            },
+            {
+              cell_id: "c_gamma",
+              "Result type": "Mobile app installs",
+              "Amount spent (USD)": 700,
+              Reach: 22000,
+              Impressions: 44000,
+              Results: 55,
+              "Clicks (all)": 900,
+              "Link clicks": 720,
+              CPA_result: 12.73,
+              CTR_link_pct: 1.64,
+              Result_per_link_click_pct: 7.6,
+              book2_concept_name: "Concept Gamma",
+            },
+          ];
+
+          await page.route("**/api/metrix/auth/me", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify({
+                user: {
+                  id: "test-user",
+                  email: "demo@metrix.app",
+                  role: "admin",
+                  must_change_password: false,
+                  workspace_id: "metrix_manager",
+                },
+              }),
+            }),
+          );
+          await page.route("**/api/metrix/seed", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify(modifiedSeed),
+            }),
+          );
+          await page.route("**/api/metrix/workspaces/*/reports", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify({ reports: [] }),
+            }),
+          );
+
+          await page.goto(`${BASE}/app/account?account=${ACCOUNT}`, {
+            waitUntil: "domcontentloaded",
+          });
+
+          await page
+            .getByText("Account Totals", { exact: false })
+            .waitFor({ state: "visible", timeout: 20_000 });
+
+          // Hover the result-event tile.
+          const tileBtn = page
+            .locator("button")
+            .filter({ hasText: "Mobile app installs" })
+            .first();
+          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
+          await tileBtn.hover();
+
+          // Click "Diagnose full breakdown" to open the modal.
+          const diagnoseBtn = page.getByText("Diagnose full breakdown");
+          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
+          await diagnoseBtn.click();
+
+          // Wait for the modal to open.
+          const dialogHeader = page.getByText("Metric diagnostic", { exact: false });
+          await dialogHeader.waitFor({ state: "visible", timeout: 8_000 });
+
+          // The concept-list heading must be present.
+          const conceptHeading = page.getByText(
+            "Top IAP library concepts driving this metric",
+            { exact: false },
+          );
+          await conceptHeading.waitFor({ state: "visible", timeout: 5_000 });
+
+          // Both injected concept names must appear.
+          const bodyText = (await page.locator("body").textContent()) ?? "";
+          assert(
+            bodyText.includes("Concept Alpha"),
+            `MetricDiagnosticModal (result-event) must show "Concept Alpha" in concept list. ` +
+              `Body text did not contain it.`,
+          );
+          assert(
+            bodyText.includes("Concept Beta"),
+            `MetricDiagnosticModal (result-event) must show "Concept Beta" in concept list. ` +
+              `Body text did not contain it.`,
+          );
+
+          // Confirm ≥2 concept-row buttons are rendered inside the modal dialog.
+          const dialog = page.locator('[role="dialog"]');
+          const conceptRows = dialog.locator('button').filter({ hasText: /Concept/ });
+          const rowCount = await conceptRows.count();
+          assert(
+            rowCount >= 2,
+            `MetricDiagnosticModal (result-event) must render ≥2 concept rows, got ${rowCount}.`,
           );
         } finally {
           await ctx.close();
