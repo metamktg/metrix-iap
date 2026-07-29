@@ -40,15 +40,17 @@ import { AvatarsView } from "@/pages/metrix/strategy/AvatarsView";
 import { CommunicationsView } from "@/pages/metrix/strategy/CommunicationsView";
 import { HypothesisQueueView } from "@/pages/metrix/strategy/HypothesisQueueView";
 import { StrategyHistoryView } from "@/pages/metrix/strategy/StrategyHistoryView";
-import { BriefBuilderView } from "@/pages/metrix/briefs/BriefBuilderView";
-import { BriefHistoryView } from "@/pages/metrix/briefs/BriefHistoryView";
+import { CreativeCommandCenter } from "@/pages/metrix/creative/CreativeCommandCenter";
+import { CreativeLibraryView } from "@/pages/metrix/creative/CreativeLibraryView";
+import { CreativeBriefBuilderView } from "@/pages/metrix/creative/CreativeBriefBuilderView";
+import { CreativeScanView } from "@/pages/metrix/creative/CreativeScanView";
+import { CreativeImportExportView } from "@/pages/metrix/creative/CreativeImportExportView";
 import { NewReportView } from "@/pages/metrix/reports/NewReportView";
 import { ReportHistoryView } from "@/pages/metrix/reports/ReportHistoryView";
 import { ExportsView } from "@/pages/metrix/reports/ExportsView";
 import { ReportSettingsView } from "@/pages/metrix/reports/ReportSettingsView";
 import { ConceptMapView } from "@/pages/metrix/mst/ConceptMapView";
 import { MatrixBuilderView } from "@/pages/metrix/mst/MatrixBuilderView";
-import { CreativeScanView } from "@/pages/metrix/mst/CreativeScanView";
 import { CrossmapResultsView } from "@/pages/metrix/mst/CrossmapResultsView";
 import { MetrixAgent } from "@/pages/MetrixAgent";
 import { AccountSettingsView } from "@/pages/metrix/settings/AccountSettingsView";
@@ -102,9 +104,12 @@ export function Router() {
       <Route path="/app/strategy/hypotheses"   component={HypothesisQueueView} />
       <Route path="/app/strategy/history"      component={StrategyHistoryView} />
 
-      {/* ── 05 Creative Briefs ────────────────────────────────────────── */}
-      <Route path="/app/briefs/builder" component={BriefBuilderView} />
-      <Route path="/app/briefs/history" component={BriefHistoryView} />
+      {/* ── 05 Creative ───────────────────────────────────────────────── */}
+      <Route path="/app/creative"              component={CreativeCommandCenter} />
+      <Route path="/app/creative/library"      component={CreativeLibraryView} />
+      <Route path="/app/creative/builder"      component={CreativeBriefBuilderView} />
+      <Route path="/app/creative/scan"         component={CreativeScanView} />
+      <Route path="/app/creative/import-export" component={CreativeImportExportView} />
 
       {/* ── 06 Report Builder ─────────────────────────────────────────── */}
       <Route path="/app/reports/new"     component={NewReportView} />
@@ -115,7 +120,6 @@ export function Router() {
       {/* ── 07 MST ────────────────────────────────────────────────────── */}
       <Route path="/app/mst/concept-map"   component={ConceptMapView} />
       <Route path="/app/mst/matrix"        component={MatrixBuilderView} />
-      <Route path="/app/mst/creative-scan" component={CreativeScanView} />
       <Route path="/app/mst/crossmap"      component={CrossmapResultsView} />
 
       {/* ── 08 Metrix Agent ───────────────────────────────────────────── */}
@@ -133,7 +137,10 @@ export function Router() {
       <Route path="/app/analysis/overview">{() => <Redirect to="/app/analysis/performance" replace />}</Route>
       <Route path="/app/analysis/concept-map">{() => <Redirect to="/app/mst/cross-map" replace />}</Route>
       <Route path="/app/strategy/brief-builder">{() => <Redirect to="/app/creative/builder" replace />}</Route>
-      <Route path="/app/briefs">{() => <Redirect to="/app/briefs/builder" replace />}</Route>
+      <Route path="/app/briefs/builder">{() => <Redirect to="/app/creative/builder" replace />}</Route>
+      <Route path="/app/briefs/history">{() => <Redirect to="/app/creative" replace />}</Route>
+      <Route path="/app/briefs">{() => <Redirect to="/app/creative" replace />}</Route>
+      <Route path="/app/mst/creative-scan">{() => <Redirect to="/app/creative/scan" replace />}</Route>
       <Route path="/app/report-builder">{() => <Redirect to="/app/reports/new" replace />}</Route>
       <Route path="/app/reports">{() => <Redirect to="/app/reports/new" replace />}</Route>
       <Route path="/app/mst">{() => <Redirect to="/app/mst/matrix" replace />}</Route>

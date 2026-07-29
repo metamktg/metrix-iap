@@ -564,7 +564,7 @@ export function IapLibraryView() {
                     const stratUrl = matchedHyp
                       ? `/app/strategy/hypotheses?focus=${matchedHyp.id}&from=analysis&fromCell=${detail.cell_id}`
                       : `/app/strategy/map?from=analysis&fromCell=${detail.cell_id}`;
-                    const briefUrl = `/app/briefs/builder?from=analysis&fromCell=${detail.cell_id}`;
+                    const briefUrl = `/app/creative?from=analysis&fromCell=${detail.cell_id}`;
                     return (
                       <div className="flex items-center gap-3 flex-wrap">
                         <SegmentDrilldownButton onClick={() => setSegmentsOpen(true)} />

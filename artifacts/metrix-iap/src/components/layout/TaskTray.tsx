@@ -184,7 +184,7 @@ export function TaskTray() {
                 sub={hyp.status}
                 onAction={() =>
                   navigate(
-                    `/app/briefs/builder?fromHyp=${encodeURIComponent(hyp.id)}&from=strategy`
+                    `/app/creative?fromHyp=${encodeURIComponent(hyp.id)}&from=strategy`
                   )
                 }
                 actionLabel="Create Brief"
@@ -210,12 +210,12 @@ export function TaskTray() {
                 key={brief.id}
                 label={brief.human_direction}
                 sub={`${brief.asset_type} · ${brief.status}`}
-                onAction={() => navigate("/app/briefs/builder")}
+                onAction={() => navigate(`/app/creative/builder?focus=${encodeURIComponent(brief.id)}`)}
                 actionLabel="Review"
               />
             ))
           )}
-          <TrayNavLink to="/app/briefs/builder" label="Brief Builder" icon={FileText} />
+          <TrayNavLink to="/app/creative" label="Creative" icon={FileText} />
         </TraySection>
 
         <Divider />

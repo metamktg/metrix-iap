@@ -1,7 +1,9 @@
-// ─── MST · Creative Scan ──────────────────────────────────────────────
-// Scanned local creative library: every mapped concept with its message
-// system, variable stack, mapping confidence, and the variable library
-// aggregated across the account's concepts.
+// ─── Creative · Library ──────────────────────────────────────────────
+// The creative asset register — every mapped concept with its message
+// system, variable stack, and the variable library aggregated across the
+// account's concepts. Distinct from the IAP Library (Analysis): this is
+// the subjective/asset side, the IAP Library is the objective/variable
+// side of the same underlying data.
 
 import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
@@ -14,9 +16,9 @@ import { CreativeCard } from "@/components/creative/CreativeCard";
 import { cardFromLibraryCell } from "@/lib/creative-assembly";
 import { Library, Tags } from "lucide-react";
 
-const SECTION = "MST · 07";
+const SECTION = "Creative · 05";
 
-export function CreativeScanView() {
+export function CreativeLibraryView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
@@ -28,7 +30,7 @@ export function CreativeScanView() {
   );
 
   return (
-    <ModuleScopeGate section={SECTION} title="Creative Scan" account={account}>
+    <ModuleScopeGate section={SECTION} title="Library" account={account}>
       {() => {
         const acct = account!;
         const mst = getMST(seed, adAccountId);
@@ -36,7 +38,7 @@ export function CreativeScanView() {
         if (!mst || mst.status !== "active" || !mst.local_book2_library?.length) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Creative Scan" />
+              <ModuleHeader section={SECTION} title="Library" />
               <ScopeBanner account={acct} />
               <PendingState title="No scanned creatives" message={mst?.render_policy ?? "The creative scan populates once the local library is mapped."} icon={Library} />
             </div>
@@ -69,8 +71,8 @@ export function CreativeScanView() {
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
             <ModuleHeader
               section={SECTION}
-              title="Creative Scan"
-              subtitle="The scanned local creative library and the variable library it produces."
+              title="Library"
+              subtitle="The scanned creative asset register and the variable library it produces."
               table="local_book2_library"
             />
             <ScopeBanner account={acct} />

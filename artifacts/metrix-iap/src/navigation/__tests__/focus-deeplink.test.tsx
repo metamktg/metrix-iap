@@ -5,7 +5,7 @@
 // target views at a URL with a real `?focus=<id>` from the seed bundle
 // and asserting the focused item is actually selected (its drill-down
 // drawer opens on arrival). A rename of the `focus` param, or a change in
-// how IapLibraryView / BriefBuilderView / HypothesisQueueView consume it,
+// how IapLibraryView / CreativeBriefBuilderView / HypothesisQueueView consume it,
 // fails here instead of silently breaking every "Open in ..." cross-link.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -84,31 +84,26 @@ describe("IAP Library ?focus=<cell_id>", () => {
   });
 });
 
-describe("Brief Builder ?focus=<brief id>", () => {
-  it("opens the drill-down drawer on the focused brief", () => {
-    const { container } = renderAt(`/app/briefs/builder?focus=${brief.id}`);
-    const header = drawerHeader(container);
-    expect(header).not.toBeNull();
-    within(header!).getByText(`Brief · ${brief.asset_type}`);
-  });
-
-  it("switches to the focused brief's format tab", () => {
-    const { container } = renderAt(`/app/briefs/builder?focus=${brief.id}`);
-    // The focused brief's card must be rendered in the active tab's grid
-    // (cards render only for the selected format tab).
+describe("Creative Brief Builder ?focus=<brief id>", () => {
+  // Brief Builder promoted the old in-page drawer to a full dedicated
+  // page (/app/creative/builder) — no drawer/close button to find
+  // anymore, so these assert on the page content directly.
+  it("renders the focused brief's own workspace", () => {
+    const { container } = renderAt(`/app/creative/builder?focus=${brief.id}`);
+    expect(container.textContent).toContain(brief.asset_type);
     expect(container.textContent).toContain(brief.human_direction);
   });
 
-  it("does not open a drawer without a focus param", () => {
-    const { container } = renderAt("/app/briefs/builder");
-    expect(drawerHeader(container)).toBeNull();
+  it("shows a brief picker without a focus param", () => {
+    const { container } = renderAt("/app/creative/builder");
+    expect(container.textContent).toContain("Choose a brief from Creative");
   });
 
-  it("does not open a drawer for an unknown focus id", () => {
+  it("shows a brief picker for an unknown focus id", () => {
     const { container } = renderAt(
-      "/app/briefs/builder?focus=__no_such_brief__"
+      "/app/creative/builder?focus=__no_such_brief__"
     );
-    expect(drawerHeader(container)).toBeNull();
+    expect(container.textContent).toContain("Choose a brief from Creative");
   });
 });
 

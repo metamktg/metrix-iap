@@ -34,23 +34,30 @@ import { DateRangeProvider } from "@/contexts/DateRangeContext";
 import { SignalView } from "../listen/SignalView";
 import { AlertsView } from "../listen/AlertsView";
 import { RecommendationsView } from "../listen/RecommendationsView";
+import { AnalysisCommandCenter } from "../analysis/AnalysisCommandCenter";
 import { AdPerformanceView } from "../analysis/AdPerformanceView";
 import { IapLibraryView } from "../analysis/IapLibraryView";
 import { AudienceView } from "../analysis/AudienceView";
 import { PlacementsView } from "../analysis/PlacementsView";
 import { BudgetView } from "../analysis/BudgetView";
+import { AnalysisHistoryView } from "../analysis/AnalysisHistoryView";
+import { StrategyCommandCenter } from "../strategy/StrategyCommandCenter";
 import { StrategyOverview } from "../strategy/StrategyOverview";
 import { StrategyMapView } from "../strategy/StrategyMapView";
 import { HypothesisQueueView } from "../strategy/HypothesisQueueView";
 import { AvatarsView } from "../strategy/AvatarsView";
-import { BriefBuilderView } from "../briefs/BriefBuilderView";
-import { BriefHistoryView } from "../briefs/BriefHistoryView";
+import { CommunicationsView } from "../strategy/CommunicationsView";
+import { StrategyHistoryView } from "../strategy/StrategyHistoryView";
+import { CreativeCommandCenter } from "../creative/CreativeCommandCenter";
+import { CreativeLibraryView } from "../creative/CreativeLibraryView";
+import { CreativeBriefBuilderView } from "../creative/CreativeBriefBuilderView";
+import { CreativeScanView } from "../creative/CreativeScanView";
+import { CreativeImportExportView } from "../creative/CreativeImportExportView";
 import { NewReportView } from "../reports/NewReportView";
 import { ReportHistoryView } from "../reports/ReportHistoryView";
 import { ExportsView } from "../reports/ExportsView";
 import { ConceptMapView } from "../mst/ConceptMapView";
 import { MatrixBuilderView } from "../mst/MatrixBuilderView";
-import { CreativeScanView } from "../mst/CreativeScanView";
 import { CrossmapResultsView } from "../mst/CrossmapResultsView";
 import { AccountSettingsView } from "../settings/AccountSettingsView";
 import { AdAccountOverview } from "../AdAccountOverview";
@@ -62,23 +69,30 @@ const GATED_VIEWS: [string, React.ComponentType][] = [
   ["Listen · Signal", SignalView],
   ["Listen · Alerts", AlertsView],
   ["Listen · Recommendations", RecommendationsView],
-  ["Analysis · Overview", AdPerformanceView],
+  ["Analysis · Command Center", AnalysisCommandCenter],
+  ["Analysis · Ad Performance", AdPerformanceView],
   ["Analysis · IAP Library", IapLibraryView],
   ["Analysis · Audience", AudienceView],
   ["Analysis · Placements", PlacementsView],
   ["Analysis · Budget", BudgetView],
+  ["Analysis · History", AnalysisHistoryView],
+  ["Strategy · Command Center", StrategyCommandCenter],
   ["Strategy · Overview", StrategyOverview],
   ["Strategy · Map", StrategyMapView],
   ["Strategy · Hypothesis Queue", HypothesisQueueView],
   ["Strategy · Avatars", AvatarsView],
-  ["Briefs · Brief Builder", BriefBuilderView],
-  ["Briefs · History", BriefHistoryView],
+  ["Strategy · Communications", CommunicationsView],
+  ["Strategy · History", StrategyHistoryView],
+  ["Creative · Command Center", CreativeCommandCenter],
+  ["Creative · Library", CreativeLibraryView],
+  ["Creative · Brief Builder", CreativeBriefBuilderView],
+  ["Creative · Scan", CreativeScanView],
+  ["Creative · Import Export", CreativeImportExportView],
   ["Reports · New Report", NewReportView],
   ["Reports · History", ReportHistoryView],
   ["Reports · Exports", ExportsView],
   ["MST · Concept Map", ConceptMapView],
   ["MST · Matrix Builder", MatrixBuilderView],
-  ["MST · Creative Scan", CreativeScanView],
   ["MST · Crossmap Results", CrossmapResultsView],
 ];
 

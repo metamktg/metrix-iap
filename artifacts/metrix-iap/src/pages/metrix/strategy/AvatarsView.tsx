@@ -431,7 +431,7 @@ export function AvatarsView() {
                       </button>
                     ))}
                     <CrossLink to="/app/mst" label="Open MST matrix" />
-                    <CrossLink to="/app/briefs/builder" label="Open Brief Builder" />
+                    <CrossLink to="/app/creative" label="Open Creative" />
                   </div>
                 }
               >

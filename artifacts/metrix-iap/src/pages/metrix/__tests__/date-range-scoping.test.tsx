@@ -37,7 +37,7 @@ import { AdPerformanceView } from "../analysis/AdPerformanceView";
 import { ConceptMapView } from "../mst/ConceptMapView";
 import { CrossmapResultsView } from "../mst/CrossmapResultsView";
 import { MatrixBuilderView } from "../mst/MatrixBuilderView";
-import { CreativeScanView } from "../mst/CreativeScanView";
+import { CreativeLibraryView } from "../creative/CreativeLibraryView";
 
 const ACCOUNT_KEY = "metrix_active_account_v1";
 const RANGE_KEY = "metrix_date_range_v1";
@@ -119,7 +119,7 @@ describe("IAP Library respects the date range", () => {
   });
 });
 
-describe("Analysis Overview tiles respect the date range", () => {
+describe("Ad Performance tiles respect the date range", () => {
   const spendOf = (text: string | null) => {
     // Extract the first $ amount following the spend tile label.
     const m = /(?:Total spend|Spend \(in range\))\$([\d,]+)/.exec(text ?? "");
@@ -193,7 +193,7 @@ describe("MST-specific no-data-in-range state", () => {
 
   for (const [name, View] of [
     ["Matrix Builder", MatrixBuilderView],
-    ["Creative Scan", CreativeScanView],
+    ["Creative Library", CreativeLibraryView],
     ["Crossmap Results", CrossmapResultsView],
   ] as [string, React.ComponentType][]) {
     it(`${name} explains the MST window when the range misses it`, () => {
