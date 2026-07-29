@@ -39,7 +39,7 @@ import type { WorkspaceInviteInputRole } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { AdAccount } from "@/lib/data/seedTypes";
 
-const SECTION = "Settings · 09";
+const SECTION = "Settings · 10";
 
 const INVITE_ROLES: { id: WorkspaceInviteInputRole; label: string }[] = [
   { id: "analyst", label: "Analyst" },
@@ -753,7 +753,7 @@ function MemberActionsCell({
   );
 }
 
-export function TeamAccessView() {
+export function UsersPermissionsView() {
   const { user } = useAuth();
 
   // Team management requires the manage_team master permission (admins
@@ -761,7 +761,7 @@ export function TeamAccessView() {
   if (user?.role !== "admin" && !user?.manage_team) {
     return (
       <div className="flex-1 flex flex-col">
-        <ModuleHeader section={SECTION} title="Team & Access" />
+        <ModuleHeader section={SECTION} title="Users & Permissions" />
         <PendingState
           title="Access required"
           message="Team management is available to admins and members with the Manage team permission. Ask a workspace admin if you need a change to your access."
@@ -846,7 +846,7 @@ function TeamAccessViewInner() {
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
       <ModuleHeader
         section={SECTION}
-        title="Team & Access"
+        title="Users & Permissions"
         subtitle={`Workspace-wide · who can access ${manager.name} and what they can do.`}
         right={
           <button

@@ -51,6 +51,7 @@ import type {
   ListAgentWaitlistParams,
   ListManualImportsResult,
   ListMetaReportRowsParams,
+  ListSessionsResult,
   ManualImport,
   ManualImportInput,
   ManualImportResult,
@@ -69,6 +70,7 @@ import type {
   RequestAccessEntriesResult,
   RequestAccessInput,
   RequestAccessResult,
+  RevokeSessionResult,
   RevokeWorkspaceInviteResult,
   RunMetaReportsResult,
   SelectMetaAdAccountInput,
@@ -2498,6 +2500,155 @@ export function useAuthMe<TData = Awaited<ReturnType<typeof authMe>>, TError = E
 
 
 
+
+export const getListMySessionsUrl = () => {
+
+
+
+
+  return `/api/metrix/sessions`
+}
+
+/**
+ * Returns every non-expired session for the logged-in user, flagging which one is the caller's own. Used by Settings → Security.
+ * @summary List the current user's active sessions
+ */
+export const listMySessions = async ( options?: RequestInit): Promise<ListSessionsResult> => {
+
+  return customFetch<ListSessionsResult>(getListMySessionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMySessionsQueryKey = () => {
+    return [
+    `/api/metrix/sessions`
+    ] as const;
+    }
+
+
+export const getListMySessionsQueryOptions = <TData = Awaited<ReturnType<typeof listMySessions>>, TError = ErrorType<ApiError>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMySessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMySessionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMySessions>>> = ({ signal }) => listMySessions({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMySessions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMySessionsQueryResult = NonNullable<Awaited<ReturnType<typeof listMySessions>>>
+export type ListMySessionsQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary List the current user's active sessions
+ */
+
+export function useListMySessions<TData = Awaited<ReturnType<typeof listMySessions>>, TError = ErrorType<ApiError>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMySessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMySessionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRevokeMySessionUrl = (sessionId: number,) => {
+
+
+
+
+  return `/api/metrix/sessions/${sessionId}`
+}
+
+/**
+ * Deletes the session by id — scoped to the caller's own sessions only, never another user's. Revoking the session behind the current request signs that browser out.
+ * @summary Revoke one of the current user's own sessions
+ */
+export const revokeMySession = async (sessionId: number, options?: RequestInit): Promise<RevokeSessionResult> => {
+
+  return customFetch<RevokeSessionResult>(getRevokeMySessionUrl(sessionId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRevokeMySessionMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeMySession>>, TError,{sessionId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokeMySession>>, TError,{sessionId: number}, TContext> => {
+
+const mutationKey = ['revokeMySession'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeMySession>>, {sessionId: number}> = (props) => {
+          const {sessionId} = props ?? {};
+
+          return  revokeMySession(sessionId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokeMySessionMutationResult = NonNullable<Awaited<ReturnType<typeof revokeMySession>>>
+
+    export type RevokeMySessionMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Revoke one of the current user's own sessions
+ */
+export const useRevokeMySession = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeMySession>>, TError,{sessionId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revokeMySession>>,
+        TError,
+        {sessionId: number},
+        TContext
+      > => {
+      return useMutation(getRevokeMySessionMutationOptions(options));
+    }
 
 export const getAuthChangePasswordUrl = () => {
 

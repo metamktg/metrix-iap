@@ -60,10 +60,10 @@ import { MstSprintsView } from "@/pages/metrix/mst/MstSprintsView";
 import { MstPerformanceView } from "@/pages/metrix/mst/MstPerformanceView";
 import { MstDirectionView } from "@/pages/metrix/mst/MstDirectionView";
 import { MetrixAgent } from "@/pages/MetrixAgent";
-import { AccountSettingsView } from "@/pages/metrix/settings/AccountSettingsView";
+import { GeneralView } from "@/pages/metrix/settings/GeneralView";
+import { SecurityView } from "@/pages/metrix/settings/SecurityView";
 import { IntegrationsView } from "@/pages/metrix/settings/IntegrationsView";
-import { TeamAccessView } from "@/pages/metrix/settings/TeamAccessView";
-import { NotificationsView } from "@/pages/metrix/settings/NotificationsView";
+import { UsersPermissionsView } from "@/pages/metrix/settings/UsersPermissionsView";
 import { BillingView } from "@/pages/metrix/settings/BillingView";
 
 const queryClient = new QueryClient({
@@ -141,10 +141,10 @@ export function Router() {
       <Route path="/app/action/agent" component={MetrixAgent} />
 
       {/* ── 10 Settings ───────────────────────────────────────────────── */}
-      <Route path="/app/settings/account"       component={AccountSettingsView} />
+      <Route path="/app/settings/general"       component={GeneralView} />
+      <Route path="/app/settings/users"         component={UsersPermissionsView} />
+      <Route path="/app/settings/security"      component={SecurityView} />
       <Route path="/app/settings/integrations"  component={IntegrationsView} />
-      <Route path="/app/settings/team"          component={TeamAccessView} />
-      <Route path="/app/settings/notifications" component={NotificationsView} />
       <Route path="/app/settings/billing"       component={BillingView} />
 
       {/* ── Legacy route redirects (old IA → new IA, zero dead ends) ──── */}
@@ -165,7 +165,10 @@ export function Router() {
       <Route path="/app/reports/exports">{() => <Redirect to="/app/exports/reports" replace />}</Route>
       <Route path="/app/agent">{() => <Redirect to="/app/action/agent" replace />}</Route>
       <Route path="/app/action">{() => <Redirect to="/app/action/agent" replace />}</Route>
-      <Route path="/app/settings">{() => <Redirect to="/app/settings/account" replace />}</Route>
+      <Route path="/app/settings">{() => <Redirect to="/app/settings/general" replace />}</Route>
+      <Route path="/app/settings/account">{() => <Redirect to="/app/settings/general" replace />}</Route>
+      <Route path="/app/settings/team">{() => <Redirect to="/app/settings/users" replace />}</Route>
+      <Route path="/app/settings/notifications">{() => <Redirect to="/app/settings/general" replace />}</Route>
 
       {/* ── 404 ───────────────────────────────────────────────────────── */}
       <Route component={NotFound} />
@@ -209,7 +212,7 @@ export function AuthGate() {
   // ?focus=password param (the app's focus deep-link convention) tells that
   // page to scroll to / highlight the password card.
   if (location === FORGOT_PASSWORD_PATH) {
-    return <Redirect to="/app/settings/account?focus=password" replace />;
+    return <Redirect to="/app/settings/security?focus=password" replace />;
   }
 
   return (

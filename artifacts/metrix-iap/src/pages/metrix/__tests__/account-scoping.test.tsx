@@ -61,7 +61,7 @@ import { MstSprintsView } from "../mst/MstSprintsView";
 import { CrossmapResultsView } from "../mst/CrossmapResultsView";
 import { MstPerformanceView } from "../mst/MstPerformanceView";
 import { MstDirectionView } from "../mst/MstDirectionView";
-import { AccountSettingsView } from "../settings/AccountSettingsView";
+import { GeneralView } from "../settings/GeneralView";
 import { AdAccountOverview } from "../AdAccountOverview";
 
 const SESSION_KEY = "metrix_active_account_v1";
@@ -102,7 +102,7 @@ const GATED_VIEWS: [string, React.ComponentType][] = [
 
 // Views that gate themselves (custom no-account / unconfigured handling).
 const SELF_GATED_VIEWS: [string, React.ComponentType][] = [
-  ["Settings · Account", AccountSettingsView],
+  ["Settings · General", GeneralView],
   ["Ad Account Overview", AdAccountOverview],
 ];
 

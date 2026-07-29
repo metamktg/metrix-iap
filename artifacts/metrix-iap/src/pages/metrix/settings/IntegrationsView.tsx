@@ -4,7 +4,7 @@
 // Connect / Add import open the guided flows from ConnectAccountDialogs.
 
 import { useState } from "react";
-import { useGetMetaConnection } from "@workspace/api-client-react";
+import { useGetMetaConnection, useListManualImports } from "@workspace/api-client-react";
 import { useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccounts } from "@/lib/data/metrixSeedAdapter";
@@ -15,7 +15,30 @@ import { cn } from "@/lib/utils";
 import { Plug, FileUp, CheckCircle2, Circle } from "lucide-react";
 import type { AdAccount } from "@/lib/data/seedTypes";
 
-const SECTION = "Settings · 09";
+const SECTION = "Settings · 10";
+
+/** One account's staged manual-import count, with a re-upload/replace shortcut. */
+function ManualUploadsRow({ account, onManage }: { account: AdAccount; onManage: () => void }) {
+  const { data } = useListManualImports(account.id);
+  const staged = data?.imports.length ?? 0;
+  return (
+    <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
+      <FileUp className="w-4 h-4 text-muted-foreground/85 shrink-0" />
+      <div className="flex-1 min-w-0">
+        <div className="text-[12px] font-medium text-foreground">{account.name}</div>
+        <div className="text-[10px] text-muted-foreground/85">
+          {staged > 0 ? `${staged} file${staged === 1 ? "" : "s"} staged` : "No files staged"}
+        </div>
+      </div>
+      <button
+        onClick={onManage}
+        className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors shrink-0"
+      >
+        <FileUp className="w-3 h-3" /> {staged > 0 ? "Re-upload / replace" : "Add import"}
+      </button>
+    </div>
+  );
+}
 
 // a.source_status is a free-form string (seedTypes.ts has no enum for it) —
 // seen holding internal import-pipeline tags like "imported_from_iap_loop_package"
@@ -37,8 +60,6 @@ export function IntegrationsView() {
   // panels are hidden entirely — live and demo data are never shown together.
   const liveConnection = useGetMetaConnection();
   const hasLiveConnection = liveConnection.data?.connected === true;
-
-  const defaultImportAccount = accounts.find((a) => a.status !== "configured") ?? accounts[0] ?? null;
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
@@ -91,21 +112,11 @@ export function IntegrationsView() {
           </div>
         </SectionCard>
 
-        <SectionCard title="Manual imports" desc="For accounts without an API connection, exported performance data can be imported by hand.">
-          <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
-            <FileUp className="w-4 h-4 text-muted-foreground/85 shrink-0" />
-            <div className="flex-1 min-w-0">
-              <div className="text-[12px] font-medium text-foreground">Manual import</div>
-              <div className="text-[10px] text-muted-foreground/85">Upload exported performance data for any ad account</div>
-            </div>
-            <button
-              onClick={() => defaultImportAccount && setImportAccount(defaultImportAccount)}
-              disabled={!defaultImportAccount}
-              className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-40 disabled:pointer-events-none"
-              data-testid="button-add-import-integrations"
-            >
-              <FileUp className="w-3 h-3" /> Add import
-            </button>
+        <SectionCard title="Manual uploads" desc="Staged uploads for every ad account — CSVs and creative files, reviewable and replaceable per account.">
+          <div className="space-y-2.5">
+            {accounts.map((a) => (
+              <ManualUploadsRow key={a.id} account={a} onManage={() => setImportAccount(a)} />
+            ))}
           </div>
         </SectionCard>
         </>

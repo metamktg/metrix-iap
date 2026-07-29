@@ -10,6 +10,8 @@ import {
   AuthRequestPasswordResetResponse,
   AuthResetPasswordBody,
   AuthResetPasswordResponse,
+  ListMySessionsResponse,
+  RevokeMySessionResponse,
 } from "@workspace/api-zod";
 import { db, usersTable, userSessionsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
@@ -21,6 +23,8 @@ import {
   readSessionToken,
   setSessionCookie,
   clearSessionCookie,
+  listUserSessions,
+  destroySessionById,
 } from "../lib/sessions";
 import {
   createPasswordResetToken,
@@ -264,6 +268,47 @@ router.post("/metrix/auth/reset-password", loginRateLimit, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "Password reset failed");
     res.status(503).json({ message: "Authentication service unavailable." });
+  }
+});
+
+router.get("/metrix/sessions", requireAuth, async (req, res) => {
+  const user = req.authUser!;
+  const token = readSessionToken(req);
+  try {
+    const sessions = await listUserSessions(user.id, token);
+    res.json(
+      ListMySessionsResponse.parse({
+        sessions: sessions.map((s) => ({
+          id: s.id,
+          created_at: s.createdAt.toISOString(),
+          expires_at: s.expiresAt.toISOString(),
+          is_current: s.isCurrent,
+        })),
+      }),
+    );
+  } catch (err) {
+    req.log.error({ err }, "Failed to list sessions");
+    res.status(503).json({ message: "Could not read sessions." });
+  }
+});
+
+router.delete("/metrix/sessions/:sessionId", requireAuth, async (req, res) => {
+  const user = req.authUser!;
+  const sessionId = Number(req.params["sessionId"]);
+  if (!Number.isInteger(sessionId)) {
+    res.status(404).json({ message: "Session not found." });
+    return;
+  }
+  try {
+    const revoked = await destroySessionById(user.id, sessionId);
+    if (!revoked) {
+      res.status(404).json({ message: "Session not found." });
+      return;
+    }
+    res.json(RevokeMySessionResponse.parse({ status: "revoked", id: sessionId }));
+  } catch (err) {
+    req.log.error({ err }, "Failed to revoke session");
+    res.status(503).json({ message: "Could not revoke the session." });
   }
 });
 

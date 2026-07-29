@@ -648,6 +648,30 @@ export interface AuthUser {
   export_data: boolean;
 }
 
+export interface SessionSummary {
+  id: number;
+  created_at: string;
+  expires_at: string;
+  /** True for the session behind the request that fetched this list. */
+  is_current: boolean;
+}
+
+export interface ListSessionsResult {
+  sessions: SessionSummary[];
+}
+
+export type RevokeSessionResultStatus = typeof RevokeSessionResultStatus[keyof typeof RevokeSessionResultStatus];
+
+
+export const RevokeSessionResultStatus = {
+  revoked: 'revoked',
+} as const;
+
+export interface RevokeSessionResult {
+  status: RevokeSessionResultStatus;
+  id: number;
+}
+
 export interface AuthUserResult {
   user: AuthUser;
 }

@@ -654,6 +654,34 @@ export const AuthMeResponse = zod.object({
 
 
 /**
+ * Returns every non-expired session for the logged-in user, flagging which one is the caller's own. Used by Settings → Security.
+ * @summary List the current user's active sessions
+ */
+export const ListMySessionsResponse = zod.object({
+  "sessions": zod.array(zod.object({
+  "id": zod.number(),
+  "created_at": zod.string(),
+  "expires_at": zod.string(),
+  "is_current": zod.boolean().describe('True for the session behind the request that fetched this list.')
+}))
+})
+
+
+/**
+ * Deletes the session by id — scoped to the caller's own sessions only, never another user's. Revoking the session behind the current request signs that browser out.
+ * @summary Revoke one of the current user's own sessions
+ */
+export const RevokeMySessionParams = zod.object({
+  "sessionId": zod.coerce.number()
+})
+
+export const RevokeMySessionResponse = zod.object({
+  "status": zod.enum(['revoked']),
+  "id": zod.number()
+})
+
+
+/**
  * Verifies the current password and replaces it. Clears the must-change-password flag and revokes all other sessions for the user.
  * @summary Change the current user's password
  */
