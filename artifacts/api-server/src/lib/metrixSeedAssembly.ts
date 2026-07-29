@@ -285,16 +285,21 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
   // ── Account-level totals override (bundle-prep exports) ─────────────
   // Some import packages carry authoritative account-level totals that
   // exceed the ad-level table (ads absent from that export still spent).
-  // When iap_metadata.account_totals is present, report those as the
-  // account totals — with the ad-level coverage spelled out in the data
-  // caveat below, never silently and never via fabricated rows.
+  // When iap_metadata.account_totals is present, use it only when it is
+  // LARGER than the DB sum — this prevents a stale or incorrect bundle
+  // value from replacing a correct (and larger) DB-computed total.
+  // The override is intentionally additive/ceiling, never a floor reducer.
   const metadata = (modules.get("iap_metadata") ?? {}) as Row;
   const accountTotals = (metadata["account_totals"] ?? null) as Row | null;
   overrideEventTotals(byEvent, accountTotals);
   const effectiveSpend =
-    accountTotals?.["spend"] != null ? Number(accountTotals["spend"]) : totalSpend;
+    accountTotals?.["spend"] != null
+      ? Math.max(totalSpend, Number(accountTotals["spend"]))
+      : totalSpend;
   const effectiveImpressions =
-    accountTotals?.["impressions"] != null ? Number(accountTotals["impressions"]) : totalImpressions;
+    accountTotals?.["impressions"] != null
+      ? Math.max(totalImpressions, Number(accountTotals["impressions"]))
+      : totalImpressions;
 
   for (const event of Object.keys(byEvent)) {
     const tot = byEvent[event]!;
@@ -1059,9 +1064,13 @@ export async function assembleMetrixSeed(): Promise<Row> {
         byEvent[event]![key] += Number(tvals[key] ?? 0);
       }
     }
-    totalSpend += accountTotals?.["spend"] != null ? Number(accountTotals["spend"]) : rowSpend;
-    totalImpressions +=
-      accountTotals?.["impressions"] != null ? Number(accountTotals["impressions"]) : rowImpressions;
+    // Same ceiling guard as buildAccountObject — override only when larger than DB sum.
+    totalSpend += accountTotals?.["spend"] != null
+      ? Math.max(rowSpend, Number(accountTotals["spend"]))
+      : rowSpend;
+    totalImpressions += accountTotals?.["impressions"] != null
+      ? Math.max(rowImpressions, Number(accountTotals["impressions"]))
+      : rowImpressions;
   }
   for (const event of Object.keys(byEvent)) {
     const t = byEvent[event]!;

@@ -37,6 +37,17 @@
 //   15c. SegmentGridModal avatar blended column — cpa_blended metric: "Blended"
 //      header is present and the first avatar row's blended cell starts with "$"
 //      (usd() dollar format), not "—".
+//   15d. SegmentGridModal avatar blended column — reach metric: "Blended" header
+//      is present; demographic rows carry Reach data so the blended cell shows a
+//      non-"—" integer value; the unavailableOnPlacements description warning is
+//      also rendered (placement export has no Reach breakdown).
+//   15e. SegmentGridModal avatar blended column — clicks_all metric: same pattern
+//      as 15d for "Clicks (all)"; demographic rows carry clicks_all data so the
+//      blended cell is non-"—"; unavailableOnPlacements warning is rendered.
+//   16. SegmentGridModal with cellIds: opening via a concept-row drilldown
+//      (TilePerformanceModal → cellIds=["C2B"]) renders ≥1 avatar segment row
+//      and the description says "scoped to C2B" — catches silent empty-grid
+//      regressions in the non-null cellIds branch of buildAvatarSegments().
 //
 // API calls are intercepted with page.route() so no live API server is needed.
 // The seed fixture comes from the checked-in test snapshot.
@@ -1886,6 +1897,410 @@ async function main() {
             cellText.startsWith("$"),
             `First avatar row's blended cell must start with "$" for the ` +
               `cpa_blended metric (usd() format). Got: "${cellText}"`,
+          );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+    // ── Test 16: SegmentGridModal with cellIds — concept-row drilldown ────────
+    // Opens CrossmapResultsView for the bookster account, clicks the C2B matrix
+    // cell row (C2B has demographic_registration_signal rows in the fixture),
+    // which triggers TilePerformanceModal with cellIds=["C2B"].  Then clicks
+    // "Avatar × placement" to open SegmentGridModal scoped to C2B.
+    //
+    // Catches a regression in buildAvatarSegments() where cellIds filtering
+    // silently empties the grid when opened from a concept row rather than the
+    // account-level diagnostic (where cellIds is null).  The account-level path
+    // is already covered by Test 7; this test exercises the non-null cellIds
+    // branch for the first time.
+    //
+    // Assertions:
+    //   • At least one avatar-segment row appears in the grid <tbody> — confirms
+    //     buildAvatarSegments() did not over-filter the C2B demographic rows.
+    //   • The dialog description text includes "scoped to C2B" — confirms that
+    //     cellIds was threaded through from TilePerformanceModal into the modal.
+    await test(
+      "SegmentGridModal with cellIds: concept-row drilldown renders ≥1 segment row and 'scoped to C2B' description",
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        try {
+          await mockApis(ctx);
+
+          // Navigate to CrossmapResultsView for the bookster account.
+          // C2B is the only cell_id that appears in both historical_matrix_4x4
+          // and demographic_registration_signal for this account (62 demo rows,
+          // 4 distinct cell_ids: C2B, C2E, C2F, C4E; matrix cells: C1A–C4D).
+          await page.goto(`${BASE}/app/mst/crossmap?account=${ACCOUNT}`, {
+            waitUntil: "domcontentloaded",
+          });
+
+          // Wait for the crossmap table to render — the "Matrix cell" column
+          // header confirms the table is mounted and data has loaded.
+          await page
+            .getByText("Matrix cell", { exact: false })
+            .waitFor({ state: "visible", timeout: 20_000 });
+
+          // Click the C2B row to open TilePerformanceModal scoped to that cell.
+          // The table rows include a <span> with the font-mono cell_id text.
+          const c2bRow = page.locator("tbody tr").filter({ hasText: "C2B" }).first();
+          await c2bRow.waitFor({ state: "visible", timeout: 8_000 });
+          await c2bRow.click();
+
+          // TilePerformanceModal should open — wait for the "Avatar × placement"
+          // button which only appears inside TilePerformanceModal (not in the table).
+          // Click "Avatar × placement" to open SegmentGridModal with cellIds=["C2B"].
+          const segmentBtn = page.getByRole("button", { name: "Avatar × placement" });
+          await segmentBtn.waitFor({ state: "visible", timeout: 5_000 });
+          await segmentBtn.click();
+
+          // SegmentGridModal title contains the cell name / kicker.
+          // Wait for the grid dialog to open by looking for the avatar segment
+          // table body — the grid always renders a <tbody> with avatar rows when
+          // buildAvatarSegments() returns a non-empty array.
+          const dialog = page.locator('[role="dialog"]').last();
+          const firstAvatarRow = dialog.locator("tbody tr").first();
+          await firstAvatarRow.waitFor({ state: "visible", timeout: 10_000 });
+
+          // Assertion 1: ≥1 avatar segment row rendered — confirms the cellIds
+          // filter did not drop all C2B demographic rows.
+          const rowCount = await dialog.locator("tbody tr").count();
+          assert(
+            rowCount >= 1,
+            `SegmentGridModal with cellIds=["C2B"] must render ≥1 avatar segment ` +
+              `row, but tbody had ${rowCount} rows. buildAvatarSegments() may have ` +
+              `over-filtered the C2B demographic rows.`,
+          );
+
+          // Assertion 2: description text includes "scoped to C2B" — confirms
+          // cellIds was passed through from TilePerformanceModal into the modal
+          // (line 251 of SegmentGridModal.tsx).
+          const dialogText = (await dialog.textContent()) ?? "";
+          assert(
+            dialogText.includes("scoped to C2B"),
+            `SegmentGridModal description must include "scoped to C2B" when ` +
+              `opened with cellIds=["C2B"]. Got dialog text snippet: ` +
+              `"${dialogText.slice(0, 300)}"`,
+          );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+
+    // ── Test 15d: SegmentGridModal avatar blended column — reach metric ────────
+    // accountLevelDeliveryTotal() returns null when multiple result events exist
+    // (to avoid double-counting), so the bookster fixture's 4-event seed would
+    // render the "No data" state and hide the drilldown button.  We inject a
+    // modified seed that has exactly ONE event in bottom_line_totals with a
+    // meaningful reach value so metric.value is non-null.
+    // The demographic rows (unchanged from the fixture) carry Reach data, so
+    // buildAvatarSegments yields non-zero seg.totals.reach and the blended cell
+    // must show a formatted integer rather than "—".
+    // metric.id === "reach" also triggers unavailableOnPlacements in
+    // SegmentGridModal — the description must include the placement-caveat text.
+    await test(
+      "SegmentGridModal avatar blended column — reach metric shows a numeric value and unavailableOnPlacements warning",
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        try {
+          // "Reach" is not a default tile — inject via localStorage so the tile
+          // is present before the app initialises.
+          await page.addInitScript(() => {
+            localStorage.setItem(
+              "metrix.overview.metric_tiles.v1",
+              JSON.stringify(["reach"]),
+            );
+          });
+
+          // Reduce bottom_line_totals to a single event so
+          // accountLevelDeliveryTotal() returns a real reach value rather than
+          // null (the null branch fires when events.length > 1).
+          const modifiedSeed15d = JSON.parse(SEED_FIXTURE_BODY);
+          const bookster15d = modifiedSeed15d.ad_accounts.find(
+            (a: { id: string }) => a.id === ACCOUNT,
+          );
+          bookster15d.iap.campaign_summary.bottom_line_totals = {
+            "Mobile app installs": {
+              results: 120,
+              reach: 52000,
+              clicks_all: 6500,
+              impressions: 180000,
+              link_clicks: 4200,
+              spend: 8001.1,
+            },
+          };
+
+          await page.route("**/api/metrix/auth/me", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify({
+                user: {
+                  id: "test-user",
+                  email: "demo@metrix.app",
+                  role: "admin",
+                  must_change_password: false,
+                  workspace_id: "metrix_manager",
+                },
+              }),
+            }),
+          );
+          await page.route("**/api/metrix/seed", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify(modifiedSeed15d),
+            }),
+          );
+          await page.route("**/api/metrix/workspaces/*/reports", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify({ reports: [] }),
+            }),
+          );
+
+          await page.goto(`${BASE}/app/account?account=${ACCOUNT}`, {
+            waitUntil: "domcontentloaded",
+          });
+
+          await page
+            .getByText("Account Totals", { exact: false })
+            .waitFor({ state: "visible", timeout: 20_000 });
+
+          // Hover the "Reach" tile to open the hover popover.
+          const tileBtn = page
+            .locator("button")
+            .filter({ hasText: "Reach" })
+            .first();
+          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
+          await tileBtn.hover();
+
+          // Open MetricDiagnosticModal via the footer link.
+          const diagnoseBtn = page.getByText("Diagnose full breakdown");
+          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
+          await diagnoseBtn.click();
+
+          const diagnosticHeader = page.getByText("Metric diagnostic", {
+            exact: false,
+          });
+          await diagnosticHeader.waitFor({ state: "visible", timeout: 8_000 });
+
+          // Click "Avatar × placement breakdown" to open SegmentGridModal.
+          const segmentBtn = page.getByRole("button", {
+            name: "Avatar × placement breakdown",
+          });
+          await segmentBtn.waitFor({ state: "visible", timeout: 5_000 });
+          await segmentBtn.click();
+
+          // Wait for SegmentGridModal — title includes the metric label.
+          const segmentTitle = page.getByText(
+            "Reach — avatar × placement",
+            { exact: false },
+          );
+          await segmentTitle.waitFor({ state: "visible", timeout: 8_000 });
+
+          const dialog = page.locator('[role="dialog"]').last();
+
+          // "Blended" column header must be visible.
+          const blendedHeader = dialog.locator("th").filter({ hasText: "Blended" });
+          await blendedHeader.waitFor({ state: "visible", timeout: 5_000 });
+          const blendedHeaderText = (await blendedHeader.textContent()) ?? "";
+          assert(
+            blendedHeaderText.includes("Blended"),
+            `SegmentGridModal must render a "Blended" column header for the ` +
+              `reach metric. Got: "${blendedHeaderText}"`,
+          );
+
+          // First avatar-segment row — blended cell must contain the metric
+          // label "Reach" and must NOT show "—".
+          // buildAvatarSegments sums r.Reach for every demographic row, so
+          // seg.totals.reach is a non-null positive integer.
+          // metricValueForSegment(reach) returns num(t.reach) when t.reach != null.
+          const firstAvatarRow = dialog.locator("tbody tr").first();
+          await firstAvatarRow.waitFor({ state: "visible", timeout: 5_000 });
+          const blendedCell = firstAvatarRow.locator("td").last();
+          const cellText = (await blendedCell.textContent()) ?? "";
+
+          assert(
+            cellText.includes("Reach"),
+            `First avatar row's blended cell must contain the metric label ` +
+              `"Reach". Got: "${cellText}"`,
+          );
+          assert(
+            !cellText.startsWith("—"),
+            `First avatar row's blended cell must not show "—" for the reach ` +
+              `metric (demographic rows carry Reach data). Got: "${cellText}"`,
+          );
+
+          // The modal description must include the unavailableOnPlacements caveat.
+          // SegmentGridModal appends the placement-caveat sentence when metric.id
+          // is "reach" (unavailableOnPlacements = true in SegmentGridModal.tsx).
+          const fullDialogText = (await dialog.textContent()) ?? "";
+          assert(
+            fullDialogText.includes("placement export doesn't carry this metric"),
+            `SegmentGridModal description must include the unavailableOnPlacements ` +
+              `warning for the reach metric. Got dialog text: "${fullDialogText.slice(0, 300)}"`,
+          );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+
+    // ── Test 15e: SegmentGridModal avatar blended column — clicks_all metric ───
+    // Same pattern as 15d: inject a one-event seed so metric.value is non-null,
+    // then assert the blended cell shows a formatted integer (not "—") and the
+    // unavailableOnPlacements warning appears (metric.id === "clicks_all").
+    await test(
+      "SegmentGridModal avatar blended column — clicks_all metric shows a numeric value and unavailableOnPlacements warning",
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        try {
+          // "Clicks (all)" is not a default tile — inject via localStorage.
+          await page.addInitScript(() => {
+            localStorage.setItem(
+              "metrix.overview.metric_tiles.v1",
+              JSON.stringify(["clicks_all"]),
+            );
+          });
+
+          // Single-event seed so accountLevelDeliveryTotal() returns
+          // a real clicks_all figure rather than null.
+          const modifiedSeed15e = JSON.parse(SEED_FIXTURE_BODY);
+          const bookster15e = modifiedSeed15e.ad_accounts.find(
+            (a: { id: string }) => a.id === ACCOUNT,
+          );
+          bookster15e.iap.campaign_summary.bottom_line_totals = {
+            "Mobile app installs": {
+              results: 120,
+              reach: 52000,
+              clicks_all: 6500,
+              impressions: 180000,
+              link_clicks: 4200,
+              spend: 8001.1,
+            },
+          };
+
+          await page.route("**/api/metrix/auth/me", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify({
+                user: {
+                  id: "test-user",
+                  email: "demo@metrix.app",
+                  role: "admin",
+                  must_change_password: false,
+                  workspace_id: "metrix_manager",
+                },
+              }),
+            }),
+          );
+          await page.route("**/api/metrix/seed", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify(modifiedSeed15e),
+            }),
+          );
+          await page.route("**/api/metrix/workspaces/*/reports", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify({ reports: [] }),
+            }),
+          );
+
+          await page.goto(`${BASE}/app/account?account=${ACCOUNT}`, {
+            waitUntil: "domcontentloaded",
+          });
+
+          await page
+            .getByText("Account Totals", { exact: false })
+            .waitFor({ state: "visible", timeout: 20_000 });
+
+          // Hover the "Clicks (all)" tile.
+          const tileBtn = page
+            .locator("button")
+            .filter({ hasText: "Clicks (all)" })
+            .first();
+          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
+          await tileBtn.hover();
+
+          // Open MetricDiagnosticModal.
+          const diagnoseBtn = page.getByText("Diagnose full breakdown");
+          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
+          await diagnoseBtn.click();
+
+          const diagnosticHeader = page.getByText("Metric diagnostic", {
+            exact: false,
+          });
+          await diagnosticHeader.waitFor({ state: "visible", timeout: 8_000 });
+
+          // Click "Avatar × placement breakdown" to open SegmentGridModal.
+          const segmentBtn = page.getByRole("button", {
+            name: "Avatar × placement breakdown",
+          });
+          await segmentBtn.waitFor({ state: "visible", timeout: 5_000 });
+          await segmentBtn.click();
+
+          // Wait for SegmentGridModal — title includes the metric label.
+          const segmentTitle = page.getByText(
+            "Clicks (all) — avatar × placement",
+            { exact: false },
+          );
+          await segmentTitle.waitFor({ state: "visible", timeout: 8_000 });
+
+          const dialog = page.locator('[role="dialog"]').last();
+
+          // "Blended" column header must be visible.
+          const blendedHeader = dialog.locator("th").filter({ hasText: "Blended" });
+          await blendedHeader.waitFor({ state: "visible", timeout: 5_000 });
+          const blendedHeaderText = (await blendedHeader.textContent()) ?? "";
+          assert(
+            blendedHeaderText.includes("Blended"),
+            `SegmentGridModal must render a "Blended" column header for the ` +
+              `clicks_all metric. Got: "${blendedHeaderText}"`,
+          );
+
+          // First avatar-segment row — blended cell must contain the metric
+          // label "Clicks (all)" and must NOT show "—".
+          // buildAvatarSegments sums r["Clicks (all)"] into seg.totals.clicksAll,
+          // so metricValueForSegment(clicks_all) returns num(t.clicksAll) ≠ null.
+          const firstAvatarRow = dialog.locator("tbody tr").first();
+          await firstAvatarRow.waitFor({ state: "visible", timeout: 5_000 });
+          const blendedCell = firstAvatarRow.locator("td").last();
+          const cellText = (await blendedCell.textContent()) ?? "";
+
+          assert(
+            cellText.includes("Clicks (all)"),
+            `First avatar row's blended cell must contain the metric label ` +
+              `"Clicks (all)". Got: "${cellText}"`,
+          );
+          assert(
+            !cellText.startsWith("—"),
+            `First avatar row's blended cell must not show "—" for the ` +
+              `clicks_all metric (demographic rows carry clicks_all data). ` +
+              `Got: "${cellText}"`,
+          );
+
+          // The modal description must include the unavailableOnPlacements caveat.
+          const fullDialogText = (await dialog.textContent()) ?? "";
+          assert(
+            fullDialogText.includes("placement export doesn't carry this metric"),
+            `SegmentGridModal description must include the unavailableOnPlacements ` +
+              `warning for the clicks_all metric. Got dialog text: "${fullDialogText.slice(0, 300)}"`,
           );
         } finally {
           await ctx.close();
