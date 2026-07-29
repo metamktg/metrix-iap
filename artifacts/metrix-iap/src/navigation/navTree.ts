@@ -119,8 +119,6 @@ export const navTree: NavSection[] = [
         id: "act-queue",
         label: "Action Queue",
         to: "/app/act/queue",
-        placeholder: true,
-        teaser: "Prioritised actions from the optimization loop — approve, defer, or dismiss.",
       },
       {
         id: "act-hypotheses",

@@ -60,6 +60,7 @@ import { IntegrationsView } from "@/pages/metrix/settings/IntegrationsView";
 import { TeamAccessView } from "@/pages/metrix/settings/TeamAccessView";
 import { NotificationsView } from "@/pages/metrix/settings/NotificationsView";
 import { BillingView } from "@/pages/metrix/settings/BillingView";
+import { ActionQueueView } from "@/pages/metrix/act/ActionQueueView";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: Infinity, retry: false } },
@@ -100,7 +101,7 @@ export function Router() {
 
       {/* ── New placeholder routes ────────────────────────────────────── */}
       <Route path="/app/analyze/findings" component={FindingsView} />
-      <Route path="/app/act/queue">{() => <ComingSoonStub label="Action Queue" />}</Route>
+      <Route path="/app/act/queue" component={ActionQueueView} />
       <Route path="/app/analyze">{() => <Redirect to="/app/analyze/findings" replace />}</Route>
       <Route path="/app/act">{() => <Redirect to="/app/act/queue" replace />}</Route>
 
