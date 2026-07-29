@@ -55,6 +55,20 @@ function isExpanded(listEl: HTMLElement): boolean {
   return !listEl.classList.contains("hidden");
 }
 
+/**
+ * A section header's label text can collide with a child label elsewhere
+ * in the tree (e.g. top-level "Analysis" vs the Exports → Analysis child).
+ * Section headers render outside any <ul>; child rows always render
+ * inside their section's <ul aria-label="... pages">. Scope to the
+ * header specifically rather than the first text match.
+ */
+function sectionHeaderLink(container: HTMLElement, label: string): HTMLElement {
+  const matches = within(container).getAllByText(label);
+  const header = matches.find((el) => !el.closest("ul"));
+  if (!header) throw new Error(`No section header found for "${label}"`);
+  return header.closest("a")!;
+}
+
 /** Open a Radix dropdown trigger (needs pointerdown in jsdom). */
 function openDropdown(trigger: Element) {
   fireEvent.pointerDown(
@@ -79,43 +93,60 @@ describe("navTree landing routes", () => {
     }
   });
 
-  it("Analysis and Strategy landing is their Overview page, with no redundant Overview child", () => {
-    const analysis = navTree.find((s) => s.id === "analysis")!;
-    const strategy = navTree.find((s) => s.id === "strategy")!;
-    expect(sectionLandingRoute(analysis)).toBe("/app/analysis/overview");
-    expect(sectionLandingRoute(strategy)).toBe("/app/strategy/overview");
-    expect(analysis.children!.map((c) => c.label)).not.toContain("Overview");
-    expect(strategy.children!.map((c) => c.label)).not.toContain("Overview");
+  it("every expandable section lands on its own command-center route (explicit landing, not a child fallback)", () => {
+    for (const section of navTree) {
+      if (!section.children?.length) continue;
+      expect(section.landing, section.id).toBeTruthy();
+      expect(sectionLandingRoute(section)).toBe(section.landing);
+    }
   });
 
-  it("sections without an Overview child land on their first child", () => {
-    const listen = navTree.find((s) => s.id === "listen")!;
-    expect(sectionLandingRoute(listen)).toBe(listen.children![0].to);
+  it("Analysis has no Overview child (renamed Ad Performance); Strategy keeps a distinct Overview child", () => {
+    const analysis = navTree.find((s) => s.id === "analysis")!;
+    const strategy = navTree.find((s) => s.id === "strategy")!;
+    expect(sectionLandingRoute(analysis)).toBe("/app/analysis");
+    expect(analysis.children!.map((c) => c.label)).not.toContain("Overview");
+    expect(analysis.children!.map((c) => c.label)).toContain("Ad Performance");
+    expect(sectionLandingRoute(strategy)).toBe("/app/strategy");
+    expect(strategy.children!.map((c) => c.label)).toContain("Overview");
+  });
+
+  it("sectionLandingRoute falls back to the first child's route when a section sets no explicit landing", () => {
+    const synthetic = {
+      id: "x",
+      number: "00",
+      label: "X",
+      icon: "LayoutDashboard" as const,
+      children: [{ id: "x-a", label: "A", to: "/app/x/a" }],
+    };
+    expect(sectionLandingRoute(synthetic)).toBe("/app/x/a");
   });
 });
 
 describe("Sidebar section headers", () => {
-  it("clicking a header navigates to the landing route and expands children", () => {
+  it("clicking a header navigates to its command center and expands children", () => {
     renderWithProviders(<Sidebar />);
     const nav = screen.getByLabelText("Main workspace navigation");
 
     // Analysis children hidden initially (not on an analysis route)
     expect(isExpanded(within(nav).getByLabelText("Analysis pages"))).toBe(false);
 
-    fireEvent.click(within(nav).getByText("Analysis"));
-    expect(window.location.pathname).toBe("/app/analysis/overview");
+    fireEvent.click(sectionHeaderLink(nav, "Analysis"));
+    expect(window.location.pathname).toBe("/app/analysis");
     const childList = within(nav).getByLabelText("Analysis pages");
     expect(isExpanded(childList)).toBe(true);
     // Expanded children include the real subpages, but no "Overview" child
+    // (renamed to Ad Performance — the command center itself is the landing).
     expect(within(childList).getByText("IAP Library")).toBeTruthy();
+    expect(within(childList).getByText("Ad Performance")).toBeTruthy();
     expect(within(childList).queryByText("Overview")).toBeNull();
   });
 
-  it("a section without an Overview child navigates to its first child", () => {
+  it("clicking Listen navigates to its command center (TL;DR), not a child", () => {
     renderWithProviders(<Sidebar />);
     const nav = screen.getByLabelText("Main workspace navigation");
     fireEvent.click(within(nav).getByText("Listen"));
-    expect(window.location.pathname).toBe("/app/listen/alerts");
+    expect(window.location.pathname).toBe("/app/listen");
     const childList = within(nav).getByLabelText("Listen pages");
     expect(isExpanded(childList)).toBe(true);
     expect(within(childList).getByText("Signal")).toBeTruthy();
@@ -134,11 +165,19 @@ describe("Sidebar section headers", () => {
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
   });
 
-  it("header link carries aria-current when its landing page is active", () => {
-    window.history.replaceState({}, "", "/app/analysis/overview");
+  it("header link carries aria-current when its command center is active", () => {
+    window.history.replaceState({}, "", "/app/analysis");
     renderWithProviders(<Sidebar />);
     const nav = screen.getByLabelText("Main workspace navigation");
-    const header = within(nav).getByText("Analysis").closest("a")!;
+    const header = sectionHeaderLink(nav, "Analysis");
+    expect(header.getAttribute("aria-current")).toBe("page");
+  });
+
+  it("header link also carries aria-current from a child route (prefix match)", () => {
+    window.history.replaceState({}, "", "/app/analysis/performance");
+    renderWithProviders(<Sidebar />);
+    const nav = screen.getByLabelText("Main workspace navigation");
+    const header = sectionHeaderLink(nav, "Analysis");
     expect(header.getAttribute("aria-current")).toBe("page");
   });
 });

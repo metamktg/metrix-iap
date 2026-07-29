@@ -43,6 +43,16 @@ export function buildBreadcrumbs(location: string, leadLabel: string, isManager:
         return crumbs;
       }
     }
+    // Every expandable section is itself a command-center page (its own
+    // `landing` route) — visited directly, distinct from any child.
+    if (
+      section.children?.length &&
+      section.landing &&
+      (location === section.landing || location.startsWith(section.landing + "/"))
+    ) {
+      crumbs.push({ label: section.label, to: section.landing });
+      return crumbs;
+    }
   }
 
   return crumbs;
