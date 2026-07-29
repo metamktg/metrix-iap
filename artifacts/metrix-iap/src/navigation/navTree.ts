@@ -353,7 +353,7 @@ export const navTree: NavSection[] = [
     number: "09",
     label: "Action",
     icon: "Zap",
-    landing: "/app/action",
+    landing: "/app/action/agent",
     placeholder: true,
     children: [
       {

@@ -114,7 +114,7 @@ export function MetrixAgent() {
       {/* Header */}
       <div className="px-6 py-5 border-b border-border/40">
         <span className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-widest block mb-1">
-          Metrix Agent · 07
+          Action · 09
         </span>
         <h1 className="text-[18px] font-semibold text-foreground leading-tight">Metrix Agent</h1>
         <p className="text-[12px] text-muted-foreground/60 mt-0.5">

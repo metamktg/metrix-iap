@@ -137,10 +137,10 @@ export function Router() {
       <Route path="/app/mst/performance"   component={MstPerformanceView} />
       <Route path="/app/mst/direction"     component={MstDirectionView} />
 
-      {/* ── 08 Metrix Agent ───────────────────────────────────────────── */}
-      <Route path="/app/agent" component={MetrixAgent} />
+      {/* ── 09 Action (coming soon) ──────────────────────────────────── */}
+      <Route path="/app/action/agent" component={MetrixAgent} />
 
-      {/* ── 09 Settings ───────────────────────────────────────────────── */}
+      {/* ── 10 Settings ───────────────────────────────────────────────── */}
       <Route path="/app/settings/account"       component={AccountSettingsView} />
       <Route path="/app/settings/integrations"  component={IntegrationsView} />
       <Route path="/app/settings/team"          component={TeamAccessView} />
@@ -163,6 +163,8 @@ export function Router() {
       <Route path="/app/reports/new">{() => <Redirect to="/app/reports/builder" replace />}</Route>
       <Route path="/app/reports/settings">{() => <Redirect to="/app/reports/configuration" replace />}</Route>
       <Route path="/app/reports/exports">{() => <Redirect to="/app/exports/reports" replace />}</Route>
+      <Route path="/app/agent">{() => <Redirect to="/app/action/agent" replace />}</Route>
+      <Route path="/app/action">{() => <Redirect to="/app/action/agent" replace />}</Route>
       <Route path="/app/settings">{() => <Redirect to="/app/settings/account" replace />}</Route>
 
       {/* ── 404 ───────────────────────────────────────────────────────── */}
