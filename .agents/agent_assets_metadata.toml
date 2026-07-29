@@ -185,3 +185,9 @@ id = "vu-qql3bpnujH4q05MVwM"
 uri = "file://screenshots/audience-pockets-1280.png"
 type = "image"
 title = "Audience Intelligence — Pocket Grid 1280px (responsive breakpoint)"
+
+[[outputs]]
+id = "ug7bTgIorao9DufuiD__R"
+uri = "file://frontend-ui-export.zip"
+type = "unspecified"
+title = "Metrix IAP — Frontend UI Export"
