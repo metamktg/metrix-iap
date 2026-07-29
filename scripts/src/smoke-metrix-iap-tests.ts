@@ -92,6 +92,17 @@ async function main() {
     fail("Home screen e2e failed", String(err?.message ?? err));
   });
 
+  // ── Step 4: Playwright forgot-password flow e2e ───────────────────────────
+  console.log("\nRunning forgot-password flow e2e...");
+  await spawnScript("smoke:forgot-password", [
+    "--filter",
+    "@workspace/scripts",
+    "run",
+    "smoke:forgot-password",
+  ]).catch((err) => {
+    fail("Forgot-password e2e failed", String(err?.message ?? err));
+  });
+
   console.log("\nPASS  All Metrix IAP smoke checks passed");
   process.exit(0);
 }
