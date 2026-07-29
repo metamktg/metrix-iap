@@ -467,7 +467,7 @@ export function ReportHistoryView() {
 
               <div className="flex items-center gap-4 pt-1">
                 <CrossLink to="/app/reports/builder" label="Compose a new report" />
-                <CrossLink to="/app/reports/exports" label="Export formats" />
+                <CrossLink to="/app/exports/reports" label="Export formats" />
               </div>
             </div>
           </div>

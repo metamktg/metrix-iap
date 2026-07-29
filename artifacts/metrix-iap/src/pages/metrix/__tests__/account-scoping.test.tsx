@@ -55,7 +55,6 @@ import { CreativeScanView } from "../creative/CreativeScanView";
 import { CreativeImportExportView } from "../creative/CreativeImportExportView";
 import { ReportBuilderView } from "../reports/ReportBuilderView";
 import { ReportHistoryView } from "../reports/ReportHistoryView";
-import { ExportsView } from "../reports/ExportsView";
 import { MstCommandCenter } from "../mst/MstCommandCenter";
 import { ConceptMapView } from "../mst/ConceptMapView";
 import { MstSprintsView } from "../mst/MstSprintsView";
@@ -93,7 +92,6 @@ const GATED_VIEWS: [string, React.ComponentType][] = [
   ["Creative · Import Export", CreativeImportExportView],
   ["Reports · Builder", ReportBuilderView],
   ["Reports · History", ReportHistoryView],
-  ["Reports · Exports", ExportsView],
   ["MST · Command Center", MstCommandCenter],
   ["MST · Concept Map", ConceptMapView],
   ["MST · Sprints", MstSprintsView],

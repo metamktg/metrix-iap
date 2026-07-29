@@ -48,7 +48,11 @@ import { CreativeImportExportView } from "@/pages/metrix/creative/CreativeImport
 import { ReportsCommandCenter } from "@/pages/metrix/reports/ReportsCommandCenter";
 import { ReportBuilderView } from "@/pages/metrix/reports/ReportBuilderView";
 import { ReportHistoryView } from "@/pages/metrix/reports/ReportHistoryView";
-import { ExportsView } from "@/pages/metrix/reports/ExportsView";
+import { ExportsCommandCenter } from "@/pages/metrix/exports/ExportsCommandCenter";
+import { ExportsAnalysisView } from "@/pages/metrix/exports/ExportsAnalysisView";
+import { ExportsStrategyView } from "@/pages/metrix/exports/ExportsStrategyView";
+import { ExportsReportsView } from "@/pages/metrix/exports/ExportsReportsView";
+import { ExportsBriefView } from "@/pages/metrix/exports/ExportsBriefView";
 import { ReportConfigurationView } from "@/pages/metrix/reports/ReportConfigurationView";
 import { MstCommandCenter } from "@/pages/metrix/mst/MstCommandCenter";
 import { MstCrossMapView } from "@/pages/metrix/mst/MstCrossMapView";
@@ -119,7 +123,12 @@ export function Router() {
       <Route path="/app/reports/builder"      component={ReportBuilderView} />
       <Route path="/app/reports/configuration" component={ReportConfigurationView} />
       <Route path="/app/reports/history"      component={ReportHistoryView} />
-      <Route path="/app/reports/exports"      component={ExportsView} />
+      {/* ── 08 Exports ───────────────────────────────────────────────── */}
+      <Route path="/app/exports"          component={ExportsCommandCenter} />
+      <Route path="/app/exports/analysis" component={ExportsAnalysisView} />
+      <Route path="/app/exports/strategy" component={ExportsStrategyView} />
+      <Route path="/app/exports/reports"  component={ExportsReportsView} />
+      <Route path="/app/exports/brief"    component={ExportsBriefView} />
 
       {/* ── 07 MST ────────────────────────────────────────────────────── */}
       <Route path="/app/mst"                component={MstCommandCenter} />
@@ -153,6 +162,7 @@ export function Router() {
       <Route path="/app/report-builder">{() => <Redirect to="/app/reports/builder" replace />}</Route>
       <Route path="/app/reports/new">{() => <Redirect to="/app/reports/builder" replace />}</Route>
       <Route path="/app/reports/settings">{() => <Redirect to="/app/reports/configuration" replace />}</Route>
+      <Route path="/app/reports/exports">{() => <Redirect to="/app/exports/reports" replace />}</Route>
       <Route path="/app/settings">{() => <Redirect to="/app/settings/account" replace />}</Route>
 
       {/* ── 404 ───────────────────────────────────────────────────────── */}

@@ -73,6 +73,7 @@ export function renderAuthedAt(
     role: "admin",
     manage_team: true,
     view_agency_rollups: true,
+    export_data: false,
   }
 ) {
   const location = memoryLocation({ path: initialPath, record: true });

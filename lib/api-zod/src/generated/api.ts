@@ -622,7 +622,8 @@ export const AuthLoginResponse = zod.object({
   "must_change_password": zod.boolean(),
   "role": zod.enum(['admin', 'member']).describe('admin sees every ad account (agency team); member sees only accounts they have been granted.'),
   "manage_team": zod.boolean().describe('Can invite\/remove members and assign asset access. Always true for admin.'),
-  "view_agency_rollups": zod.boolean().describe('Can see manager-level totals\/rollups across all ad accounts. Always true for admin.')
+  "view_agency_rollups": zod.boolean().describe('Can see manager-level totals\/rollups across all ad accounts. Always true for admin.'),
+  "export_data": zod.boolean().describe('Can use the Exports section (JSON\/CSV handoff of analysis\/strategy\/briefs\/reports). A future premium entitlement, off by default — NOT implied by admin role.')
 })
 })
 
@@ -646,7 +647,8 @@ export const AuthMeResponse = zod.object({
   "must_change_password": zod.boolean(),
   "role": zod.enum(['admin', 'member']).describe('admin sees every ad account (agency team); member sees only accounts they have been granted.'),
   "manage_team": zod.boolean().describe('Can invite\/remove members and assign asset access. Always true for admin.'),
-  "view_agency_rollups": zod.boolean().describe('Can see manager-level totals\/rollups across all ad accounts. Always true for admin.')
+  "view_agency_rollups": zod.boolean().describe('Can see manager-level totals\/rollups across all ad accounts. Always true for admin.'),
+  "export_data": zod.boolean().describe('Can use the Exports section (JSON\/CSV handoff of analysis\/strategy\/briefs\/reports). A future premium entitlement, off by default — NOT implied by admin role.')
 })
 })
 
@@ -673,7 +675,8 @@ export const AuthChangePasswordResponse = zod.object({
   "must_change_password": zod.boolean(),
   "role": zod.enum(['admin', 'member']).describe('admin sees every ad account (agency team); member sees only accounts they have been granted.'),
   "manage_team": zod.boolean().describe('Can invite\/remove members and assign asset access. Always true for admin.'),
-  "view_agency_rollups": zod.boolean().describe('Can see manager-level totals\/rollups across all ad accounts. Always true for admin.')
+  "view_agency_rollups": zod.boolean().describe('Can see manager-level totals\/rollups across all ad accounts. Always true for admin.'),
+  "export_data": zod.boolean().describe('Can use the Exports section (JSON\/CSV handoff of analysis\/strategy\/briefs\/reports). A future premium entitlement, off by default — NOT implied by admin role.')
 })
 })
 

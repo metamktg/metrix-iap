@@ -433,7 +433,7 @@ export function ReportBuilderView() {
                       Exports use the current preview mode: {mode === "internal" ? "Internal dashboard (Metrix branding)" : `Client-facing (white-labeled for ${acct.name})`}.
                     </p>
                     <div className="mt-3">
-                      <CrossLink to="/app/reports/exports" label="Manage export formats & destinations" />
+                      <CrossLink to="/app/exports/reports" label="Manage export formats & destinations" />
                     </div>
                   </SectionCard>
 

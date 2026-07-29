@@ -75,6 +75,7 @@ router.post("/metrix/auth/login", loginRateLimit, async (req, res) => {
         role: user.role,
         manage_team: user.role === "admin" || user.canManageTeam,
         view_agency_rollups: user.role === "admin" || user.canViewAgencyRollups,
+        export_data: user.canExportData,
       },
     });
     res.json(data);
@@ -106,6 +107,7 @@ router.get("/metrix/auth/me", requireAuth, (req, res) => {
       role: user.role,
       manage_team: user.role === "admin" || user.canManageTeam,
       view_agency_rollups: user.role === "admin" || user.canViewAgencyRollups,
+      export_data: user.canExportData,
     },
   });
   res.json(data);
@@ -150,6 +152,7 @@ router.post("/metrix/auth/change-password", requireAuth, async (req, res) => {
         role: user.role,
         manage_team: user.role === "admin" || user.canManageTeam,
         view_agency_rollups: user.role === "admin" || user.canViewAgencyRollups,
+        export_data: user.canExportData,
       },
     });
     res.json(data);

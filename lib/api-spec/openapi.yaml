@@ -3048,12 +3048,16 @@ components:
         view_agency_rollups:
           type: boolean
           description: Can see manager-level totals/rollups across all ad accounts. Always true for admin.
+        export_data:
+          type: boolean
+          description: Can use the Exports section (JSON/CSV handoff of analysis/strategy/briefs/reports). A future premium entitlement, off by default — NOT implied by admin role.
       required:
         - email
         - must_change_password
         - role
         - manage_team
         - view_agency_rollups
+        - export_data
     AuthUserResult:
       type: object
       properties:

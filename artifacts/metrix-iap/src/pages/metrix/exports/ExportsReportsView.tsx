@@ -1,6 +1,8 @@
-// ─── Reports · Exports ────────────────────────────────────────────────
+// ─── Exports · Reports ──────────────────────────────────────────────
 // Export formats, branding policy, and past exported deliverables for
 // this account's reports. Formats and deliverables download real files.
+// Relocated here from Reports → Exports — premium-gated like every other
+// Exports child.
 
 import { useState } from "react";
 import { useAccount, useScopedAdAccountId } from "@/contexts/AccountContext";
@@ -8,13 +10,14 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getReportBuilder, getReportHistory } from "@/lib/data/metrixSeedAdapter";
 import { buildReportModel, downloadReportExport, parseReportModel, type BrandingMode } from "@/lib/reportExport";
 import { ModuleHeader, ScopeBanner, ModuleScopeGate, SectionCard, CaveatNote, PendingState, CrossLink } from "../shared";
-import { FORMAT_LABEL } from "./ReportBuilderView";
+import { useExportsEnabled, ExportsLocked } from "./exportsShared";
+import { FORMAT_LABEL } from "../reports/ReportBuilderView";
 import { cn } from "@/lib/utils";
 import { FileDown, FileText, Check, Loader2 } from "lucide-react";
 import { useListWorkspaceReports } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 
-const SECTION = "Reports · 07";
+const SECTION = "Exports · 08";
 
 function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
@@ -31,7 +34,7 @@ interface Deliverable {
   modelJson: string | null;
 }
 
-export function ExportsView() {
+export function ExportsReportsView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
@@ -40,6 +43,16 @@ export function ExportsView() {
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [doneKey, setDoneKey] = useState<string | null>(null);
   const { toast } = useToast();
+  const enabled = useExportsEnabled();
+
+  if (!enabled) {
+    return (
+      <div className="flex-1 flex flex-col">
+        <ModuleHeader section={SECTION} title="Reports" />
+        <div className="px-6 py-5 max-w-3xl"><ExportsLocked /></div>
+      </div>
+    );
+  }
 
   async function download(key: string, format: string, mode: BrandingMode, opts?: { docTitle?: string; sectionCount?: number }) {
     if (busyKey) return;
@@ -82,7 +95,7 @@ export function ExportsView() {
   }
 
   return (
-    <ModuleScopeGate section={SECTION} title="Exports" account={account}>
+    <ModuleScopeGate section={SECTION} title="Reports" account={account}>
       {() => {
         const acct = account!;
         const rb = getReportBuilder(seed, adAccountId);
@@ -113,7 +126,7 @@ export function ExportsView() {
         if (!rb) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Exports" />
+              <ModuleHeader section={SECTION} title="Reports" />
               <ScopeBanner account={acct} />
               <PendingState title="No export options" message="Export formats become available once the report template exists." icon={FileDown} />
             </div>
@@ -126,7 +139,7 @@ export function ExportsView() {
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
             <ModuleHeader
               section={SECTION}
-              title="Exports"
+              title="Reports"
               subtitle="How reports leave Metrix: formats, branding policy, and delivered exports."
               table="report_builder"
             />

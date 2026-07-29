@@ -644,6 +644,8 @@ export interface AuthUser {
   manage_team: boolean;
   /** Can see manager-level totals/rollups across all ad accounts. Always true for admin. */
   view_agency_rollups: boolean;
+  /** Can use the Exports section (JSON/CSV handoff of analysis/strategy/briefs/reports). A future premium entitlement, off by default — NOT implied by admin role. */
+  export_data: boolean;
 }
 
 export interface AuthUserResult {
