@@ -33,10 +33,13 @@ import { AudienceView } from "@/pages/metrix/analysis/AudienceView";
 import { PlacementsView } from "@/pages/metrix/analysis/PlacementsView";
 import { BudgetView } from "@/pages/metrix/analysis/BudgetView";
 import { AnalysisHistoryView } from "@/pages/metrix/analysis/AnalysisHistoryView";
+import { StrategyCommandCenter } from "@/pages/metrix/strategy/StrategyCommandCenter";
 import { StrategyOverview } from "@/pages/metrix/strategy/StrategyOverview";
 import { StrategyMapView } from "@/pages/metrix/strategy/StrategyMapView";
 import { AvatarsView } from "@/pages/metrix/strategy/AvatarsView";
+import { CommunicationsView } from "@/pages/metrix/strategy/CommunicationsView";
 import { HypothesisQueueView } from "@/pages/metrix/strategy/HypothesisQueueView";
+import { StrategyHistoryView } from "@/pages/metrix/strategy/StrategyHistoryView";
 import { BriefBuilderView } from "@/pages/metrix/briefs/BriefBuilderView";
 import { BriefHistoryView } from "@/pages/metrix/briefs/BriefHistoryView";
 import { NewReportView } from "@/pages/metrix/reports/NewReportView";
@@ -91,10 +94,13 @@ export function Router() {
       <Route path="/app/analysis/history"    component={AnalysisHistoryView} />
 
       {/* ── 04 Strategy ───────────────────────────────────────────────── */}
-      <Route path="/app/strategy/overview"   component={StrategyOverview} />
-      <Route path="/app/strategy/map"        component={StrategyMapView} />
-      <Route path="/app/strategy/avatars"    component={AvatarsView} />
-      <Route path="/app/strategy/hypotheses" component={HypothesisQueueView} />
+      <Route path="/app/strategy"              component={StrategyCommandCenter} />
+      <Route path="/app/strategy/overview"     component={StrategyOverview} />
+      <Route path="/app/strategy/map"          component={StrategyMapView} />
+      <Route path="/app/strategy/avatars"      component={AvatarsView} />
+      <Route path="/app/strategy/communications" component={CommunicationsView} />
+      <Route path="/app/strategy/hypotheses"   component={HypothesisQueueView} />
+      <Route path="/app/strategy/history"      component={StrategyHistoryView} />
 
       {/* ── 05 Creative Briefs ────────────────────────────────────────── */}
       <Route path="/app/briefs/builder" component={BriefBuilderView} />
@@ -126,8 +132,7 @@ export function Router() {
       <Route path="/app/listen">{() => <Redirect to="/app/listen/alerts" replace />}</Route>
       <Route path="/app/analysis/overview">{() => <Redirect to="/app/analysis/performance" replace />}</Route>
       <Route path="/app/analysis/concept-map">{() => <Redirect to="/app/mst/cross-map" replace />}</Route>
-      <Route path="/app/strategy">{() => <Redirect to="/app/strategy/overview" replace />}</Route>
-      <Route path="/app/strategy/brief-builder">{() => <Redirect to="/app/briefs/builder" replace />}</Route>
+      <Route path="/app/strategy/brief-builder">{() => <Redirect to="/app/creative/builder" replace />}</Route>
       <Route path="/app/briefs">{() => <Redirect to="/app/briefs/builder" replace />}</Route>
       <Route path="/app/report-builder">{() => <Redirect to="/app/reports/new" replace />}</Route>
       <Route path="/app/reports">{() => <Redirect to="/app/reports/new" replace />}</Route>
