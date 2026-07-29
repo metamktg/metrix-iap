@@ -23,6 +23,8 @@ import { AccountProvider } from "@/contexts/AccountContext";
 import { DateRangeProvider } from "@/contexts/DateRangeContext";
 import { ConceptRegistryProvider } from "@/lib/concept-registry-context";
 import { Overview } from "@/pages/metrix/Overview";
+import { OverviewLoopPage } from "@/pages/metrix/OverviewLoopPage";
+import { OverviewUpdatesView } from "@/pages/metrix/OverviewUpdatesView";
 import { ListenCommandCenter } from "@/pages/metrix/listen/ListenCommandCenter";
 import { SignalView } from "@/pages/metrix/listen/SignalView";
 import { AlertsView } from "@/pages/metrix/listen/AlertsView";
@@ -88,6 +90,8 @@ export function Router() {
       {/* ── 01 Overview (adaptive: manager ↔ ad account) ──────────────── */}
       <Route path="/"               component={Overview} />
       <Route path="/app/account"    component={Overview} />
+      <Route path="/app/overview/loop"    component={OverviewLoopPage} />
+      <Route path="/app/overview/updates" component={OverviewUpdatesView} />
 
       {/* ── 02 Listen ─────────────────────────────────────────────────── */}
       <Route path="/app/listen"                 component={ListenCommandCenter} />

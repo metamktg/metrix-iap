@@ -17,6 +17,7 @@ import { useMetricSelection } from "@/hooks/useMetricSelection";
 import { MetricPickerButton } from "@/components/creative/MetricPicker";
 import { MetricDiagnosticModal } from "@/components/creative/MetricDiagnosticModal";
 import { TokenizedConceptText } from "@/components/concept/ConceptChip";
+import { OverviewLoopSummary } from "./OverviewLoopHub";
 
 const IMPACT_STYLE: Record<string, string> = {
   high: "bg-red-400/10 text-red-300 border-red-400/20",
@@ -108,6 +109,8 @@ export function ManagerOverview() {
       />
 
       <div className="px-6 py-5 space-y-6 max-w-6xl">
+        <OverviewLoopSummary />
+
         {/* Bottom-line totals */}
         <div>
           <div className="flex items-center justify-between mb-3">
