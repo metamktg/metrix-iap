@@ -49,9 +49,11 @@ import { NewReportView } from "@/pages/metrix/reports/NewReportView";
 import { ReportHistoryView } from "@/pages/metrix/reports/ReportHistoryView";
 import { ExportsView } from "@/pages/metrix/reports/ExportsView";
 import { ReportSettingsView } from "@/pages/metrix/reports/ReportSettingsView";
-import { ConceptMapView } from "@/pages/metrix/mst/ConceptMapView";
-import { MatrixBuilderView } from "@/pages/metrix/mst/MatrixBuilderView";
-import { CrossmapResultsView } from "@/pages/metrix/mst/CrossmapResultsView";
+import { MstCommandCenter } from "@/pages/metrix/mst/MstCommandCenter";
+import { MstCrossMapView } from "@/pages/metrix/mst/MstCrossMapView";
+import { MstSprintsView } from "@/pages/metrix/mst/MstSprintsView";
+import { MstPerformanceView } from "@/pages/metrix/mst/MstPerformanceView";
+import { MstDirectionView } from "@/pages/metrix/mst/MstDirectionView";
 import { MetrixAgent } from "@/pages/MetrixAgent";
 import { AccountSettingsView } from "@/pages/metrix/settings/AccountSettingsView";
 import { IntegrationsView } from "@/pages/metrix/settings/IntegrationsView";
@@ -118,9 +120,11 @@ export function Router() {
       <Route path="/app/reports/settings" component={ReportSettingsView} />
 
       {/* ── 07 MST ────────────────────────────────────────────────────── */}
-      <Route path="/app/mst/concept-map"   component={ConceptMapView} />
-      <Route path="/app/mst/matrix"        component={MatrixBuilderView} />
-      <Route path="/app/mst/crossmap"      component={CrossmapResultsView} />
+      <Route path="/app/mst"                component={MstCommandCenter} />
+      <Route path="/app/mst/cross-map"     component={MstCrossMapView} />
+      <Route path="/app/mst/sprints"       component={MstSprintsView} />
+      <Route path="/app/mst/performance"   component={MstPerformanceView} />
+      <Route path="/app/mst/direction"     component={MstDirectionView} />
 
       {/* ── 08 Metrix Agent ───────────────────────────────────────────── */}
       <Route path="/app/agent" component={MetrixAgent} />
@@ -136,6 +140,9 @@ export function Router() {
       <Route path="/app/listen">{() => <Redirect to="/app/listen/alerts" replace />}</Route>
       <Route path="/app/analysis/overview">{() => <Redirect to="/app/analysis/performance" replace />}</Route>
       <Route path="/app/analysis/concept-map">{() => <Redirect to="/app/mst/cross-map" replace />}</Route>
+      <Route path="/app/mst/concept-map">{() => <Redirect to="/app/mst/cross-map" replace />}</Route>
+      <Route path="/app/mst/crossmap">{() => <Redirect to="/app/mst/cross-map" replace />}</Route>
+      <Route path="/app/mst/matrix">{() => <Redirect to="/app/mst/sprints" replace />}</Route>
       <Route path="/app/strategy/brief-builder">{() => <Redirect to="/app/creative/builder" replace />}</Route>
       <Route path="/app/briefs/builder">{() => <Redirect to="/app/creative/builder" replace />}</Route>
       <Route path="/app/briefs/history">{() => <Redirect to="/app/creative" replace />}</Route>
@@ -143,7 +150,6 @@ export function Router() {
       <Route path="/app/mst/creative-scan">{() => <Redirect to="/app/creative/scan" replace />}</Route>
       <Route path="/app/report-builder">{() => <Redirect to="/app/reports/new" replace />}</Route>
       <Route path="/app/reports">{() => <Redirect to="/app/reports/new" replace />}</Route>
-      <Route path="/app/mst">{() => <Redirect to="/app/mst/matrix" replace />}</Route>
       <Route path="/app/settings">{() => <Redirect to="/app/settings/account" replace />}</Route>
 
       {/* ── 404 ───────────────────────────────────────────────────────── */}

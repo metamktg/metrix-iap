@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { GitMerge } from "lucide-react";
 import type { MSTMatrixCell } from "@/lib/data/seedTypes";
 
-const SECTION = "MST · 07";
+const SECTION = "MST · 06";
 
 export function CrossmapResultsView() {
   const seed = useMetrixSeed();
@@ -165,7 +165,7 @@ export function CrossmapResultsView() {
               <div className="flex items-center gap-4">
                 <span className="text-[11px] text-muted-foreground/60">Click any row for the tile's granular performance</span>
                 <span className="ml-auto flex items-center gap-4">
-                  <CrossLink to="/app/mst/matrix" label="Open the matrix" />
+                  <CrossLink to="/app/mst/sprints" label="Open the matrix" />
                   <CrossLink to="/app/analysis/library" label="Full IAP library" />
                 </span>
               </div>

@@ -36,7 +36,7 @@ import { IapLibraryView } from "../analysis/IapLibraryView";
 import { AdPerformanceView } from "../analysis/AdPerformanceView";
 import { ConceptMapView } from "../mst/ConceptMapView";
 import { CrossmapResultsView } from "../mst/CrossmapResultsView";
-import { MatrixBuilderView } from "../mst/MatrixBuilderView";
+import { MstSprintsView } from "../mst/MstSprintsView";
 import { CreativeLibraryView } from "../creative/CreativeLibraryView";
 
 const ACCOUNT_KEY = "metrix_active_account_v1";
@@ -192,7 +192,7 @@ describe("MST-specific no-data-in-range state", () => {
   const BEFORE_MST = { start: "2026-04-01", end: "2026-04-05" };
 
   for (const [name, View] of [
-    ["Matrix Builder", MatrixBuilderView],
+    ["Matrix Builder", MstSprintsView],
     ["Creative Library", CreativeLibraryView],
     ["Crossmap Results", CrossmapResultsView],
   ] as [string, React.ComponentType][]) {

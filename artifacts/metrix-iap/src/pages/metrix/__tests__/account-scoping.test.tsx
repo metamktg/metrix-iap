@@ -56,9 +56,12 @@ import { CreativeImportExportView } from "../creative/CreativeImportExportView";
 import { NewReportView } from "../reports/NewReportView";
 import { ReportHistoryView } from "../reports/ReportHistoryView";
 import { ExportsView } from "../reports/ExportsView";
+import { MstCommandCenter } from "../mst/MstCommandCenter";
 import { ConceptMapView } from "../mst/ConceptMapView";
-import { MatrixBuilderView } from "../mst/MatrixBuilderView";
+import { MstSprintsView } from "../mst/MstSprintsView";
 import { CrossmapResultsView } from "../mst/CrossmapResultsView";
+import { MstPerformanceView } from "../mst/MstPerformanceView";
+import { MstDirectionView } from "../mst/MstDirectionView";
 import { AccountSettingsView } from "../settings/AccountSettingsView";
 import { AdAccountOverview } from "../AdAccountOverview";
 
@@ -91,9 +94,12 @@ const GATED_VIEWS: [string, React.ComponentType][] = [
   ["Reports · New Report", NewReportView],
   ["Reports · History", ReportHistoryView],
   ["Reports · Exports", ExportsView],
+  ["MST · Command Center", MstCommandCenter],
   ["MST · Concept Map", ConceptMapView],
-  ["MST · Matrix Builder", MatrixBuilderView],
+  ["MST · Sprints", MstSprintsView],
   ["MST · Crossmap Results", CrossmapResultsView],
+  ["MST · Performance", MstPerformanceView],
+  ["MST · Direction", MstDirectionView],
 ];
 
 // Views that gate themselves (custom no-account / unconfigured handling).

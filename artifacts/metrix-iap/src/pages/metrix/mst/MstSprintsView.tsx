@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { Grid3x3 } from "lucide-react";
 import type { MSTMatrix, MSTMatrixCell } from "@/lib/data/seedTypes";
 
-const SECTION = "MST · 07";
+const SECTION = "MST · 06";
 
 const ROW_COLOR: Record<string, string> = {
   "var(--green)": "border-emerald-400/30 bg-emerald-400/[0.04]",
@@ -85,7 +85,7 @@ export function MatrixGrid({ matrix, onCellClick }: { matrix: MSTMatrix; onCellC
   );
 }
 
-export function MatrixBuilderView() {
+export function MstSprintsView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
@@ -97,7 +97,7 @@ export function MatrixBuilderView() {
   );
 
   return (
-    <ModuleScopeGate section={SECTION} title="Matrix Builder" account={account}>
+    <ModuleScopeGate section={SECTION} title="Sprints" account={account}>
       {() => {
         const acct = account!;
         const mst = getMST(seed, adAccountId);
@@ -105,7 +105,7 @@ export function MatrixBuilderView() {
         if (!mst || mst.status !== "active" || !mst.historical_matrix_4x4) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Matrix Builder" />
+              <ModuleHeader section={SECTION} title="Sprints" />
               <ScopeBanner account={acct} />
               <PendingState title="No matrix available" message={mst?.render_policy ?? "The matrix becomes available once historical data or imports exist."} icon={Grid3x3} />
             </div>
@@ -117,7 +117,7 @@ export function MatrixBuilderView() {
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
             <ModuleHeader
               section={SECTION}
-              title="Matrix Builder"
+              title="Sprints"
               subtitle="The historical 4×4 concept × shared-variable test matrix for this account."
               table="historical_matrix_4x4"
             />
@@ -140,7 +140,7 @@ export function MatrixBuilderView() {
                   <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded border border-primary/40 ring-1 ring-primary/15 inline-block" /> Primary diagonal (↘)</span>
                   <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded border border-teal-400/40 ring-1 ring-teal-400/15 inline-block" /> Counter diagonal (↗)</span>
                   <span className="text-muted-foreground/60">Click any tile for granular performance</span>
-                  <span className="ml-auto"><CrossLink to="/app/mst/crossmap" label="See crossmap results" /></span>
+                  <span className="ml-auto"><CrossLink to="/app/mst/cross-map" label="See crossmap results" /></span>
                 </div>
               </div>
             )}
