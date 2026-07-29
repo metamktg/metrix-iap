@@ -14,6 +14,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export function CreateAccountPage({ onBack }: { onBack: () => void }) {
   const { setUser } = useAuth();
 
+  const [displayName, setDisplayName] = useState("");
   const [email, setEmail]             = useState("");
   const [password, setPassword]       = useState("");
   const [confirm, setConfirm]         = useState("");
@@ -36,6 +37,7 @@ export function CreateAccountPage({ onBack }: { onBack: () => void }) {
       const result = await authRegister({
         email: email.trim(),
         password,
+        ...(displayName.trim() ? { display_name: displayName.trim() } : {}),
       });
       // The API set a session cookie — push the user object into AuthContext
       // so AuthGate immediately shows the authenticated app.
@@ -65,6 +67,32 @@ export function CreateAccountPage({ onBack }: { onBack: () => void }) {
           className="space-y-4"
           data-testid="form-create-account"
         >
+          {/* Display name (optional) */}
+          <div className="space-y-1.5">
+            <label
+              htmlFor="register-display-name"
+              className="block text-[11px] font-semibold uppercase tracking-wider text-white/40"
+            >
+              Display name <span className="normal-case font-normal text-white/25">(optional)</span>
+            </label>
+            <input
+              id="register-display-name"
+              type="text"
+              autoComplete="name"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="e.g. Jane Smith"
+              className="w-full h-10 px-3.5 rounded-lg text-[13px] text-white placeholder:text-white/25 focus:outline-none transition-colors"
+              style={{
+                background: "hsl(222 30% 11%)",
+                border: "1px solid hsl(222 20% 20%)",
+              }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = "hsl(222 100% 54% / 0.5)"; }}
+              onBlur={(e)  => { e.currentTarget.style.borderColor = "hsl(222 20% 20%)"; }}
+              data-testid="input-register-display-name"
+            />
+          </div>
+
           {/* Email */}
           <div className="space-y-1.5">
             <label
