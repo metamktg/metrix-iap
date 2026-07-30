@@ -1727,7 +1727,7 @@ export function LoopCommandChain({
         });
         const model = parseReportModel(result.report.model_json);
         if (model) {
-          await downloadReportExport(result.report.export_format, model);
+          await downloadReportExport(result.report.export_format, model, { workspaceId: managerId });
         }
         setReportGenerating(false);
         setReportDone(true);

@@ -23,21 +23,20 @@ export interface MetricSource {
   linkClicks: number | null;
   linkCtrPct: number | null;
   resultEvents: MetricResultEvent[];
+  /** True when >1 result-event type is present; delivery totals (reach, clicks) are cross-event sums and may over-count. */
+  isMultiEvent: boolean;
 }
 
 /**
- * Reach and Clicks (all) are only available broken down per result-event in
- * the seed's `bottom_line_totals`/`result_totals_by_event` maps — there's no
- * separate account-wide delivery total field. When only one result event
- * exists, its per-event figure IS the account total. When multiple result
- * events exist, the same underlying delivery can be attributed to more than
- * one event key, so summing across events would double-count — report
- * honestly as unavailable (null) rather than fabricate a blended figure.
+ * Reach and Clicks (all) are summed across all result-event rows.
+ * For single-event accounts this is exact. For multi-event accounts Meta's
+ * per-event attribution windows can overlap, so the sum is an upper-bound
+ * estimate — we surface the figure with a caveat sub-label rather than
+ * hiding it entirely as "—".
  */
 function accountLevelDeliveryTotal(events: [string, SeedResultEventTotals][], pick: (e: SeedResultEventTotals) => number): number | null {
   if (events.length === 0) return null;
-  if (events.length === 1) return pick(events[0][1]);
-  return null;
+  return events.reduce((s, [, e]) => s + pick(e), 0);
 }
 
 export function metricSourceFromCampaignSummary(cs: CampaignSummary): MetricSource {
@@ -50,6 +49,7 @@ export function metricSourceFromCampaignSummary(cs: CampaignSummary): MetricSour
     linkClicks: cs.total_link_clicks,
     linkCtrPct: cs.overall_link_ctr_pct,
     resultEvents: events.map(([key, e]) => ({ key, label: eventLabel(key), results: e.results })),
+    isMultiEvent: events.length > 1,
   };
 }
 
@@ -63,6 +63,7 @@ export function metricSourceFromManagerTotals(totals: ManagerBottomLineTotals): 
     linkClicks: totals.link_clicks,
     linkCtrPct: totals.link_ctr_pct,
     resultEvents: events.map(([key, e]) => ({ key, label: eventLabel(key), results: e.results })),
+    isMultiEvent: events.length > 1,
   };
 }
 
@@ -103,12 +104,15 @@ export interface MetricDef {
 export function buildMetricCatalog(source: MetricSource): MetricDef[] {
   const totalResults = source.resultEvents.reduce((n, e) => n + e.results, 0);
   const cpaBlended = source.spend != null && totalResults > 0 ? source.spend / totalResults : null;
+  // For multi-event accounts, delivery totals (reach, clicks) are cross-event
+  // sums that may over-count — flag them with a small caveat sub-label.
+  const deliverySub = source.isMultiEvent ? "est. across events" : undefined;
 
   const catalog: MetricDef[] = [
     { id: "spend", label: "Total spend", value: source.spend, formatted: fmtUSD(source.spend), isResultEvent: false },
     { id: "impressions", label: "Impressions", value: source.impressions, formatted: fmtNum(source.impressions), isResultEvent: false },
-    { id: "reach", label: "Reach", value: source.reach, formatted: fmtNum(source.reach), isResultEvent: false },
-    { id: "clicks_all", label: "Clicks (all)", value: source.clicksAll, formatted: fmtNum(source.clicksAll), isResultEvent: false },
+    { id: "reach", label: "Reach", value: source.reach, formatted: fmtNum(source.reach), isResultEvent: false, ...(deliverySub ? { sub: deliverySub } : {}) },
+    { id: "clicks_all", label: "Clicks (all)", value: source.clicksAll, formatted: fmtNum(source.clicksAll), isResultEvent: false, ...(deliverySub ? { sub: deliverySub } : {}) },
     { id: "link_clicks", label: "Link clicks", value: source.linkClicks, formatted: fmtNum(source.linkClicks), isResultEvent: false },
     { id: "link_ctr", label: "Link CTR", value: source.linkCtrPct, formatted: fmtPct(source.linkCtrPct), isResultEvent: false },
     { id: "cpa_blended", label: "CPA (blended)", value: cpaBlended, formatted: cpaBlended != null ? fmtUSD(cpaBlended) : "—", isResultEvent: false },

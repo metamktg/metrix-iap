@@ -485,6 +485,8 @@ export interface ManualImportResult {
   link_result?: CreativeLinkResult;
   /** Column mapping results for performance CSV uploads (absent for creative_asset uploads). Covers every canonical breakdown and base metric column. */
   mapping_summary?: ColumnMappingSummaryEntry[];
+  /** Warnings from CSV upload-time validation (e.g. the file looks like a conversion-event export rather than a delivery export). The upload is staged — this is informational only. */
+  upload_warnings?: string[] | null;
 }
 
 export type ManualImportKind = typeof ManualImportKind[keyof typeof ManualImportKind];
@@ -1537,6 +1539,23 @@ export interface GeneratedReportsBatchDeleteResult {
   deleted_count: number;
 }
 
+export interface CreateGoogleDocInput {
+  /** @minLength 1 */
+  title: string;
+  /**
+     * JSON-serialized ReportModel snapshot used to populate the Google Doc body.
+     * @minLength 1
+     */
+  model_json: string;
+}
+
+export interface CreateGoogleDocResult {
+  /** Whether a Google account is connected and the doc was created successfully. */
+  connected: boolean;
+  /** Edit URL of the created Google Doc; null when connected=false. */
+  url: string | null;
+}
+
 export type MetaConnectedAccountTokenStatus = typeof MetaConnectedAccountTokenStatus[keyof typeof MetaConnectedAccountTokenStatus];
 
 
@@ -1693,6 +1712,11 @@ limit?: number;
  * @minimum 0
  */
 offset?: number;
+/**
+ * Optional email search filter (case-insensitive substring match). When supplied, only entries whose email contains this string are returned, and total reflects the filtered count.
+ * @maxLength 200
+ */
+q?: string;
 };
 
 export type ListMetaReportRowsParams = {

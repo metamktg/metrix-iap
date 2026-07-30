@@ -152,12 +152,40 @@ async function runSmoke() {
         String(err?.message ?? err),
       );
     });
+
+    await assertCreateAccountFormVisible(PREVIEW_PORT).catch((err) => {
+      fail(
+        "Create Account page render check failed on production build",
+        String(err?.message ?? err),
+      );
+    });
+
+    await assertForgotPasswordFormVisible(PREVIEW_PORT).catch((err) => {
+      fail(
+        "Forgot Password page render check failed on production build",
+        String(err?.message ?? err),
+      );
+    });
+
+    await assertResetPasswordFormVisible(PREVIEW_PORT).catch((err) => {
+      fail(
+        "Reset Password page render check failed on production build",
+        String(err?.message ?? err),
+      );
+    });
+
+    await assertChangePasswordFormVisible(PREVIEW_PORT).catch((err) => {
+      fail(
+        "Change Password page render check failed on production build",
+        String(err?.message ?? err),
+      );
+    });
   } finally {
     previewServer?.kill();
   }
 
   console.log(
-    `\nPASS  Metrix IAP production build succeeded — login form visible in preview`,
+    `\nPASS  Metrix IAP production build succeeded — login, create-account, forgot-password, reset-password, and change-password forms visible in preview`,
   );
   process.exit(0);
 }
@@ -211,6 +239,219 @@ function startPreviewServer(
 }
 
 // ── Playwright login form assertion ──────────────────────────────────────────
+
+// ── Playwright create-account form assertion ──────────────────────────────────
+
+async function assertCreateAccountFormVisible(port: string): Promise<void> {
+  const { chromium } = await import("playwright-core");
+
+  const executablePath = process.env["REPLIT_PLAYWRIGHT_CHROMIUM_EXECUTABLE"];
+  const browser = await chromium.launch({
+    executablePath,
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  });
+
+  try {
+    const ctx = await browser.newContext({
+      viewport: { width: 1280, height: 800 },
+    });
+
+    // Return 401 so the app stays in the pre-login shell (same as login check).
+    await ctx.route("**/api/metrix/auth/me", (route) => {
+      route.fulfill({
+        status: 401,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Unauthorized" }),
+      });
+    });
+
+    const page = await ctx.newPage();
+
+    console.log(
+      `Navigating to http://localhost:${port}/create-account to check create-account form...`,
+    );
+    await page.goto(`http://localhost:${port}/create-account`, {
+      waitUntil: "domcontentloaded",
+    });
+
+    await page
+      .locator('[data-testid="form-create-account"]')
+      .waitFor({ state: "visible", timeout: 20_000 });
+
+    console.log(
+      "  ✓  [data-testid=\"form-create-account\"] is visible in production build",
+    );
+
+    await ctx.close();
+  } finally {
+    await browser.close();
+  }
+}
+
+async function assertForgotPasswordFormVisible(port: string): Promise<void> {
+  const { chromium } = await import("playwright-core");
+
+  const executablePath = process.env["REPLIT_PLAYWRIGHT_CHROMIUM_EXECUTABLE"];
+  const browser = await chromium.launch({
+    executablePath,
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  });
+
+  try {
+    const ctx = await browser.newContext({
+      viewport: { width: 1280, height: 800 },
+    });
+
+    // Return 401 so the app stays in the pre-login shell.
+    await ctx.route("**/api/metrix/auth/me", (route) => {
+      route.fulfill({
+        status: 401,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Unauthorized" }),
+      });
+    });
+
+    const page = await ctx.newPage();
+
+    console.log(
+      `Navigating to http://localhost:${port}/forgot-password to check forgot-password form...`,
+    );
+    await page.goto(`http://localhost:${port}/forgot-password`, {
+      waitUntil: "domcontentloaded",
+    });
+
+    await page
+      .locator('[data-testid="form-forgot-password"]')
+      .waitFor({ state: "visible", timeout: 20_000 });
+
+    console.log(
+      "  ✓  [data-testid=\"form-forgot-password\"] is visible in production build",
+    );
+
+    await ctx.close();
+  } finally {
+    await browser.close();
+  }
+}
+
+async function assertResetPasswordFormVisible(port: string): Promise<void> {
+  const { chromium } = await import("playwright-core");
+
+  const executablePath = process.env["REPLIT_PLAYWRIGHT_CHROMIUM_EXECUTABLE"];
+  const browser = await chromium.launch({
+    executablePath,
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  });
+
+  try {
+    const ctx = await browser.newContext({
+      viewport: { width: 1280, height: 800 },
+    });
+
+    // The reset-password page is shown regardless of auth state. Intercept
+    // auth/me so the app settles immediately without a real API server.
+    await ctx.route("**/api/metrix/auth/me", (route) => {
+      route.fulfill({
+        status: 401,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Unauthorized" }),
+      });
+    });
+
+    // Intercept the reset-password API call so the form stays in "idle" state
+    // rather than firing a real network request with the fake token.
+    await ctx.route("**/api/metrix/auth/reset-password", (route) => {
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true }),
+      });
+    });
+
+    const page = await ctx.newPage();
+
+    // Pass a fake token so the page renders the form rather than the
+    // "invalid or expired link" message.
+    console.log(
+      `Navigating to http://localhost:${port}/reset-password?token=smoke-test-token to check reset-password form...`,
+    );
+    await page.goto(
+      `http://localhost:${port}/reset-password?token=smoke-test-token`,
+      { waitUntil: "domcontentloaded" },
+    );
+
+    await page
+      .locator('[data-testid="form-reset-password"]')
+      .waitFor({ state: "visible", timeout: 20_000 });
+
+    console.log(
+      "  ✓  [data-testid=\"form-reset-password\"] is visible in production build",
+    );
+
+    await ctx.close();
+  } finally {
+    await browser.close();
+  }
+}
+
+async function assertChangePasswordFormVisible(port: string): Promise<void> {
+  const { chromium } = await import("playwright-core");
+
+  const executablePath = process.env["REPLIT_PLAYWRIGHT_CHROMIUM_EXECUTABLE"];
+  const browser = await chromium.launch({
+    executablePath,
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  });
+
+  try {
+    const ctx = await browser.newContext({
+      viewport: { width: 1280, height: 800 },
+    });
+
+    // Return a logged-in user with must_change_password: true so the app
+    // renders ChangePasswordPage instead of the login form.
+    // The API contract wraps the user under { user: { ... } }.
+    await ctx.route("**/api/metrix/auth/me", (route) => {
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          user: {
+            id: "smoke-user-id",
+            email: "smoke@example.com",
+            must_change_password: true,
+            role: "member",
+          },
+        }),
+      });
+    });
+
+    const page = await ctx.newPage();
+
+    console.log(
+      `Navigating to http://localhost:${port}/ to check change-password form...`,
+    );
+    await page.goto(`http://localhost:${port}/`, {
+      waitUntil: "domcontentloaded",
+    });
+
+    await page
+      .locator('[data-testid="form-change-password"]')
+      .waitFor({ state: "visible", timeout: 20_000 });
+
+    console.log(
+      "  ✓  [data-testid=\"form-change-password\"] is visible in production build",
+    );
+
+    await ctx.close();
+  } finally {
+    await browser.close();
+  }
+}
 
 async function assertLoginFormVisible(port: string): Promise<void> {
   // playwright-core is available in the Replit environment via the env var.

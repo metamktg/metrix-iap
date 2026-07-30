@@ -94,7 +94,8 @@ export const StageManualImportResponse = zod.object({
   "method": zod.string().describe('Human-readable label describing how the column was resolved.'),
   "tier": zod.enum(['exact', 'resolved', 'inferred', 'missing']).describe('Resolution tier: exact (verbatim), resolved (alias\/slug\/case), inferred (Jaccard ≥0.5), or missing (not found).'),
   "is_required": zod.boolean().describe('True when this column is listed in the spec\'s requiredBreakdownColumns for this CSV class. A missing required column will cause the analysis run to produce incomplete or failed results — not just reduced confidence.')
-}).describe('Per-canonical column mapping result included in the upload staging response. Covers every breakdown and base metric column so the client can render a full column-mapping report.')).optional().describe('Column mapping results for performance CSV uploads (absent for creative_asset uploads). Covers every canonical breakdown and base metric column.')
+}).describe('Per-canonical column mapping result included in the upload staging response. Covers every breakdown and base metric column so the client can render a full column-mapping report.')).optional().describe('Column mapping results for performance CSV uploads (absent for creative_asset uploads). Covers every canonical breakdown and base metric column.'),
+  "upload_warnings": zod.array(zod.string()).nullish().describe('Warnings from CSV upload-time validation (e.g. the file looks like a conversion-event export rather than a delivery export). The upload is staged — this is informational only.')
 })
 
 
@@ -793,11 +794,14 @@ export const listAgentWaitlistQueryLimitMax = 200;
 export const listAgentWaitlistQueryOffsetDefault = 0;
 export const listAgentWaitlistQueryOffsetMin = 0;
 
+export const listAgentWaitlistQueryQMax = 200;
+
 
 
 export const ListAgentWaitlistQueryParams = zod.object({
   "limit": zod.coerce.number().min(1).max(listAgentWaitlistQueryLimitMax).default(listAgentWaitlistQueryLimitDefault).describe('Maximum number of entries to return (default 50, max 200).'),
-  "offset": zod.coerce.number().min(listAgentWaitlistQueryOffsetMin).default(listAgentWaitlistQueryOffsetDefault).describe('Number of entries to skip from the newest entry (default 0).')
+  "offset": zod.coerce.number().min(listAgentWaitlistQueryOffsetMin).default(listAgentWaitlistQueryOffsetDefault).describe('Number of entries to skip from the newest entry (default 0).'),
+  "q": zod.coerce.string().max(listAgentWaitlistQueryQMax).optional().describe('Optional email search filter (case-insensitive substring match). When supplied, only entries whose email contains this string are returned, and total reflects the filtered count.')
 })
 
 export const ListAgentWaitlistResponse = zod.object({
@@ -1812,6 +1816,32 @@ export const CreateWorkspaceReportResponse = zod.object({
   "model_json": zod.string(),
   "generated_at": zod.string()
 })
+})
+
+
+/**
+ * Creates a new Google Doc in the connected Google account's Drive and returns its edit URL. Returns connected=false when no Google Docs account is linked to the Replit workspace. Requires a logged-in session with access to the workspace.
+ * @summary Create a Google Doc from a report model
+ */
+
+
+
+export const CreateGoogleDocReportParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.')
+})
+
+
+
+
+
+export const CreateGoogleDocReportBody = zod.object({
+  "title": zod.string().min(1),
+  "model_json": zod.string().min(1).describe('JSON-serialized ReportModel snapshot used to populate the Google Doc body.')
+})
+
+export const CreateGoogleDocReportResponse = zod.object({
+  "connected": zod.boolean().describe('Whether a Google account is connected and the doc was created successfully.'),
+  "url": zod.string().nullable().describe('Edit URL of the created Google Doc; null when connected=false.')
 })
 
 

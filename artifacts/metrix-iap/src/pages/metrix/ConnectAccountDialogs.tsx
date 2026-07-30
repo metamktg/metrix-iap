@@ -509,6 +509,7 @@ function CsvSlotUpload({
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploadPct, setUploadPct] = useState<number | null>(null);
+  const [uploadWarnings, setUploadWarnings] = useState<string[] | null>(null);
   const [mappingSummary, setMappingSummary] = useState<ColumnMappingSummaryEntry[] | null>(
     staged?.mapping_summary && staged.mapping_summary.length > 0 ? staged.mapping_summary : null
   );
@@ -531,6 +532,7 @@ function CsvSlotUpload({
    *  from the onChange handler before React state for `file` has settled. */
   const handleStage = async (fileToStage: File) => {
     setError(null);
+    setUploadWarnings(null);
     // Capture the previous mapping summary before clearing so we can diff
     // against it once the new file's summary arrives (re-upload scenario).
     if (mappingSummary && mappingSummary.length > 0) {
@@ -557,6 +559,9 @@ function CsvSlotUpload({
       const newSummary = result.mapping_summary ?? [];
       if (newSummary.length > 0) {
         setMappingSummary(newSummary);
+      }
+      if (result.upload_warnings && result.upload_warnings.length > 0) {
+        setUploadWarnings(result.upload_warnings);
       }
       // Diff against the previous file's summary if this is a re-upload.
       const prev = prevMappingSummaryRef.current;
@@ -605,6 +610,7 @@ function CsvSlotUpload({
     }
     setMappingSummary(null);
     setMappingDiff(null);
+    setUploadWarnings(null);
     await deleteMutation.mutateAsync({ accountId, importId: staged.id });
     onRemoved();
   };
@@ -697,6 +703,29 @@ function CsvSlotUpload({
       {mappingDiff && <CsvMappingDiffCallout diff={mappingDiff} />}
 
       {mappingSummary && <CsvMappingPanel summary={mappingSummary} />}
+
+      {uploadWarnings && uploadWarnings.length > 0 && (
+        <div className="rounded-lg border border-amber-400/30 bg-amber-400/[0.06] p-3 space-y-2">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0 space-y-1">
+              <div className="text-caption font-semibold text-amber-200">File staged with a warning — check before running analysis</div>
+              <ul className="space-y-0.5">
+                {uploadWarnings.map((w, i) => (
+                  <li key={i} className="text-label text-amber-100/80 leading-relaxed">{w}</li>
+                ))}
+              </ul>
+            </div>
+            <button
+              onClick={() => setUploadWarnings(null)}
+              className="shrink-0 w-6 h-6 flex items-center justify-center rounded text-amber-300/70 hover:text-amber-200 hover:bg-amber-400/10 transition-colors"
+              aria-label="Dismiss warning"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {error && (
         isMismatch ? (

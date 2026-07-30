@@ -71,6 +71,8 @@ export * from './conceptDescriptorEntry';
 export * from './createAdAccountInput';
 export * from './createAdAccountResult';
 export * from './createAdAccountResultStatus';
+export * from './createGoogleDocInput';
+export * from './createGoogleDocResult';
 export * from './creativeLinkResult';
 export * from './eventPref';
 export * from './generatedReport';

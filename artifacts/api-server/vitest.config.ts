@@ -5,5 +5,10 @@ export default defineConfig({
     environment: "node",
     include: ["src/**/*.test.ts"],
     fileParallelism: false,
+    // Supabase cold-starts and DB round-trips can take 30–120 s in the
+    // validation environment. Set generous global defaults so individual
+    // tests don't need to replicate the timeout on every hook/assertion.
+    hookTimeout: 120_000,
+    testTimeout: 30_000,
   },
 });

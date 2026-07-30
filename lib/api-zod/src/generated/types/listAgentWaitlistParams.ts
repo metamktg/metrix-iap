@@ -18,4 +18,9 @@ limit?: number;
  * @minimum 0
  */
 offset?: number;
+/**
+ * Optional email search filter (case-insensitive substring match). When supplied, only entries whose email contains this string are returned, and total reflects the filtered count.
+ * @maxLength 200
+ */
+q?: string;
 };

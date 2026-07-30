@@ -87,10 +87,28 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
         return { type: "ad_account", adAccountId: urlId };
       }
       // Unknown account id in the URL — fall back to manager mode.
+      // If adAccounts is empty (seed not yet loaded), a useEffect below
+      // will re-apply the URL param once accounts become available.
       return { type: "manager", adAccountId: null };
     }
     return loadPersisted();
   });
+
+  // Re-apply the ?account= URL param once the seed has loaded and adAccounts
+  // is populated. Without this, a hard load on a URL like
+  // /app/analysis/overview?account=bookster would stay in manager mode because
+  // adAccounts is empty during the first synchronous render (seed is async).
+  useEffect(() => {
+    if (adAccounts.length === 0) return;
+    const urlId = readUrlAccountParam();
+    if (urlId === null) return;
+    if (!adAccounts.some((a) => a.id === urlId)) return;
+    setPersisted((prev) => {
+      if (prev.type === "ad_account" && prev.adAccountId === urlId) return prev;
+      return { type: "ad_account", adAccountId: urlId };
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adAccounts]);
 
   // Persist the selection and keep the URL's ?account= param in sync so the
   // current view stays shareable/bookmarkable across in-app navigation.

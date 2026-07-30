@@ -122,7 +122,7 @@ function CreativeVisualInner({ data, className }: { data: CreativeCardData; clas
   const [loaded, setLoaded] = useState(false);
   const loading = !broken && !loaded;
 
-  if (data.assetUrl) {
+  if (data.assetUrl && !broken) {
     if (isVideoAsset(data.assetUrl, data.assetFilename)) {
       return (
         <video

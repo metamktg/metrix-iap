@@ -130,74 +130,77 @@ export function MetricHoverPopover({ metric, cellRows, onDiagnose, children }: M
       </HoverCardTrigger>
 
       <HoverCardContent
-        className="w-[300px] p-0 bg-popover/95 backdrop-blur-sm border-border/60 shadow-xl overflow-hidden"
+        className="w-[300px] p-0 bg-[hsl(var(--surface-raised))] border border-[hsl(var(--border-default))] shadow-2xl overflow-hidden rounded-xl"
         side="bottom"
         align="start"
         sideOffset={6}
       >
+        {/* Accent top stripe */}
+        <div className="h-[2px] w-full bg-gradient-to-r from-interactive/80 via-interactive/40 to-transparent" />
+
         {/* Header */}
-        <div className="px-3 pt-3 pb-2 border-b border-border/40">
+        <div className="px-3 pt-2.5 pb-2.5 border-b border-[hsl(var(--border-subtle))]">
           <div
-            className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/60 mb-0.5"
+            className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/70 mb-1"
             data-testid="metric-popover-header-label"
           >
             {metric.label}
           </div>
-          <div className="text-stat metric-num leading-none">{metric.formatted}</div>
+          <div className="text-stat metric-num leading-none text-foreground">{metric.formatted}</div>
           {metric.sub && (
-            <div className="text-[10px] text-muted-foreground/60 mt-0.5 truncate">{metric.sub}</div>
+            <div className="text-[9px] font-mono text-muted-foreground/50 mt-1 truncate tracking-wide">{metric.sub}</div>
           )}
         </div>
 
         {/* Chart or stat fallback */}
-        <div className="px-3 py-2.5">
+        <div className="px-3 py-3">
           {hasChart ? (
             <>
-              <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50 mb-1.5">
+              <div className="text-[9px] font-mono uppercase tracking-widest text-interactive/70 mb-2">
                 Top concepts
               </div>
               <ChartContainer
                 config={chartConfig}
-                className="aspect-auto h-[130px] w-full"
+                className="aspect-auto h-[135px] w-full"
               >
                 <BarChart
                   layout="vertical"
                   data={chartData}
-                  margin={{ top: 0, right: 40, bottom: 0, left: 0 }}
-                  barSize={10}
+                  margin={{ top: 0, right: 44, bottom: 0, left: 0 }}
+                  barSize={11}
                 >
                   <XAxis type="number" hide />
                   <YAxis
                     type="category"
                     dataKey="name"
-                    width={100}
-                    tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))", fontFamily: "inherit" }}
+                    width={102}
+                    tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))", fontFamily: "inherit", opacity: 0.9 }}
                     tickLine={false}
                     axisLine={false}
                   />
                   {refValue != null && (
                     <ReferenceLine
                       x={refValue}
-                      stroke="hsl(var(--muted-foreground))"
+                      stroke="hsl(var(--interactive))"
                       strokeDasharray="3 3"
-                      strokeOpacity={0.5}
+                      strokeOpacity={0.35}
                       label={{
                         value: "avg",
                         position: "insideTopRight",
                         fontSize: 8,
-                        fill: "hsl(var(--muted-foreground))",
-                        opacity: 0.6,
+                        fill: "hsl(var(--interactive))",
+                        opacity: 0.55,
                       }}
                     />
                   )}
-                  <Bar dataKey="value" radius={[0, 2, 2, 0]}>
+                  <Bar dataKey="value" radius={[0, 3, 3, 0]}>
                     {chartData.map((_, i) => (
-                      <RechartsCell key={i} fill={barColor} fillOpacity={1 - i * 0.12} />
+                      <RechartsCell key={i} fill={barColor} fillOpacity={0.95 - i * 0.1} />
                     ))}
                     <LabelList
                       dataKey="display"
                       position="right"
-                      style={{ fontSize: 9, fill: "hsl(var(--foreground))", opacity: 0.8, fontFamily: "inherit" }}
+                      style={{ fontSize: 9, fill: "hsl(var(--foreground))", opacity: 0.9, fontFamily: "inherit", fontWeight: 500 }}
                     />
                   </Bar>
                 </BarChart>
@@ -205,7 +208,7 @@ export function MetricHoverPopover({ metric, cellRows, onDiagnose, children }: M
             </>
           ) : (
             <div className="py-2 space-y-1">
-              <div className="text-[10px] text-muted-foreground/60 leading-relaxed">
+              <div className="text-[10px] text-muted-foreground/65 leading-relaxed">
                 {concepts.length === 0
                   ? "No concept rows available for this metric in the current import."
                   : "Only one concept found — full breakdown available in the diagnostic."}
@@ -218,7 +221,7 @@ export function MetricHoverPopover({ metric, cellRows, onDiagnose, children }: M
         </div>
 
         {/* Footer */}
-        <div className="px-3 pb-3 border-t border-border/30 pt-2">
+        <div className="px-3 pb-3 border-t border-[hsl(var(--border-subtle))] pt-2">
           <button
             onClick={onDiagnose}
             className="inline-flex items-center gap-1 text-[10px] font-semibold text-interactive hover:text-interactive/80 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"

@@ -986,6 +986,7 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
       tier: "exact" | "resolved" | "inferred" | "missing";
       is_required: boolean;
     }> | undefined;
+    let csvUploadWarnings: string[] | undefined;
     if (csvClass) {
       try {
         const text = content.toString("utf8");
@@ -1004,6 +1005,9 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
           tier: e.tier,
           is_required: e.isRequired,
         }));
+        if (parseResult.warnings.length > 0) {
+          csvUploadWarnings = parseResult.warnings;
+        }
       } catch (err) {
         if (err instanceof IapCsvFormatError) {
           res.status(422).json({ message: err.message });
@@ -1064,6 +1068,7 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
         size_bytes: content.length,
         note: "File staged for the analysis pipeline. Performance data appears only after an analysis run processes it — nothing is parsed or fabricated at upload time.",
         ...(csvMappingSummary ? { mapping_summary: csvMappingSummary } : {}),
+        ...(csvUploadWarnings ? { upload_warnings: csvUploadWarnings } : {}),
         ...(linkResult
           ? { link_result: { matched: linkResult.matched, unmatched: linkResult.unmatched } }
           : {}),
@@ -1553,7 +1558,11 @@ router.get("/metrix/agent-waitlist", requireAdmin, async (req, res) => {
     res.status(400).json({ message: "Invalid limit/offset query parameters." });
     return;
   }
-  const { limit, offset } = parsedQuery.data;
+  const { limit, offset, q } = parsedQuery.data;
+
+  const searchFilter = q && q.trim()
+    ? sql`${agentWaitlistTable.email} ILIKE ${"%" + q.trim().replace(/%/g, "\\%").replace(/_/g, "\\_") + "%"} ESCAPE '\\'`
+    : undefined;
 
   const [rows, [{ total }]] = await Promise.all([
     db
@@ -1565,10 +1574,11 @@ router.get("/metrix/agent-waitlist", requireAdmin, async (req, res) => {
         createdAt: agentWaitlistTable.createdAt,
       })
       .from(agentWaitlistTable)
+      .where(searchFilter)
       .orderBy(desc(agentWaitlistTable.createdAt), desc(agentWaitlistTable.id))
       .limit(limit)
       .offset(offset),
-    db.select({ total: count() }).from(agentWaitlistTable),
+    db.select({ total: count() }).from(agentWaitlistTable).where(searchFilter),
   ]);
 
   const data = ListAgentWaitlistResponse.parse({
@@ -2856,6 +2866,158 @@ router.post("/metrix/workspaces/:workspaceId/reports", requireAuth, requireWorks
     CreateWorkspaceReportResponse.parse({ status: "created", report: reportRowToApi(row) }),
   );
 });
+
+// ─── Google Docs export ───────────────────────────────────────────────
+// Creates a real Google Doc in the connected Google account's Drive and
+// returns its edit URL. Returns { connected: false } when the Google Docs
+// connector is not configured or the token has expired.
+
+type GdocModelLike = {
+  docTitle?: string;
+  accountName?: string;
+  platform?: string;
+  windowLabel?: string | null;
+  footerNote?: string;
+  sections?: Array<{
+    title?: string;
+    blocks?: Array<{
+      kind?: string;
+      text?: string;
+      items?: Array<{ label?: string; value?: string }>;
+      headers?: string[];
+      rows?: string[][];
+      caption?: string;
+      title?: string;
+      data?: Array<{ label?: string; value?: number }>;
+    }>;
+  }>;
+};
+
+function buildGoogleDocContent(model: GdocModelLike): {
+  text: string;
+  styleRequests: object[];
+} {
+  let text = "";
+  const styleRequests: object[] = [];
+
+  function addHeading(level: "HEADING_1" | "HEADING_2", headingText: string): void {
+    const start = 1 + text.length;
+    text += headingText + "\n";
+    const end = 1 + text.length;
+    styleRequests.push({
+      updateParagraphStyle: {
+        range: { startIndex: start, endIndex: end },
+        paragraphStyle: { namedStyleType: level },
+        fields: "namedStyleType",
+      },
+    });
+  }
+
+  if (model.docTitle) addHeading("HEADING_1", model.docTitle);
+
+  const meta = [model.accountName, model.platform].filter(Boolean).join(" · ");
+  if (meta) text += meta + "\n";
+  if (model.windowLabel) text += `Report window: ${model.windowLabel}\n`;
+  text += "\n";
+
+  for (const section of model.sections ?? []) {
+    if (section.title) addHeading("HEADING_2", section.title);
+
+    for (const block of section.blocks ?? []) {
+      if (block.kind === "text" && block.text) {
+        text += block.text + "\n\n";
+      } else if (block.kind === "stats" && block.items?.length) {
+        for (const item of block.items) {
+          text += `${item.label ?? ""}: ${item.value ?? ""}\n`;
+        }
+        text += "\n";
+      } else if (block.kind === "table") {
+        if (block.caption) text += block.caption + "\n";
+        if (block.headers?.length) text += block.headers.join("\t") + "\n";
+        for (const row of block.rows ?? []) {
+          text += row.join("\t") + "\n";
+        }
+        text += "\n";
+      } else if (block.kind === "chart" && block.title) {
+        text += block.title + ":\n";
+        for (const d of block.data ?? []) {
+          text += `  ${d.label ?? ""}: ${d.value != null ? d.value.toLocaleString("en-US") : ""}\n`;
+        }
+        text += "\n";
+      }
+    }
+  }
+
+  if (model.footerNote) {
+    text += "\n" + model.footerNote + "\n";
+  }
+
+  return { text, styleRequests };
+}
+
+router.post(
+  "/metrix/workspaces/:workspaceId/reports/google-doc",
+  requireAuth,
+  requireWorkspaceAccess,
+  async (req, res) => {
+    const { title, model_json } = req.body as { title?: unknown; model_json?: unknown };
+    if (!title || typeof title !== "string" || !model_json || typeof model_json !== "string") {
+      res.status(400).json({ message: "title and model_json are required." });
+      return;
+    }
+
+    let model: GdocModelLike;
+    try {
+      model = JSON.parse(model_json) as GdocModelLike;
+    } catch {
+      res.status(400).json({ message: "model_json is not valid JSON." });
+      return;
+    }
+
+    try {
+      const { ReplitConnectors } = await import("@replit/connectors-sdk");
+      const connectors = new ReplitConnectors();
+
+      // Step 1: Create a blank Google Doc with the report title
+      const createResp = await connectors.proxy("google-docs", "/v1/documents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+
+      if (!createResp.ok) {
+        res.json({ connected: false, url: null });
+        return;
+      }
+
+      const doc = (await createResp.json()) as { documentId?: string };
+      const documentId = doc.documentId;
+      if (!documentId) {
+        res.json({ connected: false, url: null });
+        return;
+      }
+
+      // Step 2: Populate the doc with report content
+      const { text, styleRequests } = buildGoogleDocContent(model);
+      if (text.trim().length > 0) {
+        const requests: object[] = [
+          { insertText: { location: { index: 1 }, text } },
+          ...styleRequests,
+        ];
+        await connectors.proxy("google-docs", `/v1/documents/${documentId}:batchUpdate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ requests }),
+        });
+      }
+
+      const url = `https://docs.google.com/document/d/${documentId}/edit`;
+      res.json({ connected: true, url });
+    } catch {
+      res.json({ connected: false, url: null });
+    }
+  },
+);
 
 router.delete(
   "/metrix/workspaces/:workspaceId/reports/:reportId",

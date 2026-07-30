@@ -34,7 +34,7 @@ vi.mock("@/contexts/MetrixDataContext", () => ({
 // model builder so the snapshot content under test is the real thing.
 vi.mock("@/lib/reportExport", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/reportExport")>();
-  return { ...actual, downloadReportExport: vi.fn().mockResolvedValue(undefined) };
+  return { ...actual, downloadReportExport: vi.fn().mockResolvedValue({ kind: "downloaded" }) };
 });
 
 const toastMock = vi.hoisted(() => vi.fn());

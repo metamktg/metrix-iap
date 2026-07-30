@@ -245,27 +245,65 @@ function buildSectionBlocks(sectionTitle: string, seed: MetrixSeed, adAccountId:
 
   if (t.includes("variable performance")) {
     if (!analysis?.v3_variable_performance?.length) return [];
-    return [variableRows(analysis.v3_variable_performance)];
+    const blocks: ReportBlock[] = [];
+
+    // CPA by variable family — aggregate spend and results per family, then derive CPA.
+    const familyMap = new Map<string, { spend: number; results: number }>();
+    for (const r of analysis.v3_variable_performance) {
+      const entry = familyMap.get(r.variable_family) ?? { spend: 0, results: 0 };
+      entry.spend += r["Amount spent (USD)"] ?? 0;
+      entry.results += r.Results ?? 0;
+      familyMap.set(r.variable_family, entry);
+    }
+    const familyCpa = [...familyMap.entries()]
+      .map(([family, { spend, results }]) => ({
+        label: family,
+        value: results > 0 ? spend / results : 0,
+      }))
+      .filter((d) => d.value > 0)
+      .sort((a, b) => a.value - b.value) // ascending: cheapest CPA first
+      .slice(0, 8);
+    if (familyCpa.length > 1) {
+      blocks.push({ kind: "chart", chartType: "bar", title: "CPA by variable family", unit: "usd", data: familyCpa });
+    }
+
+    blocks.push(variableRows(analysis.v3_variable_performance));
+    return blocks;
   }
 
   if (t.includes("demographic")) {
     const rows = analysis?.demographic_registration_signal ?? [];
     if (rows.length === 0) return [];
     const sorted = [...rows].sort((a, b) => b["Amount spent (USD)"] - a["Amount spent (USD)"]).slice(0, 12);
-    return [
-      {
-        kind: "table",
-        headers: ["Age", "Gender", "Spend", "Results", "CPA", "Link CTR"],
-        rows: sorted.map((r) => [
-          r.Age,
-          r.Gender,
-          usd(r["Amount spent (USD)"]),
-          num(r.Results),
-          r.CPA_result == null ? "—" : usd(r.CPA_result),
-          pct(r.CTR_link_pct),
-        ]),
-      },
-    ];
+    const blocks: ReportBlock[] = [];
+
+    // Spend by age segment — aggregate spend across genders per age band.
+    const ageMap = new Map<string, number>();
+    for (const r of rows) {
+      ageMap.set(r.Age, (ageMap.get(r.Age) ?? 0) + (r["Amount spent (USD)"] ?? 0));
+    }
+    const spendByAge = [...ageMap.entries()]
+      .map(([label, value]) => ({ label, value }))
+      .filter((d) => d.value > 0)
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 8);
+    if (spendByAge.length > 1) {
+      blocks.push({ kind: "chart", chartType: "bar", title: "Spend by age segment", unit: "usd", data: spendByAge });
+    }
+
+    blocks.push({
+      kind: "table",
+      headers: ["Age", "Gender", "Spend", "Results", "CPA", "Link CTR"],
+      rows: sorted.map((r) => [
+        r.Age,
+        r.Gender,
+        usd(r["Amount spent (USD)"]),
+        num(r.Results),
+        r.CPA_result == null ? "—" : usd(r.CPA_result),
+        pct(r.CTR_link_pct),
+      ]),
+    });
+    return blocks;
   }
 
   if (t.includes("placement")) {
@@ -757,26 +795,70 @@ async function downloadPdf(model: ReportModel, filename: string): Promise<void> 
   doc.save(filename);
 }
 
+export type ExportOutcome =
+  /** A local file was triggered for download (pdf / html / .doc fallback). */
+  | { kind: "downloaded" }
+  /** A real Google Doc was created and opened in a new tab. */
+  | { kind: "google_doc"; url: string }
+  /** Google Docs connector was not connected; fell back to .doc download. */
+  | { kind: "fallback_downloaded" };
 /**
- * Download the report in the requested format.
- * - html → styled .html file
- * - google_doc → .doc (Word-flavored HTML; opens in Word and imports cleanly into Google Docs)
- * - pdf → real PDF generated client-side
+ * Download (or create) the report in the requested format.
+ *
+ * - pdf        → real PDF generated client-side
+ * - html       → styled .html file
+ * - google_doc → when `opts.workspaceId` is provided, creates a real Google Doc
+ *                via the server connector and opens it in a new tab; falls back
+ *                to the Word-compatible .doc download when the connector is not
+ *                connected or no workspaceId is given.
  */
-export async function downloadReportExport(format: ExportFormat | string, model: ReportModel): Promise<void> {
+export async function downloadReportExport(
+  format: ExportFormat | string,
+  model: ReportModel,
+  opts?: { workspaceId?: string },
+): Promise<ExportOutcome> {
   const base = slugify(model.docTitle);
+
   if (format === "pdf") {
     await downloadPdf(model, `${base}.pdf`);
-    return;
+    return { kind: "downloaded" };
   }
-  const html = renderReportHtml(model);
+
   if (format === "google_doc") {
+    // Try to create a real Google Doc via the API server connector
+    if (opts?.workspaceId) {
+      try {
+        const resp = await fetch(
+          `/api/metrix/workspaces/${encodeURIComponent(opts.workspaceId)}/reports/google-doc`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ title: model.docTitle, model_json: serializeReportModel(model) }),
+          },
+        );
+        if (resp.ok) {
+          const data = (await resp.json()) as { connected: boolean; url: string | null };
+          if (data.connected && data.url) {
+            window.open(data.url, "_blank", "noopener,noreferrer");
+            return { kind: "google_doc", url: data.url };
+          }
+        }
+      } catch {
+        // Network error — fall through to .doc fallback below
+      }
+    }
+    // Fallback: Word-compatible .doc download (connector not connected or no context)
+    const html = renderReportHtml(model);
     const wordHtml = html.replace(
       '<html lang="en">',
       '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" lang="en">',
     );
     downloadBlob(new Blob(["\ufeff", wordHtml], { type: "application/msword" }), `${base}.doc`);
-    return;
+    return opts?.workspaceId ? { kind: "fallback_downloaded" } : { kind: "downloaded" };
   }
+
+  const html = renderReportHtml(model);
   downloadBlob(new Blob([html], { type: "text/html;charset=utf-8" }), `${base}.html`);
+  return { kind: "downloaded" };
 }

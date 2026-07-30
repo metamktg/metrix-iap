@@ -39,10 +39,12 @@ export function NewReportView() {
   const [mode, setMode] = useState<Mode>("internal");
   const [exporting, setExporting] = useState<string | null>(null);
   const [exported, setExported] = useState<string | null>(null);
+  const [exportedGoogleDocUrl, setExportedGoogleDocUrl] = useState<string | null>(null);
   // Section selection: all template sections are included by default;
   // unchecking removes them from the generated document only.
   const [excludedSections, setExcludedSections] = useState<Set<string>>(new Set());
   const [generatedOk, setGeneratedOk] = useState(false);
+  const [generatedGoogleDocUrl, setGeneratedGoogleDocUrl] = useState<string | null>(null);
   // Per-report format override: null = follow the workspace default from
   // Report Settings. Choosing here never changes the saved default.
   const [formatOverride, setFormatOverride] = useState<string | null>(null);
@@ -70,14 +72,30 @@ export function NewReportView() {
           queryKey: getListWorkspaceReportsQueryKey(manager.id),
         });
         setGeneratedOk(true);
+        setGeneratedGoogleDocUrl(null);
         const model = parseReportModel(result.report.model_json);
         if (model) {
-          await downloadReportExport(result.report.export_format, model);
-          toast({
-            title: "Report generated",
-            description: `"${result.report.title}" was saved to Report History and downloaded as ${FORMAT_LABEL[result.report.export_format] ?? result.report.export_format}.`,
-            duration: 4000,
+          const outcome = await downloadReportExport(result.report.export_format, model, {
+            workspaceId: manager.id,
           });
+          if (outcome.kind === "google_doc") {
+            setGeneratedGoogleDocUrl(outcome.url);
+            toast({
+              title: "Report generated",
+              description: `"${result.report.title}" was saved to Report History and opened as a Google Doc.`,
+              duration: 4000,
+            });
+          } else {
+            const label =
+              outcome.kind === "fallback_downloaded"
+                ? `${FORMAT_LABEL["google_doc"]} (downloaded as .doc — Google not connected)`
+                : (FORMAT_LABEL[result.report.export_format] ?? result.report.export_format);
+            toast({
+              title: "Report generated",
+              description: `"${result.report.title}" was saved to Report History and downloaded as ${label}.`,
+              duration: 4000,
+            });
+          }
         } else {
           toast({
             variant: "destructive",
@@ -159,9 +177,13 @@ export function NewReportView() {
     if (!model) return;
     setExporting(format);
     setExported(null);
+    setExportedGoogleDocUrl(null);
     try {
-      await downloadReportExport(format, model);
+      const outcome = await downloadReportExport(format, model, { workspaceId: manager.id });
       setExported(format);
+      if (outcome.kind === "google_doc") {
+        setExportedGoogleDocUrl(outcome.url);
+      }
     } finally {
       setExporting(null);
     }
@@ -379,7 +401,9 @@ export function NewReportView() {
                             ))}
                           </div>
                           <span className="text-label text-muted-foreground/70">
-                            Saves the composed document to Report History and downloads it as {FORMAT_LABEL[chosenFormat] ?? chosenFormat}.
+                            {chosenFormat === "google_doc"
+                              ? "Saves to Report History and creates a Google Doc in your Drive."
+                              : `Saves the composed document to Report History and downloads it as ${FORMAT_LABEL[chosenFormat] ?? chosenFormat}.`}
                             {chosenFormat !== defaultFormat && " Your default in Report Settings is unchanged."}
                           </span>
                         </div>
@@ -389,10 +413,18 @@ export function NewReportView() {
                       <p className="mt-2 text-label text-amber-400/90">Include at least one section to generate a report.</p>
                     )}
                     {generatedOk && (
-                      <p className="mt-2 text-caption text-emerald-400 flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5" /> Report saved.
-                        <Link to="/app/reports/history" className="underline underline-offset-2 hover:text-emerald-300">View it in Report History</Link>
-                      </p>
+                      <div className="mt-2 flex flex-col gap-1">
+                        <p className="text-caption text-emerald-400 flex items-center gap-1.5">
+                          <Check className="w-3.5 h-3.5" /> Report saved.
+                          <Link to="/app/reports/history" className="underline underline-offset-2 hover:text-emerald-300">View it in Report History</Link>
+                        </p>
+                        {generatedGoogleDocUrl && (
+                          <p className="text-caption text-emerald-400 flex items-center gap-1.5">
+                            <Check className="w-3.5 h-3.5" />
+                            <a href={generatedGoogleDocUrl} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-emerald-300">Open Google Doc</a>
+                          </p>
+                        )}
+                      </div>
                     )}
                   </div>
 
@@ -443,13 +475,23 @@ export function NewReportView() {
                             <FileDown className="w-3.5 h-3.5" />
                           )}
                           {FORMAT_LABEL[f] ?? f}
-                          {exported === f && <span className="text-label font-normal text-emerald-400/80">downloaded</span>}
+                          {exported === f && (
+                            <span className="text-label font-normal text-emerald-400/80">
+                              {f === "google_doc" && exportedGoogleDocUrl ? "opened" : "downloaded"}
+                            </span>
+                          )}
                         </button>
                       ))}
                     </div>
                     <p className="mt-2.5 text-label text-muted-foreground/70">
                       Exports use the current preview mode: {mode === "internal" ? "Internal dashboard (Metrix branding)" : `Client-facing (white-labeled for ${acct.name})`}.
                     </p>
+                    {exportedGoogleDocUrl && (
+                      <p className="mt-2 text-caption text-emerald-400 flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5" />
+                        <a href={exportedGoogleDocUrl} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-emerald-300">Open Google Doc</a>
+                      </p>
+                    )}
                     <div className="mt-3">
                       <CrossLink to="/app/reports/exports" label="Manage export formats & destinations" />
                     </div>

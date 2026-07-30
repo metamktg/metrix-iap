@@ -58,7 +58,7 @@ export function CreativeImportExportView() {
             )}
             <div className="flex items-center gap-4 pt-2">
               <ArrowLeftRight className="w-3.5 h-3.5 text-muted-foreground/60" />
-              <CrossLink to="/app/exports/brief" label="Export finished briefs" />
+              <CrossLink to="/app/creative/builder" label="Build finished briefs" />
             </div>
           </div>
         </div>

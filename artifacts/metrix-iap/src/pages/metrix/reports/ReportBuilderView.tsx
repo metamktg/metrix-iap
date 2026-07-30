@@ -63,10 +63,18 @@ export function ReportBuilderView() {
         setGeneratedOk(true);
         const model = parseReportModel(result.report.model_json);
         if (model) {
-          await downloadReportExport(result.report.export_format, model);
+          const outcome = await downloadReportExport(result.report.export_format, model, {
+            workspaceId: manager.id,
+          });
+          const label =
+            outcome.kind === "google_doc"
+              ? `${FORMAT_LABEL["google_doc"]} (opened in Google Docs)`
+              : outcome.kind === "fallback_downloaded"
+                ? `${FORMAT_LABEL["google_doc"]} (downloaded as .doc — Google not connected)`
+                : (FORMAT_LABEL[result.report.export_format] ?? result.report.export_format);
           toast({
             title: "Report generated",
-            description: `"${result.report.title}" was saved to Report History and downloaded as ${FORMAT_LABEL[result.report.export_format] ?? result.report.export_format}.`,
+            description: `"${result.report.title}" was saved to Report History and ${outcome.kind === "google_doc" ? "opened as a Google Doc" : `downloaded as ${label}`}.`,
           });
         } else {
           toast({
@@ -138,7 +146,7 @@ export function ReportBuilderView() {
     setExporting(format);
     setExported(null);
     try {
-      await downloadReportExport(format, model);
+      await downloadReportExport(format, model, { workspaceId: manager.id });
       setExported(format);
     } finally {
       setExporting(null);
@@ -429,7 +437,7 @@ export function ReportBuilderView() {
                       Exports use the current preview mode: {mode === "internal" ? "Internal dashboard (Metrix branding)" : `Client-facing (white-labeled for ${acct.name})`}.
                     </p>
                     <div className="mt-3">
-                      <CrossLink to="/app/exports/reports" label="Manage export formats & destinations" />
+                      <CrossLink to="/app/reports/history" label="View report history" />
                     </div>
                   </SectionCard>
 

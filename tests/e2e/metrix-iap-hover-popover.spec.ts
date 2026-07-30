@@ -59,9 +59,16 @@
 //      inside VariableDrilldownModal and the SegmentDrilldownModal description
 //      includes "scoped to" — catches regressions where cellIds is silently
 //      dropped to null at VariableDrilldownModal.tsx line 266.
-//
-// API calls are intercepted with page.route() so no live API server is needed.
-// The seed fixture comes from the checked-in test snapshot.
+//   19. MetricDiagnosticModal concept row navigation: clicking the first concept
+//      row button navigates to /app/analysis/library with a focus= query param
+//      matching the cell id — catches typos in the route string or a broken
+//      useLocation/navigate import.
+//   20. DNA family card → VariableDrilldownModal: navigating to
+//      /app/analysis/library?account=bookster, switching to the "Creative DNA"
+//      tab, and clicking the "raw_token" DNA family card (data-testid=
+//      "dna-family-raw_token") opens VariableDrilldownModal
+//      (data-testid="title-variable-drilldown" is visible). Catches regressions
+//      in the family-card onClick handler or in the modal's open-state logic.
 //
 // Run: tsx tests/e2e/metrix-iap-hover-popover.spec.ts
 //   or via: pnpm --filter @workspace/scripts run smoke:metrix-iap-hover-popover
@@ -2616,6 +2623,216 @@ async function main() {
         }
       },
     );
+
+    // ── Test 19: MetricDiagnosticModal concept row navigation ─────────────────
+    // Opens MetricDiagnosticModal for the "Total spend" tile with 1 injected
+    // concept row (cell id "c_alpha"), then clicks that concept row button and
+    // asserts the URL navigates to /app/analysis/library?focus=c_alpha.
+    // Catches typos in the route string or a broken navigate() import.
+    await test(
+      'MetricDiagnosticModal: clicking a concept row navigates to /app/analysis/library?focus=<cellId>',
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        try {
+          // Inject 1 concept row so the modal renders the concept list branch.
+          const modifiedSeed = JSON.parse(SEED_FIXTURE_BODY);
+          const bookster = modifiedSeed.ad_accounts.find(
+            (a: { id: string }) => a.id === ACCOUNT,
+          );
+          bookster.iap.analysis.performance_by_cell = [
+            {
+              cell_id: "c_alpha",
+              "Result type": "Mobile app installs",
+              "Amount spent (USD)": 1200,
+              Reach: 40000,
+              Impressions: 80000,
+              Results: 120,
+              "Clicks (all)": 2000,
+              "Link clicks": 1600,
+              CPA_result: 10.0,
+              CTR_link_pct: 2.0,
+              Result_per_link_click_pct: 7.5,
+              book2_concept_name: "Concept Alpha",
+            },
+          ];
+
+          await page.route("**/api/metrix/auth/me", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify({
+                user: {
+                  id: "test-user",
+                  email: "demo@metrix.app",
+                  role: "admin",
+                  must_change_password: false,
+                  workspace_id: "metrix_manager",
+                },
+              }),
+            }),
+          );
+          await page.route("**/api/metrix/seed", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify(modifiedSeed),
+            }),
+          );
+          await page.route("**/api/metrix/workspaces/*/reports", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify({ reports: [] }),
+            }),
+          );
+
+          await page.goto(`${BASE}/app/account?account=${ACCOUNT}`, {
+            waitUntil: "domcontentloaded",
+          });
+
+          await page
+            .getByText("Account Totals", { exact: false })
+            .waitFor({ state: "visible", timeout: 20_000 });
+
+          // Hover the "Total spend" tile to open its popover.
+          const tileBtn = page
+            .locator("button")
+            .filter({ hasText: "Total spend" })
+            .first();
+          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
+          await tileBtn.hover();
+
+          // Click "Diagnose full breakdown" to open MetricDiagnosticModal.
+          const diagnoseBtn = page.getByText("Diagnose full breakdown");
+          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
+          await diagnoseBtn.click();
+
+          // Wait for MetricDiagnosticModal to appear.
+          const dialogHeader = page.getByText("Metric diagnostic", { exact: false });
+          await dialogHeader.waitFor({ state: "visible", timeout: 8_000 });
+
+          // Wait for the concept list section heading — confirms the modal is
+          // showing the non-empty concept list branch.
+          const conceptHeading = page.getByText(
+            "Top IAP library concepts driving this metric",
+            { exact: false },
+          );
+          await conceptHeading.waitFor({ state: "visible", timeout: 5_000 });
+
+          // Find the first concept row button inside the dialog and click it.
+          const dialog = page.locator('[role="dialog"]');
+          const firstConceptRow = dialog
+            .locator("button")
+            .filter({ hasText: /Concept Alpha/ })
+            .first();
+          await firstConceptRow.waitFor({ state: "visible", timeout: 5_000 });
+          await firstConceptRow.click();
+
+          // After navigation the URL must contain /app/analysis/library and
+          // the focus param must be the expected cell id "c_alpha".
+          await page.waitForURL(
+            (url) =>
+              url.pathname.includes("/app/analysis/library") &&
+              url.searchParams.get("focus") === "c_alpha",
+            { timeout: 8_000 },
+          );
+
+          const finalUrl = page.url();
+          assert(
+            finalUrl.includes("/app/analysis/library"),
+            `After clicking concept row the URL must contain "/app/analysis/library". ` +
+              `Got: "${finalUrl}". Check navigate() call in MetricDiagnosticModal.tsx.`,
+          );
+          assert(
+            finalUrl.includes("focus=c_alpha"),
+            `After clicking concept row the URL must contain "focus=c_alpha". ` +
+              `Got: "${finalUrl}". The cellId may be missing or incorrectly encoded ` +
+              `in the navigate() call at MetricDiagnosticModal.tsx line ~122.`,
+          );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+
+    // ── Test 20: DNA family card opens VariableDrilldownModal ─────────────
+    // The bookster fixture has four v3_variable_performance rows, all with
+    // variable_family="raw_token" and Result type="Mobile app installs".
+    // rollupDnaFamilies() collapses them into a single family card
+    // (data-testid="dna-family-raw_token") whose top variable is "APP"
+    // (lowest CPA at 9.81 in the fixture).  The card's onClick calls
+    // setVariableCode("APP"), which should open VariableDrilldownModal.
+    //
+    // Regression guard: a broken onClick handler or a setVariableCode/
+    // open-state wiring regression would leave the modal unmounted;
+    // title-variable-drilldown would never appear.
+    await test(
+      "DNA family card (Creative DNA tab) opens VariableDrilldownModal when clicked",
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        try {
+          await mockApis(ctx);
+
+          // Navigate directly to the IAP Library for the bookster account.
+          await page.goto(
+            `${BASE}/app/analysis/library?account=${ACCOUNT}`,
+            { waitUntil: "domcontentloaded" },
+          );
+
+          // Wait for the library shell to render past the loading state.
+          await page
+            .getByText("Creative DNA", { exact: false })
+            .first()
+            .waitFor({ state: "visible", timeout: 20_000 });
+
+          // Click the "Creative DNA" tab to activate the variables panel.
+          await page
+            .getByRole("button", { name: /Creative DNA/i })
+            .first()
+            .click();
+
+          // Wait for the DNA family card for the "raw_token" family to appear.
+          const dnaCard = page.locator('[data-testid="dna-family-raw_token"]');
+          await dnaCard.waitFor({ state: "visible", timeout: 8_000 });
+
+          // Confirm the card is interactive (role="button" is set only when
+          // f.top is non-null).
+          const role = await dnaCard.getAttribute("role");
+          assert(
+            role === "button",
+            `dna-family-raw_token must have role="button" when the family has ` +
+              `a top variable (APP), but got role="${role}". ` +
+              `Check that rollupDnaFamilies() returns a non-null top entry for ` +
+              `the raw_token family in the bookster fixture.`,
+          );
+
+          // Click the card — calls setVariableCode(f.top.variableId).
+          await dnaCard.click();
+
+          // VariableDrilldownModal renders a DialogTitle with
+          // data-testid="title-variable-drilldown".
+          const drilldownTitle = page.locator(
+            '[data-testid="title-variable-drilldown"]',
+          );
+          await drilldownTitle.waitFor({ state: "visible", timeout: 8_000 });
+
+          const titleText = (await drilldownTitle.textContent()) ?? "";
+          assert(
+            titleText.trim().length > 0,
+            `VariableDrilldownModal title must be non-empty for variable "APP". ` +
+              `Check readableVariables() / VariableDrilldownModal header rendering.`,
+          );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
   } finally {
     await browser.close();
   }
@@ -2625,6 +2842,7 @@ async function main() {
   );
   if (failed > 0) process.exit(1);
 }
+// (duplicate "theirs" main function removed — test 20 merged above)
 
 main().catch((err) => {
   console.error("\nFatal error running metrix-iap hover-popover e2e tests:", err);

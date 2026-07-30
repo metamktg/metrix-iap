@@ -3895,367 +3895,1088 @@
           }
         },
         "brief_builder": {
-          "provenance": "imported",
-          "source_policy": "Briefs are the real Brief Builder stage output of the IAP loop run, generated from strategy_map ICPs and pillars.",
+          "provenance": "generated",
+          "source_policy": "Briefs were generated in-app by the Metrix engine from this account's stored strategy pillars. Review before production use.",
           "draft_briefs": [
             {
-              "id": "BOOK0-B001",
-              "source_pillar": "PILLAR_TimeEfficiency",
-              "asset_type": "static",
-              "human_direction": "C2 Row B is the account's best CPA/CVR combination ($7.09 CPA, 15.06% CVR) on the largest sample in the account.",
+              "id": "GEN_BRIEF_453e2e93_1",
+              "source_pillar": "GEN_PILLAR_623f9906_1",
+              "asset_type": "video",
+              "human_direction": "C2B produced 74 website registrations at CPA $9.13 on $675.81 spend (CTR 1.50%, 15.98% result-per-link-click); female 45-54 CPA $6.06 was the top demographic slice.",
               "plain_variable_descriptors": [
+                "CN_ProductDemo",
                 "FW_BAB",
-                "TN_Rational",
-                "HK_Benefit",
+                "TN_Relatable",
+                "HK_Story",
+                "ST_MOFU",
                 "HP_Time",
-                "CTA_StartFree"
+                "PR_VisualDemo"
               ],
-              "status": "generated_p1",
-              "book": "BOOK0",
+              "status": "generated_high",
+              "book": null,
               "mode": "matrix",
-              "voice": "Rational/Aspirational bridge",
-              "confidence": "high",
+              "voice": "Relatable, peer-to-peer",
+              "confidence": "high — built on C2B control cell (CPA $9.13, 74 registrations)",
               "full_brief": {
                 "brief_metadata": {
                   "mode": "matrix",
-                  "voice": "Rational/Aspirational bridge",
-                  "brief_id": "BOOK0-B001",
-                  "priority": "P1",
-                  "asset_type": "static",
-                  "confidence": "high",
-                  "strategic_source": "strategic_map.json:PILLAR_TimeEfficiency"
-                },
-                "qa_requirements": [
-                  "Copy-to-variable alignment scored before launch",
-                  "Row/column consistency checked against C2A/C2C/C2D"
-                ],
-                "visual_direction": {
-                  "imagery": "Bookster mascot, feature callouts",
-                  "avoid_list": [
-                    "Long-form dense text",
-                    "Guilt-heavy problem framing without relief"
-                  ],
-                  "typography": "Clean sans-serif, benefit-led headline",
-                  "composition": "Phone UI tilted, cozy reading environment",
-                  "style_guide": "Calm Intelligence visual language",
-                  "color_palette": "Warm neutrals + purple proof accent"
+                  "model": "claude-sonnet-4-6",
+                  "voice": "Relatable, peer-to-peer",
+                  "brief_id": "GEN_BRIEF_453e2e93_1",
+                  "priority": "high",
+                  "asset_type": "video",
+                  "confidence": "high — built on C2B control cell (CPA $9.13, 74 registrations)",
+                  "generated_at": "2026-07-30T06:30:11.371Z",
+                  "strategic_source": "GEN_PILLAR_623f9906_1"
                 },
                 "copy_architecture": {
-                  "cta": "Start Free",
-                  "hook": "Time-scarcity permission opener (HK_Benefit)",
-                  "proof": "Visual product demo of the 15-minute mechanism",
-                  "product_solution": "15-minute structured key-idea reads",
-                  "problem_agitation_or_value_setup": "No time for full books, guilt around not learning"
+                  "cta": "Start Free — no credit card needed",
+                  "hook": "\"I used to feel guilty every time I saw a book I hadn't finished...\"",
+                  "proof": "Screen-record overlay showing the app library with 1,000+ titles; 'I finished 3 books this week' caption.",
+                  "product_solution": "After: open Bookster, get the core ideas from any book in 15 minutes — without reading the whole thing.",
+                  "problem_agitation_or_value_setup": "Show the relatable before: a pile of half-read books, a packed schedule, the quiet guilt of not learning enough."
                 },
                 "testing_framework": {
-                  "hypothesis": "HYP_001",
-                  "matrix_position": "C2B",
-                  "success_criteria": "CPA <= $7.00 and CVR >= 15% at >=30 results / 14-day read window",
-                  "control_reference": "C2B_STC_APP_BOOK0_T2",
-                  "isolated_variable": "Visual execution (new environment/scene, same message architecture)",
-                  "learning_objective": "Confirm whether visual freshness sustains the C2 lane or whether performance is message-bound",
-                  "matrix_naming_convention": "C2B_CN_ProductDemo_FW_BAB_TN_Rational_HK_Benefit_HP_Time_001"
+                  "hypothesis": "A story-format hook (before/after narrative) lifts thumbstop vs. the direct benefit hook used in C2B while preserving the BAB time-saving mechanic.",
+                  "matrix_position": "C1A — before/after story hook",
+                  "success_criteria": "CTR ≥ 1.80%, registration CPA ≤ $9.13, thumbstop rate ≥ 25%",
+                  "control_reference": "C2B_STC_QF_BOOK2_T2",
+                  "isolated_variable": "HK_Story",
+                  "learning_objective": "Does a story hook outperform a direct benefit hook for the time-poor learner avatar within the BAB framework?"
                 },
-                "performance_tracking": {
-                  "timeline": "Launch immediate, evaluate day 14",
-                  "decision_rules": {
-                    "kill_if": "CPA > $12 at >=20 results",
-                    "scale_if": "CPA <= $7.00 sustained",
-                    "iterate_if": "CVR 8-15%"
-                  },
-                  "budget_allocation": "$400 per variation",
-                  "campaign_structure": "BOOK0 Android + iOS MST, C2 column"
-                },
-                "production_checklist": [
-                  "Isolated variable clearly executed",
-                  "All other elements match control",
-                  "Naming convention followed",
-                  "Technical specs met"
-                ],
                 "strategic_foundation": {
+                  "cta_type": "CTA_StartFree",
                   "target_icp": "ICP_BOOK0_C2_TimePoorLearner",
-                  "angle_stack": "FW_BAB + TN_Rational + HK_Benefit + HP_Time + CTA_StartFree",
-                  "concept_code": "CN_ProductDemo",
-                  "data_insight": "C2 Row B is the account's best CPA/CVR combination ($7.09 CPA, 15.06% CVR) on the largest sample in the account.",
-                  "message_pillar": "PILLAR_TimeEfficiency",
-                  "performance_benchmark": "Current best: CPA $7.09, CVR 15.06%. Target: CPA <= $7.00, CVR >= 15%."
+                  "angle_stack": "CN_ProductDemo + FW_BAB + TN_Relatable + HK_Story + ST_MOFU + HP_Time + PR_VisualDemo",
+                  "avatar_basis": "historical",
+                  "concept_code": "CN_ICP_TimePoorLearner",
+                  "data_insight": "C2B produced 74 website registrations at CPA $9.13 on $675.81 spend (CTR 1.50%, 15.98% result-per-link-click); female 45-54 CPA $6.06 was the top demographic slice.",
+                  "design_system": "CN_Design_ProductDemo_UGC",
+                  "message_pillar": "GEN_PILLAR_623f9906_1",
+                  "performance_benchmark": "Beat C2B control CPA $9.13 and CTR 1.50%"
                 },
                 "creative_specifications": {
-                  "format": "Static",
-                  "duration": "N/A",
-                  "placement": "Feed, Reels",
-                  "dimensions": "1080x1350 (Feed) + 1080x1920 (Stories/Reels)",
-                  "safe_zones": "Standard Meta safe zone for Stories/Reels text",
-                  "production_requirements": "App UI mockup, cozy/casual reading environment"
+                  "format": "Video · Feed + Reels",
+                  "placement": "Advantage+ auto-placements; primary signal from Facebook Feed (CPA $52.14) and Facebook Reels (CPA $22.35)",
+                  "dimensions": "1080x1920 (Reels/Stories) + 1080x1350 (Feed)",
+                  "creative_name": "C1A_CN_ICP_TimePoorLearner_CN_Design_ProductDemo_UGC_FW_BAB_TN_Relatable_HK_Story_ST_MOFU_001",
+                  "production_requirements": "15–30 s UGC-style selfie video; on-screen text overlays; no heavy production polish; square + vertical cuts required"
                 }
               },
-              "origin": "imported"
+              "origin": "generated"
             },
             {
-              "id": "BOOK0-B002",
-              "source_pillar": "PILLAR_RationalValue",
+              "id": "GEN_BRIEF_453e2e93_10",
+              "source_pillar": "GEN_PILLAR_623f9906_4",
               "asset_type": "static",
-              "human_direction": "C4C (rational tone) shows 21.8% CVR at the ad level on $155.80 spend - promising but below high-confidence threshold.",
+              "human_direction": "C2F (CN_ValueStack + FW_FAB): 1 checkout at CPA $21.95 and 1 trial at CPA $38.01 on limited spend — commercially oriented value-stack has early positive signal. C5 BYOC CPA $20.55 on $452.07.",
               "plain_variable_descriptors": [
-                "FW_StoryBrand",
+                "CN_ValueStack",
+                "CN_Comparison",
+                "FW_FAB",
+                "TN_Rational",
+                "HK_Shock",
+                "ST_MOFU",
+                "HP_Money",
+                "HP_Time",
+                "PR_DataDriven"
+              ],
+              "status": "generated_medium",
+              "book": null,
+              "mode": "matrix",
+              "voice": "Rational, comparison-driven",
+              "confidence": "validation_required — C5 BYOC needs full funding; C2F value-stack angle produced 1 checkout at CPA $21.95",
+              "full_brief": {
+                "brief_metadata": {
+                  "mode": "matrix",
+                  "model": "claude-sonnet-4-6",
+                  "voice": "Rational, comparison-driven",
+                  "brief_id": "GEN_BRIEF_453e2e93_10",
+                  "priority": "medium",
+                  "asset_type": "static",
+                  "confidence": "validation_required — C5 BYOC needs full funding; C2F value-stack angle produced 1 checkout at CPA $21.95",
+                  "generated_at": "2026-07-30T06:30:11.371Z",
+                  "strategic_source": "GEN_PILLAR_623f9906_4"
+                },
+                "copy_architecture": {
+                  "cta": "Try Free for 7 Days",
+                  "hook": "\"A business book costs $30 and 6 hours. A course costs $500. Bookster costs less than a coffee per week.\"",
+                  "proof": "Price comparison data badge; '1 trial at $38 CPA vs. $500 course' implied value framing; DataDriven badge.",
+                  "product_solution": "Bookster: 1,000+ books, 15 minutes each, less than the cost of one physical book per month.",
+                  "problem_agitation_or_value_setup": "The ROI mismatch: professionals spend heavily on learning resources and consume only a fraction of them."
+                },
+                "testing_framework": {
+                  "hypothesis": "A shock hook anchored to the financial cost of traditional learning (course fees, book costs, time) vs. Bookster's value stack converts the rational BYOC professional to trial more efficiently than a benefit-led hook.",
+                  "matrix_position": "C2C — cost-comparison shock hook (BYOC pro)",
+                  "success_criteria": "CTR ≥ 1.80%, registration CPA ≤ $15.00, onb_initiate_checkout CPA ≤ $25.00",
+                  "control_reference": "C2F_STC_QF_BOOK2_T2 + BOOK0_C5_rollup",
+                  "isolated_variable": "HK_Shock",
+                  "learning_objective": "Does a cost-comparison shock hook unlock deeper funnel action for the BYOC professional vs. a standard benefit frame?"
+                },
+                "strategic_foundation": {
+                  "cta_type": "CTA_TryFree",
+                  "target_icp": "ICP_BOOK0_C5_BYOC_PENDING",
+                  "angle_stack": "CN_ValueStack + CN_Comparison + FW_FAB + TN_Rational + HK_Shock + ST_MOFU + HP_Money + HP_Time + PR_DataDriven",
+                  "avatar_basis": "historical",
+                  "concept_code": "CN_ICP_BYOC_WorkingPro",
+                  "data_insight": "C2F (CN_ValueStack + FW_FAB): 1 checkout at CPA $21.95 and 1 trial at CPA $38.01 on limited spend — commercially oriented value-stack has early positive signal. C5 BYOC CPA $20.55 on $452.07.",
+                  "design_system": "CN_Design_Clean_Rational",
+                  "message_pillar": "GEN_PILLAR_623f9906_4",
+                  "performance_benchmark": "Beat C2F checkout CPA $21.95; beat C5 registration CPA $20.55"
+                },
+                "creative_specifications": {
+                  "format": "Static · Feed",
+                  "placement": "Advantage+ auto-placements",
+                  "dimensions": "1080x1350",
+                  "creative_name": "C2C_CN_ICP_BYOC_WorkingPro_CN_Design_Clean_Rational_FW_FAB_TN_Rational_HK_Shock_ST_MOFU_001",
+                  "production_requirements": "Two-column comparison visual (cost of traditional vs. Bookster); bold data callout; clean minimal design"
+                }
+              },
+              "origin": "generated"
+            },
+            {
+              "id": "GEN_BRIEF_453e2e93_11",
+              "source_pillar": "GEN_PILLAR_623f9906_4",
+              "asset_type": "video",
+              "human_direction": "Male 25-34 CPA $3.09 and male 55-64 CPA $5.73 from C2B overflow; C2F checkout CPA $21.95 — value-stack angle has early commercial signal; no dedicated male creative has been tested.",
+              "plain_variable_descriptors": [
+                "CN_Comparison",
+                "FW_FAB",
+                "TN_Rational",
+                "HK_Shock",
+                "ST_MOFU",
+                "HP_Money",
+                "HP_Time",
+                "PR_DataDriven"
+              ],
+              "status": "generated_medium",
+              "book": null,
+              "mode": "matrix",
+              "voice": "Assertive, ROI-focused",
+              "confidence": "medium — exploratory male efficiency pocket; C2F value-stack has early checkout signal",
+              "full_brief": {
+                "brief_metadata": {
+                  "mode": "matrix",
+                  "model": "claude-sonnet-4-6",
+                  "voice": "Assertive, ROI-focused",
+                  "brief_id": "GEN_BRIEF_453e2e93_11",
+                  "priority": "medium",
+                  "asset_type": "video",
+                  "confidence": "medium — exploratory male efficiency pocket; C2F value-stack has early checkout signal",
+                  "generated_at": "2026-07-30T06:30:11.371Z",
+                  "strategic_source": "GEN_PILLAR_623f9906_4"
+                },
+                "copy_architecture": {
+                  "cta": "Try Free — Reclaim Your Time",
+                  "hook": "\"The average business book takes 8 hours to read. You retain 10%. That's 7 hours and 12 minutes wasted.\"",
+                  "proof": "On-screen data animation: '1,000+ titles · 15 min each · 3 books/week average user.'",
+                  "product_solution": "Bookster: 15 minutes. Core ideas only. 3× the books in 1/10th of the time. Net positive ROI on every session.",
+                  "problem_agitation_or_value_setup": "Hard time-cost calculation: hours × low retention rate = negative ROI on reading as currently practiced."
+                },
+                "testing_framework": {
+                  "hypothesis": "A shock hook anchored to time-ROI comparison (hours per book vs. Bookster's 15-minute model) is the highest-converting entry point for the male efficiency psychographic.",
+                  "matrix_position": "C3C — ROI cost-comparison shock hook (male efficiency)",
+                  "success_criteria": "CTR ≥ 1.80%, registration CPA ≤ $8.00, thumbstop ≥ 25%",
+                  "control_reference": "C2B male demographic spill + C2F_STC_QF_BOOK2_T2",
+                  "isolated_variable": "HK_Shock",
+                  "learning_objective": "Does a rational ROI shock hook outperform a story or benefit hook for the male efficiency pocket in driving registrations?"
+                },
+                "strategic_foundation": {
+                  "cta_type": "CTA_TryFree",
+                  "target_icp": "ICP_BOOK0_MaleEfficiencyPocket",
+                  "angle_stack": "CN_Comparison + FW_FAB + TN_Rational + HK_Shock + ST_MOFU + HP_Money + HP_Time + PR_DataDriven",
+                  "avatar_basis": "historical",
+                  "concept_code": "CN_ICP_MaleEfficiencyPocket",
+                  "data_insight": "Male 25-34 CPA $3.09 and male 55-64 CPA $5.73 from C2B overflow; C2F checkout CPA $21.95 — value-stack angle has early commercial signal; no dedicated male creative has been tested.",
+                  "design_system": "CN_Design_ValueStack_Bold",
+                  "message_pillar": "GEN_PILLAR_623f9906_4",
+                  "performance_benchmark": "Beat C2B male 25-34 overflow CPA $3.09 at intentional scale; target registration CPA ≤ $8.00"
+                },
+                "creative_specifications": {
+                  "format": "Video · Feed + Reels",
+                  "placement": "Advantage+ auto-placements; broad targeting",
+                  "dimensions": "1080x1920 + 1080x1350",
+                  "creative_name": "C3C_CN_ICP_MaleEfficiencyPocket_CN_Design_ValueStack_Bold_FW_FAB_TN_Rational_HK_Shock_ST_MOFU_001",
+                  "production_requirements": "Data-led motion graphic; bold on-screen numbers; 15 s; dark palette; no lifestyle soft imagery"
+                }
+              },
+              "origin": "generated"
+            },
+            {
+              "id": "GEN_BRIEF_453e2e93_12",
+              "source_pillar": "GEN_PILLAR_623f9906_2",
+              "asset_type": "video",
+              "human_direction": "C4E: 14 onb_initiate_checkout at CPA $52.57 on $735.99 spend (CTR 2.54%); BOOK2 C4 concept rollup CPA $395.61 at 0.58% CVR — caution flag that C4E's performance may be execution-specific.",
+              "plain_variable_descriptors": [
+                "CN_Lifestyle",
+                "CN_SocialProof",
+                "FW_AIDA",
+                "TN_Aspirational",
+                "HK_Shock",
+                "ST_TOFU",
+                "HP_Confidence",
+                "PR_SocialProof"
+              ],
+              "status": "generated_high",
+              "book": null,
+              "mode": "matrix",
+              "voice": "Aspiration-coded, social proof-led",
+              "confidence": "high — C4E is account's only proven checkout-depth cell (14 checkouts at CPA $52.57)",
+              "full_brief": {
+                "brief_metadata": {
+                  "mode": "matrix",
+                  "model": "claude-sonnet-4-6",
+                  "voice": "Aspiration-coded, social proof-led",
+                  "brief_id": "GEN_BRIEF_453e2e93_12",
+                  "priority": "high",
+                  "asset_type": "video",
+                  "confidence": "high — C4E is account's only proven checkout-depth cell (14 checkouts at CPA $52.57)",
+                  "generated_at": "2026-07-30T06:30:11.372Z",
+                  "strategic_source": "GEN_PILLAR_623f9906_2"
+                },
+                "copy_architecture": {
+                  "cta": "Start Free — Read What They Read",
+                  "hook": "\"Thousands of people have read the same books as the world's top CEOs — in 15 minutes each.\"",
+                  "proof": "Social proof: '1,000+ books · Thousands of learners' badge; authority book-cover visual wall.",
+                  "product_solution": "Bookster unlocks 1,000+ of those books — the exact titles your heroes reference — condensed to the core ideas.",
+                  "problem_agitation_or_value_setup": "The access gap: the knowledge that shaped the highest performers in the world is no longer locked behind 300-page books."
+                },
+                "testing_framework": {
+                  "hypothesis": "A social-proof shock hook ('thousands of people who read the same books as [authority figure] use Bookster') drives higher CTR and checkout depth for quiz completers than a pure identity narrative.",
+                  "matrix_position": "C4C — social proof shock hook (quiz completer)",
+                  "success_criteria": "CTR ≥ 2.54% (match C4E), onb_initiate_checkout CPA ≤ $52.57",
+                  "control_reference": "C4E_STC_QF_BOOK2_T2",
+                  "isolated_variable": "HK_Shock",
+                  "learning_objective": "Does a social-proof shock hook (mass adoption of aspirational learning) outperform a personal identity narrative for the quiz-completer avatar at checkout depth?"
+                },
+                "strategic_foundation": {
+                  "cta_type": "CTA_StartFree",
+                  "target_icp": "ICP_BOOK2_C2B_QuizCompleter",
+                  "angle_stack": "CN_Lifestyle + CN_SocialProof + FW_AIDA + TN_Aspirational + HK_Shock + ST_TOFU + HP_Confidence + PR_SocialProof",
+                  "avatar_basis": "historical",
+                  "concept_code": "CN_ICP_QuizCompleter",
+                  "data_insight": "C4E: 14 onb_initiate_checkout at CPA $52.57 on $735.99 spend (CTR 2.54%); BOOK2 C4 concept rollup CPA $395.61 at 0.58% CVR — caution flag that C4E's performance may be execution-specific.",
+                  "design_system": "CN_Design_Aspirational_Authority",
+                  "message_pillar": "GEN_PILLAR_623f9906_2",
+                  "performance_benchmark": "Beat C4E checkout CPA $52.57; registration CPA ≤ $10.00"
+                },
+                "creative_specifications": {
+                  "format": "Video · Feed + Reels",
+                  "placement": "Advantage+ auto-placements; Facebook Feed + Reels priority",
+                  "dimensions": "1080x1920 + 1080x1350",
+                  "creative_name": "C4C_CN_ICP_QuizCompleter_CN_Design_Aspirational_Authority_FW_AIDA_TN_Aspirational_HK_Shock_ST_TOFU_001",
+                  "production_requirements": "Authority book-cover montage opening; social proof number animation; 20–25 s; vertical + square cuts"
+                }
+              },
+              "origin": "generated"
+            },
+            {
+              "id": "GEN_BRIEF_453e2e93_13",
+              "source_pillar": "GEN_PILLAR_623f9906_1",
+              "asset_type": "ugc",
+              "human_direction": "C2B: 74 registrations at CPA $9.13, 0 checkouts on $110.92 spend — the registration-to-checkout gap is the primary diagnostic. BOOK0 C2 rollup CPA $7.09 at 15.06% CVR confirms concept strength.",
+              "plain_variable_descriptors": [
+                "CN_UGC",
+                "CN_SocialProof",
+                "FW_BAB",
+                "TN_Relatable",
+                "HK_SocialProof",
+                "ST_BOFU",
+                "HP_Time",
+                "PR_Testimonial"
+              ],
+              "status": "generated_high",
+              "book": null,
+              "mode": "matrix",
+              "voice": "Relatable, conversational",
+              "confidence": "high — C2B is proven registration engine; testing checkout bridge via UGC social proof",
+              "full_brief": {
+                "brief_metadata": {
+                  "mode": "matrix",
+                  "model": "claude-sonnet-4-6",
+                  "voice": "Relatable, conversational",
+                  "brief_id": "GEN_BRIEF_453e2e93_13",
+                  "priority": "high",
+                  "asset_type": "ugc",
+                  "confidence": "high — C2B is proven registration engine; testing checkout bridge via UGC social proof",
+                  "generated_at": "2026-07-30T06:30:11.372Z",
+                  "strategic_source": "GEN_PILLAR_623f9906_1"
+                },
+                "copy_architecture": {
+                  "cta": "Start Free — See Why Everyone's Talking About It",
+                  "hook": "\"I've seen so many people in my feed talking about Bookster — I finally tried it.\"",
+                  "proof": "Creator shares their personal 'books completed this week' stat; community proof: 'thousands of learners' caption.",
+                  "product_solution": "Bookster: the app thousands of time-poor readers are using to actually finish the books on their list — 15 minutes at a time.",
+                  "problem_agitation_or_value_setup": "Social validation: when enough people you trust are using something, the risk of trying it disappears."
+                },
+                "testing_framework": {
+                  "hypothesis": "A UGC testimonial social-proof hook acts as a checkout bridge for registered-but-not-converted users by reducing perceived risk through peer validation.",
+                  "matrix_position": "C1D — UGC social proof checkout bridge",
+                  "success_criteria": "onb_initiate_checkout CPA ≤ $40.00, registration CPA ≤ $9.13, thumbstop ≥ 25%",
+                  "control_reference": "C2B_STC_QF_BOOK2_T2 (0 checkouts on $110.92)",
+                  "isolated_variable": "HK_SocialProof",
+                  "learning_objective": "Does a UGC social-proof hook close the registration-to-checkout gap that the C2B rational product demo could not?"
+                },
+                "strategic_foundation": {
+                  "cta_type": "CTA_StartFree",
+                  "target_icp": "ICP_BOOK0_C2_TimePoorLearner",
+                  "angle_stack": "CN_UGC + CN_SocialProof + FW_BAB + TN_Relatable + HK_SocialProof + ST_BOFU + HP_Time + PR_Testimonial",
+                  "avatar_basis": "historical",
+                  "concept_code": "CN_ICP_TimePoorLearner",
+                  "data_insight": "C2B: 74 registrations at CPA $9.13, 0 checkouts on $110.92 spend — the registration-to-checkout gap is the primary diagnostic. BOOK0 C2 rollup CPA $7.09 at 15.06% CVR confirms concept strength.",
+                  "design_system": "CN_Design_ProductDemo_UGC",
+                  "message_pillar": "GEN_PILLAR_623f9906_1",
+                  "performance_benchmark": "Generate ≥1 onb_initiate_checkout per $100 spend; registration CPA ≤ $9.13"
+                },
+                "creative_specifications": {
+                  "format": "UGC · Feed + Reels",
+                  "placement": "Advantage+ auto-placements; retarget registrants via broad signal",
+                  "dimensions": "1080x1920 + 1080x1350",
+                  "creative_name": "C1D_CN_ICP_TimePoorLearner_CN_Design_ProductDemo_UGC_FW_BAB_TN_Relatable_HK_SocialProof_ST_BOFU_001",
+                  "production_requirements": "Authentic creator testimonial; informal selfie-style; on-screen caption quotes; 20–30 s; no branded production feel"
+                }
+              },
+              "origin": "generated"
+            },
+            {
+              "id": "GEN_BRIEF_453e2e93_14",
+              "source_pillar": "GEN_PILLAR_623f9906_4",
+              "asset_type": "carousel",
+              "human_direction": "C2F: 1 trial at CPA $38.01 and 1 checkout at CPA $21.95; C5 BYOC rollup CPA $20.55 on $452.07 spend. Social proof hook is untested for this avatar.",
+              "plain_variable_descriptors": [
+                "CN_SocialProof",
+                "CN_ValueStack",
+                "FW_FAB",
+                "TN_Rational",
+                "HK_SocialProof",
+                "ST_BOFU",
+                "HP_Money",
+                "PR_Testimonial"
+              ],
+              "status": "generated_medium",
+              "book": null,
+              "mode": "matrix",
+              "voice": "Direct, value-stacking",
+              "confidence": "validation_required — C5 needs full funding; C2F value-stack angle has early trial + checkout signal",
+              "full_brief": {
+                "brief_metadata": {
+                  "mode": "matrix",
+                  "model": "claude-sonnet-4-6",
+                  "voice": "Direct, value-stacking",
+                  "brief_id": "GEN_BRIEF_453e2e93_14",
+                  "priority": "medium",
+                  "asset_type": "carousel",
+                  "confidence": "validation_required — C5 needs full funding; C2F value-stack angle has early trial + checkout signal",
+                  "generated_at": "2026-07-30T06:30:11.372Z",
+                  "strategic_source": "GEN_PILLAR_623f9906_4"
+                },
+                "copy_architecture": {
+                  "cta": "Try Free for 7 Days",
+                  "hook": "\"Thousands of working professionals use Bookster to process more content — without adding more hours.\"",
+                  "proof": "Testimonial pull-quote from a working professional persona; '1,000+ titles' badge.",
+                  "product_solution": "Bookster: your specific professional reading list, distilled to core ideas, 15 minutes per book. FAB: Feature → that's 3 books/week → benefit: you stay ahead without burning out.",
+                  "problem_agitation_or_value_setup": "Peer validation: the BYOC professional's peers are already solving the content-overload problem — this is how."
+                },
+                "testing_framework": {
+                  "hypothesis": "A peer-testimonial social proof hook triggers the BYOC professional's FOMO and reduces checkout hesitation better than a rational value-stack headline alone.",
+                  "matrix_position": "C2D — peer social proof checkout bridge (BYOC pro)",
+                  "success_criteria": "CTR ≥ 1.80%, registration CPA ≤ $15.00, carousel swipe-to-card-3 rate ≥ 35%",
+                  "control_reference": "C2F_STC_QF_BOOK2_T2 + BOOK0_C5_rollup",
+                  "isolated_variable": "HK_SocialProof",
+                  "learning_objective": "Does a social-proof hook convert the BYOC professional more efficiently than a benefit or cost-comparison hook at the checkout stage?"
+                },
+                "strategic_foundation": {
+                  "cta_type": "CTA_TryFree",
+                  "target_icp": "ICP_BOOK0_C5_BYOC_PENDING",
+                  "angle_stack": "CN_SocialProof + CN_ValueStack + FW_FAB + TN_Rational + HK_SocialProof + ST_BOFU + HP_Money + PR_Testimonial",
+                  "avatar_basis": "historical",
+                  "concept_code": "CN_ICP_BYOC_WorkingPro",
+                  "data_insight": "C2F: 1 trial at CPA $38.01 and 1 checkout at CPA $21.95; C5 BYOC rollup CPA $20.55 on $452.07 spend. Social proof hook is untested for this avatar.",
+                  "design_system": "CN_Design_Clean_Rational",
+                  "message_pillar": "GEN_PILLAR_623f9906_4",
+                  "performance_benchmark": "Beat C5 CPA $20.55; beat C2F checkout CPA $21.95"
+                },
+                "creative_specifications": {
+                  "format": "Carousel · Feed",
+                  "placement": "Advantage+ auto-placements; Facebook Feed priority",
+                  "dimensions": "1080x1080 per card (4 cards)",
+                  "creative_name": "C2D_CN_ICP_BYOC_WorkingPro_CN_Design_Clean_Rational_FW_FAB_TN_Rational_HK_SocialProof_ST_BOFU_001",
+                  "production_requirements": "Card 1: social proof stat + peer quote. Cards 2-3: key features (FAB). Card 4: CTA. Clean design, no stock photos."
+                }
+              },
+              "origin": "generated"
+            },
+            {
+              "id": "GEN_BRIEF_453e2e93_15",
+              "source_pillar": "GEN_PILLAR_623f9906_4",
+              "asset_type": "static",
+              "human_direction": "C2F (FW_FAB + TN_Assertive): 1 trial at CPA $38.01 and 1 checkout at CPA $21.95 — assertive rational tone has early commercial signal. Male 55-64 CPA $5.73 and male 25-34 CPA $3.09 remain the lowest CPAs in the account.",
+              "plain_variable_descriptors": [
+                "CN_ValueStack",
+                "FW_FAB",
+                "TN_Assertive",
+                "HK_SocialProof",
+                "ST_BOFU",
+                "HP_Money",
+                "HP_Time",
+                "PR_DataDriven"
+              ],
+              "status": "generated_medium",
+              "book": null,
+              "mode": "matrix",
+              "voice": "Confident, direct",
+              "confidence": "medium — male efficiency pocket overflow only; counter-diagonal isolation of TN_Assertive",
+              "full_brief": {
+                "brief_metadata": {
+                  "mode": "matrix",
+                  "model": "claude-sonnet-4-6",
+                  "voice": "Confident, direct",
+                  "brief_id": "GEN_BRIEF_453e2e93_15",
+                  "priority": "medium",
+                  "asset_type": "static",
+                  "confidence": "medium — male efficiency pocket overflow only; counter-diagonal isolation of TN_Assertive",
+                  "generated_at": "2026-07-30T06:30:11.372Z",
+                  "strategic_source": "GEN_PILLAR_623f9906_4"
+                },
+                "copy_architecture": {
+                  "cta": "Try Free — Join Thousands",
+                  "hook": "\"Thousands of professionals already cover 3 books a week — in 15 minutes each.\"",
+                  "proof": "'1,000+ titles · 3 books/week average · CPA data-backed' — assertive data badge.",
+                  "product_solution": "Bookster: 1,000+ titles. 15 minutes each. Zero wasted hours. Feature: condensed key ideas. Advantage: 3× the throughput. Benefit: stay ahead without the grind.",
+                  "problem_agitation_or_value_setup": "Peer signal: if other efficiency-focused professionals have solved the learning ROI problem with Bookster, the risk of not trying it is higher than the risk of trying it."
+                },
+                "testing_framework": {
+                  "hypothesis": "A social-proof hook anchored to a credible data point ('X professionals use Bookster to cover 3 books/week') drives checkout conversion for the male efficiency pocket better than an emotional or story hook.",
+                  "matrix_position": "C3D — data social proof checkout bridge (male efficiency)",
+                  "success_criteria": "CTR ≥ 1.80%, registration CPA ≤ $8.00, onb_initiate_checkout CPA ≤ $30.00",
+                  "control_reference": "C2B male demographic spill + C2F_STC_QF_BOOK2_T2",
+                  "isolated_variable": "HK_SocialProof",
+                  "learning_objective": "Does a data-anchored social proof hook (not emotional/story) drive checkout depth for the male efficiency pocket?"
+                },
+                "strategic_foundation": {
+                  "cta_type": "CTA_TryFree",
+                  "target_icp": "ICP_BOOK0_MaleEfficiencyPocket",
+                  "angle_stack": "CN_ValueStack + FW_FAB + TN_Assertive + HK_SocialProof + ST_BOFU + HP_Money + HP_Time + PR_DataDriven",
+                  "avatar_basis": "historical",
+                  "concept_code": "CN_ICP_MaleEfficiencyPocket",
+                  "data_insight": "C2F (FW_FAB + TN_Assertive): 1 trial at CPA $38.01 and 1 checkout at CPA $21.95 — assertive rational tone has early commercial signal. Male 55-64 CPA $5.73 and male 25-34 CPA $3.09 remain the lowest CPAs in the account.",
+                  "design_system": "CN_Design_ValueStack_Bold",
+                  "message_pillar": "GEN_PILLAR_623f9906_4",
+                  "performance_benchmark": "Beat overflow male CPA $5.73 at intentional scale; target registration CPA ≤ $8.00"
+                },
+                "creative_specifications": {
+                  "format": "Static · Feed",
+                  "placement": "Advantage+ auto-placements; broad targeting",
+                  "dimensions": "1080x1350",
+                  "creative_name": "C3D_CN_ICP_MaleEfficiencyPocket_CN_Design_ValueStack_Bold_FW_FAB_TN_Assertive_HK_SocialProof_ST_BOFU_001",
+                  "production_requirements": "Bold data headline; social proof number prominent; two-line value-stack supporting copy; dark/strong palette; CTA button clear"
+                }
+              },
+              "origin": "generated"
+            },
+            {
+              "id": "GEN_BRIEF_453e2e93_16",
+              "source_pillar": "GEN_PILLAR_623f9906_2",
+              "asset_type": "ugc",
+              "human_direction": "C4E: 14 onb_initiate_checkout at CPA $52.57 (CTR 2.54%); counter-diagonal shares HK_SocialProof across all 4 avatars — this is the highest-confidence isolation signal for social proof hook effectiveness at checkout.",
+              "plain_variable_descriptors": [
+                "CN_UGC",
+                "CN_Lifestyle",
+                "FW_AIDA",
+                "TN_Aspirational",
+                "HK_SocialProof",
+                "ST_BOFU",
+                "HP_Confidence",
+                "PR_UGC"
+              ],
+              "status": "generated_high",
+              "book": null,
+              "mode": "matrix",
+              "voice": "Warm, community-affirming",
+              "confidence": "high — C4E is checkout-depth control; social proof hook is the counter-diagonal isolation signal",
+              "full_brief": {
+                "brief_metadata": {
+                  "mode": "matrix",
+                  "model": "claude-sonnet-4-6",
+                  "voice": "Warm, community-affirming",
+                  "brief_id": "GEN_BRIEF_453e2e93_16",
+                  "priority": "high",
+                  "asset_type": "ugc",
+                  "confidence": "high — C4E is checkout-depth control; social proof hook is the counter-diagonal isolation signal",
+                  "generated_at": "2026-07-30T06:30:11.372Z",
+                  "strategic_source": "GEN_PILLAR_623f9906_2"
+                },
+                "copy_architecture": {
+                  "cta": "Start Free — Become a Reader",
+                  "hook": "\"I never thought I'd be the kind of person who reads 3 books a week. Bookster changed that.\"",
+                  "proof": "UGC creator authenticity; caption: 'Thousands of learners · 1,000+ books · 15 min each'; implied social proof via community language.",
+                  "product_solution": "Bookster: the community of learners already doing this is larger than you think. Join the people who read the books your heroes recommend.",
+                  "problem_agitation_or_value_setup": "The identity shift: from someone who wishes they read more to someone who actually does — and the social proof that it's achievable."
+                },
+                "testing_framework": {
+                  "hypothesis": "A UGC social-proof hook in an aspirational frame ('I learn like the people I admire — and you can too') closes the quiz-completer to checkout gap by combining C4E's proven identity angle with peer-validation risk reduction.",
+                  "matrix_position": "C4D — UGC aspirational social proof checkout bridge (quiz completer)",
+                  "success_criteria": "onb_initiate_checkout CPA ≤ $52.57, CTR ≥ 2.00%, 3-second video hold rate ≥ 35%",
+                  "control_reference": "C4E_STC_QF_BOOK2_T2",
+                  "isolated_variable": "HK_SocialProof",
+                  "learning_objective": "Does a UGC social-proof delivery of the aspirational identity angle maintain or improve C4E's checkout CPA at higher spend levels?"
+                },
+                "strategic_foundation": {
+                  "cta_type": "CTA_StartFree",
+                  "target_icp": "ICP_BOOK2_C2B_QuizCompleter",
+                  "angle_stack": "CN_UGC + CN_Lifestyle + FW_AIDA + TN_Aspirational + HK_SocialProof + ST_BOFU + HP_Confidence + PR_UGC",
+                  "avatar_basis": "historical",
+                  "concept_code": "CN_ICP_QuizCompleter",
+                  "data_insight": "C4E: 14 onb_initiate_checkout at CPA $52.57 (CTR 2.54%); counter-diagonal shares HK_SocialProof across all 4 avatars — this is the highest-confidence isolation signal for social proof hook effectiveness at checkout.",
+                  "design_system": "CN_Design_Aspirational_Authority",
+                  "message_pillar": "GEN_PILLAR_623f9906_2",
+                  "performance_benchmark": "Beat C4E checkout CPA $52.57; target ≤ $40.00"
+                },
+                "creative_specifications": {
+                  "format": "UGC · Feed + Reels",
+                  "placement": "Advantage+ auto-placements; Facebook Feed + Reels; retarget registered non-checkout users via broad signal",
+                  "dimensions": "1080x1920 + 1080x1350",
+                  "creative_name": "C4D_CN_ICP_QuizCompleter_CN_Design_Aspirational_Authority_FW_AIDA_TN_Aspirational_HK_SocialProof_ST_BOFU_001",
+                  "production_requirements": "Authentic creator; aspirational but not polished; authority books visible in background or held; 20–30 s; caption social proof overlay"
+                }
+              },
+              "origin": "generated"
+            },
+            {
+              "id": "GEN_BRIEF_453e2e93_2",
+              "source_pillar": "GEN_PILLAR_623f9906_1",
+              "asset_type": "static",
+              "human_direction": "BOOK0 C5 (BYOC) rollup: CPA $20.55 on $452.07 spend, 8.06% CVR; only rows B and D have live data — insufficient for a verdict but enough to test a dedicated time-saving creative.",
+              "plain_variable_descriptors": [
+                "CN_ProductDemo",
+                "FW_BAB",
                 "TN_Rational",
                 "HK_Story",
-                "HP_Confidence"
+                "ST_MOFU",
+                "HP_Time",
+                "PR_DataDriven"
               ],
-              "status": "generated_p2",
-              "book": "BOOK0",
+              "status": "generated_high",
+              "book": null,
               "mode": "matrix",
-              "voice": "Rational",
-              "confidence": "medium",
+              "voice": "Professional, direct",
+              "confidence": "validation_required — C5 has only 2 of 4 funded rows; CPA $20.55 on $452.07 spend",
               "full_brief": {
                 "brief_metadata": {
                   "mode": "matrix",
-                  "voice": "Rational",
-                  "brief_id": "BOOK0-B002",
-                  "priority": "P2",
+                  "model": "claude-sonnet-4-6",
+                  "voice": "Professional, direct",
+                  "brief_id": "GEN_BRIEF_453e2e93_2",
+                  "priority": "high",
                   "asset_type": "static",
-                  "confidence": "medium",
-                  "strategic_source": "strategic_map.json:PILLAR_RationalValue"
-                },
-                "qa_requirements": [
-                  "Monitor daily for early fatigue signal given small sample history"
-                ],
-                "visual_direction": {
-                  "imagery": "Existing",
-                  "avoid_list": [
-                    "Do not introduce new visual variables in this test"
-                  ],
-                  "typography": "Existing",
-                  "composition": "Existing asset - no change",
-                  "style_guide": "Calm Intelligence",
-                  "color_palette": "Existing"
+                  "confidence": "validation_required — C5 has only 2 of 4 funded rows; CPA $20.55 on $452.07 spend",
+                  "generated_at": "2026-07-30T06:30:11.371Z",
+                  "strategic_source": "GEN_PILLAR_623f9906_1"
                 },
                 "copy_architecture": {
-                  "cta": "Start Free",
-                  "hook": "Story-led opener (HK_Story)",
-                  "proof": "Rational proof point overlay",
-                  "product_solution": "Structured 15-minute learning routine",
-                  "problem_agitation_or_value_setup": "Passive consumption, not living up to potential"
+                  "cta": "Start Free Today",
+                  "hook": "\"Before Bookster I spent 6 hours on a business book and retained maybe 10%.\"",
+                  "proof": "Data badge: '1,000+ titles. 15 min each. Average user covers 3 books/week.'",
+                  "product_solution": "Bookster surfaces the key ideas from your specific professional titles in 15 minutes each — your content, your pace.",
+                  "problem_agitation_or_value_setup": "Time-cost of reading full business books vs. the outcome: professionals need insights, not page counts."
                 },
                 "testing_framework": {
-                  "hypothesis": "Not yet numbered - feeds from strategic_map pillar, not a formal hypothesis entry",
-                  "matrix_position": "C4C",
-                  "success_criteria": "CVR holds >= 15% and CPA <= $10 at >=$450 spend / 14-day window",
-                  "control_reference": "C4C_STC_APP_BOOK0_T2",
-                  "isolated_variable": "Budget scale only (same creative, 3x spend)",
-                  "learning_objective": "Determine if early strong CVR holds at real volume or was a small-sample artifact",
-                  "matrix_naming_convention": "C4C_CN_Lifestyle_FW_StoryBrand_TN_Rational_HK_Story_HP_Confidence_001"
+                  "hypothesis": "A story-anchored before/after frame for the BYOC pro (specific content, not generic summaries) outperforms a plain benefit hook within the BAB time-saving mechanic.",
+                  "matrix_position": "C2A — professional before/after story hook",
+                  "success_criteria": "CTR ≥ 1.50%, registration CPA ≤ $15.00",
+                  "control_reference": "BOOK0_C5_rollup",
+                  "isolated_variable": "HK_Story",
+                  "learning_objective": "Does a story hook lift registration CVR for the BYOC working professional vs. a direct benefit headline?"
                 },
-                "performance_tracking": {
-                  "timeline": "14 days",
-                  "decision_rules": {
-                    "kill_if": "CVR < 8% at full spend",
-                    "scale_if": "CVR >= 15% sustained",
-                    "iterate_if": "CVR 8-14%"
-                  },
-                  "budget_allocation": "$450",
-                  "campaign_structure": "BOOK0 C4 column"
-                },
-                "production_checklist": [
-                  "Confirm no other variable changes",
-                  "Budget increase only"
-                ],
                 "strategic_foundation": {
-                  "target_icp": "ICP_BOOK0_C2_TimePoorLearner (secondary: Self-Improvement Seeker)",
-                  "angle_stack": "FW_StoryBrand + TN_Rational + HK_Story + HP_Confidence",
-                  "concept_code": "CN_Lifestyle",
-                  "data_insight": "C4C (rational tone) shows 21.8% CVR at the ad level on $155.80 spend - promising but below high-confidence threshold.",
-                  "message_pillar": "PILLAR_RationalValue",
-                  "performance_benchmark": "Current: CPA $5.77, CVR 21.8% (validation_required, n small). Target: hold CVR >=15% at 3x spend."
+                  "cta_type": "CTA_StartFree",
+                  "target_icp": "ICP_BOOK0_C5_BYOC_PENDING",
+                  "angle_stack": "CN_ProductDemo + FW_BAB + TN_Rational + HK_Story + ST_MOFU + HP_Time + PR_DataDriven",
+                  "avatar_basis": "historical",
+                  "concept_code": "CN_ICP_BYOC_WorkingPro",
+                  "data_insight": "BOOK0 C5 (BYOC) rollup: CPA $20.55 on $452.07 spend, 8.06% CVR; only rows B and D have live data — insufficient for a verdict but enough to test a dedicated time-saving creative.",
+                  "design_system": "CN_Design_Clean_Rational",
+                  "message_pillar": "GEN_PILLAR_623f9906_1",
+                  "performance_benchmark": "Beat C5 blended CPA $20.55; target ≤ $15.00"
                 },
                 "creative_specifications": {
-                  "format": "Static",
-                  "duration": "N/A",
-                  "placement": "Feed",
+                  "format": "Static · Feed",
+                  "placement": "Advantage+ auto-placements; Facebook Feed priority",
                   "dimensions": "1080x1350",
-                  "safe_zones": "Standard",
-                  "production_requirements": "Rational proof overlay, no new asset needed - budget test only"
+                  "creative_name": "C2A_CN_ICP_BYOC_WorkingPro_CN_Design_Clean_Rational_FW_BAB_TN_Rational_HK_Story_ST_MOFU_001",
+                  "production_requirements": "Bold headline over clean background; data callout badge; two-panel before/after layout"
                 }
               },
-              "origin": "imported"
+              "origin": "generated"
             },
             {
-              "id": "BOOK0-B003",
-              "source_pillar": "PILLAR_MaleEfficiencyTest",
+              "id": "GEN_BRIEF_453e2e93_3",
+              "source_pillar": "GEN_PILLAR_623f9906_4",
               "asset_type": "static",
-              "human_direction": "Male 55-64 ($9.49 CPA) and Male 35-44 ($10.33 CPA) are the two best efficiency pockets in the account, currently only receiving algorithmic overflow.",
+              "human_direction": "C2B demographic spill: male 25-34 CPA $3.09 (4 results, $12.36 spend); male 55-64 CPA $5.73 (4 results, $22.92 spend) — lowest CPAs in the entire demographic breakdown with no dedicated creative.",
               "plain_variable_descriptors": [
-                "HP_Efficiency",
-                "TN_Rational",
-                "HK_Benefit"
-              ],
-              "status": "generated_p2",
-              "book": "BOOK0",
-              "mode": "general",
-              "voice": "Rational/Direct",
-              "confidence": "medium",
-              "full_brief": {
-                "brief_metadata": {
-                  "mode": "general",
-                  "voice": "Rational/Direct",
-                  "brief_id": "BOOK0-B003",
-                  "priority": "P2",
-                  "asset_type": "static",
-                  "confidence": "medium",
-                  "strategic_source": "strategic_map.json:PILLAR_MaleEfficiencyTest"
-                },
-                "qa_requirements": [
-                  "Confirm targeting is intentional, not broad, before reading results as ICP-confirming"
-                ],
-                "visual_direction": {
-                  "imagery": "Product-forward, minimal lifestyle framing",
-                  "avoid_list": [
-                    "Aspirational/identity framing (reserved for C1)",
-                    "Youth-coded visual cues"
-                  ],
-                  "typography": "Direct sans-serif",
-                  "composition": "Direct, uncluttered",
-                  "style_guide": "Calm Intelligence",
-                  "color_palette": "Neutral, confident"
-                },
-                "copy_architecture": {
-                  "cta": "Start Free",
-                  "hook": "Efficiency-led benefit opener",
-                  "proof": "Rational/data-driven proof point",
-                  "product_solution": "15-minute structured reads",
-                  "problem_agitation_or_value_setup": "Time/effort inefficiency in traditional reading"
-                },
-                "testing_framework": {
-                  "hypothesis": "HYP_003",
-                  "matrix_position": "N/A - general mode",
-                  "success_criteria": "CPA < $9.50 sustained at >= 20 results over 14-21 days",
-                  "control_reference": "Current broad targeting",
-                  "isolated_variable": "N/A - general scaling test",
-                  "learning_objective": "Confirm whether this is a durable ICP or an artifact of broad-targeting delivery",
-                  "matrix_naming_convention": "N/A"
-                },
-                "performance_tracking": {
-                  "timeline": "14-21 days",
-                  "decision_rules": {
-                    "kill_if": "CPA > $13 at >=20 results",
-                    "scale_if": "CPA < $9.50 sustained",
-                    "iterate_if": "CPA $9.50-$13"
-                  },
-                  "budget_allocation": "$500 across M35-44 and M55-64 split",
-                  "campaign_structure": "New dedicated ad set, BOOK0"
-                },
-                "production_checklist": [
-                  "New asset build required",
-                  "Dedicated ad set with intentional age/gender targeting"
-                ],
-                "strategic_foundation": {
-                  "target_icp": "ICP_BOOK0_MaleEfficiencyPocket",
-                  "angle_stack": "HP_Efficiency + TN_Rational + HK_Benefit",
-                  "concept_code": "CN_ComparisonorCN_ProductDemo (TBD by creative)",
-                  "data_insight": "Male 55-64 ($9.49 CPA) and Male 35-44 ($10.33 CPA) are the two best efficiency pockets in the account, currently only receiving algorithmic overflow.",
-                  "message_pillar": "PILLAR_MaleEfficiencyTest",
-                  "performance_benchmark": "Current overflow CPA $9.49/$10.33. Target: CPA < $9.50 with intentional targeting."
-                },
-                "creative_specifications": {
-                  "format": "Static",
-                  "duration": "N/A",
-                  "placement": "Feed",
-                  "dimensions": "1080x1350",
-                  "safe_zones": "Standard",
-                  "production_requirements": "New creative, rational/direct tone, avoid identity-aspirational framing already used for C1"
-                }
-              },
-              "origin": "imported"
-            },
-            {
-              "id": "BOOK2-B001",
-              "source_pillar": "N/A - replacement/consolidation brief",
-              "asset_type": "static",
-              "human_direction": "C2E and C4E (Book2 extension cells) combined spent $1,672 for 4 total conversions, while C2B (core matrix mechanic) converts at 11.65% CVR on similar spend.",
-              "plain_variable_descriptors": [
-                "FW_BAB",
-                "TN_Rational",
-                "HK_Benefit",
+                "CN_ValueStack",
+                "FW_FAB",
+                "TN_Assertive",
+                "HK_Story",
+                "ST_MOFU",
                 "HP_Time",
-                "CTA_StartFree"
+                "PR_DataDriven"
               ],
-              "status": "generated_p1",
-              "book": "BOOK2",
-              "mode": "general",
-              "voice": "Rational/Assertive",
-              "confidence": "high",
+              "status": "generated_medium",
+              "book": null,
+              "mode": "matrix",
+              "voice": "Confident, efficiency-coded",
+              "confidence": "medium — based on demographic overflow signal only (male 55-64 CPA $5.73, male 25-34 CPA $3.09 from C2B spill)",
               "full_brief": {
                 "brief_metadata": {
-                  "mode": "general",
-                  "voice": "Rational/Assertive",
-                  "brief_id": "BOOK2-B001",
-                  "priority": "P1",
+                  "mode": "matrix",
+                  "model": "claude-sonnet-4-6",
+                  "voice": "Confident, efficiency-coded",
+                  "brief_id": "GEN_BRIEF_453e2e93_3",
+                  "priority": "medium",
                   "asset_type": "static",
-                  "confidence": "high",
-                  "strategic_source": "strategic_map.json:ICP_BOOK2_C2B_QuizCompleter"
+                  "confidence": "medium — based on demographic overflow signal only (male 55-64 CPA $5.73, male 25-34 CPA $3.09 from C2B spill)",
+                  "generated_at": "2026-07-30T06:30:11.371Z",
+                  "strategic_source": "GEN_PILLAR_623f9906_4"
                 },
-                "qa_requirements": [
-                  "Confirm naming avoids confusion with legacy E/F cells",
-                  "Verify against Book2 Local Client Library once formally created"
-                ],
-                "visual_direction": {
-                  "imagery": "Bookster mascot, feature callouts",
-                  "avoid_list": [
-                    "Do not reintroduce the E/F extension mechanic without a new hypothesis"
-                  ],
-                  "typography": "Consistent with C2B control",
-                  "composition": "Cozy reading/lamp environment, tilted phone UI",
-                  "style_guide": "Calm Intelligence",
-                  "color_palette": "Warm neutrals, purple proof accent"
+                "copy_architecture": {
+                  "cta": "Try Free — No Commitment",
+                  "hook": "\"I used to read 2 books a year. Now I get through 3 a week — in the same commute time.\"",
+                  "proof": "'1,000+ titles. 15 min each.' Data badge; implied social proof via volume.",
+                  "product_solution": "Bookster: key ideas from 1,000+ books in 15 minutes each — built for people who value output over ritual.",
+                  "problem_agitation_or_value_setup": "The ROI problem: reading full books is low-return on time for people who want applied knowledge fast."
+                },
+                "testing_framework": {
+                  "hypothesis": "A story-framed efficiency hook purpose-built for male psychographics captures the low-CPA demographic signal at intentional scale rather than as algorithmic overflow.",
+                  "matrix_position": "C3A — efficiency story hook (male pocket)",
+                  "success_criteria": "CTR ≥ 1.50%, registration CPA ≤ $8.00, thumbstop ≥ 20%",
+                  "control_reference": "C2B demographic spill male 55-64 / male 25-34",
+                  "isolated_variable": "HK_Story",
+                  "learning_objective": "Can a purpose-built story hook for the male efficiency pocket replicate the $3–6 CPA overflow signal at meaningful spend?"
+                },
+                "strategic_foundation": {
+                  "cta_type": "CTA_TryFree",
+                  "target_icp": "ICP_BOOK0_MaleEfficiencyPocket",
+                  "angle_stack": "CN_ValueStack + FW_FAB + TN_Assertive + HK_Story + ST_MOFU + HP_Time + PR_DataDriven",
+                  "avatar_basis": "historical",
+                  "concept_code": "CN_ICP_MaleEfficiencyPocket",
+                  "data_insight": "C2B demographic spill: male 25-34 CPA $3.09 (4 results, $12.36 spend); male 55-64 CPA $5.73 (4 results, $22.92 spend) — lowest CPAs in the entire demographic breakdown with no dedicated creative.",
+                  "design_system": "CN_Design_ValueStack_Bold",
+                  "message_pillar": "GEN_PILLAR_623f9906_4",
+                  "performance_benchmark": "Beat overflow CPA $5.73 (male 55-64) and $3.09 (male 25-34) at intentional scale"
+                },
+                "creative_specifications": {
+                  "format": "Static · Feed",
+                  "placement": "Advantage+ auto-placements; broad targeting — let algorithm find the male efficiency pocket",
+                  "dimensions": "1080x1350",
+                  "creative_name": "C3A_CN_ICP_MaleEfficiencyPocket_CN_Design_ValueStack_Bold_FW_FAB_TN_Assertive_HK_Story_ST_MOFU_001",
+                  "production_requirements": "Bold typographic layout; data callout prominent; dark or high-contrast palette; no lifestyle imagery that skews female"
+                }
+              },
+              "origin": "generated"
+            },
+            {
+              "id": "GEN_BRIEF_453e2e93_4",
+              "source_pillar": "GEN_PILLAR_623f9906_2",
+              "asset_type": "video",
+              "human_direction": "C4E: 14 onb_initiate_checkout at CPA $52.57 on $735.99 spend (CTR 2.54%); registration micro-data 2 results at CPA $3.74 on $7.47 spend (20% result-per-link-click) — best checkout-depth cell in account.",
+              "plain_variable_descriptors": [
+                "CN_Lifestyle",
+                "FW_AIDA",
+                "TN_Aspirational",
+                "HK_Story",
+                "ST_TOFU",
+                "HP_Confidence",
+                "PR_SocialProof"
+              ],
+              "status": "generated_high",
+              "book": null,
+              "mode": "matrix",
+              "voice": "Warm, curiosity-driven",
+              "confidence": "high — built on C4E checkout-depth control (14 onb_initiate_checkout at CPA $52.57) and quiz-completer registration signal",
+              "full_brief": {
+                "brief_metadata": {
+                  "mode": "matrix",
+                  "model": "claude-sonnet-4-6",
+                  "voice": "Warm, curiosity-driven",
+                  "brief_id": "GEN_BRIEF_453e2e93_4",
+                  "priority": "high",
+                  "asset_type": "video",
+                  "confidence": "high — built on C4E checkout-depth control (14 onb_initiate_checkout at CPA $52.57) and quiz-completer registration signal",
+                  "generated_at": "2026-07-30T06:30:11.371Z",
+                  "strategic_source": "GEN_PILLAR_623f9906_2"
+                },
+                "copy_architecture": {
+                  "cta": "Start Free — Join Thousands of Learners",
+                  "hook": "\"The most successful people I know don't read more — they read smarter.\"",
+                  "proof": "Authority book-cover montage (recognisable titles); '1,000+ books, used by thousands of learners' social proof caption.",
+                  "product_solution": "Bookster gives you the condensed knowledge from the books that shaped the people you admire — 15 minutes at a time.",
+                  "problem_agitation_or_value_setup": "The gap between wanting to think like high-performers and actually having time to consume what they consume."
+                },
+                "testing_framework": {
+                  "hypothesis": "A story-led identity hook (learning like people you admire narrative) generates higher thumbstop and checkout depth than a direct identity statement for quiz completers.",
+                  "matrix_position": "C4A — aspirational identity story hook",
+                  "success_criteria": "CTR ≥ 2.54% (match C4E), onb_initiate_checkout CPA ≤ $52.57, thumbstop ≥ 30%",
+                  "control_reference": "C4E_STC_QF_BOOK2_T2",
+                  "isolated_variable": "HK_Story",
+                  "learning_objective": "Does a story-format delivery of the aspirational identity angle maintain C4E's checkout-depth advantage at higher spend?"
+                },
+                "strategic_foundation": {
+                  "cta_type": "CTA_StartFree",
+                  "target_icp": "ICP_BOOK2_C2B_QuizCompleter",
+                  "angle_stack": "CN_Lifestyle + FW_AIDA + TN_Aspirational + HK_Story + ST_TOFU + HP_Confidence + PR_SocialProof",
+                  "avatar_basis": "historical",
+                  "concept_code": "CN_ICP_QuizCompleter",
+                  "data_insight": "C4E: 14 onb_initiate_checkout at CPA $52.57 on $735.99 spend (CTR 2.54%); registration micro-data 2 results at CPA $3.74 on $7.47 spend (20% result-per-link-click) — best checkout-depth cell in account.",
+                  "design_system": "CN_Design_Aspirational_Authority",
+                  "message_pillar": "GEN_PILLAR_623f9906_2",
+                  "performance_benchmark": "Beat C4E checkout CPA $52.57; registration CPA target ≤ $10.00"
+                },
+                "creative_specifications": {
+                  "format": "Video · Feed + Reels",
+                  "placement": "Advantage+ auto-placements; Facebook Feed (CPA $52.22) and Facebook Reels (CPA $20.81) are highest-signal placements",
+                  "dimensions": "1080x1920 + 1080x1350",
+                  "creative_name": "C4A_CN_ICP_QuizCompleter_CN_Design_Aspirational_Authority_FW_AIDA_TN_Aspirational_HK_Story_ST_TOFU_001",
+                  "production_requirements": "Cinematic feel; authority book-cover visuals; voice-over narrative; 20–30 s; vertical + square cuts"
+                }
+              },
+              "origin": "generated"
+            },
+            {
+              "id": "GEN_BRIEF_453e2e93_5",
+              "source_pillar": "GEN_PILLAR_623f9906_1",
+              "asset_type": "video",
+              "human_direction": "C2B: 74 registrations at CPA $9.13 on $675.81 spend; BOOK0 C2 rollup CPA $7.09 at 15.06% CVR on $2,332.11 spend — highest-volume, lowest-CPA concept in the account.",
+              "plain_variable_descriptors": [
+                "CN_ProductDemo",
+                "FW_BAB",
+                "TN_Emotional",
+                "HK_Problem",
+                "ST_TOFU",
+                "HP_Time",
+                "PR_VisualDemo"
+              ],
+              "status": "generated_high",
+              "book": null,
+              "mode": "matrix",
+              "voice": "Empathetic, motivating",
+              "confidence": "high — C2B control cell foundation",
+              "full_brief": {
+                "brief_metadata": {
+                  "mode": "matrix",
+                  "model": "claude-sonnet-4-6",
+                  "voice": "Empathetic, motivating",
+                  "brief_id": "GEN_BRIEF_453e2e93_5",
+                  "priority": "high",
+                  "asset_type": "video",
+                  "confidence": "high — C2B control cell foundation",
+                  "generated_at": "2026-07-30T06:30:11.371Z",
+                  "strategic_source": "GEN_PILLAR_623f9906_1"
                 },
                 "copy_architecture": {
                   "cta": "Start Free",
-                  "hook": "HK_Benefit - '1,000 books, 15 minutes each' proof",
-                  "proof": "Visual product demo, purple proof badge",
-                  "product_solution": "Structured 15-minute reads",
-                  "problem_agitation_or_value_setup": "Time-poor reading backlog"
+                  "hook": "\"When did you last finish a book you actually wanted to read?\"",
+                  "proof": "App screen showing library of 1,000+ books; testimonial quote overlay: 'I feel like I'm learning again.'",
+                  "product_solution": "Bookster turns any book into a 15-minute listen — so you can finally make progress without clearing your schedule.",
+                  "problem_agitation_or_value_setup": "The quiet shame of a growing 'to-read' pile and the feeling that everyone else is learning more than you."
                 },
                 "testing_framework": {
-                  "hypothesis": "HYP_004",
-                  "matrix_position": "C2E / C4E replacement",
-                  "success_criteria": "CVR >= 8%, CPA <= $25 at >=$300 spend / 14-day window",
+                  "hypothesis": "Swapping from TN_Relatable to TN_Emotional within the same BAB/ProductDemo framework lifts thumbstop by leaning into the guilt angle rather than the efficiency angle.",
+                  "matrix_position": "C1B — guilt/time-pressure problem hook",
+                  "success_criteria": "CTR ≥ 1.80%, registration CPA ≤ $9.13, 3-second video view rate ≥ 35%",
                   "control_reference": "C2B_STC_QF_BOOK2_T2",
-                  "isolated_variable": "Message mechanic (replace E/F extension logic with proven B mechanic)",
-                  "learning_objective": "Confirm the B mechanic transfers to the E/F slots or whether those slots need a different approach entirely",
-                  "matrix_naming_convention": "C2Bx_CN_ProductDemo_FW_BAB_TN_Rational_HK_Benefit_HP_Time_001"
+                  "isolated_variable": "TN_Emotional",
+                  "learning_objective": "Does an emotional tone outperform a relatable/rational tone for the time-poor learner when the framework and hook type change together?"
                 },
-                "performance_tracking": {
-                  "timeline": "14 days",
-                  "decision_rules": {
-                    "kill_if": "CVR < 4% at full spend",
-                    "scale_if": "CVR >= 8% sustained",
-                    "iterate_if": "CVR 4-8%"
-                  },
-                  "budget_allocation": "$300 per replacement variant",
-                  "campaign_structure": "BOOK2 Quiz campaign"
-                },
-                "production_checklist": [
-                  "Pause further spend on current C2E/C4E/C2F assets pending this test",
-                  "Build replacement using C2B mechanic"
-                ],
                 "strategic_foundation": {
-                  "target_icp": "ICP_BOOK2_C2B_QuizCompleter",
-                  "angle_stack": "FW_BAB + TN_Rational + HK_Benefit + HP_Time + CTA_StartFree",
-                  "concept_code": "CN_ProductDemo",
-                  "data_insight": "C2E and C4E (Book2 extension cells) combined spent $1,672 for 4 total conversions, while C2B (core matrix mechanic) converts at 11.65% CVR on similar spend.",
-                  "message_pillar": "N/A - replacement/consolidation brief",
-                  "performance_benchmark": "C2B current: CPA $16.28, CVR 11.65%. C2E/C4E target if rebuilt: match C2B within 20%."
+                  "cta_type": "CTA_StartFree",
+                  "target_icp": "ICP_BOOK0_C2_TimePoorLearner",
+                  "angle_stack": "CN_ProductDemo + FW_BAB + TN_Emotional + HK_Problem + ST_TOFU + HP_Time + PR_VisualDemo",
+                  "avatar_basis": "historical",
+                  "concept_code": "CN_ICP_TimePoorLearner",
+                  "data_insight": "C2B: 74 registrations at CPA $9.13 on $675.81 spend; BOOK0 C2 rollup CPA $7.09 at 15.06% CVR on $2,332.11 spend — highest-volume, lowest-CPA concept in the account.",
+                  "design_system": "CN_Design_ProductDemo_UGC",
+                  "message_pillar": "GEN_PILLAR_623f9906_1",
+                  "performance_benchmark": "Beat C2B CTR 1.50% and registration CPA $9.13"
                 },
                 "creative_specifications": {
-                  "format": "Static",
-                  "duration": "N/A",
-                  "placement": "Feed",
-                  "dimensions": "1080x1350",
-                  "safe_zones": "Standard",
-                  "production_requirements": "Reuse validated C2B visual system with new copy variant"
+                  "format": "Video · Feed + Reels",
+                  "placement": "Advantage+ auto-placements",
+                  "dimensions": "1080x1920 + 1080x1350",
+                  "creative_name": "C1B_CN_ICP_TimePoorLearner_CN_Design_ProductDemo_UGC_FW_BAB_TN_Emotional_HK_Problem_ST_TOFU_001",
+                  "production_requirements": "Emotionally warm UGC-style; facial expression central in first 3 s; on-screen text for silent viewing; 15–20 s"
                 }
               },
-              "origin": "imported"
+              "origin": "generated"
+            },
+            {
+              "id": "GEN_BRIEF_453e2e93_6",
+              "source_pillar": "GEN_PILLAR_623f9906_3",
+              "asset_type": "video",
+              "human_direction": "C2E produced highest thumbstop CTR 2.10–3.70% in dataset and registration CPA as low as $1.49 in female 45-54 micro-slice; C5 BYOC rollup CPA $20.55 on $452.07 — the behavior-shift angle has not yet been tested against the BYOC avatar.",
+              "plain_variable_descriptors": [
+                "CN_BehaviorShift",
+                "FW_PAS",
+                "TN_Emotional",
+                "HK_Problem",
+                "ST_TOFU",
+                "HP_Overwhelm",
+                "PR_VisualDemo"
+              ],
+              "status": "generated_medium",
+              "book": null,
+              "mode": "matrix",
+              "voice": "Direct, professional",
+              "confidence": "validation_required — C5 needs full A-D funding before verdict",
+              "full_brief": {
+                "brief_metadata": {
+                  "mode": "matrix",
+                  "model": "claude-sonnet-4-6",
+                  "voice": "Direct, professional",
+                  "brief_id": "GEN_BRIEF_453e2e93_6",
+                  "priority": "medium",
+                  "asset_type": "video",
+                  "confidence": "validation_required — C5 needs full A-D funding before verdict",
+                  "generated_at": "2026-07-30T06:30:11.371Z",
+                  "strategic_source": "GEN_PILLAR_623f9906_3"
+                },
+                "copy_architecture": {
+                  "cta": "Start Free",
+                  "hook": "\"You've read the summary. You've taken the notes. But three days later — it's gone.\"",
+                  "proof": "Screen demo of a professional title in the Bookster library; data overlay: 'Avg. user covers 3 books/week.'",
+                  "product_solution": "Bookster structures what you already need to learn so the ideas actually stick — not just fill your morning commute.",
+                  "problem_agitation_or_value_setup": "The BYOC frustration: consuming specific professional content and retaining none of it, wasting both money and time."
+                },
+                "testing_framework": {
+                  "hypothesis": "An emotional PAS frame applied to the BYOC professional's overwhelm (too much content, no retention) outperforms a rational direct hook for this avatar.",
+                  "matrix_position": "C2B — overwhelm problem hook (BYOC pro)",
+                  "success_criteria": "CTR ≥ 2.00%, registration CPA ≤ $15.00, thumbstop rate ≥ 30%",
+                  "control_reference": "BOOK0_C5_rollup + C2E_STC_QF_BOOK2_T2",
+                  "isolated_variable": "TN_Emotional",
+                  "learning_objective": "Does emotional tone within a PAS behavior-shift frame unlock the BYOC professional avatar more effectively than rational tone?"
+                },
+                "strategic_foundation": {
+                  "cta_type": "CTA_StartFree",
+                  "target_icp": "ICP_BOOK0_C5_BYOC_PENDING",
+                  "angle_stack": "CN_BehaviorShift + FW_PAS + TN_Emotional + HK_Problem + ST_TOFU + HP_Overwhelm + PR_VisualDemo",
+                  "avatar_basis": "historical",
+                  "concept_code": "CN_ICP_BYOC_WorkingPro",
+                  "data_insight": "C2E produced highest thumbstop CTR 2.10–3.70% in dataset and registration CPA as low as $1.49 in female 45-54 micro-slice; C5 BYOC rollup CPA $20.55 on $452.07 — the behavior-shift angle has not yet been tested against the BYOC avatar.",
+                  "design_system": "CN_Design_Clean_Rational",
+                  "message_pillar": "GEN_PILLAR_623f9906_3",
+                  "performance_benchmark": "Beat C5 CPA $20.55; C2E thumbstop CTR benchmark 2.10–3.70%"
+                },
+                "creative_specifications": {
+                  "format": "Video · Feed + Reels",
+                  "placement": "Advantage+ auto-placements",
+                  "dimensions": "1080x1920 + 1080x1350",
+                  "creative_name": "C2B_CN_ICP_BYOC_WorkingPro_CN_Design_Clean_Rational_FW_PAS_TN_Emotional_HK_Problem_ST_TOFU_001",
+                  "production_requirements": "Talking-head or voice-over; professional setting aesthetic; 20–25 s; text overlays for silent play"
+                }
+              },
+              "origin": "generated"
+            },
+            {
+              "id": "GEN_BRIEF_453e2e93_7",
+              "source_pillar": "GEN_PILLAR_623f9906_4",
+              "asset_type": "static",
+              "human_direction": "C2E achieved CTR 2.40% and 16.67% result-per-link-click on thin spend ($14.58); male 55-64 CPA $5.73 and male 25-34 CPA $3.09 from C2B spill — behavior-shift angle + male efficiency pocket is an untested combination.",
+              "plain_variable_descriptors": [
+                "CN_BehaviorShift",
+                "FW_PAS",
+                "TN_Emotional",
+                "HK_Problem",
+                "ST_TOFU",
+                "HP_Overwhelm",
+                "PR_DataDriven"
+              ],
+              "status": "generated_medium",
+              "book": null,
+              "mode": "matrix",
+              "voice": "Bold, challenger-brand",
+              "confidence": "medium — male efficiency pocket is overflow-only; exploratory creative layer",
+              "full_brief": {
+                "brief_metadata": {
+                  "mode": "matrix",
+                  "model": "claude-sonnet-4-6",
+                  "voice": "Bold, challenger-brand",
+                  "brief_id": "GEN_BRIEF_453e2e93_7",
+                  "priority": "medium",
+                  "asset_type": "static",
+                  "confidence": "medium — male efficiency pocket is overflow-only; exploratory creative layer",
+                  "generated_at": "2026-07-30T06:30:11.371Z",
+                  "strategic_source": "GEN_PILLAR_623f9906_4"
+                },
+                "copy_architecture": {
+                  "cta": "Try Free — See the Difference",
+                  "hook": "\"You finish the book. You forget it by Friday.\"",
+                  "proof": "'Avg. user covers 3 books/week.' Data-driven badge; 1,000+ title library callout.",
+                  "product_solution": "Bookster structures each book's core ideas so they actually transfer to how you think and act — not just fill a shelf.",
+                  "problem_agitation_or_value_setup": "The retention failure that makes reading feel like a waste: hours invested, nothing applied."
+                },
+                "testing_framework": {
+                  "hypothesis": "An emotional PAS behavior-shift hook resonates with the male efficiency pocket by validating the frustration of reading without retaining, not just the time cost.",
+                  "matrix_position": "C3B — overwhelm problem hook (male efficiency)",
+                  "success_criteria": "CTR ≥ 2.00%, thumbstop ≥ 25%, registration CPA ≤ $8.00",
+                  "control_reference": "C2E_STC_QF_BOOK2_T2 + C2B male demographic spill",
+                  "isolated_variable": "TN_Emotional",
+                  "learning_objective": "Does an emotional behavior-shift hook outperform a rational value-stack hook for the male efficiency pocket?"
+                },
+                "strategic_foundation": {
+                  "cta_type": "CTA_TryFree",
+                  "target_icp": "ICP_BOOK0_MaleEfficiencyPocket",
+                  "angle_stack": "CN_BehaviorShift + FW_PAS + TN_Emotional + HK_Problem + ST_TOFU + HP_Overwhelm + PR_DataDriven",
+                  "avatar_basis": "historical",
+                  "concept_code": "CN_ICP_MaleEfficiencyPocket",
+                  "data_insight": "C2E achieved CTR 2.40% and 16.67% result-per-link-click on thin spend ($14.58); male 55-64 CPA $5.73 and male 25-34 CPA $3.09 from C2B spill — behavior-shift angle + male efficiency pocket is an untested combination.",
+                  "design_system": "CN_Design_ValueStack_Bold",
+                  "message_pillar": "GEN_PILLAR_623f9906_4",
+                  "performance_benchmark": "Beat C2E CTR 2.40%; target registration CPA ≤ $8.00"
+                },
+                "creative_specifications": {
+                  "format": "Static · Feed",
+                  "placement": "Advantage+ auto-placements; broad targeting",
+                  "dimensions": "1080x1350",
+                  "creative_name": "C3B_CN_ICP_MaleEfficiencyPocket_CN_Design_ValueStack_Bold_FW_PAS_TN_Emotional_HK_Problem_ST_TOFU_001",
+                  "production_requirements": "High-contrast; bold problem statement as hero text; minimal design; data proof badge; no stock-photo clichés"
+                }
+              },
+              "origin": "generated"
+            },
+            {
+              "id": "GEN_BRIEF_453e2e93_8",
+              "source_pillar": "GEN_PILLAR_623f9906_2",
+              "asset_type": "carousel",
+              "human_direction": "C4E: 14 onb_initiate_checkout at CPA $52.57 on $735.99 (CTR 2.54%); C2B produced 0 checkouts on $110.92 spend — aspirational angle is the only cell proven to drive checkout depth.",
+              "plain_variable_descriptors": [
+                "CN_Lifestyle",
+                "FW_AIDA",
+                "TN_Emotional",
+                "HK_Problem",
+                "ST_MOFU",
+                "HP_Confidence",
+                "PR_Expert"
+              ],
+              "status": "generated_high",
+              "book": null,
+              "mode": "matrix",
+              "voice": "Aspirational, identity-affirming",
+              "confidence": "high — C4E is checkout-depth control with 14 onb_initiate_checkout at CPA $52.57",
+              "full_brief": {
+                "brief_metadata": {
+                  "mode": "matrix",
+                  "model": "claude-sonnet-4-6",
+                  "voice": "Aspirational, identity-affirming",
+                  "brief_id": "GEN_BRIEF_453e2e93_8",
+                  "priority": "high",
+                  "asset_type": "carousel",
+                  "confidence": "high — C4E is checkout-depth control with 14 onb_initiate_checkout at CPA $52.57",
+                  "generated_at": "2026-07-30T06:30:11.371Z",
+                  "strategic_source": "GEN_PILLAR_623f9906_2"
+                },
+                "copy_architecture": {
+                  "cta": "Start Free — Build Your Edge",
+                  "hook": "\"You feel like everyone around you has read more than you.\"",
+                  "proof": "Expert authority: recognisable book covers from thought-leaders; '1,000+ titles' badge.",
+                  "product_solution": "Bookster gives you the ideas from the books that shaped the thinkers you respect — one 15-minute session at a time.",
+                  "problem_agitation_or_value_setup": "The confidence gap: knowing you should be more widely read but not having the time or knowing where to start."
+                },
+                "testing_framework": {
+                  "hypothesis": "An emotional AIDA frame addressing the quiz completer's confidence gap (feeling intellectually behind) deepens checkout conversion more than a purely aspirational identity frame.",
+                  "matrix_position": "C4B — confidence gap problem hook (quiz completer)",
+                  "success_criteria": "onb_initiate_checkout CPA ≤ $52.57, CTR ≥ 2.00%, carousel card-3 swipe rate ≥ 40%",
+                  "control_reference": "C4E_STC_QF_BOOK2_T2",
+                  "isolated_variable": "TN_Emotional",
+                  "learning_objective": "Does an emotional confidence-gap problem hook drive deeper funnel action than an aspirational identity hook for the quiz completer avatar?"
+                },
+                "strategic_foundation": {
+                  "cta_type": "CTA_StartFree",
+                  "target_icp": "ICP_BOOK2_C2B_QuizCompleter",
+                  "angle_stack": "CN_Lifestyle + FW_AIDA + TN_Emotional + HK_Problem + ST_MOFU + HP_Confidence + PR_Expert",
+                  "avatar_basis": "historical",
+                  "concept_code": "CN_ICP_QuizCompleter",
+                  "data_insight": "C4E: 14 onb_initiate_checkout at CPA $52.57 on $735.99 (CTR 2.54%); C2B produced 0 checkouts on $110.92 spend — aspirational angle is the only cell proven to drive checkout depth.",
+                  "design_system": "CN_Design_Aspirational_Authority",
+                  "message_pillar": "GEN_PILLAR_623f9906_2",
+                  "performance_benchmark": "Beat C4E checkout CPA $52.57; target ≤ $40.00"
+                },
+                "creative_specifications": {
+                  "format": "Carousel · Feed",
+                  "placement": "Advantage+ auto-placements; Facebook Feed priority",
+                  "dimensions": "1080x1080 per card (4–5 cards)",
+                  "creative_name": "C4B_CN_ICP_QuizCompleter_CN_Design_Aspirational_Authority_FW_AIDA_TN_Emotional_HK_Problem_ST_MOFU_001",
+                  "production_requirements": "Card 1: bold emotional hook text + aspirational visual. Cards 2-4: each book-insight slide. Card 5: CTA. Authority book covers as imagery."
+                }
+              },
+              "origin": "generated"
+            },
+            {
+              "id": "GEN_BRIEF_453e2e93_9",
+              "source_pillar": "GEN_PILLAR_623f9906_3",
+              "asset_type": "video",
+              "human_direction": "C2E: CTR 2.40%, 16.67% result-per-link-click on $14.58 spend; 1 checkout at CPA $15.55 on tiny V3 spend; 0 trials on $313.39 spend — checkout bridge is the diagnostic gap.",
+              "plain_variable_descriptors": [
+                "CN_BehaviorShift",
+                "FW_PAS",
+                "TN_Assertive",
+                "HK_Shock",
+                "ST_TOFU",
+                "HP_Overwhelm",
+                "PR_DataDriven"
+              ],
+              "status": "generated_high",
+              "book": null,
+              "mode": "matrix",
+              "voice": "Assertive, pattern-interrupt",
+              "confidence": "high — C2E achieved highest thumbstop CTR in dataset (2.10–3.70%); testing checkout bridge fix",
+              "full_brief": {
+                "brief_metadata": {
+                  "mode": "matrix",
+                  "model": "claude-sonnet-4-6",
+                  "voice": "Assertive, pattern-interrupt",
+                  "brief_id": "GEN_BRIEF_453e2e93_9",
+                  "priority": "high",
+                  "asset_type": "video",
+                  "confidence": "high — C2E achieved highest thumbstop CTR in dataset (2.10–3.70%); testing checkout bridge fix",
+                  "generated_at": "2026-07-30T06:30:11.371Z",
+                  "strategic_source": "GEN_PILLAR_623f9906_3"
+                },
+                "copy_architecture": {
+                  "cta": "Start Free — Read Smarter",
+                  "hook": "\"Most people retain less than 10% of every book they read. You're not the problem — your method is.\"",
+                  "proof": "'Users average 3 books/week. 1,000+ titles.' On-screen data badge; app UI screen-record close.",
+                  "product_solution": "Bookster isolates the 20% of each book that contains 80% of the value — so your retention rate actually matches your effort.",
+                  "problem_agitation_or_value_setup": "Reading full books linearly is a low-retention method designed for a different century. The effort-to-insight ratio is broken."
+                },
+                "testing_framework": {
+                  "hypothesis": "A shock hook ('you're reading wrong') paired with a PR_DataDriven proof close (not just curiosity) fixes the checkout-depth gap C2E exposed by giving users a concrete reason to trial, not just register.",
+                  "matrix_position": "C1C — shock/pattern-interrupt hook (behavior shift)",
+                  "success_criteria": "CTR ≥ 2.40%, onb_initiate_checkout CPA ≤ $30.00, registration CPA ≤ $9.13",
+                  "control_reference": "C2E_STC_QF_BOOK2_T2",
+                  "isolated_variable": "HK_Shock",
+                  "learning_objective": "Does a shock hook + data proof close convert the thumbstop energy of C2E into checkout depth that the original curiosity close failed to achieve?"
+                },
+                "strategic_foundation": {
+                  "cta_type": "CTA_StartFree",
+                  "target_icp": "ICP_BOOK0_C2_TimePoorLearner",
+                  "angle_stack": "CN_BehaviorShift + FW_PAS + TN_Assertive + HK_Shock + ST_TOFU + HP_Overwhelm + PR_DataDriven",
+                  "avatar_basis": "historical",
+                  "concept_code": "CN_ICP_TimePoorLearner",
+                  "data_insight": "C2E: CTR 2.40%, 16.67% result-per-link-click on $14.58 spend; 1 checkout at CPA $15.55 on tiny V3 spend; 0 trials on $313.39 spend — checkout bridge is the diagnostic gap.",
+                  "design_system": "CN_Design_ProductDemo_UGC",
+                  "message_pillar": "GEN_PILLAR_623f9906_3",
+                  "performance_benchmark": "Beat C2E CTR 2.40%; generate ≥1 checkout on ≥$100 spend"
+                },
+                "creative_specifications": {
+                  "format": "Video · Feed + Reels",
+                  "placement": "Advantage+ auto-placements; Facebook Reels CPA $22.35 — prioritise short-form placements",
+                  "dimensions": "1080x1920 + 1080x1350",
+                  "creative_name": "C1C_CN_ICP_TimePoorLearner_CN_Design_ProductDemo_UGC_FW_PAS_TN_Assertive_HK_Shock_ST_TOFU_001",
+                  "production_requirements": "Hard cut open; bold on-screen stat in first 2 s; assertive voice-over; 15–20 s; vertical primary"
+                }
+              },
+              "origin": "generated"
             }
           ]
         },
@@ -4967,9 +5688,9 @@
             "status": "complete",
             "window_start": "2026-05-02",
             "window_end": "2026-07-07",
-            "generated_at": "2026-07-07T00:00:00+00:00",
+            "generated_at": "2026-07-30T06:30:11.677+00:00",
             "source_file": "creative_briefs.json",
-            "note": null
+            "note": "Generated in-app by the Metrix engine (run 453e2e93-a040-48c6-b1fe-2f7a3f0c7cc9)."
           },
           {
             "stage": "creative_scan",
@@ -6657,7 +7378,7 @@
           "variation": null,
           "test_id": null,
           "meta_ad_id": "120248368953470327",
-          "creative_asset_url": "/api/metrix/accounts/ecas/cells/C3D/creative",
+          "creative_asset_url": "/api/metrix/accounts/ecas/manual-imports/b3dc6960-87ac-404f-98ab-c79102d86883/file",
           "asset_filename": "C3D_CN_ICP_HometownSelf_CN_Design_CityDetail_CTA_ClaimOffer_HK_Curiosity_TN_Aspirational_FW_PAS_ST_TOFU_001_4x5.png",
           "asset_servable": true
         },
@@ -6669,9 +7390,9 @@
           "variation": null,
           "test_id": null,
           "meta_ad_id": "120248369515870327",
-          "creative_asset_url": "/api/metrix/accounts/ecas/cells/C4A/creative",
-          "asset_filename": "C4A_CN_ICP_MemoryKeeperCouple_CN_Design_MultiPrintGallery_TN_Assertive_HK_Benefit_TN_Assertive_FW_BAB_ST_TOFU_001_4x5.png",
-          "asset_servable": true
+          "creative_asset_url": null,
+          "asset_filename": "CN_Design_MultiPrintGallery",
+          "asset_servable": false
         },
         {
           "ad_name": "C4B",

@@ -1,10 +1,13 @@
 // Integration tests for POST /api/metrix/accounts/:accountId/manual-imports.
 //
 // Covers the full upload → decode → CSV-parse pipeline via the real HTTP API:
-//   1. Valid demographic CSV staged successfully (200, status:"staged")
-//   2. Wrong-class CSV (device/placement headers in the demo slot) → 422 with
+//   1. 401 when the request has no session cookie
+//   2. Valid demographic CSV staged successfully (200, status:"staged")
+//   3. Wrong-class CSV (device/placement headers in the demo slot) → 422 with
 //      the cross-class mismatch message
-//   3. CSV with a missing critical breakdown column (Ad name) → 422
+//   4. Demographic CSV with all-zero impressions → 200, status:"staged",
+//      upload_warnings includes the conversion-export notice
+//   5. CSV with a missing critical breakdown column (Ad name) → 422
 //
 // Boots the real Express app in-process (app.listen(0)) against the live dev
 // DB / Supabase — the route's account-existence check reads Supabase directly,
@@ -28,8 +31,6 @@ import {
 } from "../iapCsvSpec";
 
 // ── CSV building helpers ──────────────────────────────────────────────────────
-// Mirrors the helpers in iapCsvParser.test.ts; inlined to keep this file
-// self-contained and avoid coupling to the unit-test helpers.
 
 const q = (cell: string): string =>
   /[",\n]/.test(cell) ? `"${cell.replace(/"/g, '""')}"` : cell;
@@ -84,7 +85,7 @@ function baseValue(col: string): string {
 /** Builds a minimal, valid CSV for the given breakdown column set. */
 function buildCsv(
   breakdownCols: readonly string[],
-  opts: { dropBreakdown?: string } = {},
+  opts: { dropBreakdown?: string; zeroImpressions?: boolean } = {},
 ): string {
   const cols = opts.dropBreakdown
     ? breakdownCols.filter((c) => c !== opts.dropBreakdown)
@@ -92,7 +93,9 @@ function buildCsv(
   const header = [...cols, ...BASE_METRICS].map(resolveCurrency);
   const row = [
     ...cols.map(breakdownValue),
-    ...BASE_METRICS.map(baseValue),
+    ...BASE_METRICS.map((col) =>
+      opts.zeroImpressions && col === "Impressions" ? "0" : baseValue(col)
+    ),
   ];
   return [line(header), line(row)].join("\n");
 }
@@ -144,7 +147,7 @@ beforeAll(async () => {
       resolve();
     });
   });
-}, 30_000);
+}, 120_000);
 
 afterAll(async () => {
   if (stagedImportIds.length > 0) {
@@ -155,7 +158,7 @@ afterAll(async () => {
   }
   await db.delete(userSessionsTable).where(eq(userSessionsTable.userId, testUserId));
   await db.delete(usersTable).where(eq(usersTable.id, testUserId));
-  await close();
+  if (typeof close === "function") await close();
   await pool.end();
 });
 
@@ -174,30 +177,31 @@ function authHeaders(): { Cookie: string; "Content-Type": string } {
 
 describe("POST /metrix/accounts/:accountId/manual-imports — CSV validation", () => {
   it("401s when unauthenticated", async () => {
-    const body = JSON.stringify({
-      kind: "performance_demo_csv",
-      filename: "demo.csv",
-      content_base64: toBase64(buildCsv(DEMOGRAPHIC_BREAKDOWN_COLUMNS)),
-    });
+    const csvText = buildCsv(DEMOGRAPHIC_BREAKDOWN_COLUMNS);
+    // No Cookie header — should be rejected by requireAuth.
     const res = await fetch(stageUrl(), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body,
+      body: JSON.stringify({
+        kind: "performance_demo_csv",
+        filename: "demo.csv",
+        content_base64: toBase64(csvText),
+      }),
     });
     expect(res.status).toBe(401);
   });
 
   it("stages a valid demographic CSV and returns status:staged", async () => {
+    // Full valid demographic CSV — all required columns present, one data row.
     const csvText = buildCsv(DEMOGRAPHIC_BREAKDOWN_COLUMNS);
-    const body = JSON.stringify({
-      kind: "performance_demo_csv",
-      filename: "demo_report.csv",
-      content_base64: toBase64(csvText),
-    });
     const res = await fetch(stageUrl(), {
       method: "POST",
       headers: authHeaders(),
-      body,
+      body: JSON.stringify({
+        kind: "performance_demo_csv",
+        filename: "demo.csv",
+        content_base64: toBase64(csvText),
+      }),
     });
     expect(res.status).toBe(200);
     const json = (await res.json()) as Record<string, unknown>;
@@ -211,15 +215,14 @@ describe("POST /metrix/accounts/:accountId/manual-imports — CSV validation", (
     // "Impression device") should trigger detectCsvClassMismatch when parsed
     // under the "demographic" class.
     const csvText = buildCsv(DEVICE_PLACEMENT_BREAKDOWN_COLUMNS);
-    const body = JSON.stringify({
-      kind: "performance_demo_csv",
-      filename: "placement_report.csv",
-      content_base64: toBase64(csvText),
-    });
     const res = await fetch(stageUrl(), {
       method: "POST",
       headers: authHeaders(),
-      body,
+      body: JSON.stringify({
+        kind: "performance_demo_csv",
+        filename: "placement.csv",
+        content_base64: toBase64(csvText),
+      }),
     });
     expect(res.status).toBe(422);
     const json = (await res.json()) as Record<string, unknown>;
@@ -228,19 +231,41 @@ describe("POST /metrix/accounts/:accountId/manual-imports — CSV validation", (
     expect(msg).toMatch(/wrong slot/i);
   });
 
+  it("stages a delivery CSV with all-zero impressions and returns upload_warnings with the conversion-export message", async () => {
+    // A demographic CSV where every row has Impressions=0 signals a Meta
+    // conversion-event export. The route should still stage the file but
+    // include an upload_warnings entry explaining the anomaly.
+    const csvText = buildCsv(DEMOGRAPHIC_BREAKDOWN_COLUMNS, { zeroImpressions: true });
+    const res = await fetch(stageUrl(), {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({
+        kind: "performance_demo_csv",
+        filename: "zero-impressions.csv",
+        content_base64: toBase64(csvText),
+      }),
+    });
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as Record<string, unknown>;
+    expect(json["status"]).toBe("staged");
+    const warnings = json["upload_warnings"] as string[] | undefined;
+    expect(Array.isArray(warnings)).toBe(true);
+    expect(warnings!.some((w) => /conversion-event export/i.test(w))).toBe(true);
+    stagedImportIds.push(String(json["import_id"]));
+  });
+
   it("rejects a demographic CSV missing the critical 'Ad name' column with 422 and a column-not-found message", async () => {
     // Drop Ad name — a critical breakdown column that cannot be recovered by
     // fuzzy inference. The parser should hard-error with an IapCsvFormatError.
     const csvText = buildCsv(DEMOGRAPHIC_BREAKDOWN_COLUMNS, { dropBreakdown: "Ad name" });
-    const body = JSON.stringify({
-      kind: "performance_demo_csv",
-      filename: "missing_adname.csv",
-      content_base64: toBase64(csvText),
-    });
     const res = await fetch(stageUrl(), {
       method: "POST",
       headers: authHeaders(),
-      body,
+      body: JSON.stringify({
+        kind: "performance_demo_csv",
+        filename: "missing_adname.csv",
+        content_base64: toBase64(csvText),
+      }),
     });
     expect(res.status).toBe(422);
     const json = (await res.json()) as Record<string, unknown>;

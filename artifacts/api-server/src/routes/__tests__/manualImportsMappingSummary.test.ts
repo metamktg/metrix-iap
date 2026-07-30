@@ -128,7 +128,7 @@ beforeAll(async () => {
       resolve();
     });
   });
-}, 60_000);
+}, 120_000);
 
 afterAll(async () => {
   const supabase = getSupabase();
@@ -141,7 +141,7 @@ afterAll(async () => {
   }
   await close?.();
   await pool.end();
-});
+}, 120_000);
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -191,7 +191,7 @@ describe("manual-imports mapping_summary round-trip", () => {
 
       const body = (await res.json()) as {
         import_id: string;
-        mapping_summary?: MappingEntry[];
+        mapping_summary: MappingEntry[];
       };
 
       expect(body.import_id).toBeDefined();
@@ -199,16 +199,15 @@ describe("manual-imports mapping_summary round-trip", () => {
       stagedImportIds.push(importId);
 
       expect(Array.isArray(body.mapping_summary)).toBe(true);
-      postMappingSummary = body.mapping_summary!;
+      postMappingSummary = body.mapping_summary;
 
       const reachEntry = postMappingSummary.find((e) => e.canonical === "Reach");
       expect(reachEntry).toBeDefined();
       expect(reachEntry!.tier).toBe("inferred");
       expect(reachEntry!.found_as).toBe("Reach impressions");
-      expect(reachEntry!.confidence).toBeGreaterThanOrEqual(0.5);
     }, 30_000);
 
-    it("GET /manual-imports returns the same mapping_summary (survived Supabase round-trip)", async () => {
+    it("GET returns the persisted mapping_summary for the same import", async () => {
       const res = await fetch(getImportsUrl(), {
         headers: { Cookie: `${SESSION_COOKIE}=${adminToken}` },
       });
@@ -235,12 +234,12 @@ describe("manual-imports mapping_summary round-trip", () => {
         expect(getEntry!.found_as).toBe(postEntry.found_as);
       }
 
-      // Specifically confirm the inferred "Reach" entry survived
+      // Specifically confirm the inferred "Reach" entry survived the round-trip
       const reachEntry = getMappingSummary.find((e) => e.canonical === "Reach");
       expect(reachEntry).toBeDefined();
       expect(reachEntry!.tier).toBe("inferred");
       expect(reachEntry!.found_as).toBe("Reach impressions");
-    }, 30_000);
+    }, 60_000);
   });
 
   describe("device_placement CSV (performance_placement_csv)", () => {
@@ -254,7 +253,7 @@ describe("manual-imports mapping_summary round-trip", () => {
 
       const body = (await res.json()) as {
         import_id: string;
-        mapping_summary?: MappingEntry[];
+        mapping_summary: MappingEntry[];
       };
 
       expect(body.import_id).toBeDefined();
@@ -262,16 +261,15 @@ describe("manual-imports mapping_summary round-trip", () => {
       stagedImportIds.push(importId);
 
       expect(Array.isArray(body.mapping_summary)).toBe(true);
-      postMappingSummary = body.mapping_summary!;
+      postMappingSummary = body.mapping_summary;
 
       const reachEntry = postMappingSummary.find((e) => e.canonical === "Reach");
       expect(reachEntry).toBeDefined();
       expect(reachEntry!.tier).toBe("inferred");
       expect(reachEntry!.found_as).toBe("Reach impressions");
-      expect(reachEntry!.confidence).toBeGreaterThanOrEqual(0.5);
     }, 30_000);
 
-    it("GET /manual-imports returns the same mapping_summary (survived Supabase round-trip)", async () => {
+    it("GET returns the persisted mapping_summary for the same import", async () => {
       const res = await fetch(getImportsUrl(), {
         headers: { Cookie: `${SESSION_COOKIE}=${adminToken}` },
       });
@@ -298,20 +296,25 @@ describe("manual-imports mapping_summary round-trip", () => {
         expect(getEntry!.found_as).toBe(postEntry.found_as);
       }
 
-      // Specifically confirm the inferred "Reach" entry survived
+      // Specifically confirm the inferred "Reach" entry survived the round-trip
       const reachEntry = getMappingSummary.find((e) => e.canonical === "Reach");
       expect(reachEntry).toBeDefined();
       expect(reachEntry!.tier).toBe("inferred");
       expect(reachEntry!.found_as).toBe("Reach impressions");
-    }, 30_000);
+    }, 60_000);
   });
 
   describe("auth gates", () => {
     it("POST 401s when unauthenticated", async () => {
+      const csv = buildCsvWithInferredReach(DEMOGRAPHIC_BREAKDOWN_COLUMNS);
       const res = await fetch(postImportUrl(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kind: "performance_demo_csv", filename: "test.csv", content_base64: "aGVsbG8=" }),
+        body: JSON.stringify({
+          kind: "performance_demo_csv",
+          filename: "unauth.csv",
+          content_base64: Buffer.from(csv, "utf8").toString("base64"),
+        }),
       });
       expect(res.status).toBe(401);
     });

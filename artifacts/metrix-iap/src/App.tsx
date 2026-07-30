@@ -24,6 +24,7 @@ import { CreateAccountPage } from "@/pages/auth/CreateAccountPage";
 import { AccountProvider } from "@/contexts/AccountContext";
 import { DateRangeProvider } from "@/contexts/DateRangeContext";
 import { ConceptRegistryProvider } from "@/lib/concept-registry-context";
+import { AnalysisViewProvider } from "@/contexts/AnalysisViewContext";
 import { Overview } from "@/pages/metrix/Overview";
 import { OverviewLoopPage } from "@/pages/metrix/OverviewLoopPage";
 import { OverviewUpdatesView } from "@/pages/metrix/OverviewUpdatesView";
@@ -32,6 +33,7 @@ import { SignalView } from "@/pages/metrix/listen/SignalView";
 import { AlertsView } from "@/pages/metrix/listen/AlertsView";
 import { RecommendationsView } from "@/pages/metrix/listen/RecommendationsView";
 import { AnalysisCommandCenter } from "@/pages/metrix/analysis/AnalysisCommandCenter";
+import { AnalysisOverview } from "@/pages/metrix/analysis/AnalysisOverview";
 import { AdPerformanceView } from "@/pages/metrix/analysis/AdPerformanceView";
 import { IapLibraryView } from "@/pages/metrix/analysis/IapLibraryView";
 import { AudienceView } from "@/pages/metrix/analysis/AudienceView";
@@ -53,11 +55,6 @@ import { CreativeImportExportView } from "@/pages/metrix/creative/CreativeImport
 import { ReportsCommandCenter } from "@/pages/metrix/reports/ReportsCommandCenter";
 import { ReportBuilderView } from "@/pages/metrix/reports/ReportBuilderView";
 import { ReportHistoryView } from "@/pages/metrix/reports/ReportHistoryView";
-import { ExportsCommandCenter } from "@/pages/metrix/exports/ExportsCommandCenter";
-import { ExportsAnalysisView } from "@/pages/metrix/exports/ExportsAnalysisView";
-import { ExportsStrategyView } from "@/pages/metrix/exports/ExportsStrategyView";
-import { ExportsReportsView } from "@/pages/metrix/exports/ExportsReportsView";
-import { ExportsBriefView } from "@/pages/metrix/exports/ExportsBriefView";
 import { ReportConfigurationView } from "@/pages/metrix/reports/ReportConfigurationView";
 import { MstCommandCenter } from "@/pages/metrix/mst/MstCommandCenter";
 import { MstCrossMapView } from "@/pages/metrix/mst/MstCrossMapView";
@@ -133,12 +130,6 @@ export function Router() {
       <Route path="/app/reports/builder"      component={ReportBuilderView} />
       <Route path="/app/reports/configuration" component={ReportConfigurationView} />
       <Route path="/app/reports/history"      component={ReportHistoryView} />
-      {/* ── 08 Exports ───────────────────────────────────────────────── */}
-      <Route path="/app/exports"          component={ExportsCommandCenter} />
-      <Route path="/app/exports/analysis" component={ExportsAnalysisView} />
-      <Route path="/app/exports/strategy" component={ExportsStrategyView} />
-      <Route path="/app/exports/reports"  component={ExportsReportsView} />
-      <Route path="/app/exports/brief"    component={ExportsBriefView} />
 
       {/* ── 07 MST ────────────────────────────────────────────────────── */}
       <Route path="/app/mst"                component={MstCommandCenter} />
@@ -165,7 +156,7 @@ export function Router() {
       <Route path="/app/settings/billing"       component={BillingView} />
 
       {/* ── Legacy route redirects (old IA → new IA, zero dead ends) ──── */}
-      <Route path="/app/analysis/overview">{() => <Redirect to="/app/analysis/performance" replace />}</Route>
+      <Route path="/app/analysis/overview" component={AnalysisOverview} />
       <Route path="/app/analysis/concept-map">{() => <Redirect to="/app/mst/cross-map" replace />}</Route>
       <Route path="/app/mst/concept-map">{() => <Redirect to="/app/mst/cross-map" replace />}</Route>
       <Route path="/app/mst/crossmap">{() => <Redirect to="/app/mst/cross-map" replace />}</Route>
@@ -178,7 +169,7 @@ export function Router() {
       <Route path="/app/report-builder">{() => <Redirect to="/app/reports/builder" replace />}</Route>
       <Route path="/app/reports/new">{() => <Redirect to="/app/reports/builder" replace />}</Route>
       <Route path="/app/reports/settings">{() => <Redirect to="/app/reports/configuration" replace />}</Route>
-      <Route path="/app/reports/exports">{() => <Redirect to="/app/exports/reports" replace />}</Route>
+      <Route path="/app/reports/exports">{() => <Redirect to="/app/reports/history" replace />}</Route>
       <Route path="/app/agent">{() => <Redirect to="/app/action/agent" replace />}</Route>
       <Route path="/app/action">{() => <Redirect to="/app/action/agent" replace />}</Route>
       <Route path="/app/settings">{() => <Redirect to="/app/settings/general" replace />}</Route>
@@ -239,11 +230,13 @@ export function AuthGate() {
       <ConceptRegistryProvider>
         <AccountProvider>
           <DateRangeProvider>
-            <TaskTrayProvider>
-              <AppShell>
-                <Router />
-              </AppShell>
-            </TaskTrayProvider>
+            <AnalysisViewProvider>
+              <TaskTrayProvider>
+                <AppShell>
+                  <Router />
+                </AppShell>
+              </TaskTrayProvider>
+            </AnalysisViewProvider>
           </DateRangeProvider>
         </AccountProvider>
       </ConceptRegistryProvider>
