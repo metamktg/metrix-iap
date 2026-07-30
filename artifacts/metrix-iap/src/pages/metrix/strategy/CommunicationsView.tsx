@@ -51,7 +51,7 @@ export function CommunicationsView() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <div className="flex items-center gap-1.5 mb-1.5">
-                          <Users className="w-3 h-3 text-primary/70" />
+                          <Users className="w-3 h-3 text-interactive/70" />
                           <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">Who's responding</span>
                         </div>
                         {icps.length > 0 ? (
@@ -71,14 +71,14 @@ export function CommunicationsView() {
                       </div>
                       <div>
                         <div className="flex items-center gap-1.5 mb-1.5">
-                          <MessageSquare className="w-3 h-3 text-primary/70" />
+                          <MessageSquare className="w-3 h-3 text-interactive/70" />
                           <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">What they're responding to</span>
                         </div>
                         <VariableStackChips stack={p.variable_stack} />
                       </div>
                       <div>
                         <div className="flex items-center gap-1.5 mb-1.5">
-                          <Lightbulb className="w-3 h-3 text-primary/70" />
+                          <Lightbulb className="w-3 h-3 text-interactive/70" />
                           <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">Why</span>
                         </div>
                         <p className="text-[11.5px] text-foreground/80 leading-relaxed">{p.why_it_matters}</p>

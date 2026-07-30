@@ -56,7 +56,7 @@ export function MstCommandCenter() {
                     {CHILDREN.map((c) => (
                       <div key={c.to} className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <c.Icon className="w-4 h-4 text-primary shrink-0" />
+                          <c.Icon className="w-4 h-4 text-interactive shrink-0" />
                           <div className="min-w-0">
                             <div className="text-[13px] font-semibold text-foreground">{c.label}</div>
                             <p className="text-[11px] text-muted-foreground/80 leading-relaxed">{c.desc}</p>

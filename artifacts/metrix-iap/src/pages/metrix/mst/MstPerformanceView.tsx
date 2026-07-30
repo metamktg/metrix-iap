@@ -136,7 +136,7 @@ export function MstPerformanceView() {
                   {avatarWinners.map((w) => (
                     <div key={w.columnId} className="rounded-xl border border-border/40 bg-white/[0.02] p-3">
                       <div className="flex items-center gap-1.5 mb-1.5">
-                        <Users className="w-3 h-3 text-primary/60" />
+                        <Users className="w-3 h-3 text-interactive/60" />
                         <span className="text-[11px] font-medium text-foreground">{w.label}</span>
                       </div>
                       <p className="text-[12px] text-foreground/85">{readableVariables(w.row.sharedVariable)}</p>

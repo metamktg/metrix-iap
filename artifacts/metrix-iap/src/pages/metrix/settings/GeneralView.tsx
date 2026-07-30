@@ -178,7 +178,7 @@ function NotificationPrefsSections() {
 
       <SectionCard title="Digest" desc="The scheduled summary across all ad accounts.">
         <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
-          <CalendarClock className="w-4 h-4 text-primary shrink-0" />
+          <CalendarClock className="w-4 h-4 text-interactive shrink-0" />
           <div className="flex-1 min-w-0">
             <div className="text-[12px] font-medium text-foreground capitalize">{notifications.digest.frequency} · {notifications.digest.day}</div>
             <div className="text-[10px] text-muted-foreground/70 mt-0.5">{notifications.digest.description}</div>
@@ -231,7 +231,7 @@ export function GeneralView() {
               {!configured && (
                 <button
                   onClick={() => setConnectOpen(true)}
-                  className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-[11px] font-medium text-primary hover:bg-primary/25 transition-colors"
+                  className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-[11px] font-medium text-interactive hover:bg-primary/25 transition-colors"
                   data-testid="button-connect-account"
                 >
                   <Plug className="w-3 h-3" /> Connect
@@ -286,7 +286,7 @@ export function GeneralView() {
         {rb && (
           <SectionCard title="White-label & branding" desc="How reports are branded when delivered to this account's client.">
             <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
-              <Palette className="w-4 h-4 text-primary shrink-0" />
+              <Palette className="w-4 h-4 text-interactive shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="text-[12px] font-medium text-foreground capitalize">{rb.default_branding} branding</div>
                 <div className="text-[10px] text-muted-foreground/85">White-label {rb.white_label_supported ? "supported" : "unavailable"} · formats: {rb.export_formats.join(", ")}</div>

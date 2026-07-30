@@ -91,6 +91,7 @@ export function CreativeBriefBuilderView() {
           return (
             <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
               <ModuleHeader section={SECTION} title="Brief Builder" subtitle="Choose a brief from Creative to open its workspace." />
+              <p className="sr-only">Choose a brief from Creative</p>
               <ScopeBanner account={acct} />
               {briefs.length === 0 ? (
                 <PendingState title="No briefs yet" message="Generate briefs from the Creative command center first." icon={FileText} action={<CrossLink to="/app/creative" label="Go to Creative" />} />
@@ -126,6 +127,9 @@ export function CreativeBriefBuilderView() {
             <FlowCrumb {...fp} />
 
             <div className="px-6 py-5 space-y-4 max-w-3xl">
+              <p className="text-[11px] text-muted-foreground/60 -mb-1">
+                {detail.asset_type} · {STATUS_LABEL[detail.status] ?? detail.status}
+              </p>
               <SectionCard title="Direction" desc="What to build.">
                 <p className="text-[13px] text-foreground/85 leading-relaxed"><TokenizedConceptText text={detail.human_direction} /></p>
                 <div className="flex flex-wrap gap-1.5 mt-3">

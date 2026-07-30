@@ -294,7 +294,14 @@ export const ListAnalysisRunsResponse = zod.object({
   "creatives_unlinked_names": zod.array(zod.string()).nullish().describe('Ad names from staged creative assets that could not be matched to any ads row.'),
   "csv_warnings": zod.array(zod.string()).nullish().describe('Warnings produced during tolerant CSV column matching (auto-resolved aliases, missing columns, unrecognised columns that might map to expected ones). Null when parsing was clean. Present on successful runs that had non-fatal column issues.'),
   "progress_pct": zod.number().optional().describe('Live progress percentage (0–100) while the run is executing. Updated at each pipeline stage. 0 when idle or just started; 100 on success.'),
-  "progress_stage": zod.string().optional().describe('Human-readable label for the current pipeline stage (e.g. \"Parsing demographics export\"). Empty string when idle or complete.')
+  "progress_stage": zod.string().optional().describe('Human-readable label for the current pipeline stage (e.g. \"Parsing demographics export\"). Empty string when idle or complete.'),
+  "reconciliation": zod.array(zod.object({
+  "metric_key": zod.enum(['spend', 'results']),
+  "demographic_total": zod.number(),
+  "placement_total": zod.number(),
+  "delta_pct": zod.number(),
+  "flagged": zod.boolean()
+})).describe('Cross-checks the demographic export\'s totals against the placement export\'s totals for this run — both are pivot slices of the same underlying campaigns, so a large delta flags a real data-integrity problem (mismatched date ranges, partial exports, wrong file uploaded).')
 }))
 })
 
@@ -430,7 +437,14 @@ export const GetLatestAnalysisRunResponse = zod.object({
   "creatives_unlinked_names": zod.array(zod.string()).nullish().describe('Ad names from staged creative assets that could not be matched to any ads row.'),
   "csv_warnings": zod.array(zod.string()).nullish().describe('Warnings produced during tolerant CSV column matching (auto-resolved aliases, missing columns, unrecognised columns that might map to expected ones). Null when parsing was clean. Present on successful runs that had non-fatal column issues.'),
   "progress_pct": zod.number().optional().describe('Live progress percentage (0–100) while the run is executing. Updated at each pipeline stage. 0 when idle or just started; 100 on success.'),
-  "progress_stage": zod.string().optional().describe('Human-readable label for the current pipeline stage (e.g. \"Parsing demographics export\"). Empty string when idle or complete.')
+  "progress_stage": zod.string().optional().describe('Human-readable label for the current pipeline stage (e.g. \"Parsing demographics export\"). Empty string when idle or complete.'),
+  "reconciliation": zod.array(zod.object({
+  "metric_key": zod.enum(['spend', 'results']),
+  "demographic_total": zod.number(),
+  "placement_total": zod.number(),
+  "delta_pct": zod.number(),
+  "flagged": zod.boolean()
+})).describe('Cross-checks the demographic export\'s totals against the placement export\'s totals for this run — both are pivot slices of the same underlying campaigns, so a large delta flags a real data-integrity problem (mismatched date ranges, partial exports, wrong file uploaded).')
 }).nullable()
 })
 
@@ -637,6 +651,59 @@ export const GetAnalysisSummaryResponse = zod.object({
   "results": zod.number(),
   "link_clicks": zod.number()
 }))
+})
+
+
+/**
+ * Composes the account's latest analysis run, latest strategy generation run, latest briefs generation run, and current brief count into one shape the frontend gates the Analysis → Strategy → Creative → MST loop on. Adds no new run tables — reads the existing manual_analysis_runs and generation_runs records. Requires access to the account.
+ * @summary Loop stage status for an account (hard-gating source of truth)
+ */
+
+
+
+export const GetAccountStageStatusParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
+})
+
+export const GetAccountStageStatusResponse = zod.object({
+  "analysis": zod.object({
+  "status": zod.enum(['none', 'running', 'success', 'error']),
+  "last_run_at": zod.string().nullable(),
+  "date_range": zod.union([zod.literal('7d'),zod.literal('14d'),zod.literal('30d'),zod.literal('all'),zod.literal(null)]).nullable()
+}),
+  "strategy": zod.object({
+  "status": zod.enum(['none', 'running', 'success', 'error']),
+  "last_run_at": zod.string().nullable()
+}),
+  "briefs": zod.object({
+  "status": zod.enum(['none', 'running', 'success', 'error']),
+  "last_run_at": zod.string().nullable(),
+  "count": zod.number()
+}),
+  "mst": zod.object({
+  "unlocked": zod.boolean()
+})
+})
+
+
+/**
+ * Sets ecommerce/lead_gen/service/app on the ad account, so downstream terminal-metric reads (Budget, Ad Performance, Exports) branch on cohort instead of assuming ROAS/purchase. Required by the UI before the first analysis run. Requires access to the account.
+ * @summary Set the account's business-model cohort
+ */
+
+
+
+export const SetAccountCohortParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
+})
+
+export const SetAccountCohortBody = zod.object({
+  "cohort": zod.enum(['ecommerce', 'lead_gen', 'service', 'app'])
+})
+
+export const SetAccountCohortResponse = zod.object({
+  "account_id": zod.string(),
+  "cohort": zod.enum(['ecommerce', 'lead_gen', 'service', 'app'])
 })
 
 
@@ -1039,6 +1106,34 @@ export const RejectRequestAccessEntryResponse = zod.object({
 
 
 /**
+ * Returns every non-expired session for the logged-in user, flagging which one is the caller's own. Used by Settings → Security.
+ * @summary List the current user's active sessions
+ */
+export const ListMySessionsResponse = zod.object({
+  "sessions": zod.array(zod.object({
+  "id": zod.number(),
+  "created_at": zod.string(),
+  "expires_at": zod.string(),
+  "is_current": zod.boolean().describe('True for the session behind the request that fetched this list.')
+}))
+})
+
+
+/**
+ * Deletes the session by id — scoped to the caller's own sessions only, never another user's. Revoking the session behind the current request signs that browser out.
+ * @summary Revoke one of the current user's own sessions
+ */
+export const RevokeMySessionParams = zod.object({
+  "sessionId": zod.coerce.number()
+})
+
+export const RevokeMySessionResponse = zod.object({
+  "status": zod.enum(['revoked']),
+  "id": zod.number()
+})
+
+
+/**
  * Verifies credentials and sets an httpOnly session cookie. Returns the authenticated user, including whether a password change is required before using the app.
  * @summary Log in with email and password
  */
@@ -1058,7 +1153,8 @@ export const AuthLoginResponse = zod.object({
   "must_change_password": zod.boolean(),
   "role": zod.enum(['admin', 'member']).describe('admin sees every ad account (agency team); member sees only accounts they have been granted.'),
   "manage_team": zod.boolean().describe('Can invite\/remove members and assign asset access. Always true for admin.'),
-  "view_agency_rollups": zod.boolean().describe('Can see manager-level totals\/rollups across all ad accounts. Always true for admin.')
+  "view_agency_rollups": zod.boolean().describe('Can see manager-level totals\/rollups across all ad accounts. Always true for admin.'),
+  "export_data": zod.boolean().describe('Can use the Exports section (JSON\/CSV handoff of analysis\/strategy\/briefs\/reports). A future premium entitlement, off by default — NOT implied by admin role.')
 })
 })
 
@@ -1082,7 +1178,8 @@ export const AuthMeResponse = zod.object({
   "must_change_password": zod.boolean(),
   "role": zod.enum(['admin', 'member']).describe('admin sees every ad account (agency team); member sees only accounts they have been granted.'),
   "manage_team": zod.boolean().describe('Can invite\/remove members and assign asset access. Always true for admin.'),
-  "view_agency_rollups": zod.boolean().describe('Can see manager-level totals\/rollups across all ad accounts. Always true for admin.')
+  "view_agency_rollups": zod.boolean().describe('Can see manager-level totals\/rollups across all ad accounts. Always true for admin.'),
+  "export_data": zod.boolean().describe('Can use the Exports section (JSON\/CSV handoff of analysis\/strategy\/briefs\/reports). A future premium entitlement, off by default — NOT implied by admin role.')
 })
 })
 
@@ -1109,7 +1206,8 @@ export const AuthChangePasswordResponse = zod.object({
   "must_change_password": zod.boolean(),
   "role": zod.enum(['admin', 'member']).describe('admin sees every ad account (agency team); member sees only accounts they have been granted.'),
   "manage_team": zod.boolean().describe('Can invite\/remove members and assign asset access. Always true for admin.'),
-  "view_agency_rollups": zod.boolean().describe('Can see manager-level totals\/rollups across all ad accounts. Always true for admin.')
+  "view_agency_rollups": zod.boolean().describe('Can see manager-level totals\/rollups across all ad accounts. Always true for admin.'),
+  "export_data": zod.boolean().describe('Can use the Exports section (JSON\/CSV handoff of analysis\/strategy\/briefs\/reports). A future premium entitlement, off by default — NOT implied by admin role.')
 })
 })
 
@@ -1171,7 +1269,8 @@ export const AuthRegisterResponse = zod.object({
   "must_change_password": zod.boolean(),
   "role": zod.enum(['admin', 'member']).describe('admin sees every ad account (agency team); member sees only accounts they have been granted.'),
   "manage_team": zod.boolean().describe('Can invite\/remove members and assign asset access. Always true for admin.'),
-  "view_agency_rollups": zod.boolean().describe('Can see manager-level totals\/rollups across all ad accounts. Always true for admin.')
+  "view_agency_rollups": zod.boolean().describe('Can see manager-level totals\/rollups across all ad accounts. Always true for admin.'),
+  "export_data": zod.boolean().describe('Can use the Exports section (JSON\/CSV handoff of analysis\/strategy\/briefs\/reports). A future premium entitlement, off by default — NOT implied by admin role.')
 })
 })
 
@@ -1910,49 +2009,6 @@ export const ListMetaReportRowsResponse = zod.object({
   "metric_mapping_status": zod.record(zod.string(), zod.unknown()).nullish().describe('Debug object showing mapped, missing, derived, and unavailable template metrics for this pull.')
 })
 
-
-/**
- * Sets the cohort classification for an ad account.
- * @summary Set cohort for an ad account
- */
-export const SetAccountCohortParams = zod.object({
-  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
-})
-
-export const SetAccountCohortBody = zod.object({
-  "cohort": zod.enum(['ecommerce', 'lead_gen', 'service', 'app'])
-})
-
-export const SetAccountCohortResponse = zod.object({
-  "account_id": zod.string(),
-  "cohort": zod.enum(['ecommerce', 'lead_gen', 'service', 'app'])
-})
-
-/**
- * Returns every non-expired session for the logged-in user, flagging which one is the caller's own.
- * @summary List the current user's active sessions
- */
-export const ListMySessionsResponse = zod.object({
-  "sessions": zod.array(zod.object({
-    "id": zod.number(),
-    "created_at": zod.string(),
-    "expires_at": zod.string(),
-    "is_current": zod.boolean().describe('True for the session behind the request that fetched this list.')
-  }))
-})
-
-/**
- * Deletes the session by id — scoped to the caller's own sessions only.
- * @summary Revoke one of the current user's own sessions
- */
-export const RevokeMySessionParams = zod.object({
-  "sessionId": zod.coerce.number()
-})
-
-export const RevokeMySessionResponse = zod.object({
-  "status": zod.enum(['revoked']),
-  "id": zod.number()
-})
 
 /**
  * Returns server health status

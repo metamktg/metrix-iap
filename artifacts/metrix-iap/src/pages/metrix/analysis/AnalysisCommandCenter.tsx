@@ -63,9 +63,9 @@ function CohortSelector({ accountId, onDone }: { accountId: string; onDone?: () 
             className="flex items-center gap-2.5 p-3 rounded-lg border border-border/40 bg-white/[0.02] hover:border-primary/40 hover:bg-primary/[0.04] transition-colors text-left disabled:opacity-60"
           >
             {mutation.isPending && mutation.variables?.data.cohort === c.id ? (
-              <Loader2 className="w-4 h-4 text-primary shrink-0 animate-spin" />
+              <Loader2 className="w-4 h-4 text-interactive shrink-0 animate-spin" />
             ) : (
-              <c.Icon className="w-4 h-4 text-primary shrink-0" />
+              <c.Icon className="w-4 h-4 text-interactive shrink-0" />
             )}
             <div className="min-w-0">
               <div className="text-[12.5px] font-medium text-foreground">{c.label}</div>
@@ -121,7 +121,7 @@ export function AnalysisCommandCenter() {
 
               <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <LayoutDashboard className="w-4 h-4 text-primary shrink-0" />
+                  <LayoutDashboard className="w-4 h-4 text-interactive shrink-0" />
                   <div className="min-w-0">
                     <div className="text-[13px] font-semibold text-foreground">Ad Performance</div>
                     <p className="text-[11px] text-muted-foreground/80 leading-relaxed">

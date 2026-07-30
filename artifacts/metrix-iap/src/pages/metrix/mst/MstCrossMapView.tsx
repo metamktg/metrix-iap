@@ -25,7 +25,7 @@ export function MstCrossMapView() {
           { id: "crossmap", label: "Crossmap Results", Icon: GitMerge },
         ]}
         active={tab}
-        onChange={setTab}
+        onChange={(id) => setTab(id as Tab)}
       />
       <div className="px-6 pt-2">
         <CaveatNote text="Dynamic cross-tile visualization (heatmaps, position maps, avatar tiles, trend/pattern charts) is planned but not yet built — this shows the underlying joins today." defaultExpanded={false} />

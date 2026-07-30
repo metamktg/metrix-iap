@@ -31,7 +31,7 @@ function SessionSection() {
   return (
     <SectionCard title="Your session" desc="The account you're currently signed in with.">
       <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
-        <UserCircle2 className="w-4 h-4 text-primary shrink-0" />
+        <UserCircle2 className="w-4 h-4 text-interactive shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="text-[12px] font-medium text-foreground truncate" data-testid="text-session-email">{user.email}</div>
           <div className="text-[10px] text-muted-foreground/85">Signed in</div>

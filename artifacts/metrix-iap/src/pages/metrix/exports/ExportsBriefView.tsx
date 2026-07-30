@@ -30,7 +30,7 @@ export function ExportsBriefView() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => downloadJson(`metrix-briefs-${selectedId}.json`, payload)}
-                    className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-[11px] font-medium text-primary hover:bg-primary/25 transition-colors"
+                    className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-[11px] font-medium text-interactive hover:bg-primary/25 transition-colors"
                   >
                     <Download className="w-3.5 h-3.5" /> JSON
                   </button>

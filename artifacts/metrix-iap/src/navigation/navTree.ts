@@ -76,7 +76,7 @@ export const navTree: NavSection[] = [
   {
     id: "overview",
     number: "01",
-    label: "Overview",
+    label: "Account Overview",
     icon: "LayoutDashboard",
     landing: "/",
     matchPaths: ["/app/account"],

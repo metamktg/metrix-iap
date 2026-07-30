@@ -7,6 +7,7 @@
  */
 import type { AnalysisRunDateRange } from './analysisRunDateRange';
 import type { AnalysisRunStatus } from './analysisRunStatus';
+import type { ReconciliationRow } from './reconciliationRow';
 
 export interface AnalysisRun {
   id: string;
@@ -34,4 +35,6 @@ export interface AnalysisRun {
   progress_pct?: number;
   /** Human-readable label for the current pipeline stage (e.g. "Parsing demographics export"). Empty string when idle or complete. */
   progress_stage?: string;
+  /** Cross-checks the demographic export's totals against the placement export's totals for this run — both are pivot slices of the same underlying campaigns, so a large delta flags a real data-integrity problem (mismatched date ranges, partial exports, wrong file uploaded). */
+  reconciliation: ReconciliationRow[];
 }

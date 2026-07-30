@@ -795,7 +795,8 @@ declare
     'variable_registry', 'signal_cards', 'account_modules', 'app_config',
     'request_access', 'meta_oauth_pending', 'connected_ad_accounts', 'report_pulls',
     'report_rows', 'generation_runs', 'manual_imports', 'manual_analysis_runs',
-    'cell_creative_overrides'
+    'cell_creative_overrides',
+    'import_metric_reconciliation'
   ];
 begin
   foreach t in array importer_tables loop

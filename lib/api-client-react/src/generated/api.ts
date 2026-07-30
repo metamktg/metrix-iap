@@ -65,6 +65,7 @@ import type {
   ListAgentWaitlistParams,
   ListManualImportsResult,
   ListMetaReportRowsParams,
+  ListSessionsResult,
   ManualImport,
   ManualImportInput,
   ManualImportResult,
@@ -83,10 +84,14 @@ import type {
   RequestAccessEntriesResult,
   RequestAccessInput,
   RequestAccessResult,
+  RevokeSessionResult,
   RevokeWorkspaceInviteResult,
   RunMetaReportsResult,
   SelectMetaAdAccountInput,
   SelectMetaAdAccountResult,
+  SetAccountCohortInput,
+  SetAccountCohortResult,
+  StageStatusResult,
   StartAnalysisInput,
   StartGenerationResult,
   SyncCreativeLinksResult,
@@ -1603,6 +1608,156 @@ export function useGetAnalysisSummary<TData = Awaited<ReturnType<typeof getAnaly
 
 
 
+
+export const getGetAccountStageStatusUrl = (accountId: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/stage-status`
+}
+
+/**
+ * Composes the account's latest analysis run, latest strategy generation run, latest briefs generation run, and current brief count into one shape the frontend gates the Analysis → Strategy → Creative → MST loop on. Adds no new run tables — reads the existing manual_analysis_runs and generation_runs records. Requires access to the account.
+ * @summary Loop stage status for an account (hard-gating source of truth)
+ */
+export const getAccountStageStatus = async (accountId: string, options?: RequestInit): Promise<StageStatusResult> => {
+
+  return customFetch<StageStatusResult>(getGetAccountStageStatusUrl(accountId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAccountStageStatusQueryKey = (accountId: string,) => {
+    return [
+    `/api/metrix/accounts/${accountId}/stage-status`
+    ] as const;
+    }
+
+
+export const getGetAccountStageStatusQueryOptions = <TData = Awaited<ReturnType<typeof getAccountStageStatus>>, TError = ErrorType<ApiError>>(accountId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAccountStageStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAccountStageStatusQueryKey(accountId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAccountStageStatus>>> = ({ signal }) => getAccountStageStatus(accountId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: accountId !== null && accountId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAccountStageStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAccountStageStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getAccountStageStatus>>>
+export type GetAccountStageStatusQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Loop stage status for an account (hard-gating source of truth)
+ */
+
+export function useGetAccountStageStatus<TData = Awaited<ReturnType<typeof getAccountStageStatus>>, TError = ErrorType<ApiError>>(
+ accountId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAccountStageStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAccountStageStatusQueryOptions(accountId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSetAccountCohortUrl = (accountId: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/cohort`
+}
+
+/**
+ * Sets ecommerce/lead_gen/service/app on the ad account, so downstream terminal-metric reads (Budget, Ad Performance, Exports) branch on cohort instead of assuming ROAS/purchase. Required by the UI before the first analysis run. Requires access to the account.
+ * @summary Set the account's business-model cohort
+ */
+export const setAccountCohort = async (accountId: string,
+    setAccountCohortInput: SetAccountCohortInput, options?: RequestInit): Promise<SetAccountCohortResult> => {
+
+  return customFetch<SetAccountCohortResult>(getSetAccountCohortUrl(accountId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(setAccountCohortInput)
+  }
+);}
+
+
+
+
+export const getSetAccountCohortMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setAccountCohort>>, TError,{accountId: string;data: BodyType<SetAccountCohortInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setAccountCohort>>, TError,{accountId: string;data: BodyType<SetAccountCohortInput>}, TContext> => {
+
+const mutationKey = ['setAccountCohort'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setAccountCohort>>, {accountId: string;data: BodyType<SetAccountCohortInput>}> = (props) => {
+          const {accountId,data} = props ?? {};
+
+          return  setAccountCohort(accountId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetAccountCohortMutationResult = NonNullable<Awaited<ReturnType<typeof setAccountCohort>>>
+    export type SetAccountCohortMutationBody = BodyType<SetAccountCohortInput>
+    export type SetAccountCohortMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Set the account's business-model cohort
+ */
+export const useSetAccountCohort = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setAccountCohort>>, TError,{accountId: string;data: BodyType<SetAccountCohortInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setAccountCohort>>,
+        TError,
+        {accountId: string;data: BodyType<SetAccountCohortInput>},
+        TContext
+      > => {
+      return useMutation(getSetAccountCohortMutationOptions(options));
+    }
 
 export const getGenerateAccountStrategyUrl = (accountId: string,) => {
 
@@ -3296,6 +3451,155 @@ export const useRejectRequestAccessEntry = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getRejectRequestAccessEntryMutationOptions(options));
+    }
+
+export const getListMySessionsUrl = () => {
+
+
+
+
+  return `/api/metrix/sessions`
+}
+
+/**
+ * Returns every non-expired session for the logged-in user, flagging which one is the caller's own. Used by Settings → Security.
+ * @summary List the current user's active sessions
+ */
+export const listMySessions = async ( options?: RequestInit): Promise<ListSessionsResult> => {
+
+  return customFetch<ListSessionsResult>(getListMySessionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMySessionsQueryKey = () => {
+    return [
+    `/api/metrix/sessions`
+    ] as const;
+    }
+
+
+export const getListMySessionsQueryOptions = <TData = Awaited<ReturnType<typeof listMySessions>>, TError = ErrorType<ApiError>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMySessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMySessionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMySessions>>> = ({ signal }) => listMySessions({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMySessions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMySessionsQueryResult = NonNullable<Awaited<ReturnType<typeof listMySessions>>>
+export type ListMySessionsQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary List the current user's active sessions
+ */
+
+export function useListMySessions<TData = Awaited<ReturnType<typeof listMySessions>>, TError = ErrorType<ApiError>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMySessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMySessionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRevokeMySessionUrl = (sessionId: number,) => {
+
+
+
+
+  return `/api/metrix/sessions/${sessionId}`
+}
+
+/**
+ * Deletes the session by id — scoped to the caller's own sessions only, never another user's. Revoking the session behind the current request signs that browser out.
+ * @summary Revoke one of the current user's own sessions
+ */
+export const revokeMySession = async (sessionId: number, options?: RequestInit): Promise<RevokeSessionResult> => {
+
+  return customFetch<RevokeSessionResult>(getRevokeMySessionUrl(sessionId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRevokeMySessionMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeMySession>>, TError,{sessionId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokeMySession>>, TError,{sessionId: number}, TContext> => {
+
+const mutationKey = ['revokeMySession'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeMySession>>, {sessionId: number}> = (props) => {
+          const {sessionId} = props ?? {};
+
+          return  revokeMySession(sessionId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokeMySessionMutationResult = NonNullable<Awaited<ReturnType<typeof revokeMySession>>>
+
+    export type RevokeMySessionMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Revoke one of the current user's own sessions
+ */
+export const useRevokeMySession = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeMySession>>, TError,{sessionId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revokeMySession>>,
+        TError,
+        {sessionId: number},
+        TContext
+      > => {
+      return useMutation(getRevokeMySessionMutationOptions(options));
     }
 
 export const getAuthLoginUrl = () => {

@@ -16,7 +16,9 @@ import {
   RESET_PASSWORD_PATH,
   FORGOT_PASSWORD_PATH,
   ADMIN_PATH,
+  CREATE_ACCOUNT_PATH,
 } from "@/navigation/preLoginRoutes";
+import { CreateAccountPage } from "@/pages/auth/CreateAccountPage";
 
 // Seed-hydrated Metrix pages (manager → ad-account hierarchy)
 import { AccountProvider } from "@/contexts/AccountContext";
@@ -206,6 +208,9 @@ export function AuthGate() {
   if (!user) {
     if (location === FORGOT_PASSWORD_PATH) {
       return <ForgotPasswordPage onBack={() => navigate("/", { replace: true })} />;
+    }
+    if (location === CREATE_ACCOUNT_PATH) {
+      return <CreateAccountPage onBack={() => navigate("/", { replace: true })} />;
     }
     return <LoginPage />;
   }

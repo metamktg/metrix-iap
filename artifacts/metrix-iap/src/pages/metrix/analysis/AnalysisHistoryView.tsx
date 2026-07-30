@@ -76,7 +76,7 @@ export function AnalysisHistoryView() {
               </SectionCard>
             )}
 
-            {run && run.reconciliation.length > 0 && (
+            {run && (run.reconciliation ?? []).length > 0 && (
               <SectionCard
                 title="Data integrity"
                 desc="The demographic and placement exports are cross-checked against each other — both are pivot slices of the same underlying campaigns, so their totals should match."
