@@ -1912,6 +1912,49 @@ export const ListMetaReportRowsResponse = zod.object({
 
 
 /**
+ * Sets the cohort classification for an ad account.
+ * @summary Set cohort for an ad account
+ */
+export const SetAccountCohortParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
+})
+
+export const SetAccountCohortBody = zod.object({
+  "cohort": zod.enum(['ecommerce', 'lead_gen', 'service', 'app'])
+})
+
+export const SetAccountCohortResponse = zod.object({
+  "account_id": zod.string(),
+  "cohort": zod.enum(['ecommerce', 'lead_gen', 'service', 'app'])
+})
+
+/**
+ * Returns every non-expired session for the logged-in user, flagging which one is the caller's own.
+ * @summary List the current user's active sessions
+ */
+export const ListMySessionsResponse = zod.object({
+  "sessions": zod.array(zod.object({
+    "id": zod.number(),
+    "created_at": zod.string(),
+    "expires_at": zod.string(),
+    "is_current": zod.boolean().describe('True for the session behind the request that fetched this list.')
+  }))
+})
+
+/**
+ * Deletes the session by id — scoped to the caller's own sessions only.
+ * @summary Revoke one of the current user's own sessions
+ */
+export const RevokeMySessionParams = zod.object({
+  "sessionId": zod.coerce.number()
+})
+
+export const RevokeMySessionResponse = zod.object({
+  "status": zod.enum(['revoked']),
+  "id": zod.number()
+})
+
+/**
  * Returns server health status
  * @summary Health check
  */

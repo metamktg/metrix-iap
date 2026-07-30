@@ -8,7 +8,6 @@
 
 export type RevokeSessionResultStatus = typeof RevokeSessionResultStatus[keyof typeof RevokeSessionResultStatus];
 
-
 export const RevokeSessionResultStatus = {
   revoked: 'revoked',
 } as const;

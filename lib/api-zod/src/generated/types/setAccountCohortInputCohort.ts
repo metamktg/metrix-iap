@@ -8,7 +8,6 @@
 
 export type SetAccountCohortInputCohort = typeof SetAccountCohortInputCohort[keyof typeof SetAccountCohortInputCohort];
 
-
 export const SetAccountCohortInputCohort = {
   ecommerce: 'ecommerce',
   lead_gen: 'lead_gen',

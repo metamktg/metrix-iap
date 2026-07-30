@@ -19,7 +19,7 @@ export function MstCrossMapView() {
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
-      <ModuleTabs<Tab>
+      <ModuleTabs
         tabs={[
           { id: "concept", label: "Concept Map", Icon: Network },
           { id: "crossmap", label: "Crossmap Results", Icon: GitMerge },
