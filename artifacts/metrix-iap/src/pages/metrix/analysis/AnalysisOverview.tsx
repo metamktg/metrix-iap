@@ -723,8 +723,7 @@ export function AnalysisOverview() {
   const analysis       = getAnalysisData(seed, adAccountId);
 
   const [cellSort, setCellSort] = useState<CellSort>("spend");
-  const [selectedWindow, setSelectedWindow] = useState<DataWindowSelection | null>(null);
-  const { topN, setTopN, goalCpa, setGoalCpa } = useAnalysisView();
+  const { topN, setTopN, goalCpa, setGoalCpa, selectedWindow, setSelectedWindow } = useAnalysisView();
 
   // Fetch available date windows from actual ad_performance data (not run metadata).
   const { data: windowsData, isFetching: windowsFetching } = useQuery({

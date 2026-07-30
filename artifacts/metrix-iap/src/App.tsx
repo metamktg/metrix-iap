@@ -24,6 +24,7 @@ import { CreateAccountPage } from "@/pages/auth/CreateAccountPage";
 import { AccountProvider } from "@/contexts/AccountContext";
 import { DateRangeProvider } from "@/contexts/DateRangeContext";
 import { ConceptRegistryProvider } from "@/lib/concept-registry-context";
+import { AnalysisViewProvider } from "@/contexts/AnalysisViewContext";
 import { Overview } from "@/pages/metrix/Overview";
 import { OverviewLoopPage } from "@/pages/metrix/OverviewLoopPage";
 import { OverviewUpdatesView } from "@/pages/metrix/OverviewUpdatesView";
@@ -32,6 +33,7 @@ import { SignalView } from "@/pages/metrix/listen/SignalView";
 import { AlertsView } from "@/pages/metrix/listen/AlertsView";
 import { RecommendationsView } from "@/pages/metrix/listen/RecommendationsView";
 import { AnalysisCommandCenter } from "@/pages/metrix/analysis/AnalysisCommandCenter";
+import { AnalysisOverview } from "@/pages/metrix/analysis/AnalysisOverview";
 import { AdPerformanceView } from "@/pages/metrix/analysis/AdPerformanceView";
 import { IapLibraryView } from "@/pages/metrix/analysis/IapLibraryView";
 import { AudienceView } from "@/pages/metrix/analysis/AudienceView";
@@ -165,7 +167,7 @@ export function Router() {
       <Route path="/app/settings/billing"       component={BillingView} />
 
       {/* ── Legacy route redirects (old IA → new IA, zero dead ends) ──── */}
-      <Route path="/app/analysis/overview">{() => <Redirect to="/app/analysis/performance" replace />}</Route>
+      <Route path="/app/analysis/overview" component={AnalysisOverview} />
       <Route path="/app/analysis/concept-map">{() => <Redirect to="/app/mst/cross-map" replace />}</Route>
       <Route path="/app/mst/concept-map">{() => <Redirect to="/app/mst/cross-map" replace />}</Route>
       <Route path="/app/mst/crossmap">{() => <Redirect to="/app/mst/cross-map" replace />}</Route>
@@ -239,11 +241,13 @@ export function AuthGate() {
       <ConceptRegistryProvider>
         <AccountProvider>
           <DateRangeProvider>
-            <TaskTrayProvider>
-              <AppShell>
-                <Router />
-              </AppShell>
-            </TaskTrayProvider>
+            <AnalysisViewProvider>
+              <TaskTrayProvider>
+                <AppShell>
+                  <Router />
+                </AppShell>
+              </TaskTrayProvider>
+            </AnalysisViewProvider>
           </DateRangeProvider>
         </AccountProvider>
       </ConceptRegistryProvider>

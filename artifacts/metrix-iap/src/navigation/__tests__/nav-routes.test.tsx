@@ -43,7 +43,6 @@ const navPaths: { label: string; to: string }[] = navTree.flatMap((section) => [
 
 // Legacy IA paths and the routes they must redirect to.
 const legacyRedirects: [string, string][] = [
-  ["/app/analysis/overview", "/app/analysis/performance"],
   ["/app/analysis/concept-map", "/app/mst/cross-map"],
   ["/app/mst/concept-map", "/app/mst/cross-map"],
   ["/app/mst/crossmap", "/app/mst/cross-map"],
