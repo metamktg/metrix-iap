@@ -986,6 +986,7 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
       tier: "exact" | "resolved" | "inferred" | "missing";
       is_required: boolean;
     }> | undefined;
+    let csvUploadWarnings: string[] | undefined;
     if (csvClass) {
       try {
         const text = content.toString("utf8");
@@ -1004,6 +1005,9 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
           tier: e.tier,
           is_required: e.isRequired,
         }));
+        if (parseResult.warnings.length > 0) {
+          csvUploadWarnings = parseResult.warnings;
+        }
       } catch (err) {
         if (err instanceof IapCsvFormatError) {
           res.status(422).json({ message: err.message });
@@ -1064,6 +1068,7 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
         size_bytes: content.length,
         note: "File staged for the analysis pipeline. Performance data appears only after an analysis run processes it — nothing is parsed or fabricated at upload time.",
         ...(csvMappingSummary ? { mapping_summary: csvMappingSummary } : {}),
+        ...(csvUploadWarnings ? { upload_warnings: csvUploadWarnings } : {}),
         ...(linkResult
           ? { link_result: { matched: linkResult.matched, unmatched: linkResult.unmatched } }
           : {}),

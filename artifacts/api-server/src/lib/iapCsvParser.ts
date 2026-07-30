@@ -542,6 +542,28 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
     throw new IapCsvFormatError("The file has a header row but no data rows.");
   }
 
+  // ── Conversion-export detection ────────────────────────────────────────
+  // Delivery exports (demographic, device_placement, ad_summary) always carry
+  // real impression counts. All-zero impressions is the hallmark of a Meta
+  // conversion/action export — those exports attribute clicks and results to ad
+  // delivery windows but record 0 impressions because they are not impression-
+  // driven. Saving one silently produces impossible CTR values.
+  if (csvClass !== "conversion_device") {
+    const impressionsFound = baseMetricIdx.has("Impressions");
+    if (impressionsFound) {
+      const impressionValues = rows.map((row) => row.base["impressions"]);
+      const allZeroOrNull = impressionValues.every((v) => v === null || v === 0);
+      const anyExplicitZero = impressionValues.some((v) => v === 0);
+      if (allZeroOrNull && anyExplicitZero) {
+        warnings.push(
+          "This looks like a conversion-event export, not a delivery export. " +
+            "Delivery exports include impression counts. " +
+            "Please export from Ads Manager using the standard Delivery report type.",
+        );
+      }
+    }
+  }
+
   return {
     rows,
     optionalMetricsPresent: optionalMetricsPresent.map(slugifyColumn),

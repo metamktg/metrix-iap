@@ -19,4 +19,6 @@ export interface ManualImportResult {
   link_result?: CreativeLinkResult;
   /** Column mapping results for performance CSV uploads (absent for creative_asset uploads). Covers every canonical breakdown and base metric column. */
   mapping_summary?: ColumnMappingSummaryEntry[];
+  /** Warnings from CSV upload-time validation (e.g. the file looks like a conversion-event export rather than a delivery export). The upload is staged — this is informational only. */
+  upload_warnings?: string[] | null;
 }

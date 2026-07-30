@@ -3610,6 +3610,12 @@ components:
           description: Column mapping results for performance CSV uploads (absent for creative_asset uploads). Covers every canonical breakdown and base metric column.
           items:
             $ref: "#/components/schemas/ColumnMappingSummaryEntry"
+        upload_warnings:
+          type: array
+          nullable: true
+          description: Warnings from CSV upload-time validation (e.g. the file looks like a conversion-event export rather than a delivery export). The upload is staged — this is informational only.
+          items:
+            type: string
       required:
         - status
         - import_id

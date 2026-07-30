@@ -84,7 +84,7 @@ function baseValue(col: string): string {
 /** Builds a minimal, valid CSV for the given breakdown column set. */
 function buildCsv(
   breakdownCols: readonly string[],
-  opts: { dropBreakdown?: string } = {},
+  opts: { dropBreakdown?: string; zeroImpressions?: boolean } = {},
 ): string {
   const cols = opts.dropBreakdown
     ? breakdownCols.filter((c) => c !== opts.dropBreakdown)
@@ -92,7 +92,9 @@ function buildCsv(
   const header = [...cols, ...BASE_METRICS].map(resolveCurrency);
   const row = [
     ...cols.map(breakdownValue),
-    ...BASE_METRICS.map(baseValue),
+    ...BASE_METRICS.map((col) =>
+      opts.zeroImpressions && col === "Impressions" ? "0" : baseValue(col)
+    ),
   ];
   return [line(header), line(row)].join("\n");
 }
@@ -226,6 +228,27 @@ describe("POST /metrix/accounts/:accountId/manual-imports — CSV validation", (
     const msg = String(json["message"] ?? "");
     expect(msg).toMatch(/device.placement pivot/i);
     expect(msg).toMatch(/wrong slot/i);
+  });
+
+  it("stages a delivery CSV with all-zero impressions and returns upload_warnings with the conversion-export message", async () => {
+    const csvText = buildCsv(DEMOGRAPHIC_BREAKDOWN_COLUMNS, { zeroImpressions: true });
+    const body = JSON.stringify({
+      kind: "performance_demo_csv",
+      filename: "conversion_export.csv",
+      content_base64: toBase64(csvText),
+    });
+    const res = await fetch(stageUrl(), {
+      method: "POST",
+      headers: authHeaders(),
+      body,
+    });
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as Record<string, unknown>;
+    expect(json["status"]).toBe("staged");
+    const warnings = json["upload_warnings"] as string[] | undefined;
+    expect(Array.isArray(warnings)).toBe(true);
+    expect(warnings!.some((w) => /conversion-event export/i.test(w))).toBe(true);
+    stagedImportIds.push(String(json["import_id"]));
   });
 
   it("rejects a demographic CSV missing the critical 'Ad name' column with 422 and a column-not-found message", async () => {
