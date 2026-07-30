@@ -12,7 +12,7 @@ import { ModuleHeader, SectionCard, CaveatNote, CrossLink } from "../shared";
 import { cn } from "@/lib/utils";
 import { FileText, Palette, CalendarClock, Building2, Users, Check } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { FORMAT_LABEL } from "./ReportBuilderView";
+import { FORMAT_LABEL } from "./reportFormatLabels";
 import {
   useGetReportSettings,
   useUpdateReportSettings,

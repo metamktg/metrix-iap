@@ -476,7 +476,7 @@ export const GetAnalysisSummaryByRunResponse = zod.object({
   "total_spend_usd": zod.number(),
   "total_impressions": zod.number(),
   "total_link_clicks": zod.number(),
-  "overall_link_ctr_pct": zod.number(),
+  "overall_link_ctr_pct": zod.number().nullable(),
   "bottom_line_totals": zod.record(zod.string(), zod.object({
   "spend": zod.number(),
   "reach": zod.number(),
@@ -537,7 +537,7 @@ export const GetAnalysisSummaryByDateRangeResponse = zod.object({
   "total_spend_usd": zod.number(),
   "total_impressions": zod.number(),
   "total_link_clicks": zod.number(),
-  "overall_link_ctr_pct": zod.number(),
+  "overall_link_ctr_pct": zod.number().nullable(),
   "bottom_line_totals": zod.record(zod.string(), zod.object({
   "spend": zod.number(),
   "reach": zod.number(),
@@ -620,7 +620,7 @@ export const GetAnalysisSummaryResponse = zod.object({
   "total_spend_usd": zod.number(),
   "total_impressions": zod.number(),
   "total_link_clicks": zod.number(),
-  "overall_link_ctr_pct": zod.number(),
+  "overall_link_ctr_pct": zod.number().nullable(),
   "bottom_line_totals": zod.record(zod.string(), zod.object({
   "spend": zod.number(),
   "reach": zod.number(),

@@ -15,7 +15,7 @@ export interface ManagerBottomLineTotals {
   spend_usd: number;
   impressions: number;
   link_clicks: number;
-  link_ctr_pct: number;
+  link_ctr_pct: number | null;
   result_totals_by_event: Record<string, SeedResultEventTotals>;
 }
 
@@ -368,7 +368,7 @@ export interface CampaignSummary {
   total_spend_usd: number;
   total_impressions: number;
   total_link_clicks: number;
-  overall_link_ctr_pct: number;
+  overall_link_ctr_pct: number | null;
   data_caveat: string;
   window_start?: string;
   window_end?: string;

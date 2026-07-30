@@ -3957,7 +3957,7 @@ components:
         total_spend_usd: { type: number }
         total_impressions: { type: number }
         total_link_clicks: { type: number }
-        overall_link_ctr_pct: { type: number }
+        overall_link_ctr_pct: { type: number, nullable: true }
         bottom_line_totals:
           type: object
           additionalProperties:

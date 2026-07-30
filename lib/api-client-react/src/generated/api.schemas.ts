@@ -754,7 +754,7 @@ export interface AnalysisSummaryTotals {
   total_spend_usd: number;
   total_impressions: number;
   total_link_clicks: number;
-  overall_link_ctr_pct: number;
+  overall_link_ctr_pct: number | null;
   bottom_line_totals: AnalysisSummaryTotalsBottomLineTotals;
 }
 

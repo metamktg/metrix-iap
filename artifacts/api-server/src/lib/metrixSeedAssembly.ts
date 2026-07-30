@@ -305,7 +305,14 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
     const tot = byEvent[event]!;
     tot["spend"] = round(tot["spend"]);
   }
-  const linkCtrPct = effectiveImpressions > 0 ? round((totalLinkClicks / effectiveImpressions) * 100, 4) : 0;
+  // Guard: link_clicks > impressions is physically impossible for delivery data.
+  // When it occurs the rows came from a conversion-event export that carries
+  // attributed clicks but no delivery impressions — CTR is meaningless, emit null
+  // so the UI renders "—" rather than an absurd percentage (e.g. 154 250 %).
+  const linkCtrPct =
+    effectiveImpressions > 0 && totalLinkClicks <= effectiveImpressions
+      ? round((totalLinkClicks / effectiveImpressions) * 100, 4)
+      : null;
 
   const windowStart = adPerformance.reduce(
     (min, r) => (r["date_start"] < min ? r["date_start"] : min),
@@ -1076,7 +1083,11 @@ export async function assembleMetrixSeed(): Promise<Row> {
     const t = byEvent[event]!;
     t["spend"] = round(t["spend"]);
   }
-  const linkCtrPct = totalImpressions > 0 ? round((totalLinkClicks / totalImpressions) * 100, 4) : 0;
+  // Same guard as per-account: clicks > impressions → conversion-export data, CTR meaningless.
+  const linkCtrPct =
+    totalImpressions > 0 && totalLinkClicks <= totalImpressions
+      ? round((totalLinkClicks / totalImpressions) * 100, 4)
+      : null;
 
   const managerCards = signalCards.filter((c) => c["surface"] === "manager_overview").map(cardShape);
   const managerMeta = (config.get("manager_account_meta") ?? {}) as Row;
@@ -1203,7 +1214,10 @@ export function composeSeedForUser(
         spend_usd: round(totalSpend),
         impressions: totalImpressions,
         link_clicks: totalLinkClicks,
-        link_ctr_pct: totalImpressions > 0 ? round((totalLinkClicks / totalImpressions) * 100, 4) : 0,
+        link_ctr_pct:
+          totalImpressions > 0 && totalLinkClicks <= totalImpressions
+            ? round((totalLinkClicks / totalImpressions) * 100, 4)
+            : null,
         result_totals_by_event: byEvent,
       },
       recommendation_cards: managerCards,
