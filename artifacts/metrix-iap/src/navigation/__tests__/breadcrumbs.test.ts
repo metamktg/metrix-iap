@@ -82,7 +82,7 @@ describe("section landing pages show only the section label (Overview as parent 
     (s) => s.landing && !s.children?.some((c) => c.to === s.landing)
   );
 
-  it("navTree has at least one section where the landing is not a child (Analyze, Act, Report)", () => {
+  it("navTree has at least one section where the landing is not a child (Analysis, Strategy)", () => {
     expect(landingSections.length).toBeGreaterThanOrEqual(2);
   });
 
@@ -103,7 +103,7 @@ describe("child pages show section + child labels", () => {
   );
 
   it("navTree yields a sane number of child paths", () => {
-    expect(childPaths.length).toBeGreaterThanOrEqual(16);
+    expect(childPaths.length).toBeGreaterThanOrEqual(20);
   });
 
   for (const { section, child } of childPaths) {

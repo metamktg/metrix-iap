@@ -17,8 +17,6 @@ import {
   Bot,
   Settings2,
   Info,
-  House,
-  Zap,
 } from "lucide-react";
 import { AccountSwitcher } from "./AccountSwitcher";
 import { DataSourceBadgeToggle } from "@/components/ui/DataSourceBadge";
@@ -39,8 +37,6 @@ const ICONS: Record<NavIconName, React.ComponentType<{ className?: string }>> = 
   Layers,
   Bot,
   Settings2,
-  House,
-  Zap,
 };
 
 function NavIcon({ name, className }: { name: NavIconName; className?: string }) {
@@ -201,7 +197,7 @@ function ExpandedPlaceholderTooltip({ label, teaser }: { label: string; teaser: 
 // ─── Collapsed icon button ─────────────────────────────────────────────
 
 // IDs after which a thin section divider is inserted in collapsed mode
-const COLLAPSED_DIVIDER_AFTER = new Set(["home", "analyze", "act", "report"]);
+const COLLAPSED_DIVIDER_AFTER = new Set(["overview", "analysis", "reports", "mst"]);
 
 function CollapsedItem({
   section,

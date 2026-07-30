@@ -245,25 +245,9 @@
   --metrix-danger: 354 100% 65%;
   --metrix-panel: 218 65% 10%;
 
-  --app-font-sans: 'Sora', 'Inter', system-ui, sans-serif;
+  --app-font-sans: 'Inter', 'Manrope', system-ui, sans-serif;
   --app-font-serif: Georgia, serif;
   --app-font-mono: 'IBM Plex Mono', 'SFMono-Regular', 'Menlo', Consolas, monospace;
-  --font-display: 'Sora', system-ui, sans-serif;
-
-  /* ── Void Navy token set ──────────────────────────────────────────── */
-  --void-navy:           #000B21;
-  --void-navy-2:         #04102B;
-  --void-navy-3:         #0A1A3C;
-  --meta-blue-deep:      #001F4D;
-  --meta-blue-mid:       #004D99;
-  --meta-blue-light:     #0077CC;
-  --meta-blue-highlight: #0099FF;
-  --grad-meta:           linear-gradient(135deg, #001F4D 0%, #004D99 35%, #0077CC 70%, #0099FF 100%);
-  --grad-meta-vertical:  linear-gradient(180deg, #0099FF 0%, #0077CC 40%, #004D99 75%, #001F4D 100%);
-  --grad-hero:
-    radial-gradient(ellipse at 30% 20%, #0099FF22 0%, transparent 55%),
-    radial-gradient(ellipse at 70% 80%, #004D9933 0%, transparent 60%),
-    linear-gradient(180deg, #000B21 0%, #04102B 100%);
   --radius: 0.5rem;
 
   --shadow-2xs: 0 1px 2px 0 rgba(0,0,0,0.4);
@@ -392,9 +376,12 @@
     stroke-width: 1.5;
   }
 
-  /* Layered dark command-center background — Void Navy */
+  /* Layered dark command-center background */
   body {
-    background: var(--void-navy);
+    background:
+      radial-gradient(circle at 52% 8%, rgba(0, 119, 255, 0.18), transparent 32%),
+      radial-gradient(circle at 86% 18%, rgba(22, 217, 255, 0.08), transparent 26%),
+      linear-gradient(180deg, #020711 0%, #050b18 48%, #020711 100%);
     color: var(--mx-text-main);
   }
 

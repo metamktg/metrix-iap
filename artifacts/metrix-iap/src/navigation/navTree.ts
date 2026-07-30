@@ -2,12 +2,16 @@
 // All labels, routes, badge keys, and placeholder flags live here.
 // Sidebar.tsx consumes this — no nav data defined elsewhere.
 //
-// 5-section information architecture:
-//   1 Home     → leaf /app/home
-//   2 Analyze  → Findings / Audience / Placements / Budget
-//   3 Act      → Action Queue / Hypotheses / Briefs / MST
-//   4 Report   → New Report / History / Exports
-//   5 Settings → Account / Integrations / Team / Notifications / Billing
+// Locked 9-section information architecture (user-specified):
+//   1 Overview
+//   2 Listen          → Alerts / Signal / Recommendations
+//   3 Analysis        → Overview / IAP Library / Audience / Placements / Budget Insight
+//   4 Strategy        → Overview / Strategy Map / Avatars · ICP / Hypothesis Queue
+//   5 Creative Briefs → Brief Builder / History
+//   6 Report Builder  → New Report / Report History / Exports
+//   7 MST             → Concept Map / Matrix Builder / Creative Scan / Crossmap Results
+//   8 Metrix Agent    (Coming Soon — waitlist)
+//   9 Settings        → Account / Integrations / Team & Access / Notifications / Billing
 
 export type NavBadgeKey =
   | "signals"
@@ -25,9 +29,7 @@ export type NavIconName =
   | "FileBarChart"
   | "Layers"
   | "Bot"
-  | "Settings2"
-  | "House"
-  | "Zap";
+  | "Settings2";
 
 export type NavChild = {
   id: string;
@@ -69,109 +71,231 @@ export function sectionLandingRoute(section: NavSection): string | null {
 
 export const navTree: NavSection[] = [
   {
-    id: "home",
+    id: "overview",
     number: "01",
-    label: "Home",
-    icon: "House",
-    to: "/app/home",
+    label: "Overview",
+    icon: "LayoutDashboard",
+    to: "/",
     matchPaths: ["/app/account"],
   },
   {
-    id: "analyze",
+    id: "listen",
     number: "02",
-    label: "Analyze",
-    icon: "BarChart2",
-    landing: "/app/analyze",
+    label: "Listen",
+    icon: "Radio",
     children: [
       {
-        id: "analyze-findings",
-        label: "Findings",
-        to: "/app/analyze/findings",
+        id: "listen-alerts",
+        label: "Alerts",
+        to: "/app/listen/alerts",
+        dataSource: "signal_cards, data_caveats",
       },
       {
-        id: "analyze-audience",
+        id: "listen-signal",
+        label: "Signal",
+        to: "/app/listen/signal",
+        badgeKey: "signals",
+        dataSource: "signal_cards",
+      },
+      {
+        id: "listen-recommendations",
+        label: "Recommendations",
+        to: "/app/listen/recommendations",
+        dataSource: "recommendation_cards",
+      },
+    ],
+  },
+  {
+    id: "analysis",
+    number: "03",
+    label: "Analysis",
+    icon: "BarChart2",
+    landing: "/app/analysis",
+    children: [
+      {
+        id: "analysis-overview",
+        label: "Overview",
+        to: "/app/analysis/overview",
+        dataSource: "campaign_summary, performance_by_cell",
+      },
+      {
+        id: "analysis-library",
+        label: "IAP Library",
+        to: "/app/analysis/library",
+        dataSource: "performance_by_cell, v3_variable_performance",
+      },
+      {
+        id: "analysis-audience",
         label: "Audience",
         to: "/app/analysis/audience",
         dataSource: "demographic_registration_signal",
       },
       {
-        id: "analyze-placements",
+        id: "analysis-placements",
         label: "Placements",
         to: "/app/analysis/placements",
         dataSource: "v3_placement_signal, c4e_placement_signal",
       },
       {
-        id: "analyze-budget",
-        label: "Budget",
+        id: "analysis-budget",
+        label: "Budget Insight",
         to: "/app/analysis/budget",
         dataSource: "campaign_summary, performance_by_cell",
       },
     ],
   },
   {
-    id: "act",
-    number: "03",
-    label: "Act",
-    icon: "Zap",
-    landing: "/app/act",
+    id: "strategy",
+    number: "04",
+    label: "Strategy",
+    icon: "Compass",
+    landing: "/app/strategy",
     children: [
       {
-        id: "act-queue",
-        label: "Action Queue",
-        to: "/app/act/queue",
+        id: "strategy-overview",
+        label: "Overview",
+        to: "/app/strategy/overview",
+        dataSource: "message_pillars, performance_by_cell",
       },
       {
-        id: "act-hypotheses",
-        label: "Hypotheses",
+        id: "strategy-map",
+        label: "Strategy Map",
+        to: "/app/strategy/map",
+        dataSource: "message_pillars, performance_by_cell",
+      },
+      {
+        id: "strategy-avatars",
+        label: "Avatars / ICP",
+        to: "/app/strategy/avatars",
+        dataSource: "historical_matrix_4x4, demographic_registration_signal",
+      },
+      {
+        id: "strategy-hypotheses",
+        label: "Hypothesis Queue",
         to: "/app/strategy/hypotheses",
         dataSource: "active_hypotheses, message_pillars",
-      },
-      {
-        id: "act-briefs",
-        label: "Briefs",
-        to: "/app/briefs",
-        badgeKey: "briefs",
-        dataSource: "draft_briefs",
-      },
-      {
-        id: "act-mst",
-        label: "MST",
-        to: "/app/mst",
-        badgeKey: "mst",
-        dataSource: "historical_matrix_4x4, performance_by_cell",
       },
     ],
   },
   {
-    id: "report",
-    number: "04",
-    label: "Report",
+    id: "briefs",
+    number: "05",
+    label: "Creative Briefs",
+    icon: "FileText",
+    landing: "/app/briefs",
+    children: [
+      {
+        id: "briefs-overview",
+        label: "Overview",
+        to: "/app/briefs",
+        dataSource: "draft_briefs",
+      },
+      {
+        id: "briefs-builder",
+        label: "Brief Builder",
+        to: "/app/briefs/builder",
+        badgeKey: "briefs",
+        dataSource: "draft_briefs",
+      },
+      {
+        id: "briefs-history",
+        label: "History",
+        to: "/app/briefs/history",
+        dataSource: "draft_briefs",
+      },
+    ],
+  },
+  {
+    id: "reports",
+    number: "06",
+    label: "Report Builder",
     icon: "FileBarChart",
     landing: "/app/reports",
     children: [
       {
-        id: "report-new",
+        id: "reports-overview",
+        label: "Overview",
+        to: "/app/reports",
+        dataSource: "report_sections, report_history",
+      },
+      {
+        id: "reports-new",
         label: "New Report",
         to: "/app/reports/new",
         dataSource: "report_sections",
       },
       {
-        id: "report-history",
-        label: "History",
+        id: "reports-history",
+        label: "Report History",
         to: "/app/reports/history",
         dataSource: "report_history",
       },
       {
-        id: "report-exports",
+        id: "reports-exports",
         label: "Exports",
         to: "/app/reports/exports",
         dataSource: "report_history, export_formats",
       },
+      {
+        id: "reports-settings",
+        label: "Settings",
+        to: "/app/reports/settings",
+        dataSource: "report_builder defaults + workspace overrides",
+      },
     ],
   },
   {
+    id: "mst",
+    number: "07",
+    label: "MST",
+    icon: "Layers",
+    landing: "/app/mst",
+    badgeKey: "mst",
+    children: [
+      {
+        id: "mst-overview",
+        label: "Overview",
+        to: "/app/mst",
+        dataSource: "historical_matrix_4x4, performance_by_cell",
+      },
+      {
+        id: "mst-concept-map",
+        label: "Concept Map",
+        to: "/app/mst/concept-map",
+        dataSource: "performance_by_cell, message_pillars",
+      },
+      {
+        id: "mst-matrix",
+        label: "Matrix Builder",
+        to: "/app/mst/matrix",
+        dataSource: "historical_matrix_4x4",
+      },
+      {
+        id: "mst-creative-scan",
+        label: "Creative Scan",
+        to: "/app/mst/creative-scan",
+        dataSource: "local_book2_library",
+      },
+      {
+        id: "mst-crossmap",
+        label: "Crossmap Results",
+        to: "/app/mst/crossmap",
+        dataSource: "historical_matrix_4x4, performance_by_cell",
+      },
+    ],
+  },
+  {
+    id: "agent",
+    number: "08",
+    label: "Agent",
+    icon: "Bot",
+    to: "/app/agent",
+    badgeKey: "agent",
+    teaser: "Your AI strategist — analyzes patterns, surfaces winning tests, and drafts briefs autonomously.",
+  },
+  {
     id: "settings",
-    number: "05",
+    number: "09",
     label: "Settings",
     icon: "Settings2",
     children: [
