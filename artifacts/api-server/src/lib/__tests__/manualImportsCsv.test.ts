@@ -157,7 +157,7 @@ afterAll(async () => {
   }
   await db.delete(userSessionsTable).where(eq(userSessionsTable.userId, testUserId));
   await db.delete(usersTable).where(eq(usersTable.id, testUserId));
-  await close();
+  if (typeof close === "function") await close();
   await pool.end();
 });
 

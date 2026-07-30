@@ -35,7 +35,7 @@ function ExpandVisualInner({ data, className }: { data: CreativeCardData; classN
   const [loaded, setLoaded] = useState(false);
   const loading = !broken && !loaded;
   const hue = hueFor(data.conceptCode);
-  if (data.assetUrl) {
+  if (data.assetUrl && !broken) {
     if (isVideo(data.assetUrl, data.assetFilename)) {
       return (
         <video

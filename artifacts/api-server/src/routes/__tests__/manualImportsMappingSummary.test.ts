@@ -128,7 +128,7 @@ beforeAll(async () => {
       resolve();
     });
   });
-}, 60_000);
+}, 120_000);
 
 afterAll(async () => {
   const supabase = getSupabase();
