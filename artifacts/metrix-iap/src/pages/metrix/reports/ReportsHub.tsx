@@ -91,7 +91,7 @@ function QuickGenerate({
         });
         const model = parseReportModel(result.report.model_json);
         if (model) {
-          await downloadReportExport(result.report.export_format, model);
+          await downloadReportExport(result.report.export_format, model, { workspaceId: managerId });
         }
         setGenerating(false);
         setDone(true);

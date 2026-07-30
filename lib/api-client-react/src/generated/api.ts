@@ -51,6 +51,8 @@ import type {
   CellCreativeUploadResult,
   CreateAdAccountInput,
   CreateAdAccountResult,
+  CreateGoogleDocInput,
+  CreateGoogleDocResult,
   GenerateStrategyInput,
   GeneratedReportCreateInput,
   GeneratedReportCreateResult,
@@ -5530,6 +5532,78 @@ export const useCreateWorkspaceReport = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getCreateWorkspaceReportMutationOptions(options));
+    }
+
+export const getCreateGoogleDocReportUrl = (workspaceId: string,) => {
+
+
+
+
+  return `/api/metrix/workspaces/${workspaceId}/reports/google-doc`
+}
+
+/**
+ * Creates a new Google Doc in the connected Google account's Drive and returns its edit URL. Returns connected=false when no Google Docs account is linked to the Replit workspace. Requires a logged-in session with access to the workspace.
+ * @summary Create a Google Doc from a report model
+ */
+export const createGoogleDocReport = async (workspaceId: string,
+    createGoogleDocInput: CreateGoogleDocInput, options?: RequestInit): Promise<CreateGoogleDocResult> => {
+
+  return customFetch<CreateGoogleDocResult>(getCreateGoogleDocReportUrl(workspaceId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createGoogleDocInput)
+  }
+);}
+
+
+
+
+export const getCreateGoogleDocReportMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createGoogleDocReport>>, TError,{workspaceId: string;data: BodyType<CreateGoogleDocInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createGoogleDocReport>>, TError,{workspaceId: string;data: BodyType<CreateGoogleDocInput>}, TContext> => {
+
+const mutationKey = ['createGoogleDocReport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createGoogleDocReport>>, {workspaceId: string;data: BodyType<CreateGoogleDocInput>}> = (props) => {
+          const {workspaceId,data} = props ?? {};
+
+          return  createGoogleDocReport(workspaceId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateGoogleDocReportMutationResult = NonNullable<Awaited<ReturnType<typeof createGoogleDocReport>>>
+    export type CreateGoogleDocReportMutationBody = BodyType<CreateGoogleDocInput>
+    export type CreateGoogleDocReportMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Create a Google Doc from a report model
+ */
+export const useCreateGoogleDocReport = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createGoogleDocReport>>, TError,{workspaceId: string;data: BodyType<CreateGoogleDocInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createGoogleDocReport>>,
+        TError,
+        {workspaceId: string;data: BodyType<CreateGoogleDocInput>},
+        TContext
+      > => {
+      return useMutation(getCreateGoogleDocReportMutationOptions(options));
     }
 
 export const getDeleteWorkspaceReportUrl = (workspaceId: string,

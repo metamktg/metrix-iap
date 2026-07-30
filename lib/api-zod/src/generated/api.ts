@@ -1820,6 +1820,32 @@ export const CreateWorkspaceReportResponse = zod.object({
 
 
 /**
+ * Creates a new Google Doc in the connected Google account's Drive and returns its edit URL. Returns connected=false when no Google Docs account is linked to the Replit workspace. Requires a logged-in session with access to the workspace.
+ * @summary Create a Google Doc from a report model
+ */
+
+
+
+export const CreateGoogleDocReportParams = zod.object({
+  "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.')
+})
+
+
+
+
+
+export const CreateGoogleDocReportBody = zod.object({
+  "title": zod.string().min(1),
+  "model_json": zod.string().min(1).describe('JSON-serialized ReportModel snapshot used to populate the Google Doc body.')
+})
+
+export const CreateGoogleDocReportResponse = zod.object({
+  "connected": zod.boolean().describe('Whether a Google account is connected and the doc was created successfully.'),
+  "url": zod.string().nullable().describe('Edit URL of the created Google Doc; null when connected=false.')
+})
+
+
+/**
  * Permanently deletes a generated report document (and its stored snapshot) from Report History. Only in-app generated reports can be deleted; seed history entries live in the seed bundle and are not addressable here. Requires a logged-in session with access to the workspace.
  * @summary Delete a generated report
  */

@@ -155,7 +155,7 @@ export function ReportHistoryView() {
     setBusyId(entry.id);
     setDoneId(null);
     try {
-      await downloadReportExport(format, model);
+      await downloadReportExport(format, model, { workspaceId: manager.id });
       setDoneId(entry.id);
     } finally {
       setBusyId(null);

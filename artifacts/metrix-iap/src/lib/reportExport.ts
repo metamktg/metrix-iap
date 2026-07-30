@@ -795,26 +795,70 @@ async function downloadPdf(model: ReportModel, filename: string): Promise<void> 
   doc.save(filename);
 }
 
+export type ExportOutcome =
+  /** A local file was triggered for download (pdf / html / .doc fallback). */
+  | { kind: "downloaded" }
+  /** A real Google Doc was created and opened in a new tab. */
+  | { kind: "google_doc"; url: string }
+  /** Google Docs connector was not connected; fell back to .doc download. */
+  | { kind: "fallback_downloaded" };
 /**
- * Download the report in the requested format.
- * - html → styled .html file
- * - google_doc → .doc (Word-flavored HTML; opens in Word and imports cleanly into Google Docs)
- * - pdf → real PDF generated client-side
+ * Download (or create) the report in the requested format.
+ *
+ * - pdf        → real PDF generated client-side
+ * - html       → styled .html file
+ * - google_doc → when `opts.workspaceId` is provided, creates a real Google Doc
+ *                via the server connector and opens it in a new tab; falls back
+ *                to the Word-compatible .doc download when the connector is not
+ *                connected or no workspaceId is given.
  */
-export async function downloadReportExport(format: ExportFormat | string, model: ReportModel): Promise<void> {
+export async function downloadReportExport(
+  format: ExportFormat | string,
+  model: ReportModel,
+  opts?: { workspaceId?: string },
+): Promise<ExportOutcome> {
   const base = slugify(model.docTitle);
+
   if (format === "pdf") {
     await downloadPdf(model, `${base}.pdf`);
-    return;
+    return { kind: "downloaded" };
   }
-  const html = renderReportHtml(model);
+
   if (format === "google_doc") {
+    // Try to create a real Google Doc via the API server connector
+    if (opts?.workspaceId) {
+      try {
+        const resp = await fetch(
+          `/api/metrix/workspaces/${encodeURIComponent(opts.workspaceId)}/reports/google-doc`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ title: model.docTitle, model_json: serializeReportModel(model) }),
+          },
+        );
+        if (resp.ok) {
+          const data = (await resp.json()) as { connected: boolean; url: string | null };
+          if (data.connected && data.url) {
+            window.open(data.url, "_blank", "noopener,noreferrer");
+            return { kind: "google_doc", url: data.url };
+          }
+        }
+      } catch {
+        // Network error — fall through to .doc fallback below
+      }
+    }
+    // Fallback: Word-compatible .doc download (connector not connected or no context)
+    const html = renderReportHtml(model);
     const wordHtml = html.replace(
       '<html lang="en">',
       '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" lang="en">',
     );
     downloadBlob(new Blob(["\ufeff", wordHtml], { type: "application/msword" }), `${base}.doc`);
-    return;
+    return opts?.workspaceId ? { kind: "fallback_downloaded" } : { kind: "downloaded" };
   }
+
+  const html = renderReportHtml(model);
   downloadBlob(new Blob([html], { type: "text/html;charset=utf-8" }), `${base}.html`);
+  return { kind: "downloaded" };
 }

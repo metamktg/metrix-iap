@@ -41,7 +41,7 @@ vi.mock("@/contexts/MetrixDataContext", () => ({
 
 vi.mock("@/lib/reportExport", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/reportExport")>();
-  return { ...actual, downloadReportExport: vi.fn().mockResolvedValue(undefined) };
+  return { ...actual, downloadReportExport: vi.fn().mockResolvedValue({ kind: "downloaded" }) };
 });
 
 vi.mock("@/hooks/use-toast", () => ({

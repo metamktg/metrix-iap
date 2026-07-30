@@ -1539,6 +1539,23 @@ export interface GeneratedReportsBatchDeleteResult {
   deleted_count: number;
 }
 
+export interface CreateGoogleDocInput {
+  /** @minLength 1 */
+  title: string;
+  /**
+     * JSON-serialized ReportModel snapshot used to populate the Google Doc body.
+     * @minLength 1
+     */
+  model_json: string;
+}
+
+export interface CreateGoogleDocResult {
+  /** Whether a Google account is connected and the doc was created successfully. */
+  connected: boolean;
+  /** Edit URL of the created Google Doc; null when connected=false. */
+  url: string | null;
+}
+
 export type MetaConnectedAccountTokenStatus = typeof MetaConnectedAccountTokenStatus[keyof typeof MetaConnectedAccountTokenStatus];
 
 
