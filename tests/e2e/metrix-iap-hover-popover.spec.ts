@@ -54,6 +54,11 @@
 //      campaign_summary value (total_spend_usd = null), opening the modal via
 //      "Diagnose full breakdown" renders "No data for this metric yet" and
 //      omits concept rows — catches regressions in the hasData = false branch.
+//   18. SegmentDrilldownModal via VariableDrilldownModal: opening from the
+//      TopVariableStackStrip (FW_BAB carrier cell C2B) renders ≥1 segment row
+//      inside VariableDrilldownModal and the SegmentDrilldownModal description
+//      includes "scoped to" — catches regressions where cellIds is silently
+//      dropped to null at VariableDrilldownModal.tsx line 266.
 //
 // API calls are intercepted with page.route() so no live API server is needed.
 // The seed fixture comes from the checked-in test snapshot.
@@ -2487,6 +2492,125 @@ async function main() {
               `metric.value is null. Got ${rowCount}.`,
           );
 
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+    // ── Test 18: SegmentGridModal via VariableDrilldownModal concept path ────
+    // Opens VariableDrilldownModal for the "FW_BAB" variable (which carries
+    // creative cell C2B in the bookster fixture — C2B has 62 demographic rows
+    // across all cells, with C2B rows confirmed present in the analysis).
+    // The modal shows "Segment performance — scoped to this variable's cells"
+    // rows computed by computeVariableDrilldown() using only carrier-cell demo
+    // rows (cellIds = ["C2B"]).  Clicking one of those rows opens
+    // SegmentDrilldownModal with cellIds=["C2B"] threaded through from
+    // VariableDrilldownModal (line 266 of VariableDrilldownModal.tsx).
+    //
+    // This is the third non-null cellIds entry point into the segment drill-down
+    // chain — the other two being Test 7 (account-level, cellIds=null) and
+    // Test 16 (concept row → TilePerformanceModal, cellIds=["C2B"]).  A
+    // regression in computeVariableDrilldown() carrier-cell filtering or in
+    // the cellIds prop threading at line 266 would silently empty the segment
+    // section without any existing test catching it.
+    //
+    // Assertions:
+    //   1. ≥1 segment row (data-testid="row-variable-segment-*") renders inside
+    //      VariableDrilldownModal — confirms computeVariableDrilldown found
+    //      carrier cells and the demo-grain scoping produced non-empty segments.
+    //   2. After clicking a segment row, SegmentDrilldownModal's description
+    //      contains "scoped to" — confirms cellIds was threaded through from
+    //      VariableDrilldownModal into SegmentDrilldownModal (not silently
+    //      dropped to null, which would widen the scope to the whole account).
+    await test(
+      "SegmentGridModal via VariableDrilldownModal: FW_BAB carrier cells render ≥1 segment row and 'scoped to' description",
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        try {
+          await mockApis(ctx);
+
+          // Navigate to AnalysisHub — TopVariableStackStrip is rendered here
+          // and lists the top variable combinations from strategy.variable_combinations.
+          // The bookster fixture has three combos; two have a CPA value and are
+          // shown sorted ascending: "FW_StoryBrand + ..." (CPA 5.77) and
+          // "FW_BAB + HK_Benefit + HP_Time + CN_ProductDemo" (CPA 7.09).
+          // FW_BAB appears as hook_variable for cell C2B, which has demographic
+          // rows, so clicking the FW_BAB card yields a non-empty segment section.
+          await page.goto(`${BASE}/app/analysis?account=${ACCOUNT}`, {
+            waitUntil: "domcontentloaded",
+          });
+
+          // Wait for TopVariableStackStrip to mount — its section heading is
+          // "Top Variable Stacks".
+          await page
+            .getByText("Top Variable Stacks", { exact: false })
+            .waitFor({ state: "visible", timeout: 20_000 });
+
+          // Find and click the variable-stack card that carries "FW_BAB".
+          // The card renders each code as a <span> with font-mono styling;
+          // .filter({ hasText }) matches any card whose visible text includes
+          // "FW_BAB".
+          const fwBabCard = page
+            .locator("button")
+            .filter({ hasText: "FW_BAB" })
+            .first();
+          await fwBabCard.waitFor({ state: "visible", timeout: 8_000 });
+          await fwBabCard.click();
+
+          // VariableDrilldownModal opens — its title includes the human-readable
+          // label for "FW_BAB" via readableVariables() and also renders the raw
+          // code in a <span> inside the DialogTitle (data-testid="title-variable-drilldown").
+          const drilldownTitle = page.locator(
+            '[data-testid="title-variable-drilldown"]',
+          );
+          await drilldownTitle.waitFor({ state: "visible", timeout: 8_000 });
+
+          // ── Assertion 1: ≥1 segment row renders ───────────────────────────
+          // computeVariableDrilldown scopes demographic rows to FW_BAB's carrier
+          // cells (C2B), then groups by age×gender into segment rows rendered as
+          // <button data-testid="row-variable-segment-{age}-{gender}">.
+          // A count of 0 would mean carrier-cell filtering silently discarded
+          // all demo rows or computeVariableDrilldown returned segments.available=false.
+          const segmentRows = page.locator(
+            '[data-testid^="row-variable-segment-"]',
+          );
+          await segmentRows.first().waitFor({ state: "visible", timeout: 8_000 });
+          const segRowCount = await segmentRows.count();
+          assert(
+            segRowCount >= 1,
+            `VariableDrilldownModal must render ≥1 segment row for FW_BAB ` +
+              `(carrier cell C2B has demographic data), but found ${segRowCount} rows. ` +
+              `computeVariableDrilldown() may have over-filtered the carrier-cell ` +
+              `demographic rows, or segments.available is incorrectly false.`,
+          );
+
+          // ── Assertion 2: 'scoped to' appears after opening SegmentDrilldownModal ─
+          // Click the first segment row to open SegmentDrilldownModal.
+          // VariableDrilldownModal passes cellIds=data.carrierCellIds (["C2B"])
+          // at line 266 of VariableDrilldownModal.tsx.  If cellIds is silently
+          // dropped to null the description reads "…from their own demographic
+          // rows" without the "(scoped to C2B)" suffix; if cellIds is correctly
+          // threaded, the description contains "(scoped to C2B)".
+          const firstSegmentRow = segmentRows.first();
+          await firstSegmentRow.click();
+
+          // SegmentDrilldownModal opens as a new Dialog.  Use .last() because
+          // VariableDrilldownModal's Dialog is still mounted underneath.
+          const segmentDialog = page.locator('[role="dialog"]').last();
+          await segmentDialog.waitFor({ state: "visible", timeout: 8_000 });
+
+          const dialogText = (await segmentDialog.textContent()) ?? "";
+          assert(
+            dialogText.includes("scoped to"),
+            `SegmentDrilldownModal description must include "scoped to" when ` +
+              `opened from VariableDrilldownModal with cellIds=["C2B"]. ` +
+              `This confirms the cellIds prop was threaded through at line 266 ` +
+              `of VariableDrilldownModal.tsx rather than silently dropped to null. ` +
+              `Got dialog text snippet: "${dialogText.slice(0, 400)}"`,
+          );
         } finally {
           await ctx.close();
         }
