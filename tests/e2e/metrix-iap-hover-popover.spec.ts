@@ -48,6 +48,10 @@
 //      (TilePerformanceModal → cellIds=["C2B"]) renders ≥1 avatar segment row
 //      and the description says "scoped to C2B" — catches silent empty-grid
 //      regressions in the non-null cellIds branch of buildAvatarSegments().
+//   17. MetricDiagnosticModal empty state: when the chosen metric has no
+//      campaign_summary value (total_spend_usd = null), opening the modal via
+//      "Diagnose full breakdown" renders "No data for this metric yet" and
+//      omits concept rows — catches regressions in the hasData = false branch.
 //
 // API calls are intercepted with page.route() so no live API server is needed.
 // The seed fixture comes from the checked-in test snapshot.
@@ -2302,6 +2306,135 @@ async function main() {
             `SegmentGridModal description must include the unavailableOnPlacements ` +
               `warning for the clicks_all metric. Got dialog text: "${fullDialogText.slice(0, 300)}"`,
           );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+
+    // ── Test 17: MetricDiagnosticModal empty state (null metric value) ────
+    // Injects a seed where total_spend_usd is null so the "Total spend" metric
+    // has value = null (hasData = false).  Opening MetricDiagnosticModal via
+    // "Diagnose full breakdown" must render the honest empty state and omit any
+    // concept rows — catches regressions in the !hasData branch of the modal.
+    await test(
+      'MetricDiagnosticModal: null metric value shows "No data for this metric yet" empty state',
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        try {
+          // Build a seed where the "Total spend" metric has no data.
+          const modifiedSeed = JSON.parse(SEED_FIXTURE_BODY);
+          const bookster = modifiedSeed.ad_accounts.find(
+            (a: { id: string }) => a.id === ACCOUNT,
+          );
+          // Null out total_spend_usd → metricSourceFromCampaignSummary() sets
+          // source.spend = null → buildMetricCatalog() emits value: null for
+          // the "spend" metric → MetricDiagnosticModal hasData = false.
+          bookster.iap.campaign_summary.total_spend_usd = null;
+          // Empty performance_by_cell so no concept rows could accidentally
+          // leak through and mask the empty-state branch.
+          bookster.iap.analysis.performance_by_cell = [];
+
+          await page.route("**/api/metrix/auth/me", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify({
+                user: {
+                  id: "test-user",
+                  email: "demo@metrix.app",
+                  role: "admin",
+                  must_change_password: false,
+                  workspace_id: "metrix_manager",
+                },
+              }),
+            }),
+          );
+          await page.route("**/api/metrix/seed", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify(modifiedSeed),
+            }),
+          );
+          await page.route("**/api/metrix/workspaces/*/reports", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify({ reports: [] }),
+            }),
+          );
+
+          await page.goto(`${BASE}/app/account?account=${ACCOUNT}`, {
+            waitUntil: "domcontentloaded",
+          });
+
+          await page
+            .getByText("Account Totals", { exact: false })
+            .waitFor({ state: "visible", timeout: 20_000 });
+
+          // Hover the "Total spend" tile — the HoverCard still opens even
+          // when the metric value is null.
+          const tileBtn = page
+            .locator("button")
+            .filter({ hasText: "Total spend" })
+            .first();
+          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
+          await tileBtn.hover();
+
+          // The "Diagnose full breakdown" footer link is always present.
+          const diagnoseBtn = page.getByText("Diagnose full breakdown");
+          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
+          await diagnoseBtn.click();
+
+          // Modal header must appear.
+          const dialogHeader = page.getByText("Metric diagnostic", {
+            exact: false,
+          });
+          await dialogHeader.waitFor({ state: "visible", timeout: 8_000 });
+
+          // ── Assert 1: empty-state copy is present ─────────────────────
+          const emptyHeading = page.getByText("No data for this metric yet", {
+            exact: false,
+          });
+          await emptyHeading.waitFor({ state: "visible", timeout: 5_000 });
+          const emptyText = (await emptyHeading.textContent()) ?? "";
+          assert(
+            emptyText.includes("No data for this metric yet"),
+            `MetricDiagnosticModal must show "No data for this metric yet" when ` +
+              `metric.value is null. Got: "${emptyText}"`,
+          );
+
+          // ── Assert 2: concept rows are absent ─────────────────────────
+          // The "Top IAP library concepts" section must not exist in the modal.
+          const dialog = page.locator('[role="dialog"]').first();
+          const conceptSection = dialog.getByText(
+            "Top IAP library concepts driving this metric",
+            { exact: false },
+          );
+          const conceptSectionVisible = await conceptSection
+            .isVisible()
+            .catch(() => false);
+          assert(
+            !conceptSectionVisible,
+            `MetricDiagnosticModal must NOT render the concept-list section ` +
+              `("Top IAP library concepts") when metric.value is null.`,
+          );
+
+          // No concept-row buttons inside the modal.
+          const conceptRows = dialog
+            .locator("button")
+            .filter({ hasText: /Concept/ });
+          const rowCount = await conceptRows.count();
+          assert(
+            rowCount === 0,
+            `MetricDiagnosticModal must render 0 concept-row buttons when ` +
+              `metric.value is null. Got ${rowCount}.`,
+          );
+
         } finally {
           await ctx.close();
         }
