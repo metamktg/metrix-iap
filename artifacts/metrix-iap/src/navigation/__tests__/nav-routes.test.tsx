@@ -56,7 +56,7 @@ const legacyRedirects: [string, string][] = [
   ["/app/report-builder", "/app/reports/builder"],
   ["/app/reports/new", "/app/reports/builder"],
   ["/app/reports/settings", "/app/reports/configuration"],
-  ["/app/reports/exports", "/app/exports/reports"],
+  ["/app/reports/exports", "/app/reports/history"],
   ["/app/agent", "/app/action/agent"],
   ["/app/action", "/app/action/agent"],
   ["/app/settings", "/app/settings/general"],

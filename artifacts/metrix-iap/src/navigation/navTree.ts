@@ -316,39 +316,6 @@ export const navTree: NavSection[] = [
     ],
   },
   {
-    id: "exports",
-    number: "08",
-    label: "Exports",
-    icon: "Download",
-    landing: "/app/exports",
-    children: [
-      {
-        id: "exports-analysis",
-        label: "Analysis",
-        to: "/app/exports/analysis",
-        dataSource: "performance_by_cell, v3_variable_performance",
-      },
-      {
-        id: "exports-strategy",
-        label: "Strategy JSON",
-        to: "/app/exports/strategy",
-        dataSource: "message_pillars, active_hypotheses",
-      },
-      {
-        id: "exports-reports",
-        label: "Reports",
-        to: "/app/exports/reports",
-        dataSource: "report_history, export_formats",
-      },
-      {
-        id: "exports-brief",
-        label: "Brief",
-        to: "/app/exports/brief",
-        dataSource: "draft_briefs",
-      },
-    ],
-  },
-  {
     id: "action",
     number: "09",
     label: "Action",
