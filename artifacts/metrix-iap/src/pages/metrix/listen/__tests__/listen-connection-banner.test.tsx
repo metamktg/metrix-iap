@@ -47,6 +47,11 @@ if (!booksterAccount?.listen?.signal_cards?.length) {
 // ── Mutable state for per-test control ───────────────────────────────────
 const mockMeta = { connected: false };
 
+// Mutable seed reference — swapped per-test to supply synthetic data.
+// Initialised to the fixture; individual describe blocks may override it.
+// eslint-disable-next-line prefer-const
+let activeSeed: unknown = seed;
+
 // ── Mocks ─────────────────────────────────────────────────────────────────
 // Must be declared before any imports that transitively use these modules.
 
@@ -62,7 +67,7 @@ vi.mock("@workspace/api-client-react", () => ({
 }));
 
 vi.mock("@/contexts/MetrixDataContext", () => ({
-  useMetrixSeed:         () => seed,
+  useMetrixSeed:         () => activeSeed,
   useMetrixIsRefetching: () => false,
   MetrixDataProvider:    ({ children }: { children: ReactNode }) => children,
 }));
@@ -113,9 +118,45 @@ function makeWrapper(path = "/app/listen/alerts") {
   };
 }
 
+// ── Synthetic seed: bookster account with one recommendation card ─────────
+// Deep-clone the fixture and inject a populated optimization_loop so the
+// RecommendationDeck render path (not the empty-state PendingState) is exercised.
+const syntheticSeedWithCards = JSON.parse(JSON.stringify(seed)) as {
+  ad_accounts: {
+    id: string;
+    iap?: {
+      optimization_loop?: {
+        recommendation_cards: unknown[];
+        action_policy?: string;
+      } | null;
+    };
+  }[];
+};
+const _syntheticBookster = syntheticSeedWithCards.ad_accounts.find((a) => a.id === "bookster");
+if (_syntheticBookster) {
+  if (!_syntheticBookster.iap) (_syntheticBookster as Record<string, unknown>).iap = {};
+  _syntheticBookster.iap!.optimization_loop = {
+    recommendation_cards: [
+      {
+        id: "rec-test-1",
+        account_id: "bookster",
+        scope: "creative",
+        title: "Pause underperforming creatives to cut wasted spend",
+        rationale: "Bottom 3 creatives by CPA exceed the target by 2×.",
+        impact: "high",
+        confidence: "high",
+        recommended_action: "Pause the bottom 3 creatives and reallocate their budget.",
+        manager_card_descriptor: "Creative",
+      },
+    ],
+    action_policy: "All changes require manual approval before implementation.",
+  };
+}
+
 beforeEach(() => {
   selectBookster();
   mockMeta.connected = false;
+  activeSeed = seed;
 });
 
 afterEach(cleanup);
@@ -292,5 +333,62 @@ describe("RecommendationsView — connected", () => {
   it("does NOT render the legacy PendingState gate when connected", () => {
     render(<RecommendationsView />, { wrapper: makeWrapper("/app/listen/recommendations") });
     expect(screen.queryByText(LEGACY_GATE_TEXT)).toBeNull();
+  });
+});
+
+// ── RecommendationsView — populated deck ──────────────────────────────────
+//
+// These suites use syntheticSeedWithCards, which injects one recommendation_card
+// into the bookster account's iap.optimization_loop. They confirm:
+//   • The RecommendationDeck render path fires (card title + action text visible)
+//   • The "No recommendations" PendingState is absent
+//   • ConnectionNudgeBanner still tracks the Meta connection state correctly
+
+describe("RecommendationsView — with recommendation cards (disconnected)", () => {
+  beforeEach(() => {
+    activeSeed = syntheticSeedWithCards;
+    mockMeta.connected = false;
+  });
+
+  it("renders the card title in the deck", () => {
+    render(<RecommendationsView />, { wrapper: makeWrapper("/app/listen/recommendations") });
+    expect(screen.getByText(/pause underperforming creatives to cut wasted spend/i)).toBeTruthy();
+  });
+
+  it("renders the recommended action text in the deck", () => {
+    render(<RecommendationsView />, { wrapper: makeWrapper("/app/listen/recommendations") });
+    expect(screen.getByText(/pause the bottom 3 creatives and reallocate/i)).toBeTruthy();
+  });
+
+  it("does NOT render the 'No recommendations' PendingState", () => {
+    render(<RecommendationsView />, { wrapper: makeWrapper("/app/listen/recommendations") });
+    expect(screen.queryByText(/no recommendations/i)).toBeNull();
+  });
+
+  it("shows ConnectionNudgeBanner when Meta is disconnected", () => {
+    render(<RecommendationsView />, { wrapper: makeWrapper("/app/listen/recommendations") });
+    expect(screen.getByText(BANNER_TEXT)).toBeTruthy();
+  });
+});
+
+describe("RecommendationsView — with recommendation cards (connected)", () => {
+  beforeEach(() => {
+    activeSeed = syntheticSeedWithCards;
+    mockMeta.connected = true;
+  });
+
+  it("renders the card title in the deck when Meta is connected", () => {
+    render(<RecommendationsView />, { wrapper: makeWrapper("/app/listen/recommendations") });
+    expect(screen.getByText(/pause underperforming creatives to cut wasted spend/i)).toBeTruthy();
+  });
+
+  it("does NOT render the 'No recommendations' PendingState when connected", () => {
+    render(<RecommendationsView />, { wrapper: makeWrapper("/app/listen/recommendations") });
+    expect(screen.queryByText(/no recommendations/i)).toBeNull();
+  });
+
+  it("hides ConnectionNudgeBanner when Meta is connected", () => {
+    render(<RecommendationsView />, { wrapper: makeWrapper("/app/listen/recommendations") });
+    expect(screen.queryByText(BANNER_TEXT)).toBeNull();
   });
 });
