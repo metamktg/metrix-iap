@@ -40,14 +40,25 @@
 //   15d. SegmentGridModal avatar blended column — reach metric: "Blended" header
 //      is present; demographic rows carry Reach data so the blended cell shows a
 //      non-"—" integer value; the unavailableOnPlacements description warning is
-//      also rendered (placement export has no Reach breakdown).
+//      also rendered; and every "All avatars" placement cell shows "—" (placement
+//      export has no Reach breakdown — topPlacements() sets reach: null).
 //   15e. SegmentGridModal avatar blended column — clicks_all metric: same pattern
-//      as 15d for "Clicks (all)"; demographic rows carry clicks_all data so the
-//      blended cell is non-"—"; unavailableOnPlacements warning is rendered.
+//      as 15d for "Clicks (all)"; blended cell is non-"—"; unavailableOnPlacements
+//      warning is rendered; every "All avatars" placement cell shows "—"
+//      (topPlacements() sets clicksAll: null).
 //   16. SegmentGridModal with cellIds: opening via a concept-row drilldown
 //      (TilePerformanceModal → cellIds=["C2B"]) renders ≥1 avatar segment row
 //      and the description says "scoped to C2B" — catches silent empty-grid
 //      regressions in the non-null cellIds branch of buildAvatarSegments().
+//   17. MetricDiagnosticModal empty state: when the chosen metric has no
+//      campaign_summary value (total_spend_usd = null), opening the modal via
+//      "Diagnose full breakdown" renders "No data for this metric yet" and
+//      omits concept rows — catches regressions in the hasData = false branch.
+//   18. SegmentDrilldownModal via VariableDrilldownModal: opening from the
+//      TopVariableStackStrip (FW_BAB carrier cell C2B) renders ≥1 segment row
+//      inside VariableDrilldownModal and the SegmentDrilldownModal description
+//      includes "scoped to" — catches regressions where cellIds is silently
+//      dropped to null at VariableDrilldownModal.tsx line 266.
 //
 // API calls are intercepted with page.route() so no live API server is needed.
 // The seed fixture comes from the checked-in test snapshot.
@@ -2149,6 +2160,33 @@ async function main() {
             `SegmentGridModal description must include the unavailableOnPlacements ` +
               `warning for the reach metric. Got dialog text: "${fullDialogText.slice(0, 300)}"`,
           );
+
+          // The "All avatars" placement-marginal row must show "—" in the metric
+          // value div of every placement cell for the reach metric.
+          // topPlacements() always sets reach: null on placement totals, so
+          // metricValueForSegment(reach) returns "—" — never a fabricated number.
+          // Each placement cell has two divs: [0] = metric value, [1] = spend
+          // sub-line (always shows a dollar amount). We check only div[0].
+          const allAvatarsRow = dialog.locator("tbody tr").filter({ hasText: "All avatars" });
+          await allAvatarsRow.waitFor({ state: "visible", timeout: 5_000 });
+          // Placement cells are all tds except the first (avatar label) and last (empty blended).
+          const allAvatarsCells = await allAvatarsRow.locator("td").all();
+          // Must have at least 3 cells: label + ≥1 placement + blended-spacer.
+          assert(
+            allAvatarsCells.length >= 3,
+            `"All avatars" row must have ≥3 cells (label + placements + spacer). Got ${allAvatarsCells.length}`,
+          );
+          const placementCells = allAvatarsCells.slice(1, allAvatarsCells.length - 1);
+          for (let i = 0; i < placementCells.length; i++) {
+            // First div = metric value display; must be "—" for unavailable metrics.
+            const metricDiv = placementCells[i].locator("div").first();
+            const metricText = (await metricDiv.textContent()) ?? "";
+            assert(
+              metricText.trim() === "—",
+              `"All avatars" placement cell [${i}] metric-value div must be "—" for the reach metric. ` +
+                `Got: "${metricText}"`,
+            );
+          }
         } finally {
           await ctx.close();
         }
@@ -2301,6 +2339,277 @@ async function main() {
             fullDialogText.includes("placement export doesn't carry this metric"),
             `SegmentGridModal description must include the unavailableOnPlacements ` +
               `warning for the clicks_all metric. Got dialog text: "${fullDialogText.slice(0, 300)}"`,
+          );
+
+          // The "All avatars" placement-marginal row must show "—" in the metric
+          // value div of every placement cell for clicks_all.  topPlacements()
+          // always sets clicksAll: null on placement totals, so
+          // metricValueForSegment returns "—" — never a fabricated value.
+          // Each placement cell: div[0] = metric value, div[1] = spend sub-line.
+          const allAvatarsRow = dialog.locator("tbody tr").filter({ hasText: "All avatars" });
+          await allAvatarsRow.waitFor({ state: "visible", timeout: 5_000 });
+          const allAvatarsCells = await allAvatarsRow.locator("td").all();
+          assert(
+            allAvatarsCells.length >= 3,
+            `"All avatars" row must have ≥3 cells (label + placements + spacer). Got ${allAvatarsCells.length}`,
+          );
+          const placementCells = allAvatarsCells.slice(1, allAvatarsCells.length - 1);
+          for (let i = 0; i < placementCells.length; i++) {
+            const metricDiv = placementCells[i].locator("div").first();
+            const metricText = (await metricDiv.textContent()) ?? "";
+            assert(
+              metricText.trim() === "—",
+              `"All avatars" placement cell [${i}] metric-value div must be "—" for the clicks_all metric. ` +
+                `Got: "${metricText}"`,
+            );
+          }
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+
+    // ── Test 17: MetricDiagnosticModal empty state (null metric value) ────
+    // Injects a seed where total_spend_usd is null so the "Total spend" metric
+    // has value = null (hasData = false).  Opening MetricDiagnosticModal via
+    // "Diagnose full breakdown" must render the honest empty state and omit any
+    // concept rows — catches regressions in the !hasData branch of the modal.
+    await test(
+      'MetricDiagnosticModal: null metric value shows "No data for this metric yet" empty state',
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        try {
+          // Build a seed where the "Total spend" metric has no data.
+          const modifiedSeed = JSON.parse(SEED_FIXTURE_BODY);
+          const bookster = modifiedSeed.ad_accounts.find(
+            (a: { id: string }) => a.id === ACCOUNT,
+          );
+          // Null out total_spend_usd → metricSourceFromCampaignSummary() sets
+          // source.spend = null → buildMetricCatalog() emits value: null for
+          // the "spend" metric → MetricDiagnosticModal hasData = false.
+          bookster.iap.campaign_summary.total_spend_usd = null;
+          // Empty performance_by_cell so no concept rows could accidentally
+          // leak through and mask the empty-state branch.
+          bookster.iap.analysis.performance_by_cell = [];
+
+          await page.route("**/api/metrix/auth/me", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify({
+                user: {
+                  id: "test-user",
+                  email: "demo@metrix.app",
+                  role: "admin",
+                  must_change_password: false,
+                  workspace_id: "metrix_manager",
+                },
+              }),
+            }),
+          );
+          await page.route("**/api/metrix/seed", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify(modifiedSeed),
+            }),
+          );
+          await page.route("**/api/metrix/workspaces/*/reports", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify({ reports: [] }),
+            }),
+          );
+
+          await page.goto(`${BASE}/app/account?account=${ACCOUNT}`, {
+            waitUntil: "domcontentloaded",
+          });
+
+          await page
+            .getByText("Account Totals", { exact: false })
+            .waitFor({ state: "visible", timeout: 20_000 });
+
+          // Hover the "Total spend" tile — the HoverCard still opens even
+          // when the metric value is null.
+          const tileBtn = page
+            .locator("button")
+            .filter({ hasText: "Total spend" })
+            .first();
+          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
+          await tileBtn.hover();
+
+          // The "Diagnose full breakdown" footer link is always present.
+          const diagnoseBtn = page.getByText("Diagnose full breakdown");
+          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
+          await diagnoseBtn.click();
+
+          // Modal header must appear.
+          const dialogHeader = page.getByText("Metric diagnostic", {
+            exact: false,
+          });
+          await dialogHeader.waitFor({ state: "visible", timeout: 8_000 });
+
+          // ── Assert 1: empty-state copy is present ─────────────────────
+          const emptyHeading = page.getByText("No data for this metric yet", {
+            exact: false,
+          });
+          await emptyHeading.waitFor({ state: "visible", timeout: 5_000 });
+          const emptyText = (await emptyHeading.textContent()) ?? "";
+          assert(
+            emptyText.includes("No data for this metric yet"),
+            `MetricDiagnosticModal must show "No data for this metric yet" when ` +
+              `metric.value is null. Got: "${emptyText}"`,
+          );
+
+          // ── Assert 2: concept rows are absent ─────────────────────────
+          // The "Top IAP library concepts" section must not exist in the modal.
+          const dialog = page.locator('[role="dialog"]').first();
+          const conceptSection = dialog.getByText(
+            "Top IAP library concepts driving this metric",
+            { exact: false },
+          );
+          const conceptSectionVisible = await conceptSection
+            .isVisible()
+            .catch(() => false);
+          assert(
+            !conceptSectionVisible,
+            `MetricDiagnosticModal must NOT render the concept-list section ` +
+              `("Top IAP library concepts") when metric.value is null.`,
+          );
+
+          // No concept-row buttons inside the modal.
+          const conceptRows = dialog
+            .locator("button")
+            .filter({ hasText: /Concept/ });
+          const rowCount = await conceptRows.count();
+          assert(
+            rowCount === 0,
+            `MetricDiagnosticModal must render 0 concept-row buttons when ` +
+              `metric.value is null. Got ${rowCount}.`,
+          );
+
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+    // ── Test 18: SegmentGridModal via VariableDrilldownModal concept path ────
+    // Opens VariableDrilldownModal for the "FW_BAB" variable (which carries
+    // creative cell C2B in the bookster fixture — C2B has 62 demographic rows
+    // across all cells, with C2B rows confirmed present in the analysis).
+    // The modal shows "Segment performance — scoped to this variable's cells"
+    // rows computed by computeVariableDrilldown() using only carrier-cell demo
+    // rows (cellIds = ["C2B"]).  Clicking one of those rows opens
+    // SegmentDrilldownModal with cellIds=["C2B"] threaded through from
+    // VariableDrilldownModal (line 266 of VariableDrilldownModal.tsx).
+    //
+    // This is the third non-null cellIds entry point into the segment drill-down
+    // chain — the other two being Test 7 (account-level, cellIds=null) and
+    // Test 16 (concept row → TilePerformanceModal, cellIds=["C2B"]).  A
+    // regression in computeVariableDrilldown() carrier-cell filtering or in
+    // the cellIds prop threading at line 266 would silently empty the segment
+    // section without any existing test catching it.
+    //
+    // Assertions:
+    //   1. ≥1 segment row (data-testid="row-variable-segment-*") renders inside
+    //      VariableDrilldownModal — confirms computeVariableDrilldown found
+    //      carrier cells and the demo-grain scoping produced non-empty segments.
+    //   2. After clicking a segment row, SegmentDrilldownModal's description
+    //      contains "scoped to" — confirms cellIds was threaded through from
+    //      VariableDrilldownModal into SegmentDrilldownModal (not silently
+    //      dropped to null, which would widen the scope to the whole account).
+    await test(
+      "SegmentGridModal via VariableDrilldownModal: FW_BAB carrier cells render ≥1 segment row and 'scoped to' description",
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        try {
+          await mockApis(ctx);
+
+          // Navigate to AnalysisHub — TopVariableStackStrip is rendered here
+          // and lists the top variable combinations from strategy.variable_combinations.
+          // The bookster fixture has three combos; two have a CPA value and are
+          // shown sorted ascending: "FW_StoryBrand + ..." (CPA 5.77) and
+          // "FW_BAB + HK_Benefit + HP_Time + CN_ProductDemo" (CPA 7.09).
+          // FW_BAB appears as hook_variable for cell C2B, which has demographic
+          // rows, so clicking the FW_BAB card yields a non-empty segment section.
+          await page.goto(`${BASE}/app/analysis?account=${ACCOUNT}`, {
+            waitUntil: "domcontentloaded",
+          });
+
+          // Wait for TopVariableStackStrip to mount — its section heading is
+          // "Top Variable Stacks".
+          await page
+            .getByText("Top Variable Stacks", { exact: false })
+            .waitFor({ state: "visible", timeout: 20_000 });
+
+          // Find and click the variable-stack card that carries "FW_BAB".
+          // The card renders each code as a <span> with font-mono styling;
+          // .filter({ hasText }) matches any card whose visible text includes
+          // "FW_BAB".
+          const fwBabCard = page
+            .locator("button")
+            .filter({ hasText: "FW_BAB" })
+            .first();
+          await fwBabCard.waitFor({ state: "visible", timeout: 8_000 });
+          await fwBabCard.click();
+
+          // VariableDrilldownModal opens — its title includes the human-readable
+          // label for "FW_BAB" via readableVariables() and also renders the raw
+          // code in a <span> inside the DialogTitle (data-testid="title-variable-drilldown").
+          const drilldownTitle = page.locator(
+            '[data-testid="title-variable-drilldown"]',
+          );
+          await drilldownTitle.waitFor({ state: "visible", timeout: 8_000 });
+
+          // ── Assertion 1: ≥1 segment row renders ───────────────────────────
+          // computeVariableDrilldown scopes demographic rows to FW_BAB's carrier
+          // cells (C2B), then groups by age×gender into segment rows rendered as
+          // <button data-testid="row-variable-segment-{age}-{gender}">.
+          // A count of 0 would mean carrier-cell filtering silently discarded
+          // all demo rows or computeVariableDrilldown returned segments.available=false.
+          const segmentRows = page.locator(
+            '[data-testid^="row-variable-segment-"]',
+          );
+          await segmentRows.first().waitFor({ state: "visible", timeout: 8_000 });
+          const segRowCount = await segmentRows.count();
+          assert(
+            segRowCount >= 1,
+            `VariableDrilldownModal must render ≥1 segment row for FW_BAB ` +
+              `(carrier cell C2B has demographic data), but found ${segRowCount} rows. ` +
+              `computeVariableDrilldown() may have over-filtered the carrier-cell ` +
+              `demographic rows, or segments.available is incorrectly false.`,
+          );
+
+          // ── Assertion 2: 'scoped to' appears after opening SegmentDrilldownModal ─
+          // Click the first segment row to open SegmentDrilldownModal.
+          // VariableDrilldownModal passes cellIds=data.carrierCellIds (["C2B"])
+          // at line 266 of VariableDrilldownModal.tsx.  If cellIds is silently
+          // dropped to null the description reads "…from their own demographic
+          // rows" without the "(scoped to C2B)" suffix; if cellIds is correctly
+          // threaded, the description contains "(scoped to C2B)".
+          const firstSegmentRow = segmentRows.first();
+          await firstSegmentRow.click();
+
+          // SegmentDrilldownModal opens as a new Dialog.  Use .last() because
+          // VariableDrilldownModal's Dialog is still mounted underneath.
+          const segmentDialog = page.locator('[role="dialog"]').last();
+          await segmentDialog.waitFor({ state: "visible", timeout: 8_000 });
+
+          const dialogText = (await segmentDialog.textContent()) ?? "";
+          assert(
+            dialogText.includes("scoped to"),
+            `SegmentDrilldownModal description must include "scoped to" when ` +
+              `opened from VariableDrilldownModal with cellIds=["C2B"]. ` +
+              `This confirms the cellIds prop was threaded through at line 266 ` +
+              `of VariableDrilldownModal.tsx rather than silently dropped to null. ` +
+              `Got dialog text snippet: "${dialogText.slice(0, 400)}"`,
           );
         } finally {
           await ctx.close();

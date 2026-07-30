@@ -14,11 +14,9 @@ import {
   FileText,
   FileBarChart,
   Layers,
-  Bot,
-  Settings2,
-  Info,
-  House,
+  Download,
   Zap,
+  Settings2,
 } from "lucide-react";
 import { AccountSwitcher } from "./AccountSwitcher";
 import { DataSourceBadgeToggle } from "@/components/ui/DataSourceBadge";
@@ -37,10 +35,9 @@ const ICONS: Record<NavIconName, React.ComponentType<{ className?: string }>> = 
   FileText,
   FileBarChart,
   Layers,
-  Bot,
-  Settings2,
-  House,
+  Download,
   Zap,
+  Settings2,
 };
 
 function NavIcon({ name, className }: { name: NavIconName; className?: string }) {
@@ -70,25 +67,21 @@ function saveCollapsed(v: boolean) {
 
 // ─── Badge pill ────────────────────────────────────────────────────────
 
-const BADGE_STYLE: Record<string, { base: string; shape: string }> = {
-  alerts:      { base: "bg-destructive/15 text-destructive border-destructive/20",        shape: "rounded" },
-  signals:     { base: "bg-amber-400 text-amber-950 border-amber-400/80",                  shape: "rounded-full" },
-  suggestions: { base: "bg-primary/15 text-interactive border-primary/30",                     shape: "rounded-full" },
-  briefs:      { base: "bg-primary/12 text-interactive border-primary/30",                     shape: "rounded-full" },
-  mst:         { base: "bg-white/[0.04] text-muted-foreground/55 border-border/35",        shape: "rounded" },
-  agent:       { base: "bg-white/[0.04] text-muted-foreground/55 border-border/35",        shape: "rounded" },
+const BADGE_STYLE: Record<string, string> = {
+  alerts:      "bg-destructive/15 text-destructive border-destructive/20",
+  signals:     "text-amber-400 bg-amber-400/10 border-amber-400/20",
+  suggestions: "bg-primary/15 text-interactive border-primary/20",
+  briefs:      "bg-primary/15 text-interactive border-primary/20",
+  mst:         "bg-muted text-muted-foreground border-border/40",
+  agent:       "bg-muted text-muted-foreground border-border/40",
 };
-
-const BADGE_FALLBACK = { base: "bg-muted text-muted-foreground border-border/40", shape: "rounded" };
 
 function NavBadge({ count, badgeKey }: { count: number | null; badgeKey: string }) {
   if (count == null || count <= 0) return null;
-  const style = BADGE_STYLE[badgeKey] ?? BADGE_FALLBACK;
   return (
     <span className={cn(
-      "ml-auto text-[9px] font-bold px-1.5 py-0.5 border leading-none tabular-nums shrink-0",
-      style.base,
-      style.shape,
+      "ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded border leading-none tabular-nums shrink-0",
+      BADGE_STYLE[badgeKey] ?? "bg-muted text-muted-foreground border-border/40"
     )}>
       {count}
     </span>
@@ -125,75 +118,16 @@ function navigate(href: string, e: React.MouseEvent) {
 
 // ─── Tooltip (collapsed-mode hover label) ─────────────────────────────
 
-function CollapseTooltip({
-  label,
-  teaser,
-}: {
-  label: string;
-  teaser?: string;
-}) {
+function CollapseTooltip({ label, sub }: { label: string; sub?: string }) {
   return (
     <div className={cn(
       "absolute left-full top-1/2 -translate-y-1/2 ml-2 z-[100]",
       "pointer-events-none select-none",
-      "bg-surface border border-border/50 rounded-md elevation-raised",
-      "px-2.5 py-1.5 max-w-[220px]",
+      "bg-[hsl(222_61%_10%)] border border-border/50 rounded-md shadow-xl",
+      "px-2.5 py-1.5 whitespace-nowrap",
     )}>
-      <div className="text-body font-semibold text-foreground leading-tight whitespace-nowrap">{label}</div>
-      {teaser && (
-        <div className="text-label text-muted-foreground/65 mt-1 leading-snug whitespace-normal">{teaser}</div>
-      )}
-    </div>
-  );
-}
-
-// ─── Footer info tooltip (version / data mode) ─────────────────────────
-
-function FooterInfoTip() {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <div
-      className="relative flex items-center"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      <button
-        type="button"
-        aria-label="Build info"
-        className="flex items-center gap-1 text-muted-foreground/35 hover:text-muted-foreground/65 transition-colors"
-      >
-        <Info className="w-3 h-3" />
-      </button>
-      {hovered && (
-        <div className={cn(
-          "absolute left-5 bottom-0 z-[100]",
-          "pointer-events-none select-none",
-          "bg-surface border border-border/50 rounded-md elevation-raised",
-          "px-2.5 py-1.5 whitespace-nowrap",
-        )}>
-          <div className="text-[9px] font-mono text-muted-foreground/60 tracking-wider">METRIX IAP v2.0-rc</div>
-          <div className="text-[9px] font-mono text-muted-foreground/50">SAMPLE / DEMO DATA</div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Tooltip for expanded placeholder items ────────────────────────────
-
-function ExpandedPlaceholderTooltip({ label, teaser }: { label: string; teaser: string }) {
-  return (
-    <div className={cn(
-      "absolute left-2 right-2 top-full mt-0.5 z-[100]",
-      "pointer-events-none select-none",
-      "bg-surface border border-border/50 rounded-md elevation-raised",
-      "px-2.5 py-2",
-    )}>
-      <span className="inline-block text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/55 border border-border/35 px-1 py-0.5 rounded leading-none mb-1.5">
-        Coming Soon
-      </span>
-      <div className="text-caption font-semibold text-foreground leading-tight">{label}</div>
-      <div className="text-label text-muted-foreground/65 mt-1 leading-snug">{teaser}</div>
+      <div className="text-[12px] font-semibold text-foreground leading-tight">{label}</div>
+      {sub && <div className="text-[9px] text-muted-foreground/60 mt-0.5">{sub}</div>}
     </div>
   );
 }
@@ -201,7 +135,7 @@ function ExpandedPlaceholderTooltip({ label, teaser }: { label: string; teaser: 
 // ─── Collapsed icon button ─────────────────────────────────────────────
 
 // IDs after which a thin section divider is inserted in collapsed mode
-const COLLAPSED_DIVIDER_AFTER = new Set(["home", "analyze", "act", "report"]);
+const COLLAPSED_DIVIDER_AFTER = new Set(["overview", "analysis", "mst", "exports"]);
 
 function CollapsedItem({
   section,
@@ -220,18 +154,16 @@ function CollapsedItem({
     <>
       <li className="relative" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
         <a
-          href={section.placeholder ? undefined : landing}
-          onClick={section.placeholder ? (e) => e.preventDefault() : (e) => navigate(landing, e)}
+          href={landing}
+          onClick={(e) => navigate(landing, e)}
           aria-current={active ? "page" : undefined}
-          aria-disabled={section.placeholder || undefined}
-          aria-label={section.placeholder ? `${section.label} — coming soon` : section.label}
-          tabIndex={section.placeholder ? -1 : undefined}
+          aria-label={section.label}
           className={cn(
             "flex items-center justify-center w-10 h-10 mx-auto rounded-lg transition-all relative overflow-hidden",
             active
               ? "bg-primary/25 text-interactive border border-primary/35 shadow-sm shadow-primary/20"
               : "text-foreground/45 hover:text-foreground/90 hover:bg-white/[0.07]",
-            section.placeholder && "opacity-40 cursor-not-allowed pointer-events-none"
+            section.placeholder && "opacity-50"
           )}
         >
           {/* Active left accent bar */}
@@ -245,12 +177,7 @@ function CollapsedItem({
             </span>
           )}
         </a>
-        {hovered && (
-          <CollapseTooltip
-            label={section.label}
-            teaser={section.teaser}
-          />
-        )}
+        {hovered && <CollapseTooltip label={section.label} sub={section.number} />}
       </li>
       {/* Section group divider */}
       {COLLAPSED_DIVIDER_AFTER.has(section.id) && (
@@ -267,29 +194,21 @@ function CollapsedItem({
 function ChildRow({ child, count }: { child: NavChild; count: number | null }) {
   const [location] = useLocation();
   const active = isChildActive(child.to, location);
-  const [hovered, setHovered] = useState(false);
 
   return (
-    <li
-      className="relative"
-      onMouseEnter={child.placeholder ? () => setHovered(true) : undefined}
-      onMouseLeave={child.placeholder ? () => setHovered(false) : undefined}
-    >
+    <li className="relative">
       {active && (
-        <span className="absolute left-0 top-1.5 bottom-[5px] w-0.5 bg-primary rounded-full" />
+        <span className="absolute left-0 top-[5px] bottom-[5px] w-0.5 bg-primary rounded-full" />
       )}
       <a
-        href={child.placeholder ? undefined : child.to}
-        onClick={child.placeholder ? (e) => e.preventDefault() : (e) => navigate(child.to, e)}
+        href={child.to}
+        onClick={(e) => navigate(child.to, e)}
         aria-current={active ? "page" : undefined}
-        aria-disabled={child.placeholder || undefined}
-        tabIndex={child.placeholder ? -1 : undefined}
         className={cn(
-          "flex items-center gap-1.5 pl-3 pr-2 h-8 rounded-r text-body transition-all",
+          "flex items-center gap-1.5 pl-3 pr-2 h-8 rounded-r text-[12px] transition-all",
           active
             ? "font-semibold text-foreground bg-primary/8"
-            : "text-foreground/65 hover:text-foreground hover:bg-[rgba(20,55,110,0.45)]",
-          child.placeholder && "opacity-40 cursor-not-allowed pointer-events-none"
+            : "text-foreground/65 hover:text-foreground hover:bg-[rgba(20,55,110,0.45)]"
         )}
       >
         <span className="flex-1 truncate leading-tight">{child.label}</span>
@@ -299,15 +218,12 @@ function ChildRow({ child, count }: { child: NavChild; count: number | null }) {
           </span>
         )}
         {!child.placeholder && child.dataSource && (
-          <Database className="w-3.5 h-3.5 shrink-0 text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <Database className="w-2 h-2 shrink-0 text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity" />
         )}
         {child.badgeKey && !child.placeholder && (
           <NavBadge count={count} badgeKey={child.badgeKey} />
         )}
       </a>
-      {hovered && child.teaser && (
-        <ExpandedPlaceholderTooltip label={child.label} teaser={child.teaser} />
-      )}
     </li>
   );
 }
@@ -337,7 +253,7 @@ function ExpandableSection({
     <li>
       <div
         className={cn(
-          "flex items-center rounded-lg text-caption font-semibold uppercase tracking-widest transition-all select-none",
+          "flex items-center rounded-lg text-[11px] font-semibold uppercase tracking-widest transition-all select-none",
           landingActive
             ? "mx-nav-active"
             : sectionActive
@@ -382,7 +298,7 @@ function ExpandableSection({
           )}
         >
           <ChevronDown
-            className={cn("w-3.5 h-3.5 transition-transform duration-200", open && "rotate-180")}
+            className={cn("w-3 h-3 transition-transform duration-200", open && "rotate-180")}
           />
         </button>
       </div>
@@ -419,29 +335,22 @@ function LeafSection({
   const [location] = useLocation();
   const active = isSectionActive(section, location);
   const to = section.to!;
-  const [hovered, setHovered] = useState(false);
 
   return (
-    <li
-      className="relative"
-      onMouseEnter={section.placeholder ? () => setHovered(true) : undefined}
-      onMouseLeave={section.placeholder ? () => setHovered(false) : undefined}
-    >
+    <li className="relative">
       {active && (
-        <span className="absolute left-0 top-1.5 bottom-[6px] w-0.5 bg-primary rounded-full" />
+        <span className="absolute left-0 top-[6px] bottom-[6px] w-0.5 bg-primary rounded-full" />
       )}
       <a
-        href={section.placeholder ? undefined : to}
-        onClick={section.placeholder ? (e) => e.preventDefault() : (e) => navigate(to, e)}
+        href={to}
+        onClick={(e) => navigate(to, e)}
         aria-current={active ? "page" : undefined}
-        aria-disabled={section.placeholder || undefined}
-        tabIndex={section.placeholder ? -1 : undefined}
         className={cn(
-          "flex items-center gap-2 px-2.5 h-9 rounded-lg text-caption font-semibold uppercase tracking-widest transition-all",
+          "flex items-center gap-2 px-2.5 h-9 rounded-lg text-[11px] font-semibold uppercase tracking-widest transition-all",
           active
             ? "mx-nav-active"
             : "text-foreground/70 hover:text-foreground hover:bg-[rgba(20,55,110,0.45)]",
-          section.placeholder && "opacity-40 cursor-not-allowed pointer-events-none"
+          section.placeholder && "opacity-60"
         )}
       >
         <NavIcon
@@ -453,8 +362,8 @@ function LeafSection({
         />
         <span className="flex-1">{section.label}</span>
         {section.placeholder && (
-          <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/55 border border-border/35 px-1 py-0.5 rounded leading-none normal-case shrink-0">
-            Coming Soon
+          <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/70 border border-border/40 px-1 py-0.5 rounded leading-none normal-case shrink-0">
+            Soon
           </span>
         )}
         {section.badgeKey && !section.placeholder && (
@@ -464,9 +373,6 @@ function LeafSection({
           />
         )}
       </a>
-      {hovered && section.teaser && (
-        <ExpandedPlaceholderTooltip label={section.label} teaser={section.teaser} />
-      )}
     </li>
   );
 }
@@ -500,7 +406,7 @@ export function Sidebar() {
       className={cn(
         "flex flex-col shrink-0 h-full overflow-hidden mx-sidebar",
         "transition-[width] duration-200 ease-out",
-        collapsed ? "w-[var(--sidebar-collapsed)]" : "w-[var(--sidebar-expanded)]"
+        collapsed ? "w-[56px]" : "w-[216px]"
       )}
       aria-label="Workspace sidebar"
     >
@@ -516,32 +422,29 @@ export function Sidebar() {
             className="w-6 h-6 object-contain mx-logo-glow"
           />
         ) : (
-          <div className="flex items-center gap-2">
-            <img
-              src={`${import.meta.env.BASE_URL}metrix-logo.png`}
-              alt="Metrix"
-              className="w-5 h-5 object-contain shrink-0 mx-logo-glow"
-            />
-            <span className="text-title font-bold tracking-tight text-foreground">METRIX</span>
-            <span className="text-[9px] font-mono text-muted-foreground/60 border border-border/50 px-1.5 py-0.5 rounded leading-none ml-0.5">
-              IAP
-            </span>
-          </div>
+          <>
+            <div className="flex items-center gap-2">
+              <img
+                src={`${import.meta.env.BASE_URL}metrix-logo.png`}
+                alt="Metrix"
+                className="w-5 h-5 object-contain shrink-0 mx-logo-glow"
+              />
+              <span className="text-[13px] font-bold tracking-tight text-foreground">METRIX</span>
+              <span className="text-[9px] font-mono text-muted-foreground/60 border border-border/50 px-1.5 py-0.5 rounded leading-none ml-0.5">
+                IAP
+              </span>
+            </div>
+            <p className="text-[9px] text-muted-foreground/55 mt-1 leading-tight tracking-wide">
+              Not more data. Better decisions.
+            </p>
+          </>
         )}
       </div>
 
-      {/* Account context header — distinct zone so the workspace selector
-          reads as "what am I scoped to" rather than generic nav chrome.
-          Collapsed: compact icon-only button. Expanded: labelled zone. */}
-      {collapsed ? (
-        <div className="shrink-0 border-b border-border/40 bg-white/[0.015] flex items-center justify-center py-1">
-          <AccountSwitcher compact />
-        </div>
-      ) : (
-        <div className="shrink-0 border-b border-border/40 bg-white/[0.015]">
-          <div className="px-2 pt-2 pb-2">
-            <AccountSwitcher />
-          </div>
+      {/* Account switcher — hide in collapsed mode */}
+      {!collapsed && (
+        <div className="px-2 py-2 border-b border-border/40 shrink-0">
+          <AccountSwitcher />
         </div>
       )}
 
@@ -588,7 +491,14 @@ export function Sidebar() {
       )}>
         {!collapsed && <DataSourceBadgeToggle />}
         {!collapsed && (
-          <FooterInfoTip />
+          <div className="space-y-0.5">
+            <div className="text-[9px] text-muted-foreground/50 font-mono tracking-wider">
+              METRIX IAP v2.0-rc
+            </div>
+            <div className="text-[9px] text-muted-foreground/50 font-mono">
+              SAMPLE / DEMO DATA
+            </div>
+          </div>
         )}
 
         {/* Collapse toggle */}
@@ -599,14 +509,14 @@ export function Sidebar() {
           className={cn(
             "flex items-center justify-center rounded-lg transition-all",
             "text-muted-foreground/50 hover:text-foreground hover:bg-white/[0.06]",
-            collapsed ? "w-10 h-8" : "w-full h-7 gap-1.5 text-label font-medium border border-border/20"
+            collapsed ? "w-10 h-8" : "w-full h-7 gap-1.5 text-[10px] font-medium border border-border/20"
           )}
         >
           {collapsed ? (
             <PanelLeftOpen className="w-3.5 h-3.5" />
           ) : (
             <>
-              <PanelLeftClose className="w-3.5 h-3.5" />
+              <PanelLeftClose className="w-3 h-3" />
               <span>Collapse</span>
             </>
           )}

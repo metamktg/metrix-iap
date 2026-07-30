@@ -538,6 +538,8 @@ export interface AdAccount {
   source_status?: string;
   /** Numeric Meta ad account id (no "act_" prefix) for Ads Manager deep links. Null until a raw Meta export supplies it. */
   meta_ad_account_id?: string | null;
+  /** Business-model cohort — null until the agency sets it (required before the first analysis run). */
+  cohort?: "ecommerce" | "lead_gen" | "service" | "app" | null;
   /** Ad-level registry (ad_name → cell/concept + nullable meta_ad_id / creative_asset_url). */
   ads?: AdRecord[];
   overview_state?: AdAccountOverviewState;

@@ -12,7 +12,7 @@ import { ModuleHeader, SectionCard, CaveatNote, CrossLink } from "../shared";
 import { cn } from "@/lib/utils";
 import { FileText, Palette, CalendarClock, Building2, Users, Check } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { FORMAT_LABEL } from "./reportFormatLabels";
+import { FORMAT_LABEL } from "./ReportBuilderView";
 import {
   useGetReportSettings,
   useUpdateReportSettings,
@@ -22,7 +22,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
-const SECTION = "Reports · 06";
+const SECTION = "Reports · 07";
 
 function OptionRow<T extends string>({
   options,
@@ -45,14 +45,14 @@ function OptionRow<T extends string>({
           onClick={() => onSelect(opt)}
           disabled={disabled}
           className={cn(
-            "flex items-center gap-1.5 px-2.5 h-7 rounded-md border text-caption font-medium transition-colors",
+            "flex items-center gap-1.5 px-2.5 h-7 rounded-md border text-[11px] font-medium transition-colors",
             value === opt
               ? "border-primary/40 bg-primary/10 text-interactive"
               : "border-border/40 text-foreground/70 hover:text-foreground hover:bg-white/5",
             disabled && "opacity-50 pointer-events-none"
           )}
         >
-          {value === opt && <Check className="w-3.5 h-3.5" />}
+          {value === opt && <Check className="w-3 h-3" />}
           {labelFor(opt)}
         </button>
       ))}
@@ -60,7 +60,7 @@ function OptionRow<T extends string>({
   );
 }
 
-export function ReportSettingsView() {
+export function ReportConfigurationView() {
   const seed = useMetrixSeed();
   const { manager, adAccounts } = useAccount();
   const queryClient = useQueryClient();
@@ -101,16 +101,17 @@ export function ReportSettingsView() {
 
   return (
     <div className="flex-1 flex flex-col">
-      <ModuleHeader section={SECTION} title="Report Settings" />
+      <ModuleHeader section={SECTION} title="Configuration" />
 
       <div className="flex-1 overflow-y-auto p-6 space-y-4 max-w-3xl">
         <SectionCard
           title="Default template"
-          desc="Branding · format · audience defaults"
+          desc="Branding, format, and audience defaults applied when composing a new report."
+          table="workspace_report_settings"
         >
           <div className="space-y-4 pt-1">
             <div className="space-y-1.5">
-              <p className="text-caption font-medium text-foreground/80">Branding</p>
+              <p className="text-[11px] font-medium text-foreground/80">Branding</p>
               <OptionRow
                 options={["metrix", "white_label"]}
                 value={branding as "metrix" | "white_label"}
@@ -119,14 +120,14 @@ export function ReportSettingsView() {
                 labelFor={(v) => (v === "metrix" ? "Metrix branded" : "White label")}
               />
               {rb && !rb.white_label_supported && (
-                <p className="text-label text-muted-foreground/60">
+                <p className="text-[10px] text-muted-foreground/60">
                   White label is not enabled for this workspace's plan; exports fall back to Metrix branding.
                 </p>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <p className="text-caption font-medium text-foreground/80">Export format</p>
+              <p className="text-[11px] font-medium text-foreground/80">Export format</p>
               <OptionRow
                 options={seedFormats}
                 value={format}
@@ -137,7 +138,7 @@ export function ReportSettingsView() {
             </div>
 
             <div className="space-y-1.5">
-              <p className="text-caption font-medium text-foreground/80">Default audience mode</p>
+              <p className="text-[11px] font-medium text-foreground/80">Default audience mode</p>
               <OptionRow
                 options={["internal", "client"]}
                 value={mode as "internal" | "client"}
@@ -145,8 +146,8 @@ export function ReportSettingsView() {
                 disabled={isPending}
                 labelFor={(v) => (v === "internal" ? "Internal (full detail)" : "Client-facing")}
               />
-              <div className="flex items-center gap-1.5 text-label text-muted-foreground/60">
-                {mode === "internal" ? <Building2 className="w-3.5 h-3.5" /> : <Users className="w-3.5 h-3.5" />}
+              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/60">
+                {mode === "internal" ? <Building2 className="w-3 h-3" /> : <Users className="w-3 h-3" />}
                 New reports open in this mode; it can still be switched per report.
               </div>
             </div>
@@ -155,7 +156,8 @@ export function ReportSettingsView() {
 
         <SectionCard
           title="Scheduled sends"
-          desc="Automatic delivery · on a cadence"
+          desc="Deliver the default report automatically on a cadence."
+          table="workspace_report_settings"
         >
           <div className="space-y-4 pt-1">
             <div className="flex items-center gap-3">
@@ -166,8 +168,8 @@ export function ReportSettingsView() {
                 aria-label="Enable scheduled sends"
               />
               <div>
-                <p className="text-body font-medium text-foreground/85">Send reports on a schedule</p>
-                <p className="text-label text-muted-foreground/60">
+                <p className="text-[12px] font-medium text-foreground/85">Send reports on a schedule</p>
+                <p className="text-[10px] text-muted-foreground/60">
                   Compose and deliver the default report automatically.
                 </p>
               </div>
@@ -176,7 +178,7 @@ export function ReportSettingsView() {
             {scheduleEnabled && (
               <>
                 <div className="space-y-1.5">
-                  <p className="text-caption font-medium text-foreground/80">Cadence</p>
+                  <p className="text-[11px] font-medium text-foreground/80">Cadence</p>
                   <OptionRow
                     options={["weekly", "monthly"]}
                     value={cadence as "weekly" | "monthly"}
@@ -186,7 +188,7 @@ export function ReportSettingsView() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-caption font-medium text-foreground/80" htmlFor="report-recipients">
+                  <label className="text-[11px] font-medium text-foreground/80" htmlFor="report-recipients">
                     Recipients
                   </label>
                   <input
@@ -199,9 +201,9 @@ export function ReportSettingsView() {
                       const v = e.target.value.trim();
                       if (v !== recipients) save({ schedule_recipients: v || null });
                     }}
-                    className="w-full h-8 px-2.5 rounded-md border border-border/40 bg-white/[0.03] text-body text-foreground/85 placeholder:text-muted-foreground/40"
+                    className="w-full h-8 px-2.5 rounded-md border border-border/40 bg-white/[0.03] text-[12px] text-foreground/85 placeholder:text-muted-foreground/40"
                   />
-                  <p className="text-label text-muted-foreground/60">Comma-separated emails — saves automatically.</p>
+                  <p className="text-[10px] text-muted-foreground/60">Comma-separated emails. Saved when the field loses focus.</p>
                 </div>
               </>
             )}
@@ -211,8 +213,8 @@ export function ReportSettingsView() {
         </SectionCard>
 
         <div className="flex items-center gap-2">
-          <FileText className="w-3.5 h-3.5 text-muted-foreground/60" />
-          <CrossLink to="/app/reports/new" label="Compose a report with these defaults" />
+          <FileText className="w-3 h-3 text-muted-foreground/60" />
+          <CrossLink to="/app/reports/builder" label="Compose a report with these defaults" />
         </div>
       </div>
     </div>

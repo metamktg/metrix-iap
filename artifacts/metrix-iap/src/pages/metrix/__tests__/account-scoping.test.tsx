@@ -32,28 +32,38 @@ vi.mock("@/contexts/MetrixDataContext", () => ({
 import { AccountProvider } from "@/contexts/AccountContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DateRangeProvider } from "@/contexts/DateRangeContext";
+import { AnalysisViewProvider } from "@/contexts/AnalysisViewContext";
 import { SignalView } from "../listen/SignalView";
 import { AlertsView } from "../listen/AlertsView";
 import { RecommendationsView } from "../listen/RecommendationsView";
-import { AnalysisOverview } from "../analysis/AnalysisOverview";
+import { AnalysisCommandCenter } from "../analysis/AnalysisCommandCenter";
+import { AdPerformanceView } from "../analysis/AdPerformanceView";
 import { IapLibraryView } from "../analysis/IapLibraryView";
 import { AudienceView } from "../analysis/AudienceView";
 import { PlacementsView } from "../analysis/PlacementsView";
 import { BudgetView } from "../analysis/BudgetView";
+import { AnalysisHistoryView } from "../analysis/AnalysisHistoryView";
+import { StrategyCommandCenter } from "../strategy/StrategyCommandCenter";
 import { StrategyOverview } from "../strategy/StrategyOverview";
 import { StrategyMapView } from "../strategy/StrategyMapView";
 import { HypothesisQueueView } from "../strategy/HypothesisQueueView";
 import { AvatarsView } from "../strategy/AvatarsView";
-import { BriefBuilderView } from "../briefs/BriefBuilderView";
-import { BriefHistoryView } from "../briefs/BriefHistoryView";
-import { NewReportView } from "../reports/NewReportView";
+import { CommunicationsView } from "../strategy/CommunicationsView";
+import { StrategyHistoryView } from "../strategy/StrategyHistoryView";
+import { CreativeCommandCenter } from "../creative/CreativeCommandCenter";
+import { CreativeLibraryView } from "../creative/CreativeLibraryView";
+import { CreativeBriefBuilderView } from "../creative/CreativeBriefBuilderView";
+import { CreativeScanView } from "../creative/CreativeScanView";
+import { CreativeImportExportView } from "../creative/CreativeImportExportView";
+import { ReportBuilderView } from "../reports/ReportBuilderView";
 import { ReportHistoryView } from "../reports/ReportHistoryView";
-import { ExportsView } from "../reports/ExportsView";
+import { MstCommandCenter } from "../mst/MstCommandCenter";
 import { ConceptMapView } from "../mst/ConceptMapView";
-import { MatrixBuilderView } from "../mst/MatrixBuilderView";
-import { CreativeScanView } from "../mst/CreativeScanView";
+import { MstSprintsView } from "../mst/MstSprintsView";
 import { CrossmapResultsView } from "../mst/CrossmapResultsView";
-import { AccountSettingsView } from "../settings/AccountSettingsView";
+import { MstPerformanceView } from "../mst/MstPerformanceView";
+import { MstDirectionView } from "../mst/MstDirectionView";
+import { GeneralView } from "../settings/GeneralView";
 import { AdAccountOverview } from "../AdAccountOverview";
 
 const SESSION_KEY = "metrix_active_account_v1";
@@ -63,29 +73,38 @@ const GATED_VIEWS: [string, React.ComponentType][] = [
   ["Listen · Signal", SignalView],
   ["Listen · Alerts", AlertsView],
   ["Listen · Recommendations", RecommendationsView],
-  ["Analysis · Overview", AnalysisOverview],
+  ["Analysis · Command Center", AnalysisCommandCenter],
+  ["Analysis · Ad Performance", AdPerformanceView],
   ["Analysis · IAP Library", IapLibraryView],
   ["Analysis · Audience", AudienceView],
   ["Analysis · Placements", PlacementsView],
   ["Analysis · Budget", BudgetView],
+  ["Analysis · History", AnalysisHistoryView],
+  ["Strategy · Command Center", StrategyCommandCenter],
   ["Strategy · Overview", StrategyOverview],
   ["Strategy · Map", StrategyMapView],
   ["Strategy · Hypothesis Queue", HypothesisQueueView],
   ["Strategy · Avatars", AvatarsView],
-  ["Briefs · Brief Builder", BriefBuilderView],
-  ["Briefs · History", BriefHistoryView],
-  ["Reports · New Report", NewReportView],
+  ["Strategy · Communications", CommunicationsView],
+  ["Strategy · History", StrategyHistoryView],
+  ["Creative · Command Center", CreativeCommandCenter],
+  ["Creative · Library", CreativeLibraryView],
+  ["Creative · Brief Builder", CreativeBriefBuilderView],
+  ["Creative · Scan", CreativeScanView],
+  ["Creative · Import Export", CreativeImportExportView],
+  ["Reports · Builder", ReportBuilderView],
   ["Reports · History", ReportHistoryView],
-  ["Reports · Exports", ExportsView],
+  ["MST · Command Center", MstCommandCenter],
   ["MST · Concept Map", ConceptMapView],
-  ["MST · Matrix Builder", MatrixBuilderView],
-  ["MST · Creative Scan", CreativeScanView],
+  ["MST · Sprints", MstSprintsView],
   ["MST · Crossmap Results", CrossmapResultsView],
+  ["MST · Performance", MstPerformanceView],
+  ["MST · Direction", MstDirectionView],
 ];
 
 // Views that gate themselves (custom no-account / unconfigured handling).
 const SELF_GATED_VIEWS: [string, React.ComponentType][] = [
-  ["Settings · Account", AccountSettingsView],
+  ["Settings · General", GeneralView],
   ["Ad Account Overview", AdAccountOverview],
 ];
 
@@ -102,7 +121,9 @@ function renderView(View: React.ComponentType) {
       <AuthProvider>
         <AccountProvider>
           <DateRangeProvider>
-            <View />
+            <AnalysisViewProvider>
+              <View />
+            </AnalysisViewProvider>
           </DateRangeProvider>
         </AccountProvider>
       </AuthProvider>

@@ -443,3 +443,43 @@ drop trigger if exists trg_learning_registry_gate on learning_registry;
 create trigger trg_learning_registry_gate
   before insert or update on learning_registry
   for each row execute function public.metrix_enforce_learning_gate();
+
+-- ---------------------------------------------------------------------------
+-- Migration tracking table (_metrix_migrations, created imperatively by
+-- migrate.ts — not one of the 22 official tables, so it was never covered
+-- above). It carries no client data and no app code ever needs to reach it
+-- via PostgREST, but it defaults to the same anon/authenticated DML grants
+-- as every other public table and RLS was never turned on for it — so the
+-- publishable anon key could read, insert, update, delete, or truncate the
+-- migration ledger. Same hard-401 treatment as the importer schema
+-- (scripts/src/metrix-supabase/schema.sql): enable RLS with no policies and
+-- revoke the default grants. The migrator connects with a superuser/
+-- service-role Postgres URL (BYPASSRLS), so this does not affect it.
+-- ---------------------------------------------------------------------------
+
+alter table if exists public._metrix_migrations enable row level security;
+revoke all on public._metrix_migrations from anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Tenancy helpers: close public RPC exposure (Supabase security advisor
+-- WARN 0028/0029). `revoke all on function ... from public` above only
+-- revokes the implicit PUBLIC-pseudo-role grant — it does not touch a
+-- direct grant made straight to `anon`, which is how these ended up
+-- callable via /rest/v1/rpc/<fn> by unauthenticated callers. Currently
+-- harmless (every helper gates on auth.uid(), null for anon, so they only
+-- ever return false/deny) but there is no reason to leave a superuser-
+-- rights function reachable by the public internet. `authenticated` still
+-- needs EXECUTE: RLS policies above call these helpers as the querying
+-- role, not as the function owner.
+--
+-- metrix_enforce_learning_gate is a BEFORE INSERT/UPDATE trigger function,
+-- never meant to be called directly at all — revoke from every role.
+-- Trigger firing does not require EXECUTE on the trigger function, so this
+-- does not affect trg_learning_registry_gate.
+-- ---------------------------------------------------------------------------
+
+revoke execute on function public.metrix_user_is_client_member(uuid) from anon;
+revoke execute on function public.metrix_user_is_client_writer(uuid) from anon;
+revoke execute on function public.metrix_user_in_org(uuid) from anon;
+revoke execute on function public.metrix_client_id_of_run(uuid) from anon;
+revoke all on function public.metrix_enforce_learning_gate() from public, anon, authenticated, service_role;

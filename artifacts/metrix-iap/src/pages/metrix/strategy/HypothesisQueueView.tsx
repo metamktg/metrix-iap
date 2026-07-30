@@ -261,7 +261,7 @@ export function HypothesisQueueView() {
                           )}
                           {linkedBriefs.length > 0 && (
                             <div className="mt-3 pt-3 border-t border-border/20">
-                              <CrossLink to={`/app/briefs/builder?focus=${linkedBriefs[0].id}`} label={`${linkedBriefs.length} draft brief${linkedBriefs.length > 1 ? "s" : ""} from this pillar`} />
+                              <CrossLink to={`/app/creative/builder?focus=${linkedBriefs[0].id}`} label={`${linkedBriefs.length} draft brief${linkedBriefs.length > 1 ? "s" : ""} from this pillar`} />
                             </div>
                           )}
                         </div>
@@ -283,7 +283,7 @@ export function HypothesisQueueView() {
                   <div className="flex items-center gap-4 flex-wrap">
                     {detail.status === "ready_for_brief_builder" && (
                       <LoopAction
-                        to={`/app/briefs/builder?from=strategy&fromHyp=${detail.id}`}
+                        to={`/app/creative?from=strategy&fromHyp=${detail.id}`}
                         label="Create Brief"
                         icon="brief"
                       />

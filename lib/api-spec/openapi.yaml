@@ -815,6 +815,88 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/stage-status:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+    get:
+      operationId: getAccountStageStatus
+      tags: [metrix]
+      summary: Loop stage status for an account (hard-gating source of truth)
+      description: Composes the account's latest analysis run, latest strategy generation run, latest briefs generation run, and current brief count into one shape the frontend gates the Analysis → Strategy → Creative → MST loop on. Adds no new run tables — reads the existing manual_analysis_runs and generation_runs records. Requires access to the account.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Stage status for this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StageStatusResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/cohort:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+    patch:
+      operationId: setAccountCohort
+      tags: [metrix]
+      summary: Set the account's business-model cohort
+      description: Sets ecommerce/lead_gen/service/app on the ad account, so downstream terminal-metric reads (Budget, Ad Performance, Exports) branch on cohort instead of assuming ROAS/purchase. Required by the UI before the first analysis run. Requires access to the account.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetAccountCohortInput"
+      responses:
+        "200":
+          description: Cohort set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetAccountCohortResult"
+        "400":
+          description: Invalid cohort value
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/accounts/{accountId}/generate/strategy:
     parameters:
       - name: accountId
@@ -1592,6 +1674,60 @@ paths:
                 $ref: "#/components/schemas/ApiError"
         "404":
           description: Access request not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/sessions:
+    get:
+      operationId: listMySessions
+      tags: [metrix]
+      summary: List the current user's active sessions
+      description: Returns every non-expired session for the logged-in user, flagging which one is the caller's own. Used by Settings → Security.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Active sessions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListSessionsResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/sessions/{sessionId}:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: integer
+    delete:
+      operationId: revokeMySession
+      tags: [metrix]
+      summary: Revoke one of the current user's own sessions
+      description: Deletes the session by id — scoped to the caller's own sessions only, never another user's. Revoking the session behind the current request signs that browser out.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevokeSessionResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Session not found (already revoked, or not yours)
           content:
             application/json:
               schema:
@@ -3694,12 +3830,38 @@ components:
         progress_stage:
           type: string
           description: Human-readable label for the current pipeline stage (e.g. "Parsing demographics export"). Empty string when idle or complete.
+        reconciliation:
+          type: array
+          description: Cross-checks the demographic export's totals against the placement export's totals for this run — both are pivot slices of the same underlying campaigns, so a large delta flags a real data-integrity problem (mismatched date ranges, partial exports, wrong file uploaded).
+          items:
+            $ref: "#/components/schemas/ReconciliationRow"
       required:
         - id
         - account_id
         - status
         - date_range
         - started_at
+        - reconciliation
+    ReconciliationRow:
+      type: object
+      properties:
+        metric_key:
+          type: string
+          enum: [spend, results]
+        demographic_total:
+          type: number
+        placement_total:
+          type: number
+        delta_pct:
+          type: number
+        flagged:
+          type: boolean
+      required:
+        - metric_key
+        - demographic_total
+        - placement_total
+        - delta_pct
+        - flagged
     SyncCreativeLinksResult:
       type: object
       properties:
@@ -3934,6 +4096,56 @@ components:
         - kind
         - status
         - started_at
+    StageStatusResult:
+      type: object
+      properties:
+        analysis:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [none, running, success, error]
+            last_run_at:
+              type: string
+              nullable: true
+            date_range:
+              type: string
+              nullable: true
+              enum: [7d, 14d, 30d, all, null]
+          required: [status, last_run_at, date_range]
+        strategy:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [none, running, success, error]
+            last_run_at:
+              type: string
+              nullable: true
+          required: [status, last_run_at]
+        briefs:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [none, running, success, error]
+            last_run_at:
+              type: string
+              nullable: true
+            count:
+              type: integer
+          required: [status, last_run_at, count]
+        mst:
+          type: object
+          properties:
+            unlocked:
+              type: boolean
+          required: [unlocked]
+      required:
+        - analysis
+        - strategy
+        - briefs
+        - mst
     LatestGenerationRunResult:
       type: object
       properties:
@@ -3960,12 +4172,72 @@ components:
         view_agency_rollups:
           type: boolean
           description: Can see manager-level totals/rollups across all ad accounts. Always true for admin.
+        export_data:
+          type: boolean
+          description: Can use the Exports section (JSON/CSV handoff of analysis/strategy/briefs/reports). A future premium entitlement, off by default — NOT implied by admin role.
       required:
         - email
         - must_change_password
         - role
         - manage_team
         - view_agency_rollups
+        - export_data
+    SetAccountCohortInput:
+      type: object
+      properties:
+        cohort:
+          type: string
+          enum: [ecommerce, lead_gen, service, app]
+      required:
+        - cohort
+    SetAccountCohortResult:
+      type: object
+      properties:
+        account_id:
+          type: string
+        cohort:
+          type: string
+          enum: [ecommerce, lead_gen, service, app]
+      required:
+        - account_id
+        - cohort
+    SessionSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        created_at:
+          type: string
+        expires_at:
+          type: string
+        is_current:
+          type: boolean
+          description: True for the session behind the request that fetched this list.
+      required:
+        - id
+        - created_at
+        - expires_at
+        - is_current
+    ListSessionsResult:
+      type: object
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/SessionSummary"
+      required:
+        - sessions
+    RevokeSessionResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [revoked]
+        id:
+          type: integer
+      required:
+        - status
+        - id
     AuthUserResult:
       type: object
       properties:

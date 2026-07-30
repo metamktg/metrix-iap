@@ -629,6 +629,22 @@ export const AnalysisRunDateRange = {
   all: 'all',
 } as const;
 
+export type ReconciliationRowMetricKey = typeof ReconciliationRowMetricKey[keyof typeof ReconciliationRowMetricKey];
+
+
+export const ReconciliationRowMetricKey = {
+  spend: 'spend',
+  results: 'results',
+} as const;
+
+export interface ReconciliationRow {
+  metric_key: ReconciliationRowMetricKey;
+  demographic_total: number;
+  placement_total: number;
+  delta_pct: number;
+  flagged: boolean;
+}
+
 export interface AnalysisRun {
   id: string;
   account_id: string;
@@ -655,6 +671,8 @@ export interface AnalysisRun {
   progress_pct?: number;
   /** Human-readable label for the current pipeline stage (e.g. "Parsing demographics export"). Empty string when idle or complete. */
   progress_stage?: string;
+  /** Cross-checks the demographic export's totals against the placement export's totals for this run — both are pivot slices of the same underlying campaigns, so a large delta flags a real data-integrity problem (mismatched date ranges, partial exports, wrong file uploaded). */
+  reconciliation: ReconciliationRow[];
 }
 
 export interface SyncCreativeLinksResult {
@@ -832,6 +850,74 @@ export interface GenerationRun {
   finished_at?: string | null;
 }
 
+export type StageStatusResultAnalysisStatus = typeof StageStatusResultAnalysisStatus[keyof typeof StageStatusResultAnalysisStatus];
+
+
+export const StageStatusResultAnalysisStatus = {
+  none: 'none',
+  running: 'running',
+  success: 'success',
+  error: 'error',
+} as const;
+
+export type StageStatusResultAnalysisDateRange = typeof StageStatusResultAnalysisDateRange[keyof typeof StageStatusResultAnalysisDateRange] | null;
+
+
+export const StageStatusResultAnalysisDateRange = {
+  '7d': '7d',
+  '14d': '14d',
+  '30d': '30d',
+  all: 'all',
+} as const;
+
+export type StageStatusResultAnalysis = {
+  status: StageStatusResultAnalysisStatus;
+  last_run_at: string | null;
+  date_range: StageStatusResultAnalysisDateRange;
+};
+
+export type StageStatusResultStrategyStatus = typeof StageStatusResultStrategyStatus[keyof typeof StageStatusResultStrategyStatus];
+
+
+export const StageStatusResultStrategyStatus = {
+  none: 'none',
+  running: 'running',
+  success: 'success',
+  error: 'error',
+} as const;
+
+export type StageStatusResultStrategy = {
+  status: StageStatusResultStrategyStatus;
+  last_run_at: string | null;
+};
+
+export type StageStatusResultBriefsStatus = typeof StageStatusResultBriefsStatus[keyof typeof StageStatusResultBriefsStatus];
+
+
+export const StageStatusResultBriefsStatus = {
+  none: 'none',
+  running: 'running',
+  success: 'success',
+  error: 'error',
+} as const;
+
+export type StageStatusResultBriefs = {
+  status: StageStatusResultBriefsStatus;
+  last_run_at: string | null;
+  count: number;
+};
+
+export type StageStatusResultMst = {
+  unlocked: boolean;
+};
+
+export interface StageStatusResult {
+  analysis: StageStatusResultAnalysis;
+  strategy: StageStatusResultStrategy;
+  briefs: StageStatusResultBriefs;
+  mst: StageStatusResultMst;
+}
+
 export interface LatestGenerationRunResult {
   run: GenerationRun | null;
 }
@@ -856,6 +942,61 @@ export interface AuthUser {
   manage_team: boolean;
   /** Can see manager-level totals/rollups across all ad accounts. Always true for admin. */
   view_agency_rollups: boolean;
+  /** Can use the Exports section (JSON/CSV handoff of analysis/strategy/briefs/reports). A future premium entitlement, off by default — NOT implied by admin role. */
+  export_data: boolean;
+}
+
+export type SetAccountCohortInputCohort = typeof SetAccountCohortInputCohort[keyof typeof SetAccountCohortInputCohort];
+
+
+export const SetAccountCohortInputCohort = {
+  ecommerce: 'ecommerce',
+  lead_gen: 'lead_gen',
+  service: 'service',
+  app: 'app',
+} as const;
+
+export interface SetAccountCohortInput {
+  cohort: SetAccountCohortInputCohort;
+}
+
+export type SetAccountCohortResultCohort = typeof SetAccountCohortResultCohort[keyof typeof SetAccountCohortResultCohort];
+
+
+export const SetAccountCohortResultCohort = {
+  ecommerce: 'ecommerce',
+  lead_gen: 'lead_gen',
+  service: 'service',
+  app: 'app',
+} as const;
+
+export interface SetAccountCohortResult {
+  account_id: string;
+  cohort: SetAccountCohortResultCohort;
+}
+
+export interface SessionSummary {
+  id: number;
+  created_at: string;
+  expires_at: string;
+  /** True for the session behind the request that fetched this list. */
+  is_current: boolean;
+}
+
+export interface ListSessionsResult {
+  sessions: SessionSummary[];
+}
+
+export type RevokeSessionResultStatus = typeof RevokeSessionResultStatus[keyof typeof RevokeSessionResultStatus];
+
+
+export const RevokeSessionResultStatus = {
+  revoked: 'revoked',
+} as const;
+
+export interface RevokeSessionResult {
+  status: RevokeSessionResultStatus;
+  id: number;
 }
 
 export interface AuthUserResult {

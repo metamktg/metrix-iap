@@ -96,6 +96,24 @@ export interface CardAssemblyOpts {
 
 export function cardFromCell(cellId: string, opts: CardAssemblyOpts): CreativeCardData {
   const lib = libraryCellById(opts.mst, cellId);
+  return cardFromLibraryCell(lib, cellId, opts);
+}
+
+/**
+ * Same field mapping as cardFromCell, but takes an already-resolved library
+ * cell instead of re-looking one up by cell_id. Needed anywhere the caller
+ * is iterating local_book2_library directly rather than a list of distinct
+ * cell ids: a cell_id is not unique in that array (the same concept can
+ * have multiple physical asset-format rows — Feed, Square, Story — sharing
+ * one cell_id), so re-resolving by id via cardFromCell would silently
+ * collapse every row for that cell onto whichever one libraryCellById's
+ * first-match returns, discarding the rest.
+ */
+export function cardFromLibraryCell(
+  lib: MSTLibraryCell | null,
+  cellId: string,
+  opts: CardAssemblyOpts
+): CreativeCardData {
   const perf = opts.perfRows ? primaryPerfRow(opts.perfRows, cellId) : null;
   const ad = primaryAdForCell(opts.ads, cellId, lib?.mapped_ad_names);
 

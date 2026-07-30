@@ -11,6 +11,8 @@ import {
   AuthResetPasswordBody,
   AuthResetPasswordResponse,
   AuthRegisterBody,
+  ListMySessionsResponse,
+  RevokeMySessionResponse,
 } from "@workspace/api-zod";
 import { db, usersTable, userSessionsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
@@ -19,6 +21,8 @@ import {
   createSession,
   destroySession,
   destroyOtherSessions,
+  listUserSessions,
+  destroySessionById,
   readSessionToken,
   setSessionCookie,
   clearSessionCookie,
@@ -76,6 +80,7 @@ router.post("/metrix/auth/login", loginRateLimit, async (req, res) => {
         role: user.role,
         manage_team: user.role === "admin" || user.canManageTeam,
         view_agency_rollups: user.role === "admin" || user.canViewAgencyRollups,
+        export_data: user.canExportData ?? false,
       },
     });
     res.json(data);
@@ -107,6 +112,7 @@ router.get("/metrix/auth/me", requireAuth, (req, res) => {
       role: user.role,
       manage_team: user.role === "admin" || user.canManageTeam,
       view_agency_rollups: user.role === "admin" || user.canViewAgencyRollups,
+      export_data: user.canExportData ?? false,
     },
   });
   res.json(data);
@@ -151,6 +157,7 @@ router.post("/metrix/auth/change-password", requireAuth, async (req, res) => {
         role: user.role,
         manage_team: user.role === "admin" || user.canManageTeam,
         view_agency_rollups: user.role === "admin" || user.canViewAgencyRollups,
+        export_data: user.canExportData ?? false,
       },
     });
     res.json(data);
@@ -317,12 +324,54 @@ router.post("/metrix/auth/register", loginRateLimit, async (req, res) => {
         role: newUser.role,
         manage_team: newUser.role === "admin" || newUser.canManageTeam,
         view_agency_rollups: newUser.role === "admin" || newUser.canViewAgencyRollups,
+        export_data: newUser.canExportData ?? false,
       },
     });
     res.json(data);
   } catch (err) {
     req.log.error({ err }, "Registration failed");
     res.status(503).json({ message: "Account creation failed. Please try again." });
+  }
+});
+
+router.get("/metrix/sessions", requireAuth, async (req, res) => {
+  const user = req.authUser!;
+  const token = readSessionToken(req);
+  try {
+    const sessions = await listUserSessions(user.id, token);
+    res.json(
+      ListMySessionsResponse.parse({
+        sessions: sessions.map((s) => ({
+          id: s.id,
+          created_at: s.createdAt.toISOString(),
+          expires_at: s.expiresAt.toISOString(),
+          is_current: s.isCurrent,
+        })),
+      }),
+    );
+  } catch (err) {
+    req.log.error({ err }, "Failed to list sessions");
+    res.status(503).json({ message: "Could not read sessions." });
+  }
+});
+
+router.delete("/metrix/sessions/:sessionId", requireAuth, async (req, res) => {
+  const user = req.authUser!;
+  const sessionId = Number(req.params["sessionId"]);
+  if (!Number.isInteger(sessionId)) {
+    res.status(404).json({ message: "Session not found." });
+    return;
+  }
+  try {
+    const revoked = await destroySessionById(user.id, sessionId);
+    if (!revoked) {
+      res.status(404).json({ message: "Session not found." });
+      return;
+    }
+    res.json(RevokeMySessionResponse.parse({ status: "revoked", id: sessionId }));
+  } catch (err) {
+    req.log.error({ err }, "Failed to revoke session");
+    res.status(503).json({ message: "Could not revoke the session." });
   }
 });
 

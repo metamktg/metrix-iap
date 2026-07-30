@@ -2,9 +2,11 @@
 // production Vite build, then asserts the build actually produced an
 // index.html entry point.
 //
-// Catches the class of regression where a broken production build (Vite/Babel
-// parse errors, bad imports, plugin failures) would otherwise only surface
-// when a visitor loads a blank page.
+// After the build succeeds the script starts `vite preview` on the built
+// output and uses Playwright to navigate to the root URL, asserting that the
+// login form ([data-testid="form-login"]) is visible.  This catches the class
+// of regression where a broken LoginPage import compiles TypeScript cleanly
+// but produces a React render error that leaves users with a blank screen.
 //
 // Run: pnpm --filter @workspace/scripts run smoke:metrix-iap-build
 //
@@ -14,7 +16,7 @@
 // dev/preview server config and does not affect build output; BASE_PATH is
 // set to "/" to match the artifact's registered preview path.
 
-import { spawn } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -123,9 +125,138 @@ async function runSmoke() {
   }
 
   console.log(
-    `\nPASS  Metrix IAP production build succeeded (${path.relative(repoRoot, indexHtml)} present with bundle script)`,
+    `\nBUILD OK  ${path.relative(repoRoot, indexHtml)} present with bundle script`,
+  );
+
+  // ── Step 4: boot vite preview and assert the login form renders ──────────
+  const PREVIEW_PORT = "15178";
+  const previewEnv: NodeJS.ProcessEnv = {
+    ...process.env,
+    NODE_ENV: "production",
+    PORT: PREVIEW_PORT,
+    BASE_PATH,
+  };
+
+  let previewServer: ChildProcess | null = null;
+
+  try {
+    previewServer = await startPreviewServer(PREVIEW_PORT, previewEnv).catch(
+      (err) => {
+        fail("Failed to start vite preview server", String(err?.message ?? err));
+      },
+    );
+
+    await assertLoginFormVisible(PREVIEW_PORT).catch((err) => {
+      fail(
+        "Login page render check failed on production build",
+        String(err?.message ?? err),
+      );
+    });
+  } finally {
+    previewServer?.kill();
+  }
+
+  console.log(
+    `\nPASS  Metrix IAP production build succeeded — login form visible in preview`,
   );
   process.exit(0);
+}
+
+// ── vite preview ──────────────────────────────────────────────────────────────
+
+function startPreviewServer(
+  port: string,
+  env: NodeJS.ProcessEnv,
+): Promise<ChildProcess> {
+  return new Promise((resolve, reject) => {
+    console.log("Starting vite preview server...");
+    const child = spawn(
+      "pnpm",
+      ["--filter", "@workspace/metrix-iap", "run", "serve"],
+      {
+        cwd: repoRoot,
+        env,
+        stdio: ["ignore", "pipe", "pipe"],
+      },
+    );
+
+    let ready = false;
+
+    const onData = (chunk: Buffer) => {
+      const line = chunk.toString();
+      // Vite preview prints "Local:" or "localhost" when it is ready.
+      if (!ready && /Local:|localhost/i.test(line)) {
+        ready = true;
+        resolve(child);
+      }
+    };
+
+    child.stdout.on("data", onData);
+    child.stderr.on("data", onData);
+
+    child.on("error", reject);
+    child.on("exit", (code) => {
+      if (!ready) {
+        reject(new Error(`vite preview exited prematurely with code ${code}`));
+      }
+    });
+
+    setTimeout(() => {
+      if (!ready) {
+        child.kill();
+        reject(new Error("vite preview did not become ready within 30 s"));
+      }
+    }, 30_000);
+  });
+}
+
+// ── Playwright login form assertion ──────────────────────────────────────────
+
+async function assertLoginFormVisible(port: string): Promise<void> {
+  // playwright-core is available in the Replit environment via the env var.
+  const { chromium } = await import("playwright-core");
+
+  const executablePath = process.env["REPLIT_PLAYWRIGHT_CHROMIUM_EXECUTABLE"];
+  const browser = await chromium.launch({
+    executablePath,
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  });
+
+  try {
+    const ctx = await browser.newContext({
+      viewport: { width: 1280, height: 800 },
+    });
+
+    // Intercept the auth/me endpoint so the app renders the login page
+    // immediately without needing a real API server.
+    await ctx.route("**/api/metrix/auth/me", (route) => {
+      route.fulfill({
+        status: 401,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Unauthorized" }),
+      });
+    });
+
+    const page = await ctx.newPage();
+
+    console.log(
+      `Navigating to http://localhost:${port}/ to check login form...`,
+    );
+    await page.goto(`http://localhost:${port}/`, {
+      waitUntil: "domcontentloaded",
+    });
+
+    await page
+      .locator('[data-testid="form-login"]')
+      .waitFor({ state: "visible", timeout: 20_000 });
+
+    console.log("  ✓  [data-testid=\"form-login\"] is visible in production build");
+
+    await ctx.close();
+  } finally {
+    await browser.close();
+  }
 }
 
 main().catch((err) => {

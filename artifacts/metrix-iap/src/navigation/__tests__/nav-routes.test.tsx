@@ -28,19 +28,13 @@ import {
   NOT_FOUND_TEXT,
 } from "./harness";
 
-// Every path the sidebar can link to (sections + children + matchPaths +
-// section landing pages that are not themselves a child subtab).
+// Every path the sidebar can link to (sections + children + matchPaths).
 const navPaths: { label: string; to: string }[] = navTree.flatMap((section) => [
   ...(section.to ? [{ label: section.label, to: section.to }] : []),
   ...(section.matchPaths ?? []).map((to) => ({
     label: `${section.label} (matchPath)`,
     to,
   })),
-  // Landing routes that are not listed as a child (Overview-as-parent-route
-  // pattern): section header navigates there but no child row duplicates it.
-  ...(section.landing && !section.children?.some((c) => c.to === section.landing)
-    ? [{ label: `${section.label} (Overview)`, to: section.landing }]
-    : []),
   ...(section.children ?? []).map((child) => ({
     label: `${section.label} · ${child.label}`,
     to: child.to,
@@ -48,14 +42,27 @@ const navPaths: { label: string; to: string }[] = navTree.flatMap((section) => [
 ]);
 
 // Legacy IA paths and the routes they must redirect to.
-// Note: /app/analysis, /app/strategy, /app/briefs, /app/reports, /app/mst
-// are now real hub pages (execution control centers) — no redirect needed.
 const legacyRedirects: [string, string][] = [
-  ["/app/listen", "/app/listen/alerts"],
-  ["/app/analysis/concept-map", "/app/mst/concept-map"],
-  ["/app/strategy/brief-builder", "/app/briefs/builder"],
-  ["/app/report-builder", "/app/reports/new"],
-  ["/app/settings", "/app/settings/account"],
+  ["/app/analysis/overview", "/app/analysis/performance"],
+  ["/app/analysis/concept-map", "/app/mst/cross-map"],
+  ["/app/mst/concept-map", "/app/mst/cross-map"],
+  ["/app/mst/crossmap", "/app/mst/cross-map"],
+  ["/app/mst/matrix", "/app/mst/sprints"],
+  ["/app/strategy/brief-builder", "/app/creative/builder"],
+  ["/app/briefs/builder", "/app/creative/builder"],
+  ["/app/briefs/history", "/app/creative"],
+  ["/app/briefs", "/app/creative"],
+  ["/app/mst/creative-scan", "/app/creative/scan"],
+  ["/app/report-builder", "/app/reports/builder"],
+  ["/app/reports/new", "/app/reports/builder"],
+  ["/app/reports/settings", "/app/reports/configuration"],
+  ["/app/reports/exports", "/app/exports/reports"],
+  ["/app/agent", "/app/action/agent"],
+  ["/app/action", "/app/action/agent"],
+  ["/app/settings", "/app/settings/general"],
+  ["/app/settings/account", "/app/settings/general"],
+  ["/app/settings/team", "/app/settings/users"],
+  ["/app/settings/notifications", "/app/settings/general"],
 ];
 
 beforeEach(() => {
@@ -91,9 +98,9 @@ describe("legacy redirects land on their new targets", () => {
 // user opening that link (old email, bookmark) must be redirected to a real
 // in-app destination — never fall through to the 404 page.
 describe("a signed-in user visiting /forgot-password is redirected", () => {
-  it("/forgot-password → /app/settings/account?focus=password, not the 404 page", () => {
+  it("/forgot-password → /app/settings/security?focus=password, not the 404 page", () => {
     const { container, location } = renderAuthedAt("/forgot-password");
-    expect(location.history.at(-1)).toBe("/app/settings/account?focus=password");
+    expect(location.history.at(-1)).toBe("/app/settings/security?focus=password");
     expect(container.textContent).not.toContain(NOT_FOUND_TEXT);
     expect(container.textContent?.trim().length).toBeGreaterThan(0);
   });

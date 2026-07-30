@@ -62,7 +62,7 @@ import { useLocation, useSearch } from "wouter";
 import { ConnectMetaDialog, ManualImportDialog } from "./ConnectAccountDialogs";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
 import { useListManualImports } from "@workspace/api-client-react";
-import { Plug, FileUp, Clock, Database, Info, ArrowRight, ArrowLeftRight, CheckSquare, CheckCircle2, Square, CalendarX2, AlertTriangle, ChevronDown, ChevronLeft, Sparkles, Map as MapIcon } from "lucide-react";
+import { Plug, FileUp, Clock, Database, Info, ArrowRight, ArrowLeftRight, CheckSquare, CheckCircle2, Square, CalendarRange, CalendarX2, AlertTriangle, ChevronDown, ChevronLeft, Sparkles, Map as MapIcon, Lock, Circle, Loader2, CircleCheck, CircleX } from "lucide-react";
 import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
 import { DataSourceBadge } from "@/components/ui/DataSourceBadge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -1380,6 +1380,136 @@ export function SectionCard({
       <div className="relative p-3">{children}</div>
     </section>
   );
+}
+
+// ─── Scope banner (which ad account a module is reading) ──────────────
+
+export function ScopeBanner({ account }: { account: AdAccount }) {
+  return (
+    <div className="flex items-center gap-2 px-6 py-2 border-b border-border/30 bg-white/[0.015]">
+      <Database className="w-3 h-3 text-muted-foreground/60 shrink-0" />
+      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Scoped to ad account</span>
+      <span className="text-[12px] font-medium text-foreground/90">{account.name}</span>
+      <span className="text-[10px] font-mono text-muted-foreground/70">{account.platform}</span>
+    </div>
+  );
+}
+
+// ─── Prerequisite gate ─────────────────────────────────────────────────
+// Hard gating between loop stages (e.g. Strategy requires a completed
+// Analysis run). Composes *inside* ModuleScopeGate's children() so an
+// unscoped/unconfigured account is still caught first. Children are a
+// render function — never evaluated while the prerequisite is unmet.
+
+export function PrerequisiteGate({
+  met,
+  title,
+  message,
+  ctaLabel,
+  ctaTo,
+  children,
+}: {
+  met: boolean;
+  title: string;
+  message: string;
+  ctaLabel?: string;
+  ctaTo?: string;
+  children: () => React.ReactNode;
+}) {
+  if (!met) {
+    return (
+      <PendingState
+        title={title}
+        message={message}
+        icon={Lock}
+        action={ctaTo && ctaLabel ? <CrossLink to={ctaTo} label={ctaLabel} /> : undefined}
+      />
+    );
+  }
+  return <>{children()}</>;
+}
+
+// ─── Loop hub (command-center stage strip) ─────────────────────────────
+// Every command center renders this row: the 6 loop stages, the current
+// one highlighted, each a link to that stage's command center. Locked
+// stages (prerequisite unmet) are visibly disabled, never hidden.
+
+export type LoopStageStatus = "locked" | "none" | "running" | "success" | "error";
+
+export interface LoopStageInfo {
+  id: string;
+  label: string;
+  to: string;
+  status: LoopStageStatus;
+}
+
+const STAGE_DOT: Record<LoopStageStatus, React.ComponentType<{ className?: string }>> = {
+  locked: Lock,
+  none: Circle,
+  running: Loader2,
+  success: CircleCheck,
+  error: CircleX,
+};
+
+const STAGE_DOT_CLASS: Record<LoopStageStatus, string> = {
+  locked: "text-muted-foreground/40",
+  none: "text-muted-foreground/50",
+  running: "text-amber-400 animate-spin",
+  success: "text-emerald-400",
+  error: "text-red-400",
+};
+
+export function StageLoopHub({ stages, current }: { stages: LoopStageInfo[]; current?: string }) {
+  const [, navigate] = useLocation();
+  return (
+    <div className="flex items-center gap-1 flex-wrap px-6 py-3 border-b border-border/30 bg-white/[0.01]">
+      {stages.map((s, i) => {
+        const Dot = STAGE_DOT[s.status];
+        const isCurrent = s.id === current;
+        const locked = s.status === "locked";
+        return (
+          <div key={s.id} className="flex items-center gap-1">
+            {i > 0 && <ArrowRight className="w-3 h-3 text-muted-foreground/25 shrink-0 mx-0.5" />}
+            <button
+              onClick={() => !locked && navigate(s.to)}
+              disabled={locked}
+              className={cn(
+                "inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border text-[12px] font-medium transition-colors",
+                isCurrent
+                  ? "border-primary/40 bg-primary/10 text-interactive"
+                  : locked
+                    ? "border-border/25 text-muted-foreground/40 cursor-not-allowed"
+                    : "border-border/40 text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.03]"
+              )}
+            >
+              <Dot className={cn("w-3 h-3 shrink-0", STAGE_DOT_CLASS[s.status])} />
+              {s.label}
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export interface StageStatusLike {
+  analysis: { status: LoopStageStatus | "none" };
+  strategy: { status: LoopStageStatus | "none" };
+  briefs: { status: LoopStageStatus | "none"; count: number };
+  mst: { unlocked: boolean };
+}
+
+/** Builds the 5-stage Analysis→Strategy→Creative→MST→Reports row every command center renders. */
+export function buildLoopStages(s: StageStatusLike): LoopStageInfo[] {
+  const analysisOk = s.analysis.status === "success";
+  const strategyOk = s.strategy.status === "success";
+  return [
+    { id: "analysis", label: "Analysis", to: "/app/analysis", status: s.analysis.status as LoopStageStatus },
+    { id: "strategy", label: "Strategy", to: "/app/strategy", status: analysisOk ? (s.strategy.status as LoopStageStatus) : "locked" },
+    { id: "creative", label: "Creative", to: "/app/creative", status: strategyOk ? (s.briefs.status as LoopStageStatus) : "locked" },
+    { id: "mst", label: "MST", to: "/app/mst", status: s.mst.unlocked ? "none" : "locked" },
+    { id: "reports", label: "Reports", to: "/app/reports", status: analysisOk ? "none" : "locked" },
+  ];
 }
 
 /**
