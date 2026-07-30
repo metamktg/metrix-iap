@@ -1107,6 +1107,13 @@ paths:
             type: integer
             minimum: 0
             default: 0
+        - name: q
+          in: query
+          required: false
+          description: Optional email search filter (case-insensitive substring match). When supplied, only entries whose email contains this string are returned, and total reflects the filtered count.
+          schema:
+            type: string
+            maxLength: 200
       responses:
         "200":
           description: Waitlist entries
@@ -5131,4 +5138,3 @@ components:
           type: string
       required:
         - status
-

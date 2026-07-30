@@ -1558,7 +1558,11 @@ router.get("/metrix/agent-waitlist", requireAdmin, async (req, res) => {
     res.status(400).json({ message: "Invalid limit/offset query parameters." });
     return;
   }
-  const { limit, offset } = parsedQuery.data;
+  const { limit, offset, q } = parsedQuery.data;
+
+  const searchFilter = q && q.trim()
+    ? sql`${agentWaitlistTable.email} ILIKE ${"%" + q.trim().replace(/%/g, "\\%").replace(/_/g, "\\_") + "%"} ESCAPE '\\'`
+    : undefined;
 
   const [rows, [{ total }]] = await Promise.all([
     db
@@ -1570,10 +1574,11 @@ router.get("/metrix/agent-waitlist", requireAdmin, async (req, res) => {
         createdAt: agentWaitlistTable.createdAt,
       })
       .from(agentWaitlistTable)
+      .where(searchFilter)
       .orderBy(desc(agentWaitlistTable.createdAt), desc(agentWaitlistTable.id))
       .limit(limit)
       .offset(offset),
-    db.select({ total: count() }).from(agentWaitlistTable),
+    db.select({ total: count() }).from(agentWaitlistTable).where(searchFilter),
   ]);
 
   const data = ListAgentWaitlistResponse.parse({

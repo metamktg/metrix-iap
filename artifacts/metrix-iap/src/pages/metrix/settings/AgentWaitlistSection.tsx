@@ -2,10 +2,10 @@
 // Lists waitlist signups from the API with paging and CSV export.
 // Access is gated behind the ADMIN_API_KEY admin key (Bearer auth).
 
-import { useState, useRef, type FormEvent } from "react";
+import { useState, useRef, useEffect, type FormEvent } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { SectionCard } from "../shared";
-import { Users, Download, Loader2, Lock, CheckCircle2, Copy, MailCheck } from "lucide-react";
+import { Users, Download, Loader2, Lock, CheckCircle2, Copy, MailCheck, Search, X } from "lucide-react";
 import {
   listAgentWaitlist,
   getListAgentWaitlistQueryKey,
@@ -26,15 +26,23 @@ export function AgentWaitlistSection() {
   );
   const [keyInput, setKeyInput] = useState("");
   const [lastKeyRejected, setLastKeyRejected] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const queryClient = useQueryClient();
+
+  // Debounce the search input: wait 300 ms of inactivity before firing a query.
+  useEffect(() => {
+    const id = setTimeout(() => setSearchQuery(searchInput.trim()), 300);
+    return () => clearTimeout(id);
+  }, [searchInput]);
 
   const authHeaders = adminKey ? { authorization: `Bearer ${adminKey}` } : undefined;
 
   const { data, isLoading, isError, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-    queryKey: [...getListAgentWaitlistQueryKey(), "infinite", WAITLIST_PAGE_SIZE],
+    queryKey: [...getListAgentWaitlistQueryKey(), "infinite", WAITLIST_PAGE_SIZE, searchQuery],
     queryFn: ({ pageParam, signal }) =>
       listAgentWaitlist(
-        { limit: WAITLIST_PAGE_SIZE, offset: pageParam },
+        { limit: WAITLIST_PAGE_SIZE, offset: pageParam, ...(searchQuery ? { q: searchQuery } : {}) },
         { signal, headers: authHeaders },
       ),
     initialPageParam: 0,
@@ -209,6 +217,28 @@ export function AgentWaitlistSection() {
         </div>
       }
     >
+      {/* Search input */}
+      <div className="relative mb-2">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50 pointer-events-none" />
+        <input
+          type="text"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          placeholder="Search by email…"
+          className="w-full h-8 pl-8 pr-8 rounded-md bg-white/[0.03] border border-border/40 text-body text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/40 focus-visible:ring-1 focus-visible:ring-ring"
+          data-testid="input-waitlist-search"
+        />
+        {searchInput && (
+          <button
+            onClick={() => setSearchInput("")}
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+            aria-label="Clear search"
+            data-testid="button-clear-waitlist-search"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
       {exportError && (
         <div className="mb-2 text-caption text-red-400/90 px-3 py-2 rounded-md border border-red-400/25 bg-red-400/[0.06]">
           {exportError}
@@ -221,7 +251,9 @@ export function AgentWaitlistSection() {
       ) : entries.length === 0 ? (
         <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
           <Users className="w-4 h-4 text-muted-foreground/70 shrink-0" />
-          <div className="text-caption text-muted-foreground/70">No waitlist signups yet.</div>
+          <div className="text-caption text-muted-foreground/70">
+            {searchQuery ? `No signups matching "${searchQuery}".` : "No waitlist signups yet."}
+          </div>
         </div>
       ) : (
         <div className="rounded-lg border border-border/30 bg-white/[0.02] overflow-hidden" data-testid="list-waitlist-entries">

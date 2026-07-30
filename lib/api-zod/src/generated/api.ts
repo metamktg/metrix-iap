@@ -40,7 +40,6 @@ export const createManualAdAccountBodyNameMin = 2;
 export const createManualAdAccountBodyNameMax = 120;
 
 
-
 export const CreateManualAdAccountBody = zod.object({
   "name": zod.string().min(createManualAdAccountBodyNameMin).max(createManualAdAccountBodyNameMax).describe('Display name for the ad account (e.g. the client or brand name).')
 })
@@ -58,14 +57,11 @@ export const CreateManualAdAccountResponse = zod.object({
  */
 
 
-
 export const StageManualImportParams = zod.object({
   "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
 })
 
 export const stageManualImportBodyFilenameMax = 255;
-
-
 
 
 export const StageManualImportBody = zod.object({
@@ -105,7 +101,6 @@ export const StageManualImportResponse = zod.object({
  */
 
 
-
 export const ListManualImportsParams = zod.object({
   "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
 })
@@ -142,8 +137,6 @@ export const ListManualImportsResponse = zod.object({
  * Updates the ad_names mapping for a staged creative_asset import (the ad(s) this creative file represents). Only valid for creative_asset imports.
  * @summary Edit the ad-name mapping for a staged creative asset
  */
-
-
 
 
 export const UpdateManualImportAdNamesParams = zod.object({
@@ -188,8 +181,6 @@ export const UpdateManualImportAdNamesResponse = zod.object({
  */
 
 
-
-
 export const DeleteManualImportParams = zod.object({
   "accountId": zod.coerce.string().min(1).describe('Ad account identifier.'),
   "importId": zod.coerce.string().min(1).describe('Manual import identifier.')
@@ -202,8 +193,6 @@ export const DeleteManualImportResponse = zod.void()
  * Streams the raw file content staged for this import, with its original content type. Used as the `src` of an `<img>`/`<video>` tag directly — not a JSON response. Requires access to the account.
  * @summary Fetch the raw bytes of a staged manual import (creative asset)
  */
-
-
 
 
 export const GetManualImportFileParams = zod.object({
@@ -272,7 +261,6 @@ export const GetManualPerformanceCsvFormatResponse = zod.object({
  */
 
 
-
 export const ListAnalysisRunsParams = zod.object({
   "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
 })
@@ -313,7 +301,6 @@ export const ListAnalysisRunsResponse = zod.object({
  */
 
 
-
 export const StartManualAnalysisRunParams = zod.object({
   "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
 })
@@ -333,7 +320,6 @@ export const StartManualAnalysisRunResponse = zod.object({
  */
 
 
-
 export const SyncCreativeLinksParams = zod.object({
   "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
 })
@@ -351,16 +337,10 @@ export const SyncCreativeLinksResponse = zod.object({
  */
 
 
-
-
 export const UploadCellCreativeParams = zod.object({
   "accountId": zod.coerce.string().min(1).describe('Ad account identifier.'),
   "cellId": zod.coerce.string().min(1).describe('Creative cell identifier (e.g. C2B).')
 })
-
-
-
-
 
 
 export const UploadCellCreativeBody = zod.object({
@@ -381,8 +361,6 @@ export const UploadCellCreativeResponse = zod.object({
  */
 
 
-
-
 export const GetCellCreativeParams = zod.object({
   "accountId": zod.coerce.string().min(1).describe('Ad account identifier.'),
   "cellId": zod.coerce.string().min(1).describe('Creative cell identifier (e.g. C2B).')
@@ -395,8 +373,6 @@ export const GetCellCreativeResponse = zod.unknown()
  * Deletes the cell creative override for the given cell, restoring the default creative or the placeholder. Busts the seed cache.
  * @summary Remove a manually uploaded cell creative
  */
-
-
 
 
 export const DeleteCellCreativeParams = zod.object({
@@ -413,7 +389,6 @@ export const DeleteCellCreativeResponse = zod.object({
  * Returns the most recent manual analysis run for the account, or null when none exists. Runs stuck in 'running' past the staleness cutoff are honestly flipped to 'error'. Requires access to the account.
  * @summary Latest manual analysis run for an account
  */
-
 
 
 export const GetLatestAnalysisRunParams = zod.object({
@@ -454,8 +429,6 @@ export const GetLatestAnalysisRunResponse = zod.object({
  * Filters ad_performance, demographic_performance, and placement_performance to the date window of the given manual_analysis_run. Returns the same shape as getAnalysisSummary. Used by the IAP run picker on manual-upload accounts.
  * @summary Re-aggregate analysis data for a specific analysis run's date window
  */
-
-
 
 
 export const GetAnalysisSummaryByRunParams = zod.object({
@@ -515,7 +488,6 @@ export const GetAnalysisSummaryByRunResponse = zod.object({
  * Filters ad_performance, demographic_performance, and placement_performance to the provided date range. Used by DataWindowBar for both single-window and monthly-bucket filter pills. Path params avoid query-param Params-type name collision in orval codegen.
  * @summary Re-aggregate analysis data for an explicit date range
  */
-
 
 
 export const GetAnalysisSummaryByDateRangeParams = zod.object({
@@ -578,7 +550,6 @@ export const GetAnalysisSummaryByDateRangeResponse = zod.object({
  */
 
 
-
 export const GetAccountAnalysisDataWindowsParams = zod.object({
   "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
 })
@@ -599,7 +570,6 @@ export const GetAccountAnalysisDataWindowsResponse = zod.object({
  * Re-aggregates ad_performance, demographic_performance, and placement_performance rows for the requested date preset, anchored to the latest date stored for the account (not wall-clock time). Returns totals plus demographic, placement, and concept breakdowns. Used by the date preset filter on analysis views. Requires access to the account.
  * @summary Re-aggregate analysis data for a date preset window
  */
-
 
 
 export const GetAnalysisSummaryParams = zod.object({
@@ -661,7 +631,6 @@ export const GetAnalysisSummaryResponse = zod.object({
  */
 
 
-
 export const GetAccountStageStatusParams = zod.object({
   "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
 })
@@ -693,7 +662,6 @@ export const GetAccountStageStatusResponse = zod.object({
  */
 
 
-
 export const SetAccountCohortParams = zod.object({
   "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
 })
@@ -712,7 +680,6 @@ export const SetAccountCohortResponse = zod.object({
  * Starts an in-app Metrix engine run that generates message pillars and testing hypotheses grounded in the account's real analysis rows. Returns 202 with the run id immediately; poll the latest-run endpoint for the outcome. Generated rows carry source='generated' and never touch imported rows. Requires access to the account.
  * @summary Generate strategy (pillars + hypotheses) from the account's analysis data
  */
-
 
 
 export const GenerateAccountStrategyParams = zod.object({
@@ -734,7 +701,6 @@ export const GenerateAccountStrategyResponse = zod.object({
  */
 
 
-
 export const GenerateAccountBriefsParams = zod.object({
   "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
 })
@@ -748,7 +714,6 @@ export const GenerateAccountBriefsResponse = zod.object({
  * Returns the most recent generation run for the account and kind (strategy or briefs), or null when none exists. Runs stuck in 'running' past the staleness cutoff are honestly flipped to 'error'. Requires access to the account.
  * @summary Latest generation run for an account and kind
  */
-
 
 
 export const GetLatestGenerationRunParams = zod.object({
@@ -794,11 +759,11 @@ export const listAgentWaitlistQueryLimitMax = 200;
 export const listAgentWaitlistQueryOffsetDefault = 0;
 export const listAgentWaitlistQueryOffsetMin = 0;
 
-
-
+export const listAgentWaitlistQueryQMax = 200;
 export const ListAgentWaitlistQueryParams = zod.object({
   "limit": zod.coerce.number().min(1).max(listAgentWaitlistQueryLimitMax).default(listAgentWaitlistQueryLimitDefault).describe('Maximum number of entries to return (default 50, max 200).'),
-  "offset": zod.coerce.number().min(listAgentWaitlistQueryOffsetMin).default(listAgentWaitlistQueryOffsetDefault).describe('Number of entries to skip from the newest entry (default 0).')
+  "offset": zod.coerce.number().min(listAgentWaitlistQueryOffsetMin).default(listAgentWaitlistQueryOffsetDefault).describe('Number of entries to skip from the newest entry (default 0).'),
+  "q": zod.coerce.string().max(listAgentWaitlistQueryQMax).optional().describe('Optional email search filter (case-insensitive substring match). When supplied, only entries whose email contains this string are returned, and total reflects the filtered count.')
 })
 
 export const ListAgentWaitlistResponse = zod.object({
@@ -817,7 +782,6 @@ export const ListAgentWaitlistResponse = zod.object({
  * Creates (or resets) a user account with a temporary password for the waitlisted email, marks the entry approved, and emails the temporary password to the user. When the email provider is not configured, the temporary password is returned to the admin instead. Requires an admin bearer key.
  * @summary Approve a waitlist entry and provision a user account
  */
-
 
 
 export const ApproveAgentWaitlistEntryParams = zod.object({
@@ -839,7 +803,6 @@ export const ApproveAgentWaitlistEntryResponse = zod.object({
  */
 
 
-
 export const RejectAgentWaitlistEntryParams = zod.object({
   "entryId": zod.coerce.number().min(1).describe('Waitlist entry identifier.')
 })
@@ -855,7 +818,6 @@ export const RejectAgentWaitlistEntryResponse = zod.object({
  * @summary Log in to the admin panel with the admin password
  */
 export const adminLoginBodyPasswordMax = 200;
-
 
 
 export const AdminLoginBody = zod.object({
@@ -942,7 +904,6 @@ export const CreateAdminUserResponse = zod.object({
  */
 
 
-
 export const AdminResendTempPasswordParams = zod.object({
   "userId": zod.coerce.number().min(1).describe('User account identifier.')
 })
@@ -960,7 +921,6 @@ export const AdminResendTempPasswordResponse = zod.object({
  * Creates a single-use, 1-hour password reset link and emails it to the user. Their current password keeps working until the link is used. When the email cannot be delivered, the link is returned so the admin can share it manually. Refuses (409) for disabled accounts. Requires admin access.
  * @summary Send the user a password reset link
  */
-
 
 
 export const AdminSendPasswordResetParams = zod.object({
@@ -982,7 +942,6 @@ export const AdminSendPasswordResetResponse = zod.object({
  */
 
 
-
 export const AdminRevokeUserParams = zod.object({
   "userId": zod.coerce.number().min(1).describe('User account identifier.')
 })
@@ -997,7 +956,6 @@ export const AdminRevokeUserResponse = zod.object({
  * Re-enables a disabled account. The user's existing password keeps working (sessions were destroyed at revoke time, so they must log in again). Requires admin access.
  * @summary Restore a revoked user's access
  */
-
 
 
 export const AdminRestoreUserParams = zod.object({
@@ -1028,7 +986,6 @@ export const ListAdminAdAccountsResponse = zod.object({
  */
 
 
-
 export const DeleteAdminUserParams = zod.object({
   "userId": zod.coerce.number().min(1).describe('User account identifier.')
 })
@@ -1045,7 +1002,6 @@ export const DeleteAdminUserResponse = zod.object({
  */
 
 
-
 export const GetAdminUserAdAccountsParams = zod.object({
   "userId": zod.coerce.number().min(1).describe('User account identifier.')
 })
@@ -1059,7 +1015,6 @@ export const GetAdminUserAdAccountsResponse = zod.object({
  * Replaces the user's full grant list with the submitted ad_account_ids array. Pass an empty array to clear all grants. Unknown account ids are silently skipped. Requires admin access.
  * @summary Replace a user's ad account grants
  */
-
 
 
 export const UpdateAdminUserAdAccountsParams = zod.object({
@@ -1195,7 +1150,6 @@ export const authChangePasswordBodyNewPasswordMin = 8;
 export const authChangePasswordBodyNewPasswordMax = 200;
 
 
-
 export const AuthChangePasswordBody = zod.object({
   "current_password": zod.string().min(1).max(authChangePasswordBodyCurrentPasswordMax),
   "new_password": zod.string().min(authChangePasswordBodyNewPasswordMin).max(authChangePasswordBodyNewPasswordMax)
@@ -1236,7 +1190,6 @@ export const authResetPasswordBodyNewPasswordMin = 8;
 export const authResetPasswordBodyNewPasswordMax = 200;
 
 
-
 export const AuthResetPasswordBody = zod.object({
   "token": zod.string().min(1).max(authResetPasswordBodyTokenMax),
   "new_password": zod.string().min(authResetPasswordBodyNewPasswordMin).max(authResetPasswordBodyNewPasswordMax)
@@ -1255,7 +1208,6 @@ export const authRegisterBodyPasswordMin = 8;
 export const authRegisterBodyPasswordMax = 200;
 
 export const authRegisterBodyDisplayNameMax = 120;
-
 
 
 export const AuthRegisterBody = zod.object({
@@ -1282,7 +1234,6 @@ export const AuthRegisterResponse = zod.object({
  */
 
 
-
 export const ListWorkspaceInvitesParams = zod.object({
   "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.')
 })
@@ -1305,7 +1256,6 @@ export const ListWorkspaceInvitesResponse = zod.object({
  * Creates a pending invite for the given email and role. Idempotent per workspace and email. Requires a logged-in session with access to the workspace.
  * @summary Invite a member to the workspace
  */
-
 
 
 export const CreateWorkspaceInviteParams = zod.object({
@@ -1348,8 +1298,6 @@ export const CreateWorkspaceInviteResponse = zod.object({
  */
 
 
-
-
 export const RevokeWorkspaceInviteParams = zod.object({
   "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.'),
   "inviteId": zod.coerce.number().min(1).describe('Invite identifier.')
@@ -1364,8 +1312,6 @@ export const RevokeWorkspaceInviteResponse = zod.object({
  * Bumps the invite's created_at timestamp to now and returns the updated invite. Requires a logged-in session with access to the workspace.
  * @summary Resend a pending workspace invite
  */
-
-
 
 
 export const ResendWorkspaceInviteParams = zod.object({
@@ -1397,8 +1343,6 @@ export const ResendWorkspaceInviteResponse = zod.object({
  */
 
 
-
-
 export const UpdateMemberPermissionsParams = zod.object({
   "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.'),
   "email": zod.coerce.string().min(1).describe('Member\'s email address (URL-encoded).')
@@ -1422,8 +1366,6 @@ export const UpdateMemberPermissionsResponse = zod.object({
  */
 
 
-
-
 export const ResendMemberTempPasswordParams = zod.object({
   "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.'),
   "email": zod.coerce.string().min(1).describe('Member\'s email address (URL-encoded).')
@@ -1442,8 +1384,6 @@ export const ResendMemberTempPasswordResponse = zod.object({
  * Disabling revokes all sessions and rejects future logins with a generic message; restoring re-enables login. Manage-team-only; requires a logged-in session with access to the workspace. Cannot disable your own account or a designated agency admin account.
  * @summary Disable or restore a member's access
  */
-
-
 
 
 export const UpdateMemberStatusParams = zod.object({
@@ -1465,7 +1405,6 @@ export const UpdateMemberStatusResponse = zod.object({
  * Returns provisioned user accounts (real logins) for this workspace, newest first. Requires a logged-in session with access to the workspace.
  * @summary List real workspace member accounts
  */
-
 
 
 export const ListWorkspaceMembersParams = zod.object({
@@ -1491,8 +1430,6 @@ export const ListWorkspaceMembersResponse = zod.object({
  */
 
 
-
-
 export const ListMemberAdAccountsParams = zod.object({
   "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.'),
   "email": zod.coerce.string().min(1).describe('Member\'s email address (URL-encoded).')
@@ -1509,14 +1446,10 @@ export const ListMemberAdAccountsResponse = zod.object({
  */
 
 
-
-
 export const GrantMemberAdAccountParams = zod.object({
   "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.'),
   "email": zod.coerce.string().min(1).describe('Member\'s email address (URL-encoded).')
 })
-
-
 
 
 export const GrantMemberAdAccountBody = zod.object({
@@ -1532,9 +1465,6 @@ export const GrantMemberAdAccountResponse = zod.object({
  * Removes the user_ad_accounts grant for the member, if present. Admin-only; requires a logged-in session with access to the workspace.
  * @summary Revoke a member's access to an ad account
  */
-
-
-
 
 
 export const RevokeMemberAdAccountParams = zod.object({
@@ -1554,13 +1484,9 @@ export const RevokeMemberAdAccountResponse = zod.object({
  */
 
 
-
 export const GetNotificationPrefsParams = zod.object({
   "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.')
 })
-
-
-
 
 
 export const GetNotificationPrefsResponse = zod.object({
@@ -1582,13 +1508,9 @@ export const GetNotificationPrefsResponse = zod.object({
  */
 
 
-
 export const UpdateNotificationPrefsParams = zod.object({
   "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.')
 })
-
-
-
 
 
 export const UpdateNotificationPrefsBody = zod.object({
@@ -1602,9 +1524,6 @@ export const UpdateNotificationPrefsBody = zod.object({
   "in_app": zod.boolean()
 })).optional()
 })
-
-
-
 
 
 export const UpdateNotificationPrefsResponse = zod.object({
@@ -1636,7 +1555,6 @@ export const submitRequestAccessBodyAvgMonthlyAdSpendMax = 100;
 export const submitRequestAccessBodyWebsiteMax = 300;
 
 export const submitRequestAccessBodyLinkedinMax = 300;
-
 
 
 export const SubmitRequestAccessBody = zod.object({
@@ -1684,7 +1602,6 @@ export const ListRequestAccessEntriesResponse = zod.object({
  */
 
 
-
 export const GetReportSettingsParams = zod.object({
   "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.')
 })
@@ -1703,7 +1620,6 @@ export const GetReportSettingsResponse = zod.object({
  * Upserts Report Builder default overrides for this workspace and returns the persisted values. Requires a logged-in session with access to the workspace.
  * @summary Update workspace report-builder settings
  */
-
 
 
 export const UpdateReportSettingsParams = zod.object({
@@ -1735,7 +1651,6 @@ export const UpdateReportSettingsResponse = zod.object({
  */
 
 
-
 export const ListWorkspaceReportsParams = zod.object({
   "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.')
 })
@@ -1765,7 +1680,6 @@ export const ListWorkspaceReportsResponse = zod.object({
  */
 
 
-
 export const CreateWorkspaceReportParams = zod.object({
   "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.')
 })
@@ -1779,7 +1693,6 @@ export const createWorkspaceReportBodySummaryMax = 1000;
 
 export const createWorkspaceReportBodyModelJsonMin = 2;
 export const createWorkspaceReportBodyModelJsonMax = 2000000;
-
 
 
 export const CreateWorkspaceReportBody = zod.object({
@@ -1822,7 +1735,6 @@ export const CreateWorkspaceReportResponse = zod.object({
  */
 
 
-
 export const DeleteWorkspaceReportParams = zod.object({
   "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.'),
   "reportId": zod.coerce.number().describe('Generated report identifier.')
@@ -1840,13 +1752,11 @@ export const DeleteWorkspaceReportResponse = zod.object({
  */
 
 
-
 export const BatchDeleteWorkspaceReportsParams = zod.object({
   "workspaceId": zod.coerce.string().min(1).describe('Workspace (manager account) identifier.')
 })
 
 export const batchDeleteWorkspaceReportsBodyReportIdsMax = 200;
-
 
 
 export const BatchDeleteWorkspaceReportsBody = zod.object({
@@ -1932,7 +1842,6 @@ export const ListMetaAdAccountsResponse = zod.object({
  */
 
 
-
 export const SelectMetaAdAccountBody = zod.object({
   "ad_account_id": zod.string().min(1)
 })
@@ -1981,7 +1890,6 @@ export const listMetaReportRowsQueryOffsetDefault = 0;
 export const listMetaReportRowsQueryOffsetMin = 0;
 
 
-
 export const ListMetaReportRowsQueryParams = zod.object({
   "report_class": zod.enum(['IAP_DEMOGRAPHIC_TEXT_SIGNAL', 'IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL']),
   "limit": zod.coerce.number().min(1).max(listMetaReportRowsQueryLimitMax).default(listMetaReportRowsQueryLimitDefault),
@@ -2018,5 +1926,4 @@ export const ListMetaReportRowsResponse = zod.object({
 export const HealthCheckResponse = zod.object({
   "status": zod.string()
 })
-
 
