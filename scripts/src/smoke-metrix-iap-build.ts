@@ -173,12 +173,19 @@ async function runSmoke() {
         String(err?.message ?? err),
       );
     });
+
+    await assertChangePasswordFormVisible(PREVIEW_PORT).catch((err) => {
+      fail(
+        "Change Password page render check failed on production build",
+        String(err?.message ?? err),
+      );
+    });
   } finally {
     previewServer?.kill();
   }
 
   console.log(
-    `\nPASS  Metrix IAP production build succeeded — login, create-account, forgot-password, and reset-password forms visible in preview`,
+    `\nPASS  Metrix IAP production build succeeded — login, create-account, forgot-password, reset-password, and change-password forms visible in preview`,
   );
   process.exit(0);
 }
@@ -382,6 +389,62 @@ async function assertResetPasswordFormVisible(port: string): Promise<void> {
 
     console.log(
       "  ✓  [data-testid=\"form-reset-password\"] is visible in production build",
+    );
+
+    await ctx.close();
+  } finally {
+    await browser.close();
+  }
+}
+
+async function assertChangePasswordFormVisible(port: string): Promise<void> {
+  const { chromium } = await import("playwright-core");
+
+  const executablePath = process.env["REPLIT_PLAYWRIGHT_CHROMIUM_EXECUTABLE"];
+  const browser = await chromium.launch({
+    executablePath,
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  });
+
+  try {
+    const ctx = await browser.newContext({
+      viewport: { width: 1280, height: 800 },
+    });
+
+    // Return a logged-in user with must_change_password: true so the app
+    // renders ChangePasswordPage instead of the login form.
+    // The API contract wraps the user under { user: { ... } }.
+    await ctx.route("**/api/metrix/auth/me", (route) => {
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          user: {
+            id: "smoke-user-id",
+            email: "smoke@example.com",
+            must_change_password: true,
+            role: "member",
+          },
+        }),
+      });
+    });
+
+    const page = await ctx.newPage();
+
+    console.log(
+      `Navigating to http://localhost:${port}/ to check change-password form...`,
+    );
+    await page.goto(`http://localhost:${port}/`, {
+      waitUntil: "domcontentloaded",
+    });
+
+    await page
+      .locator('[data-testid="form-change-password"]')
+      .waitFor({ state: "visible", timeout: 20_000 });
+
+    console.log(
+      "  ✓  [data-testid=\"form-change-password\"] is visible in production build",
     );
 
     await ctx.close();

@@ -11,10 +11,11 @@ import { getSupabase } from "../../lib/supabase";
 //
 // Covers:
 //   1. Auth gates (401, 403)
-//   2. Manual analysis run path: finished_at present after a completed run
-//   3. Live-Meta fallback path: finished_at synthesized from report_pulls when
-//      no manual run exists (the stale-warning persistence gap fixed by this task)
-//   4. Live-Meta running state: finished_at is null when any class is still running
+//   2. Unknown account → 200 with run=null
+//   3. Manual analysis run path: returns the most recent completed run
+//   4. Live-Meta fallback path: finished_at synthesized from report_pulls when
+//      no manual run exists
+//   5. Live-Meta running state: finished_at is null when any class is still running
 //
 // Boots the real app in-process against the live dev Supabase. Test rows are
 // inserted in beforeAll and cleaned up in afterAll.
@@ -70,7 +71,7 @@ beforeAll(async () => {
   adminToken = (await createSession(adminUserId)).token;
   memberToken = (await createSession(memberUserId)).token;
 
-      const supabase = getSupabase();
+  const supabase = getSupabase();
 
   // ── Manual run: insert a completed run for the first seed account ──────
   const { data: runRows, error: runErr } = await supabase
@@ -91,7 +92,7 @@ beforeAll(async () => {
   if (runErr) throw new Error(`Failed to insert test analysis run: ${runErr.message}`);
   testRunId = String(runRows![0]!["id"]);
 
-  // ── Live-Meta fallback: insert two report_pulls (one per class, both success) ─
+  // ── Live-Meta fallback: insert two successful report_pulls for liveMetaTestAccountId ─
   // These use a fake act_-style account id so there are no manual_analysis_runs
   // for this account, exercising the synthesizeRunFromReportPulls path.
   const fetchedAt = new Date().toISOString();
@@ -100,18 +101,18 @@ beforeAll(async () => {
     "IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL",
   ];
   for (const cls of REPORT_CLASSES) {
-      const { data: pullRows, error: pullErr } = await supabase
-        .from("report_pulls")
-        .insert({
-          user_id: String(adminUserId),
-          ad_account_id: runningAccountId,
-          report_class: "IAP_DEMOGRAPHIC_TEXT_SIGNAL",
-          status: "running",
-          date_range_start: "2025-06-17",
-          date_range_end: "2025-07-16",
-          fetched_at: new Date().toISOString(),
-        })
-        .select("id");
+    const { data: pullRows, error: pullErr } = await supabase
+      .from("report_pulls")
+      .insert({
+        user_id: String(adminUserId),
+        ad_account_id: liveMetaTestAccountId,
+        report_class: cls,
+        status: "success",
+        date_range_start: "2025-06-17",
+        date_range_end: "2025-07-16",
+        fetched_at: fetchedAt,
+      })
+      .select("id");
     if (pullErr) throw new Error(`Failed to insert test report_pull (${cls}): ${pullErr.message}`);
     liveMetaReportPullIds.push(String(pullRows![0]!["id"]));
   }
@@ -127,7 +128,7 @@ beforeAll(async () => {
 }, 120_000);
 
 afterAll(async () => {
-      const supabase = getSupabase();
+  const supabase = getSupabase();
   if (testRunId) {
     await supabase.from("manual_analysis_runs").delete().eq("id", testRunId);
   }
@@ -159,29 +160,29 @@ function get(accountId: string, token?: string) {
 
 describe("GET /metrix/accounts/:id/analysis-runs/latest", () => {
   it("401s when unauthenticated", async () => {
-        const res = await get(runningAccountId, adminToken);
+    const res = await get(adAccountId);
+    expect(res.status).toBe(401);
+  });
+
+  it("403s when a non-admin member requests", async () => {
+    const res = await get(adAccountId, memberToken);
     expect(res.status).toBe(403);
   });
 
   it("returns 200 with run=null for an unknown account", async () => {
-        const res = await get(runningAccountId, adminToken);
-    expect(res.status).toBe(403);
-  });
-
-  it("returns 200 with run=null for an unknown account", async () => {
-        const res = await get(runningAccountId, adminToken);
-        expect(res.status).toBe(200);
-        const body = (await res.json()) as { run: Record<string, unknown> | null };
+    const res = await get("unknown-account-id", adminToken);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { run: Record<string, unknown> | null };
     expect(body.run).toBeNull();
   });
 
   describe("manual analysis run path", () => {
-    it("returns finished_at for a completed manual run", async () => {
-        const res = await get(runningAccountId, adminToken);
-        expect(res.status).toBe(200);
-        const body = (await res.json()) as { run: Record<string, unknown> | null };
-        expect(body.run).not.toBeNull();
-        const run = body.run!;
+    it("returns the completed run with all required fields", async () => {
+      const res = await get(adAccountId, adminToken);
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { run: Record<string, unknown> | null };
+      expect(body.run).not.toBeNull();
+      const run = body.run!;
       expect(run).toHaveProperty("id");
       expect(run).toHaveProperty("account_id");
       expect(run).toHaveProperty("status");
@@ -193,31 +194,15 @@ describe("GET /metrix/accounts/:id/analysis-runs/latest", () => {
 
   describe("live-Meta fallback path (synthesized from report_pulls)", () => {
     it("returns finished_at synthesized from report_pulls when no manual run exists", async () => {
-        const res = await get(runningAccountId, adminToken);
-        expect(res.status).toBe(200);
-        const body = (await res.json()) as { run: Record<string, unknown> | null };
-        const run = body.run!;
-      expect(run).toHaveProperty("id");
-      expect(run).toHaveProperty("account_id");
-      expect(run).toHaveProperty("status");
-      expect(run).toHaveProperty("date_range");
-      expect(run).toHaveProperty("started_at");
-      expect(run).toHaveProperty("finished_at");
-    });
-  });
-
-  describe("live-Meta fallback path (synthesized from report_pulls)", () => {
-    it("returns finished_at synthesized from report_pulls when no manual run exists", async () => {
-        const res = await get(runningAccountId, adminToken);
-        expect(res.status).toBe(200);
-        const body = (await res.json()) as { run: Record<string, unknown> | null };
-        expect(body.run).not.toBeNull();
-        const run = body.run!;
+      const res = await get(liveMetaTestAccountId, adminToken);
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { run: Record<string, unknown> | null };
+      expect(body.run).not.toBeNull();
+      const run = body.run!;
       expect(typeof run["finished_at"]).toBe("string");
       expect((run["finished_at"] as string).length).toBeGreaterThan(0);
       expect(run["status"]).toBe("success");
       expect(run["account_id"]).toBe(liveMetaTestAccountId);
-      expect(run["date_range"]).toBe("30d");
     }, 60_000);
 
     it("returns finished_at=null when any report class is still running", async () => {

@@ -141,7 +141,7 @@ afterAll(async () => {
   }
   await close?.();
   await pool.end();
-});
+}, 120_000);
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -190,16 +190,16 @@ describe("manual-imports mapping_summary round-trip", () => {
       expect(res.status).toBe(200);
 
       const body = (await res.json()) as {
-        import_id?: string;
-        mapping_summary?: MappingEntry[] | null;
+        import_id: string;
+        mapping_summary: MappingEntry[];
       };
 
       expect(body.import_id).toBeDefined();
-      importId = body.import_id!;
+      importId = body.import_id;
       stagedImportIds.push(importId);
 
       expect(Array.isArray(body.mapping_summary)).toBe(true);
-      postMappingSummary = body.mapping_summary!;
+      postMappingSummary = body.mapping_summary;
 
       const reachEntry = postMappingSummary.find((e) => e.canonical === "Reach");
       expect(reachEntry).toBeDefined();
@@ -252,16 +252,16 @@ describe("manual-imports mapping_summary round-trip", () => {
       expect(res.status).toBe(200);
 
       const body = (await res.json()) as {
-        import_id?: string;
-        mapping_summary?: MappingEntry[] | null;
+        import_id: string;
+        mapping_summary: MappingEntry[];
       };
 
       expect(body.import_id).toBeDefined();
-      importId = body.import_id!;
+      importId = body.import_id;
       stagedImportIds.push(importId);
 
       expect(Array.isArray(body.mapping_summary)).toBe(true);
-      postMappingSummary = body.mapping_summary!;
+      postMappingSummary = body.mapping_summary;
 
       const reachEntry = postMappingSummary.find((e) => e.canonical === "Reach");
       expect(reachEntry).toBeDefined();
@@ -312,7 +312,7 @@ describe("manual-imports mapping_summary round-trip", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           kind: "performance_demo_csv",
-          filename: "unauth-test.csv",
+          filename: "unauth.csv",
           content_base64: Buffer.from(csv, "utf8").toString("base64"),
         }),
       });
