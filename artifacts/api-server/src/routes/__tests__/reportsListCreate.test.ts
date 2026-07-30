@@ -128,8 +128,8 @@ beforeAll(async () => {
       resolve();
     });
   });
-// beforeAll timeout raised to 30 s: getMetrixSeedFromSupabase() can exceed
-// the default 10 s hookTimeout when Supabase is cold.
+// beforeAll timeout raised to 120 s: getMetrixSeedFromSupabase() can exceed
+// 60 s when the seed cache expires mid-suite and Supabase is under load.
 }, 120_000);
 
 afterAll(async () => {

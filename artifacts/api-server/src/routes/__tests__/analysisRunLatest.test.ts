@@ -74,23 +74,30 @@ beforeAll(async () => {
   const supabase = getSupabase();
 
   // ── Manual run: insert a completed run for the first seed account ──────
-  const { data: runRows, error: runErr } = await supabase
-    .from("manual_analysis_runs")
-    .insert({
-      account_id: adAccountId,
-      status: "success",
-      date_range: "7d",
-      date_start: "2025-01-01",
-      date_end: "2025-01-07",
-      rows_ingested: 42,
-      imports_used: 2,
-      started_at: new Date(Date.now() - 5000).toISOString(),
-      finished_at: new Date().toISOString(),
-      created_by: `analysis-run-test-${Date.now()}`,
-    })
-    .select("id");
-  if (runErr) throw new Error(`Failed to insert test analysis run: ${runErr.message}`);
-  testRunId = String(runRows![0]!["id"]);
+  // Retry once after 3 s to handle transient Supabase 5xx / Cloudflare 521
+  // errors that can hit mid-suite when the connection pool is under load.
+  let runRows: Array<{ id: string | number }> | null = null;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const { data, error: runErr } = await supabase
+      .from("manual_analysis_runs")
+      .insert({
+        account_id: adAccountId,
+        status: "success",
+        date_range: "7d",
+        date_start: "2025-01-01",
+        date_end: "2025-01-07",
+        rows_ingested: 42,
+        imports_used: 2,
+        started_at: new Date(Date.now() - 5000).toISOString(),
+        finished_at: new Date().toISOString(),
+        created_by: `analysis-run-test-${Date.now()}`,
+      })
+      .select("id");
+    if (!runErr) { runRows = data; break; }
+    if (attempt === 2) throw new Error(`Failed to insert test analysis run: ${runErr.message}`);
+    await new Promise((res) => setTimeout(res, 3_000));
+  }
+  testRunId = String(runRows![0]!.id);
 
   // ── Live-Meta fallback: insert two successful report_pulls for liveMetaTestAccountId ─
   // These use a fake act_-style account id so there are no manual_analysis_runs
@@ -101,20 +108,25 @@ beforeAll(async () => {
     "IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL",
   ];
   for (const cls of REPORT_CLASSES) {
-    const { data: pullRows, error: pullErr } = await supabase
-      .from("report_pulls")
-      .insert({
-        user_id: String(adminUserId),
-        ad_account_id: liveMetaTestAccountId,
-        report_class: cls,
-        status: "success",
-        date_range_start: "2025-06-17",
-        date_range_end: "2025-07-16",
-        fetched_at: fetchedAt,
-      })
-      .select("id");
-    if (pullErr) throw new Error(`Failed to insert test report_pull (${cls}): ${pullErr.message}`);
-    liveMetaReportPullIds.push(String(pullRows![0]!["id"]));
+    let pullId: string | null = null;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      const { data: pullRows, error: pullErr } = await supabase
+        .from("report_pulls")
+        .insert({
+          user_id: String(adminUserId),
+          ad_account_id: liveMetaTestAccountId,
+          report_class: cls,
+          status: "success",
+          date_range_start: "2025-06-17",
+          date_range_end: "2025-07-16",
+          fetched_at: fetchedAt,
+        })
+        .select("id");
+      if (!pullErr) { pullId = String(pullRows![0]!.id); break; }
+      if (attempt === 2) throw new Error(`Failed to insert test report_pull (${cls}): ${pullErr.message}`);
+      await new Promise((res) => setTimeout(res, 3_000));
+    }
+    liveMetaReportPullIds.push(pullId!);
   }
 
   await new Promise<void>((resolve) => {
@@ -164,13 +176,13 @@ describe("GET /metrix/accounts/:id/analysis-runs/latest", () => {
     expect(res.status).toBe(401);
   });
 
-  it("403s when a non-admin member requests", async () => {
+  it("403s for a member (not admin)", async () => {
     const res = await get(adAccountId, memberToken);
     expect(res.status).toBe(403);
   });
 
   it("returns 200 with run=null for an unknown account", async () => {
-    const res = await get("unknown-account-id", adminToken);
+    const res = await get("nonexistent-account-id", adminToken);
     expect(res.status).toBe(200);
     const body = (await res.json()) as { run: Record<string, unknown> | null };
     expect(body.run).toBeNull();

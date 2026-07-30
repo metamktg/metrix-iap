@@ -21,6 +21,7 @@
     "smoke:metrix-iap-home-screen": "tsx ./src/smoke-metrix-iap-home-screen.ts",
     "smoke:forgot-password": "tsx ./src/smoke-forgot-password.ts",
     "import:metrix": "tsx ./src/metrix-supabase/import.ts",
+    "enforce:importer-rls": "tsx ./src/enforce-importer-rls.ts",
     "create:user": "tsx ./src/create-user.ts",
     "mirror:auth-users": "tsx ./src/metrix-official/mirror-auth-users.ts",
     "migrate:metrix-official": "tsx ./src/metrix-official/migrate.ts",
