@@ -122,8 +122,28 @@ async function main() {
   });
 
   try {
-    // Brief pause so Vite finishes HMR setup before Playwright navigates.
-    await new Promise((r) => setTimeout(r, 1500));
+    // Poll the dev server until it actually serves a response before handing
+    // off to Playwright.  Vite prints "ready" as soon as the HTTP server
+    // binds, but the first request triggers module transforms that can take
+    // several seconds under load — if Playwright hits the page before those
+    // transforms finish it gets a 30 s timeout.  Polling here absorbs that
+    // warm-up time so the first Playwright goto always finds a live server.
+    const warmupUrl = `http://localhost:${DEV_PORT}/`;
+    const warmupDeadline = Date.now() + 45_000;
+    let warmedUp = false;
+    while (Date.now() < warmupDeadline) {
+      try {
+        const res = await fetch(warmupUrl, { signal: AbortSignal.timeout(4_000) });
+        if (res.status < 500) { warmedUp = true; break; }
+      } catch {
+        // server not yet responding — keep polling
+      }
+      await new Promise((r) => setTimeout(r, 500));
+    }
+    if (!warmedUp) {
+      server.kill();
+      fail("Dev server did not respond within 45 s after signalling ready");
+    }
 
     console.log("\nRunning login page layout e2e tests...\n");
     await runTests().catch((err) => {
