@@ -40,10 +40,12 @@
 //   15d. SegmentGridModal avatar blended column — reach metric: "Blended" header
 //      is present; demographic rows carry Reach data so the blended cell shows a
 //      non-"—" integer value; the unavailableOnPlacements description warning is
-//      also rendered (placement export has no Reach breakdown).
+//      also rendered; and every "All avatars" placement cell shows "—" (placement
+//      export has no Reach breakdown — topPlacements() sets reach: null).
 //   15e. SegmentGridModal avatar blended column — clicks_all metric: same pattern
-//      as 15d for "Clicks (all)"; demographic rows carry clicks_all data so the
-//      blended cell is non-"—"; unavailableOnPlacements warning is rendered.
+//      as 15d for "Clicks (all)"; blended cell is non-"—"; unavailableOnPlacements
+//      warning is rendered; every "All avatars" placement cell shows "—"
+//      (topPlacements() sets clicksAll: null).
 //   16. SegmentGridModal with cellIds: opening via a concept-row drilldown
 //      (TilePerformanceModal → cellIds=["C2B"]) renders ≥1 avatar segment row
 //      and the description says "scoped to C2B" — catches silent empty-grid
@@ -2153,6 +2155,33 @@ async function main() {
             `SegmentGridModal description must include the unavailableOnPlacements ` +
               `warning for the reach metric. Got dialog text: "${fullDialogText.slice(0, 300)}"`,
           );
+
+          // The "All avatars" placement-marginal row must show "—" in the metric
+          // value div of every placement cell for the reach metric.
+          // topPlacements() always sets reach: null on placement totals, so
+          // metricValueForSegment(reach) returns "—" — never a fabricated number.
+          // Each placement cell has two divs: [0] = metric value, [1] = spend
+          // sub-line (always shows a dollar amount). We check only div[0].
+          const allAvatarsRow = dialog.locator("tbody tr").filter({ hasText: "All avatars" });
+          await allAvatarsRow.waitFor({ state: "visible", timeout: 5_000 });
+          // Placement cells are all tds except the first (avatar label) and last (empty blended).
+          const allAvatarsCells = await allAvatarsRow.locator("td").all();
+          // Must have at least 3 cells: label + ≥1 placement + blended-spacer.
+          assert(
+            allAvatarsCells.length >= 3,
+            `"All avatars" row must have ≥3 cells (label + placements + spacer). Got ${allAvatarsCells.length}`,
+          );
+          const placementCells = allAvatarsCells.slice(1, allAvatarsCells.length - 1);
+          for (let i = 0; i < placementCells.length; i++) {
+            // First div = metric value display; must be "—" for unavailable metrics.
+            const metricDiv = placementCells[i].locator("div").first();
+            const metricText = (await metricDiv.textContent()) ?? "";
+            assert(
+              metricText.trim() === "—",
+              `"All avatars" placement cell [${i}] metric-value div must be "—" for the reach metric. ` +
+                `Got: "${metricText}"`,
+            );
+          }
         } finally {
           await ctx.close();
         }
@@ -2306,6 +2335,29 @@ async function main() {
             `SegmentGridModal description must include the unavailableOnPlacements ` +
               `warning for the clicks_all metric. Got dialog text: "${fullDialogText.slice(0, 300)}"`,
           );
+
+          // The "All avatars" placement-marginal row must show "—" in the metric
+          // value div of every placement cell for clicks_all.  topPlacements()
+          // always sets clicksAll: null on placement totals, so
+          // metricValueForSegment returns "—" — never a fabricated value.
+          // Each placement cell: div[0] = metric value, div[1] = spend sub-line.
+          const allAvatarsRow = dialog.locator("tbody tr").filter({ hasText: "All avatars" });
+          await allAvatarsRow.waitFor({ state: "visible", timeout: 5_000 });
+          const allAvatarsCells = await allAvatarsRow.locator("td").all();
+          assert(
+            allAvatarsCells.length >= 3,
+            `"All avatars" row must have ≥3 cells (label + placements + spacer). Got ${allAvatarsCells.length}`,
+          );
+          const placementCells = allAvatarsCells.slice(1, allAvatarsCells.length - 1);
+          for (let i = 0; i < placementCells.length; i++) {
+            const metricDiv = placementCells[i].locator("div").first();
+            const metricText = (await metricDiv.textContent()) ?? "";
+            assert(
+              metricText.trim() === "—",
+              `"All avatars" placement cell [${i}] metric-value div must be "—" for the clicks_all metric. ` +
+                `Got: "${metricText}"`,
+            );
+          }
         } finally {
           await ctx.close();
         }
