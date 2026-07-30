@@ -26,9 +26,9 @@ const round = (v: number, dp = 2) => {
   return Math.round(v * f) / f;
 };
 
-async function selectAll(table: string, build?: (q: any) => any): Promise<Row[]> {
+async function selectAll(table: string, build?: (q: any) => any, columns = "*"): Promise<Row[]> {
   const supabase = getSupabase();
-  let query: any = supabase.from(table).select("*");
+  let query: any = supabase.from(table).select(columns);
   if (build) query = build(query);
   const { data, error } = await query;
   if (error) {
@@ -816,8 +816,13 @@ export async function assembleMetrixSeed(): Promise<Row> {
     selectAll("cell_creative_overrides", (q) => q.order("uploaded_at")).catch(() => [] as Row[]),
     // creative_asset manual_imports: used for auto-heal detection only; rows
     // with null ad_names are excluded because they carry no mapping to fix.
-    selectAll("manual_imports", (q) =>
-      q.eq("kind", "creative_asset").not("ad_names", "is", null),
+    // Column-scoped (not "*"): this table's `content` bytea column holds the
+    // raw uploaded file bytes (up to 8MB each) — pulling it on every seed
+    // assembly was the dominant source of Supabase egress.
+    selectAll(
+      "manual_imports",
+      (q) => q.eq("kind", "creative_asset").not("ad_names", "is", null),
+      "account_id, ad_names",
     ).catch(() => [] as Row[]),
   ]);
 
