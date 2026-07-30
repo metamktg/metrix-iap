@@ -30,6 +30,7 @@ vi.mock("@/contexts/MetrixDataContext", () => ({
 import { AccountProvider } from "@/contexts/AccountContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DateRangeProvider } from "@/contexts/DateRangeContext";
+import { AnalysisViewProvider } from "@/contexts/AnalysisViewContext";
 import { Sidebar } from "../Sidebar";
 import { AnalysisOverview } from "@/pages/metrix/analysis/AnalysisOverview";
 import { navTree, sectionLandingRoute } from "@/navigation/navTree";
@@ -44,7 +45,9 @@ function renderWithProviders(ui: React.ReactElement) {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <AccountProvider>
-          <DateRangeProvider>{ui}</DateRangeProvider>
+          <DateRangeProvider>
+            <AnalysisViewProvider>{ui}</AnalysisViewProvider>
+          </DateRangeProvider>
         </AccountProvider>
       </AuthProvider>
     </QueryClientProvider>

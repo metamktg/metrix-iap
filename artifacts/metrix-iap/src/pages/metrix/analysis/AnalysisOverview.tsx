@@ -4,6 +4,7 @@
 // then the core control reads and drill-in module cards.
 
 import { useState, useMemo } from "react";
+import { useAnalysisView } from "@/contexts/AnalysisViewContext";
 import { TYPE } from "../typography";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed, useMetrixIsRefetching } from "@/contexts/MetrixDataContext";
@@ -723,8 +724,7 @@ export function AnalysisOverview() {
 
   const [cellSort, setCellSort] = useState<CellSort>("spend");
   const [selectedWindow, setSelectedWindow] = useState<DataWindowSelection | null>(null);
-  const [topN, setTopN] = useState(10);
-  const [goalCpa, setGoalCpa] = useState<number | null>(null);
+  const { topN, setTopN, goalCpa, setGoalCpa } = useAnalysisView();
 
   // Fetch available date windows from actual ad_performance data (not run metadata).
   const { data: windowsData, isFetching: windowsFetching } = useQuery({

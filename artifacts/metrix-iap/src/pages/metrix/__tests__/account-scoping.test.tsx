@@ -32,6 +32,7 @@ vi.mock("@/contexts/MetrixDataContext", () => ({
 import { AccountProvider } from "@/contexts/AccountContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DateRangeProvider } from "@/contexts/DateRangeContext";
+import { AnalysisViewProvider } from "@/contexts/AnalysisViewContext";
 import { SignalView } from "../listen/SignalView";
 import { AlertsView } from "../listen/AlertsView";
 import { RecommendationsView } from "../listen/RecommendationsView";
@@ -102,7 +103,9 @@ function renderView(View: React.ComponentType) {
       <AuthProvider>
         <AccountProvider>
           <DateRangeProvider>
-            <View />
+            <AnalysisViewProvider>
+              <View />
+            </AnalysisViewProvider>
           </DateRangeProvider>
         </AccountProvider>
       </AuthProvider>

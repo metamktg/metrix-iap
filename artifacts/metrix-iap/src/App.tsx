@@ -61,6 +61,7 @@ import { TeamAccessView } from "@/pages/metrix/settings/TeamAccessView";
 import { NotificationsView } from "@/pages/metrix/settings/NotificationsView";
 import { BillingView } from "@/pages/metrix/settings/BillingView";
 import { ActionQueueView } from "@/pages/metrix/act/ActionQueueView";
+import { AnalysisViewProvider } from "@/contexts/AnalysisViewContext";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: Infinity, retry: false } },
@@ -217,11 +218,13 @@ export function AuthGate() {
       <ConceptRegistryProvider>
         <AccountProvider>
           <DateRangeProvider>
-            <TaskTrayProvider>
-              <AppShell>
-                <Router />
-              </AppShell>
-            </TaskTrayProvider>
+            <AnalysisViewProvider>
+              <TaskTrayProvider>
+                <AppShell>
+                  <Router />
+                </AppShell>
+              </TaskTrayProvider>
+            </AnalysisViewProvider>
           </DateRangeProvider>
         </AccountProvider>
       </ConceptRegistryProvider>

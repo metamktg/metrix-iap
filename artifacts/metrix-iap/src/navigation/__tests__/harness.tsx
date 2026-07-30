@@ -10,6 +10,7 @@ import { getAuthMeQueryKey, type AuthUser } from "@workspace/api-client-react";
 import { AccountProvider } from "@/contexts/AccountContext";
 import { DateRangeProvider } from "@/contexts/DateRangeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { AnalysisViewProvider } from "@/contexts/AnalysisViewContext";
 import { Router as AppRouter, AuthGate } from "@/App";
 import { PRE_LOGIN_ROUTE_PATHS } from "@/navigation/preLoginRoutes";
 
@@ -49,7 +50,9 @@ export function renderAt(initialPath: string) {
           ) : (
             <AccountProvider>
               <DateRangeProvider>
-                <AppRouter />
+                <AnalysisViewProvider>
+                  <AppRouter />
+                </AnalysisViewProvider>
               </DateRangeProvider>
             </AccountProvider>
           )}

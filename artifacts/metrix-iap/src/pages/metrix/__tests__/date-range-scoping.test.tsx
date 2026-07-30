@@ -32,6 +32,7 @@ vi.mock("@/contexts/MetrixDataContext", () => ({
 
 import { AccountProvider } from "@/contexts/AccountContext";
 import { DateRangeProvider } from "@/contexts/DateRangeContext";
+import { AnalysisViewProvider } from "@/contexts/AnalysisViewContext";
 import { getConceptWindows } from "@/lib/date-scope";
 import { IapLibraryView } from "../analysis/IapLibraryView";
 import { AnalysisOverview } from "../analysis/AnalysisOverview";
@@ -89,7 +90,9 @@ function renderView(View: React.ComponentType) {
     <QueryClientProvider client={queryClient}>
       <AccountProvider>
         <DateRangeProvider>
-          <View />
+          <AnalysisViewProvider>
+            <View />
+          </AnalysisViewProvider>
         </DateRangeProvider>
       </AccountProvider>
     </QueryClientProvider>
