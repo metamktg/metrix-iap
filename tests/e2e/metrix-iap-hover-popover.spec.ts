@@ -59,6 +59,10 @@
 //      inside VariableDrilldownModal and the SegmentDrilldownModal description
 //      includes "scoped to" — catches regressions where cellIds is silently
 //      dropped to null at VariableDrilldownModal.tsx line 266.
+//   19. MetricDiagnosticModal concept row navigation: clicking the first concept
+//      row button navigates to /app/analysis/library with a focus= query param
+//      matching the cell id — catches typos in the route string or a broken
+//      useLocation/navigate import.
 //
 // API calls are intercepted with page.route() so no live API server is needed.
 // The seed fixture comes from the checked-in test snapshot.
@@ -2610,6 +2614,140 @@ async function main() {
               `This confirms the cellIds prop was threaded through at line 266 ` +
               `of VariableDrilldownModal.tsx rather than silently dropped to null. ` +
               `Got dialog text snippet: "${dialogText.slice(0, 400)}"`,
+          );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+
+    // ── Test 19: MetricDiagnosticModal concept row navigation ─────────────────
+    // Opens MetricDiagnosticModal for the "Total spend" tile with 1 injected
+    // concept row (cell id "c_alpha"), then clicks that concept row button and
+    // asserts the URL navigates to /app/analysis/library?focus=c_alpha.
+    // Catches typos in the route string or a broken navigate() import.
+    await test(
+      'MetricDiagnosticModal: clicking a concept row navigates to /app/analysis/library?focus=<cellId>',
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        try {
+          // Inject 1 concept row so the modal renders the concept list branch.
+          const modifiedSeed = JSON.parse(SEED_FIXTURE_BODY);
+          const bookster = modifiedSeed.ad_accounts.find(
+            (a: { id: string }) => a.id === ACCOUNT,
+          );
+          bookster.iap.analysis.performance_by_cell = [
+            {
+              cell_id: "c_alpha",
+              "Result type": "Mobile app installs",
+              "Amount spent (USD)": 1200,
+              Reach: 40000,
+              Impressions: 80000,
+              Results: 120,
+              "Clicks (all)": 2000,
+              "Link clicks": 1600,
+              CPA_result: 10.0,
+              CTR_link_pct: 2.0,
+              Result_per_link_click_pct: 7.5,
+              book2_concept_name: "Concept Alpha",
+            },
+          ];
+
+          await page.route("**/api/metrix/auth/me", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify({
+                user: {
+                  id: "test-user",
+                  email: "demo@metrix.app",
+                  role: "admin",
+                  must_change_password: false,
+                  workspace_id: "metrix_manager",
+                },
+              }),
+            }),
+          );
+          await page.route("**/api/metrix/seed", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify(modifiedSeed),
+            }),
+          );
+          await page.route("**/api/metrix/workspaces/*/reports", (route) =>
+            route.fulfill({
+              status: 200,
+              contentType: "application/json",
+              body: JSON.stringify({ reports: [] }),
+            }),
+          );
+
+          await page.goto(`${BASE}/app/account?account=${ACCOUNT}`, {
+            waitUntil: "domcontentloaded",
+          });
+
+          await page
+            .getByText("Account Totals", { exact: false })
+            .waitFor({ state: "visible", timeout: 20_000 });
+
+          // Hover the "Total spend" tile to open its popover.
+          const tileBtn = page
+            .locator("button")
+            .filter({ hasText: "Total spend" })
+            .first();
+          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
+          await tileBtn.hover();
+
+          // Click "Diagnose full breakdown" to open MetricDiagnosticModal.
+          const diagnoseBtn = page.getByText("Diagnose full breakdown");
+          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
+          await diagnoseBtn.click();
+
+          // Wait for MetricDiagnosticModal to appear.
+          const dialogHeader = page.getByText("Metric diagnostic", { exact: false });
+          await dialogHeader.waitFor({ state: "visible", timeout: 8_000 });
+
+          // Wait for the concept list section heading — confirms the modal is
+          // showing the non-empty concept list branch.
+          const conceptHeading = page.getByText(
+            "Top IAP library concepts driving this metric",
+            { exact: false },
+          );
+          await conceptHeading.waitFor({ state: "visible", timeout: 5_000 });
+
+          // Find the first concept row button inside the dialog and click it.
+          const dialog = page.locator('[role="dialog"]');
+          const firstConceptRow = dialog
+            .locator("button")
+            .filter({ hasText: /Concept Alpha/ })
+            .first();
+          await firstConceptRow.waitFor({ state: "visible", timeout: 5_000 });
+          await firstConceptRow.click();
+
+          // After navigation the URL must contain /app/analysis/library and
+          // the focus param must be the expected cell id "c_alpha".
+          await page.waitForURL(
+            (url) =>
+              url.pathname.includes("/app/analysis/library") &&
+              url.searchParams.get("focus") === "c_alpha",
+            { timeout: 8_000 },
+          );
+
+          const finalUrl = page.url();
+          assert(
+            finalUrl.includes("/app/analysis/library"),
+            `After clicking concept row the URL must contain "/app/analysis/library". ` +
+              `Got: "${finalUrl}". Check navigate() call in MetricDiagnosticModal.tsx.`,
+          );
+          assert(
+            finalUrl.includes("focus=c_alpha"),
+            `After clicking concept row the URL must contain "focus=c_alpha". ` +
+              `Got: "${finalUrl}". The cellId may be missing or incorrectly encoded ` +
+              `in the navigate() call at MetricDiagnosticModal.tsx line ~122.`,
           );
         } finally {
           await ctx.close();

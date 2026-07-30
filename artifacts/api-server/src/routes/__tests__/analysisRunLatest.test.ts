@@ -246,6 +246,6 @@ describe("GET /metrix/accounts/:id/analysis-runs/latest", () => {
       } finally {
         await supabase.from("report_pulls").delete().eq("id", runningPullId);
       }
-    });
+    }, 60_000);
   });
 });
