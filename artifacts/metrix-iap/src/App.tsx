@@ -65,6 +65,8 @@ import { MstSprintsView } from "@/pages/metrix/mst/MstSprintsView";
 import { MstPerformanceView } from "@/pages/metrix/mst/MstPerformanceView";
 import { MstDirectionView } from "@/pages/metrix/mst/MstDirectionView";
 import { MetrixAgent } from "@/pages/MetrixAgent";
+import { HomeView } from "@/pages/metrix/HomeView";
+import { FindingsView } from "@/pages/metrix/analysis/FindingsView";
 import { GeneralView } from "@/pages/metrix/settings/GeneralView";
 import { SecurityView } from "@/pages/metrix/settings/SecurityView";
 import { IntegrationsView } from "@/pages/metrix/settings/IntegrationsView";
@@ -144,6 +146,13 @@ export function Router() {
       <Route path="/app/mst/sprints"       component={MstSprintsView} />
       <Route path="/app/mst/performance"   component={MstPerformanceView} />
       <Route path="/app/mst/direction"     component={MstDirectionView} />
+
+      {/* ── Home screen ───────────────────────────────────────────────── */}
+      <Route path="/app/home" component={HomeView} />
+
+      {/* ── Analyze section ───────────────────────────────────────────── */}
+      <Route path="/app/analyze/findings" component={FindingsView} />
+      <Route path="/app/analyze">{() => <Redirect to="/app/analyze/findings" replace />}</Route>
 
       {/* ── 09 Action (coming soon) ──────────────────────────────────── */}
       <Route path="/app/action/agent" component={MetrixAgent} />

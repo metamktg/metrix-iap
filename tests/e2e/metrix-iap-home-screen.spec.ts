@@ -228,8 +228,8 @@ async function main() {
       }
     });
 
-    // ── Test 5: clicking Analyze in the sidebar nav navigates to /app/analyze ──
-    await test('clicking "Analyze" in the sidebar nav navigates to /app/analyze', async () => {
+    // ── Test 5: clicking Analysis in the sidebar nav navigates to /app/analysis ──
+    await test('clicking "Analysis" in the sidebar nav navigates to /app/analysis', async () => {
       const ctx = await browser.newContext({
         viewport: { width: 1440, height: 900 },
       });
@@ -238,11 +238,12 @@ async function main() {
         await mockApis(ctx);
         await gotoHome(page);
 
-        // The Analyze section header renders an <a> whose text content is "Analyze".
-        // It navigates to section.landing = "/app/analyze".
+        // The Analysis section header in the expanded sidebar renders an <a>
+        // whose text content is "Analysis" (navTree section label).
+        // It navigates to section.landing = "/app/analysis".
         const analyzeLink = page
           .locator("a")
-          .filter({ hasText: /^Analyze$/i })
+          .filter({ hasText: /^Analysis$/i })
           .first();
         await analyzeLink.waitFor({ state: "visible", timeout: 8_000 });
         await analyzeLink.click();
@@ -252,8 +253,8 @@ async function main() {
 
         const url = page.url();
         assert(
-          url.includes("/app/analyze"),
-          `Expected URL to contain "/app/analyze" after clicking Analyze nav item, got: "${url}"`,
+          url.includes("/app/analysis"),
+          `Expected URL to contain "/app/analysis" after clicking Analysis nav item, got: "${url}"`,
         );
         console.log(`       navigated to: ${url}`);
       } finally {
