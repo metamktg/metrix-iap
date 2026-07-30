@@ -743,6 +743,28 @@ create table if not exists cell_creative_overrides (
 create index if not exists cell_creative_overrides_account_idx
   on cell_creative_overrides (account_id);
 
+-- Cross-checks the two required manual CSVs against each other for the
+-- same run: the demographic export and the device/placement export are
+-- both pivot slices of the SAME underlying campaign performance, so their
+-- account-level spend/results totals for the scoped window should match.
+-- A mismatch flags a real data-integrity problem (mismatched date ranges,
+-- partial exports, wrong file uploaded) rather than silently rendering
+-- two internally-inconsistent halves of the same account.
+create table if not exists import_metric_reconciliation (
+  id uuid primary key default gen_random_uuid(),
+  manual_analysis_run_id uuid not null references manual_analysis_runs(id) on delete cascade,
+  account_id text not null references ad_accounts(id),
+  metric_key text not null check (metric_key in ('spend', 'results')),
+  demographic_total numeric,
+  placement_total numeric,
+  delta_pct numeric,
+  flagged boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists import_metric_reconciliation_run_idx
+  on import_metric_reconciliation (manual_analysis_run_id);
+
 -- ─────────────────────────────────────────────────────────────────────
 -- Row Level Security (platform integrity).
 --

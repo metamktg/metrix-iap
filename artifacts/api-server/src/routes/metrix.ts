@@ -42,6 +42,7 @@ import {
   AdminRestoreUserResponse,
   CreateManualAdAccountBody,
   CreateManualAdAccountResponse,
+  SetAccountCohortResponse,
   StageManualImportBody,
   StageManualImportResponse,
   ListManualImportsResponse,
@@ -865,6 +866,43 @@ router.post("/metrix/accounts", requireAuth, async (req, res) => {
     req.log.error({ err }, "Failed to create manual ad account");
     res.status(502).json({
       message: err instanceof Error ? err.message : "Could not create the ad account.",
+    });
+  }
+});
+
+const COHORTS = ["ecommerce", "lead_gen", "service", "app"] as const;
+
+router.patch("/metrix/accounts/:accountId/cohort", requireAuth, async (req, res) => {
+  const accountId = String(req.params["accountId"]);
+  const cohort = req.body?.["cohort"];
+  if (!COHORTS.includes(cohort)) {
+    res.status(400).json({ message: `cohort must be one of: ${COHORTS.join(", ")}.` });
+    return;
+  }
+  const user = req.authUser!;
+  if (user.role !== "admin" && !(await userHasAccountAccess(user.id, accountId))) {
+    res.status(403).json({ message: "You don't have access to this ad account." });
+    return;
+  }
+  try {
+    const supabase = getSupabase();
+    const update = await supabase
+      .from("ad_accounts")
+      .update({ cohort })
+      .eq("id", accountId)
+      .select("id");
+    if (update.error) throw new Error(update.error.message);
+    if (!update.data || update.data.length === 0) {
+      res.status(404).json({ message: "Ad account not found." });
+      return;
+    }
+    invalidateMetrixSeedCache();
+    req.log.info({ accountId, cohort }, "Ad account cohort set");
+    res.json(SetAccountCohortResponse.parse({ account_id: accountId, cohort }));
+  } catch (err) {
+    req.log.error({ err, accountId }, "Failed to set account cohort");
+    res.status(502).json({
+      message: err instanceof Error ? err.message : "Could not set the account's cohort.",
     });
   }
 });

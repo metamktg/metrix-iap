@@ -59,6 +59,44 @@ export async function destroySession(token: string): Promise<void> {
     .where(eq(userSessionsTable.tokenHash, hashToken(token)));
 }
 
+export type SessionSummary = {
+  id: number;
+  createdAt: Date;
+  expiresAt: Date;
+  isCurrent: boolean;
+};
+
+/** Lists a user's active sessions, flagging which one is the caller's own. */
+export async function listUserSessions(userId: number, currentToken: string | null): Promise<SessionSummary[]> {
+  const currentHash = currentToken ? hashToken(currentToken) : null;
+  const rows = await db
+    .select({
+      id: userSessionsTable.id,
+      tokenHash: userSessionsTable.tokenHash,
+      createdAt: userSessionsTable.createdAt,
+      expiresAt: userSessionsTable.expiresAt,
+    })
+    .from(userSessionsTable)
+    .where(eq(userSessionsTable.userId, userId));
+  return rows
+    .map((r) => ({
+      id: r.id,
+      createdAt: r.createdAt,
+      expiresAt: r.expiresAt,
+      isCurrent: currentHash !== null && r.tokenHash === currentHash,
+    }))
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+}
+
+/** Revokes one of a user's own sessions by id. Never touches another user's session. */
+export async function destroySessionById(userId: number, sessionId: number): Promise<boolean> {
+  const deleted = await db
+    .delete(userSessionsTable)
+    .where(and(eq(userSessionsTable.id, sessionId), eq(userSessionsTable.userId, userId)))
+    .returning({ id: userSessionsTable.id });
+  return deleted.length > 0;
+}
+
 /** Revoke every session for a user except the one identified by keepToken. */
 export async function destroyOtherSessions(
   userId: number,

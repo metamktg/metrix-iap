@@ -103,7 +103,7 @@ describe("scanner sanity", () => {
     expect(paths).toContain("/app/mst");
     // CrossLink template-literal targets (query stripped)
     expect(paths).toContain("/app/analysis/library");
-    expect(paths).toContain("/app/briefs/builder");
+    expect(paths).toContain("/app/creative/builder");
     // AccountContext fallback
     expect(paths).toContain("/app/account");
   });

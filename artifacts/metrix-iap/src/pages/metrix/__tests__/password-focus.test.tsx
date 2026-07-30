@@ -31,7 +31,7 @@ vi.mock("@/contexts/MetrixDataContext", () => ({
 import { AccountProvider } from "@/contexts/AccountContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DateRangeProvider } from "@/contexts/DateRangeContext";
-import { AccountSettingsView } from "../settings/AccountSettingsView";
+import { SecurityView } from "../settings/SecurityView";
 
 const SESSION_KEY = "metrix_active_account_v1";
 
@@ -44,7 +44,7 @@ function renderView() {
       <AuthProvider>
         <AccountProvider>
           <DateRangeProvider>
-            <AccountSettingsView />
+            <SecurityView />
           </DateRangeProvider>
         </AccountProvider>
       </AuthProvider>
@@ -66,7 +66,7 @@ beforeEach(() => {
   scrollSpy = vi.fn();
   Element.prototype.scrollIntoView =
     scrollSpy as unknown as typeof Element.prototype.scrollIntoView;
-  window.history.replaceState({}, "", "/app/settings/account");
+  window.history.replaceState({}, "", "/app/settings/security");
 });
 
 afterEach(() => {
@@ -75,7 +75,7 @@ afterEach(() => {
 
 describe("arriving with ?focus=password (forgot-password redirect)", () => {
   it("scrolls to and highlights the password card, then clears the param", () => {
-    window.history.replaceState({}, "", "/app/settings/account?focus=password");
+    window.history.replaceState({}, "", "/app/settings/security?focus=password");
     renderView();
 
     const card = screen.getByTestId("section-password");

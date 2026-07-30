@@ -3,6 +3,7 @@ import healthRouter from "./health";
 import metrixRouter from "./metrix";
 import metrixGenerationRouter from "./metrixGeneration";
 import metrixAnalysisRouter from "./metrixAnalysis";
+import metrixStageStatusRouter from "./metrixStageStatus";
 import authRouter from "./auth";
 import metaConnectRouter from "./metaConnect";
 
@@ -13,6 +14,7 @@ router.use(authRouter);
 router.use(metrixRouter);
 router.use(metrixGenerationRouter);
 router.use(metrixAnalysisRouter);
+router.use(metrixStageStatusRouter);
 router.use(metaConnectRouter);
 
 export default router;

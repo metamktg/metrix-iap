@@ -22,6 +22,10 @@ export const usersTable = pgTable("users", {
   // agencyAccessSafeguard.ts.
   canManageTeam: boolean("can_manage_team").notNull().default(false),
   canViewAgencyRollups: boolean("can_view_agency_rollups").notNull().default(false),
+  // Gates the Exports section (JSON/CSV handoff of analysis/strategy/
+  // briefs/reports). Off by default — a future premium entitlement, not
+  // a role: agencies could otherwise use it to bypass white-label gates.
+  canExportData: boolean("can_export_data").notNull().default(false),
   // Mirror of this user in Supabase auth.users (uuid). The official METRIX
   // schema FKs reviewer/approver/editor columns to auth.users(id), so every
   // provisioned user is mirrored there at approval time (login stays custom).

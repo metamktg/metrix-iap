@@ -1,1 +1,3 @@
-Edge Functions (validate-upload, run-pipeline, bridge-transform, resolve-creatives, export-report) — stubs pending.
+Edge Functions (validate-upload, run-pipeline, bridge-transform, resolve-creatives, export-report) — superseded, not planned.
+
+These were the original Blueprint v2.0 design. The shipped architecture (see root `replit.md` → Architecture decisions) instead runs all of this server-side in `artifacts/api-server/` (Express) using the Supabase service_role key directly — manual CSV parsing/staging, the analysis pipeline, creative resolution, and report generation all live there, not in Supabase Edge Functions. No functions are currently deployed to this project. Leaving this stub in place unless the team decides to actually move workloads to Edge Functions.

@@ -8,7 +8,7 @@ import { ModuleHeader, SectionCard, PendingState, MetricTile, fmtUSD, CrossLink 
 import { cn } from "@/lib/utils";
 import { CreditCard, Check } from "lucide-react";
 
-const SECTION = "Settings · 09";
+const SECTION = "Settings · 10";
 
 function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });

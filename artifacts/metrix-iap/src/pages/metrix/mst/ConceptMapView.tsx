@@ -23,7 +23,7 @@ import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/
 import { Network, Layers } from "lucide-react";
 import type { CellPerformanceRow } from "@/lib/data/seedTypes";
 
-const SECTION = "MST · 07";
+const SECTION = "MST · 06";
 
 interface ConceptGroup {
   name: string;

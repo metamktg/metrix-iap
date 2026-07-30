@@ -8,7 +8,6 @@ import { LoginPage } from "@/pages/auth/LoginPage";
 import { ChangePasswordPage } from "@/pages/auth/ChangePasswordPage";
 import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage";
 import { ResetPasswordPage } from "@/pages/auth/ResetPasswordPage";
-import { CreateAccountPage } from "@/pages/auth/CreateAccountPage";
 import { AdminWaitlistPage } from "@/pages/admin/AdminWaitlistPage";
 import { Loader2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
@@ -17,7 +16,6 @@ import {
   RESET_PASSWORD_PATH,
   FORGOT_PASSWORD_PATH,
   ADMIN_PATH,
-  CREATE_ACCOUNT_PATH,
 } from "@/navigation/preLoginRoutes";
 
 // Seed-hydrated Metrix pages (manager → ad-account hierarchy)
@@ -25,43 +23,51 @@ import { AccountProvider } from "@/contexts/AccountContext";
 import { DateRangeProvider } from "@/contexts/DateRangeContext";
 import { ConceptRegistryProvider } from "@/lib/concept-registry-context";
 import { Overview } from "@/pages/metrix/Overview";
-import { HomeView } from "@/pages/metrix/HomeView";
+import { OverviewLoopPage } from "@/pages/metrix/OverviewLoopPage";
+import { OverviewUpdatesView } from "@/pages/metrix/OverviewUpdatesView";
+import { ListenCommandCenter } from "@/pages/metrix/listen/ListenCommandCenter";
 import { SignalView } from "@/pages/metrix/listen/SignalView";
 import { AlertsView } from "@/pages/metrix/listen/AlertsView";
 import { RecommendationsView } from "@/pages/metrix/listen/RecommendationsView";
-import { AnalysisHub } from "@/pages/metrix/analysis/AnalysisHub";
-import { FindingsView } from "@/pages/metrix/analysis/FindingsView";
-import { AnalysisOverview } from "@/pages/metrix/analysis/AnalysisOverview";
+import { AnalysisCommandCenter } from "@/pages/metrix/analysis/AnalysisCommandCenter";
+import { AdPerformanceView } from "@/pages/metrix/analysis/AdPerformanceView";
 import { IapLibraryView } from "@/pages/metrix/analysis/IapLibraryView";
 import { AudienceView } from "@/pages/metrix/analysis/AudienceView";
 import { PlacementsView } from "@/pages/metrix/analysis/PlacementsView";
 import { BudgetView } from "@/pages/metrix/analysis/BudgetView";
-import { StrategyHub } from "@/pages/metrix/strategy/StrategyHub";
+import { AnalysisHistoryView } from "@/pages/metrix/analysis/AnalysisHistoryView";
+import { StrategyCommandCenter } from "@/pages/metrix/strategy/StrategyCommandCenter";
 import { StrategyOverview } from "@/pages/metrix/strategy/StrategyOverview";
 import { StrategyMapView } from "@/pages/metrix/strategy/StrategyMapView";
 import { AvatarsView } from "@/pages/metrix/strategy/AvatarsView";
+import { CommunicationsView } from "@/pages/metrix/strategy/CommunicationsView";
 import { HypothesisQueueView } from "@/pages/metrix/strategy/HypothesisQueueView";
-import { BriefHub } from "@/pages/metrix/briefs/BriefHub";
-import { BriefBuilderView } from "@/pages/metrix/briefs/BriefBuilderView";
-import { BriefHistoryView } from "@/pages/metrix/briefs/BriefHistoryView";
-import { ReportsHub } from "@/pages/metrix/reports/ReportsHub";
-import { NewReportView } from "@/pages/metrix/reports/NewReportView";
+import { StrategyHistoryView } from "@/pages/metrix/strategy/StrategyHistoryView";
+import { CreativeCommandCenter } from "@/pages/metrix/creative/CreativeCommandCenter";
+import { CreativeLibraryView } from "@/pages/metrix/creative/CreativeLibraryView";
+import { CreativeBriefBuilderView } from "@/pages/metrix/creative/CreativeBriefBuilderView";
+import { CreativeScanView } from "@/pages/metrix/creative/CreativeScanView";
+import { CreativeImportExportView } from "@/pages/metrix/creative/CreativeImportExportView";
+import { ReportsCommandCenter } from "@/pages/metrix/reports/ReportsCommandCenter";
+import { ReportBuilderView } from "@/pages/metrix/reports/ReportBuilderView";
 import { ReportHistoryView } from "@/pages/metrix/reports/ReportHistoryView";
-import { ExportsView } from "@/pages/metrix/reports/ExportsView";
-import { ReportSettingsView } from "@/pages/metrix/reports/ReportSettingsView";
-import { MSTHub } from "@/pages/metrix/mst/MSTHub";
-import { ConceptMapView } from "@/pages/metrix/mst/ConceptMapView";
-import { MatrixBuilderView } from "@/pages/metrix/mst/MatrixBuilderView";
-import { CreativeScanView } from "@/pages/metrix/mst/CreativeScanView";
-import { CrossmapResultsView } from "@/pages/metrix/mst/CrossmapResultsView";
+import { ExportsCommandCenter } from "@/pages/metrix/exports/ExportsCommandCenter";
+import { ExportsAnalysisView } from "@/pages/metrix/exports/ExportsAnalysisView";
+import { ExportsStrategyView } from "@/pages/metrix/exports/ExportsStrategyView";
+import { ExportsReportsView } from "@/pages/metrix/exports/ExportsReportsView";
+import { ExportsBriefView } from "@/pages/metrix/exports/ExportsBriefView";
+import { ReportConfigurationView } from "@/pages/metrix/reports/ReportConfigurationView";
+import { MstCommandCenter } from "@/pages/metrix/mst/MstCommandCenter";
+import { MstCrossMapView } from "@/pages/metrix/mst/MstCrossMapView";
+import { MstSprintsView } from "@/pages/metrix/mst/MstSprintsView";
+import { MstPerformanceView } from "@/pages/metrix/mst/MstPerformanceView";
+import { MstDirectionView } from "@/pages/metrix/mst/MstDirectionView";
 import { MetrixAgent } from "@/pages/MetrixAgent";
-import { AccountSettingsView } from "@/pages/metrix/settings/AccountSettingsView";
+import { GeneralView } from "@/pages/metrix/settings/GeneralView";
+import { SecurityView } from "@/pages/metrix/settings/SecurityView";
 import { IntegrationsView } from "@/pages/metrix/settings/IntegrationsView";
-import { TeamAccessView } from "@/pages/metrix/settings/TeamAccessView";
-import { NotificationsView } from "@/pages/metrix/settings/NotificationsView";
+import { UsersPermissionsView } from "@/pages/metrix/settings/UsersPermissionsView";
 import { BillingView } from "@/pages/metrix/settings/BillingView";
-import { ActionQueueView } from "@/pages/metrix/act/ActionQueueView";
-import { AnalysisViewProvider } from "@/contexts/AnalysisViewContext";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: Infinity, retry: false } },
@@ -78,89 +84,96 @@ function NotFound() {
   );
 }
 
-function ComingSoonStub({ label }: { label: string }) {
-  return (
-    <div className="flex-1 flex items-center justify-center py-24">
-      <div className="text-center space-y-2">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 border border-border/35 px-2 py-1 rounded inline-block mb-3">
-          Coming Soon
-        </p>
-        <h2 className="text-base font-semibold text-foreground">{label}</h2>
-        <p className="text-xs text-muted-foreground">This section is under construction.</p>
-      </div>
-    </div>
-  );
-}
-
 export function Router() {
   return (
     <Switch>
-      {/* ── Home ──────────────────────────────────────────────────────── */}
-      <Route path="/">{() => <Redirect to="/app/home" replace />}</Route>
-      <Route path="/app/home"       component={HomeView} />
+      {/* ── 01 Overview (adaptive: manager ↔ ad account) ──────────────── */}
+      <Route path="/"               component={Overview} />
       <Route path="/app/account"    component={Overview} />
-
-      {/* ── New placeholder routes ────────────────────────────────────── */}
-      <Route path="/app/analyze/findings" component={FindingsView} />
-      <Route path="/app/act/queue" component={ActionQueueView} />
-      <Route path="/app/analyze">{() => <Redirect to="/app/analyze/findings" replace />}</Route>
-      <Route path="/app/act">{() => <Redirect to="/app/act/queue" replace />}</Route>
+      <Route path="/app/overview/loop"    component={OverviewLoopPage} />
+      <Route path="/app/overview/updates" component={OverviewUpdatesView} />
 
       {/* ── 02 Listen ─────────────────────────────────────────────────── */}
+      <Route path="/app/listen"                 component={ListenCommandCenter} />
       <Route path="/app/listen/alerts"          component={AlertsView} />
       <Route path="/app/listen/signal"          component={SignalView} />
       <Route path="/app/listen/recommendations" component={RecommendationsView} />
 
       {/* ── 03 Analysis ───────────────────────────────────────────────── */}
-      <Route path="/app/analysis"         component={AnalysisHub} />
-      <Route path="/app/analysis/overview"   component={AnalysisOverview} />
+      <Route path="/app/analysis"            component={AnalysisCommandCenter} />
+      <Route path="/app/analysis/performance" component={AdPerformanceView} />
       <Route path="/app/analysis/library"    component={IapLibraryView} />
       <Route path="/app/analysis/audience"   component={AudienceView} />
       <Route path="/app/analysis/placements" component={PlacementsView} />
       <Route path="/app/analysis/budget"     component={BudgetView} />
+      <Route path="/app/analysis/history"    component={AnalysisHistoryView} />
 
       {/* ── 04 Strategy ───────────────────────────────────────────────── */}
-      <Route path="/app/strategy"            component={StrategyHub} />
-      <Route path="/app/strategy/overview"   component={StrategyOverview} />
-      <Route path="/app/strategy/map"        component={StrategyMapView} />
-      <Route path="/app/strategy/avatars"    component={AvatarsView} />
-      <Route path="/app/strategy/hypotheses" component={HypothesisQueueView} />
+      <Route path="/app/strategy"              component={StrategyCommandCenter} />
+      <Route path="/app/strategy/overview"     component={StrategyOverview} />
+      <Route path="/app/strategy/map"          component={StrategyMapView} />
+      <Route path="/app/strategy/avatars"      component={AvatarsView} />
+      <Route path="/app/strategy/communications" component={CommunicationsView} />
+      <Route path="/app/strategy/hypotheses"   component={HypothesisQueueView} />
+      <Route path="/app/strategy/history"      component={StrategyHistoryView} />
 
-      {/* ── 05 Creative Briefs ────────────────────────────────────────── */}
-      <Route path="/app/briefs"         component={BriefHub} />
-      <Route path="/app/briefs/builder" component={BriefBuilderView} />
-      <Route path="/app/briefs/history" component={BriefHistoryView} />
+      {/* ── 05 Creative ───────────────────────────────────────────────── */}
+      <Route path="/app/creative"              component={CreativeCommandCenter} />
+      <Route path="/app/creative/library"      component={CreativeLibraryView} />
+      <Route path="/app/creative/builder"      component={CreativeBriefBuilderView} />
+      <Route path="/app/creative/scan"         component={CreativeScanView} />
+      <Route path="/app/creative/import-export" component={CreativeImportExportView} />
 
       {/* ── 06 Report Builder ─────────────────────────────────────────── */}
-      <Route path="/app/reports"         component={ReportsHub} />
-      <Route path="/app/reports/new"     component={NewReportView} />
-      <Route path="/app/reports/history" component={ReportHistoryView} />
-      <Route path="/app/reports/exports" component={ExportsView} />
-      <Route path="/app/reports/settings" component={ReportSettingsView} />
+      <Route path="/app/reports"              component={ReportsCommandCenter} />
+      <Route path="/app/reports/builder"      component={ReportBuilderView} />
+      <Route path="/app/reports/configuration" component={ReportConfigurationView} />
+      <Route path="/app/reports/history"      component={ReportHistoryView} />
+      {/* ── 08 Exports ───────────────────────────────────────────────── */}
+      <Route path="/app/exports"          component={ExportsCommandCenter} />
+      <Route path="/app/exports/analysis" component={ExportsAnalysisView} />
+      <Route path="/app/exports/strategy" component={ExportsStrategyView} />
+      <Route path="/app/exports/reports"  component={ExportsReportsView} />
+      <Route path="/app/exports/brief"    component={ExportsBriefView} />
 
       {/* ── 07 MST ────────────────────────────────────────────────────── */}
-      <Route path="/app/mst"               component={MSTHub} />
-      <Route path="/app/mst/concept-map"   component={ConceptMapView} />
-      <Route path="/app/mst/matrix"        component={MatrixBuilderView} />
-      <Route path="/app/mst/creative-scan" component={CreativeScanView} />
-      <Route path="/app/mst/crossmap"      component={CrossmapResultsView} />
+      <Route path="/app/mst"                component={MstCommandCenter} />
+      <Route path="/app/mst/cross-map"     component={MstCrossMapView} />
+      <Route path="/app/mst/sprints"       component={MstSprintsView} />
+      <Route path="/app/mst/performance"   component={MstPerformanceView} />
+      <Route path="/app/mst/direction"     component={MstDirectionView} />
 
-      {/* ── 08 Metrix Agent ───────────────────────────────────────────── */}
-      <Route path="/app/agent" component={MetrixAgent} />
+      {/* ── 09 Action (coming soon) ──────────────────────────────────── */}
+      <Route path="/app/action/agent" component={MetrixAgent} />
 
-      {/* ── 09 Settings ───────────────────────────────────────────────── */}
-      <Route path="/app/settings/account"       component={AccountSettingsView} />
+      {/* ── 10 Settings ───────────────────────────────────────────────── */}
+      <Route path="/app/settings/general"       component={GeneralView} />
+      <Route path="/app/settings/users"         component={UsersPermissionsView} />
+      <Route path="/app/settings/security"      component={SecurityView} />
       <Route path="/app/settings/integrations"  component={IntegrationsView} />
-      <Route path="/app/settings/team"          component={TeamAccessView} />
-      <Route path="/app/settings/notifications" component={NotificationsView} />
       <Route path="/app/settings/billing"       component={BillingView} />
 
       {/* ── Legacy route redirects (old IA → new IA, zero dead ends) ──── */}
-      <Route path="/app/listen">{() => <Redirect to="/app/listen/alerts" replace />}</Route>
-      <Route path="/app/analysis/concept-map">{() => <Redirect to="/app/mst/concept-map" replace />}</Route>
-      <Route path="/app/strategy/brief-builder">{() => <Redirect to="/app/briefs/builder" replace />}</Route>
-      <Route path="/app/report-builder">{() => <Redirect to="/app/reports/new" replace />}</Route>
-      <Route path="/app/settings">{() => <Redirect to="/app/settings/account" replace />}</Route>
+      <Route path="/app/analysis/overview">{() => <Redirect to="/app/analysis/performance" replace />}</Route>
+      <Route path="/app/analysis/concept-map">{() => <Redirect to="/app/mst/cross-map" replace />}</Route>
+      <Route path="/app/mst/concept-map">{() => <Redirect to="/app/mst/cross-map" replace />}</Route>
+      <Route path="/app/mst/crossmap">{() => <Redirect to="/app/mst/cross-map" replace />}</Route>
+      <Route path="/app/mst/matrix">{() => <Redirect to="/app/mst/sprints" replace />}</Route>
+      <Route path="/app/strategy/brief-builder">{() => <Redirect to="/app/creative/builder" replace />}</Route>
+      <Route path="/app/briefs/builder">{() => <Redirect to="/app/creative/builder" replace />}</Route>
+      <Route path="/app/briefs/history">{() => <Redirect to="/app/creative" replace />}</Route>
+      <Route path="/app/briefs">{() => <Redirect to="/app/creative" replace />}</Route>
+      <Route path="/app/mst/creative-scan">{() => <Redirect to="/app/creative/scan" replace />}</Route>
+      <Route path="/app/report-builder">{() => <Redirect to="/app/reports/builder" replace />}</Route>
+      <Route path="/app/reports/new">{() => <Redirect to="/app/reports/builder" replace />}</Route>
+      <Route path="/app/reports/settings">{() => <Redirect to="/app/reports/configuration" replace />}</Route>
+      <Route path="/app/reports/exports">{() => <Redirect to="/app/exports/reports" replace />}</Route>
+      <Route path="/app/agent">{() => <Redirect to="/app/action/agent" replace />}</Route>
+      <Route path="/app/action">{() => <Redirect to="/app/action/agent" replace />}</Route>
+      <Route path="/app/settings">{() => <Redirect to="/app/settings/general" replace />}</Route>
+      <Route path="/app/settings/account">{() => <Redirect to="/app/settings/general" replace />}</Route>
+      <Route path="/app/settings/team">{() => <Redirect to="/app/settings/users" replace />}</Route>
+      <Route path="/app/settings/notifications">{() => <Redirect to="/app/settings/general" replace />}</Route>
 
       {/* ── 404 ───────────────────────────────────────────────────────── */}
       <Route component={NotFound} />
@@ -180,12 +193,6 @@ export function AuthGate() {
   // The admin console has its own password gate — independent of user auth.
   if (location === ADMIN_PATH) {
     return <AdminWaitlistPage />;
-  }
-
-  // Account creation — open to logged-out visitors; redirect in if already signed in.
-  if (location === CREATE_ACCOUNT_PATH) {
-    if (!isLoading && user) return <Redirect to="/" replace />;
-    return <CreateAccountPage onBack={() => navigate("/", { replace: true })} />;
   }
 
   if (isLoading) {
@@ -210,7 +217,7 @@ export function AuthGate() {
   // ?focus=password param (the app's focus deep-link convention) tells that
   // page to scroll to / highlight the password card.
   if (location === FORGOT_PASSWORD_PATH) {
-    return <Redirect to="/app/settings/account?focus=password" replace />;
+    return <Redirect to="/app/settings/security?focus=password" replace />;
   }
 
   return (
@@ -218,13 +225,11 @@ export function AuthGate() {
       <ConceptRegistryProvider>
         <AccountProvider>
           <DateRangeProvider>
-            <AnalysisViewProvider>
-              <TaskTrayProvider>
-                <AppShell>
-                  <Router />
-                </AppShell>
-              </TaskTrayProvider>
-            </AnalysisViewProvider>
+            <TaskTrayProvider>
+              <AppShell>
+                <Router />
+              </AppShell>
+            </TaskTrayProvider>
           </DateRangeProvider>
         </AccountProvider>
       </ConceptRegistryProvider>
