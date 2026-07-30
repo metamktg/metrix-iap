@@ -130,7 +130,7 @@ beforeAll(async () => {
   });
 // beforeAll timeout raised to 30 s: getMetrixSeedFromSupabase() can exceed
 // the default 10 s hookTimeout when Supabase is cold.
-}, 30_000);
+}, 120_000);
 
 afterAll(async () => {
   await db

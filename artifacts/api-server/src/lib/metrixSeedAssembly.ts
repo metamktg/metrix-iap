@@ -1037,15 +1037,27 @@ export async function assembleMetrixSeed(): Promise<Row> {
   // Blended per account so the same account-level totals override used in
   // buildAccountObject applies here too — manager totals always equal the
   // sum of the per-account totals shown in the app.
+  //
+  // CTR blending: an account whose link_clicks > impressions is a conversion-
+  // export account — its CTR is meaningless (null at the per-account level).
+  // Including its clicks in the manager numerator while only delivery accounts
+  // contribute impressions to the denominator produces a nonsensical blended
+  // rate (e.g. 15.8 % when one account has 0 delivery impressions at all).
+  // ctrImpressions / ctrLinkClicks accumulate only delivery-basis accounts so
+  // the blended CTR remains semantically valid. totalLinkClicks still sums all
+  // accounts for the raw bottom_line_totals.link_clicks field.
   const byEvent: Record<string, Row> = {};
   let totalSpend = 0;
   let totalImpressions = 0;
   let totalLinkClicks = 0;
+  let ctrImpressions = 0;
+  let ctrLinkClicks = 0;
   for (const account of adAccounts) {
     const accountId = String(account["id"]);
     const local: Record<string, Row> = {};
     let rowSpend = 0;
     let rowImpressions = 0;
+    let rowLinkClicks = 0;
     for (const r of tables.adPerformance.get(accountId) ?? []) {
       const event = r["result_type"] as string;
       local[event] ??= zeroEventTotals();
@@ -1057,7 +1069,7 @@ export async function assembleMetrixSeed(): Promise<Row> {
       local[event]["link_clicks"] += Number(r["link_clicks"] ?? 0);
       rowSpend += Number(r["spend"] ?? 0);
       rowImpressions += Number(r["impressions"] ?? 0);
-      totalLinkClicks += Number(r["link_clicks"] ?? 0);
+      rowLinkClicks += Number(r["link_clicks"] ?? 0);
     }
     const modules = modulesFor(accountModules, accountId);
     const accountTotals = ((modules.get("iap_metadata") ?? {}) as Row)["account_totals"] as
@@ -1072,21 +1084,33 @@ export async function assembleMetrixSeed(): Promise<Row> {
       }
     }
     // Same ceiling guard as buildAccountObject — override only when larger than DB sum.
-    totalSpend += accountTotals?.["spend"] != null
+    const effectiveAccountSpend = accountTotals?.["spend"] != null
       ? Math.max(rowSpend, Number(accountTotals["spend"]))
       : rowSpend;
-    totalImpressions += accountTotals?.["impressions"] != null
+    const effectiveAccountImpressions = accountTotals?.["impressions"] != null
       ? Math.max(rowImpressions, Number(accountTotals["impressions"]))
       : rowImpressions;
+    totalSpend += effectiveAccountSpend;
+    totalImpressions += effectiveAccountImpressions;
+    totalLinkClicks += rowLinkClicks;
+    // Only include in blended CTR if this account is delivery-basis.
+    // link_clicks > impressions signals a conversion export — mixing its
+    // clicks into the CTR numerator against delivery-only impressions is
+    // semantically wrong, so skip it entirely from the CTR fraction.
+    if (rowLinkClicks <= effectiveAccountImpressions) {
+      ctrImpressions += effectiveAccountImpressions;
+      ctrLinkClicks += rowLinkClicks;
+    }
   }
   for (const event of Object.keys(byEvent)) {
     const t = byEvent[event]!;
     t["spend"] = round(t["spend"]);
   }
-  // Same guard as per-account: clicks > impressions → conversion-export data, CTR meaningless.
+  // Blended CTR uses only delivery-basis accounts (ctrImpressions / ctrLinkClicks).
+  // If no accounts have valid delivery data, emit null so the UI renders "—".
   const linkCtrPct =
-    totalImpressions > 0 && totalLinkClicks <= totalImpressions
-      ? round((totalLinkClicks / totalImpressions) * 100, 4)
+    ctrImpressions > 0
+      ? round((ctrLinkClicks / ctrImpressions) * 100, 4)
       : null;
 
   const managerCards = signalCards.filter((c) => c["surface"] === "manager_overview").map(cardShape);
@@ -1178,12 +1202,24 @@ export function composeSeedForUser(
   let totalSpend = 0;
   let totalImpressions = 0;
   let totalLinkClicks = 0;
+  // Only delivery-basis accounts contribute to the blended CTR (same logic as
+  // assembleMetrixSeed). overall_link_ctr_pct is null for conversion-export
+  // accounts — skip their clicks/impressions from the CTR fraction.
+  let ctrImpressions = 0;
+  let ctrLinkClicks = 0;
   for (const account of accounts) {
     const summary = (account["iap"] as Row | null)?.["campaign_summary"] as Row | undefined;
     if (!summary) continue;
+    const accountImpressions = Number(summary["total_impressions"] ?? 0);
+    const accountLinkClicks = Number(summary["total_link_clicks"] ?? 0);
     totalSpend += Number(summary["total_spend_usd"] ?? 0);
-    totalImpressions += Number(summary["total_impressions"] ?? 0);
-    totalLinkClicks += Number(summary["total_link_clicks"] ?? 0);
+    totalImpressions += accountImpressions;
+    totalLinkClicks += accountLinkClicks;
+    // overall_link_ctr_pct is non-null only for delivery-basis accounts.
+    if (summary["overall_link_ctr_pct"] != null) {
+      ctrImpressions += accountImpressions;
+      ctrLinkClicks += accountLinkClicks;
+    }
     const accountByEvent = (summary["bottom_line_totals"] ?? {}) as Record<string, Row>;
     for (const [event, totals] of Object.entries(accountByEvent)) {
       const target = (byEvent[event] ??= {
@@ -1214,10 +1250,9 @@ export function composeSeedForUser(
         spend_usd: round(totalSpend),
         impressions: totalImpressions,
         link_clicks: totalLinkClicks,
-        link_ctr_pct:
-          totalImpressions > 0 && totalLinkClicks <= totalImpressions
-            ? round((totalLinkClicks / totalImpressions) * 100, 4)
-            : null,
+        link_ctr_pct: ctrImpressions > 0
+          ? round((ctrLinkClicks / ctrImpressions) * 100, 4)
+          : null,
         result_totals_by_event: byEvent,
       },
       recommendation_cards: managerCards,

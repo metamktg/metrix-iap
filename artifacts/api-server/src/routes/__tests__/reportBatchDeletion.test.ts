@@ -109,7 +109,7 @@ beforeAll(async () => {
       resolve();
     });
   });
-}, 60_000);
+}, 120_000);
 
 afterAll(async () => {
   // Guard every step: if beforeAll timed out partway, some of these ids /

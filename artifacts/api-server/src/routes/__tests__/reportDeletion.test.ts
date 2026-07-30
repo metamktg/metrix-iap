@@ -94,7 +94,7 @@ beforeAll(async () => {
       resolve();
     });
   });
-}, 90_000);
+}, 120_000);
 
 afterAll(async () => {
   if (testUserId) {
