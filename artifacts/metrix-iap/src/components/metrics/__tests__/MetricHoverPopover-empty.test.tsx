@@ -1,6 +1,8 @@
-// Unit tests: MetricHoverPopover renders without errors when cellRows is empty.
-// Covers the concepts.length === 0 branch in MetricHoverPopover.tsx for each
-// supported metric type: spend, link_ctr, cpa_blended, and a result-event metric.
+// Unit tests: MetricHoverPopover renders without errors when cellRows is empty
+// or contains exactly one concept.
+// Covers the concepts.length === 0 branch and the concepts.length === 1 branch
+// in MetricHoverPopover.tsx for each supported metric type: spend, link_ctr,
+// cpa_blended, and a result-event metric.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
@@ -133,5 +135,116 @@ describe("MetricHoverPopover — empty cellRows fallback", () => {
     );
     expect(screen.getByText("Total spend")).toBeTruthy();
     expect(screen.getByText("$1,234")).toBeTruthy();
+  });
+});
+
+// ── Single-concept branch ─────────────────────────────────────────────────────
+
+/** One CellPerformanceRow → topConceptsForMetric returns exactly 1 entry. */
+function makeOneRow(overrides: Partial<import("@/lib/data/seedTypes").CellPerformanceRow> = {}): import("@/lib/data/seedTypes").CellPerformanceRow {
+  return {
+    cell_id: "cell-001",
+    "Result type": "Purchase",
+    "Amount spent (USD)": 500,
+    Reach: 10000,
+    Impressions: 12000,
+    Results: 10,
+    "Clicks (all)": 300,
+    "Link clicks": 250,
+    CPA_result: 50,
+    CTR_link_pct: 2.08,
+    Result_per_link_click_pct: 4,
+    book2_concept_name: "Alpha Concept",
+    ...overrides,
+  };
+}
+
+function renderPopoverWithOneRow(metric: MetricDef) {
+  return render(
+    <MetricHoverPopover
+      metric={metric}
+      cellRows={[makeOneRow()]}
+      onDiagnose={vi.fn()}
+    >
+      <button type="button">Metric tile</button>
+    </MetricHoverPopover>
+  );
+}
+
+describe("MetricHoverPopover — single-concept fallback", () => {
+  beforeEach(() => cleanup());
+
+  it("shows the single-concept message for spend metric", () => {
+    renderPopoverWithOneRow(makeMetric({ id: "spend", label: "Total spend", formatted: "$500" }));
+    expect(screen.getByText(/only one concept found/i)).toBeTruthy();
+  });
+
+  it("does not render the chart when only one concept matches", () => {
+    renderPopoverWithOneRow(makeMetric({ id: "spend", label: "Total spend", formatted: "$500" }));
+    expect(screen.queryByTestId("chart-container")).toBeNull();
+  });
+
+  it("shows the single-concept message for link_ctr metric", () => {
+    renderPopoverWithOneRow(makeMetric({ id: "link_ctr", label: "Link CTR", formatted: "2.08%", value: 2.08 }));
+    expect(screen.getByText(/only one concept found/i)).toBeTruthy();
+  });
+
+  it("does not render the chart for link_ctr with a single concept", () => {
+    renderPopoverWithOneRow(makeMetric({ id: "link_ctr", label: "Link CTR", formatted: "2.08%", value: 2.08 }));
+    expect(screen.queryByTestId("chart-container")).toBeNull();
+  });
+
+  it("shows the single-concept message for cpa_blended metric", () => {
+    renderPopoverWithOneRow(makeMetric({ id: "cpa_blended", label: "CPA (blended)", formatted: "$50", value: 50 }));
+    expect(screen.getByText(/only one concept found/i)).toBeTruthy();
+  });
+
+  it("does not render the chart for cpa_blended with a single concept", () => {
+    renderPopoverWithOneRow(makeMetric({ id: "cpa_blended", label: "CPA (blended)", formatted: "$50", value: 50 }));
+    expect(screen.queryByTestId("chart-container")).toBeNull();
+  });
+
+  it("shows the single-concept message for a result-event metric when one row matches the event key", () => {
+    render(
+      <MetricHoverPopover
+        metric={makeMetric({
+          id: "result:Purchase",
+          label: "Purchases",
+          formatted: "10",
+          isResultEvent: true,
+          eventKey: "Purchase",
+        })}
+        cellRows={[makeOneRow({ "Result type": "Purchase" })]}
+        onDiagnose={vi.fn()}
+      >
+        <button type="button">Metric tile</button>
+      </MetricHoverPopover>
+    );
+    expect(screen.getByText(/only one concept found/i)).toBeTruthy();
+  });
+
+  it("does not render the chart for a result-event metric with one matching row", () => {
+    render(
+      <MetricHoverPopover
+        metric={makeMetric({
+          id: "result:Purchase",
+          label: "Purchases",
+          formatted: "10",
+          isResultEvent: true,
+          eventKey: "Purchase",
+        })}
+        cellRows={[makeOneRow({ "Result type": "Purchase" })]}
+        onDiagnose={vi.fn()}
+      >
+        <button type="button">Metric tile</button>
+      </MetricHoverPopover>
+    );
+    expect(screen.queryByTestId("chart-container")).toBeNull();
+  });
+
+  it("still renders the metric label header when only one concept matches", () => {
+    renderPopoverWithOneRow(makeMetric({ id: "spend", label: "Total spend", formatted: "$500" }));
+    expect(screen.getByText("Total spend")).toBeTruthy();
+    expect(screen.getByText("$500")).toBeTruthy();
   });
 });
