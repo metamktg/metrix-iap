@@ -143,7 +143,7 @@ export function CreativeBriefBuilderView() {
                 <ul className="space-y-1.5">
                   {checklist.map((item) => (
                     <li key={item} className="flex items-start gap-2 text-[12px] text-foreground/80">
-                      <ClipboardCheck className="w-3.5 h-3.5 text-interactive/60 shrink-0 mt-0.5" />
+                      <ClipboardCheck className="w-3.5 h-3.5 text-interactive shrink-0 mt-0.5" />
                       {item}
                     </li>
                   ))}
@@ -153,7 +153,7 @@ export function CreativeBriefBuilderView() {
               {pillar && (
                 <SectionCard title="Source pillar" desc={pillar.plain_descriptor}>
                   <div className="flex items-center gap-2 mb-2">
-                    <Sparkles className="w-3.5 h-3.5 text-interactive/60" />
+                    <Sparkles className="w-3.5 h-3.5 text-interactive" />
                     <span className="text-[12px] font-medium text-foreground">{pillar.label}</span>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">

@@ -245,27 +245,65 @@ function buildSectionBlocks(sectionTitle: string, seed: MetrixSeed, adAccountId:
 
   if (t.includes("variable performance")) {
     if (!analysis?.v3_variable_performance?.length) return [];
-    return [variableRows(analysis.v3_variable_performance)];
+    const blocks: ReportBlock[] = [];
+
+    // CPA by variable family — aggregate spend and results per family, then derive CPA.
+    const familyMap = new Map<string, { spend: number; results: number }>();
+    for (const r of analysis.v3_variable_performance) {
+      const entry = familyMap.get(r.variable_family) ?? { spend: 0, results: 0 };
+      entry.spend += r["Amount spent (USD)"] ?? 0;
+      entry.results += r.Results ?? 0;
+      familyMap.set(r.variable_family, entry);
+    }
+    const familyCpa = [...familyMap.entries()]
+      .map(([family, { spend, results }]) => ({
+        label: family,
+        value: results > 0 ? spend / results : 0,
+      }))
+      .filter((d) => d.value > 0)
+      .sort((a, b) => a.value - b.value) // ascending: cheapest CPA first
+      .slice(0, 8);
+    if (familyCpa.length > 1) {
+      blocks.push({ kind: "chart", chartType: "bar", title: "CPA by variable family", unit: "usd", data: familyCpa });
+    }
+
+    blocks.push(variableRows(analysis.v3_variable_performance));
+    return blocks;
   }
 
   if (t.includes("demographic")) {
     const rows = analysis?.demographic_registration_signal ?? [];
     if (rows.length === 0) return [];
     const sorted = [...rows].sort((a, b) => b["Amount spent (USD)"] - a["Amount spent (USD)"]).slice(0, 12);
-    return [
-      {
-        kind: "table",
-        headers: ["Age", "Gender", "Spend", "Results", "CPA", "Link CTR"],
-        rows: sorted.map((r) => [
-          r.Age,
-          r.Gender,
-          usd(r["Amount spent (USD)"]),
-          num(r.Results),
-          r.CPA_result == null ? "—" : usd(r.CPA_result),
-          pct(r.CTR_link_pct),
-        ]),
-      },
-    ];
+    const blocks: ReportBlock[] = [];
+
+    // Spend by age segment — aggregate spend across genders per age band.
+    const ageMap = new Map<string, number>();
+    for (const r of rows) {
+      ageMap.set(r.Age, (ageMap.get(r.Age) ?? 0) + (r["Amount spent (USD)"] ?? 0));
+    }
+    const spendByAge = [...ageMap.entries()]
+      .map(([label, value]) => ({ label, value }))
+      .filter((d) => d.value > 0)
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 8);
+    if (spendByAge.length > 1) {
+      blocks.push({ kind: "chart", chartType: "bar", title: "Spend by age segment", unit: "usd", data: spendByAge });
+    }
+
+    blocks.push({
+      kind: "table",
+      headers: ["Age", "Gender", "Spend", "Results", "CPA", "Link CTR"],
+      rows: sorted.map((r) => [
+        r.Age,
+        r.Gender,
+        usd(r["Amount spent (USD)"]),
+        num(r.Results),
+        r.CPA_result == null ? "—" : usd(r.CPA_result),
+        pct(r.CTR_link_pct),
+      ]),
+    });
+    return blocks;
   }
 
   if (t.includes("placement")) {
