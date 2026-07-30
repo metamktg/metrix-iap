@@ -152,12 +152,19 @@ async function runSmoke() {
         String(err?.message ?? err),
       );
     });
+
+    await assertCreateAccountFormVisible(PREVIEW_PORT).catch((err) => {
+      fail(
+        "Create Account page render check failed on production build",
+        String(err?.message ?? err),
+      );
+    });
   } finally {
     previewServer?.kill();
   }
 
   console.log(
-    `\nPASS  Metrix IAP production build succeeded — login form visible in preview`,
+    `\nPASS  Metrix IAP production build succeeded — login form and create-account form visible in preview`,
   );
   process.exit(0);
 }
@@ -211,6 +218,55 @@ function startPreviewServer(
 }
 
 // ── Playwright login form assertion ──────────────────────────────────────────
+
+// ── Playwright create-account form assertion ──────────────────────────────────
+
+async function assertCreateAccountFormVisible(port: string): Promise<void> {
+  const { chromium } = await import("playwright-core");
+
+  const executablePath = process.env["REPLIT_PLAYWRIGHT_CHROMIUM_EXECUTABLE"];
+  const browser = await chromium.launch({
+    executablePath,
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  });
+
+  try {
+    const ctx = await browser.newContext({
+      viewport: { width: 1280, height: 800 },
+    });
+
+    // Return 401 so the app stays in the pre-login shell (same as login check).
+    await ctx.route("**/api/metrix/auth/me", (route) => {
+      route.fulfill({
+        status: 401,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Unauthorized" }),
+      });
+    });
+
+    const page = await ctx.newPage();
+
+    console.log(
+      `Navigating to http://localhost:${port}/create-account to check create-account form...`,
+    );
+    await page.goto(`http://localhost:${port}/create-account`, {
+      waitUntil: "domcontentloaded",
+    });
+
+    await page
+      .locator('[data-testid="form-create-account"]')
+      .waitFor({ state: "visible", timeout: 20_000 });
+
+    console.log(
+      "  ✓  [data-testid=\"form-create-account\"] is visible in production build",
+    );
+
+    await ctx.close();
+  } finally {
+    await browser.close();
+  }
+}
 
 async function assertLoginFormVisible(port: string): Promise<void> {
   // playwright-core is available in the Replit environment via the env var.
