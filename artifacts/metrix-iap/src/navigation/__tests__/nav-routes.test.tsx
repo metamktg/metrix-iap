@@ -43,6 +43,7 @@ const navPaths: { label: string; to: string }[] = navTree.flatMap((section) => [
 
 // Legacy IA paths and the routes they must redirect to.
 const legacyRedirects: [string, string][] = [
+  // /app/analysis/overview now renders AnalysisOverview directly (not a redirect).
   ["/app/analysis/concept-map", "/app/mst/cross-map"],
   ["/app/mst/concept-map", "/app/mst/cross-map"],
   ["/app/mst/crossmap", "/app/mst/cross-map"],
@@ -107,7 +108,7 @@ describe("a signed-in user visiting /forgot-password is redirected", () => {
 
 describe("unknown paths still 404", () => {
   it("a bogus path renders the NotFound page", () => {
-    const { container } = renderAt("/app/definitely-not-a-real-page");
+    const { container } = renderAt("/this-is-definitely-not-a-real-route");
     expect(container.textContent).toContain(NOT_FOUND_TEXT);
   });
 });

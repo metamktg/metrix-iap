@@ -20,6 +20,7 @@
     "smoke:metrix-iap-hover-popover": "tsx ./src/smoke-metrix-iap-hover-popover.ts",
     "smoke:metrix-iap-home-screen": "tsx ./src/smoke-metrix-iap-home-screen.ts",
     "smoke:forgot-password": "tsx ./src/smoke-forgot-password.ts",
+    "smoke:metrix-iap-slider-persistence": "tsx ./src/smoke-metrix-iap-slider-persistence.ts",
     "import:metrix": "tsx ./src/metrix-supabase/import.ts",
     "enforce:importer-rls": "tsx ./src/enforce-importer-rls.ts",
     "create:user": "tsx ./src/create-user.ts",

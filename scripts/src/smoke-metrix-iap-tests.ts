@@ -103,6 +103,17 @@ async function main() {
     fail("Forgot-password e2e failed", String(err?.message ?? err));
   });
 
+  // ── Step 5: Playwright slider persistence e2e ────────────────────────────
+  console.log("\nRunning slider persistence e2e...");
+  await spawnScript("smoke:metrix-iap-slider-persistence", [
+    "--filter",
+    "@workspace/scripts",
+    "run",
+    "smoke:metrix-iap-slider-persistence",
+  ]).catch((err) => {
+    fail("Slider persistence e2e failed", String(err?.message ?? err));
+  });
+
   console.log("\nPASS  All Metrix IAP smoke checks passed");
   process.exit(0);
 }
