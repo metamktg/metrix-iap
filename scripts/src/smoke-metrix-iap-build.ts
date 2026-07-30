@@ -159,12 +159,26 @@ async function runSmoke() {
         String(err?.message ?? err),
       );
     });
+
+    await assertForgotPasswordFormVisible(PREVIEW_PORT).catch((err) => {
+      fail(
+        "Forgot Password page render check failed on production build",
+        String(err?.message ?? err),
+      );
+    });
+
+    await assertResetPasswordFormVisible(PREVIEW_PORT).catch((err) => {
+      fail(
+        "Reset Password page render check failed on production build",
+        String(err?.message ?? err),
+      );
+    });
   } finally {
     previewServer?.kill();
   }
 
   console.log(
-    `\nPASS  Metrix IAP production build succeeded — login form and create-account form visible in preview`,
+    `\nPASS  Metrix IAP production build succeeded — login, create-account, forgot-password, and reset-password forms visible in preview`,
   );
   process.exit(0);
 }
@@ -260,6 +274,114 @@ async function assertCreateAccountFormVisible(port: string): Promise<void> {
 
     console.log(
       "  ✓  [data-testid=\"form-create-account\"] is visible in production build",
+    );
+
+    await ctx.close();
+  } finally {
+    await browser.close();
+  }
+}
+
+async function assertForgotPasswordFormVisible(port: string): Promise<void> {
+  const { chromium } = await import("playwright-core");
+
+  const executablePath = process.env["REPLIT_PLAYWRIGHT_CHROMIUM_EXECUTABLE"];
+  const browser = await chromium.launch({
+    executablePath,
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  });
+
+  try {
+    const ctx = await browser.newContext({
+      viewport: { width: 1280, height: 800 },
+    });
+
+    // Return 401 so the app stays in the pre-login shell.
+    await ctx.route("**/api/metrix/auth/me", (route) => {
+      route.fulfill({
+        status: 401,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Unauthorized" }),
+      });
+    });
+
+    const page = await ctx.newPage();
+
+    console.log(
+      `Navigating to http://localhost:${port}/forgot-password to check forgot-password form...`,
+    );
+    await page.goto(`http://localhost:${port}/forgot-password`, {
+      waitUntil: "domcontentloaded",
+    });
+
+    await page
+      .locator('[data-testid="form-forgot-password"]')
+      .waitFor({ state: "visible", timeout: 20_000 });
+
+    console.log(
+      "  ✓  [data-testid=\"form-forgot-password\"] is visible in production build",
+    );
+
+    await ctx.close();
+  } finally {
+    await browser.close();
+  }
+}
+
+async function assertResetPasswordFormVisible(port: string): Promise<void> {
+  const { chromium } = await import("playwright-core");
+
+  const executablePath = process.env["REPLIT_PLAYWRIGHT_CHROMIUM_EXECUTABLE"];
+  const browser = await chromium.launch({
+    executablePath,
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  });
+
+  try {
+    const ctx = await browser.newContext({
+      viewport: { width: 1280, height: 800 },
+    });
+
+    // The reset-password page is shown regardless of auth state. Intercept
+    // auth/me so the app settles immediately without a real API server.
+    await ctx.route("**/api/metrix/auth/me", (route) => {
+      route.fulfill({
+        status: 401,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Unauthorized" }),
+      });
+    });
+
+    // Intercept the reset-password API call so the form stays in "idle" state
+    // rather than firing a real network request with the fake token.
+    await ctx.route("**/api/metrix/auth/reset-password", (route) => {
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true }),
+      });
+    });
+
+    const page = await ctx.newPage();
+
+    // Pass a fake token so the page renders the form rather than the
+    // "invalid or expired link" message.
+    console.log(
+      `Navigating to http://localhost:${port}/reset-password?token=smoke-test-token to check reset-password form...`,
+    );
+    await page.goto(
+      `http://localhost:${port}/reset-password?token=smoke-test-token`,
+      { waitUntil: "domcontentloaded" },
+    );
+
+    await page
+      .locator('[data-testid="form-reset-password"]')
+      .waitFor({ state: "visible", timeout: 20_000 });
+
+    console.log(
+      "  ✓  [data-testid=\"form-reset-password\"] is visible in production build",
     );
 
     await ctx.close();

@@ -185,15 +185,13 @@ describe("manual-imports mapping_summary round-trip", () => {
     let postMappingSummary: MappingEntry[];
 
     it("POST stores mapping_summary including the inferred 'Reach' entry", async () => {
-      const csv = buildCsvWithInferredReach(DEVICE_PLACEMENT_BREAKDOWN_COLUMNS);
-      const res = await fetch(getImportsUrl());
+      const csv = buildCsvWithInferredReach(DEMOGRAPHIC_BREAKDOWN_COLUMNS);
+      const res = await postCsv("performance_demo_csv", csv);
       expect(res.status).toBe(200);
 
       const body = (await res.json()) as {
-        imports: Array<{
-          id: string;
-          mapping_summary?: MappingEntry[] | null;
-        }>;
+        import_id: string;
+        mapping_summary: MappingEntry[];
       };
 
       expect(body.import_id).toBeDefined();
@@ -201,18 +199,18 @@ describe("manual-imports mapping_summary round-trip", () => {
       stagedImportIds.push(importId);
 
       expect(Array.isArray(body.mapping_summary)).toBe(true);
-      postMappingSummary = body.mapping_summary!;
+      postMappingSummary = body.mapping_summary;
 
-      const reachEntry = getMappingSummary.find((e) => e.canonical === "Reach");
+      const reachEntry = postMappingSummary.find((e) => e.canonical === "Reach");
       expect(reachEntry).toBeDefined();
       expect(reachEntry!.tier).toBe("inferred");
       expect(reachEntry!.found_as).toBe("Reach impressions");
     }, 30_000);
-  });
 
-  describe("auth gates", () => {
-    it("POST 401s when unauthenticated", async () => {
-      const res = await fetch(getImportsUrl());
+    it("GET returns mapping_summary after round-trip through Supabase", async () => {
+      const res = await fetch(getImportsUrl(), {
+        headers: { Cookie: `${SESSION_COOKIE}=${adminToken}` },
+      });
       expect(res.status).toBe(200);
 
       const body = (await res.json()) as {
@@ -250,14 +248,12 @@ describe("manual-imports mapping_summary round-trip", () => {
 
     it("POST stores mapping_summary including the inferred 'Reach' entry", async () => {
       const csv = buildCsvWithInferredReach(DEVICE_PLACEMENT_BREAKDOWN_COLUMNS);
-      const res = await fetch(getImportsUrl());
+      const res = await postCsv("performance_placement_csv", csv);
       expect(res.status).toBe(200);
 
       const body = (await res.json()) as {
-        imports: Array<{
-          id: string;
-          mapping_summary?: MappingEntry[] | null;
-        }>;
+        import_id: string;
+        mapping_summary: MappingEntry[];
       };
 
       expect(body.import_id).toBeDefined();
@@ -265,18 +261,18 @@ describe("manual-imports mapping_summary round-trip", () => {
       stagedImportIds.push(importId);
 
       expect(Array.isArray(body.mapping_summary)).toBe(true);
-      postMappingSummary = body.mapping_summary!;
+      postMappingSummary = body.mapping_summary;
 
-      const reachEntry = getMappingSummary.find((e) => e.canonical === "Reach");
+      const reachEntry = postMappingSummary.find((e) => e.canonical === "Reach");
       expect(reachEntry).toBeDefined();
       expect(reachEntry!.tier).toBe("inferred");
       expect(reachEntry!.found_as).toBe("Reach impressions");
     }, 30_000);
-  });
 
-  describe("auth gates", () => {
-    it("POST 401s when unauthenticated", async () => {
-      const res = await fetch(getImportsUrl());
+    it("GET returns mapping_summary after round-trip through Supabase", async () => {
+      const res = await fetch(getImportsUrl(), {
+        headers: { Cookie: `${SESSION_COOKIE}=${adminToken}` },
+      });
       expect(res.status).toBe(200);
 
       const body = (await res.json()) as {
@@ -310,7 +306,16 @@ describe("manual-imports mapping_summary round-trip", () => {
 
   describe("auth gates", () => {
     it("POST 401s when unauthenticated", async () => {
-      const res = await fetch(getImportsUrl());
+      const csv = buildCsvWithInferredReach(DEMOGRAPHIC_BREAKDOWN_COLUMNS);
+      const res = await fetch(postImportUrl(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: "performance_demo_csv",
+          filename: "unauth-test.csv",
+          content_base64: Buffer.from(csv, "utf8").toString("base64"),
+        }),
+      });
       expect(res.status).toBe(401);
     });
 

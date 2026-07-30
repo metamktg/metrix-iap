@@ -176,24 +176,27 @@ function authHeaders(): { Cookie: string; "Content-Type": string } {
 
 describe("POST /metrix/accounts/:accountId/manual-imports — CSV validation", () => {
   it("401s when unauthenticated", async () => {
+    const csvText = buildCsv(DEMOGRAPHIC_BREAKDOWN_COLUMNS);
     const body = JSON.stringify({
       kind: "performance_demo_csv",
-      filename: "missing_adname.csv",
+      filename: "demo.csv",
       content_base64: toBase64(csvText),
     });
+    // No Cookie header — should be rejected by requireAuth.
     const res = await fetch(stageUrl(), {
       method: "POST",
-      headers: authHeaders(),
+      headers: { "Content-Type": "application/json" },
       body,
     });
     expect(res.status).toBe(401);
   });
 
   it("stages a valid demographic CSV and returns status:staged", async () => {
-    const csvText = buildCsv(DEMOGRAPHIC_BREAKDOWN_COLUMNS, { dropBreakdown: "Ad name" });
+    // Full valid demographic CSV — all required columns present, one data row.
+    const csvText = buildCsv(DEMOGRAPHIC_BREAKDOWN_COLUMNS);
     const body = JSON.stringify({
       kind: "performance_demo_csv",
-      filename: "missing_adname.csv",
+      filename: "demo.csv",
       content_base64: toBase64(csvText),
     });
     const res = await fetch(stageUrl(), {
@@ -201,7 +204,7 @@ describe("POST /metrix/accounts/:accountId/manual-imports — CSV validation", (
       headers: authHeaders(),
       body,
     });
-    expect(res.status).toBe(422);
+    expect(res.status).toBe(200);
     const json = (await res.json()) as Record<string, unknown>;
     expect(json["status"]).toBe("staged");
     expect(typeof json["import_id"]).toBe("string");
@@ -212,10 +215,10 @@ describe("POST /metrix/accounts/:accountId/manual-imports — CSV validation", (
     // Build a device/placement CSV — its signature columns ("Placement",
     // "Impression device") should trigger detectCsvClassMismatch when parsed
     // under the "demographic" class.
-    const csvText = buildCsv(DEMOGRAPHIC_BREAKDOWN_COLUMNS, { dropBreakdown: "Ad name" });
+    const csvText = buildCsv(DEVICE_PLACEMENT_BREAKDOWN_COLUMNS);
     const body = JSON.stringify({
       kind: "performance_demo_csv",
-      filename: "missing_adname.csv",
+      filename: "placement.csv",
       content_base64: toBase64(csvText),
     });
     const res = await fetch(stageUrl(), {
@@ -231,10 +234,13 @@ describe("POST /metrix/accounts/:accountId/manual-imports — CSV validation", (
   });
 
   it("stages a delivery CSV with all-zero impressions and returns upload_warnings with the conversion-export message", async () => {
-    const csvText = buildCsv(DEMOGRAPHIC_BREAKDOWN_COLUMNS, { dropBreakdown: "Ad name" });
+    // A demographic CSV where every row has Impressions=0 signals a Meta
+    // conversion-event export. The route should still stage the file but
+    // include an upload_warnings entry explaining the anomaly.
+    const csvText = buildCsv(DEMOGRAPHIC_BREAKDOWN_COLUMNS, { zeroImpressions: true });
     const body = JSON.stringify({
       kind: "performance_demo_csv",
-      filename: "missing_adname.csv",
+      filename: "conversion-export.csv",
       content_base64: toBase64(csvText),
     });
     const res = await fetch(stageUrl(), {
@@ -242,7 +248,7 @@ describe("POST /metrix/accounts/:accountId/manual-imports — CSV validation", (
       headers: authHeaders(),
       body,
     });
-    expect(res.status).toBe(422);
+    expect(res.status).toBe(200);
     const json = (await res.json()) as Record<string, unknown>;
     expect(json["status"]).toBe("staged");
     const warnings = json["upload_warnings"] as string[] | undefined;
