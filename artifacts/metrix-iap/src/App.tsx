@@ -25,10 +25,12 @@ import { AccountProvider } from "@/contexts/AccountContext";
 import { DateRangeProvider } from "@/contexts/DateRangeContext";
 import { ConceptRegistryProvider } from "@/lib/concept-registry-context";
 import { Overview } from "@/pages/metrix/Overview";
+import { HomeView } from "@/pages/metrix/HomeView";
 import { SignalView } from "@/pages/metrix/listen/SignalView";
 import { AlertsView } from "@/pages/metrix/listen/AlertsView";
 import { RecommendationsView } from "@/pages/metrix/listen/RecommendationsView";
 import { AnalysisHub } from "@/pages/metrix/analysis/AnalysisHub";
+import { FindingsView } from "@/pages/metrix/analysis/FindingsView";
 import { AnalysisOverview } from "@/pages/metrix/analysis/AnalysisOverview";
 import { IapLibraryView } from "@/pages/metrix/analysis/IapLibraryView";
 import { AudienceView } from "@/pages/metrix/analysis/AudienceView";
@@ -58,6 +60,8 @@ import { IntegrationsView } from "@/pages/metrix/settings/IntegrationsView";
 import { TeamAccessView } from "@/pages/metrix/settings/TeamAccessView";
 import { NotificationsView } from "@/pages/metrix/settings/NotificationsView";
 import { BillingView } from "@/pages/metrix/settings/BillingView";
+import { ActionQueueView } from "@/pages/metrix/act/ActionQueueView";
+import { AnalysisViewProvider } from "@/contexts/AnalysisViewContext";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: Infinity, retry: false } },
@@ -74,12 +78,33 @@ function NotFound() {
   );
 }
 
+function ComingSoonStub({ label }: { label: string }) {
+  return (
+    <div className="flex-1 flex items-center justify-center py-24">
+      <div className="text-center space-y-2">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 border border-border/35 px-2 py-1 rounded inline-block mb-3">
+          Coming Soon
+        </p>
+        <h2 className="text-base font-semibold text-foreground">{label}</h2>
+        <p className="text-xs text-muted-foreground">This section is under construction.</p>
+      </div>
+    </div>
+  );
+}
+
 export function Router() {
   return (
     <Switch>
-      {/* ── 01 Overview (adaptive: manager ↔ ad account) ──────────────── */}
-      <Route path="/"               component={Overview} />
+      {/* ── Home ──────────────────────────────────────────────────────── */}
+      <Route path="/">{() => <Redirect to="/app/home" replace />}</Route>
+      <Route path="/app/home"       component={HomeView} />
       <Route path="/app/account"    component={Overview} />
+
+      {/* ── New placeholder routes ────────────────────────────────────── */}
+      <Route path="/app/analyze/findings" component={FindingsView} />
+      <Route path="/app/act/queue" component={ActionQueueView} />
+      <Route path="/app/analyze">{() => <Redirect to="/app/analyze/findings" replace />}</Route>
+      <Route path="/app/act">{() => <Redirect to="/app/act/queue" replace />}</Route>
 
       {/* ── 02 Listen ─────────────────────────────────────────────────── */}
       <Route path="/app/listen/alerts"          component={AlertsView} />
@@ -193,11 +218,13 @@ export function AuthGate() {
       <ConceptRegistryProvider>
         <AccountProvider>
           <DateRangeProvider>
-            <TaskTrayProvider>
-              <AppShell>
-                <Router />
-              </AppShell>
-            </TaskTrayProvider>
+            <AnalysisViewProvider>
+              <TaskTrayProvider>
+                <AppShell>
+                  <Router />
+                </AppShell>
+              </TaskTrayProvider>
+            </AnalysisViewProvider>
           </DateRangeProvider>
         </AccountProvider>
       </ConceptRegistryProvider>
