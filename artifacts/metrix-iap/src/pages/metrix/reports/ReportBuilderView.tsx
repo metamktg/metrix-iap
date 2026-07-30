@@ -23,11 +23,7 @@ import { Link } from "wouter";
 
 const SECTION = "Reports · 07";
 
-export const FORMAT_LABEL: Record<string, string> = {
-  pdf: "PDF",
-  google_doc: "Google Doc",
-  html: "HTML",
-};
+import { FORMAT_LABEL } from "./reportFormatLabels";
 
 type Tab = "preview" | "branding";
 type Mode = "internal" | "client";

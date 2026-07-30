@@ -11,7 +11,7 @@ import { getAdAccount, getReportBuilder, getReportHistory } from "@/lib/data/met
 import { buildReportModel, downloadReportExport, parseReportModel, type BrandingMode } from "@/lib/reportExport";
 import { ModuleHeader, ScopeBanner, ModuleScopeGate, SectionCard, CaveatNote, PendingState, CrossLink } from "../shared";
 import { useExportsEnabled, ExportsLocked } from "./exportsShared";
-import { FORMAT_LABEL } from "../reports/ReportBuilderView";
+import { FORMAT_LABEL } from "../reports/reportFormatLabels";
 import { cn } from "@/lib/utils";
 import { FileDown, FileText, Check, Loader2 } from "lucide-react";
 import { useListWorkspaceReports } from "@workspace/api-client-react";
