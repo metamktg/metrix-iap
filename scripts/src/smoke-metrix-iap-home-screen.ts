@@ -1,10 +1,20 @@
-// Smoke check: Metrix IAP login page split-panel layout (Playwright).
+// Smoke check: Metrix IAP Home screen + 5-section nav end-to-end (Playwright).
 //
 // Boots the metrix-iap Vite dev server on an isolated port, waits for it to
-// be ready, runs the Playwright layout spec from
-// tests/e2e/login-page-layout.spec.ts, then tears the server down.
+// be ready, runs the Playwright spec at
+// tests/e2e/metrix-iap-home-screen.spec.ts, then tears the server down.
+// API responses (auth/me, seed, reports) are mocked inside the spec itself
+// so no running API server is required.
 //
-// Run: pnpm --filter @workspace/scripts run smoke:login-page-layout
+// Assertions:
+//   1. Verdict headline (h1) is visible and non-empty on /app/home.
+//   2. Loop strip shows all 4 stages: Listen, Analyze, Act, Learn.
+//   3. KPI tiles row shows 4 tiles: Spend / Best CPA / Results / Concepts.
+//   4. "Next best actions" section heading is visible.
+//   5. Clicking "Analyze" in the sidebar navigates to /app/analyze.
+//   6. Clicking "Settings" in the sidebar navigates to /app/settings/account.
+//
+// Run: pnpm --filter @workspace/scripts run smoke:metrix-iap-home-screen
 
 import { spawn, type ChildProcess } from "node:child_process";
 import path from "node:path";
@@ -23,8 +33,8 @@ function fail(message: string, extra?: string): never {
 
 // ── dev server ──────────────────────────────────────────────────────────────
 
-// Use a port that is unlikely to collide with the real metrix-iap workflow.
-const DEV_PORT = "15176";
+// Use a port that is unlikely to collide with other smoke-test workflows.
+const DEV_PORT = "15177";
 
 async function startDevServer(): Promise<ChildProcess> {
   return new Promise((resolve, reject) => {
@@ -78,7 +88,10 @@ async function startDevServer(): Promise<ChildProcess> {
 
 async function runTests(): Promise<void> {
   return new Promise((resolve, reject) => {
-    const specPath = path.join(repoRoot, "tests/e2e/login-page-layout.spec.ts");
+    const specPath = path.join(
+      repoRoot,
+      "tests/e2e/metrix-iap-home-screen.spec.ts",
+    );
     const child = spawn("pnpm", ["exec", "tsx", specPath], {
       cwd: repoRoot,
       env: {
@@ -105,7 +118,7 @@ async function runTests(): Promise<void> {
       } else {
         reject(
           new Error(
-            `Login page layout e2e tests failed (exit ${code})\n--- output ---\n${output || "(no output)"}`,
+            `Home screen e2e tests failed (exit ${code})\n--- output ---\n${output || "(no output)"}`,
           ),
         );
       }
@@ -116,44 +129,29 @@ async function runTests(): Promise<void> {
 // ── main ────────────────────────────────────────────────────────────────────
 
 async function main() {
-  console.log("Starting @workspace/metrix-iap dev server for login layout e2e tests...");
+  console.log(
+    "Starting @workspace/metrix-iap dev server for home-screen e2e tests...",
+  );
   const server = await startDevServer().catch((err) => {
-    fail("Failed to start metrix-iap dev server", String(err?.message ?? err));
+    fail(
+      "Failed to start metrix-iap dev server",
+      String(err?.message ?? err),
+    );
   });
 
   try {
-    // Poll the dev server until it actually serves a response before handing
-    // off to Playwright.  Vite prints "ready" as soon as the HTTP server
-    // binds, but the first request triggers module transforms that can take
-    // several seconds under load — if Playwright hits the page before those
-    // transforms finish it gets a 30 s timeout.  Polling here absorbs that
-    // warm-up time so the first Playwright goto always finds a live server.
-    const warmupUrl = `http://localhost:${DEV_PORT}/`;
-    const warmupDeadline = Date.now() + 45_000;
-    let warmedUp = false;
-    while (Date.now() < warmupDeadline) {
-      try {
-        const res = await fetch(warmupUrl, { signal: AbortSignal.timeout(4_000) });
-        if (res.status < 500) { warmedUp = true; break; }
-      } catch {
-        // server not yet responding — keep polling
-      }
-      await new Promise((r) => setTimeout(r, 500));
-    }
-    if (!warmedUp) {
-      server.kill();
-      fail("Dev server did not respond within 45 s after signalling ready");
-    }
+    // Brief pause so Vite finishes HMR setup before Playwright navigates.
+    await new Promise((r) => setTimeout(r, 2000));
 
-    console.log("\nRunning login page layout e2e tests...\n");
+    console.log("\nRunning Home screen + 5-section nav e2e tests...\n");
     await runTests().catch((err) => {
-      fail("Login page layout e2e tests failed", String(err?.message ?? err));
+      fail("Home screen e2e tests failed", String(err?.message ?? err));
     });
   } finally {
     server.kill();
   }
 
-  console.log("\nPASS  Login page layout e2e tests passed.");
+  console.log("\nPASS  Home screen + 5-section nav e2e tests passed.");
   process.exit(0);
 }
 

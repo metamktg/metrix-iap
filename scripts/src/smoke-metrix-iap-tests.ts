@@ -81,6 +81,28 @@ async function main() {
     fail("Login page layout e2e failed", String(err?.message ?? err));
   });
 
+  // ── Step 3: Playwright Home screen + 5-section nav e2e ───────────────────
+  console.log("\nRunning Home screen + 5-section nav e2e...");
+  await spawnScript("smoke:metrix-iap-home-screen", [
+    "--filter",
+    "@workspace/scripts",
+    "run",
+    "smoke:metrix-iap-home-screen",
+  ]).catch((err) => {
+    fail("Home screen e2e failed", String(err?.message ?? err));
+  });
+
+  // ── Step 4: Playwright forgot-password flow e2e ───────────────────────────
+  console.log("\nRunning forgot-password flow e2e...");
+  await spawnScript("smoke:forgot-password", [
+    "--filter",
+    "@workspace/scripts",
+    "run",
+    "smoke:forgot-password",
+  ]).catch((err) => {
+    fail("Forgot-password e2e failed", String(err?.message ?? err));
+  });
+
   console.log("\nPASS  All Metrix IAP smoke checks passed");
   process.exit(0);
 }
