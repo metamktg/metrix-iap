@@ -14,7 +14,7 @@
 //   5  Creative    → Library / Brief Builder / Creative Scan / Import & Export
 //   6  MST         → Cross-Map / Sprints / Performance / Direction
 //   7  Reports     → Report Builder / Configuration / History
-//   8  Exports     → Analysis / Strategy JSON / Reports / Brief   (premium-gated)
+//   8  Exports     → Analysis / Strategy JSON / Reports / Brief   (open to all during beta; advanced-tier gating is a post-beta consideration, not enforced today)
 //   9  Action      → Agent   (Coming Soon)
 //   10 Settings    → General / Users & Permissions / Security / Integrations / Billing
 

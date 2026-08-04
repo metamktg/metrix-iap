@@ -49,5 +49,8 @@ Thumbs.db
 .local/
 
 # Chat-uploaded assets and unrelated exports (never re-accumulate)
-attached_assets/
-exports/
+# Anchored to repo root only — an unanchored `exports/` would also match
+# legitimate source directories anywhere in the tree (e.g.
+# artifacts/metrix-iap/src/pages/metrix/exports/).
+/attached_assets/
+/exports/
