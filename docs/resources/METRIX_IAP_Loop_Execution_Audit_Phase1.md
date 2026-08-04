@@ -148,3 +148,22 @@ metrics) is higher leverage than patching each site independently.
 6. **Optimization Loop** — full build, the largest remaining gap in the loop.
 7. **Data Bundle Prep** — decide if a real, separate bundle stage is worth building or if the
    current folded-in CSV path is an accepted simplification.
+
+## Remediation progress
+
+- **Item 1 (cohort-awareness) — done.** `cohortConfig.ts` added; `generationEngine.ts` now resolves
+  cohort and injects a "BUSINESS MODEL CONTEXT" block into the Strategy/Brief prompts instead of
+  hardcoding CPA. Also fixed a real, currently-broken endpoint found along the way:
+  `PATCH /metrix/accounts/:id/cohort` wrote to a DB column (`ad_accounts.cohort`) that didn't exist
+  anywhere in the tracked schema — added the missing backfill migration.
+- **Item 2 (Analysis Core data-integrity bugs) — partially done, two items deliberately deferred.**
+  Fixed: the silent `"unknown"` result-type fallback now surfaces a `csv_warnings` entry instead of
+  masking a real data-quality gap. **Deferred, not fixed blind:** (a) the `concept_performance`/
+  `variable_performance` full-account-replace vs. window-scoped inconsistency, and (b)
+  `deleteRunOutputs`'s incomplete cleanup on failure for tables without a run-id FK. Both need either
+  a live/staging database to verify against (this sandbox has no `DATABASE_URL`/`SUPABASE_DB_URL`),
+  or more design work first — (a) in particular has a real edge case around the `"all"` date-range
+  preset where a naive window-scoped delete could leave orphaned rows from an earlier `"all"` run
+  once new historical data extends the range. (b) turned out to be a documented, seemingly deliberate
+  tradeoff in the existing code comments, not an obvious oversight — overriding it without certainty
+  risks trading one bug for a different one in a pipeline real client data flows through.
