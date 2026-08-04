@@ -10,6 +10,7 @@ at. Nothing here is a specification. Read these for *why* decisions were made; r
 | [`METRIX_Document_Briefs_Package.md`](METRIX_Document_Briefs_Package.md) | Scoping briefs for all 15 outstanding Blueprint v2.0 documents, with per-brief purpose, scope, dependencies, acceptance criteria, and a source-confidence rating. |
 | [`METRIX_Documentation_Audit_Phase1.md`](METRIX_Documentation_Audit_Phase1.md) | Cohort-aware migration audit: which of the 11 canonical documents carry hardcoded ecommerce assumptions, severity per document, the source-of-truth tier hierarchy, and the five repair briefs in dependency order. |
 | [`METRIX_UI_Disclosure_Audit_Phase1.md`](METRIX_UI_Disclosure_Audit_Phase1.md) | Progressive-disclosure UI audit: every module page ranked by raw-pixel typography violations (`check:disclosure-rulebook`), the dead-seed-field pattern found and fixed once in Communications, and the scoped backlog for initiative 2+. |
+| [`METRIX_IAP_Loop_Execution_Audit_Phase1.md`](METRIX_IAP_Loop_Execution_Audit_Phase1.md) | IAP Loop execution audit: what actually runs end-to-end per stage vs. what's stubbed, the cross-cutting cohort-awareness hardcoding bug (Analysis Core + Strategy/Brief generation), and the Optimization Loop being a complete stub. Suggested remediation order for initiative 5+. |
 
 ## The one rule worth carrying forward
 
