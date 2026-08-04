@@ -86,3 +86,12 @@ UI (confirmed unused during Initiative 1's research, not yet fixed):
 2. `act/ActionQueueView.tsx` (same recommendation-card shape already fixed once in `ManagerOverview.tsx` — fastest win, pattern is proven).
 3. `analysis/FindingsView.tsx` + `reports/ReportBuilderView.tsx` (highest violation counts, but need a real disclosure pass, not just a typography find-replace — budget more time here).
 4. Everything else, roughly in rank order, confirming each batch with the user per their standing "confirm before each initiative" instruction.
+
+## Progress
+
+- `OverviewLoopHub.tsx` and `HomeView.tsx` — **done** (0 violations remaining in both). Fixed by
+  mapping each raw pixel class to its nearest TYPE-scale size, matching the composed `TYPE.*`
+  constants where the color/weight already matched, or the bare `text-label`/`text-caption`/
+  `text-body`/`text-title`/`text-display` utility classes when preserving an existing custom
+  color/weight override was more minimal-diff. 265 → 244 total violations remaining across 23 files.
+  All 1095 metrix-iap tests still pass; typecheck clean.
