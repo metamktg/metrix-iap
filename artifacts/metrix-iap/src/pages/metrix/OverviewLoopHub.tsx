@@ -11,6 +11,8 @@ import { useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccounts, getAnalysisData, getStrategyData, getBriefBuilder, getMST } from "@/lib/data/metrixSeedAdapter";
 import { CrossLink } from "./shared";
+import { TYPE } from "./typography";
+import { cn } from "@/lib/utils";
 import { CheckCircle2, Circle } from "lucide-react";
 import type { AdAccount } from "@/lib/data/seedTypes";
 
@@ -38,10 +40,11 @@ export function accountLoopStages(seed: ReturnType<typeof useMetrixSeed>, accoun
 function StageChip({ stage }: { stage: AccountLoopStage }) {
   return (
     <span
-      className={
-        "inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded border leading-none " +
-        (stage.done ? "text-emerald-400 border-emerald-400/25 bg-emerald-400/10" : "text-muted-foreground/60 border-border/40 bg-white/[0.02]")
-      }
+      className={cn(
+        TYPE.label,
+        "inline-flex items-center gap-1 normal-case tracking-normal px-1.5 py-0.5 rounded border leading-none",
+        stage.done ? "text-emerald-400 border-emerald-400/25 bg-emerald-400/10" : "text-muted-foreground/60 border-border/40 bg-white/[0.02]",
+      )}
     >
       {stage.done ? <CheckCircle2 className="w-2.5 h-2.5" /> : <Circle className="w-2.5 h-2.5" />}
       {stage.label}
@@ -63,28 +66,28 @@ export function OverviewLoopSummary({ full = false }: { full?: boolean }) {
     <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
       {!full && (
         <div className="flex items-center justify-between mb-3">
-          <div className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">IAP Loop</div>
+          <div className={cn(TYPE.label, "text-muted-foreground/70")}>IAP Loop</div>
           <CrossLink to="/app/overview/loop" label="Full loop status" />
         </div>
       )}
       {needsAnalysis > 0 && (
-        <p className="text-[11px] text-muted-foreground/75 mb-3">
+        <p className={cn(TYPE.caption, "text-muted-foreground/75 mb-3")}>
           {needsAnalysis} of {configuredCount} connected accounts still need analysis run.
         </p>
       )}
       <div className="space-y-2">
         {shown.map(({ account, stages }) => (
           <div key={account.id} className="flex items-center gap-3">
-            <span className="text-[12px] text-foreground/85 w-32 truncate shrink-0">{account.name}</span>
+            <span className={cn(TYPE.body, "text-foreground/85 w-32 truncate shrink-0")}>{account.name}</span>
             <div className="flex items-center gap-1.5 flex-wrap">
               {account.status === "configured" ? stages.map((s) => <StageChip key={s.id} stage={s} />) : (
-                <span className="text-[10px] text-muted-foreground/60">Not connected</span>
+                <span className={cn(TYPE.caption, "text-muted-foreground/60")}>Not connected</span>
               )}
             </div>
           </div>
         ))}
         {!full && rows.length > 6 && (
-          <p className="text-[10px] text-muted-foreground/60 pt-1">+{rows.length - 6} more — see full loop status</p>
+          <p className={cn(TYPE.caption, "text-muted-foreground/60 pt-1")}>+{rows.length - 6} more — see full loop status</p>
         )}
       </div>
     </div>

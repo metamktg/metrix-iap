@@ -805,9 +805,9 @@ export function UnconfiguredState({ account }: { account: AdAccount }) {
           </div>
           <h2 className="text-base font-semibold text-foreground">{s?.title ?? "Get started with " + account.name}</h2>
           <p className="text-caption text-muted-foreground/60 leading-relaxed">
-            {isManual
+            {s?.description ?? (isManual
               ? "Upload your Meta CSV exports, then run analysis to see performance data."
-              : "Connect a data source, then follow the setup checklist below."}
+              : "Connect a data source, then follow the setup checklist below.")}
           </p>
         </div>
 
