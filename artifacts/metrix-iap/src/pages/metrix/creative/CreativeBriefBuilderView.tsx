@@ -11,7 +11,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getBriefBuilder, getStrategyData, getAnalysisData, getMST, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState,
-  CrossLink, useFocusParam, FlowCrumb, useFromParam, SectionCard,
+  CrossLink, useFocusParam, FlowCrumb, useFromParam, SectionCard, ConfidenceBadge,
 } from "../shared";
 import { CreativeCard } from "@/components/creative/CreativeCard";
 import { cardFromCell } from "@/lib/creative-assembly";
@@ -100,8 +100,8 @@ export function CreativeBriefBuilderView() {
                   {briefs.map((b) => (
                     <div key={b.id} className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
                       <div className="min-w-0">
-                        <p className="text-[12px] font-semibold text-foreground leading-tight">{pillarOf(b.source_pillar)?.label ?? b.source_pillar}</p>
-                        <p className="text-[10px] text-muted-foreground/70 mt-0.5">{b.asset_type} · {STATUS_LABEL[b.status] ?? b.status}</p>
+                        <p className="text-body font-semibold text-foreground leading-tight">{pillarOf(b.source_pillar)?.label ?? b.source_pillar}</p>
+                        <p className="text-label text-muted-foreground/70 mt-0.5">{b.asset_type} · {STATUS_LABEL[b.status] ?? b.status}</p>
                       </div>
                       <CrossLink to={`/app/creative/builder?focus=${b.id}`} label="Open" />
                     </div>
@@ -127,14 +127,20 @@ export function CreativeBriefBuilderView() {
             <FlowCrumb {...fp} />
 
             <div className="px-6 py-5 space-y-4 max-w-3xl">
-              <p className="text-[11px] text-muted-foreground/60 -mb-1">
-                {detail.asset_type} · {STATUS_LABEL[detail.status] ?? detail.status}
-              </p>
+              <div className="flex items-center gap-2 flex-wrap -mb-1">
+                <p className="text-caption text-muted-foreground/60">
+                  {detail.asset_type} · {STATUS_LABEL[detail.status] ?? detail.status}
+                  {detail.book && ` · ${detail.book}`}
+                  {detail.mode && ` · ${detail.mode}`}
+                  {detail.voice && ` · ${detail.voice}`}
+                </p>
+                {detail.confidence && <ConfidenceBadge value={detail.confidence} />}
+              </div>
               <SectionCard title="Direction" desc="What to build.">
-                <p className="text-[13px] text-foreground/85 leading-relaxed"><TokenizedConceptText text={detail.human_direction} /></p>
+                <p className="text-title text-foreground/85 leading-relaxed"><TokenizedConceptText text={detail.human_direction} /></p>
                 <div className="flex flex-wrap gap-1.5 mt-3">
                   {detail.plain_variable_descriptors.map((d) => (
-                    <span key={d} className="text-[10px] text-foreground/75 border border-border/40 bg-white/[0.03] px-1.5 py-0.5 rounded leading-none">{d}</span>
+                    <span key={d} className="text-label text-foreground/75 border border-border/40 bg-white/[0.03] px-1.5 py-0.5 rounded leading-none">{d}</span>
                   ))}
                 </div>
               </SectionCard>
@@ -142,7 +148,7 @@ export function CreativeBriefBuilderView() {
               <SectionCard title="What to include" desc={`Checklist for a ${detail.asset_type.toLowerCase().includes("ugc") ? "UGC" : "static"} handoff.`}>
                 <ul className="space-y-1.5">
                   {checklist.map((item) => (
-                    <li key={item} className="flex items-start gap-2 text-[12px] text-foreground/80">
+                    <li key={item} className="flex items-start gap-2 text-body text-foreground/80">
                       <ClipboardCheck className="w-3.5 h-3.5 text-interactive/60 shrink-0 mt-0.5" />
                       {item}
                     </li>
@@ -154,7 +160,7 @@ export function CreativeBriefBuilderView() {
                 <SectionCard title="Source pillar" desc={pillar.plain_descriptor}>
                   <div className="flex items-center gap-2 mb-2">
                     <Sparkles className="w-3.5 h-3.5 text-interactive/60" />
-                    <span className="text-[12px] font-medium text-foreground">{pillar.label}</span>
+                    <span className="text-body font-medium text-foreground">{pillar.label}</span>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     {pillar.source_cells.map((c) => (
@@ -182,13 +188,13 @@ export function CreativeBriefBuilderView() {
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     onClick={() => downloadBriefJson(detail, acct.name)}
-                    className="flex items-center gap-1.5 h-9 px-3.5 rounded-md border border-border/50 text-[12px] font-medium text-foreground hover:bg-white/5 transition-colors"
+                    className="flex items-center gap-1.5 h-9 px-3.5 rounded-md border border-border/50 text-body font-medium text-foreground hover:bg-white/5 transition-colors"
                   >
                     <Download className="w-3.5 h-3.5" /> Download brief (JSON)
                   </button>
                   <a
                     href={mailtoForBrief(detail, pillar?.label ?? detail.source_pillar)}
-                    className="flex items-center gap-1.5 h-9 px-3.5 rounded-md bg-primary/15 border border-primary/30 text-[12px] font-medium text-interactive hover:bg-primary/25 transition-colors"
+                    className="flex items-center gap-1.5 h-9 px-3.5 rounded-md bg-primary/15 border border-primary/30 text-body font-medium text-interactive hover:bg-primary/25 transition-colors"
                   >
                     <Mail className="w-3.5 h-3.5" /> Email to production
                   </a>

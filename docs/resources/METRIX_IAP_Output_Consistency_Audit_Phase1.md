@@ -90,12 +90,14 @@ Flagging only so a future pass doesn't mistake the unused field for an oversight
 
 ## Suggested priority
 
-1. **`overview_state.description`/`.primary_action`/`.secondary_action`** — small, contained fix,
-   directly improves the onboarding empty-state experience with copy the backend already wrote.
-2. **MST QA fields** (`qa_mapping_status`, `mapping_confidence`) — gives creative ops a visual signal
-   for asset mapping problems that's currently invisible.
-3. **BriefBuilder per-brief metadata** (`book`/`mode`/`voice`/`confidence`) — straightforward
-   additions to the existing detail drawers, no new data plumbing needed.
-4. **OptimizationLoop policy fields** — hold until the broader Optimization Loop stub gets built
-   (Initiative 5); fixing these in isolation would just be surfacing policy text for a feature that's
-   mostly not there yet.
+1. ~~`overview_state.description`/`.primary_action`/`.secondary_action`~~ — **done.**
+   `UnconfiguredState` now shows the backend-authored, path-specific setup copy.
+2. ~~MST QA fields (`qa_mapping_status`, `mapping_confidence`)~~ — **done.** `CreativeCardData` gained
+   both fields; the card face shows a QA warning badge for "flagged"/"library_only_no_export_match"
+   statuses, and the expand dialog shows the full status + confidence always. Wired through
+   `cardFromLibraryCell` in `creative-assembly.ts`.
+3. ~~BriefBuilder per-brief metadata (`book`/`mode`/`voice`/`confidence`)~~ — **done.** Added to both
+   detail views: `briefs/BriefBuilderView.tsx`'s `InfoDrawer` and
+   `creative/CreativeBriefBuilderView.tsx`'s metadata line, the latter using `ConfidenceBadge`.
+4. **OptimizationLoop policy fields** — still held. Fixing these in isolation would just be surfacing
+   policy text for a feature that's mostly not there yet (Initiative 5).
