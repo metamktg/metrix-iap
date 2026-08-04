@@ -95,3 +95,5 @@ UI (confirmed unused during Initiative 1's research, not yet fixed):
   `text-body`/`text-title`/`text-display` utility classes when preserving an existing custom
   color/weight override was more minimal-diff. 265 → 244 total violations remaining across 23 files.
   All 1095 metrix-iap tests still pass; typecheck clean.
+- `act/ActionQueueView.tsx` — **done** (0 violations remaining). Same fix pattern. 244 -> 219 total
+  violations remaining across 22 files.
