@@ -9,6 +9,7 @@ at. Nothing here is a specification. Read these for *why* decisions were made; r
 | [`METRIX_Conversation_Synthesis_and_Handoff.md`](METRIX_Conversation_Synthesis_and_Handoff.md) | Full-context handoff. Records the wrong turns that were caught and corrected (client identity leaking into schema, invented sprint tracking, inverted resolver priority, the near-miss MST gating table) so they are not quietly reintroduced. Also lists the canonical Drive document IDs. |
 | [`METRIX_Document_Briefs_Package.md`](METRIX_Document_Briefs_Package.md) | Scoping briefs for all 15 outstanding Blueprint v2.0 documents, with per-brief purpose, scope, dependencies, acceptance criteria, and a source-confidence rating. |
 | [`METRIX_Documentation_Audit_Phase1.md`](METRIX_Documentation_Audit_Phase1.md) | Cohort-aware migration audit: which of the 11 canonical documents carry hardcoded ecommerce assumptions, severity per document, the source-of-truth tier hierarchy, and the five repair briefs in dependency order. |
+| [`METRIX_UI_Disclosure_Audit_Phase1.md`](METRIX_UI_Disclosure_Audit_Phase1.md) | Progressive-disclosure UI audit: every module page ranked by raw-pixel typography violations (`check:disclosure-rulebook`), the dead-seed-field pattern found and fixed once in Communications, and the scoped backlog for initiative 2+. |
 
 ## The one rule worth carrying forward
 
