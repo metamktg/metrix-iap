@@ -416,6 +416,11 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
   // so the UI can badge generated output honestly.
   const generatedPillars = messagePillars.filter((r) => r["source"] === "generated");
   const activePillars = generatedPillars.length > 0 ? generatedPillars : messagePillars;
+  // ICP profiles generate independently of pillars (Strategy Map's
+  // "ICP Profile Registry" output) — the same generated-preferred-over-
+  // imported swap, but on its own generated-set check, not gated on pillars.
+  const generatedIcpProfiles = icpProfiles.filter((r) => r["source"] === "generated");
+  const activeIcpProfiles = generatedIcpProfiles.length > 0 ? generatedIcpProfiles : icpProfiles;
   const generatedHypotheses = testingHypotheses.filter((r) => r["source"] === "generated");
   const activeHypotheses =
     generatedPillars.length > 0 && generatedHypotheses.length > 0
@@ -460,7 +465,10 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
       expected_impact: h["expected_impact"],
       origin: h["source"] ?? "imported",
     })),
-    icp_profiles: icpProfiles.map((r) => r["payload"]),
+    icp_profiles: activeIcpProfiles.map((r) => ({
+      ...(r["payload"] as Row),
+      origin: r["source"] ?? "imported",
+    })),
     variable_combinations: variableCombinations.map((v) => ({
       combination: v["combination"],
       context: v["context"],

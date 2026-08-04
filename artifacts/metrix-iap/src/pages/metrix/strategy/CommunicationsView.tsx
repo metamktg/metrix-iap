@@ -7,9 +7,11 @@
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getStrategyData } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, SectionCard } from "../shared";
-import { VariableStackChips, icpName } from "./strategyShared";
-import { MessageSquare, Users, Lightbulb } from "lucide-react";
+import { ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, SectionCard, ConfidenceBadge, DetailReveal, deriveLabel } from "../shared";
+import { TYPE } from "../typography";
+import { cn } from "@/lib/utils";
+import { VariableStackChips, IcpChips, HypothesisLabel, pillarHasDetails, PillarDetailSections } from "./strategyShared";
+import { MessageSquare, Users, Lightbulb, FlaskConical } from "lucide-react";
 
 const SECTION = "Strategy · 04";
 
@@ -42,53 +44,89 @@ export function CommunicationsView() {
             <ScopeBanner account={account!} />
             <div className="px-6 py-5 space-y-4 max-w-4xl">
               {strategy.message_pillars.map((p) => {
-                const icps = (p.target_icps ?? []).map((id) => {
-                  const profile = (strategy.icp_profiles ?? []).find((pr) => pr.profile_id === id);
-                  return { id, name: icpName(strategy.icp_profiles, id), profile };
-                });
+                const targetIcps = p.target_icps ?? [];
+                const matchedProfiles = targetIcps
+                  .map((id) => strategy.icp_profiles?.find((pr) => pr.profile_id === id))
+                  .filter((pr): pr is NonNullable<typeof pr> => Boolean(pr));
+                const hypotheses = strategy.active_hypotheses.filter((h) => h.pillar_id === p.id);
+                const bestConfidence = matchedProfiles.map((pr) => pr.confidence_level).find(Boolean);
+                const messageResonance = matchedProfiles.map((pr) => pr.message_resonance).find(Boolean);
+
                 return (
                   <SectionCard key={p.id} title={p.label} desc={p.plain_descriptor}>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <div className="flex items-center gap-1.5 mb-1.5">
-                          <Users className="w-3 h-3 text-interactive/70" />
-                          <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">Who's responding</span>
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <Users className="w-3 h-3 text-interactive/70" />
+                            <span className={cn(TYPE.label, "text-muted-foreground/70")}>Who&apos;s responding</span>
+                          </div>
+                          {bestConfidence && <ConfidenceBadge value={bestConfidence} />}
                         </div>
-                        {icps.length > 0 ? (
-                          <ul className="space-y-1.5">
-                            {icps.map((i) => (
-                              <li key={i.id} className="text-[12px] text-foreground/85">
-                                {i.name}
-                                {i.profile?.demographic_foundation && (
-                                  <p className="text-[10.5px] text-muted-foreground/75 leading-relaxed mt-0.5">{i.profile.demographic_foundation}</p>
-                                )}
-                              </li>
-                            ))}
-                          </ul>
+                        {matchedProfiles.length > 0 ? (
+                          <div className="space-y-2">
+                            <IcpChips ids={targetIcps} profiles={strategy.icp_profiles} />
+                            {matchedProfiles.map((pr) =>
+                              pr.demographic_foundation ? (
+                                <DetailReveal
+                                  key={pr.profile_id}
+                                  label={deriveLabel(pr.demographic_foundation, 60)}
+                                  labelClassName={cn(TYPE.caption, "text-muted-foreground/75")}
+                                  eyebrow={pr.profile_name}
+                                  sections={[{ text: pr.demographic_foundation }]}
+                                />
+                              ) : null,
+                            )}
+                          </div>
                         ) : (
-                          <p className="text-[11px] text-muted-foreground/70">No ICP linked to this pillar yet.</p>
+                          <p className={cn(TYPE.caption, "text-muted-foreground/70")}>No ICP linked to this pillar yet.</p>
                         )}
                       </div>
                       <div>
                         <div className="flex items-center gap-1.5 mb-1.5">
                           <MessageSquare className="w-3 h-3 text-interactive/70" />
-                          <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">What they're responding to</span>
+                          <span className={cn(TYPE.label, "text-muted-foreground/70")}>What they&apos;re responding to</span>
                         </div>
                         <VariableStackChips stack={p.variable_stack} />
                       </div>
                       <div>
                         <div className="flex items-center gap-1.5 mb-1.5">
                           <Lightbulb className="w-3 h-3 text-interactive/70" />
-                          <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">Why</span>
+                          <span className={cn(TYPE.label, "text-muted-foreground/70")}>Why</span>
                         </div>
-                        <p className="text-[11.5px] text-foreground/80 leading-relaxed">{p.why_it_matters}</p>
-                        {icps.some((i) => i.profile?.message_resonance) && (
-                          <p className="text-[10.5px] text-muted-foreground/75 leading-relaxed mt-1.5">
-                            {icps.find((i) => i.profile?.message_resonance)?.profile?.message_resonance}
-                          </p>
-                        )}
+                        <DetailReveal
+                          label={deriveLabel(p.why_it_matters, 72)}
+                          labelClassName={cn(TYPE.body, "text-foreground/85")}
+                          eyebrow="Why it matters"
+                          sections={[
+                            { text: p.why_it_matters },
+                            { label: "Message resonance", text: messageResonance },
+                          ]}
+                        />
                       </div>
                     </div>
+
+                    {hypotheses.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-border/20">
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <FlaskConical className="w-3 h-3 text-interactive/70" />
+                          <span className={cn(TYPE.label, "text-muted-foreground/70")}>Testing hypotheses</span>
+                        </div>
+                        <ul className="space-y-1.5">
+                          {hypotheses.map((h) => (
+                            <li key={h.id}>
+                              <HypothesisLabel label={h.label} isolated={h.isolated_variable} />
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {pillarHasDetails(p) && (
+                      <div className="mt-3 pt-3 border-t border-border/20">
+                        <PillarDetailSections pillar={p} profiles={strategy.icp_profiles} />
+                      </div>
+                    )}
                   </SectionCard>
                 );
               })}

@@ -223,6 +223,8 @@ export interface ICPProfile {
   message_resonance?: string;
   strategic_recommendation?: string;
   confidence_level?: string;
+  /** 'generated' when produced by the in-app Metrix engine, else imported. */
+  origin?: string;
   [k: string]: unknown;
 }
 

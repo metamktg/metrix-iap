@@ -9,33 +9,20 @@ import { CheckCircle2, Plug, TrendingUp, Plus, ArrowRight } from "lucide-react";
 import { useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed, useMetrixIsRefetching } from "@/contexts/MetrixDataContext";
 import { getManagerOverview } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, MetricTile, SectionCard, ConfidenceBadge, DetailReveal, fmtUSD, fmtNum, eventLabel, SkeletonTileRow } from "./shared";
+import { ModuleHeader, MetricTile, SectionCard, ConfidenceBadge, ImpactBadge, ScopeBadge, DetailReveal, fmtUSD, fmtNum, eventLabel, SkeletonTileRow } from "./shared";
 import { AddAccountDialog } from "./AddAccountDialog";
 import { cn } from "@/lib/utils";
-import { buildMetricCatalog, metricSourceFromManagerTotals, metricById } from "@/lib/data/metricsCatalog";
+import { buildMetricCatalog, metricSourceFromManagerTotals, metricById, resultMetricId } from "@/lib/data/metricsCatalog";
 import { useMetricSelection } from "@/hooks/useMetricSelection";
 import { MetricPickerButton } from "@/components/creative/MetricPicker";
 import { MetricDiagnosticModal } from "@/components/creative/MetricDiagnosticModal";
 import { TokenizedConceptText } from "@/components/concept/ConceptChip";
 import { OverviewLoopSummary } from "./OverviewLoopHub";
 
-const IMPACT_STYLE: Record<string, string> = {
-  high: "bg-red-400/10 text-red-300 border-red-400/20",
-  medium: "bg-amber-400/10 text-amber-300 border-amber-400/20",
-  low: "bg-muted text-muted-foreground/60 border-border/40",
-  setup: "bg-primary/10 text-interactive border-primary/20",
-};
-
-const SCOPE_STYLE: Record<string, string> = {
-  creative: "bg-amber-500/10 text-amber-300 border-amber-500/20",
-  funnel: "bg-teal-500/10 text-teal-300 border-teal-500/20",
-  placement: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
-  mst: "bg-purple-500/10 text-purple-300 border-purple-500/20",
-};
-
-function Badge({ text, cls }: { text: string; cls: string }) {
+/** Account-label pill — page-specific (not a shared badge family like impact/scope). */
+function AccountBadge({ text }: { text: string }) {
   return (
-    <span className={cn("text-label font-semibold border px-1.5 py-0.5 rounded uppercase tracking-wide leading-none", cls)}>
+    <span className="text-label font-semibold border px-1.5 py-0.5 rounded uppercase tracking-wide leading-none bg-primary/10 text-interactive border-primary/20">
       {text}
     </span>
   );
@@ -131,11 +118,16 @@ export function ManagerOverview() {
           )}
         </div>
 
-        {/* Results by event */}
-        <SectionCard title="Results by event" desc="Result volume by conversion event · all accounts">
+        {/* Results by event — same catalog + drill-down modal as the metric tiles above,
+            instead of a second, dead-end display of the same underlying data. */}
+        <SectionCard title="Results by event" desc="Result volume by conversion event · all accounts · tap for detail">
           <div className="grid grid-cols-dashboard-3-sm gap-3">
             {events.map(([key, e]) => (
-              <div key={key} className="rounded-lg border border-border/40 bg-white/[0.02] p-3.5">
+              <button
+                key={key}
+                onClick={() => setOpenMetricId(resultMetricId(key))}
+                className="text-left rounded-lg border border-border/40 bg-white/[0.02] p-3.5 hover:border-border/60 hover:bg-white/[0.04] transition-colors"
+              >
                 <div className="flex items-center gap-1.5 mb-2">
                   <TrendingUp className="w-3.5 h-3.5 text-interactive/60" />
                   <span className="text-caption font-medium text-foreground leading-tight">{eventLabel(key)}</span>
@@ -145,7 +137,7 @@ export function ManagerOverview() {
                   <div>Spend {fmtUSD(e.spend)}</div>
                   <div>Link clicks {fmtNum(e.link_clicks)}</div>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </SectionCard>
@@ -200,9 +192,9 @@ export function ManagerOverview() {
               {data.recommendation_cards.map((c) => (
                 <div key={c.id} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col">
                   <div className="flex items-center gap-1.5 flex-wrap mb-2">
-                    <Badge text={c.manager_card_descriptor ?? accountName(c.account_id)} cls="bg-primary/10 text-interactive border-primary/20" />
-                    <Badge text={c.scope} cls={SCOPE_STYLE[c.scope] ?? "bg-muted text-muted-foreground/60 border-border/40"} />
-                    <Badge text={`${c.impact} impact`} cls={IMPACT_STYLE[c.impact] ?? IMPACT_STYLE.low} />
+                    <AccountBadge text={c.manager_card_descriptor ?? accountName(c.account_id)} />
+                    <ScopeBadge scope={c.scope} />
+                    <ImpactBadge impact={c.impact} />
                     <ConfidenceBadge value={c.confidence} />
                   </div>
                   <DetailReveal

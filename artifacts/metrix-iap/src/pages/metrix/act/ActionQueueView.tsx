@@ -82,7 +82,7 @@ function InlineDrawer({
     <div className="mt-2 rounded-xl border border-[hsl(var(--border-default))] bg-[var(--void-navy-3)] p-4 space-y-3 text-left">
       {/* Close handle */}
       <div className="flex items-center justify-between">
-        <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground/50">
+        <span className="text-label font-bold uppercase tracking-[0.18em] text-muted-foreground/50">
           Full Detail
         </span>
         <button
@@ -97,17 +97,17 @@ function InlineDrawer({
 
       {/* Rationale */}
       <div className="space-y-1">
-        <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground/50">Rationale</p>
-        <DenseText text={card.rationale} className="text-[12px] text-foreground/80 leading-relaxed" />
+        <p className="text-label font-bold uppercase tracking-[0.15em] text-muted-foreground/50">Rationale</p>
+        <DenseText text={card.rationale} className="text-body text-foreground/80 leading-relaxed" />
       </div>
 
       {/* Recommended action */}
       {card.recommended_action && (
         <div className="space-y-1">
-          <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground/50">
+          <p className="text-label font-bold uppercase tracking-[0.15em] text-muted-foreground/50">
             Recommended action
           </p>
-          <p className="text-[12px] text-foreground/75 leading-relaxed italic">
+          <p className="text-body text-foreground/75 leading-relaxed italic">
             {card.recommended_action}
           </p>
         </div>
@@ -116,7 +116,7 @@ function InlineDrawer({
       {/* Safety notice */}
       <div className="flex items-start gap-2 rounded-lg border border-amber-400/15 bg-amber-400/[0.04] px-3 py-2">
         <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-        <p className="text-[11px] text-amber-400/80 leading-relaxed">
+        <p className="text-caption text-amber-400/80 leading-relaxed">
           Approving adds a manual implementation task to the Task Tray. No changes are applied automatically.
         </p>
       </div>
@@ -187,7 +187,7 @@ function QueueCard({
         <div className="flex items-center gap-2 mb-2 flex-wrap">
           <span
             className={cn(
-              "inline-flex text-[10px] font-bold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none",
+              "inline-flex text-label font-bold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none",
               verb.cls
             )}
           >
@@ -195,30 +195,30 @@ function QueueCard({
           </span>
           <ConfidenceBadge value={card.confidence} />
           {impactLabel && (
-            <span className="ml-auto text-[11px] text-[var(--meta-blue-highlight)] font-semibold tabular-nums">
+            <span className="ml-auto text-caption text-[var(--meta-blue-highlight)] font-semibold tabular-nums">
               {impactLabel}
             </span>
           )}
           {isApproved && (
-            <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-semibold">
+            <span className="flex items-center gap-1 text-label text-emerald-400 font-semibold">
               <CheckCircle2 className="w-3.5 h-3.5" /> Approved
             </span>
           )}
         </div>
 
         {/* Title */}
-        <p className="text-[13px] font-semibold text-foreground leading-snug mb-1.5">
+        <p className="text-title font-semibold text-foreground leading-snug mb-1.5">
           {card.title}
         </p>
 
         {/* Rationale preview — always visible */}
-        <p className="text-[12px] text-muted-foreground/70 line-clamp-2 leading-relaxed">
+        <p className="text-body text-muted-foreground/70 line-clamp-2 leading-relaxed">
           {card.rationale}
         </p>
 
         {/* Expand chevron */}
         {!isDismissed && (
-          <div className="mt-2 flex items-center gap-1 text-[10px] text-muted-foreground/40">
+          <div className="mt-2 flex items-center gap-1 text-label text-muted-foreground/40">
             {expanded ? (
               <><ChevronUp className="w-3.5 h-3.5" /> Less</>
             ) : (
@@ -241,14 +241,14 @@ function QueueCard({
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); dismiss(); }}
-            className="flex items-center gap-1.5 h-8 px-3 rounded border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+            className="flex items-center gap-1.5 h-8 px-3 rounded border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
           >
             <X className="w-3.5 h-3.5" /> Dismiss
           </button>
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); approve(); }}
-            className="flex items-center gap-1.5 h-8 px-3 rounded bg-primary/15 border border-primary/30 text-[11px] font-semibold text-interactive hover:bg-primary/25 transition-colors"
+            className="flex items-center gap-1.5 h-8 px-3 rounded bg-primary/15 border border-primary/30 text-caption font-semibold text-interactive hover:bg-primary/25 transition-colors"
           >
             <Check className="w-3.5 h-3.5" /> Approve
           </button>
@@ -261,7 +261,7 @@ function QueueCard({
           <button
             type="button"
             onClick={restore}
-            className="flex items-center gap-1.5 h-7 px-2.5 rounded border border-border/40 text-[10px] font-medium text-muted-foreground/60 hover:text-foreground hover:bg-white/5 transition-colors"
+            className="flex items-center gap-1.5 h-7 px-2.5 rounded border border-border/40 text-label font-medium text-muted-foreground/60 hover:text-foreground hover:bg-white/5 transition-colors"
           >
             <RotateCcw className="w-3 h-3" /> Restore
           </button>
@@ -271,11 +271,11 @@ function QueueCard({
       {/* Restore for approved */}
       {isApproved && (
         <div className="px-4 pb-3 flex items-center justify-between">
-          <span className="text-[10px] text-muted-foreground/50">Added to Task Tray</span>
+          <span className="text-label text-muted-foreground/50">Added to Task Tray</span>
           <button
             type="button"
             onClick={restore}
-            className="flex items-center gap-1.5 h-7 px-2.5 rounded border border-border/40 text-[10px] font-medium text-muted-foreground/60 hover:text-foreground hover:bg-white/5 transition-colors"
+            className="flex items-center gap-1.5 h-7 px-2.5 rounded border border-border/40 text-label font-medium text-muted-foreground/60 hover:text-foreground hover:bg-white/5 transition-colors"
           >
             <RotateCcw className="w-3 h-3" /> Undo
           </button>
@@ -299,15 +299,15 @@ function EmptyQueue({ reason }: { reason: "no-loop" | "all-done" }) {
       </div>
       {reason === "all-done" ? (
         <>
-          <p className="text-[13px] font-medium text-foreground/60">All caught up</p>
-          <p className="text-[12px] text-muted-foreground/50 max-w-[280px]">
+          <p className="text-title font-medium text-foreground/60">All caught up</p>
+          <p className="text-body text-muted-foreground/50 max-w-[280px]">
             All recommendations have been reviewed. Approved items are in your Task Tray.
           </p>
         </>
       ) : (
         <>
-          <p className="text-[13px] font-medium text-foreground/60">No actions yet</p>
-          <p className="text-[12px] text-muted-foreground/50 max-w-[280px]">
+          <p className="text-title font-medium text-foreground/60">No actions yet</p>
+          <p className="text-body text-muted-foreground/50 max-w-[280px]">
             Run analysis to generate optimization recommendations for this account.
           </p>
         </>
@@ -343,7 +343,7 @@ export function ActionQueueView() {
   if (!account) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center py-24 px-6">
-        <p className="text-[13px] text-muted-foreground/70">Select an ad account to see the action queue.</p>
+        <p className="text-title text-muted-foreground/70">Select an ad account to see the action queue.</p>
       </div>
     );
   }
@@ -387,7 +387,7 @@ export function ActionQueueView() {
           >
             Action Queue
           </h1>
-          <p className="text-[13px] text-muted-foreground/65 max-w-[520px] leading-relaxed">
+          <p className="text-title text-muted-foreground/65 max-w-[520px] leading-relaxed">
             {allCards.length > 0
               ? `${allCards.length} recommendation${allCards.length !== 1 ? "s" : ""} from the optimization loop, sorted by impact. Approve to add to the Task Tray.`
               : "Optimization loop recommendations appear here after analysis runs."}
@@ -403,7 +403,7 @@ export function ActionQueueView() {
                 type="button"
                 onClick={() => setTab(t.id)}
                 className={cn(
-                  "flex items-center gap-1.5 h-9 px-3 text-[12px] font-medium border-b-2 transition-colors",
+                  "flex items-center gap-1.5 h-9 px-3 text-body font-medium border-b-2 transition-colors",
                   tab === t.id
                     ? "border-primary text-foreground"
                     : "border-transparent text-muted-foreground/60 hover:text-foreground"
@@ -413,7 +413,7 @@ export function ActionQueueView() {
                 {t.count > 0 && (
                   <span
                     className={cn(
-                      "text-[9px] font-bold px-1.5 py-0.5 rounded-full",
+                      "text-label font-bold px-1.5 py-0.5 rounded-full",
                       t.id === "approved"
                         ? "bg-emerald-400/15 text-emerald-400"
                         : t.id === "dismissed"

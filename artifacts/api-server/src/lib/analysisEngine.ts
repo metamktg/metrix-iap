@@ -809,6 +809,7 @@ export async function startManualAnalysis(
       // Supplement from the ad_summary (preferred) then demo aggregation:
       // fill spend/results/resultType for any ad bucket the placement export
       // left financially empty. Priority: summary > demo > null.
+      let unknownResultTypeRows = 0;
       for (const b of adBuckets.values()) {
         const adKey = [b.campaign, b.adName, b.date].join("\u0001");
         const summary = summaryAdBuckets.get(adKey);
@@ -823,11 +824,17 @@ export async function startManualAnalysis(
         }
         // Use a stable fallback only when result type is genuinely absent from
         // all exports — avoids the misleading "Results" column-header literal.
-        if (!b.resultType) b.resultType = "unknown";
+        // Surfaced as a csv_warning below rather than masked silently: an
+        // "unknown" result type is a real data-quality gap, not a normal value.
+        if (!b.resultType) {
+          b.resultType = "unknown";
+          unknownResultTypeRows += 1;
+        }
       }
       // Surface summary-only ad/days (in ad_summary but absent from placement).
       for (const [key, sum] of summaryAdBuckets) {
         if (!adBuckets.has(key)) {
+          if (!sum.resultType) unknownResultTypeRows += 1;
           adBuckets.set(key, { ...sum, resultType: sum.resultType ?? "unknown" });
         }
       }
@@ -835,8 +842,14 @@ export async function startManualAnalysis(
       // both placement and ad_summary) so no spend rows are silently dropped.
       for (const [key, demo] of demoAdBuckets) {
         if (!adBuckets.has(key)) {
+          if (!demo.resultType) unknownResultTypeRows += 1;
           adBuckets.set(key, { ...demo, resultType: demo.resultType ?? "unknown" });
         }
+      }
+      if (unknownResultTypeRows > 0) {
+        allCsvWarnings.push(
+          `[Result type] ${unknownResultTypeRows} ad/day row(s) had no result type in any export — recorded as "unknown" rather than a real conversion event.`,
+        );
       }
 
       // ── Demographic rows: aggregate demo export by gender/age/day.

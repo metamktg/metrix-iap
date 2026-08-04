@@ -10,6 +10,7 @@
     "check:text-primary-contrast": "tsx ./src/check-text-primary-contrast.ts",
     "check:css-token-contrast": "tsx ./src/check-css-token-contrast.ts",
     "check:text-muted-contrast": "tsx ./src/check-text-muted-contrast.ts",
+    "check:disclosure-rulebook": "tsx ./src/check-disclosure-rulebook.ts",
     "refresh:seed-fixture": "tsx ./src/check-seed-fixture-drift.ts --refresh",
     "smoke:api-server": "tsx ./src/smoke-api-server.ts",
     "smoke:metrix-iap-build": "tsx ./src/smoke-metrix-iap-build.ts",

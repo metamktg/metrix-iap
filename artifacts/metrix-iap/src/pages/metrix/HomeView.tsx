@@ -70,13 +70,13 @@ function LoopStage({ label, dot, sub, active, href }: LoopStageProps) {
           : "border-[hsl(var(--border))] bg-transparent hover:border-[hsl(var(--border-default))] hover:bg-white/[0.03]"
       )}
     >
-      <span className={cn("text-[11px] font-bold uppercase tracking-widest", active ? "text-[var(--meta-blue-highlight)]" : "text-foreground/70")}>
+      <span className={cn("text-caption font-bold uppercase tracking-widest", active ? "text-[var(--meta-blue-highlight)]" : "text-foreground/70")}>
         {label}
       </span>
       <span className={cn("text-base font-semibold leading-none tabular-nums", active ? "text-[var(--meta-blue-highlight)]" : "text-foreground/50")}>
         {dot}
       </span>
-      <span className="text-[10px] text-muted-foreground/60 leading-snug">{sub}</span>
+      <span className="text-label text-muted-foreground/60 leading-snug">{sub}</span>
     </a>
   );
 }
@@ -86,9 +86,9 @@ function LoopStage({ label, dot, sub, active, href }: LoopStageProps) {
 function KpiTile({ label, stat, unit }: { label: string; stat: string; unit?: string }) {
   return (
     <div className="flex flex-col gap-1 rounded-xl border border-[hsl(var(--border))] bg-white/[0.03] px-4 py-3 hover:bg-white/[0.05] transition-colors">
-      <span className="text-[10px] uppercase tracking-widest text-muted-foreground/55 font-semibold">{label}</span>
+      <span className="text-label uppercase tracking-widest text-muted-foreground/55 font-semibold">{label}</span>
       <span
-        className="text-[22px] font-semibold leading-none tabular-nums"
+        className="text-display font-semibold leading-none tabular-nums"
         style={{
           background: "var(--grad-meta)",
           WebkitBackgroundClip: "text",
@@ -98,7 +98,7 @@ function KpiTile({ label, stat, unit }: { label: string; stat: string; unit?: st
       >
         {stat}
       </span>
-      {unit && <span className="text-[11px] text-muted-foreground/55 leading-tight">{unit}</span>}
+      {unit && <span className="text-caption text-muted-foreground/55 leading-tight">{unit}</span>}
     </div>
   );
 }
@@ -123,35 +123,35 @@ function ActionCard({ card }: { card: RecommendationCard }) {
     >
       {/* Top row */}
       <div className="flex items-center gap-2 mb-2">
-        <span className={cn("inline-flex text-[10px] font-bold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none", verb.cls)}>
+        <span className={cn("inline-flex text-label font-bold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none", verb.cls)}>
           {verb.label}
         </span>
         <ConfidenceBadge value={card.confidence} />
         {impactLabel && (
-          <span className="ml-auto text-[11px] text-[var(--meta-blue-highlight)] font-semibold tabular-nums">
+          <span className="ml-auto text-caption text-[var(--meta-blue-highlight)] font-semibold tabular-nums">
             {impactLabel}
           </span>
         )}
       </div>
 
       {/* Title */}
-      <p className="text-[13px] font-semibold text-foreground leading-snug mb-1">
+      <p className="text-title font-semibold text-foreground leading-snug mb-1">
         {deriveLabel(card.title, 60)}
       </p>
 
       {/* Rationale */}
       {!expanded ? (
-        <p className="text-[12px] text-muted-foreground/75 line-clamp-2 leading-relaxed">
+        <p className="text-body text-muted-foreground/75 line-clamp-2 leading-relaxed">
           {card.rationale}
         </p>
       ) : (
-        <p className="text-[12px] text-muted-foreground/85 leading-relaxed">
+        <p className="text-body text-muted-foreground/85 leading-relaxed">
           {card.rationale}
         </p>
       )}
 
       {expanded && card.recommended_action && (
-        <p className="mt-2 text-[11px] text-muted-foreground/60 italic leading-snug">
+        <p className="mt-2 text-caption text-muted-foreground/60 italic leading-snug">
           {card.recommended_action}
         </p>
       )}
@@ -251,7 +251,7 @@ export function HomeView() {
         >
           Welcome to Metrix.
         </h1>
-        <p className="text-[13px] text-muted-foreground/70">Select an ad account to see your dashboard.</p>
+        <p className="text-title text-muted-foreground/70">Select an ad account to see your dashboard.</p>
       </div>
     );
   }
@@ -287,7 +287,7 @@ export function HomeView() {
             {verdictHeadline}
           </h1>
           {subLine && (
-            <p className="text-[13px] text-muted-foreground/75 max-w-[600px] leading-relaxed">
+            <p className="text-title text-muted-foreground/75 max-w-[600px] leading-relaxed">
               {subLine}
             </p>
           )}
@@ -355,7 +355,7 @@ export function HomeView() {
         {/* ── Next best actions ───────────────────────────────────────── */}
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/55">
+            <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/55">
               Next best actions
             </span>
             <TooltipProvider>
@@ -380,7 +380,7 @@ export function HomeView() {
             </div>
           ) : (
             <div className="flex items-center justify-center rounded-xl border border-dashed border-border/40 px-6 py-8 text-center">
-              <p className="text-[12px] text-muted-foreground/50">
+              <p className="text-body text-muted-foreground/50">
                 Run analysis to surface actions.
               </p>
             </div>

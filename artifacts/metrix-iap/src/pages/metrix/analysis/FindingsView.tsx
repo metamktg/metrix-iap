@@ -149,14 +149,14 @@ function VerdictBanner({
       >
         {/* Eyebrow */}
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--meta-blue-highlight)]/80">
+          <span className="text-label font-bold uppercase tracking-widest text-[var(--meta-blue-highlight)]/80">
             AI Verdict
           </span>
           {runType && (
-            <span className="text-[10px] text-muted-foreground/50 font-mono">{runType}</span>
+            <span className="text-label text-muted-foreground/50 font-mono">{runType}</span>
           )}
           {dateRange && (dateRange.start || dateRange.end) && (
-            <span className="text-[10px] text-muted-foreground/50 font-mono ml-auto">
+            <span className="text-label text-muted-foreground/50 font-mono ml-auto">
               {dateRange.start ? fmtDate(dateRange.start) : ""}
               {dateRange.start && dateRange.end ? " – " : ""}
               {dateRange.end ? fmtDate(dateRange.end) : ""}
@@ -180,7 +180,7 @@ function VerdictBanner({
         {(subLine || confidence) && (
           <div className="flex items-start gap-2 flex-wrap">
             {subLine && (
-              <p className="text-[12px] text-muted-foreground/70 leading-relaxed flex-1 min-w-0 max-w-[680px]">
+              <p className="text-body text-muted-foreground/70 leading-relaxed flex-1 min-w-0 max-w-[680px]">
                 {subLine}
               </p>
             )}
@@ -197,7 +197,7 @@ function VerdictBanner({
       {criticalAlert && (
         <div className="flex items-start gap-2.5 rounded-lg border border-amber-400/20 bg-amber-400/[0.04] px-4 py-3">
           <AlertTriangle className="w-4 h-4 text-amber-400/80 shrink-0 mt-0.5" />
-          <p className="text-[12px] text-amber-400/90 leading-relaxed">{criticalAlert}</p>
+          <p className="text-body text-amber-400/90 leading-relaxed">{criticalAlert}</p>
         </div>
       )}
     </div>
@@ -222,12 +222,12 @@ function ConceptCard({ score }: { score: ConceptScore }) {
     >
       {/* Header row: concept code + tier badge + confidence */}
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-[11px] font-bold font-mono text-foreground/60 bg-white/[0.05] px-1.5 py-0.5 rounded border border-white/[0.08]">
+        <span className="text-caption font-bold font-mono text-foreground/60 bg-white/[0.05] px-1.5 py-0.5 rounded border border-white/[0.08]">
           {score.book} {score.concept_code}
         </span>
         <span
           className={cn(
-            "inline-flex text-[10px] font-bold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none",
+            "inline-flex text-label font-bold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none",
             tb.cls
           )}
         >
@@ -243,9 +243,9 @@ function ConceptCard({ score }: { score: ConceptScore }) {
       {/* Metrics row: CPA · Spend · Results */}
       <div className="grid grid-cols-3 gap-2">
         <div>
-          <div className="text-[9px] uppercase tracking-widest text-muted-foreground/45 font-semibold mb-0.5">CPA</div>
+          <div className="text-label uppercase tracking-widest text-muted-foreground/45 font-semibold mb-0.5">CPA</div>
           <div
-            className="text-[15px] font-semibold tabular-nums leading-none"
+            className="text-title font-semibold tabular-nums leading-none"
             style={{
               background: score.cpa != null ? "var(--grad-meta)" : undefined,
               WebkitBackgroundClip: score.cpa != null ? "text" : undefined,
@@ -258,14 +258,14 @@ function ConceptCard({ score }: { score: ConceptScore }) {
           </div>
         </div>
         <div>
-          <div className="text-[9px] uppercase tracking-widest text-muted-foreground/45 font-semibold mb-0.5">Spend</div>
-          <div className="text-[13px] font-medium tabular-nums text-foreground/70 leading-none">
+          <div className="text-label uppercase tracking-widest text-muted-foreground/45 font-semibold mb-0.5">Spend</div>
+          <div className="text-title font-medium tabular-nums text-foreground/70 leading-none">
             {score.spend != null ? fmtMetric("usd_total", score.spend) : "—"}
           </div>
         </div>
         <div>
-          <div className="text-[9px] uppercase tracking-widest text-muted-foreground/45 font-semibold mb-0.5">Results</div>
-          <div className="text-[13px] font-medium tabular-nums text-foreground/70 leading-none">
+          <div className="text-label uppercase tracking-widest text-muted-foreground/45 font-semibold mb-0.5">Results</div>
+          <div className="text-title font-medium tabular-nums text-foreground/70 leading-none">
             {score.results != null ? fmtNum(score.results) : "—"}
           </div>
         </div>
@@ -275,7 +275,7 @@ function ConceptCard({ score }: { score: ConceptScore }) {
       {liftLbl && (
         <div className="flex items-center gap-1.5">
           {lift}
-          <span className="text-[11px] text-muted-foreground/55 leading-none">{liftLbl}</span>
+          <span className="text-caption text-muted-foreground/55 leading-none">{liftLbl}</span>
         </div>
       )}
 
@@ -285,13 +285,13 @@ function ConceptCard({ score }: { score: ConceptScore }) {
           {whatText && (
             <DenseText
               text={whatText}
-              className="text-[11px] text-muted-foreground/75 leading-relaxed"
+              className="text-caption text-muted-foreground/75 leading-relaxed"
               clampClass="line-clamp-2"
               threshold={80}
             />
           )}
           {soWhatText && (
-            <p className="text-[10px] text-muted-foreground/50 leading-snug font-medium uppercase tracking-wide">
+            <p className="text-label text-muted-foreground/50 leading-snug font-medium uppercase tracking-wide">
               {deriveLabel(soWhatText, 70)}
             </p>
           )}
@@ -310,10 +310,10 @@ function FailurePatternsStrip({ patterns }: { patterns: FailurePattern[] }) {
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
-        <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/55">
+        <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/55">
           Flagged campaigns
         </span>
-        <span className="text-[10px] text-muted-foreground/40 font-mono ml-auto">
+        <span className="text-label text-muted-foreground/40 font-mono ml-auto">
           {fmtUSD(totalWasted, 0)} flagged spend
         </span>
       </div>
@@ -322,10 +322,10 @@ function FailurePatternsStrip({ patterns }: { patterns: FailurePattern[] }) {
           <div key={i} className="flex items-start gap-3 px-4 py-3">
             <AlertTriangle className="w-3.5 h-3.5 text-amber-400/60 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
-              <p className="text-[12px] font-medium text-foreground/80 truncate">{p.campaign}</p>
-              <p className="text-[11px] text-muted-foreground/55 leading-snug mt-0.5">{p.diagnosis}</p>
+              <p className="text-body font-medium text-foreground/80 truncate">{p.campaign}</p>
+              <p className="text-caption text-muted-foreground/55 leading-snug mt-0.5">{p.diagnosis}</p>
             </div>
-            <span className="shrink-0 text-[11px] font-mono tabular-nums text-amber-400/70">
+            <span className="shrink-0 text-caption font-mono tabular-nums text-amber-400/70">
               {fmtUSD(p.wasted_spend ?? p.spend, 0)}
             </span>
           </div>
@@ -341,10 +341,10 @@ function FindingsEmptyState() {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
       <div className="w-12 h-12 rounded-xl border border-border/40 bg-white/[0.02] flex items-center justify-center">
-        <span className="text-[20px] opacity-30">🔍</span>
+        <span className="text-display opacity-30">🔍</span>
       </div>
-      <p className="text-[14px] font-semibold text-foreground/70">No intelligence data yet</p>
-      <p className="text-[12px] text-muted-foreground/55 max-w-xs leading-relaxed">
+      <p className="text-title font-semibold text-foreground/70">No intelligence data yet</p>
+      <p className="text-body text-muted-foreground/55 max-w-xs leading-relaxed">
         Run the full IAP loop to generate concept scores, tier rankings, and the AI verdict.
       </p>
     </div>
@@ -415,7 +415,7 @@ export function FindingsView() {
   if (!account) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center py-24 px-6">
-        <p className="text-[13px] text-muted-foreground/70">Select an ad account to view Findings.</p>
+        <p className="text-title text-muted-foreground/70">Select an ad account to view Findings.</p>
       </div>
     );
   }
@@ -464,18 +464,18 @@ export function FindingsView() {
               {execSummary && (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div className="flex flex-col gap-1 rounded-xl border border-[hsl(var(--border))] bg-white/[0.02] px-4 py-3">
-                    <span className="text-[10px] uppercase tracking-widest text-muted-foreground/50 font-semibold">Total spend</span>
+                    <span className="text-label uppercase tracking-widest text-muted-foreground/50 font-semibold">Total spend</span>
                     <span
-                      className="text-[20px] font-semibold tabular-nums leading-none"
+                      className="text-display font-semibold tabular-nums leading-none"
                       style={{ background: "var(--grad-meta)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}
                     >
                       {execSummary.total_spend != null ? fmtMetric("usd_total", execSummary.total_spend) : "—"}
                     </span>
                   </div>
                   <div className="flex flex-col gap-1 rounded-xl border border-[hsl(var(--border))] bg-white/[0.02] px-4 py-3">
-                    <span className="text-[10px] uppercase tracking-widest text-muted-foreground/50 font-semibold">Total results</span>
+                    <span className="text-label uppercase tracking-widest text-muted-foreground/50 font-semibold">Total results</span>
                     <span
-                      className="text-[20px] font-semibold tabular-nums leading-none"
+                      className="text-display font-semibold tabular-nums leading-none"
                       style={{ background: "var(--grad-meta)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}
                     >
                       {execSummary.total_results != null ? fmtNum(execSummary.total_results) : "—"}
@@ -483,9 +483,9 @@ export function FindingsView() {
                   </div>
                   {execSummary.blended_cpa_by_book && Object.entries(execSummary.blended_cpa_by_book).slice(0, 2).map(([book, cpa]) => (
                     <div key={book} className="flex flex-col gap-1 rounded-xl border border-[hsl(var(--border))] bg-white/[0.02] px-4 py-3">
-                      <span className="text-[10px] uppercase tracking-widest text-muted-foreground/50 font-semibold">Blended CPA · {book}</span>
+                      <span className="text-label uppercase tracking-widest text-muted-foreground/50 font-semibold">Blended CPA · {book}</span>
                       <span
-                        className="text-[20px] font-semibold tabular-nums leading-none"
+                        className="text-display font-semibold tabular-nums leading-none"
                         style={{ background: "var(--grad-meta)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}
                       >
                         {fmtUSD(cpa, cpa < 100 ? 2 : 0)}
@@ -499,10 +499,10 @@ export function FindingsView() {
               {conceptScores.length > 0 && (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/55">
+                    <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/55">
                       Concept rankings
                     </span>
-                    <span className="text-[10px] text-muted-foreground/35 font-mono">
+                    <span className="text-label text-muted-foreground/35 font-mono">
                       {conceptScores.length} concepts · sorted by CPA
                     </span>
                   </div>
