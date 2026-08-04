@@ -20,6 +20,7 @@ import { z } from "zod";
 import { getSupabase } from "./supabase";
 import { invalidateMetrixSeedCache } from "./metrixSeedAssembly";
 import { logger } from "./logger";
+import { resolveCohort, type CohortDefinition } from "./cohortConfig";
 
 export const GENERATION_MODEL = "claude-sonnet-4-6";
 /** Runs stuck 'running' past this cutoff are treated as dead (server restart). */
@@ -150,11 +151,33 @@ async function accountExists(accountId: string): Promise<Row | null> {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from("ad_accounts")
-    .select("id, name")
+    .select("id, name, cohort")
     .eq("id", accountId)
     .limit(1);
   if (error) throw new Error(error.message);
   return data && data.length > 0 ? data[0]! : null;
+}
+
+/**
+ * "BUSINESS MODEL CONTEXT" block injected into every generation prompt.
+ * This is the fix for the systemic ecommerce-hardcoding defect: without
+ * it, the model defaults to purchase/CPA language for every client
+ * regardless of their real terminal metric.
+ */
+function cohortContextBlock(cohort: CohortDefinition | null): string {
+  if (!cohort) {
+    return (
+      "BUSINESS MODEL CONTEXT: this account's cohort has not been configured yet. " +
+      "Do NOT assume ecommerce/purchase/ROAS language — write in terms of \"cost per result\" " +
+      "generically until the account's real terminal metric is known."
+    );
+  }
+  return (
+    `BUSINESS MODEL CONTEXT: this account's business model is ${cohort.label} ` +
+    `(cohort: ${cohort.cohort_key}). The metric that defines success is ${cohort.terminal_metric_label} ` +
+    `— lower is better. Do not reference ROAS, AOV, "purchase", or "add to cart" unless this ` +
+    `account's cohort is ecommerce; use ${cohort.terminal_metric_label} language throughout.`
+  );
 }
 
 type StrategyEvidence = {
@@ -355,7 +378,8 @@ const IAP_VARIABLE_TAXONOMY = [
 ].join("\n");
 
 // The IAP Matrix construction rules the brief layer must obey.
-const IAP_MATRIX_METHODOLOGY = [
+function iapMatrixMethodology(terminalMetricLabel: string): string {
+  return [
   "IAP MATRIX METHODOLOGY (MST = Matrix Sprint Test — the creative testing engine inside IAP):",
   "- STRUCTURE: a 4×4 grid of 16 creatives, cell positions C1A through C4D (columns C1–C4, rows A–D).",
   "- COLUMNS = concept constants (the audience-isolation axis). All 4 cells in a column share the SAME avatar/ICP, the SAME design system (CN_Design_*), and the SAME CTA family. NEVER mix ICP codes within a column — it invalidates avatar-level analysis.",
@@ -365,20 +389,29 @@ const IAP_MATRIX_METHODOLOGY = [
   "- NAMING: each creative is named {MatrixPosition}_{ConceptCodes}_{AngleCodes}_{UniqueID}, e.g. C1A_CN_ICP_BusyParents_CN_Design_UGC_FW_PAS_TN_Emotional_HK_Problem_ST_TOFU_001.",
   "- CELL CODES: columns are C1..C4 in the exact order the COLUMNS list is given; rows are A, B, C, D; a cell code is <Column><Row> (e.g. C1A, C2B).",
   "- HONEST PADDING: always build the full 4 columns. When the account has fewer than 4 real ICPs, the extra column(s) are EXPLORATORY expansion avatars — transparent, testable hypotheses with NO historical data (avatar_basis:\"exploratory\", target_icp blank), never presented as established customer profiles. Ground the core columns in real ICPs.",
-  "- Andromeda execution context: assume BROAD targeting, ABO budgeting, and Advantage+ auto-placements. Prefer distinct concepts over near-duplicates and behavioral/psychographic angles over demographic micro-targeting. CTR / thumbstop are the earliest signals; CPA needs volume before a verdict.",
+  `- Andromeda execution context: assume BROAD targeting, ABO budgeting, and Advantage+ auto-placements. Prefer distinct concepts over near-duplicates and behavioral/psychographic angles over demographic micro-targeting. CTR / thumbstop are the earliest signals; ${terminalMetricLabel} needs volume before a verdict.`,
   "- CORE PHILOSOPHY: the full matrix is planned and LOCKED before launch — no on-the-fly tweaks — and each cell isolates exactly ONE variable.",
-].join("\n");
+  ].join("\n");
+}
 
-function strategyPrompt(evidence: Row, cellIds: Set<string>, icpIds: Set<string>): string {
+function strategyPrompt(
+  evidence: Row,
+  cellIds: Set<string>,
+  icpIds: Set<string>,
+  cohort: CohortDefinition | null,
+): string {
+  const terminalMetricLabel = cohort?.terminal_metric_label ?? "cost per result";
   return [
     "You are the METRIX strategy engine. From the ad-account analysis evidence below, produce message pillars and testing hypotheses for the next IAP creative cycle (Matrix Sprint Test).",
     "",
+    cohortContextBlock(cohort),
+    "",
     IAP_VARIABLE_TAXONOMY,
     "",
-    IAP_MATRIX_METHODOLOGY,
+    iapMatrixMethodology(terminalMetricLabel),
     "",
     "STRICT RULES:",
-    "- Ground every claim in the evidence. Quote real numbers (results, CPA, CVR, funnel counts) in performance_evidence. NEVER invent metrics.",
+    `- Ground every claim in the evidence. Quote real numbers (results, ${terminalMetricLabel}, CVR, funnel counts) in performance_evidence. NEVER invent metrics.`,
     `- source_cells: only ids from this list (or empty): ${JSON.stringify([...cellIds])}`,
     `- target_icps: only profile ids from this list (or empty): ${JSON.stringify([...icpIds])}. Each pillar should map to the ICP(s) whose concept column will carry it.`,
     "- messaging_framework: combine taxonomy variable ids (see above) that appear in variable_performance, joined with ' + ' (e.g. \"HK_Benefit + FW_BAB\"). If variable-level evidence is absent, still use the taxonomy prefixes to name the intended combination.",
@@ -442,7 +475,13 @@ type BriefColumn = {
   role: "core" | "exploratory";
 };
 
-function briefsPrompt(pillars: Row[], evidence: Row, columns: BriefColumn[]): string {
+function briefsPrompt(
+  pillars: Row[],
+  evidence: Row,
+  columns: BriefColumn[],
+  cohort: CohortDefinition | null,
+): string {
+  const terminalMetricLabel = cohort?.terminal_metric_label ?? "cost per result";
   const pillarSummaries = pillars.map((row) => {
     const p = (row["payload"] ?? {}) as Row;
     return {
@@ -478,9 +517,11 @@ function briefsPrompt(pillars: Row[], evidence: Row, columns: BriefColumn[]): st
   return [
     "You are the METRIX brief builder. From the stored strategy pillars and supporting analysis evidence below, produce the next set of creative briefs as an IAP Matrix (Matrix Sprint Test).",
     "",
+    cohortContextBlock(cohort),
+    "",
     IAP_VARIABLE_TAXONOMY,
     "",
-    IAP_MATRIX_METHODOLOGY,
+    iapMatrixMethodology(terminalMetricLabel),
     "",
     "STRICT RULES:",
     `- message_pillar MUST be one of these pillar ids: ${JSON.stringify(pillarSummaries.map((p) => p.pillar_id))}`,
@@ -746,6 +787,7 @@ export async function startStrategyGeneration(
 ): Promise<string> {
   const account = await accountExists(accountId);
   if (!account) throw new GenerationError("Ad account not found.", 404);
+  const cohort = resolveCohort(account["cohort"] as string | null | undefined);
   const { evidence, cellIds, icpIds } = await buildStrategyEvidence(accountId, String(account["name"] ?? accountId));
   const runId = await startRun(accountId, "strategy", createdBy, sourceAnalysisRunId);
 
@@ -759,7 +801,7 @@ export async function startStrategyGeneration(
   void (async () => {
     try {
       const output = sanitizeGeneratedText(
-        await generateValidated(strategyPrompt(evidence, cellIds, icpIds), GeneratedStrategy),
+        await generateValidated(strategyPrompt(evidence, cellIds, icpIds, cohort), GeneratedStrategy),
         accountName,
       );
 
@@ -846,6 +888,7 @@ export async function startStrategyGeneration(
 export async function startBriefsGeneration(accountId: string, createdBy: string): Promise<string> {
   const account = await accountExists(accountId);
   if (!account) throw new GenerationError("Ad account not found.", 404);
+  const cohort = resolveCohort(account["cohort"] as string | null | undefined);
   const pillars = await storedPillars(accountId);
   if (pillars.length === 0) {
     throw new GenerationError(
@@ -946,7 +989,7 @@ export async function startBriefsGeneration(accountId: string, createdBy: string
   void (async () => {
     try {
       const output = sanitizeGeneratedText(
-        await generateValidated(briefsPrompt(pillars, evidence, columns), GeneratedBriefs, {
+        await generateValidated(briefsPrompt(pillars, evidence, columns, cohort), GeneratedBriefs, {
           // 16 fully-populated briefs overflow the 8k default → truncated JSON.
           maxTokens: 16384,
           // Enforce the locked 4×4 (general mode is exempt) via the repair retry.

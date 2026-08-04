@@ -26,6 +26,14 @@ create table if not exists ad_accounts (
 -- Idempotent backfill for databases created before meta_ad_account_id existed.
 alter table ad_accounts add column if not exists meta_ad_account_id text;
 
+-- Idempotent backfill for databases created before cohort existed. Business-
+-- model cohort (docs/data-model/METRIX_Cohort_Architecture_v1.md); null until
+-- the agency sets it via PATCH /metrix/accounts/:id/cohort. This column was
+-- previously written to by that route without ever being defined here —
+-- the route would fail at runtime until this backfill exists.
+alter table ad_accounts add column if not exists cohort text
+  check (cohort in ('ecommerce', 'lead_gen', 'service', 'app'));
+
 -- Ad-level registry. `meta_ad_id` and `creative_asset_url` are nullable by
 -- design: no Meta ad_id exists anywhere in the current package (only
 -- ad_name), and asset_path values are non-servable local paths. When real
