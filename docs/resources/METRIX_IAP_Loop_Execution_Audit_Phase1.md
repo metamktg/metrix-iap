@@ -167,3 +167,11 @@ metrics) is higher leverage than patching each site independently.
   once new historical data extends the range. (b) turned out to be a documented, seemingly deliberate
   tradeoff in the existing code comments, not an obvious oversight — overriding it without certainty
   risks trading one bug for a different one in a pipeline real client data flows through.
+- **Item 3 (Strategy's ICP profile generation gap) - done.** generationEngine.ts's GeneratedStrategy
+  schema now includes icp_profiles (0-4 new/refined segments per run, grounded in evidence, never
+  duplicating an existing profile_name). icp_profiles table gained the same source/generation_run_id
+  columns message_pillars/testing_hypotheses already had (another schema-drift gap closed). Seed
+  assembly applies the same generated-preferred-over-imported swap already used for pillars.
+  Deliberately scoped narrow: pillars' target_icps still only reference pre-existing imported profile
+  ids this pass -- cross-referencing newly generated ICPs from the same run is a future refinement,
+  not bundled in here, to keep the change contained and low-risk.

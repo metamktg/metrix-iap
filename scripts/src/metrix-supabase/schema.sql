@@ -581,6 +581,8 @@ create index if not exists report_rows_user_account_class_date_idx on report_row
 
 alter table message_pillars add column if not exists source text not null default 'imported';
 alter table message_pillars add column if not exists generation_run_id uuid;
+alter table icp_profiles add column if not exists source text not null default 'imported';
+alter table icp_profiles add column if not exists generation_run_id uuid;
 alter table testing_hypotheses add column if not exists source text not null default 'imported';
 alter table testing_hypotheses add column if not exists generation_run_id uuid;
 -- Explicit pillar linkage: which message pillar this hypothesis tests.
