@@ -97,3 +97,12 @@ UI (confirmed unused during Initiative 1's research, not yet fixed):
   All 1095 metrix-iap tests still pass; typecheck clean.
 - `act/ActionQueueView.tsx` — **done** (0 violations remaining). Same fix pattern. 244 -> 219 total
   violations remaining across 22 files.
+- `analysis/FindingsView.tsx` — **done** (0 violations remaining). 219 -> 186 total violations
+  remaining across 21 files.
+- Also fixed this pass (found during the onboarding/output-consistency audits, not the ranked
+  typography backlog): 5 nav items in `navigation/navTree.ts` carried a stale `placeholder: true`
+  flag despite having real, working pages behind them (`Strategy -> Communications`,
+  `Creative -> Library`, `Creative -> Import & Export`, `MST -> Performance`, `Overview -> Updates`)
+  -- each verified individually by reading the component, not removed blindly. This was causing a
+  false "Soon" badge in the sidebar on working features, including the app's only getting-started
+  guide. `MST -> Direction` keeps its flag -- verified it's genuinely still a stub.

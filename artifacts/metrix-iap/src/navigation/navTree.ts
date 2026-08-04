@@ -93,7 +93,6 @@ export const navTree: NavSection[] = [
         label: "Updates",
         to: "/app/overview/updates",
         dataSource: "platform_updates",
-        placeholder: true,
       },
     ],
   },
@@ -200,7 +199,6 @@ export const navTree: NavSection[] = [
         label: "Communications",
         to: "/app/strategy/communications",
         dataSource: "message_pillars, performance_by_cell",
-        placeholder: true,
       },
       {
         id: "strategy-hypotheses",
@@ -228,7 +226,6 @@ export const navTree: NavSection[] = [
         label: "Library",
         to: "/app/creative/library",
         dataSource: "local_book2_library, imported_creative_briefs",
-        placeholder: true,
       },
       {
         id: "creative-builder",
@@ -248,7 +245,6 @@ export const navTree: NavSection[] = [
         label: "Import & Export",
         to: "/app/creative/import-export",
         dataSource: "manual_imports",
-        placeholder: true,
       },
     ],
   },
@@ -277,7 +273,6 @@ export const navTree: NavSection[] = [
         label: "Performance",
         to: "/app/mst/performance",
         dataSource: "historical_matrix_4x4, performance_by_cell",
-        placeholder: true,
       },
       {
         id: "mst-direction",
