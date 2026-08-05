@@ -393,7 +393,7 @@
       "spend_usd": 15177.91,
       "impressions": 63929,
       "link_clicks": 10104,
-      "link_ctr_pct": 15.805,
+      "link_ctr_pct": 1.2406,
       "result_totals_by_event": {
         "onb_initiate_checkout": {
           "spend": 2047.8,
@@ -3789,7 +3789,8 @@
               "funnel_entry_point": "TOF - App install",
               "psychographic_profile": "No time for full books; guilt around not learning; wants permission to learn efficiently",
               "demographic_foundation": "30-54, mixed gender, time-scarce professional or parent",
-              "strategic_recommendation": "Scale now with dedicated budget; build a second creative layer within this ICP before diversifying spend elsewhere"
+              "strategic_recommendation": "Scale now with dedicated budget; build a second creative layer within this ICP before diversifying spend elsewhere",
+              "origin": "imported"
             },
             {
               "profile_id": "ICP_BOOK0_MaleEfficiencyPocket",
@@ -3807,7 +3808,8 @@
               "funnel_entry_point": "Overflow from broad targeting",
               "psychographic_profile": "Unconfirmed - currently only receiving algorithmic overflow traffic, not purpose-built creative",
               "demographic_foundation": "Male, 35-44 and 55-64",
-              "strategic_recommendation": "Build and test a purpose-built creative for this segment before assuming it is a durable ICP"
+              "strategic_recommendation": "Build and test a purpose-built creative for this segment before assuming it is a durable ICP",
+              "origin": "imported"
             },
             {
               "profile_id": "ICP_BOOK2_C2B_QuizCompleter",
@@ -3824,7 +3826,8 @@
               "funnel_entry_point": "TOF quiz -> registration",
               "psychographic_profile": "Responds to product-demo / '1,000 books, 15 minutes each' proof",
               "demographic_foundation": "Same targeting as BOOK2 broad quiz campaign; not yet demographically isolated",
-              "strategic_recommendation": "Keep as control; brief a checkout-stage-specific message layer to close the registration-to-checkout gap"
+              "strategic_recommendation": "Keep as control; brief a checkout-stage-specific message layer to close the registration-to-checkout gap",
+              "origin": "imported"
             },
             {
               "profile_id": "ICP_BOOK0_C5_BYOC_PENDING",
@@ -3840,7 +3843,8 @@
               "funnel_entry_point": "TOF - App install",
               "psychographic_profile": "Needs to process specific professional content, not generic summaries",
               "demographic_foundation": "25-40 working professionals, operators, founders (per Local Client Library CONCEPTS tab)",
-              "strategic_recommendation": "Do not judge from current data; needs full A-D funding before a verdict"
+              "strategic_recommendation": "Do not judge from current data; needs full A-D funding before a verdict",
+              "origin": "imported"
             }
           ],
           "variable_combinations": [
@@ -7378,7 +7382,7 @@
           "variation": null,
           "test_id": null,
           "meta_ad_id": "120248368953470327",
-          "creative_asset_url": "/api/metrix/accounts/ecas/manual-imports/b3dc6960-87ac-404f-98ab-c79102d86883/file",
+          "creative_asset_url": "/api/metrix/accounts/ecas/cells/C3D/creative",
           "asset_filename": "C3D_CN_ICP_HometownSelf_CN_Design_CityDetail_CTA_ClaimOffer_HK_Curiosity_TN_Aspirational_FW_PAS_ST_TOFU_001_4x5.png",
           "asset_servable": true
         },
@@ -7390,9 +7394,9 @@
           "variation": null,
           "test_id": null,
           "meta_ad_id": "120248369515870327",
-          "creative_asset_url": null,
-          "asset_filename": "CN_Design_MultiPrintGallery",
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/ecas/cells/C4A/creative",
+          "asset_filename": "C4A_CN_ICP_MemoryKeeperCouple_CN_Design_MultiPrintGallery_TN_Assertive_HK_Benefit_TN_Assertive_FW_BAB_ST_TOFU_001_4x5.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C4B",
@@ -13914,7 +13918,8 @@
               "funnel_entry_point": "TOFU — cold, problem-aware gift seekers around gifting moments (Father's Day window in the data).",
               "psychographic_profile": "Shopping for an emotionally meaningful, non-generic gift for a parent or partner. Responds to recipient-reaction narratives ('watch their face light up'), not product specs or discounts. Gift anxiety — wants the gift to land, fears giving something forgettable.",
               "demographic_foundation": "Male 25-34 — the account's 8th-largest segment ($123.70 spend, 6,835 impressions) yet it produced 1 of the 2 account purchases (2026-06-21, on the gift-narrative creative '1 Print Static'). Buyer is not the recipient: the purchase creative is written entirely about someone else's street.",
-              "strategic_recommendation": "Primary ICP for MST cycle 1. Run gift-narrative cells broad and let delivery re-find younger gift buyers; do not hard-restrict age yet (delivery skew currently sends 52% of spend to 55+)."
+              "strategic_recommendation": "Primary ICP for MST cycle 1. Run gift-narrative cells broad and let delivery re-find younger gift buyers; do not hard-restrict age yet (delivery skew currently sends 52% of spend to 55+).",
+              "origin": "imported"
             },
             {
               "profile_id": "LD-ICP-SELF-DECORATOR-55PLUS",
@@ -13935,7 +13940,8 @@
               "funnel_entry_point": "TOFU/MOFU — solution-aware browsers; testimonial and quality-proof creative are natural MOFU/BOFU follow-ups for this ICP.",
               "psychographic_profile": "Decorating their own home with meaningful places — cities of first trips, honeymoons, hometowns. Values perceived craftsmanship ('museum-quality paper', real wood frames) and authenticity; a real unstyled photo outperformed the polished discount grid for this segment.",
               "demographic_foundation": "55+ segments absorbed $851.70 (51.6% of account spend, ~24,400 impressions) and produced 1 purchase: female 55-64 on 'Multiple Pieces' (2026-05-06) — an authentic multi-print product spread with no discount overlay.",
-              "strategic_recommendation": "Secondary ICP for MST cycle 1. A/B real-photo spread vs catalog-grid mockup at equal budget with NO discount in either arm, per the analysis_core next-sprint recommendation."
+              "strategic_recommendation": "Secondary ICP for MST cycle 1. A/B real-photo spread vs catalog-grid mockup at equal budget with NO discount in either arm, per the analysis_core next-sprint recommendation.",
+              "origin": "imported"
             },
             {
               "profile_id": "LD-ICP-CITY-LOYALIST",
@@ -13953,7 +13959,8 @@
               "funnel_entry_point": "TOFU — geo-targeted cold audiences in the named city only.",
               "psychographic_profile": "Identity-driven local — buys the city as a badge ('NASHVILLE ART for a NASHVILLE LOVER'). Neighborhood name-stacking (Music Row, 12 South, Belle Meade) is the flattery mechanic.",
               "demographic_foundation": "No converting segment yet. The two city-pride creatives ('Music Row Static - Pride' static + 'Blue Shirt UGC') spent $287.28 across 7,578 impressions with 0 reported purchases.",
-              "strategic_recommendation": "Hold out of MST cycle 1 budget. Run a separate geo-tight Nashville test before spending against this ICP again — do not kill on 0 purchases until attribution is reconciled."
+              "strategic_recommendation": "Hold out of MST cycle 1 budget. Run a separate geo-tight Nashville test before spending against this ICP again — do not kill on 0 purchases until attribution is reconciled.",
+              "origin": "imported"
             },
             {
               "profile_id": "ICP-ECAS-01",
@@ -13968,7 +13975,8 @@
               "funnel_entry_point": "/collections/best-sellers",
               "psychographic_profile": "Values craft/permanence over novelty; skeptical of \"generic\" personalized gifts",
               "demographic_foundation": "Adults 45+ shopping for a gift for someone else (parent, sibling, longtime friend)",
-              "strategic_recommendation": "Hold current hypothesis. Do not reallocate budget toward or away from this ICP until MST Sprint 1 delivers a valid read (all cells live, tracking fixed)."
+              "strategic_recommendation": "Hold current hypothesis. Do not reallocate budget toward or away from this ICP until MST Sprint 1 delivers a valid read (all cells live, tracking fixed).",
+              "origin": "imported"
             },
             {
               "profile_id": "ICP-ECAS-02",
@@ -13983,7 +13991,8 @@
               "funnel_entry_point": "/collections/best-sellers",
               "psychographic_profile": "Wants their space to feel intentional, not default/bare",
               "demographic_foundation": "Adults 25-34 in a life-stage transition (new home, new relationship, new job)",
-              "strategic_recommendation": "Hold current hypothesis. Do not reallocate budget toward or away from this ICP until MST Sprint 1 delivers a valid read (all cells live, tracking fixed)."
+              "strategic_recommendation": "Hold current hypothesis. Do not reallocate budget toward or away from this ICP until MST Sprint 1 delivers a valid read (all cells live, tracking fixed).",
+              "origin": "imported"
             },
             {
               "profile_id": "ICP-ECAS-03",
@@ -13998,7 +14007,8 @@
               "funnel_entry_point": "city collection page (never a single PDP for cold traffic)",
               "psychographic_profile": "Values authenticity and specificity — reacts against generic gift-shop iconography",
               "demographic_foundation": "Self-purchasers buying for their own nostalgia/identity around a specific place",
-              "strategic_recommendation": "Hold current hypothesis. Do not reallocate budget toward or away from this ICP until MST Sprint 1 delivers a valid read (all cells live, tracking fixed)."
+              "strategic_recommendation": "Hold current hypothesis. Do not reallocate budget toward or away from this ICP until MST Sprint 1 delivers a valid read (all cells live, tracking fixed).",
+              "origin": "imported"
             },
             {
               "profile_id": "ICP-ECAS-04",
@@ -14013,7 +14023,8 @@
               "funnel_entry_point": "/collections/best-sellers",
               "psychographic_profile": "Frames purchase as relationship narrative, not decor",
               "demographic_foundation": "Couples/partners commemorating shared travel or shared history",
-              "strategic_recommendation": "Hold current hypothesis. Do not reallocate budget toward or away from this ICP until MST Sprint 1 delivers a valid read (all cells live, tracking fixed)."
+              "strategic_recommendation": "Hold current hypothesis. Do not reallocate budget toward or away from this ICP until MST Sprint 1 delivers a valid read (all cells live, tracking fixed).",
+              "origin": "imported"
             }
           ],
           "variable_combinations": [
