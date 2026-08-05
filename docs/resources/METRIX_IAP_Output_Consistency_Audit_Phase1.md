@@ -56,15 +56,16 @@ these aren't independent UI bugs so much as symptoms of the same underlying gap.
   concept id) — wired via `lib/creative-assembly.ts:118-149`
 - `local_book2_library[].asset_filename` — dead. `creative-assembly.ts:133` sources the displayed
   filename from `AdRecord.asset_filename` instead, so the MST library cell's own copy is never read
-- `local_book2_library[].qa_mapping_status` — dead, zero references anywhere
-- `local_book2_library[].mapping_confidence` — dead, zero references anywhere
-- `historical_matrix_4x4.diagonal_down` / `.diagonal_up` (the matrix-level id arrays) — dead. Only
-  the per-cell `diagonal_role` is read; the matrix-level path arrays are never used
+- ~~`local_book2_library[].qa_mapping_status`~~ / ~~`.mapping_confidence`~~ — **wired.** See priority
+  item 2 below.
+- ~~`historical_matrix_4x4.diagonal_down` / `.diagonal_up`~~ — **wired.** `lib/mst-analysis.ts`'s
+  layer 4 (diagonal isolation) now reads these matrix-level cell-id arrays directly as the
+  authoritative diagonal grouping, falling back to per-cell `diagonal_role` only if they're empty.
 - `source_artifacts` — dead, zero references
 
-The two QA fields are the most worth prioritizing if MST work continues: an asset with low mapping
-confidence or a flagged QA status currently displays identically to a fully-validated one — no visual
-distinction anywhere in the Creative/MST UI.
+The two QA fields were the most worth prioritizing when MST work continued, and both are now closed:
+an asset with low mapping confidence or a flagged QA status shows a visual QA badge in the
+Creative/MST UI instead of rendering identically to a fully-validated one.
 
 **Manager/Agency-level.** `bottom_line_totals`, `configured_ad_accounts`, `unconfigured_ad_accounts`,
 `recommendation_cards` — fully wired (`ManagerOverview.tsx`). `ManagerAccount.type` and

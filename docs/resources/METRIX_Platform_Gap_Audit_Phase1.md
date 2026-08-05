@@ -21,6 +21,11 @@ this fix would have failed at the DB write. **Closed.**
 No other schema drift was found: `ad_accounts.cohort` was checked and already exists in production
 (this was drift the Initiative 6 migration correctly targets, not a new gap).
 
+**MST layers 2-7, previously listed as a real gap below, closed in the same session** once research
+showed the remaining 6 layers are deterministic aggregation over data already in the seed bundle, not
+a generation-engine feature — see gap #3 below for the full writeup. Frontend-only, no schema or
+backend change, so it carried none of the live-database risk the `icp_profiles` fix did.
+
 ## Confirmed NOT gaps (advisor findings that are working as designed)
 
 Supabase's advisors surface a lot of noise that looks alarming out of context. Each of these was
@@ -70,12 +75,16 @@ Confirmed in the earlier IAP Loop execution audit (`METRIX_IAP_Loop_Execution_Au
 generation-engine wiring exists at all for this stage (unlike Strategy/Briefs, which route through
 `generationEngine.ts`). This is the largest remaining build in the IAP chain.
 
-### 3. MST layers 2-7 are unimplemented
+### 3. ~~MST layers 2-7 are unimplemented~~ — closed this pass
 
-Layer 1 (the raw matrix grid) works. `docs/prompts/MST_TEST_ENGINE_v2.0.md`'s 7-layer spec
-(column/row/diagonal analysis, variable isolation, synergy, crossmap, verdicts) is fully documented
-but has no generation-engine code, no storage, and no UI. `seedTypes.ts`'s `MST` interface only models
-layer 1.
+Layer 1 (the raw matrix grid) already worked. Layers 2-7 (column/row/diagonal analysis, variable
+isolation, combination synergy, crossmap leaderboard) turned out not to need generation-engine
+wiring at all: they're grouping/ranking/aggregation math over `historical_matrix_4x4` +
+`performance_by_cell`, both already in the seed bundle — not creative narrative. Implemented as a
+pure, cohort-aware, unit-tested TypeScript module (`lib/mst-analysis.ts`), consumed by a rewritten
+`mst/MstPerformanceView.tsx`. Zero schema change, zero LLM call, zero new backend surface — the
+lowest-risk possible way to close this gap. See the higher-lift plan below, which has been trimmed
+to drop this item.
 
 ### 4. Analysis Core target-shape decision still open
 
@@ -102,9 +111,9 @@ programmatically; flagged for the user to flip directly.
 
 ## Higher-lift plan (for a dedicated build environment)
 
-The two genuinely large builds — Optimization Loop and MST layers 2-7 — share a shape with the
-Strategy/Briefs work already shipped, so the plan is to extend the same pattern rather than invent a
-new one:
+MST layers 2-7 dropped off this list — closed this pass without needing the dedicated environment
+(see above). The remaining large build, Optimization Loop, still needs the generation-engine pattern
+already proven out for Strategy/Briefs:
 
 1. **Optimization Loop generation engine.** New `startOptimizationLoopGeneration` alongside
    `startStrategyGeneration`/`startBriefsGeneration` in `generationEngine.ts`: evidence pack from real
@@ -116,27 +125,20 @@ new one:
    table for Strategy Map). Then wire the 4 dead UI fields identified in the Output Consistency audit
    (`ManagerOverview.tsx` for `manager_overview_visibility`, `ActionQueueView.tsx` for
    `dismiss_policy`/`source_policy` via `CaveatNote`).
-2. **MST layers 2-7.** Extend `seedTypes.ts`'s `MST` interface with the layer 2-7 shapes per
-   `MST_TEST_ENGINE_v2.0.md`, add a generation path in `generationEngine.ts` (or determine whether this
-   should be a separate `mstEngine.ts` given the spec's size — column/row/diagonal analysis, variable
-   isolation, synergy, crossmap, verdicts — before committing to co-locating it with Strategy/Briefs
-   generation), storage decision (extend `local_book2_library`/`historical_matrix_4x4` vs. new table),
-   then a UI pass reusing the disclosure primitives (`DetailReveal`, `ConfidenceBadge`) already
-   established platform-wide.
-3. **GitHub Actions CI for the full validation suite** — mirror the `.replit` "Project" workflow's
+2. **GitHub Actions CI for the full validation suite** — mirror the `.replit` "Project" workflow's
    task list (typecheck, both test suites, both builds, nav-routes, seed-fixture-drift, contrast
    checks) as a `.github/workflows/ci.yml` gating PRs into `main`, once the needed secrets are
-   provisioned on the repo. This closes gap #1 above and should happen before the two builds above,
-   not after — it's what keeps them from landing bugs silently.
-4. **Analysis Core target-shape decision** (gap #4) — resolve full-replace-vs-window-scoped semantics
+   provisioned on the repo. This closes gap #1 above and should happen before the Optimization Loop
+   build, not after — it's what keeps it from landing bugs silently.
+3. **Analysis Core target-shape decision** (gap #4) — resolve full-replace-vs-window-scoped semantics
    for `concept_performance`/`variable_performance`, then fix `deleteRunOutputs` to match.
-5. **Performance advisory cleanup** (the 70 INFO/WARN findings on the official schema) — batch as a
+4. **Performance advisory cleanup** (the 70 INFO/WARN findings on the official schema) — batch as a
    dedicated `supabase/policies/` pass with `metrixOfficialSecurity.test.ts` re-run after each
    consolidation, since `multiple_permissive_policies` fixes involve merging `_select`/`_write`
    policies per table and `auth_rls_initplan` fixes involve wrapping `auth.<fn>()` calls in
    `(select ...)` — both are behavior-preserving in theory but need the security test suite to prove
    it per table, not applied as one blind sweep.
 
-Items 1-2 are the actual "activate the full functional Metrix IAP app" work — everything else in this
-audit is either already fixed, confirmed to not be a real gap, or scoped, low-risk cleanup that can
-happen alongside them.
+Item 1 (Optimization Loop) is the actual remaining "activate the full functional Metrix IAP app"
+work — everything else in this audit is either already fixed (including MST layers 2-7, this pass),
+confirmed to not be a real gap, or scoped, low-risk cleanup that can happen alongside it.
