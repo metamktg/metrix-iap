@@ -48,13 +48,25 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright Chromium
-        # login-page-layout.spec.ts (and other e2e specs) launch chromium
-        # headless, which since Playwright 1.4x+ resolves to a separate
-        # "Chromium Headless Shell" binary distinct from full Chromium —
-        # "chromium" alone did not pull it in on this runner (confirmed by
-        # actually hitting the failure: "Executable doesn't exist at
-        # .../chromium_headless_shell-1228/..."). Installing both explicitly.
-        run: npx playwright install --with-deps chromium chromium-headless-shell
+        # Two real bugs found by actually running this in CI, not assumed:
+        # (1) login-page-layout.spec.ts and other e2e specs launch chromium
+        #     headless, which since Playwright 1.4x+ resolves to a separate
+        #     "Chromium Headless Shell" binary distinct from full Chromium —
+        #     "chromium" alone did not pull it in. Installing both explicitly.
+        # (2) Only playwright-core (the library) is a dependency here, not
+        #     the playwright CLI package — so bare `npx playwright install`
+        #     doesn't resolve the repo's pinned version at all. npx fetched
+        #     a fresh, different, newer playwright from the registry instead,
+        #     which downloaded a browser revision the pinned playwright-core
+        #     doesn't match ("Executable doesn't exist at
+        #     .../chromium_headless_shell-1228/...": runtime expected 1228,
+        #     the unpinned installer fetched 1234). Pinning to the exact
+        #     installed playwright-core version (read from node_modules,
+        #     not hardcoded) so installer and runtime always agree even
+        #     after future version bumps.
+        run: |
+          PW_VERSION=$(node -p "require('./node_modules/playwright-core/package.json').version")
+          npx "playwright@$PW_VERSION" install --with-deps chromium chromium-headless-shell
 
       - name: Typecheck (all packages)
         run: pnpm run typecheck
