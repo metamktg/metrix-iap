@@ -1,0 +1,74 @@
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;500;600;700&family=JetBrains+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Industrial / Editorial Light Theme */
+    --background: 40 20% 97%; /* Warm paper */
+    --foreground: 240 20% 10%; /* Deep navy/black */
+    
+    --card: 0 0% 100%;
+    --card-foreground: 240 20% 10%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 20% 10%;
+    
+    --primary: 245 80% 50%; /* Cobalt Blue */
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 40 10% 90%;
+    --secondary-foreground: 240 20% 10%;
+    
+    --muted: 40 10% 90%;
+    --muted-foreground: 240 5% 40%;
+    
+    --accent: 15 90% 55%; /* Vibrant Orange */
+    --accent-foreground: 0 0% 100%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 40 15% 85%;
+    --input: 40 15% 85%;
+    --ring: 245 80% 50%;
+
+    --radius: 0rem; /* Sharp corners for brutalist/editorial feel */
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: 'DM Sans', sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6, .font-display {
+    font-family: 'Bricolage Grotesque', sans-serif;
+  }
+  code, pre, .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+/* Custom Scrollbar for the feed */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
