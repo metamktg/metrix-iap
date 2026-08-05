@@ -14,6 +14,25 @@ import type { CreativeCardData } from "./CreativeCard";
 import { AdsManagerButton } from "./AdsManagerLink";
 import { resolveVariableLabel, getVariablePrefix, PREFIX_COLORS } from "@/lib/variable-registry";
 
+// ─── QA mapping status ─────────────────────────────────────────────────
+// MSTLibraryCell.qa_mapping_status, observed values: "pass",
+// "mapped_to_performance" (validated), "flagged", "library_only_no_export_match"
+// (needs attention). Unrecognized values fall back to neutral styling.
+
+const QA_STATUS_STYLE: Record<string, string> = {
+  pass: "bg-emerald-400/10 text-emerald-400 border-emerald-400/25",
+  mapped_to_performance: "bg-emerald-400/10 text-emerald-400 border-emerald-400/25",
+  flagged: "bg-red-400/10 text-red-300 border-red-400/25",
+  library_only_no_export_match: "bg-amber-400/10 text-amber-300 border-amber-400/25",
+};
+
+const QA_STATUS_LABEL: Record<string, string> = {
+  pass: "Pass",
+  mapped_to_performance: "Mapped to performance",
+  flagged: "Flagged",
+  library_only_no_export_match: "No export match",
+};
+
 // ─── Local creative visual (avoids circular import with CreativeCard) ──
 
 const VIDEO_EXT = new Set(["mp4", "mov", "m4v", "webm", "avi", "mkv"]);
@@ -213,6 +232,29 @@ function OverviewTab({ data }: { data: CreativeCardData }) {
         <div className="space-y-1.5">
           <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50">IAP read</p>
           <p className="text-caption text-foreground/80 leading-relaxed">{data.iapRead}</p>
+        </div>
+      )}
+
+      {(data.qaMappingStatus || data.mappingConfidence) && (
+        <div className="space-y-1.5">
+          <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50">QA mapping</p>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {data.qaMappingStatus && (
+              <span
+                className={cn(
+                  "inline-flex text-label font-semibold uppercase tracking-wide border px-1.5 py-0.5 rounded leading-none",
+                  QA_STATUS_STYLE[data.qaMappingStatus] ?? "bg-muted text-muted-foreground/60 border-border/40",
+                )}
+              >
+                {QA_STATUS_LABEL[data.qaMappingStatus] ?? data.qaMappingStatus}
+              </span>
+            )}
+            {data.mappingConfidence && (
+              <span className="text-label font-semibold uppercase tracking-wide text-muted-foreground/60 border border-border/40 px-1.5 py-0.5 rounded leading-none">
+                {data.mappingConfidence} confidence
+              </span>
+            )}
+          </div>
         </div>
       )}
 

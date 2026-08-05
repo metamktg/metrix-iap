@@ -22,7 +22,7 @@ file:line. The good news: the "honesty pattern" (running/success/error, no fabri
 | Analysis Core | **Partial** — deterministic aggregation covering ~2 of 11 prompt dimensions, real data-integrity bugs |
 | Strategy Map | **Real, with 2 significant bugs** — hardcoded CPA, never generates ICP profiles |
 | Brief Builder | **Real, shares the same cohort-hardcoding bug** as Strategy |
-| MST Test Engine | **Layer 1 real and working**; layers 2–7 fully unimplemented (confirmed earlier this session) |
+| MST Test Engine | **All 7 layers real.** Layer 1 (matrix×performance join) was already working; layers 2–7 (column/row/diagonal analysis, variable isolation, combination synergy, crossmap leaderboard) shipped this pass as a pure, cohort-aware, unit-tested computation over existing seed data — `lib/mst-analysis.ts`, no LLM, no schema change. Rendered in `mst/MstPerformanceView.tsx`. |
 | MST Creative Scan | **Spec only** — not wired to any code path |
 | Optimization Loop | **Complete stub** — no data model, no generation engine, no trigger, nothing to display |
 
@@ -95,16 +95,24 @@ concurrency guard, and route logic have no direct tests).
 
 **Layer 1 (the matrix grid) is real and working.** `MstSprintsView.tsx` renders the actual
 `historical_matrix_4x4` grid with correct gating (status, date-range, pending states).
-`MstPerformanceView.tsx` computes genuine universal-vs-avatar-specific CPA winners by joining real
-rows. Every incomplete area is **honestly labeled**, not silently broken: `MstCrossMapView.tsx`
-self-documents "planned but not yet built," `MstDirectionView.tsx` is an explicit `PendingState`
-about the Optimization Loop dependency.
 
-**Layers 2–7 remain fully unimplemented** (column/row/diagonal analysis, variable isolation,
-synergy, crossmap, verdicts) — confirmed again this pass, consistent with the earlier finding this
-session. `MST_CREATIVE_SCAN`'s spec (`docs/iap/MST_CREATIVE_SCAN.md`) is also unwired —
-`CreativeScanView.tsx` does plain file upload + ad-name mapping only, with its own `CaveatNote`
-admitting the automated confidence pass "is planned but not yet built."
+**Layers 2–7 are now real, shipped this pass.** `lib/mst-analysis.ts` is a pure, unit-tested
+computation module (`__tests__/mst-analysis.test.ts`, run against the real bookster fixture) that
+joins `historical_matrix_4x4` to `performance_by_cell` and computes the full 7-layer spec:
+column/avatar analysis, row (cross-avatar) consistency, diagonal isolation (reading the
+matrix-level `diagonal_down`/`diagonal_up` cell-id arrays — previously dead per the Output
+Consistency audit), individual variable isolation, pairwise/triple combination synergy (including
+golden-formula detection), and the master crossmap leaderboard. Verdicts
+(`universal_winner`/`avatar_dependent`/`underperformer`/`insufficient_data`) are computed
+deterministically from consistency (coefficient of variation across contexts) and standing vs. the
+comparison set — no LLM call, so there's no hallucination surface on what's fundamentally
+arithmetic. Terminal metric label/direction resolve through the account's cohort
+(`lib/data/cohortMeta.ts`, mirroring the backend's `cohortConfig.ts`) rather than hardcoding CPA —
+`MstPerformanceView.tsx` was rewritten to consume this engine, replacing its previous hand-rolled,
+CPA-only, single-metric "best row" logic. `MST_CREATIVE_SCAN`'s spec
+(`docs/iap/MST_CREATIVE_SCAN.md`) remains unwired — `CreativeScanView.tsx` does plain file upload +
+ad-name mapping only, with its own `CaveatNote` admitting the automated confidence pass "is planned
+but not yet built." That gap is separate from the 7-layer test-results engine and still open.
 
 ## 6. Optimization Loop
 
@@ -144,7 +152,7 @@ metrics) is higher leverage than patching each site independently.
 4. **Decide Analysis Core's target shape** — keep it as deterministic aggregation (fast, cheap,
    already mostly working) vs. build it out toward the full LLM-driven 11-dimension contract. This is
    an architectural call, not a quick fix.
-5. **MST layers 2–7** (already flagged as its own future initiative).
+5. ~~**MST layers 2–7**~~ — **done.** See Remediation progress below.
 6. **Optimization Loop** — full build, the largest remaining gap in the loop.
 7. **Data Bundle Prep** — decide if a real, separate bundle stage is worth building or if the
    current folded-in CSV path is an accepted simplification.
@@ -175,3 +183,11 @@ metrics) is higher leverage than patching each site independently.
   Deliberately scoped narrow: pillars' target_icps still only reference pre-existing imported profile
   ids this pass -- cross-referencing newly generated ICPs from the same run is a future refinement,
   not bundled in here, to keep the change contained and low-risk.
+- **Item 5 (MST layers 2-7) — done.** Implemented as pure client-side computation
+  (`lib/mst-analysis.ts`) rather than a backend generation-engine addition — the layers are
+  grouping/ranking/aggregation over data the seed bundle already carries, not creative narrative, so
+  there was no need for a new LLM call path, new prompt, or new storage. Zero backend/schema risk.
+  Unit-tested against the real bookster fixture (16-cell active matrix, 12 performance rows),
+  including a regression test for compound `" + "`-joined variable fields (e.g.
+  `"TN_Rational + TN_Relatable"`) being split into individually-isolated codes rather than treated
+  as one glued string. `MstPerformanceView.tsx` rewritten to consume it.

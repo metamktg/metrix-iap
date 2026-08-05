@@ -11,6 +11,7 @@ import {
   ModuleHeader, ModuleTabs, ModuleScopeGate, PendingState,
   MetricTile, CaveatNote, CrossLink, useFocusParam, FlowCrumb, useFromParam,
   RangeScopeBar, NoDataInRangeState, StaleFocusNotice, deriveLabel, SkeletonBlock,
+  ConfidenceBadge,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import {
@@ -231,6 +232,16 @@ export function BriefBuilderView() {
                 }
               >
                 <DrawerField label="Status">{STATUS_LABEL[detail.status] ?? detail.status}</DrawerField>
+                {(detail.book || detail.mode || detail.voice) && (
+                  <DrawerField label="Details">
+                    {[detail.book, detail.mode, detail.voice].filter(Boolean).join(" · ")}
+                  </DrawerField>
+                )}
+                {detail.confidence && (
+                  <DrawerField label="Confidence">
+                    <ConfidenceBadge value={detail.confidence} />
+                  </DrawerField>
+                )}
                 <DrawerField label="Human direction"><TokenizedConceptText text={detail.human_direction} /></DrawerField>
                 <DrawerField label="Creative direction">
                   <div className="flex flex-wrap gap-1.5">
