@@ -48,7 +48,13 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+        # login-page-layout.spec.ts (and other e2e specs) launch chromium
+        # headless, which since Playwright 1.4x+ resolves to a separate
+        # "Chromium Headless Shell" binary distinct from full Chromium —
+        # "chromium" alone did not pull it in on this runner (confirmed by
+        # actually hitting the failure: "Executable doesn't exist at
+        # .../chromium_headless_shell-1228/..."). Installing both explicitly.
+        run: npx playwright install --with-deps chromium chromium-headless-shell
 
       - name: Typecheck (all packages)
         run: pnpm run typecheck
