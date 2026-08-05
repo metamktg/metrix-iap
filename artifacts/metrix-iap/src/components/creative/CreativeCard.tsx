@@ -16,7 +16,7 @@
 
 import { useMemo, useState, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { ImageOff, Maximize2, ExternalLink, Upload } from "lucide-react";
+import { ImageOff, Maximize2, ExternalLink, Upload, AlertTriangle } from "lucide-react";
 import { resolveVariableLabel, getVariablePrefix, PREFIX_COLORS } from "@/lib/variable-registry";
 import { CreativeExpandDialog } from "./CreativeExpandDialog";
 import { buildAdsManagerAdUrl } from "./AdsManagerLink";
@@ -52,6 +52,10 @@ export interface CreativeCardData {
   stats?: CreativeCardStats;
   iapRead?: string | null;
   stage?: string | null;
+  /** MSTLibraryCell.qa_mapping_status — "flagged"/"library_only_no_export_match" need attention. */
+  qaMappingStatus?: string | null;
+  /** MSTLibraryCell.mapping_confidence — high/medium/low. */
+  mappingConfidence?: string | null;
   /** Meta ad id (ads.meta_ad_id) — enables the Ads Manager link when set with adAccountId. */
   metaAdId?: string | null;
   /** Numeric Meta ad account id (meta_ad_account_id) — NOT the internal account id. */
@@ -249,6 +253,8 @@ export function CreativeCard({
       ? buildAdsManagerAdUrl(data.adAccountId, data.metaAdId)
       : null;
 
+  const qaFlagged = data.qaMappingStatus === "flagged" || data.qaMappingStatus === "library_only_no_export_match";
+
   return (
     <>
       {/*
@@ -355,6 +361,15 @@ export function CreativeCard({
               {data.stage && (
                 <span className="text-[8px] font-mono uppercase text-muted-foreground/55 border border-border/30 px-1 py-0.5 rounded leading-none">
                   {data.stage}
+                </span>
+              )}
+              {qaFlagged && (
+                <span
+                  title={`QA mapping: ${data.qaMappingStatus}`}
+                  className="flex items-center gap-0.5 text-[8px] font-semibold uppercase text-amber-300 border border-amber-400/30 bg-amber-400/10 px-1 py-0.5 rounded leading-none"
+                >
+                  <AlertTriangle className="w-2.5 h-2.5" />
+                  QA
                 </span>
               )}
             </div>

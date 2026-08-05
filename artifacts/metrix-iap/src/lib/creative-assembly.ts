@@ -145,6 +145,8 @@ export function cardFromLibraryCell(
       : undefined,
     iapRead: lib?.iap_read ?? perf?.iap_read ?? null,
     stage: lib?.stage ?? perf?.stage ?? null,
+    qaMappingStatus: lib?.qa_mapping_status ?? null,
+    mappingConfidence: lib?.mapping_confidence ?? null,
     metaAdId: ad?.meta_ad_id ?? null,
     adAccountId: opts.metaAdAccountId ?? null,
   };

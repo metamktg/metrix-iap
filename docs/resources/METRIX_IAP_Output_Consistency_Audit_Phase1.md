@@ -56,15 +56,16 @@ these aren't independent UI bugs so much as symptoms of the same underlying gap.
   concept id) — wired via `lib/creative-assembly.ts:118-149`
 - `local_book2_library[].asset_filename` — dead. `creative-assembly.ts:133` sources the displayed
   filename from `AdRecord.asset_filename` instead, so the MST library cell's own copy is never read
-- `local_book2_library[].qa_mapping_status` — dead, zero references anywhere
-- `local_book2_library[].mapping_confidence` — dead, zero references anywhere
-- `historical_matrix_4x4.diagonal_down` / `.diagonal_up` (the matrix-level id arrays) — dead. Only
-  the per-cell `diagonal_role` is read; the matrix-level path arrays are never used
+- ~~`local_book2_library[].qa_mapping_status`~~ / ~~`.mapping_confidence`~~ — **wired.** See priority
+  item 2 below.
+- ~~`historical_matrix_4x4.diagonal_down` / `.diagonal_up`~~ — **wired.** `lib/mst-analysis.ts`'s
+  layer 4 (diagonal isolation) now reads these matrix-level cell-id arrays directly as the
+  authoritative diagonal grouping, falling back to per-cell `diagonal_role` only if they're empty.
 - `source_artifacts` — dead, zero references
 
-The two QA fields are the most worth prioritizing if MST work continues: an asset with low mapping
-confidence or a flagged QA status currently displays identically to a fully-validated one — no visual
-distinction anywhere in the Creative/MST UI.
+The two QA fields were the most worth prioritizing when MST work continued, and both are now closed:
+an asset with low mapping confidence or a flagged QA status shows a visual QA badge in the
+Creative/MST UI instead of rendering identically to a fully-validated one.
 
 **Manager/Agency-level.** `bottom_line_totals`, `configured_ad_accounts`, `unconfigured_ad_accounts`,
 `recommendation_cards` — fully wired (`ManagerOverview.tsx`). `ManagerAccount.type` and
@@ -90,12 +91,14 @@ Flagging only so a future pass doesn't mistake the unused field for an oversight
 
 ## Suggested priority
 
-1. **`overview_state.description`/`.primary_action`/`.secondary_action`** — small, contained fix,
-   directly improves the onboarding empty-state experience with copy the backend already wrote.
-2. **MST QA fields** (`qa_mapping_status`, `mapping_confidence`) — gives creative ops a visual signal
-   for asset mapping problems that's currently invisible.
-3. **BriefBuilder per-brief metadata** (`book`/`mode`/`voice`/`confidence`) — straightforward
-   additions to the existing detail drawers, no new data plumbing needed.
-4. **OptimizationLoop policy fields** — hold until the broader Optimization Loop stub gets built
-   (Initiative 5); fixing these in isolation would just be surfacing policy text for a feature that's
-   mostly not there yet.
+1. ~~`overview_state.description`/`.primary_action`/`.secondary_action`~~ — **done.**
+   `UnconfiguredState` now shows the backend-authored, path-specific setup copy.
+2. ~~MST QA fields (`qa_mapping_status`, `mapping_confidence`)~~ — **done.** `CreativeCardData` gained
+   both fields; the card face shows a QA warning badge for "flagged"/"library_only_no_export_match"
+   statuses, and the expand dialog shows the full status + confidence always. Wired through
+   `cardFromLibraryCell` in `creative-assembly.ts`.
+3. ~~BriefBuilder per-brief metadata (`book`/`mode`/`voice`/`confidence`)~~ — **done.** Added to both
+   detail views: `briefs/BriefBuilderView.tsx`'s `InfoDrawer` and
+   `creative/CreativeBriefBuilderView.tsx`'s metadata line, the latter using `ConfidenceBadge`.
+4. **OptimizationLoop policy fields** — still held. Fixing these in isolation would just be surfacing
+   policy text for a feature that's mostly not there yet (Initiative 5).
