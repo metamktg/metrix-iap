@@ -1,0 +1,92 @@
+name: CI
+
+# Runs everything from the Replit "Project" validation workflow that does
+# NOT require live secrets (DATABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
+# DEMO_ACCOUNT_PASSWORD, ...) — none of those are provisioned on this repo
+# yet. Deliberately excludes:
+#   - api-server-tests: needs DATABASE_URL (password-reset cleanup runs
+#     against dev Replit Postgres)
+#   - seed-fixture-drift: needs a running API server + live Supabase +
+#     DEMO_ACCOUNT_PASSWORD
+# Everything below either has no external dependency or (marketing-form-e2e,
+# metrix-iap-build) intercepts/mocks the network calls it would otherwise
+# need a backend for. See docs/resources/METRIX_Platform_Gap_Audit_Phase1.md
+# for the full picture and what re-adding the excluded two needs.
+#
+# Until now, a PR could merge into main with zero automated verification —
+# the Replit workflow only runs when someone manually presses it in the
+# Replit workspace. This closes that gap for everything it safely can.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Typecheck (all packages)
+        run: pnpm run typecheck
+
+      - name: Disclosure rulebook
+        run: pnpm --filter @workspace/scripts run check:disclosure-rulebook
+
+      - name: Text contrast checks
+        run: |
+          pnpm --filter @workspace/scripts run check:text-primary-contrast
+          pnpm --filter @workspace/scripts run check:css-token-contrast
+          pnpm --filter @workspace/scripts run check:text-muted-contrast
+
+      - name: API codegen drift
+        run: pnpm --filter @workspace/scripts run check:api-codegen-drift
+
+      - name: Scripts unit tests
+        run: pnpm --filter @workspace/scripts run test
+
+      - name: API server smoke (boots without Supabase env by design)
+        # The server now imports the Anthropic AI integration client at module
+        # load time (lib/integrations-anthropic-ai), which throws immediately
+        # if these are unset — discovered by actually running this step, not
+        # assumed. Placeholders are enough: /api/healthz never calls the
+        # client, and Replit normally auto-provisions the real values.
+        env:
+          AI_INTEGRATIONS_ANTHROPIC_BASE_URL: "https://ci-placeholder.invalid"
+          AI_INTEGRATIONS_ANTHROPIC_API_KEY: "ci-placeholder-key"
+        run: pnpm --filter @workspace/scripts run smoke:api-server
+
+      - name: Metrix IAP vitest suite + login page layout e2e
+        run: pnpm --filter @workspace/scripts run smoke:metrix-iap-tests
+
+      - name: Metrix IAP production build
+        run: pnpm --filter @workspace/scripts run smoke:metrix-iap-build
+
+      - name: Marketing production build
+        run: pnpm --filter @workspace/scripts run smoke:marketing-build
+
+      - name: Marketing form e2e (network mocked, no real backend)
+        run: pnpm --filter @workspace/scripts run smoke:marketing-e2e
