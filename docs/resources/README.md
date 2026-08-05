@@ -13,6 +13,7 @@ at. Nothing here is a specification. Read these for *why* decisions were made; r
 | [`METRIX_IAP_Loop_Execution_Audit_Phase1.md`](METRIX_IAP_Loop_Execution_Audit_Phase1.md) | IAP Loop execution audit: what actually runs end-to-end per stage vs. what's stubbed, the cross-cutting cohort-awareness hardcoding bug (Analysis Core + Strategy/Brief generation), and the Optimization Loop being a complete stub. Suggested remediation order for initiative 5+. |
 | [`METRIX_IAP_Output_Consistency_Audit_Phase1.md`](METRIX_IAP_Output_Consistency_Audit_Phase1.md) | Every seed-bundle field checked against every page, Agency and Ad Account views: which fields are dead, which are Agency-only/Ad-Account-only, and priority order for closing the gaps. |
 | [`METRIX_Onboarding_Flow_Audit_Phase1.md`](METRIX_Onboarding_Flow_Audit_Phase1.md) | New-user journey traced end to end: what works, the mislabeled "Soon" badges fixed this pass, and the open items (guided-setup copy the backend assembles but the UI drops, and a cited but missing "Onboarding cold-start" spec). |
+| [`METRIX_Platform_Gap_Audit_Phase1.md`](METRIX_Platform_Gap_Audit_Phase1.md) | Cross-system gap audit (Replit/GitHub/Supabase), checked live against the production database via the Supabase MCP connection: the `icp_profiles` schema-drift fix applied this pass, advisor findings confirmed as by-design rather than gaps, and the higher-lift plan for Optimization Loop + MST layers 2-7. |
 
 ## The one rule worth carrying forward
 
