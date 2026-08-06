@@ -111,6 +111,9 @@ function buildRankMetrics(resultPlural: string): RankMetric<SegmentEntry>[] {
     { id: "impressions", label: "Impressions",  direction: "desc", value: (e) => e.totals.impressions, format: fmtNum },
     { id: "cvr",         label: "CVR",          direction: "desc", value: (e) => e.derived.cvr,        format: fmtPct },
     { id: "cpm",         label: "CPM",          direction: "asc",  value: (e) => e.derived.cpm,        format: fmtUSD },
+    { id: "atcRate",     label: "Add to cart rate", direction: "desc", value: (e) => e.derived.addToCartRate,   format: fmtPct },
+    { id: "costPerAtc",  label: "Cost per ATC",     direction: "asc",  value: (e) => e.derived.costPerAddToCart, format: fmtUSD },
+    { id: "checkoutRate", label: "Checkout rate",   direction: "desc", value: (e) => e.derived.checkoutRate,    format: fmtPct },
   ];
 }
 
@@ -118,6 +121,7 @@ const AUDIENCE_RANK_GROUPS: MetricGroup[] = [
   { label: "Performance", ids: ["results", "spend", "cpa"] },
   { label: "Traffic",     ids: ["ctr", "impressions"] },
   { label: "Engagement",  ids: ["cvr", "cpm"] },
+  { label: "Downstream intent", ids: ["atcRate", "costPerAtc", "checkoutRate"] },
 ];
 
 // ── View toggle ───────────────────────────────────────────────────────
@@ -592,7 +596,11 @@ const RANK_KEY = "metrix.audience.rank.v1";
 /** Adapt API demographic rows → DemographicRow[] for existing analysis helpers.
  * Note: demographic_performance does not store impressions — Impressions and
  * CTR_link_pct are unavailable for preset windows and default to 0. */
-function adaptApiDemoRows(rows: { age: string; gender: string; spend: number | null; results: number | null; link_clicks: number | null }[]): DemographicRow[] {
+function adaptApiDemoRows(rows: {
+  age: string; gender: string; spend: number | null; results: number | null; link_clicks: number | null;
+  adds_to_cart?: number | null; checkouts_initiated?: number | null; purchases?: number | null;
+  adds_to_cart_value?: number | null;
+}[]): DemographicRow[] {
   return rows.map((r) => ({
     cell_id: "",
     "Ad name": "",
@@ -607,6 +615,10 @@ function adaptApiDemoRows(rows: { age: string; gender: string; spend: number | n
     CPA_result: r.results && r.results > 0 && r.spend ? r.spend / r.results : null,
     CTR_link_pct: 0, // impressions not stored at demographic level
     Result_per_link_click_pct: r.link_clicks && r.link_clicks > 0 && r.results ? (r.results / r.link_clicks) * 100 : 0,
+    adds_to_cart: r.adds_to_cart ?? null,
+    checkouts_initiated: r.checkouts_initiated ?? null,
+    purchases: r.purchases ?? null,
+    adds_to_cart_value: r.adds_to_cart_value ?? null,
   }));
 }
 
