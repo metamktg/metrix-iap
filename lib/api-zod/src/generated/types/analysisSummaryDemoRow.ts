@@ -12,4 +12,7 @@ export interface AnalysisSummaryDemoRow {
   spend: number | null;
   results: number | null;
   link_clicks: number | null;
+  adds_to_cart: number | null;
+  checkouts_initiated: number | null;
+  purchases: number | null;
 }

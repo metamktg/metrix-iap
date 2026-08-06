@@ -103,6 +103,10 @@ export interface DemographicRow {
   CTR_link_pct: number;
   Result_per_link_click_pct: number;
   book2_concept_name?: string;
+  /** Downstream funnel counts (ecommerce cohort), present only when the source export carried them. */
+  adds_to_cart?: number | null;
+  checkouts_initiated?: number | null;
+  purchases?: number | null;
 }
 
 export interface PlacementRow {

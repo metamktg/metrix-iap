@@ -59,6 +59,9 @@ export interface AnalysisSummaryDemoRow {
   spend: number | null;
   results: number | null;
   link_clicks: number | null;
+  adds_to_cart: number | null;
+  checkouts_initiated: number | null;
+  purchases: number | null;
 }
 
 export interface AnalysisSummaryPlacementRow {
@@ -1223,6 +1226,9 @@ export async function startManualAnalysis(
         results: b.results,
         cpa: derivedRates(b.spend, b.impressions, b.linkClicks, b.results).cpa,
         cvr_link_pct: derivedRates(b.spend, b.impressions, b.linkClicks, b.results).cvr_link_pct,
+        adds_to_cart: b.addsToCart,
+        checkouts_initiated: b.checkoutsInitiated,
+        purchases: b.purchases,
         extra_metrics: Object.keys(b.extra).length > 0 ? b.extra : null,
       }));
       await insertChunked("demographic_performance", demographicRows);
@@ -1499,18 +1505,21 @@ export async function getAnalysisSummaryByPreset(
   // ── Demographic rows ───────────────────────────────────────────────
   const { data: demoRows, error: demoErr } = await supabase
     .from("demographic_performance")
-    .select("date_start, age, gender, spend, results, link_clicks")
+    .select("date_start, age, gender, spend, results, link_clicks, adds_to_cart, checkouts_initiated, purchases")
     .eq("account_id", accountId);
   if (demoErr) throw new Error(demoErr.message);
 
-  const demoMap = new Map<string, { spend: number; results: number; link_clicks: number }>();
+  const demoMap = new Map<string, { spend: number; results: number; link_clicks: number; adds_to_cart: number | null; checkouts_initiated: number | null; purchases: number | null }>();
   for (const r of demoRows ?? []) {
     if (!withinViewPreset(String((r as any).date_start ?? ""), preset, anchor)) continue;
     const key = `${String((r as any).age ?? "")}|${String((r as any).gender ?? "").toLowerCase()}`;
-    const d = demoMap.get(key) ?? { spend: 0, results: 0, link_clicks: 0 };
+    const d = demoMap.get(key) ?? { spend: 0, results: 0, link_clicks: 0, adds_to_cart: null, checkouts_initiated: null, purchases: null };
     d.spend       += Number((r as any).spend ?? 0);
     d.results     += Number((r as any).results ?? 0);
     d.link_clicks += Number((r as any).link_clicks ?? 0);
+    d.adds_to_cart = sumOptional(d.adds_to_cart, num((r as any).adds_to_cart));
+    d.checkouts_initiated = sumOptional(d.checkouts_initiated, num((r as any).checkouts_initiated));
+    d.purchases = sumOptional(d.purchases, num((r as any).purchases));
     demoMap.set(key, d);
   }
   const demographic_rows: AnalysisSummaryDemoRow[] = Array.from(demoMap.entries()).map(([key, v]) => {
@@ -1521,6 +1530,9 @@ export async function getAnalysisSummaryByPreset(
       spend:      v.spend,
       results:    v.results,
       link_clicks: v.link_clicks,
+      adds_to_cart: v.adds_to_cart,
+      checkouts_initiated: v.checkouts_initiated,
+      purchases: v.purchases,
     };
   });
 
@@ -1652,24 +1664,36 @@ async function _computeAnalysisSummaryForDateRange(
   // ── Demographic rows ──────────────────────────────────────────────
   const { data: demoRows, error: demoErr } = await supabase
     .from("demographic_performance")
-    .select("date_start, age, gender, spend, results, link_clicks")
+    .select("date_start, age, gender, spend, results, link_clicks, adds_to_cart, checkouts_initiated, purchases")
     .eq("account_id", accountId)
     .gte("date_start", start)
     .lte("date_start", end);
   if (demoErr) throw new Error(demoErr.message);
 
-  const demoMap = new Map<string, { spend: number; results: number; link_clicks: number }>();
+  const demoMap = new Map<string, { spend: number; results: number; link_clicks: number; adds_to_cart: number | null; checkouts_initiated: number | null; purchases: number | null }>();
   for (const r of demoRows ?? []) {
     const key = `${String((r as any).age ?? "")}|${String((r as any).gender ?? "").toLowerCase()}`;
-    const d   = demoMap.get(key) ?? { spend: 0, results: 0, link_clicks: 0 };
+    const d   = demoMap.get(key) ?? { spend: 0, results: 0, link_clicks: 0, adds_to_cart: null, checkouts_initiated: null, purchases: null };
     d.spend       += Number((r as any).spend ?? 0);
     d.results     += Number((r as any).results ?? 0);
     d.link_clicks += Number((r as any).link_clicks ?? 0);
+    d.adds_to_cart = sumOptional(d.adds_to_cart, num((r as any).adds_to_cart));
+    d.checkouts_initiated = sumOptional(d.checkouts_initiated, num((r as any).checkouts_initiated));
+    d.purchases = sumOptional(d.purchases, num((r as any).purchases));
     demoMap.set(key, d);
   }
   const demographic_rows: AnalysisSummaryDemoRow[] = Array.from(demoMap.entries()).map(([key, v]) => {
     const [age, gender] = key.split("|");
-    return { age: age ?? "", gender: gender ?? "", spend: v.spend, results: v.results, link_clicks: v.link_clicks };
+    return {
+      age: age ?? "",
+      gender: gender ?? "",
+      spend: v.spend,
+      results: v.results,
+      link_clicks: v.link_clicks,
+      adds_to_cart: v.adds_to_cart,
+      checkouts_initiated: v.checkouts_initiated,
+      purchases: v.purchases,
+    };
   });
 
   // ── Placement rows ────────────────────────────────────────────────

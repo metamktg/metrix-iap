@@ -89,6 +89,10 @@ export interface SegmentRawTotals {
   impressions: number | null;
   linkClicks: number | null;
   clicksAll: number | null;
+  /** Downstream funnel counts (ecommerce cohort) — null unless every scoped row carries the field. */
+  addsToCart: number | null;
+  checkoutsInitiated: number | null;
+  purchases: number | null;
 }
 
 function numberOrNull(v: unknown): number | null {
@@ -116,6 +120,9 @@ export function computeSegmentTotals(rows: DemographicRow[]): SegmentRawTotals {
     impressions: sumStrict(rows, (r) => r.Impressions),
     linkClicks: sumStrict(rows, (r) => r["Link clicks"]),
     clicksAll: sumStrict(rows, (r) => r["Clicks (all)"]),
+    addsToCart: sumStrict(rows, (r) => r.adds_to_cart),
+    checkoutsInitiated: sumStrict(rows, (r) => r.checkouts_initiated),
+    purchases: sumStrict(rows, (r) => r.purchases),
   };
 }
 
@@ -134,6 +141,14 @@ export interface SegmentDerivedMetrics {
   frequency: number | null;
   /** Conversion rate % (results ÷ link clicks × 100). */
   cvr: number | null;
+  /** Add-to-cart rate % (adds to cart ÷ link clicks × 100) — downstream intent signal independent of CTR/CPA. */
+  addToCartRate: number | null;
+  /** Cost per add to cart (spend ÷ adds to cart). */
+  costPerAddToCart: number | null;
+  /** Checkout rate % (checkouts initiated ÷ link clicks × 100). */
+  checkoutRate: number | null;
+  /** Cost per checkout initiated (spend ÷ checkouts initiated). */
+  costPerCheckout: number | null;
 }
 
 function ratio(num: number | null, den: number | null, scale = 1): number | null {
@@ -149,6 +164,10 @@ export function deriveSegmentMetrics(t: SegmentRawTotals): SegmentDerivedMetrics
     cpc: ratio(t.spend, t.linkClicks),
     frequency: ratio(t.impressions, t.reach),
     cvr: ratio(t.results, t.linkClicks, 100),
+    addToCartRate: ratio(t.addsToCart, t.linkClicks, 100),
+    costPerAddToCart: ratio(t.spend, t.addsToCart),
+    checkoutRate: ratio(t.checkoutsInitiated, t.linkClicks, 100),
+    costPerCheckout: ratio(t.spend, t.checkoutsInitiated),
   };
 }
 

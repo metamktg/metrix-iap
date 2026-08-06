@@ -186,6 +186,17 @@ alter table platform_performance add column if not exists checkouts_initiated bi
 alter table platform_performance add column if not exists purchases bigint;
 alter table platform_performance add column if not exists tracking_basis text;
 
+-- Demographic (age/gender) breakdown never got these funnel-stage columns
+-- when device/placement/platform did, even though the ecommerce CSV/Graph
+-- ingestion path parses "Adds to cart" / "Checkouts initiated" / "Purchases"
+-- for the demographic pivot export too — they were silently dropped into
+-- extra_metrics with nothing downstream reading them. This backfills parity
+-- so audience-segment analysis (e.g. "does this age band show downstream
+-- intent") isn't blind to funnel data the account's own export already carries.
+alter table demographic_performance add column if not exists adds_to_cart bigint;
+alter table demographic_performance add column if not exists checkouts_initiated bigint;
+alter table demographic_performance add column if not exists purchases bigint;
+
 create table if not exists concept_performance (
   id bigint generated always as identity primary key,
   account_id text not null references ad_accounts(id),
