@@ -4031,7 +4031,11 @@ components:
         spend: { type: number, nullable: true }
         results: { type: number, nullable: true }
         link_clicks: { type: number, nullable: true }
-      required: [age, gender, spend, results, link_clicks]
+        adds_to_cart: { type: number, nullable: true }
+        checkouts_initiated: { type: number, nullable: true }
+        purchases: { type: number, nullable: true }
+        adds_to_cart_value: { type: number, nullable: true }
+      required: [age, gender, spend, results, link_clicks, adds_to_cart, checkouts_initiated, purchases, adds_to_cart_value]
     AnalysisSummaryPlacementRow:
       type: object
       properties:

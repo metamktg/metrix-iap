@@ -492,7 +492,11 @@ export const GetAnalysisSummaryByRunResponse = zod.object({
   "gender": zod.string(),
   "spend": zod.number().nullable(),
   "results": zod.number().nullable(),
-  "link_clicks": zod.number().nullable()
+  "link_clicks": zod.number().nullable(),
+  "adds_to_cart": zod.number().nullable(),
+  "checkouts_initiated": zod.number().nullable(),
+  "purchases": zod.number().nullable(),
+  "adds_to_cart_value": zod.number().nullable()
 })),
   "placement_rows": zod.array(zod.object({
   "placement": zod.string(),
@@ -553,7 +557,11 @@ export const GetAnalysisSummaryByDateRangeResponse = zod.object({
   "gender": zod.string(),
   "spend": zod.number().nullable(),
   "results": zod.number().nullable(),
-  "link_clicks": zod.number().nullable()
+  "link_clicks": zod.number().nullable(),
+  "adds_to_cart": zod.number().nullable(),
+  "checkouts_initiated": zod.number().nullable(),
+  "purchases": zod.number().nullable(),
+  "adds_to_cart_value": zod.number().nullable()
 })),
   "placement_rows": zod.array(zod.object({
   "placement": zod.string(),
@@ -636,7 +644,11 @@ export const GetAnalysisSummaryResponse = zod.object({
   "gender": zod.string(),
   "spend": zod.number().nullable(),
   "results": zod.number().nullable(),
-  "link_clicks": zod.number().nullable()
+  "link_clicks": zod.number().nullable(),
+  "adds_to_cart": zod.number().nullable(),
+  "checkouts_initiated": zod.number().nullable(),
+  "purchases": zod.number().nullable(),
+  "adds_to_cart_value": zod.number().nullable()
 })),
   "placement_rows": zod.array(zod.object({
   "placement": zod.string(),
