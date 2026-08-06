@@ -1,154 +1,412 @@
-import { useState } from "react";
-import { ChevronsUpDown, Check, Building2, Briefcase, Plus, Plug } from "lucide-react";
+// ─── Account Switcher ─────────────────────────────────────────────────
+// Sidebar account selector with initials avatars, live search, and
+// a clear visual distinction between the manager account and ad accounts.
+
+import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
+import { ChevronsUpDown, Check, Building2, Plus, Search, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useAccount } from "@/contexts/AccountContext";
 import { AddAccountDialog } from "@/pages/metrix/AddAccountDialog";
 
-const STATUS_DOT: Record<string, string> = {
-  configured: "bg-emerald-500",
-  unconfigured: "bg-muted-foreground/60",
-};
+// ─── Avatar ────────────────────────────────────────────────────────────
+
+const AVATAR_HUES = [217, 262, 191, 162, 231, 280, 38, 15];
+
+function nameToHue(name: string): number {
+  let h = 0;
+  for (const c of name) h = (((h * 31) ^ c.charCodeAt(0)) >>> 0);
+  return AVATAR_HUES[h % AVATAR_HUES.length];
+}
+
+function nameInitials(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return "?";
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+}
+
+function AccountAvatar({
+  name,
+  size = "md",
+  status,
+  isManager = false,
+}: {
+  name: string;
+  size?: "xs" | "sm" | "md" | "lg";
+  status?: string;
+  isManager?: boolean;
+}) {
+  const hue = nameToHue(name);
+  const init = nameInitials(name);
+  const dims: Record<string, string> = {
+    xs: "w-5 h-5 text-[8px]",
+    sm: "w-7 h-7 text-[10px]",
+    md: "w-8 h-8 text-[11px]",
+    lg: "w-9 h-9 text-[12px]",
+  };
+  const iconSize: Record<string, string> = {
+    xs: "w-2.5 h-2.5", sm: "w-3 h-3", md: "w-4 h-4", lg: "w-4.5 h-4.5",
+  };
+  const dotSize: Record<string, string> = {
+    xs: "w-1.5 h-1.5", sm: "w-2 h-2", md: "w-2 h-2", lg: "w-2.5 h-2.5",
+  };
+  const dotOffset: Record<string, string> = {
+    xs: "-bottom-px -right-px", sm: "-bottom-0.5 -right-0.5",
+    md: "-bottom-0.5 -right-0.5", lg: "-bottom-0.5 -right-0.5",
+  };
+
+  return (
+    <div className="relative shrink-0">
+      {isManager ? (
+        <div className={cn("rounded-lg flex items-center justify-center border bg-primary/15 border-primary/30", dims[size])}>
+          <Building2 className={cn("text-interactive", iconSize[size])} />
+        </div>
+      ) : (
+        <div
+          className={cn("rounded-lg flex items-center justify-center font-bold border leading-none", dims[size])}
+          style={{
+            background: `hsl(${hue} 50% 15%)`,
+            borderColor: `hsl(${hue} 50% 26% / 0.5)`,
+            color: `hsl(${hue} 75% 68%)`,
+          }}
+        >
+          {init}
+        </div>
+      )}
+      {status != null && (
+        <span
+          className={cn(
+            "absolute rounded-full ring-[1.5px] ring-[hsl(222_45%_9%)]",
+            dotSize[size],
+            dotOffset[size],
+            status === "configured" ? "bg-emerald-500" : "bg-muted-foreground/40"
+          )}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Panel ─────────────────────────────────────────────────────────────
+
+function SwitcherPanel({
+  anchorRef,
+  compact,
+  onClose,
+  onAddAccount,
+}: {
+  anchorRef: React.RefObject<HTMLButtonElement | null>;
+  compact: boolean;
+  onClose: () => void;
+  onAddAccount: () => void;
+}) {
+  const {
+    manager, adAccounts,
+    selectedAccountType, activeAdAccountId,
+    selectManager, selectAdAccount,
+  } = useAccount();
+
+  const [search, setSearch] = useState("");
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  const isManager = selectedAccountType === "manager";
+  const showSearch = adAccounts.length > 3;
+
+  const filtered = search.trim()
+    ? adAccounts.filter((a) => a.name.toLowerCase().includes(search.toLowerCase()))
+    : adAccounts;
+
+  const configuredCount = adAccounts.filter((a) => a.status === "configured").length;
+
+  // Position relative to anchor on mount
+  useEffect(() => {
+    if (!anchorRef.current) return;
+    const r = anchorRef.current.getBoundingClientRect();
+    const panelW = 256;
+    if (compact) {
+      // Flyout to the right in icon rail
+      const top = Math.min(r.top, window.innerHeight - 360 - 8);
+      setPos({ top: Math.max(8, top), left: r.right + 8 });
+    } else {
+      // Drop below in expanded sidebar
+      const left = Math.max(8, Math.min(r.left, window.innerWidth - panelW - 8));
+      setPos({ top: r.bottom + 6, left });
+    }
+    // Auto-focus search
+    setTimeout(() => searchRef.current?.focus(), 40);
+  }, [anchorRef, compact]);
+
+  // Click-outside + Escape
+  useEffect(() => {
+    function onPointer(e: PointerEvent) {
+      if (panelRef.current?.contains(e.target as Node)) return;
+      if (anchorRef.current?.contains(e.target as Node)) return;
+      onClose();
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("pointerdown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [anchorRef, onClose]);
+
+  function pick(fn: () => void) {
+    fn();
+    onClose();
+  }
+
+  if (!pos) return null;
+
+  const panel = (
+    <div
+      ref={panelRef}
+      style={{ position: "fixed", top: pos.top, left: pos.left, zIndex: 9999, width: 256 }}
+      className={cn(
+        "flex flex-col rounded-xl overflow-hidden",
+        "bg-[hsl(222_45%_9%)] border border-border/50",
+        "shadow-[0_8px_40px_rgba(0,0,0,0.55)]",
+        "animate-in fade-in-0 zoom-in-95 duration-100"
+      )}
+      role="dialog"
+      aria-label="Switch account"
+    >
+      {/* Search */}
+      {showSearch && (
+        <div className="p-2 border-b border-border/30">
+          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white/[0.04] border border-border/30 focus-within:border-primary/40 transition-colors">
+            <Search className="w-3 h-3 text-muted-foreground/40 shrink-0" />
+            <input
+              ref={searchRef}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => e.stopPropagation()}
+              placeholder="Search accounts…"
+              className="flex-1 bg-transparent text-[12px] text-foreground placeholder:text-muted-foreground/40 outline-none"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors text-[10px]"
+              >
+                ×
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="overflow-y-auto max-h-[340px] p-1.5 space-y-0.5">
+        {/* Manager row */}
+        {!search.trim() && (
+          <button
+            onClick={() => pick(selectManager)}
+            className={cn(
+              "w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg text-left transition-colors relative group",
+              isManager
+                ? "bg-primary/10 hover:bg-primary/15"
+                : "hover:bg-white/[0.05]"
+            )}
+          >
+            {isManager && (
+              <span className="absolute left-0 top-2.5 bottom-2.5 w-0.5 bg-primary rounded-r-full" />
+            )}
+            <AccountAvatar name={manager.name} size="md" isManager />
+            <div className="flex-1 min-w-0">
+              <div className={cn("text-[12px] font-semibold leading-tight truncate", isManager ? "text-foreground" : "text-foreground/75")}>
+                {manager.name}
+              </div>
+              <div className="text-[9px] text-muted-foreground/50 leading-tight mt-0.5">
+                Agency · All accounts
+              </div>
+            </div>
+            {isManager && <Check className="w-3.5 h-3.5 text-interactive shrink-0" />}
+          </button>
+        )}
+
+        {/* Divider + section label */}
+        {!search.trim() && (
+          <div className="flex items-center gap-2 px-1 py-1">
+            <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/45">
+              Ad Accounts
+            </span>
+            <span className="text-[9px] text-muted-foreground/30 ml-auto tabular-nums">
+              {configuredCount}/{adAccounts.length}
+            </span>
+          </div>
+        )}
+
+        {/* Ad account rows */}
+        {filtered.length === 0 ? (
+          <div className="px-2.5 py-4 text-center">
+            <p className="text-[11px] text-muted-foreground/50">No accounts match "{search}"</p>
+          </div>
+        ) : (
+          filtered.map((a) => {
+            const isActive = !isManager && activeAdAccountId === a.id;
+            const isUnconfigured = a.status === "unconfigured";
+            return (
+              <button
+                key={a.id}
+                onClick={() => pick(() => selectAdAccount(a.id))}
+                className={cn(
+                  "w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg text-left transition-colors relative group/row",
+                  isActive
+                    ? "bg-primary/10 hover:bg-primary/15"
+                    : "hover:bg-white/[0.05]",
+                  isUnconfigured && !isActive && "opacity-70"
+                )}
+              >
+                {isActive && (
+                  <span className="absolute left-0 top-2.5 bottom-2.5 w-0.5 bg-primary rounded-r-full" />
+                )}
+                <AccountAvatar name={a.name} size="md" status={a.status} />
+                <div className="flex-1 min-w-0">
+                  <div className={cn(
+                    "text-[12px] font-semibold leading-tight truncate",
+                    isActive ? "text-foreground" : "text-foreground/75"
+                  )}>
+                    {a.name}
+                  </div>
+                  {isUnconfigured && (
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <span className="text-[9px] text-amber-400/70 leading-tight">
+                        Needs setup
+                      </span>
+                      <ArrowUpRight className="w-2.5 h-2.5 text-amber-400/50" />
+                    </div>
+                  )}
+                </div>
+                {isActive && <Check className="w-3.5 h-3.5 text-interactive shrink-0" />}
+              </button>
+            );
+          })
+        )}
+      </div>
+
+      {/* Add account footer */}
+      {!search.trim() && (
+        <div className="border-t border-border/30 p-1.5">
+          <button
+            onClick={() => { onClose(); setTimeout(onAddAccount, 0); }}
+            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left hover:bg-white/[0.05] transition-colors group"
+          >
+            <div className="w-8 h-8 rounded-lg border border-dashed border-border/40 flex items-center justify-center shrink-0 group-hover:border-border/60 transition-colors">
+              <Plus className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-muted-foreground/80 transition-colors" />
+            </div>
+            <span className="text-[12px] font-medium text-muted-foreground/60 group-hover:text-muted-foreground/90 transition-colors">
+              Connect Ad Account
+            </span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
+  return createPortal(panel, document.body);
+}
+
+// ─── Switcher ─────────────────────────────────────────────────────────
 
 export function AccountSwitcher({ compact = false }: { compact?: boolean }) {
-  const { manager, adAccounts, selectedAccountType, activeAdAccountId, selectManager, selectAdAccount } = useAccount();
+  const { manager, adAccounts, selectedAccountType, activeAdAccountId } = useAccount();
   const [open, setOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const isManager = selectedAccountType === "manager";
   const active = adAccounts.find((a) => a.id === activeAdAccountId) ?? null;
-
   const triggerLabel = isManager ? manager.name : active?.name ?? manager.name;
-  const triggerSub = isManager ? "Agency Overview" : "";
+
+  const toggle = useCallback(() => setOpen((v) => !v), []);
+  const close = useCallback(() => setOpen(false), []);
+
+  if (compact) {
+    return (
+      <>
+        <button
+          ref={triggerRef}
+          onClick={toggle}
+          aria-label={`Switch account — currently: ${triggerLabel}`}
+          title={triggerLabel}
+          className={cn(
+            "w-10 h-10 mx-auto rounded-lg flex items-center justify-center transition-colors",
+            "hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary",
+            open && "bg-primary/10"
+          )}
+        >
+          <AccountAvatar
+            name={triggerLabel}
+            size="sm"
+            isManager={isManager}
+            status={!isManager && active ? active.status : undefined}
+          />
+        </button>
+
+        {open && (
+          <SwitcherPanel
+            anchorRef={triggerRef}
+            compact
+            onClose={close}
+            onAddAccount={() => setAddOpen(true)}
+          />
+        )}
+        <AddAccountDialog open={addOpen} onOpenChange={setAddOpen} />
+      </>
+    );
+  }
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger asChild>
-        {compact ? (
-          /* Collapsed sidebar: icon-only button — shows active account type */
-          <button
-            className={cn(
-              "w-10 h-10 mx-auto rounded-lg flex items-center justify-center relative",
-              "hover:bg-primary/10 transition-colors",
-              "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
-            )}
-            aria-label={`Switch account — currently: ${triggerLabel}`}
-            title={triggerLabel}
-          >
-            <div className="w-6 h-6 rounded border border-primary/20 bg-primary/10 flex items-center justify-center">
-              {isManager ? <Building2 className="w-3.5 h-3.5 text-interactive" /> : <Briefcase className="w-3.5 h-3.5 text-interactive" />}
-            </div>
-            {/* Status dot for ad accounts */}
-            {!isManager && active && (
-              <span
-                className={cn(
-                  "absolute bottom-1.5 right-1.5 w-1.5 h-1.5 rounded-full ring-1 ring-background",
-                  STATUS_DOT[active.status] ?? "bg-muted-foreground/60"
-                )}
-              />
-            )}
-          </button>
-        ) : (
-          <button
-            className={cn(
-              "w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md",
-              "hover:bg-white/[0.05] transition-colors text-left",
-              "border border-transparent hover:border-border/30",
-              "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
-            )}
-            aria-label={`Current account: ${triggerLabel}`}
-          >
-            <div className="shrink-0 w-6 h-6 rounded border border-primary/20 bg-primary/10 flex items-center justify-center">
-              {isManager ? <Building2 className="w-3.5 h-3.5 text-interactive" /> : <Briefcase className="w-3.5 h-3.5 text-interactive" />}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="text-body font-medium text-foreground truncate leading-tight">{triggerLabel}</span>
-                {!isManager && active && (
-                  <span className={cn("shrink-0 w-1.5 h-1.5 rounded-full", STATUS_DOT[active.status] ?? "bg-muted-foreground/60")} />
-                )}
-              </div>
-              {triggerSub && (
-                <div className="text-label text-muted-foreground/70 leading-tight truncate">{triggerSub}</div>
-              )}
-            </div>
-            <ChevronsUpDown className="shrink-0 w-3.5 h-3.5 text-muted-foreground/60" />
-          </button>
+    <>
+      <button
+        ref={triggerRef}
+        onClick={toggle}
+        aria-label={`Current account: ${triggerLabel}`}
+        className={cn(
+          "w-full flex items-center gap-2.5 px-2 py-2 rounded-lg text-left transition-colors",
+          "hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary",
+          open && "bg-white/[0.06]"
         )}
-      </DropdownMenuTrigger>
-
-      <DropdownMenuContent align="start" sideOffset={4} className="w-[212px] bg-surface-overlay border-border/50 elevation-floating p-1 z-50">
-        {/* Manager */}
-        <DropdownMenuItem
-          className={cn("flex items-center gap-2 px-2 py-1.5 cursor-pointer rounded-sm h-9", isManager && "bg-primary/8")}
-          onClick={() => { setOpen(false); selectManager(); }}
-        >
-          <div className={cn("w-5 h-5 rounded border flex items-center justify-center shrink-0", isManager ? "bg-primary/15 border-primary/25" : "bg-white/[0.04] border-border/30")}>
-            <Building2 className={cn("w-3.5 h-3.5", isManager ? "text-interactive" : "text-muted-foreground/70")} />
+      >
+        <AccountAvatar
+          name={triggerLabel}
+          size="md"
+          isManager={isManager}
+          status={!isManager && active ? active.status : undefined}
+        />
+        <div className="flex-1 min-w-0">
+          <div className="text-[12px] font-semibold text-foreground/90 leading-tight truncate">
+            {triggerLabel}
           </div>
-          <div className="flex-1 min-w-0">
-            <div className={cn("text-caption font-medium leading-tight", isManager ? "text-foreground" : "text-foreground/70")}>{manager.name}</div>
-            <div className="text-[9px] text-muted-foreground/70 leading-tight">Agency Overview</div>
-          </div>
-          {isManager && <Check className="w-3.5 h-3.5 text-interactive shrink-0" />}
-        </DropdownMenuItem>
+          {isManager && (
+            <div className="text-[9px] text-muted-foreground/50 leading-tight mt-0.5">
+              Agency Overview
+            </div>
+          )}
+        </div>
+        <ChevronsUpDown
+          className={cn(
+            "w-3.5 h-3.5 shrink-0 transition-colors",
+            open ? "text-muted-foreground/70" : "text-muted-foreground/35"
+          )}
+        />
+      </button>
 
-        <DropdownMenuSeparator className="my-1 bg-border/30" />
-        <DropdownMenuLabel className="px-2 py-1 text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60">
-          Ad Accounts
-        </DropdownMenuLabel>
-
-        {adAccounts.map((a) => {
-          const isActive = !isManager && activeAdAccountId === a.id;
-          return (
-            <DropdownMenuItem
-              key={a.id}
-              className={cn("flex items-center gap-2 px-2 py-1.5 cursor-pointer rounded-sm h-9", isActive && "bg-primary/8")}
-              onClick={() => { setOpen(false); selectAdAccount(a.id); }}
-            >
-              <div className={cn("w-5 h-5 rounded border flex items-center justify-center shrink-0", isActive ? "bg-primary/15 border-primary/25" : "bg-white/[0.04] border-border/30")}>
-                <Briefcase className={cn("w-3.5 h-3.5", isActive ? "text-interactive" : "text-muted-foreground/70")} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className={cn("text-caption font-medium leading-tight truncate", isActive ? "text-foreground" : "text-foreground/70")}>{a.name}</div>
-              </div>
-              <div className="flex items-center gap-1.5 shrink-0">
-                {a.status === "unconfigured" && (
-                  <span className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/60 border border-border/40 px-1 py-0.5 rounded leading-none">Setup</span>
-                )}
-                <span className={cn("w-1.5 h-1.5 rounded-full", STATUS_DOT[a.status] ?? "bg-muted-foreground/60")} />
-                {isActive && <Check className="w-3.5 h-3.5 text-interactive" />}
-              </div>
-            </DropdownMenuItem>
-          );
-        })}
-
-        <DropdownMenuSeparator className="my-1 bg-border/30" />
-        <DropdownMenuItem
-          className="flex items-center gap-2 px-2 py-1.5 cursor-pointer rounded-sm h-8 text-muted-foreground/60"
-          onSelect={(e) => {
-            // Defer opening the dialog until the dropdown has fully closed —
-            // avoids the Radix dropdown→dialog focus/pointer-events trap.
-            e.preventDefault();
-            setOpen(false);
-            setTimeout(() => setAddOpen(true), 0);
-          }}
-        >
-          <div className="w-5 h-5 rounded border border-dashed border-border/40 flex items-center justify-center shrink-0">
-            <Plus className="w-3.5 h-3.5" />
-          </div>
-          <span className="text-caption font-medium">Add Ad Account</span>
-          <Plug className="w-3.5 h-3.5 ml-auto text-muted-foreground/60" />
-        </DropdownMenuItem>
-      </DropdownMenuContent>
+      {open && (
+        <SwitcherPanel
+          anchorRef={triggerRef}
+          compact={false}
+          onClose={close}
+          onAddAccount={() => setAddOpen(true)}
+        />
+      )}
       <AddAccountDialog open={addOpen} onOpenChange={setAddOpen} />
-    </DropdownMenu>
+    </>
   );
 }
