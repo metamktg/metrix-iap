@@ -11,6 +11,7 @@ import {
   ModuleHeader, ModuleTabs, ModuleScopeGate, PendingState,
   MetricTile, CrossLink, useFocusParam, FlowCrumb, useFromParam, LoopAction,
   RangeScopeBar, NoDataInRangeState, StaleFocusNotice, DetailReveal, deriveLabel,
+  PILL_ACTIVE, PILL_INACTIVE,
 } from "../shared";
 import {
   HypothesisStatusBadge, PillarDetailSections, VariableStackChips, pillarHasDetails,
@@ -134,29 +135,31 @@ export function HypothesisQueueView() {
                 ) : (
                   <>
                     {/* Status filter strip */}
-                    <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+                    <div className="flex items-center gap-1.5 mb-3 flex-wrap" role="group" aria-label="Filter hypotheses by status">
                       {([
                         { id: "all",        label: `All`,         count: hyps.length },
                         { id: "ready",      label: `Ready`,       count: ready.length },
                         { id: "validation", label: `Validation`,  count: validating.length },
-                      ] as const).map(({ id, label, count }) => (
-                        <button
-                          key={id}
-                          onClick={() => setStatusFilter(id)}
-                          className={cn(
-                            "inline-flex items-center gap-1 h-6 px-2 rounded-full border text-label font-medium transition-colors",
-                            statusFilter === id
-                              ? "border-primary/40 bg-primary/10 text-interactive"
-                              : "border-border/40 text-muted-foreground/60 hover:text-foreground/80",
-                          )}
-                        >
-                          {label}
-                          <span className={cn(
-                            "text-label font-mono rounded px-0.5",
-                            statusFilter === id ? "text-interactive/70" : "text-muted-foreground/40",
-                          )}>{count}</span>
-                        </button>
-                      ))}
+                      ] as const).map(({ id, label, count }) => {
+                        const active = statusFilter === id;
+                        return (
+                          <button
+                            key={id}
+                            onClick={() => setStatusFilter(id)}
+                            aria-pressed={active}
+                            className={cn(
+                              "inline-flex items-center gap-1 h-6 px-2 rounded-full border text-label font-medium transition-colors",
+                              active ? PILL_ACTIVE : PILL_INACTIVE,
+                            )}
+                          >
+                            {label}
+                            <span className={cn(
+                              "text-label font-mono rounded px-0.5",
+                              active ? "text-interactive/70" : "text-muted-foreground/40",
+                            )}>{count}</span>
+                          </button>
+                        );
+                      })}
                     </div>
 
                     <div className="space-y-2.5">

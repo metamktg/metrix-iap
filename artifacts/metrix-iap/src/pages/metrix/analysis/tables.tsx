@@ -18,7 +18,7 @@ import { useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowDown, ArrowUp, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel } from "../shared";
+import { readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel, PILL_ACTIVE, PILL_INACTIVE } from "../shared";
 import type { CellPerformanceRow, VariablePerformanceRow, DemographicRow, PlacementRow, ConversionFunnelRow } from "@/lib/data/seedTypes";
 
 export function Th({ children, right }: { children: React.ReactNode; right?: boolean }) {
@@ -139,6 +139,24 @@ export function SortableTh({
 
 export function Td({ children, right, className, style }: { children: React.ReactNode; right?: boolean; className?: string; style?: React.CSSProperties }) {
   return <td style={style} className={cn("px-2.5 py-2 text-body text-foreground/85 align-top", right && "text-right tabular-nums", className)}>{children}</td>;
+}
+
+/** Binary spend/CPA-intensity overlay toggle, shared by CellTable and VariableTable. */
+export function HeatmapToggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+  return (
+    <div className="flex items-center justify-end">
+      <button
+        onClick={onToggle}
+        aria-pressed={on}
+        className={cn(
+          "h-6 px-2.5 rounded-md border text-label font-mono uppercase tracking-widest transition-colors",
+          on ? PILL_ACTIVE : PILL_INACTIVE
+        )}
+      >
+        Heatmap
+      </button>
+    </div>
+  );
 }
 
 // ─── Virtual table body ───────────────────────────────────────────────
@@ -297,20 +315,7 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
 
   return (
     <div className="space-y-1.5">
-      {/* Heatmap toggle toolbar */}
-      <div className="flex items-center justify-end">
-        <button
-          onClick={() => setHeatmapOn((h) => !h)}
-          className={cn(
-            "h-6 px-2.5 rounded-md text-label font-mono uppercase tracking-widest transition-colors",
-            heatmapOn
-              ? "bg-primary/20 text-interactive border border-primary/30"
-              : "text-muted-foreground/70 border border-border/30 hover:text-muted-foreground hover:border-border/60"
-          )}
-        >
-          Heatmap
-        </button>
-      </div>
+      <HeatmapToggle on={heatmapOn} onToggle={() => setHeatmapOn((h) => !h)} />
       {heatmapOn && (
         <div className="flex items-center gap-3 px-2 text-label text-muted-foreground/65 font-mono">
           <div className="flex items-center gap-1.5">
@@ -434,20 +439,7 @@ export function VariableTable({
 
   return (
     <div className="space-y-1.5">
-      {/* Heatmap toggle toolbar */}
-      <div className="flex items-center justify-end">
-        <button
-          onClick={() => setHeatmapOn((h) => !h)}
-          className={cn(
-            "h-6 px-2.5 rounded-md text-label font-mono uppercase tracking-widest transition-colors",
-            heatmapOn
-              ? "bg-primary/20 text-interactive border border-primary/30"
-              : "text-muted-foreground/70 border border-border/30 hover:text-muted-foreground hover:border-border/60"
-          )}
-        >
-          Heatmap
-        </button>
-      </div>
+      <HeatmapToggle on={heatmapOn} onToggle={() => setHeatmapOn((h) => !h)} />
       {heatmapOn && (
         <div className="flex items-center gap-3 px-2 text-label text-muted-foreground/65 font-mono">
           <div className="flex items-center gap-1.5">

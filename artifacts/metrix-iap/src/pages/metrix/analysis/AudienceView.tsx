@@ -26,7 +26,7 @@ import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
-  SkeletonTileRow, DatePresetBar, type ViewPreset,
+  SkeletonTileRow, DatePresetBar, type ViewPreset, SegmentedToggle,
 } from "../shared";
 import { getGetAnalysisSummaryQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
@@ -126,7 +126,7 @@ const AUDIENCE_RANK_GROUPS: MetricGroup[] = [
 
 // ── View toggle ───────────────────────────────────────────────────────
 
-const VIEW_TABS: { id: ViewMode; label: string; Icon: React.ElementType }[] = [
+const VIEW_TABS: { id: ViewMode; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "map",     label: "Intelligence Map", Icon: Map },
   { id: "pockets", label: "Pocket Grid",      Icon: LayoutGrid },
   { id: "ranked",  label: "Ranked",           Icon: List },
@@ -134,29 +134,13 @@ const VIEW_TABS: { id: ViewMode; label: string; Icon: React.ElementType }[] = [
 
 function ViewToggle({ mode, onChange }: { mode: ViewMode; onChange: (m: ViewMode) => void }) {
   return (
-    <div
-      className="flex items-center gap-0.5 rounded-lg border border-border/30 bg-white/[0.02] p-0.5"
-      role="group"
-      aria-label="Audience view mode"
-    >
-      {VIEW_TABS.map(({ id, label, Icon }) => (
-        <button
-          key={id}
-          onClick={() => onChange(id)}
-          aria-pressed={mode === id}
-          className={cn(
-            "flex items-center gap-1.5 h-7 px-3 rounded-md transition-colors",
-            TYPE.label, "font-medium",
-            mode === id
-              ? "bg-primary/20 text-interactive"
-              : "text-muted-foreground/55 hover:text-muted-foreground"
-          )}
-        >
-          <Icon className="w-3.5 h-3.5 shrink-0" />
-          <span className="hidden sm:inline">{label}</span>
-        </button>
-      ))}
-    </div>
+    <SegmentedToggle
+      ariaLabel="Audience view mode"
+      options={VIEW_TABS}
+      active={mode}
+      onChange={onChange}
+      responsiveLabels
+    />
   );
 }
 

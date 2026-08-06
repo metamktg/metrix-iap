@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PILL_ACTIVE, PILL_INACTIVE } from "../shared";
 
 export interface RankMetric<Row> {
   id: string;
@@ -126,17 +127,16 @@ export function RankSortBar<Row>({
                     key={m.id}
                     onClick={() => onSelect(m.id)}
                     data-testid={`rank-metric-${m.id}`}
+                    aria-pressed={active}
                     className={cn(
-                      "inline-flex items-center gap-1 h-6 px-2 rounded-full border text-label font-medium transition-colors",
-                      active
-                        ? "border-primary/40 bg-primary/10 text-foreground"
-                        : "border-border/40 bg-white/[0.01] text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.04]"
+                      "inline-flex items-center gap-1 h-6 px-2 rounded-full border text-label font-semibold transition-colors",
+                      active ? PILL_ACTIVE : PILL_INACTIVE
                     )}
                   >
                     {m.label}
                     {active && (m.direction === "asc"
-                      ? <ArrowUp className="w-3.5 h-3.5 text-interactive/70" />
-                      : <ArrowDown className="w-3.5 h-3.5 text-interactive/70" />)}
+                      ? <ArrowUp className="w-3.5 h-3.5 text-interactive" />
+                      : <ArrowDown className="w-3.5 h-3.5 text-interactive" />)}
                   </button>
                 );
               })}
@@ -159,19 +159,18 @@ export function RankSortBar<Row>({
             key={m.id}
             onClick={() => onSelect(m.id)}
             data-testid={`rank-metric-${m.id}`}
+            aria-pressed={active}
             className={cn(
-              "inline-flex items-center gap-1 h-6 px-2 rounded-full border text-label font-medium transition-colors",
-              active
-                ? "border-primary/40 bg-primary/10 text-foreground"
-                : "border-border/40 bg-white/[0.01] text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.04]"
+              "inline-flex items-center gap-1 h-6 px-2 rounded-full border text-label font-semibold transition-colors",
+              active ? PILL_ACTIVE : PILL_INACTIVE
             )}
           >
             {m.label}
             {active &&
               (m.direction === "asc" ? (
-                <ArrowUp className="w-3.5 h-3.5 text-interactive/70" />
+                <ArrowUp className="w-3.5 h-3.5 text-interactive" />
               ) : (
-                <ArrowDown className="w-3.5 h-3.5 text-interactive/70" />
+                <ArrowDown className="w-3.5 h-3.5 text-interactive" />
               ))}
           </button>
         );
