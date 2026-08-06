@@ -717,7 +717,7 @@ function CommandHub({
   analysisStartError: string | null;
   onNavigate: (path: string) => void;
   onStartAnalysis: (range: AnalysisDateRange) => Promise<void>;
-  onGenerateStrategy: (analysisRunId?: string) => void;
+  onGenerateStrategy: (analysisRunIds?: string[]) => void;
   onGenerateBriefs: () => void;
   reportGenerating: boolean;
   reportError: string | null;
@@ -784,15 +784,16 @@ function CommandHub({
   // Pre-execution confirmation step for analysis / strategy / briefs / report
   const [pendingConfirm, setPendingConfirm] = useState<"analysis" | "strategy" | "briefs" | "report" | null>(null);
   const [localDateRange, setLocalDateRange] = useState<AnalysisDateRange>("30d");
-  // Which analysis run the user wants to ground strategy in.
-  // Defaults to latest successful run when the confirmation panel opens.
-  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  // Which analysis runs the user wants to ground strategy in (up to 3).
+  // Defaults to the latest successful run when the confirmation panel opens.
+  const [selectedRunIds, setSelectedRunIds] = useState<string[]>([]);
   // Report delivery mode selection (internal vs client-facing)
   const [reportMode, setReportMode] = useState<"internal" | "client">("internal");
   useEffect(() => {
     if (pendingConfirm === "strategy") {
       const best = analysisRuns.find((r) => r.status === "success") ?? analysisRuns[0];
-      setSelectedRunId(best?.id ?? analysisRun?.id ?? null);
+      const defaultId = best?.id ?? analysisRun?.id;
+      setSelectedRunIds(defaultId ? [defaultId] : []);
     }
   }, [pendingConfirm, analysisRuns, analysisRun?.id]);
 
@@ -1074,9 +1075,17 @@ function CommandHub({
       if (pendingConfirm === "strategy") {
       const successRuns = analysisRuns.filter((r) => r.status === "success");
       const candidateRuns = successRuns.length > 0 ? successRuns : analysisRuns;
-      // Show at most 3 runs (most recent first — API returns newest first)
-      const displayRuns = candidateRuns.slice(0, 3);
+      // Show at most 5 runs; user may check up to 3 of them
+      const displayRuns = candidateRuns.slice(0, 5);
       const hiddenCount  = candidateRuns.length - displayRuns.length;
+      const MAX_SELECTION = 3;
+      const toggleRun = (id: string) => {
+        setSelectedRunIds((prev) => {
+          if (prev.includes(id)) return prev.filter((r) => r !== id);
+          if (prev.length >= MAX_SELECTION) return prev; // cap at 3
+          return [...prev, id];
+        });
+      };
       return (
         <div className="flex flex-col gap-2.5">
           <div>
@@ -1085,8 +1094,13 @@ function CommandHub({
                 Ground strategy in
               </p>
               {candidateRuns.length > 0 && (
-                <span className="text-[9px] text-muted-foreground/25">
-                  {candidateRuns.length} run{candidateRuns.length !== 1 ? "s" : ""} available
+                <span className={cn(
+                  "text-[9px] font-medium tabular-nums",
+                  selectedRunIds.length === MAX_SELECTION
+                    ? "text-emerald-400/60"
+                    : "text-muted-foreground/25"
+                )}>
+                  {selectedRunIds.length}/{MAX_SELECTION} selected
                 </span>
               )}
             </div>
@@ -1104,7 +1118,8 @@ function CommandHub({
             ) : (
               <div className="rounded-lg border border-border/40 divide-y divide-border/30 overflow-hidden">
                 {displayRuns.map((run, idx) => {
-                  const isSel = selectedRunId === run.id;
+                  const isChecked = selectedRunIds.includes(run.id);
+                  const isDisabled = !isChecked && selectedRunIds.length >= MAX_SELECTION;
                   const dateLabel = run.date_start && run.date_end
                     ? `${fmtDate(run.date_start)} – ${fmtDate(run.date_end)}`
                     : run.date_range ?? "Analysis";
@@ -1112,20 +1127,30 @@ function CommandHub({
                   return (
                     <button
                       key={run.id}
-                      onClick={() => setSelectedRunId(run.id)}
+                      onClick={() => toggleRun(run.id)}
+                      disabled={isDisabled}
                       className={cn(
                         "w-full flex items-center gap-2 px-2.5 py-2 text-left transition-colors",
-                        isSel
+                        isChecked
                           ? "bg-emerald-400/[0.07] text-foreground/90"
+                          : isDisabled
+                          ? "opacity-35 cursor-not-allowed"
                           : "bg-transparent text-foreground/55 hover:bg-muted/30",
                       )}
                     >
+                      {/* Checkbox */}
                       <span className={cn(
-                        "w-2.5 h-2.5 rounded-full shrink-0 border transition-colors",
-                        isSel
-                          ? "bg-emerald-400/80 border-emerald-400/60"
-                          : "bg-transparent border-border/40",
-                      )} />
+                        "w-3 h-3 rounded-sm shrink-0 border flex items-center justify-center transition-colors",
+                        isChecked
+                          ? "bg-emerald-400/70 border-emerald-400/60"
+                          : "bg-transparent border-border/50",
+                      )}>
+                        {isChecked && (
+                          <svg viewBox="0 0 10 10" className="w-2 h-2 fill-none stroke-black stroke-[2]">
+                            <polyline points="2,5 4.5,7.5 8,3" />
+                          </svg>
+                        )}
+                      </span>
                       <span className="text-label font-medium flex-1 truncate">{dateLabel}</span>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {isLatest && (
@@ -1145,11 +1170,14 @@ function CommandHub({
                 {hiddenCount > 0 && (
                   <div className="px-2.5 py-1.5 bg-white/[0.01]">
                     <span className="text-[9px] text-muted-foreground/25">
-                      +{hiddenCount} older run{hiddenCount !== 1 ? "s" : ""} not shown
+                      +{hiddenCount} older run{hiddenCount !== 1 ? "s" : ""} · see History for full list
                     </span>
                   </div>
                 )}
               </div>
+            )}
+            {selectedRunIds.length === 0 && candidateRuns.length > 0 && (
+              <p className="text-[9px] text-amber-400/60 mt-1.5">Select at least one run to continue.</p>
             )}
           </div>
           {/* Estimated time hint */}
@@ -1159,8 +1187,19 @@ function CommandHub({
           </div>
           <div className="flex gap-1.5">
             <button
-              onClick={() => { setPendingConfirm(null); onGenerateStrategy(selectedRunId ?? undefined); onClose(); }}
-              className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-primary-btn"
+              onClick={() => {
+                if (selectedRunIds.length === 0 && candidateRuns.length > 0) return;
+                setPendingConfirm(null);
+                onGenerateStrategy(selectedRunIds.length > 0 ? selectedRunIds : undefined);
+                onClose();
+              }}
+              disabled={selectedRunIds.length === 0 && candidateRuns.length > 0}
+              className={cn(
+                "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
+                selectedRunIds.length === 0 && candidateRuns.length > 0
+                  ? "opacity-40 cursor-not-allowed mx-secondary-btn"
+                  : "mx-primary-btn"
+              )}
             >
               <Sparkles className="w-3.5 h-3.5" /> Build Strategy
             </button>
@@ -2004,7 +2043,7 @@ export function LoopCommandChain({
           analysisStartError={analysisStartError}
           onNavigate={navigate}
           onStartAnalysis={handleStartAnalysis}
-          onGenerateStrategy={(runId) => strategyGen.start({ analysis_run_id: runId })}
+          onGenerateStrategy={(runIds) => strategyGen.start({ analysis_run_ids: runIds, analysis_run_id: runIds?.[0] })}
           onGenerateBriefs={() => briefsGen.start()}
           reportGenerating={reportGenerating}
           reportError={reportError}

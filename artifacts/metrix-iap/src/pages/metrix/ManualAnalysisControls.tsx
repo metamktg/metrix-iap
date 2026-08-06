@@ -14,6 +14,7 @@ import {
   useGetManualPerformanceCsvFormat,
   useStartManualAnalysisRun,
   useGetLatestAnalysisRun,
+  useListAnalysisRuns,
   useListManualImports,
   useUpdateManualImportAdNames,
   useSyncCreativeLinks,
@@ -42,6 +43,7 @@ import {
   AlertTriangle,
   RefreshCw,
   Images,
+  History,
 } from "lucide-react";
 
 function RunAnalysisBtn({
@@ -735,6 +737,7 @@ export function AnalysisControls({
   const queryClient = useQueryClient();
   const startMutation = useStartManualAnalysisRun();
   const { data: latest, refetch } = useGetLatestAnalysisRun(accountId);
+  const { data: runsData } = useListAnalysisRuns(accountId);
   const { data: importsData, refetch: refetchImports } = useListManualImports(accountId);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const calledDoneRef = useRef(false);
@@ -839,8 +842,22 @@ export function AnalysisControls({
     }
   };
 
+  const priorRuns = (runsData?.runs ?? []).filter((r) => r.status === "success");
+
   return (
     <div className="space-y-3">
+      {/* Existing-runs context strip */}
+      {priorRuns.length > 0 && (
+        <div className="flex items-center gap-2 rounded-md border border-border/30 bg-white/[0.02] px-2.5 py-2">
+          <History className="w-3.5 h-3.5 text-muted-foreground/55 shrink-0" />
+          <span className="text-[11px] text-muted-foreground/70 leading-snug">
+            <span className="font-semibold text-foreground/80">
+              {priorRuns.length} existing run{priorRuns.length !== 1 ? "s" : ""}
+            </span>
+            {" "}· Running again adds another snapshot you can select independently when building strategy.
+          </span>
+        </div>
+      )}
       <div className="flex items-center gap-2">
         <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/85 shrink-0" />
         <span className="text-caption font-medium text-foreground">Date range to analyze</span>
