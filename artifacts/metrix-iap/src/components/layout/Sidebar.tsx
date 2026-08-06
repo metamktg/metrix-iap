@@ -18,7 +18,6 @@ import {
   Zap,
   Settings2,
 } from "lucide-react";
-import { AccountSwitcher } from "./AccountSwitcher";
 import { DataSourceBadgeToggle } from "@/components/ui/DataSourceBadge";
 import { navTree, sectionLandingRoute } from "@/navigation/navTree";
 import { useNavBadges } from "@/navigation/useNavBadges";
@@ -564,14 +563,6 @@ export function Sidebar() {
             </p>
           </>
         )}
-      </div>
-
-      {/* Account switcher */}
-      <div className={cn(
-        "border-b border-border/40 shrink-0",
-        collapsed ? "py-2 flex items-center justify-center" : "px-2 py-2"
-      )}>
-        <AccountSwitcher compact={collapsed} />
       </div>
 
       {/* Nav */}
