@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PILL_ACTIVE, PILL_INACTIVE } from "../shared";
 
 export interface RankMetric<Row> {
   id: string;
@@ -129,9 +130,7 @@ export function RankSortBar<Row>({
                     aria-pressed={active}
                     className={cn(
                       "inline-flex items-center gap-1 h-6 px-2 rounded-full border text-label font-semibold transition-colors",
-                      active
-                        ? "border-primary/60 bg-primary/20 text-interactive shadow-[0_0_0_1px_rgba(92,155,255,0.15)]"
-                        : "border-border/40 bg-white/[0.01] text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.04] hover:border-border/60"
+                      active ? PILL_ACTIVE : PILL_INACTIVE
                     )}
                   >
                     {m.label}
@@ -163,9 +162,7 @@ export function RankSortBar<Row>({
             aria-pressed={active}
             className={cn(
               "inline-flex items-center gap-1 h-6 px-2 rounded-full border text-label font-semibold transition-colors",
-              active
-                ? "border-primary/60 bg-primary/20 text-interactive shadow-[0_0_0_1px_rgba(92,155,255,0.15)]"
-                : "border-border/40 bg-white/[0.01] text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.04] hover:border-border/60"
+              active ? PILL_ACTIVE : PILL_INACTIVE
             )}
           >
             {m.label}

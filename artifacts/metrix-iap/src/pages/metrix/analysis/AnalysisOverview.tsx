@@ -16,7 +16,7 @@ import {
   SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
   DetailReveal, deriveLabel,
   LoopAction, SkeletonTileRow, InfoTooltip, readableVariables, eventLabel,
-  DataWindowBar,
+  DataWindowBar, SegmentedToggle,
   type DataWindowSelection,
 } from "../shared";
 import {
@@ -32,7 +32,7 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import {
-  LineChart, Library, Users, LayoutGrid, Wallet,
+  LineChart, Library, Users, LayoutGrid, Wallet, ArrowUp, ArrowDown,
 } from "lucide-react";
 import type {
   ConceptRollupRow, DemographicRow, PlacementRow, VariablePerformanceRow,
@@ -601,6 +601,14 @@ function DemoHeatmapGrid({
 
 type VarSortKey = "spend" | "cpa" | "ctr" | "results";
 
+/** "asc" = lower is better (CPA); "desc" = higher is better. Drives the header arrow direction. */
+const VAR_SORT_DIRECTION: Record<VarSortKey, "asc" | "desc"> = {
+  spend: "desc",
+  results: "desc",
+  cpa: "asc",
+  ctr: "desc",
+};
+
 function CompactVariableTable({ rows }: { rows: VariablePerformanceRow[] }) {
   const [sortKey, setSortKey] = useState<VarSortKey>("spend");
 
@@ -612,7 +620,7 @@ function CompactVariableTable({ rows }: { rows: VariablePerformanceRow[] }) {
       if (!ex || r["Amount spent (USD)"] > ex["Amount spent (USD)"]) byId.set(r.variable_id, r);
     }
     const arr = [...byId.values()];
-    const asc = sortKey === "cpa";
+    const asc = VAR_SORT_DIRECTION[sortKey] === "asc";
     return arr
       .sort((a, b) => {
         const va = sortKey === "spend" ? a["Amount spent (USD)"]
@@ -644,22 +652,33 @@ function CompactVariableTable({ rows }: { rows: VariablePerformanceRow[] }) {
           <tr className="border-b border-border/30">
             <th className="text-left px-2 py-1.5 text-label font-mono uppercase tracking-widest text-muted-foreground/60 whitespace-nowrap">Variable</th>
             <th className="text-left px-2 py-1.5 text-label font-mono uppercase tracking-widest text-muted-foreground/60">Family</th>
-            {cols.map((c) => (
-              <th key={c.key} className="text-right px-2 py-1.5">
-                <button
-                  onClick={() => setSortKey(c.key)}
-                  className={cn(
-                    "text-label font-mono uppercase tracking-widest transition-colors whitespace-nowrap",
-                    sortKey === c.key
-                      ? "text-interactive"
-                      : "text-muted-foreground/60 hover:text-foreground/80",
-                  )}
+            {cols.map((c) => {
+              const active = sortKey === c.key;
+              const dir = VAR_SORT_DIRECTION[c.key];
+              return (
+                <th
+                  key={c.key}
+                  className="text-right px-2 py-1.5"
+                  aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : "none"}
                 >
-                  {c.label}
-                  {sortKey === c.key && <span className="ml-0.5 opacity-60">↓</span>}
-                </button>
-              </th>
-            ))}
+                  <button
+                    onClick={() => setSortKey(c.key)}
+                    aria-label={`Sort by ${c.label}${active ? (dir === "asc" ? ", currently ascending" : ", currently descending") : ""}`}
+                    className={cn(
+                      "inline-flex items-center gap-0.5 text-label font-mono uppercase tracking-widest font-semibold transition-colors whitespace-nowrap",
+                      active
+                        ? "text-interactive"
+                        : "text-muted-foreground/60 hover:text-foreground/80",
+                    )}
+                  >
+                    {c.label}
+                    {active && (dir === "asc"
+                      ? <ArrowUp className="w-3 h-3" />
+                      : <ArrowDown className="w-3 h-3" />)}
+                  </button>
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody>
@@ -678,37 +697,6 @@ function CompactVariableTable({ rows }: { rows: VariablePerformanceRow[] }) {
           ))}
         </tbody>
       </table>
-    </div>
-  );
-}
-
-// ─── Sort toggle button ───────────────────────────────────────────────
-
-function SortToggle({
-  options,
-  active,
-  onSelect,
-}: {
-  options: { key: string; label: string }[];
-  active: string;
-  onSelect: (k: string) => void;
-}) {
-  return (
-    <div className="flex items-center gap-0.5 bg-white/[0.04] rounded-lg p-0.5">
-      {options.map((o) => (
-        <button
-          key={o.key}
-          onClick={() => onSelect(o.key)}
-          className={cn(
-            "px-2.5 py-1 rounded-md text-label font-medium transition-colors whitespace-nowrap",
-            active === o.key
-              ? "bg-primary/20 text-interactive"
-              : "text-muted-foreground/60 hover:text-foreground/80",
-          )}
-        >
-          {o.label}
-        </button>
-      ))}
     </div>
   );
 }
@@ -1029,13 +1017,14 @@ export function AnalysisOverview() {
                               className="w-24"
                             />
                           </div>
-                          <SortToggle
+                          <SegmentedToggle
+                            ariaLabel="Sort top concepts by"
                             options={[
-                              { key: "spend" as CellSort, label: "Spend" },
-                              { key: "cpa"   as CellSort, label: "CPA" },
+                              { id: "spend" as CellSort, label: "Spend" },
+                              { id: "cpa"   as CellSort, label: "CPA" },
                             ]}
                             active={cellSort}
-                            onSelect={(k) => setCellSort(k as CellSort)}
+                            onChange={(k) => setCellSort(k)}
                           />
                           <CrossLink to="/app/analysis/library" label="All →" />
                         </div>

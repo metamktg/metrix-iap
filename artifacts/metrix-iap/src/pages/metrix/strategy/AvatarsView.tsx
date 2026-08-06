@@ -13,7 +13,7 @@ import {
   ModuleHeader, ModuleScopeGate, PendingState,
   MetricTile, CrossLink, resultTerm, SectionCard, ConfidenceBadge,
   fmtUSD, fmtPct, fmtNum, RangeScopeBar, NoDataInRangeState,
-  DetailReveal, deriveLabel,
+  DetailReveal, deriveLabel, SegmentedToggle, PILL_ACTIVE, PILL_INACTIVE,
 } from "../shared";
 import { DemographicTable } from "../analysis/tables";
 import { VariableStackChips, VariableChip, familyLabel } from "./strategyShared";
@@ -258,27 +258,15 @@ function SortFilterBar({
   return (
     <div className="sticky top-0 z-20 flex items-center gap-3 px-6 py-2.5 border-b border-border/30 bg-surface-deep/95 backdrop-blur-sm flex-wrap shrink-0">
       {/* View toggle */}
-      <div className="flex items-center bg-white/[0.04] rounded-lg p-0.5 border border-border/30" role="group" aria-label="Avatar view mode">
-        {(["avatars", "profiles"] as ViewMode[]).map((m) => (
-          <button
-            key={m}
-            onClick={() => onViewMode(m)}
-            aria-pressed={viewMode === m}
-            className={cn(
-              "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-body font-medium transition-colors",
-              viewMode === m
-                ? "bg-primary/20 text-interactive shadow-[0_0_0_1px_rgba(92,155,255,0.15)]"
-                : "text-muted-foreground/60 hover:text-foreground/80"
-            )}
-          >
-            {m === "avatars"
-              ? <Users className="w-3.5 h-3.5" />
-              : <Fingerprint className="w-3.5 h-3.5" />
-            }
-            {m === "avatars" ? "Avatars" : "Profiles"}
-          </button>
-        ))}
-      </div>
+      <SegmentedToggle
+        ariaLabel="Avatar view mode"
+        options={[
+          { id: "avatars" as ViewMode, label: "Avatars", Icon: Users },
+          { id: "profiles" as ViewMode, label: "Profiles", Icon: Fingerprint },
+        ]}
+        active={viewMode}
+        onChange={onViewMode}
+      />
 
       <div className="w-px h-5 bg-border/40" />
 
@@ -296,9 +284,7 @@ function SortFilterBar({
                 aria-pressed={active}
                 className={cn(
                   "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-body font-semibold transition-colors border",
-                  active
-                    ? "border-primary/60 bg-primary/20 text-interactive shadow-[0_0_0_1px_rgba(92,155,255,0.15)]"
-                    : "border-transparent text-muted-foreground/60 hover:text-foreground/80 hover:border-border/30"
+                  active ? PILL_ACTIVE : PILL_INACTIVE
                 )}
               >
                 {SORT_LABEL[k]}
