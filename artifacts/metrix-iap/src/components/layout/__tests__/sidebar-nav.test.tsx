@@ -62,9 +62,13 @@ function renderCollapsed() {
   return renderWithProviders(<Sidebar />);
 }
 
-/** The child <ul> is toggled between "block" and "hidden" utility classes. */
+/**
+ * The child list is now animated via a CSS grid wrapper (0fr → 1fr).
+ * The wrapper carries aria-hidden="true" when collapsed.
+ */
 function isExpanded(listEl: HTMLElement): boolean {
-  return !listEl.classList.contains("hidden");
+  const wrapper = listEl.parentElement;
+  return wrapper?.getAttribute("aria-hidden") !== "true";
 }
 
 /**
