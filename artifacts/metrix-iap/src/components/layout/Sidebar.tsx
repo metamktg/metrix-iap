@@ -18,7 +18,6 @@ import {
   Zap,
   Settings2,
 } from "lucide-react";
-import { AccountSwitcher } from "./AccountSwitcher";
 import { DataSourceBadgeToggle } from "@/components/ui/DataSourceBadge";
 import { navTree, sectionLandingRoute } from "@/navigation/navTree";
 import { useNavBadges } from "@/navigation/useNavBadges";
@@ -116,22 +115,6 @@ function navigate(href: string, e: React.MouseEvent) {
   window.dispatchEvent(new PopStateEvent("popstate"));
 }
 
-// ─── Tooltip (collapsed-mode hover label for leaf sections) ────────────
-
-function CollapseTooltip({ label, sub }: { label: string; sub?: string }) {
-  return (
-    <div className={cn(
-      "absolute left-full top-1/2 -translate-y-1/2 ml-2 z-[100]",
-      "pointer-events-none select-none",
-      "bg-[hsl(222_61%_10%)] border border-border/50 rounded-md shadow-xl",
-      "px-2.5 py-1.5 whitespace-nowrap",
-    )}>
-      <div className="text-[12px] font-semibold text-foreground leading-tight">{label}</div>
-      {sub && <div className="text-[9px] text-muted-foreground/60 mt-0.5">{sub}</div>}
-    </div>
-  );
-}
-
 // ─── Child row (used in both expanded sidebar and hover flyout) ─────────
 
 function ChildRow({
@@ -205,6 +188,8 @@ function HoverFlyout({
 }) {
   const children = section.children ?? [];
 
+  // Handle leaf sections (no children) — these show a tooltip, not a flyout,
+  // so this component is only rendered when hasChildren is true.
   const panel = (
     <div
       style={{ position: "fixed", top, left, zIndex: 9999 }}
@@ -221,9 +206,6 @@ function HoverFlyout({
       {/* Section title */}
       <div className="px-3 py-1.5 text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60 border-b border-border/30 mb-0.5">
         {section.label}
-        {section.number && (
-          <span className="ml-1.5 font-mono opacity-50">{section.number}</span>
-        )}
       </div>
       <ul
         className="list-none p-0 m-0 px-1 space-y-0.5 pt-0.5"
@@ -266,7 +248,7 @@ function CollapsedItem({
   const hasChildren = (section.children?.length ?? 0) > 0;
 
   const scheduleClose = useCallback(() => {
-    closeTimer.current = setTimeout(() => setHovered(false), 120);
+    closeTimer.current = setTimeout(() => setHovered(false), 150);
   }, []);
 
   const cancelClose = useCallback(() => {
@@ -280,10 +262,15 @@ function CollapsedItem({
     cancelClose();
     if (liRef.current) {
       const rect = liRef.current.getBoundingClientRect();
-      setFlyoutPos({ top: rect.top, left: rect.right + 4 });
+      // Estimate flyout height: header (32px) + each child (34px) + padding (12px)
+      const estHeight = 32 + (section.children?.length ?? 0) * 34 + 12;
+      const rawTop = rect.top;
+      // Clamp so the flyout doesn't overflow the bottom of the viewport
+      const clampedTop = Math.min(rawTop, window.innerHeight - estHeight - 8);
+      setFlyoutPos({ top: Math.max(8, clampedTop), left: rect.right + 6 });
     }
     setHovered(true);
-  }, [cancelClose]);
+  }, [cancelClose, section.children?.length]);
 
   const handleIconLeave = useCallback(() => {
     if (hasChildren) {
@@ -292,6 +279,16 @@ function CollapsedItem({
       setHovered(false);
     }
   }, [hasChildren, scheduleClose]);
+
+  // Escape key closes the flyout
+  useEffect(() => {
+    if (!hovered) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setHovered(false);
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [hovered]);
 
   return (
     <>
@@ -309,6 +306,7 @@ function CollapsedItem({
           }}
           aria-current={active ? "page" : undefined}
           aria-label={section.label}
+          title={!hasChildren ? section.label : undefined}
           className={cn(
             "flex items-center justify-center w-10 h-10 mx-auto rounded-lg transition-all relative overflow-hidden",
             active
@@ -339,9 +337,6 @@ function CollapsedItem({
             onClose={() => setHovered(false)}
           />
         )}
-        {hovered && !hasChildren && (
-          <CollapseTooltip label={section.label} sub={section.number} />
-        )}
       </li>
 
       {COLLAPSED_DIVIDER_AFTER.has(section.id) && (
@@ -354,28 +349,29 @@ function CollapsedItem({
 }
 
 // ─── Expandable section (expanded mode) ────────────────────────────────
+// open / onToggle are controlled by the parent Sidebar (accordion mode).
 
 function ExpandableSection({
   section,
   badgeCounts,
+  open,
+  onToggle,
 }: {
   section: NavSection;
   badgeCounts: Record<string, number | null>;
+  open: boolean;
+  onToggle: () => void;
 }) {
   const [location] = useLocation();
   const sectionActive = isSectionActive(section, location);
   const landing = sectionLandingRoute(section);
   const landingActive = landing != null && isChildActive(landing, location);
-  const [open, setOpen] = useState(sectionActive);
   const controlsId = useId();
-
-  useEffect(() => {
-    if (sectionActive) setOpen(true);
-  }, [location, sectionActive]);
   const children = section.children ?? [];
 
   return (
     <li>
+      {/* Single row: icon + label navigates to landing; chevron toggles list */}
       <div
         className={cn(
           "flex items-center rounded-lg text-[11px] font-semibold uppercase tracking-widest transition-all select-none",
@@ -386,17 +382,19 @@ function ExpandableSection({
               : "text-foreground/70 hover:text-foreground hover:bg-[rgba(20,55,110,0.4)]"
         )}
       >
+        {/* Icon + label: navigates to landing page */}
         <a
           href={landing ?? "#"}
           aria-current={landingActive ? "page" : undefined}
           onClick={(e) => {
             if (!landing) {
               e.preventDefault();
-              setOpen(v => !v);
+              onToggle();
               return;
             }
             navigate(landing, e);
-            setOpen(true);
+            // Ensure this section stays open when navigated to
+            if (!open) onToggle();
           }}
           className="flex-1 min-w-0 flex items-center gap-2 pl-2.5 pr-1 h-9"
         >
@@ -409,17 +407,19 @@ function ExpandableSection({
           />
           <span className="flex-1 text-left truncate">{section.label}</span>
         </a>
+
+        {/* Chevron-only toggle — expands/collapses child list without navigating */}
         <button
           type="button"
           aria-expanded={open}
           aria-controls={controlsId}
           aria-label={`${open ? "Collapse" : "Expand"} ${section.label} section`}
-          onClick={() => setOpen(v => !v)}
+          onClick={onToggle}
           className={cn(
             "shrink-0 h-9 w-7 flex items-center justify-center rounded transition-colors",
             landingActive
-              ? "text-white/80 hover:text-white"
-              : "text-muted-foreground/60 hover:text-foreground"
+              ? "text-white/70 hover:text-white"
+              : "text-muted-foreground/40 hover:text-muted-foreground"
           )}
         >
           <ChevronDown
@@ -428,6 +428,7 @@ function ExpandableSection({
         </button>
       </div>
 
+      {/* Child list — hidden when collapsed */}
       <ul
         id={controlsId}
         aria-label={`${section.label} pages`}
@@ -505,6 +506,7 @@ function LeafSection({
 // ─── Sidebar ───────────────────────────────────────────────────────────
 
 export function Sidebar() {
+  const [location] = useLocation();
   const badgeCounts = useNavBadges();
   const { user } = useAuth();
   const [collapsed, setCollapsed] = useState(loadCollapsed);
@@ -521,9 +523,30 @@ export function Sidebar() {
     ? navTree
     : navTree.map((section) =>
         section.children?.length
-          ? { ...section, children: section.children.filter((c) => c.id !== "settings-team") }
+          ? { ...section, children: section.children.filter((c) => c.id !== "settings-users") }
           : section
       );
+
+  // ─── Accordion state ──────────────────────────────────────────────────
+  // Find the currently active section to open by default.
+  const activeSection = visibleTree.find(s => isSectionActive(s, location));
+  const [openSectionId, setOpenSectionId] = useState<string | null>(
+    activeSection?.id ?? null
+  );
+
+  // When the user navigates (e.g. via topbar breadcrumb or link click),
+  // auto-open the section that contains the new active page.
+  useEffect(() => {
+    const nowActive = visibleTree.find(s => isSectionActive(s, location));
+    if (nowActive) {
+      setOpenSectionId(nowActive.id);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location]);
+
+  function handleSectionToggle(id: string) {
+    setOpenSectionId(prev => (prev === id ? null : id));
+  }
 
   return (
     <aside
@@ -535,17 +558,30 @@ export function Sidebar() {
       )}
       aria-label="Workspace sidebar"
     >
-      {/* Logo */}
+      {/* Logo row — collapse toggle lives here as a small icon button */}
       <div className={cn(
         "border-b border-border/40 shrink-0 transition-all duration-200",
-        collapsed ? "px-0 pt-3.5 pb-3 flex items-center justify-center" : "px-4 pt-4 pb-3"
+        collapsed
+          ? "px-0 pt-3 pb-2.5 flex flex-col items-center gap-2"
+          : "px-4 pt-4 pb-3"
       )}>
         {collapsed ? (
-          <img
-            src={`${import.meta.env.BASE_URL}metrix-logo.png`}
-            alt="Metrix"
-            className="w-6 h-6 object-contain mx-logo-glow"
-          />
+          <>
+            <img
+              src={`${import.meta.env.BASE_URL}metrix-logo.png`}
+              alt="Metrix"
+              className="w-6 h-6 object-contain mx-logo-glow"
+            />
+            {/* Expand button beneath logo in collapsed mode */}
+            <button
+              onClick={toggleCollapse}
+              aria-label="Expand sidebar"
+              title="Expand sidebar"
+              className="w-7 h-7 flex items-center justify-center rounded text-muted-foreground/40 hover:text-muted-foreground hover:bg-white/[0.05] transition-colors"
+            >
+              <PanelLeftOpen className="w-3.5 h-3.5" />
+            </button>
+          </>
         ) : (
           <>
             <div className="flex items-center gap-2">
@@ -558,20 +594,21 @@ export function Sidebar() {
               <span className="text-[9px] font-mono text-muted-foreground/60 border border-border/50 px-1.5 py-0.5 rounded leading-none ml-0.5">
                 IAP
               </span>
+              {/* Collapse button — right-aligned in logo row */}
+              <button
+                onClick={toggleCollapse}
+                aria-label="Collapse sidebar"
+                title="Collapse sidebar"
+                className="ml-auto w-6 h-6 flex items-center justify-center rounded text-muted-foreground/35 hover:text-muted-foreground hover:bg-white/[0.05] transition-colors"
+              >
+                <PanelLeftClose className="w-3.5 h-3.5" />
+              </button>
             </div>
             <p className="text-[9px] text-muted-foreground/55 mt-1 leading-tight tracking-wide">
               Not more data. Better decisions.
             </p>
           </>
         )}
-      </div>
-
-      {/* Account switcher */}
-      <div className={cn(
-        "border-b border-border/40 shrink-0",
-        collapsed ? "py-2 flex items-center justify-center" : "px-2 py-2"
-      )}>
-        <AccountSwitcher compact={collapsed} />
       </div>
 
       {/* Nav */}
@@ -597,6 +634,8 @@ export function Sidebar() {
                   key={section.id}
                   section={section}
                   badgeCounts={badgeCounts}
+                  open={openSectionId === section.id}
+                  onToggle={() => handleSectionToggle(section.id)}
                 />
               ) : (
                 <LeafSection
@@ -610,10 +649,10 @@ export function Sidebar() {
         )}
       </nav>
 
-      {/* Footer */}
+      {/* Footer — data source badge + version only */}
       <div className={cn(
         "border-t border-border/40 shrink-0",
-        collapsed ? "py-3 flex flex-col items-center gap-2" : "px-3 py-3 space-y-2.5"
+        collapsed ? "py-3 flex flex-col items-center gap-2" : "px-3 py-3 space-y-2"
       )}>
         {!collapsed && <DataSourceBadgeToggle />}
         {!collapsed && (
@@ -626,31 +665,6 @@ export function Sidebar() {
             </div>
           </div>
         )}
-
-        {/* Expand / Collapse toggle — prominent, always visible */}
-        <button
-          onClick={toggleCollapse}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className={cn(
-            "flex items-center justify-center gap-2 rounded-lg transition-all",
-            "bg-primary/10 hover:bg-primary/20 border border-primary/25 hover:border-primary/45",
-            "text-interactive hover:text-white",
-            "shadow-sm shadow-primary/10",
-            collapsed
-              ? "w-10 h-9"
-              : "w-full h-8 text-[10px] font-semibold"
-          )}
-        >
-          {collapsed ? (
-            <PanelLeftOpen className="w-4 h-4" />
-          ) : (
-            <>
-              <PanelLeftClose className="w-3.5 h-3.5 shrink-0" />
-              <span>Collapse</span>
-            </>
-          )}
-        </button>
       </div>
     </aside>
   );

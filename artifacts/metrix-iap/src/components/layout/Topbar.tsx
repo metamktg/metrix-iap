@@ -7,10 +7,10 @@ import {
 } from "lucide-react";
 import { useAccount } from "@/contexts/AccountContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { BrandLogo } from "@/components/brand/BrandMark";
 import { useTaskTray } from "@/contexts/TaskTrayContext";
 import { useTaskTrayCount } from "./TaskTray";
 import { buildBreadcrumbs } from "./breadcrumbs";
+import { AccountSwitcher } from "./AccountSwitcher";
 
 // ─── Account menu dropdown ─────────────────────────────────────────────
 
@@ -141,21 +141,28 @@ export function Topbar() {
 
   const isManager = selectedAccountType === "manager";
   const leadLabel = isManager ? manager.name : activeAdAccount?.name ?? manager.name;
-  const crumbs = buildBreadcrumbs(location, leadLabel, isManager);
+  const crumbs = buildBreadcrumbs(location, isManager);
 
   const unconfigured = !isManager && activeAdAccount?.status === "unconfigured";
   const initials = leadLabel.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 
   return (
-    <header className="h-[var(--topbar-h)] flex items-center gap-3 px-4 shrink-0 mx-topbar">
+    <header className="h-[var(--topbar-h)] flex items-center gap-2 px-3 shrink-0 mx-topbar">
+      {/* Account switcher */}
+      <div className="shrink-0">
+        <AccountSwitcher />
+      </div>
+
+      {/* Divider */}
+      <div className="w-px h-4 bg-border/50 shrink-0" />
+
       {/* Breadcrumb */}
       <nav aria-label="Breadcrumb" className="flex items-center gap-0 flex-1 min-w-0">
-        <BrandLogo className="w-4 h-4 shrink-0 mr-1" />
         {crumbs.map((crumb, i) => {
           const isLast = i === crumbs.length - 1;
           return (
             <span key={i} className="flex items-center min-w-0">
-              <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0 mx-0.5" />
+              {i > 0 && <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0 mx-0.5" />}
               {!isLast && crumb.to ? (
                 <Link
                   href={crumb.to}
