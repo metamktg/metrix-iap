@@ -1268,32 +1268,35 @@ function CreativeUploadSection({
               </button>
             )}
           </div>
-          {creativeAssets.map((asset) => (
-            <div key={asset.id} className="flex items-start gap-2">
-              <div className="flex-1 min-w-0">
-                <CreativeAdNamesEditor
-                  accountId={accountId}
-                  asset={asset}
-                  knownAdNames={knownAdNames}
-                  availableAdNames={availableAdNames}
-                  autoFocusPicker={justStagedIds.has(asset.id)}
-                  onSaved={onChanged}
-                />
+          {/* Capped scroll area — prevents 60+ cards from making the dialog infinitely tall */}
+          <div className={cn("space-y-1.5", creativeAssets.length > 6 && "max-h-72 overflow-y-auto pr-1")}>
+            {creativeAssets.map((asset) => (
+              <div key={asset.id} className="flex items-start gap-2">
+                <div className="flex-1 min-w-0">
+                  <CreativeAdNamesEditor
+                    accountId={accountId}
+                    asset={asset}
+                    knownAdNames={knownAdNames}
+                    availableAdNames={availableAdNames}
+                    autoFocusPicker={justStagedIds.has(asset.id)}
+                    onSaved={onChanged}
+                  />
+                </div>
+                <button
+                  onClick={() => setConfirmDeleteId(asset.id)}
+                  disabled={pendingDeleteId === asset.id}
+                  className="shrink-0 mt-2 w-7 h-7 flex items-center justify-center rounded text-muted-foreground/80 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  aria-label={`Remove ${asset.filename}`}
+                >
+                  {pendingDeleteId === asset.id ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-3.5 h-3.5" />
+                  )}
+                </button>
               </div>
-              <button
-                onClick={() => setConfirmDeleteId(asset.id)}
-                disabled={pendingDeleteId === asset.id}
-                className="shrink-0 mt-2 w-7 h-7 flex items-center justify-center rounded text-muted-foreground/80 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                aria-label={`Remove ${asset.filename}`}
-              >
-                {pendingDeleteId === asset.id ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Trash2 className="w-3.5 h-3.5" />
-                )}
-              </button>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
@@ -1448,6 +1451,8 @@ export function ManualUploadPanel({
   const creativeAssets = imports.filter((i) => i.kind === "creative_asset");
   const guessedImports = guessedCreativeImports(imports);
   const bothRequiredStaged = Boolean(demoImport && placementImport);
+  const creativeMappedCount = creativeAssets.filter((a) => a.ad_names.length > 0).length;
+  const creativeUnmappedCount = creativeAssets.length - creativeMappedCount;
 
   // Auto-advance to review/run step once when both required CSVs are already
   // staged — reopening the dialog (e.g. from Analysis Hub or Library) skips
@@ -1477,7 +1482,7 @@ export function ManualUploadPanel({
           creativesCount={creativeAssets.length}
           onAnalysis={true}
         />
-        {/* Upload summary */}
+        {/* Upload summary — compact, no raw file dump */}
         <div className="rounded-lg border border-border/40 bg-white/[0.02] p-3 space-y-2">
           <div className="text-body font-semibold text-foreground">Files staged</div>
           <div className="space-y-1.5">
@@ -1489,10 +1494,24 @@ export function ManualUploadPanel({
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
               <span className="text-foreground/80 truncate">Placements — {placementImport?.filename}</span>
             </div>
-            {summaryImport && (
+            {summaryImport ? (
               <div className="flex items-center gap-2 text-caption">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                 <span className="text-foreground/80 truncate">Ad Summary — {summaryImport.filename}</span>
+              </div>
+            ) : (
+              /* Inline nudge — no separate warning block needed */
+              <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md border border-amber-400/25 bg-amber-400/[0.05]">
+                <div className="flex items-center gap-2 min-w-0">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span className="text-caption text-amber-200/80 truncate">No Ad Summary CSV — spend may be underreported</span>
+                </div>
+                <button
+                  onClick={() => setStep("upload")}
+                  className="shrink-0 flex items-center gap-1 h-6 px-2.5 rounded border border-amber-400/35 bg-amber-400/10 text-label font-medium text-amber-200 hover:bg-amber-400/20 transition-colors"
+                >
+                  <ArrowLeft className="w-3 h-3" /> Add one
+                </button>
               </div>
             )}
             {conversionDeviceImport && (
@@ -1501,46 +1520,37 @@ export function ManualUploadPanel({
                 <span className="text-foreground/80 truncate">Conversion Device — {conversionDeviceImport.filename}</span>
               </div>
             )}
+            {/* Creative files: compact count summary — avoids listing 60+ raw filenames */}
             {creativeAssets.length > 0 ? (
-              creativeAssets.map((a) => (
-                <div key={a.id} className="flex items-center gap-2 text-caption">
-                  <Images className="w-3.5 h-3.5 text-muted-foreground/85 shrink-0" />
-                  <span className="text-foreground/80 truncate">{a.filename}</span>
-                  <span className="text-muted-foreground/80 truncate">
-                    {a.ad_names.length > 0 ? `→ ${a.ad_names.join(", ")}` : "→ unmapped"}
+              <div className="flex items-center gap-2 text-caption">
+                <Images className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
+                <span className="text-foreground/80 flex-1">
+                  {creativeAssets.length} creative {creativeAssets.length === 1 ? "file" : "files"} staged
+                </span>
+                {creativeUnmappedCount > 0 ? (
+                  <>
+                    <span className="text-label font-medium text-amber-400 shrink-0">
+                      {creativeMappedCount}/{creativeAssets.length} mapped
+                    </span>
+                    <button
+                      onClick={() => setStep("upload")}
+                      className="shrink-0 flex items-center gap-1 h-6 px-2.5 rounded border border-amber-400/35 bg-amber-400/10 text-label font-medium text-amber-200 hover:bg-amber-400/20 transition-colors"
+                    >
+                      Fix mappings
+                    </button>
+                  </>
+                ) : (
+                  <span className="flex items-center gap-1 text-emerald-400 shrink-0">
+                    <CheckCircle2 className="w-3 h-3" />
+                    <span className="text-label font-medium">All mapped</span>
                   </span>
-                  {a.match_method === "guess" && <MatchMethodBadge method="guess" />}
-                </div>
-              ))
+                )}
+              </div>
             ) : (
-              <div className="text-caption text-muted-foreground/80">No creative files staged.</div>
+              <div className="text-caption text-muted-foreground/60">No creative files staged — optional.</div>
             )}
           </div>
         </div>
-
-        {/* Spend coverage notice — shown when Ad Summary CSV is absent */}
-        {!summaryImport && (
-          <div className="rounded-lg border border-amber-400/25 bg-amber-400/[0.05] p-3 space-y-1.5">
-            <div className="flex items-start gap-2">
-              <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0 space-y-1">
-                <div className="text-caption font-semibold text-amber-200">Spend totals will be underreported</div>
-                <p className="text-label text-amber-100/65 leading-relaxed">
-                  Meta's demographic export only captures ~10–15% of actual spend — iOS privacy attribution limits
-                  prevent the rest from being assigned to a gender/age segment. Upload an{" "}
-                  <strong className="text-amber-200/90">Ad Summary CSV</strong> (ad-level, no breakdown) from Meta
-                  Ads Manager to get accurate spend figures across all your ads.
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => setStep("upload")}
-              className="text-caption text-amber-300/80 underline underline-offset-2 hover:text-amber-200 transition-colors"
-            >
-              ← Go back and add Ad Summary CSV
-            </button>
-          </div>
-        )}
 
         <GuessedMatchesCallout
           accountId={accountId}
