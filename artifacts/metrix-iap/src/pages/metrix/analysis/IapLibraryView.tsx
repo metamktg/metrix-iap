@@ -30,7 +30,7 @@ import {
   ModuleHeader, ModuleTabs, ModuleScopeGate, PendingState, FlowCrumb, LoopAction, useFromParam,
   MetricTile, CaveatNote, MetricSelectionBar, CrossLink, useFocusParam,
   readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel,
-  RangeScopeBar, NoDataInRangeState, StaleFocusNotice,
+  RangeScopeBar, NoDataInRangeState, StaleFocusNotice, PILL_ACTIVE, PILL_INACTIVE,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { useCellRangeScope } from "@/lib/date-scope";
@@ -335,9 +335,7 @@ export function IapLibraryView() {
                     onClick={() => setGroupByConcept((v) => !v)}
                     aria-pressed={groupByConcept}
                     className={`flex items-center gap-1.5 text-label font-medium border px-2.5 py-1.5 rounded-md transition-colors ${
-                      groupByConcept
-                        ? "border-primary/50 bg-primary/10 text-interactive"
-                        : "border-border/40 bg-white/[0.02] text-muted-foreground/70 hover:text-foreground hover:border-border/60 hover:bg-white/[0.04]"
+                      groupByConcept ? PILL_ACTIVE : PILL_INACTIVE
                     }`}
                   >
                     <Dna className="w-3.5 h-3.5" />

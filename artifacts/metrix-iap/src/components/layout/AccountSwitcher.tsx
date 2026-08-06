@@ -26,7 +26,7 @@ export function AccountSwitcher({ compact = false }: { compact?: boolean }) {
   const active = adAccounts.find((a) => a.id === activeAdAccountId) ?? null;
 
   const triggerLabel = isManager ? manager.name : active?.name ?? manager.name;
-  const triggerSub = isManager ? "Manager · Agency Overview" : active?.platform ?? "";
+  const triggerSub = isManager ? "Agency Overview" : "";
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -75,7 +75,9 @@ export function AccountSwitcher({ compact = false }: { compact?: boolean }) {
                   <span className={cn("shrink-0 w-1.5 h-1.5 rounded-full", STATUS_DOT[active.status] ?? "bg-muted-foreground/60")} />
                 )}
               </div>
-              <div className="text-label text-muted-foreground/70 leading-tight truncate">{triggerSub}</div>
+              {triggerSub && (
+                <div className="text-label text-muted-foreground/70 leading-tight truncate">{triggerSub}</div>
+              )}
             </div>
             <ChevronsUpDown className="shrink-0 w-3.5 h-3.5 text-muted-foreground/60" />
           </button>
@@ -116,7 +118,6 @@ export function AccountSwitcher({ compact = false }: { compact?: boolean }) {
               </div>
               <div className="flex-1 min-w-0">
                 <div className={cn("text-caption font-medium leading-tight truncate", isActive ? "text-foreground" : "text-foreground/70")}>{a.name}</div>
-                <div className="text-[9px] text-muted-foreground/60 leading-tight capitalize">{a.status}</div>
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
                 {a.status === "unconfigured" && (

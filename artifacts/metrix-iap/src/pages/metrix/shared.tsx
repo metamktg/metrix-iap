@@ -1134,6 +1134,66 @@ export function StaleFocusNotice({ label = "item" }: { label?: string }) {
   );
 }
 
+// ─── Shared filter/sort active-state tokens ───────────────────────────
+// Single source of truth for "this chip/pill is the one currently active"
+// styling. Every sort-by-metric pill, filter chip, and date/window picker
+// across the platform composes from these two strings instead of each
+// picking its own opacity values — the actual fix for controls whose
+// active state was too subtle to register as "this took effect."
+// Layout (radius, padding, icon gaps) stays per-component; only the
+// active/inactive color treatment is shared here.
+export const PILL_ACTIVE =
+  "border-primary/60 bg-primary/20 text-interactive shadow-[0_0_0_1px_rgba(92,155,255,0.15)]";
+export const PILL_INACTIVE =
+  "border-border/40 text-muted-foreground/60 hover:text-foreground hover:bg-white/[0.04] hover:border-border/60";
+
+// ─── Segmented toggle ─────────────────────────────────────────────────
+// Contained 2-4 option mode switch (e.g. "Avatars / Profiles",
+// "Map / Pockets / Ranked") — the boxed-pill sibling of the outlined
+// chip-row pattern above. Same active-state strength, different shape.
+export function SegmentedToggle<T extends string>({
+  options,
+  active,
+  onChange,
+  ariaLabel,
+  responsiveLabels,
+}: {
+  options: { id: T; label: string; Icon?: React.ComponentType<{ className?: string }> }[];
+  active: T;
+  onChange: (id: T) => void;
+  ariaLabel: string;
+  /** Collapse to icon-only below the sm breakpoint, for tight header rows. */
+  responsiveLabels?: boolean;
+}) {
+  return (
+    <div
+      className="flex items-center gap-0.5 rounded-lg border border-border/30 bg-white/[0.03] p-0.5"
+      role="group"
+      aria-label={ariaLabel}
+    >
+      {options.map(({ id, label, Icon }) => {
+        const isActive = active === id;
+        return (
+          <button
+            key={id}
+            onClick={() => onChange(id)}
+            aria-pressed={isActive}
+            className={cn(
+              "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-body font-medium transition-colors",
+              isActive
+                ? "bg-primary/20 text-interactive shadow-[0_0_0_1px_rgba(92,155,255,0.15)]"
+                : "text-muted-foreground/60 hover:text-foreground/80"
+            )}
+          >
+            {Icon && <Icon className="w-3.5 h-3.5 shrink-0" />}
+            <span className={responsiveLabels ? "hidden sm:inline" : undefined}>{label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Metric selection bar ─────────────────────────────────────────────
 // Result-event metric selection used to filter Analysis views.
 
@@ -1160,9 +1220,7 @@ export function MetricSelectionBar({
             aria-pressed={on}
             className={cn(
               "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-body font-medium transition-colors",
-              on
-                ? "border-primary/30 bg-primary/10 text-interactive"
-                : "border-border/40 text-muted-foreground/60 hover:text-foreground hover:bg-white/[0.03]"
+              on ? PILL_ACTIVE : PILL_INACTIVE
             )}
           >
             {on ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
@@ -1212,9 +1270,7 @@ export function DatePresetBar({
             aria-pressed={value === v}
             className={cn(
               "inline-flex items-center h-6 px-2.5 rounded-md border text-caption font-medium transition-colors",
-              value === v
-                ? "border-primary/40 bg-primary/10 text-interactive"
-                : "border-border/40 text-muted-foreground/60 hover:text-foreground hover:bg-white/[0.03]"
+              value === v ? PILL_ACTIVE : PILL_INACTIVE
             )}
           >
             {label}
@@ -1277,9 +1333,7 @@ export function DataWindowBar({
           aria-pressed={selectedKey === null}
           className={cn(
             "inline-flex items-center h-6 px-2.5 rounded-md border text-caption font-medium transition-colors",
-            selectedKey === null
-              ? "border-primary/40 bg-primary/10 text-interactive"
-              : "border-border/40 text-muted-foreground/60 hover:text-foreground hover:bg-white/[0.03]",
+            selectedKey === null ? PILL_ACTIVE : PILL_INACTIVE,
           )}
         >
           All data
@@ -1295,9 +1349,7 @@ export function DataWindowBar({
               title={`${w.rows.toLocaleString()} rows · $${w.spend.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} spend`}
               className={cn(
                 "inline-flex items-center h-6 px-2.5 rounded-md border text-caption font-medium transition-colors",
-                pressed
-                  ? "border-primary/40 bg-primary/10 text-interactive"
-                  : "border-border/40 text-muted-foreground/60 hover:text-foreground hover:bg-white/[0.03]",
+                pressed ? PILL_ACTIVE : PILL_INACTIVE,
               )}
             >
               {w.label}

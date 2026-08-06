@@ -87,6 +87,9 @@ const RUNTIME_EXPORTS: Array<keyof typeof shared> = [
   "useStaleFocus",
   "StaleFocusNotice",
   "MetricSelectionBar",
+  "PILL_ACTIVE",
+  "PILL_INACTIVE",
+  "SegmentedToggle",
   "IMPACT_STYLE",
   "SCOPE_STYLE",
   "ImpactBadge",
@@ -326,6 +329,18 @@ describe("shared.tsx display components — render checks (no context)", () => {
 
   it("SectionTabBar renders non-empty output", () => {
     const { container } = render(<shared.SectionTabBar section="analysis" />);
+    expect(container.firstChild).not.toBeNull();
+  });
+
+  it("SegmentedToggle renders non-empty output", () => {
+    const { container } = render(
+      <shared.SegmentedToggle
+        ariaLabel="View mode"
+        options={[{ id: "a", label: "A" }, { id: "b", label: "B" }]}
+        active="a"
+        onChange={() => {}}
+      />
+    );
     expect(container.firstChild).not.toBeNull();
   });
 });

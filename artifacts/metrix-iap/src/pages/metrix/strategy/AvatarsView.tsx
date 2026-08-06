@@ -13,7 +13,7 @@ import {
   ModuleHeader, ModuleScopeGate, PendingState,
   MetricTile, CrossLink, resultTerm, SectionCard, ConfidenceBadge,
   fmtUSD, fmtPct, fmtNum, RangeScopeBar, NoDataInRangeState,
-  DetailReveal, deriveLabel,
+  DetailReveal, deriveLabel, SegmentedToggle, PILL_ACTIVE, PILL_INACTIVE,
 } from "../shared";
 import { DemographicTable } from "../analysis/tables";
 import { VariableStackChips, VariableChip, familyLabel } from "./strategyShared";
@@ -33,7 +33,7 @@ import {
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import {
   Users, Fingerprint, DoorOpen, MessageSquareQuote, Compass,
-  ArrowDownRight, ArrowUpRight, Dna, ChevronDown, Search, MapPin,
+  ArrowDownRight, ArrowUpRight, ArrowDown, ArrowUp, Dna, ChevronDown, ChevronRight, Search, MapPin,
 } from "lucide-react";
 import type {
   MSTMatrixColumn, MSTMatrixCell, ICPProfile, PlacementRow, AnalysisData,
@@ -45,14 +45,24 @@ const SECTION = "Strategy · 04";
 
 // ─── Types & constants ─────────────────────────────────────────────────
 
-type SortKey = "spend" | "cpa" | "cvr" | "confidence";
+type SortKey = "spend" | "cpa" | "cvr" | "cpm" | "confidence";
 type ViewMode = "avatars" | "profiles";
 
 const SORT_LABEL: Record<SortKey, string> = {
   spend: "Spend",
   cpa: "CPA",
-  cvr: "CVR",
+  cvr: "Link CVR",
+  cpm: "CPM",
   confidence: "Confidence",
+};
+
+/** "asc" = lower is better (cost metrics), "desc" = higher is better. Drives the sort-pill arrow. */
+const SORT_DIRECTION: Record<SortKey, "asc" | "desc"> = {
+  spend: "desc",
+  cpa: "asc",
+  cvr: "desc",
+  cpm: "asc",
+  confidence: "desc",
 };
 
 const CONF_ORDER: Record<string, number> = { high: 0, medium: 1, directional: 2, low: 3 };
@@ -63,6 +73,22 @@ interface ColumnPerf {
   cpa: number | null;
   /** link clicks ÷ impressions × 100 */
   cvr: number | null;
+  /** upper-funnel reach efficiency: spend ÷ impressions × 1000 */
+  cpm: number | null;
+}
+
+/** Stable per-avatar accent so identity reads consistently regardless of sort order. */
+const AVATAR_ACCENTS = [
+  { icon: "text-blue-300", chip: "border-blue-400/30 bg-blue-400/10", rail: "before:bg-blue-400/70", bar: "bg-blue-400/70" },
+  { icon: "text-violet-300", chip: "border-violet-400/30 bg-violet-400/10", rail: "before:bg-violet-400/70", bar: "bg-violet-400/70" },
+  { icon: "text-amber-300", chip: "border-amber-400/30 bg-amber-400/10", rail: "before:bg-amber-400/70", bar: "bg-amber-400/70" },
+  { icon: "text-teal-300", chip: "border-teal-400/30 bg-teal-400/10", rail: "before:bg-teal-400/70", bar: "bg-teal-400/70" },
+  { icon: "text-fuchsia-300", chip: "border-fuchsia-400/30 bg-fuchsia-400/10", rail: "before:bg-fuchsia-400/70", bar: "bg-fuchsia-400/70" },
+  { icon: "text-sky-300", chip: "border-sky-400/30 bg-sky-400/10", rail: "before:bg-sky-400/70", bar: "bg-sky-400/70" },
+] as const;
+
+function avatarAccent(index: number) {
+  return AVATAR_ACCENTS[index % AVATAR_ACCENTS.length];
 }
 
 // ─── Per-column performance ────────────────────────────────────────────
@@ -75,7 +101,7 @@ function computeColumnPerf(
   const rows = (analysis?.performance_by_cell ?? []).filter(
     (r) => columnIdForCell(r.cell_id, columnIds) === columnId,
   );
-  if (rows.length === 0) return { spend: 0, results: 0, cpa: null, cvr: null };
+  if (rows.length === 0) return { spend: 0, results: 0, cpa: null, cvr: null, cpm: null };
   const spend = rows.reduce((s, r) => s + r["Amount spent (USD)"], 0);
   const results = rows.reduce((s, r) => s + r.Results, 0);
   const impressions = rows.reduce((s, r) => s + r.Impressions, 0);
@@ -85,20 +111,42 @@ function computeColumnPerf(
     results,
     cpa: results > 0 ? spend / results : null,
     cvr: impressions > 0 ? (linkClicks / impressions) * 100 : null,
+    cpm: impressions > 0 ? (spend / impressions) * 1000 : null,
   };
 }
 
 // ─── Metric pill ──────────────────────────────────────────────────────
 
-function MetricPill({ label, value, colorClass }: {
+function MetricPill({ label, value, colorClass, active, direction }: {
   label: string;
   value: string;
   colorClass?: string;
+  /** True when this is the metric currently driving sort order — gets a visible highlight. */
+  active?: boolean;
+  direction?: "asc" | "desc";
 }) {
   return (
-    <div className="flex flex-col gap-0.5">
-      <span className={cn(TYPE.label, "text-muted-foreground/50 normal-case")}>{label}</span>
-      <span className={cn("text-sm font-bold tabular-nums", colorClass ?? "text-foreground/85")}>{value}</span>
+    <div
+      className={cn(
+        "flex flex-col gap-0.5 rounded-md px-1.5 py-1 -mx-1.5 -my-1 transition-colors",
+        active && "bg-primary/[0.07] ring-1 ring-primary/25"
+      )}
+    >
+      <span className={cn(
+        "text-label font-semibold normal-case inline-flex items-center gap-0.5",
+        active ? "text-interactive/90" : "text-muted-foreground/60"
+      )}>
+        {label}
+        {active && direction && (direction === "asc"
+          ? <ArrowUp className="w-2.5 h-2.5" />
+          : <ArrowDown className="w-2.5 h-2.5" />)}
+      </span>
+      <span className={cn(
+        "text-callout font-extrabold tabular-nums leading-none",
+        colorClass ?? (active ? "text-foreground" : "text-foreground/85")
+      )}>
+        {value}
+      </span>
     </div>
   );
 }
@@ -210,46 +258,42 @@ function SortFilterBar({
   return (
     <div className="sticky top-0 z-20 flex items-center gap-3 px-6 py-2.5 border-b border-border/30 bg-surface-deep/95 backdrop-blur-sm flex-wrap shrink-0">
       {/* View toggle */}
-      <div className="flex items-center bg-white/[0.04] rounded-lg p-0.5 border border-border/30">
-        {(["avatars", "profiles"] as ViewMode[]).map((m) => (
-          <button
-            key={m}
-            onClick={() => onViewMode(m)}
-            className={cn(
-              "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-body font-medium transition-colors",
-              viewMode === m
-                ? "bg-primary/15 text-interactive"
-                : "text-muted-foreground/60 hover:text-foreground/80"
-            )}
-          >
-            {m === "avatars"
-              ? <Users className="w-3.5 h-3.5" />
-              : <Fingerprint className="w-3.5 h-3.5" />
-            }
-            {m === "avatars" ? "Avatars" : "Profiles"}
-          </button>
-        ))}
-      </div>
+      <SegmentedToggle
+        ariaLabel="Avatar view mode"
+        options={[
+          { id: "avatars" as ViewMode, label: "Avatars", Icon: Users },
+          { id: "profiles" as ViewMode, label: "Profiles", Icon: Fingerprint },
+        ]}
+        active={viewMode}
+        onChange={onViewMode}
+      />
 
       <div className="w-px h-5 bg-border/40" />
 
-      {/* Sort options */}
-      <div className="flex items-center gap-1.5">
+      {/* Sort options — CPM only applies to avatar-level (impression) data */}
+      <div className="flex items-center gap-1.5" role="group" aria-label="Sort avatars">
         <span className="text-label font-semibold text-muted-foreground/40 normal-case tracking-normal">Sort</span>
-        {(Object.keys(SORT_LABEL) as SortKey[]).map((k) => (
-          <button
-            key={k}
-            onClick={() => onSort(k)}
-            className={cn(
-              "px-2 py-0.5 rounded text-body font-medium transition-colors border",
-              sortBy === k
-                ? "border-primary/40 bg-primary/10 text-interactive"
-                : "border-transparent text-muted-foreground/60 hover:text-foreground/80 hover:border-border/30"
-            )}
-          >
-            {SORT_LABEL[k]}
-          </button>
-        ))}
+        {(Object.keys(SORT_LABEL) as SortKey[])
+          .filter((k) => k !== "cpm" || viewMode === "avatars")
+          .map((k) => {
+            const active = sortBy === k;
+            return (
+              <button
+                key={k}
+                onClick={() => onSort(k)}
+                aria-pressed={active}
+                className={cn(
+                  "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-body font-semibold transition-colors border",
+                  active ? PILL_ACTIVE : PILL_INACTIVE
+                )}
+              >
+                {SORT_LABEL[k]}
+                {active && (SORT_DIRECTION[k] === "asc"
+                  ? <ArrowUp className="w-3 h-3" />
+                  : <ArrowDown className="w-3 h-3" />)}
+              </button>
+            );
+          })}
       </div>
 
       {/* Profile search — only in profiles view */}
@@ -276,7 +320,7 @@ function SortFilterBar({
 
 function AvatarCard({
   col, cells, perf, maxSpend, matched, flash, registerRef,
-  onClickAvatar, onScrollProfile, dna,
+  onClickAvatar, onScrollProfile, dna, accentIndex, rank, sortBy,
 }: {
   col: MSTMatrixColumn;
   cells: MSTMatrixCell[];
@@ -288,80 +332,102 @@ function AvatarCard({
   onClickAvatar: (col: MSTMatrixColumn, cells: MSTMatrixCell[]) => void;
   onScrollProfile: (profileId: string) => void;
   dna: AvatarDna | null;
+  /** Stable identity index (original matrix order) — drives the accent color, independent of sort. */
+  accentIndex: number;
+  /** 1-based position in the currently sorted list — shown as a rank badge. */
+  rank: number;
+  sortBy: SortKey;
 }) {
   const [dnaOpen, setDnaOpen] = useState(false);
   const spendPct = maxSpend > 0 ? (perf.spend / maxSpend) * 100 : 0;
   const hasPerf = perf.spend > 0 || perf.cpa != null;
+  const accent = avatarAccent(accentIndex);
 
   return (
     <div
       ref={registerRef}
       className={cn(
-        "rounded-xl border bg-white/[0.02] transition-colors duration-500 scroll-mt-24",
+        "relative rounded-xl border bg-white/[0.02] transition-colors duration-500 scroll-mt-24",
+        "before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:rounded-l-xl",
+        accent.rail,
         flash ? "border-primary/70 bg-primary/[0.06]" : "border-border/40 hover:border-border/60"
       )}
     >
+      {/* Rank badge — reinforces that re-sorting actually reordered the grid */}
+      <span
+        className="absolute top-3 right-3.5 text-label font-mono font-semibold text-muted-foreground/35 tabular-nums"
+        aria-hidden="true"
+      >
+        #{rank}
+      </span>
+
       <button
         onClick={() => onClickAvatar(col, cells)}
-        className="w-full text-left p-4 hover:bg-white/[0.03] transition-colors rounded-xl"
+        className="group w-full text-left pl-5 pr-4 py-4 hover:bg-white/[0.03] transition-colors rounded-xl"
       >
-        {/* L1: identity */}
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-8 h-8 rounded-lg border border-primary/25 bg-primary/[0.08] flex items-center justify-center shrink-0">
-            <Users className="w-4 h-4 text-interactive/70" />
+        {/* L1: identity — the primary visual anchor on the card */}
+        <div className="flex items-center gap-2.5 mb-3.5 pr-6">
+          <div className={cn("w-9 h-9 rounded-lg border flex items-center justify-center shrink-0", accent.chip)}>
+            <Users className={cn("w-5 h-5", accent.icon)} />
           </div>
           <div className="min-w-0">
-            <p className="text-title font-semibold text-foreground leading-tight whitespace-pre-line">{col.name}</p>
-            <span className="text-label font-mono text-muted-foreground/60">{col.icp}</span>
+            <p className="text-lg font-bold text-foreground leading-tight tracking-tight whitespace-pre-line">{col.name}</p>
+            <span className="inline-block mt-0.5 text-label font-mono text-muted-foreground/55">{col.icp}</span>
           </div>
         </div>
 
-        {/* L1: metric pills */}
+        {/* L1: metric pills — the active sort metric is visually highlighted */}
         {hasPerf && (
-          <div className="grid grid-cols-3 gap-2 mb-2.5">
-            <MetricPill label="Spend" value={fmtUSD(perf.spend, 0)} />
-            <MetricPill label="CPA" value={perf.cpa != null ? fmtUSD(perf.cpa) : "—"} />
-            <MetricPill label="Link CVR" value={perf.cvr != null ? fmtPct(perf.cvr) : "—"} />
+          <div className="grid grid-cols-4 gap-1.5 mb-3">
+            <MetricPill label="Spend" value={fmtUSD(perf.spend, 0)} active={sortBy === "spend"} direction={SORT_DIRECTION.spend} />
+            <MetricPill label="CPA" value={perf.cpa != null ? fmtUSD(perf.cpa) : "—"} active={sortBy === "cpa"} direction={SORT_DIRECTION.cpa} />
+            <MetricPill label="Link CVR" value={perf.cvr != null ? fmtPct(perf.cvr) : "—"} active={sortBy === "cvr"} direction={SORT_DIRECTION.cvr} />
+            <MetricPill label="CPM" value={perf.cpm != null ? fmtUSD(perf.cpm) : "—"} active={sortBy === "cpm"} direction={SORT_DIRECTION.cpm} />
           </div>
         )}
 
         {/* L1: spend bar (normalised across all avatars) */}
         {maxSpend > 0 && (
-          <div
-            className="h-[3px] rounded-full overflow-hidden mb-2.5"
-            style={{ background: "rgba(255,255,255,0.04)" }}
-            title={`${spendPct.toFixed(1)}% of top avatar spend`}
-          >
+          <div className="flex items-center gap-2 mb-3">
             <div
-              className="h-full rounded-full bg-primary/50"
-              style={{ width: `${Math.min(spendPct, 100)}%` }}
-            />
+              className="flex-1 h-[3px] rounded-full overflow-hidden"
+              style={{ background: "rgba(255,255,255,0.04)" }}
+            >
+              <div
+                className={cn("h-full rounded-full", accent.bar)}
+                style={{ width: `${Math.min(spendPct, 100)}%` }}
+              />
+            </div>
+            <span className="text-label text-muted-foreground/40 tabular-nums shrink-0">
+              {spendPct.toFixed(0)}% of top spend
+            </span>
           </div>
         )}
 
-        <p className="text-label text-muted-foreground/50">
+        <p className="inline-flex items-center gap-1 text-caption font-medium text-muted-foreground/65 group-hover:text-interactive transition-colors">
           {cells.length} angle{cells.length !== 1 ? "s" : ""} · tap for detail
+          <ChevronRight className="w-3 h-3 opacity-0 -translate-x-0.5 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
         </p>
       </button>
 
       {/* L2: Creative DNA — collapsed by default */}
       {dna && dna.variables.length > 0 && (
-        <div className="border-t border-border/20">
+        <div className={cn("border-t border-border/20", dnaOpen && "bg-white/[0.015]")}>
           <button
             type="button"
             onClick={() => setDnaOpen((o) => !o)}
-            className="w-full flex items-center justify-between px-4 py-2 hover:bg-white/[0.02] transition-colors"
+            className="w-full flex items-center justify-between pl-5 pr-4 py-2 hover:bg-white/[0.02] transition-colors"
           >
             <div className="flex items-center gap-1.5">
-              <Dna className="w-3.5 h-3.5 text-interactive/60" />
-              <span className="text-label font-semibold text-muted-foreground/70 uppercase tracking-widest">
+              <Dna className={cn("w-3.5 h-3.5", accent.icon)} />
+              <span className="text-label font-bold text-muted-foreground/75 uppercase tracking-widest">
                 Creative DNA
               </span>
             </div>
             <ChevronDown className={cn("w-3.5 h-3.5 text-muted-foreground/40 transition-transform", dnaOpen && "rotate-180")} />
           </button>
           {dnaOpen && (
-            <div className="px-4 pb-3">
+            <div className="pl-5 pr-4 pb-3">
               <DnaChipStrip
                 variables={dna.variables}
                 label={`Measured · ${dna.measuredCellIds.length} angle${dna.measuredCellIds.length === 1 ? "" : "s"}`}
@@ -374,7 +440,7 @@ function AvatarCard({
 
       {/* ICP profile links */}
       {matched.length > 0 && (
-        <div className="px-4 pb-3 pt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border/20">
+        <div className="pl-5 pr-4 pb-3 pt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border/20">
           <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/60">
             ICP profile{matched.length === 1 ? "" : "s"}
           </span>
@@ -1154,15 +1220,24 @@ export function AvatarsView() {
 
   // ─── Sorted / filtered lists ───────────────────────────────────────
 
+  // Stable per-avatar identity index (original matrix order) so the accent color
+  // and "which avatar is which" stay fixed regardless of the active sort.
+  const accentIndexByColumn = useMemo(
+    () => new Map((matrix?.columns ?? []).map((c, i) => [c.id, i])),
+    [matrix],
+  );
+
   const sortedColumns = useMemo(() => {
     if (!matrix) return [];
+    const emptyPerf: ColumnPerf = { spend: 0, results: 0, cpa: null, cvr: null, cpm: null };
     return [...matrix.columns].sort((a, b) => {
-      const pa = perfByColumn.get(a.id) ?? { spend: 0, results: 0, cpa: null, cvr: null };
-      const pb = perfByColumn.get(b.id) ?? { spend: 0, results: 0, cpa: null, cvr: null };
+      const pa = perfByColumn.get(a.id) ?? emptyPerf;
+      const pb = perfByColumn.get(b.id) ?? emptyPerf;
       switch (sortBy) {
         case "spend": return (pb.spend ?? 0) - (pa.spend ?? 0);
         case "cpa": return (pa.cpa ?? Infinity) - (pb.cpa ?? Infinity);
         case "cvr": return (pb.cvr ?? -1) - (pa.cvr ?? -1);
+        case "cpm": return (pa.cpm ?? Infinity) - (pb.cpm ?? Infinity);
         case "confidence": {
           const da = dnaByColumn.get(a.id);
           const db = dnaByColumn.get(b.id);
@@ -1183,6 +1258,8 @@ export function AvatarsView() {
           case "spend": return (pb?.spend ?? 0) - (pa?.spend ?? 0);
           case "cpa": return (pa?.cpa ?? Infinity) - (pb?.cpa ?? Infinity);
           case "cvr": return (pb?.cvr_link_pct ?? -1) - (pa?.cvr_link_pct ?? -1);
+          // ICP profile data carries no impression-level CPM — fall back to spend order.
+          case "cpm": return (pb?.spend ?? 0) - (pa?.spend ?? 0);
           case "confidence": {
             const ca = CONF_ORDER[pa?.confidence?.toLowerCase() ?? ""] ?? 99;
             const cb = CONF_ORDER[pb?.confidence?.toLowerCase() ?? ""] ?? 99;
@@ -1267,13 +1344,13 @@ export function AvatarsView() {
                   {viewMode === "avatars" && matrix && (
                     <SectionCard
                       title="Matrix avatars"
-                      desc="Sorted by spend · tap any card for detail"
+                      desc={`Sorted by ${SORT_LABEL[sortBy]} · tap any card for detail`}
                       >
                       <div className="grid grid-cols-dashboard-2 gap-3">
-                        {sortedColumns.map((col) => {
+                        {sortedColumns.map((col, i) => {
                           const cells = cellsFor(col.id);
                           const matched = matchedProfilesFor(col);
-                          const perf = perfByColumn.get(col.id) ?? { spend: 0, results: 0, cpa: null, cvr: null };
+                          const perf = perfByColumn.get(col.id) ?? { spend: 0, results: 0, cpa: null, cvr: null, cpm: null };
                           const dna = dnaByColumn.get(col.id) ?? null;
                           return (
                             <AvatarCard
@@ -1291,6 +1368,9 @@ export function AvatarsView() {
                                 setPendingProfileScroll(profileId);
                               }}
                               dna={dna}
+                              accentIndex={accentIndexByColumn.get(col.id) ?? i}
+                              rank={i + 1}
+                              sortBy={sortBy}
                             />
                           );
                         })}
