@@ -99,7 +99,7 @@ export function useGenerationRun(accountId: string | null, kind: GenerationKind)
   const briefsMutation = useGenerateAccountBriefs();
   const mutation = kind === "strategy" ? strategyMutation : briefsMutation;
 
-  const start = (extraData?: { analysis_run_id?: string }) => {
+  const start = (extraData?: { analysis_run_ids?: string[]; analysis_run_id?: string }) => {
     // Guard: when passed directly as an onClick handler, extraData is a React
     // SyntheticEvent that carries the DOM element — discard it so we never
     // accidentally JSON.stringify a circular HTMLButtonElement reference.
@@ -143,7 +143,13 @@ export function useGenerationRun(accountId: string | null, kind: GenerationKind)
       },
     };
     if (kind === "strategy") {
-      strategyMutation.mutate({ accountId, data: extraData }, callbacks);
+      // Prefer the plural analysis_run_ids (multi-run selection); fall back to
+      // the legacy single analysis_run_id. The API route accepts both.
+      const ids = extraData?.analysis_run_ids;
+      const strategyData = ids && ids.length > 0
+        ? { analysis_run_ids: ids, analysis_run_id: ids[0] }
+        : { analysis_run_id: extraData?.analysis_run_id };
+      strategyMutation.mutate({ accountId, data: strategyData }, callbacks);
     } else {
       briefsMutation.mutate({ accountId }, callbacks);
     }

@@ -14,7 +14,7 @@ import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, SectionCard, StageLoopHub, buildLoopStages, CrossLink,
 } from "../shared";
 import { AnalysisControls } from "../ManualAnalysisControls";
-import { useSetAccountCohort, getGetMetrixSeedQueryKey, ApiError } from "@workspace/api-client-react";
+import { useSetAccountCohort, useListAnalysisRuns, getGetMetrixSeedQueryKey, ApiError } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { LayoutDashboard, Store, Target, Wrench, Smartphone, Loader2 } from "lucide-react";
 import type { AdAccount } from "@/lib/data/seedTypes";
@@ -84,6 +84,8 @@ export function AnalysisCommandCenter() {
   const account = getAdAccount(seed, adAccountId);
   const status = useStageStatus(account?.id ?? null);
   const [changingCohort, setChangingCohort] = useState(false);
+  const { data: runsData } = useListAnalysisRuns(account?.id ?? "");
+  const runCount = (runsData?.runs ?? []).filter((r) => r.status === "success").length;
 
   return (
     <ModuleScopeGate section={SECTION} title="Analysis" account={account}>
@@ -134,9 +136,18 @@ export function AnalysisCommandCenter() {
 
               <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
                 <div className="min-w-0">
-                  <div className="text-[13px] font-semibold text-foreground">Run history</div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-[13px] font-semibold text-foreground">Run history</div>
+                    {runCount > 0 && (
+                      <span className="text-[9px] font-semibold uppercase tracking-wider text-interactive/70 bg-primary/[0.06] border border-primary/20 rounded px-1.5 py-0.5 leading-none">
+                        {runCount} run{runCount !== 1 ? "s" : ""}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-[11px] text-muted-foreground/80 leading-relaxed">
-                    Full detail on the account's most recent analysis run, including data-integrity flags.
+                    {runCount > 0
+                      ? `${runCount} successful run${runCount !== 1 ? "s" : ""} — each can be selected independently when building strategy in the IAP Loop.`
+                      : "Full detail on analysis runs for this account, including data-integrity flags."}
                   </p>
                 </div>
                 <CrossLink to="/app/analysis/history" label="Open" />
