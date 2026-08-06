@@ -2,8 +2,8 @@ import { navTree, type NavChild } from "@/navigation/navTree";
 
 export type BreadcrumbEntry = { label: string; to?: string };
 
-export function buildBreadcrumbs(location: string, leadLabel: string, isManager: boolean): BreadcrumbEntry[] {
-  const crumbs: BreadcrumbEntry[] = [{ label: leadLabel, to: "/" }];
+export function buildBreadcrumbs(location: string, isManager: boolean): BreadcrumbEntry[] {
+  const crumbs: BreadcrumbEntry[] = [];
 
   if (location === "/" || location === "") {
     crumbs.push({ label: isManager ? "Agency Overview" : "Account Overview" });

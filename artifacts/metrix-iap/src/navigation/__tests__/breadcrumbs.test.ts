@@ -3,7 +3,8 @@
 //   - every navTree path (sections, children, matchPaths) must produce the
 //     expected section/child labels from buildBreadcrumbs
 //   - "/" and matchPaths must show the manager vs ad-account overview label
-//   - unknown paths fall back to just the lead label (account name)
+//   - unknown paths fall back to an empty crumb list (account name now lives
+//     in the topbar AccountSwitcher, not in the breadcrumb trail)
 // buildBreadcrumbs is a pure function, so this tests it directly.
 
 import { describe, it, expect } from "vitest";
@@ -11,23 +12,21 @@ import { describe, it, expect } from "vitest";
 import { buildBreadcrumbs } from "@/components/layout/breadcrumbs";
 import { navTree } from "../navTree";
 
-const LEAD = "Bookster";
-
 function labels(location: string, isManager = false): string[] {
-  return buildBreadcrumbs(location, LEAD, isManager).map((c) => c.label);
+  return buildBreadcrumbs(location, isManager).map((c) => c.label);
 }
 
 describe("root overview breadcrumb", () => {
   it('"/" shows Account Overview for an ad account', () => {
-    expect(labels("/", false)).toEqual([LEAD, "Account Overview"]);
+    expect(labels("/", false)).toEqual(["Account Overview"]);
   });
 
   it('"/" shows Agency Overview for a manager', () => {
-    expect(labels("/", true)).toEqual([LEAD, "Agency Overview"]);
+    expect(labels("/", true)).toEqual(["Agency Overview"]);
   });
 
   it("empty location behaves like the root", () => {
-    expect(labels("", false)).toEqual([LEAD, "Account Overview"]);
+    expect(labels("", false)).toEqual(["Account Overview"]);
   });
 });
 
@@ -40,16 +39,15 @@ describe("matchPaths breadcrumbs (e.g. /app/account)", () => {
 
   for (const path of matchPaths) {
     it(`${path} shows Account Overview for an ad account`, () => {
-      expect(labels(path, false)).toEqual([LEAD, "Account Overview"]);
+      expect(labels(path, false)).toEqual(["Account Overview"]);
     });
 
     it(`${path} shows Agency Overview for a manager`, () => {
-      expect(labels(path, true)).toEqual([LEAD, "Agency Overview"]);
+      expect(labels(path, true)).toEqual(["Agency Overview"]);
     });
 
     it(`${path}/nested-subpage still matches`, () => {
       expect(labels(`${path}/nested-subpage`, false)).toEqual([
-        LEAD,
         "Account Overview",
       ]);
     });
@@ -78,11 +76,11 @@ describe("command-center (parent) pages show their section label", () => {
     if (section.landing === "/") continue;
 
     it(`${section.landing} → ${section.label}`, () => {
-      expect(labels(section.landing!)).toEqual([LEAD, section.label]);
+      expect(labels(section.landing!)).toEqual([section.label]);
     });
 
     it(`${section.landing}/unlisted-subpath → ${section.label}`, () => {
-      expect(labels(`${section.landing}/unlisted-subpath`)).toEqual([LEAD, section.label]);
+      expect(labels(`${section.landing}/unlisted-subpath`)).toEqual([section.label]);
     });
   }
 });
@@ -97,12 +95,12 @@ describe("section landing pages show only the section label (Overview as parent 
   });
 
   for (const section of landingSections) {
-    it(`${section.landing} → [${LEAD}, "${section.label}"] (section as parent, no "Overview" subtab crumb)`, () => {
-      expect(labels(section.landing!)).toEqual([LEAD, section.label]);
+    it(`${section.landing} → ["${section.label}"] (section as parent, no "Overview" subtab crumb)`, () => {
+      expect(labels(section.landing!)).toEqual([section.label]);
     });
 
     it(`${section.landing}/sub-detail also collapses to section label`, () => {
-      expect(labels(`${section.landing}/sub-detail`)).toEqual([LEAD, section.label]);
+      expect(labels(`${section.landing}/sub-detail`)).toEqual([section.label]);
     });
   }
 });
@@ -118,12 +116,11 @@ describe("child pages show section + child labels", () => {
 
   for (const { section, child } of childPaths) {
     it(`${child.to} → ${section.label} · ${child.label}`, () => {
-      expect(labels(child.to)).toEqual([LEAD, section.label, child.label]);
+      expect(labels(child.to)).toEqual([section.label, child.label]);
     });
 
     it(`${child.to}/detail-id → ${section.label} · ${child.label}`, () => {
       expect(labels(`${child.to}/detail-id`)).toEqual([
-        LEAD,
         section.label,
         child.label,
       ]);
@@ -132,16 +129,11 @@ describe("child pages show section + child labels", () => {
 });
 
 describe("crumb link targets", () => {
-  it("the lead crumb always links to /", () => {
-    expect(buildBreadcrumbs("/app/listen/signal", LEAD, false)[0]?.to).toBe("/");
-    expect(buildBreadcrumbs("/", LEAD, true)[0]?.to).toBe("/");
-  });
-
   it("section crumbs on child pages link to the section's first child route", () => {
     for (const section of navTree) {
       for (const child of section.children ?? []) {
-        const crumbs = buildBreadcrumbs(child.to, LEAD, false);
-        expect(crumbs[1]?.to).toBe(section.children![0]!.to);
+        const crumbs = buildBreadcrumbs(child.to, false);
+        expect(crumbs[0]?.to).toBe(section.children![0]!.to);
       }
     }
   });
@@ -151,22 +143,22 @@ describe("crumb link targets", () => {
       (s) => s.children?.length && s.landing && s.landing !== "/" && !s.children.some((c) => c.to === s.landing)
     );
     expect(section).toBeDefined();
-    const crumbs = buildBreadcrumbs(section!.landing!, LEAD, false);
-    expect(crumbs[1]?.to).toBe(section!.landing);
+    const crumbs = buildBreadcrumbs(section!.landing!, false);
+    expect(crumbs[0]?.to).toBe(section!.landing);
   });
 
   it("overview crumbs (root and matchPaths) have no link target", () => {
-    expect(buildBreadcrumbs("/", LEAD, false)[1]?.to).toBeUndefined();
-    expect(buildBreadcrumbs("/app/account", LEAD, false)[1]?.to).toBeUndefined();
+    expect(buildBreadcrumbs("/", false)[0]?.to).toBeUndefined();
+    expect(buildBreadcrumbs("/app/account", false)[0]?.to).toBeUndefined();
   });
 });
 
-describe("unknown paths fall back to the lead label only", () => {
-  it("a bogus path yields just the account name", () => {
-    expect(labels("/app/definitely-not-a-real-page")).toEqual([LEAD]);
+describe("unknown paths fall back to an empty breadcrumb list", () => {
+  it("a bogus path yields no crumbs (account name is in the topbar switcher, not here)", () => {
+    expect(labels("/app/definitely-not-a-real-page")).toEqual([]);
   });
 
   it("a nav path with an extra prefix does not match", () => {
-    expect(labels("/other/app/listen/alerts")).toEqual([LEAD]);
+    expect(labels("/other/app/listen/alerts")).toEqual([]);
   });
 });
