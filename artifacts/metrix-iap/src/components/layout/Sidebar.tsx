@@ -428,23 +428,29 @@ function ExpandableSection({
         </button>
       </div>
 
-      {/* Child list — hidden when collapsed */}
-      <ul
+      {/* Animated child list — grid 0fr→1fr trick animates height:auto cleanly */}
+      <div
         id={controlsId}
-        aria-label={`${section.label} pages`}
-        className={cn(
-          "mt-0.5 ml-3 pl-0 border-l border-border/20 space-y-0.5 pb-1",
-          open ? "block" : "hidden"
-        )}
+        aria-hidden={!open}
+        style={{
+          display: "grid",
+          gridTemplateRows: open ? "1fr" : "0fr",
+          transition: "grid-template-rows 220ms cubic-bezier(0.4,0,0.2,1)",
+        }}
       >
-        {children.map(child => (
-          <ChildRow
-            key={child.id}
-            child={child}
-            count={child.badgeKey ? badgeCounts[child.badgeKey] ?? null : null}
-          />
-        ))}
-      </ul>
+        <ul
+          aria-label={`${section.label} pages`}
+          className="overflow-hidden mt-0.5 ml-3 pl-0 border-l border-border/20 space-y-0.5 pb-1"
+        >
+          {children.map(child => (
+            <ChildRow
+              key={child.id}
+              child={child}
+              count={child.badgeKey ? badgeCounts[child.badgeKey] ?? null : null}
+            />
+          ))}
+        </ul>
+      </div>
     </li>
   );
 }
