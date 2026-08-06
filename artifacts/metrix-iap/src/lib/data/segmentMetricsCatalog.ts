@@ -3,10 +3,10 @@
 // segment from real demographic-row totals: metrics whose inputs exist
 // are available with a value; metrics whose inputs are missing in this
 // segment's rows are unavailable with an explicit reason; metrics with
-// no underlying per-segment field anywhere in the data model (ROAS, ATC,
-// purchase value, …) are structurally unavailable — offered in the
-// picker as disabled so they light up if a future export carries them,
-// but never rendered with a fabricated value.
+// no underlying per-segment field anywhere in the data model (ROAS,
+// average result value, purchase value, …) are structurally unavailable —
+// offered in the picker as disabled so they light up if a future export
+// carries them, but never rendered with a fabricated value.
 
 import { fmtUSD, fmtNum, fmtPct } from "@/pages/metrix/shared";
 import type { SegmentDerivedMetrics, SegmentRawTotals } from "@/lib/segment-analytics";
@@ -77,6 +77,13 @@ const ROWS: CatalogRowSpec[] = [
   { id: "cpc", label: "CPC", pick: (_t, d) => d.cpc, format: (v) => fmtUSD(v), missing: (t) => (t.spend == null || t.linkClicks == null ? missingOf(t, [["spend", "spend"], ["linkClicks", "link clicks"]]) : t.linkClicks === 0 ? "no link clicks in this segment" : null), direction: "lower_better" },
   { id: "frequency", label: "Frequency", pick: (_t, d) => d.frequency, format: fmtRatio as (v: number) => string, missing: (t) => (t.impressions == null || t.reach == null ? missingOf(t, [["impressions", "impressions"], ["reach", "reach"]]) : t.reach === 0 ? "no reach in this segment" : null), direction: "lower_better" },
   { id: "cvr", label: "CVR", pick: (_t, d) => d.cvr, format: (v) => fmtPct(v), missing: (t) => (t.results == null || t.linkClicks == null ? missingOf(t, [["results", "results"], ["linkClicks", "link clicks"]]) : t.linkClicks === 0 ? "no link clicks in this segment" : null), direction: "higher_better" },
+  { id: "atc", label: "Adds to cart", pick: (t) => t.addsToCart, format: fmtNum, missing: (t) => missingOf(t, [["addsToCart", "adds to cart"]]), direction: "higher_better" },
+  { id: "initiate_checkout", label: "Checkouts initiated", pick: (t) => t.checkoutsInitiated, format: fmtNum, missing: (t) => missingOf(t, [["checkoutsInitiated", "checkouts initiated"]]), direction: "higher_better" },
+  { id: "purchases", label: "Purchases", pick: (t) => t.purchases, format: fmtNum, missing: (t) => missingOf(t, [["purchases", "purchases"]]), direction: "higher_better" },
+  { id: "add_to_cart_rate", label: "Add to cart rate", pick: (_t, d) => d.addToCartRate, format: (v) => fmtPct(v), missing: (t) => (t.addsToCart == null || t.linkClicks == null ? missingOf(t, [["addsToCart", "adds to cart"], ["linkClicks", "link clicks"]]) : t.linkClicks === 0 ? "no link clicks in this segment" : null), direction: "higher_better" },
+  { id: "cost_per_add_to_cart", label: "Cost per ATC", pick: (_t, d) => d.costPerAddToCart, format: (v) => fmtUSD(v), missing: (t) => (t.spend == null || t.addsToCart == null ? missingOf(t, [["spend", "spend"], ["addsToCart", "adds to cart"]]) : t.addsToCart === 0 ? "no adds to cart in this segment" : null), direction: "lower_better" },
+  { id: "checkout_rate", label: "Checkout rate", pick: (_t, d) => d.checkoutRate, format: (v) => fmtPct(v), missing: (t) => (t.checkoutsInitiated == null || t.linkClicks == null ? missingOf(t, [["checkoutsInitiated", "checkouts initiated"], ["linkClicks", "link clicks"]]) : t.linkClicks === 0 ? "no link clicks in this segment" : null), direction: "higher_better" },
+  { id: "add_to_cart_value", label: "Add to cart value", pick: (t) => t.addsToCartValue, format: (v) => fmtUSD(v), missing: (t) => missingOf(t, [["addsToCartValue", "adds to cart conversion value"]]), direction: "higher_better" },
 ];
 
 /**
@@ -87,8 +94,6 @@ const ROWS: CatalogRowSpec[] = [
 export const UNSUPPORTED_SEGMENT_METRICS: Array<{ id: string; label: string; format: (v: number) => string }> = [
   { id: "roas", label: "ROAS", format: fmtRatio as (v: number) => string },
   { id: "avg_result_value", label: "Average result value", format: (v) => fmtUSD(v) },
-  { id: "atc", label: "Adds to cart", format: fmtNum },
-  { id: "initiate_checkout", label: "Checkouts initiated", format: fmtNum },
   { id: "purchase_value", label: "Purchase value", format: (v) => fmtUSD(v) },
 ];
 

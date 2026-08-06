@@ -5,7 +5,7 @@
 // labeled with their source account. Deeper action lives inside each account.
 
 import { useMemo, useState } from "react";
-import { CheckCircle2, Plug, TrendingUp, Plus, ArrowRight } from "lucide-react";
+import { CheckCircle2, Plug, TrendingUp, Plus, ArrowRight, ChevronDown } from "lucide-react";
 import { useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed, useMetrixIsRefetching } from "@/contexts/MetrixDataContext";
 import { getManagerOverview } from "@/lib/data/metrixSeedAdapter";
@@ -18,6 +18,26 @@ import { MetricPickerButton } from "@/components/creative/MetricPicker";
 import { MetricDiagnosticModal } from "@/components/creative/MetricDiagnosticModal";
 import { TokenizedConceptText } from "@/components/concept/ConceptChip";
 import { OverviewLoopSummary } from "./OverviewLoopHub";
+import { TYPE } from "./typography";
+
+/** Metric IDs that should be hidden when their blended value is 0 (meaningless without data). */
+const SUPPRESS_ZERO_IDS = new Set(["unknown", "cpa_blended"]);
+
+/** Compact USD formatter for sub-labels (e.g. $9.4k, $1.2M). */
+function fmtCompactUSD(n: number): string {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}k`;
+  return `$${Math.round(n)}`;
+}
+
+/** Per-account totals derived from the ad accounts in the seed (no new API). */
+interface AccountTotals {
+  id: string;
+  name: string;
+  spend: number;
+  results: number;
+  cpa: number | null;
+}
 
 /** Account-label pill — page-specific (not a shared badge family like impact/scope). */
 function AccountBadge({ text }: { text: string }) {
@@ -28,11 +48,41 @@ function AccountBadge({ text }: { text: string }) {
   );
 }
 
+/** Dense per-account breakdown table shown beneath the metric tiles. */
+function AccountBreakdownTable({ rows }: { rows: AccountTotals[] }) {
+  if (rows.length === 0) return null;
+  return (
+    <div className="rounded-lg border border-border/40 overflow-hidden">
+      <div className="grid text-left" style={{ gridTemplateColumns: "1fr auto auto auto" }}>
+        {/* Header */}
+        <div className={cn(TYPE.label, "px-3 py-1.5 border-b border-border/30 text-muted-foreground/60 uppercase tracking-widest")}>Account</div>
+        <div className={cn(TYPE.label, "px-3 py-1.5 border-b border-border/30 text-muted-foreground/60 uppercase tracking-widest text-right")}>Spend</div>
+        <div className={cn(TYPE.label, "px-3 py-1.5 border-b border-border/30 text-muted-foreground/60 uppercase tracking-widest text-right")}>Results</div>
+        <div className={cn(TYPE.label, "px-3 py-1.5 border-b border-border/30 text-muted-foreground/60 uppercase tracking-widest text-right")}>CPA</div>
+        {/* Rows */}
+        {rows.map((r, i) => {
+          const isLast = i === rows.length - 1;
+          const rowBorder = isLast ? "" : "border-b border-border/20";
+          return (
+            <>
+              <div key={`${r.id}-name`} className={cn(TYPE.body, "px-3 py-2 text-foreground/85 font-medium truncate", rowBorder)}>{r.name}</div>
+              <div key={`${r.id}-spend`} className={cn(TYPE.body, "px-3 py-2 text-foreground/80 tabular-nums text-right", rowBorder)}>{fmtUSD(r.spend, 0)}</div>
+              <div key={`${r.id}-results`} className={cn(TYPE.body, "px-3 py-2 text-foreground/80 tabular-nums text-right", rowBorder)}>{fmtNum(r.results)}</div>
+              <div key={`${r.id}-cpa`} className={cn(TYPE.body, "px-3 py-2 text-foreground/80 tabular-nums text-right", rowBorder)}>{r.cpa != null ? fmtUSD(r.cpa) : "—"}</div>
+            </>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function ManagerOverview() {
   const { manager, adAccounts, selectAdAccount } = useAccount();
   const seed = useMetrixSeed();
   const isRefetching = useMetrixIsRefetching();
   const [addOpen, setAddOpen] = useState(false);
+  const [breakdownOpen, setBreakdownOpen] = useState(false);
   const data = getManagerOverview(seed);
   const totals = data.bottom_line_totals;
   const events = Object.entries(totals.result_totals_by_event);
@@ -40,6 +90,27 @@ export function ManagerOverview() {
   // Map account_id → display name so each rec shows its source account.
   const accountName = (id: string) =>
     adAccounts.find((a) => a.id === id)?.name ?? id;
+
+  // Derive per-account totals from the seed's ad account data.
+  const accountTotals = useMemo<AccountTotals[]>(() => {
+    return adAccounts
+      .filter((a) => a.status === "configured" && a.iap?.campaign_summary)
+      .map((a) => {
+        const cs = a.iap!.campaign_summary!;
+        const spend = cs.total_spend_usd ?? 0;
+        const results = Object.values(cs.bottom_line_totals).reduce((s, e) => s + (e.results ?? 0), 0);
+        const cpa = results > 0 ? spend / results : null;
+        return { id: a.id, name: a.name, spend, results, cpa };
+      })
+      .sort((a, b) => b.spend - a.spend);
+  }, [adAccounts]);
+
+  // Top-2 account contributors for spend tile sub-label.
+  const spendSub = useMemo(() => {
+    const top2 = accountTotals.slice(0, 2);
+    if (top2.length === 0) return undefined;
+    return top2.map((r) => `${r.name} ${fmtCompactUSD(r.spend)}`).join(" · ");
+  }, [accountTotals]);
 
   const metricCatalog = useMemo(() => buildMetricCatalog(metricSourceFromManagerTotals(totals)), [totals]);
   const availableMetricIds = useMemo(() => metricCatalog.map((m) => m.id), [metricCatalog]);
@@ -92,14 +163,25 @@ export function ManagerOverview() {
         }
       />
 
-      <div className="px-6 py-5 space-y-6 max-w-6xl">
+      <div className="px-6 py-5 space-y-4 max-w-6xl">
         <OverviewLoopSummary />
 
         {/* Bottom-line totals */}
         <div>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-2">
             <h2 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/60">Bottom-line totals</h2>
-            <MetricPickerButton catalog={metricCatalog} selected={selectedMetricIds} onToggle={toggle} onMove={move} onReset={reset} />
+            <div className="flex items-center gap-2">
+              {/* Breakdown toggle */}
+              <button
+                onClick={() => setBreakdownOpen((v) => !v)}
+                aria-expanded={breakdownOpen}
+                className="inline-flex items-center gap-1 text-label font-medium text-muted-foreground/70 hover:text-foreground/80 transition-colors px-2 py-1 rounded border border-border/30 bg-white/[0.02] hover:border-border/50"
+              >
+                Breakdown
+                <ChevronDown className={cn("w-3 h-3 transition-transform duration-150", breakdownOpen && "rotate-180")} />
+              </button>
+              <MetricPickerButton catalog={metricCatalog} selected={selectedMetricIds} onToggle={toggle} onMove={move} onReset={reset} />
+            </div>
           </div>
           {isRefetching ? (
             <SkeletonTileRow count={selectedMetricIds.length || 4} />
@@ -108,12 +190,30 @@ export function ManagerOverview() {
               {selectedMetricIds.map((id) => {
                 const m = metricById(metricCatalog, id);
                 if (!m) return null;
+                // Suppress meaningless zero tiles (e.g. "UNKNOWN · 0").
+                if ((m.value === 0 || m.value == null) && SUPPRESS_ZERO_IDS.has(m.id)) return null;
+                // Also suppress any result-event tile whose label contains "unknown".
+                if ((m.value === 0 || m.value == null) && m.label.toLowerCase().includes("unknown")) return null;
+                // Attach top-2 account spend breakdown as sub-label for the spend tile.
+                const sub = id === "spend" ? spendSub : m.sub;
                 return (
-                  <button key={id} onClick={() => setOpenMetricId(id)} className="text-left">
-                    <MetricTile label={m.label} value={m.formatted} />
+                  <button key={id} onClick={() => setOpenMetricId(id)} className="text-left group">
+                    <div className="mx-kpi-tile py-3 transition-colors group-hover:border-primary/30">
+                      <div className="relative z-10">
+                        <div className="text-label font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5 truncate">{m.label}</div>
+                        <div className="text-bignum font-bold text-foreground metric-num leading-none tracking-[-0.035em]">{m.formatted}</div>
+                        {sub && <div className="text-caption text-muted-foreground/55 mt-1.5 leading-snug line-clamp-1">{sub}</div>}
+                      </div>
+                    </div>
                   </button>
                 );
               })}
+            </div>
+          )}
+          {/* Per-account breakdown table */}
+          {breakdownOpen && !isRefetching && (
+            <div className="mt-3">
+              <AccountBreakdownTable rows={accountTotals} />
             </div>
           )}
         </div>
