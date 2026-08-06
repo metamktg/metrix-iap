@@ -10,7 +10,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTaskTray } from "@/contexts/TaskTrayContext";
 import { useTaskTrayCount } from "./TaskTray";
 import { buildBreadcrumbs } from "./breadcrumbs";
-import { AccountSwitcher } from "./AccountSwitcher";
 
 // ─── Account menu dropdown ─────────────────────────────────────────────
 
@@ -148,14 +147,6 @@ export function Topbar() {
 
   return (
     <header className="h-[var(--topbar-h)] flex items-center gap-2 px-3 shrink-0 mx-topbar">
-      {/* Account switcher */}
-      <div className="shrink-0">
-        <AccountSwitcher />
-      </div>
-
-      {/* Divider */}
-      <div className="w-px h-4 bg-border/50 shrink-0" />
-
       {/* Breadcrumb */}
       <nav aria-label="Breadcrumb" className="flex items-center gap-0 flex-1 min-w-0">
         {crumbs.map((crumb, i) => {
