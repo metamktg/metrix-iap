@@ -196,6 +196,11 @@ alter table platform_performance add column if not exists tracking_basis text;
 alter table demographic_performance add column if not exists adds_to_cart bigint;
 alter table demographic_performance add column if not exists checkouts_initiated bigint;
 alter table demographic_performance add column if not exists purchases bigint;
+-- "Adds to cart conversion value" — a $ total some newer exports carry directly;
+-- additive across rows (unlike Meta's own "Cost per add to cart", which is a
+-- per-row ratio and must never be summed — the correct blended cost-per-ATC is
+-- always derived client-side as spend ÷ adds_to_cart from the raw counts above).
+alter table demographic_performance add column if not exists adds_to_cart_value numeric;
 
 create table if not exists concept_performance (
   id bigint generated always as identity primary key,

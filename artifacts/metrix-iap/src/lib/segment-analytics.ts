@@ -93,6 +93,8 @@ export interface SegmentRawTotals {
   addsToCart: number | null;
   checkoutsInitiated: number | null;
   purchases: number | null;
+  /** "Adds to cart conversion value" $ total — null unless every scoped row carries it. */
+  addsToCartValue: number | null;
 }
 
 function numberOrNull(v: unknown): number | null {
@@ -123,6 +125,7 @@ export function computeSegmentTotals(rows: DemographicRow[]): SegmentRawTotals {
     addsToCart: sumStrict(rows, (r) => r.adds_to_cart),
     checkoutsInitiated: sumStrict(rows, (r) => r.checkouts_initiated),
     purchases: sumStrict(rows, (r) => r.purchases),
+    addsToCartValue: sumStrict(rows, (r) => r.adds_to_cart_value),
   };
 }
 

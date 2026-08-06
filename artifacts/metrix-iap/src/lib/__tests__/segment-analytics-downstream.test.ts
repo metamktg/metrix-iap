@@ -81,4 +81,23 @@ describe("downstream funnel totals/derived metrics", () => {
     expect(derived.addToCartRate).toBeNull();
     expect(derived.checkoutRate).toBeNull();
   });
+
+  it("sums adds_to_cart_value ($ total) as an independent additive field, not derived from cost-per math", () => {
+    const rows = [
+      row({ adds_to_cart: 10, adds_to_cart_value: 250 }),
+      row({ adds_to_cart: 5, adds_to_cart_value: 120 }),
+    ];
+    const totals = computeSegmentTotals(rows);
+    expect(totals.addsToCartValue).toBe(370);
+  });
+
+  it("keeps adds_to_cart_value honestly null when older imports never carried it, even though counts exist", () => {
+    const rows = [
+      row({ adds_to_cart: 10 }), // no adds_to_cart_value field on this older-style row
+      row({ adds_to_cart: 5 }),
+    ];
+    const totals = computeSegmentTotals(rows);
+    expect(totals.addsToCart).toBe(15); // counts still sum fine
+    expect(totals.addsToCartValue).toBeNull(); // value total is honestly unavailable
+  });
 });

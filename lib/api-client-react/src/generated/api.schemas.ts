@@ -769,6 +769,7 @@ export interface AnalysisSummaryDemoRow {
   adds_to_cart: number | null;
   checkouts_initiated: number | null;
   purchases: number | null;
+  adds_to_cart_value: number | null;
 }
 
 export interface AnalysisSummaryPlacementRow {

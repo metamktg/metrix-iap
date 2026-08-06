@@ -83,6 +83,7 @@ const ROWS: CatalogRowSpec[] = [
   { id: "add_to_cart_rate", label: "Add to cart rate", pick: (_t, d) => d.addToCartRate, format: (v) => fmtPct(v), missing: (t) => (t.addsToCart == null || t.linkClicks == null ? missingOf(t, [["addsToCart", "adds to cart"], ["linkClicks", "link clicks"]]) : t.linkClicks === 0 ? "no link clicks in this segment" : null), direction: "higher_better" },
   { id: "cost_per_add_to_cart", label: "Cost per ATC", pick: (_t, d) => d.costPerAddToCart, format: (v) => fmtUSD(v), missing: (t) => (t.spend == null || t.addsToCart == null ? missingOf(t, [["spend", "spend"], ["addsToCart", "adds to cart"]]) : t.addsToCart === 0 ? "no adds to cart in this segment" : null), direction: "lower_better" },
   { id: "checkout_rate", label: "Checkout rate", pick: (_t, d) => d.checkoutRate, format: (v) => fmtPct(v), missing: (t) => (t.checkoutsInitiated == null || t.linkClicks == null ? missingOf(t, [["checkoutsInitiated", "checkouts initiated"], ["linkClicks", "link clicks"]]) : t.linkClicks === 0 ? "no link clicks in this segment" : null), direction: "higher_better" },
+  { id: "add_to_cart_value", label: "Add to cart value", pick: (t) => t.addsToCartValue, format: (v) => fmtUSD(v), missing: (t) => missingOf(t, [["addsToCartValue", "adds to cart conversion value"]]), direction: "higher_better" },
 ];
 
 /**

@@ -599,6 +599,7 @@ const RANK_KEY = "metrix.audience.rank.v1";
 function adaptApiDemoRows(rows: {
   age: string; gender: string; spend: number | null; results: number | null; link_clicks: number | null;
   adds_to_cart?: number | null; checkouts_initiated?: number | null; purchases?: number | null;
+  adds_to_cart_value?: number | null;
 }[]): DemographicRow[] {
   return rows.map((r) => ({
     cell_id: "",
@@ -617,6 +618,7 @@ function adaptApiDemoRows(rows: {
     adds_to_cart: r.adds_to_cart ?? null,
     checkouts_initiated: r.checkouts_initiated ?? null,
     purchases: r.purchases ?? null,
+    adds_to_cart_value: r.adds_to_cart_value ?? null,
   }));
 }
 

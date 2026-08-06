@@ -107,6 +107,8 @@ export interface DemographicRow {
   adds_to_cart?: number | null;
   checkouts_initiated?: number | null;
   purchases?: number | null;
+  /** "Adds to cart conversion value" $ total — only present on newer exports that carry it directly. */
+  adds_to_cart_value?: number | null;
 }
 
 export interface PlacementRow {
