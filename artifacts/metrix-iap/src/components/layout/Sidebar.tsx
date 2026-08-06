@@ -22,6 +22,7 @@ import { DataSourceBadgeToggle } from "@/components/ui/DataSourceBadge";
 import { navTree, sectionLandingRoute } from "@/navigation/navTree";
 import { useNavBadges } from "@/navigation/useNavBadges";
 import { useAuth } from "@/contexts/AuthContext";
+import { AccountSwitcher } from "./AccountSwitcher";
 import type { NavSection, NavChild, NavIconName } from "@/navigation/navTree";
 
 // ─── Icon map ──────────────────────────────────────────────────────────
@@ -596,9 +597,20 @@ export function Sidebar() {
                 alt="Metrix"
                 className="w-5 h-5 object-contain shrink-0 mx-logo-glow"
               />
-              <span className="text-[13px] font-bold tracking-tight text-foreground">METRIX</span>
-              <span className="text-[9px] font-mono text-muted-foreground/60 border border-border/50 px-1.5 py-0.5 rounded leading-none ml-0.5">
-                IAP
+              <span className="text-[14px] font-semibold tracking-tight text-foreground/90">metrix</span>
+              {/* IAP badge — hover reveals the tagline */}
+              <span className="relative group ml-0.5">
+                <span className="text-[9px] font-mono text-muted-foreground/60 border border-border/50 px-1.5 py-0.5 rounded leading-none cursor-default select-none">
+                  IAP
+                </span>
+                <span className={cn(
+                  "absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5",
+                  "rounded-lg bg-[hsl(222_61%_10%)] border border-border/50 shadow-xl",
+                  "text-[10px] text-muted-foreground/70 whitespace-nowrap italic",
+                  "opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-50"
+                )}>
+                  Not more data. Better decisions.
+                </span>
               </span>
               {/* Collapse button — right-aligned in logo row */}
               <button
@@ -610,9 +622,10 @@ export function Sidebar() {
                 <PanelLeftClose className="w-3.5 h-3.5" />
               </button>
             </div>
-            <p className="text-[9px] text-muted-foreground/55 mt-1 leading-tight tracking-wide">
-              Not more data. Better decisions.
-            </p>
+            {/* Account switcher — expanded mode, full-width row */}
+            <div className="mt-2.5 border-t border-border/30 pt-2.5">
+              <AccountSwitcher />
+            </div>
           </>
         )}
       </div>
@@ -624,6 +637,13 @@ export function Sidebar() {
       >
         {collapsed ? (
           <ol className="space-y-1 list-none p-0 m-0">
+            {/* Compact account switcher at top of icon rail */}
+            <li className="pb-0.5">
+              <AccountSwitcher compact />
+            </li>
+            <li aria-hidden="true" className="flex items-center justify-center py-0.5">
+              <span className="w-5 h-px bg-border/35 rounded-full" />
+            </li>
             {visibleTree.map((section) => (
               <CollapsedItem
                 key={section.id}
