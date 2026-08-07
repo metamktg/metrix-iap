@@ -496,22 +496,86 @@ export function IapLibraryView() {
                     )}
 
                     {/* ── Grouped view ── */}
-                    {groupByConcept ? (
-                      cells.length ? (
-                        <ConceptFamilyView
-                          groups={conceptGroups}
-                          cardCtx={cardCtx}
-                          demoByCell={demoByCell}
-                          allPlacements={allPlacements}
-                          unmappedCellIds={unmappedCellIds}
-                          onDetail={(row) => setDetail(row)}
-                          onUploadCreatives={() => setCreativeLibraryOpen(true)}
-                          onUploadCreative={adAccountId ? (cellId) => setUploadCellId(cellId) : undefined}
-                        />
-                      ) : (
-                        <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." action={<CrossLink to="/app/analysis/overview" label="Back to Overview" />} />
-                      )
-                    ) : (() => {
+                    {groupByConcept ? (() => {
+                      // Apply the same funnel sort + creative filters used in the flat grid
+                      const sortKey = funnelConfig?.sortKey ?? "none";
+                      const sortDir = funnelConfig?.sortDir ?? "desc";
+                      let sortedCells = uniqueCellRows(cells);
+                      if (sortKey !== "none") {
+                        sortedCells = [...sortedCells].sort((a, b) => {
+                          const va = sortValueForCell(a, sortKey);
+                          const vb = sortValueForCell(b, sortKey);
+                          return sortDir === "asc" ? va - vb : vb - va;
+                        });
+                      }
+                      const totalBeforeFilter = sortedCells.length;
+                      const effectiveSortKey = sortKey === "none" ? "spend" : sortKey;
+                      // Determine which cell IDs survive the filters using the deduped
+                      // representative rows (same eligibility logic as the flat grid).
+                      const filteredDeduped = applyCreativeFilters(sortedCells, creativeFilters, effectiveSortKey, sortDir);
+                      const survivingIds = new Set(filteredDeduped.map((r) => r.cell_id));
+                      // Pass the FULL multi-result-type rows for surviving cells so that
+                      // groupByConceptFamily can compute correct blended KPI aggregates.
+                      const filteredFullRows = cells.filter((r) => survivingIds.has(r.cell_id));
+                      const filteredConceptGroups = groupByConceptFamily(filteredFullRows, mst);
+
+                      // Concept options always reflect the full (pre-filter) concept set
+                      const conceptOptionNames = [...new Set(
+                        conceptGroups.map((g) => g.conceptName).filter(Boolean) as string[]
+                      )];
+
+                      // Map funnel sort key to the nearest CellRankKpi for within-angle ordering
+                      const rankKpi: import("@/lib/concept-grouping").CellRankKpi =
+                        sortKey === "cpa"     ? "cpa"
+                        : sortKey === "spend"   ? "spend"
+                        : sortKey === "results" ? "results"
+                        : sortKey === "ctr"     ? "ctr"
+                        : "cpa";
+
+                      if (totalBeforeFilter === 0) {
+                        return <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." action={<CrossLink to="/app/analysis/overview" label="Back to Overview" />} />;
+                      }
+
+                      return (
+                        <div className="space-y-4">
+                          {/* ── Creative filter panel (same as flat grid) ── */}
+                          <CreativeFilterPanel
+                            filters={creativeFilters}
+                            onChange={(f) => { setCreativeFilters(f); setPage(1); }}
+                            conceptOptions={conceptOptionNames}
+                            shownCount={filteredDeduped.length}
+                            totalCount={totalBeforeFilter}
+                          />
+
+                          {filteredConceptGroups.length === 0 ? (
+                            <PendingState
+                              title="No cells match filters"
+                              message="Adjust the spend floor, tier, or concept filter to see cells."
+                              action={
+                                <button
+                                  onClick={() => setCreativeFilters(DEFAULT_FILTER_STATE)}
+                                  className="text-interactive hover:underline text-label"
+                                >
+                                  Clear filters
+                                </button>
+                              }
+                            />
+                          ) : (
+                            <ConceptFamilyView
+                              groups={filteredConceptGroups}
+                              cardCtx={cardCtx}
+                              demoByCell={demoByCell}
+                              allPlacements={allPlacements}
+                              unmappedCellIds={unmappedCellIds}
+                              rankKpi={rankKpi}
+                              onDetail={(row) => setDetail(row)}
+                              onUploadCreatives={() => setCreativeLibraryOpen(true)}
+                              onUploadCreative={adAccountId ? (cellId) => setUploadCellId(cellId) : undefined}
+                            />
+                          )}
+                        </div>
+                      );
+                    })() : (() => {
                       // Apply funnel sort then creative filters
                       const sortKey = funnelConfig?.sortKey ?? "none";
                       const sortDir = funnelConfig?.sortDir ?? "desc";
