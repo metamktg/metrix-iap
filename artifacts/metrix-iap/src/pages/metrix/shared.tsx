@@ -987,7 +987,7 @@ export function MetricTile({
         )}
         title="Open segment breakdown for this metric"
       >
-        {isPrimary && <div className="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-primary/55 pointer-events-none" />}
+        {isPrimary && <div data-testid="metric-tile-primary-accent" className="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-primary/55 pointer-events-none" />}
         <div className="relative z-10">
           <div className={cn(labelCls, "group-hover/tile:text-interactive/70 transition-colors")}>{label}</div>
           <div className="text-bignum font-bold text-foreground metric-num leading-none tracking-[-0.035em]">{value}</div>
@@ -1002,7 +1002,7 @@ export function MetricTile({
       "mx-kpi-tile p-4 transition-colors group-hover:border-primary/30 relative",
       isPrimary && "border-primary/35 bg-primary/[0.03]"
     )}>
-      {isPrimary && <div className="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-primary/55 pointer-events-none" />}
+      {isPrimary && <div data-testid="metric-tile-primary-accent" className="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-primary/55 pointer-events-none" />}
       <div className="relative z-10">
         <div className={labelCls}>{label}</div>
         <div className="text-bignum font-bold text-foreground metric-num leading-none tracking-[-0.035em]">{value}</div>
