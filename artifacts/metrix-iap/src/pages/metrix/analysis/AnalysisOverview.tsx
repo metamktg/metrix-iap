@@ -490,15 +490,15 @@ function DemoHeatmapGrid({
     if (cpa == null) return "rgba(255,255,255,0.02)";
     // Goal-relative coloring when goalCpa is provided
     if (goalCpa != null && goalCpa > 0) {
-      if (cpa <= goalCpa * 0.9)  return "rgba(52,211,153,0.32)";  // emerald — at/below goal
-      if (cpa >= goalCpa * 1.1)  return "rgba(251,191,36,0.24)";  // amber — above goal
-      return "rgba(99,102,241,0.20)";                             // indigo — neutral band ±10%
+      if (cpa <= goalCpa * 0.9)  return "hsl(var(--chart-3) / 0.32)";  // emerald — at/below goal
+      if (cpa >= goalCpa * 1.1)  return "hsl(var(--chart-4) / 0.24)";  // amber — above goal
+      return "hsl(var(--chart-1) / 0.20)";                             // indigo — neutral band ±10%
     }
     // Fallback: min/max relative coloring
     const t = intensity(cpa);
-    if (t >= 0.65) return `rgba(52,211,153,${0.08 + t * 0.26})`; // emerald
-    if (t >= 0.35) return `rgba(99,102,241,${0.06 + t * 0.14})`; // indigo mid
-    return `rgba(251,191,36,${0.06 + (1 - t) * 0.14})`; // amber
+    if (t >= 0.65) return `hsl(var(--chart-3) / ${0.08 + t * 0.26})`; // emerald
+    if (t >= 0.35) return `hsl(var(--chart-1) / ${0.06 + t * 0.14})`; // indigo mid
+    return `hsl(var(--chart-4) / ${0.06 + (1 - t) * 0.14})`; // amber
   }
 
   // Build the gridTemplateColumns string: label col + one col per gender.
@@ -584,11 +584,11 @@ function DemoHeatmapGrid({
           </span>
           <div className="flex items-center gap-1.5">
             <span className={cn(TYPE.label, "text-muted-foreground/45")}>CPA:</span>
-            <div className="w-2.5 h-2.5 rounded-sm" style={{ background: "rgba(251,191,36,0.25)" }} />
+            <div className="w-2.5 h-2.5 rounded-sm" style={{ background: "hsl(var(--chart-4) / 0.25)" }} />
             <span className={cn(TYPE.label)}>High</span>
-            <div className="w-10 h-1 rounded-full mx-0.5" style={{ background: "linear-gradient(to right, rgba(251,191,36,0.25), rgba(52,211,153,0.35))" }} />
+            <div className="w-10 h-1 rounded-full mx-0.5" style={{ background: "linear-gradient(to right, hsl(var(--chart-4) / 0.25), hsl(var(--chart-3) / 0.35))" }} />
             <span className={cn(TYPE.label)}>Low</span>
-            <div className="w-2.5 h-2.5 rounded-sm" style={{ background: "rgba(52,211,153,0.35)" }} />
+            <div className="w-2.5 h-2.5 rounded-sm" style={{ background: "hsl(var(--chart-3) / 0.35)" }} />
           </div>
         </div>
       </div>

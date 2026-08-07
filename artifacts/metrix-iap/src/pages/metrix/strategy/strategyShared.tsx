@@ -376,7 +376,7 @@ export function PillarDetailSections({ pillar, profiles }: { pillar: MessagePill
 
 export const HYP_STATUS_STYLE: Record<string, string> = {
   ready_for_brief_builder: "bg-emerald-400/10 text-emerald-400 border-emerald-400/20",
-  validation_required: "bg-[#16d9ff]/10 text-[#62e6ff] border-[#16d9ff]/20",
+  validation_required: "bg-accent/10 text-accent border-accent/20",
   high: "bg-red-400/10 text-red-300 border-red-400/20",
   p1: "bg-red-400/10 text-red-300 border-red-400/20",
   medium: "bg-amber-400/10 text-amber-300 border-amber-400/20",
@@ -415,7 +415,7 @@ export function HypothesisStatusBadge({ status }: { status: string }) {
 const RECO_STYLE: Record<string, string> = {
   scale: "bg-emerald-400/10 text-emerald-400 border-emerald-400/20",
   optimize: "bg-amber-400/10 text-amber-300 border-amber-400/20",
-  validate: "bg-[#16d9ff]/10 text-[#62e6ff] border-[#16d9ff]/20",
+  validate: "bg-accent/10 text-accent border-accent/20",
   avoid: "bg-red-400/10 text-red-300 border-red-400/20",
 };
 
@@ -469,7 +469,7 @@ const PLAYBOOK_LANES: Array<{
 }> = [
   { key: "scale_now", label: "Scale now", Icon: ArrowUpRight, accent: "text-emerald-400 border-emerald-400/25 bg-emerald-400/[0.06]" },
   { key: "optimize", label: "Optimize", Icon: Sparkles, accent: "text-amber-300 border-amber-400/25 bg-amber-400/[0.06]" },
-  { key: "validate", label: "Validate", Icon: FlaskConical, accent: "text-[#62e6ff] border-[#16d9ff]/25 bg-[#16d9ff]/[0.06]" },
+  { key: "validate", label: "Validate", Icon: FlaskConical, accent: "text-accent border-accent/25 bg-accent/[0.06]" },
   { key: "explore", label: "Explore", Icon: Search, accent: "text-purple-300 border-purple-400/25 bg-purple-400/[0.06]" },
   { key: "avoid_combinations", label: "Avoid", Icon: Ban, accent: "text-red-300 border-red-400/25 bg-red-400/[0.06]" },
 ];

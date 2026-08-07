@@ -147,7 +147,7 @@ function VerdictBanner({
     <div className="space-y-3">
       {/* Main banner */}
       <div
-        className="rounded-xl border border-[var(--meta-blue-highlight)]/20 bg-[rgba(0,153,255,0.04)] px-5 py-4 space-y-2"
+        className="rounded-xl border border-[var(--meta-blue-highlight)]/20 bg-primary/5 px-5 py-4 space-y-2"
       >
         {/* Eyebrow */}
         <div className="flex items-center gap-2 flex-wrap">

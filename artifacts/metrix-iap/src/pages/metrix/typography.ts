@@ -27,15 +27,15 @@ export const TYPE = {
    *  text-micro classes across several files. */
   microLabel: "text-micro font-mono font-semibold uppercase tracking-widest text-muted-foreground/60",
   /** Uppercase eyebrow/section labels above titles or field groups.
-   *  text-data-caption = #8796ac, 6.5:1 — intentional secondary, solid (no opacity blend). */
+   *  text-data-caption = DS muted-foreground @85% — intentional secondary, solid step. */
   label: "text-label font-semibold uppercase tracking-widest text-data-caption",
   /** Card / list-item titles. Bold is the one enforced title weight
    *  platform-wide — matches SectionCard's own hardcoded <h3>. */
   title: "text-title font-bold text-foreground leading-snug",
   /** Primary body prose inside cards and tiles.
-   *  text-data-body = #c6d2e5, 12.9:1 — clear readable prose, solid. */
+   *  text-data-body = DS foreground @88% — clear readable prose, solid step. */
   body: "text-body leading-relaxed text-data-body",
   /** Secondary/supporting prose: descriptions, sublines, meta text.
-   *  text-data-label = #aab6ca, 9.6:1 — crisp secondary text, solid (no opacity blend). */
+   *  text-data-label = DS muted-foreground — crisp secondary text, solid step. */
   caption: "text-caption leading-relaxed text-data-label",
 } as const;

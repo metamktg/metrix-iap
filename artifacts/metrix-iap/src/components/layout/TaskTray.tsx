@@ -50,7 +50,7 @@ const DATE_PRESETS = [
 const ACCENT = {
   approved: "before:bg-emerald-400",
   hypothesis: "before:bg-violet-400",
-  brief: "before:bg-blue-400",
+  brief: "before:bg-chart-1",
   signal: "before:bg-amber-400",
   nav: "",
 } as const;
@@ -675,7 +675,7 @@ export function TaskTray() {
         <Divider />
 
         {/* ── Draft briefs awaiting review ──────────────────────────── */}
-        <TraySection title="Briefs Pending" count={pendingDrafts.length} accentColor="bg-blue-400">
+        <TraySection title="Briefs Pending" count={pendingDrafts.length} accentColor="bg-chart-1">
           {pendingDrafts.length === 0 ? (
             <EmptySlot
               message="No briefs waiting for review"

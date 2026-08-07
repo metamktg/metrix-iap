@@ -16,7 +16,7 @@ const SECTION = "MST · 06";
 
 const ROW_COLOR: Record<string, string> = {
   "var(--green)": "border-emerald-400/30 bg-emerald-400/[0.04]",
-  "var(--blue)": "border-blue-400/30 bg-blue-400/[0.04]",
+  "var(--blue)": "border-blue-400/30 bg-chart-1/[0.04]",
   "var(--amber)": "border-amber-400/30 bg-amber-400/[0.04]",
   "var(--purple)": "border-purple-400/30 bg-purple-400/[0.04]",
 };

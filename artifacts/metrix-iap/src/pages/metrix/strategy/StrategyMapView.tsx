@@ -46,7 +46,7 @@ const PILLAR_ACCENTS = [
 
 const PILLAR_DOT = [
   "bg-emerald-400/70",
-  "bg-blue-400/70",
+  "bg-chart-1/70",
   "bg-purple-400/70",
   "bg-amber-400/70",
   "bg-cyan-400/70",
@@ -238,7 +238,7 @@ function hypPriorityAccent(status: string): string {
   const s = status.toLowerCase();
   if (s === "high" || s === "p1") return "border-l-[3px] border-l-amber-400/60";
   if (s === "medium" || s === "p2") return "border-l-[3px] border-l-amber-400/30";
-  if (s === "validation_required") return "border-l-[3px] border-l-[#16d9ff]/40";
+  if (s === "validation_required") return "border-l-[3px] border-l-accent/40";
   if (s === "ready_for_brief_builder") return "border-l-[3px] border-l-emerald-400/50";
   return "border-l-[3px] border-l-border/25";
 }

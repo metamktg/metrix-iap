@@ -286,11 +286,11 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
           <VariableCodeChips row={r} />
         </Td>
         <Td>{eventLabel(r["Result type"])}</Td>
-        <Td right style={spendIntensity > 0 ? { background: `rgba(99,102,241,${(spendIntensity * 0.22).toFixed(3)})` } : undefined}>
+        <Td right style={spendIntensity > 0 ? { background: `hsl(var(--chart-1) / ${(spendIntensity * 0.22).toFixed(3)})` } : undefined}>
           {fmtUSD(r["Amount spent (USD)"])}
         </Td>
         <Td right>{fmtNum(r.Results)}</Td>
-        <Td right style={cpaIntensity > 0 ? { background: `rgba(52,211,153,${(cpaIntensity * 0.22).toFixed(3)})` } : undefined}>
+        <Td right style={cpaIntensity > 0 ? { background: `hsl(var(--chart-3) / ${(cpaIntensity * 0.22).toFixed(3)})` } : undefined}>
           {r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
         </Td>
         <Td right>{fmtPct(r.CTR_link_pct)}</Td>
@@ -319,11 +319,11 @@ export function CellTable({ rows, onRowClick }: { rows: CellPerformanceRow[]; on
       {heatmapOn && (
         <div className="flex items-center gap-3 px-2 text-label text-muted-foreground/65 font-mono">
           <div className="flex items-center gap-1.5">
-            <div className="w-10 h-2 rounded-full" style={{ background: "linear-gradient(90deg, rgba(99,102,241,0.04) 0%, rgba(99,102,241,0.22) 100%)" }} />
+            <div className="w-10 h-2 rounded-full" style={{ background: "linear-gradient(90deg, hsl(var(--chart-1) / 0.04) 0%, hsl(var(--chart-1) / 0.22) 100%)" }} />
             <span>Spend intensity</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-10 h-2 rounded-full" style={{ background: "linear-gradient(90deg, rgba(52,211,153,0.04) 0%, rgba(52,211,153,0.22) 100%)" }} />
+            <div className="w-10 h-2 rounded-full" style={{ background: "linear-gradient(90deg, hsl(var(--chart-3) / 0.04) 0%, hsl(var(--chart-3) / 0.22) 100%)" }} />
             <span>Low → high CPA efficiency</span>
           </div>
         </div>
@@ -399,14 +399,14 @@ export function VariableTable({
         </Td>
         <Td className="capitalize">{r.variable_family}</Td>
         <Td>{eventLabel(r["Result type"])}</Td>
-        <Td right style={spendIntensity > 0 ? { background: `rgba(99,102,241,${(spendIntensity * 0.22).toFixed(3)})` } : undefined}>
+        <Td right style={spendIntensity > 0 ? { background: `hsl(var(--chart-1) / ${(spendIntensity * 0.22).toFixed(3)})` } : undefined}>
           <div className="flex flex-col gap-0.5">
             <span>{fmtUSD(r["Amount spent (USD)"])}</span>
             {heatmapOn && maxSpend > 0 && (
               <div className="h-[3px] rounded-full bg-white/[0.06] overflow-hidden">
                 <div
                   className="h-full rounded-full"
-                  style={{ width: `${spendIntensity * 100}%`, background: "rgba(99,102,241,0.65)" }}
+                  style={{ width: `${spendIntensity * 100}%`, background: "hsl(var(--chart-1) / 0.65)" }}
                 />
               </div>
             )}
@@ -414,7 +414,7 @@ export function VariableTable({
         </Td>
         <Td right>{fmtNum(r.unique_ads)}</Td>
         <Td right>{fmtNum(r.Results)}</Td>
-        <Td right style={cpaIntensity > 0 ? { background: `rgba(52,211,153,${(cpaIntensity * 0.22).toFixed(3)})` } : undefined}>
+        <Td right style={cpaIntensity > 0 ? { background: `hsl(var(--chart-3) / ${(cpaIntensity * 0.22).toFixed(3)})` } : undefined}>
           {r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
         </Td>
         <Td right>{fmtPct(r.CTR_link_pct)}</Td>
@@ -443,11 +443,11 @@ export function VariableTable({
       {heatmapOn && (
         <div className="flex items-center gap-3 px-2 text-label text-muted-foreground/65 font-mono">
           <div className="flex items-center gap-1.5">
-            <div className="w-10 h-2 rounded-full" style={{ background: "linear-gradient(90deg, rgba(99,102,241,0.04) 0%, rgba(99,102,241,0.22) 100%)" }} />
+            <div className="w-10 h-2 rounded-full" style={{ background: "linear-gradient(90deg, hsl(var(--chart-1) / 0.04) 0%, hsl(var(--chart-1) / 0.22) 100%)" }} />
             <span>Spend intensity</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-10 h-2 rounded-full" style={{ background: "linear-gradient(90deg, rgba(52,211,153,0.04) 0%, rgba(52,211,153,0.22) 100%)" }} />
+            <div className="w-10 h-2 rounded-full" style={{ background: "linear-gradient(90deg, hsl(var(--chart-3) / 0.04) 0%, hsl(var(--chart-3) / 0.22) 100%)" }} />
             <span>Low → high CPA efficiency</span>
           </div>
         </div>
@@ -496,7 +496,7 @@ export function DemographicTable({
           <span className="text-muted-foreground/65">low</span>
           <div
             className="w-20 h-2 rounded-full"
-            style={{ background: "linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(52,211,153,0.30) 100%)" }}
+            style={{ background: "linear-gradient(90deg, rgba(255,255,255,0.04) 0%, hsl(var(--chart-3) / 0.30) 100%)" }}
           />
           <span className="text-muted-foreground/65">high</span>
         </div>
@@ -539,7 +539,7 @@ export function DemographicTable({
                 <Td right>{r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}</Td>
                 <Td
                   right
-                  style={intensity > 0 ? { background: `rgba(52,211,153,${(intensity * 0.28).toFixed(3)})` } : undefined}
+                  style={intensity > 0 ? { background: `hsl(var(--chart-3) / ${(intensity * 0.28).toFixed(3)})` } : undefined}
                 >
                   {fmtPct(r.Result_per_link_click_pct)}
                 </Td>

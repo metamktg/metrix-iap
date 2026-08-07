@@ -66,7 +66,7 @@ function LoopStage({ label, dot, sub, active, href }: LoopStageProps) {
         "flex flex-col items-center gap-1 px-5 py-3 rounded-[11px] border transition-all",
         "min-w-[100px] text-center select-none",
         active
-          ? "border-[var(--meta-blue-highlight)] bg-[rgba(0,153,255,0.06)]"
+          ? "border-[var(--meta-blue-highlight)] bg-primary/10"
           : "border-[hsl(var(--border))] bg-transparent hover:border-[hsl(var(--border-default))] hover:bg-white/[0.03]"
       )}
     >
@@ -118,7 +118,7 @@ function ActionCard({ card }: { card: RecommendationCard }) {
       onClick={() => setExpanded(v => !v)}
       className={cn(
         "w-full text-left rounded-xl border border-[hsl(var(--border))] p-4 transition-all",
-        "bg-[var(--void-navy-3)] hover:border-[hsl(var(--border-default))] hover:bg-[rgba(10,26,60,0.95)]"
+        "bg-[var(--void-navy-3)] hover:border-[hsl(var(--border-default))] hover:bg-secondary/95"
       )}
     >
       {/* Top row */}

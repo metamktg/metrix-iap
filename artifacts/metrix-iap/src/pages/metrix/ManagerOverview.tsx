@@ -431,7 +431,7 @@ function AdAccountCard({
 const IMPACT_STYLE: Record<string, { borderLeft: string; accentBg: string }> = {
   high:   { borderLeft: "border-l-[3px] border-l-amber-400/50",   accentBg: "bg-amber-400/[0.03]" },
   medium: { borderLeft: "border-l-[3px] border-l-primary/30",     accentBg: "bg-primary/[0.025]" },
-  setup:  { borderLeft: "border-l-[3px] border-l-blue-400/30",    accentBg: "bg-blue-400/[0.025]" },
+  setup:  { borderLeft: "border-l-[3px] border-l-blue-400/30",    accentBg: "bg-chart-1/[0.025]" },
   low:    { borderLeft: "",                                         accentBg: "" },
 };
 

@@ -80,7 +80,7 @@ interface ColumnPerf {
 
 /** Stable per-avatar accent so identity reads consistently regardless of sort order. */
 const AVATAR_ACCENTS = [
-  { icon: "text-blue-300", chip: "border-blue-400/30 bg-blue-400/10", rail: "before:bg-blue-400/70", bar: "bg-blue-400/70" },
+  { icon: "text-blue-300", chip: "border-blue-400/30 bg-chart-1/10", rail: "before:bg-chart-1/70", bar: "bg-chart-1/70" },
   { icon: "text-violet-300", chip: "border-violet-400/30 bg-violet-400/10", rail: "before:bg-violet-400/70", bar: "bg-violet-400/70" },
   { icon: "text-amber-300", chip: "border-amber-400/30 bg-amber-400/10", rail: "before:bg-amber-400/70", bar: "bg-amber-400/70" },
   { icon: "text-teal-300", chip: "border-teal-400/30 bg-teal-400/10", rail: "before:bg-teal-400/70", bar: "bg-teal-400/70" },
