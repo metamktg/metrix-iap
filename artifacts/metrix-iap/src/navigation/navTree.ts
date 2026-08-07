@@ -269,6 +269,12 @@ export const navTree: NavSection[] = [
         dataSource: "historical_matrix_4x4",
       },
       {
+        id: "mst-creative-scan",
+        label: "Creative Scan",
+        to: "/app/mst/creative-scan",
+        dataSource: "local_book2_library",
+      },
+      {
         id: "mst-performance",
         label: "Performance",
         to: "/app/mst/performance",

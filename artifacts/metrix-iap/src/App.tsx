@@ -62,6 +62,7 @@ import { MstCrossMapView } from "@/pages/metrix/mst/MstCrossMapView";
 import { MstSprintsView } from "@/pages/metrix/mst/MstSprintsView";
 import { MstPerformanceView } from "@/pages/metrix/mst/MstPerformanceView";
 import { MstDirectionView } from "@/pages/metrix/mst/MstDirectionView";
+import { CreativeScanView as MstCreativeScanView } from "@/pages/metrix/mst/CreativeScanView";
 import { MetrixAgent } from "@/pages/MetrixAgent";
 import { HomeView } from "@/pages/metrix/HomeView";
 import { FindingsView } from "@/pages/metrix/analysis/FindingsView";
@@ -133,12 +134,13 @@ export function Router() {
       <Route path="/app/reports/configuration" component={ReportConfigurationView} />
       <Route path="/app/reports/history"      component={ReportHistoryView} />
 
-      {/* ── 07 MST ────────────────────────────────────────────────────── */}
+      {/* ── 06 MST ────────────────────────────────────────────────────── */}
       <Route path="/app/mst"                component={MstCommandCenter} />
       <Route path="/app/mst/cross-map"     component={MstCrossMapView} />
       <Route path="/app/mst/sprints"       component={MstSprintsView} />
       <Route path="/app/mst/performance"   component={MstPerformanceView} />
       <Route path="/app/mst/direction"     component={MstDirectionView} />
+      <Route path="/app/mst/creative-scan" component={MstCreativeScanView} />
 
       {/* ── Home screen ───────────────────────────────────────────────── */}
       <Route path="/app/home" component={HomeView} />
@@ -167,7 +169,6 @@ export function Router() {
       <Route path="/app/briefs/builder">{() => <Redirect to="/app/creative/builder" replace />}</Route>
       <Route path="/app/briefs/history">{() => <Redirect to="/app/creative" replace />}</Route>
       <Route path="/app/briefs">{() => <Redirect to="/app/creative" replace />}</Route>
-      <Route path="/app/mst/creative-scan">{() => <Redirect to="/app/creative/scan" replace />}</Route>
       <Route path="/app/report-builder">{() => <Redirect to="/app/reports/builder" replace />}</Route>
       <Route path="/app/reports/new">{() => <Redirect to="/app/reports/builder" replace />}</Route>
       <Route path="/app/reports/settings">{() => <Redirect to="/app/reports/configuration" replace />}</Route>

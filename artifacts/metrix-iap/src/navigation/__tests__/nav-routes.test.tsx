@@ -52,7 +52,6 @@ const legacyRedirects: [string, string][] = [
   ["/app/briefs/builder", "/app/creative/builder"],
   ["/app/briefs/history", "/app/creative"],
   ["/app/briefs", "/app/creative"],
-  ["/app/mst/creative-scan", "/app/creative/scan"],
   ["/app/report-builder", "/app/reports/builder"],
   ["/app/reports/new", "/app/reports/builder"],
   ["/app/reports/settings", "/app/reports/configuration"],
