@@ -50,3 +50,4 @@
 - [Metrix CSV Day canonical + derived metrics](metrix-csv-day-canonical.md) — "Day" is the canonical date column; derivable/ranking columns accepted but never expected; rate↔count inference guard.
 - [Manual accounts render from the daterange summary API](metrix-manual-analysis-fulldata.md) — no concept codes → empty seed analysis tables; Overview defaults to full-span API rows; stale window guards; per-ad tile data on AdRecord.performance.
 - [Seamless-loop video design](video-artifact-gotchas.md) — looping compositions: every timeline period must divide the loop; staggered repeats and boundary snaps need loop-length keyframes/opacity envelopes; verify by pixel-diffing frames one loop apart.
+- [Validation workflows vs configureWorkflow](validation-workflows-vs-configure.md) — new check:* scripts wire in via setValidationCommand, not configureWorkflow (10-workflow limit + validation-type lock).

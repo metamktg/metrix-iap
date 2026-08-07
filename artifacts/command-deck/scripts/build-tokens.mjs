@@ -139,7 +139,7 @@ function colorEntries(scope, tokens) {
   return out;
 }
 
-function buildCss(tokens) {
+export function buildCss(tokens) {
   let css = readFileSync(templatePath, "utf8");
   const replacements = {};
 
@@ -175,7 +175,7 @@ function buildCss(tokens) {
   return css;
 }
 
-function buildTs(tokens) {
+export function buildTs(tokens) {
   const portable = {
     color: {
       light: colorEntries("light", tokens),
