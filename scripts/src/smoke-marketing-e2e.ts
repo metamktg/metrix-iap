@@ -35,7 +35,7 @@ async function startDevServer(): Promise<ChildProcess> {
         env: {
           ...process.env,
           PORT: DEV_PORT,
-          BASE_PATH: "/www/",
+          BASE_PATH: "/waitlist/",
         },
         stdio: ["ignore", "pipe", "pipe"],
       },
@@ -82,7 +82,7 @@ async function runTests(): Promise<void> {
       cwd: repoRoot,
       env: {
         ...process.env,
-        MARKETING_BASE_URL: `http://localhost:${DEV_PORT}/www`,
+        MARKETING_BASE_URL: `http://localhost:${DEV_PORT}/waitlist`,
       },
       stdio: ["ignore", "pipe", "pipe"],
     });

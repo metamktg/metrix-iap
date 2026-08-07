@@ -12,7 +12,7 @@
 // time (they are normally supplied by the workflow). This script supplies
 // safe values so the build runs from a clean shell. PORT is only used for
 // dev/preview server config and does not affect build output; BASE_PATH is
-// set to "/www/" to match the artifact's registered preview path.
+// set to "/waitlist/" to match the artifact's registered preview path.
 
 import { spawn } from "node:child_process";
 import fs from "node:fs";
@@ -28,7 +28,7 @@ const repoRoot = path.resolve(
 const appDir = path.join(repoRoot, "artifacts/marketing");
 const indexHtml = path.join(appDir, "dist/public/index.html");
 
-const BASE_PATH = "/www/";
+const BASE_PATH = "/waitlist/";
 
 function fail(message: string, extra?: string): never {
   console.error(`\nFAIL  ${message}`);

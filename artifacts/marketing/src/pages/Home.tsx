@@ -130,7 +130,7 @@ export default function Home() {
             <div className="relative">
               <div className="rounded-2xl overflow-hidden border border-[var(--mx-border-medium)] shadow-[0_0_60px_rgba(0,188,255,0.08)]">
                 <img
-                  src="/www/dashboard-screenshot.png"
+                  src="/waitlist/dashboard-screenshot.png"
                   alt="Metrix IAP Dashboard"
                   className="w-full object-cover"
                 />
