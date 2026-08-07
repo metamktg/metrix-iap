@@ -16,6 +16,8 @@
 //   4. Scatter mode renders the "Frequency × Link CTR" section card
 //      — no JS errors.
 //   5. Cycling through all three tabs produces no JS errors.
+//   6. When demographic_registration_signal is empty, "No engagement data"
+//      PendingState is shown and no JS errors are thrown.
 //
 // Run: pnpm --filter @workspace/scripts run smoke:metrix-iap-engagement-funnel
 

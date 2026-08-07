@@ -40,6 +40,19 @@ const SEED_FIXTURE_BODY = fs.readFileSync(
   "utf-8",
 );
 
+// A variant of the fixture with all demographic_registration_signal arrays
+// zeroed out. Used to verify the PendingState branch in EngagementFunnelView.
+const SEED_FIXTURE_EMPTY_DEMO = (() => {
+  const seed = JSON.parse(SEED_FIXTURE_BODY);
+  for (const acct of seed.ad_accounts ?? []) {
+    const analysis = acct?.iap?.analysis;
+    if (analysis) {
+      analysis.demographic_registration_signal = [];
+    }
+  }
+  return JSON.stringify(seed);
+})();
+
 // ── helpers ────────────────────────────────────────────────────────────────
 
 let passed = 0;
@@ -63,6 +76,7 @@ function assert(condition: boolean, message: string): asserts condition {
 
 /**
  * Register route intercepts for all API endpoints the app calls at startup.
+ * Uses the full fixture (accounts have demographic data → funnel renders).
  */
 async function mockApis(ctx: BrowserContext): Promise<void> {
   const page = ctx.pages()[0]!;
@@ -127,6 +141,68 @@ async function mockApis(ctx: BrowserContext): Promise<void> {
 }
 
 /**
+ * Same as mockApis but serves the empty-demographic seed so the funnel renders
+ * the PendingState branch instead of the full funnel content.
+ */
+async function mockApisWithEmptyDemographic(ctx: BrowserContext): Promise<void> {
+  const page = ctx.pages()[0]!;
+
+  await page.route("**/api/metrix/auth/me", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        user: {
+          id: "test-user",
+          email: "demo@metrix.app",
+          role: "admin",
+          must_change_password: false,
+          workspace_id: "metrix_manager",
+        },
+      }),
+    }),
+  );
+
+  // Seed with all demographic_registration_signal arrays emptied.
+  await page.route("**/api/metrix/seed", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: SEED_FIXTURE_EMPTY_DEMO,
+    }),
+  );
+
+  await page.route("**/api/metrix/workspaces/*/reports", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ reports: [] }),
+    }),
+  );
+
+  await page.route("**/analysis/data-windows**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ windows: [] }),
+    }),
+  );
+
+  await page.route("**/analysis/summary**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        totals: {},
+        concept_rows: [],
+        placement_rows: [],
+        demographic_rows: [],
+      }),
+    }),
+  );
+}
+
+/**
  * Navigate to the Engagement Funnel page for the bookster demo account and
  * wait until the view mode toggle buttons are visible (page has rendered past
  * loading / pending states).
@@ -139,6 +215,21 @@ async function gotoFunnel(page: Page): Promise<void> {
   // content area has rendered (past the ModuleScopeGate loading state).
   await page
     .getByRole("button", { name: "Funnel" })
+    .waitFor({ state: "visible", timeout: 30_000 });
+}
+
+/**
+ * Navigate to the Engagement Funnel page with the empty-demographic seed.
+ * The PendingState branch does not render the Funnel/Breakdown/Scatter toggle,
+ * so we wait for the "Engagement Funnel" heading from ModuleHeader instead.
+ */
+async function gotoFunnelEmpty(page: Page): Promise<void> {
+  await page.goto(`${BASE}/app/analysis/funnel?account=bookster`, {
+    waitUntil: "domcontentloaded",
+  });
+  await page
+    .getByText("Engagement Funnel")
+    .first()
     .waitFor({ state: "visible", timeout: 30_000 });
 }
 
@@ -315,6 +406,49 @@ async function main() {
             jsErrors.length === 0,
             `Expected no JS errors in Scatter mode, got: ${jsErrors.join("; ")}`,
           );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+
+    // ── Test 6: PendingState renders when demographic data is absent ─────────
+    await test(
+      'PendingState shows "No engagement data" when demographic rows are empty',
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        const jsErrors: string[] = [];
+        page.on("pageerror", (err) => jsErrors.push(err.message));
+        try {
+          await mockApisWithEmptyDemographic(ctx);
+          await gotoFunnelEmpty(page);
+
+          // The PendingState title must be visible.
+          const pendingTitle = page.getByText("No engagement data").first();
+          await pendingTitle.waitFor({ state: "visible", timeout: 10_000 });
+          assert(
+            await pendingTitle.isVisible(),
+            'Expected "No engagement data" pending state title to be visible when demographic rows are empty',
+          );
+          console.log('       "No engagement data" pending state visible ✓');
+
+          // The funnel tab toggle must NOT be present (we are in the pending branch).
+          const funnelTab = page.getByRole("button", { name: "Funnel" });
+          const funnelTabVisible = await funnelTab.isVisible().catch(() => false);
+          assert(
+            !funnelTabVisible,
+            'Expected Funnel tab toggle to be hidden in the pending state, but it was visible',
+          );
+          console.log("       Funnel/Breakdown/Scatter tabs are absent ✓");
+
+          assert(
+            jsErrors.length === 0,
+            `Expected no JS errors in PendingState, got: ${jsErrors.join("; ")}`,
+          );
+          console.log("       No JS errors ✓");
         } finally {
           await ctx.close();
         }
