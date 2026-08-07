@@ -739,6 +739,15 @@ export function AnalysisControls({
     (imp) => imp.kind === "performance_ad_summary_csv"
   );
 
+  // Hard-block: this component renders standalone on Account Settings /
+  // Analysis Command Center (outside the AddAccountDialog wizard, which
+  // already gates its own "Review" step on bothRequiredStaged). Without this
+  // check, a first-time user with zero CSVs staged could click "Run analysis"
+  // and only discover the requirement from the server's 422 afterward.
+  const hasDemoCsv = (importsData?.imports ?? []).some((imp) => imp.kind === "performance_demo_csv");
+  const hasPlacementCsv = (importsData?.imports ?? []).some((imp) => imp.kind === "performance_placement_csv");
+  const missingRequiredCsv = !hasDemoCsv || !hasPlacementCsv;
+
   // Detect whether any required breakdown column is missing across staged CSVs.
   // When true, we soft-block the Run button with a warning (escape hatch kept).
   const hasRequiredMissing = (importsData?.imports ?? []).some(
@@ -876,8 +885,28 @@ export function AnalysisControls({
 
       {error && <p className="text-caption text-red-400">{error}</p>}
 
+      {/* Hard-block: at least one required report hasn't been staged yet */}
+      {missingRequiredCsv && !isRunning && (
+        <div className="rounded-lg border border-red-400/35 bg-red-500/[0.07] p-3">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0 space-y-1">
+              <div className="text-caption font-semibold text-red-200">
+                Both reports are required before running analysis
+              </div>
+              <p className="text-label text-red-100/70 leading-relaxed">
+                Missing: {[!hasDemoCsv && "Demographics export", !hasPlacementCsv && "Placement export"]
+                  .filter(Boolean)
+                  .join(", ")}
+                . Upload {missingRequiredCsv && !hasDemoCsv && !hasPlacementCsv ? "them" : "it"} from this account's setup screen.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Soft-block warning when required breakdown columns are missing */}
-      {hasRequiredMissing && !isRunning && !forceRunAcknowledged && (
+      {!missingRequiredCsv && hasRequiredMissing && !isRunning && !forceRunAcknowledged && (
         <div className="rounded-lg border border-red-400/35 bg-red-500/[0.07] p-3 space-y-2">
           <div className="flex items-start gap-2">
             <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
@@ -920,7 +949,12 @@ export function AnalysisControls({
         )}
         <RunAnalysisBtn
           onClick={handleRun}
-          disabled={isRunning || startMutation.isPending || (hasRequiredMissing && !forceRunAcknowledged)}
+          disabled={
+            isRunning ||
+            startMutation.isPending ||
+            missingRequiredCsv ||
+            (hasRequiredMissing && !forceRunAcknowledged)
+          }
           warning={hasRequiredMissing && forceRunAcknowledged}
         >
           {isRunning || startMutation.isPending ? (
