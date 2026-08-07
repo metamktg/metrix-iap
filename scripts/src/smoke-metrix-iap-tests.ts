@@ -114,6 +114,17 @@ async function main() {
     fail("Slider persistence e2e failed", String(err?.message ?? err));
   });
 
+  // ── Step 6: Playwright funnel filter e2e ─────────────────────────────────
+  console.log("\nRunning funnel filter e2e...");
+  await spawnScript("smoke:metrix-iap-funnel-filter", [
+    "--filter",
+    "@workspace/scripts",
+    "run",
+    "smoke:metrix-iap-funnel-filter",
+  ]).catch((err) => {
+    fail("Funnel filter e2e failed", String(err?.message ?? err));
+  });
+
   console.log("\nPASS  All Metrix IAP smoke checks passed");
   process.exit(0);
 }

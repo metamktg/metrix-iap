@@ -168,7 +168,7 @@ function PlacementDetailDialog({ placement, v3Rows, c4eRows, accountRollup, onCl
           <div className="grid grid-cols-dashboard-4-sm gap-2">
             {tiles.map(({ label, value, delta }) => (
               <div key={label} className="mx-kpi-tile px-3 py-2.5">
-                <div className="text-label font-mono uppercase tracking-widest text-muted-foreground/60 mb-0.5">{label}</div>
+                <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-0.5">{label}</div>
                 <div className="text-stat metric-num leading-none">{value}</div>
                 {delta && (
                   <div className={cn("text-label mt-1 leading-none", delta.good ? "text-accent" : "text-amber-300/80")}>

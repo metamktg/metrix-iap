@@ -228,6 +228,7 @@ export function CreativeCard({
   onUploadCreatives,
   onUploadCreative,
   onSegmentClick,
+  perfRow,
 }: {
   data: CreativeCardData;
   className?: string;
@@ -239,6 +240,8 @@ export function CreativeCard({
   onUploadCreative?: (cellId: string) => void;
   onSegmentClick?: (segment: { age: string; gender: string }) => void;
   onFullBreakdownClick?: () => void;
+  /** Performance row for the Funnel tab in the expand dialog. */
+  perfRow?: import("@/lib/data/seedTypes").CellPerformanceRow | null;
 }) {
   const [open, setOpen] = useState(false);
   const openDialog = useCallback(() => setOpen(true), []);
@@ -389,6 +392,7 @@ export function CreativeCard({
         unmapped={unmapped}
         onUploadCreatives={onUploadCreatives}
         onSegmentClick={onSegmentClick}
+        perfRow={perfRow}
       />
     </>
   );

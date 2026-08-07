@@ -882,11 +882,28 @@ export function SkeletonTileRow({ count = 4 }: { count?: number }) {
 // ─── Metric tile ──────────────────────────────────────────────────────
 // When the tile is placed inside a `group` button, border lifts on hover.
 
-export function MetricTile({ label, value, sub }: { label: React.ReactNode; value: string; sub?: string }) {
+export function MetricTile({ label, value, sub, onClick }: { label: React.ReactNode; value: string; sub?: string; onClick?: () => void }) {
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className="mx-kpi-tile p-4 transition-colors hover:border-primary/40 hover:bg-primary/[0.04] text-left w-full group/tile"
+        title="Open segment breakdown for this metric"
+      >
+        <div className="relative z-10">
+          <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-2 truncate group-hover/tile:text-interactive/60 transition-colors">{label}</div>
+          <div className="text-bignum font-bold text-foreground metric-num leading-none tracking-[-0.035em]">{value}</div>
+          {sub && <div className="text-caption text-muted-foreground/65 mt-2 leading-snug line-clamp-2">{sub}</div>}
+          <div className="mt-2 text-[8px] font-mono uppercase tracking-wider text-interactive/0 group-hover/tile:text-interactive/50 transition-colors">Segment breakdown →</div>
+        </div>
+      </button>
+    );
+  }
   return (
     <div className="mx-kpi-tile p-4 transition-colors group-hover:border-primary/30">
       <div className="relative z-10">
-        <div className="text-label font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-2 truncate">{label}</div>
+        <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-2 truncate">{label}</div>
         <div className="text-bignum font-bold text-foreground metric-num leading-none tracking-[-0.035em]">{value}</div>
         {sub && <div className="text-caption text-muted-foreground/65 mt-2 leading-snug line-clamp-2">{sub}</div>}
       </div>

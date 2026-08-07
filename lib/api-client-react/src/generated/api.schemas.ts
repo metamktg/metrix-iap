@@ -822,8 +822,6 @@ export interface AccountAnalysisDataWindowsResult {
 export interface GenerateStrategyInput {
   /** ID of the specific analysis run to ground this strategy in. Optional — when omitted the engine uses the account's current analysis data. Stored as provenance on the generation run. */
   analysis_run_id?: string | null;
-  /** IDs of up to 3 analysis runs to ground this strategy in. When provided, the first ID is stored as the primary source run. Takes precedence over analysis_run_id when both are present. */
-  analysis_run_ids?: string[] | null;
 }
 
 export interface StartGenerationResult {

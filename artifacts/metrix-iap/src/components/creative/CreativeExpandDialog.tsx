@@ -7,10 +7,11 @@
 
 import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { Upload, BarChart2, Users, Monitor, ImageOff, AlertTriangle } from "lucide-react";
+import { Upload, BarChart2, Users, Monitor, ImageOff, AlertTriangle, TrendingDown } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import type { DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
+import type { CellPerformanceRow, DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 import type { CreativeCardData } from "./CreativeCard";
+import { FunnelStepsChart, buildFunnelSteps } from "./FunnelStepsChart";
 import { AdsManagerButton } from "./AdsManagerLink";
 import { resolveVariableLabel, getVariablePrefix, PREFIX_COLORS } from "@/lib/variable-registry";
 
@@ -138,7 +139,7 @@ function pct(n: number | null | undefined): string {
 
 // ─── Tab chrome ────────────────────────────────────────────────────────
 
-type Tab = "overview" | "demographics" | "placements";
+type Tab = "overview" | "demographics" | "placements" | "funnel";
 type DemoMetric = "spend" | "results";
 type PlacementMetric = "spend" | "cpa";
 
@@ -597,6 +598,34 @@ function PlacementsTab({ rows }: { rows: PlacementRow[] }) {
   );
 }
 
+// ─── Funnel tab ─────────────────────────────────────────────────────────
+
+function FunnelTab({ perfRow }: { perfRow: CellPerformanceRow | null }) {
+  if (!perfRow) {
+    return (
+      <div className="py-10 text-center space-y-1.5">
+        <p className="text-body font-medium text-muted-foreground/60">No performance data</p>
+        <p className="text-label text-muted-foreground/50">Funnel steps require performance data for this creative.</p>
+      </div>
+    );
+  }
+  const steps = buildFunnelSteps(perfRow);
+  const hasAnyFunnel = perfRow.adds_to_cart != null || perfRow.checkouts_initiated != null || perfRow.purchases != null;
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Conversion funnel</p>
+      </div>
+      <FunnelStepsChart steps={steps} />
+      {!hasAnyFunnel && (
+        <p className="text-[9px] text-muted-foreground/40 pt-1 border-t border-border/20">
+          Adds to cart, checkouts, and purchases are only available when the source export includes conversion-event columns.
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ─── Main dialog export ────────────────────────────────────────────────
 
 export interface CreativeExpandDialogProps {
@@ -615,19 +644,23 @@ export interface CreativeExpandDialogProps {
   onUploadCreatives?: () => void;
   /** When provided, Demographics rows become tappable → segment drill-down. */
   onSegmentClick?: (segment: { age: string; gender: string }) => void;
+  /** Performance row for this cell — used to render the Funnel tab. */
+  perfRow?: CellPerformanceRow | null;
 }
 
 export function CreativeExpandDialog({
   open, onOpenChange, data,
   demographic = [], placements = [],
   expandFooter, unmapped, onUploadCreatives, onSegmentClick,
+  perfRow = null,
 }: CreativeExpandDialogProps) {
   const [tab, setTab] = useState<Tab>("overview");
 
   const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: "overview",      label: "Overview",      icon: <BarChart2 className="w-3.5 h-3.5" /> },
-    { id: "demographics",  label: "Demographics",  icon: <Users    className="w-3.5 h-3.5" /> },
-    { id: "placements",    label: "Placements",    icon: <Monitor  className="w-3.5 h-3.5" /> },
+    { id: "overview",      label: "Overview",      icon: <BarChart2    className="w-3.5 h-3.5" /> },
+    { id: "demographics",  label: "Demographics",  icon: <Users        className="w-3.5 h-3.5" /> },
+    { id: "placements",    label: "Placements",    icon: <Monitor      className="w-3.5 h-3.5" /> },
+    { id: "funnel",        label: "Funnel",        icon: <TrendingDown className="w-3.5 h-3.5" /> },
   ];
 
   return (
@@ -700,6 +733,7 @@ export function CreativeExpandDialog({
               {tab === "overview"     && <OverviewTab      data={data} />}
               {tab === "demographics" && <DemographicsTab  rows={demographic} onSegmentClick={onSegmentClick} />}
               {tab === "placements"   && <PlacementsTab    rows={placements} />}
+              {tab === "funnel"       && <FunnelTab        perfRow={perfRow} />}
             </div>
 
             {/* Footer */}

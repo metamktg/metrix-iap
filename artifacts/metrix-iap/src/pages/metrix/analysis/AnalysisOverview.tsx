@@ -946,7 +946,7 @@ export function AnalysisOverview() {
                     {/* Right: result type donut — inline with tiles */}
                     {resultTypePie.length > 0 && (
                       <div className="w-[196px] shrink-0 rounded-xl border border-border/40 bg-white/[0.02] p-3 flex flex-col">
-                        <div className={cn(TYPE.label, "font-semibold uppercase tracking-[0.12em] text-muted-foreground/70 mb-1")}>
+                        <div className="text-sm font-bold text-foreground mb-1.5">
                           By result type
                         </div>
                         <SharePieChart
@@ -1104,8 +1104,8 @@ export function AnalysisOverview() {
                     <SectionCard title="Core control reads" desc="Control creative · per funnel depth">
                       <div className="grid grid-cols-dashboard-2 gap-3">
                         <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                          <div className="text-label font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5">Primary control</div>
-                          <p className="text-title font-semibold text-foreground">{resolveConceptName(controls.primary_control)}</p>
+                          <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-1">Primary control</div>
+                          <p className="text-sm font-bold text-foreground">{resolveConceptName(controls.primary_control)}</p>
                           <div className="mt-1.5">
                             {(() => {
                               const read = resolveControlText(controls.primary_control_read, controls.primary_control);
@@ -1128,8 +1128,8 @@ export function AnalysisOverview() {
                           const regName = resolveConceptName(regId);
                           return (
                             <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                              <div className="text-label font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5">{term.Singular} control</div>
-                              <p className="text-title font-semibold text-foreground">{regName}</p>
+                              <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-1">{term.Singular} control</div>
+                              <p className="text-sm font-bold text-foreground">{regName}</p>
                               {controls.registration_control_read && (() => {
                                 const read = resolveControlText(controls.registration_control_read, regId);
                                 return (
@@ -1160,11 +1160,11 @@ export function AnalysisOverview() {
                         <div key={s.to} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2">
                           <div className="flex items-center gap-2">
                             <s.Icon className="w-3.5 h-3.5 text-interactive" />
-                            <span className="text-title font-semibold text-foreground">{s.label}</span>
+                            <span className="text-sm font-bold text-foreground">{s.label}</span>
                             <InfoTooltip content={s.desc} />
                           </div>
                           <div className="flex items-center justify-between mt-auto pt-1">
-                            <span className="text-label font-mono text-muted-foreground/70">{s.stat}</span>
+                            <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40">{s.stat}</span>
                             <CrossLink to={s.to} label="Open" />
                           </div>
                         </div>
