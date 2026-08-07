@@ -886,7 +886,7 @@ export function MetricTile({ label, value, sub }: { label: React.ReactNode; valu
   return (
     <div className="mx-kpi-tile p-4 transition-colors group-hover:border-primary/30">
       <div className="relative z-10">
-        <div className="text-label font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-2 truncate">{label}</div>
+        <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-2 truncate">{label}</div>
         <div className="text-bignum font-bold text-foreground metric-num leading-none tracking-[-0.035em]">{value}</div>
         {sub && <div className="text-caption text-muted-foreground/65 mt-2 leading-snug line-clamp-2">{sub}</div>}
       </div>
