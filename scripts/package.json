@@ -25,6 +25,7 @@
     "smoke:register-session-persistence": "tsx ./src/smoke-register-session-persistence.ts",
     "smoke:metrix-iap-funnel-filter": "tsx ./src/smoke-metrix-iap-funnel-filter.ts",
     "smoke:metrix-iap-engagement-funnel": "tsx ./src/smoke-metrix-iap-engagement-funnel.ts",
+    "smoke:metrix-iap-ad-account-overview": "tsx ./src/smoke-metrix-iap-ad-account-overview.ts",
     "import:metrix": "tsx ./src/metrix-supabase/import.ts",
     "enforce:importer-rls": "tsx ./src/enforce-importer-rls.ts",
     "create:user": "tsx ./src/create-user.ts",
