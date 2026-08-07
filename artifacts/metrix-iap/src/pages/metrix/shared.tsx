@@ -323,17 +323,21 @@ function spaNav(href: string, e: React.MouseEvent) {
 
 const SECTION_TABS: Record<"analysis" | "strategy", { label: string; to: string }[]> = {
   analysis: [
-    { label: "Overview",       to: "/app/analysis/overview" },
-    { label: "IAP Library",    to: "/app/analysis/library" },
-    { label: "Audience",       to: "/app/analysis/audience" },
-    { label: "Placements",     to: "/app/analysis/placements" },
-    { label: "Budget Insight", to: "/app/analysis/budget" },
+    { label: "Overview",        to: "/app/analysis/overview" },
+    { label: "Ad Performance",  to: "/app/analysis/performance" },
+    { label: "IAP Library",     to: "/app/analysis/library" },
+    { label: "Audience",        to: "/app/analysis/audience" },
+    { label: "Placements",      to: "/app/analysis/placements" },
+    { label: "Budget",          to: "/app/analysis/budget" },
+    { label: "History",         to: "/app/analysis/history" },
   ],
   strategy: [
-    { label: "Overview",          to: "/app/strategy/overview" },
-    { label: "Strategy Map",      to: "/app/strategy/map" },
-    { label: "Avatars / ICP",     to: "/app/strategy/avatars" },
-    { label: "Hypothesis Queue",  to: "/app/strategy/hypotheses" },
+    { label: "Overview",             to: "/app/strategy/overview" },
+    { label: "Strategy Map",         to: "/app/strategy/map" },
+    { label: "Avatars / ICP / PMF",  to: "/app/strategy/avatars" },
+    { label: "Communications",       to: "/app/strategy/communications" },
+    { label: "Hypothesis Queue",     to: "/app/strategy/hypotheses" },
+    { label: "History",              to: "/app/strategy/history" },
   ],
 };
 

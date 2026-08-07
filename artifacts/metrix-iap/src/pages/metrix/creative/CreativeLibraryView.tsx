@@ -9,7 +9,7 @@ import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getMST, getAnalysisData, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, ScopeBanner, ModuleScopeGate, ModuleTabs, CaveatNote, PendingState, readableVariables, CrossLink } from "../shared";
+import { ModuleHeader, ScopeBanner, ModuleScopeGate, ModuleTabs, CaveatNote, PendingState, readableVariables, CrossLink, InfoTooltip } from "../shared";
 import { CreativeCard } from "@/components/creative/CreativeCard";
 import { cardFromLibraryCell } from "@/lib/creative-assembly";
 import { Library, Tags } from "lucide-react";
@@ -111,7 +111,10 @@ export function CreativeLibraryView() {
                   <PendingState title="No variables yet" message="The variable library aggregates from concepts in the local library." icon={Tags} />
                 ) : (
                   <div className="space-y-5">
-                    <p className="text-[12px] text-muted-foreground/80">Distinct creative variables in use across this account's concept library, grouped by family. The count shows how many concepts use each variable.</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-[12px] text-muted-foreground/80">Distinct creative variables in use, grouped by family.</p>
+                      <InfoTooltip content="The count shows how many concepts in this account's local library use each variable." />
+                    </div>
                     {variableGroups.map((g) => (
                       <div key={g.label}>
                         <div className="flex items-center gap-2 mb-2">

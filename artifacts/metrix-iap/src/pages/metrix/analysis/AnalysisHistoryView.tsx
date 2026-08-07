@@ -13,6 +13,7 @@ import {
   ModuleScopeGate,
   SectionCard,
   PendingState,
+  InfoTooltip,
 } from "../shared";
 import {
   History,
@@ -180,11 +181,12 @@ export function AnalysisHistoryView() {
             {successRuns.length > 0 && (
               <div className="flex items-start gap-2.5 p-3 rounded-lg border border-primary/20 bg-primary/[0.04]">
                 <Info className="w-3.5 h-3.5 text-interactive/80 shrink-0 mt-0.5" />
-                <p className="text-[11.5px] text-foreground/75 leading-relaxed">
-                  <span className="font-semibold text-foreground/90">{successRuns.length} successful run{successRuns.length !== 1 ? "s" : ""} available.</span>{" "}
-                  Open the <span className="font-semibold">IAP Loop</span> and go to the Strategy stage to select up to 3 runs to
-                  ground your strategy in — each run covers a distinct date range and can be combined.
-                </p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-[11.5px] font-semibold text-foreground/90">
+                    {successRuns.length} successful run{successRuns.length !== 1 ? "s" : ""} available.
+                  </p>
+                  <InfoTooltip content="Open the IAP Loop and go to the Strategy stage to select up to 3 runs to ground your strategy in — each run covers a distinct date range and can be combined." />
+                </div>
               </div>
             )}
 

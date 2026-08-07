@@ -116,7 +116,7 @@ export function AdAccountOverview() {
         <PendingState
           title="Analysis data loading"
           message="Core analysis data is being assembled. Refresh in a moment."
-          action={<CrossLink to="/app/analysis/overview" label="Go to Analysis" />}
+          action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />}
         />
       </div>
     );

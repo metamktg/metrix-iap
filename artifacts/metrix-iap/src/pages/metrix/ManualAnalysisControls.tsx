@@ -30,6 +30,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@workspace/command-deck/hooks/use-toast";
 import { guessedCreativeImports } from "./manualImportUtils";
 import { ImportConfidenceReport } from "./ImportConfidenceReport";
+import { InfoTooltip } from "./shared";
 import { cn } from "@workspace/command-deck/lib/utils";
 import {
   FileText,
@@ -1207,10 +1208,10 @@ export function AnalysisControls({
         <ImportConfidenceReport imports={importsData?.imports ?? []} />
       )}
 
-      <p className="text-label text-muted-foreground/75 leading-relaxed">
-        Analysis only runs when you press this button. It reads your staged uploads and reports
-        the exact dates found in the data for the selected range — it will never run on its own.
-      </p>
+      <div className="flex items-center gap-1.5">
+        <p className="text-label text-muted-foreground/75">Analysis only runs when you press this button — it will never run on its own.</p>
+        <InfoTooltip content="It reads your staged uploads and reports the exact dates found in the data for the selected range." />
+      </div>
     </div>
   );
 }

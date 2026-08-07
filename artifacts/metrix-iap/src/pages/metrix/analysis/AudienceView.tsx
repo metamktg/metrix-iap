@@ -739,7 +739,7 @@ export function AudienceView() {
                   title="No demographic signal"
                   message="Audience intelligence appears once demographic result data exists."
                   icon={Users}
-                  action={<CrossLink to="/app/analysis/overview" label="Return to Analysis Overview" />}
+                  action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />}
                 />
               </div>
             );
