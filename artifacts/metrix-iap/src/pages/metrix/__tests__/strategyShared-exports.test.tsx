@@ -48,6 +48,7 @@ const RUNTIME_EXPORTS: Array<keyof typeof strategyShared> = [
   "HypothesisCodeChipsRow",
   "pillarHasDetails",
   "PillarDetailSections",
+  "PillarDetailsFold",
   "HYP_STATUS_STYLE",
   "HYP_STATUS_LABEL",
   "HypothesisStatusBadge",

@@ -1530,6 +1530,51 @@ export function SectionCard({
   );
 }
 
+// ─── Show-more fold (cognitive-load cap for long lists) ───────────────
+// Platform density rule: any unbounded card/row list shows the first N
+// items and folds the rest behind an explicit "Show all …" toggle.
+
+/** Fold state for a long list: first `limit` items visible until expanded. */
+export function useShowMore<T>(items: T[], limit: number): {
+  visible: T[];
+  expanded: boolean;
+  toggle: () => void;
+  hiddenCount: number;
+} {
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? items : items.slice(0, limit);
+  return {
+    visible,
+    expanded,
+    toggle: () => setExpanded((v) => !v),
+    hiddenCount: Math.max(0, items.length - limit),
+  };
+}
+
+/** The companion toggle button — renders nothing when the list fits. */
+export function ShowMoreButton({
+  total, hiddenCount, expanded, onToggle, noun,
+}: {
+  total: number;
+  hiddenCount: number;
+  expanded: boolean;
+  onToggle: () => void;
+  noun: string;
+}) {
+  if (hiddenCount <= 0) return null;
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={expanded}
+      className="w-full flex items-center justify-center gap-1.5 py-2 mt-2 rounded-lg text-body font-medium text-muted-foreground/60 hover:text-foreground/80 hover:bg-white/[0.02] border border-border/25 transition-colors"
+    >
+      {expanded ? "Show fewer" : `Show all ${total} ${noun}`}
+      <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", expanded && "rotate-180")} aria-hidden />
+    </button>
+  );
+}
+
 // ─── Scope banner (which ad account a module is reading) ──────────────
 
 export function ScopeBanner({ account }: { account: AdAccount }) {

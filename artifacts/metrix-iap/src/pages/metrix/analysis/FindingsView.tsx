@@ -22,6 +22,8 @@ import {
   fmtUSD,
   fmtNum,
   deriveLabel,
+  useShowMore,
+  ShowMoreButton,
 } from "../shared";
 import { TYPE } from "../typography";
 import { AlertTriangle, TrendingDown, TrendingUp, Minus } from "lucide-react";
@@ -304,6 +306,7 @@ function ConceptCard({ score }: { score: ConceptScore }) {
 // ─── Failure patterns strip ───────────────────────────────────────────
 
 function FailurePatternsStrip({ patterns }: { patterns: FailurePattern[] }) {
+  const fold = useShowMore(patterns, 6);
   if (!patterns.length) return null;
   const totalWasted = patterns.reduce((s, p) => s + (p.wasted_spend ?? p.spend ?? 0), 0);
 
@@ -318,7 +321,7 @@ function FailurePatternsStrip({ patterns }: { patterns: FailurePattern[] }) {
         </span>
       </div>
       <div className="rounded-xl border border-[hsl(var(--border))] bg-[var(--void-navy-3)] overflow-hidden divide-y divide-white/[0.04]">
-        {patterns.map((p, i) => (
+        {fold.visible.map((p, i) => (
           <div key={i} className="flex items-start gap-3 px-4 py-3">
             <AlertTriangle className="w-3.5 h-3.5 text-amber-400/60 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
@@ -331,6 +334,7 @@ function FailurePatternsStrip({ patterns }: { patterns: FailurePattern[] }) {
           </div>
         ))}
       </div>
+      <ShowMoreButton total={patterns.length} hiddenCount={fold.hiddenCount} expanded={fold.expanded} onToggle={fold.toggle} noun="findings" />
     </div>
   );
 }
@@ -377,6 +381,8 @@ export function FindingsView() {
   }, [intel]);
 
   const failurePatterns: FailurePattern[] = intel?.failure_patterns ?? [];
+
+  const conceptFold = useShowMore(conceptScores, 8);
 
   // ── Fallback: derive verdict from optimization_loop top card ─────
   const optLoop = account?.iap?.optimization_loop ?? null;
@@ -507,10 +513,11 @@ export function FindingsView() {
                     </span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {conceptScores.map((score, i) => (
+                    {conceptFold.visible.map((score, i) => (
                       <ConceptCard key={`${score.book}-${score.concept_code}-${i}`} score={score} />
                     ))}
                   </div>
+                  <ShowMoreButton total={conceptScores.length} hiddenCount={conceptFold.hiddenCount} expanded={conceptFold.expanded} onToggle={conceptFold.toggle} noun="concepts" />
                 </div>
               )}
 
