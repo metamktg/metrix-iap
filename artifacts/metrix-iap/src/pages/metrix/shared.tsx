@@ -1036,7 +1036,7 @@ export function ModuleScopeGate({
 // Visible pill button — navigates to another module. Use whenever a
 // UI surface should surface a clear actionable jump to a sibling module.
 
-export function CrossLink({ to, label }: { to: string; label: string }) {
+export function CrossLink({ to, label, srNote }: { to: string; label: string; srNote?: string }) {
   const [, navigate] = useLocation();
   return (
     <button
@@ -1044,6 +1044,7 @@ export function CrossLink({ to, label }: { to: string; label: string }) {
       className="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg bg-primary/12 border border-primary/30 text-interactive hover:bg-primary/20 hover:border-primary/50 transition-all shadow-sm shadow-primary/5"
     >
       {label}
+      {srNote && <span className="sr-only">{` — ${srNote}`}</span>}
       <ArrowRight className="w-3.5 h-3.5" />
     </button>
   );
@@ -1473,28 +1474,58 @@ export function SectionCard({
   table,
   children,
   right,
+  collapsible = true,
+  defaultOpen = true,
 }: {
   title: string;
   desc?: string;
   table?: string;
   children: React.ReactNode;
   right?: React.ReactNode;
+  /** Every module is progressively disclosable by default; pass false to pin open. */
+  collapsible?: boolean;
+  defaultOpen?: boolean;
 }) {
+  const [open, setOpen] = useState(defaultOpen);
+  const bodyVisible = !collapsible || open;
   return (
     <section className="mx-card-hero overflow-hidden">
-      <div className="mx-accent-bar relative flex items-center gap-2 px-3.5 py-2 border-b border-[rgba(120,170,255,0.12)]">
+      <div
+        className={cn(
+          "mx-accent-bar relative flex items-center gap-2 px-3.5 py-2 border-b border-[rgba(120,170,255,0.12)]",
+          collapsible && "cursor-pointer select-none hover:bg-white/[0.02] transition-colors"
+        )}
+        onClick={collapsible ? () => setOpen((v) => !v) : undefined}
+      >
         <div className="flex-1 min-w-0">
-          <h3 className="text-title font-semibold text-foreground leading-tight">{title}</h3>
+          <h3 className="text-title font-bold text-foreground leading-tight">{title}</h3>
           {desc && (
             <p className="text-label text-muted-foreground/50 leading-snug mt-0.5 line-clamp-1">{desc}</p>
           )}
         </div>
-        <div className="shrink-0 flex items-center gap-2">
+        <div className="shrink-0 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
           {right}
           {table && <DataSourceBadge table={table} collapsible />}
+          {collapsible && (
+            <button
+              type="button"
+              aria-label={bodyVisible ? "Collapse section" : "Expand section"}
+              aria-expanded={bodyVisible}
+              onClick={() => setOpen((v) => !v)}
+              className="p-0.5 rounded hover:bg-white/[0.06] transition-colors shrink-0"
+            >
+              <ChevronDown
+                className={cn(
+                  "w-3.5 h-3.5 text-muted-foreground/40 transition-transform",
+                  bodyVisible && "rotate-180"
+                )}
+                aria-hidden
+              />
+            </button>
+          )}
         </div>
       </div>
-      <div className="relative p-3">{children}</div>
+      {bodyVisible && <div className="relative p-3">{children}</div>}
     </section>
   );
 }

@@ -1,18 +1,20 @@
-// Smoke check: SectionInfoIcon tooltip e2e — Analysis and Strategy overview pages.
+// Smoke check: SectionInfoIcon tooltips on Analysis sub-pages (Playwright).
 //
-// Boots the metrix-iap Vite dev server on an isolated port, waits for it to
-// be ready, runs the Playwright spec at
-// tests/e2e/metrix-iap-section-info-icons.spec.ts, then tears the server down.
-// API responses (auth/me, seed, reports, ad-accounts) are mocked inside the
-// spec itself so no running API server is required.
+// Boots the metrix-iap Vite dev server on a private port, waits for it
+// to be ready, runs the Playwright spec at
+// tests/e2e/metrix-iap-section-info-tooltips.spec.ts, then tears the server down.
+// API responses (auth/me, seed, reports, data-windows, analysis/summary) are
+// mocked inside the spec itself so no running API server is required.
 //
-// Assertions:
-//   1. AnalysisOverview · "Analysis modules" SectionInfoIcon shows correct tooltip.
-//   2. AnalysisOverview · "Top concepts by spend" SectionInfoIcon shows correct tooltip.
-//   3. StrategyOverview · "Go deeper" SectionInfoIcon shows correct tooltip.
-//   4. StrategyOverview · "Pillar coverage" SectionInfoIcon shows correct tooltip.
+// Assertions (in the spec):
+//   1. Audience / Ranked tab — hovering the ⓘ icon opens a [role="tooltip"]
+//      with non-empty text mentioning ranking/segment/KPI.
+//   2. Placements — hovering the first ⓘ icon opens a tooltip mentioning
+//      placement/spend/delivery.
+//   3. Budget — hovering the first ⓘ icon opens a tooltip mentioning
+//      spend/result/budget/concept/event.
 //
-// Run: pnpm --filter @workspace/scripts run smoke:metrix-iap-section-info-icons
+// Run: pnpm --filter @workspace/scripts run smoke:metrix-iap-section-info-tooltips
 
 import { spawn, type ChildProcess } from "node:child_process";
 import path from "node:path";
@@ -31,8 +33,7 @@ function fail(message: string, extra?: string): never {
 
 // ── dev server ──────────────────────────────────────────────────────────────
 
-// Use a port that is unlikely to collide with other smoke-test workflows.
-const DEV_PORT = "15182";
+const DEV_PORT = "15183"; // private port; won't collide with any other workflow
 
 async function startDevServer(): Promise<ChildProcess> {
   return new Promise((resolve, reject) => {
@@ -55,7 +56,6 @@ async function startDevServer(): Promise<ChildProcess> {
     const onData = (chunk: Buffer) => {
       const line = chunk.toString();
       process.stdout.write(line);
-      // Vite prints "Local:" or "ready in" when the server is listening.
       if (!ready && /Local:|ready in|localhost/i.test(line)) {
         ready = true;
         resolve(child);
@@ -72,7 +72,6 @@ async function startDevServer(): Promise<ChildProcess> {
       }
     });
 
-    // Hard timeout.
     setTimeout(() => {
       if (!ready) {
         child.kill();
@@ -88,7 +87,7 @@ async function runTests(): Promise<void> {
   return new Promise((resolve, reject) => {
     const specPath = path.join(
       repoRoot,
-      "tests/e2e/metrix-iap-section-info-icons.spec.ts",
+      "tests/e2e/metrix-iap-section-info-tooltips.spec.ts",
     );
     const child = spawn("pnpm", ["exec", "tsx", specPath], {
       cwd: repoRoot,
@@ -138,7 +137,7 @@ async function main() {
   });
 
   try {
-    // Brief pause so Vite finishes HMR setup before Playwright navigates.
+    // Brief pause so Vite finishes HMR setup.
     await new Promise((r) => setTimeout(r, 2000));
 
     console.log("\nRunning SectionInfoIcon tooltip e2e tests...\n");
