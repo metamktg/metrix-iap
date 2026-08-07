@@ -10,7 +10,7 @@
 // the library refreshes automatically.
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { Images, Dna, RefreshCw, AlertTriangle, PlayCircle } from "lucide-react";
+import { Images, Dna, RefreshCw, AlertTriangle, PlayCircle, TrendingUp, TrendingDown, Sliders } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -52,6 +52,13 @@ import type { CellPerformanceRow, DemographicRow, PlacementRow } from "@/lib/dat
 import { CreativeLibraryDialog, ManualImportDialog } from "@/pages/metrix/ConnectAccountDialogs";
 import { CellCreativeUploadDialog } from "@/components/creative/CellCreativeUploadDialog";
 import { useConceptHighlight } from "@/lib/concept-registry-context";
+import {
+  type FunnelStage, FUNNEL_STAGE_CONFIGS, getFunnelStageConfig,
+} from "@/lib/funnelStages";
+import {
+  CreativeFilterPanel, DEFAULT_FILTER_STATE, applyCreativeFilters, sortValueForCell,
+  type CreativeFilterState,
+} from "@/components/creative/CreativeFilterPanel";
 
 const SECTION = "Analysis · 03";
 
@@ -104,6 +111,9 @@ export function IapLibraryView() {
   const [groupByConcept, setGroupByConcept] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<10 | 25 | 50>(10);
+  // ── Funnel stage + creative filters (local, non-persisted) ───────────
+  const [funnelStage, setFunnelStage] = useState<FunnelStage>("custom");
+  const [creativeFilters, setCreativeFilters] = useState<CreativeFilterState>(DEFAULT_FILTER_STATE);
   // Variable drill-down (DNA cards, best-read chips, variable table rows)
   const [variableCode, setVariableCode] = useState<string | null>(null);
   // Segment drill-down opened from a card's Demographics tab (scoped to that cell)
@@ -161,11 +171,22 @@ export function IapLibraryView() {
   const tileCatalog = useMemo(() => buildLibraryMetricCatalog(libCells), [libCells]);
   const tileCatalogIds = useMemo(() => tileCatalog.map((m) => m.id), [tileCatalog]);
   const {
-    selected: tileIds, toggle: toggleTile, move: moveTile, reset: resetTiles,
+    selected: savedTileIds, toggle: toggleTile, move: moveTile, reset: resetTiles,
   } = useTileSelection(tileCatalogIds, {
     storageKey: LIBRARY_METRIC_STORAGE_KEY,
     defaultIds: LIBRARY_DEFAULT_METRIC_IDS,
   });
+
+  // When a named funnel stage is active, override tile IDs with the stage's preset.
+  // Filter the stage tile IDs against what's actually in the catalog (some may be absent
+  // for single-event accounts). Fall back to saved IDs for "custom".
+  const funnelConfig = useMemo(() => getFunnelStageConfig(funnelStage), [funnelStage]);
+  const tileIds = useMemo(() => {
+    if (!funnelConfig) return savedTileIds;
+    const available = new Set(tileCatalogIds);
+    const filtered = funnelConfig.tileIds.filter((id) => available.has(id));
+    return filtered.length > 0 ? filtered : savedTileIds;
+  }, [funnelConfig, savedTileIds, tileCatalogIds]);
 
   // ── Unmapped cell detection ──────────────────────────────────────────
   // A cell is "unmapped" when it exists in performance_by_cell but has no
@@ -303,6 +324,42 @@ export function IapLibraryView() {
                 <StaleFocusNotice label="creative cell" />
               )}
               <MetricSelectionBar events={allEvents} isSelected={isSelected} onToggle={toggle} />
+
+              {/* ── Funnel stage selector ── */}
+              <div className="px-6 pt-3 pb-1 flex items-center gap-2">
+                <Sliders className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
+                <span className="text-label text-muted-foreground/50 shrink-0">Funnel</span>
+                <div className="flex items-center rounded-md border border-border/30 overflow-hidden">
+                  {(["upper", "lower", "custom"] as const).map((stage) => {
+                    const label = stage === "upper" ? "Upper Funnel" : stage === "lower" ? "Lower Funnel" : "Custom";
+                    const icon = stage === "upper"
+                      ? <TrendingUp className="w-3 h-3 shrink-0" />
+                      : stage === "lower"
+                      ? <TrendingDown className="w-3 h-3 shrink-0" />
+                      : null;
+                    return (
+                      <button
+                        key={stage}
+                        onClick={() => {
+                          setFunnelStage(stage);
+                          // Reset filters when switching stages
+                          setCreativeFilters(DEFAULT_FILTER_STATE);
+                          setPage(1);
+                        }}
+                        className={[
+                          "flex items-center gap-1 px-2.5 py-1 text-label font-medium transition-colors",
+                          funnelStage === stage
+                            ? "bg-white/10 text-foreground"
+                            : "text-muted-foreground/50 hover:text-muted-foreground/70 hover:bg-white/[0.03]",
+                        ].join(" ")}
+                      >
+                        {icon}{label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <RangeScopeBar grainNote="Cell and variable metrics aggregate each creative's full flight window — this import has no daily grain." />
 
               {!rangeHasData ? (
@@ -310,8 +367,22 @@ export function IapLibraryView() {
               ) : (
               <>
               <div className="px-6 pt-5">
-                <div className="flex items-center justify-end mb-2">
-                  <MetricPickerButton catalog={tileCatalog} selected={tileIds} onToggle={toggleTile} onMove={moveTile} onReset={resetTiles} />
+                <div className="flex items-center justify-between mb-2">
+                  {/* Funnel stage badge */}
+                  {funnelConfig ? (
+                    <span className="text-[9px] font-mono font-semibold uppercase tracking-widest text-interactive/70 border border-primary/25 bg-primary/[0.06] px-2 py-0.5 rounded">
+                      {funnelConfig.badge}
+                    </span>
+                  ) : (
+                    <div />
+                  )}
+                  <MetricPickerButton
+                    catalog={tileCatalog}
+                    selected={funnelStage === "custom" ? savedTileIds : tileIds}
+                    onToggle={(id) => { setFunnelStage("custom"); toggleTile(id); }}
+                    onMove={(id, dir) => { setFunnelStage("custom"); moveTile(id, dir); }}
+                    onReset={() => { setFunnelStage("custom"); resetTiles(); }}
+                  />
                 </div>
                 <div className="grid grid-cols-dashboard-4 gap-3">
                   {tileIds.map((id) => {
@@ -321,7 +392,7 @@ export function IapLibraryView() {
                   })}
                   {tileIds.length === 0 && (
                     <div className="col-span-2 md:col-span-4 text-caption text-muted-foreground/60 border border-dashed border-border/40 rounded-lg px-3 py-4 text-center">
-                      No metrics selected — use “Customize” to add tiles.
+                      No metrics selected — use "Customize" to add tiles.
                     </div>
                   )}
                 </div>
@@ -441,20 +512,52 @@ export function IapLibraryView() {
                         <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." action={<CrossLink to="/app/analysis/overview" label="Back to Overview" />} />
                       )
                     ) : (() => {
-                      const uniqueCells = uniqueCellRows(cells);
-                      const totalCells = uniqueCells.length;
+                      // Apply funnel sort then creative filters
+                      const sortKey = funnelConfig?.sortKey ?? "none";
+                      const sortDir = funnelConfig?.sortDir ?? "desc";
+                      let sortedCells = uniqueCellRows(cells);
+                      if (sortKey !== "none") {
+                        sortedCells = [...sortedCells].sort((a, b) => {
+                          const va = sortValueForCell(a, sortKey);
+                          const vb = sortValueForCell(b, sortKey);
+                          return sortDir === "asc" ? va - vb : vb - va;
+                        });
+                      }
+                      const totalBeforeFilter = sortedCells.length;
+                      const filteredCells = applyCreativeFilters(sortedCells, creativeFilters, sortKey === "none" ? "spend" : sortKey, sortDir);
+                      const conceptOptionNames = [...new Set(
+                        conceptGroups.map((g) => g.conceptName).filter(Boolean) as string[]
+                      )];
+                      const totalCells = filteredCells.length;
                       const totalPages = Math.max(1, Math.ceil(totalCells / pageSize));
                       const safePage = Math.min(page, totalPages);
-                      const pagedCells = uniqueCells.slice((safePage - 1) * pageSize, safePage * pageSize);
+                      const pagedCells = filteredCells.slice((safePage - 1) * pageSize, safePage * pageSize);
                       const rangeStart = (safePage - 1) * pageSize + 1;
                       const rangeEnd = Math.min(safePage * pageSize, totalCells);
 
-                      if (totalCells === 0 && creativeOnlyCellIds.length === 0) {
+                      if (totalBeforeFilter === 0 && creativeOnlyCellIds.length === 0) {
                         return <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." action={<CrossLink to="/app/analysis/overview" label="Back to Overview" />} />;
                       }
 
                       return (
                         <div className="space-y-4">
+                          {/* ── Creative filter panel ── */}
+                          <CreativeFilterPanel
+                            filters={creativeFilters}
+                            onChange={(f) => { setCreativeFilters(f); setPage(1); }}
+                            conceptOptions={conceptOptionNames}
+                            shownCount={totalCells}
+                            totalCount={totalBeforeFilter}
+                          />
+
+                          {totalCells === 0 && (
+                            <PendingState
+                              title="No cells match filters"
+                              message="Adjust the spend floor, tier, or concept filter to see cells."
+                              action={<button onClick={() => setCreativeFilters(DEFAULT_FILTER_STATE)} className="text-interactive hover:underline text-label">Clear filters</button>}
+                            />
+                          )}
+
                           {/* ── Performance cells ── */}
                           {totalCells > 0 && (
                             <>
@@ -474,6 +577,7 @@ export function IapLibraryView() {
                                         ...cardFromCell(row.cell_id, cardCtx),
                                         stats: aggStatsForCell(row.cell_id, cells),
                                       }}
+                                      perfRow={row}
                                       unmapped={unmappedCellIds.has(row.cell_id)}
                                       demographic={demoByCell.get(row.cell_id) ?? []}
                                       placements={allPlacements}
@@ -596,6 +700,7 @@ export function IapLibraryView() {
                               onUploadCreatives={() => setCreativeLibraryOpen(true)}
                               onUploadCreative={adAccountId ? (cellId) => setUploadCellId(cellId) : undefined}
                               onSegmentClick={(seg) => setCardSegment({ segment: seg, cellIds: [row.cell_id] })}
+                              perfRow={row}
                               onFullBreakdownClick={() => setCardGridCell(row)}
                               expandFooter={(close) => (
                                 <button
@@ -799,6 +904,7 @@ export function IapLibraryView() {
                           mst,
                           ...getCreativeLinkContext(seed, adAccountId),
                         })}
+                        perfRow={detail}
                         unmapped={unmappedCellIds.has(detail.cell_id)}
                         demographic={demoByCell.get(detail.cell_id) ?? []}
                         placements={allPlacements}
