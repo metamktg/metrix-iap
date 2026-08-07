@@ -17,6 +17,7 @@ import { z } from "zod";
 import { getSupabase } from "./supabase";
 import { logger } from "./logger";
 import { invalidateMetrixSeedCache } from "./metrixSeedAssembly";
+import { extractVideoKeyframes } from "./videoKeyframes";
 import {
   GENERATION_MODEL,
   GenerationError,
@@ -197,8 +198,12 @@ const DeconstructionOutput = z.object({
 
 const SUPPORTED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
 
-/** Resolve a servable Anthropic media type, or null when unsupported (video etc.). */
+/** Resolve a servable Anthropic media type, or null when not an image (video etc.). */
 export function supportedImageMediaType(contentType: string | null | undefined, filename: string): string | null {
+  // Video detection wins: a video-extension file with a stale/misdetected
+  // image MIME type must go through the keyframe pipeline, never be sent to
+  // the model as a (undecodable) image.
+  if (isVideoCreative(contentType, filename)) return null;
   const ct = String(contentType ?? "").toLowerCase().split(";")[0]!.trim();
   if (SUPPORTED_IMAGE_TYPES.has(ct)) return ct;
   const ext = filename.toLowerCase().split(".").pop() ?? "";
@@ -213,6 +218,7 @@ export function supportedImageMediaType(contentType: string | null | undefined, 
   return byExt[ext] ?? null;
 }
 
+const VIDEO_EXTENSIONS = new Set(["mp4", "mov", "webm", "m4v", "avi", "mkv", "mpeg", "mpg", "ogv"]);
 function decodeStagedBytes(hexOrRaw: string): Buffer {
   // Supabase/PostgREST returns bytea as a hex string prefixed with \x.
   const hex = hexOrRaw.startsWith("\\x") ? hexOrRaw.slice(2) : hexOrRaw;
@@ -227,6 +233,7 @@ function deconstructionPrompt(opts: {
   adContexts: Array<Row>;
   briefIntended: string[] | null;
   registryFamilies: string[];
+  videoFrameLabels?: string[] | null;
 }): string {
   const adLines =
     opts.adContexts.length > 0
@@ -239,7 +246,9 @@ function deconstructionPrompt(opts: {
       : "- (not mapped to a live ad yet — classify from the visual alone)";
   return [
     `You are the Metrix IAP creative deconstruction engine for the ad account "${opts.accountName}".`,
-    `Analyze the attached creative image ("${opts.filename}") together with its ad-name context and classify it against the IAP variable registry.`,
+    opts.videoFrameLabels && opts.videoFrameLabels.length > 0
+      ? `The creative "${opts.filename}" is a VIDEO. The attached images are keyframes extracted from it, in order: ${opts.videoFrameLabels.join(", ")}. Analyze them together with the ad-name context as ONE creative and classify it against the IAP variable registry.`
+      : `Analyze the attached creative image ("${opts.filename}") together with its ad-name context and classify it against the IAP variable registry.`,
     "",
     IAP_VARIABLE_TAXONOMY,
     "",
@@ -594,7 +603,20 @@ export async function startCreativeDeconstruction(
           model: GENERATION_MODEL,
         };
 
-        if (!mediaType) {
+        // Video creatives are classified via extracted keyframes fed through
+        // the same image pipeline. Only truly unknown formats (and videos
+        // ffmpeg cannot decode) stay unsupported.
+        let videoFrames: Array<{ label: string; jpeg: Buffer }> | null = null;
+        if (!mediaType && isVideoCreative(imp["content_type"] as string | null, filename)) {
+          try {
+            videoFrames = await extractVideoKeyframes(decodeStagedBytes(String(imp["content"])), filename);
+          } catch (frameErr) {
+            logger.warn({ accountId, importId, filename, err: frameErr }, "Video keyframe extraction failed");
+            videoFrames = null;
+          }
+        }
+
+        if (!mediaType && !videoFrames) {
           // Atomic: unsupported replaces the prior classification and drops
           // any library entry it no longer backs, in one transaction.
           await commitReplacement(
@@ -622,12 +644,33 @@ export async function startCreativeDeconstruction(
         const briefIntended = brief ? briefIntendedVariables(brief.payload) : null;
 
         // ── Model call: no writes have happened for this import yet. ──
-        const imageB64 = decodeStagedBytes(String(imp["content"])).toString("base64");
+        const imageBlocks: Array<Record<string, unknown>> = videoFrames
+          ? videoFrames.map((f) => ({
+              type: "image",
+              source: { type: "base64", media_type: "image/jpeg", data: f.jpeg.toString("base64") },
+            }))
+          : [
+              {
+                type: "image",
+                source: {
+                  type: "base64",
+                  media_type: mediaType!,
+                  data: decodeStagedBytes(String(imp["content"])).toString("base64"),
+                },
+              },
+            ];
         const content: ModelContent = [
-          { type: "image", source: { type: "base64", media_type: mediaType, data: imageB64 } },
+          ...imageBlocks,
           {
             type: "text",
-            text: deconstructionPrompt({ accountName, filename, adContexts: adRows, briefIntended, registryFamilies }),
+            text: deconstructionPrompt({
+              accountName,
+              filename,
+              adContexts: adRows,
+              briefIntended,
+              registryFamilies,
+              videoFrameLabels: videoFrames ? videoFrames.map((f) => f.label) : null,
+            }),
           },
         ];
 
@@ -777,7 +820,7 @@ export async function reviewDeconstruction(
   const row = await getDeconstruction(accountId, id);
   const status = String(row["status"]);
   if (status === "unsupported") {
-    throw new GenerationError("Video/unsupported files cannot be classified yet.", 422);
+    throw new GenerationError("Unsupported files have no classification to review — re-run deconstruction on them instead.", 422);
   }
   const now = new Date().toISOString();
 
@@ -843,4 +886,12 @@ export async function reviewDeconstruction(
   if (upd.error) throw new Error(upd.error.message);
   invalidateMetrixSeedCache();
   return deconstructionShape(upd.data![0]!);
+}
+
+/** True when the upload is a video creative (classified via extracted keyframes). */
+export function isVideoCreative(contentType: string | null | undefined, filename: string): boolean {
+  const ct = String(contentType ?? "").toLowerCase().split(";")[0]!.trim();
+  if (ct.startsWith("video/")) return true;
+  const ext = filename.toLowerCase().split(".").pop() ?? "";
+  return VIDEO_EXTENSIONS.has(ext);
 }

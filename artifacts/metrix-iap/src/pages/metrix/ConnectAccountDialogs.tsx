@@ -1705,7 +1705,7 @@ function CreativeDeconstructSection({
 
   const pending = creativeAssets.filter((a) => {
     const d = byImportId.get(a.id);
-    return !d || d.status === "discarded";
+    return !d || d.status === "discarded" || d.status === "unsupported";
   });
 
   return (
@@ -1752,6 +1752,16 @@ function CreativeDeconstructSection({
                     </span>
                   )}
                   <DeconstructBadge status={d.status} />
+                  {d.status === "unsupported" && (
+                    <button
+                      onClick={() => void start([asset.id])}
+                      disabled={isRunning}
+                      className="shrink-0 h-6 px-2 rounded border border-border/50 text-label font-medium text-muted-foreground/85 hover:text-foreground hover:border-primary/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      aria-label={`Retry deconstruct ${asset.filename}`}
+                    >
+                      Retry
+                    </button>
+                  )}
                 </>
               ) : (
                 <>
@@ -1773,7 +1783,7 @@ function CreativeDeconstructSection({
       <div className="px-0.5">
         <p className="text-label text-foreground/70 font-medium">Classification grades each creative against the IAP variable registry.</p>
         <p className="text-label text-muted-foreground/55 leading-relaxed mt-0.5">
-          ≥80% confidence files into the library automatically; anything lower waits in the IAP Library review queue. Videos are marked unsupported for now.
+          ≥80% confidence files into the library automatically; anything lower waits in the IAP Library review queue. Videos are classified from extracted keyframes.
         </p>
       </div>
     </div>
