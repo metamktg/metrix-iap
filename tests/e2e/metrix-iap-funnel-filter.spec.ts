@@ -320,6 +320,118 @@ async function main() {
       },
     );
 
+    // ── Test 5: Performance tier pills filter cells by percentile ─────────
+    await test(
+      'Performance tier pills: Top 25% and Bottom 25% bound cell count; All restores it',
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        try {
+          await mockApis(ctx);
+          await gotoLibrary(page);
+
+          // Wait for creative cards to render.
+          await page.locator("[data-concept-cell]").first().waitFor({
+            state: "visible",
+            timeout: 20_000,
+          });
+
+          const totalCells = await page.locator("[data-concept-cell]").count();
+          assert(
+            totalCells > 0,
+            `Expected at least one creative cell before tier filtering, got ${totalCells}`,
+          );
+          console.log(`       Total cells (unfiltered): ${totalCells}`);
+
+          // ── Top 25% ────────────────────────────────────────────────────────
+          await page.getByRole("button", { name: "Top 25%" }).click();
+          // Wait for the filter counter to appear (isFiltered → true).
+          const topCounter = page.locator("text=/Showing \\d+ of \\d+ cells/");
+          await topCounter
+            .waitFor({ state: "visible", timeout: 8_000 })
+            .catch(async () => {
+              // may have filtered to zero — accept "No cells match filters" too
+              await page
+                .locator("text=No cells match filters")
+                .waitFor({ state: "visible", timeout: 4_000 })
+                .catch(() => {});
+            });
+
+          // Verify the filter counter is visible — proves tier state is active and
+          // the filter ran, regardless of how many cells the fixture happens to have.
+          const topCounterVisible = await topCounter.isVisible().catch(() => false);
+          assert(
+            topCounterVisible,
+            'Expected "Showing X of Y cells" counter to appear after clicking "Top 25%", but it was not visible',
+          );
+
+          const topCells = await page.locator("[data-concept-cell]").count();
+          // Top 25% must reduce the count — if it equals total, the filter did nothing.
+          assert(
+            topCells < totalCells,
+            `Top 25% should show fewer cells than the unfiltered total (${totalCells}), but got ${topCells}`,
+          );
+          // Cells shown must be within the 25-percentile bound (ceiling for small n).
+          const topLimit = Math.ceil(totalCells * 0.25);
+          assert(
+            topCells <= topLimit,
+            `Top 25% should show ≤ ${topLimit} cells (25% of ${totalCells}), but got ${topCells}`,
+          );
+          console.log(`       Top 25%: ${topCells} cells shown (< ${totalCells}, ≤ ${topLimit}) ✓`);
+
+          // ── Bottom 25% ─────────────────────────────────────────────────────
+          // Navigate back to the library to start from a clean filter state
+          // (tier="all") before testing Bottom 25% in isolation.  Testing from
+          // a clean slate avoids any top25→bottom25 state-transition quirk
+          // where the React filter state briefly resets between two tier clicks.
+          await gotoLibrary(page);
+          await page.locator("[data-concept-cell]").first().waitFor({
+            state: "visible",
+            timeout: 20_000,
+          });
+
+          await page.getByRole("button", { name: "Bottom 25%" }).click();
+
+          // Wait for the fixture-deterministic bottom-25 counter to appear.
+          // Fixture (bookster, custom stage → effectiveSortKey="spend"):
+          //   4 cells sorted ascending by spend: [5.46, 7.47, 14.58, 675.81]
+          //   p25 = sortedValues[floor(4×0.25)] = sortedValues[1] = 7.47
+          //   bottom25 (desc=higher-is-better): v ≤ p25
+          //   C2F (5.46) and C4E (7.47, boundary tie at p25) both qualify → 2 cells.
+          // If the tier filter regresses (tier ignored entirely), all 4 cells show
+          // and the counter never says "Showing 2 of 4 cells"; this waitFor then
+          // times out, failing the test.
+          const bottom25Counter = page.locator("text=/Showing 2 of 4 cells/").first();
+          await bottom25Counter.waitFor({ state: "visible", timeout: 10_000 });
+          const bottom25Visible = await bottom25Counter.isVisible().catch(() => false);
+          assert(
+            bottom25Visible,
+            `Bottom 25% should surface "Showing 2 of 4 cells" (C2F spend=5.46 + C4E spend=7.47 ≤ p25=7.47; boundary tie at p25 includes C4E). Tier filter may not be applying.`,
+          );
+          console.log(`       Bottom 25%: "Showing 2 of 4 cells" ✓ (boundary tie at p25=7.47)`);
+
+          // ── All ────────────────────────────────────────────────────────────
+          // Use exact:true to match only the "All" tier pill, not any other button
+          // whose accessible name contains "All" as a substring (e.g. metric selects).
+          await page.getByRole("button", { name: "All", exact: true }).first().click();
+
+          // Counter disappears when isFiltered = false (no tier, no spend, no concept).
+          await bottom25Counter.waitFor({ state: "hidden", timeout: 8_000 }).catch(() => {});
+
+          const restoredCells = await page.locator("[data-concept-cell]").count();
+          assert(
+            restoredCells === totalCells,
+            `Clicking "All" should restore all ${totalCells} cells, but got ${restoredCells}`,
+          );
+          console.log(`       All: ${restoredCells} cells restored ✓`);
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+
     // ── Test 4: "Funnel" tab in the expand dialog renders without error ────
     await test(
       '"Funnel" tab in the creative expand dialog renders the conversion funnel',

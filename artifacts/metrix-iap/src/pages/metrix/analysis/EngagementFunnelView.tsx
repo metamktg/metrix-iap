@@ -34,7 +34,7 @@ import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ModuleScopeGate, ScopeBanner, PendingState,
   SectionCard, MetricTile, CrossLink, fmtNum, fmtPct, fmtUSD,
-  SkeletonTileRow, CaveatNote,
+  SkeletonTileRow, CaveatNote, SectionInfoIcon,
 } from "../shared";
 import {
   scopeDemographicRows, listSegments, rowsForSegment,
@@ -701,6 +701,7 @@ export function EngagementFunnelView() {
                   <SectionCard
                     title="Conversion funnel"
                     desc="Stage-by-stage audience journey from impression to purchase. Each row shows the count and % retained from the previous stage."
+                    right={<SectionInfoIcon tip="Absolute volume and stage-over-stage retention rate from impression through to purchase, drawn from the demographic export." />}
                   >
                     <FunnelWaterfall stages={funnelStages} />
                   </SectionCard>
@@ -709,6 +710,7 @@ export function EngagementFunnelView() {
                   <SectionCard
                     title="CTR comparison"
                     desc="All-clicks CTR vs link-click CTR. The gap between them shows how much engagement doesn't drive intent."
+                    right={<SectionInfoIcon tip="A wide gap between CTR All and CTR Link means clicks are staying on-platform (reactions, shares, profile visits) rather than driving off-platform intent." />}
                   >
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div className="rounded-lg border border-border/30 bg-white/[0.02] p-4">
@@ -730,7 +732,7 @@ export function EngagementFunnelView() {
                     {summaryTiles.ctrAll != null && summaryTiles.ctrLink != null && summaryTiles.ctrAll > 0 && (
                       <div className="mt-3 p-3 rounded-lg border border-border/25 bg-white/[0.01] text-[11px] text-muted-foreground/70">
                         <span className="font-medium text-foreground/80">Intent conversion: </span>
-                        {fmtRate(pct(summaryTiles.ctrLink, summaryTiles.ctrAll / 100), 0)} of all clicks become link clicks.
+                        {fmtRate(pct(summaryTiles.ctrLink, summaryTiles.ctrAll), 0)} of all clicks become link clicks.
                         {summaryTiles.ctrLink != null && summaryTiles.ctrAll != null && summaryTiles.ctrAll > 0 && summaryTiles.ctrLink / summaryTiles.ctrAll < 0.4 && (
                           <span className="text-amber-400/70 ml-1">Low ratio — check for high engagement creative that doesn't drive off-platform intent.</span>
                         )}
@@ -747,9 +749,12 @@ export function EngagementFunnelView() {
                   title={`${dim === "audience" ? "Audience segment" : "Placement"} breakdown`}
                   desc={`All engagement metrics by ${dim === "audience" ? "age × gender pocket" : "placement × platform"}. Sort by any column to find highest-frequency or highest-intent segments.`}
                   right={
-                    <span className="text-[10px] text-muted-foreground/50">
-                      {breakdownRows.length} {dim === "audience" ? "pockets" : "placements"}
-                    </span>
+                    <>
+                      <span className="text-[10px] text-muted-foreground/50">
+                        {breakdownRows.length} {dim === "audience" ? "pockets" : "placements"}
+                      </span>
+                      <SectionInfoIcon tip="Sortable table of engagement metrics for each segment. Switch the sort column to surface your highest-frequency or highest-intent pockets." />
+                    </>
                   }
                 >
                   <BreakdownTable rows={breakdownRows} sortId={sortId} onSort={setSort} />
@@ -766,6 +771,7 @@ export function EngagementFunnelView() {
                   <SectionCard
                     title={`Frequency × Link CTR — ${dim === "audience" ? "Audience segments" : "Placements"}`}
                     desc="Each dot is a segment. Bubble size = spend share. Reference lines show the account median. High-frequency + low-CTR segments signal creative fatigue."
+                    right={<SectionInfoIcon tip="Segments above the median frequency line but below the median CTR line are candidates for creative refresh — they've seen the ad often enough that engagement is declining." />}
                   >
                     {dim === "audience" ? (
                       <FrequencyScatter rows={breakdownRows} />

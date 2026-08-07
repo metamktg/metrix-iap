@@ -72,6 +72,31 @@ import { normalizeConfidence } from "@/lib/normalize";
 import { TYPE } from "./typography";
 import type { AdAccount } from "@/lib/data/seedTypes";
 
+// ─── Section info icon ────────────────────────────────────────────────
+// Small ⓘ icon with a hover tooltip — used in SectionCard right slots
+// and on Core controls card eyebrows to explain section/card purpose.
+
+export function SectionInfoIcon({ tip }: { tip: string }) {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span
+            role="img"
+            aria-label="Section info"
+            className="inline-flex items-center justify-center shrink-0 cursor-default text-muted-foreground/35 hover:text-muted-foreground/65 transition-colors"
+          >
+            <Info className="w-3 h-3" />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-[260px] text-left leading-relaxed text-caption whitespace-normal">
+          {tip}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
 // ─── Info tooltip ──────────────────────────────────────────────────────
 
 export function InfoTooltip({ content }: { content: string }) {
@@ -1461,7 +1486,7 @@ export function SectionCard({
         <div className="flex-1 min-w-0">
           <h3 className="text-title font-semibold text-foreground leading-tight">{title}</h3>
           {desc && (
-            <p className="text-[10px] text-muted-foreground/50 leading-snug mt-0.5 line-clamp-1">{desc}</p>
+            <p className="text-label text-muted-foreground/50 leading-snug mt-0.5 line-clamp-1">{desc}</p>
           )}
         </div>
         <div className="shrink-0 flex items-center gap-2">

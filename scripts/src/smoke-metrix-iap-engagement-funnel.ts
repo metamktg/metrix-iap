@@ -1,21 +1,28 @@
-// Smoke check: funnel selector, creative filter panel, and funnel tab e2e.
+// Smoke check: Engagement Funnel view (/app/analysis/funnel) e2e.
 //
 // Boots the metrix-iap Vite dev server on an isolated port, waits for it to
 // be ready, runs the Playwright spec at
-// tests/e2e/metrix-iap-funnel-filter.spec.ts, then tears the server down.
+// tests/e2e/metrix-iap-engagement-funnel.spec.ts, then tears the server down.
 // API responses (auth/me, seed, reports, data-windows) are mocked inside
 // the spec itself so no running API server is required.
 //
 // Assertions (in the spec):
-//   1. "Upper Funnel" button → UPPER FUNNEL badge visible.
-//   2. "Lower Funnel" button → LOWER FUNNEL badge visible, UPPER FUNNEL gone.
-//   3. Spend floor input → "Showing X of Y cells" counter changes.
-//   4. Opening a creative card's expand dialog and clicking "Funnel" tab →
-//      FunnelStepsChart renders with "Conversion funnel" heading and no JS errors.
-//   5. Performance tier pills: "Top 25%" shows ≤ 25% of cells, "Bottom 25%"
-//      similarly bounded, "All" restores the full count.
+//   1. "Engagement Funnel" heading and Funnel/Breakdown/Scatter toggle tabs
+//      are visible after navigation.
+//   2. Funnel mode renders the "Conversion funnel" section card and the
+//      "Impressions" funnel stage label — no JS errors.
+//   3. Breakdown mode renders the sortable table with a "Segment" column
+//      header — no JS errors.
+//   4. Scatter mode renders the "Frequency × Link CTR" section card
+//      — no JS errors.
+//   5. Breakdown Audience → Placement dimension switch: section card title
+//      confirms the dimension switched; at least one data row is present
+//      after each switch — no JS errors.
+//   6. When demographic_registration_signal is empty, "No engagement data"
+//      PendingState is shown and no JS errors are thrown.
+//   7. Cycling through all three tabs produces no JS errors.
 //
-// Run: pnpm --filter @workspace/scripts run smoke:metrix-iap-funnel-filter
+// Run: pnpm --filter @workspace/scripts run smoke:metrix-iap-engagement-funnel
 
 import { spawn, type ChildProcess } from "node:child_process";
 import path from "node:path";
@@ -34,8 +41,8 @@ function fail(message: string, extra?: string): never {
 
 // ── dev server ──────────────────────────────────────────────────────────────
 
-// Port 15180: unique to this smoke so it never collides with concurrent runs.
-const DEV_PORT = "15180";
+// Port 15181: unique to this smoke so it never collides with concurrent runs.
+const DEV_PORT = "15181";
 
 async function startDevServer(): Promise<ChildProcess> {
   return new Promise((resolve, reject) => {
@@ -91,7 +98,7 @@ async function runTests(): Promise<void> {
   return new Promise((resolve, reject) => {
     const specPath = path.join(
       repoRoot,
-      "tests/e2e/metrix-iap-funnel-filter.spec.ts",
+      "tests/e2e/metrix-iap-engagement-funnel.spec.ts",
     );
     const child = spawn("pnpm", ["exec", "tsx", specPath], {
       cwd: repoRoot,
@@ -119,7 +126,7 @@ async function runTests(): Promise<void> {
       } else {
         reject(
           new Error(
-            `Funnel filter e2e tests failed (exit ${code})\n--- output ---\n${output || "(no output)"}`,
+            `Engagement funnel e2e tests failed (exit ${code})\n--- output ---\n${output || "(no output)"}`,
           ),
         );
       }
@@ -131,7 +138,7 @@ async function runTests(): Promise<void> {
 
 async function main() {
   console.log(
-    "Starting @workspace/metrix-iap dev server for funnel filter e2e tests...",
+    "Starting @workspace/metrix-iap dev server for engagement funnel e2e tests...",
   );
   const server = await startDevServer().catch((err) => {
     fail(
@@ -167,15 +174,15 @@ async function main() {
       fail("Dev server did not respond within 45 s after signalling ready");
     }
 
-    console.log("\nRunning funnel filter e2e tests...\n");
+    console.log("\nRunning engagement funnel e2e tests...\n");
     await runTests().catch((err) => {
-      fail("Funnel filter e2e tests failed", String(err?.message ?? err));
+      fail("Engagement funnel e2e tests failed", String(err?.message ?? err));
     });
   } finally {
     server.kill();
   }
 
-  console.log("\nPASS  Funnel filter e2e tests passed.");
+  console.log("\nPASS  Engagement funnel e2e tests passed.");
   process.exit(0);
 }
 

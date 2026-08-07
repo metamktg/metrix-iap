@@ -1,21 +1,18 @@
-// Smoke check: funnel selector, creative filter panel, and funnel tab e2e.
+// Smoke check: Metrix IAP AdAccountOverview UX polish end-to-end (Playwright).
 //
 // Boots the metrix-iap Vite dev server on an isolated port, waits for it to
 // be ready, runs the Playwright spec at
-// tests/e2e/metrix-iap-funnel-filter.spec.ts, then tears the server down.
-// API responses (auth/me, seed, reports, data-windows) are mocked inside
-// the spec itself so no running API server is required.
+// tests/e2e/metrix-iap-ad-account-overview.spec.ts, then tears the server down.
+// API responses (auth/me, seed, reports) are mocked inside the spec itself
+// so no running API server is required.
 //
-// Assertions (in the spec):
-//   1. "Upper Funnel" button → UPPER FUNNEL badge visible.
-//   2. "Lower Funnel" button → LOWER FUNNEL badge visible, UPPER FUNNEL gone.
-//   3. Spend floor input → "Showing X of Y cells" counter changes.
-//   4. Opening a creative card's expand dialog and clicking "Funnel" tab →
-//      FunnelStepsChart renders with "Conversion funnel" heading and no JS errors.
-//   5. Performance tier pills: "Top 25%" shows ≤ 25% of cells, "Bottom 25%"
-//      similarly bounded, "All" restores the full count.
+// Assertions:
+//   1. "Account Totals" SectionCard header is visible on /app/account.
+//   2. At least one SectionInfoIcon (info icon) is visible.
+//   3. Zero-result event tiles have the opacity-60 class applied.
+//   4. "No actions yet" empty state renders when no recommendation cards exist.
 //
-// Run: pnpm --filter @workspace/scripts run smoke:metrix-iap-funnel-filter
+// Run: pnpm --filter @workspace/scripts run smoke:metrix-iap-ad-account-overview
 
 import { spawn, type ChildProcess } from "node:child_process";
 import path from "node:path";
@@ -34,8 +31,8 @@ function fail(message: string, extra?: string): never {
 
 // ── dev server ──────────────────────────────────────────────────────────────
 
-// Port 15180: unique to this smoke so it never collides with concurrent runs.
-const DEV_PORT = "15180";
+// Use a port unlikely to collide with other smoke-test workflows.
+const DEV_PORT = "15192";
 
 async function startDevServer(): Promise<ChildProcess> {
   return new Promise((resolve, reject) => {
@@ -91,7 +88,7 @@ async function runTests(): Promise<void> {
   return new Promise((resolve, reject) => {
     const specPath = path.join(
       repoRoot,
-      "tests/e2e/metrix-iap-funnel-filter.spec.ts",
+      "tests/e2e/metrix-iap-ad-account-overview.spec.ts",
     );
     const child = spawn("pnpm", ["exec", "tsx", specPath], {
       cwd: repoRoot,
@@ -119,7 +116,7 @@ async function runTests(): Promise<void> {
       } else {
         reject(
           new Error(
-            `Funnel filter e2e tests failed (exit ${code})\n--- output ---\n${output || "(no output)"}`,
+            `AdAccountOverview e2e tests failed (exit ${code})\n--- output ---\n${output || "(no output)"}`,
           ),
         );
       }
@@ -131,7 +128,7 @@ async function runTests(): Promise<void> {
 
 async function main() {
   console.log(
-    "Starting @workspace/metrix-iap dev server for funnel filter e2e tests...",
+    "Starting @workspace/metrix-iap dev server for AdAccountOverview e2e tests...",
   );
   const server = await startDevServer().catch((err) => {
     fail(
@@ -141,41 +138,18 @@ async function main() {
   });
 
   try {
-    // Poll the dev server until it actually serves a response before handing
-    // off to Playwright. Vite prints "ready" as soon as the HTTP server binds,
-    // but the first request triggers module transforms that can take several
-    // seconds under load — polling here absorbs that warm-up time.
-    const warmupUrl = `http://localhost:${DEV_PORT}/`;
-    const warmupDeadline = Date.now() + 45_000;
-    let warmedUp = false;
-    while (Date.now() < warmupDeadline) {
-      try {
-        const res = await fetch(warmupUrl, {
-          signal: AbortSignal.timeout(4_000),
-        });
-        if (res.status < 500) {
-          warmedUp = true;
-          break;
-        }
-      } catch {
-        // server not yet responding — keep polling
-      }
-      await new Promise((r) => setTimeout(r, 500));
-    }
-    if (!warmedUp) {
-      server.kill();
-      fail("Dev server did not respond within 45 s after signalling ready");
-    }
+    // Brief pause so Vite finishes HMR setup before Playwright navigates.
+    await new Promise((r) => setTimeout(r, 2000));
 
-    console.log("\nRunning funnel filter e2e tests...\n");
+    console.log("\nRunning AdAccountOverview UX polish e2e tests...\n");
     await runTests().catch((err) => {
-      fail("Funnel filter e2e tests failed", String(err?.message ?? err));
+      fail("AdAccountOverview e2e tests failed", String(err?.message ?? err));
     });
   } finally {
     server.kill();
   }
 
-  console.log("\nPASS  Funnel filter e2e tests passed.");
+  console.log("\nPASS  AdAccountOverview UX polish e2e tests passed.");
   process.exit(0);
 }
 

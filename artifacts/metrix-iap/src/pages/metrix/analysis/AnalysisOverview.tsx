@@ -15,7 +15,7 @@ import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
   DetailReveal, deriveLabel,
-  LoopAction, SkeletonTileRow, InfoTooltip, readableVariables, eventLabel,
+  LoopAction, SkeletonTileRow, InfoTooltip, readableVariables, eventLabel, SectionInfoIcon,
   DataWindowBar, SegmentedToggle,
   type DataWindowSelection,
 } from "../shared";
@@ -989,7 +989,7 @@ export function AnalysisOverview() {
                     <SectionCard
                       title="Spend by month"
                       desc="Day-prorated spend (blue, left axis) and results (green dashed, right axis)"
-                      right={<CrossLink to="/app/analysis/budget" label="Budget →" />}
+                      right={<><SectionInfoIcon tip="Month-by-month spend trend with daily proration, plotted against result volume to surface delivery patterns." /><CrossLink to="/app/analysis/budget" label="Budget →" /></>}
                     >
                       <SpendTrendChart data={trendData} />
                     </SectionCard>
@@ -997,7 +997,7 @@ export function AnalysisOverview() {
 
                   {/* ── Cell performance bar chart ────────────────── */}
                   {!!selectedWindow && runFetching ? (
-                    <SectionCard title="Top concepts by spend" desc="Loading…">
+                    <SectionCard title="Top concepts by spend" desc="Loading…" right={<SectionInfoIcon tip="Ranks creative concepts by spend or CPA so you can quickly see which ideas are carrying the account." />}>
                       <SkeletonTileRow count={3} />
                     </SectionCard>
                   ) : sortedCells.length > 0 && (
@@ -1010,6 +1010,7 @@ export function AnalysisOverview() {
                       }
                       right={
                         <div className="flex items-center gap-3">
+                          <SectionInfoIcon tip="Ranks creative concepts by spend or CPA so you can quickly see which ideas are carrying the account." />
                           {/* Top-N slider */}
                           <div className="flex items-center gap-2">
                             <span className="text-label text-muted-foreground/60 whitespace-nowrap">
@@ -1052,7 +1053,7 @@ export function AnalysisOverview() {
                         <SectionCard
                           title="Variable performance"
                           desc="Hook · Tone · Framework · Concept — top 8 · click column to sort"
-                          right={<CrossLink to="/app/analysis/library" label="Full →" />}
+                          right={<><SectionInfoIcon tip="Shows how each creative variable family (hook, tone, framework, concept) performs on spend and CPA across the top results." /><CrossLink to="/app/analysis/library" label="Full →" /></>}
                         >
                           <CompactVariableTable rows={a.v3_variable_performance} />
                         </SectionCard>
@@ -1061,7 +1062,7 @@ export function AnalysisOverview() {
                         <SectionCard
                           title="Top placements"
                           desc="V3 + C4E combined · spend bar, CPA badge, CTR badge · top 6"
-                          right={<CrossLink to="/app/analysis/placements" label="Full →" />}
+                          right={<><SectionInfoIcon tip="Surfaces the highest-spend placements with their CPA and CTR so you know where delivery is concentrated." /><CrossLink to="/app/analysis/placements" label="Full →" /></>}
                         >
                           <PlacementTable
                             placements={allPlacements}
@@ -1082,6 +1083,7 @@ export function AnalysisOverview() {
                       }
                       right={
                         <div className="flex items-center gap-3">
+                          <SectionInfoIcon tip="Maps CPA by age and gender to reveal which demographic segments are most and least efficient." />
                           {/* Goal-CPA slider */}
                           {medianCpa != null && (
                             <div className="flex items-center gap-2">
@@ -1109,7 +1111,7 @@ export function AnalysisOverview() {
 
                   {/* ── Core control reads ────────────────────────── */}
                   {controls && (
-                    <SectionCard title="Core control reads" desc="Control creative · per funnel depth">
+                    <SectionCard title="Core control reads" desc="Control creative · per funnel depth" right={<SectionInfoIcon tip="The benchmark creative concepts that set the efficiency floor — new tests are judged against these." />}>
                       <div className="grid grid-cols-dashboard-2 gap-3">
                         <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
                           <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-1">Primary control</div>
@@ -1162,7 +1164,7 @@ export function AnalysisOverview() {
                   )}
 
                   {/* ── Sub-page drill-in cards ───────────────────── */}
-                  <SectionCard title="Analysis modules" desc="Same data · different slices">
+                  <SectionCard title="Analysis modules" desc="Same data · different slices" right={<SectionInfoIcon tip="Deeper views of the same data sliced by library, audience, placements, and budget." />}>
                     <div className="grid grid-cols-dashboard-2 gap-3">
                       {subpages.map((s) => (
                         <div key={s.to} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2">
