@@ -1700,7 +1700,7 @@ function CreativeDeconstructSection({
   accountId: string;
   creativeAssets: { id: string; filename: string; ad_names: string[] }[];
 }) {
-  const { byImportId, isRunning, start } = useDeconstruction(accountId);
+  const { byImportId, isRunning, progress, start, startBackfill } = useDeconstruction(accountId);
   if (creativeAssets.length === 0) return null;
 
   const pending = creativeAssets.filter((a) => {
@@ -1715,15 +1715,29 @@ function CreativeDeconstructSection({
           Deconstruct into IAP library
         </span>
         <button
-          onClick={() => void start(pending.map((a) => a.id))}
+          onClick={() => void startBackfill()}
           disabled={isRunning || pending.length === 0}
           className="shrink-0 flex items-center gap-1 h-6 px-2 rounded border border-primary/30 bg-primary/10 text-label font-medium text-interactive hover:bg-primary/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           data-testid="deconstruct-all"
         >
           {isRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-          {isRunning ? "Deconstructing…" : `Deconstruct all${pending.length > 0 ? ` (${pending.length})` : ""}`}
+          {isRunning
+            ? progress
+              ? `Classifying ${Math.min(progress.done + 1, progress.total)} of ${progress.total}…`
+              : "Deconstructing…"
+            : `Deconstruct all${pending.length > 0 ? ` (${pending.length})` : ""}`}
         </button>
       </div>
+      {isRunning && progress && (
+        <div className="px-0.5" data-testid="deconstruct-progress">
+          <div className="h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden">
+            <div
+              className="h-full rounded-full bg-primary transition-[width] duration-300 ease-out"
+              style={{ width: `${Math.max(4, Math.round((progress.done / Math.max(1, progress.total)) * 100))}%` }}
+            />
+          </div>
+        </div>
+      )}
       <div className={cn("space-y-1", creativeAssets.length > 6 && "max-h-48 overflow-y-auto pr-1")}>
         {creativeAssets.map((asset) => {
           const d = byImportId.get(asset.id);

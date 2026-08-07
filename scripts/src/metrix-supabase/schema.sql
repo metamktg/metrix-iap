@@ -867,6 +867,11 @@ end $$;
 alter table generation_runs add column if not exists source_analysis_run_ids jsonb;
 alter table generation_runs add column if not exists source_analysis_all_time boolean not null default false;
 
+-- Per-item progress for multi-item runs (deconstruct backfills): done/total
+-- updated after each item commits. Null total = single-shot run (no meter).
+alter table generation_runs add column if not exists progress_done integer not null default 0;
+alter table generation_runs add column if not exists progress_total integer;
+
 -- ─────────────────────────────────────────────────────────────────────
 -- Cell-level creative overrides (July 2026).
 --

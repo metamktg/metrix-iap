@@ -837,6 +837,12 @@ export interface StartGenerationResult {
   run_id: string;
 }
 
+export interface StartDeconstructBackfillResult {
+  run_id: string;
+  /** Number of unclassified creative uploads targeted by this backfill run. */
+  total: number;
+}
+
 export type GenerationRunKind = typeof GenerationRunKind[keyof typeof GenerationRunKind];
 
 
@@ -868,6 +874,10 @@ export interface GenerationRun {
   source_analysis_run_ids?: string[] | null;
   /** True when this generation was grounded in every analysis run for the account rather than a specific selection. */
   source_analysis_all_time: boolean;
+  /** Items committed so far in a multi-item run (deconstruct). 0 for runs without a per-item meter. */
+  progress_done: number;
+  /** Total items targeted by the run; null for runs without a per-item meter. */
+  progress_total?: number | null;
 }
 
 export interface DeconstructCreativesInput {

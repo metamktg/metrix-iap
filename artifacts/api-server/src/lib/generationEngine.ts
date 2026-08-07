@@ -737,6 +737,10 @@ export type GenerationRun = {
    *  or all-time. Both null/false means a pre-run-scoping legacy row. */
   source_analysis_run_ids: string[] | null;
   source_analysis_all_time: boolean;
+  /** Items committed so far in a multi-item run (deconstruct). */
+  progress_done: number;
+  /** Total items targeted by the run; null for runs without a per-item meter. */
+  progress_total: number | null;
 };
 
 const runShape = (r: Row): GenerationRun => ({
@@ -750,6 +754,8 @@ const runShape = (r: Row): GenerationRun => ({
   finished_at: r["finished_at"] ?? null,
   source_analysis_run_ids: Array.isArray(r["source_analysis_run_ids"]) ? r["source_analysis_run_ids"] : null,
   source_analysis_all_time: r["source_analysis_all_time"] === true,
+  progress_done: Number(r["progress_done"] ?? 0),
+  progress_total: r["progress_total"] != null ? Number(r["progress_total"]) : null,
 });
 
 /** Latest run for an account+kind, with dead 'running' rows honestly flipped to error. */
@@ -825,6 +831,20 @@ export async function startRun(
     throw new Error(error.message);
   }
   return String(data![0]!["id"]);
+}
+
+/**
+ * Update the per-item progress meter of a running multi-item run.
+ * Best-effort bookkeeping: a failure here must never abort the run itself,
+ * so callers should not treat errors as fatal.
+ */
+export async function setRunProgress(runId: string, done: number, total: number): Promise<void> {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("generation_runs")
+    .update({ progress_done: done, progress_total: total })
+    .eq("id", runId);
+  if (error) throw new Error(error.message);
 }
 
 export async function finishRun(runId: string, status: "success" | "error", errorMessage?: string): Promise<void> {

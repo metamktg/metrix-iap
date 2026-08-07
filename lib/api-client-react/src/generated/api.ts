@@ -100,6 +100,7 @@ import type {
   SetAccountCohortResult,
   StageStatusResult,
   StartAnalysisInput,
+  StartDeconstructBackfillResult,
   StartGenerationResult,
   SyncCreativeLinksResult,
   UpdateManualImportAdNamesInput,
@@ -2135,6 +2136,77 @@ export const useDeconstructCreatives = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getDeconstructCreativesMutationOptions(options));
+    }
+
+export const getBackfillDeconstructCreativesUrl = (accountId: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/deconstruct-creatives/backfill`
+}
+
+/**
+ * Starts a deconstruction run over every creative_asset manual import on the account that has no non-discarded classification (never previously classified, or previously discarded). The run is chunked with pauses to respect model rate limits, and per-item progress (progress_done of progress_total) is reported on the latest-run endpoint (kind=deconstruct). Results flow through the same 80% confidence gate and review queue as targeted deconstruction. Returns 202 with the run id and the number of targeted imports. Requires access to the account.
+ * @summary Classify every unclassified uploaded creative on the account in one bulk run
+ */
+export const backfillDeconstructCreatives = async (accountId: string, options?: RequestInit): Promise<StartDeconstructBackfillResult> => {
+
+  return customFetch<StartDeconstructBackfillResult>(getBackfillDeconstructCreativesUrl(accountId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getBackfillDeconstructCreativesMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof backfillDeconstructCreatives>>, TError,{accountId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof backfillDeconstructCreatives>>, TError,{accountId: string}, TContext> => {
+
+const mutationKey = ['backfillDeconstructCreatives'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof backfillDeconstructCreatives>>, {accountId: string}> = (props) => {
+          const {accountId} = props ?? {};
+
+          return  backfillDeconstructCreatives(accountId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BackfillDeconstructCreativesMutationResult = NonNullable<Awaited<ReturnType<typeof backfillDeconstructCreatives>>>
+
+    export type BackfillDeconstructCreativesMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Classify every unclassified uploaded creative on the account in one bulk run
+ */
+export const useBackfillDeconstructCreatives = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof backfillDeconstructCreatives>>, TError,{accountId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof backfillDeconstructCreatives>>,
+        TError,
+        {accountId: string},
+        TContext
+      > => {
+      return useMutation(getBackfillDeconstructCreativesMutationOptions(options));
     }
 
 export const getListCreativeDeconstructionsUrl = (accountId: string,) => {

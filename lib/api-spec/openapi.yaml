@@ -1176,6 +1176,53 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/deconstruct-creatives/backfill:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+    post:
+      operationId: backfillDeconstructCreatives
+      tags: [metrix]
+      summary: Classify every unclassified uploaded creative on the account in one bulk run
+      description: Starts a deconstruction run over every creative_asset manual import on the account that has no non-discarded classification (never previously classified, or previously discarded). The run is chunked with pauses to respect model rate limits, and per-item progress (progress_done of progress_total) is reported on the latest-run endpoint (kind=deconstruct). Results flow through the same 80% confidence gate and review queue as targeted deconstruction. Returns 202 with the run id and the number of targeted imports. Requires access to the account.
+      security:
+        - cookieAuth: []
+      responses:
+        "202":
+          description: Bulk deconstruction backfill started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StartDeconstructBackfillResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: A deconstruction run is already in progress, or every uploaded creative already has a classification
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/accounts/{accountId}/creative-deconstructions:
     parameters:
       - name: accountId
@@ -4373,6 +4420,17 @@ components:
           type: string
       required:
         - run_id
+    StartDeconstructBackfillResult:
+      type: object
+      properties:
+        run_id:
+          type: string
+        total:
+          type: integer
+          description: Number of unclassified creative uploads targeted by this backfill run.
+      required:
+        - run_id
+        - total
     GenerationRun:
       type: object
       properties:
@@ -4406,6 +4464,13 @@ components:
         source_analysis_all_time:
           type: boolean
           description: True when this generation was grounded in every analysis run for the account rather than a specific selection.
+        progress_done:
+          type: integer
+          description: Items committed so far in a multi-item run (deconstruct). 0 for runs without a per-item meter.
+        progress_total:
+          type: integer
+          nullable: true
+          description: Total items targeted by the run; null for runs without a per-item meter.
       required:
         - id
         - account_id
@@ -4413,6 +4478,7 @@ components:
         - status
         - started_at
         - source_analysis_all_time
+        - progress_done
     DeconstructCreativesInput:
       type: object
       properties:
