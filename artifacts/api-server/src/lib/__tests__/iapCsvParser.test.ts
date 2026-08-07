@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { parseIapCsv, IapCsvFormatError } from "../iapCsvParser";
 import {
   BASE_METRICS,
+  DERIVED_OR_IRRELEVANT_METRICS,
   DEMOGRAPHIC_BREAKDOWN_COLUMNS,
   DEVICE_PLACEMENT_BREAKDOWN_COLUMNS,
   type IapCsvClass,
@@ -21,7 +22,7 @@ const breakdownColsFor = (cls: IapCsvClass): readonly string[] =>
 /** A concrete breakdown value per column so required-value checks are satisfied. */
 function breakdownValue(col: string): string {
   switch (col) {
-    case "Date":
+    case "Day":
       return "2026-06-01";
     case "Campaign ID":
       return "6001";
@@ -92,22 +93,22 @@ describe("parseIapCsv — valid exports", () => {
 });
 
 describe("parseIapCsv — alias / fuzzy matching", () => {
-  it('accepts "Day" in place of "Date" via alias match', () => {
+  it('accepts legacy "Date" in place of "Day" via alias match', () => {
     const breakdownCols = [...DEMOGRAPHIC_BREAKDOWN_COLUMNS];
-    // Replace "Date" with "Day" in the header
+    // Replace canonical "Day" with legacy "Date" in the header
     const header = breakdownCols
-      .map((c) => (c === "Date" ? "Day" : resolveCurrency(c)))
+      .map((c) => (c === "Day" ? "Date" : resolveCurrency(c)))
       .concat(BASE_METRICS.map(resolveCurrency));
     const row = breakdownCols.map(breakdownValue).concat(BASE_METRICS.map(baseValue));
     const text = [line(header), line(row)].join("\n");
 
     const result = parseIapCsv(text, "demographic");
     expect(result.rows.length).toBe(1);
-    // "Date" breakdown value should be populated from the "Day" column
-    expect(result.rows[0]!.breakdowns["Date"]).toBe("2026-06-01");
+    // "Day" breakdown value should be populated from the "Date" column
+    expect(result.rows[0]!.breakdowns["Day"]).toBe("2026-06-01");
     // A warning should be recorded
-    expect(result.warnings.some((w) => w.includes("Day") && w.includes("Date"))).toBe(true);
-    expect(result.columnMappings["Date"]?.via).toBe("alias");
+    expect(result.warnings.some((w) => w.includes("Date") && w.includes("Day"))).toBe(true);
+    expect(result.columnMappings["Day"]?.via).toBe("alias");
   });
 
   it("accepts case-insensitive column names", () => {
@@ -192,5 +193,49 @@ describe("parseIapCsv — hard errors remain", () => {
     expect(() => parseIapCsv([line(header), line(row)].join("\n"), "demographic")).toThrow(
       /missing required value/i,
     );
+  });
+});
+
+// ── Derivable / irrelevant columns are never expected ─────────────────────────
+
+describe("parseIapCsv — derivable & irrelevant columns", () => {
+  it("emits no warnings when derivable columns (cost-per-X, rankings) are absent", () => {
+    // A real-Meta-style export: breakdowns + base metrics only, none of the
+    // derivable ratio/ranking columns.
+    const result = parseIapCsv(validCsv("demographic").text, "demographic");
+    const flagged = result.warnings.filter((w) =>
+      DERIVED_OR_IRRELEVANT_METRICS.some((c) => w.includes(c)),
+    );
+    expect(flagged).toEqual([]);
+    const missingFlagged = result.missingColumns.filter((c) =>
+      DERIVED_OR_IRRELEVANT_METRICS.includes(c),
+    );
+    expect(missingFlagged).toEqual([]);
+  });
+
+  it("accepts derivable columns transparently when present", () => {
+    const breakdownCols = [...DEMOGRAPHIC_BREAKDOWN_COLUMNS];
+    const extras = ["CPC (cost per link click)", "Cost per landing page view", "Quality ranking"];
+    const header = breakdownCols
+      .map(resolveCurrency)
+      .concat(BASE_METRICS.map(resolveCurrency))
+      .concat(extras);
+    const row = breakdownCols
+      .map(breakdownValue)
+      .concat(BASE_METRICS.map(baseValue))
+      .concat(["1.23", "2.34", "Above average"]);
+    const result = parseIapCsv([line(header), line(row)].join("\n"), "demographic");
+    expect(result.rows.length).toBe(1);
+    // No unknown-column or missing-column warnings about the derivable extras
+    const flagged = result.warnings.filter((w) => extras.some((c) => w.includes(c)));
+    expect(flagged).toEqual([]);
+  });
+
+  it("BASE_METRICS no longer contains derivable or ranking columns", () => {
+    for (const col of DERIVED_OR_IRRELEVANT_METRICS) {
+      expect(BASE_METRICS).not.toContain(col);
+    }
+    expect(BASE_METRICS).not.toContain("Cost per result");
+    expect(BASE_METRICS).not.toContain("Quality ranking");
   });
 });

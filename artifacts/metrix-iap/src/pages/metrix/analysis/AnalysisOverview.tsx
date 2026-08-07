@@ -3,7 +3,7 @@
 // cell performance bars, variable table, placement bars, demo heatmap,
 // then the core control reads and drill-in module cards.
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useAnalysisView } from "@/contexts/AnalysisViewContext";
 import { TYPE } from "../typography";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
@@ -727,15 +727,50 @@ export function AnalysisOverview() {
     enabled: !!adAccountId,
   });
 
-  // Fetch re-aggregated data when a specific window is selected.
+  // Full span of the imported data — used as the default query window so the
+  // Overview always shows the COMPLETE imported dataset when no specific
+  // window is selected (crucial for manual accounts whose ads carry no
+  // cell/concept codes and whose seed-side analysis tables are thus sparse).
+  const sortedWindows = windowsData?.windows ?? [];
+  const fullSpan = sortedWindows.length > 0
+    ? { start: sortedWindows[0]!.start, end: sortedWindows[sortedWindows.length - 1]!.end }
+    : null;
+  const queryWindow = selectedWindow ?? fullSpan;
+
+  // Fetch re-aggregated data for the selected window (or the full span).
   const { data: runData, isFetching: runFetching } = useQuery({
     ...getGetAnalysisSummaryByDateRangeQueryOptions(
       adAccountId ?? "",
-      selectedWindow?.start ?? "",
-      selectedWindow?.end ?? "",
+      queryWindow?.start ?? "",
+      queryWindow?.end ?? "",
     ),
-    enabled: !!selectedWindow && !!adAccountId,
+    enabled: !!queryWindow && !!adAccountId,
   });
+
+  // ── Stale-window guard ────────────────────────────────────────────────
+  // A persisted window selection can outlive the data it referred to (e.g.
+  // after a fresh manual import replaces the dataset). If the selection no
+  // longer matches any available window, fall back to "All data" so a stale
+  // selection can never blank out the analysis.
+  useEffect(() => {
+    if (!selectedWindow || !windowsData) return;
+    const stillValid = (windowsData.windows ?? []).some(
+      (w) => w.start === selectedWindow.start && w.end === selectedWindow.end,
+    );
+    if (!stillValid) setSelectedWindow(null);
+  }, [selectedWindow, windowsData, setSelectedWindow]);
+
+  // Secondary guard: even a nominally-valid window must never render an empty
+  // analysis — if the ranged query comes back with no rows at all, reset to
+  // the full imported dataset.
+  useEffect(() => {
+    if (!selectedWindow || !runData || runFetching) return;
+    const empty =
+      (runData.concept_rows?.length ?? 0) === 0 &&
+      (runData.placement_rows?.length ?? 0) === 0 &&
+      (runData.demographic_rows?.length ?? 0) === 0;
+    if (empty) setSelectedWindow(null);
+  }, [selectedWindow, runData, runFetching, setSelectedWindow]);
 
   return (
     <ModuleScopeGate section={SECTION} title="Analysis Overview" account={account}>
@@ -801,7 +836,9 @@ export function AnalysisOverview() {
         // When a preset is active and data has loaded, use the concept_rows
         // returned by the API (derived from ad_performance for the window).
         // Otherwise fall back to the all-time seed performance_by_cell rows.
-        const sortedCells: CellBarItem[] = (selectedWindow && runData)
+        // Prefer API rows whenever a window is selected OR the seed-side
+        // surface is empty (manual accounts without cell codes).
+        const sortedCells: CellBarItem[] = (runData && (selectedWindow || a.performance_by_cell.length === 0))
           ? [...runData.concept_rows]
               .sort((x, y) =>
                 cellSort === "spend"
@@ -834,7 +871,8 @@ export function AnalysisOverview() {
 
         // ── Placements (top 6 by spend) ───────────────────────────────
         // When a run is selected and data has loaded, use the API placement rows.
-        const allPlacements = (selectedWindow && runData
+        const allPlacements = (runData &&
+          (selectedWindow || (a.v3_placement_signal.length === 0 && a.c4e_placement_signal.length === 0))
           ? runData.placement_rows.map((r) => ({
               placement: r.placement,
               spend: r.spend,
@@ -852,7 +890,7 @@ export function AnalysisOverview() {
 
         // ── Demographic heatmap ───────────────────────────────────────
         // When a run is selected and data has loaded, build heatmap from API rows.
-        const heatmapRows = selectedWindow && runData
+        const heatmapRows = runData && (selectedWindow || a.demographic_registration_signal.length === 0)
           ? runData.demographic_rows.map((r) => ({
               cell_id: "", "Ad name": "", Age: r.age, Gender: r.gender,
               "Amount spent (USD)": r.spend ?? 0,

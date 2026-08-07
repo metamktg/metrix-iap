@@ -501,6 +501,14 @@ export interface AdRecord {
   creative_asset_url?: string | null;
   asset_filename?: string | null;
   asset_servable?: boolean;
+  /** Full-window per-ad aggregates from ad_performance — lets the client render a tile for every ad, even without a cell/concept code. */
+  performance?: {
+    spend: number;
+    results: number;
+    impressions: number;
+    link_clicks: number;
+    result_type: string | null;
+  } | null;
 }
 
 // ─── Ad account ───────────────────────────────────────────────────────

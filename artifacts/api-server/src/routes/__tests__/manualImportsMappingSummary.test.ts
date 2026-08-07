@@ -44,7 +44,7 @@ const resolveCurrency = (col: string): string =>
 /** Stock cell values that keep the parser happy for a single data row. */
 function cellValue(col: string): string {
   const map: Record<string, string> = {
-    Date: "2026-06-01",
+    Day: "2026-06-01",
     "Campaign ID": "6001",
     "Campaign name": "Test Campaign",
     "Ad set ID": "7001",

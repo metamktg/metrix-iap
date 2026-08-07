@@ -259,7 +259,7 @@ const DATE_RANGES: { id: "7d" | "14d" | "30d" | "all"; label: string }[] = [
 
 /**
  * Shows CSV column warnings from a completed analysis run.
- * Displayed when the parser auto-resolved column names (e.g. "Day" → "Date"),
+ * Displayed when the parser auto-resolved column names (e.g. legacy "Date" → "Day"),
  * found missing columns, or spotted unrecognised columns that might map to
  * expected ones. Uses amber styling — the run succeeded, but at reduced
  * confidence for missing core metrics.

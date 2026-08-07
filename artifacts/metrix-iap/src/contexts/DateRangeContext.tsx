@@ -213,6 +213,17 @@ export function DateRangeProvider({ children }: { children: React.ReactNode }) {
 
   const setCompare = useCallback((on: boolean) => update({ compare: on }), [update]);
 
+  // Stale-selection reset: when a persisted custom range no longer overlaps
+  // the current data window at all (e.g. it was saved before a fresh manual
+  // import replaced the dataset), reset the stored state to "all" so both the
+  // computed range AND the visible preset pill fall back to the full window.
+  useEffect(() => {
+    if (!bounds || state.preset !== "custom" || !state.customStart || !state.customEnd) return;
+    if (state.customEnd < bounds.start || state.customStart > bounds.end) {
+      update({ preset: "all", customStart: null, customEnd: null });
+    }
+  }, [bounds, state.preset, state.customStart, state.customEnd, update]);
+
   const range = useMemo<IsoRange | null>(() => {
     if (!bounds) return null;
     if (state.preset === "all") return bounds;
@@ -221,9 +232,11 @@ export function DateRangeProvider({ children }: { children: React.ReactNode }) {
       // Clamp custom range to the available data window.
       const start = isoMax(state.customStart, bounds.start);
       const end = isoMin(state.customEnd, bounds.end);
-      // Preserve the user's literal selection even when it falls fully
-      // outside the window — modules then show an explicit no-data state.
-      if (start > end) return { start: state.customStart, end: state.customEnd };
+      // A custom range that falls fully outside the data window is stale
+      // (e.g. persisted before a fresh manual import replaced the dataset).
+      // Fall back to the full window — a stale selection must never blank
+      // out an analysis that has data.
+      if (start > end) return bounds;
       return { start, end };
     }
     const days = PRESET_DAYS[state.preset] ?? 30;
