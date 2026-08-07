@@ -15,7 +15,7 @@ import {
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { useCellRangeScope, sumInRange } from "@/lib/date-scope";
-import { LineChart, Library, Users, LayoutGrid, Wallet } from "lucide-react";
+import { LineChart, Library, Users, LayoutGrid, Wallet, TrendingUp } from "lucide-react";
 
 const SECTION = "Analysis · 03";
 
@@ -101,6 +101,13 @@ export function AdPerformanceView() {
             Icon: Wallet,
             desc: "Spend allocation by result event, concept, and placement.",
             stat: `${fmtUSD(summary.total_spend_usd, 0)} analyzed`,
+          },
+          {
+            to: "/app/analysis/funnel",
+            label: "Engagement Funnel",
+            Icon: TrendingUp,
+            desc: "Frequency, CTR all vs link, reach CTR, and full conversion waterfall.",
+            stat: `${fmtNum(summary.total_impressions)} impressions · ${fmtNum(summary.total_link_clicks)} link clicks`,
           },
         ];
 
