@@ -656,6 +656,34 @@ create table if not exists manual_imports (
 
 create index if not exists manual_imports_account_kind_idx on manual_imports (account_id, kind);
 
+-- Widen kind to the two CSV kinds ConnectAccountDialogs/Zod/analysisEngine
+-- already expect (Ad Summary, Conversion & Device) but this constraint
+-- never allowed — uploading either failed the INSERT despite passing every
+-- other validation layer. (Re)applied idempotently, same pattern as the
+-- match_method check below.
+do $$
+declare cname text;
+begin
+  for cname in
+    select conname
+    from pg_constraint
+    where conrelid = 'manual_imports'::regclass
+      and contype = 'c'
+      and pg_get_constraintdef(oid) ilike '%kind = ANY%'
+  loop
+    execute format('alter table manual_imports drop constraint %I', cname);
+  end loop;
+  alter table manual_imports
+    add constraint manual_imports_kind_check
+    check (kind in (
+      'performance_demo_csv',
+      'performance_placement_csv',
+      'performance_ad_summary_csv',
+      'performance_conversion_device_csv',
+      'creative_asset'
+    ));
+end $$;
+
 -- Idempotent backfill for databases created before this rework.
 alter table manual_imports add column if not exists content_type text;
 alter table manual_imports add column if not exists ad_names text[] not null default '{}';
@@ -781,6 +809,18 @@ create index if not exists demographic_performance_run_idx on demographic_perfor
 create index if not exists placement_performance_run_idx on placement_performance (manual_analysis_run_id);
 create index if not exists platform_performance_run_idx on platform_performance (manual_analysis_run_id);
 create index if not exists device_performance_run_idx on device_performance (manual_analysis_run_id);
+
+-- Links a staged import to the manual_analysis_run that consumed it. A
+-- successful run flips its consumed manual_imports rows from 'staged' to
+-- 'processed' and tags them here, so an Import History panel can show
+-- "which files fed which run" and offer a "restage" action (flip back to
+-- 'staged', clear this column) to redrive a new run from the same files
+-- without re-uploading. on delete set null (not cascade): deleting a run
+-- must never delete the underlying uploaded file.
+alter table manual_imports
+  add column if not exists manual_analysis_run_id uuid references manual_analysis_runs(id) on delete set null;
+
+create index if not exists manual_imports_run_idx on manual_imports (manual_analysis_run_id);
 
 -- concept_performance/variable_performance's old unique keys had no run
 -- component — that was safe only because the full-account wipe above

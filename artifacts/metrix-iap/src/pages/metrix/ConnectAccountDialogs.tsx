@@ -1444,10 +1444,15 @@ export function ManualUploadPanel({
     void queryClient.invalidateQueries({ queryKey: getListManualImportsQueryKey(accountId) });
   };
 
-  const demoImport = imports.find((i) => i.kind === "performance_demo_csv") ?? null;
-  const placementImport = imports.find((i) => i.kind === "performance_placement_csv") ?? null;
-  const summaryImport = imports.find((i) => i.kind === "performance_ad_summary_csv") ?? null;
-  const conversionDeviceImport = imports.find((i) => i.kind === "performance_conversion_device_csv") ?? null;
+  // A successful run destages the files it consumed (status flips to
+  // "processed") so the upload slots read as empty again for the next
+  // batch — a run's already-used files live in the Import History panel
+  // (Analysis Command Center) for restaging, not here.
+  const stagedImports = imports.filter((i) => i.status === "staged");
+  const demoImport = stagedImports.find((i) => i.kind === "performance_demo_csv") ?? null;
+  const placementImport = stagedImports.find((i) => i.kind === "performance_placement_csv") ?? null;
+  const summaryImport = stagedImports.find((i) => i.kind === "performance_ad_summary_csv") ?? null;
+  const conversionDeviceImport = stagedImports.find((i) => i.kind === "performance_conversion_device_csv") ?? null;
   const creativeAssets = imports.filter((i) => i.kind === "creative_asset");
   const guessedImports = guessedCreativeImports(imports);
   const bothRequiredStaged = Boolean(demoImport && placementImport);

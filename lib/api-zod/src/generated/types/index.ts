@@ -155,6 +155,7 @@ export * from './requestAccessInput';
 export * from './requestAccessInputBusinessType';
 export * from './requestAccessResult';
 export * from './requestAccessResultStatus';
+export * from './restageManualImportsResult';
 export * from './revokeSessionResult';
 export * from './revokeSessionResultStatus';
 export * from './revokeWorkspaceInviteResult';

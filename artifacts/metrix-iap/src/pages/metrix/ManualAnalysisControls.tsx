@@ -18,6 +18,7 @@ import {
   useListManualImports,
   useUpdateManualImportAdNames,
   useSyncCreativeLinks,
+  useRestageManualImportsForRun,
   getGetMetrixSeedQueryKey,
   getListManualImportsQueryKey,
   ApiError,
@@ -579,9 +580,13 @@ function CreativeLinkageStatus({
 function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
   const [expanded, setExpanded] = useState(false);
 
-  // Only performance CSVs carry a mapping_summary; creatives don't.
+  // Only performance CSVs carry a mapping_summary; creatives don't. Once an
+  // import is consumed by a run (status=processed) it's no longer part of
+  // what the NEXT run will read, so its mapping health is no longer
+  // actionable here — only currently-staged files are relevant.
   const csvImports = imports.filter(
     (imp) =>
+      imp.status === "staged" &&
       (imp.kind === "performance_demo_csv" ||
         imp.kind === "performance_placement_csv" ||
         imp.kind === "performance_ad_summary_csv" ||
@@ -720,6 +725,113 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
 }
 
 /**
+ * Shows past successful runs alongside the specific files each one consumed
+ * (status=processed, tagged with manual_analysis_run_id) and lets the user
+ * "Restage" a batch — flips those files back to staged and clears the run
+ * link, so the next "Run analysis" click regenerates from the exact same
+ * files without re-uploading. Collapsed by default; only rendered once at
+ * least one past run has destaged files to show.
+ */
+function ImportHistoryPanel({
+  accountId,
+  runs,
+  imports,
+  disabled,
+  onRestaged,
+}: {
+  accountId: string;
+  runs: AnalysisRun[];
+  imports: ManualImport[];
+  disabled?: boolean;
+  onRestaged: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [restagingRunId, setRestagingRunId] = useState<string | null>(null);
+  const [restageError, setRestageError] = useState<string | null>(null);
+  const restageMutation = useRestageManualImportsForRun();
+
+  const runsWithFiles = runs
+    .map((run) => ({ run, files: imports.filter((imp) => imp.manual_analysis_run_id === run.id) }))
+    .filter((entry) => entry.files.length > 0);
+
+  if (runsWithFiles.length === 0) return null;
+
+  const handleRestage = async (runId: string) => {
+    setRestageError(null);
+    setRestagingRunId(runId);
+    try {
+      await restageMutation.mutateAsync({ accountId, runId });
+      onRestaged();
+    } catch (err) {
+      setRestageError(err instanceof ApiError ? err.message : "Could not restage these files. Try again.");
+    } finally {
+      setRestagingRunId(null);
+    }
+  };
+
+  return (
+    <div className="rounded-lg border border-border/30 bg-white/[0.02] overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setExpanded((e) => !e)}
+        className="w-full flex items-center gap-2 px-2.5 py-2 text-left"
+      >
+        <History className="w-3.5 h-3.5 text-muted-foreground/55 shrink-0" />
+        <span className="text-[11px] text-muted-foreground/70 leading-snug flex-1">
+          <span className="font-semibold text-foreground/80">
+            Import history · {runsWithFiles.length} run{runsWithFiles.length !== 1 ? "s" : ""}
+          </span>
+          {" "}· Restage a past batch's files to regenerate analysis without re-uploading.
+        </span>
+        {expanded ? (
+          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
+        ) : (
+          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
+        )}
+      </button>
+      {expanded && (
+        <div className="border-t border-border/20 divide-y divide-border/20">
+          {runsWithFiles.map(({ run, files }) => (
+            <div key={run.id} className="px-2.5 py-2 space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-label text-foreground/80">
+                  {run.date_start && run.date_end ? `${run.date_start} → ${run.date_end}` : run.date_range}
+                  {" "}· {files.length} file{files.length !== 1 ? "s" : ""}
+                </span>
+                <button
+                  onClick={() => handleRestage(run.id)}
+                  disabled={disabled || restagingRunId === run.id}
+                  className="flex items-center gap-1 h-6 px-2 rounded border border-border/40 bg-white/[0.02] text-label font-medium text-foreground/80 hover:bg-white/[0.05] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {restagingRunId === run.id ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-3 h-3" />
+                  )}
+                  Restage
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {files.map((f) => (
+                  <span
+                    key={f.id}
+                    className="text-[9px] font-mono text-muted-foreground/50 border border-border/30 rounded px-1 py-0.5 truncate max-w-[160px]"
+                    title={f.filename}
+                  >
+                    {f.filename}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {restageError && <p className="text-caption text-red-400 px-2.5 pb-2">{restageError}</p>}
+    </div>
+  );
+}
+
+/**
  * Explicit, manual analysis trigger for an account's staged CSVs.
  * Nothing here runs automatically — the user must pick a date range and
  * press "Run analysis". Polls the latest run every 2.5s while running.
@@ -751,24 +863,28 @@ export function AnalysisControls({
   const run = latest?.run ?? null;
   const isRunning = run?.status === "running";
 
+  // A run destages the files it consumes (status flips staged -> processed,
+  // tagged with the run id) so the staging area is empty again for the next
+  // batch — every "currently staged" check below only counts status="staged"
+  // imports; processed ones live in Import History instead.
+  const stagedImports = (importsData?.imports ?? []).filter((imp) => imp.status === "staged");
+
   // True when an Ad Summary CSV is staged — this provides full spend data unaffected
   // by iOS privacy attribution limits (demographic exports only capture ~10-15% of spend).
-  const hasSummary = (importsData?.imports ?? []).some(
-    (imp) => imp.kind === "performance_ad_summary_csv"
-  );
+  const hasSummary = stagedImports.some((imp) => imp.kind === "performance_ad_summary_csv");
 
   // Hard-block: this component renders standalone on Account Settings /
   // Analysis Command Center (outside the AddAccountDialog wizard, which
   // already gates its own "Review" step on bothRequiredStaged). Without this
   // check, a first-time user with zero CSVs staged could click "Run analysis"
   // and only discover the requirement from the server's 422 afterward.
-  const hasDemoCsv = (importsData?.imports ?? []).some((imp) => imp.kind === "performance_demo_csv");
-  const hasPlacementCsv = (importsData?.imports ?? []).some((imp) => imp.kind === "performance_placement_csv");
+  const hasDemoCsv = stagedImports.some((imp) => imp.kind === "performance_demo_csv");
+  const hasPlacementCsv = stagedImports.some((imp) => imp.kind === "performance_placement_csv");
   const missingRequiredCsv = !hasDemoCsv || !hasPlacementCsv;
 
   // Detect whether any required breakdown column is missing across staged CSVs.
   // When true, we soft-block the Run button with a warning (escape hatch kept).
-  const hasRequiredMissing = (importsData?.imports ?? []).some(
+  const hasRequiredMissing = stagedImports.some(
     (imp) =>
       (imp.kind === "performance_demo_csv" ||
         imp.kind === "performance_placement_csv" ||
@@ -867,6 +983,17 @@ export function AnalysisControls({
           </span>
         </div>
       )}
+
+      <ImportHistoryPanel
+        accountId={accountId}
+        runs={priorRuns}
+        imports={importsData?.imports ?? []}
+        disabled={isRunning}
+        onRestaged={() => {
+          void refetchImports();
+          void queryClient.invalidateQueries({ queryKey: getListManualImportsQueryKey(accountId) });
+        }}
+      />
       <div className="flex items-center gap-2">
         <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/85 shrink-0" />
         <span className="text-caption font-medium text-foreground">Date range to analyze</span>

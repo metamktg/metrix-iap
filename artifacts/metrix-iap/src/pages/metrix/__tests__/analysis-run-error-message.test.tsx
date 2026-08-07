@@ -28,6 +28,7 @@ type MockImport = {
   filename: string;
   ad_names: string[];
   mapping_summary: MockMappingEntry[];
+  status: string;
 };
 let mockImports: MockImport[] = [];
 
@@ -170,6 +171,7 @@ describe("AnalysisControls — error run shows verbatim error_message", () => {
         mapping_summary: [
           { canonical: "Age", tier: "missing", is_required: true, found_as: null },
         ],
+        status: "staged",
       },
       {
         id: "imp-2",
@@ -177,6 +179,7 @@ describe("AnalysisControls — error run shows verbatim error_message", () => {
         filename: "placements.csv",
         ad_names: [],
         mapping_summary: [],
+        status: "staged",
       },
     ];
     // The run has already failed (simulates: user clicked "Run anyway" → run errored).
