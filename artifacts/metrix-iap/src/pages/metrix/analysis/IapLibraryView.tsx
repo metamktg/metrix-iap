@@ -367,7 +367,7 @@ export function IapLibraryView() {
                 </div>
               </div>
 
-              {(analysisRunsData?.runs.length ?? 0) > 0 && (
+              {(analysisRunsData?.runs?.length ?? 0) > 0 && (
                 <div className="px-6 pt-4">
                   <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/30 mb-1.5">
                     Scope to analysis run
