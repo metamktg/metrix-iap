@@ -163,11 +163,11 @@ export function AdAccountOverview() {
   const loopReportCount  = (reportsData?.reports ?? []).filter((r) => r.ad_account_id === adAccountId).length;
 
   const loopSteps: LoopChecklistStep[] = [
-    { label: "Data connected",       done: true,                    route: "/app/settings/account" },
+    { label: "Data connected",       done: true,                    route: "/app/settings/general" },
     { label: "Analysis run",         done: loopCellCount > 0,       route: "/app/analysis/overview" },
     { label: "Strategy generated",   done: loopPillarCount > 0,     route: "/app/strategy/overview" },
-    { label: "Briefs generated",     done: loopBriefCount > 0,      route: "/app/briefs/builder" },
-    { label: "Report created",       done: loopReportCount > 0,     route: "/app/reports/new" },
+    { label: "Briefs generated",     done: loopBriefCount > 0,      route: "/app/creative/builder" },
+    { label: "Report created",       done: loopReportCount > 0,     route: "/app/reports/builder" },
   ];
   const allLoopComplete = loopSteps.every((s) => s.done);
 
@@ -369,7 +369,12 @@ export function AdAccountOverview() {
           <SectionCard
             title="Optimization loop"
             desc="Approve to Task Tray or dismiss · never auto-applied"
-            right={<SectionInfoIcon tip="AI-generated recommendations to approve or dismiss — never applied automatically." />}
+            right={
+              <>
+                <CrossLink to="/app/act/queue" label="Open full queue" />
+                <SectionInfoIcon tip="AI-generated recommendations to approve or dismiss — never applied automatically." />
+              </>
+            }
           >
             {deckCards.length ? (
               <RecommendationDeck scopeId={account.id} cards={deckCards} emptyLabel="All account recommendations reviewed" />
