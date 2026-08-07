@@ -195,7 +195,8 @@ function buildAudienceRows(rows: DemographicRow[]): BreakdownRow[] {
   });
 }
 
-function buildPlacementRows(rows: PlacementRow[]): BreakdownRow[] {
+/** Exported for unit tests. */
+export function buildPlacementRows(rows: PlacementRow[]): BreakdownRow[] {
   const grouped = new Map<string, PlacementRow[]>();
   for (const r of rows) {
     const key = `${r.Platform} · ${r.Placement}`;
@@ -315,7 +316,8 @@ function SortableHeader({
   );
 }
 
-function BreakdownTable({
+/** Exported for unit tests. */
+export function BreakdownTable({
   rows, sortId, onSort,
 }: {
   rows: BreakdownRow[];
@@ -334,9 +336,14 @@ function BreakdownTable({
 
   const allCols: RankMetric<BreakdownRow>[] = BREAKDOWN_METRICS.filter((m) => rows.some((r) => m.value(r) != null));
   // Default: show only priority cols + the active sort col (always visible for context)
-  const cols = showAllCols
-    ? allCols
-    : allCols.filter((m) => PRIORITY_COL_IDS.includes(m.id as (typeof PRIORITY_COL_IDS)[number]) || m.id === sortId);
+  // Default: show only priority cols + the active sort col (always visible for context).
+  // Edge case: if none of the priority/sort columns have data (e.g. placement rows
+  // where only Impressions and Spend are populated), fall back to showing every
+  // available column rather than silently rendering a table with zero metric columns.
+  const priorityCols = allCols.filter(
+    (m) => PRIORITY_COL_IDS.includes(m.id as (typeof PRIORITY_COL_IDS)[number]) || m.id === sortId
+  );
+  const cols = showAllCols || priorityCols.length === 0 ? allCols : priorityCols;
   const hiddenCount = allCols.length - cols.length;
 
   return (
