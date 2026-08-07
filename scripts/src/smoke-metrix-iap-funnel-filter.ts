@@ -12,6 +12,8 @@
 //   3. Spend floor input → "Showing X of Y cells" counter changes.
 //   4. Opening a creative card's expand dialog and clicking "Funnel" tab →
 //      FunnelStepsChart renders with "Conversion funnel" heading and no JS errors.
+//   5. Performance tier pills: "Top 25%" shows ≤ 25% of cells, "Bottom 25%"
+//      similarly bounded, "All" restores the full count.
 //
 // Run: pnpm --filter @workspace/scripts run smoke:metrix-iap-funnel-filter
 
