@@ -19,7 +19,7 @@ import { cn } from "@workspace/command-deck/lib/utils";
 import { Plug, FileUp, CheckCircle2, Circle } from "lucide-react";
 import type { AdAccount } from "@/lib/data/seedTypes";
 
-const SECTION = "Settings · 09";
+const SECTION = "Settings · 10";
 
 export function IntegrationsView() {
   const seed = useMetrixSeed();

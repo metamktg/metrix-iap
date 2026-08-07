@@ -24,7 +24,7 @@ import { cn } from "@workspace/command-deck/lib/utils";
 import { GitMerge } from "lucide-react";
 import type { MSTMatrixCell } from "@/lib/data/seedTypes";
 
-const SECTION = "MST · 07";
+const SECTION = "MST · 06";
 
 // ─── Sort support ─────────────────────────────────────────────────────
 
