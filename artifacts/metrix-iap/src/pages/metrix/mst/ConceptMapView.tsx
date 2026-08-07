@@ -4,6 +4,8 @@
 // cross-links into the Hypothesis Queue and Brief Builder.
 
 import { useState } from "react";
+import { TYPE } from "../typography";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAnalysisData, getStrategyData, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
@@ -33,7 +35,7 @@ interface ConceptGroup {
   cellIds: string[];
 }
 
-export function ConceptMapView() {
+export function ConceptMapView({ renderHeader = true }: { renderHeader?: boolean } = {}) {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
@@ -44,7 +46,7 @@ export function ConceptMapView() {
   const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "");
 
   return (
-    <ModuleScopeGate section={SECTION} title="Concept Map" account={account}>
+    <ModuleScopeGate section={SECTION} title="Concept Map" account={account} renderHeader={renderHeader}>
       {() => {
         const acct = account!;
         const a = getAnalysisData(seed, adAccountId);
@@ -53,7 +55,7 @@ export function ConceptMapView() {
         if (!a || a.performance_by_cell.length === 0) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Concept Map" account={acct} />
+              {renderHeader && <ModuleHeader section={SECTION} title="Concept Map" account={acct} />}
               <PendingState title="No concepts yet" message="Concepts appear once cell-level analysis is available." icon={Network}
                 action={<CrossLink to="/app/analysis/library" label="Open IAP Library" />}
               />
@@ -86,15 +88,17 @@ export function ConceptMapView() {
 
         return (
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
-            <ModuleHeader
-              section={SECTION}
-              title="Concept Map"
-              subtitle="Concepts mapped to pillars"
-              account={acct}
-            />
+            {renderHeader && (
+              <ModuleHeader
+                section={SECTION}
+                title="Concept Map"
+                subtitle="Concepts mapped to pillars"
+                account={acct}
+              />
+            )}
             {(analysisRunsData?.runs.length ?? 0) > 0 && (
               <div className="px-6 pt-4">
-                <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/30 mb-1.5">
+                <p className={cn(TYPE.microLabel, "text-muted-foreground/30 mb-1.5")}>
                   Scope to analysis run
                 </p>
                 <RunSelector runs={analysisRunsData!.runs} value={runSelection} onChange={setRunSelection} />

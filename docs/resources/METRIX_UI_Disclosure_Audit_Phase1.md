@@ -106,3 +106,14 @@ UI (confirmed unused during Initiative 1's research, not yet fixed):
   -- each verified individually by reading the component, not removed blindly. This was causing a
   false "Soon" badge in the sidebar on working features, including the app's only getting-started
   guide. `MST -> Direction` keeps its flag -- verified it's genuinely still a stub.
+- **Enforcement gap closed.** This audit's own checker (`check:disclosure-rulebook`) was never
+  wired into `.replit`'s workflow list — every sibling contrast check was, this one wasn't — so
+  nothing gated on it after the 186/21-file snapshot above was written, and the count silently
+  regressed to 270 across 34 files (new screens, e.g. the MST Cross-Map merge, shipped fresh
+  ad-hoc classes; some previously-"done" files above also crept back up). As part of the
+  platform-wide UI hierarchy pass, the checker now enforces a **ratchet baseline**
+  (`scripts/src/disclosure-rulebook.baseline.json`): a file may never exceed its recorded count,
+  and a brand-new file may not introduce any violations at all. It's wired into `.replit` as the
+  `disclosure-rulebook` workflow, same as `command-deck-contrast`. The 186/21-file snapshot above
+  is historical; the baseline JSON is now the live source of truth and only ever ratchets down —
+  fix a file, re-run `--write-baseline`, commit the lowered count in the same PR.

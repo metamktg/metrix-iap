@@ -440,11 +440,11 @@ export function VariableCombinationsGrid({ combinations }: { combinations: Varia
           <CombinationChips combination={c.combination} />
           <div className="mt-auto pt-2 border-t border-border/20 flex items-center gap-4">
             <div>
-              <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40">CPA</div>
+              <div className={cn(TYPE.microLabel, "text-muted-foreground/40")}>CPA</div>
               <div className="text-sm font-bold text-foreground tabular-nums">{fmtMetric("usd_unit", c.cpa)}</div>
             </div>
             <div>
-              <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40">CVR</div>
+              <div className={cn(TYPE.microLabel, "text-muted-foreground/40")}>CVR</div>
               <div className="text-sm font-bold text-foreground tabular-nums">{fmtMetric("pct", c.cvr_pct)}</div>
             </div>
             {c.confidence && (

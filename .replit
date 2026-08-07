@@ -72,6 +72,10 @@ args = "command-deck-contrast"
 task = "workflow.run"
 args = "command-deck-contrast"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "disclosure-rulebook"
+
 [[workflows.workflow]]
 name = "api-smoke"
 author = "agent"
@@ -211,6 +215,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm --filter @workspace/scripts run check:command-deck-contrast"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "disclosure-rulebook"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/scripts run check:disclosure-rulebook"
 
 [workflows.workflow.metadata]
 isValidation = true

@@ -559,7 +559,8 @@
   }
 
   .mx-section-header__title {
-    font-size: 1.5rem;     /* 24px — bumped from 21px for page-title authority */
+    font-size: 1.75rem;    /* 28px — matches text-bignum; second bump for page-title
+                               authority over 14px card/section titles */
     font-weight: 700;
     color: hsl(var(--text-primary));
     letter-spacing: -0.02em;
@@ -577,10 +578,13 @@
   /* ── Formal type scale — matches TYPE constants in typography.ts ──────
      Add sizes here instead of using arbitrary text-[Npx] in components.
      Use text-sm (14px) and text-lg (18px) from Tailwind's built-in scale.
-     Scale: label(10) · caption(11) · body(12) · title(13) · text-sm(14) ·
-            callout(15) · text-base(16) · text-lg(18) · display(21) ·
-            section(22) · stat(26) · bignum(28)
+     Scale: micro(9) · label(10) · caption(11) · body(12) · title(14) ·
+            text-sm(14) · callout(15) · text-base(16) · text-lg(18) ·
+            display(21) · section(22) · stat(26) · bignum(28)
      ─────────────────────────────────────────────────────────────────── */
+  .text-micro   { font-size: 0.5625rem;  line-height: 1.4; }  /* 9px — micro mono
+                                                                   index/eyebrow labels,
+                                                                   below text-label */
   .text-label   { font-size: 0.625rem;   line-height: 1.4; }  /* 10px */
   .text-caption { font-size: 0.6875rem;  line-height: 1.5; }  /* 11px */
   .text-body    { font-size: 0.75rem;    line-height: 1.5; }  /* 12px ≡ text-xs */

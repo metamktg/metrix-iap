@@ -10,6 +10,8 @@
 // the library refreshes automatically.
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { TYPE } from "../typography";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { Images, Dna, RefreshCw, AlertTriangle, PlayCircle, TrendingUp, TrendingDown, Sliders } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
@@ -369,7 +371,7 @@ export function IapLibraryView() {
 
               {(analysisRunsData?.runs.length ?? 0) > 0 && (
                 <div className="px-6 pt-4">
-                  <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/30 mb-1.5">
+                  <p className={cn(TYPE.microLabel, "text-muted-foreground/30 mb-1.5")}>
                     Scope to analysis run
                   </p>
                   <RunSelector runs={analysisRunsData!.runs} value={runSelection} onChange={setRunSelection} />

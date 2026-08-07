@@ -18,12 +18,23 @@
 // • Drawers (InfoDrawer/DrawerField) and modals may show full-length prose.
 //
 // Typography roles — import { TYPE } from "./typography":
+// • TYPE.microLabel 9px mono uppercase micro index/eyebrow labels (below
+//   TYPE.label — e.g. "Spend"/"Results" strip labels, run-scope captions)
 // • TYPE.label   10px uppercase eyebrow/section labels
-// • TYPE.title   13px semibold card/list titles
+// • TYPE.title   14px BOLD card/list titles — bold is the one enforced
+//   title weight platform-wide (matches SectionCard's own <h3>)
 // • TYPE.body    12px primary prose in cards/tiles
 // • TYPE.caption 11px secondary/meta prose
 // Standard tile anatomy: eyebrow label → title → clamped body → chip rows →
-// footer/meta. No half-pixel sizes (10.5/11.5/12.5px) in card bodies.
+// footer/meta. No half-pixel sizes (10.5/11.5/12.5px) in card bodies, and no
+// raw text-[Npx] classes — every size composes from TYPE (enforced by
+// scripts/check-disclosure-rulebook.ts).
+//
+// Header ownership: a page composing tab-switched sub-views (e.g. a command
+// center that toggles between two child views) owns the single <ModuleHeader>
+// itself; sub-views mounted this way must not render their own — accept and
+// honor a `renderHeader={false}` prop instead, so a route never shows two
+// stacked headings for the same title.
 //
 // Normalization rulebook — import from "@/lib/normalize" (pure, tested):
 // • TITLES: compound "Main — Qualifier" analysis/pillar titles split with
@@ -920,8 +931,8 @@ export function MetricTile({
 }) {
   const isPrimary = variant === "primary";
   const labelCls = isPrimary
-    ? "text-[9px] font-mono uppercase tracking-widest text-muted-foreground/65 mb-1.5 truncate"
-    : "text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-2 truncate";
+    ? cn(TYPE.microLabel, "text-muted-foreground/65 mb-1.5 truncate")
+    : cn(TYPE.microLabel, "text-muted-foreground/40 mb-2 truncate");
 
   if (onClick) {
     return (
@@ -1002,17 +1013,22 @@ export function ModuleScopeGate({
   section,
   title,
   account,
+  renderHeader = true,
   children,
 }: {
   section: string;
   title: string;
   account: AdAccount | null;
+  /** Pass false when a parent (e.g. a tab-switched command center) already
+   *  owns the single ModuleHeader for this route — prevents a duplicate
+   *  heading from rendering in the blocked (no-account/unconfigured) states. */
+  renderHeader?: boolean;
   children: () => React.ReactNode;
 }) {
   if (!account) {
     return (
       <div className="flex-1 flex flex-col">
-        <ModuleHeader section={section} title={title} />
+        {renderHeader && <ModuleHeader section={section} title={title} />}
         <PendingState
           title="No ad account selected"
           message="Choose an ad account to view this module."
@@ -1024,7 +1040,7 @@ export function ModuleScopeGate({
   if (account.status !== "configured") {
     return (
       <div className="flex-1 flex flex-col">
-        <ModuleHeader section={section} title={title} />
+        {renderHeader && <ModuleHeader section={section} title={title} />}
         <UnconfiguredState account={account} />
       </div>
     );
