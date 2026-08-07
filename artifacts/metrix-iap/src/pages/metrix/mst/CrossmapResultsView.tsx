@@ -5,6 +5,7 @@
 // best-performing cells rise to the top immediately.
 
 import { useState } from "react";
+import { TYPE } from "../typography";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getMST, getAnalysisData, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
@@ -23,7 +24,7 @@ import { cn } from "@workspace/command-deck/lib/utils";
 import { GitMerge } from "lucide-react";
 import type { MSTMatrixCell } from "@/lib/data/seedTypes";
 
-const SECTION = "MST · 07";
+const SECTION = "MST · 06";
 
 // ─── Sort support ─────────────────────────────────────────────────────
 
@@ -46,7 +47,7 @@ const CROSSMAP_METRICS: RankMetric<CrossmapEnrichedRow>[] = [
   { id: "ctr",     label: "Link CTR", direction: "desc", value: (r) => r.ran ? r.avgCtr  : null, format: fmtPct },
 ];
 
-export function CrossmapResultsView() {
+export function CrossmapResultsView({ renderHeader = true }: { renderHeader?: boolean } = {}) {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
@@ -64,7 +65,7 @@ export function CrossmapResultsView() {
   const activeSort = CROSSMAP_METRICS.find((m) => m.id === sortId) ?? CROSSMAP_METRICS[0];
 
   return (
-    <ModuleScopeGate section={SECTION} title="Crossmap Results" account={account}>
+    <ModuleScopeGate section={SECTION} title="Crossmap Results" account={account} renderHeader={renderHeader}>
       {() => {
         const acct = account!;
         const mst = getMST(seed, adAccountId);
@@ -74,7 +75,7 @@ export function CrossmapResultsView() {
         if (!mst || mst.status !== "active" || !matrix || !analysis) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Crossmap Results" account={acct} />
+              {renderHeader && <ModuleHeader section={SECTION} title="Crossmap Results" account={acct} />}
               <PendingState title="No crossmap yet" message={mst?.render_policy ?? "Crossmap results appear once the matrix and performance data both exist."} icon={GitMerge}
                 action={<CrossLink to="/app/mst/matrix" label="Open MST Matrix" />}
               />
@@ -124,15 +125,17 @@ export function CrossmapResultsView() {
 
         return (
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
-            <ModuleHeader
-              section={SECTION}
-              title="Crossmap Results"
-              subtitle="Planned cells × actual delivery"
-              account={acct}
-            />
+            {renderHeader && (
+              <ModuleHeader
+                section={SECTION}
+                title="Crossmap Results"
+                subtitle="Planned cells × actual delivery"
+                account={acct}
+              />
+            )}
             {(analysisRunsData?.runs.length ?? 0) > 0 && (
               <div className="px-6 pt-4">
-                <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/30 mb-1.5">
+                <p className={cn(TYPE.microLabel, "text-muted-foreground/30 mb-1.5")}>
                   Scope to analysis run
                 </p>
                 <RunSelector runs={analysisRunsData!.runs} value={runSelection} onChange={setRunSelection} />

@@ -12,13 +12,14 @@ import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PrerequisiteGate, CrossLink,
   StageLoopHub, buildLoopStages,
 } from "../shared";
-import { Network, Grid3x3, TrendingUp, Compass } from "lucide-react";
+import { Network, Grid3x3, TrendingUp, Compass, Library } from "lucide-react";
 
 const SECTION = "MST · 06";
 
 const CHILDREN = [
   { to: "/app/mst/cross-map", label: "Cross-Map", Icon: Network, desc: "Concepts mapped to strategy pillars, and planned cells crossmapped to observed performance." },
   { to: "/app/mst/sprints", label: "Sprints", Icon: Grid3x3, desc: "The 4×4 test matrix for this account." },
+  { to: "/app/mst/creative-scan", label: "Creative Scan", Icon: Library, desc: "Scanned local creative library: message system, variable stack, and mapping confidence per concept." },
   { to: "/app/mst/performance", label: "Performance", Icon: TrendingUp, desc: "Universal vs avatar-specific winners." },
   { to: "/app/mst/direction", label: "Direction", Icon: Compass, desc: "The Optimization Loop — next-sprint priorities." },
 ];

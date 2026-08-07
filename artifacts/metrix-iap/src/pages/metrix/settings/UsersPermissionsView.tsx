@@ -1,4 +1,4 @@
-// ─── Settings · Team & Access ─────────────────────────────────────────
+// ─── Settings · Users & Permissions ────────────────────────────────────
 // Workspace-wide: members, roles, and the account-level access policy.
 // "Add member" is single-step: role, master permissions, and initial
 // ad-account grants are all set before the invite is sent, and the account
@@ -825,7 +825,7 @@ export function UsersPermissionsView() {
           title="Access required"
           message="Team management is available to admins and members with the Manage team permission. Ask a workspace admin if you need a change to your access."
           icon={ShieldCheck}
-          action={<CrossLink to="/app/analysis/overview" label="Back to Overview" />}
+          action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />}
         />
       </div>
     );

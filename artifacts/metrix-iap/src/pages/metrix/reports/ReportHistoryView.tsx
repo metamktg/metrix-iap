@@ -8,7 +8,7 @@ import { useAccount, useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getReportHistory } from "@/lib/data/metrixSeedAdapter";
 import { buildReportModel, downloadReportExport, parseReportModel, type BrandingMode } from "@/lib/reportExport";
-import { ModuleHeader, ModuleScopeGate, PendingState, MetricTile, CrossLink, fmtNum, deriveLabel, useShowMore, ShowMoreButton } from "../shared";
+import { ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile, CrossLink, fmtNum, deriveLabel, useShowMore, ShowMoreButton } from "../shared";
 import { FORMAT_LABEL } from "./reportFormatLabels";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { History, FileText, Building2, Users, FileDown, Check, Loader2, Trash2, X } from "lucide-react";
@@ -32,7 +32,7 @@ import {
   AlertDialogTitle,
 } from "@workspace/command-deck/components/ui/alert-dialog";
 
-const SECTION = "Reports · 06";
+const SECTION = "Reports · 07";
 
 function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
@@ -163,7 +163,7 @@ export function ReportHistoryView() {
   }
 
   return (
-    <ModuleScopeGate section={SECTION} title="Report History" account={account}>
+    <ModuleScopeGate section={SECTION} title="History" account={account}>
       {() => {
         const acct = account!;
         const seedHistory = getReportHistory(seed, adAccountId);
@@ -201,9 +201,9 @@ export function ReportHistoryView() {
         if (history.length === 0) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Report History" account={acct} />
+              <ModuleHeader section={SECTION} title="History" account={acct} />
               <PendingState title="No reports yet" message="Reports you compose and export will appear here." icon={History}
-                action={<CrossLink to="/app/reports/new" label="Compose the first report" />}
+                action={<CrossLink to="/app/reports/builder" label="Compose the first report" />}
               />
             </div>
           );
@@ -216,10 +216,11 @@ export function ReportHistoryView() {
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
             <ModuleHeader
               section={SECTION}
-              title="Report History"
+              title="History"
               subtitle="All generated reports · newest first"
               account={acct}
             />
+            <ScopeBanner account={acct} />
 
             <div className="px-6 pt-5 grid grid-cols-dashboard-3 gap-3 max-w-3xl">
               <MetricTile label="Reports" value={fmtNum(history.length)} />
@@ -321,7 +322,7 @@ export function ReportHistoryView() {
                     <AlertDialogTitle>Delete this report?</AlertDialogTitle>
                     <AlertDialogDescription>
                       {confirmDelete
-                        ? `"${confirmDelete.title}" and its stored snapshot will be permanently removed from Report History and Exports. This can't be undone.`
+                        ? `"${confirmDelete.title}" and its stored snapshot will be permanently removed from Report History. This can't be undone.`
                         : ""}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
@@ -351,8 +352,8 @@ export function ReportHistoryView() {
                     </AlertDialogTitle>
                     <AlertDialogDescription>
                       {selectedIds.size === 1
-                        ? "The selected report and its stored snapshot will be permanently removed from Report History and Exports. This can't be undone."
-                        : `The ${fmtNum(selectedIds.size)} selected reports and their stored snapshots will be permanently removed from Report History and Exports. This can't be undone.`}
+                        ? "The selected report and its stored snapshot will be permanently removed from Report History. This can't be undone."
+                        : `The ${fmtNum(selectedIds.size)} selected reports and their stored snapshots will be permanently removed from Report History. This can't be undone.`}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -381,8 +382,7 @@ export function ReportHistoryView() {
               </AlertDialog>
 
               <div className="flex items-center gap-4 pt-1">
-                <CrossLink to="/app/reports/new" label="Compose a new report" />
-                <CrossLink to="/app/reports/exports" label="Export formats" />
+                <CrossLink to="/app/reports/builder" label="Compose a new report" />
               </div>
             </div>
           </div>

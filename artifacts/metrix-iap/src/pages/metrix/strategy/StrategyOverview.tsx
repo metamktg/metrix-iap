@@ -324,7 +324,7 @@ export function StrategyOverview() {
   const [expandedPillars, setExpandedPillars] = useState<Record<string, boolean>>({});
 
   return (
-    <ModuleScopeGate section={SECTION} title="Strategy Overview" account={account}>
+    <ModuleScopeGate section={SECTION} title="Overview" account={account}>
       {() => {
         const acct = account!;
         const strategy = getStrategyData(seed, adAccountId);
@@ -334,7 +334,7 @@ export function StrategyOverview() {
         if (!strategy || strategy.message_pillars.length === 0) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Strategy Overview" tabs="strategy" account={acct} />
+              <ModuleHeader section={SECTION} title="Overview" tabs="strategy" account={acct} />
               <PendingState title="No strategy yet" message="Strategy pillars derive from validated analysis reads." icon={Compass}
                 action={!hasAnalysis ? <CrossLink to="/app/analysis/overview" label="Review Analysis first" /> : undefined}
               />
@@ -414,7 +414,7 @@ export function StrategyOverview() {
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
             <ModuleHeader
               section={SECTION}
-              title="Strategy Overview"
+              title="Overview"
               subtitle="Pillar coverage · hypothesis breakdown · variable map"
               tabs="strategy"
               account={acct}

@@ -13,6 +13,8 @@ import {
   CaveatNote, SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
   RangeScopeBar, NoDataInRangeState, SectionInfoIcon,
 } from "../shared";
+import { TYPE } from "../typography";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { useCellRangeScope, sumInRange } from "@/lib/date-scope";
 import { LineChart, Library, Users, LayoutGrid, Wallet, TrendingUp } from "lucide-react";
@@ -155,16 +157,16 @@ export function AdPerformanceView() {
                       const primaryResolved = primaryName !== controls.primary_control;
                       return (
                         <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5">Primary control</div>
+                          <div className={cn(TYPE.microLabel, "text-muted-foreground/70 mb-1.5")}>Primary control</div>
                           {/* Unresolved codes (no human name in local_book2_library) render
                               de-emphasized instead of borrowing the resolved-name treatment —
                               a raw composite ID is not a headline. */}
-                          <p className={primaryResolved ? "text-[13px] font-semibold text-foreground" : "text-[11px] font-mono text-muted-foreground/70"}>
+                          <p className={primaryResolved ? TYPE.title : cn(TYPE.body, "font-mono text-muted-foreground/70")}>
                             {primaryName}
                           </p>
-                          <p className="text-[11px] text-muted-foreground/80 mt-1.5 leading-relaxed">{resolveControlText(controls.primary_control_read, controls.primary_control)}</p>
+                          <p className={cn(TYPE.body, "text-muted-foreground/80 mt-1.5")}>{resolveControlText(controls.primary_control_read, controls.primary_control)}</p>
                           {primaryResolved && (
-                            <p className="text-[9px] font-mono text-muted-foreground/40 mt-1.5">{controls.primary_control}</p>
+                            <p className={cn(TYPE.microLabel, "text-muted-foreground/40 mt-1.5")}>{controls.primary_control}</p>
                           )}
                         </div>
                       );
@@ -175,15 +177,15 @@ export function AdPerformanceView() {
                       const regResolved = regName !== regId;
                       return (
                         <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70 mb-1.5">{term.Singular} control</div>
-                          <p className={regResolved ? "text-[13px] font-semibold text-foreground" : "text-[11px] font-mono text-muted-foreground/70"}>
+                          <div className={cn(TYPE.microLabel, "text-muted-foreground/70 mb-1.5")}>{term.Singular} control</div>
+                          <p className={regResolved ? TYPE.title : cn(TYPE.body, "font-mono text-muted-foreground/70")}>
                             {regName}
                           </p>
                           {controls.registration_control_read && (
-                            <p className="text-[11px] text-muted-foreground/80 mt-1.5 leading-relaxed">{resolveControlText(controls.registration_control_read, regId)}</p>
+                            <p className={cn(TYPE.body, "text-muted-foreground/80 mt-1.5")}>{resolveControlText(controls.registration_control_read, regId)}</p>
                           )}
                           {regResolved && (
-                            <p className="text-[9px] font-mono text-muted-foreground/40 mt-1.5">{regId}</p>
+                            <p className={cn(TYPE.microLabel, "text-muted-foreground/40 mt-1.5")}>{regId}</p>
                           )}
                         </div>
                       );
@@ -192,19 +194,25 @@ export function AdPerformanceView() {
                 </SectionCard>
               )}
 
-              <SectionCard title="Analysis modules" desc="Each module reads a different slice of the same account data." right={<SectionInfoIcon tip="Each module drills into a different dimension of the same import — Library (cell/variable performance), Audience, Placements, Budget, and Engagement Funnel." />}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* Reference strip only — these 5 destinations are already reachable
+                  via the Analysis section tab bar in ModuleHeader above; this is
+                  a compact index (label + a live stat), not a second nav. Each
+                  module's full description lives in the title attr, not as
+                  always-visible first-layer prose. */}
+              <SectionCard title="Analysis modules" desc="Jump to a specific slice of this account's data." right={<SectionInfoIcon tip="Each module drills into a different dimension of the same import — Library (cell/variable performance), Audience, Placements, Budget, and Engagement Funnel." />}>
+                <div className="flex flex-wrap gap-2">
                   {subpages.map((s) => (
-                    <div key={s.to} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2">
-                      <div className="flex items-center gap-2">
-                        <s.Icon className="w-3.5 h-3.5 text-interactive" />
-                        <span className="text-[13px] font-semibold text-foreground">{s.label}</span>
+                    <div
+                      key={s.to}
+                      title={s.desc}
+                      className="flex items-center gap-2 rounded-lg border border-border/40 bg-white/[0.02] pl-3 pr-1.5 py-1.5"
+                    >
+                      <s.Icon className="w-3.5 h-3.5 text-interactive shrink-0" />
+                      <div className="flex flex-col min-w-0">
+                        <span className={TYPE.title}>{s.label}</span>
+                        <span className={cn(TYPE.microLabel, "text-muted-foreground/50 truncate")}>{s.stat}</span>
                       </div>
-                      <p className="text-[11px] text-muted-foreground/80 leading-relaxed">{s.desc}</p>
-                      <div className="flex items-center justify-between mt-auto pt-1">
-                        <span className="text-[10px] font-mono text-muted-foreground/70">{s.stat}</span>
-                        <CrossLink to={s.to} label="Open" />
-                      </div>
+                      <CrossLink to={s.to} label="Open" />
                     </div>
                   ))}
                 </div>

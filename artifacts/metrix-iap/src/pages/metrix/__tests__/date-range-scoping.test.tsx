@@ -39,7 +39,7 @@ import { IapLibraryView } from "../analysis/IapLibraryView";
 import { AnalysisOverview } from "../analysis/AnalysisOverview";
 import { ConceptMapView } from "../mst/ConceptMapView";
 import { CrossmapResultsView } from "../mst/CrossmapResultsView";
-import { MatrixBuilderView } from "../mst/MatrixBuilderView";
+import { MstSprintsView } from "../mst/MstSprintsView";
 import { CreativeScanView } from "../mst/CreativeScanView";
 
 const ACCOUNT_KEY = "metrix_active_account_v1";
@@ -143,7 +143,7 @@ const RANGE_INDEPENDENT_VIEWS: [string, React.ComponentType][] = [
   ["IAP Library", IapLibraryView],
   ["Concept Map", ConceptMapView],
   ["Crossmap Results", CrossmapResultsView],
-  ["Matrix Builder", MatrixBuilderView],
+  ["Sprints", MstSprintsView],
   ["Creative Scan", CreativeScanView],
 ];
 

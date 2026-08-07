@@ -532,10 +532,17 @@ export interface ManualImport {
   /** How ad_names was auto-suggested at stage time (id code, confident filename similarity, or low-confidence closest guess), if it still matches the saved mapping. Cleared once the mapping is overridden. */
   match_method?: ManualImportMatchMethod;
   status: ManualImportStatus;
+  /** The analysis run that consumed this import (status=processed), if any. Null for staged/rejected imports and for creative_asset uploads, which are never run-consumed. */
+  manual_analysis_run_id?: string | null;
   created_at: string;
   link_result?: CreativeLinkResult;
   /** Column mapping results stored at upload time for performance CSV imports (absent for creative_asset uploads). Used to surface column health warnings at the 'Run analysis' step and to re-hydrate the mapping panel on subsequent visits without re-uploading. */
   mapping_summary?: ColumnMappingSummaryEntry[] | null;
+}
+
+export interface RestageManualImportsResult {
+  /** Number of manual_imports rows flipped from processed back to staged. */
+  restaged: number;
 }
 
 export interface ListManualImportsResult {

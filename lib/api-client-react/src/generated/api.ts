@@ -88,6 +88,7 @@ import type {
   RequestAccessEntriesResult,
   RequestAccessInput,
   RequestAccessResult,
+  RestageManualImportsResult,
   ReviewCreativeDeconstructionInput,
   ReviewCreativeDeconstructionResult,
   RevokeSessionResult,
@@ -445,6 +446,79 @@ export function useListManualImports<TData = Awaited<ReturnType<typeof listManua
 
 
 
+
+export const getRestageManualImportsForRunUrl = (accountId: string,
+    runId: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/manual-imports/restage-run/${runId}`
+}
+
+/**
+ * Flips every manual_imports row this run consumed (status=processed) back to staged and clears the run linkage, so "Run analysis" picks them up again to regenerate the analysis from the same files without re-uploading. Requires access to the account.
+ * @summary Restage the imports a past analysis run consumed
+ */
+export const restageManualImportsForRun = async (accountId: string,
+    runId: string, options?: RequestInit): Promise<RestageManualImportsResult> => {
+
+  return customFetch<RestageManualImportsResult>(getRestageManualImportsForRunUrl(accountId,runId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRestageManualImportsForRunMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restageManualImportsForRun>>, TError,{accountId: string;runId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof restageManualImportsForRun>>, TError,{accountId: string;runId: string}, TContext> => {
+
+const mutationKey = ['restageManualImportsForRun'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof restageManualImportsForRun>>, {accountId: string;runId: string}> = (props) => {
+          const {accountId,runId} = props ?? {};
+
+          return  restageManualImportsForRun(accountId,runId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RestageManualImportsForRunMutationResult = NonNullable<Awaited<ReturnType<typeof restageManualImportsForRun>>>
+
+    export type RestageManualImportsForRunMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Restage the imports a past analysis run consumed
+ */
+export const useRestageManualImportsForRun = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restageManualImportsForRun>>, TError,{accountId: string;runId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof restageManualImportsForRun>>,
+        TError,
+        {accountId: string;runId: string},
+        TContext
+      > => {
+      return useMutation(getRestageManualImportsForRunMutationOptions(options));
+    }
 
 export const getUpdateManualImportAdNamesUrl = (accountId: string,
     importId: string,) => {

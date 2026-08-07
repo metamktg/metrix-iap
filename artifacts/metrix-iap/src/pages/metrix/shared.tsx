@@ -18,12 +18,23 @@
 // • Drawers (InfoDrawer/DrawerField) and modals may show full-length prose.
 //
 // Typography roles — import { TYPE } from "./typography":
+// • TYPE.microLabel 9px mono uppercase micro index/eyebrow labels (below
+//   TYPE.label — e.g. "Spend"/"Results" strip labels, run-scope captions)
 // • TYPE.label   10px uppercase eyebrow/section labels
-// • TYPE.title   13px semibold card/list titles
+// • TYPE.title   14px BOLD card/list titles — bold is the one enforced
+//   title weight platform-wide (matches SectionCard's own <h3>)
 // • TYPE.body    12px primary prose in cards/tiles
 // • TYPE.caption 11px secondary/meta prose
 // Standard tile anatomy: eyebrow label → title → clamped body → chip rows →
-// footer/meta. No half-pixel sizes (10.5/11.5/12.5px) in card bodies.
+// footer/meta. No half-pixel sizes (10.5/11.5/12.5px) in card bodies, and no
+// raw text-[Npx] classes — every size composes from TYPE (enforced by
+// scripts/check-disclosure-rulebook.ts).
+//
+// Header ownership: a page composing tab-switched sub-views (e.g. a command
+// center that toggles between two child views) owns the single <ModuleHeader>
+// itself; sub-views mounted this way must not render their own — accept and
+// honor a `renderHeader={false}` prop instead, so a route never shows two
+// stacked headings for the same title.
 //
 // Normalization rulebook — import from "@/lib/normalize" (pure, tested):
 // • TITLES: compound "Main — Qualifier" analysis/pillar titles split with
@@ -62,7 +73,7 @@ import { useLocation, useSearch } from "wouter";
 import { ConnectMetaDialog, ManualImportDialog } from "./ConnectAccountDialogs";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
 import { useListManualImports } from "@workspace/api-client-react";
-import { Plug, FileUp, Clock, Database, Info, ArrowRight, ArrowLeftRight, CheckSquare, CheckCircle2, Square, CalendarRange, CalendarX2, AlertTriangle, ChevronDown, ChevronLeft, Sparkles, Map as MapIcon, Lock, Circle, Loader2, CircleCheck, CircleX } from "lucide-react";
+import { Plug, FileUp, Clock, Database, Info, ArrowRight, ArrowLeftRight, CheckSquare, CheckCircle2, Square, CalendarRange, CalendarX2, AlertTriangle, ChevronDown, ChevronLeft, Sparkles, Map as MapIcon, Lock, Circle, Loader2, CircleCheck, CircleX, Venus, Mars } from "lucide-react";
 import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
 import { DataSourceBadge } from "@/components/ui/DataSourceBadge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@workspace/command-deck/components/ui/tooltip";
@@ -240,6 +251,38 @@ export function resultTerm(account: AdAccount | null | undefined): ResultTerm {
   return { singular, plural, Singular: capitalize(singular), Plural: capitalize(plural) };
 }
 
+// ─── Segment gender icon ────────────────────────────────────────────────
+// Small glyph next to a demographic segment's age·gender label (e.g.
+// "Women 45-54") — breaks up the cognitive load of scanning a grid of
+// text-only labels. Renders nothing for a gender value that isn't
+// female/male — never fabricates an icon for data the segment doesn't
+// actually carry.
+
+export function SegmentGenderIcon({ gender }: { gender: string }) {
+  const g = gender.trim().toLowerCase();
+  if (g === "female") {
+    return (
+      <span
+        aria-hidden
+        className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-rose-400/15 text-rose-300 shrink-0"
+      >
+        <Venus className="w-3 h-3" />
+      </span>
+    );
+  }
+  if (g === "male") {
+    return (
+      <span
+        aria-hidden
+        className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-400/15 text-blue-300 shrink-0"
+      >
+        <Mars className="w-3 h-3" />
+      </span>
+    );
+  }
+  return null;
+}
+
 // ─── Confidence badge ─────────────────────────────────────────────────
 
 export function ConfidenceBadge({ value }: { value: string }) {
@@ -280,17 +323,21 @@ function spaNav(href: string, e: React.MouseEvent) {
 
 const SECTION_TABS: Record<"analysis" | "strategy", { label: string; to: string }[]> = {
   analysis: [
-    { label: "Overview",       to: "/app/analysis/overview" },
-    { label: "IAP Library",    to: "/app/analysis/library" },
-    { label: "Audience",       to: "/app/analysis/audience" },
-    { label: "Placements",     to: "/app/analysis/placements" },
-    { label: "Budget Insight", to: "/app/analysis/budget" },
+    { label: "Overview",        to: "/app/analysis/overview" },
+    { label: "Ad Performance",  to: "/app/analysis/performance" },
+    { label: "IAP Library",     to: "/app/analysis/library" },
+    { label: "Audience",        to: "/app/analysis/audience" },
+    { label: "Placements",      to: "/app/analysis/placements" },
+    { label: "Budget",          to: "/app/analysis/budget" },
+    { label: "History",         to: "/app/analysis/history" },
   ],
   strategy: [
-    { label: "Overview",          to: "/app/strategy/overview" },
-    { label: "Strategy Map",      to: "/app/strategy/map" },
-    { label: "Avatars / ICP",     to: "/app/strategy/avatars" },
-    { label: "Hypothesis Queue",  to: "/app/strategy/hypotheses" },
+    { label: "Overview",             to: "/app/strategy/overview" },
+    { label: "Strategy Map",         to: "/app/strategy/map" },
+    { label: "Avatars / ICP / PMF",  to: "/app/strategy/avatars" },
+    { label: "Communications",       to: "/app/strategy/communications" },
+    { label: "Hypothesis Queue",     to: "/app/strategy/hypotheses" },
+    { label: "History",              to: "/app/strategy/history" },
   ],
 };
 
@@ -345,13 +392,19 @@ export function ModuleHeader({
   account?: AdAccount;
 }) {
   const sectionLabel = section.split(" · ")[0];
+  // A stage's command-center hub sets title to the bare stage name (e.g.
+  // title="Strategy" on the page whose section is "Strategy · 04"), which
+  // would otherwise render the eyebrow and H1 as an exact duplicate. Fall
+  // back to the full section string (surfacing the "· 04" stage position
+  // that's normally trimmed off) instead of inventing new copy.
+  const eyebrowText = sectionLabel.toLowerCase() === title.toLowerCase() ? section : sectionLabel;
   return (
     <div className="shrink-0">
       <div className={cn("px-6 py-4", !tabs && "border-b border-border/40")}>
         <div className="flex items-start gap-3">
           <div className="flex-1 min-w-0 mx-section-header">
             <div className="flex items-center gap-1.5">
-              <span className="mx-section-header__eyebrow">{sectionLabel}</span>
+              <span className="mx-section-header__eyebrow">{eyebrowText}</span>
               {subtitle && <InfoTooltip content={subtitle} />}
             </div>
             <h1 className="mx-section-header__title">{title}</h1>
@@ -920,8 +973,8 @@ export function MetricTile({
 }) {
   const isPrimary = variant === "primary";
   const labelCls = isPrimary
-    ? "text-[9px] font-mono uppercase tracking-widest text-muted-foreground/65 mb-1.5 truncate"
-    : "text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-2 truncate";
+    ? cn(TYPE.microLabel, "text-muted-foreground/65 mb-1.5 truncate")
+    : cn(TYPE.microLabel, "text-muted-foreground/40 mb-2 truncate");
 
   if (onClick) {
     return (
@@ -1002,17 +1055,22 @@ export function ModuleScopeGate({
   section,
   title,
   account,
+  renderHeader = true,
   children,
 }: {
   section: string;
   title: string;
   account: AdAccount | null;
+  /** Pass false when a parent (e.g. a tab-switched command center) already
+   *  owns the single ModuleHeader for this route — prevents a duplicate
+   *  heading from rendering in the blocked (no-account/unconfigured) states. */
+  renderHeader?: boolean;
   children: () => React.ReactNode;
 }) {
   if (!account) {
     return (
       <div className="flex-1 flex flex-col">
-        <ModuleHeader section={section} title={title} />
+        {renderHeader && <ModuleHeader section={section} title={title} />}
         <PendingState
           title="No ad account selected"
           message="Choose an ad account to view this module."
@@ -1024,7 +1082,7 @@ export function ModuleScopeGate({
   if (account.status !== "configured") {
     return (
       <div className="flex-1 flex flex-col">
-        <ModuleHeader section={section} title={title} />
+        {renderHeader && <ModuleHeader section={section} title={title} />}
         <UnconfiguredState account={account} />
       </div>
     );
@@ -1497,10 +1555,12 @@ export function SectionCard({
         )}
         onClick={collapsible ? () => setOpen((v) => !v) : undefined}
       >
-        <div className="flex-1 min-w-0">
-          <h3 className="text-title font-bold text-foreground leading-tight">{title}</h3>
+        <div className="flex-1 min-w-0 flex items-center gap-1.5">
+          <h3 className="text-title font-bold text-foreground leading-tight truncate">{title}</h3>
           {desc && (
-            <p className="text-label text-muted-foreground/50 leading-snug mt-0.5 line-clamp-1">{desc}</p>
+            <span onClick={(e) => e.stopPropagation()} className="shrink-0">
+              <InfoTooltip content={desc} />
+            </span>
           )}
         </div>
         <div className="shrink-0 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>

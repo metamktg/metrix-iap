@@ -161,6 +161,7 @@ export * from './requestAccessInput';
 export * from './requestAccessInputBusinessType';
 export * from './requestAccessResult';
 export * from './requestAccessResultStatus';
+export * from './restageManualImportsResult';
 export * from './reviewCreativeDeconstructionInput';
 export * from './reviewCreativeDeconstructionInputAction';
 export * from './reviewCreativeDeconstructionResult';

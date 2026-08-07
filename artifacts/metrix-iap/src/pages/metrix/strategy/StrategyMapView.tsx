@@ -214,13 +214,13 @@ function SourceCellCard({
         <div className="flex items-center gap-3 pt-1 border-t border-border/15">
           {(spend ?? 0) > 0 && (
             <div className="flex flex-col gap-0.5">
-              <span className={cn(TYPE.label, "text-muted-foreground/40 uppercase tracking-wide text-[9px]")}>Spend</span>
+              <span className={cn(TYPE.microLabel, "text-muted-foreground/40")}>Spend</span>
               <span className={cn(TYPE.label, "text-foreground/65 tabular-nums font-semibold")}>{fmtUSD(spend, 0)}</span>
             </div>
           )}
           {(results ?? 0) > 0 && (
             <div className="flex flex-col gap-0.5">
-              <span className={cn(TYPE.label, "text-muted-foreground/40 uppercase tracking-wide text-[9px]")}>Results</span>
+              <span className={cn(TYPE.microLabel, "text-muted-foreground/40")}>Results</span>
               <span className={cn(TYPE.label, "text-foreground/65 tabular-nums font-semibold")}>{fmtNum(results)}</span>
             </div>
           )}
@@ -545,7 +545,7 @@ export function StrategyMapView() {
                   {/* Left column — Pillars list (resizable) */}
                   <div style={{ width: leftWidth }} className="shrink-0 overflow-y-auto bg-white/[0.005]">
                     <div className="px-3 py-2 border-b border-border/20 sticky top-0 bg-background/90 backdrop-blur-sm z-10">
-                      <p className={cn(TYPE.label, "text-muted-foreground/35 uppercase tracking-wide text-[10px] mb-0.5")}>Pillars</p>
+                      <p className={cn(TYPE.microLabel, "text-muted-foreground/35 mb-0.5")}>Pillars</p>
                       <span className={cn(TYPE.caption, "font-semibold text-foreground/65")}>
                         {pillars.length} message pillar{pillars.length !== 1 ? "s" : ""}
                       </span>
@@ -577,7 +577,7 @@ export function StrategyMapView() {
                             )}
                           />
                           <div className="min-w-0">
-                            <p className={cn(TYPE.label, "text-muted-foreground/35 uppercase tracking-wide text-[10px] mb-0.5")}>
+                            <p className={cn(TYPE.microLabel, "text-muted-foreground/35 mb-0.5")}>
                               Source cells
                             </p>
                             <span className={cn(TYPE.caption, "font-semibold text-foreground/80 leading-snug line-clamp-1")}>
@@ -694,7 +694,7 @@ export function StrategyMapView() {
                         <div className="flex items-center gap-1.5">
                           <FlaskConical className="w-3 h-3 text-muted-foreground/40 shrink-0" />
                           <div>
-                            <p className={cn(TYPE.label, "text-muted-foreground/35 uppercase tracking-wide text-[10px] mb-0.5")}>Hypotheses</p>
+                            <p className={cn(TYPE.microLabel, "text-muted-foreground/35 mb-0.5")}>Hypotheses</p>
                             <span className={cn(TYPE.caption, "font-semibold text-foreground/65")}>
                               {selectedHyps.length} active
                             </span>

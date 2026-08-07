@@ -121,6 +121,7 @@ export const ListManualImportsResponse = zod.object({
   "ad_names": zod.array(zod.string()),
   "match_method": zod.enum(['id', 'fuzzy', 'guess']).nullish().describe('How ad_names was auto-suggested at stage time (id code, confident filename similarity, or low-confidence closest guess), if it still matches the saved mapping. Cleared once the mapping is overridden.'),
   "status": zod.enum(['staged', 'processed', 'rejected']),
+  "manual_analysis_run_id": zod.string().nullish().describe('The analysis run that consumed this import (status=processed), if any. Null for staged\/rejected imports and for creative_asset uploads, which are never run-consumed.'),
   "created_at": zod.string(),
   "link_result": zod.object({
   "matched": zod.array(zod.string()).describe('Ad names that resolved to a real ad row and were linked to this asset.'),
@@ -135,6 +136,24 @@ export const ListManualImportsResponse = zod.object({
   "is_required": zod.boolean().describe('True when this column is listed in the spec\'s requiredBreakdownColumns for this CSV class. A missing required column will cause the analysis run to produce incomplete or failed results — not just reduced confidence.')
 }).describe('Per-canonical column mapping result included in the upload staging response. Covers every breakdown and base metric column so the client can render a full column-mapping report.')).nullish().describe('Column mapping results stored at upload time for performance CSV imports (absent for creative_asset uploads). Used to surface column health warnings at the \'Run analysis\' step and to re-hydrate the mapping panel on subsequent visits without re-uploading.')
 }))
+})
+
+
+/**
+ * Flips every manual_imports row this run consumed (status=processed) back to staged and clears the run linkage, so "Run analysis" picks them up again to regenerate the analysis from the same files without re-uploading. Requires access to the account.
+ * @summary Restage the imports a past analysis run consumed
+ */
+
+
+
+
+export const RestageManualImportsForRunParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.'),
+  "runId": zod.coerce.string().min(1).describe('A past manual analysis run identifier.')
+})
+
+export const RestageManualImportsForRunResponse = zod.object({
+  "restaged": zod.number().describe('Number of manual_imports rows flipped from processed back to staged.')
 })
 
 
@@ -166,6 +185,7 @@ export const UpdateManualImportAdNamesResponse = zod.object({
   "ad_names": zod.array(zod.string()),
   "match_method": zod.enum(['id', 'fuzzy', 'guess']).nullish().describe('How ad_names was auto-suggested at stage time (id code, confident filename similarity, or low-confidence closest guess), if it still matches the saved mapping. Cleared once the mapping is overridden.'),
   "status": zod.enum(['staged', 'processed', 'rejected']),
+  "manual_analysis_run_id": zod.string().nullish().describe('The analysis run that consumed this import (status=processed), if any. Null for staged\/rejected imports and for creative_asset uploads, which are never run-consumed.'),
   "created_at": zod.string(),
   "link_result": zod.object({
   "matched": zod.array(zod.string()).describe('Ad names that resolved to a real ad row and were linked to this asset.'),

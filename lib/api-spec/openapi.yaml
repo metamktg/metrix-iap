@@ -164,6 +164,54 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/manual-imports/restage-run/{runId}:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+      - name: runId
+        in: path
+        required: true
+        description: A past manual analysis run identifier.
+        schema:
+          type: string
+          minLength: 1
+    post:
+      operationId: restageManualImportsForRun
+      tags: [metrix]
+      summary: Restage the imports a past analysis run consumed
+      description: Flips every manual_imports row this run consumed (status=processed) back to staged and clears the run linkage, so "Run analysis" picks them up again to regenerate the analysis from the same files without re-uploading. Requires access to the account.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Imports restaged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RestageManualImportsResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/accounts/{accountId}/manual-imports/{importId}:
     parameters:
       - name: accountId
@@ -3883,6 +3931,10 @@ components:
         status:
           type: string
           enum: [staged, processed, rejected]
+        manual_analysis_run_id:
+          type: string
+          description: The analysis run that consumed this import (status=processed), if any. Null for staged/rejected imports and for creative_asset uploads, which are never run-consumed.
+          nullable: true
         created_at:
           type: string
         link_result:
@@ -3902,6 +3954,14 @@ components:
         - ad_names
         - status
         - created_at
+    RestageManualImportsResult:
+      type: object
+      properties:
+        restaged:
+          type: integer
+          description: Number of manual_imports rows flipped from processed back to staged.
+      required:
+        - restaged
     ListManualImportsResult:
       type: object
       properties:

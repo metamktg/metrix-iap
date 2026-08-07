@@ -9,7 +9,4 @@ export const MANUAL_ONLY_CHECK_SCRIPTS: Record<string, string> = {
   "check:metrix-settings-api":
     "requires a live API server (mutates invite/notification rows); run manually " +
     "with the API Server workflow up — not suitable for an unattended validation workflow",
-  "check:disclosure-rulebook":
-    "currently failing: existing pages still carry raw text-[Npx] classes; " +
-    "clean up the violations before wiring it into a validation workflow",
 };

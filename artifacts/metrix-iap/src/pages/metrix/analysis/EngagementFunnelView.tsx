@@ -48,7 +48,7 @@ import {
 import { cn } from "@workspace/command-deck/lib/utils";
 import {
   TrendingUp, Layers, Table2, Activity, ArrowDown, ArrowUp,
-  ChevronsUpDown, Info, Video, ArrowRight,
+  ChevronsUpDown, Video, ArrowRight,
 } from "lucide-react";
 import type { DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 import { TYPE } from "../typography";
@@ -283,12 +283,8 @@ function FunnelWaterfall({ stages }: { stages: FunnelStage[] }) {
         );
       })}
       {!hasLowerFunnel && (
-        <div className="rounded-lg border border-border/30 bg-white/[0.02] p-3 flex items-start gap-2 mt-2">
-          <Info className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0 mt-0.5" />
-          <p className="text-[11px] text-muted-foreground/65 leading-relaxed">
-            Add-to-cart, checkout, and purchase data comes from the demographic export when the account is configured
-            for ecommerce tracking. These fields appear once a matching export is staged and analyzed.
-          </p>
+        <div className="mt-2">
+          <CaveatNote text="Add-to-cart, checkout, and purchase data comes from the demographic export when the account is configured for ecommerce tracking. These fields appear once a matching export is staged and analyzed." />
         </div>
       )}
     </div>
@@ -521,17 +517,9 @@ function VideoPlaceholder() {
   return (
     <div className="rounded-xl border border-border/30 bg-white/[0.015] p-5 flex items-start gap-3">
       <Video className="w-5 h-5 text-muted-foreground/40 shrink-0 mt-0.5" />
-      <div className="space-y-1.5">
+      <div className="space-y-1.5 max-w-xl flex-1 min-w-0">
         <div className="text-[12.5px] font-semibold text-foreground/80">Video engagement metrics not available</div>
-        <p className="text-[11px] text-muted-foreground/65 leading-relaxed max-w-xl">
-          ThruPlay rate and video-play-percentage data require a Meta <strong>Video Creative report CSV</strong> — a
-          separate export from the standard demographic/placement performance report. These fields are recognized by
-          the import parser when present but are not currently detected in staged uploads.
-        </p>
-        <p className="text-[11px] text-muted-foreground/50 leading-relaxed">
-          To see video metrics: in Meta Ads Manager → Columns → Customize → add ThruPlays and Video play % → export
-          as CSV and stage it alongside your performance exports.
-        </p>
+        <CaveatNote text="ThruPlay rate and video-play-percentage data require a Meta Video Creative report CSV — a separate export from the standard demographic/placement performance report, not currently detected in staged uploads. To see video metrics: in Meta Ads Manager, go to Columns → Customize, add ThruPlays and Video play %, export as CSV, and stage it alongside your performance exports." />
       </div>
     </div>
   );
