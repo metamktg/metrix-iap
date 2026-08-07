@@ -150,7 +150,7 @@ export function AdPerformanceView() {
               {summary.data_caveat && <CaveatNote text={summary.data_caveat} />}
 
               {controls && (
-                <SectionCard title="Core control reads" desc="The current control concept for each funnel depth." table="core_reanalysis_read" right={<SectionInfoIcon tip="The winning concept at each funnel stage as determined by the most recent re-analysis run — the benchmark every new test is measured against." />}>
+                <SectionCard title="Core control reads" desc="Control creative · per funnel depth" table="core_reanalysis_read" right={<SectionInfoIcon tip="The winning concept at each funnel stage as determined by the most recent re-analysis run — the benchmark every new test is measured against." />}>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {(() => {
                       const primaryName = resolveConceptName(controls.primary_control);
@@ -199,7 +199,7 @@ export function AdPerformanceView() {
                   a compact index (label + a live stat), not a second nav. Each
                   module's full description lives in the title attr, not as
                   always-visible first-layer prose. */}
-              <SectionCard title="Analysis modules" desc="Jump to a specific slice of this account's data." right={<SectionInfoIcon tip="Each module drills into a different dimension of the same import — Library (cell/variable performance), Audience, Placements, Budget, and Engagement Funnel." />}>
+              <SectionCard title="Analysis modules" desc="Same data · different slices" right={<SectionInfoIcon tip="Each module drills into a different dimension of the same import — Library (cell/variable performance), Audience, Placements, Budget, and Engagement Funnel." />}>
                 <div className="flex flex-wrap gap-2">
                   {subpages.map((s) => (
                     <div
