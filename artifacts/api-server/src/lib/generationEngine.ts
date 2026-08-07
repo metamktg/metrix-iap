@@ -348,7 +348,10 @@ function extractJson(text: string): unknown {
   return JSON.parse(stripped.slice(start, end + 1));
 }
 
-async function callModel(prompt: string, maxTokens = 8192): Promise<string> {
+async function callModel(
+  prompt: string,
+  maxTokens = 8192,
+): Promise<{ text: string; truncated: boolean }> {
   const message = await anthropic.messages.create({
     model: GENERATION_MODEL,
     max_tokens: maxTokens,
@@ -356,32 +359,57 @@ async function callModel(prompt: string, maxTokens = 8192): Promise<string> {
   });
   const block = message.content.find((b) => b.type === "text");
   if (!block || block.type !== "text") throw new Error("Model returned no text content.");
-  return block.text;
+  return { text: block.text, truncated: message.stop_reason === "max_tokens" };
 }
+
+// Hard ceiling for automatic budget escalation when the model's JSON is
+// cut off by max_tokens. Truncated JSON can never be "repaired" by a
+// follow-up prompt — the only fix is a bigger output budget.
+const MAX_OUTPUT_TOKENS = 32768;
 
 async function generateValidated<T>(
   prompt: string,
   schema: z.ZodType<T>,
   opts: { maxTokens?: number; validate?: (value: T) => string | null } = {},
 ): Promise<T> {
-  const { maxTokens, validate } = opts;
+  const { validate } = opts;
+  const maxTokens = Math.min(opts.maxTokens ?? 8192, MAX_OUTPUT_TOKENS);
   const parseAndCheck = (raw: string): T => {
     const value = schema.parse(extractJson(raw));
     const problem = validate?.(value);
     if (problem) throw new Error(problem);
     return value;
   };
-  const first = await callModel(prompt, maxTokens);
+
+  // Escalate the output budget until the response is no longer truncated.
+  let budget = maxTokens;
+  let first = await callModel(prompt, budget);
+  while (first.truncated && budget < MAX_OUTPUT_TOKENS) {
+    budget = Math.min(budget * 2, MAX_OUTPUT_TOKENS);
+    first = await callModel(prompt, budget);
+  }
+  if (first.truncated) {
+    throw new Error(
+      `Model output exceeded the ${MAX_OUTPUT_TOKENS}-token budget and was cut off. ` +
+        `Try again — or reduce the scope of the generation.`,
+    );
+  }
+
   try {
-    return parseAndCheck(first);
+    return parseAndCheck(first.text);
   } catch (err) {
     const problem = err instanceof Error ? err.message : String(err);
     const repairPrompt =
       `${prompt}\n\nYour previous response failed validation. Errors:\n${problem}\n\n` +
-      `Previous response:\n${first.slice(0, 6000)}\n\n` +
+      `Previous response:\n${first.text.slice(0, 6000)}\n\n` +
       `Return ONLY the corrected raw JSON object — no prose, no markdown fences.`;
-    const second = await callModel(repairPrompt, maxTokens);
-    return parseAndCheck(second);
+    const second = await callModel(repairPrompt, budget);
+    if (second.truncated) {
+      throw new Error(
+        "Model repair response was cut off by the output budget. Try again.",
+      );
+    }
+    return parseAndCheck(second.text);
   }
 }
 
@@ -842,7 +870,11 @@ export async function startStrategyGeneration(
   void (async () => {
     try {
       const output = sanitizeGeneratedText(
-        await generateValidated(strategyPrompt(evidence, cellIds, icpIds, cohort), GeneratedStrategy),
+        await generateValidated(strategyPrompt(evidence, cellIds, icpIds, cohort), GeneratedStrategy, {
+          // Strategy JSON regularly exceeds the 8k default (a real run was cut
+          // off at ~29k chars); generateValidated escalates further if needed.
+          maxTokens: 16384,
+        }),
         accountName,
       );
 
