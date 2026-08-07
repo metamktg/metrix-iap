@@ -95,8 +95,8 @@ function MetricPickerDropdown({ catalog, activeId, onSelect, onClose }: MetricPi
           : "text-foreground/75 hover:bg-white/[0.05]",
       )}
     >
-      <span className="text-[11px] truncate">{m.label}</span>
-      <span className="text-[11px] font-mono tabular-nums text-muted-foreground/55 shrink-0">
+      <span className="text-caption truncate">{m.label}</span>
+      <span className="text-caption font-mono tabular-nums text-muted-foreground/55 shrink-0">
         {m.value != null ? m.formatted : "—"}
       </span>
     </button>
@@ -107,7 +107,7 @@ function MetricPickerDropdown({ catalog, activeId, onSelect, onClose }: MetricPi
       ref={ref}
       className="absolute top-full left-0 mt-1 z-50 w-56 rounded-lg border border-border/60 bg-[hsl(var(--surface-raised))] shadow-2xl py-1 overflow-hidden"
     >
-      <div className="px-2.5 py-1 text-[9px] font-mono uppercase tracking-widest text-muted-foreground/45">
+      <div className="px-2.5 py-1 text-micro font-mono uppercase tracking-widest text-muted-foreground/45">
         Delivery & efficiency
       </div>
       {staticMetrics.map((m) => <Row key={m.id} m={m} />)}
@@ -115,7 +115,7 @@ function MetricPickerDropdown({ catalog, activeId, onSelect, onClose }: MetricPi
       {eventMetrics.length > 0 && (
         <>
           <div className="mx-2 my-1 border-t border-border/20" />
-          <div className="px-2.5 py-1 text-[9px] font-mono uppercase tracking-widest text-muted-foreground/45">
+          <div className="px-2.5 py-1 text-micro font-mono uppercase tracking-widest text-muted-foreground/45">
             Results by event
           </div>
           {eventMetrics.map((m) => <Row key={m.id} m={m} />)}
@@ -255,7 +255,7 @@ function ResultsByEventList({
         style={{ gridTemplateColumns: "1fr 5.5rem 3.5rem 1fr 5.5rem 5rem" }}
       >
         {["Event", "Results", "Share", "", "Spend", "CPA"].map((h) => (
-          <span key={h} className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/35 text-right first:text-left">{h}</span>
+          <span key={h} className="text-micro font-mono uppercase tracking-widest text-muted-foreground/35 text-right first:text-left">{h}</span>
         ))}
       </div>
 
@@ -294,7 +294,7 @@ function ResultsByEventList({
 
             {/* Result count */}
             <div className={cn(
-              "tabular-nums font-semibold text-right text-[13px]",
+              "tabular-nums font-semibold text-right text-title",
               isZero ? "text-muted-foreground/30" : isTop ? "text-foreground" : "text-foreground/75",
             )}>
               {fmtNum(e.results)}
@@ -400,16 +400,16 @@ function AdAccountCard({
         {configured && totals && (totals.spend > 0 || totals.results > 0) && (
           <div className="flex items-center gap-4 mt-2.5 pt-2 border-t border-border/20">
             <div>
-              <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/35 mb-0.5">Spend</div>
+              <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/35 mb-0.5">Spend</div>
               <div className={cn(TYPE.body, "font-semibold tabular-nums text-foreground/80")}>{fmtUSD(totals.spend, 0)}</div>
             </div>
             <div>
-              <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/35 mb-0.5">Results</div>
+              <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/35 mb-0.5">Results</div>
               <div className={cn(TYPE.body, "tabular-nums text-foreground/65")}>{fmtNum(totals.results)}</div>
             </div>
             {totals.cpa != null && (
               <div>
-                <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/35 mb-0.5">CPA</div>
+                <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/35 mb-0.5">CPA</div>
                 <div className={cn(TYPE.body, "tabular-nums text-foreground/65")}>{fmtUSD(totals.cpa)}</div>
               </div>
             )}
@@ -466,14 +466,14 @@ function RecommendationCardItem({
       <div>
         <TokenizedConceptText
           text={card.title}
-          className="text-[13px] font-semibold text-foreground leading-snug"
+          className="text-title font-semibold text-foreground leading-snug"
         />
       </div>
 
       {/* ③ Action block — the most important second thing, never hidden */}
       {card.recommended_action && (
         <div className="rounded-lg border border-border/25 bg-white/[0.04] px-3 py-2.5">
-          <div className="text-[9px] font-mono uppercase tracking-widest text-interactive/55 mb-1.5">
+          <div className="text-micro font-mono uppercase tracking-widest text-interactive/55 mb-1.5">
             Recommended action
           </div>
           <TokenizedConceptText
@@ -488,7 +488,7 @@ function RecommendationCardItem({
         <div>
           <button
             onClick={() => setRationaleOpen((v) => !v)}
-            className="flex items-center gap-1 text-[10px] text-muted-foreground/45 hover:text-foreground/65 transition-colors font-medium"
+            className="flex items-center gap-1 text-label text-muted-foreground/45 hover:text-foreground/65 transition-colors font-medium"
           >
             {rationaleOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
             {rationaleOpen ? "Hide rationale" : "Why this?"}
@@ -508,13 +508,13 @@ function RecommendationCardItem({
       <div className="flex items-end justify-between gap-2 mt-auto pt-1">
         <button
           onClick={onOpen}
-          className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-interactive hover:text-primary transition-colors"
+          className="inline-flex items-center gap-1.5 text-body font-semibold text-interactive hover:text-primary transition-colors"
         >
           Open {accountLabel} <ArrowRight className="w-3.5 h-3.5" />
         </button>
         {card.source_path && (
           <span
-            className="text-[9px] font-mono text-muted-foreground/25 truncate max-w-[130px]"
+            className="text-micro font-mono text-muted-foreground/25 truncate max-w-[130px]"
             title={card.source_path}
           >
             {card.source_path}

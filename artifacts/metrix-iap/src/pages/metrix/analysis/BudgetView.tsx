@@ -235,13 +235,13 @@ export function BudgetView() {
                     <div className="border-t border-border/20 px-4 pb-4 pt-3 space-y-4">
                       {a.v3_placement_signal.length > 0 && (
                         <div>
-                          <h4 className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-2">V3 signal</h4>
+                          <h4 className="text-micro font-mono uppercase tracking-widest text-muted-foreground/40 mb-2">V3 signal</h4>
                           <PlacementTable rows={a.v3_placement_signal} />
                         </div>
                       )}
                       {a.c4e_placement_signal.length > 0 && (
                         <div>
-                          <h4 className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-2">C4E signal</h4>
+                          <h4 className="text-micro font-mono uppercase tracking-widest text-muted-foreground/40 mb-2">C4E signal</h4>
                           <PlacementTable rows={a.c4e_placement_signal} />
                         </div>
                       )}

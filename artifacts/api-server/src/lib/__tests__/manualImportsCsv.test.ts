@@ -41,7 +41,7 @@ const resolveCurrency = (col: string): string =>
 
 function breakdownValue(col: string): string {
   switch (col) {
-    case "Date":
+    case "Day":
       return "2026-07-01";
     case "Campaign ID":
       return "6001";

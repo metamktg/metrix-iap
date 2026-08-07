@@ -11,3 +11,7 @@ description: Durable rules for classifying uploaded creatives into the IAP libra
 - **Cell alignment**: use the mapped ad's grid cell, else the linked brief's matrix cell, else a NEW column — never guess a creative into an existing grid column.
 - Filed library payloads carry deconstruction provenance keys; all dedupe/cleanup (re-classification, discard, import delete) works via those keys — any new writer must preserve them.
 - Videos are never sent to the model — recorded as `unsupported`.
+
+## Bulk backfill & run progress
+- Bulk backfill endpoint targets server-side: every creative_asset import with no non-discarded classification (discarded rows get retried; unsupported/needs_review/filed are skipped).
+- generation_runs carries progress_done/progress_total, updated after each per-import commit; UI polls the latest-run endpoint for the n-of-m meter. Pacing: sequential model calls + pause every few items.

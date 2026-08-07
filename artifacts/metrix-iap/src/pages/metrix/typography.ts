@@ -24,7 +24,7 @@ export const TYPE = {
   /** Micro mono index/eyebrow labels below TYPE.label (e.g. "Spend"/"Results"
    *  strip labels, run-scope captions) — the formal home for the 9px
    *  font-mono uppercase pattern that was previously hand-copied as raw
-   *  text-[9px] classes across several files. */
+   *  text-micro classes across several files. */
   microLabel: "text-micro font-mono font-semibold uppercase tracking-widest text-muted-foreground/60",
   /** Uppercase eyebrow/section labels above titles or field groups.
    *  text-data-caption = #8796ac, 6.5:1 — intentional secondary, solid (no opacity blend). */

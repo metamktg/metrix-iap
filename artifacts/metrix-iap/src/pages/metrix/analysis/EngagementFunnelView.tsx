@@ -258,7 +258,7 @@ function FunnelWaterfall({ stages }: { stages: FunnelStage[] }) {
         return (
           <div key={stage.id} className={cn("rounded-lg border p-3", c.bg, c.border)}>
             <div className="flex items-center gap-3 mb-1.5">
-              <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 w-28 shrink-0">
+              <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/60 w-28 shrink-0">
                 {stage.label}
               </span>
               <div className="flex-1 h-5 bg-white/[0.04] rounded overflow-hidden">
@@ -267,14 +267,14 @@ function FunnelWaterfall({ stages }: { stages: FunnelStage[] }) {
                   style={{ width: `${barW}%` }}
                 />
               </div>
-              <span className="text-[13px] font-semibold text-foreground tabular-nums w-24 text-right shrink-0">
+              <span className="text-title font-semibold text-foreground tabular-nums w-24 text-right shrink-0">
                 {fmtNum(stage.value)}
               </span>
             </div>
             {stage.pctOfPrev != null && (
               <div className="flex items-center gap-1 ml-28 pl-3">
                 <ArrowRight className="w-3 h-3 text-muted-foreground/35" />
-                <span className={cn("text-[10px] font-medium", stage.pctOfPrev >= 20 ? "text-emerald-400/70" : stage.pctOfPrev >= 5 ? c.text : "text-red-400/70")}>
+                <span className={cn("text-label font-medium", stage.pctOfPrev >= 20 ? "text-emerald-400/70" : stage.pctOfPrev >= 5 ? c.text : "text-red-400/70")}>
                   {stage.pctOfPrev.toFixed(1)}% of previous stage
                 </span>
               </div>
@@ -301,7 +301,7 @@ function SortableHeader({
     <button
       onClick={() => onSort(col.id)}
       className={cn(
-        "flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide transition-colors",
+        "flex items-center gap-1 text-label font-semibold uppercase tracking-wide transition-colors",
         isActive ? "text-interactive" : "text-muted-foreground/55 hover:text-foreground/70"
       )}
     >
@@ -329,7 +329,7 @@ function BreakdownTable({
   const allVals = sorted.map((r) => activeMetric.value(r));
 
   if (rows.length === 0) {
-    return <div className="text-[12px] text-muted-foreground/60 py-4">No data for this breakdown.</div>;
+    return <div className="text-body text-muted-foreground/60 py-4">No data for this breakdown.</div>;
   }
 
   const allCols: RankMetric<BreakdownRow>[] = BREAKDOWN_METRICS.filter((m) => rows.some((r) => m.value(r) != null));
@@ -345,7 +345,7 @@ function BreakdownTable({
         <table className="w-full text-left border-separate border-spacing-0">
           <thead>
             <tr>
-              <th className="pb-2 pr-4 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/55 sticky left-0 bg-transparent">
+              <th className="pb-2 pr-4 text-label font-semibold uppercase tracking-wide text-muted-foreground/55 sticky left-0 bg-transparent">
                 Segment
               </th>
               {cols.map((col) => (
@@ -353,7 +353,7 @@ function BreakdownTable({
                   <SortableHeader col={col} activeId={sortId} direction={activeMetric.direction} onSort={onSort} />
                 </th>
               ))}
-              <th className="pb-2 px-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/55">
+              <th className="pb-2 px-3 text-label font-semibold uppercase tracking-wide text-muted-foreground/55">
                 Bar
               </th>
             </tr>
@@ -366,13 +366,13 @@ function BreakdownTable({
               return (
                 <tr key={row.label} className={cn("group", isTop && "bg-white/[0.015]")}>
                   <td className="py-2 pr-4 sticky left-0">
-                    <span className="text-[12px] font-medium text-foreground/90 whitespace-nowrap">{row.label}</span>
+                    <span className="text-body font-medium text-foreground/90 whitespace-nowrap">{row.label}</span>
                   </td>
                   {cols.map((col) => {
                     const val = col.value(row);
                     return (
                       <td key={col.id} className={cn(
-                        "py-2 px-3 text-[12px] tabular-nums whitespace-nowrap",
+                        "py-2 px-3 text-body tabular-nums whitespace-nowrap",
                         col.id === sortId ? "font-semibold text-interactive" : "text-foreground/70"
                       )}>
                         {val != null ? col.format(val) : <span className="text-muted-foreground/30">—</span>}
@@ -397,7 +397,7 @@ function BreakdownTable({
       {(hiddenCount > 0 || showAllCols) && (
         <button
           onClick={() => setShowAllCols((v) => !v)}
-          className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground/55 hover:text-foreground/70 transition-colors"
+          className="flex items-center gap-1 text-label font-medium text-muted-foreground/55 hover:text-foreground/70 transition-colors"
         >
           {showAllCols ? (
             <><ArrowUp className="w-3 h-3" /> Show fewer columns</>
@@ -428,7 +428,7 @@ function FrequencyScatter({ rows }: { rows: BreakdownRow[] }) {
 
   if (plotData.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64 text-[12px] text-muted-foreground/60">
+      <div className="flex items-center justify-center h-64 text-body text-muted-foreground/60">
         Need reach + impression data to plot frequency scatter.
       </div>
     );
@@ -436,7 +436,7 @@ function FrequencyScatter({ rows }: { rows: BreakdownRow[] }) {
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-3 text-[10px] text-muted-foreground/60">
+      <div className="grid grid-cols-2 gap-3 text-label text-muted-foreground/60">
         <div className="flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-full bg-blue-400/70" />
           <span>High freq + high CTR → scale safely</span>
@@ -483,7 +483,7 @@ function FrequencyScatter({ rows }: { rows: BreakdownRow[] }) {
               if (!active || !payload?.length) return null;
               const p = payload[0]?.payload as (ScatterPoint & { spendShare: number });
               return (
-                <div className="rounded-lg border border-border/50 bg-[#0a1628]/95 backdrop-blur px-3 py-2 shadow-lg text-[11px] space-y-0.5">
+                <div className="rounded-lg border border-border/50 bg-[#0a1628]/95 backdrop-blur px-3 py-2 shadow-lg text-caption space-y-0.5">
                   <div className="font-semibold text-foreground">{p.label}</div>
                   <div className="text-muted-foreground/70">Frequency: <span className="text-foreground/90">{fmtFreq(p.x)}</span></div>
                   <div className="text-muted-foreground/70">Link CTR: <span className="text-foreground/90">{fmtRate(p.y, 2)}</span></div>
@@ -518,7 +518,7 @@ function VideoPlaceholder() {
     <div className="rounded-xl border border-border/30 bg-white/[0.015] p-5 flex items-start gap-3">
       <Video className="w-5 h-5 text-muted-foreground/40 shrink-0 mt-0.5" />
       <div className="space-y-1.5 max-w-xl flex-1 min-w-0">
-        <div className="text-[12.5px] font-semibold text-foreground/80">Video engagement metrics not available</div>
+        <div className="text-body font-semibold text-foreground/80">Video engagement metrics not available</div>
         <CaveatNote text="ThruPlay rate and video-play-percentage data require a Meta Video Creative report CSV — a separate export from the standard demographic/placement performance report, not currently detected in staged uploads. To see video metrics: in Meta Ads Manager, go to Columns → Customize, add ThruPlays and Video play %, export as CSV, and stage it alongside your performance exports." />
       </div>
     </div>
@@ -637,7 +637,7 @@ export function EngagementFunnelView() {
                     key={mode}
                     onClick={() => setViewMode(mode)}
                     className={cn(
-                      "inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-colors",
+                      "inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-caption font-medium transition-colors",
                       viewMode === mode
                         ? "bg-primary/20 text-interactive border border-primary/25"
                         : "text-muted-foreground/70 hover:text-foreground/80"
@@ -657,7 +657,7 @@ export function EngagementFunnelView() {
                       key={d}
                       onClick={() => setDim(d)}
                       className={cn(
-                        "px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-colors",
+                        "px-2.5 py-1.5 rounded-md text-caption font-medium transition-colors",
                         dim === d
                           ? "bg-primary/20 text-interactive border border-primary/25"
                           : "text-muted-foreground/70 hover:text-foreground/80"
@@ -702,23 +702,23 @@ export function EngagementFunnelView() {
                   >
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div className="rounded-lg border border-border/30 bg-white/[0.02] p-4">
-                        <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/55 mb-1">CTR All</div>
-                        <div className="text-[20px] font-bold text-foreground">{fmtRate(summaryTiles.ctrAll, 2)}</div>
-                        <div className="text-[10px] text-muted-foreground/50 mt-1">All clicks ÷ impressions</div>
+                        <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/55 mb-1">CTR All</div>
+                        <div className="text-display font-bold text-foreground">{fmtRate(summaryTiles.ctrAll, 2)}</div>
+                        <div className="text-label text-muted-foreground/50 mt-1">All clicks ÷ impressions</div>
                       </div>
                       <div className="rounded-lg border border-border/30 bg-white/[0.02] p-4">
-                        <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/55 mb-1">CTR Link</div>
-                        <div className="text-[20px] font-bold text-foreground">{fmtRate(summaryTiles.ctrLink, 2)}</div>
-                        <div className="text-[10px] text-muted-foreground/50 mt-1">Link clicks ÷ impressions</div>
+                        <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/55 mb-1">CTR Link</div>
+                        <div className="text-display font-bold text-foreground">{fmtRate(summaryTiles.ctrLink, 2)}</div>
+                        <div className="text-label text-muted-foreground/50 mt-1">Link clicks ÷ impressions</div>
                       </div>
                       <div className="rounded-lg border border-border/30 bg-white/[0.02] p-4">
-                        <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/55 mb-1">Reach CTR</div>
-                        <div className="text-[20px] font-bold text-foreground">{fmtRate(summaryTiles.reachCtr, 2)}</div>
-                        <div className="text-[10px] text-muted-foreground/50 mt-1">Link clicks ÷ unique reach</div>
+                        <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/55 mb-1">Reach CTR</div>
+                        <div className="text-display font-bold text-foreground">{fmtRate(summaryTiles.reachCtr, 2)}</div>
+                        <div className="text-label text-muted-foreground/50 mt-1">Link clicks ÷ unique reach</div>
                       </div>
                     </div>
                     {summaryTiles.ctrAll != null && summaryTiles.ctrLink != null && summaryTiles.ctrAll > 0 && (
-                      <div className="mt-3 p-3 rounded-lg border border-border/25 bg-white/[0.01] text-[11px] text-muted-foreground/70">
+                      <div className="mt-3 p-3 rounded-lg border border-border/25 bg-white/[0.01] text-caption text-muted-foreground/70">
                         <span className="font-medium text-foreground/80">Intent conversion: </span>
                         {fmtRate(pct(summaryTiles.ctrLink, summaryTiles.ctrAll), 0)} of all clicks become link clicks.
                         {summaryTiles.ctrLink != null && summaryTiles.ctrAll != null && summaryTiles.ctrAll > 0 && summaryTiles.ctrLink / summaryTiles.ctrAll < 0.4 && (
@@ -738,7 +738,7 @@ export function EngagementFunnelView() {
                   desc={`All engagement metrics by ${dim === "audience" ? "age × gender pocket" : "placement × platform"}. Sort by any column to find highest-frequency or highest-intent segments.`}
                   right={
                     <>
-                      <span className="text-[10px] text-muted-foreground/50">
+                      <span className="text-label text-muted-foreground/50">
                         {breakdownRows.length} {dim === "audience" ? "pockets" : "placements"}
                       </span>
                       <SectionInfoIcon tip="Sortable table of engagement metrics for each segment. Switch the sort column to surface your highest-frequency or highest-intent pockets." />
@@ -764,7 +764,7 @@ export function EngagementFunnelView() {
                     {dim === "audience" ? (
                       <FrequencyScatter rows={breakdownRows} />
                     ) : (
-                      <div className="flex items-center justify-center h-40 text-[12px] text-muted-foreground/60">
+                      <div className="flex items-center justify-center h-40 text-body text-muted-foreground/60">
                         Placement rows don't include Reach data — frequency scatter requires the demographic export.
                         <button
                           onClick={() => setDim("audience")}

@@ -33,13 +33,13 @@ function SessionSection() {
       <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
         <UserCircle2 className="w-4 h-4 text-interactive shrink-0" />
         <div className="flex-1 min-w-0">
-          <div className="text-[12px] font-medium text-foreground truncate" data-testid="text-session-email">{user.email}</div>
-          <div className="text-[10px] text-muted-foreground/85">Signed in</div>
+          <div className="text-body font-medium text-foreground truncate" data-testid="text-session-email">{user.email}</div>
+          <div className="text-label text-muted-foreground/85">Signed in</div>
         </div>
         <button
           onClick={handleSignOut}
           disabled={signingOut}
-          className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors disabled:opacity-50"
           data-testid="button-sign-out"
         >
           {signingOut ? <Loader2 className="w-3 h-3 animate-spin" /> : <LogOut className="w-3 h-3" />}
@@ -69,7 +69,7 @@ function ActiveSessionsSection() {
   return (
     <SectionCard title="Active sessions" desc="Every browser currently signed in as you. Revoking a session signs it out immediately." table="user_sessions">
       {sessions.length === 0 ? (
-        <p className="text-[11px] text-muted-foreground/70">No active sessions found.</p>
+        <p className="text-caption text-muted-foreground/70">No active sessions found.</p>
       ) : (
         <div className="divide-y divide-border/20">
           {sessions.map((s) => (
@@ -77,16 +77,16 @@ function ActiveSessionsSection() {
               <Monitor className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-[12px] font-medium text-foreground">
+                  <span className="text-body font-medium text-foreground">
                     {s.is_current ? "This device" : "Other session"}
                   </span>
                   {s.is_current && (
-                    <span className="text-[9px] font-semibold uppercase tracking-wide text-emerald-400 border border-emerald-400/25 bg-emerald-400/10 px-1.5 py-0.5 rounded leading-none">
+                    <span className="text-micro font-semibold uppercase tracking-wide text-emerald-400 border border-emerald-400/25 bg-emerald-400/10 px-1.5 py-0.5 rounded leading-none">
                       Current
                     </span>
                   )}
                 </div>
-                <div className="text-[10px] text-muted-foreground/70 mt-0.5">
+                <div className="text-label text-muted-foreground/70 mt-0.5">
                   Signed in {new Date(s.created_at).toLocaleString()} · expires {new Date(s.expires_at).toLocaleDateString()}
                 </div>
               </div>
@@ -94,7 +94,7 @@ function ActiveSessionsSection() {
                 onClick={() => revoke.mutate({ sessionId: s.id })}
                 disabled={revoke.isPending}
                 className={cn(
-                  "flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-[10px] font-medium transition-colors shrink-0",
+                  "flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-label font-medium transition-colors shrink-0",
                   s.is_current
                     ? "border-red-400/30 text-red-300 hover:bg-red-400/10"
                     : "border-border/50 text-muted-foreground hover:text-foreground hover:bg-white/5",
@@ -112,7 +112,7 @@ function ActiveSessionsSection() {
 }
 
 const inputClass =
-  "w-full h-9 px-3 rounded-md bg-white/[0.03] border border-border/40 text-[13px] text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40";
+  "w-full h-9 px-3 rounded-md bg-white/[0.03] border border-border/40 text-title text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:border-primary/40";
 
 function PasswordSection() {
   const { changePassword } = useAuth();
@@ -189,7 +189,7 @@ function PasswordSection() {
       <SectionCard title="Password" desc="Change the password you use to sign in. Changing it signs you out everywhere else.">
         <form onSubmit={handleSubmit} className="space-y-3 max-w-sm" data-testid="form-account-change-password">
           <div className="space-y-1.5">
-            <label htmlFor="account-current-password" className="text-[11px] font-medium text-muted-foreground">
+            <label htmlFor="account-current-password" className="text-caption font-medium text-muted-foreground">
               Current password
             </label>
             <input
@@ -204,7 +204,7 @@ function PasswordSection() {
             />
           </div>
           <div className="space-y-1.5">
-            <label htmlFor="account-new-password" className="text-[11px] font-medium text-muted-foreground">
+            <label htmlFor="account-new-password" className="text-caption font-medium text-muted-foreground">
               New password <span className="text-muted-foreground/80">(min. 8 characters)</span>
             </label>
             <input
@@ -220,7 +220,7 @@ function PasswordSection() {
             />
           </div>
           <div className="space-y-1.5">
-            <label htmlFor="account-confirm-password" className="text-[11px] font-medium text-muted-foreground">
+            <label htmlFor="account-confirm-password" className="text-caption font-medium text-muted-foreground">
               Confirm new password
             </label>
             <input
@@ -235,19 +235,19 @@ function PasswordSection() {
             />
           </div>
           {error && (
-            <div className="text-[11px] text-red-400/90" data-testid="text-account-change-password-error">
+            <div className="text-caption text-red-400/90" data-testid="text-account-change-password-error">
               {error}
             </div>
           )}
           {success && (
-            <div className="flex items-center gap-1.5 text-[11px] text-emerald-400/90" data-testid="text-account-change-password-success">
+            <div className="flex items-center gap-1.5 text-caption text-emerald-400/90" data-testid="text-account-change-password-success">
               <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> Password updated. Other sessions have been signed out.
             </div>
           )}
           <button
             type="submit"
             disabled={isSubmitting || !currentPassword || !newPassword || !confirmPassword}
-            className="flex items-center justify-center gap-1.5 h-9 px-4 rounded-md bg-primary text-primary-foreground text-[12px] font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+            className="flex items-center justify-center gap-1.5 h-9 px-4 rounded-md bg-primary text-primary-foreground text-body font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:pointer-events-none"
             data-testid="button-account-change-password"
           >
             {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5" />}
@@ -269,7 +269,7 @@ export function SecurityView() {
         <ActiveSessionsSection />
         <div className="flex items-start gap-2.5 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
           <ShieldCheck className="w-4 h-4 text-muted-foreground/60 shrink-0 mt-0.5" />
-          <p className="text-[11px] text-muted-foreground/70 leading-relaxed">
+          <p className="text-caption text-muted-foreground/70 leading-relaxed">
             Two-factor authentication and login history are planned but not yet built.
           </p>
         </div>

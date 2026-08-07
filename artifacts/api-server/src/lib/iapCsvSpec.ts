@@ -28,49 +28,26 @@ export const BASE_METRICS: readonly string[] = [
   "Impressions",
   "Frequency",
   "CPM (cost per 1,000 impressions)",
-  "Cost per 1,000 Accounts Center accounts reached",
   "Result type",
   "Results",
-  "Cost per result",
-  "Result rate",
-  "Results rate per link clicks",
   "Result value type",
   "Results value",
   "Views",
   "Clicks (all)",
-  "CPC (all)",
   "CTR (all)",
   "Link clicks",
-  "CPC (cost per link click)",
   "CTR (link click-through rate)",
-  "Unique CTR (link click-through rate)",
   "Unique clicks (all)",
-  "Cost per unique click (all)",
-  "Cost per unique link click",
   "Outbound clicks",
   "Unique outbound clicks",
-  "Outbound CTR (click-through rate)",
-  "Unique outbound CTR (click-through rate)",
-  "Cost per outbound click",
-  "Cost per unique outbound click",
   "Landing page views",
-  "Cost per landing page view",
-  "Landing page views rate per link clicks",
   "Page engagement",
   "Post engagements",
   "Post comments",
   "Post reactions",
   "Post saves",
   "Post shares",
-  "Cost per Page engagement",
-  "Cost per post engagement",
-  "Cost per post share",
-  "Cost per interaction",
   "Instagram profile visits",
-  "Quality ranking",
-  "Engagement rate ranking",
-  "Conversion rate ranking",
-  "Ad recall lift rate",
   "Video average play time",
   "Video plays",
   "3-second video plays",
@@ -81,9 +58,50 @@ export const BASE_METRICS: readonly string[] = [
   "Video plays at 95%",
   "Video plays at 100%",
   "ThruPlays",
+];
+
+/**
+ * Columns that are either fully derivable from raw counts already in
+ * BASE_METRICS (cost-per-X ratios: spend ÷ X; rate columns: X ÷ Y) or
+ * irrelevant to the analysis (Meta's diagnostic ranking labels).
+ *
+ * They are ACCEPTED transparently when present (parsed into row.base like any
+ * base metric) but are never expected: they don't appear in the Required
+ * Format panel, are never listed as missing, and never generate warnings.
+ * Where a derived value is needed downstream, the analysis engine computes it
+ * from raw counts (see derivedRates in analysisEngine.ts) — the server never
+ * trusts a pre-divided ratio column over its own math.
+ */
+export const DERIVED_OR_IRRELEVANT_METRICS: readonly string[] = [
+  // Derivable cost-per-X ratios (spend ÷ raw count)
+  "Cost per result",
+  "Cost per 1,000 Accounts Center accounts reached",
+  "CPC (all)",
+  "CPC (cost per link click)",
+  "Cost per unique click (all)",
+  "Cost per unique link click",
+  "Cost per outbound click",
+  "Cost per unique outbound click",
+  "Cost per landing page view",
+  "Cost per Page engagement",
+  "Cost per post engagement",
+  "Cost per post share",
+  "Cost per interaction",
   "Cost per ThruPlay",
   "Cost per 3-second video play",
   "Cost per 2-second continuous video play",
+  // Derivable rate columns (count ÷ count)
+  "Result rate",
+  "Results rate per link clicks",
+  "Unique CTR (link click-through rate)",
+  "Outbound CTR (click-through rate)",
+  "Unique outbound CTR (click-through rate)",
+  "Landing page views rate per link clicks",
+  // Irrelevant diagnostic / ranking labels
+  "Quality ranking",
+  "Engagement rate ranking",
+  "Conversion rate ranking",
+  "Ad recall lift rate",
 ];
 
 export const ECOMMERCE_METRICS: readonly string[] = [
@@ -163,7 +181,7 @@ export const APP_METRICS: readonly string[] = [
 export const OPTIONAL_METRICS: readonly string[] = [...ECOMMERCE_METRICS, ...SERVICE_METRICS, ...APP_METRICS];
 
 export const DEMOGRAPHIC_BREAKDOWN_COLUMNS: readonly string[] = [
-  "Date",
+  "Day",
   "Campaign ID",
   "Campaign name",
   "Ad set ID",
@@ -176,7 +194,7 @@ export const DEMOGRAPHIC_BREAKDOWN_COLUMNS: readonly string[] = [
 ];
 
 export const DEVICE_PLACEMENT_BREAKDOWN_COLUMNS: readonly string[] = [
-  "Date",
+  "Day",
   "Campaign ID",
   "Campaign name",
   "Ad set ID",
@@ -196,7 +214,7 @@ export const DEVICE_PLACEMENT_BREAKDOWN_COLUMNS: readonly string[] = [
  * avoid tracking_basis collisions with impression-device rows.
  */
 export const CONVERSION_DEVICE_BREAKDOWN_COLUMNS: readonly string[] = [
-  "Date",
+  "Day",
   "Campaign name",
   "Ad name",
   "Conversion device",
@@ -208,7 +226,7 @@ export const CONVERSION_DEVICE_BREAKDOWN_COLUMNS: readonly string[] = [
  * format from Meta that carries full spend unaffected by iOS privacy limits.
  */
 export const AD_SUMMARY_BREAKDOWN_COLUMNS: readonly string[] = [
-  "Date",
+  "Day",
   "Campaign ID",
   "Campaign name",
   "Ad set ID",
@@ -230,23 +248,23 @@ export const IAP_CSV_CLASS_SPECS: Record<IapCsvClass, IapCsvClassSpec> = {
   demographic: {
     className: "IAP_DEMOGRAPHIC_TEXT_SIGNAL",
     breakdownColumns: DEMOGRAPHIC_BREAKDOWN_COLUMNS,
-    requiredBreakdownColumns: ["Date", "Campaign name", "Ad name", "Gender", "Age"],
+    requiredBreakdownColumns: ["Day", "Campaign name", "Ad name", "Gender", "Age"],
   },
   device_placement: {
     className: "IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL",
     breakdownColumns: DEVICE_PLACEMENT_BREAKDOWN_COLUMNS,
-    requiredBreakdownColumns: ["Date", "Campaign name", "Ad name", "Impression device", "Platform", "Placement"],
+    requiredBreakdownColumns: ["Day", "Campaign name", "Ad name", "Impression device", "Platform", "Placement"],
   },
   ad_summary: {
     className: "IAP_AD_SUMMARY",
     breakdownColumns: AD_SUMMARY_BREAKDOWN_COLUMNS,
     // Ad name is required; Campaign name used for bucketing but tolerated blank
-    requiredBreakdownColumns: ["Date", "Ad name"],
+    requiredBreakdownColumns: ["Day", "Ad name"],
   },
   conversion_device: {
     className: "IAP_CONVERSION_DEVICE_SIGNAL",
     breakdownColumns: CONVERSION_DEVICE_BREAKDOWN_COLUMNS,
-    requiredBreakdownColumns: ["Date", "Campaign name", "Ad name", "Conversion device"],
+    requiredBreakdownColumns: ["Day", "Campaign name", "Ad name", "Conversion device"],
   },
 };
 
@@ -287,15 +305,16 @@ export function headerMatchesColumn(header: string, canonical: string): boolean 
  */
 export const COLUMN_ALIASES: Record<string, string> = {
   // ── Date / time breakdowns ───────────────────────────────────────────
-  // Meta Ads Manager standard UI exports use "Day" for the date breakdown
-  "day": "Date",
+  // "Day" is canonical — it is what Meta Ads Manager standard UI exports
+  // actually emit. "Date" (and the labels below) are accepted as aliases.
+  "date": "Day",
   // Reporting period labels seen in Meta Business Suite / legacy exports
-  "report date": "Date",
-  "reporting date": "Date",
-  "reporting starts": "Date",
-  "report start": "Date",
-  "date start": "Date",
-  "week": "Date",                  // weekly-rollup exports sometimes emit "Week"
+  "report date": "Day",
+  "reporting date": "Day",
+  "reporting starts": "Day",
+  "report start": "Day",
+  "date start": "Day",
+  "week": "Day",                  // weekly-rollup exports sometimes emit "Week"
 
   // ── Spend / amount ───────────────────────────────────────────────────
   // Spend column — sometimes labelled without the currency suffix
@@ -434,13 +453,12 @@ export const COLUMN_ALIASES: Record<string, string> = {
  */
 export const SIGNAL_WEIGHTS: Record<string, number> = {
   "Amount spent ({ACCOUNT_CURRENCY})": 0.20,
-  "Results": 0.18,
+  "Results": 0.23,
   "Impressions": 0.10,
   "CTR (link click-through rate)": 0.07,
   "Link clicks": 0.07,
   "Reach": 0.06,
   "CPM (cost per 1,000 impressions)": 0.05,
-  "Cost per result": 0.05,
   "Video average play time": 0.03,
   "ThruPlays": 0.03,
   "Landing page views": 0.03,
@@ -757,7 +775,6 @@ export const CORE_BASE_METRICS: ReadonlySet<string> = new Set([
   "Reach",
   "Impressions",
   "Results",
-  "Cost per result",
   "Link clicks",
   "CTR (link click-through rate)",
   "CPM (cost per 1,000 impressions)",
@@ -856,14 +873,14 @@ export function buildIapCsvClassFormat(csvClass: IapCsvClass): IapCsvClassFormat
 
   // For conversion_device, only breakdown + conversion metrics (no spend/impressions columns)
   // For ad_summary, include creative metadata columns in addition to base metrics
-  const CONVERSION_METRIC_COLS = ["Results", "Result type", "Cost per result"] as const;
+  const CONVERSION_METRIC_COLS = ["Results", "Result type"] as const;
   const baseMetricCols = isConversion ? [] : BASE_METRICS.map(resolveCurrencyColumn);
   const conversionMetricCols = isConversion ? [...CONVERSION_METRIC_COLS] : [];
   const creativeMeta = isSummary ? CREATIVE_METADATA_COLUMNS : [];
   const header = [...spec.breakdownColumns, ...baseMetricCols, ...conversionMetricCols, ...creativeMeta];
 
   const commonBreakdowns: Record<string, string> = {
-    Date: "2026-06-01",
+    Day: "2026-06-01",
     "Campaign ID": "6001",
     "Campaign name": "Prospecting - Broad",
     "Ad set ID": "7001",
@@ -876,14 +893,14 @@ export function buildIapCsvClassFormat(csvClass: IapCsvClass): IapCsvClassFormat
     : isSummary
     ? { ...commonBreakdowns }
     : isConversion
-    ? { Date: "2026-06-01", "Campaign name": "Prospecting - Broad", "Ad name": "UGC_Testimonial_v1", "Conversion device": "iphone" }
+    ? { Day: "2026-06-01", "Campaign name": "Prospecting - Broad", "Ad name": "UGC_Testimonial_v1", "Conversion device": "iphone" }
     : { ...commonBreakdowns, "Impression device": "iphone", Platform: "facebook", Placement: "feed" };
   const breakdownSample2: Record<string, string> = isDemo
     ? { ...breakdownSample1, Gender: "male", Age: "35-44" }
     : isSummary
-    ? { ...commonBreakdowns, Date: "2026-06-02" }
+    ? { ...commonBreakdowns, Day: "2026-06-02" }
     : isConversion
-    ? { Date: "2026-06-01", "Campaign name": "Prospecting - Broad", "Ad name": "UGC_Testimonial_v1", "Conversion device": "android_smartphone" }
+    ? { Day: "2026-06-01", "Campaign name": "Prospecting - Broad", "Ad name": "UGC_Testimonial_v1", "Conversion device": "android_smartphone" }
     : { ...breakdownSample1, "Impression device": "android_smartphone", Platform: "instagram", Placement: "story" };
 
   const baseSample1: Record<string, string> = {};
@@ -960,7 +977,7 @@ export function buildIapCsvClassFormat(csvClass: IapCsvClass): IapCsvClassFormat
 
   const metricGroups: IapCsvMetricGroup[] = isConversion
     ? [
-        { name: "Conversion Metrics", required: true, columns: ["Results", "Result type", "Cost per result"] },
+        { name: "Conversion Metrics", required: true, columns: ["Results", "Result type"] },
         { name: "App (optional)", required: false, columns: APP_METRICS },
       ]
     : [

@@ -98,7 +98,7 @@ export function CreativeCommandCenter() {
                 {() => (
                   <>
                     <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                      <span className="text-[11px] text-muted-foreground/75">
+                      <span className="text-caption text-muted-foreground/75">
                         {briefs.length > 0 ? `${briefs.length} briefs across ${pillarsCovered} pillars.` : "No briefs generated yet."}
                       </span>
                       <GenerateButton
@@ -140,19 +140,19 @@ export function CreativeCommandCenter() {
                             className="text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col hover:border-border/60 hover:bg-white/[0.03] transition-colors"
                           >
                             <div className="flex items-center justify-between gap-2 mb-2">
-                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/80 border border-border/50 px-1.5 py-0.5 rounded leading-none">
+                              <span className="inline-flex items-center gap-1 text-label font-semibold uppercase tracking-wide text-muted-foreground/80 border border-border/50 px-1.5 py-0.5 rounded leading-none">
                                 <FileText className="w-2.5 h-2.5" /> {b.asset_type}
                               </span>
-                              <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-200 border border-amber-400/30 bg-amber-400/20 px-1.5 py-0.5 rounded leading-none">
+                              <span className="text-label font-semibold uppercase tracking-wide text-amber-200 border border-amber-400/30 bg-amber-400/20 px-1.5 py-0.5 rounded leading-none">
                                 {STATUS_LABEL[b.status] ?? b.status}
                               </span>
                             </div>
                             <div className="flex items-center gap-1.5 mb-2">
                               <Sparkles className="w-3 h-3 text-interactive/60" />
-                              <span className="text-[11px] text-muted-foreground/60">From pillar</span>
-                              <span className="text-[11px] font-medium text-foreground">{pillarOf(b.source_pillar)?.label ?? b.source_pillar}</span>
+                              <span className="text-caption text-muted-foreground/60">From pillar</span>
+                              <span className="text-caption font-medium text-foreground">{pillarOf(b.source_pillar)?.label ?? b.source_pillar}</span>
                             </div>
-                            <p className="text-[12px] text-foreground/80 leading-relaxed flex-1"><TokenizedConceptText text={b.human_direction} /></p>
+                            <p className="text-body text-foreground/80 leading-relaxed flex-1"><TokenizedConceptText text={b.human_direction} /></p>
                           </button>
                         ))}
                       </div>
@@ -167,8 +167,8 @@ export function CreativeCommandCenter() {
                     <div className="flex items-center gap-2.5 min-w-0">
                       <c.Icon className="w-4 h-4 text-interactive shrink-0" />
                       <div className="min-w-0">
-                        <div className="text-[13px] font-semibold text-foreground">{c.label}</div>
-                        <p className="text-[11px] text-muted-foreground/80 leading-relaxed">{c.desc}</p>
+                        <div className="text-title font-semibold text-foreground">{c.label}</div>
+                        <p className="text-caption text-muted-foreground/80 leading-relaxed">{c.desc}</p>
                       </div>
                     </div>
                     <CrossLink to={c.to} label="Open" />

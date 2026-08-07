@@ -802,7 +802,9 @@ export const GetLatestGenerationRunResponse = zod.object({
   "started_at": zod.string(),
   "finished_at": zod.string().nullish(),
   "source_analysis_run_ids": zod.array(zod.string()).nullish().describe('Analysis run ids this generation was grounded in. Null for legacy runs predating run-scoping, or when source_analysis_all_time is true.'),
-  "source_analysis_all_time": zod.boolean().describe('True when this generation was grounded in every analysis run for the account rather than a specific selection.')
+  "source_analysis_all_time": zod.boolean().describe('True when this generation was grounded in every analysis run for the account rather than a specific selection.'),
+  "progress_done": zod.number().describe('Items committed so far in a multi-item run (deconstruct). 0 for runs without a per-item meter.'),
+  "progress_total": zod.number().nullish().describe('Total items targeted by the run; null for runs without a per-item meter.')
 }).nullable()
 })
 
@@ -827,6 +829,23 @@ export const DeconstructCreativesBody = zod.object({
 
 export const DeconstructCreativesResponse = zod.object({
   "run_id": zod.string()
+})
+
+
+/**
+ * Starts a deconstruction run over every creative_asset manual import on the account that has no non-discarded classification (never previously classified, or previously discarded). The run is chunked with pauses to respect model rate limits, and per-item progress (progress_done of progress_total) is reported on the latest-run endpoint (kind=deconstruct). Results flow through the same 80% confidence gate and review queue as targeted deconstruction. Returns 202 with the run id and the number of targeted imports. Requires access to the account.
+ * @summary Classify every unclassified uploaded creative on the account in one bulk run
+ */
+
+
+
+export const BackfillDeconstructCreativesParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
+})
+
+export const BackfillDeconstructCreativesResponse = zod.object({
+  "run_id": zod.string(),
+  "total": zod.number().describe('Number of unclassified creative uploads targeted by this backfill run.')
 })
 
 

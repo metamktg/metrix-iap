@@ -49,9 +49,9 @@ export function MstDirectionView() {
                   <div key={s.label} className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
                     <div className="flex items-center gap-2 mb-1.5">
                       <s.Icon className="w-3.5 h-3.5 text-interactive" />
-                      <span className="text-[13px] font-semibold text-foreground">{s.label}</span>
+                      <span className="text-title font-semibold text-foreground">{s.label}</span>
                     </div>
-                    <p className="text-[11px] text-muted-foreground/80 leading-relaxed">{s.desc}</p>
+                    <p className="text-caption text-muted-foreground/80 leading-relaxed">{s.desc}</p>
                   </div>
                 ))}
               </div>

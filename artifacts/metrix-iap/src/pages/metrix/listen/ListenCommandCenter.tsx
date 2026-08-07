@@ -55,8 +55,8 @@ export function ListenCommandCenter() {
               >
                 <AlertTriangle className="w-4 h-4 text-red-300/80 shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <div className="text-[13px] font-semibold text-foreground">{r.account.name}</div>
-                  <div className="text-[10px] text-muted-foreground/70 mt-0.5">{r.highImpact} high-impact signal{r.highImpact === 1 ? "" : "s"}</div>
+                  <div className="text-title font-semibold text-foreground">{r.account.name}</div>
+                  <div className="text-label text-muted-foreground/70 mt-0.5">{r.highImpact} high-impact signal{r.highImpact === 1 ? "" : "s"}</div>
                 </div>
               </button>
             ))}
@@ -64,13 +64,13 @@ export function ListenCommandCenter() {
         )}
 
         <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
-          <div className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-2">Connection status</div>
+          <div className="text-caption font-semibold uppercase tracking-widest text-muted-foreground/70 mb-2">Connection status</div>
           <div className="space-y-1.5">
             {accounts.map((a) => (
               <div key={a.id} className="flex items-center gap-2.5 py-1">
                 {a.status === "configured" ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> : <Circle className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />}
-                <span className="text-[12px] text-foreground/85 flex-1">{a.name}</span>
-                <span className="text-[10px] text-muted-foreground/60">{a.status === "configured" ? "Connected" : "Not connected"}</span>
+                <span className="text-body text-foreground/85 flex-1">{a.name}</span>
+                <span className="text-label text-muted-foreground/60">{a.status === "configured" ? "Connected" : "Not connected"}</span>
               </div>
             ))}
           </div>
@@ -78,15 +78,15 @@ export function ListenCommandCenter() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
-            <span className="text-[12px] font-medium text-foreground">Alerts</span>
+            <span className="text-body font-medium text-foreground">Alerts</span>
             <CrossLink to="/app/listen/alerts" label="Open" />
           </div>
           <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
-            <span className="text-[12px] font-medium text-foreground">Signal</span>
+            <span className="text-body font-medium text-foreground">Signal</span>
             <CrossLink to="/app/listen/signal" label="Open" />
           </div>
           <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
-            <span className="text-[12px] font-medium text-foreground">Recommendations</span>
+            <span className="text-body font-medium text-foreground">Recommendations</span>
             <CrossLink to="/app/listen/recommendations" label="Open" />
           </div>
         </div>
