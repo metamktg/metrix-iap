@@ -896,6 +896,101 @@
   100% { left: 110%; }
 }
 
+/* ═══ Metrix boot loader — "command deck powering up" ══════════════════
+   CSS recreation of the loading-video motion reference: glowing logo core
+   with rotating orbital ring, blue→cyan progress sweep with phase readout,
+   and branded glint skeleton tiles. All timelines share a 4.4s loop. */
+
+/* Static, restrained core glow behind the logo — no pulsing */
+.mx-boot-core-glow {
+  position: absolute;
+  width: 60%;
+  height: 60%;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(21, 93, 255, 0.28), rgba(22, 217, 255, 0.08) 55%, transparent 72%);
+  filter: blur(10px);
+}
+
+/* Rotating orbital ring — thin, sharp 1.5px arc */
+.mx-boot-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: conic-gradient(from 0deg, transparent 0%, rgba(22, 217, 255, 0.6) 22%, rgba(21, 93, 255, 0.35) 32%, transparent 44%);
+  mask-image: radial-gradient(circle, transparent 66%, black 67.5%, black 70.5%, transparent 72%);
+  -webkit-mask-image: radial-gradient(circle, transparent 66%, black 67.5%, black 70.5%, transparent 72%);
+  animation: mx-boot-spin 3.6s linear infinite;
+}
+@keyframes mx-boot-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Logo stays static — no breathing pulse */
+.mx-boot-logo-pulse {
+  animation: none;
+}
+
+/* Boot phase labels — stacked, opacity-cycled (4 phases × 1.1s = 4.4s) */
+.mx-boot-phase {
+  opacity: 0;
+  animation: mx-boot-phase-cycle 4.4s linear infinite;
+}
+@keyframes mx-boot-phase-cycle {
+  0%      { opacity: 0; }
+  4%      { opacity: 1; }
+  21%     { opacity: 1; }
+  25%, 100% { opacity: 0; }
+}
+
+/* Progress track + blue→cyan fill sweep */
+.mx-boot-track {
+  position: relative;
+  width: 100%;
+  height: 3px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(20, 38, 72, 0.65);
+  border: 1px solid rgba(86, 140, 255, 0.18);
+}
+.mx-boot-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  transform-origin: left center;
+  background: linear-gradient(90deg, #155dff, #1f8fff 55%, #16d9ff);
+  animation: mx-boot-fill 4.4s var(--mx-ease) infinite;
+}
+@keyframes mx-boot-fill {
+  0%   { transform: scaleX(0); opacity: 1; }
+  86%  { transform: scaleX(1); opacity: 1; }
+  94%  { transform: scaleX(1); opacity: 0; }
+  100% { transform: scaleX(0); opacity: 0; }
+}
+
+/* Skeleton tile with branded sweep glint (replaces flat grey pulse) */
+.mx-boot-tile {
+  position: relative;
+  overflow: hidden;
+  border-radius: 6px;
+  background: rgba(20, 38, 72, 0.55);
+  border: 1px solid rgba(86, 140, 255, 0.14);
+}
+.mx-boot-glint {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 55%;
+  background: linear-gradient(90deg, transparent, rgba(31, 143, 255, 0.16) 45%, rgba(22, 217, 255, 0.2) 55%, transparent);
+  transform: translateX(-160%);
+  animation: mx-boot-glint 4.4s ease-in-out infinite;
+}
+@keyframes mx-boot-glint {
+  0%   { transform: translateX(-160%); }
+  55%  { transform: translateX(300%); }
+  100% { transform: translateX(300%); }
+}
+
 /* ── Reduced-motion: instant transitions for motion-sensitive users ─────
  * Sets --transition-speed to 0ms and kills known animation utilities so
  * all CSS transitions and Tailwind animate-* classes become instant.
