@@ -1,0 +1,19 @@
+kind = "design-system"
+previewPath = "/command-deck/"
+title = "Command Deck Design System"
+description = "A sci-fi instrument-panel design system extracted from the Command Deck analysis mockup: deep space-navy surfaces, sky-blue and cyan signal accents, Share Tech Mono terminal labels, square-cornered panels with left status accent bars and subtle glow. Serves Metrix analytics surfaces and any dashboard that wants a mission-control feel."
+version = "1.0.0"
+id = "artifacts/command-deck"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/command-deck/" ]
+localPort = 24963
+
+[services.development]
+run = "pnpm --filter @workspace/command-deck run dev"
+
+[services.env]
+PORT = "24963"
+BASE_PATH = "/command-deck/"
