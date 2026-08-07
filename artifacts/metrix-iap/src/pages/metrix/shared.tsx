@@ -388,13 +388,19 @@ export function ModuleHeader({
   account?: AdAccount;
 }) {
   const sectionLabel = section.split(" · ")[0];
+  // A stage's command-center hub sets title to the bare stage name (e.g.
+  // title="Strategy" on the page whose section is "Strategy · 04"), which
+  // would otherwise render the eyebrow and H1 as an exact duplicate. Fall
+  // back to the full section string (surfacing the "· 04" stage position
+  // that's normally trimmed off) instead of inventing new copy.
+  const eyebrowText = sectionLabel.toLowerCase() === title.toLowerCase() ? section : sectionLabel;
   return (
     <div className="shrink-0">
       <div className={cn("px-6 py-4", !tabs && "border-b border-border/40")}>
         <div className="flex items-start gap-3">
           <div className="flex-1 min-w-0 mx-section-header">
             <div className="flex items-center gap-1.5">
-              <span className="mx-section-header__eyebrow">{sectionLabel}</span>
+              <span className="mx-section-header__eyebrow">{eyebrowText}</span>
               {subtitle && <InfoTooltip content={subtitle} />}
             </div>
             <h1 className="mx-section-header__title">{title}</h1>
