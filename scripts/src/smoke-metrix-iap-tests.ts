@@ -136,13 +136,24 @@ async function main() {
     fail("Engagement funnel e2e failed", String(err?.message ?? err));
   });
 
-  // ── Step 8: Playwright SectionInfoIcon tooltip e2e ────────────────────────
-  console.log("\nRunning SectionInfoIcon tooltip e2e...");
+  // ── Step 8: Playwright SectionInfoIcon tooltip e2e (EngagementFunnel + AdPerformance) ──
+  console.log("\nRunning SectionInfoIcon tooltip e2e (EngagementFunnel + AdPerformance)...");
   await spawnScript("smoke:metrix-iap-section-info-icons", [
     "--filter",
     "@workspace/scripts",
     "run",
     "smoke:metrix-iap-section-info-icons",
+  ]).catch((err) => {
+    fail("SectionInfoIcon tooltip e2e failed", String(err?.message ?? err));
+  });
+
+  // ── Step 9: Playwright SectionInfoIcon tooltip e2e (Audience + Placements + Budget) ──
+  console.log("\nRunning SectionInfoIcon tooltip e2e (Audience + Placements + Budget)...");
+  await spawnScript("smoke:metrix-iap-section-info-tooltips", [
+    "--filter",
+    "@workspace/scripts",
+    "run",
+    "smoke:metrix-iap-section-info-tooltips",
   ]).catch((err) => {
     fail("SectionInfoIcon tooltip e2e failed", String(err?.message ?? err));
   });

@@ -27,6 +27,7 @@
     "smoke:metrix-iap-engagement-funnel": "tsx ./src/smoke-metrix-iap-engagement-funnel.ts",
     "smoke:metrix-iap-ad-account-overview": "tsx ./src/smoke-metrix-iap-ad-account-overview.ts",
     "smoke:metrix-iap-section-info-icons": "tsx ./src/smoke-metrix-iap-section-info-icons.ts",
+    "smoke:metrix-iap-section-info-tooltips": "tsx ./src/smoke-metrix-iap-section-info-tooltips.ts",
     "import:metrix": "tsx ./src/metrix-supabase/import.ts",
     "enforce:importer-rls": "tsx ./src/enforce-importer-rls.ts",
     "create:user": "tsx ./src/create-user.ts",
