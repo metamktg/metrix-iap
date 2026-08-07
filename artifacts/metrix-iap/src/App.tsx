@@ -71,6 +71,7 @@ import { CreativeScanView as MstCreativeScanView } from "@/pages/metrix/mst/Crea
 import { MetrixAgent } from "@/pages/MetrixAgent";
 import { HomeView } from "@/pages/metrix/HomeView";
 import { FindingsView } from "@/pages/metrix/analysis/FindingsView";
+import { ActionQueueView } from "@/pages/metrix/act/ActionQueueView";
 import { GeneralView } from "@/pages/metrix/settings/GeneralView";
 import { SecurityView } from "@/pages/metrix/settings/SecurityView";
 import { IntegrationsView } from "@/pages/metrix/settings/IntegrationsView";
@@ -160,6 +161,9 @@ export function Router() {
       {/* ── Analyze section ───────────────────────────────────────────── */}
       <Route path="/app/analyze/findings" component={FindingsView} />
       <Route path="/app/analyze">{() => <Redirect to="/app/analyze/findings" replace />}</Route>
+
+      {/* ── Act section ───────────────────────────────────────────────── */}
+      <Route path="/app/act/queue" component={ActionQueueView} />
 
       {/* ── 09 Action (coming soon) ──────────────────────────────────── */}
       <Route path="/app/action/agent" component={MetrixAgent} />
