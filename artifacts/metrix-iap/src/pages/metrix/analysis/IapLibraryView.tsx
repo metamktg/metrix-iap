@@ -915,7 +915,7 @@ export function IapLibraryView() {
                   <div className="grid grid-cols-2 gap-3">
                     <MetricTile label="Spend"    value={fmtUSD(detail["Amount spent (USD)"], 0)} />
                     <MetricTile label="Results"  value={fmtNum(detail.Results)} sub={eventLabel(detail["Result type"])} />
-                    <MetricTile label="CPA"      value={detail.CPA_result != null ? fmtUSD(detail.CPA_result) : "—"} />
+                    <MetricTile variant="primary" label="CPA" value={detail.CPA_result != null ? fmtUSD(detail.CPA_result) : "—"} />
                     <MetricTile label="Link CTR" value={fmtPct(detail.CTR_link_pct)} />
                   </div>
                   {/* Secondary delivery stats — derived from this row, dashes when absent */}

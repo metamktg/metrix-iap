@@ -715,6 +715,7 @@ export function AudienceView() {
                       <MetricTile label="Signal spend" value={fmtUSD(totalSpend, 0)} />
                       <MetricTile label={term.Plural} value={fmtNum(totalResults)} />
                       <MetricTile
+                        variant="primary"
                         label={`Prime · ${activeMetric.label}`}
                         value={best ? segmentLabel(best.seg) : "—"}
                         sub={

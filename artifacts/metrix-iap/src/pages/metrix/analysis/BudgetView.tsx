@@ -111,14 +111,14 @@ export function BudgetView() {
               <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
                 {preset !== "all" && presetData ? (
                   <>
-                    <MetricTile label="Total spend" value={fmtUSD(presetData.totals.total_spend_usd, 0)} />
+                    <MetricTile variant="primary" label="Total spend" value={fmtUSD(presetData.totals.total_spend_usd, 0)} />
                     <MetricTile label="Impressions" value={fmtNum(presetData.totals.total_impressions)} />
                     <MetricTile label="Link clicks" value={fmtNum(presetData.totals.total_link_clicks)} />
                     <MetricTile label="Link CTR" value={fmtPct(presetData.totals.overall_link_ctr_pct)} />
                   </>
                 ) : (
                   <>
-                    <MetricTile label="Total spend" value={fmtUSD(summary.total_spend_usd, 0)} />
+                    <MetricTile variant="primary" label="Total spend" value={fmtUSD(summary.total_spend_usd, 0)} />
                     <MetricTile label="Impressions" value={fmtNum(summary.total_impressions)} />
                     <MetricTile label="Link clicks" value={fmtNum(summary.total_link_clicks)} />
                     <MetricTile label="Link CTR" value={fmtPct(summary.overall_link_ctr_pct)} />

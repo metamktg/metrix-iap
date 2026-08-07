@@ -56,6 +56,9 @@ import { TYPE } from "../typography";
 const SECTION = "Analysis · 03";
 const SORT_KEY = "funnel-breakdown-sort";
 
+/** Columns shown by default; sort-active column is always included regardless. */
+const PRIORITY_COL_IDS = ["ctrLink", "ctrAll", "frequency", "atcRate"] as const;
+
 // ─── helpers ──────────────────────────────────────────────────────────
 
 function safe(n: number | null | undefined, d = 0): number | null {
@@ -323,6 +326,8 @@ function BreakdownTable({
   sortId: string;
   onSort: (id: string) => void;
 }) {
+  const [showAllCols, setShowAllCols] = useState(false);
+
   const activeMetric = BREAKDOWN_METRICS.find((m) => m.id === sortId) ?? BREAKDOWN_METRICS[0];
   const sorted = sortByRankMetric(rows, activeMetric);
   const allVals = sorted.map((r) => activeMetric.value(r));
@@ -331,60 +336,80 @@ function BreakdownTable({
     return <div className="text-[12px] text-muted-foreground/60 py-4">No data for this breakdown.</div>;
   }
 
-  const cols: RankMetric<BreakdownRow>[] = BREAKDOWN_METRICS.filter((m) => rows.some((r) => m.value(r) != null));
+  const allCols: RankMetric<BreakdownRow>[] = BREAKDOWN_METRICS.filter((m) => rows.some((r) => m.value(r) != null));
+  // Default: show only priority cols + the active sort col (always visible for context)
+  const cols = showAllCols
+    ? allCols
+    : allCols.filter((m) => PRIORITY_COL_IDS.includes(m.id as (typeof PRIORITY_COL_IDS)[number]) || m.id === sortId);
+  const hiddenCount = allCols.length - cols.length;
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left border-separate border-spacing-0">
-        <thead>
-          <tr>
-            <th className="pb-2 pr-4 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/55 sticky left-0 bg-transparent">
-              Segment
-            </th>
-            {cols.map((col) => (
-              <th key={col.id} className="pb-2 px-3 whitespace-nowrap">
-                <SortableHeader col={col} activeId={sortId} direction={activeMetric.direction} onSort={onSort} />
+    <div className="space-y-2">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-separate border-spacing-0">
+          <thead>
+            <tr>
+              <th className="pb-2 pr-4 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/55 sticky left-0 bg-transparent">
+                Segment
               </th>
-            ))}
-            <th className="pb-2 px-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/55">
-              Bar
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border/20">
-          {sorted.map((row, i) => {
-            const v = activeMetric.value(row);
-            const bar = rankBarPct(v, allVals, activeMetric.direction);
-            const isTop = i === 0;
-            return (
-              <tr key={row.label} className={cn("group", isTop && "bg-white/[0.015]")}>
-                <td className="py-2 pr-4 sticky left-0">
-                  <span className="text-[12px] font-medium text-foreground/90 whitespace-nowrap">{row.label}</span>
-                </td>
-                {cols.map((col) => {
-                  const val = col.value(row);
-                  return (
-                    <td key={col.id} className={cn(
-                      "py-2 px-3 text-[12px] tabular-nums whitespace-nowrap",
-                      col.id === sortId ? "font-semibold text-interactive" : "text-foreground/70"
-                    )}>
-                      {val != null ? col.format(val) : <span className="text-muted-foreground/30">—</span>}
-                    </td>
-                  );
-                })}
-                <td className="py-2 px-3 w-32">
-                  <div className="h-1.5 bg-white/[0.04] rounded-full overflow-hidden w-full">
-                    <div
-                      className="h-full bg-interactive/50 rounded-full transition-all"
-                      style={{ width: `${bar}%` }}
-                    />
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+              {cols.map((col) => (
+                <th key={col.id} className="pb-2 px-3 whitespace-nowrap">
+                  <SortableHeader col={col} activeId={sortId} direction={activeMetric.direction} onSort={onSort} />
+                </th>
+              ))}
+              <th className="pb-2 px-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/55">
+                Bar
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border/20">
+            {sorted.map((row, i) => {
+              const v = activeMetric.value(row);
+              const bar = rankBarPct(v, allVals, activeMetric.direction);
+              const isTop = i === 0;
+              return (
+                <tr key={row.label} className={cn("group", isTop && "bg-white/[0.015]")}>
+                  <td className="py-2 pr-4 sticky left-0">
+                    <span className="text-[12px] font-medium text-foreground/90 whitespace-nowrap">{row.label}</span>
+                  </td>
+                  {cols.map((col) => {
+                    const val = col.value(row);
+                    return (
+                      <td key={col.id} className={cn(
+                        "py-2 px-3 text-[12px] tabular-nums whitespace-nowrap",
+                        col.id === sortId ? "font-semibold text-interactive" : "text-foreground/70"
+                      )}>
+                        {val != null ? col.format(val) : <span className="text-muted-foreground/30">—</span>}
+                      </td>
+                    );
+                  })}
+                  <td className="py-2 px-3 w-32">
+                    <div className="h-1.5 bg-white/[0.04] rounded-full overflow-hidden w-full">
+                      <div
+                        className="h-full bg-interactive/50 rounded-full transition-all"
+                        style={{ width: `${bar}%` }}
+                      />
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      {/* Progressive disclosure: expand / collapse secondary columns */}
+      {(hiddenCount > 0 || showAllCols) && (
+        <button
+          onClick={() => setShowAllCols((v) => !v)}
+          className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground/55 hover:text-foreground/70 transition-colors"
+        >
+          {showAllCols ? (
+            <><ArrowUp className="w-3 h-3" /> Show fewer columns</>
+          ) : (
+            <><ArrowDown className="w-3 h-3" /> Show {hiddenCount} more column{hiddenCount !== 1 ? "s" : ""} (CVR, Checkout Rate, Spend, CPA)</>
+          )}
+        </button>
+      )}
     </div>
   );
 }
