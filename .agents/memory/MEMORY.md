@@ -1,3 +1,4 @@
+// hint: Logic changed on both sides. Requires understanding intent of each change.
 - [Metrix MST / IAP Matrix methodology](metrix-mst-methodology.md) — MST=Metrix Sprint Test; Concept×Angle matrix rules + real-cardinality honesty; matrix grid vs generated briefs are distinct surfaces; generated cell codes must align to the historical grid, not fetch order.
 - [Metrix IAP closed-loop linkage](metrix-iap-closed-loop.md) — cross-entity back-refs (Ad/Concept/Brief) filled at gen time by linkClosedLoop() IIFE, not per-render.
 - [Supabase RLS testing](supabase-rls-testing.md) — rolled-back-txn tests need savepoints around expected failures; gates must be triggers (BYPASSRLS skips RLS, not triggers); drizzle push hangs non-TTY.
@@ -49,5 +50,6 @@
 - [Metrix IAP home + analyze routes](metrix-iap-home-analyze-routes.md) — /app/home (HomeView) and /app/analyze routes were missing from App.tsx; navTree section is "Analysis" (→/app/analysis), not "Analyze" (→/app/analyze); sidebar defaults to expanded (empty localStorage).
 - [Metrix CSV Day canonical + derived metrics](metrix-csv-day-canonical.md) — "Day" is the canonical date column; derivable/ranking columns accepted but never expected; rate↔count inference guard.
 - [Manual accounts render from the daterange summary API](metrix-manual-analysis-fulldata.md) — no concept codes → empty seed analysis tables; Overview defaults to full-span API rows; stale window guards; per-ad tile data on AdRecord.performance.
+- [Wouter Redirect drops query params](wouter-redirect-drops-query.md) — legacy-route redirects lose ?account=; e2e must hit canonical paths, click default tabs, and mock all API endpoints.
 - [Seamless-loop video design](video-artifact-gotchas.md) — looping compositions: every timeline period must divide the loop; staggered repeats and boundary snaps need loop-length keyframes/opacity envelopes; verify by pixel-diffing frames one loop apart.
 - [Validation workflows vs configureWorkflow](validation-workflows-vs-configure.md) — new check:* scripts wire in via setValidationCommand, not configureWorkflow (10-workflow limit + validation-type lock).
