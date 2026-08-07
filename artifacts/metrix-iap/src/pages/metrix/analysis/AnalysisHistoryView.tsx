@@ -64,18 +64,18 @@ function RunCard({ run, index, isLatest }: { run: AnalysisRun; index: number; is
         <RunStatusIcon status={run.status} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[13px] font-semibold text-foreground capitalize">{run.status}</span>
+            <span className="text-title font-semibold text-foreground capitalize">{run.status}</span>
             {isLatest && (
-              <span className="text-[9px] font-semibold uppercase tracking-wider text-emerald-400/70 bg-emerald-400/[0.08] border border-emerald-400/15 rounded px-1.5 py-0.5 leading-none">
+              <span className="text-micro font-semibold uppercase tracking-wider text-emerald-400/70 bg-emerald-400/[0.08] border border-emerald-400/15 rounded px-1.5 py-0.5 leading-none">
                 Latest
               </span>
             )}
-            <span className="text-[11px] text-muted-foreground/60 ml-auto shrink-0">
+            <span className="text-caption text-muted-foreground/60 ml-auto shrink-0">
               Run #{index + 1}
             </span>
           </div>
           {run.started_at && (
-            <p className="text-[11px] text-muted-foreground/60 mt-0.5">
+            <p className="text-caption text-muted-foreground/60 mt-0.5">
               {fmtDateTime(run.started_at)}
               {run.finished_at && ` · finished ${fmtDateTime(run.finished_at)}`}
             </p>
@@ -90,8 +90,8 @@ function RunCard({ run, index, isLatest }: { run: AnalysisRun; index: number; is
             <div className="flex items-start gap-2">
               <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0 mt-0.5" />
               <div>
-                <div className="text-[10px] text-muted-foreground/55 font-medium uppercase tracking-wide">Covered</div>
-                <div className="text-[12px] text-foreground/85 font-medium mt-0.5">{coverageLabel}</div>
+                <div className="text-label text-muted-foreground/55 font-medium uppercase tracking-wide">Covered</div>
+                <div className="text-body text-foreground/85 font-medium mt-0.5">{coverageLabel}</div>
               </div>
             </div>
           )}
@@ -99,8 +99,8 @@ function RunCard({ run, index, isLatest }: { run: AnalysisRun; index: number; is
             <div className="flex items-start gap-2">
               <Database className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0 mt-0.5" />
               <div>
-                <div className="text-[10px] text-muted-foreground/55 font-medium uppercase tracking-wide">Rows</div>
-                <div className="text-[12px] text-foreground/85 font-medium mt-0.5">
+                <div className="text-label text-muted-foreground/55 font-medium uppercase tracking-wide">Rows</div>
+                <div className="text-body text-foreground/85 font-medium mt-0.5">
                   {run.rows_ingested.toLocaleString()}
                 </div>
               </div>
@@ -111,14 +111,14 @@ function RunCard({ run, index, isLatest }: { run: AnalysisRun; index: number; is
 
       {/* Date range preset badge */}
       <div className="flex items-center gap-1.5">
-        <span className="text-[10px] text-muted-foreground/50 font-medium uppercase tracking-wide">Range preset</span>
-        <span className="text-[10px] font-semibold text-muted-foreground/70 bg-white/[0.04] border border-border/30 px-1.5 py-0.5 rounded">
+        <span className="text-label text-muted-foreground/50 font-medium uppercase tracking-wide">Range preset</span>
+        <span className="text-label font-semibold text-muted-foreground/70 bg-white/[0.04] border border-border/30 px-1.5 py-0.5 rounded">
           {run.date_range ?? "custom"}
         </span>
       </div>
 
       {run.error_message && (
-        <div className="flex items-start gap-2 text-[11px] text-red-400/80 leading-relaxed">
+        <div className="flex items-start gap-2 text-caption text-red-400/80 leading-relaxed">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-red-400" />
           {run.error_message}
         </div>
@@ -127,14 +127,14 @@ function RunCard({ run, index, isLatest }: { run: AnalysisRun; index: number; is
       {/* Data integrity */}
       {run.status === "success" && (run.reconciliation ?? []).length > 0 && (
         <div className="space-y-1.5 pt-1 border-t border-border/25">
-          <div className="text-[10px] text-muted-foreground/50 font-medium uppercase tracking-wide">
+          <div className="text-label text-muted-foreground/50 font-medium uppercase tracking-wide">
             Data integrity check
           </div>
           {run.reconciliation.map((r) => (
             <div
               key={r.metric_key}
               className={cn(
-                "flex items-center gap-2 rounded px-2 py-1.5 text-[11px]",
+                "flex items-center gap-2 rounded px-2 py-1.5 text-caption",
                 r.flagged ? "bg-amber-400/[0.06] border border-amber-400/20" : "bg-white/[0.02] border border-border/20"
               )}
             >
@@ -182,7 +182,7 @@ export function AnalysisHistoryView() {
               <div className="flex items-start gap-2.5 p-3 rounded-lg border border-primary/20 bg-primary/[0.04]">
                 <Info className="w-3.5 h-3.5 text-interactive/80 shrink-0 mt-0.5" />
                 <div className="flex items-center gap-1.5">
-                  <p className="text-[11.5px] font-semibold text-foreground/90">
+                  <p className="text-caption font-semibold text-foreground/90">
                     {successRuns.length} successful run{successRuns.length !== 1 ? "s" : ""} available.
                   </p>
                   <InfoTooltip content="Open the IAP Loop and go to the Strategy stage to select up to 3 runs to ground your strategy in — each run covers a distinct date range and can be combined." />
@@ -191,7 +191,7 @@ export function AnalysisHistoryView() {
             )}
 
             {isLoading ? (
-              <div className="flex items-center gap-2 text-[12px] text-muted-foreground/70 py-4">
+              <div className="flex items-center gap-2 text-body text-muted-foreground/70 py-4">
                 <Loader2 className="w-4 h-4 animate-spin" /> Loading runs…
               </div>
             ) : runs.length === 0 ? (

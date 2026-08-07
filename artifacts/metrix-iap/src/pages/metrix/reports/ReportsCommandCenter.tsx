@@ -47,15 +47,15 @@ export function ReportsCommandCenter() {
           {() => (
             <>
               <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                <div className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-2">Recent reports</div>
+                <div className="text-caption font-semibold uppercase tracking-widest text-muted-foreground/70 mb-2">Recent reports</div>
                 {recent.length === 0 ? (
                   <PendingState title="No reports yet" message="Build your first report from the Report Builder." icon={FileBarChart} />
                 ) : (
                   <div className="space-y-2">
                     {recent.map((r) => (
                       <div key={r.id} className="flex items-center justify-between gap-3 py-1.5 border-b border-border/20 last:border-0">
-                        <span className="text-[12px] text-foreground/85 truncate">{r.title}</span>
-                        <span className="text-[10px] text-muted-foreground/60 shrink-0">{new Date(r.generated_at).toLocaleDateString()}</span>
+                        <span className="text-body text-foreground/85 truncate">{r.title}</span>
+                        <span className="text-label text-muted-foreground/60 shrink-0">{new Date(r.generated_at).toLocaleDateString()}</span>
                       </div>
                     ))}
                   </div>
@@ -68,8 +68,8 @@ export function ReportsCommandCenter() {
                     <div className="flex items-center gap-2.5 min-w-0">
                       <c.Icon className="w-4 h-4 text-interactive shrink-0" />
                       <div className="min-w-0">
-                        <div className="text-[13px] font-semibold text-foreground">{c.label}</div>
-                        <p className="text-[11px] text-muted-foreground/80 leading-relaxed">{c.desc}</p>
+                        <div className="text-title font-semibold text-foreground">{c.label}</div>
+                        <p className="text-caption text-muted-foreground/80 leading-relaxed">{c.desc}</p>
                       </div>
                     </div>
                     <CrossLink to={c.to} label="Open" />

@@ -1152,7 +1152,7 @@ export function AnalysisOverview() {
                     <SectionCard title="Core control reads" desc="Control creative · per funnel depth" right={<SectionInfoIcon tip="The benchmark creative concepts that set the efficiency floor — new tests are judged against these." />}>
                       <div className="grid grid-cols-dashboard-2 gap-3">
                         <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                          <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-1">Primary control</div>
+                          <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/40 mb-1">Primary control</div>
                           <p className="text-sm font-bold text-foreground">{resolveConceptName(controls.primary_control)}</p>
                           <div className="mt-1.5">
                             {(() => {
@@ -1176,7 +1176,7 @@ export function AnalysisOverview() {
                           const regName = resolveConceptName(regId);
                           return (
                             <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                              <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-1">{term.Singular} control</div>
+                              <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/40 mb-1">{term.Singular} control</div>
                               <p className="text-sm font-bold text-foreground">{regName}</p>
                               {controls.registration_control_read && (() => {
                                 const read = resolveControlText(controls.registration_control_read, regId);
@@ -1212,7 +1212,7 @@ export function AnalysisOverview() {
                             <InfoTooltip content={s.desc} />
                           </div>
                           <div className="flex items-center justify-between mt-auto pt-1">
-                            <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40">{s.stat}</span>
+                            <span className="text-micro font-mono uppercase tracking-widest text-muted-foreground/40">{s.stat}</span>
                             <CrossLink to={s.to} label="Open" />
                           </div>
                         </div>

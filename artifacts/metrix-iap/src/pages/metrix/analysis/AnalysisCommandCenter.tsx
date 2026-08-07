@@ -49,7 +49,7 @@ function CohortSelector({ accountId, onDone }: { accountId: string; onDone?: () 
 
   return (
     <div className="space-y-3">
-      <p className="text-[11.5px] text-muted-foreground/80 leading-relaxed">
+      <p className="text-caption text-muted-foreground/80 leading-relaxed">
         Set this account's business model before running analysis — it decides which terminal
         metric shows up in Budget, Ad Performance, and Exports instead of assuming ROAS for
         every account.
@@ -68,8 +68,8 @@ function CohortSelector({ accountId, onDone }: { accountId: string; onDone?: () 
               <c.Icon className="w-4 h-4 text-interactive shrink-0" />
             )}
             <div className="min-w-0">
-              <div className="text-[12.5px] font-medium text-foreground">{c.label}</div>
-              <div className="text-[10px] text-muted-foreground/70 mt-0.5">{c.desc}</div>
+              <div className="text-body font-medium text-foreground">{c.label}</div>
+              <div className="text-label text-muted-foreground/70 mt-0.5">{c.desc}</div>
             </div>
           </button>
         ))}
@@ -112,7 +112,7 @@ export function AnalysisCommandCenter() {
                   title="Run analysis"
                   desc="Pick a date range and explicitly analyze the staged manual uploads. Never runs automatically."
                   right={
-                    <button onClick={() => setChangingCohort(true)} className="text-[10px] font-medium text-muted-foreground/70 hover:text-foreground transition-colors">
+                    <button onClick={() => setChangingCohort(true)} className="text-label font-medium text-muted-foreground/70 hover:text-foreground transition-colors">
                       {cohortLabel} · Change
                     </button>
                   }
@@ -125,8 +125,8 @@ export function AnalysisCommandCenter() {
                 <div className="flex items-center gap-2.5 min-w-0">
                   <LayoutDashboard className="w-4 h-4 text-interactive shrink-0" />
                   <div className="min-w-0">
-                    <div className="text-[13px] font-semibold text-foreground">Ad Performance</div>
-                    <p className="text-[11px] text-muted-foreground/80 leading-relaxed">
+                    <div className="text-title font-semibold text-foreground">Ad Performance</div>
+                    <p className="text-caption text-muted-foreground/80 leading-relaxed">
                       Campaign totals, control reads, and the full breakdown once analysis has run.
                     </p>
                   </div>
@@ -137,14 +137,14 @@ export function AnalysisCommandCenter() {
               <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <div className="text-[13px] font-semibold text-foreground">Run history</div>
+                    <div className="text-title font-semibold text-foreground">Run history</div>
                     {runCount > 0 && (
-                      <span className="text-[9px] font-semibold uppercase tracking-wider text-interactive/70 bg-primary/[0.06] border border-primary/20 rounded px-1.5 py-0.5 leading-none">
+                      <span className="text-micro font-semibold uppercase tracking-wider text-interactive/70 bg-primary/[0.06] border border-primary/20 rounded px-1.5 py-0.5 leading-none">
                         {runCount} run{runCount !== 1 ? "s" : ""}
                       </span>
                     )}
                   </div>
-                  <p className="text-[11px] text-muted-foreground/80 leading-relaxed">
+                  <p className="text-caption text-muted-foreground/80 leading-relaxed">
                     {runCount > 0
                       ? `${runCount} successful run${runCount !== 1 ? "s" : ""} — each can be selected independently when building strategy in the IAP Loop.`
                       : "Full detail on analysis runs for this account, including data-integrity flags."}

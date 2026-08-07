@@ -389,7 +389,7 @@ export function IapLibraryView() {
                   {/* Funnel stage badge + section info */}
                   <div className="flex items-center gap-1.5">
                     {funnelConfig && (
-                      <span className="text-[9px] font-mono font-semibold uppercase tracking-widest text-interactive/70 border border-primary/25 bg-primary/[0.06] px-2 py-0.5 rounded">
+                      <span className="text-micro font-mono font-semibold uppercase tracking-widest text-interactive/70 border border-primary/25 bg-primary/[0.06] px-2 py-0.5 rounded">
                         {funnelConfig.badge}
                       </span>
                     )}
@@ -904,30 +904,30 @@ export function IapLibraryView() {
                             >
                               <div className="flex items-center justify-between gap-2 mb-3">
                                 <span className="text-sm font-bold text-foreground">{familyLabel(f.family)}</span>
-                                <span className="text-[10px] font-mono text-muted-foreground/40 border border-border/30 rounded px-1 py-0.5 leading-none">
+                                <span className="text-label font-mono text-muted-foreground/40 border border-border/30 rounded px-1 py-0.5 leading-none">
                                   {f.variableCount} variable{f.variableCount === 1 ? "" : "s"}
                                 </span>
                               </div>
                               <div className="flex items-center gap-3 tabular-nums">
                                 <div>
-                                  <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40 leading-none mb-0.5">Spend</div>
+                                  <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/40 leading-none mb-0.5">Spend</div>
                                   <div className="text-caption font-semibold text-foreground/80">{fmtUSD(f.spend, 0)}</div>
                                 </div>
                                 <div>
-                                  <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40 leading-none mb-0.5">Results</div>
+                                  <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/40 leading-none mb-0.5">Results</div>
                                   <div className="text-caption font-semibold text-foreground/80">{fmtNum(f.results)}</div>
                                 </div>
                                 <div>
-                                  <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40 leading-none mb-0.5">CPA</div>
+                                  <div className="text-micro font-mono uppercase tracking-widest text-muted-foreground/40 leading-none mb-0.5">CPA</div>
                                   <div className="text-caption font-semibold text-foreground/80">{f.cpa != null ? fmtUSD(f.cpa) : "—"}</div>
                                 </div>
                               </div>
                               {f.top && (
                                 <div className="mt-2 pt-2 border-t border-border/20 flex items-center gap-1.5 flex-wrap">
-                                  <span className="text-[9px] uppercase tracking-widest text-muted-foreground/40">Best read</span>
+                                  <span className="text-micro uppercase tracking-widest text-muted-foreground/40">Best read</span>
                                   <VariableChip code={f.top.variableId} showCode={false} className="opacity-80 scale-95 border-border/30" />
                                   {f.top.cpa != null && (
-                                    <span className="text-[10px] tabular-nums text-muted-foreground/50">{fmtUSD(f.top.cpa)} CPA</span>
+                                    <span className="text-label tabular-nums text-muted-foreground/50">{fmtUSD(f.top.cpa)} CPA</span>
                                   )}
                                 </div>
                               )}

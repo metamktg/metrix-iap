@@ -1,34 +1,4 @@
 {
-  "maxTotalViolations": 245,
-  "perFile": {
-    "artifacts/metrix-iap/src/pages/metrix/analysis/AnalysisCommandCenter.tsx": 9,
-    "artifacts/metrix-iap/src/pages/metrix/analysis/AnalysisHistoryView.tsx": 15,
-    "artifacts/metrix-iap/src/pages/metrix/analysis/AnalysisOverview.tsx": 3,
-    "artifacts/metrix-iap/src/pages/metrix/analysis/BudgetView.tsx": 2,
-    "artifacts/metrix-iap/src/pages/metrix/analysis/EngagementFunnelView.tsx": 31,
-    "artifacts/metrix-iap/src/pages/metrix/analysis/IapLibraryView.tsx": 7,
-    "artifacts/metrix-iap/src/pages/metrix/analysis/PlacementsView.tsx": 1,
-    "artifacts/metrix-iap/src/pages/metrix/creative/CreativeCommandCenter.tsx": 8,
-    "artifacts/metrix-iap/src/pages/metrix/creative/CreativeImportExportView.tsx": 2,
-    "artifacts/metrix-iap/src/pages/metrix/creative/CreativeLibraryView.tsx": 6,
-    "artifacts/metrix-iap/src/pages/metrix/listen/ListenCommandCenter.tsx": 8,
-    "artifacts/metrix-iap/src/pages/metrix/ManagerOverview.tsx": 14,
-    "artifacts/metrix-iap/src/pages/metrix/ManualAnalysisControls.tsx": 3,
-    "artifacts/metrix-iap/src/pages/metrix/mst/MstCommandCenter.tsx": 2,
-    "artifacts/metrix-iap/src/pages/metrix/mst/MstDirectionView.tsx": 2,
-    "artifacts/metrix-iap/src/pages/metrix/mst/MstPerformanceView.tsx": 2,
-    "artifacts/metrix-iap/src/pages/metrix/mst/MstSprintsView.tsx": 11,
-    "artifacts/metrix-iap/src/pages/metrix/OverviewLoopHub.tsx": 8,
-    "artifacts/metrix-iap/src/pages/metrix/OverviewUpdatesView.tsx": 3,
-    "artifacts/metrix-iap/src/pages/metrix/reports/ReportBuilderView.tsx": 35,
-    "artifacts/metrix-iap/src/pages/metrix/reports/ReportConfigurationView.tsx": 12,
-    "artifacts/metrix-iap/src/pages/metrix/reports/ReportsCommandCenter.tsx": 5,
-    "artifacts/metrix-iap/src/pages/metrix/settings/GeneralView.tsx": 24,
-    "artifacts/metrix-iap/src/pages/metrix/settings/SecurityView.tsx": 16,
-    "artifacts/metrix-iap/src/pages/metrix/shared.tsx": 5,
-    "artifacts/metrix-iap/src/pages/metrix/strategy/CommunicationsView.tsx": 2,
-    "artifacts/metrix-iap/src/pages/metrix/strategy/StrategyCommandCenter.tsx": 3,
-    "artifacts/metrix-iap/src/pages/metrix/strategy/StrategyHistoryView.tsx": 3,
-    "artifacts/metrix-iap/src/pages/metrix/strategy/StrategyOverview.tsx": 3
-  }
+  "maxTotalViolations": 0,
+  "perFile": {}
 }

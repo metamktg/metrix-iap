@@ -541,14 +541,14 @@ export function StrategyOverview() {
                         <div className="px-4 py-3 flex flex-col gap-2.5 flex-1">
                           {/* Descriptor */}
                           {p.plain_descriptor && (
-                            <p className="text-[11px] text-muted-foreground/55 leading-relaxed line-clamp-2">
+                            <p className="text-caption text-muted-foreground/55 leading-relaxed line-clamp-2">
                               {deriveLabel(p.plain_descriptor, 130)}
                             </p>
                           )}
 
                           {/* Variable stack — most actionable signal, rendered prominently */}
                           <div>
-                            <span className={cn(TYPE.label, "text-muted-foreground/45 uppercase tracking-wide text-[10px] mb-1.5 block")}>
+                            <span className={cn(TYPE.label, "text-muted-foreground/45 uppercase tracking-wide text-label mb-1.5 block")}>
                               What works
                             </span>
                             <VariableStackChips stack={p.variable_stack} />
@@ -557,7 +557,7 @@ export function StrategyOverview() {
                           {/* ICP chips */}
                           {(p.target_icps?.length ?? 0) > 0 && (
                             <div>
-                              <span className={cn(TYPE.label, "text-muted-foreground/45 uppercase tracking-wide text-[10px] mb-1.5 block")}>
+                              <span className={cn(TYPE.label, "text-muted-foreground/45 uppercase tracking-wide text-label mb-1.5 block")}>
                                 Who responds
                               </span>
                               <IcpChips ids={p.target_icps} profiles={strategy.icp_profiles} />
