@@ -517,16 +517,16 @@ export function StrategyOverview() {
                         </div>
 
                         {/* Pillar title */}
-                        <div title={t.qualifier ? p.label : undefined}>
-                          <p className="text-title font-semibold text-foreground leading-tight line-clamp-1">{t.main}</p>
-                          {t.qualifier && <p className={cn(TYPE.caption, "line-clamp-1 mt-0.5")}>{t.qualifier}</p>}
+                        <div title={p.label}>
+                          <p className="text-title font-semibold text-foreground leading-tight line-clamp-2">{t.main}</p>
+                          {t.qualifier && <p className={cn(TYPE.caption, "line-clamp-2 mt-0.5 text-muted-foreground/70")}>{t.qualifier}</p>}
                         </div>
 
-                        {/* Descriptor — L2 via info icon only */}
+                        {/* Descriptor — visible inline */}
                         {p.plain_descriptor && (
-                          <div className="flex items-center gap-1">
-                            <InfoTooltip content={deriveLabel(p.plain_descriptor, 90)} />
-                          </div>
+                          <p className="text-[11px] text-muted-foreground/60 leading-relaxed line-clamp-2">
+                            {deriveLabel(p.plain_descriptor, 120)}
+                          </p>
                         )}
 
                         {/* Source cell chips */}

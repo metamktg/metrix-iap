@@ -129,14 +129,14 @@ export function AdPerformanceView() {
             <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
               {scoped ? (
                 <>
-                  <MetricTile label="Spend (in range)" value={fmtUSD(scoped.spend, 0)} sub="concept flights overlapping range" />
+                  <MetricTile variant="primary" label="Spend (in range)" value={fmtUSD(scoped.spend, 0)} sub="concept flights overlapping range" />
                   <MetricTile label="Link clicks (in range)" value={fmtNum(scoped.linkClicks)} />
                   <MetricTile label="Results (in range)" value={fmtNum(scoped.results)} />
                   <MetricTile label="Concept flights" value={String(scoped.concepts)} sub="overlapping selected range" />
                 </>
               ) : (
                 <>
-                  <MetricTile label="Total spend" value={fmtUSD(summary.total_spend_usd, 0)} />
+                  <MetricTile variant="primary" label="Total spend" value={fmtUSD(summary.total_spend_usd, 0)} />
                   <MetricTile label="Impressions" value={fmtNum(summary.total_impressions)} />
                   <MetricTile label="Link clicks" value={fmtNum(summary.total_link_clicks)} />
                   <MetricTile label="Link CTR" value={fmtPct(summary.overall_link_ctr_pct)} />

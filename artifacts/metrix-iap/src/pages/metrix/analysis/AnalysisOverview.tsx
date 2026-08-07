@@ -26,7 +26,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { SharePieChart } from "@/components/charts/SharePieChart";
 import {
-  AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip,
+  AreaChart, Area, BarChart, Bar, Cell, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid, Brush,
 } from "recharts";
 import { Slider } from "@/components/ui/slider";
@@ -375,7 +375,15 @@ function CellPerfBars({ items, resultNoun }: {
               );
             }}
           />
-          <Bar dataKey="spend" fill="hsl(var(--primary))" radius={[0, 3, 3, 0]} opacity={0.75} />
+          <Bar dataKey="spend" radius={[0, 3, 3, 0]}>
+            {items.map((_, i) => (
+              <Cell
+                key={i}
+                fill={i === 0 ? "hsl(var(--primary))" : "rgba(255,255,255,0.22)"}
+                fillOpacity={i === 0 ? 0.9 : 0.55}
+              />
+            ))}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -928,14 +936,14 @@ export function AnalysisOverview() {
                         <>
                           {selectedWindow && runData ? (
                             <>
-                              <MetricTile label="Total spend"  value={fmtUSD(runData.totals.total_spend_usd, 0)} />
+                              <MetricTile variant="primary" label="Total spend"  value={fmtUSD(runData.totals.total_spend_usd, 0)} />
                               <MetricTile label="Impressions"  value={fmtNum(runData.totals.total_impressions)} />
                               <MetricTile label="Link clicks"  value={fmtNum(runData.totals.total_link_clicks)} />
                               <MetricTile label="Link CTR"     value={fmtPct(runData.totals.overall_link_ctr_pct)} />
                             </>
                           ) : (
                             <>
-                              <MetricTile label="Total spend"  value={fmtUSD(summary.total_spend_usd, 0)} />
+                              <MetricTile variant="primary" label="Total spend"  value={fmtUSD(summary.total_spend_usd, 0)} />
                               <MetricTile label="Impressions"  value={fmtNum(summary.total_impressions)} />
                               <MetricTile label="Link clicks"  value={fmtNum(summary.total_link_clicks)} />
                               <MetricTile label="Link CTR"     value={fmtPct(summary.overall_link_ctr_pct)} />

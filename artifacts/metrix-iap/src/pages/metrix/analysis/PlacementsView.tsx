@@ -333,6 +333,7 @@ export function PlacementsView() {
                         <MetricTile label="Link clicks" value={fmtNum(totalClicks)} />
                         <MetricTile label="Purchases" value={fmtNum(totalPurchases)} />
                         <MetricTile
+                          variant="primary"
                           label="Top placement"
                           value={top?.placement ?? "—"}
                           sub={top ? `${fmtNum(top.purchases ?? 0)} purchases · ${fmtNum(top.link_clicks ?? 0)} link clicks` : undefined}
@@ -378,6 +379,7 @@ export function PlacementsView() {
                   <MetricTile label="Placement spend" value={fmtUSD(totalSpend, 0)} />
                   <MetricTile label={term.Plural} value={fmtNum(totalResults)} />
                   <MetricTile
+                    variant="primary"
                     label={`Best · ${activeMetric.label}`}
                     value={best?.placement ?? "—"}
                     sub={

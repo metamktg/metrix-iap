@@ -882,17 +882,36 @@ export function SkeletonTileRow({ count = 4 }: { count?: number }) {
 // ─── Metric tile ──────────────────────────────────────────────────────
 // When the tile is placed inside a `group` button, border lifts on hover.
 
-export function MetricTile({ label, value, sub, onClick }: { label: React.ReactNode; value: string; sub?: string; onClick?: () => void }) {
+// variant="primary" — accent bar at top, higher-contrast label; use on the
+// single most important tile in a row group to establish visual authority.
+export function MetricTile({
+  label, value, sub, onClick, variant = "default",
+}: {
+  label: React.ReactNode;
+  value: string;
+  sub?: string;
+  onClick?: () => void;
+  variant?: "primary" | "default";
+}) {
+  const isPrimary = variant === "primary";
+  const labelCls = isPrimary
+    ? "text-[9px] font-mono uppercase tracking-widest text-muted-foreground/65 mb-1.5 truncate"
+    : "text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-2 truncate";
+
   if (onClick) {
     return (
       <button
         type="button"
         onClick={onClick}
-        className="mx-kpi-tile p-4 transition-colors hover:border-primary/40 hover:bg-primary/[0.04] text-left w-full group/tile"
+        className={cn(
+          "mx-kpi-tile p-4 transition-colors hover:border-primary/40 hover:bg-primary/[0.04] text-left w-full group/tile relative",
+          isPrimary && "border-primary/35 bg-primary/[0.03]"
+        )}
         title="Open segment breakdown for this metric"
       >
+        {isPrimary && <div className="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-primary/55 pointer-events-none" />}
         <div className="relative z-10">
-          <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-2 truncate group-hover/tile:text-interactive/60 transition-colors">{label}</div>
+          <div className={cn(labelCls, "group-hover/tile:text-interactive/70 transition-colors")}>{label}</div>
           <div className="text-bignum font-bold text-foreground metric-num leading-none tracking-[-0.035em]">{value}</div>
           {sub && <div className="text-caption text-muted-foreground/65 mt-2 leading-snug line-clamp-2">{sub}</div>}
           <div className="mt-2 text-[8px] font-mono uppercase tracking-wider text-interactive/0 group-hover/tile:text-interactive/50 transition-colors">Segment breakdown →</div>
@@ -901,9 +920,13 @@ export function MetricTile({ label, value, sub, onClick }: { label: React.ReactN
     );
   }
   return (
-    <div className="mx-kpi-tile p-4 transition-colors group-hover:border-primary/30">
+    <div className={cn(
+      "mx-kpi-tile p-4 transition-colors group-hover:border-primary/30 relative",
+      isPrimary && "border-primary/35 bg-primary/[0.03]"
+    )}>
+      {isPrimary && <div className="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-primary/55 pointer-events-none" />}
       <div className="relative z-10">
-        <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-2 truncate">{label}</div>
+        <div className={labelCls}>{label}</div>
         <div className="text-bignum font-bold text-foreground metric-num leading-none tracking-[-0.035em]">{value}</div>
         {sub && <div className="text-caption text-muted-foreground/65 mt-2 leading-snug line-clamp-2">{sub}</div>}
       </div>
@@ -1436,10 +1459,10 @@ export function SectionCard({
     <section className="mx-card-hero overflow-hidden">
       <div className="mx-accent-bar relative flex items-center gap-2 px-3.5 py-2 border-b border-[rgba(120,170,255,0.12)]">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <h3 className="text-title font-semibold text-foreground leading-tight">{title}</h3>
-            {desc && <InfoTooltip content={desc} />}
-          </div>
+          <h3 className="text-title font-semibold text-foreground leading-tight">{title}</h3>
+          {desc && (
+            <p className="text-[10px] text-muted-foreground/50 leading-snug mt-0.5 line-clamp-1">{desc}</p>
+          )}
         </div>
         <div className="shrink-0 flex items-center gap-2">
           {right}
