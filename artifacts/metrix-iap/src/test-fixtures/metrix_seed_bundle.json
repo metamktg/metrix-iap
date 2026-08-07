@@ -387,13 +387,13 @@
     "name": "Metrix Manager",
     "type": "manager_account",
     "overview_mode": "agency_blended",
-    "configured_ad_accounts": 3,
+    "configured_ad_accounts": 4,
     "unconfigured_ad_accounts": 2,
     "bottom_line_totals": {
-      "spend_usd": 15248.01,
-      "impressions": 2636728,
-      "link_clicks": 10255,
-      "link_ctr_pct": 0.2665,
+      "spend_usd": 15305.98,
+      "impressions": 2637252,
+      "link_clicks": 10596,
+      "link_ctr_pct": 0.2794,
       "result_totals_by_event": {
         "Mobile app installs": {
           "spend": 4766.02,
@@ -428,12 +428,12 @@
           "link_clicks": 677
         },
         "Website purchases": {
-          "spend": 6920.08,
-          "reach": 2205,
-          "impressions": 63830,
+          "spend": 6978.05,
+          "reach": 2623,
+          "impressions": 64354,
           "results": 26,
-          "clicks_all": 5205,
-          "link_clicks": 3830
+          "clicks_all": 5236,
+          "link_clicks": 3894
         },
         "unknown": {
           "spend": 0,
@@ -441,7 +441,7 @@
           "impressions": 0,
           "results": 0,
           "clicks_all": 0,
-          "link_clicks": 273
+          "link_clicks": 550
         },
         "Website checkouts initiated": {
           "spend": 327.1,
@@ -4290,6 +4290,7 @@
               "concept": "C1",
               "date_start": "2026-05-02",
               "date_end": "2026-05-19",
+              "manual_analysis_run_id": null,
               "spend": 515.0538,
               "link_clicks": 500,
               "results": 42,
@@ -4307,6 +4308,7 @@
               "concept": "C2",
               "date_start": "2026-05-02",
               "date_end": "2026-06-04",
+              "manual_analysis_run_id": null,
               "spend": 2332.11,
               "link_clicks": 2184,
               "results": 329,
@@ -4324,6 +4326,7 @@
               "concept": "C3",
               "date_start": "2026-05-02",
               "date_end": "2026-05-20",
+              "manual_analysis_run_id": null,
               "spend": 286.84,
               "link_clicks": 292,
               "results": 0,
@@ -4341,6 +4344,7 @@
               "concept": "C4",
               "date_start": "2026-05-02",
               "date_end": "2026-05-21",
+              "manual_analysis_run_id": null,
               "spend": 621.1922,
               "link_clicks": 584,
               "results": 49,
@@ -4358,6 +4362,7 @@
               "concept": "C5",
               "date_start": "2026-05-25",
               "date_end": "2026-06-03",
+              "manual_analysis_run_id": null,
               "spend": 452.07,
               "link_clicks": 273,
               "results": 22,
@@ -4375,6 +4380,7 @@
               "concept": "C6",
               "date_start": "2026-05-25",
               "date_end": "2026-06-04",
+              "manual_analysis_run_id": null,
               "spend": 518.71,
               "link_clicks": 526,
               "results": 42,
@@ -4392,6 +4398,7 @@
               "concept": "C7",
               "date_start": "2026-05-25",
               "date_end": "2026-06-02",
+              "manual_analysis_run_id": null,
               "spend": 40.04,
               "link_clicks": 43,
               "results": 2,
@@ -4409,6 +4416,7 @@
               "concept": "C2",
               "date_start": "2026-06-04",
               "date_end": "2026-07-07",
+              "manual_analysis_run_id": null,
               "spend": 2443.61,
               "link_clicks": 1107,
               "results": 76,
@@ -4426,6 +4434,7 @@
               "concept": "C4",
               "date_start": "2026-06-04",
               "date_end": "2026-06-27",
+              "manual_analysis_run_id": null,
               "spend": 791.21,
               "link_clicks": 339,
               "results": 2,
@@ -14062,6 +14071,7 @@
               "concept": "C1",
               "date_start": "2026-07-14",
               "date_end": "2026-07-24",
+              "manual_analysis_run_id": null,
               "spend": 12.9,
               "link_clicks": 5,
               "results": 0,
@@ -14079,6 +14089,7 @@
               "concept": "C2",
               "date_start": "2026-07-14",
               "date_end": "2026-07-24",
+              "manual_analysis_run_id": null,
               "spend": 3.97,
               "link_clicks": 1,
               "results": 0,
@@ -14096,6 +14107,7 @@
               "concept": "C3",
               "date_start": "2026-07-14",
               "date_end": "2026-07-24",
+              "manual_analysis_run_id": null,
               "spend": 27.44,
               "link_clicks": 12,
               "results": 0,
@@ -14113,6 +14125,7 @@
               "concept": "C4",
               "date_start": "2026-07-14",
               "date_end": "2026-07-24",
+              "manual_analysis_run_id": null,
               "spend": 13.66,
               "link_clicks": 5,
               "results": 0,
@@ -14130,6 +14143,7 @@
               "concept": "LD-CN-CATALOG-GRID",
               "date_start": "2026-05-03",
               "date_end": "2026-06-26",
+              "manual_analysis_run_id": null,
               "spend": 364.86,
               "link_clicks": 259,
               "results": 0,
@@ -14147,6 +14161,7 @@
               "concept": "LD-CN-CITY-PRIDE",
               "date_start": "2026-05-03",
               "date_end": "2026-06-26",
+              "manual_analysis_run_id": null,
               "spend": 287.28,
               "link_clicks": 174,
               "results": 0,
@@ -14164,6 +14179,7 @@
               "concept": "LD-CN-DAD-SOCIALPROOF",
               "date_start": "2026-05-03",
               "date_end": "2026-06-26",
+              "manual_analysis_run_id": null,
               "spend": 11.62,
               "link_clicks": 3,
               "results": 0,
@@ -14181,6 +14197,7 @@
               "concept": "LD-CN-GIFT-MOMENT",
               "date_start": "2026-05-03",
               "date_end": "2026-06-26",
+              "manual_analysis_run_id": null,
               "spend": 107.24,
               "link_clicks": 64,
               "results": 1,
@@ -14198,6 +14215,7 @@
               "concept": "LD-CN-HIS-HERS",
               "date_start": "2026-05-03",
               "date_end": "2026-06-26",
+              "manual_analysis_run_id": null,
               "spend": 22.83,
               "link_clicks": 7,
               "results": 0,
@@ -14215,6 +14233,7 @@
               "concept": "LD-CN-LIFESTYLE-TESTIMONIAL",
               "date_start": "2026-05-03",
               "date_end": "2026-06-26",
+              "manual_analysis_run_id": null,
               "spend": 149.59,
               "link_clicks": 160,
               "results": 0,
@@ -14232,6 +14251,7 @@
               "concept": "LD-CN-PRODUCT-SPREAD",
               "date_start": "2026-05-03",
               "date_end": "2026-06-26",
+              "manual_analysis_run_id": null,
               "spend": 255.03,
               "link_clicks": 234,
               "results": 1,
@@ -14249,6 +14269,7 @@
               "concept": "LD-CN-QUALITY-REBUTTAL",
               "date_start": "2026-05-03",
               "date_end": "2026-06-26",
+              "manual_analysis_run_id": null,
               "spend": 127.33,
               "link_clicks": 81,
               "results": 0,
@@ -17910,6 +17931,571 @@
           "drive-download-20260725T055530Z-1-001.zip (full Drive export, 20 files, all 16 cells represented but with filename/variant inconsistencies)",
           "ECAS-MST-Sprint1-Creative-Board.html (design-stage mockup v1.0.0, superseded)"
         ]
+      },
+      "listen": {
+        "signal_cards": []
+      }
+    },
+    {
+      "id": "manual_BwsYjC5ZRk0i",
+      "name": "Gabri",
+      "status": "configured",
+      "platform": "Meta Ads",
+      "facebook_page_dp_url": null,
+      "source_status": "manual_reports",
+      "meta_ad_account_id": null,
+      "ads": [
+        {
+          "ad_name": "C1A",
+          "book": null,
+          "cell": "C1A",
+          "concept": "C1",
+          "variation": null,
+          "test_id": null,
+          "meta_ad_id": null,
+          "creative_asset_url": null,
+          "asset_filename": null,
+          "asset_servable": false
+        },
+        {
+          "ad_name": "C1B",
+          "book": null,
+          "cell": "C1B",
+          "concept": "C1",
+          "variation": null,
+          "test_id": null,
+          "meta_ad_id": null,
+          "creative_asset_url": null,
+          "asset_filename": null,
+          "asset_servable": false
+        },
+        {
+          "ad_name": "C1C",
+          "book": null,
+          "cell": "C1C",
+          "concept": "C1",
+          "variation": null,
+          "test_id": null,
+          "meta_ad_id": null,
+          "creative_asset_url": null,
+          "asset_filename": null,
+          "asset_servable": false
+        },
+        {
+          "ad_name": "C1D",
+          "book": null,
+          "cell": "C1D",
+          "concept": "C1",
+          "variation": null,
+          "test_id": null,
+          "meta_ad_id": null,
+          "creative_asset_url": null,
+          "asset_filename": null,
+          "asset_servable": false
+        },
+        {
+          "ad_name": "C2B",
+          "book": null,
+          "cell": "C2B",
+          "concept": "C2",
+          "variation": null,
+          "test_id": null,
+          "meta_ad_id": null,
+          "creative_asset_url": null,
+          "asset_filename": null,
+          "asset_servable": false
+        },
+        {
+          "ad_name": "C2C",
+          "book": null,
+          "cell": "C2C",
+          "concept": "C2",
+          "variation": null,
+          "test_id": null,
+          "meta_ad_id": null,
+          "creative_asset_url": null,
+          "asset_filename": null,
+          "asset_servable": false
+        },
+        {
+          "ad_name": "C3A",
+          "book": null,
+          "cell": "C3A",
+          "concept": "C3",
+          "variation": null,
+          "test_id": null,
+          "meta_ad_id": null,
+          "creative_asset_url": null,
+          "asset_filename": null,
+          "asset_servable": false
+        },
+        {
+          "ad_name": "C3B",
+          "book": null,
+          "cell": "C3B",
+          "concept": "C3",
+          "variation": null,
+          "test_id": null,
+          "meta_ad_id": null,
+          "creative_asset_url": null,
+          "asset_filename": null,
+          "asset_servable": false
+        },
+        {
+          "ad_name": "C3D",
+          "book": null,
+          "cell": "C3D",
+          "concept": "C3",
+          "variation": null,
+          "test_id": null,
+          "meta_ad_id": null,
+          "creative_asset_url": null,
+          "asset_filename": null,
+          "asset_servable": false
+        },
+        {
+          "ad_name": "c4A",
+          "book": null,
+          "cell": null,
+          "concept": "C4",
+          "variation": null,
+          "test_id": null,
+          "meta_ad_id": null,
+          "creative_asset_url": null,
+          "asset_filename": null,
+          "asset_servable": false
+        },
+        {
+          "ad_name": "C4B",
+          "book": null,
+          "cell": "C4B",
+          "concept": "C4",
+          "variation": null,
+          "test_id": null,
+          "meta_ad_id": null,
+          "creative_asset_url": null,
+          "asset_filename": null,
+          "asset_servable": false
+        },
+        {
+          "ad_name": "C4C",
+          "book": null,
+          "cell": "C4C",
+          "concept": "C4",
+          "variation": null,
+          "test_id": null,
+          "meta_ad_id": null,
+          "creative_asset_url": null,
+          "asset_filename": null,
+          "asset_servable": false
+        }
+      ],
+      "iap": {
+        "metadata": {},
+        "core_reanalysis_read": null,
+        "campaign_summary": {
+          "bottom_line_totals": {
+            "Website purchases": {
+              "spend": 57.97,
+              "reach": 418,
+              "impressions": 524,
+              "results": 0,
+              "clicks_all": 31,
+              "link_clicks": 64
+            },
+            "unknown": {
+              "spend": 0,
+              "reach": 0,
+              "impressions": 0,
+              "results": 0,
+              "clicks_all": 0,
+              "link_clicks": 277
+            }
+          },
+          "total_spend_usd": 57.97,
+          "total_impressions": 524,
+          "total_link_clicks": 341,
+          "overall_link_ctr_pct": 65.0763,
+          "data_caveat": "Totals cover the full imported window 2026-07-14 → 2026-07-24.",
+          "window_start": "2026-07-14",
+          "window_end": "2026-07-24",
+          "campaign_windows": []
+        },
+        "analysis": {
+          "performance_by_cell": [],
+          "v3_variable_performance": [],
+          "demographic_registration_signal": [],
+          "v3_placement_signal": [],
+          "c4e_placement_signal": [],
+          "conversion_tracking_signal": {
+            "tracking_basis": "conversion",
+            "window_start": "2026-07-21",
+            "window_end": "2026-07-21",
+            "note": "Conversion-based tracking: funnel actions are attributed to the converting device/platform/placement. Spend and impressions are not device-attributable under this tracking, so no CPA/CTR exist here. The export window may differ from the account's campaign window — treat cross-surface comparisons as directional.",
+            "devices": [
+              {
+                "device": "iphone",
+                "date_start": "2026-07-21",
+                "date_end": "2026-07-21",
+                "link_clicks": 33,
+                "adds_to_cart": 6,
+                "checkouts_initiated": null,
+                "purchases": null,
+                "confidence": null
+              },
+              {
+                "device": "iphone",
+                "date_start": "2026-07-16",
+                "date_end": "2026-07-16",
+                "link_clicks": 13,
+                "adds_to_cart": 1,
+                "checkouts_initiated": null,
+                "purchases": null,
+                "confidence": null
+              }
+            ],
+            "platforms": [
+              {
+                "platform": "facebook",
+                "date_start": "2026-07-21",
+                "date_end": "2026-07-21",
+                "link_clicks": 26,
+                "adds_to_cart": 6,
+                "checkouts_initiated": null,
+                "purchases": null,
+                "confidence": null
+              },
+              {
+                "platform": "threads",
+                "date_start": "2026-07-16",
+                "date_end": "2026-07-16",
+                "link_clicks": 3,
+                "adds_to_cart": 1,
+                "checkouts_initiated": null,
+                "purchases": null,
+                "confidence": null
+              }
+            ],
+            "placements": [
+              {
+                "placement": "Feed",
+                "date_start": "2026-07-21",
+                "date_end": "2026-07-21",
+                "link_clicks": 33,
+                "adds_to_cart": 6,
+                "checkouts_initiated": null,
+                "purchases": null,
+                "confidence": null
+              },
+              {
+                "placement": "Threads feed",
+                "date_start": "2026-07-16",
+                "date_end": "2026-07-16",
+                "link_clicks": 3,
+                "adds_to_cart": 1,
+                "checkouts_initiated": null,
+                "purchases": null,
+                "confidence": null
+              }
+            ]
+          },
+          "top_checkout_cells": [],
+          "top_checkout_variables": [],
+          "concept_rollup": [
+            {
+              "book": null,
+              "concept": "C1",
+              "date_start": "2026-07-14",
+              "date_end": "2026-07-24",
+              "manual_analysis_run_id": null,
+              "spend": 12.900000000000002,
+              "link_clicks": 57,
+              "results": null,
+              "cpa": null,
+              "cvr_link_pct": null,
+              "confidence": null,
+              "mapped_in_library": false,
+              "buying_intent_score": 57,
+              "performance_lift_vs_baseline": null,
+              "performance_tier": "4 - Eliminate",
+              "confidence_level": "validation_required"
+            },
+            {
+              "book": null,
+              "concept": "C2",
+              "date_start": "2026-07-14",
+              "date_end": "2026-07-24",
+              "manual_analysis_run_id": null,
+              "spend": 3.97,
+              "link_clicks": 1,
+              "results": null,
+              "cpa": null,
+              "cvr_link_pct": null,
+              "confidence": null,
+              "mapped_in_library": false,
+              "buying_intent_score": 1,
+              "performance_lift_vs_baseline": null,
+              "performance_tier": "4 - Eliminate",
+              "confidence_level": "validation_required"
+            },
+            {
+              "book": null,
+              "concept": "C3",
+              "date_start": "2026-07-14",
+              "date_end": "2026-07-24",
+              "manual_analysis_run_id": null,
+              "spend": 27.439999999999998,
+              "link_clicks": 26,
+              "results": null,
+              "cpa": null,
+              "cvr_link_pct": null,
+              "confidence": null,
+              "mapped_in_library": false,
+              "buying_intent_score": 26,
+              "performance_lift_vs_baseline": null,
+              "performance_tier": "4 - Eliminate",
+              "confidence_level": "validation_required"
+            },
+            {
+              "book": null,
+              "concept": "C4",
+              "date_start": "2026-07-14",
+              "date_end": "2026-07-24",
+              "manual_analysis_run_id": null,
+              "spend": 13.659999999999998,
+              "link_clicks": 257,
+              "results": null,
+              "cpa": null,
+              "cvr_link_pct": null,
+              "confidence": null,
+              "mapped_in_library": false,
+              "buying_intent_score": 257,
+              "performance_lift_vs_baseline": null,
+              "performance_tier": "4 - Eliminate",
+              "confidence_level": "validation_required"
+            }
+          ]
+        },
+        "strategy": {
+          "provenance": "generated",
+          "message_pillars": [
+            {
+              "id": "GEN_PILLAR_e976aaf9_1",
+              "label": "Feed-First Engagement Anchor",
+              "source_cells": [],
+              "plain_descriptor": "Establish a baseline creative that captures attention in the Feed placement — the only placement with confirmed engagement volume (33 link clicks, 6 adds-to-cart) — using a hook-forward format that stops the scroll before asking for any downstream action.",
+              "why_it_matters": "Feed placement drove 33 link clicks and 6 adds-to-cart vs. Threads feed's 3 link clicks and 1 add-to-cart. No cost-per-result or CVR data is available at this stage; these are raw funnel counts only. C3 absorbed the largest spend share (≈$27.44 of ≈$57.97 total) but results are not yet attributed to concepts, so concept-level CPA cannot be stated.",
+              "variable_stack": {
+                "hook": "HK_Problem",
+                "framework": "FW_PAS",
+                "tone": "TN_Relatable"
+              },
+              "funnel_application": "TOFU: thumbstop and link-click generation in Feed. The creative must earn the click before any downstream metric is meaningful. Add-to-cart volume (6 events) is too small for conversion optimization; link-click volume is the actionable early signal.",
+              "execution_specifications": "Lead with a problem-statement hook in the first 2–3 seconds (HK_Problem). Body copy follows PAS structure — agitate the pain before presenting relief. Tone stays relatable and peer-level, not aspirational or clinical. Avoid price or offer language until terminal metric is confirmed.",
+              "placement_strategy": "Advantage+ auto-placements with Feed as the expected delivery anchor given observed traffic concentration. Broad targeting, ABO budget. Do not restrict to Feed manually — let Advantage+ allocate, but monitor Feed vs. Threads split in reporting.",
+              "scaling_guidance": "Wait for at minimum 50 link clicks per concept before drawing CPA conclusions. Scale spend only after results (terminal metric) begin populating — current data volume is pre-statistical.",
+              "target_icps": [],
+              "origin": "generated"
+            },
+            {
+              "id": "GEN_PILLAR_e976aaf9_2",
+              "label": "Concept Spend Efficiency Audit",
+              "source_cells": [],
+              "plain_descriptor": "C3 received disproportionate spend (≈$27.44, ~47% of total) relative to C1 (≈$12.90), C4 (≈$13.66), and C2 (≈$3.97), yet no results are attributed to any concept. The next sprint must structurally equalize spend across columns to produce readable concept-level cost-per-result signals before any scaling decision is made.",
+              "why_it_matters": "C3 spend ≈$27.44; C4 ≈$13.66; C1 ≈$12.90; C2 ≈$3.97. Results, CPA, and CVR are null for all four concepts in the rollup. C2's severely suppressed spend ($3.97) means it is statistically unreadable. No variable-level performance data exists to ground concept-quality judgments.",
+              "variable_stack": {
+                "concept": "CN_Comparison",
+                "framework": "FW_FAB",
+                "tone": "TN_Rational"
+              },
+              "funnel_application": "MOFU: the matrix sprint is itself the test vehicle. Each concept column must generate enough link clicks and eventual results to be comparable. MOFU angles (feature-benefit, comparison) are appropriate for audiences who have already registered a problem and are evaluating options.",
+              "execution_specifications": "In the MST grid, assign one concept angle per column and enforce equal ABO budgets per ad set so no single concept drifts to C3-level dominance in early delivery. Design each column's creative to be meaningfully distinct — different format, different hook type — so spend differences, when they emerge, reflect genuine audience preference rather than auction-level similarity penalties.",
+              "placement_strategy": "ABO with equal budgets per column ad set. Advantage+ placements active on all four. Monitor concept-level spend pacing in the first 48 hours and flag any column absorbing >40% of total spend as a potential delivery anomaly, not necessarily a performance signal.",
+              "scaling_guidance": "Do not pause C2-equivalent low-spend columns in the first 7 days. Delivery suppression on a low-spend concept may reflect creative similarity scoring or auction overlap, not audience rejection. Allow the full sprint window before making structural cuts.",
+              "target_icps": [],
+              "origin": "generated"
+            },
+            {
+              "id": "GEN_PILLAR_e976aaf9_3",
+              "label": "iPhone / Mobile-Native Social Proof",
+              "source_cells": [],
+              "plain_descriptor": "iPhone is the dominant device in the conversion funnel (13 + 33 link clicks across two iPhone rows vs. no other device data). A mobile-native creative format (vertical video or UGC-style) with embedded social proof should lower friction for this device cohort and improve the link-click-to-add-to-cart conversion rate beyond the observed ~15% (6 ATC / 39 total iPhone link clicks).",
+              "why_it_matters": "iPhone accounts for all recorded link clicks (46 total across two device rows: 13 and 33) and all 7 recorded adds-to-cart (1 + 6). No other device appears in the conversion data. The blended iPhone ATC rate is approximately 15% (7/46) — directional only given low volume. No cost or CPA data is device-attributed.",
+              "variable_stack": {
+                "concept": "CN_UGC",
+                "proof": "PR_UGC",
+                "hook": "HK_SocialProof",
+                "tone": "TN_Warm"
+              },
+              "funnel_application": "TOFU-to-MOFU bridge: UGC social proof is optimized to generate the first click (TOFU) while the embedded proof element seeds credibility for the downstream action (MOFU). On mobile, native-feeling content outperforms polished studio formats in thumbstop rate.",
+              "execution_specifications": "Vertical 9:16 aspect ratio. First frame must feel native to a phone scroll — no broadcast-style opening. Social proof element (testimonial quote, review count, or peer endorsement) appears within the first 3 seconds. Copy kept short for mobile thumb-scroll pacing. Avoid heavy text overlays that obscure on small screens.",
+              "placement_strategy": "Advantage+ auto-placements; the vertical format will be favored by Reels and Stories alongside Feed. Do not artificially restrict to Feed despite Feed's current traffic dominance — mobile-native formats may unlock Reels inventory and broaden reach.",
+              "scaling_guidance": "Track iPhone ATC rate as the early proxy. If this pillar's cells produce ATC rates materially above the baseline ~15%, flag for budget increase. Confirm terminal metric before scaling to avoid optimizing toward ATC when the real goal may differ.",
+              "target_icps": [],
+              "origin": "generated"
+            },
+            {
+              "id": "GEN_PILLAR_e976aaf9_4",
+              "label": "Threads Feed Exploratory Expansion",
+              "source_cells": [],
+              "plain_descriptor": "Threads feed delivered 3 link clicks and 1 add-to-cart from minimal activity, suggesting the placement is live and converting at a surface-level rate comparable to Facebook Feed (1/3 = 33% ATC rate vs. 6/33 = 18% on Facebook Feed) — though sample sizes are too small for statistical confidence. A dedicated exploratory concept column should test whether Threads-native copy and format conventions can produce a lower cost-per-result than Facebook Feed given potentially lower CPM competition.",
+              "why_it_matters": "Threads feed: 3 link clicks, 1 add-to-cart (~33% ATC rate, n=3, pre-statistical). Facebook Feed: 33 link clicks, 6 adds-to-cart (~18% ATC rate, n=33, still low volume). No spend, CPM, or CPA is broken out by placement in the available data. This pillar is explicitly exploratory and low-confidence.",
+              "variable_stack": {
+                "concept": "CN_Lifestyle",
+                "framework": "FW_StoryBrand",
+                "tone": "TN_Aspirational",
+                "hook": "HK_Curiosity"
+              },
+              "funnel_application": "TOFU: Threads audiences skew toward discovery and conversational content. An unaware-level hook with curiosity framing matches the ambient browsing behavior typical of Threads feed. Avoid hard-sell CTAs until the placement's conversion behavior is better understood.",
+              "execution_specifications": "Text-weight, conversational format optimized for the Threads feed aesthetic (less visual-dominant than Facebook Feed). Hook framed as a question or observation rather than a direct claim. Keep creative concise — Threads users skim fast. This column is flagged as EXPLORATORY in the matrix; avatar_basis is exploratory with no historical ICP grounding.",
+              "placement_strategy": "Advantage+ auto-placements will naturally distribute to Threads. Do not force Threads-only delivery — instead, monitor Threads share of delivery in the placement breakdown and compare ATC rates once link-click volume exceeds 30 per placement.",
+              "scaling_guidance": "Low priority for budget allocation until volume supports a verdict. Treat this column as a signal-gathering cell, not a scaling candidate, in the first sprint.",
+              "target_icps": [],
+              "origin": "generated"
+            }
+          ],
+          "active_hypotheses": [
+            {
+              "id": "GEN_HYP_e976aaf9_1",
+              "label": "A problem-first hook (HK_Problem) in the opening frame will produce a higher link-click rate than a benefit-first hook (HK_Benefit) across all four concept columns, because the account's funnel data shows users entering at an add-to-cart stage consistent with problem-aware rather than solution-aware awareness levels.",
+              "source": "Pillar 1 (Feed-First Engagement Anchor) — HK_Problem baseline",
+              "status": "high",
+              "pillar_id": "GEN_PILLAR_e976aaf9_1",
+              "risk": "Low sample volume may prevent statistical significance within a single sprint. The ~15% blended ATC rate suggests post-click quality matters as much as click volume — hook wins on CTR may not translate to cost-per-result wins.",
+              "test_variant": "Row A of the MST uses HK_Problem across C1A, C2A, C3A, C4A (four different avatars/concepts, same hook type). Row B uses HK_Benefit across C1B, C2B, C3B, C4B. All other variables (FW_, TN_, PR_) differ within each row so hook is the only shared variable.",
+              "isolated_variable": "HK_ hook type (HK_Problem vs. HK_Benefit). Distributed as: Row A = HK_Problem constant across all 4 columns; Row B = HK_Benefit constant across all 4 columns. Each hook type appears exactly 4 times in varied concept/tone/framework contexts, satisfying the 2–4 appearance rule and enabling cross-avatar hook isolation.",
+              "success_criteria": "Row A (HK_Problem) achieves a link-click rate (link clicks / impressions) at least 20% higher than Row B (HK_Benefit) after each row accumulates ≥200 impressions. Secondary: ATC rate directionally favors HK_Problem.",
+              "expected_impact": "Medium. Problem-aware messaging is directionally supported by the funnel entry data (users reaching ATC), but without demographic or creative variable data, the magnitude of the hook effect is unknown.",
+              "origin": "generated"
+            },
+            {
+              "id": "GEN_HYP_e976aaf9_2",
+              "label": "Equalizing ABO budgets across all four concept columns (C1–C4) will reveal a readable cost-per-result signal per concept within one sprint, whereas the current unequal spend distribution (C3 at ~47% of total) has produced null results across all concept rows.",
+              "source": "Current spend distribution: C3 ≈$27.44, C4 ≈$13.66, C1 ≈$12.90, C2 ≈$3.97 — all showing null results.",
+              "status": "high",
+              "pillar_id": "GEN_PILLAR_e976aaf9_2",
+              "risk": "Meta's delivery algorithm may still favor one concept via auction dynamics even with equal budgets. If one column receives far lower CPM, its link-click volume will differ despite equal spend — this is a signal, not a flaw.",
+              "test_variant": "Next sprint: set equal ABO daily budgets for all four concept column ad sets. Target minimum $10–15/day per column for ≥7 days to generate actionable link-click volume (target ≥50 link clicks per concept before reading CPA).",
+              "isolated_variable": "Budget allocation structure (equal ABO per column vs. uncontrolled delivery weighting). This is a structural/methodological variable, not a creative variable — it is held constant as equal across all 16 cells and is not an angle variable in the matrix rows. Its effect is read at the concept-column level by comparing spend distribution after 7 days.",
+              "success_criteria": "No single column absorbs more than 35% of total sprint spend after Day 3. All four columns reach ≥50 link clicks by Day 7. At least two columns produce a non-null cost-per-result.",
+              "expected_impact": "High structural impact. Without readable concept-level data, no creative or audience scaling decision is defensible. This is the foundational fix that enables all other hypotheses to be tested.",
+              "origin": "generated"
+            },
+            {
+              "id": "GEN_HYP_e976aaf9_3",
+              "label": "A UGC-style, mobile-native creative format (CN_UGC) will produce a higher add-to-cart rate than a polished/designed format (CN_Lifestyle or CN_ProductDemo) on iPhone, because iPhone accounts for 100% of observed device-side conversion events and native-feeling content reduces perceived ad friction on mobile feeds.",
+              "source": "Pillar 3 (iPhone / Mobile-Native Social Proof) — current blended iPhone ATC rate of ~15% (7 ATC / 46 link clicks, pre-statistical).",
+              "status": "medium",
+              "pillar_id": "GEN_PILLAR_e976aaf9_3",
+              "risk": "The account may not be an e-commerce/purchase model — 'adds-to-cart' may be a proxy metric rather than the terminal result. If the real terminal metric differs, ATC rate optimization may be misleading. Flag for cohort configuration before acting on this hypothesis at scale.",
+              "test_variant": "Column C3 of the MST uses CN_UGC as the concept constant (Column Constant) across all four rows (C3A, C3B, C3C, C3D). Column C1 uses a polished/designed concept constant (CN_Lifestyle or CN_ProductDemo). All row-level angle variables (FW_, TN_, HK_) differ across rows within each column.",
+              "isolated_variable": "CN_ format angle (CN_UGC vs. CN_Lifestyle/CN_ProductDemo) held constant within its respective column. Appears 4 times each (once per row within its column), across varied framework/tone/hook contexts in the rows — satisfying the 2–4 distribution rule at the column level. Effect readable by comparing ATC rates between the two columns on iPhone delivery.",
+              "success_criteria": "CN_UGC column produces an ATC rate ≥25% higher than the comparison column on iPhone (absolute: >19% ATC rate vs. baseline ~15%) after ≥30 link clicks per column on iPhone devices.",
+              "expected_impact": "Medium. Mobile-native UGC is a broadly validated format signal, but the account's low data volume means the effect size estimate is speculative.",
+              "origin": "generated"
+            },
+            {
+              "id": "GEN_HYP_e976aaf9_4",
+              "label": "A curiosity-based hook (HK_Curiosity) will outperform a social-proof hook (HK_SocialProof) in link-click rate for audiences at the Unaware or Problem-Aware stage (AW_Unaware, AW_ProblemAware), because curiosity gaps create intrinsic motivation to click without requiring prior category knowledge.",
+              "source": "Pillar 4 (Threads Feed Exploratory) — HK_Curiosity baseline in the exploratory column.",
+              "status": "medium",
+              "pillar_id": "GEN_PILLAR_e976aaf9_4",
+              "risk": "HK_SocialProof may underperform on CTR but produce higher downstream quality (ATC rate). A hook that generates curious clicks may attract lower-intent users. Read both click rate and ATC rate together before drawing conclusions.",
+              "test_variant": "Row C of the MST uses HK_Curiosity constant across C1C, C2C, C3C, C4C. Row D uses HK_SocialProof constant across C1D, C2D, C3D, C4D. AW_ level is set to AW_Unaware or AW_ProblemAware for both rows. All other variables (FW_, TN_, CN_ format) differ within each row.",
+              "isolated_variable": "HK_ hook type (HK_Curiosity vs. HK_SocialProof) distributed as Row C vs. Row D. Each hook type appears 4 times across 4 different avatar/concept columns, satisfying isolation requirements. The counter-diagonal (C1D, C2C, C3B, C4A) should be monitored for cross-variable interaction effects.",
+              "success_criteria": "Row C (HK_Curiosity) achieves link-click rate ≥15% higher than Row D (HK_SocialProof) after ≥200 impressions per row. If the Threads placement delivers on Row C cells, compare Threads-specific CTR as a secondary signal.",
+              "expected_impact": "Medium-low. This is a directional hypothesis with no prior creative variable data to anchor the prediction. Treat as signal-gathering in Sprint 1.",
+              "origin": "generated"
+            },
+            {
+              "id": "GEN_HYP_e976aaf9_5",
+              "label": "The main diagonal (C1A, C2B, C3C, C4D) — each carrying a TN_Relatable tone constant across four different avatar columns — will demonstrate whether relatable tonality is a universal signal or avatar-specific, because the diagonal isolates one variable (tone) across maximum concept diversity.",
+              "source": "No prior tone variable data exists in the account. This hypothesis establishes the first tone baseline.",
+              "status": "high",
+              "risk": "Diagonal isolation is the highest-confidence structure in the matrix but requires all 4 avatar columns to generate sufficient volume simultaneously. If one column is suppressed (as C2 was at $3.97 in the prior period), the diagonal signal breaks.",
+              "test_variant": "Assign TN_Relatable as the shared tone variable on the main diagonal: C1A, C2B, C3C, C4D. Each cell also carries its column's ICP constant and a unique combination of FW_, HK_, HP_, and PR_ variables. The counter-diagonal uses TN_Aspirational for contrast isolation.",
+              "isolated_variable": "TN_ tonality (TN_Relatable on main diagonal, TN_Aspirational on counter-diagonal). TN_Relatable appears exactly 4 times (main diagonal cells) across 4 different avatar/concept contexts. TN_Aspirational appears exactly 4 times (counter-diagonal cells). No other row or column shares either tone constant, preserving isolation.",
+              "success_criteria": "If TN_Relatable cells produce a consistently higher link-click rate (≥2 of 4 diagonal cells outperforming their column's other rows) across at least 3 of the 4 avatar columns, tonality is flagged as a scalable variable. If the pattern is column-specific (e.g., only C3C outperforms), tone is an avatar-dependent signal.",
+              "expected_impact": "High if volume is sufficient. Tone is a durable creative variable — a confirmed TN_Relatable signal would apply to all future sprint planning across avatars.",
+              "origin": "generated"
+            },
+            {
+              "id": "GEN_HYP_e976aaf9_6",
+              "label": "Adding an explicit pain-point reference in copy (HP_ variable active) will improve add-to-cart rate versus generic benefit copy (HP_ absent), because the funnel data shows users are entering at a problem-aware stage and pain acknowledgment reduces cognitive distance to action.",
+              "source": "No prior HP_ variable data. Baseline is the blended ~15% ATC rate (7/46 iPhone link clicks, pre-statistical).",
+              "status": "low",
+              "risk": "Low volume is the primary risk. 7 total ATC events across the entire account is insufficient to detect a 5pp ATC rate difference with statistical confidence. This hypothesis is a directional signal-gathering exercise, not a confirmatory test.",
+              "test_variant": "In Row B of the MST, assign one explicit HP_ tag per cell (HP_Time, HP_Money, HP_Confidence, HP_Overwhelm — one per column, varied). In Row A (HK_Problem row), HP_ variables are absent to keep Row A clean for hook isolation. Compare Row B ATC rate to Row A ATC rate after controlling for hook type.",
+              "isolated_variable": "HP_ pain specificity (explicit pain label present vs. absent). HP_ tags appear in Row B only (4 cells, 4 different pain types across 4 columns). Each specific HP_ code appears exactly once — satisfying minimum distribution — with the understanding that pain-type comparison is secondary; the primary test is HP_present vs. HP_absent (Row B vs. Row A). Pain-type sub-analysis requires a future sprint with 2+ appearances per HP_ code.",
+              "success_criteria": "Row B (HP_ active) produces ATC rate ≥5 percentage points above Row A (HP_ absent) after ≥30 link clicks per row. Secondary: if one HP_ code (e.g., HP_Money) produces a materially higher ATC rate, flag it for 2× repetition in Sprint 2.",
+              "expected_impact": "Medium. Pain specificity is a well-established copy lever, but without knowing the terminal metric or the product category, the most resonant pain type is unknown.",
+              "origin": "generated"
+            }
+          ],
+          "icp_profiles": [
+            {
+              "model": "claude-sonnet-4-6",
+              "profile_id": "GEN_ICP_e976aaf9_1",
+              "generated_at": "2026-08-07T03:53:55.236Z",
+              "profile_name": "Mobile-First Impulse Converter",
+              "confidence_level": "low",
+              "message_resonance": "No creative variable data exists to confirm specific message resonance. Directionally, the Feed + iPhone combination suggests short-form, mobile-native formats (UGC, vertical video) and problem-acknowledgment hooks are the appropriate starting point. Social proof elements (PR_UGC, PR_Testimonial) are hypothesized to reduce friction given the mobile impulse context.",
+              "behavioral_signals": "All observed conversion events are iPhone-sourced, suggesting this group is both the most reachable and most conversion-active segment in the account. The blended ATC rate of ~15% (7/46) is directional but pre-statistical. No checkout or purchase data is available, so funnel depth beyond ATC is unknown. Urgency response and price sensitivity cannot be assessed from current evidence.",
+              "funnel_entry_point": "Feed placement on Facebook (33 link clicks, 6 ATCs) is the primary observed entry point. Threads feed contributed a small share (3 link clicks, 1 ATC). Entry appears to occur at the problem-aware stage based on hook-to-action speed.",
+              "psychographic_profile": "This audience interacts with the account's ads in a mobile-first, ambient browsing context — they are not actively searching but can be interrupted by relevant content. Their conversion to add-to-cart suggests moderate to high intent upon click, though the terminal metric is unknown so purchase intent cannot be confirmed. They likely respond to content that feels native to their feed rather than overtly promotional. Pain recognition (problem-aware) appears to be the entry condition given the funnel entry pattern.",
+              "demographic_foundation": "iPhone users exclusively, based on account data showing 100% of link clicks and adds-to-cart originating from iPhone devices (46 link clicks, 7 ATCs). Gender, age, and geography are unknown — no demographic breakdown exists in the current evidence. Likely concentrated in Feed placements given Feed's 33/36 total link-click share. Device context suggests consumption in a mobile-native, thumb-scroll environment.",
+              "strategic_recommendation": "Assign this profile to the primary concept column (C1) in the MST with CN_UGC as the concept constant and HK_Problem as the Row A hook. Use ATC rate on iPhone as the primary early signal, but do not scale spend until the terminal metric populates and the cohort is configured.",
+              "origin": "generated"
+            },
+            {
+              "model": "claude-sonnet-4-6",
+              "profile_id": "GEN_ICP_e976aaf9_2",
+              "generated_at": "2026-08-07T03:53:55.236Z",
+              "profile_name": "Threads-Native Discovery User",
+              "confidence_level": "validation_required",
+              "message_resonance": "No evidence. Hypothesized resonance: conversational, text-weight formats; curiosity or lifestyle hooks; non-transactional CTAs in early touchpoints. This is an exploratory hypothesis with zero creative evidence.",
+              "behavioral_signals": "1 ATC from 3 link clicks on Threads (~33% surface ATC rate) is a noise-level signal — n=3 has no statistical value. However, the existence of conversion events from Threads confirms the placement is active and the pixel is firing. Urgency, price sensitivity, and funnel depth are completely unknown for this segment.",
+              "funnel_entry_point": "Threads feed, likely at TOFU/unaware stage based on platform context. This audience has not been deliberately targeted — delivery was organic from Advantage+ auto-placement.",
+              "psychographic_profile": "Threads users tend to engage with opinion, commentary, and discovery content rather than direct-response advertising. This audience may be at an earlier awareness level (AW_Unaware or AW_ProblemAware) than the Facebook Feed cohort and requires softer entry-point messaging. They are likely resistant to aggressive CTAs but responsive to curiosity-gap and lifestyle-alignment content. No psychographic data is confirmed from this account.",
+              "demographic_foundation": "Users reached via the Threads feed placement — 3 link clicks and 1 add-to-cart observed. No device, gender, age, or geography data is available for this segment specifically. Threads as a platform skews toward users already embedded in Meta's ecosystem who engage with text-forward, conversational content. Volume is extremely low and this profile is entirely exploratory.",
+              "strategic_recommendation": "Assign this profile to the exploratory column (C4) in the MST, flagged as avatar_basis: exploratory. Use HK_Curiosity and FW_StoryBrand as the column's angle anchors. Do not allocate more than 15–20% of sprint budget to this column until volume justifies a verdict.",
+              "origin": "generated"
+            }
+          ],
+          "variable_combinations": [],
+          "scaling_playbook": null
+        },
+        "brief_builder": {
+          "provenance": "imported",
+          "source_policy": "Briefs are the real Brief Builder stage output of the IAP loop run, generated from strategy_map ICPs and pillars.",
+          "draft_briefs": []
+        },
+        "report_builder": null,
+        "optimization_loop": null,
+        "intelligence": {
+          "summary": null,
+          "concept_scores": [],
+          "failure_patterns": []
+        },
+        "data_quality": [],
+        "loop_status": [
+          {
+            "stage": "strategy_map",
+            "status": "complete",
+            "window_start": null,
+            "window_end": null,
+            "generated_at": "2026-08-07T03:53:55.557+00:00",
+            "source_file": null,
+            "note": "Generated in-app by the Metrix engine (run e976aaf9-1009-4d30-9099-edc3b081e751)."
+          }
+        ]
+      },
+      "mst": {
+        "status": "active",
+        "render_policy": "",
+        "local_book2_library": [],
+        "historical_matrix_4x4": null,
+        "source_artifacts": []
       },
       "listen": {
         "signal_cards": []
@@ -24558,6 +25144,7 @@
               "concept": "C1",
               "date_start": "2026-06-14",
               "date_end": "2026-07-13",
+              "manual_analysis_run_id": null,
               "spend": 0.45000000000000007,
               "link_clicks": null,
               "results": null,
@@ -24575,6 +25162,7 @@
               "concept": "C2",
               "date_start": "2026-06-14",
               "date_end": "2026-07-13",
+              "manual_analysis_run_id": null,
               "spend": 50.05999999999998,
               "link_clicks": 12,
               "results": null,
@@ -24592,6 +25180,7 @@
               "concept": "C3",
               "date_start": "2026-06-14",
               "date_end": "2026-07-13",
+              "manual_analysis_run_id": null,
               "spend": 0.6700000000000002,
               "link_clicks": null,
               "results": null,

@@ -18,6 +18,10 @@ export const IAP_SMOKE_STEPS: SmokeStep[] = [
   { label: "Login page layout e2e", script: "smoke:login-page-layout" },
   { label: "Home screen + 5-section nav e2e", script: "smoke:metrix-iap-home-screen" },
   { label: "Forgot-password flow e2e", script: "smoke:forgot-password" },
+  {
+    label: "Register session-persistence e2e",
+    script: "smoke:register-session-persistence",
+  },
   { label: "Slider persistence e2e", script: "smoke:metrix-iap-slider-persistence" },
   { label: "Funnel filter e2e", script: "smoke:metrix-iap-funnel-filter" },
   { label: "Engagement funnel e2e", script: "smoke:metrix-iap-engagement-funnel" },
