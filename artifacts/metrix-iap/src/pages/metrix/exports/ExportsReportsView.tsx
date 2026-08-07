@@ -19,7 +19,7 @@ export function ExportsReportsView() {
   const account = getAdAccount(seed, adAccountId);
 
   return (
-    <ModuleScopeGate section={SECTION} title="Exports · Reports" account={account}>
+    <ModuleScopeGate section={SECTION} title="Reports" account={account}>
       {() => {
         const acct = account!;
         const reportBuilder = getReportBuilder(seed, adAccountId);
@@ -27,7 +27,7 @@ export function ExportsReportsView() {
         if (!reportBuilder) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Exports · Reports" />
+              <ModuleHeader section={SECTION} title="Reports" />
               <ScopeBanner account={acct} />
               <PendingState title="No report configuration yet" message="Set up reporting for this account first." icon={FileText} />
             </div>
@@ -38,7 +38,7 @@ export function ExportsReportsView() {
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
             <ModuleHeader
               section={SECTION}
-              title="Exports · Reports"
+              title="Reports"
               subtitle="Reports already export as real files — download them from Report History."
               table="export_formats, report_history"
             />

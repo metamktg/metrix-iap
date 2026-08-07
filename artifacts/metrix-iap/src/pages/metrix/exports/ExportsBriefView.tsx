@@ -20,7 +20,7 @@ export function ExportsBriefView() {
   const account = getAdAccount(seed, adAccountId);
 
   return (
-    <ModuleScopeGate section={SECTION} title="Exports · Brief" account={account}>
+    <ModuleScopeGate section={SECTION} title="Brief" account={account}>
       {() => {
         const acct = account!;
         const briefBuilder = getBriefBuilder(seed, adAccountId);
@@ -28,7 +28,7 @@ export function ExportsBriefView() {
         if (!briefBuilder || briefBuilder.draft_briefs.length === 0) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Exports · Brief" />
+              <ModuleHeader section={SECTION} title="Brief" />
               <ScopeBanner account={acct} />
               <PendingState title="No briefs yet" message="Build a brief first — there's nothing to export yet." icon={FileStack} />
             </div>
@@ -42,7 +42,7 @@ export function ExportsBriefView() {
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
             <ModuleHeader
               section={SECTION}
-              title="Exports · Brief"
+              title="Brief"
               subtitle="Draft briefs, as shown in Brief Builder."
               table="draft_briefs"
             />

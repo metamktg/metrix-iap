@@ -57,6 +57,11 @@ import { ReportsCommandCenter } from "@/pages/metrix/reports/ReportsCommandCente
 import { ReportBuilderView } from "@/pages/metrix/reports/ReportBuilderView";
 import { ReportHistoryView } from "@/pages/metrix/reports/ReportHistoryView";
 import { ReportConfigurationView } from "@/pages/metrix/reports/ReportConfigurationView";
+import { ExportsCommandCenter } from "@/pages/metrix/exports/ExportsCommandCenter";
+import { ExportsAnalysisView } from "@/pages/metrix/exports/ExportsAnalysisView";
+import { ExportsStrategyView } from "@/pages/metrix/exports/ExportsStrategyView";
+import { ExportsReportsView } from "@/pages/metrix/exports/ExportsReportsView";
+import { ExportsBriefView } from "@/pages/metrix/exports/ExportsBriefView";
 import { MstCommandCenter } from "@/pages/metrix/mst/MstCommandCenter";
 import { MstCrossMapView } from "@/pages/metrix/mst/MstCrossMapView";
 import { MstSprintsView } from "@/pages/metrix/mst/MstSprintsView";
@@ -128,7 +133,7 @@ export function Router() {
       <Route path="/app/creative/scan"         component={CreativeScanView} />
       <Route path="/app/creative/import-export" component={CreativeImportExportView} />
 
-      {/* ── 06 Report Builder ─────────────────────────────────────────── */}
+      {/* ── 07 Reports ────────────────────────────────────────────────── */}
       <Route path="/app/reports"              component={ReportsCommandCenter} />
       <Route path="/app/reports/builder"      component={ReportBuilderView} />
       <Route path="/app/reports/configuration" component={ReportConfigurationView} />
@@ -141,6 +146,13 @@ export function Router() {
       <Route path="/app/mst/performance"   component={MstPerformanceView} />
       <Route path="/app/mst/direction"     component={MstDirectionView} />
       <Route path="/app/mst/creative-scan" component={MstCreativeScanView} />
+
+      {/* ── 08 Exports ────────────────────────────────────────────────── */}
+      <Route path="/app/exports"           component={ExportsCommandCenter} />
+      <Route path="/app/exports/analysis"  component={ExportsAnalysisView} />
+      <Route path="/app/exports/strategy"  component={ExportsStrategyView} />
+      <Route path="/app/exports/reports"   component={ExportsReportsView} />
+      <Route path="/app/exports/brief"     component={ExportsBriefView} />
 
       {/* ── Home screen ───────────────────────────────────────────────── */}
       <Route path="/app/home" component={HomeView} />
@@ -172,7 +184,7 @@ export function Router() {
       <Route path="/app/report-builder">{() => <Redirect to="/app/reports/builder" replace />}</Route>
       <Route path="/app/reports/new">{() => <Redirect to="/app/reports/builder" replace />}</Route>
       <Route path="/app/reports/settings">{() => <Redirect to="/app/reports/configuration" replace />}</Route>
-      <Route path="/app/reports/exports">{() => <Redirect to="/app/reports/history" replace />}</Route>
+      <Route path="/app/reports/exports">{() => <Redirect to="/app/exports/reports" replace />}</Route>
       <Route path="/app/agent">{() => <Redirect to="/app/action/agent" replace />}</Route>
       <Route path="/app/action">{() => <Redirect to="/app/action/agent" replace />}</Route>
       <Route path="/app/settings">{() => <Redirect to="/app/settings/general" replace />}</Route>
