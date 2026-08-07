@@ -33,7 +33,7 @@ export function familyLabel(family: string): string {
 }
 
 /** One readable chip per variable code, colored by family prefix. Code shown as tooltip on hover. */
-export function VariableChip({ code, showCode = false }: { code: string; showCode?: boolean }) {
+export function VariableChip({ code, showCode = false, className }: { code: string; showCode?: boolean; className?: string }) {
   const prefix = getVariablePrefix(code);
   return (
     <span
@@ -41,6 +41,7 @@ export function VariableChip({ code, showCode = false }: { code: string; showCod
       className={cn(
         "inline-flex items-center gap-1 text-label font-medium border px-1.5 py-0.5 rounded leading-none",
         PREFIX_COLORS[prefix],
+        className,
       )}
     >
       {resolveVariableLabel(code)}
@@ -393,11 +394,11 @@ export function VariableCombinationsGrid({ combinations }: { combinations: Varia
           <CombinationChips combination={c.combination} />
           <div className="mt-auto pt-2 border-t border-border/20 flex items-center gap-4">
             <div>
-              <div className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70">CPA</div>
+              <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40">CPA</div>
               <div className="text-sm font-bold text-foreground tabular-nums">{fmtMetric("usd_unit", c.cpa)}</div>
             </div>
             <div>
-              <div className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70">CVR</div>
+              <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40">CVR</div>
               <div className="text-sm font-bold text-foreground tabular-nums">{fmtMetric("pct", c.cvr_pct)}</div>
             </div>
             {c.confidence && (

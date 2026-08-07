@@ -644,32 +644,32 @@ export function IapLibraryView() {
                               className={`rounded-xl border border-border/40 bg-white/[0.02] p-3 ${f.top ? "cursor-pointer hover:border-primary/30 hover:bg-white/[0.04] active:bg-white/[0.06] transition-colors focus-visible:outline focus-visible:outline-1 focus-visible:outline-primary/60" : ""}`}
                               data-testid={`dna-family-${f.family}`}
                             >
-                              <div className="flex items-center justify-between gap-2 mb-2">
-                                <span className="text-caption font-semibold text-foreground">{familyLabel(f.family)}</span>
-                                <span className="text-label font-mono text-muted-foreground/60">
+                              <div className="flex items-center justify-between gap-2 mb-3">
+                                <span className="text-sm font-bold text-foreground">{familyLabel(f.family)}</span>
+                                <span className="text-[10px] font-mono text-muted-foreground/40 border border-border/30 rounded px-1 py-0.5 leading-none">
                                   {f.variableCount} variable{f.variableCount === 1 ? "" : "s"}
                                 </span>
                               </div>
-                              <div className="flex items-center gap-4 tabular-nums">
+                              <div className="flex items-center gap-3 tabular-nums">
                                 <div>
-                                  <div className="text-label font-mono uppercase tracking-wider text-muted-foreground/50 leading-none mb-1">Spend</div>
-                                  <div className="text-caption font-semibold text-foreground/90">{fmtUSD(f.spend, 0)}</div>
+                                  <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40 leading-none mb-0.5">Spend</div>
+                                  <div className="text-caption font-semibold text-foreground/80">{fmtUSD(f.spend, 0)}</div>
                                 </div>
                                 <div>
-                                  <div className="text-label font-mono uppercase tracking-wider text-muted-foreground/50 leading-none mb-1">Results</div>
-                                  <div className="text-caption font-semibold text-foreground/90">{fmtNum(f.results)}</div>
+                                  <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40 leading-none mb-0.5">Results</div>
+                                  <div className="text-caption font-semibold text-foreground/80">{fmtNum(f.results)}</div>
                                 </div>
                                 <div>
-                                  <div className="text-label font-mono uppercase tracking-wider text-muted-foreground/50 leading-none mb-1">CPA</div>
-                                  <div className="text-caption font-semibold text-foreground/90">{f.cpa != null ? fmtUSD(f.cpa) : "—"}</div>
+                                  <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40 leading-none mb-0.5">CPA</div>
+                                  <div className="text-caption font-semibold text-foreground/80">{f.cpa != null ? fmtUSD(f.cpa) : "—"}</div>
                                 </div>
                               </div>
                               {f.top && (
                                 <div className="mt-2 pt-2 border-t border-border/20 flex items-center gap-1.5 flex-wrap">
-                                  <span className="text-label font-mono uppercase tracking-wider text-muted-foreground/50">Best read</span>
-                                  <VariableChip code={f.top.variableId} showCode={false} />
+                                  <span className="text-[9px] uppercase tracking-widest text-muted-foreground/40">Best read</span>
+                                  <VariableChip code={f.top.variableId} showCode={false} className="opacity-80 scale-95 border-border/30" />
                                   {f.top.cpa != null && (
-                                    <span className="text-label tabular-nums text-muted-foreground/70">{fmtUSD(f.top.cpa)} CPA</span>
+                                    <span className="text-[10px] tabular-nums text-muted-foreground/50">{fmtUSD(f.top.cpa)} CPA</span>
                                   )}
                                 </div>
                               )}
