@@ -169,6 +169,17 @@ async function main() {
     fail("Avatars page tooltip e2e failed", String(err?.message ?? err));
   });
 
+  // ── Step 11: Playwright AdAccountOverview UX e2e ──────────────────────────
+  console.log("\nRunning AdAccountOverview UX e2e...");
+  await spawnScript("smoke:metrix-iap-ad-account-overview", [
+    "--filter",
+    "@workspace/scripts",
+    "run",
+    "smoke:metrix-iap-ad-account-overview",
+  ]).catch((err) => {
+    fail("AdAccountOverview UX e2e failed", String(err?.message ?? err));
+  });
+
   console.log("\nPASS  All Metrix IAP smoke checks passed");
   process.exit(0);
 }

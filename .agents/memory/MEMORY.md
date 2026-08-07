@@ -42,6 +42,5 @@
 - [Date-scope fixture tests with homogeneous windows](date-scope-fixture-homogeneous.md) — when full-period analysis gives all concepts the same date window, tests that need differential concept windows must use synthetic rollup data, not the fixture.
 - [Collapsible header a11y + chip tooltips](collapsible-header-a11y.md) — no role=button on wide clickable headers (e2e name collisions); chips need own TooltipProvider + aria-label for hidden codes.
 - [Command Deck consumption in Metrix IAP](command-deck-consumption.md) — theme comes from the package; app forces .dark on <html>; contrast tests must read tokens via loadEffectiveThemeCss().
-// hint: Logic changed on both sides. Requires understanding intent of each change.
 - [LLM JSON truncation handling](llm-json-truncation.md) — "Expected ',' or ']' in JSON" from generation runs = max_tokens cutoff; repair prompts can't fix it, escalate the output budget via stop_reason.
 - [Metrix IAP home + analyze routes](metrix-iap-home-analyze-routes.md) — /app/home (HomeView) and /app/analyze routes were missing from App.tsx; navTree section is "Analysis" (→/app/analysis), not "Analyze" (→/app/analyze); sidebar defaults to expanded (empty localStorage).
