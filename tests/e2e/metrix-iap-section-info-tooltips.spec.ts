@@ -10,6 +10,9 @@
 //      assert [role="tooltip"] shows the exact expected tip text.
 //   2. Placements / "Spend by placement" card — same pattern.
 //   3. Budget / "Efficiency by result event" card — same pattern.
+//   4. IAP Library / metric tiles header icon — same pattern.
+//   5. Analysis Overview / "Analysis modules" card — same pattern.
+//   6. Engagement Funnel / "Conversion funnel" card — same pattern.
 //
 // Catches silent regressions if the tooltip library (Radix UI) or the
 // SectionInfoIcon CSS/markup changes such that the tooltip stops appearing.
@@ -330,6 +333,75 @@ async function main() {
               `  Got:      "${text}"`,
           );
           console.log('       Library metric tiles tooltip verified ✓');
+
+          assert(
+            jsErrors.length === 0,
+            `Expected no JS errors, got: ${jsErrors.join("; ")}`,
+          );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+    // ── Test 5: Analysis Overview — "Analysis modules" card ────────────────
+    await test(
+      'Analysis Overview — "Analysis modules" SectionInfoIcon shows correct tip',
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        const jsErrors: string[] = [];
+        page.on("pageerror", (err) => jsErrors.push(err.message));
+        try {
+          await mockApis(ctx);
+
+          await page.goto(`${BASE}/app/analysis/overview?account=bookster`, {
+            waitUntil: "domcontentloaded",
+          });
+
+          await assertSectionTooltip(
+            page,
+            "Analysis modules",
+            "Deeper views of the same data sliced by library, audience, placements, and budget.",
+            30_000,
+          );
+          console.log('       "Analysis modules" tooltip verified ✓');
+
+          assert(
+            jsErrors.length === 0,
+            `Expected no JS errors, got: ${jsErrors.join("; ")}`,
+          );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+
+    // ── Test 6: Engagement Funnel — "Conversion funnel" card ───────────────
+    await test(
+      'Engagement Funnel — "Conversion funnel" SectionInfoIcon shows correct tip',
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        const jsErrors: string[] = [];
+        page.on("pageerror", (err) => jsErrors.push(err.message));
+        try {
+          await mockApis(ctx);
+
+          await page.goto(`${BASE}/app/analysis/funnel?account=bookster`, {
+            waitUntil: "domcontentloaded",
+          });
+
+          await assertSectionTooltip(
+            page,
+            "Conversion funnel",
+            "Absolute volume and stage-over-stage retention rate from impression through to purchase, drawn from the demographic export.",
+            30_000,
+          );
+          console.log('       "Conversion funnel" tooltip verified ✓');
 
           assert(
             jsErrors.length === 0,

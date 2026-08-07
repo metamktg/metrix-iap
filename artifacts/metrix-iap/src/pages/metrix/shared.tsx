@@ -57,7 +57,7 @@
 //   <HypothesisCodeChipsRow> + a line-clamp-1 caption, drawer keeps prose.
 
 import { useState } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { useLocation, useSearch } from "wouter";
 import { ConnectMetaDialog, ManualImportDialog } from "./ConnectAccountDialogs";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
@@ -65,8 +65,8 @@ import { useListManualImports } from "@workspace/api-client-react";
 import { Plug, FileUp, Clock, Database, Info, ArrowRight, ArrowLeftRight, CheckSquare, CheckCircle2, Square, CalendarRange, CalendarX2, AlertTriangle, ChevronDown, ChevronLeft, Sparkles, Map as MapIcon, Lock, Circle, Loader2, CircleCheck, CircleX } from "lucide-react";
 import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
 import { DataSourceBadge } from "@/components/ui/DataSourceBadge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@workspace/command-deck/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@workspace/command-deck/components/ui/popover";
 import { resolveVariableLabel } from "@/lib/variable-registry";
 import { normalizeConfidence } from "@/lib/normalize";
 import { TYPE } from "./typography";
@@ -1527,6 +1527,51 @@ export function SectionCard({
       </div>
       {bodyVisible && <div className="relative p-3">{children}</div>}
     </section>
+  );
+}
+
+// ─── Show-more fold (cognitive-load cap for long lists) ───────────────
+// Platform density rule: any unbounded card/row list shows the first N
+// items and folds the rest behind an explicit "Show all …" toggle.
+
+/** Fold state for a long list: first `limit` items visible until expanded. */
+export function useShowMore<T>(items: T[], limit: number): {
+  visible: T[];
+  expanded: boolean;
+  toggle: () => void;
+  hiddenCount: number;
+} {
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? items : items.slice(0, limit);
+  return {
+    visible,
+    expanded,
+    toggle: () => setExpanded((v) => !v),
+    hiddenCount: Math.max(0, items.length - limit),
+  };
+}
+
+/** The companion toggle button — renders nothing when the list fits. */
+export function ShowMoreButton({
+  total, hiddenCount, expanded, onToggle, noun,
+}: {
+  total: number;
+  hiddenCount: number;
+  expanded: boolean;
+  onToggle: () => void;
+  noun: string;
+}) {
+  if (hiddenCount <= 0) return null;
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={expanded}
+      className="w-full flex items-center justify-center gap-1.5 py-2 mt-2 rounded-lg text-body font-medium text-muted-foreground/60 hover:text-foreground/80 hover:bg-white/[0.02] border border-border/25 transition-colors"
+    >
+      {expanded ? "Show fewer" : `Show all ${total} ${noun}`}
+      <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", expanded && "rotate-180")} aria-hidden />
+    </button>
   );
 }
 

@@ -8,12 +8,12 @@
 // IAP descriptor; the raw code lives only in the hover tooltip.
 
 import { useEffect, useMemo, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@workspace/command-deck/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@workspace/command-deck/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@workspace/command-deck/components/ui/tooltip";
 import { Settings2, Check, ChevronUp, ChevronDown, RotateCcw, Info, AlertTriangle, Ban, GitCompareArrows, X, ArrowLeftRight, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
 import { useLocation } from "wouter";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { getMST } from "@/lib/data/metrixSeedAdapter";

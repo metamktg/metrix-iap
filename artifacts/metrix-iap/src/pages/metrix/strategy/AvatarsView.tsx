@@ -14,6 +14,7 @@ import {
   MetricTile, CrossLink, resultTerm, SectionCard, ConfidenceBadge,
   fmtUSD, fmtPct, fmtNum,
   DetailReveal, deriveLabel, SegmentedToggle, PILL_ACTIVE, PILL_INACTIVE,
+  useShowMore, ShowMoreButton,
 } from "../shared";
 import { DemographicTable } from "../analysis/tables";
 import { VariableStackChips, VariableChip, familyLabel } from "./strategyShared";
@@ -30,7 +31,7 @@ import {
   type SegmentId, type SegmentRawTotals, type SegmentDerivedMetrics, type SegmentSignal,
 } from "@/lib/segment-analytics";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@workspace/command-deck/components/ui/tooltip";
 import {
   Users, Fingerprint, DoorOpen, MessageSquareQuote, Compass,
   ArrowDownRight, ArrowUpRight, ArrowDown, ArrowUp, Dna, ChevronDown, ChevronRight, Search, MapPin,
@@ -39,7 +40,7 @@ import type {
   MSTMatrixColumn, MSTMatrixCell, ICPProfile, PlacementRow, AnalysisData,
   AdRecord, ActiveHypothesis,
 } from "@/lib/data/seedTypes";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 
 const SECTION = "Strategy · 04";
 
@@ -1069,6 +1070,61 @@ function DrawerAdList({
   );
 }
 
+// ─── Folded grid / list wrappers ──────────────────────────────────────
+// The three unbounded lists below live inside the ModuleScopeGate render
+// callback, so the show-more hook is extracted into these small components
+// to keep it called unconditionally (rules of hooks).
+
+function FoldedGrid<T>({
+  items, limit, noun, gridClassName, renderItem,
+}: {
+  items: T[];
+  limit: number;
+  noun: string;
+  gridClassName: string;
+  renderItem: (item: T, index: number) => React.ReactNode;
+}) {
+  const fold = useShowMore(items, limit);
+  return (
+    <>
+      <div className={gridClassName}>
+        {fold.visible.map((item, i) => renderItem(item, i))}
+      </div>
+      <ShowMoreButton
+        total={items.length}
+        hiddenCount={fold.hiddenCount}
+        expanded={fold.expanded}
+        onToggle={fold.toggle}
+        noun={noun}
+      />
+    </>
+  );
+}
+
+function FoldedList<T>({
+  items, limit, noun, listClassName, renderItem,
+}: {
+  items: T[];
+  limit: number;
+  noun: string;
+  listClassName: string;
+  renderItem: (item: T, index: number) => React.ReactNode;
+}) {
+  const fold = useShowMore(items, limit);
+  return (
+    <div className={listClassName}>
+      {fold.visible.map((item, i) => renderItem(item, i))}
+      <ShowMoreButton
+        total={items.length}
+        hiddenCount={fold.hiddenCount}
+        expanded={fold.expanded}
+        onToggle={fold.toggle}
+        noun={noun}
+      />
+    </div>
+  );
+}
+
 // ─── Main view ────────────────────────────────────────────────────────
 
 export function AvatarsView() {
@@ -1375,8 +1431,12 @@ export function AvatarsView() {
                       title="Matrix avatars"
                       desc={`Sorted by ${SORT_LABEL[sortBy]} · tap any card for detail`}
                       >
-                      <div className="grid grid-cols-dashboard-2 gap-3">
-                        {sortedColumns.map((col, i) => {
+                      <FoldedGrid
+                        items={sortedColumns}
+                        limit={6}
+                        noun="avatars"
+                        gridClassName="grid grid-cols-dashboard-2 gap-3"
+                        renderItem={(col, i) => {
                           const cells = cellsFor(col.id);
                           const matched = matchedProfilesFor(col);
                           const perf = perfByColumn.get(col.id) ?? { spend: 0, results: 0, cpa: null, cvr: null, cpm: null };
@@ -1402,8 +1462,8 @@ export function AvatarsView() {
                               sortBy={sortBy}
                             />
                           );
-                        })}
-                      </div>
+                        }}
+                      />
                     </SectionCard>
                   )}
 
@@ -1413,13 +1473,19 @@ export function AvatarsView() {
                       title="ICP profiles"
                       desc="Strategy-map customer profiles · real performance"
                       >
-                      <div className="space-y-3">
-                        {filteredProfiles.length === 0 ? (
+                      {filteredProfiles.length === 0 ? (
+                        <div className="space-y-3">
                           <p className={cn(TYPE.body, "text-muted-foreground/50 py-6 text-center")}>
                             No profiles match "{searchQuery}"
                           </p>
-                        ) : (
-                          filteredProfiles.map((p) => (
+                        </div>
+                      ) : (
+                        <FoldedList
+                          items={filteredProfiles}
+                          limit={5}
+                          noun="profiles"
+                          listClassName="space-y-3"
+                          renderItem={(p) => (
                             <IcpProfileCard
                               key={p.profile_id}
                               profile={p}
@@ -1436,9 +1502,9 @@ export function AvatarsView() {
                               avgCvr={avgCvr}
                               hypotheses={hypothesesByProfile.get(p.profile_id)}
                             />
-                          ))
-                        )}
-                      </div>
+                          )}
+                        />
+                      )}
                     </SectionCard>
                   )}
 
@@ -1448,10 +1514,13 @@ export function AvatarsView() {
                       title="Audience segments"
                       desc="Demographic signal · performance + confidence · explore"
                       >
-                      <div className="grid grid-cols-dashboard-2 gap-3">
-                        {segmentList.map((seg) => {
-                          const stats = segmentStats.get(segmentKey(seg));
-                          if (!stats) return null;
+                      <FoldedGrid
+                        items={segmentList.filter((seg) => segmentStats.has(segmentKey(seg)))}
+                        limit={6}
+                        noun="segments"
+                        gridClassName="grid grid-cols-dashboard-2 gap-3"
+                        renderItem={(seg) => {
+                          const stats = segmentStats.get(segmentKey(seg))!;
                           return (
                             <AudienceSegmentTile
                               key={segmentKey(seg)}
@@ -1463,8 +1532,8 @@ export function AvatarsView() {
                               onExplore={() => setAudienceSegment(seg)}
                             />
                           );
-                        })}
-                      </div>
+                        }}
+                      />
                     </SectionCard>
                   )}
 

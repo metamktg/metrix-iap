@@ -158,6 +158,28 @@ async function main() {
     fail("SectionInfoIcon tooltip e2e failed", String(err?.message ?? err));
   });
 
+  // ── Step 10: Playwright Avatars page tooltip e2e (signal badge + placements + cell chips) ──
+  console.log("\nRunning Avatars page tooltip e2e (signal badge + placements + cell chips)...");
+  await spawnScript("smoke:metrix-iap-avatars-tooltips", [
+    "--filter",
+    "@workspace/scripts",
+    "run",
+    "smoke:metrix-iap-avatars-tooltips",
+  ]).catch((err) => {
+    fail("Avatars page tooltip e2e failed", String(err?.message ?? err));
+  });
+
+  // ── Step 11: Playwright AdAccountOverview UX e2e ──────────────────────────
+  console.log("\nRunning AdAccountOverview UX e2e...");
+  await spawnScript("smoke:metrix-iap-ad-account-overview", [
+    "--filter",
+    "@workspace/scripts",
+    "run",
+    "smoke:metrix-iap-ad-account-overview",
+  ]).catch((err) => {
+    fail("AdAccountOverview UX e2e failed", String(err?.message ?? err));
+  });
+
   console.log("\nPASS  All Metrix IAP smoke checks passed");
   process.exit(0);
 }

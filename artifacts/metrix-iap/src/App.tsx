@@ -1,7 +1,7 @@
 import { Switch, Route, Redirect, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@workspace/command-deck/components/ui/toaster";
+import { TooltipProvider } from "@workspace/command-deck/components/ui/tooltip";
 import { MetrixDataProvider } from "@/contexts/MetrixDataContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { LoginPage } from "@/pages/auth/LoginPage";

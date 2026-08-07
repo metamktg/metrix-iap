@@ -6,7 +6,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ArrowDown, ArrowUp } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { PILL_ACTIVE, PILL_INACTIVE } from "../shared";
 
 export interface RankMetric<Row> {

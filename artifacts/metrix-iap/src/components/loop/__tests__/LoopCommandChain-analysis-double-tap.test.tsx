@@ -73,7 +73,7 @@ vi.mock("@/contexts/MetrixDataContext", () => ({
   MetrixDataProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-vi.mock("@/hooks/use-toast", () => ({
+vi.mock("@workspace/command-deck/hooks/use-toast", () => ({
   useToast: () => ({ toast: vi.fn() }),
 }));
 

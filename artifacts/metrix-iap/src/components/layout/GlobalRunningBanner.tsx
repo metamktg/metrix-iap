@@ -19,7 +19,7 @@ import {
   getGetMetrixSeedQueryKey,
 } from "@workspace/api-client-react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 
 const POLL_MS = 3000;
 

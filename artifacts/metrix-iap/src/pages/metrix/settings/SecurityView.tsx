@@ -7,7 +7,7 @@ import { ApiError, useListMySessions, useRevokeMySession, getListMySessionsQuery
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { ModuleHeader, SectionCard, useFocusParam } from "../shared";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { UserCircle2, LogOut, Loader2, KeyRound, CheckCircle2, Monitor, ShieldCheck } from "lucide-react";
 
 const SECTION = "Settings · 10";

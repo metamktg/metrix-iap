@@ -31,7 +31,7 @@ import {
   InfoTooltip,
 } from "../shared";
 import { ManualImportDialog } from "../ConnectAccountDialogs";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import {
   BarChart3,
   ArrowUpRight,

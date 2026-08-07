@@ -11,7 +11,7 @@ import type { MetricDef } from "@/lib/data/metricsCatalog";
 // HoverCard from Radix UI uses pointer events and portals that jsdom does not
 // fully support.  Stub just enough to render the card inline so assertions can
 // read fallback text without needing a real popover portal.
-vi.mock("@/components/ui/hover-card", () => {
+vi.mock("@workspace/command-deck/components/ui/hover-card", () => {
   const React = require("react");
   return {
     HoverCard: ({ children }: { children: React.ReactNode }) =>
@@ -24,7 +24,7 @@ vi.mock("@/components/ui/hover-card", () => {
 });
 
 // ChartContainer requires a full canvas context; stub it to a plain div.
-vi.mock("@/components/ui/chart", () => {
+vi.mock("@workspace/command-deck/components/ui/chart", () => {
   const React = require("react");
   return {
     ChartContainer: ({ children }: { children: React.ReactNode }) =>

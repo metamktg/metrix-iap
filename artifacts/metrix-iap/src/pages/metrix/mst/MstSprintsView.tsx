@@ -8,7 +8,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getMST, getAnalysisData, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
 import { ModuleHeader, ScopeBanner, ModuleScopeGate, CaveatNote, PendingState, CrossLink, readableVariables } from "../shared";
 import { TilePerformanceModal } from "@/components/creative/TilePerformanceModal";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { Grid3x3 } from "lucide-react";
 import type { MSTMatrix, MSTMatrixCell } from "@/lib/data/seedTypes";
 

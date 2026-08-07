@@ -27,6 +27,7 @@ import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
   SkeletonTileRow, DatePresetBar, type ViewPreset, SegmentedToggle, SectionInfoIcon,
+  useShowMore, ShowMoreButton,
 } from "../shared";
 import { getGetAnalysisSummaryQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
@@ -36,7 +37,7 @@ import {
   Users, Map, LayoutGrid, List, ArrowRight,
   AlertTriangle, TrendingUp,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import {
   scopeDemographicRows,
   listSegments, rowsForSegment,
@@ -470,6 +471,7 @@ function PocketGridTab({
   activeMetric: RankMetric<SegmentEntry>;
   onSelectMetric: (id: string) => void;
 }) {
+  const fold = useShowMore(ranked, 10);
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -479,7 +481,7 @@ function PocketGridTab({
         <RankSortBar metrics={rankMetrics} activeId={activeMetric.id} onSelect={onSelectMetric} groups={AUDIENCE_RANK_GROUPS} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {ranked.map((e) => (
+        {fold.visible.map((e) => (
           <PocketCard
             key={`${e.seg.age}|${e.seg.gender}`}
             entry={e}
@@ -488,6 +490,7 @@ function PocketGridTab({
           />
         ))}
       </div>
+      <ShowMoreButton total={ranked.length} hiddenCount={fold.hiddenCount} expanded={fold.expanded} onToggle={fold.toggle} noun="segments" />
     </div>
   );
 }
@@ -505,6 +508,7 @@ function RankedListTab({
   resultPlural: string;
   medianCpa: number;
 }) {
+  const fold = useShowMore(ranked, 10);
   const metricValues = ranked.map((e) => activeMetric.value(e));
 
   return (
@@ -514,7 +518,7 @@ function RankedListTab({
       right={<><SectionInfoIcon tip="Ranks each age–gender pocket by the active KPI so you can spot which segments are driving results and which need attention." /><RankSortBar metrics={rankMetrics} activeId={activeMetric.id} onSelect={onSelectMetric} groups={AUDIENCE_RANK_GROUPS} /></>}
     >
       <div className="space-y-2">
-        {ranked.map((e, idx) => {
+        {fold.visible.map((e, idx) => {
           const v = activeMetric.value(e);
           const barPct = rankBarPct(v, metricValues, activeMetric.direction);
           const eff = cpaEff(e.derived.cpa, medianCpa);
@@ -569,6 +573,7 @@ function RankedListTab({
           );
         })}
       </div>
+      <ShowMoreButton total={ranked.length} hiddenCount={fold.hiddenCount} expanded={fold.expanded} onToggle={fold.toggle} noun="segments" />
       <p className={cn("mt-3", TYPE.label, "text-muted-foreground/45")}>
         Bar length is relative to the best segment on {activeMetric.label}.{" "}
         {ranked.length} segment{ranked.length !== 1 ? "s" : ""} — click any row for its messaging attribution.

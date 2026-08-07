@@ -16,14 +16,15 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getStrategyData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState,
-  SectionCard, ConfidenceBadge, deriveLabel,
+  SectionCard, ConfidenceBadge, deriveLabel, useShowMore, ShowMoreButton,
 } from "../shared";
 import { TYPE } from "../typography";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import {
   VariableStackChips, IcpChips, HypothesisLabel,
-  HypothesisStatusBadge, pillarHasDetails, PillarDetailSections,
+  HypothesisStatusBadge, pillarHasDetails, PillarDetailsFold,
 } from "./strategyShared";
+import type { StrategyData } from "@/lib/data/seedTypes";
 import { MessageSquare, Users, Lightbulb, FlaskConical, ChevronDown } from "lucide-react";
 
 const SECTION = "Strategy · 04";
@@ -147,6 +148,129 @@ function HypothesesStrip({
   );
 }
 
+// ─── Pillar list (first 5 + show-more fold) ───────────────────────────────────
+
+function PillarList({ strategy }: { strategy: StrategyData }) {
+  const fold = useShowMore(strategy.message_pillars, 5);
+  return (
+    <>
+      {fold.visible.map((p, i) => {
+        const targetIcps = p.target_icps ?? [];
+        const matchedProfiles = targetIcps
+          .map((id) => strategy.icp_profiles?.find((pr) => pr.profile_id === id))
+          .filter((pr): pr is NonNullable<typeof pr> => Boolean(pr));
+        const hypotheses = strategy.active_hypotheses.filter((h) => h.pillar_id === p.id);
+        const bestConfidence = matchedProfiles.map((pr) => pr.confidence_level).find(Boolean);
+        const messageResonance = matchedProfiles.map((pr) => pr.message_resonance).find(Boolean);
+        const tier = pillarTier(p.source_cells ?? []);
+
+        return (
+          <div
+            key={p.id}
+            className={cn(
+              "rounded-xl border border-border/40 bg-white/[0.02] overflow-hidden",
+              TIER_ACCENT[tier]
+            )}
+          >
+            {/* ── Pillar header ── */}
+            <div className="px-4 pt-4 pb-3 flex items-start gap-3 border-b border-border/15">
+              {/* Index number */}
+              <span className={cn(TYPE.label, "tabular-nums text-muted-foreground/40 mt-0.5 w-5 text-right shrink-0")}>
+                {String(i + 1).padStart(2, "0")}
+              </span>
+
+              {/* Title block */}
+              <div className="flex-1 min-w-0">
+                <p className="text-base font-bold text-foreground leading-snug line-clamp-2">
+                  {p.label}
+                </p>
+                {p.plain_descriptor && (
+                  <p className={cn(TYPE.caption, "text-muted-foreground/55 mt-1 leading-relaxed line-clamp-2")}>
+                    {p.plain_descriptor}
+                  </p>
+                )}
+              </div>
+
+              {/* Evidence tier badge */}
+              <span
+                className={cn(
+                  "text-label font-semibold px-2 py-0.5 rounded-full leading-none shrink-0 whitespace-nowrap mt-0.5",
+                  TIER_BADGE[tier]
+                )}
+                title={`${p.source_cells?.length ?? 0} source cell${(p.source_cells?.length ?? 0) !== 1 ? "s" : ""}`}
+              >
+                {TIER_LABEL[tier]}
+              </span>
+            </div>
+
+            {/* ── Body ── */}
+            <div className="px-4 py-3.5 space-y-4">
+
+              {/* Row 1: What works (primary) + Who responds (context) */}
+              <div className="grid grid-cols-[1fr_auto] gap-4 items-start">
+
+                {/* What works — variable signals — LEADS because it's the actionable creative lever */}
+                <div>
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <MessageSquare className="w-3 h-3 text-interactive/70 shrink-0" />
+                    <span className={cn(TYPE.label, "text-muted-foreground/65 font-semibold uppercase tracking-wide text-[10px]")}>
+                      What works
+                    </span>
+                  </div>
+                  <VariableStackChips stack={p.variable_stack} />
+                </div>
+
+                {/* Who responds — ICP context — narrower, supporting role */}
+                {(matchedProfiles.length > 0 || targetIcps.length > 0) && (
+                  <div className="shrink-0 min-w-[140px] max-w-[200px]">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-1.5">
+                        <Users className="w-3 h-3 text-interactive/60 shrink-0" />
+                        <span className={cn(TYPE.label, "text-muted-foreground/55 font-semibold uppercase tracking-wide text-[10px]")}>
+                          Who responds
+                        </span>
+                      </div>
+                      {bestConfidence && <ConfidenceBadge value={bestConfidence} />}
+                    </div>
+                    {targetIcps.length > 0 ? (
+                      <IcpChips ids={targetIcps} profiles={strategy.icp_profiles} maxVisible={3} />
+                    ) : (
+                      <p className={cn(TYPE.caption, "text-muted-foreground/40 italic")}>No ICP linked yet</p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Row 2: Why it matters — strategic rationale, 1 line visible + expand */}
+              <WhyBlock
+                whyText={p.why_it_matters}
+                resonance={messageResonance}
+              />
+
+              {/* Pillar detail sections — folded behind "Pillar details" */}
+              {pillarHasDetails(p) && (
+                <div className="pt-1 border-t border-border/15">
+                  <PillarDetailsFold pillar={p} profiles={strategy.icp_profiles} />
+                </div>
+              )}
+
+              {/* Hypothesis strip — badge only, progressive disclosure */}
+              <HypothesesStrip hypotheses={hypotheses} />
+            </div>
+          </div>
+        );
+      })}
+      <ShowMoreButton
+        total={strategy.message_pillars.length}
+        hiddenCount={fold.hiddenCount}
+        expanded={fold.expanded}
+        onToggle={fold.toggle}
+        noun="pillars"
+      />
+    </>
+  );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function CommunicationsView() {
@@ -183,112 +307,7 @@ export function CommunicationsView() {
             <ScopeBanner account={account!} />
 
             <div className="px-6 py-5 space-y-3 max-w-3xl">
-              {strategy.message_pillars.map((p, i) => {
-                const targetIcps = p.target_icps ?? [];
-                const matchedProfiles = targetIcps
-                  .map((id) => strategy.icp_profiles?.find((pr) => pr.profile_id === id))
-                  .filter((pr): pr is NonNullable<typeof pr> => Boolean(pr));
-                const hypotheses = strategy.active_hypotheses.filter((h) => h.pillar_id === p.id);
-                const bestConfidence = matchedProfiles.map((pr) => pr.confidence_level).find(Boolean);
-                const messageResonance = matchedProfiles.map((pr) => pr.message_resonance).find(Boolean);
-                const tier = pillarTier(p.source_cells ?? []);
-
-                return (
-                  <div
-                    key={p.id}
-                    className={cn(
-                      "rounded-xl border border-border/40 bg-white/[0.02] overflow-hidden",
-                      TIER_ACCENT[tier]
-                    )}
-                  >
-                    {/* ── Pillar header ── */}
-                    <div className="px-4 pt-4 pb-3 flex items-start gap-3 border-b border-border/15">
-                      {/* Index number */}
-                      <span className={cn(TYPE.label, "tabular-nums text-muted-foreground/40 mt-0.5 w-5 text-right shrink-0")}>
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
-
-                      {/* Title block */}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-base font-bold text-foreground leading-snug line-clamp-2">
-                          {p.label}
-                        </p>
-                        {p.plain_descriptor && (
-                          <p className={cn(TYPE.caption, "text-muted-foreground/55 mt-1 leading-relaxed line-clamp-2")}>
-                            {p.plain_descriptor}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Evidence tier badge */}
-                      <span
-                        className={cn(
-                          "text-label font-semibold px-2 py-0.5 rounded-full leading-none shrink-0 whitespace-nowrap mt-0.5",
-                          TIER_BADGE[tier]
-                        )}
-                        title={`${p.source_cells?.length ?? 0} source cell${(p.source_cells?.length ?? 0) !== 1 ? "s" : ""}`}
-                      >
-                        {TIER_LABEL[tier]}
-                      </span>
-                    </div>
-
-                    {/* ── Body ── */}
-                    <div className="px-4 py-3.5 space-y-4">
-
-                      {/* Row 1: What works (primary) + Who responds (context) */}
-                      <div className="grid grid-cols-[1fr_auto] gap-4 items-start">
-
-                        {/* What works — variable signals — LEADS because it's the actionable creative lever */}
-                        <div>
-                          <div className="flex items-center gap-1.5 mb-2">
-                            <MessageSquare className="w-3 h-3 text-interactive/70 shrink-0" />
-                            <span className={cn(TYPE.label, "text-muted-foreground/65 font-semibold uppercase tracking-wide text-[10px]")}>
-                              What works
-                            </span>
-                          </div>
-                          <VariableStackChips stack={p.variable_stack} />
-                        </div>
-
-                        {/* Who responds — ICP context — narrower, supporting role */}
-                        {(matchedProfiles.length > 0 || targetIcps.length > 0) && (
-                          <div className="shrink-0 min-w-[140px] max-w-[200px]">
-                            <div className="flex items-center justify-between gap-2 mb-2">
-                              <div className="flex items-center gap-1.5">
-                                <Users className="w-3 h-3 text-interactive/60 shrink-0" />
-                                <span className={cn(TYPE.label, "text-muted-foreground/55 font-semibold uppercase tracking-wide text-[10px]")}>
-                                  Who responds
-                                </span>
-                              </div>
-                              {bestConfidence && <ConfidenceBadge value={bestConfidence} />}
-                            </div>
-                            {targetIcps.length > 0 ? (
-                              <IcpChips ids={targetIcps} profiles={strategy.icp_profiles} maxVisible={3} />
-                            ) : (
-                              <p className={cn(TYPE.caption, "text-muted-foreground/40 italic")}>No ICP linked yet</p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Row 2: Why it matters — strategic rationale, 1 line visible + expand */}
-                      <WhyBlock
-                        whyText={p.why_it_matters}
-                        resonance={messageResonance}
-                      />
-
-                      {/* Pillar detail sections (if any) — nested inside card, not extra card */}
-                      {pillarHasDetails(p) && (
-                        <div className="pt-1 border-t border-border/15">
-                          <PillarDetailSections pillar={p} profiles={strategy.icp_profiles} />
-                        </div>
-                      )}
-
-                      {/* Hypothesis strip — badge only, progressive disclosure */}
-                      <HypothesesStrip hypotheses={hypotheses} />
-                    </div>
-                  </div>
-                );
-              })}
+              <PillarList strategy={strategy} />
             </div>
           </div>
         );

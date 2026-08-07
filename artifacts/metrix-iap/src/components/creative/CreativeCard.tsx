@@ -15,7 +15,7 @@
 //     interception of card clicks.
 
 import { useMemo, useState, useCallback, useRef } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { ImageOff, Maximize2, ExternalLink, Upload, AlertTriangle } from "lucide-react";
 import { resolveVariableLabel, getVariablePrefix, PREFIX_COLORS } from "@/lib/variable-registry";
 import { CreativeExpandDialog } from "./CreativeExpandDialog";

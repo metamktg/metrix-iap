@@ -1,0 +1,73 @@
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@400;500;600;700&display=swap');
+
+.command-deck-container {
+  font-family: 'Inter', sans-serif;
+  background-color: #050a14;
+  color: #8fa6c4;
+  --accent-blue: #38bdf8;
+  --accent-blue-glow: rgba(56, 189, 248, 0.2);
+  --accent-cyan: #22d3ee;
+  --border-color: rgba(56, 189, 248, 0.15);
+  --panel-bg: rgba(9, 18, 36, 0.6);
+  --panel-bg-hover: rgba(14, 27, 53, 0.8);
+}
+
+.command-deck-mono {
+  font-family: 'Share Tech Mono', monospace;
+}
+
+.scanline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(255,255,255,0),
+    rgba(255,255,255,0) 50%,
+    rgba(0,0,0,0.1) 50%,
+    rgba(0,0,0,0.1)
+  );
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 50;
+  opacity: 0.3;
+}
+
+.rail-tick {
+  width: 8px;
+  height: 2px;
+  background-color: var(--border-color);
+  margin-bottom: 4px;
+}
+.rail-tick.active {
+  background-color: var(--accent-blue);
+  width: 12px;
+  box-shadow: 0 0 8px var(--accent-blue-glow);
+}
+
+.status-indicator {
+  position: relative;
+}
+.status-indicator::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+}
+
+.status-indicator.warning::before {
+  background-color: #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+}
+
+.glow-text {
+  text-shadow: 0 0 10px var(--accent-blue-glow);
+}

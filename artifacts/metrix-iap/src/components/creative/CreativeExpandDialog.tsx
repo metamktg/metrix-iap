@@ -6,9 +6,9 @@
 // CreativeCard to avoid circular deps; types only via import type.
 
 import { useState, useMemo } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { Upload, BarChart2, Users, Monitor, ImageOff, AlertTriangle, TrendingDown } from "lucide-react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@workspace/command-deck/components/ui/dialog";
 import type { CellPerformanceRow, DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 import type { CreativeCardData } from "./CreativeCard";
 import { FunnelStepsChart, buildFunnelSteps } from "./FunnelStepsChart";

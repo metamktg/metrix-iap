@@ -28,7 +28,7 @@ vi.mock("@/contexts/MetrixDataContext", () => ({
   useMetrixIsRefetching: () => false,
 }));
 
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { TooltipProvider } from "@workspace/command-deck/components/ui/tooltip";
 import { ConceptRegistryProvider } from "@/lib/concept-registry-context";
 import { ConceptChip, TokenizedConceptText } from "@/components/concept/ConceptChip";
 

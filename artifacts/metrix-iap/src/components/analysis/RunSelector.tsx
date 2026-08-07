@@ -11,8 +11,8 @@
 // semantically distinct. A run's date range is shown purely as a "which
 // one is this" label — it is never used to filter anything here.
 
-import { Checkbox } from "@/components/ui/checkbox";
-import { cn } from "@/lib/utils";
+import { Checkbox } from "@workspace/command-deck/components/ui/checkbox";
+import { cn } from "@workspace/command-deck/lib/utils";
 import type { AnalysisRun } from "@workspace/api-client-react";
 
 export interface RunSelectorValue {

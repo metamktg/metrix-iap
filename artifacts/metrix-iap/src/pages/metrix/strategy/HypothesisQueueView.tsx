@@ -12,17 +12,18 @@ import {
   MetricTile, CrossLink, useFocusParam, FlowCrumb, useFromParam, LoopAction,
   StaleFocusNotice, DetailReveal, deriveLabel,
   PILL_ACTIVE, PILL_INACTIVE, SectionCard, SectionInfoIcon,
+  useShowMore, ShowMoreButton,
 } from "../shared";
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@workspace/command-deck/components/ui/tooltip";
 import {
-  HypothesisStatusBadge, PillarDetailSections, VariableStackChips, pillarHasDetails,
-  HypothesisCodeChipsRow,
+  HypothesisStatusBadge, VariableStackChips, pillarHasDetails,
+  HypothesisCodeChipsRow, PillarDetailsFold,
 } from "./strategyShared";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { Layers, FlaskConical, AlertTriangle, ArrowRight, Beaker, Crosshair, Target, TrendingUp, ChevronDown } from "lucide-react";
 import type { ActiveHypothesis } from "@/lib/data/seedTypes";
 import { TokenizedConceptText } from "@/components/concept/ConceptChip";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 
 const SECTION = "Strategy · 04";
 
@@ -48,27 +49,77 @@ function HypFact({
   );
 }
 
-/** Progressive-disclosure fold for a pillar's full detail sections
- *  (funnel, execution, placement, scaling, ICPs). Collapsed by default —
- *  the pillar card leads with label, descriptor, and variable stack. */
-function PillarDetailsFold({ pillar, profiles }: React.ComponentProps<typeof PillarDetailSections>) {
-  const [open, setOpen] = useState(false);
+/** The filtered hypothesis card list, folded to the platform density cap.
+ *  Extracted so the show-more hook runs unconditionally (the list lives
+ *  inside a ModuleScopeGate render callback in the parent). */
+function HypothesisCardList({
+  hyps, onSelect,
+}: {
+  hyps: ActiveHypothesis[];
+  onSelect: (h: ActiveHypothesis) => void;
+}) {
+  const fold = useShowMore(hyps, 8);
   return (
-    <div>
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        className="flex items-center gap-1.5 text-caption font-medium text-muted-foreground/70 hover:text-foreground/80 transition-colors"
-      >
-        Pillar details
-        <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} />
-      </button>
-      {open && (
-        <div className="mt-2">
-          <PillarDetailSections pillar={pillar} profiles={profiles} />
-        </div>
-      )}
+    <div className="space-y-2.5">
+      {fold.visible.map((h) => {
+        // Show at most 2 facts inline; prioritise isolated variable then test variant.
+        const inlineFacts = [
+          h.isolated_variable && { label: "Isolates",    value: h.isolated_variable, Icon: Crosshair },
+          h.test_variant      && { label: "Test variant", value: h.test_variant,      Icon: Beaker },
+        ].filter(Boolean) as { label: string; value: string; Icon: React.ComponentType<{ className?: string }> }[];
+        return (
+          <button
+            key={h.id}
+            onClick={() => onSelect(h)}
+            className="w-full text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 hover:border-border/60 hover:bg-white/[0.03] transition-colors"
+          >
+            <div className="flex items-start gap-2">
+              <div className="flex-1 min-w-0">
+                {/* Density rule: chips first; the sentence drops to a
+                    one-line caption (full prose in the tap drawer). */}
+                <HypothesisCodeChipsRow label={h.label} />
+                <p className="text-body text-foreground/80 leading-snug line-clamp-1 mt-1">{deriveLabel(h.label, 72)}</p>
+                {h.source && (
+                  <div className="flex items-center gap-1.5 mt-1.5 text-caption text-muted-foreground/60">
+                    <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/60" />
+                    {h.source}
+                  </div>
+                )}
+              </div>
+              <span className="shrink-0">
+                <HypothesisStatusBadge status={h.status} />
+              </span>
+            </div>
+
+            {/* Inline fact strip — max 2 key facts, rest in drawer */}
+            {inlineFacts.length > 0 && (
+              <div className="flex items-center gap-4 mt-2.5 pt-2.5 border-t border-border/20 flex-wrap">
+                {inlineFacts.map((f) => (
+                  <div key={f.label} className="flex items-center gap-1.5 min-w-0">
+                    <f.Icon className="w-3 h-3 text-muted-foreground/45 shrink-0" />
+                    <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/35 shrink-0">{f.label}</span>
+                    <span className="text-caption text-foreground/70 truncate">{deriveLabel(f.value, 48)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {h.risk && (
+              <div className="flex items-start gap-1.5 mt-2.5 pt-2.5 border-t border-border/20">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-400/70 shrink-0 mt-0.5" />
+                <p className="text-caption text-amber-400/80 leading-relaxed line-clamp-1">{deriveLabel(h.risk, 90)}</p>
+              </div>
+            )}
+          </button>
+        );
+      })}
+      <ShowMoreButton
+        total={hyps.length}
+        hiddenCount={fold.hiddenCount}
+        expanded={fold.expanded}
+        onToggle={fold.toggle}
+        noun="hypotheses"
+      />
     </div>
   );
 }
@@ -184,66 +235,14 @@ export function HypothesisQueueView() {
                       })}
                     </div>
 
-                    <div className="space-y-2.5">
-                      {hyps
-                        .filter((h) =>
-                          statusFilter === "all" ? true
-                          : statusFilter === "ready" ? h.status === "ready_for_brief_builder"
-                          : h.status === "validation_required"
-                        )
-                        .map((h) => {
-                          // Show at most 2 facts inline; prioritise isolated variable then test variant.
-                          const inlineFacts = [
-                            h.isolated_variable && { label: "Isolates",    value: h.isolated_variable, Icon: Crosshair },
-                            h.test_variant      && { label: "Test variant", value: h.test_variant,      Icon: Beaker },
-                          ].filter(Boolean) as { label: string; value: string; Icon: React.ComponentType<{ className?: string }> }[];
-                          return (
-                            <button
-                              key={h.id}
-                              onClick={() => setDetail(h)}
-                              className="w-full text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 hover:border-border/60 hover:bg-white/[0.03] transition-colors"
-                            >
-                              <div className="flex items-start gap-2">
-                                <div className="flex-1 min-w-0">
-                                  {/* Density rule: chips first; the sentence drops to a
-                                      one-line caption (full prose in the tap drawer). */}
-                                  <HypothesisCodeChipsRow label={h.label} />
-                                  <p className="text-body text-foreground/80 leading-snug line-clamp-1 mt-1">{deriveLabel(h.label, 72)}</p>
-                                  {h.source && (
-                                    <div className="flex items-center gap-1.5 mt-1.5 text-caption text-muted-foreground/60">
-                                      <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/60" />
-                                      {h.source}
-                                    </div>
-                                  )}
-                                </div>
-                                <span className="shrink-0">
-                                  <HypothesisStatusBadge status={h.status} />
-                                </span>
-                              </div>
-
-                              {/* Inline fact strip — max 2 key facts, rest in drawer */}
-                              {inlineFacts.length > 0 && (
-                                <div className="flex items-center gap-4 mt-2.5 pt-2.5 border-t border-border/20 flex-wrap">
-                                  {inlineFacts.map((f) => (
-                                    <div key={f.label} className="flex items-center gap-1.5 min-w-0">
-                                      <f.Icon className="w-3 h-3 text-muted-foreground/45 shrink-0" />
-                                      <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/35 shrink-0">{f.label}</span>
-                                      <span className="text-caption text-foreground/70 truncate">{deriveLabel(f.value, 48)}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-
-                              {h.risk && (
-                                <div className="flex items-start gap-1.5 mt-2.5 pt-2.5 border-t border-border/20">
-                                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400/70 shrink-0 mt-0.5" />
-                                  <p className="text-caption text-amber-400/80 leading-relaxed line-clamp-1">{deriveLabel(h.risk, 90)}</p>
-                                </div>
-                              )}
-                            </button>
-                          );
-                        })}
-                    </div>
+                    <HypothesisCardList
+                      hyps={hyps.filter((h) =>
+                        statusFilter === "all" ? true
+                        : statusFilter === "ready" ? h.status === "ready_for_brief_builder"
+                        : h.status === "validation_required"
+                      )}
+                      onSelect={setDetail}
+                    />
                   </SectionCard>
                 )
               )}

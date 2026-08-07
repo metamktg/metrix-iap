@@ -13,7 +13,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@workspace/command-deck/components/ui/tooltip";
 
 export function buildAdsManagerAdUrl(adAccountId: string, metaAdId: string): string {
   const act = adAccountId.replace(/^act_/, "");

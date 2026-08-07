@@ -6,8 +6,8 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { ChevronDown, Check, X } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@workspace/command-deck/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@workspace/command-deck/components/ui/popover";
 
 export type PerformanceTier = "all" | "top25" | "mid50" | "bottom25";
 

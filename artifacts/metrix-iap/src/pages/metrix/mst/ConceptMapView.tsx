@@ -9,7 +9,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAnalysisData, getStrategyData, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
-  CrossLink, fmtUSD, fmtNum, eventLabel,
+  CrossLink, fmtUSD, fmtNum, eventLabel, useShowMore, ShowMoreButton,
 } from "../shared";
 import { VariableCodeChips } from "../analysis/tables";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
@@ -108,44 +108,12 @@ export function ConceptMapView() {
               <MetricTile label="Concepts feeding pillars" value={String(linkedConcepts)} />
             </div>
 
-            <div className="px-6 py-5 grid grid-cols-dashboard-2 gap-3 max-w-5xl">
-              {groups.map((g) => {
-                const linked = pillarsForGroup(g);
-                return (
-                  <button
-                    key={g.name}
-                    onClick={() => setDetail(g)}
-                    className="text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 hover:border-border/60 hover:bg-white/[0.03] transition-colors"
-                  >
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      {g.cellIds.map((c) => (
-                        <span key={c} className="text-label font-mono text-muted-foreground/70 border border-border/40 px-1 py-0.5 rounded leading-none">{c}</span>
-                      ))}
-                    </div>
-                    <p className="text-title font-semibold text-foreground leading-tight">{g.name}</p>
-
-                    <div className="mt-3 h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
-                      <div className="h-full bg-primary/50 rounded-full" style={{ width: `${Math.max((g.spend / maxSpend) * 100, 3)}%` }} />
-                    </div>
-                    <div className="flex items-center justify-between mt-1.5 text-label text-muted-foreground/60 tabular-nums">
-                      <span>{fmtUSD(g.spend, 0)} spend</span>
-                      <span>{fmtNum(g.results)} results</span>
-                    </div>
-
-                    <div className="mt-3 pt-3 border-t border-border/20 flex items-center gap-1.5 flex-wrap">
-                      <Layers className="w-3.5 h-3.5 text-interactive/50" />
-                      {linked.length ? (
-                        linked.map((p) => (
-                          <span key={p.id} className="text-label text-interactive/80 border border-primary/20 bg-primary/[0.06] px-1.5 py-0.5 rounded leading-none">{p.label}</span>
-                        ))
-                      ) : (
-                        <span className="text-label text-muted-foreground/60">No pillar linked yet</span>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+            <ConceptGroupList
+              groups={groups}
+              maxSpend={maxSpend}
+              pillarsForGroup={pillarsForGroup}
+              onSelect={setDetail}
+            />
 
             {detail && (
               <InfoDrawer
@@ -223,5 +191,60 @@ export function ConceptMapView() {
         );
       }}
     </ModuleScopeGate>
+  );
+}
+
+function ConceptGroupList({
+  groups,
+  maxSpend,
+  pillarsForGroup,
+  onSelect,
+}: {
+  groups: ConceptGroup[];
+  maxSpend: number;
+  pillarsForGroup: (g: ConceptGroup) => { id: string; label: string }[];
+  onSelect: (g: ConceptGroup) => void;
+}) {
+  const fold = useShowMore(groups, 6);
+  return (
+    <div className="px-6 py-5 grid grid-cols-dashboard-2 gap-3 max-w-5xl">
+      {fold.visible.map((g) => {
+        const linked = pillarsForGroup(g);
+        return (
+          <button
+            key={g.name}
+            onClick={() => onSelect(g)}
+            className="text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 hover:border-border/60 hover:bg-white/[0.03] transition-colors"
+          >
+            <div className="flex items-center gap-1.5 mb-1.5">
+              {g.cellIds.map((c) => (
+                <span key={c} className="text-label font-mono text-muted-foreground/70 border border-border/40 px-1 py-0.5 rounded leading-none">{c}</span>
+              ))}
+            </div>
+            <p className="text-title font-semibold text-foreground leading-tight">{g.name}</p>
+
+            <div className="mt-3 h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
+              <div className="h-full bg-primary/50 rounded-full" style={{ width: `${Math.max((g.spend / maxSpend) * 100, 3)}%` }} />
+            </div>
+            <div className="flex items-center justify-between mt-1.5 text-label text-muted-foreground/60 tabular-nums">
+              <span>{fmtUSD(g.spend, 0)} spend</span>
+              <span>{fmtNum(g.results)} results</span>
+            </div>
+
+            <div className="mt-3 pt-3 border-t border-border/20 flex items-center gap-1.5 flex-wrap">
+              <Layers className="w-3.5 h-3.5 text-interactive/50" />
+              {linked.length ? (
+                linked.map((p) => (
+                  <span key={p.id} className="text-label text-interactive/80 border border-primary/20 bg-primary/[0.06] px-1.5 py-0.5 rounded leading-none">{p.label}</span>
+                ))
+              ) : (
+                <span className="text-label text-muted-foreground/60">No pillar linked yet</span>
+              )}
+            </div>
+          </button>
+        );
+      })}
+      <ShowMoreButton total={groups.length} hiddenCount={fold.hiddenCount} expanded={fold.expanded} onToggle={fold.toggle} noun="groups" />
+    </div>
   );
 }

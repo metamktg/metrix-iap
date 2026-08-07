@@ -12,7 +12,7 @@ import { resolveInlineVariableCodes } from "@/lib/variable-registry";
 import {
   ModuleHeader, ModuleScopeGate, PendingState,
   CrossLink, fmtUSD, fmtNum, FlowCrumb, useFromParam, LoopAction,
-  DetailReveal, deriveLabel, InfoTooltip,
+  DetailReveal, deriveLabel, InfoTooltip, useShowMore, ShowMoreButton,
 } from "../shared";
 import {
   VariableStackChips, IcpChips, PillarDetailSections, pillarHasDetails,
@@ -21,7 +21,7 @@ import {
 } from "./strategyShared";
 import { splitTitle } from "@/lib/normalize";
 import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/SegmentGridModal";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import {
   Map, ChevronDown, FlaskConical, CheckSquare,
   Square, Lightbulb,
@@ -258,6 +258,29 @@ function HypCard({ h }: { h: ActiveHypothesis }) {
       </div>
       <HypothesisLabel label={h.label} isolated={h.isolated_variable} />
     </div>
+  );
+}
+
+// ─── Selected-pillar hypotheses list (folded) ─────────────────────────
+// Extracted so the show-more hook can be called unconditionally, outside
+// the ModuleScopeGate render callback.
+
+function SelectedHypsList({ hyps }: { hyps: ActiveHypothesis[] }) {
+  const sorted = sortByPriority(hyps);
+  const fold = useShowMore(sorted, 6);
+  return (
+    <>
+      {fold.visible.map((h) => (
+        <HypCard key={h.id} h={h} />
+      ))}
+      <ShowMoreButton
+        total={sorted.length}
+        hiddenCount={fold.hiddenCount}
+        expanded={fold.expanded}
+        onToggle={fold.toggle}
+        noun="hypotheses"
+      />
+    </>
   );
 }
 
@@ -691,9 +714,7 @@ export function StrategyMapView() {
                           </p>
                         </div>
                       ) : (
-                        sortByPriority(selectedHyps).map((h) => (
-                          <HypCard key={h.id} h={h} />
-                        ))
+                        <SelectedHypsList hyps={selectedHyps} />
                       )}
 
                       {/* Unattached hypotheses in right column when applicable */}

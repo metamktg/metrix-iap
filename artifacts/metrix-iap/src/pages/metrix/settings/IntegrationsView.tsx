@@ -15,7 +15,7 @@ import { ModuleHeader, SectionCard } from "../shared";
 import { ConnectMetaDialog, ManualImportDialog } from "../ConnectAccountDialogs";
 import { MetaLiveConnection } from "./MetaLiveConnection";
 import { AdAccountIntegrationsPanel } from "./AdAccountIntegrationsPanel";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { Plug, FileUp, CheckCircle2, Circle } from "lucide-react";
 import type { AdAccount } from "@/lib/data/seedTypes";
 
