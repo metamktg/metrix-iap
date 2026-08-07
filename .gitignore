@@ -54,3 +54,9 @@ Thumbs.db
 # artifacts/metrix-iap/src/pages/metrix/exports/).
 /attached_assets/
 /exports/
+
+# Replit Canvas feature cache and ad-hoc UI export/QA-screenshot dumps —
+# workspace-local artifacts, never referenced by code, tests, or docs.
+/.canvas/
+/screenshots/
+/*.zip
