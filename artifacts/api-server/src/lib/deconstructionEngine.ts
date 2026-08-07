@@ -24,6 +24,7 @@ import {
   finishRun,
   generateValidated,
   sanitizeGeneratedText,
+  setRunProgress,
   startRun,
   type ModelContent,
 } from "./generationEngine";
@@ -419,6 +420,68 @@ export async function deleteDerivedLibraryEntries(accountId: string, importId: s
 
 // ─── run entry point ──────────────────────────────────────────────────
 
+// Rate-limit pacing for bulk runs: model calls are strictly sequential
+// (one per import), and after every CHUNK_SIZE imports the run pauses for
+// CHUNK_PAUSE_MS so a large backfill can't flood the model API.
+export const DECONSTRUCT_CHUNK_SIZE = 5;
+export const DECONSTRUCT_CHUNK_PAUSE_MS = 3000;
+
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/**
+ * Pure selection rule for the bulk backfill: an import needs classification
+ * when it has no deconstruction row at all, or its only row is 'discarded'.
+ * Everything else (auto_filed, needs_review, user_overridden, unsupported)
+ * already has a non-discarded classification and is left alone.
+ */
+export function selectUnclassifiedImportIds(
+  imports: Array<{ id: string }>,
+  deconstructions: Array<{ manual_import_id: string; status: string }>,
+): string[] {
+  const byImport = new Map(deconstructions.map((d) => [String(d.manual_import_id), String(d.status)]));
+  return imports
+    .map((i) => String(i.id))
+    .filter((id) => {
+      const status = byImport.get(id);
+      return status === undefined || status === "discarded";
+    });
+}
+
+/**
+ * Bulk backfill: classify every creative_asset manual import on the account
+ * that has no non-discarded classification. Returns the run id and the
+ * number of targeted imports. Throws 409 when nothing needs classification.
+ */
+export async function startCreativeDeconstructionBackfill(
+  accountId: string,
+  createdBy: string,
+): Promise<{ runId: string; total: number }> {
+  const supabase = getSupabase();
+  const [{ data: imports, error: impErr }, { data: decs, error: decErr }] = await Promise.all([
+    supabase
+      .from("manual_imports")
+      .select("id")
+      .eq("account_id", accountId)
+      .eq("kind", "creative_asset"),
+    supabase
+      .from("creative_deconstructions")
+      .select("manual_import_id, status")
+      .eq("account_id", accountId),
+  ]);
+  if (impErr) throw new Error(impErr.message);
+  if (decErr) throw new Error(decErr.message);
+
+  const targets = selectUnclassifiedImportIds(
+    (imports ?? []) as Array<{ id: string }>,
+    (decs ?? []) as Array<{ manual_import_id: string; status: string }>,
+  );
+  if (targets.length === 0) {
+    throw new GenerationError("Every uploaded creative on this account already has a classification.", 409);
+  }
+  const runId = await startCreativeDeconstruction(accountId, createdBy, targets);
+  return { runId, total: targets.length };
+}
+
 /**
  * Start a deconstruction run over the given creative_asset manual imports.
  * Returns the run id immediately; classification continues in the background.
@@ -456,6 +519,13 @@ export async function startCreativeDeconstruction(
 
   void (async () => {
     try {
+      // Progress meter: n of m, updated after each import commits.
+      const total = imports.length;
+      try {
+        await setRunProgress(runId, 0, total);
+      } catch (progressErr) {
+        logger.warn({ accountId, runId, err: progressErr }, "Could not initialize run progress");
+      }
       // Shared account context, fetched once per run.
       const [{ data: ads }, { data: briefs }, { data: registry }] = await Promise.all([
         supabase.from("ads").select("ad_name, cell, concept, variation").eq("account_id", accountId),
@@ -495,6 +565,21 @@ export async function startCreativeDeconstruction(
       // (3) swap the derived library entry. A model failure mid-batch
       // therefore leaves every not-yet-reclassified import — including its
       // previous successful result — untouched.
+      let done = 0;
+      const noteDone = async () => {
+        done += 1;
+        try {
+          await setRunProgress(runId, done, total);
+        } catch (progressErr) {
+          logger.warn({ accountId, runId, err: progressErr }, "Could not update run progress");
+        }
+        // Rate-limit pacing: pause between chunks so bulk backfills don't
+        // flood the model API (calls are already strictly sequential).
+        if (done < total && done % DECONSTRUCT_CHUNK_SIZE === 0) {
+          await sleep(DECONSTRUCT_CHUNK_PAUSE_MS);
+        }
+      };
+
       for (const imp of imports) {
         const importId = String(imp["id"]);
         const filename = String(imp["filename"]);
@@ -529,6 +614,7 @@ export async function startCreativeDeconstruction(
             null,
             null,
           );
+          await noteDone();
           continue;
         }
 
@@ -601,6 +687,7 @@ export async function startCreativeDeconstruction(
           filing?.cellId ?? null,
           filing?.libraryRow ?? null,
         );
+        await noteDone();
       }
 
       await finishRun(runId, "success");

@@ -188,6 +188,7 @@ export * from './stageStatusResultStrategy';
 export * from './stageStatusResultStrategyStatus';
 export * from './startAnalysisInput';
 export * from './startAnalysisInputDateRange';
+export * from './startDeconstructBackfillResult';
 export * from './startGenerationResult';
 export * from './syncCreativeLinksResult';
 export * from './updateManualImportAdNamesInput';

@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  useBackfillDeconstructCreatives,
   useDeconstructCreatives,
   useListCreativeDeconstructions,
   useReviewCreativeDeconstruction,
@@ -112,13 +113,14 @@ export function useDeconstruction(accountId: string | null) {
   }, [run, polling, queryClient, toast, accountId]);
 
   const startMutation = useDeconstructCreatives();
+  const backfillMutation = useBackfillDeconstructCreatives();
 
-  const start = async (importIds: string[]) => {
-    if (!accountId || importIds.length === 0 || firingRef.current) return;
+  const fire = async (mutate: () => Promise<unknown>) => {
+    if (!accountId || firingRef.current) return;
     firingRef.current = true;
     setFiring(true);
     try {
-      await startMutation.mutateAsync({ accountId, data: { import_ids: importIds } });
+      await mutate();
       setPolling(true);
       void queryClient.invalidateQueries({
         queryKey: getGetLatestGenerationRunQueryKey(accountId, "deconstruct"),
@@ -133,6 +135,16 @@ export function useDeconstruction(accountId: string | null) {
       firingRef.current = false;
       setFiring(false);
     }
+  };
+
+  const start = async (importIds: string[]) => {
+    if (importIds.length === 0) return;
+    await fire(() => startMutation.mutateAsync({ accountId: accountId!, data: { import_ids: importIds } }));
+  };
+
+  /** Bulk backfill: the server targets every upload with no non-discarded classification. */
+  const startBackfill = async () => {
+    await fire(() => backfillMutation.mutateAsync({ accountId: accountId! }));
   };
 
   const reviewMutation = useReviewCreativeDeconstruction();
@@ -156,12 +168,20 @@ export function useDeconstruction(accountId: string | null) {
   const deconstructions = listQuery.data?.deconstructions ?? [];
   const byImportId = new Map(deconstructions.map((d) => [d.manual_import_id, d]));
 
+  const isRunning = firing || run?.status === "running" || startMutation.isPending || backfillMutation.isPending;
+
   return {
     deconstructions,
     byImportId,
-    isRunning: firing || run?.status === "running" || startMutation.isPending,
+    isRunning,
+    /** n-of-m meter for the in-flight run, when it reports per-item progress. */
+    progress:
+      isRunning && run?.status === "running" && run.progress_total != null
+        ? { done: run.progress_done ?? 0, total: run.progress_total }
+        : null,
     runError: run?.status === "error" ? (run.error_message ?? "The run failed.") : null,
     start,
+    startBackfill,
     review,
     reviewPending: reviewMutation.isPending,
     refetch: () => {

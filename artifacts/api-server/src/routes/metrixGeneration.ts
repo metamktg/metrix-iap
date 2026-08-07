@@ -18,6 +18,7 @@ import {
   listDeconstructions,
   reviewDeconstruction,
   startCreativeDeconstruction,
+  startCreativeDeconstructionBackfill,
   type DetectedVariable,
 } from "../lib/deconstructionEngine";
 
@@ -86,6 +87,26 @@ router.post("/metrix/accounts/:accountId/deconstruct-creatives", requireAuth, as
     sendGenerationError(res, err);
   }
 });
+
+// Bulk backfill: classify every creative_asset upload on the account with
+// no non-discarded classification. The server decides the target set, so
+// the action stays correct even when the client's list is stale.
+router.post(
+  "/metrix/accounts/:accountId/deconstruct-creatives/backfill",
+  requireAuth,
+  async (req, res) => {
+    const accountId = String(req.params["accountId"]);
+    try {
+      if (!(await guardAccess(req, res, accountId))) return;
+      const { runId, total } = await startCreativeDeconstructionBackfill(accountId, req.authUser!.email);
+      req.log.info({ accountId, runId, total }, "Creative deconstruction backfill started");
+      res.status(202).json({ run_id: runId, total });
+    } catch (err) {
+      req.log.error({ err, accountId }, "Failed to start creative deconstruction backfill");
+      sendGenerationError(res, err);
+    }
+  },
+);
 
 router.get("/metrix/accounts/:accountId/creative-deconstructions", requireAuth, async (req, res) => {
   const accountId = String(req.params["accountId"]);
