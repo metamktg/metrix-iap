@@ -125,6 +125,17 @@ async function main() {
     fail("Funnel filter e2e failed", String(err?.message ?? err));
   });
 
+  // ── Step 7: Playwright engagement funnel e2e ──────────────────────────────
+  console.log("\nRunning engagement funnel e2e...");
+  await spawnScript("smoke:metrix-iap-engagement-funnel", [
+    "--filter",
+    "@workspace/scripts",
+    "run",
+    "smoke:metrix-iap-engagement-funnel",
+  ]).catch((err) => {
+    fail("Engagement funnel e2e failed", String(err?.message ?? err));
+  });
+
   console.log("\nPASS  All Metrix IAP smoke checks passed");
   process.exit(0);
 }
