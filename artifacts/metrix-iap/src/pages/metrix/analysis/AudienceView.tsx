@@ -27,7 +27,7 @@ import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
   SkeletonTileRow, DatePresetBar, type ViewPreset, SegmentedToggle, SectionInfoIcon,
-  useShowMore, ShowMoreButton,
+  useShowMore, ShowMoreButton, SegmentGenderIcon,
 } from "../shared";
 import { getGetAnalysisSummaryQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
@@ -49,7 +49,8 @@ import {
 import { SegmentDrilldownModal } from "@/components/creative/SegmentDrilldownModal";
 import {
   RankSortBar, KpiStat, sortByRankMetric, useRankMetric,
-  rankBarPct, type RankMetric, type MetricGroup,
+  rankBarPct, MetricPickerTile, type RankMetric, type MetricGroup,
+  type ResolvedMetricOption,
 } from "./rankSort";
 
 // ── Types ─────────────────────────────────────────────────────────────
@@ -115,6 +116,32 @@ function buildRankMetrics(resultPlural: string): RankMetric<SegmentEntry>[] {
     { id: "atcRate",     label: "Add to cart rate", direction: "desc", value: (e) => e.derived.addToCartRate,   format: fmtPct },
     { id: "costPerAtc",  label: "Cost per ATC",     direction: "asc",  value: (e) => e.derived.costPerAddToCart, format: fmtUSD },
     { id: "checkoutRate", label: "Checkout rate",   direction: "desc", value: (e) => e.derived.checkoutRate,    format: fmtPct },
+  ];
+}
+
+/**
+ * Same 10 metrics as buildRankMetrics, resolved to a single account-wide
+ * value (spend-weighted where applicable — e.g. CVR/CTR/CPM come from
+ * deriveSegmentMetrics on the SUMMED totals, never a naive average of each
+ * segment's own rate) so the header KPI tiles can swap between them without
+ * showing a statistically wrong blended number.
+ */
+function buildResolvedAudienceMetrics(
+  totals: SegmentRawTotals,
+  derived: SegmentDerivedMetrics,
+  resultPlural: string,
+): ResolvedMetricOption[] {
+  return [
+    { id: "results",      label: resultPlural,       formatted: fmtNum(totals.results ?? 0) },
+    { id: "spend",        label: "Spend",             formatted: fmtUSD(totals.spend ?? 0, 0) },
+    { id: "cpa",          label: "CPA",               formatted: derived.cpa != null ? fmtUSD(derived.cpa) : "—" },
+    { id: "ctr",          label: "Link CTR",          formatted: derived.ctr != null ? fmtPct(derived.ctr) : "—" },
+    { id: "impressions",  label: "Impressions",       formatted: fmtNum(totals.impressions ?? 0) },
+    { id: "cvr",          label: "CVR",               formatted: derived.cvr != null ? fmtPct(derived.cvr) : "—" },
+    { id: "cpm",          label: "CPM",               formatted: derived.cpm != null ? fmtUSD(derived.cpm) : "—" },
+    { id: "atcRate",      label: "Add to cart rate",  formatted: derived.addToCartRate != null ? fmtPct(derived.addToCartRate) : "—" },
+    { id: "costPerAtc",   label: "Cost per ATC",      formatted: derived.costPerAddToCart != null ? fmtUSD(derived.costPerAddToCart) : "—" },
+    { id: "checkoutRate", label: "Checkout rate",     formatted: derived.checkoutRate != null ? fmtPct(derived.checkoutRate) : "—" },
   ];
 }
 
@@ -415,8 +442,11 @@ function PocketCard({
         {/* L1: name + efficiency label + low-signal flag */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex flex-col gap-0.5 min-w-0">
-            <span className={cn(TYPE.title, "font-bold text-foreground/90 truncate block")}>
-              {segmentLabel(entry.seg)}
+            <span className="flex items-center gap-1.5 min-w-0">
+              <SegmentGenderIcon gender={entry.seg.gender} />
+              <span className={cn(TYPE.title, "text-foreground/90 truncate flex-1 min-w-0")}>
+                {segmentLabel(entry.seg)}
+              </span>
             </span>
             <div className="flex items-center gap-1.5">
               <span className={cn(TYPE.label, "font-semibold")} style={{ color }}>
@@ -539,7 +569,8 @@ function RankedListTab({
                 <span className="w-4 shrink-0 font-mono text-muted-foreground/35 tabular-nums text-right text-label">
                   {idx + 1}
                 </span>
-                <span className={cn(TYPE.title, "font-semibold text-foreground/90 flex-1 truncate")}>
+                <SegmentGenderIcon gender={e.seg.gender} />
+                <span className={cn(TYPE.title, "text-foreground/90 flex-1 truncate")}>
                   {segmentLabel(e.seg)}
                 </span>
                 {e.signal.low && (
@@ -672,9 +703,19 @@ export function AudienceView() {
   const activeMetric = rankMetrics.find((m) => m.id === activeId) ?? rankMetrics[0];
   const ranked = useMemo(() => sortByRankMetric(entries, activeMetric), [entries, activeMetric]);
 
-  const totalSpend   = entries.reduce((n, e) => n + (e.totals.spend ?? 0), 0);
-  const totalResults = entries.reduce((n, e) => n + (e.totals.results ?? 0), 0);
+  const totalSpend = entries.reduce((n, e) => n + (e.totals.spend ?? 0), 0);
   const best = ranked[0];
+
+  // Header KPI tiles: two independently swappable slots, resolved from the
+  // account-wide (spend-weighted) totals so a rate metric like CVR/CTR/CPM
+  // shows the real blended reading, never an average-of-averages.
+  const accountWideMetrics = useMemo(() => {
+    const t = computeSegmentTotals(scopedRows);
+    return buildResolvedAudienceMetrics(t, deriveSegmentMetrics(t), term.Plural);
+  }, [scopedRows, term.Plural]);
+  const tileIds = accountWideMetrics.map((m) => m.id);
+  const { activeId: tile1Id, select: selectTile1 } = useRankMetric(`${RANK_KEY}.tile1`, tileIds, "spend");
+  const { activeId: tile2Id, select: selectTile2 } = useRankMetric(`${RANK_KEY}.tile2`, tileIds, "results");
 
   const medianCpa = useMemo(() => {
     return numMedian(entries.filter((e) => e.derived.cpa != null).map((e) => e.derived.cpa!));
@@ -723,8 +764,18 @@ export function AudienceView() {
                   ) : (
                     <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
                       <MetricTile label="Pockets" value={fmtNum(entries.length)} />
-                      <MetricTile label="Signal spend" value={fmtUSD(totalSpend, 0)} />
-                      <MetricTile label={term.Plural} value={fmtNum(totalResults)} />
+                      <MetricPickerTile
+                        options={accountWideMetrics}
+                        groups={AUDIENCE_RANK_GROUPS}
+                        activeId={tile1Id}
+                        onSelect={selectTile1}
+                      />
+                      <MetricPickerTile
+                        options={accountWideMetrics}
+                        groups={AUDIENCE_RANK_GROUPS}
+                        activeId={tile2Id}
+                        onSelect={selectTile2}
+                      />
                       <MetricTile
                         variant="primary"
                         label={`Prime · ${activeMetric.label}`}

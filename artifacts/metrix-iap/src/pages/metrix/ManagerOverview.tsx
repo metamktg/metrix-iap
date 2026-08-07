@@ -595,7 +595,7 @@ export function ManagerOverview() {
     return (
       <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
         <ModuleHeader
-          section="Metrix Manager · Agency Overview"
+          section="Agency Overview"
           title={manager.name}
           subtitle="No ad accounts yet. Add your first account to unlock the intelligence platform."
         />
@@ -626,7 +626,7 @@ export function ManagerOverview() {
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
       <ModuleHeader
-        section="Metrix Manager · Agency Overview"
+        section="Agency Overview"
         title={manager.name}
         subtitle="Blended performance · all ad accounts"
         right={

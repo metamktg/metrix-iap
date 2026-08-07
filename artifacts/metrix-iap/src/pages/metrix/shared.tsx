@@ -73,7 +73,7 @@ import { useLocation, useSearch } from "wouter";
 import { ConnectMetaDialog, ManualImportDialog } from "./ConnectAccountDialogs";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
 import { useListManualImports } from "@workspace/api-client-react";
-import { Plug, FileUp, Clock, Database, Info, ArrowRight, ArrowLeftRight, CheckSquare, CheckCircle2, Square, CalendarRange, CalendarX2, AlertTriangle, ChevronDown, ChevronLeft, Sparkles, Map as MapIcon, Lock, Circle, Loader2, CircleCheck, CircleX } from "lucide-react";
+import { Plug, FileUp, Clock, Database, Info, ArrowRight, ArrowLeftRight, CheckSquare, CheckCircle2, Square, CalendarRange, CalendarX2, AlertTriangle, ChevronDown, ChevronLeft, Sparkles, Map as MapIcon, Lock, Circle, Loader2, CircleCheck, CircleX, Venus, Mars } from "lucide-react";
 import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
 import { DataSourceBadge } from "@/components/ui/DataSourceBadge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@workspace/command-deck/components/ui/tooltip";
@@ -249,6 +249,38 @@ export function resultTerm(account: AdAccount | null | undefined): ResultTerm {
   const singular = match?.[1] ?? "result";
   const plural = match?.[2] ?? "results";
   return { singular, plural, Singular: capitalize(singular), Plural: capitalize(plural) };
+}
+
+// ─── Segment gender icon ────────────────────────────────────────────────
+// Small glyph next to a demographic segment's age·gender label (e.g.
+// "Women 45-54") — breaks up the cognitive load of scanning a grid of
+// text-only labels. Renders nothing for a gender value that isn't
+// female/male — never fabricates an icon for data the segment doesn't
+// actually carry.
+
+export function SegmentGenderIcon({ gender }: { gender: string }) {
+  const g = gender.trim().toLowerCase();
+  if (g === "female") {
+    return (
+      <span
+        aria-hidden
+        className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-rose-400/15 text-rose-300 shrink-0"
+      >
+        <Venus className="w-3 h-3" />
+      </span>
+    );
+  }
+  if (g === "male") {
+    return (
+      <span
+        aria-hidden
+        className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-400/15 text-blue-300 shrink-0"
+      >
+        <Mars className="w-3 h-3" />
+      </span>
+    );
+  }
+  return null;
 }
 
 // ─── Confidence badge ─────────────────────────────────────────────────

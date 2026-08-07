@@ -14,7 +14,7 @@ import {
   MetricTile, CrossLink, resultTerm, SectionCard, ConfidenceBadge,
   fmtUSD, fmtPct, fmtNum,
   DetailReveal, deriveLabel, SegmentedToggle, PILL_ACTIVE, PILL_INACTIVE,
-  useShowMore, ShowMoreButton,
+  useShowMore, ShowMoreButton, SegmentGenderIcon,
 } from "../shared";
 import { DemographicTable } from "../analysis/tables";
 import { VariableStackChips, VariableChip, familyLabel } from "./strategyShared";
@@ -777,8 +777,11 @@ function AudienceSegmentTile({
     <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-3">
       {/* L1: identity + confidence badge */}
       <div className="flex items-start justify-between gap-2">
-        <p className={cn(TYPE.title, "font-semibold text-foreground leading-snug")}>
-          {segmentLabel(seg)}
+        <p className="flex items-center gap-1.5 min-w-0">
+          <SegmentGenderIcon gender={seg.gender} />
+          <span className={cn(TYPE.title, "text-foreground leading-snug truncate")}>
+            {segmentLabel(seg)}
+          </span>
         </p>
         <TooltipProvider delayDuration={150}>
           <Tooltip>

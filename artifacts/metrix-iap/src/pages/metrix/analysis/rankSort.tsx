@@ -5,9 +5,10 @@
 // Null values always sort last: a missing number is never "best".
 
 import { useCallback, useEffect, useState } from "react";
-import { ArrowDown, ArrowUp } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronDown, Check } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
-import { PILL_ACTIVE, PILL_INACTIVE } from "../shared";
+import { Popover, PopoverTrigger, PopoverContent } from "@workspace/command-deck/components/ui/popover";
+import { TYPE } from "../typography";
 
 export interface RankMetric<Row> {
   id: string;
@@ -93,8 +94,67 @@ export interface MetricGroup {
   ids: string[];
 }
 
-/** Horizontal chip row: pick which KPI ranks the list.
- *  Pass `groups` to add labelled category separators (Performance / Traffic / Engagement). */
+/**
+ * Generic grouped metric list used by both RankSortBar's dropdown and
+ * MetricPickerTile's dropdown — a single, shared "pick a metric" surface
+ * instead of two hand-rolled lists with slightly different markup.
+ */
+function MetricOptionList({
+  ids,
+  labelFor,
+  groups,
+  activeId,
+  onSelect,
+}: {
+  ids: string[];
+  labelFor: (id: string) => string;
+  groups?: MetricGroup[];
+  activeId: string;
+  onSelect: (id: string) => void;
+}) {
+  const Row = ({ id }: { id: string }) => {
+    const active = id === activeId;
+    return (
+      <button
+        key={id}
+        onClick={() => onSelect(id)}
+        data-testid={`rank-metric-${id}`}
+        aria-pressed={active}
+        className={cn(
+          "w-full flex items-center gap-2 px-2.5 py-1.5 text-left transition-colors",
+          active ? "bg-primary/10 text-interactive" : "text-foreground/80 hover:bg-white/[0.05]"
+        )}
+      >
+        <Check className={cn("w-3 h-3 shrink-0", active ? "opacity-100" : "opacity-0")} />
+        <span className={cn(TYPE.body, "truncate")}>{labelFor(id)}</span>
+      </button>
+    );
+  };
+
+  if (!groups) {
+    return <div className="py-1">{ids.map((id) => <Row key={id} id={id} />)}</div>;
+  }
+
+  return (
+    <div className="py-1">
+      {groups.map((g, gi) => {
+        const groupIds = ids.filter((id) => g.ids.includes(id));
+        if (groupIds.length === 0) return null;
+        return (
+          <div key={g.label}>
+            {gi > 0 && <div className="my-1 border-t border-border/20" />}
+            <div className={cn(TYPE.microLabel, "text-muted-foreground/45 px-2.5 py-1")}>{g.label}</div>
+            {groupIds.map((id) => <Row key={id} id={id} />)}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Single dropdown: pick which KPI ranks the list. Replaces a row of pill
+ *  buttons with one compact trigger — the option list (with `groups`
+ *  category headers, if passed) opens in a popover. */
 export function RankSortBar<Row>({
   metrics,
   activeId,
@@ -108,73 +168,112 @@ export function RankSortBar<Row>({
   className?: string;
   groups?: MetricGroup[];
 }) {
-  if (groups) {
-    return (
-      <div className={cn("flex flex-wrap items-center gap-x-2 gap-y-1", className)}>
-        {groups.map((g, gi) => {
-          const gMetrics = metrics.filter((m) => g.ids.includes(m.id));
-          if (gMetrics.length === 0) return null;
-          return (
-            <div key={g.label} className="flex items-center gap-1">
-              {gi > 0 && <span className="w-px h-3.5 bg-border/30 mx-0.5 shrink-0" />}
-              <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/30 mr-0.5">
-                {g.label}
-              </span>
-              {gMetrics.map((m) => {
-                const active = m.id === activeId;
-                return (
-                  <button
-                    key={m.id}
-                    onClick={() => onSelect(m.id)}
-                    data-testid={`rank-metric-${m.id}`}
-                    aria-pressed={active}
-                    className={cn(
-                      "inline-flex items-center gap-1 h-6 px-2 rounded-full border text-label font-semibold transition-colors",
-                      active ? PILL_ACTIVE : PILL_INACTIVE
-                    )}
-                  >
-                    {m.label}
-                    {active && (m.direction === "asc"
-                      ? <ArrowUp className="w-3.5 h-3.5 text-interactive" />
-                      : <ArrowDown className="w-3.5 h-3.5 text-interactive" />)}
-                  </button>
-                );
-              })}
-            </div>
-          );
-        })}
-      </div>
-    );
-  }
+  const [open, setOpen] = useState(false);
+  const active = metrics.find((m) => m.id === activeId) ?? metrics[0];
 
   return (
-    <div className={cn("flex flex-wrap items-center gap-1", className)}>
-      <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/50 mr-1">
-        Rank by
-      </span>
-      {metrics.map((m) => {
-        const active = m.id === activeId;
-        return (
-          <button
-            key={m.id}
-            onClick={() => onSelect(m.id)}
-            data-testid={`rank-metric-${m.id}`}
-            aria-pressed={active}
-            className={cn(
-              "inline-flex items-center gap-1 h-6 px-2 rounded-full border text-label font-semibold transition-colors",
-              active ? PILL_ACTIVE : PILL_INACTIVE
-            )}
-          >
-            {m.label}
-            {active &&
-              (m.direction === "asc" ? (
-                <ArrowUp className="w-3.5 h-3.5 text-interactive" />
-              ) : (
-                <ArrowDown className="w-3.5 h-3.5 text-interactive" />
-              ))}
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 bg-white/[0.02] hover:bg-white/[0.05] transition-colors",
+            className
+          )}
+        >
+          <span className={cn(TYPE.microLabel, "text-muted-foreground/55")}>Sort by</span>
+          <span className={cn(TYPE.body, "font-semibold text-foreground/90")}>{active.label}</span>
+          {active.direction === "asc" ? (
+            <ArrowUp className="w-3 h-3 text-interactive" />
+          ) : (
+            <ArrowDown className="w-3 h-3 text-interactive" />
+          )}
+          <ChevronDown className={cn("w-3 h-3 text-muted-foreground/50 transition-transform", open && "rotate-180")} />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-56 p-0 border-border/60 bg-popover/95 backdrop-blur-sm overflow-hidden">
+        <MetricOptionList
+          ids={metrics.map((m) => m.id)}
+          labelFor={(id) => metrics.find((m) => m.id === id)?.label ?? id}
+          groups={groups}
+          activeId={activeId}
+          onSelect={(id) => { onSelect(id); setOpen(false); }}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/** A pre-resolved metric option for MetricPickerTile — value already
+ *  computed and formatted by the caller (no per-row accessor needed here,
+ *  unlike RankMetric, since the tile shows one aggregate reading). */
+export interface ResolvedMetricOption {
+  id: string;
+  label: string;
+  formatted: string;
+}
+
+/**
+ * Swappable KPI tile: shows one metric's value with a dropdown (opened by
+ * clicking the label) to swap which metric from `options` is featured —
+ * generalizes the per-tile picker pattern from the Manager Overview KPI
+ * strip so any page's header tiles can offer the same "pick from all
+ * available metrics" interaction instead of a fixed, single-metric tile.
+ */
+export function MetricPickerTile({
+  options,
+  groups,
+  activeId,
+  onSelect,
+  sub,
+  variant = "default",
+}: {
+  options: ResolvedMetricOption[];
+  groups?: MetricGroup[];
+  activeId: string;
+  onSelect: (id: string) => void;
+  sub?: string;
+  variant?: "primary" | "default";
+}) {
+  const [open, setOpen] = useState(false);
+  const isPrimary = variant === "primary";
+  const active = options.find((o) => o.id === activeId) ?? options[0];
+  if (!active) return null;
+
+  return (
+    <div className={cn("mx-kpi-tile p-4 relative", isPrimary && "border-primary/35 bg-primary/[0.03]")}>
+      {isPrimary && <div className="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-primary/55 pointer-events-none" />}
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button type="button" className="flex items-center gap-1 group/lbl text-left w-fit">
+            <span className={cn(
+              TYPE.microLabel,
+              isPrimary ? "text-muted-foreground/65" : "text-muted-foreground/50",
+              "transition-colors",
+              open && "text-interactive"
+            )}>
+              {active.label}
+            </span>
+            <ChevronDown className={cn(
+              "w-2.5 h-2.5 shrink-0 transition-all",
+              open ? "rotate-180 text-interactive" : "text-muted-foreground/35 group-hover/lbl:text-muted-foreground/65"
+            )} />
           </button>
-        );
-      })}
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-56 p-0 border-border/60 bg-popover/95 backdrop-blur-sm overflow-hidden">
+          <MetricOptionList
+            ids={options.map((o) => o.id)}
+            labelFor={(id) => options.find((o) => o.id === id)?.label ?? id}
+            groups={groups}
+            activeId={activeId}
+            onSelect={(id) => { onSelect(id); setOpen(false); }}
+          />
+        </PopoverContent>
+      </Popover>
+      <div className="text-bignum font-bold text-foreground metric-num leading-none tracking-[-0.035em] mt-1">
+        {active.formatted}
+      </div>
+      {sub && <div className={cn(TYPE.caption, "text-muted-foreground/50 mt-2 leading-snug line-clamp-2")}>{sub}</div>}
     </div>
   );
 }
