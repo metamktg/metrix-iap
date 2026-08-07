@@ -21,8 +21,8 @@ import {
   ReferenceLine,
   LabelList,
 } from "recharts";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@workspace/command-deck/components/ui/hover-card";
+import { ChartContainer, type ChartConfig } from "@workspace/command-deck/components/ui/chart";
 import type { MetricDef } from "@/lib/data/metricsCatalog";
 import type { CellPerformanceRow } from "@/lib/data/seedTypes";
 import { topConceptsForMetric } from "@/lib/data/metricConceptUtils";

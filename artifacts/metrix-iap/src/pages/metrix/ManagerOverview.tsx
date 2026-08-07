@@ -24,7 +24,7 @@ import {
   fmtUSD, fmtNum, eventLabel, SkeletonTileRow,
 } from "./shared";
 import { AddAccountDialog } from "./AddAccountDialog";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import {
   buildMetricCatalog, metricSourceFromManagerTotals, metricById,
   resultMetricId, DEFAULT_METRIC_IDS, type MetricDef,

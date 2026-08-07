@@ -392,6 +392,7 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
       concept: r["concept"],
       date_start: r["date_start"],
       date_end: r["date_end"],
+      manual_analysis_run_id: r["manual_analysis_run_id"] ?? null,
       spend: r["spend"] === null ? null : Number(r["spend"]),
       link_clicks: r["link_clicks"] === null ? null : Number(r["link_clicks"]),
       results: r["results"] === null ? null : Number(r["results"]),

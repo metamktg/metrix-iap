@@ -721,8 +721,8 @@ export const SetAccountCohortResponse = zod.object({
 
 
 /**
- * Starts an in-app Metrix engine run that generates message pillars and testing hypotheses grounded in the account's real analysis rows. Returns 202 with the run id immediately; poll the latest-run endpoint for the outcome. Generated rows carry source='generated' and never touch imported rows. Requires access to the account.
- * @summary Generate strategy (pillars + hypotheses) from the account's analysis data
+ * Starts an in-app Metrix engine run that generates message pillars and testing hypotheses grounded in the account's real analysis rows from the selected run(s), or every run when analysis_all_time is true. Returns 202 with the run id immediately; poll the latest-run endpoint for the outcome. Generated rows carry source='generated' and never touch imported rows. Requires access to the account.
+ * @summary Generate strategy (pillars + hypotheses) from selected analysis run(s)
  */
 
 
@@ -731,8 +731,11 @@ export const GenerateAccountStrategyParams = zod.object({
   "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
 })
 
+export const generateAccountStrategyBodyAnalysisAllTimeDefault = false;
+
 export const GenerateAccountStrategyBody = zod.object({
-  "analysis_run_id": zod.string().nullish().describe('ID of the specific analysis run to ground this strategy in. Optional — when omitted the engine uses the account\'s current analysis data. Stored as provenance on the generation run.')
+  "analysis_run_ids": zod.array(zod.string()).optional().describe('Specific analysis run ids to ground this strategy in. Ignored when analysis_all_time is true. Provide at least one id when analysis_all_time is false or omitted.'),
+  "analysis_all_time": zod.boolean().default(generateAccountStrategyBodyAnalysisAllTimeDefault).describe('When true, ground this strategy in every analysis run for this account (ignores analysis_run_ids). Exactly one of analysis_run_ids (non-empty) or analysis_all_time=true is required.')
 })
 
 export const GenerateAccountStrategyResponse = zod.object({
@@ -777,7 +780,9 @@ export const GetLatestGenerationRunResponse = zod.object({
   "error_message": zod.string().nullish(),
   "model": zod.string().nullish(),
   "started_at": zod.string(),
-  "finished_at": zod.string().nullish()
+  "finished_at": zod.string().nullish(),
+  "source_analysis_run_ids": zod.array(zod.string()).nullish().describe('Analysis run ids this generation was grounded in. Null for legacy runs predating run-scoping, or when source_analysis_all_time is true.'),
+  "source_analysis_all_time": zod.boolean().describe('True when this generation was grounded in every analysis run for the account rather than a specific selection.')
 }).nullable()
 })
 

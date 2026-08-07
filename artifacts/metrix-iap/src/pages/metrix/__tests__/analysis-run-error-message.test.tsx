@@ -80,7 +80,7 @@ vi.mock("@workspace/api-client-react", async (importOriginal) => {
   };
 });
 
-vi.mock("@/hooks/use-toast", () => ({
+vi.mock("@workspace/command-deck/hooks/use-toast", () => ({
   useToast: () => ({ toast: vi.fn() }),
 }));
 
@@ -170,6 +170,13 @@ describe("AnalysisControls — error run shows verbatim error_message", () => {
         mapping_summary: [
           { canonical: "Age", tier: "missing", is_required: true, found_as: null },
         ],
+      },
+      {
+        id: "imp-2",
+        kind: "performance_placement_csv",
+        filename: "placements.csv",
+        ad_names: [],
+        mapping_summary: [],
       },
     ];
     // The run has already failed (simulates: user clicked "Run anyway" → run errored).

@@ -10,10 +10,9 @@ import { getAdAccount, getBriefBuilder, getStrategyData, getAnalysisData, getMST
 import {
   ModuleHeader, ModuleTabs, ModuleScopeGate, PendingState,
   MetricTile, CaveatNote, CrossLink, useFocusParam, FlowCrumb, useFromParam,
-  RangeScopeBar, NoDataInRangeState, StaleFocusNotice, deriveLabel, SkeletonBlock,
+  StaleFocusNotice, deriveLabel, SkeletonBlock,
   ConfidenceBadge,
 } from "../shared";
-import { useDateRange } from "@/contexts/DateRangeContext";
 import {
   useGenerationRun, GenerateButton, ProvenanceBadge, GenerationErrorNote,
 } from "@/components/generation/GenerationControls";
@@ -48,7 +47,6 @@ export function BriefBuilderView() {
   const [tab, setTab] = useState<FormatTab>("static");
   const focus = useFocusParam();
   const [detail, setDetail] = useState<DraftBrief | null>(null);
-  const { rangeHasData } = useDateRange();
   const generation = useGenerationRun(adAccountId, "briefs");
   const fp = useFromParam();
 
@@ -112,17 +110,12 @@ export function BriefBuilderView() {
             {focus && !briefs.some((b) => b.id === focus) && (
               <StaleFocusNotice label="brief" />
             )}
-            <RangeScopeBar grainNote="Briefs derive from the account's full flight window — this import has no daily grain." />
             {generation.lastError && (
               <div className="px-6 pt-4">
                 <GenerationErrorNote message={generation.lastError} onRetry={() => generation.start()} />
               </div>
             )}
 
-            {!rangeHasData ? (
-              <NoDataInRangeState what="draft briefs" />
-            ) : (
-            <>
             <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="Draft briefs" value={String(briefs.length)} />
               <MetricTile label="Pillars covered" value={String(pillarsCovered)} sub={`of ${strategy?.message_pillars.length ?? 0} message pillars`} />
@@ -216,8 +209,6 @@ export function BriefBuilderView() {
                 </div>
               )}
             </div>
-            </>
-            )}
 
             {detail && (
               <InfoDrawer

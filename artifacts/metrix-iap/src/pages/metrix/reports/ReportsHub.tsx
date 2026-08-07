@@ -34,8 +34,8 @@ import {
   parseReportModel,
 } from "@/lib/reportExport";
 import { useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
+import { useToast } from "@workspace/command-deck/hooks/use-toast";
+import { cn } from "@workspace/command-deck/lib/utils";
 import {
   FileText,
   ArrowUpRight,

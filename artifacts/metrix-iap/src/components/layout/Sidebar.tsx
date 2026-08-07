@@ -1,7 +1,7 @@
 import { useLocation } from "wouter";
 import { useState, useRef, useCallback, useEffect, useId } from "react";
 import { createPortal } from "react-dom";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import {
   ChevronDown,
   Database,

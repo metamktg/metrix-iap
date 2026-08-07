@@ -13,7 +13,7 @@ import { ModuleHeader, SectionCard, CaveatNote, PendingState, useFocusParam, Det
 import { ConnectMetaDialog, ManualImportDialog, CreativeLibraryDialog } from "../ConnectAccountDialogs";
 import { AnalysisControls } from "../ManualAnalysisControls";
 import { AgentWaitlistSection } from "./AgentWaitlistSection";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { Plug, FileUp, Palette, ShieldCheck, CheckCircle2, Circle, UserCircle2, LogOut, Loader2, KeyRound, Images } from "lucide-react";
 
 const SECTION = "Settings · 09";

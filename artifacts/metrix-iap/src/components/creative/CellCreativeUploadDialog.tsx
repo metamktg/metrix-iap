@@ -2,13 +2,13 @@ import { useState, useRef, useCallback } from "react";
 import { Upload, X, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetMetrixSeedQueryKey } from "@workspace/api-client-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@workspace/command-deck/components/ui/dialog";
 
 const MAX_BYTES = 8 * 1024 * 1024;
 

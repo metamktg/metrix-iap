@@ -909,12 +909,12 @@ paths:
     post:
       operationId: generateAccountStrategy
       tags: [metrix]
-      summary: Generate strategy (pillars + hypotheses) from the account's analysis data
-      description: Starts an in-app Metrix engine run that generates message pillars and testing hypotheses grounded in the account's real analysis rows. Returns 202 with the run id immediately; poll the latest-run endpoint for the outcome. Generated rows carry source='generated' and never touch imported rows. Requires access to the account.
+      summary: Generate strategy (pillars + hypotheses) from selected analysis run(s)
+      description: Starts an in-app Metrix engine run that generates message pillars and testing hypotheses grounded in the account's real analysis rows from the selected run(s), or every run when analysis_all_time is true. Returns 202 with the run id immediately; poll the latest-run endpoint for the outcome. Generated rows carry source='generated' and never touch imported rows. Requires access to the account.
       security:
         - cookieAuth: []
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
@@ -926,6 +926,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StartGenerationResult"
+        "400":
+          description: Neither analysis_run_ids nor analysis_all_time was meaningfully set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
         "401":
           description: Not logged in
           content:
@@ -4119,10 +4125,15 @@ components:
     GenerateStrategyInput:
       type: object
       properties:
-        analysis_run_id:
-          type: string
-          nullable: true
-          description: ID of the specific analysis run to ground this strategy in. Optional — when omitted the engine uses the account's current analysis data. Stored as provenance on the generation run.
+        analysis_run_ids:
+          type: array
+          items:
+            type: string
+          description: Specific analysis run ids to ground this strategy in. Ignored when analysis_all_time is true. Provide at least one id when analysis_all_time is false or omitted.
+        analysis_all_time:
+          type: boolean
+          default: false
+          description: When true, ground this strategy in every analysis run for this account (ignores analysis_run_ids). Exactly one of analysis_run_ids (non-empty) or analysis_all_time=true is required.
     StartGenerationResult:
       type: object
       properties:
@@ -4154,12 +4165,22 @@ components:
         finished_at:
           type: string
           nullable: true
+        source_analysis_run_ids:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: Analysis run ids this generation was grounded in. Null for legacy runs predating run-scoping, or when source_analysis_all_time is true.
+        source_analysis_all_time:
+          type: boolean
+          description: True when this generation was grounded in every analysis run for the account rather than a specific selection.
       required:
         - id
         - account_id
         - kind
         - status
         - started_at
+        - source_analysis_all_time
     StageStatusResult:
       type: object
       properties:

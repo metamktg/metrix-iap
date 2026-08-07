@@ -23,7 +23,7 @@ import {
 } from "./shared";
 import { useListWorkspaceReports } from "@workspace/api-client-react";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { buildMetricCatalog, metricSourceFromCampaignSummary, metricById } from "@/lib/data/metricsCatalog";
 import { useMetricSelection } from "@/hooks/useMetricSelection";
 import { MetricPickerButton } from "@/components/creative/MetricPicker";

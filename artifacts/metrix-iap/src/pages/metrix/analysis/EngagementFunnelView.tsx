@@ -45,7 +45,7 @@ import {
   RankSortBar, sortByRankMetric, useRankMetric,
   rankBarPct, type RankMetric,
 } from "./rankSort";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import {
   TrendingUp, Layers, Table2, Activity, ArrowDown, ArrowUp,
   ChevronsUpDown, Info, Video, ArrowRight,

@@ -31,11 +31,12 @@ import {
   ModuleHeader, ModuleTabs, ModuleScopeGate, PendingState, FlowCrumb, LoopAction, useFromParam,
   MetricTile, CaveatNote, MetricSelectionBar, CrossLink, useFocusParam,
   readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel,
-  RangeScopeBar, NoDataInRangeState, StaleFocusNotice, PILL_ACTIVE, PILL_INACTIVE,
+  StaleFocusNotice, PILL_ACTIVE, PILL_INACTIVE,
   SectionInfoIcon,
 } from "../shared";
-import { useDateRange } from "@/contexts/DateRangeContext";
-import { useCellRangeScope } from "@/lib/date-scope";
+import { useCellRunScope } from "@/lib/run-scope";
+import { RunSelector, ALL_TIME_SELECTION } from "@/components/analysis/RunSelector";
+import { useListAnalysisRuns } from "@workspace/api-client-react";
 import { CreativeCard } from "@/components/creative/CreativeCard";
 import { ConceptFamilyView } from "@/components/creative/ConceptFamilyView";
 import { cardFromCell, libraryCellById } from "@/lib/creative-assembly";
@@ -125,13 +126,14 @@ export function IapLibraryView() {
   const [cardSegment, setCardSegment] = useState<{ segment: SegmentId; cellIds: string[] } | null>(null);
   // Full audience grid opened from a card's "Full breakdown" button on the Demographics tab
   const [cardGridCell, setCardGridCell] = useState<CellPerformanceRow | null>(null);
-  const { rangeHasData } = useDateRange();
+  const [runSelection, setRunSelection] = useState(ALL_TIME_SELECTION);
 
   const a       = getAnalysisData(seed, adAccountId);
   const summary = getCampaignSummary(seed, adAccountId);
   const strategy = getStrategyData(seed, adAccountId);
   const mst     = getMST(seed, adAccountId);
   const fp      = useFromParam();
+  const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "");
 
   // Deck cards for Task Tray — derived from the account's optimization loop
   const optLoop = account?.iap?.optimization_loop ?? null;
@@ -155,14 +157,14 @@ export function IapLibraryView() {
     [summary]
   );
   const { selected, toggle, isSelected } = useMetricSelection(adAccountId ?? "none", allEvents);
-  const { filterCells } = useCellRangeScope(a);
+  const { filterByRun } = useCellRunScope(a, runSelection);
 
   // ── Customizable KPI tile row (library-scoped catalog + selection) ───
-  // Built from the same metric- and range-filtered rows the grid uses so
+  // Built from the same metric- and run-filtered rows the grid uses so
   // the tiles always agree with what's below them.
   const libCells = useMemo(
-    () => filterCells((a?.performance_by_cell ?? []).filter((r) => selected.includes(r["Result type"]))),
-    [a, selected, filterCells]
+    () => filterByRun((a?.performance_by_cell ?? []).filter((r) => selected.includes(r["Result type"]))),
+    [a, selected, filterByRun]
   );
 
   // ── Concept family groups (for "Group by concept" toggle) ────────────
@@ -253,10 +255,10 @@ export function IapLibraryView() {
           const filterRows = <T extends { "Result type": string }>(rows: T[]) =>
             rows.filter((r) => selected.includes(r["Result type"]));
 
-          // Metric selection first, then the global date range
-          const cells        = filterCells(filterRows(a.performance_by_cell));
+          // Metric selection first, then the analysis-run scope
+          const cells        = filterByRun(filterRows(a.performance_by_cell));
           const variables    = filterRows(a.v3_variable_performance);
-          const topCells     = filterCells(filterRows(a.top_checkout_cells));
+          const topCells     = filterByRun(filterRows(a.top_checkout_cells));
           const topVariables = filterRows(a.top_checkout_variables);
 
           const TABS: { id: Tab; label: string; count: number }[] = [
@@ -365,12 +367,15 @@ export function IapLibraryView() {
                 </div>
               </div>
 
-              <RangeScopeBar grainNote="Cell and variable metrics aggregate each creative's full flight window — this import has no daily grain." />
+              {(analysisRunsData?.runs.length ?? 0) > 0 && (
+                <div className="px-6 pt-4">
+                  <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/30 mb-1.5">
+                    Scope to analysis run
+                  </p>
+                  <RunSelector runs={analysisRunsData!.runs} value={runSelection} onChange={setRunSelection} />
+                </div>
+              )}
 
-              {!rangeHasData ? (
-                <NoDataInRangeState what="creative performance" />
-              ) : (
-              <>
               <div className="px-6 pt-5">
                 <div className="flex items-center justify-between mb-2">
                   {/* Funnel stage badge + section info */}
@@ -870,8 +875,6 @@ export function IapLibraryView() {
                   )
                 )}
               </div>
-              </>
-              )}
 
               {/* ── Cell detail drawer ── */}
               {detail && (

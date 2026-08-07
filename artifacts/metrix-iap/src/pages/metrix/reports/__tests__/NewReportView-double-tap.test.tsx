@@ -44,7 +44,7 @@ vi.mock("@/lib/reportExport", async (importOriginal) => {
   return { ...actual, downloadReportExport: vi.fn().mockResolvedValue({ kind: "downloaded" }) };
 });
 
-vi.mock("@/hooks/use-toast", () => ({
+vi.mock("@workspace/command-deck/hooks/use-toast", () => ({
   useToast: () => ({ toast: vi.fn() }),
 }));
 

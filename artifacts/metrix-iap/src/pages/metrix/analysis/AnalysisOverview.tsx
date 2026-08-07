@@ -29,8 +29,8 @@ import {
   AreaChart, Area, BarChart, Bar, Cell, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid, Brush,
 } from "recharts";
-import { Slider } from "@/components/ui/slider";
-import { cn } from "@/lib/utils";
+import { Slider } from "@workspace/command-deck/components/ui/slider";
+import { cn } from "@workspace/command-deck/lib/utils";
 import {
   LineChart, Library, Users, LayoutGrid, Wallet, ArrowUp, ArrowDown,
 } from "lucide-react";

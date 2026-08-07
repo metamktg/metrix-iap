@@ -21,7 +21,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import {
   useGetLatestAnalysisRun, getGetLatestAnalysisRunQueryKey,
   useListAnalysisRuns,
@@ -31,7 +31,8 @@ import {
 } from "@workspace/api-client-react";
 import type { AnalysisRun, GeneratedReportCreateInput } from "@workspace/api-client-react";
 import { useGenerationRun } from "@/components/generation/GenerationControls";
-import { useToast } from "@/hooks/use-toast";
+import { RunSelector, ALL_TIME_SELECTION, type RunSelectorValue } from "@/components/analysis/RunSelector";
+import { useToast } from "@workspace/command-deck/hooks/use-toast";
 import type { AdAccount, StrategyData, BriefBuilder } from "@/lib/data/seedTypes";
 import { computeStaleStages } from "./staleStageDetection";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -717,7 +718,7 @@ function CommandHub({
   analysisStartError: string | null;
   onNavigate: (path: string) => void;
   onStartAnalysis: (range: AnalysisDateRange) => Promise<void>;
-  onGenerateStrategy: (analysisRunIds?: string[]) => void;
+  onGenerateStrategy: (selection: RunSelectorValue) => void;
   onGenerateBriefs: () => void;
   reportGenerating: boolean;
   reportError: string | null;
@@ -784,18 +785,17 @@ function CommandHub({
   // Pre-execution confirmation step for analysis / strategy / briefs / report
   const [pendingConfirm, setPendingConfirm] = useState<"analysis" | "strategy" | "briefs" | "report" | null>(null);
   const [localDateRange, setLocalDateRange] = useState<AnalysisDateRange>("30d");
-  // Which analysis runs the user wants to ground strategy in (up to 3).
-  // Defaults to the latest successful run when the confirmation panel opens.
-  const [selectedRunIds, setSelectedRunIds] = useState<string[]>([]);
+  // Which analysis run(s) the user wants to ground strategy in.
+  // Defaults to All time when the confirmation panel opens — the server
+  // requires an explicit selection, and "everything" is the safest default.
+  const [runSelection, setRunSelection] = useState<RunSelectorValue>(ALL_TIME_SELECTION);
   // Report delivery mode selection (internal vs client-facing)
   const [reportMode, setReportMode] = useState<"internal" | "client">("internal");
   useEffect(() => {
     if (pendingConfirm === "strategy") {
-      const best = analysisRuns.find((r) => r.status === "success") ?? analysisRuns[0];
-      const defaultId = best?.id ?? analysisRun?.id;
-      setSelectedRunIds(defaultId ? [defaultId] : []);
+      setRunSelection(ALL_TIME_SELECTION);
     }
-  }, [pendingConfirm, analysisRuns, analysisRun?.id]);
+  }, [pendingConfirm]);
 
   // Actions section content
   function Actions() {
@@ -1075,110 +1075,14 @@ function CommandHub({
       if (pendingConfirm === "strategy") {
       const successRuns = analysisRuns.filter((r) => r.status === "success");
       const candidateRuns = successRuns.length > 0 ? successRuns : analysisRuns;
-      // Show at most 5 runs; user may check up to 3 of them
-      const displayRuns = candidateRuns.slice(0, 5);
-      const hiddenCount  = candidateRuns.length - displayRuns.length;
-      const MAX_SELECTION = 3;
-      const toggleRun = (id: string) => {
-        setSelectedRunIds((prev) => {
-          if (prev.includes(id)) return prev.filter((r) => r !== id);
-          if (prev.length >= MAX_SELECTION) return prev; // cap at 3
-          return [...prev, id];
-        });
-      };
+      const canBuild = runSelection.allTime || runSelection.selectedRunIds.length > 0;
       return (
         <div className="flex flex-col gap-2.5">
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/30">
-                Ground strategy in
-              </p>
-              {candidateRuns.length > 0 && (
-                <span className={cn(
-                  "text-[9px] font-medium tabular-nums",
-                  selectedRunIds.length === MAX_SELECTION
-                    ? "text-emerald-400/60"
-                    : "text-muted-foreground/25"
-                )}>
-                  {selectedRunIds.length}/{MAX_SELECTION} selected
-                </span>
-              )}
-            </div>
-            {displayRuns.length === 0 ? (
-              <div className="rounded-lg border border-emerald-400/20 bg-emerald-400/[0.04] px-2.5 py-2">
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400/60 shrink-0" />
-                  <span className="text-label font-semibold text-foreground/75">
-                    {analysisRun?.date_start && analysisRun?.date_end
-                      ? `${fmtDate(analysisRun.date_start)} – ${fmtDate(analysisRun.date_end)}`
-                      : "Latest analysis"}
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <div className="rounded-lg border border-border/40 divide-y divide-border/30 overflow-hidden">
-                {displayRuns.map((run, idx) => {
-                  const isChecked = selectedRunIds.includes(run.id);
-                  const isDisabled = !isChecked && selectedRunIds.length >= MAX_SELECTION;
-                  const dateLabel = run.date_start && run.date_end
-                    ? `${fmtDate(run.date_start)} – ${fmtDate(run.date_end)}`
-                    : run.date_range ?? "Analysis";
-                  const isLatest = idx === 0 && successRuns.length > 0;
-                  return (
-                    <button
-                      key={run.id}
-                      onClick={() => toggleRun(run.id)}
-                      disabled={isDisabled}
-                      className={cn(
-                        "w-full flex items-center gap-2 px-2.5 py-2 text-left transition-colors",
-                        isChecked
-                          ? "bg-emerald-400/[0.07] text-foreground/90"
-                          : isDisabled
-                          ? "opacity-35 cursor-not-allowed"
-                          : "bg-transparent text-foreground/55 hover:bg-muted/30",
-                      )}
-                    >
-                      {/* Checkbox */}
-                      <span className={cn(
-                        "w-3 h-3 rounded-sm shrink-0 border flex items-center justify-center transition-colors",
-                        isChecked
-                          ? "bg-emerald-400/70 border-emerald-400/60"
-                          : "bg-transparent border-border/50",
-                      )}>
-                        {isChecked && (
-                          <svg viewBox="0 0 10 10" className="w-2 h-2 fill-none stroke-black stroke-[2]">
-                            <polyline points="2,5 4.5,7.5 8,3" />
-                          </svg>
-                        )}
-                      </span>
-                      <span className="text-label font-medium flex-1 truncate">{dateLabel}</span>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {isLatest && (
-                          <span className="text-[8px] font-semibold uppercase tracking-wider text-emerald-400/60 bg-emerald-400/[0.08] border border-emerald-400/15 rounded px-1 py-0.5 leading-none">
-                            Latest
-                          </span>
-                        )}
-                        {run.rows_ingested != null && (
-                          <span className="text-[9px] font-mono text-muted-foreground/35">
-                            {run.rows_ingested.toLocaleString()} rows
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-                {hiddenCount > 0 && (
-                  <div className="px-2.5 py-1.5 bg-white/[0.01]">
-                    <span className="text-[9px] text-muted-foreground/25">
-                      +{hiddenCount} older run{hiddenCount !== 1 ? "s" : ""} · see History for full list
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
-            {selectedRunIds.length === 0 && candidateRuns.length > 0 && (
-              <p className="text-[9px] text-amber-400/60 mt-1.5">Select at least one run to continue.</p>
-            )}
+            <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/30 mb-1.5">
+              Ground strategy in
+            </p>
+            <RunSelector runs={candidateRuns} value={runSelection} onChange={setRunSelection} />
           </div>
           {/* Estimated time hint */}
           <div className="flex items-center gap-1.5">
@@ -1187,19 +1091,9 @@ function CommandHub({
           </div>
           <div className="flex gap-1.5">
             <button
-              onClick={() => {
-                if (selectedRunIds.length === 0 && candidateRuns.length > 0) return;
-                setPendingConfirm(null);
-                onGenerateStrategy(selectedRunIds.length > 0 ? selectedRunIds : undefined);
-                onClose();
-              }}
-              disabled={selectedRunIds.length === 0 && candidateRuns.length > 0}
-              className={cn(
-                "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
-                selectedRunIds.length === 0 && candidateRuns.length > 0
-                  ? "opacity-40 cursor-not-allowed mx-secondary-btn"
-                  : "mx-primary-btn"
-              )}
+              onClick={() => { setPendingConfirm(null); onGenerateStrategy(runSelection); onClose(); }}
+              disabled={!canBuild}
+              className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-primary-btn disabled:opacity-40 disabled:pointer-events-none"
             >
               <Sparkles className="w-3.5 h-3.5" /> Build Strategy
             </button>
@@ -2043,7 +1937,9 @@ export function LoopCommandChain({
           analysisStartError={analysisStartError}
           onNavigate={navigate}
           onStartAnalysis={handleStartAnalysis}
-          onGenerateStrategy={(runIds) => strategyGen.start({ analysis_run_ids: runIds, analysis_run_id: runIds?.[0] })}
+          onGenerateStrategy={(sel) =>
+            strategyGen.start(sel.allTime ? { analysis_all_time: true } : { analysis_run_ids: sel.selectedRunIds })
+          }
           onGenerateBriefs={() => briefsGen.start()}
           reportGenerating={reportGenerating}
           reportError={reportError}

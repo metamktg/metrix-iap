@@ -30,7 +30,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@workspace/command-deck/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,8 +40,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+} from "@workspace/command-deck/components/ui/alert-dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@workspace/command-deck/components/ui/popover";
 import {
   Command,
   CommandEmpty,
@@ -49,8 +49,8 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command";
-import { cn } from "@/lib/utils";
+} from "@workspace/command-deck/components/ui/command";
+import { cn } from "@workspace/command-deck/lib/utils";
 import {
   Plug,
   FileUp,

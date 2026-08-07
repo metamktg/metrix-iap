@@ -7,7 +7,7 @@ import { useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getWorkspaceSettings } from "@/lib/data/metrixSeedAdapter";
 import { ModuleHeader, SectionCard, PendingState, CrossLink } from "../shared";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { Bell, Mail, MonitorSmartphone, CalendarClock, Check, Minus } from "lucide-react";
 import {
   useGetNotificationPrefs,
@@ -15,7 +15,7 @@ import {
   getGetNotificationPrefsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@workspace/command-deck/hooks/use-toast";
 
 const SECTION = "Settings · 09";
 

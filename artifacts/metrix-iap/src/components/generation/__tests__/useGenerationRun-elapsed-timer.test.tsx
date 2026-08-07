@@ -21,7 +21,7 @@ vi.mock("@workspace/api-client-react", () => ({
   ApiError: class ApiError extends Error {},
 }));
 
-vi.mock("@/hooks/use-toast", () => ({
+vi.mock("@workspace/command-deck/hooks/use-toast", () => ({
   useToast: () => ({ toast: vi.fn() }),
 }));
 

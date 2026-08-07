@@ -17,4 +17,8 @@ export interface GenerationRun {
   model?: string | null;
   started_at: string;
   finished_at?: string | null;
+  /** Analysis run ids this generation was grounded in. Null for legacy runs predating run-scoping, or when source_analysis_all_time is true. */
+  source_analysis_run_ids?: string[] | null;
+  /** True when this generation was grounded in every analysis run for the account rather than a specific selection. */
+  source_analysis_all_time: boolean;
 }

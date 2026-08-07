@@ -22,8 +22,8 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
+} from "@workspace/command-deck/components/ui/dialog";
+import { cn } from "@workspace/command-deck/lib/utils";
 import {
   Plug,
   FileUp,

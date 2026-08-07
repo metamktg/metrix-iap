@@ -5,15 +5,15 @@
 
 import { useState } from "react";
 import { TYPE } from "../typography";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { resolveVariableLabel, getVariablePrefix, PREFIX_COLORS, resolveInlineVariableCodes } from "@/lib/variable-registry";
 import { ConfidenceBadge, DetailReveal, deriveLabel } from "../shared";
 import {
   parseHierarchyRef, formatHierarchyRef, fmtMetric, extractVariableCodes, compactIcpName,
   type HierarchyRef,
 } from "@/lib/normalize";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@workspace/command-deck/components/ui/popover";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@workspace/command-deck/components/ui/tooltip";
 import { Funnel, Wrench, LayoutGrid, TrendingUp, Users, ArrowUpRight, Ban, FlaskConical, Search, Sparkles, ChevronDown } from "lucide-react";
 import type { MessagePillar, ICPProfile, VariableCombination, ScalingPlaybook } from "@/lib/data/seedTypes";
 

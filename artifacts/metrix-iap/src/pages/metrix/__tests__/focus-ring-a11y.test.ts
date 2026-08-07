@@ -36,13 +36,15 @@ import {
   relativeLuminance,
   contrastRatio,
   parseFocusRingOpacities,
+  loadEffectiveThemeCss,
 } from "./wcag-contrast-helpers";
 
 // ─── Read design tokens live from the stylesheet ────────────────────────────
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const cssPath = resolve(__dirname, "../../../index.css");
-const cssSource = readFileSync(cssPath, "utf-8");
+const pkgCssPath = resolve(__dirname, "../../../../../command-deck/src/index.css");
+const cssSource = loadEffectiveThemeCss(cssPath, pkgCssPath);
 
 const primaryRgb = hslTokenToRgb(extractCssVar(cssSource, "--primary"));
 const bgRgb      = hslTokenToRgb(extractCssVar(cssSource, "--background"));

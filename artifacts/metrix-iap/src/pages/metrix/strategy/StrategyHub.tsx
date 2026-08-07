@@ -29,7 +29,7 @@ import {
   GenerateButton,
   ProvenanceBadge,
 } from "@/components/generation/GenerationControls";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import {
   Compass,
   ArrowUpRight,

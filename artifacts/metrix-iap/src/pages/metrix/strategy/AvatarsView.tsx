@@ -12,7 +12,7 @@ import { getAdAccount, getMST, getAnalysisData, getStrategyData, getAds } from "
 import {
   ModuleHeader, ModuleScopeGate, PendingState,
   MetricTile, CrossLink, resultTerm, SectionCard, ConfidenceBadge,
-  fmtUSD, fmtPct, fmtNum, RangeScopeBar, NoDataInRangeState,
+  fmtUSD, fmtPct, fmtNum,
   DetailReveal, deriveLabel, SegmentedToggle, PILL_ACTIVE, PILL_INACTIVE,
   useShowMore, ShowMoreButton,
 } from "../shared";
@@ -22,7 +22,6 @@ import {
   computeAvatarDna, mergeAvatarDna, columnIdForCell,
   type AvatarDna, type DnaVariable,
 } from "@/lib/creative-dna";
-import { useDateRange } from "@/contexts/DateRangeContext";
 import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/SegmentGridModal";
 import { SegmentDrilldownModal } from "@/components/creative/SegmentDrilldownModal";
 import {
@@ -32,7 +31,7 @@ import {
   type SegmentId, type SegmentRawTotals, type SegmentDerivedMetrics, type SegmentSignal,
 } from "@/lib/segment-analytics";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@workspace/command-deck/components/ui/tooltip";
 import {
   Users, Fingerprint, DoorOpen, MessageSquareQuote, Compass,
   ArrowDownRight, ArrowUpRight, ArrowDown, ArrowUp, Dna, ChevronDown, ChevronRight, Search, MapPin,
@@ -41,7 +40,7 @@ import type {
   MSTMatrixColumn, MSTMatrixCell, ICPProfile, PlacementRow, AnalysisData,
   AdRecord, ActiveHypothesis,
 } from "@/lib/data/seedTypes";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 
 const SECTION = "Strategy · 04";
 
@@ -1132,7 +1131,6 @@ export function AvatarsView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
-  const { rangeHasData } = useDateRange();
 
   // ─── Sort / filter state ──────────────────────────────────────────
   const [viewMode, setViewMode] = useState<ViewMode>("avatars");
@@ -1418,13 +1416,7 @@ export function AvatarsView() {
               onSearch={setSearchQuery}
             />
 
-            <RangeScopeBar grainNote="Avatars come from the historical matrix; audience signal aggregates full flight windows — no daily grain." />
-
-            {!rangeHasData ? (
-              <NoDataInRangeState what="avatar data" />
-            ) : (
-              <>
-                {/* Summary tiles */}
+            {/* Summary tiles */}
                 <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
                   <MetricTile label="Avatars" value={String(matrix?.columns.length ?? 0)} variant="primary" />
                   <MetricTile label="Message angles" value={String(matrix?.cells.length ?? 0)} sub="matrix cells" />
@@ -1563,8 +1555,6 @@ export function AvatarsView() {
                   )}
 
                 </div>
-              </>
-            )}
 
             {/* ── Avatar detail drawer ── */}
             {detail && (

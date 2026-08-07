@@ -7,7 +7,7 @@
 // "no joint grain" state. Never fabricated.
 
 import { useMemo } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@workspace/command-deck/components/ui/dialog";
 import { Info } from "lucide-react";
 import type { AnalysisData, DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 import type { MetricDef } from "@/lib/data/metricsCatalog";

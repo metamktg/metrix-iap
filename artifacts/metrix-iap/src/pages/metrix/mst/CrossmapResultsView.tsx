@@ -11,14 +11,15 @@ import { getAdAccount, getMST, getAnalysisData, getCreativeLinkContext } from "@
 import {
   ModuleHeader, ModuleScopeGate, CaveatNote, PendingState, MetricTile,
   CrossLink, readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel,
-  RangeScopeBar, NoDataInRangeState, useShowMore, ShowMoreButton,
+  useShowMore, ShowMoreButton,
 } from "../shared";
-import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
-import { useCellRangeScope, useMstRangeScope } from "@/lib/date-scope";
+import { useCellRunScope } from "@/lib/run-scope";
+import { RunSelector, ALL_TIME_SELECTION } from "@/components/analysis/RunSelector";
+import { useListAnalysisRuns } from "@workspace/api-client-react";
 import { TilePerformanceModal } from "@/components/creative/TilePerformanceModal";
 import { TableShell, Th, Td } from "../analysis/tables";
 import { RankSortBar, useRankMetric, type RankMetric } from "../analysis/rankSort";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { GitMerge } from "lucide-react";
 import type { MSTMatrixCell } from "@/lib/data/seedTypes";
 
@@ -49,12 +50,11 @@ export function CrossmapResultsView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
-  const { rangeHasData, range } = useDateRange();
   const [activeCell, setActiveCell] = useState<MSTMatrixCell | null>(null);
-  const mstData = getMST(seed, adAccountId);
+  const [runSelection, setRunSelection] = useState(ALL_TIME_SELECTION);
   const analysisData = getAnalysisData(seed, adAccountId);
-  const { inRangeCell } = useCellRangeScope(analysisData);
-  const { mstRange, mstInRange } = useMstRangeScope(mstData, analysisData);
+  const { inRunScope } = useCellRunScope(analysisData, runSelection);
+  const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "");
 
   const { activeId: sortId, select: setSortId } = useRankMetric(
     CROSSMAP_SORT_KEY,
@@ -85,7 +85,7 @@ export function CrossmapResultsView() {
         // Join each matrix cell to its observed performance rows by cell_id,
         // then enrich with CPA and avg CTR for sort support.
         const joined: CrossmapEnrichedRow[] = matrix.cells.map((cell) => {
-          const perf = analysis.performance_by_cell.filter((r) => r.cell_id === cell.cell_id && inRangeCell(r.cell_id)) as CrossmapEnrichedRow["perf"];
+          const perf = analysis.performance_by_cell.filter((r) => r.cell_id === cell.cell_id && inRunScope(r.cell_id)) as CrossmapEnrichedRow["perf"];
           const spend = perf.reduce((n, r) => n + r["Amount spent (USD)"], 0);
           const results = perf.reduce((n, r) => n + r.Results, 0);
           const cpa = results > 0 ? spend / results : null;
@@ -130,19 +130,15 @@ export function CrossmapResultsView() {
               subtitle="Planned cells × actual delivery"
               account={acct}
             />
-            <RangeScopeBar />
+            {(analysisRunsData?.runs.length ?? 0) > 0 && (
+              <div className="px-6 pt-4">
+                <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/30 mb-1.5">
+                  Scope to analysis run
+                </p>
+                <RunSelector runs={analysisRunsData!.runs} value={runSelection} onChange={setRunSelection} />
+              </div>
+            )}
 
-            {!rangeHasData || !mstInRange ? (
-              <NoDataInRangeState
-                what="crossmap data"
-                detail={
-                  !mstInRange && mstRange && range
-                    ? `The selected range (${formatIsoRange(range)}) does not overlap this account's MST data window (${formatIsoRange(mstRange)}).`
-                    : undefined
-                }
-              />
-            ) : (
-            <>
             <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="Planned cells" value={fmtNum(planned)} />
               <MetricTile label="Cells with data" value={fmtNum(ran.length)} sub={`${coveragePct.toFixed(0)}% matrix coverage`} />
@@ -193,8 +189,6 @@ export function CrossmapResultsView() {
                 <CrossLink to="/app/analysis/library" label="Full IAP library" />
               </div>
             </div>
-            </>
-            )}
 
             {activeCell && (
               <TilePerformanceModal

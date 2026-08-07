@@ -19,7 +19,7 @@ import {
   SectionCard, ConfidenceBadge, deriveLabel, useShowMore, ShowMoreButton,
 } from "../shared";
 import { TYPE } from "../typography";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import {
   VariableStackChips, IcpChips, HypothesisLabel,
   HypothesisStatusBadge, pillarHasDetails, PillarDetailsFold,

@@ -21,7 +21,7 @@ import {
 } from "./strategyShared";
 import { splitTitle } from "@/lib/normalize";
 import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/SegmentGridModal";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import {
   Map, ChevronDown, FlaskConical, CheckSquare,
   Square, Lightbulb,

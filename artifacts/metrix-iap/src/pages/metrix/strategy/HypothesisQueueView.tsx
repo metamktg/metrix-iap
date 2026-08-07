@@ -10,21 +10,20 @@ import { getAdAccount, getStrategyData, getBriefBuilder } from "@/lib/data/metri
 import {
   ModuleHeader, ModuleTabs, ModuleScopeGate, PendingState,
   MetricTile, CrossLink, useFocusParam, FlowCrumb, useFromParam, LoopAction,
-  RangeScopeBar, NoDataInRangeState, StaleFocusNotice, DetailReveal, deriveLabel,
+  StaleFocusNotice, DetailReveal, deriveLabel,
   PILL_ACTIVE, PILL_INACTIVE, SectionCard, SectionInfoIcon,
   useShowMore, ShowMoreButton,
 } from "../shared";
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@workspace/command-deck/components/ui/tooltip";
 import {
   HypothesisStatusBadge, VariableStackChips, pillarHasDetails,
   HypothesisCodeChipsRow, PillarDetailsFold,
 } from "./strategyShared";
-import { useDateRange } from "@/contexts/DateRangeContext";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { Layers, FlaskConical, AlertTriangle, ArrowRight, Beaker, Crosshair, Target, TrendingUp, ChevronDown } from "lucide-react";
 import type { ActiveHypothesis } from "@/lib/data/seedTypes";
 import { TokenizedConceptText } from "@/components/concept/ConceptChip";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 
 const SECTION = "Strategy · 04";
 
@@ -133,7 +132,6 @@ export function HypothesisQueueView() {
   const [statusFilter, setStatusFilter] = useState<"all" | "ready" | "validation">("all");
   const focus = useFocusParam();
   const [detail, setDetail] = useState<ActiveHypothesis | null>(null);
-  const { rangeHasData } = useDateRange();
 
   const s = getStrategyData(seed, adAccountId);
   const fp = useFromParam();
@@ -186,12 +184,6 @@ export function HypothesisQueueView() {
             {focus && !s.active_hypotheses.some((h) => h.id === focus) && (
               <StaleFocusNotice label="hypothesis" />
             )}
-            <RangeScopeBar grainNote="Hypotheses derive from the account's full flight window — this import has no daily grain." />
-
-            {!rangeHasData ? (
-              <NoDataInRangeState what="hypothesis data" />
-            ) : (
-            <>
             <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="In queue" value={String(hyps.length)} variant="primary" />
               <MetricTile label="Ready for briefs" value={String(ready.length)} />
@@ -322,8 +314,6 @@ export function HypothesisQueueView() {
                 )
               )}
             </div>
-            </>
-            )}
 
             {detail && (
               <InfoDrawer

@@ -37,7 +37,7 @@ import {
   Users, Map, LayoutGrid, List, ArrowRight,
   AlertTriangle, TrendingUp,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import {
   scopeDemographicRows,
   listSegments, rowsForSegment,

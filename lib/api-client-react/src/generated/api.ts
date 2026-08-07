@@ -1770,11 +1770,11 @@ export const getGenerateAccountStrategyUrl = (accountId: string,) => {
 }
 
 /**
- * Starts an in-app Metrix engine run that generates message pillars and testing hypotheses grounded in the account's real analysis rows. Returns 202 with the run id immediately; poll the latest-run endpoint for the outcome. Generated rows carry source='generated' and never touch imported rows. Requires access to the account.
- * @summary Generate strategy (pillars + hypotheses) from the account's analysis data
+ * Starts an in-app Metrix engine run that generates message pillars and testing hypotheses grounded in the account's real analysis rows from the selected run(s), or every run when analysis_all_time is true. Returns 202 with the run id immediately; poll the latest-run endpoint for the outcome. Generated rows carry source='generated' and never touch imported rows. Requires access to the account.
+ * @summary Generate strategy (pillars + hypotheses) from selected analysis run(s)
  */
 export const generateAccountStrategy = async (accountId: string,
-    generateStrategyInput?: GenerateStrategyInput, options?: RequestInit): Promise<StartGenerationResult> => {
+    generateStrategyInput: GenerateStrategyInput, options?: RequestInit): Promise<StartGenerationResult> => {
 
   return customFetch<StartGenerationResult>(getGenerateAccountStrategyUrl(accountId),
   {
@@ -1789,8 +1789,8 @@ export const generateAccountStrategy = async (accountId: string,
 
 
 export const getGenerateAccountStrategyMutationOptions = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateAccountStrategy>>, TError,{accountId: string;data?: BodyType<GenerateStrategyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof generateAccountStrategy>>, TError,{accountId: string;data?: BodyType<GenerateStrategyInput>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateAccountStrategy>>, TError,{accountId: string;data: BodyType<GenerateStrategyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateAccountStrategy>>, TError,{accountId: string;data: BodyType<GenerateStrategyInput>}, TContext> => {
 
 const mutationKey = ['generateAccountStrategy'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -1802,7 +1802,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateAccountStrategy>>, {accountId: string;data?: BodyType<GenerateStrategyInput>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateAccountStrategy>>, {accountId: string;data: BodyType<GenerateStrategyInput>}> = (props) => {
           const {accountId,data} = props ?? {};
 
           return  generateAccountStrategy(accountId,data,requestOptions)
@@ -1816,18 +1816,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type GenerateAccountStrategyMutationResult = NonNullable<Awaited<ReturnType<typeof generateAccountStrategy>>>
-    export type GenerateAccountStrategyMutationBody = BodyType<GenerateStrategyInput> | undefined
+    export type GenerateAccountStrategyMutationBody = BodyType<GenerateStrategyInput>
     export type GenerateAccountStrategyMutationError = ErrorType<ApiError>
 
     /**
- * @summary Generate strategy (pillars + hypotheses) from the account's analysis data
+ * @summary Generate strategy (pillars + hypotheses) from selected analysis run(s)
  */
 export const useGenerateAccountStrategy = <TError = ErrorType<ApiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateAccountStrategy>>, TError,{accountId: string;data?: BodyType<GenerateStrategyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateAccountStrategy>>, TError,{accountId: string;data: BodyType<GenerateStrategyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof generateAccountStrategy>>,
         TError,
-        {accountId: string;data?: BodyType<GenerateStrategyInput>},
+        {accountId: string;data: BodyType<GenerateStrategyInput>},
         TContext
       > => {
       return useMutation(getGenerateAccountStrategyMutationOptions(options));

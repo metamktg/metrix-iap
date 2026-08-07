@@ -9,7 +9,7 @@
 // failure_patterns) with fallback to optimization_loop recommendation_cards.
 
 import { useMemo } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getCampaignSummary } from "@/lib/data/metrixSeedAdapter";

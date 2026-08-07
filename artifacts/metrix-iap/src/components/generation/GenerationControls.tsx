@@ -14,8 +14,9 @@ import {
   getGetMetrixSeedQueryKey,
   getGetLatestGenerationRunQueryKey,
   ApiError,
+  type GenerateStrategyInput,
 } from "@workspace/api-client-react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@workspace/command-deck/hooks/use-toast";
 import { Loader2, Sparkles, AlertTriangle } from "lucide-react";
 
 export type GenerationKind = "strategy" | "briefs";
@@ -99,7 +100,7 @@ export function useGenerationRun(accountId: string | null, kind: GenerationKind)
   const briefsMutation = useGenerateAccountBriefs();
   const mutation = kind === "strategy" ? strategyMutation : briefsMutation;
 
-  const start = (extraData?: { analysis_run_ids?: string[]; analysis_run_id?: string }) => {
+  const start = (extraData?: GenerateStrategyInput) => {
     // Guard: when passed directly as an onClick handler, extraData is a React
     // SyntheticEvent that carries the DOM element — discard it so we never
     // accidentally JSON.stringify a circular HTMLButtonElement reference.
@@ -143,13 +144,11 @@ export function useGenerationRun(accountId: string | null, kind: GenerationKind)
       },
     };
     if (kind === "strategy") {
-      // Prefer the plural analysis_run_ids (multi-run selection); fall back to
-      // the legacy single analysis_run_id. The API route accepts both.
-      const ids = extraData?.analysis_run_ids;
-      const strategyData = ids && ids.length > 0
-        ? { analysis_run_ids: ids, analysis_run_id: ids[0] }
-        : { analysis_run_id: extraData?.analysis_run_id };
-      strategyMutation.mutate({ accountId, data: strategyData }, callbacks);
+      // The server requires an explicit selection (analysis_run_ids or
+      // analysis_all_time) — no implicit "latest run" fallback. Default to
+      // all-time only as a safety net if a caller forgets to pass a
+      // selection; RunSelector-driven callers always pass one explicitly.
+      strategyMutation.mutate({ accountId, data: extraData ?? { analysis_all_time: true } }, callbacks);
     } else {
       briefsMutation.mutate({ accountId }, callbacks);
     }
