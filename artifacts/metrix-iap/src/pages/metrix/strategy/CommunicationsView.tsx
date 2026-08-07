@@ -53,7 +53,7 @@ export function CommunicationsView() {
                 const messageResonance = matchedProfiles.map((pr) => pr.message_resonance).find(Boolean);
 
                 return (
-                  <SectionCard key={p.id} title={p.label} desc={p.plain_descriptor}>
+                  <SectionCard key={p.id} title={p.label} desc={deriveLabel(p.plain_descriptor, 72)}>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <div className="flex items-center justify-between gap-2 mb-1.5">

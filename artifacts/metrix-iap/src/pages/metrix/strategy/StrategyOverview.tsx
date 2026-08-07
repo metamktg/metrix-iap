@@ -447,7 +447,7 @@ export function StrategyOverview() {
             <>
             {/* ── Metric tiles ──────────────────────────────────────── */}
             <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
-              <MetricTile label="Message pillars"    value={fmtNum(pillars.length)} />
+              <MetricTile label="Message pillars"    value={fmtNum(pillars.length)} variant="primary" />
               <MetricTile label="Active hypotheses"  value={fmtNum(hypotheses.length)} />
               <MetricTile label="Ready for brief"    value={fmtNum(ready)} />
               <MetricTile label="Draft briefs"       value={fmtNum(briefs?.draft_briefs.length ?? 0)} />

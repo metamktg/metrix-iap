@@ -1333,7 +1333,7 @@ export function AvatarsView() {
               <>
                 {/* Summary tiles */}
                 <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
-                  <MetricTile label="Avatars" value={String(matrix?.columns.length ?? 0)} />
+                  <MetricTile label="Avatars" value={String(matrix?.columns.length ?? 0)} variant="primary" />
                   <MetricTile label="Message angles" value={String(matrix?.cells.length ?? 0)} sub="matrix cells" />
                   <MetricTile label="ICP profiles" value={String(icpProfiles.length)} sub="strategy map" />
                   <MetricTile label="Segments" value={String(segmentList.length)} sub="audience signal" />

@@ -9,7 +9,7 @@ import { getAdAccount, getStrategyData } from "@/lib/data/metrixSeedAdapter";
 import { useStageStatus } from "@/hooks/useStageStatus";
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PrerequisiteGate, SectionCard,
-  StageLoopHub, buildLoopStages, CrossLink,
+  StageLoopHub, buildLoopStages, CrossLink, MetricTile, fmtNum,
 } from "../shared";
 import {
   useGenerationRun, GenerateButton, GenerationErrorNote, ProvenanceBadge,
@@ -50,6 +50,15 @@ export function StrategyCommandCenter() {
             />
             <ScopeBanner account={acct} />
             <StageLoopHub stages={buildLoopStages(status)} current="strategy" />
+
+            {strategy && (
+              <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
+                <MetricTile label="Message pillars" value={fmtNum(strategy.message_pillars.length)} variant="primary" />
+                <MetricTile label="Active hypotheses" value={fmtNum(strategy.active_hypotheses.length)} />
+                <MetricTile label="ICP profiles" value={fmtNum(strategy.icp_profiles?.length ?? 0)} />
+                <MetricTile label="Ready for brief" value={fmtNum(strategy.active_hypotheses.filter((h) => h.status === "ready_for_brief_builder").length)} />
+              </div>
+            )}
 
             <div className="px-6 py-5 space-y-4 max-w-3xl">
               <PrerequisiteGate
