@@ -53,3 +53,4 @@
 - [Wouter Redirect drops query params](wouter-redirect-drops-query.md) — legacy-route redirects lose ?account=; e2e must hit canonical paths, click default tabs, and mock all API endpoints.
 - [Seamless-loop video design](video-artifact-gotchas.md) — looping compositions: every timeline period must divide the loop; staggered repeats and boundary snaps need loop-length keyframes/opacity envelopes; verify by pixel-diffing frames one loop apart.
 - [Validation workflows vs configureWorkflow](validation-workflows-vs-configure.md) — new check:* scripts wire in via setValidationCommand, not configureWorkflow (10-workflow limit + validation-type lock).
+- [Supabase full outages](supabase-full-outage.md) — REST 522 + pooler connect timeouts together = project-wide outage (hours, seen under bulk vision runs); check both before debugging hung live tests.
