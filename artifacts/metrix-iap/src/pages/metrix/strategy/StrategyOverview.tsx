@@ -500,86 +500,123 @@ export function StrategyOverview() {
                     const tier = pillarTier(p.source_cells);
                     const linked = hypothesesFor(p.id);
                     const isOpen = expandedPillars[p.id] ?? false;
+
+                    // Left-border accent by evidence tier — matches recommendation-card pattern
+                    const tierAccent =
+                      tier === "high"
+                        ? "border-l-[3px] border-l-emerald-400/60"
+                        : tier === "medium"
+                          ? "border-l-[3px] border-l-amber-400/50"
+                          : "border-l-[3px] border-l-border/30";
+
                     return (
                       <div
                         key={p.id}
                         id={`pillar-${p.id}`}
-                        className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2 scroll-mt-4"
+                        className={cn(
+                          "rounded-xl border border-border/40 bg-white/[0.02] flex flex-col scroll-mt-4 overflow-hidden",
+                          tierAccent
+                        )}
                       >
-                        {/* Index + confidence tier */}
-                        <div className="flex items-center justify-between gap-2">
-                          <span className={cn(TYPE.label, "tabular-nums")}>
+                        {/* ── Header: index + title + tier badge ── */}
+                        <div className="px-4 pt-4 pb-3 flex items-start gap-2 border-b border-border/15">
+                          <span className={cn(TYPE.label, "tabular-nums text-muted-foreground/40 mt-0.5 shrink-0 w-5 text-right")}>
                             {String(i + 1).padStart(2, "0")}
                           </span>
-                          <span className={cn("text-label font-semibold border px-1.5 py-0.5 rounded leading-none", TIER_STYLE[tier])}>
-                            {TIER_LABEL[tier]}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-foreground leading-snug line-clamp-2" title={p.label}>
+                              {t.main}
+                            </p>
+                            {t.qualifier && (
+                              <p className={cn(TYPE.caption, "line-clamp-1 mt-0.5 text-muted-foreground/55")}>
+                                {t.qualifier}
+                              </p>
+                            )}
+                          </div>
+                          <span
+                            className={cn(
+                              "text-label font-semibold border px-1.5 py-0.5 rounded leading-none shrink-0 mt-0.5",
+                              TIER_STYLE[tier]
+                            )}
+                            title={`${p.source_cells.length} source cell${p.source_cells.length !== 1 ? "s" : ""}`}
+                          >
+                            {p.source_cells.length}c · {TIER_LABEL[tier]}
                           </span>
                         </div>
 
-                        {/* Pillar title */}
-                        <div title={p.label}>
-                          <p className="text-title font-semibold text-foreground leading-tight line-clamp-2">{t.main}</p>
-                          {t.qualifier && <p className={cn(TYPE.caption, "line-clamp-2 mt-0.5 text-muted-foreground/70")}>{t.qualifier}</p>}
-                        </div>
+                        {/* ── Body ── */}
+                        <div className="px-4 py-3 flex flex-col gap-2.5 flex-1">
+                          {/* Descriptor */}
+                          {p.plain_descriptor && (
+                            <p className="text-[11px] text-muted-foreground/55 leading-relaxed line-clamp-2">
+                              {deriveLabel(p.plain_descriptor, 130)}
+                            </p>
+                          )}
 
-                        {/* Descriptor — visible inline */}
-                        {p.plain_descriptor && (
-                          <p className="text-[11px] text-muted-foreground/60 leading-relaxed line-clamp-2">
-                            {deriveLabel(p.plain_descriptor, 120)}
-                          </p>
-                        )}
+                          {/* Variable stack — most actionable signal, rendered prominently */}
+                          <div>
+                            <span className={cn(TYPE.label, "text-muted-foreground/45 uppercase tracking-wide text-[10px] mb-1.5 block")}>
+                              What works
+                            </span>
+                            <VariableStackChips stack={p.variable_stack} />
+                          </div>
 
-                        {/* Source cell chips */}
-                        {p.source_cells.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {p.source_cells.map((c) => (
-                              <a
-                                key={c}
-                                href={`/app/analysis/library?focus=${c}`}
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  window.history.pushState({}, "", `/app/analysis/library?focus=${c}`);
-                                  window.dispatchEvent(new PopStateEvent("popstate"));
-                                }}
-                                className="text-label font-mono text-interactive/80 hover:text-primary border border-primary/20 hover:border-primary/40 bg-primary/[0.04] px-1.5 py-0.5 rounded leading-none transition-colors"
+                          {/* ICP chips */}
+                          {(p.target_icps?.length ?? 0) > 0 && (
+                            <div>
+                              <span className={cn(TYPE.label, "text-muted-foreground/45 uppercase tracking-wide text-[10px] mb-1.5 block")}>
+                                Who responds
+                              </span>
+                              <IcpChips ids={p.target_icps} profiles={strategy.icp_profiles} />
+                            </div>
+                          )}
+
+                          {/* Source cell chips */}
+                          {p.source_cells.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-auto pt-1">
+                              {p.source_cells.map((c) => (
+                                <a
+                                  key={c}
+                                  href={`/app/analysis/library?focus=${c}`}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    window.history.pushState({}, "", `/app/analysis/library?focus=${c}`);
+                                    window.dispatchEvent(new PopStateEvent("popstate"));
+                                  }}
+                                  className="text-label font-mono text-interactive/80 hover:text-primary border border-primary/20 hover:border-primary/40 bg-primary/[0.04] px-1.5 py-0.5 rounded leading-none transition-colors"
+                                >
+                                  {c}
+                                </a>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Hypothesis count + expand */}
+                          {linked.length > 0 && (
+                            <div className="pt-2 border-t border-border/20">
+                              <button
+                                onClick={() => setExpandedPillars((e) => ({ ...e, [p.id]: !isOpen }))}
+                                aria-expanded={isOpen}
+                                className="inline-flex items-center gap-1 text-caption font-semibold text-interactive hover:text-interactive/80 transition-colors w-full"
                               >
-                                {c}
-                              </a>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Variable stack + ICP chips */}
-                        <div className="mt-auto pt-1 space-y-1.5">
-                          <VariableStackChips stack={p.variable_stack} />
-                          <IcpChips ids={p.target_icps} profiles={strategy.icp_profiles} />
+                                <ChevronDown className={cn("w-3 h-3 transition-transform shrink-0", isOpen && "rotate-180")} />
+                                <span>{linked.length} hypothes{linked.length !== 1 ? "es" : "is"}</span>
+                              </button>
+                              {isOpen && (
+                                <div className="mt-2 space-y-1.5">
+                                  {linked.map((h) => (
+                                    <div key={h.id} className="flex items-center gap-1.5">
+                                      <HypothesisStatusBadge status={h.status} />
+                                      <span className={cn(TYPE.label, "text-foreground/70 truncate")} title={h.label}>
+                                        {deriveLabel(h.label, 40)}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
-
-                        {/* Hypothesis count + expand */}
-                        {linked.length > 0 && (
-                          <div className="pt-1 border-t border-border/20">
-                            <button
-                              onClick={() => setExpandedPillars((e) => ({ ...e, [p.id]: !isOpen }))}
-                              aria-expanded={isOpen}
-                              className="inline-flex items-center gap-1 text-caption font-semibold text-interactive hover:text-interactive/80 transition-colors w-full"
-                            >
-                              <ChevronDown className={cn("w-3 h-3 transition-transform shrink-0", isOpen && "rotate-180")} />
-                              <span>{linked.length} hypothes{linked.length !== 1 ? "es" : "is"}</span>
-                            </button>
-                            {isOpen && (
-                              <div className="mt-2 space-y-1.5">
-                                {linked.map((h) => (
-                                  <div key={h.id} className="flex items-center gap-1.5">
-                                    <HypothesisStatusBadge status={h.status} />
-                                    <span className={cn(TYPE.label, "text-foreground/70 truncate")} title={h.label}>
-                                      {deriveLabel(h.label, 40)}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )}
                       </div>
                     );
                   })}
@@ -595,20 +632,40 @@ export function StrategyOverview() {
               )}
 
               {/* ── Strategy modules ──────────────────────────────────── */}
-              <SectionCard title="Strategy modules" desc="Same strategy · different angles" right={<SectionInfoIcon tip="Deeper views of the same strategy from different angles — map, avatars, and hypothesis queue." />}>
+              <SectionCard title="Go deeper" desc="Same strategy, different lenses — map, audience, and validation queue" right={<SectionInfoIcon tip="Deeper views of the same strategy from different angles — map, avatars, and hypothesis queue." />}>
                 <div className="grid grid-cols-dashboard-3 gap-3">
                   {subpages.map((s) => (
-                    <div key={s.to} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2">
+                    <a
+                      key={s.to}
+                      href={s.to}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        window.history.pushState({}, "", s.to);
+                        window.dispatchEvent(new PopStateEvent("popstate"));
+                      }}
+                      className="group rounded-xl border border-border/40 bg-white/[0.02] hover:bg-white/[0.045] hover:border-border/70 p-4 flex flex-col gap-3 transition-all no-underline"
+                    >
+                      {/* Icon + label */}
                       <div className="flex items-center gap-2">
-                        <s.Icon className="w-3.5 h-3.5 text-interactive" />
-                        <span className="text-title font-semibold text-foreground">{s.label}</span>
-                        <InfoTooltip content={s.desc} />
+                        <div className="w-7 h-7 rounded-lg bg-primary/[0.06] border border-primary/15 flex items-center justify-center shrink-0 group-hover:bg-primary/[0.10] transition-colors">
+                          <s.Icon className="w-3.5 h-3.5 text-interactive" />
+                        </div>
+                        <span className="text-sm font-bold text-foreground group-hover:text-foreground transition-colors">{s.label}</span>
                       </div>
-                      <div className="flex items-center justify-between mt-auto pt-1">
-                        <span className="text-label font-mono text-muted-foreground/70">{s.stat}</span>
-                        <CrossLink to={s.to} label="Open" />
+
+                      {/* Description — always visible */}
+                      <p className={cn(TYPE.caption, "text-muted-foreground/60 leading-relaxed flex-1")}>
+                        {s.desc}
+                      </p>
+
+                      {/* Stat + arrow */}
+                      <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/20">
+                        <span className={cn(TYPE.label, "text-muted-foreground/50 font-mono")}>{s.stat}</span>
+                        <span className={cn(TYPE.label, "text-interactive/60 group-hover:text-interactive transition-colors font-semibold")}>
+                          Open →
+                        </span>
                       </div>
-                    </div>
+                    </a>
                   ))}
                 </div>
               </SectionCard>
