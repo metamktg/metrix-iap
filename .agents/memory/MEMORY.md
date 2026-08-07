@@ -47,3 +47,4 @@
 - [Workflow coverage guard](workflow-check-coverage-guard.md) — every check:*/smoke:* script must run in a workflow or be allowlisted with a reason; guard test parses .replit.
 - [Creative deconstruction flow](creative-deconstruction.md) — uploaded creatives classify against the registry via a 'deconstruct' generation run; 80% gate, prefix-based validation, provenance-keyed dedupe/cleanup in library_cells payloads.
 - [Metrix IAP home + analyze routes](metrix-iap-home-analyze-routes.md) — /app/home (HomeView) and /app/analyze routes were missing from App.tsx; navTree section is "Analysis" (→/app/analysis), not "Analyze" (→/app/analyze); sidebar defaults to expanded (empty localStorage).
+- [Seamless-loop video design](video-artifact-gotchas.md) — looping compositions: every timeline period must divide the loop; staggered repeats and boundary snaps need loop-length keyframes/opacity envelopes; verify by pixel-diffing frames one loop apart.
