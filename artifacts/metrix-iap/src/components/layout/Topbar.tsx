@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import {
   ChevronRight, Bell, CheckCircle2, PanelRightOpen, PanelRightClose,
   Settings, CreditCard, Users, LogOut, User,

@@ -2,7 +2,7 @@
 // One place for the real logo asset so login, password screens, topbar,
 // and sidebar all render the same brand mark.
 
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 
 const LOGO_SRC = `${import.meta.env.BASE_URL}metrix-logo.png`;
 

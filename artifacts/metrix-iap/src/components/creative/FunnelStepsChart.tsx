@@ -5,7 +5,7 @@
 // Between each pair of adjacent steps with data, the conversion rate is
 // shown as a percentage.
 
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 
 export interface FunnelStep {
   label: string;

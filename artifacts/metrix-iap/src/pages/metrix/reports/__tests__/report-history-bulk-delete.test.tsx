@@ -35,7 +35,7 @@ vi.mock("@/contexts/MetrixDataContext", async () => {
 
 import { AccountProvider } from "@/contexts/AccountContext";
 import { DateRangeProvider } from "@/contexts/DateRangeContext";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "@workspace/command-deck/components/ui/toaster";
 import { ReportHistoryView } from "../ReportHistoryView";
 
 const WORKSPACE_ID = "metrix_manager";

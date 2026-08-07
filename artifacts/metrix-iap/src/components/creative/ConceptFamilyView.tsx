@@ -7,7 +7,7 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronRight, Trophy } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { fmtUSD, fmtNum, fmtPct } from "@/pages/metrix/shared";
 import type { ConceptFamilyGroup, AngleGroup, BlendedKPI } from "@/lib/concept-grouping";
 import { rankCellsByPrimaryKpi, type CellRankKpi } from "@/lib/concept-grouping";

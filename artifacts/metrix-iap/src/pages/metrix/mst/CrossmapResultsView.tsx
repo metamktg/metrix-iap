@@ -18,7 +18,7 @@ import { useCellRangeScope, useMstRangeScope } from "@/lib/date-scope";
 import { TilePerformanceModal } from "@/components/creative/TilePerformanceModal";
 import { TableShell, Th, Td } from "../analysis/tables";
 import { RankSortBar, useRankMetric, type RankMetric } from "../analysis/rankSort";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { GitMerge } from "lucide-react";
 import type { MSTMatrixCell } from "@/lib/data/seedTypes";
 

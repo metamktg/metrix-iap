@@ -15,7 +15,7 @@ import {
 } from "../shared";
 import { AnalysisControls } from "../ManualAnalysisControls";
 import { useSetAccountCohort, useListAnalysisRuns, getGetMetrixSeedQueryKey, ApiError } from "@workspace/api-client-react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@workspace/command-deck/hooks/use-toast";
 import { LayoutDashboard, Store, Target, Wrench, Smartphone, Loader2 } from "lucide-react";
 import type { AdAccount } from "@/lib/data/seedTypes";
 

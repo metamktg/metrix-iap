@@ -19,7 +19,7 @@ import {
 } from "@/components/generation/GenerationControls";
 import { VariableStackChips, IcpChips, NormalizedRefItem, playbookHasContent, HypothesisStatusBadge } from "./strategyShared";
 import { splitTitle } from "@/lib/normalize";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { Compass, Map, Users, ListChecks, ChevronDown } from "lucide-react";
 import { SharePieChart } from "@/components/charts/SharePieChart";
 import { PREFIX_COLORS, getVariablePrefix, resolveVariableLabel } from "@/lib/variable-registry";

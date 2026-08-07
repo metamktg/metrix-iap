@@ -17,12 +17,12 @@ import {
 } from "../shared";
 import { getGetAnalysisSummaryQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@workspace/command-deck/components/ui/dialog";
 import { SharePieChart } from "@/components/charts/SharePieChart";
 import { LayoutGrid, ChevronRight, BarChart2, PieChart } from "lucide-react";
 import type { ConversionTrackingSignal, PlacementRow } from "@/lib/data/seedTypes";
 import { ConversionFunnelTable } from "./tables";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { RankSortBar, KpiStat, sortByRankMetric, useRankMetric, type RankMetric } from "./rankSort";
 
 const SECTION = "Analysis · 03";

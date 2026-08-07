@@ -10,7 +10,7 @@ import { getAdAccount, getReportHistory } from "@/lib/data/metrixSeedAdapter";
 import { buildReportModel, downloadReportExport, parseReportModel, type BrandingMode } from "@/lib/reportExport";
 import { ModuleHeader, ModuleScopeGate, PendingState, MetricTile, CrossLink, fmtNum, deriveLabel, useShowMore, ShowMoreButton } from "../shared";
 import { FORMAT_LABEL } from "./reportFormatLabels";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { History, FileText, Building2, Users, FileDown, Check, Loader2, Trash2, X } from "lucide-react";
 import {
   useListWorkspaceReports,
@@ -19,8 +19,8 @@ import {
   getListWorkspaceReportsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
-import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@workspace/command-deck/hooks/use-toast";
+import { Checkbox } from "@workspace/command-deck/components/ui/checkbox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,7 +30,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@workspace/command-deck/components/ui/alert-dialog";
 
 const SECTION = "Reports · 06";
 

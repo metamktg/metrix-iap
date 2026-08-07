@@ -10,7 +10,7 @@ import { ModuleHeader, ScopeBanner, ModuleScopeGate, CaveatNote, PendingState, C
 import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
 import { useMstRangeScope } from "@/lib/date-scope";
 import { TilePerformanceModal } from "@/components/creative/TilePerformanceModal";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { Grid3x3 } from "lucide-react";
 import type { MSTMatrix, MSTMatrixCell } from "@/lib/data/seedTypes";
 

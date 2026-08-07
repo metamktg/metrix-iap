@@ -14,7 +14,7 @@ import {
   PILL_ACTIVE, PILL_INACTIVE, SectionCard, SectionInfoIcon,
   useShowMore, ShowMoreButton,
 } from "../shared";
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@workspace/command-deck/components/ui/tooltip";
 import {
   HypothesisStatusBadge, VariableStackChips, pillarHasDetails,
   HypothesisCodeChipsRow, PillarDetailsFold,
@@ -24,7 +24,7 @@ import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { Layers, FlaskConical, AlertTriangle, ArrowRight, Beaker, Crosshair, Target, TrendingUp, ChevronDown } from "lucide-react";
 import type { ActiveHypothesis } from "@/lib/data/seedTypes";
 import { TokenizedConceptText } from "@/components/concept/ConceptChip";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 
 const SECTION = "Strategy · 04";
 

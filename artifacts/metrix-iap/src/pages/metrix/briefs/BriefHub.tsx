@@ -23,7 +23,7 @@ import {
   GenerateButton,
   ProvenanceBadge,
 } from "@/components/generation/GenerationControls";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { FileText, ArrowUpRight, CheckCircle2, Activity } from "lucide-react";
 
 const SECTION = "Creative Briefs · 05";

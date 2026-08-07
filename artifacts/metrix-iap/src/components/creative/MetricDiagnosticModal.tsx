@@ -8,7 +8,7 @@
 
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@workspace/command-deck/components/ui/dialog";
 import { Gauge, ArrowRight, Info } from "lucide-react";
 import type { AnalysisData, MST } from "@/lib/data/seedTypes";
 import type { MetricDef } from "@/lib/data/metricsCatalog";

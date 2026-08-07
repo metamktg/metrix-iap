@@ -18,7 +18,7 @@ import {
   CaveatNote, SectionCard, DetailReveal, readableVariables, fmtUSD, fmtNum,
   useShowMore, ShowMoreButton,
 } from "../shared";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { TrendingUp, Users, GitMerge, Sparkles } from "lucide-react";
 
 const SECTION = "MST · 06";

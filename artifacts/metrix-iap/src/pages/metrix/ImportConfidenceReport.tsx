@@ -15,7 +15,7 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronRight, TrendingDown } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import type { ManualImport } from "@workspace/api-client-react";
 
 // ── Signal weights (mirrors iapCsvSpec.ts SIGNAL_WEIGHTS) ──────────────

@@ -84,7 +84,8 @@
     "vite": "catalog:",
     "vitest": "^4.1.10",
     "wouter": "^3.3.5",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "@workspace/command-deck": "workspace:*"
   },
   "dependencies": {
     "@types/papaparse": "^5.5.2",

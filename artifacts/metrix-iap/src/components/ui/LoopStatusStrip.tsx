@@ -3,7 +3,7 @@
 // Used in the global header and compact account cards; the full checklist
 // sidebar lives in AdAccountOverview.
 
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { CheckCircle2, Circle } from "lucide-react";
 import { useWorkflowCounts } from "@/hooks/useWorkflowCounts";
 

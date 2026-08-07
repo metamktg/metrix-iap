@@ -6,7 +6,7 @@
 // ran show an explicit "not run" state instead of fabricated numbers.
 
 import { useMemo, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@workspace/command-deck/components/ui/dialog";
 import { Grid3x3 } from "lucide-react";
 import type { AdRecord, AnalysisData, MST, MSTMatrixCell } from "@/lib/data/seedTypes";
 import { cardFromCell, cardFromMatrixCell, libraryCellById } from "@/lib/creative-assembly";

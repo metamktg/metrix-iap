@@ -11,7 +11,7 @@ import { getAdAccount, getReportBuilder, getWorkspaceSettings } from "@/lib/data
 import { ModuleHeader, ScopeBanner, SectionCard, CaveatNote, PendingState, CrossLink } from "../shared";
 import { ConnectMetaDialog, ManualImportDialog, CreativeLibraryDialog } from "../ConnectAccountDialogs";
 import { AgentWaitlistSection } from "./AgentWaitlistSection";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { Plug, FileUp, Palette, ShieldCheck, CheckCircle2, Circle, Images, Bell, Mail, MonitorSmartphone, CalendarClock, Check, Minus } from "lucide-react";
 import {
   useGetNotificationPrefs,
@@ -19,7 +19,7 @@ import {
   getGetNotificationPrefsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@workspace/command-deck/hooks/use-toast";
 
 const SECTION = "Settings · 10";
 

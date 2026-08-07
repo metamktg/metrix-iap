@@ -4,8 +4,8 @@
 // useMetricSelection (localStorage), shared by both overview pages.
 
 import { Settings2, Check, ChevronUp, ChevronDown, RotateCcw } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@workspace/command-deck/components/ui/popover";
+import { cn } from "@workspace/command-deck/lib/utils";
 import type { MetricDef } from "@/lib/data/metricsCatalog";
 
 export function MetricPickerButton({

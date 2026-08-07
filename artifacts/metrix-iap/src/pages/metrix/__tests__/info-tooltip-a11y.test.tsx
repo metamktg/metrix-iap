@@ -19,6 +19,7 @@ import {
   contrastRatio,
   parseCssHslToken,
   extractCssVar,
+  loadEffectiveThemeCss,
 } from "./wcag-contrast-helpers";
 
 afterEach(cleanup);
@@ -35,7 +36,8 @@ function renderTooltip(content = "Helpful explanation") {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const cssPath = resolve(__dirname, "../../../index.css");
-const cssSource = readFileSync(cssPath, "utf-8");
+const pkgCssPath = resolve(__dirname, "../../../../../command-deck/src/index.css");
+const cssSource = loadEffectiveThemeCss(cssPath, pkgCssPath);
 
 const ringHsl = parseCssHslToken(extractCssVar(cssSource, "--ring"));
 const bgHsl = parseCssHslToken(extractCssVar(cssSource, "--background"));

@@ -38,7 +38,7 @@ vi.mock("@/lib/reportExport", async (importOriginal) => {
 });
 
 const toastMock = vi.hoisted(() => vi.fn());
-vi.mock("@/hooks/use-toast", () => ({
+vi.mock("@workspace/command-deck/hooks/use-toast", () => ({
   useToast: () => ({ toast: toastMock }),
   toast: toastMock,
 }));

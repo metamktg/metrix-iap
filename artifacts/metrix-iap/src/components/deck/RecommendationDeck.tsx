@@ -8,7 +8,7 @@
 // Approved cards NEVER auto-edit campaigns.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import {
   Check,
   X,

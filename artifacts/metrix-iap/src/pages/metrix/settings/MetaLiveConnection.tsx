@@ -24,7 +24,7 @@ import type {
   MetaReportRow,
 } from "@workspace/api-client-react";
 import { SectionCard } from "../shared";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import {
   Plug,
   ShieldCheck,

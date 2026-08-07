@@ -15,7 +15,7 @@ import {
 } from "@/lib/data/metrixSeedAdapter";
 import { CrossLink } from "./shared";
 import { TYPE } from "./typography";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { CheckCircle2, Circle, Plug, Infinity } from "lucide-react";
 import type { AdAccount } from "@/lib/data/seedTypes";
 

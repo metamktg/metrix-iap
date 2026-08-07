@@ -8,7 +8,7 @@
 
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount } from "@/lib/data/metrixSeedAdapter";
@@ -19,7 +19,7 @@ import {
 import { TYPE } from "./typography";
 import type { RecommendationCard } from "@/lib/data/seedTypes";
 import { Info } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@workspace/command-deck/components/ui/tooltip";
 
 // ─── helpers ──────────────────────────────────────────────────────────
 

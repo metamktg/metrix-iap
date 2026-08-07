@@ -21,7 +21,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import {
   useGetLatestAnalysisRun, getGetLatestAnalysisRunQueryKey,
   useListAnalysisRuns,
@@ -31,7 +31,7 @@ import {
 } from "@workspace/api-client-react";
 import type { AnalysisRun, GeneratedReportCreateInput } from "@workspace/api-client-react";
 import { useGenerationRun } from "@/components/generation/GenerationControls";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@workspace/command-deck/hooks/use-toast";
 import type { AdAccount, StrategyData, BriefBuilder } from "@/lib/data/seedTypes";
 import { computeStaleStages } from "./staleStageDetection";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
