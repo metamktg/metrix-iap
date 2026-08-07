@@ -7,11 +7,10 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getBriefBuilder, getStrategyData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile, CrossLink,
-  RangeScopeBar, NoDataInRangeState,
 } from "../shared";
-import { useDateRange } from "@/contexts/DateRangeContext";
+import { useGetLatestGenerationRun, useListAnalysisRuns } from "@workspace/api-client-react";
 import { normalizeBriefStatus, type BriefStatus } from "@/lib/data/seedTypes";
-import { FileClock, FileText } from "lucide-react";
+import { FileClock, FileText, Layers } from "lucide-react";
 
 const SECTION = "Creative Briefs · 05";
 
@@ -24,11 +23,42 @@ const STATUS_DISPLAY: Record<BriefStatus, { label: string; className: string }> 
   archived:   { label: "Archived",   className: "text-muted-foreground/50 border-border/30 bg-white/[0.02]" },
 };
 
+/** Read-only provenance line: which analysis run(s) the current strategy
+ *  (and therefore these briefs) was grounded in. Briefs themselves aren't
+ *  run-scoped — this just surfaces where the strategy behind them came
+ *  from, sourced from generation_runs' provenance columns. */
+function StrategyProvenanceNote({ accountId }: { accountId: string }) {
+  const { data: runData } = useGetLatestGenerationRun(accountId, "strategy");
+  const { data: analysisRunsData } = useListAnalysisRuns(accountId);
+  const run = runData?.run;
+  if (!run || run.status !== "success") return null;
+
+  const label = run.source_analysis_all_time
+    ? "All-time analysis"
+    : (run.source_analysis_run_ids ?? []).length > 0
+      ? (run.source_analysis_run_ids ?? [])
+          .map((id) => {
+            const r = analysisRunsData?.runs.find((ar) => ar.id === id);
+            return r?.date_start && r?.date_end
+              ? `${r.date_start} – ${r.date_end}`
+              : r?.date_range ?? "analysis run";
+          })
+          .join(", ")
+      : null;
+  if (!label) return null;
+
+  return (
+    <div className="px-6 pt-4 flex items-center gap-1.5 text-label text-muted-foreground/60">
+      <Layers className="w-3.5 h-3.5 text-muted-foreground/50" />
+      Strategy grounded in: {label}
+    </div>
+  );
+}
+
 export function BriefHistoryView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
-  const { rangeHasData } = useDateRange();
 
   return (
     <ModuleScopeGate section={SECTION} title="History" account={account}>
@@ -52,12 +82,8 @@ export function BriefHistoryView() {
               subtitle="All generated briefs · current status"
               account={acct}
             />
-            <RangeScopeBar grainNote="Brief history derives from the account's full flight window — this import has no daily grain." />
+            <StrategyProvenanceNote accountId={acct.id} />
 
-            {!rangeHasData ? (
-              <NoDataInRangeState what="brief history" />
-            ) : (
-            <>
             <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="Total briefs" value={String(briefs.length)} />
               <MetricTile label="Open" value={String(open)} />
@@ -102,8 +128,6 @@ export function BriefHistoryView() {
                 </div>
               )}
             </div>
-            </>
-            )}
           </div>
         );
       }}

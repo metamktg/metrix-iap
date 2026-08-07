@@ -11,9 +11,8 @@ import {
   getConceptWindows,
   cellInRange,
   sumInRange,
-  getMstRange,
 } from "../date-scope";
-import type { AnalysisData, MST } from "../data/seedTypes";
+import type { AnalysisData } from "../data/seedTypes";
 
 const seed = JSON.parse(
   fs.readFileSync(
@@ -27,7 +26,6 @@ const seed = JSON.parse(
 
 const bookster = seed.ad_accounts.find((a: { id: string }) => a.id === "bookster");
 const analysis: AnalysisData = bookster.iap.analysis;
-const mst: MST = bookster.mst;
 
 describe("conceptForCell", () => {
   it("extracts the concept code from a cell id", () => {
@@ -126,28 +124,5 @@ describe("sumInRange", () => {
     // C2 flights continue through 2026-07-31 → stay in.
     expect(narrowed).toBeLessThan(all);
     expect(narrowed).toBeGreaterThan(0);
-  });
-});
-
-describe("getMstRange", () => {
-  it("returns the union window of MST concepts, from MST data not account bounds", () => {
-    const range = getMstRange(mst, analysis);
-    expect(range).not.toBeNull();
-    const windows = getConceptWindows(analysis);
-    // Every concept in the MST library with a dated window fits inside it.
-    for (const c of mst.local_book2_library ?? []) {
-      const w = windows.get(conceptForCell(c.cell_id) ?? "");
-      if (!w) continue;
-      expect(range!.start <= w.start).toBe(true);
-      expect(range!.end >= w.end).toBe(true);
-    }
-  });
-
-  it("returns null without MST", () => {
-    expect(getMstRange(null, analysis)).toBeNull();
-  });
-
-  it("returns null when no MST concept has a dated rollup", () => {
-    expect(getMstRange(mst, null)).toBeNull();
   });
 });

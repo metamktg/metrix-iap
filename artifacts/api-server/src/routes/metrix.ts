@@ -2877,6 +2877,10 @@ type GdocModelLike = {
   accountName?: string;
   platform?: string;
   windowLabel?: string | null;
+  /** True when the report includes analysis-derived sections (strategy,
+   *  cell/variable performance) that are never scoped by windowLabel —
+   *  see reportExport.ts's ReportModel for the full explanation. */
+  hasAnalysisDerivedContent?: boolean;
   footerNote?: string;
   sections?: Array<{
     title?: string;
@@ -2917,7 +2921,11 @@ function buildGoogleDocContent(model: GdocModelLike): {
 
   const meta = [model.accountName, model.platform].filter(Boolean).join(" · ");
   if (meta) text += meta + "\n";
-  if (model.windowLabel) text += `Report window: ${model.windowLabel}\n`;
+  if (model.windowLabel) {
+    text += model.hasAnalysisDerivedContent
+      ? `Report window: ${model.windowLabel} (live performance) · Strategy & concept data: all-time\n`
+      : `Report window: ${model.windowLabel}\n`;
+  }
   text += "\n";
 
   for (const section of model.sections ?? []) {

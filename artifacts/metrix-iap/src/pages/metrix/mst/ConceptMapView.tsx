@@ -13,9 +13,9 @@ import {
 } from "../shared";
 import { VariableCodeChips } from "../analysis/tables";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
-import { useDateRange } from "@/contexts/DateRangeContext";
-import { useCellRangeScope } from "@/lib/date-scope";
-import { RangeScopeBar, NoDataInRangeState } from "../shared";
+import { useCellRunScope } from "@/lib/run-scope";
+import { RunSelector, ALL_TIME_SELECTION } from "@/components/analysis/RunSelector";
+import { useListAnalysisRuns } from "@workspace/api-client-react";
 import { getMST } from "@/lib/data/metrixSeedAdapter";
 import { CreativeCard } from "@/components/creative/CreativeCard";
 import { cardFromCell } from "@/lib/creative-assembly";
@@ -39,8 +39,9 @@ export function ConceptMapView() {
   const account = getAdAccount(seed, adAccountId);
   const [detail, setDetail] = useState<ConceptGroup | null>(null);
   const [segmentsOpen, setSegmentsOpen] = useState(false);
-  const { rangeHasData } = useDateRange();
-  const { filterCells } = useCellRangeScope(getAnalysisData(seed, adAccountId));
+  const [runSelection, setRunSelection] = useState(ALL_TIME_SELECTION);
+  const { filterByRun } = useCellRunScope(getAnalysisData(seed, adAccountId), runSelection);
+  const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "");
 
   return (
     <ModuleScopeGate section={SECTION} title="Concept Map" account={account}>
@@ -60,8 +61,8 @@ export function ConceptMapView() {
           );
         }
 
-        // Only cells whose concept flight overlaps the selected range.
-        const rowsInRange = filterCells(a.performance_by_cell);
+        // Only cells whose concept was produced by the selected analysis run(s).
+        const rowsInRange = filterByRun(a.performance_by_cell);
 
         const groupsMap = new Map<string, ConceptGroup>();
         for (const r of rowsInRange) {
@@ -91,12 +92,15 @@ export function ConceptMapView() {
               subtitle="Concepts mapped to pillars"
               account={acct}
             />
-            <RangeScopeBar />
+            {(analysisRunsData?.runs.length ?? 0) > 0 && (
+              <div className="px-6 pt-4">
+                <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/30 mb-1.5">
+                  Scope to analysis run
+                </p>
+                <RunSelector runs={analysisRunsData!.runs} value={runSelection} onChange={setRunSelection} />
+              </div>
+            )}
 
-            {!rangeHasData ? (
-              <NoDataInRangeState what="concept data" />
-            ) : (
-            <>
             <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="Concepts" value={String(groups.length)} />
               <MetricTile label="Creative cells" value={String(new Set(rowsInRange.map((r) => r.cell_id)).size)} />
@@ -142,8 +146,6 @@ export function ConceptMapView() {
                 );
               })}
             </div>
-            </>
-            )}
 
             {detail && (
               <InfoDrawer
