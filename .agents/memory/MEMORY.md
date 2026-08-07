@@ -51,6 +51,7 @@
 - [Metrix CSV Day canonical + derived metrics](metrix-csv-day-canonical.md) — "Day" is the canonical date column; derivable/ranking columns accepted but never expected; rate↔count inference guard.
 - [Manual accounts render from the daterange summary API](metrix-manual-analysis-fulldata.md) — no concept codes → empty seed analysis tables; Overview defaults to full-span API rows; stale window guards; per-ad tile data on AdRecord.performance.
 - [Wouter Redirect drops query params](wouter-redirect-drops-query.md) — legacy-route redirects lose ?account=; e2e must hit canonical paths, click default tabs, and mock all API endpoints.
+- [Recharts scatter tests in jsdom](recharts-jsdom-testing.md) — mock ResponsiveContainer with fixed size (typed cloneElement) and select `g[role=img][aria-label]`; recharts adds an unlabeled role=img wrapper per shape.
 - [Seamless-loop video design](video-artifact-gotchas.md) — looping compositions: every timeline period must divide the loop; staggered repeats and boundary snaps need loop-length keyframes/opacity envelopes; verify by pixel-diffing frames one loop apart.
 - [Validation workflows vs configureWorkflow](validation-workflows-vs-configure.md) — new check:* scripts wire in via setValidationCommand, not configureWorkflow (10-workflow limit + validation-type lock).
 - [Supabase full outages](supabase-full-outage.md) — REST 522 + pooler connect timeouts together = project-wide outage (hours, seen under bulk vision runs); check both before debugging hung live tests.
