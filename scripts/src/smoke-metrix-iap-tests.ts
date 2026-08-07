@@ -136,6 +136,17 @@ async function main() {
     fail("Engagement funnel e2e failed", String(err?.message ?? err));
   });
 
+  // ── Step 8: Playwright SectionInfoIcon tooltip e2e ────────────────────────
+  console.log("\nRunning SectionInfoIcon tooltip e2e...");
+  await spawnScript("smoke:metrix-iap-section-info-icons", [
+    "--filter",
+    "@workspace/scripts",
+    "run",
+    "smoke:metrix-iap-section-info-icons",
+  ]).catch((err) => {
+    fail("SectionInfoIcon tooltip e2e failed", String(err?.message ?? err));
+  });
+
   console.log("\nPASS  All Metrix IAP smoke checks passed");
   process.exit(0);
 }
