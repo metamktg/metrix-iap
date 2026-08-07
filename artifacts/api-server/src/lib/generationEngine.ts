@@ -842,7 +842,13 @@ export async function startStrategyGeneration(
   void (async () => {
     try {
       const output = sanitizeGeneratedText(
-        await generateValidated(strategyPrompt(evidence, cellIds, icpIds, cohort), GeneratedStrategy),
+        await generateValidated(strategyPrompt(evidence, cellIds, icpIds, cohort), GeneratedStrategy, {
+          // Up to 6 pillars + 8 hypotheses + N ICP profiles, each with several
+          // prose fields, overflows the 8k default the same way 16 fully-
+          // populated briefs did below → truncated JSON, repair retry fails
+          // identically since it reused the same budget. Match the briefs fix.
+          maxTokens: 16384,
+        }),
         accountName,
       );
 
