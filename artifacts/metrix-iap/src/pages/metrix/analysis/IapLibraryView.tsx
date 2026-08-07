@@ -771,6 +771,65 @@ export function IapLibraryView() {
                         </div>
                       );
                     })()}
+
+                    {/* ── Ad-level tiles ─────────────────────────────
+                        Every ad in the analysis renders a tile, even when
+                        it has no cell/concept code (typical for manual
+                        imports of historical accounts). Real creative when
+                        mapped; otherwise a placeholder that deep-links to
+                        the manual creative import flow. */}
+                    {(() => {
+                      const seenNames = new Set<string>();
+                      const adLevelAds = (cardCtx.ads ?? []).filter((ad) => {
+                        if (!ad.ad_name || ad.ad_name.startsWith("__cell_override_")) return false;
+                        if (seenNames.has(ad.ad_name)) return false;
+                        seenNames.add(ad.ad_name);
+                        // Ads already represented by a performance-cell or
+                        // creative-only card are covered above.
+                        if (ad.cell && (perfCellIdsSet.has(ad.cell) || creativeOnlyCellIds.includes(ad.cell))) return false;
+                        return true;
+                      });
+                      if (adLevelAds.length === 0) return null;
+                      return (
+                        <div className="space-y-3 pt-2 border-t border-border/15" data-testid="section-ad-level-tiles">
+                          <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/40">
+                            Ads without creative cells ({adLevelAds.length})
+                          </p>
+                          <div className="grid grid-cols-dashboard-5-xl gap-3">
+                            {adLevelAds.map((ad) => {
+                              const p = ad.performance ?? null;
+                              return (
+                                <CreativeCard
+                                  key={ad.ad_name}
+                                  data={{
+                                    conceptCode: ad.concept ?? ad.cell ?? "AD",
+                                    title: ad.ad_name,
+                                    assetUrl: ad.creative_asset_url ?? null,
+                                    assetFilename: ad.asset_filename ?? null,
+                                    tags: [],
+                                    metaAdId: ad.meta_ad_id ?? null,
+                                    adAccountId: cardCtx.metaAdAccountId,
+                                    stats: p
+                                      ? {
+                                          spend: p.spend,
+                                          results: p.results,
+                                          cpa: p.results > 0 ? p.spend / p.results : null,
+                                          ctrPct: p.impressions > 0 ? (p.link_clicks / p.impressions) * 100 : null,
+                                          resultLabel: p.result_type ? eventLabel(p.result_type) : undefined,
+                                        }
+                                      : undefined,
+                                  }}
+                                  unmapped={!ad.creative_asset_url}
+                                  demographic={[]}
+                                  placements={[]}
+                                  onUploadCreatives={() => setCreativeLibraryOpen(true)}
+                                />
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </>
                 )}
 

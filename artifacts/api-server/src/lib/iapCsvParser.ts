@@ -1,6 +1,6 @@
 // Parser for the two Meta Ads Reporting pivot export CSV classes (see
 // iapCsvSpec.ts). Tolerant of common column naming variations from Meta Ads
-// Manager UI exports (e.g. "Day" instead of "Date", CPM abbreviations, etc.)
+// Manager UI exports (e.g. legacy "Date" instead of "Day", CPM abbreviations, etc.)
 // via iapCsvSpec.findColumnInHeader(). Missing columns degrade confidence
 // rather than hard-blocking: the parse result carries `warnings` and
 // `missingColumns` so callers can surface confidence notices to the user.
@@ -14,6 +14,7 @@
 
 import {
   BASE_METRICS,
+  DERIVED_OR_IRRELEVANT_METRICS,
   OPTIONAL_METRICS,
   CORE_BASE_METRICS,
   CREATIVE_METADATA_COLUMNS,
@@ -167,7 +168,7 @@ function parseNumericCell(raw: string | undefined): number | null {
 }
 
 /** Breakdown column names that are load-bearing for the analysis pipeline. */
-const CRITICAL_BREAKDOWN_COLUMNS = new Set(["Date", "Ad name", "Campaign name"]);
+const CRITICAL_BREAKDOWN_COLUMNS = new Set(["Day", "Ad name", "Campaign name"]);
 
 /** Determine the display tier for a ColumnMatch. */
 function matchTier(match: ColumnMatch): "exact" | "resolved" | "inferred" {
@@ -180,7 +181,7 @@ function matchTier(match: ColumnMatch): "exact" | "resolved" | "inferred" {
  * Parses one staged CSV against the given class's canonical template.
  *
  * Column resolution order: exact → currency-placeholder → case-insensitive →
- * known alias (e.g. "Day" → "Date") → slug match → Jaccard inference.
+ * known alias (e.g. "Date" → "Day") → slug match → Jaccard inference.
  *
  * Missing breakdown columns and missing Base-section metric columns now produce
  * warnings instead of hard errors, EXCEPT for critical breakdown columns
@@ -259,7 +260,10 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
   const missingBaseMetrics: string[] = [];
   let amountSpentIdx = -1;
 
-  for (const col of BASE_METRICS) {
+  // Derived/irrelevant metrics are accepted transparently when present but are
+  // never expected: absence is not recorded, warned about, or inferred against.
+  const acceptedBaseColumns: readonly string[] = [...BASE_METRICS, ...DERIVED_OR_IRRELEVANT_METRICS];
+  for (const col of acceptedBaseColumns) {
     if (col === "Amount spent ({ACCOUNT_CURRENCY})") {
       const match = findColumnInHeader(headerStrings, col);
       if (match) {
@@ -303,7 +307,9 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
         tier: matchTier(match),
         isRequired: false,
       });
-    } else {
+    } else if (BASE_METRICS.includes(col)) {
+      // Only genuinely-expected base metrics count as missing; derived or
+      // irrelevant columns (cost-per-X ratios, rankings) are simply skipped.
       missingBaseMetrics.push(col);
     }
   }
@@ -317,8 +323,17 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
   const allMissingForInference = [...missingBreakdowns, ...missingBaseMetrics];
   const stillMissingAfterInference: string[] = [];
 
+  // Rate/ratio ↔ count mismatch guard: never infer a rate or cost-per column
+  // onto a raw count column (or vice versa). E.g. "Purchases rate per landing
+  // page views" must NOT be promoted into "Landing page views" — summing rate
+  // values as counts silently corrupts every downstream aggregate.
+  const isRatioColumn = (name: string): boolean => /\brate\b|cost per|\bctr\b|\bcpc\b|\bcpm\b/i.test(name);
+
   for (const col of allMissingForInference) {
-    const inferred = inferColumnMapping(unmappedHeaders, col);
+    let inferred = inferColumnMapping(unmappedHeaders, col);
+    if (inferred && isRatioColumn(inferred.headerValue) !== isRatioColumn(col)) {
+      inferred = null;
+    }
     if (inferred) {
       // Auto-promote — overwrite any prior "missing" summary entry
       claimedHeaderValues.add(inferred.headerValue);
@@ -377,8 +392,8 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
     });
     throw new IapCsvFormatError(
       `The following required columns could not be found: ${suggestions.join(", ")}. ` +
-        `Meta Ads Manager exports the date column as "Day" — rename it to "Date" in your export, ` +
-        `or check that you are using the correct report template.`,
+        `The date breakdown column should be "Day" (as Meta Ads Manager exports it; "Date" is also accepted) — ` +
+        `check that you are using the correct report template.`,
     );
   }
 
@@ -425,6 +440,7 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
   const allCanonicals = new Set([
     ...spec.breakdownColumns,
     ...BASE_METRICS,
+    ...DERIVED_OR_IRRELEVANT_METRICS,
     ...OPTIONAL_METRICS,
   ]);
 
@@ -574,7 +590,7 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
   };
 }
 
-/** Converts a Meta "Date" cell (e.g. "2026-07-01") to an ISO date string, throwing on invalid dates. */
+/** Converts a Meta "Day" cell (e.g. "2026-07-01") to an ISO date string, throwing on invalid dates. */
 export function toIsoDate(raw: string, context: string): string {
   const trimmed = raw.trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {

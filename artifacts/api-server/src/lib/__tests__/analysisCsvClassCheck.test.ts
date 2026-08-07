@@ -9,27 +9,27 @@ import {
 
 describe("detectCsvClassFromHeaders", () => {
   it("detects demographic from exact signature columns", () => {
-    const headers = ["Date", "Campaign name", "Ad name", "Gender", "Age", "Impressions"];
+    const headers = ["Day", "Campaign name", "Ad name", "Gender", "Age", "Impressions"];
     expect(detectCsvClassFromHeaders(headers)).toBe("demographic");
   });
 
   it("detects demographic via alias ('gender' lowercase)", () => {
-    const headers = ["Date", "Ad name", "gender", "age", "Impressions"];
+    const headers = ["Day", "Ad name", "gender", "age", "Impressions"];
     expect(detectCsvClassFromHeaders(headers)).toBe("demographic");
   });
 
   it("detects device_placement from exact signature columns", () => {
-    const headers = ["Date", "Campaign name", "Ad name", "Impression device", "Platform", "Placement"];
+    const headers = ["Day", "Campaign name", "Ad name", "Impression device", "Platform", "Placement"];
     expect(detectCsvClassFromHeaders(headers)).toBe("device_placement");
   });
 
   it("detects device_placement via alias ('device' and 'ad placement')", () => {
-    const headers = ["Date", "Ad name", "device", "Platform", "ad placement"];
+    const headers = ["Day", "Ad name", "device", "Platform", "ad placement"];
     expect(detectCsvClassFromHeaders(headers)).toBe("device_placement");
   });
 
   it("returns null when no signature columns are present", () => {
-    const headers = ["Date", "Campaign name", "Ad name", "Impressions", "Spend"];
+    const headers = ["Day", "Campaign name", "Ad name", "Impressions", "Spend"];
     expect(detectCsvClassFromHeaders(headers)).toBeNull();
   });
 
@@ -93,9 +93,9 @@ describe("checkDuplicateCsvClasses", () => {
 describe("detectCsvClassFromHeaders + checkDuplicateCsvClasses round-trip", () => {
   function headersFor(cls: IapCsvClass): string[] {
     if (cls === "demographic") {
-      return ["Date", "Campaign name", "Ad set name", "Ad name", "Gender", "Age", "Impressions"];
+      return ["Day", "Campaign name", "Ad set name", "Ad name", "Gender", "Age", "Impressions"];
     }
-    return ["Date", "Campaign name", "Ad set name", "Ad name", "Impression device", "Platform", "Placement", "Impressions"];
+    return ["Day", "Campaign name", "Ad set name", "Ad name", "Impression device", "Platform", "Placement", "Impressions"];
   }
 
   it("rejects two demographic CSVs (one in each slot)", () => {

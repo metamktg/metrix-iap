@@ -31,7 +31,7 @@ const breakdownColsFor = (cls: IapCsvClass): readonly string[] =>
 
 function breakdownValue(col: string): string {
   const map: Record<string, string> = {
-    Date: "2026-06-01",
+    Day: "2026-06-01",
     "Campaign ID": "6001",
     "Campaign name": "Prospecting - Broad",
     "Ad set ID": "7001",
@@ -69,7 +69,7 @@ function validCsv(cls: IapCsvClass): string {
 
 describe("findColumnInHeader — confidence scores", () => {
   it("assigns confidence 1.0 for exact match", () => {
-    const match = findColumnInHeader(["Ad name", "Date"], "Ad name");
+    const match = findColumnInHeader(["Ad name", "Day"], "Ad name");
     expect(match).not.toBeNull();
     expect(match!.confidence).toBe(1.0);
     expect(match!.via).toBe("exact");
@@ -91,7 +91,7 @@ describe("findColumnInHeader — confidence scores", () => {
   });
 
   it("assigns confidence 0.95 for alias match", () => {
-    const match = findColumnInHeader(["Day"], "Date");
+    const match = findColumnInHeader(["Date"], "Day");
     expect(match).not.toBeNull();
     expect(match!.confidence).toBe(0.95);
     expect(match!.via).toBe("alias");
@@ -121,10 +121,10 @@ describe("COLUMN_ALIASES — new entries resolve correctly", () => {
   };
 
   // Date variants
-  resolves("report date", "Date");
-  resolves("reporting starts", "Date");
-  resolves("date start", "Date");
-  resolves("reporting date", "Date");
+  resolves("report date", "Day");
+  resolves("reporting starts", "Day");
+  resolves("date start", "Day");
+  resolves("reporting date", "Day");
 
   // Spend variants
   resolves("budget spent", "Amount spent ({ACCOUNT_CURRENCY})");
@@ -160,7 +160,7 @@ describe("COLUMN_ALIASES — new entries resolve correctly", () => {
 
 describe("COLUMN_ALIASES — resolve via findColumnInHeader", () => {
   it("accepts 'report date' as Date", () => {
-    const match = findColumnInHeader(["report date"], "Date");
+    const match = findColumnInHeader(["report date"], "Day");
     expect(match).not.toBeNull();
     expect(match!.via).toBe("alias");
     expect(match!.confidence).toBe(0.95);
@@ -307,11 +307,11 @@ describe("parseIapCsv — mappingSummary", () => {
 
   it("marks exact matches with tier 'exact' and confidence 1.0", () => {
     const result = parseIapCsv(validCsv("demographic"), "demographic");
-    const dateEntry = result.mappingSummary.find((e) => e.canonical === "Date");
+    const dateEntry = result.mappingSummary.find((e) => e.canonical === "Day");
     expect(dateEntry).toBeDefined();
     expect(dateEntry!.tier).toBe("exact");
     expect(dateEntry!.confidence).toBe(1.0);
-    expect(dateEntry!.foundAs).toBe("Date");
+    expect(dateEntry!.foundAs).toBe("Day");
   });
 
   it("marks currency placeholder match with tier 'exact' and confidence 0.99", () => {
@@ -328,16 +328,16 @@ describe("parseIapCsv — mappingSummary", () => {
   it("marks alias match with tier 'resolved' and confidence 0.95", () => {
     const breakdownCols = [...DEMOGRAPHIC_BREAKDOWN_COLUMNS];
     const header = breakdownCols
-      .map((c) => (c === "Date" ? "Day" : resolveCurrency(c)))
+      .map((c) => (c === "Day" ? "Date" : resolveCurrency(c)))
       .concat(BASE_METRICS.map(resolveCurrency));
     const row = breakdownCols.map(breakdownValue).concat(BASE_METRICS.map(baseValue));
     const result = parseIapCsv([line(header), line(row)].join("\n"), "demographic");
 
-    const dateEntry = result.mappingSummary.find((e) => e.canonical === "Date");
+    const dateEntry = result.mappingSummary.find((e) => e.canonical === "Day");
     expect(dateEntry).toBeDefined();
     expect(dateEntry!.tier).toBe("resolved");
     expect(dateEntry!.confidence).toBe(0.95);
-    expect(dateEntry!.foundAs).toBe("Day");
+    expect(dateEntry!.foundAs).toBe("Date");
   });
 
   it("marks missing columns with tier 'missing', null foundAs, and confidence 0", () => {
@@ -380,7 +380,7 @@ describe("parseIapCsv — new alias entries end-to-end", () => {
   function csvWithDateAlias(alias: string): string {
     const breakdownCols = [...DEMOGRAPHIC_BREAKDOWN_COLUMNS];
     const header = breakdownCols
-      .map((c) => (c === "Date" ? alias : resolveCurrency(c)))
+      .map((c) => (c === "Day" ? alias : resolveCurrency(c)))
       .concat(BASE_METRICS.map(resolveCurrency));
     const row = breakdownCols.map(breakdownValue).concat(BASE_METRICS.map(baseValue));
     return [line(header), line(row)].join("\n");
@@ -388,19 +388,19 @@ describe("parseIapCsv — new alias entries end-to-end", () => {
 
   it("accepts 'report date' as the date column", () => {
     const result = parseIapCsv(csvWithDateAlias("report date"), "demographic");
-    expect(result.rows[0]!.breakdowns["Date"]).toBe("2026-06-01");
-    expect(result.columnMappings["Date"]?.via).toBe("alias");
+    expect(result.rows[0]!.breakdowns["Day"]).toBe("2026-06-01");
+    expect(result.columnMappings["Day"]?.via).toBe("alias");
   });
 
   it("accepts 'reporting starts' as the date column", () => {
     const result = parseIapCsv(csvWithDateAlias("reporting starts"), "demographic");
-    expect(result.rows[0]!.breakdowns["Date"]).toBe("2026-06-01");
-    expect(result.columnMappings["Date"]?.via).toBe("alias");
+    expect(result.rows[0]!.breakdowns["Day"]).toBe("2026-06-01");
+    expect(result.columnMappings["Day"]?.via).toBe("alias");
   });
 
   it("accepts 'date start' as the date column", () => {
     const result = parseIapCsv(csvWithDateAlias("date start"), "demographic");
-    expect(result.rows[0]!.breakdowns["Date"]).toBe("2026-06-01");
+    expect(result.rows[0]!.breakdowns["Day"]).toBe("2026-06-01");
   });
 
   it("accepts 'budget spent' for the amount spent column", () => {
@@ -451,7 +451,7 @@ describe("detectCsvClassMismatch — pure function", () => {
   });
 
   it("detects device_placement CSV uploaded to demographic slot via 'Impression device'", () => {
-    const headers = ["Date", "Ad name", "Campaign name", "Impression device"];
+    const headers = ["Day", "Ad name", "Campaign name", "Impression device"];
     const result = detectCsvClassMismatch(headers, "demographic");
     expect(result).not.toBeNull();
     expect(result).toMatch(/device.?placement/i);
@@ -466,7 +466,7 @@ describe("detectCsvClassMismatch — pure function", () => {
   });
 
   it("detects demographic CSV uploaded to device_placement slot via 'Age'", () => {
-    const headers = ["Date", "Ad name", "Campaign name", "Age"];
+    const headers = ["Day", "Ad name", "Campaign name", "Age"];
     const result = detectCsvClassMismatch(headers, "device_placement");
     expect(result).not.toBeNull();
     expect(result).toMatch(/demographic/i);
@@ -474,7 +474,7 @@ describe("detectCsvClassMismatch — pure function", () => {
 
   it("catches 'Placement' alias 'ad placement' when parsing as demographic", () => {
     // 'ad placement' is an alias for 'Placement' in COLUMN_ALIASES
-    const headers = ["Date", "Campaign name", "Ad name", "Gender", "Age", "ad placement"];
+    const headers = ["Day", "Campaign name", "Ad name", "Gender", "Age", "ad placement"];
     const result = detectCsvClassMismatch(headers, "demographic");
     // 'ad placement' resolves to Placement (device_placement signature)
     // AND Gender/Age also present — either way mismatch is detected
@@ -484,14 +484,14 @@ describe("detectCsvClassMismatch — pure function", () => {
   });
 
   it("catches 'device type' alias for 'Impression device' when parsing as demographic", () => {
-    const headers = ["Date", "Campaign name", "Ad name", "device type", "Platform"];
+    const headers = ["Day", "Campaign name", "Ad name", "device type", "Platform"];
     const result = detectCsvClassMismatch(headers, "demographic");
     expect(result).not.toBeNull();
     expect(result).toMatch(/device.?placement/i);
   });
 
   it("names the detected columns in the error message", () => {
-    const headers = ["Date", "Ad name", "Campaign name", "Placement", "Impression device"];
+    const headers = ["Day", "Ad name", "Campaign name", "Placement", "Impression device"];
     const result = detectCsvClassMismatch(headers, "demographic");
     expect(result).not.toBeNull();
     expect(result).toMatch(/"Placement"/);
@@ -499,7 +499,7 @@ describe("detectCsvClassMismatch — pure function", () => {
 
   it("returns null for a minimal header with no class-signature columns", () => {
     // Generic columns that appear in both — no signal either way
-    const headers = ["Date", "Campaign name", "Ad name", "Impressions", "Reach"];
+    const headers = ["Day", "Campaign name", "Ad name", "Impressions", "Reach"];
     expect(detectCsvClassMismatch(headers, "demographic")).toBeNull();
     expect(detectCsvClassMismatch(headers, "device_placement")).toBeNull();
   });

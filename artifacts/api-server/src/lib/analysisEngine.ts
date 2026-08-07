@@ -764,16 +764,16 @@ export async function startManualAnalysis(
 
       await updateProgress(runId, 50, "Building performance aggregates");
       const allDates = [
-        ...demoRows.map((r) => r.breakdowns["Date"]!),
-        ...placementRows.map((r) => r.breakdowns["Date"]!),
-        ...summaryRows.map((r) => r.breakdowns["Date"]!),
-        ...conversionDeviceRows.map((r) => r.breakdowns["Date"]!),
+        ...demoRows.map((r) => r.breakdowns["Day"]!),
+        ...placementRows.map((r) => r.breakdowns["Day"]!),
+        ...summaryRows.map((r) => r.breakdowns["Day"]!),
+        ...conversionDeviceRows.map((r) => r.breakdowns["Day"]!),
       ];
       const maxDate = allDates.reduce((max, d) => (d > max ? d : max), allDates[0]!);
 
-      const scopedDemo = demoRows.filter((r) => withinRange(r.breakdowns["Date"]!, dateRange, maxDate));
-      const scopedPlacement = placementRows.filter((r) => withinRange(r.breakdowns["Date"]!, dateRange, maxDate));
-      const scopedSummary = summaryRows.filter((r) => withinRange(r.breakdowns["Date"]!, dateRange, maxDate));
+      const scopedDemo = demoRows.filter((r) => withinRange(r.breakdowns["Day"]!, dateRange, maxDate));
+      const scopedPlacement = placementRows.filter((r) => withinRange(r.breakdowns["Day"]!, dateRange, maxDate));
+      const scopedSummary = summaryRows.filter((r) => withinRange(r.breakdowns["Day"]!, dateRange, maxDate));
       if (scopedDemo.length === 0 || scopedPlacement.length === 0) {
         throw new AnalysisError(
           `No rows fall within the selected "${dateRange}" window (latest data is ${maxDate}). Try "all" or a wider range.`,
@@ -781,12 +781,12 @@ export async function startManualAnalysis(
         );
       }
 
-      const scopedConversionDevice = conversionDeviceRows.filter((r) => withinRange(r.breakdowns["Date"]!, dateRange, maxDate));
+      const scopedConversionDevice = conversionDeviceRows.filter((r) => withinRange(r.breakdowns["Day"]!, dateRange, maxDate));
       const scopedDates = [
-        ...scopedDemo.map((r) => r.breakdowns["Date"]!),
-        ...scopedPlacement.map((r) => r.breakdowns["Date"]!),
-        ...scopedSummary.map((r) => r.breakdowns["Date"]!),
-        ...scopedConversionDevice.map((r) => r.breakdowns["Date"]!),
+        ...scopedDemo.map((r) => r.breakdowns["Day"]!),
+        ...scopedPlacement.map((r) => r.breakdowns["Day"]!),
+        ...scopedSummary.map((r) => r.breakdowns["Day"]!),
+        ...scopedConversionDevice.map((r) => r.breakdowns["Day"]!),
       ];
       const dateStart = scopedDates.reduce((min, d) => (d < min ? d : min), scopedDates[0]!);
       const dateEnd = scopedDates.reduce((max, d) => (d > max ? d : max), scopedDates[0]!);
@@ -805,7 +805,7 @@ export async function startManualAnalysis(
         const campaign = row.breakdowns["Campaign name"]!;
         const adSet = row.breakdowns["Ad set name"] ?? "";
         const adName = row.breakdowns["Ad name"]!;
-        const date = row.breakdowns["Date"]!;
+        const date = row.breakdowns["Day"]!;
         const key = [campaign, adName, date].join("\u0001");
         if (!demoAdBuckets.has(key)) {
           demoAdBuckets.set(key, { ...emptyBucket(), campaign, adSet, adName, date });
@@ -830,7 +830,7 @@ export async function startManualAnalysis(
         const campaign = row.breakdowns["Campaign name"] ?? "";
         const adSet = row.breakdowns["Ad set name"] ?? "";
         const adName = row.breakdowns["Ad name"]!;
-        const date = row.breakdowns["Date"]!;
+        const date = row.breakdowns["Day"]!;
         const key = [campaign, adName, date].join("\u0001");
         if (!summaryAdBuckets.has(key)) {
           summaryAdBuckets.set(key, { ...emptyBucket(), campaign, adSet, adName, date });
@@ -855,7 +855,7 @@ export async function startManualAnalysis(
         const campaign = row.breakdowns["Campaign name"]!;
         const adSet = row.breakdowns["Ad set name"] ?? "";
         const adName = row.breakdowns["Ad name"]!;
-        const date = row.breakdowns["Date"]!;
+        const date = row.breakdowns["Day"]!;
         const key = [campaign, adName, date].join("\u0001");
         if (!adBuckets.has(key)) {
           adBuckets.set(key, { ...emptyBucket(), campaign, adSet, adName, resultType: "", date });
@@ -913,7 +913,7 @@ export async function startManualAnalysis(
       for (const row of scopedDemo) {
         const gender = row.breakdowns["Gender"]!;
         const age = row.breakdowns["Age"]!;
-        const date = row.breakdowns["Date"]!;
+        const date = row.breakdowns["Day"]!;
         const key = [gender, age, date].join("\u0001");
         if (!demoBuckets.has(key)) demoBuckets.set(key, { ...emptyBucket(), gender, age, date });
         accumulate(demoBuckets.get(key)!, row);
@@ -925,7 +925,7 @@ export async function startManualAnalysis(
       const placementBuckets = new Map<string, AggBucket & { placement: string; date: string }>();
       const platformBuckets = new Map<string, AggBucket & { platform: string; date: string }>();
       for (const row of scopedPlacement) {
-        const date = row.breakdowns["Date"]!;
+        const date = row.breakdowns["Day"]!;
         const device = row.breakdowns["Impression device"]!;
         const placement = row.breakdowns["Placement"]!;
         const platform = row.breakdowns["Platform"]!;
@@ -1358,7 +1358,7 @@ export async function startManualAnalysis(
       // they are distinguishable from impression-device rows.
       const convDeviceBuckets = new Map<string, AggBucket & { device: string; date: string }>();
       for (const row of scopedConversionDevice) {
-        const date = row.breakdowns["Date"]!;
+        const date = row.breakdowns["Day"]!;
         const device = row.breakdowns["Conversion device"]!;
         const dKey = [device, date].join("\u0001");
         if (!convDeviceBuckets.has(dKey)) convDeviceBuckets.set(dKey, { ...emptyBucket(), device, date });

@@ -652,6 +652,24 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
           });
         }
       }
+      // Per-ad performance aggregates so the client can render an ad-level
+      // tile for EVERY ad in the analysis — including ads with no cell /
+      // concept code (common for manual imports of historical accounts).
+      const perAdStats = new Map<
+        string,
+        { spend: number; results: number; impressions: number; link_clicks: number; result_type: string | null }
+      >();
+      for (const r of adPerformance) {
+        const name = String(r["ad_name"] ?? "");
+        if (!name) continue;
+        const s = perAdStats.get(name) ?? { spend: 0, results: 0, impressions: 0, link_clicks: 0, result_type: null };
+        s.spend       += Number(r["spend"] ?? 0);
+        s.results     += Number(r["results"] ?? 0);
+        s.impressions += Number(r["impressions"] ?? 0);
+        s.link_clicks += Number(r["link_clicks"] ?? 0);
+        s.result_type ??= r["result_type"] ? String(r["result_type"]) : null;
+        perAdStats.set(name, s);
+      }
       // Apply overrides to existing ad rows (replaces their creative URL).
       const baseAds = adsRegistry.map((r) => {
         const cellId = r["cell"] ? String(r["cell"]) : null;
@@ -667,6 +685,7 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
           creative_asset_url: override ? override.url : (r["creative_asset_url"] ?? null),
           asset_filename: override ? override.filename : (r["asset_filename"] ?? null),
           asset_servable: override ? true : r["asset_servable"] === true,
+          performance: perAdStats.get(String(r["ad_name"] ?? "")) ?? null,
         };
       });
       // For cells with an override but no matching ad row (library-only cells),

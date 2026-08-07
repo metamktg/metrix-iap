@@ -25,13 +25,12 @@ import { InfoTooltip } from "./shared";
 const SIGNAL_WEIGHTS: Record<string, number> = {
   "Amount spent ({ACCOUNT_CURRENCY})": 0.20,
   "Amount spent (USD)": 0.20,  // resolved currency variant
-  "Results": 0.18,
+  "Results": 0.23,
   "Impressions": 0.10,
   "CTR (link click-through rate)": 0.07,
   "Link clicks": 0.07,
   "Reach": 0.06,
   "CPM (cost per 1,000 impressions)": 0.05,
-  "Cost per result": 0.05,
   "Video average play time": 0.03,
   "ThruPlays": 0.03,
   "Landing page views": 0.03,

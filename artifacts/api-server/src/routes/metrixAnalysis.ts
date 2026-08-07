@@ -59,7 +59,7 @@ async function guardAccess(req: any, res: any, accountId: string): Promise<boole
  * placeholder since that detail is already explained in the column list above.
  */
 const ALIAS_GUIDE_CANONICALS: string[] = [
-  "Date",
+  "Day",
   "Amount spent ({ACCOUNT_CURRENCY})",
   "Link clicks",
   "ThruPlays",
