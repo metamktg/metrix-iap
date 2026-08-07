@@ -166,6 +166,22 @@ async function rowsFor(table: string, accountId: string, build?: (q: any) => any
   return data ?? [];
 }
 
+/**
+ * Scoped variant for the run-taggable rollup tables (concept_performance,
+ * variable_performance, device/platform/placement_performance). runIds ===
+ * "all" (or empty) returns every row for the account, matching pre-run-
+ * scoping behavior exactly. A specific set filters to rows tagged with one
+ * of the selected runs OR untagged (manual_analysis_run_id is null) —
+ * pre-migration history has no run tag and must never silently disappear
+ * from a specific-run selection, only "all time" ever meant everything.
+ */
+async function rowsForRuns(table: string, accountId: string, runIds: string[] | "all"): Promise<Row[]> {
+  return rowsFor(table, accountId, (q) => {
+    if (runIds === "all" || runIds.length === 0) return q;
+    return q.or(`manual_analysis_run_id.in.(${runIds.join(",")}),manual_analysis_run_id.is.null`);
+  });
+}
+
 const num = (v: unknown): number => {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
@@ -212,18 +228,22 @@ type StrategyEvidence = {
   icpIds: Set<string>;
 };
 
-async function buildStrategyEvidence(accountId: string, accountName: string): Promise<StrategyEvidence> {
+async function buildStrategyEvidence(
+  accountId: string,
+  accountName: string,
+  runIds: string[] | "all" = "all",
+): Promise<StrategyEvidence> {
   const [cellRows, varRows, demoRows, placementRows, deviceRows, platformRows, placementPerfRows, conceptRows, icpRows, moduleRows] =
     await Promise.all([
-      rowsFor("library_cell_performance", accountId),
-      rowsFor("variable_performance", accountId),
-      rowsFor("demographic_signal", accountId),
-      rowsFor("placement_signal", accountId),
-      rowsFor("device_performance", accountId),
-      rowsFor("platform_performance", accountId),
-      rowsFor("placement_performance", accountId),
-      rowsFor("concept_performance", accountId),
-      rowsFor("icp_profiles", accountId),
+      rowsFor("library_cell_performance", accountId), // baseline client-library data, not run-scoped
+      rowsForRuns("variable_performance", accountId, runIds),
+      rowsFor("demographic_signal", accountId), // baseline client-library data, not run-scoped
+      rowsFor("placement_signal", accountId), // baseline client-library data, not run-scoped
+      rowsForRuns("device_performance", accountId, runIds),
+      rowsForRuns("platform_performance", accountId, runIds),
+      rowsForRuns("placement_performance", accountId, runIds),
+      rowsForRuns("concept_performance", accountId, runIds),
+      rowsFor("icp_profiles", accountId), // imported + generated, not run-scoped
       rowsFor("account_modules", accountId, (q) => q.eq("module", "iap_metadata")),
     ]);
 
@@ -676,6 +696,10 @@ export type GenerationRun = {
   model: string | null;
   started_at: string;
   finished_at: string | null;
+  /** Analysis-run provenance: which run(s) this generation was grounded in,
+   *  or all-time. Both null/false means a pre-run-scoping legacy row. */
+  source_analysis_run_ids: string[] | null;
+  source_analysis_all_time: boolean;
 };
 
 const runShape = (r: Row): GenerationRun => ({
@@ -687,6 +711,8 @@ const runShape = (r: Row): GenerationRun => ({
   model: r["model"] ?? null,
   started_at: String(r["started_at"]),
   finished_at: r["finished_at"] ?? null,
+  source_analysis_run_ids: Array.isArray(r["source_analysis_run_ids"]) ? r["source_analysis_run_ids"] : null,
+  source_analysis_all_time: r["source_analysis_all_time"] === true,
 });
 
 /** Latest run for an account+kind, with dead 'running' rows honestly flipped to error. */
@@ -730,7 +756,7 @@ async function startRun(
   accountId: string,
   kind: GenerationKind,
   createdBy: string,
-  sourceAnalysisRunId?: string,
+  sourceRunIds?: string[] | "all",
 ): Promise<string> {
   const latest = await getLatestGenerationRun(accountId, kind);
   if (latest && latest.status === "running") {
@@ -744,8 +770,10 @@ async function startRun(
     model: GENERATION_MODEL,
     created_by: createdBy,
   };
-  if (sourceAnalysisRunId) {
-    insertPayload["source_analysis_run_id"] = sourceAnalysisRunId;
+  if (sourceRunIds === "all") {
+    insertPayload["source_analysis_all_time"] = true;
+  } else if (sourceRunIds && sourceRunIds.length > 0) {
+    insertPayload["source_analysis_run_ids"] = sourceRunIds;
   }
   const { data, error } = await supabase
     .from("generation_runs")
@@ -824,13 +852,23 @@ async function upsertLoopStage(accountId: string, stage: string, runId: string):
 export async function startStrategyGeneration(
   accountId: string,
   createdBy: string,
-  sourceAnalysisRunId?: string,
+  runIds: string[] | "all",
 ): Promise<string> {
+  if (runIds !== "all" && runIds.length === 0) {
+    throw new GenerationError(
+      "Select at least one analysis run, or choose All time, before building strategy.",
+      400,
+    );
+  }
   const account = await accountExists(accountId);
   if (!account) throw new GenerationError("Ad account not found.", 404);
   const cohort = resolveCohort(account["cohort"] as string | null | undefined);
-  const { evidence, cellIds, icpIds } = await buildStrategyEvidence(accountId, String(account["name"] ?? accountId));
-  const runId = await startRun(accountId, "strategy", createdBy, sourceAnalysisRunId);
+  const { evidence, cellIds, icpIds } = await buildStrategyEvidence(
+    accountId,
+    String(account["name"] ?? accountId),
+    runIds,
+  );
+  const runId = await startRun(accountId, "strategy", createdBy, runIds);
 
   // Run-scope generated ids so ids from different runs never collide —
   // a brief referencing GEN_PILLAR_<oldrun>_1 can never silently resolve

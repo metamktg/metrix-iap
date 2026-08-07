@@ -38,11 +38,13 @@ async function guardAccess(req: any, res: any, accountId: string): Promise<boole
 
 router.post("/metrix/accounts/:accountId/generate/strategy", requireAuth, async (req, res) => {
   const accountId = String(req.params["accountId"]);
-  const sourceAnalysisRunId = req.body?.["analysis_run_id"] ? String(req.body["analysis_run_id"]) : undefined;
+  const allTime = req.body?.["analysis_all_time"] === true;
+  const rawIds = Array.isArray(req.body?.["analysis_run_ids"]) ? req.body["analysis_run_ids"] : [];
+  const runIds: string[] | "all" = allTime ? "all" : rawIds.map(String);
   try {
     if (!(await guardAccess(req, res, accountId))) return;
-    const runId = await startStrategyGeneration(accountId, req.authUser!.email, sourceAnalysisRunId);
-    req.log.info({ accountId, runId, sourceAnalysisRunId }, "Strategy generation started");
+    const runId = await startStrategyGeneration(accountId, req.authUser!.email, runIds);
+    req.log.info({ accountId, runId, runIds }, "Strategy generation started");
     res.status(202).json({ run_id: runId });
   } catch (err) {
     req.log.error({ err, accountId }, "Failed to start strategy generation");

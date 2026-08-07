@@ -8,7 +8,7 @@
 // per-day numbers.
 
 import { useMemo, useCallback } from "react";
-import type { AnalysisData, MST } from "@/lib/data/seedTypes";
+import type { AnalysisData } from "@/lib/data/seedTypes";
 import { rangesOverlap, isoMin, isoMax, useDateRange, type IsoRange } from "@/contexts/DateRangeContext";
 
 /** Concept code for a creative cell id: "C2B" → "C2". */
@@ -63,40 +63,6 @@ export function cellInRange(
   return rangesOverlap(range, w.start, w.end);
 }
 
-/**
- * Union flight window across the concepts that actually appear in the
- * account's MST data (library cells + historical matrix). This is the
- * MST-specific availability window — narrower than the account's campaign
- * bounds whenever MST only covers a subset of concepts/flights.
- * Returns null when MST has no cells or no concept has a dated rollup.
- */
-export function getMstRange(
-  mst: MST | null | undefined,
-  analysis: AnalysisData | null | undefined
-): IsoRange | null {
-  if (!mst) return null;
-  const concepts = new Set<string>();
-  for (const c of mst.local_book2_library ?? []) {
-    const k = conceptForCell(c.cell_id);
-    if (k) concepts.add(k);
-  }
-  for (const c of mst.historical_matrix_4x4?.cells ?? []) {
-    const k = conceptForCell(c.cell_id) ?? conceptForCell(c.concept_code);
-    if (k) concepts.add(k);
-  }
-  if (!concepts.size) return null;
-  const windows = getConceptWindows(analysis);
-  let out: IsoRange | null = null;
-  for (const concept of concepts) {
-    const w = windows.get(concept);
-    if (!w) continue;
-    out = out
-      ? { start: isoMin(out.start, w.start), end: isoMax(out.end, w.end) }
-      : w;
-  }
-  return out;
-}
-
 /** Sum a numeric field over dated rows that overlap a range. */
 export function sumInRange<T>(
   rows: T[],
@@ -142,24 +108,4 @@ export function useCellRangeScope(analysis: AnalysisData | null | undefined) {
   );
 
   return { windows, range, narrowed, inRangeCell, filterCells };
-}
-
-/**
- * MST-specific range availability: true when the selected range overlaps
- * the MST's own data window (union of its concepts' flights), not merely
- * the account's campaign bounds. When MST has no dated window at all we
- * return true — the module's own pending states handle that case.
- */
-export function useMstRangeScope(
-  mst: MST | null | undefined,
-  analysis: AnalysisData | null | undefined
-) {
-  const { range, preset } = useDateRange();
-  const mstRange = useMemo(() => getMstRange(mst, analysis), [mst, analysis]);
-  const narrowed = preset !== "all";
-  const mstInRange =
-    !narrowed || !range || !mstRange
-      ? true
-      : rangesOverlap(range, mstRange.start, mstRange.end);
-  return { mstRange, mstInRange, narrowed };
 }

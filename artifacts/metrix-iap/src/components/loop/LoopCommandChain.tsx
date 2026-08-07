@@ -31,6 +31,7 @@ import {
 } from "@workspace/api-client-react";
 import type { AnalysisRun, GeneratedReportCreateInput } from "@workspace/api-client-react";
 import { useGenerationRun } from "@/components/generation/GenerationControls";
+import { RunSelector, ALL_TIME_SELECTION, type RunSelectorValue } from "@/components/analysis/RunSelector";
 import { useToast } from "@/hooks/use-toast";
 import type { AdAccount, StrategyData, BriefBuilder } from "@/lib/data/seedTypes";
 import { computeStaleStages } from "./staleStageDetection";
@@ -717,7 +718,7 @@ function CommandHub({
   analysisStartError: string | null;
   onNavigate: (path: string) => void;
   onStartAnalysis: (range: AnalysisDateRange) => Promise<void>;
-  onGenerateStrategy: (analysisRunId?: string) => void;
+  onGenerateStrategy: (selection: RunSelectorValue) => void;
   onGenerateBriefs: () => void;
   reportGenerating: boolean;
   reportError: string | null;
@@ -784,17 +785,17 @@ function CommandHub({
   // Pre-execution confirmation step for analysis / strategy / briefs / report
   const [pendingConfirm, setPendingConfirm] = useState<"analysis" | "strategy" | "briefs" | "report" | null>(null);
   const [localDateRange, setLocalDateRange] = useState<AnalysisDateRange>("30d");
-  // Which analysis run the user wants to ground strategy in.
-  // Defaults to latest successful run when the confirmation panel opens.
-  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  // Which analysis run(s) the user wants to ground strategy in.
+  // Defaults to All time when the confirmation panel opens — the server
+  // requires an explicit selection, and "everything" is the safest default.
+  const [runSelection, setRunSelection] = useState<RunSelectorValue>(ALL_TIME_SELECTION);
   // Report delivery mode selection (internal vs client-facing)
   const [reportMode, setReportMode] = useState<"internal" | "client">("internal");
   useEffect(() => {
     if (pendingConfirm === "strategy") {
-      const best = analysisRuns.find((r) => r.status === "success") ?? analysisRuns[0];
-      setSelectedRunId(best?.id ?? analysisRun?.id ?? null);
+      setRunSelection(ALL_TIME_SELECTION);
     }
-  }, [pendingConfirm, analysisRuns, analysisRun?.id]);
+  }, [pendingConfirm]);
 
   // Actions section content
   function Actions() {
@@ -1074,83 +1075,14 @@ function CommandHub({
       if (pendingConfirm === "strategy") {
       const successRuns = analysisRuns.filter((r) => r.status === "success");
       const candidateRuns = successRuns.length > 0 ? successRuns : analysisRuns;
-      // Show at most 3 runs (most recent first — API returns newest first)
-      const displayRuns = candidateRuns.slice(0, 3);
-      const hiddenCount  = candidateRuns.length - displayRuns.length;
+      const canBuild = runSelection.allTime || runSelection.selectedRunIds.length > 0;
       return (
         <div className="flex flex-col gap-2.5">
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/30">
-                Ground strategy in
-              </p>
-              {candidateRuns.length > 0 && (
-                <span className="text-[9px] text-muted-foreground/25">
-                  {candidateRuns.length} run{candidateRuns.length !== 1 ? "s" : ""} available
-                </span>
-              )}
-            </div>
-            {displayRuns.length === 0 ? (
-              <div className="rounded-lg border border-emerald-400/20 bg-emerald-400/[0.04] px-2.5 py-2">
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400/60 shrink-0" />
-                  <span className="text-label font-semibold text-foreground/75">
-                    {analysisRun?.date_start && analysisRun?.date_end
-                      ? `${fmtDate(analysisRun.date_start)} – ${fmtDate(analysisRun.date_end)}`
-                      : "Latest analysis"}
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <div className="rounded-lg border border-border/40 divide-y divide-border/30 overflow-hidden">
-                {displayRuns.map((run, idx) => {
-                  const isSel = selectedRunId === run.id;
-                  const dateLabel = run.date_start && run.date_end
-                    ? `${fmtDate(run.date_start)} – ${fmtDate(run.date_end)}`
-                    : run.date_range ?? "Analysis";
-                  const isLatest = idx === 0 && successRuns.length > 0;
-                  return (
-                    <button
-                      key={run.id}
-                      onClick={() => setSelectedRunId(run.id)}
-                      className={cn(
-                        "w-full flex items-center gap-2 px-2.5 py-2 text-left transition-colors",
-                        isSel
-                          ? "bg-emerald-400/[0.07] text-foreground/90"
-                          : "bg-transparent text-foreground/55 hover:bg-muted/30",
-                      )}
-                    >
-                      <span className={cn(
-                        "w-2.5 h-2.5 rounded-full shrink-0 border transition-colors",
-                        isSel
-                          ? "bg-emerald-400/80 border-emerald-400/60"
-                          : "bg-transparent border-border/40",
-                      )} />
-                      <span className="text-label font-medium flex-1 truncate">{dateLabel}</span>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {isLatest && (
-                          <span className="text-[8px] font-semibold uppercase tracking-wider text-emerald-400/60 bg-emerald-400/[0.08] border border-emerald-400/15 rounded px-1 py-0.5 leading-none">
-                            Latest
-                          </span>
-                        )}
-                        {run.rows_ingested != null && (
-                          <span className="text-[9px] font-mono text-muted-foreground/35">
-                            {run.rows_ingested.toLocaleString()} rows
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-                {hiddenCount > 0 && (
-                  <div className="px-2.5 py-1.5 bg-white/[0.01]">
-                    <span className="text-[9px] text-muted-foreground/25">
-                      +{hiddenCount} older run{hiddenCount !== 1 ? "s" : ""} not shown
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
+            <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/30 mb-1.5">
+              Ground strategy in
+            </p>
+            <RunSelector runs={candidateRuns} value={runSelection} onChange={setRunSelection} />
           </div>
           {/* Estimated time hint */}
           <div className="flex items-center gap-1.5">
@@ -1159,8 +1091,9 @@ function CommandHub({
           </div>
           <div className="flex gap-1.5">
             <button
-              onClick={() => { setPendingConfirm(null); onGenerateStrategy(selectedRunId ?? undefined); onClose(); }}
-              className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-primary-btn"
+              onClick={() => { setPendingConfirm(null); onGenerateStrategy(runSelection); onClose(); }}
+              disabled={!canBuild}
+              className="inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg mx-primary-btn disabled:opacity-40 disabled:pointer-events-none"
             >
               <Sparkles className="w-3.5 h-3.5" /> Build Strategy
             </button>
@@ -2004,7 +1937,9 @@ export function LoopCommandChain({
           analysisStartError={analysisStartError}
           onNavigate={navigate}
           onStartAnalysis={handleStartAnalysis}
-          onGenerateStrategy={(runId) => strategyGen.start({ analysis_run_id: runId })}
+          onGenerateStrategy={(sel) =>
+            strategyGen.start(sel.allTime ? { analysis_all_time: true } : { analysis_run_ids: sel.selectedRunIds })
+          }
           onGenerateBriefs={() => briefsGen.start()}
           reportGenerating={reportGenerating}
           reportError={reportError}

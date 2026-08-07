@@ -153,6 +153,10 @@ export interface ConceptRollupRow {
   concept: string;
   date_start: string;
   date_end: string;
+  /** Which analysis run produced this concept's rollup row. Null for
+   *  pre-run-scoping legacy rows — those must always be treated as
+   *  in-scope regardless of which run(s) are selected. */
+  manual_analysis_run_id?: string | null;
   spend: number | null;
   link_clicks: number | null;
   results: number | null;

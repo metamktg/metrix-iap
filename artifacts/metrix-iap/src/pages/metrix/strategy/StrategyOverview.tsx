@@ -11,9 +11,8 @@ import { getAdAccount, getStrategyData, getBriefBuilder } from "@/lib/data/metri
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CrossLink, fmtNum, LoopAction,
-  RangeScopeBar, NoDataInRangeState, DetailReveal, deriveLabel, InfoTooltip, SkeletonBlock,
+  DetailReveal, deriveLabel, InfoTooltip, SkeletonBlock,
 } from "../shared";
-import { useDateRange } from "@/contexts/DateRangeContext";
 import {
   useGenerationRun, GenerateButton, ProvenanceBadge, GenerationErrorNote,
 } from "@/components/generation/GenerationControls";
@@ -321,7 +320,6 @@ export function StrategyOverview() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
-  const { rangeHasData } = useDateRange();
   const generation = useGenerationRun(adAccountId, "strategy");
   const [expandedPillars, setExpandedPillars] = useState<Record<string, boolean>>({});
 
@@ -434,17 +432,12 @@ export function StrategyOverview() {
                 </div>
               }
             />
-            <RangeScopeBar grainNote="Strategy derives from the account's full flight window — this import has no daily grain." />
             {generation.lastError && (
               <div className="px-6 pt-4">
                 <GenerationErrorNote message={generation.lastError} onRetry={() => generation.start()} />
               </div>
             )}
 
-            {!rangeHasData ? (
-              <NoDataInRangeState what="strategy data" />
-            ) : (
-            <>
             {/* ── Metric tiles ──────────────────────────────────────── */}
             <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="Message pillars"    value={fmtNum(pillars.length)} />
@@ -617,8 +610,6 @@ export function StrategyOverview() {
                 <LoopAction to="/app/briefs/builder" label="Draft briefs from this strategy" icon="brief" />
               </div>
             </div>
-            </>
-            )}
           </div>
         );
       }}

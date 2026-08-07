@@ -10,14 +10,13 @@ import { getAdAccount, getStrategyData, getBriefBuilder } from "@/lib/data/metri
 import {
   ModuleHeader, ModuleTabs, ModuleScopeGate, PendingState,
   MetricTile, CrossLink, useFocusParam, FlowCrumb, useFromParam, LoopAction,
-  RangeScopeBar, NoDataInRangeState, StaleFocusNotice, DetailReveal, deriveLabel,
+  StaleFocusNotice, DetailReveal, deriveLabel,
   PILL_ACTIVE, PILL_INACTIVE,
 } from "../shared";
 import {
   HypothesisStatusBadge, PillarDetailSections, VariableStackChips, pillarHasDetails,
   HypothesisCodeChipsRow,
 } from "./strategyShared";
-import { useDateRange } from "@/contexts/DateRangeContext";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { Layers, FlaskConical, AlertTriangle, ArrowRight, Beaker, Crosshair, Target, TrendingUp } from "lucide-react";
 import type { ActiveHypothesis } from "@/lib/data/seedTypes";
@@ -56,7 +55,6 @@ export function HypothesisQueueView() {
   const [statusFilter, setStatusFilter] = useState<"all" | "ready" | "validation">("all");
   const focus = useFocusParam();
   const [detail, setDetail] = useState<ActiveHypothesis | null>(null);
-  const { rangeHasData } = useDateRange();
 
   const s = getStrategyData(seed, adAccountId);
   const fp = useFromParam();
@@ -109,12 +107,6 @@ export function HypothesisQueueView() {
             {focus && !s.active_hypotheses.some((h) => h.id === focus) && (
               <StaleFocusNotice label="hypothesis" />
             )}
-            <RangeScopeBar grainNote="Hypotheses derive from the account's full flight window — this import has no daily grain." />
-
-            {!rangeHasData ? (
-              <NoDataInRangeState what="hypothesis data" />
-            ) : (
-            <>
             <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
               <MetricTile label="In queue" value={String(hyps.length)} />
               <MetricTile label="Ready for briefs" value={String(ready.length)} />
@@ -274,8 +266,6 @@ export function HypothesisQueueView() {
                 )
               )}
             </div>
-            </>
-            )}
 
             {detail && (
               <InfoDrawer

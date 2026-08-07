@@ -351,11 +351,22 @@ async function updateProgress(runId: string, pct: number, stage: string): Promis
 /** Deletes every output table's rows this specific run wrote (partial-output cleanup on failure/staleness). */
 async function deleteRunOutputs(runId: string): Promise<void> {
   const supabase = getSupabase();
-  const { error } = await supabase.from("ad_performance").delete().eq("manual_analysis_run_id", runId);
-  if (error) throw new Error(error.message);
-  // Demographic/placement/platform/device tables are windowed full-refresh
-  // (no run-id FK — see below), so their cleanup happens via the same
-  // date-window delete used on (re)run, not a run-id filter.
+  // All 6 rollup tables now carry manual_analysis_run_id and retain history
+  // across runs (see the analysis-run-scoping migration) — a failed run's
+  // partial rows are no longer swept up by a full account wipe on the next
+  // run, so they must be explicitly deleted by run id here.
+  for (const table of [
+    "ad_performance",
+    "concept_performance",
+    "variable_performance",
+    "demographic_performance",
+    "placement_performance",
+    "platform_performance",
+    "device_performance",
+  ]) {
+    const { error } = await supabase.from(table).delete().eq("manual_analysis_run_id", runId);
+    if (error) throw new Error(error.message);
+  }
 }
 
 function withinRange(date: string, dateRange: DateRangePreset, maxDate: string): boolean {
@@ -1024,8 +1035,10 @@ export async function startManualAnalysis(
           return r > 0 ? s / r : null;
         };
 
-        const delConcept = await supabase.from("concept_performance").delete().eq("account_id", accountId);
-        if (delConcept.error) throw new Error(delConcept.error.message);
+        // No delete here: concept_performance is run-tagged (manual_analysis_run_id)
+        // and retains full history across runs — deleting-then-inserting the whole
+        // account on every run used to destroy every prior run's rollup. A failed
+        // run's rows are cleaned up by deleteRunOutputs (see below), not here.
         const conceptRows = Array.from(conceptMap.values()).map((c) => {
           const spend = c.spend > 0 ? c.spend : null;
           const results = c.results > 0 ? c.results : null;
@@ -1070,6 +1083,7 @@ export async function startManualAnalysis(
 
           return {
             account_id: accountId,
+            manual_analysis_run_id: runId,
             book: c.book,
             concept: c.concept,
             date_start: dateStart,
@@ -1133,12 +1147,9 @@ export async function startManualAnalysis(
         const accountResultType =
           [...rtCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "unknown";
 
-        // Full-replace variable_performance for this account
-        const delVar = await supabase
-          .from("variable_performance")
-          .delete()
-          .eq("account_id", accountId);
-        if (delVar.error) throw new Error(delVar.error.message);
+        // No delete here: variable_performance is run-tagged (manual_analysis_run_id)
+        // and retains full history across runs, same reasoning as concept_performance
+        // above — a full account wipe here used to destroy every prior run's rollup.
 
         const varRows = Array.from(varPerfMap.entries()).map(([token, v]) => {
           const cpa = v.results > 0 ? v.spend / v.results : null;
@@ -1146,6 +1157,7 @@ export async function startManualAnalysis(
             v.linkClicks > 0 && v.results > 0 ? (v.results / v.linkClicks) * 100 : null;
           return {
             account_id: accountId,
+            manual_analysis_run_id: runId,
             variable_family: "raw_token",
             variable_id: token,
             result_type: accountResultType,
@@ -1223,6 +1235,7 @@ export async function startManualAnalysis(
       await updateProgress(runId, 90, "Writing demographic & placement data");
       const demographicRows = Array.from(demoBuckets.values()).map((b) => ({
         account_id: accountId,
+        manual_analysis_run_id: runId,
         gender: b.gender,
         age: b.age,
         date_start: b.date,
@@ -1247,6 +1260,7 @@ export async function startManualAnalysis(
 
       const placementRowsOut = Array.from(placementBuckets.values()).map((b) => ({
         account_id: accountId,
+        manual_analysis_run_id: runId,
         placement: b.placement,
         date_start: b.date,
         date_end: b.date,
@@ -1266,6 +1280,7 @@ export async function startManualAnalysis(
 
       const platformRowsOut = Array.from(platformBuckets.values()).map((b) => ({
         account_id: accountId,
+        manual_analysis_run_id: runId,
         platform: b.platform,
         date_start: b.date,
         date_end: b.date,
@@ -1284,6 +1299,7 @@ export async function startManualAnalysis(
 
       const deviceRowsOut = Array.from(deviceBuckets.values()).map((b) => ({
         account_id: accountId,
+        manual_analysis_run_id: runId,
         device: b.device,
         date_start: b.date,
         date_end: b.date,
@@ -1314,6 +1330,7 @@ export async function startManualAnalysis(
       }
       const convDeviceRowsOut = Array.from(convDeviceBuckets.values()).map((b) => ({
         account_id: accountId,
+        manual_analysis_run_id: runId,
         device: b.device,
         date_start: b.date,
         date_end: b.date,

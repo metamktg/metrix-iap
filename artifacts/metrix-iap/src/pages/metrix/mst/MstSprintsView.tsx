@@ -6,9 +6,7 @@ import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getMST, getAnalysisData, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, ScopeBanner, ModuleScopeGate, CaveatNote, PendingState, CrossLink, readableVariables, RangeScopeBar, NoDataInRangeState } from "../shared";
-import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
-import { useMstRangeScope } from "@/lib/date-scope";
+import { ModuleHeader, ScopeBanner, ModuleScopeGate, CaveatNote, PendingState, CrossLink, readableVariables } from "../shared";
 import { TilePerformanceModal } from "@/components/creative/TilePerformanceModal";
 import { cn } from "@/lib/utils";
 import { Grid3x3 } from "lucide-react";
@@ -89,12 +87,7 @@ export function MstSprintsView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
-  const { rangeHasData, range } = useDateRange();
   const [activeCell, setActiveCell] = useState<MSTMatrixCell | null>(null);
-  const { mstRange, mstInRange } = useMstRangeScope(
-    getMST(seed, adAccountId),
-    getAnalysisData(seed, adAccountId)
-  );
 
   return (
     <ModuleScopeGate section={SECTION} title="Sprints" account={account}>
@@ -122,28 +115,16 @@ export function MstSprintsView() {
               table="historical_matrix_4x4"
             />
             <ScopeBanner account={acct} />
-            <RangeScopeBar grainNote="The matrix is a historical structure; tile pop-ups show each cell's full flight-window performance — this import has no daily grain." />
-            {!rangeHasData || !mstInRange ? (
-              <NoDataInRangeState
-                what="MST data"
-                detail={
-                  !mstInRange && mstRange && range
-                    ? `The selected range (${formatIsoRange(range)}) does not overlap this account's MST data window (${formatIsoRange(mstRange)}).`
-                    : undefined
-                }
-              />
-            ) : (
-              <div className="px-6 py-5 space-y-4">
-                <CaveatNote text={mst.render_policy} />
-                <MatrixGrid matrix={matrix} onCellClick={setActiveCell} />
-                <div className="flex items-center gap-4 text-[11px] text-muted-foreground/75 flex-wrap">
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded border border-primary/40 ring-1 ring-primary/15 inline-block" /> Primary diagonal (↘)</span>
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded border border-teal-400/40 ring-1 ring-teal-400/15 inline-block" /> Counter diagonal (↗)</span>
-                  <span className="text-muted-foreground/60">Click any tile for granular performance</span>
-                  <span className="ml-auto"><CrossLink to="/app/mst/cross-map" label="See crossmap results" /></span>
-                </div>
+            <div className="px-6 py-5 space-y-4">
+              <CaveatNote text={mst.render_policy} />
+              <MatrixGrid matrix={matrix} onCellClick={setActiveCell} />
+              <div className="flex items-center gap-4 text-[11px] text-muted-foreground/75 flex-wrap">
+                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded border border-primary/40 ring-1 ring-primary/15 inline-block" /> Primary diagonal (↘)</span>
+                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded border border-teal-400/40 ring-1 ring-teal-400/15 inline-block" /> Counter diagonal (↗)</span>
+                <span className="text-muted-foreground/60">Click any tile for granular performance</span>
+                <span className="ml-auto"><CrossLink to="/app/mst/cross-map" label="See crossmap results" /></span>
               </div>
-            )}
+            </div>
             {activeCell && (
               <TilePerformanceModal
                 open

@@ -12,7 +12,7 @@ import { getAdAccount, getMST, getAnalysisData, getStrategyData, getAds } from "
 import {
   ModuleHeader, ModuleScopeGate, PendingState,
   MetricTile, CrossLink, resultTerm, SectionCard, ConfidenceBadge,
-  fmtUSD, fmtPct, fmtNum, RangeScopeBar, NoDataInRangeState,
+  fmtUSD, fmtPct, fmtNum,
   DetailReveal, deriveLabel, SegmentedToggle, PILL_ACTIVE, PILL_INACTIVE,
 } from "../shared";
 import { DemographicTable } from "../analysis/tables";
@@ -21,7 +21,6 @@ import {
   computeAvatarDna, mergeAvatarDna, columnIdForCell,
   type AvatarDna, type DnaVariable,
 } from "@/lib/creative-dna";
-import { useDateRange } from "@/contexts/DateRangeContext";
 import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/SegmentGridModal";
 import { SegmentDrilldownModal } from "@/components/creative/SegmentDrilldownModal";
 import {
@@ -1039,7 +1038,6 @@ export function AvatarsView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
-  const { rangeHasData } = useDateRange();
 
   // ─── Sort / filter state ──────────────────────────────────────────
   const [viewMode, setViewMode] = useState<ViewMode>("avatars");
@@ -1325,13 +1323,7 @@ export function AvatarsView() {
               onSearch={setSearchQuery}
             />
 
-            <RangeScopeBar grainNote="Avatars come from the historical matrix; audience signal aggregates full flight windows — no daily grain." />
-
-            {!rangeHasData ? (
-              <NoDataInRangeState what="avatar data" />
-            ) : (
-              <>
-                {/* Summary tiles */}
+            {/* Summary tiles */}
                 <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
                   <MetricTile label="Avatars" value={String(matrix?.columns.length ?? 0)} />
                   <MetricTile label="Message angles" value={String(matrix?.cells.length ?? 0)} sub="matrix cells" />
@@ -1457,8 +1449,6 @@ export function AvatarsView() {
                   )}
 
                 </div>
-              </>
-            )}
 
             {/* ── Avatar detail drawer ── */}
             {detail && (

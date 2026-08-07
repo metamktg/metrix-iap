@@ -747,6 +747,87 @@ alter table if exists manual_analysis_runs add column if not exists progress_pct
 alter table if exists manual_analysis_runs add column if not exists progress_stage text not null default '';
 
 -- ─────────────────────────────────────────────────────────────────────
+-- Run-tagged history for analysis rollups (analysis-run scoping).
+--
+-- concept_performance and variable_performance were previously wiped in
+-- full (delete .eq("account_id", ...) with NO date/run scoping) on every
+-- manual analysis run — only the latest run's rollup ever existed in
+-- storage, all history destroyed on each re-run. demographic_performance/
+-- placement_performance/platform_performance/device_performance already
+-- retained history implicitly (their delete is date-window-scoped, not
+-- account-wide), but had no explicit run identity — a run's rows could
+-- only be reconstructed by joining back through manual_analysis_runs'
+-- date_start/date_end. This column makes run membership explicit and
+-- uniform across all 6 rollup tables, so evidence for strategy generation
+-- (and any other analysis-derived view) can be scoped to one run, several,
+-- or all of them without indirecting through date arithmetic.
+--
+-- Existing rows get manual_analysis_run_id = null (pre-migration history
+-- with no run tag, and for concept/variable_performance specifically:
+-- history already destroyed by the old wipe-on-every-run behavior, not
+-- recoverable). Null rows must always be included regardless of which
+-- run(s) are selected — never silently dropped.
+-- ─────────────────────────────────────────────────────────────────────
+alter table concept_performance add column if not exists manual_analysis_run_id uuid references manual_analysis_runs(id) on delete cascade;
+alter table variable_performance add column if not exists manual_analysis_run_id uuid references manual_analysis_runs(id) on delete cascade;
+alter table demographic_performance add column if not exists manual_analysis_run_id uuid references manual_analysis_runs(id) on delete cascade;
+alter table placement_performance add column if not exists manual_analysis_run_id uuid references manual_analysis_runs(id) on delete cascade;
+alter table platform_performance add column if not exists manual_analysis_run_id uuid references manual_analysis_runs(id) on delete cascade;
+alter table device_performance add column if not exists manual_analysis_run_id uuid references manual_analysis_runs(id) on delete cascade;
+
+create index if not exists concept_performance_run_idx on concept_performance (manual_analysis_run_id);
+create index if not exists variable_performance_run_idx on variable_performance (manual_analysis_run_id);
+create index if not exists demographic_performance_run_idx on demographic_performance (manual_analysis_run_id);
+create index if not exists placement_performance_run_idx on placement_performance (manual_analysis_run_id);
+create index if not exists platform_performance_run_idx on platform_performance (manual_analysis_run_id);
+create index if not exists device_performance_run_idx on device_performance (manual_analysis_run_id);
+
+-- concept_performance/variable_performance's old unique keys had no run
+-- component — that was safe only because the full-account wipe above
+-- guaranteed at most one row per key at any time. Now that the wipe is
+-- removed (analysisEngine.ts), the same concept/variable recurring across
+-- multiple retained runs would collide on insert without widening the
+-- key to include the run. Idempotent drop-by-lookup, matching the
+-- match_method_check pattern above (~L682-697) rather than hardcoding a
+-- constraint name that may differ across environments.
+do $$
+declare cname text;
+begin
+  for cname in
+    select conname from pg_constraint
+    where conrelid = 'concept_performance'::regclass and contype = 'u'
+  loop
+    execute format('alter table concept_performance drop constraint %I', cname);
+  end loop;
+  alter table concept_performance
+    add constraint concept_performance_account_book_concept_run_key
+    unique (account_id, book, concept, manual_analysis_run_id);
+end $$;
+
+do $$
+declare cname text;
+begin
+  for cname in
+    select conname from pg_constraint
+    where conrelid = 'variable_performance'::regclass and contype = 'u'
+  loop
+    execute format('alter table variable_performance drop constraint %I', cname);
+  end loop;
+  alter table variable_performance
+    add constraint variable_performance_account_family_id_type_run_key
+    unique (account_id, variable_family, variable_id, result_type, manual_analysis_run_id);
+end $$;
+
+-- Multi-run / all-time provenance for strategy generation (replaces the
+-- never-actually-created source_analysis_run_id reference in
+-- generationEngine.ts — that column was never added to this schema, so
+-- selecting any specific run in the old picker made the generation_runs
+-- insert fail outright with an undefined-column error). New columns
+-- instead of repurposing anything, since the shape is now plural.
+alter table generation_runs add column if not exists source_analysis_run_ids jsonb;
+alter table generation_runs add column if not exists source_analysis_all_time boolean not null default false;
+
+-- ─────────────────────────────────────────────────────────────────────
 -- Cell-level creative overrides (July 2026).
 --
 -- Stores a directly-uploaded creative asset keyed to a specific IAP cell

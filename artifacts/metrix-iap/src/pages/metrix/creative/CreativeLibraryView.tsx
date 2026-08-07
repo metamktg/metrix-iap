@@ -9,9 +9,7 @@ import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getMST, getAnalysisData, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, ScopeBanner, ModuleScopeGate, ModuleTabs, CaveatNote, PendingState, readableVariables, RangeScopeBar, NoDataInRangeState, CrossLink } from "../shared";
-import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
-import { useMstRangeScope } from "@/lib/date-scope";
+import { ModuleHeader, ScopeBanner, ModuleScopeGate, ModuleTabs, CaveatNote, PendingState, readableVariables, CrossLink } from "../shared";
 import { CreativeCard } from "@/components/creative/CreativeCard";
 import { cardFromLibraryCell } from "@/lib/creative-assembly";
 import { Library, Tags } from "lucide-react";
@@ -23,11 +21,6 @@ export function CreativeLibraryView() {
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
   const [tab, setTab] = useState<string>("library");
-  const { rangeHasData, range } = useDateRange();
-  const { mstRange, mstInRange } = useMstRangeScope(
-    getMST(seed, adAccountId),
-    getAnalysisData(seed, adAccountId)
-  );
 
   return (
     <ModuleScopeGate section={SECTION} title="Library" account={account}>
@@ -84,18 +77,6 @@ export function CreativeLibraryView() {
               active={tab}
               onChange={setTab}
             />
-            <RangeScopeBar grainNote="Scanned concepts and their variables reflect the full imported library — this import has no daily grain." />
-
-            {!rangeHasData || !mstInRange ? (
-              <NoDataInRangeState
-                what="scanned creatives"
-                detail={
-                  !mstInRange && mstRange && range
-                    ? `The selected range (${formatIsoRange(range)}) does not overlap this account's MST data window (${formatIsoRange(mstRange)}).`
-                    : undefined
-                }
-              />
-            ) : (
             <div className="px-6 py-5 space-y-4">
               <CaveatNote text={mst.render_policy} />
 
@@ -154,7 +135,6 @@ export function CreativeLibraryView() {
                 )
               )}
             </div>
-            )}
           </div>
         );
       }}

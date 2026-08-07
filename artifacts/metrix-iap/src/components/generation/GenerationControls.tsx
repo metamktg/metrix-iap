@@ -14,6 +14,7 @@ import {
   getGetMetrixSeedQueryKey,
   getGetLatestGenerationRunQueryKey,
   ApiError,
+  type GenerateStrategyInput,
 } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Sparkles, AlertTriangle } from "lucide-react";
@@ -99,7 +100,7 @@ export function useGenerationRun(accountId: string | null, kind: GenerationKind)
   const briefsMutation = useGenerateAccountBriefs();
   const mutation = kind === "strategy" ? strategyMutation : briefsMutation;
 
-  const start = (extraData?: { analysis_run_id?: string }) => {
+  const start = (extraData?: GenerateStrategyInput) => {
     // Guard: when passed directly as an onClick handler, extraData is a React
     // SyntheticEvent that carries the DOM element — discard it so we never
     // accidentally JSON.stringify a circular HTMLButtonElement reference.
@@ -143,7 +144,11 @@ export function useGenerationRun(accountId: string | null, kind: GenerationKind)
       },
     };
     if (kind === "strategy") {
-      strategyMutation.mutate({ accountId, data: extraData }, callbacks);
+      // The server requires an explicit selection (analysis_run_ids or
+      // analysis_all_time) — no implicit "latest run" fallback. Default to
+      // all-time only as a safety net if a caller forgets to pass a
+      // selection; RunSelector-driven callers always pass one explicitly.
+      strategyMutation.mutate({ accountId, data: extraData ?? { analysis_all_time: true } }, callbacks);
     } else {
       briefsMutation.mutate({ accountId }, callbacks);
     }

@@ -820,8 +820,10 @@ export interface AccountAnalysisDataWindowsResult {
 }
 
 export interface GenerateStrategyInput {
-  /** ID of the specific analysis run to ground this strategy in. Optional — when omitted the engine uses the account's current analysis data. Stored as provenance on the generation run. */
-  analysis_run_id?: string | null;
+  /** Specific analysis run ids to ground this strategy in. Ignored when analysis_all_time is true. Provide at least one id when analysis_all_time is false or omitted. */
+  analysis_run_ids?: string[];
+  /** When true, ground this strategy in every analysis run for this account (ignores analysis_run_ids). Exactly one of analysis_run_ids (non-empty) or analysis_all_time=true is required. */
+  analysis_all_time?: boolean;
 }
 
 export interface StartGenerationResult {
@@ -854,6 +856,10 @@ export interface GenerationRun {
   model?: string | null;
   started_at: string;
   finished_at?: string | null;
+  /** Analysis run ids this generation was grounded in. Null for legacy runs predating run-scoping, or when source_analysis_all_time is true. */
+  source_analysis_run_ids?: string[] | null;
+  /** True when this generation was grounded in every analysis run for the account rather than a specific selection. */
+  source_analysis_all_time: boolean;
 }
 
 export type StageStatusResultAnalysisStatus = typeof StageStatusResultAnalysisStatus[keyof typeof StageStatusResultAnalysisStatus];
