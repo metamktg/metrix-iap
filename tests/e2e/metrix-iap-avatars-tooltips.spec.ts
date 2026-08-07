@@ -13,6 +13,18 @@
 // A regression (broken Tooltip wiring, badge turned into a button, sr-only
 // text removed) would silently hide the signal rationale — this catches it.
 //
+// Keyboard-focus coverage & decision (task: keyboard tooltips):
+//   4. The placements accordion button is reached via Tab and its tooltip
+//      opens on keyboard focus (Radix opens tooltips on focus for focusable
+//      triggers).
+//   5. DECISION: the signal badge and cell-code chips stay plain,
+//      NON-focusable <span>s (no tabindex=0). They are static/informational
+//      content, not interactive controls; adding tab stops to static text
+//      degrades keyboard navigation (WAI-ARIA: don't put tabindex on
+//      non-interactive elements), and screen-reader users already get the
+//      full rationale via the always-present sr-only text. A test asserts
+//      the spans have no tabindex so a future change is deliberate.
+//
 // Run: tsx tests/e2e/metrix-iap-avatars-tooltips.spec.ts
 //   or via: pnpm --filter @workspace/scripts run smoke:metrix-iap-avatars-tooltips
 
@@ -366,6 +378,127 @@ async function main() {
             chip,
             "Matrix cell",
             "drawer cell-code chip",
+          );
+
+          // DECISION check: chips are static info, must NOT be focusable.
+          const chipTabindex = await chip.evaluate((el) =>
+            el.getAttribute("tabindex"),
+          );
+          assert(
+            chipTabindex === null,
+            `cell-code chip must not have tabindex (got "${chipTabindex}") — ` +
+              "chips are static/informational; sr-only text covers screen readers",
+          );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+
+    // Test 4: keyboard focus — Tab reaches the placements accordion button
+    // and its tooltip opens on focus (no mouse involved).
+    await test(
+      "Account placements accordion: tooltip opens on keyboard focus (Tab)",
+      async () => {
+        const { ctx, page } = await newAvatarsPage(
+          browser,
+          ACCOUNT,
+          "Audience segments",
+        );
+        try {
+          await page.getByRole("button", { name: "Profiles" }).click();
+          const accordion = page
+            .getByRole("button", { name: /Account placements/ })
+            .first();
+          await accordion.waitFor({ state: "visible", timeout: 10_000 });
+          await accordion.scrollIntoViewIfNeeded();
+
+          // The page has a long tab order, so instead of tabbing from the top
+          // of the document, focus the focusable element immediately BEFORE
+          // the accordion in DOM/tab order, then press Tab once. This still
+          // verifies the accordion is reachable via a real keyboard Tab.
+          const hasPrev = await accordion.evaluate((el) => {
+            const focusables = Array.from(
+              document.querySelectorAll<HTMLElement>(
+                "button, a[href], input, select, textarea, [tabindex]:not([tabindex='-1'])",
+              ),
+            ).filter((f) => !f.hasAttribute("disabled"));
+            const idx = focusables.indexOf(el as HTMLElement);
+            if (idx <= 0) return false;
+            focusables[idx - 1]!.focus();
+            return true;
+          });
+          assert(hasPrev, "could not find a focusable element before the accordion");
+          await page.keyboard.press("Tab");
+          const reached = await accordion.evaluate(
+            (el) => el === document.activeElement,
+          );
+          assert(
+            reached,
+            "pressing Tab from the preceding focusable did not land on the placements accordion button",
+          );
+
+          // Radix opens tooltips immediately on keyboard focus.
+          await page.waitForTimeout(400);
+          const tooltips = page.locator('[role="tooltip"]');
+          const count = await tooltips.count();
+          assert(
+            count > 0,
+            "no [role=tooltip] appeared after keyboard-focusing the placements accordion",
+          );
+          let text = "";
+          for (let i = 0; i < count; i++) {
+            text += (await tooltips.nth(i).textContent()) ?? "";
+          }
+          assert(
+            text.includes(
+              "Account-level placement signal — no per-profile breakdown available.",
+            ),
+            `focus tooltip text "${text}" did not contain the expected placements copy`,
+          );
+
+          // Enter still toggles the accordion open while focused.
+          await page.keyboard.press("Enter");
+          await page.waitForTimeout(300);
+          const rows = await accordion.evaluate((el) => {
+            const wrapper = el.parentElement;
+            return wrapper
+              ? wrapper.querySelectorAll(":scope > .mt-2 > div").length
+              : -1;
+          });
+          assert(
+            rows > 0,
+            "pressing Enter on the focused placements accordion did not open it",
+          );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+
+    // Test 5: DECISION — signal badge span stays non-focusable (no tabindex).
+    await test(
+      "Signal badge: non-focusable plain span (no tabindex) by decision",
+      async () => {
+        const { ctx, page } = await newAvatarsPage(
+          browser,
+          ACCOUNT,
+          "Audience segments",
+        );
+        try {
+          const badge = page
+            .locator("span")
+            .filter({ hasText: /^(low signal|signal ✓)/ })
+            .first();
+          await badge.waitFor({ state: "visible", timeout: 10_000 });
+          const tabindex = await badge.evaluate((el) =>
+            el.getAttribute("tabindex"),
+          );
+          assert(
+            tabindex === null,
+            `signal badge must not have tabindex (got "${tabindex}") — ` +
+              "static info; sr-only rationale covers screen readers. " +
+              "If making badges focusable, do it deliberately and update this test.",
           );
         } finally {
           await ctx.close();
