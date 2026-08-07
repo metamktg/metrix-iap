@@ -10,7 +10,7 @@ import { useMetricSelection } from "@/lib/metric-selection";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   CaveatNote, CrossLink, MetricSelectionBar, SectionCard, fmtUSD, fmtNum, fmtPct, eventLabel,
-  SkeletonTileRow, DatePresetBar, type ViewPreset,
+  SkeletonTileRow, DatePresetBar, type ViewPreset, SectionInfoIcon,
 } from "../shared";
 import { getGetAnalysisSummaryQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
@@ -133,6 +133,7 @@ export function BudgetView() {
               <SectionCard
                 title="Efficiency by result event"
                 desc="Spend · results · CPA per event type"
+                right={<SectionInfoIcon tip="Breaks down spend, results, and CPA by each tracked result event so you can see which conversion goals are running efficiently." />}
               >
                 {eventRows.length === 0 ? (
                   <PendingState title="No events selected" message="Select at least one result event above." action={<CrossLink to="/app/analysis/overview" label="Return to Overview" />} />
@@ -165,6 +166,7 @@ export function BudgetView() {
               <SectionCard
                 title="Spend by concept"
                 desc="Current metric selection"
+                right={<SectionInfoIcon tip="Shows how ad spend is distributed across creative concepts so you can see which ideas are consuming the most budget." />}
                 >
                 {conceptRows.length === 0 ? (
                   <PendingState title="No concept spend" message="No cell rows match the current metric selection." action={<CrossLink to="/app/analysis/overview" label="Return to Overview" />} />

@@ -13,7 +13,7 @@ import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CaveatNote, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
-  SkeletonTileRow, DatePresetBar, type ViewPreset,
+  SkeletonTileRow, DatePresetBar, type ViewPreset, SectionInfoIcon,
 } from "../shared";
 import { getGetAnalysisSummaryQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
@@ -199,6 +199,7 @@ function ConversionTrackingSections({ cts }: { cts: ConversionTrackingSignal }) 
         <SectionCard
           title="Conversion-attributed placements"
           desc={`Funnel actions attributed to the converting placement. ${windowLabel ?? ""}`.trim()}
+          right={<SectionInfoIcon tip="Shows funnel actions (clicks, add-to-carts, purchases) attributed to each placement by the conversion tracking export." />}
         >
           <CaveatNote text="Conversion-attributed rows — delivery spend not applicable for this tracking basis." />
           <ConversionFunnelTable rows={cts.placements.map((r) => ({ ...r, label: r.placement }))} labelHeader="Placement" />
@@ -208,6 +209,7 @@ function ConversionTrackingSections({ cts }: { cts: ConversionTrackingSignal }) 
         <SectionCard
           title="Conversion-attributed platforms"
           desc="Funnel actions · by converting platform"
+          right={<SectionInfoIcon tip="Breaks down conversion-tracked funnel actions by the platform where the conversion was recorded." />}
         >
           <CaveatNote text="Conversion-attributed rows — delivery spend not applicable for this tracking basis." />
           <ConversionFunnelTable rows={cts.platforms.map((r) => ({ ...r, label: r.platform }))} labelHeader="Platform" />
@@ -217,6 +219,7 @@ function ConversionTrackingSections({ cts }: { cts: ConversionTrackingSignal }) 
         <SectionCard
           title="Conversion-attributed devices"
           desc="Funnel actions · by converting device"
+          right={<SectionInfoIcon tip="Shows which device types are completing conversions so you can align creative formats to the highest-converting device." />}
         >
           <CaveatNote text="Conversion-attributed rows — delivery spend not applicable for this tracking basis." />
           <ConversionFunnelTable rows={cts.devices.map((r) => ({ ...r, label: r.device }))} labelHeader="Device" />
@@ -397,6 +400,7 @@ export function PlacementsView() {
                   desc="V3 + C4E combined · spend vs result share · click for breakdown"
                   right={
                     <div className="flex items-center gap-2">
+                      <SectionInfoIcon tip="Ranks each placement by spend, results, or CPA so you can see where delivery is concentrated and spot efficiency mismatches." />
                       {rollup.length > 1 && (
                         <button
                           onClick={() => setShowShareChart((v) => !v)}
