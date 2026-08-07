@@ -54,6 +54,7 @@ import type { SegmentId } from "@/lib/segment-analytics";
 import type { CellPerformanceRow, DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 import { CreativeLibraryDialog, ManualImportDialog } from "@/pages/metrix/ConnectAccountDialogs";
 import { CellCreativeUploadDialog } from "@/components/creative/CellCreativeUploadDialog";
+import { DeconstructionReviewQueue } from "@/components/creative/DeconstructionReviewQueue";
 import { useConceptHighlight } from "@/lib/concept-registry-context";
 import {
   type FunnelStage, FUNNEL_STAGE_CONFIGS, getFunnelStageConfig,
@@ -65,7 +66,7 @@ import {
 
 const SECTION = "Analysis · 03";
 
-type Tab = "cells" | "top" | "variables";
+type Tab = "cells" | "top" | "variables" | "review";
 
 const VARIABLE_FIELDS: { key: keyof CellPerformanceRow; label: string }[] = [
   { key: "hook_variable",       label: "Hook" },
@@ -265,6 +266,11 @@ export function IapLibraryView() {
             { id: "cells",     label: "Creative cells",   count: cells.length },
             { id: "top",       label: "Top performers",   count: topCells.length + topVariables.length },
             { id: "variables", label: "Creative DNA",     count: variables.length },
+            {
+              id: "review",
+              label: "Review queue",
+              count: (account?.creative_deconstructions ?? []).filter((d) => d.status === "needs_review").length,
+            },
           ];
 
           const pillarsForCell = (cellId: string) =>
@@ -873,6 +879,11 @@ export function IapLibraryView() {
                   ) : (
                     <PendingState title="No variables in selection" message="Adjust the metric selection to see variable performance." action={<CrossLink to="/app/analysis/overview" label="Back to Overview" />} />
                   )
+                )}
+
+                {/* ── Review queue tab (sub-80% deconstructed creatives) ── */}
+                {tab === "review" && (
+                  <DeconstructionReviewQueue accountId={adAccountId} />
                 )}
               </div>
 

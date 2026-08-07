@@ -16,6 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   useStageManualImport,
   useListManualImports,
+  type CreativeDeconstruction,
   useUpdateManualImportAdNames,
   useDeleteManualImport,
   getGetMetrixSeedQueryKey,
@@ -88,6 +89,7 @@ import {
 import { guessedCreativeImports } from "./manualImportUtils";
 import type { ManualImportInput, ManualImportResult } from "@workspace/api-client-react";
 import { suggestAdNameMatch, type AdNameMatch } from "@/lib/adNameMatch";
+import { useDeconstruction, DECONSTRUCTION_STATUS_LABEL } from "@/components/creative/useDeconstruction";
 
 export function PrimaryBtn({
   onClick,
@@ -1653,6 +1655,98 @@ export function ManualUploadPanel({
 // Ad-name mapping is dropdown-only against the account's real ads registry
 // (`account.ads`), so there's no way to mistype a mapping.
 
+// ─── Deconstruct staged creatives into the IAP library ────────────────
+// Per-file and per-batch triggers plus a classification badge for every
+// staged creative. Runs go through the generation engine (202 + poll);
+// results at/above the 80% gate file into the local library automatically,
+// below-gate results land in the IAP Library review queue.
+function DeconstructBadge({ status }: { status: CreativeDeconstruction["status"] }) {
+  const style: Record<CreativeDeconstruction["status"], string> = {
+    auto_filed: "border-emerald-400/30 bg-emerald-400/[0.06] text-emerald-400",
+    user_overridden: "border-emerald-400/30 bg-emerald-400/[0.06] text-emerald-400",
+    needs_review: "border-amber-400/30 bg-amber-400/[0.06] text-amber-300",
+    unsupported: "border-border/50 bg-white/[0.03] text-muted-foreground/80",
+    discarded: "border-border/50 bg-white/[0.03] text-muted-foreground/80",
+  };
+  return (
+    <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded border text-label font-medium whitespace-nowrap", style[status])}>
+      {DECONSTRUCTION_STATUS_LABEL[status]}
+    </span>
+  );
+}
+
+function CreativeDeconstructSection({
+  accountId,
+  creativeAssets,
+}: {
+  accountId: string;
+  creativeAssets: { id: string; filename: string; ad_names: string[] }[];
+}) {
+  const { byImportId, isRunning, start } = useDeconstruction(accountId);
+  if (creativeAssets.length === 0) return null;
+
+  const pending = creativeAssets.filter((a) => {
+    const d = byImportId.get(a.id);
+    return !d || d.status === "discarded";
+  });
+
+  return (
+    <div className="space-y-1.5" data-testid="deconstruct-section">
+      <div className="flex items-center justify-between px-0.5 gap-2">
+        <span className="text-label font-medium text-muted-foreground/85">
+          Deconstruct into IAP library
+        </span>
+        <button
+          onClick={() => void start(pending.map((a) => a.id))}
+          disabled={isRunning || pending.length === 0}
+          className="shrink-0 flex items-center gap-1 h-6 px-2 rounded border border-primary/30 bg-primary/10 text-label font-medium text-interactive hover:bg-primary/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          data-testid="deconstruct-all"
+        >
+          {isRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+          {isRunning ? "Deconstructing…" : `Deconstruct all${pending.length > 0 ? ` (${pending.length})` : ""}`}
+        </button>
+      </div>
+      <div className={cn("space-y-1", creativeAssets.length > 6 && "max-h-48 overflow-y-auto pr-1")}>
+        {creativeAssets.map((asset) => {
+          const d = byImportId.get(asset.id);
+          return (
+            <div key={asset.id} className="flex items-center gap-2 px-2 py-1 rounded border border-border/30 bg-white/[0.015]">
+              <span className="flex-1 min-w-0 truncate text-caption text-foreground/85">{asset.filename}</span>
+              {d && d.status !== "discarded" ? (
+                <>
+                  {d.overall_confidence != null && (
+                    <span className="text-label tabular-nums text-muted-foreground/80">
+                      {Math.round(d.overall_confidence * 100)}%
+                    </span>
+                  )}
+                  <DeconstructBadge status={d.status} />
+                </>
+              ) : (
+                <>
+                  <span className="text-label text-muted-foreground/70">Not classified</span>
+                  <button
+                    onClick={() => void start([asset.id])}
+                    disabled={isRunning}
+                    className="shrink-0 h-6 px-2 rounded border border-border/50 text-label font-medium text-muted-foreground/85 hover:text-foreground hover:border-primary/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    aria-label={`Deconstruct ${asset.filename}`}
+                  >
+                    Deconstruct
+                  </button>
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <p className="text-label text-muted-foreground/70 leading-relaxed px-0.5">
+        Classification grades each creative against the IAP variable registry. ≥80% confidence files
+        into the library automatically; anything lower waits in the IAP Library review queue. Videos
+        are marked unsupported for now.
+      </p>
+    </div>
+  );
+}
+
 export function CreativeLibraryPanel({
   accountId,
   availableAdNames,
@@ -1691,6 +1785,7 @@ export function CreativeLibraryPanel({
         availableAdNames={availableAdNames}
         onChanged={refresh}
       />
+      <CreativeDeconstructSection accountId={accountId} creativeAssets={creativeAssets} />
       {onDone && (
         <div className="flex items-center justify-between pt-2 border-t border-border/30">
           <span className="text-caption text-muted-foreground/85">

@@ -14,6 +14,12 @@ import {
   startStrategyGeneration,
   type GenerationKind,
 } from "../lib/generationEngine";
+import {
+  listDeconstructions,
+  reviewDeconstruction,
+  startCreativeDeconstruction,
+  type DetectedVariable,
+} from "../lib/deconstructionEngine";
 
 const router: IRouter = Router();
 
@@ -65,11 +71,71 @@ router.post("/metrix/accounts/:accountId/generate/briefs", requireAuth, async (r
   }
 });
 
+// ── creative deconstruction ────────────────────────────────────────────
+
+router.post("/metrix/accounts/:accountId/deconstruct-creatives", requireAuth, async (req, res) => {
+  const accountId = String(req.params["accountId"]);
+  const importIds = Array.isArray(req.body?.["import_ids"]) ? req.body["import_ids"].map(String) : [];
+  try {
+    if (!(await guardAccess(req, res, accountId))) return;
+    const runId = await startCreativeDeconstruction(accountId, req.authUser!.email, importIds);
+    req.log.info({ accountId, runId, count: importIds.length }, "Creative deconstruction started");
+    res.status(202).json({ run_id: runId });
+  } catch (err) {
+    req.log.error({ err, accountId }, "Failed to start creative deconstruction");
+    sendGenerationError(res, err);
+  }
+});
+
+router.get("/metrix/accounts/:accountId/creative-deconstructions", requireAuth, async (req, res) => {
+  const accountId = String(req.params["accountId"]);
+  try {
+    if (!(await guardAccess(req, res, accountId))) return;
+    const deconstructions = await listDeconstructions(accountId);
+    res.json({ deconstructions });
+  } catch (err) {
+    req.log.error({ err, accountId }, "Failed to list creative deconstructions");
+    sendGenerationError(res, err);
+  }
+});
+
+router.patch(
+  "/metrix/accounts/:accountId/creative-deconstructions/:deconstructionId",
+  requireAuth,
+  async (req, res) => {
+    const accountId = String(req.params["accountId"]);
+    const deconstructionId = String(req.params["deconstructionId"]);
+    const action = String(req.body?.["action"] ?? "");
+    if (action !== "update_variables" && action !== "bypass" && action !== "discard") {
+      res.status(400).json({ message: "action must be 'update_variables', 'bypass', or 'discard'." });
+      return;
+    }
+    const variables = Array.isArray(req.body?.["variables"])
+      ? (req.body["variables"] as DetectedVariable[])
+      : undefined;
+    try {
+      if (!(await guardAccess(req, res, accountId))) return;
+      const deconstruction = await reviewDeconstruction(
+        accountId,
+        deconstructionId,
+        action,
+        req.authUser!.email,
+        variables,
+      );
+      req.log.info({ accountId, deconstructionId, action }, "Creative deconstruction reviewed");
+      res.json({ deconstruction });
+    } catch (err) {
+      req.log.error({ err, accountId, deconstructionId }, "Failed to review creative deconstruction");
+      sendGenerationError(res, err);
+    }
+  },
+);
+
 router.get("/metrix/accounts/:accountId/generation-runs/:kind/latest", requireAuth, async (req, res) => {
   const accountId = String(req.params["accountId"]);
   const kind = String(req.params["kind"]);
-  if (kind !== "strategy" && kind !== "briefs") {
-    res.status(400).json({ message: "kind must be 'strategy' or 'briefs'." });
+  if (kind !== "strategy" && kind !== "briefs" && kind !== "deconstruct") {
+    res.status(400).json({ message: "kind must be 'strategy', 'briefs', or 'deconstruct'." });
     return;
   }
   try {

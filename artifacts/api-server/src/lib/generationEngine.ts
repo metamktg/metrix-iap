@@ -28,7 +28,7 @@ export const STALE_RUN_MS = 10 * 60 * 1000;
 
 type Row = Record<string, any>;
 
-export type GenerationKind = "strategy" | "briefs";
+export type GenerationKind = "strategy" | "briefs" | "deconstruct";
 
 export class GenerationError extends Error {
   constructor(
@@ -368,14 +368,19 @@ function extractJson(text: string): unknown {
   return JSON.parse(stripped.slice(start, end + 1));
 }
 
+/** A user-message content payload: plain text, or text+image blocks (vision). */
+export type ModelContent = string | Array<Record<string, unknown>>;
+
 async function callModel(
-  prompt: string,
+  prompt: ModelContent,
   maxTokens = 8192,
 ): Promise<{ text: string; truncated: boolean }> {
   const message = await anthropic.messages.create({
     model: GENERATION_MODEL,
     max_tokens: maxTokens,
-    messages: [{ role: "user", content: prompt }],
+    // The SDK type for content blocks is stricter than our generic record
+    // shape; the wire format is identical.
+    messages: [{ role: "user", content: prompt as never }],
   });
   const block = message.content.find((b) => b.type === "text");
   if (!block || block.type !== "text") throw new Error("Model returned no text content.");
@@ -387,8 +392,8 @@ async function callModel(
 // follow-up prompt — the only fix is a bigger output budget.
 const MAX_OUTPUT_TOKENS = 32768;
 
-async function generateValidated<T>(
-  prompt: string,
+export async function generateValidated<T>(
+  prompt: ModelContent,
   schema: z.ZodType<T>,
   opts: { maxTokens?: number; validate?: (value: T) => string | null } = {},
 ): Promise<T> {
@@ -419,10 +424,14 @@ async function generateValidated<T>(
     return parseAndCheck(first.text);
   } catch (err) {
     const problem = err instanceof Error ? err.message : String(err);
-    const repairPrompt =
-      `${prompt}\n\nYour previous response failed validation. Errors:\n${problem}\n\n` +
+    const repairNote =
+      `\n\nYour previous response failed validation. Errors:\n${problem}\n\n` +
       `Previous response:\n${first.text.slice(0, 6000)}\n\n` +
       `Return ONLY the corrected raw JSON object — no prose, no markdown fences.`;
+    const repairPrompt: ModelContent =
+      typeof prompt === "string"
+        ? `${prompt}${repairNote}`
+        : [...prompt, { type: "text", text: repairNote }];
     const second = await callModel(repairPrompt, budget);
     if (second.truncated) {
       throw new Error(
@@ -438,7 +447,7 @@ async function generateValidated<T>(
 // The canonical global variable taxonomy shared by every MST-layer prompt.
 // Kept as one source of truth so strategy pillars and brief angle_stacks use
 // the SAME prefixes (this mirrors the frontend variable-registry taxonomy).
-const IAP_VARIABLE_TAXONOMY = [
+export const IAP_VARIABLE_TAXONOMY = [
   "IAP GLOBAL VARIABLE TAXONOMY (use these prefixes; combine several with ' + '):",
   "- CN_ Concept/format angle: e.g. CN_Testimonial, CN_FounderStory, CN_ProductDemo, CN_Comparison, CN_ValueStack, CN_Lifestyle, CN_PainFirst, CN_SocialProof, CN_UGC.",
   "- FW_ Copy framework: FW_PAS, FW_AIDA, FW_FAB, FW_BAB, FW_StoryBrand, FW_Direct.",
@@ -780,7 +789,7 @@ export async function getLatestGenerationRun(
   return runShape(row);
 }
 
-async function startRun(
+export async function startRun(
   accountId: string,
   kind: GenerationKind,
   createdBy: string,
@@ -818,7 +827,7 @@ async function startRun(
   return String(data![0]!["id"]);
 }
 
-async function finishRun(runId: string, status: "success" | "error", errorMessage?: string): Promise<void> {
+export async function finishRun(runId: string, status: "success" | "error", errorMessage?: string): Promise<void> {
   const supabase = getSupabase();
   const { error } = await supabase
     .from("generation_runs")
@@ -833,6 +842,17 @@ async function finishRun(runId: string, status: "success" | "error", errorMessag
 
 async function deleteRunOutputs(runId: string, kind: GenerationKind): Promise<void> {
   const supabase = getSupabase();
+  if (kind === "deconstruct") {
+    // Intentional no-op. Deconstruction commits atomically PER IMPORT
+    // (classification upsert + library swap happen only after the model
+    // succeeded for that import — see deconstructionEngine), so every row a
+    // dead/failed run wrote is a complete, valid replacement. Deleting by
+    // run id here would destroy those valid results AND, because the upsert
+    // replaced the prior row in place, there would be nothing to restore —
+    // a transient failure must never erase an earlier successful
+    // classification or its filed library entry.
+    return;
+  }
   const tables =
     kind === "strategy" ? ["message_pillars", "testing_hypotheses", "icp_profiles"] : ["imported_creative_briefs"];
   for (const table of tables) {
@@ -841,7 +861,7 @@ async function deleteRunOutputs(runId: string, kind: GenerationKind): Promise<vo
   }
 }
 
-async function deletePriorGenerated(accountId: string, kind: GenerationKind): Promise<void> {
+async function deletePriorGenerated(accountId: string, kind: Exclude<GenerationKind, "deconstruct">): Promise<void> {
   const supabase = getSupabase();
   const tables =
     kind === "strategy" ? ["message_pillars", "testing_hypotheses", "icp_profiles"] : ["imported_creative_briefs"];

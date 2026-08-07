@@ -90,6 +90,7 @@ import {
   invalidateMetrixSeedCache,
 } from "../lib/metrixSeedAssembly";
 import { randomBytes } from "node:crypto";
+import { deleteDerivedLibraryEntries } from "../lib/deconstructionEngine";
 import { getSupabase } from "../lib/supabase";
 import { parseIapCsv, IapCsvFormatError } from "../lib/iapCsvParser";
 import type { IapCsvClass } from "../lib/iapCsvSpec";
@@ -1228,6 +1229,10 @@ router.delete("/metrix/accounts/:accountId/manual-imports/:importId", requireAut
       if (adNames.length > 0) {
         await syncCreativeAssetLinks(accountId, importId, "", adNames, []);
       }
+      // Library entries derived from this creative's deconstruction must not
+      // outlive the source file (the classification row itself cascades via
+      // the manual_import_id FK).
+      await deleteDerivedLibraryEntries(accountId, importId);
     }
     const del = await supabase.from("manual_imports").delete().eq("id", importId);
     if (del.error) throw new Error(del.error.message);

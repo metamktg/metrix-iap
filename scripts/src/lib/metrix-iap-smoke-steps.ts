@@ -38,6 +38,7 @@ export const IAP_SMOKE_STEPS: SmokeStep[] = [
     script: "smoke:metrix-iap-avatars-tooltips",
   },
   { label: "AdAccountOverview UX e2e", script: "smoke:metrix-iap-ad-account-overview" },
+  { label: "IAP Library review queue e2e", script: "smoke:metrix-iap-review-queue" },
 ];
 
 /**
