@@ -12,6 +12,7 @@ import { getAdAccount, getBriefBuilder, getStrategyData, getAnalysisData, getMST
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState,
   CrossLink, useFocusParam, FlowCrumb, useFromParam, SectionCard, ConfidenceBadge,
+  useShowMore, ShowMoreButton,
 } from "../shared";
 import { CreativeCard } from "@/components/creative/CreativeCard";
 import { cardFromCell } from "@/lib/creative-assembly";
@@ -96,17 +97,7 @@ export function CreativeBriefBuilderView() {
               {briefs.length === 0 ? (
                 <PendingState title="No briefs yet" message="Generate briefs from the Creative command center first." icon={FileText} action={<CrossLink to="/app/creative" label="Go to Creative" />} />
               ) : (
-                <div className="px-6 py-5 space-y-2.5 max-w-3xl">
-                  {briefs.map((b) => (
-                    <div key={b.id} className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                      <div className="min-w-0">
-                        <p className="text-body font-semibold text-foreground leading-tight">{pillarOf(b.source_pillar)?.label ?? b.source_pillar}</p>
-                        <p className="text-label text-muted-foreground/70 mt-0.5">{b.asset_type} · {STATUS_LABEL[b.status] ?? b.status}</p>
-                      </div>
-                      <CrossLink to={`/app/creative/builder?focus=${b.id}`} label="Open" />
-                    </div>
-                  ))}
-                </div>
+                <BriefChooserList briefs={briefs} pillarOf={pillarOf} />
               )}
             </div>
           );
@@ -209,5 +200,29 @@ export function CreativeBriefBuilderView() {
         );
       }}
     </ModuleScopeGate>
+  );
+}
+
+function BriefChooserList({
+  briefs,
+  pillarOf,
+}: {
+  briefs: DraftBrief[];
+  pillarOf: (id: string) => { label: string } | undefined;
+}) {
+  const fold = useShowMore(briefs, 6);
+  return (
+    <div className="px-6 py-5 space-y-2.5 max-w-3xl">
+      {fold.visible.map((b) => (
+        <div key={b.id} className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
+          <div className="min-w-0">
+            <p className="text-body font-semibold text-foreground leading-tight">{pillarOf(b.source_pillar)?.label ?? b.source_pillar}</p>
+            <p className="text-label text-muted-foreground/70 mt-0.5">{b.asset_type} · {STATUS_LABEL[b.status] ?? b.status}</p>
+          </div>
+          <CrossLink to={`/app/creative/builder?focus=${b.id}`} label="Open" />
+        </div>
+      ))}
+      <ShowMoreButton total={briefs.length} hiddenCount={fold.hiddenCount} expanded={fold.expanded} onToggle={fold.toggle} noun="briefs" />
+    </div>
   );
 }

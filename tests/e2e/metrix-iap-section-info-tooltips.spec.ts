@@ -290,6 +290,56 @@ async function main() {
         }
       },
     );
+    // ── Test 4: IAP Library — metric tiles header SectionInfoIcon ──────────
+    await test(
+      'Library — metric tiles SectionInfoIcon shows correct tip',
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        const jsErrors: string[] = [];
+        page.on("pageerror", (err) => jsErrors.push(err.message));
+        try {
+          await mockApis(ctx);
+
+          await page.goto(`${BASE}/app/analysis/library?account=bookster`, {
+            waitUntil: "domcontentloaded",
+          });
+
+          // The Library page has no SectionCard wrapper — the SectionInfoIcon
+          // sits in the metric tiles header row. Hover the first (and only)
+          // info icon on the page and assert the tooltip text.
+          const trigger = page
+            .locator('span[aria-label="Section info"]')
+            .first();
+          await trigger.waitFor({ state: "visible", timeout: 30_000 });
+          await trigger.hover();
+
+          const tooltip = page.locator('[role="tooltip"]');
+          await tooltip.waitFor({ state: "visible", timeout: 8_000 });
+
+          const expectedTip =
+            "Aggregates every creative cell's full flight window for the selected metrics, so you can compare cell and variable performance side by side.";
+          const text = ((await tooltip.textContent()) ?? "").trim();
+          assert(text.length > 0, "Library tooltip text is empty");
+          assert(
+            text === expectedTip,
+            `Library tooltip text mismatch.\n` +
+              `  Expected: "${expectedTip}"\n` +
+              `  Got:      "${text}"`,
+          );
+          console.log('       Library metric tiles tooltip verified ✓');
+
+          assert(
+            jsErrors.length === 0,
+            `Expected no JS errors, got: ${jsErrors.join("; ")}`,
+          );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
   } finally {
     await browser.close();
   }

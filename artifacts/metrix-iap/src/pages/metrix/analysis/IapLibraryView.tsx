@@ -32,6 +32,7 @@ import {
   MetricTile, CaveatNote, MetricSelectionBar, CrossLink, useFocusParam,
   readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel,
   RangeScopeBar, NoDataInRangeState, StaleFocusNotice, PILL_ACTIVE, PILL_INACTIVE,
+  SectionInfoIcon,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { useCellRangeScope } from "@/lib/date-scope";
@@ -372,14 +373,15 @@ export function IapLibraryView() {
               <>
               <div className="px-6 pt-5">
                 <div className="flex items-center justify-between mb-2">
-                  {/* Funnel stage badge */}
-                  {funnelConfig ? (
-                    <span className="text-[9px] font-mono font-semibold uppercase tracking-widest text-interactive/70 border border-primary/25 bg-primary/[0.06] px-2 py-0.5 rounded">
-                      {funnelConfig.badge}
-                    </span>
-                  ) : (
-                    <div />
-                  )}
+                  {/* Funnel stage badge + section info */}
+                  <div className="flex items-center gap-1.5">
+                    {funnelConfig && (
+                      <span className="text-[9px] font-mono font-semibold uppercase tracking-widest text-interactive/70 border border-primary/25 bg-primary/[0.06] px-2 py-0.5 rounded">
+                        {funnelConfig.badge}
+                      </span>
+                    )}
+                    <SectionInfoIcon tip="Aggregates every creative cell's full flight window for the selected metrics, so you can compare cell and variable performance side by side." />
+                  </div>
                   <MetricPickerButton
                     catalog={tileCatalog}
                     selected={funnelStage === "custom" ? savedTileIds : tileIds}

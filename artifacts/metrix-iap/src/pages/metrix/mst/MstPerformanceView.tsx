@@ -11,11 +11,12 @@
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getMST, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
-import { runMstAnalysis, type Verdict } from "@/lib/mst-analysis";
+import { runMstAnalysis, type Verdict, type ColumnAnalysisEntry, type RowAnalysisEntry, type DiagonalAnalysisEntry } from "@/lib/mst-analysis";
 import { resolveCohortMeta } from "@/lib/data/cohortMeta";
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
   CaveatNote, SectionCard, DetailReveal, readableVariables, fmtUSD, fmtNum,
+  useShowMore, ShowMoreButton,
 } from "../shared";
 import { cn } from "@/lib/utils";
 import { TrendingUp, Users, GitMerge, Sparkles } from "lucide-react";
@@ -121,60 +122,100 @@ export function MstPerformanceView() {
               </SectionCard>
 
               <SectionCard title="Avatar / column winners" desc="Best-performing concept per avatar — may differ from the universal winner.">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {columnAnalysis.map((col) => {
-                    const top = col.variants[0];
-                    return (
-                      <div key={col.columnId} className="rounded-xl border border-border/40 bg-white/[0.02] p-3">
-                        <div className="flex items-center gap-1.5 mb-2">
-                          <Users className="w-3 h-3 text-interactive/60" />
-                          <span className="text-sm font-bold text-foreground">{col.columnLabel}</span>
-                        </div>
-                        <p className="text-body text-foreground/85">{top ? readableVariables(top.conceptCode) : "—"}</p>
-                        <p className="text-[9px] font-mono text-muted-foreground/40 mt-0.5 tabular-nums">{top ? fmtMetric(top.value) : "—"} · {col.agg.appearances} rows</p>
-                        {col.retire.length > 0 && col.retire[0] !== col.scale[0] && (
-                          <DetailReveal
-                            label="Retire candidate"
-                            sections={[{ text: `${col.retire[0]} ranked last in this column's tested variants.` }]}
-                          />
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                <ColumnAnalysisList columnAnalysis={columnAnalysis} fmtMetric={fmtMetric} />
               </SectionCard>
 
               <SectionCard title="Row consistency" desc="Does this shared variable work the same way across every avatar, or only some?">
-                <div className="space-y-2">
-                  {rowAnalysis.map((row) => (
-                    <div key={row.rowId} className="flex items-center justify-between gap-3 rounded-lg border border-border/30 bg-white/[0.01] px-3 py-2">
-                      <div className="min-w-0">
-                        <p className="text-body text-foreground/85">{readableVariables(row.sharedVariable)}</p>
-                        <p className="text-label text-muted-foreground/60 mt-0.5">{row.byColumn.map((c) => `${c.columnLabel}: ${c.standing}`).join(" · ")}</p>
-                      </div>
-                      <VerdictBadge verdict={row.verdict} />
-                    </div>
-                  ))}
-                </div>
+                <RowAnalysisList rowAnalysis={rowAnalysis} />
               </SectionCard>
 
               <SectionCard title="Diagonal isolation" desc="Maximum-diversity read: the same variable tested against every avatar and context at once.">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {diagonalAnalysis.map((d) => (
-                    <div key={d.role} className="rounded-xl border border-border/40 bg-white/[0.02] p-3">
-                      <div className="flex items-center justify-between gap-2 mb-1.5">
-                        <span className="flex items-center gap-1.5 text-sm font-bold text-foreground"><GitMerge className="w-3 h-3 text-interactive/60" /> {d.label}</span>
-                        <VerdictBadge verdict={d.verdict} />
-                      </div>
-                      <p className="text-[9px] font-mono text-muted-foreground/40 tabular-nums">{fmtMetric(d.agg.terminalMetricValue)} · {d.cellIds.join(", ")}</p>
-                    </div>
-                  ))}
-                </div>
+                <DiagonalAnalysisList diagonalAnalysis={diagonalAnalysis} fmtMetric={fmtMetric} />
               </SectionCard>
             </div>
           </div>
         );
       }}
     </ModuleScopeGate>
+  );
+}
+
+function ColumnAnalysisList({
+  columnAnalysis,
+  fmtMetric,
+}: {
+  columnAnalysis: ColumnAnalysisEntry[];
+  fmtMetric: (v: number | null) => string;
+}) {
+  const fold = useShowMore(columnAnalysis, 6);
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      {fold.visible.map((col) => {
+        const top = col.variants[0];
+        return (
+          <div key={col.columnId} className="rounded-xl border border-border/40 bg-white/[0.02] p-3">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Users className="w-3 h-3 text-interactive/60" />
+              <span className="text-sm font-bold text-foreground">{col.columnLabel}</span>
+            </div>
+            <p className="text-body text-foreground/85">{top ? readableVariables(top.conceptCode) : "—"}</p>
+            <p className="text-[9px] font-mono text-muted-foreground/40 mt-0.5 tabular-nums">{top ? fmtMetric(top.value) : "—"} · {col.agg.appearances} rows</p>
+            {col.retire.length > 0 && col.retire[0] !== col.scale[0] && (
+              <DetailReveal
+                label="Retire candidate"
+                sections={[{ text: `${col.retire[0]} ranked last in this column's tested variants.` }]}
+              />
+            )}
+          </div>
+        );
+      })}
+      <div className="md:col-span-2">
+        <ShowMoreButton total={columnAnalysis.length} hiddenCount={fold.hiddenCount} expanded={fold.expanded} onToggle={fold.toggle} noun="columns" />
+      </div>
+    </div>
+  );
+}
+
+function RowAnalysisList({ rowAnalysis }: { rowAnalysis: RowAnalysisEntry[] }) {
+  const fold = useShowMore(rowAnalysis, 6);
+  return (
+    <div className="space-y-2">
+      {fold.visible.map((row) => (
+        <div key={row.rowId} className="flex items-center justify-between gap-3 rounded-lg border border-border/30 bg-white/[0.01] px-3 py-2">
+          <div className="min-w-0">
+            <p className="text-body text-foreground/85">{readableVariables(row.sharedVariable)}</p>
+            <p className="text-label text-muted-foreground/60 mt-0.5">{row.byColumn.map((c) => `${c.columnLabel}: ${c.standing}`).join(" · ")}</p>
+          </div>
+          <VerdictBadge verdict={row.verdict} />
+        </div>
+      ))}
+      <ShowMoreButton total={rowAnalysis.length} hiddenCount={fold.hiddenCount} expanded={fold.expanded} onToggle={fold.toggle} noun="rows" />
+    </div>
+  );
+}
+
+function DiagonalAnalysisList({
+  diagonalAnalysis,
+  fmtMetric,
+}: {
+  diagonalAnalysis: DiagonalAnalysisEntry[];
+  fmtMetric: (v: number | null) => string;
+}) {
+  const fold = useShowMore(diagonalAnalysis, 6);
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      {fold.visible.map((d) => (
+        <div key={d.role} className="rounded-xl border border-border/40 bg-white/[0.02] p-3">
+          <div className="flex items-center justify-between gap-2 mb-1.5">
+            <span className="flex items-center gap-1.5 text-sm font-bold text-foreground"><GitMerge className="w-3 h-3 text-interactive/60" /> {d.label}</span>
+            <VerdictBadge verdict={d.verdict} />
+          </div>
+          <p className="text-[9px] font-mono text-muted-foreground/40 tabular-nums">{fmtMetric(d.agg.terminalMetricValue)} · {d.cellIds.join(", ")}</p>
+        </div>
+      ))}
+      <div className="md:col-span-2">
+        <ShowMoreButton total={diagonalAnalysis.length} hiddenCount={fold.hiddenCount} expanded={fold.expanded} onToggle={fold.toggle} noun="diagonals" />
+      </div>
+    </div>
   );
 }

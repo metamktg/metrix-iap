@@ -14,7 +14,7 @@ import {
 } from "@/lib/normalize";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
-import { Funnel, Wrench, LayoutGrid, TrendingUp, Users, ArrowUpRight, Ban, FlaskConical, Search, Sparkles } from "lucide-react";
+import { Funnel, Wrench, LayoutGrid, TrendingUp, Users, ArrowUpRight, Ban, FlaskConical, Search, Sparkles, ChevronDown } from "lucide-react";
 import type { MessagePillar, ICPProfile, VariableCombination, ScalingPlaybook } from "@/lib/data/seedTypes";
 
 // ─── Variable families ────────────────────────────────────────────────
@@ -288,6 +288,31 @@ export function HypothesisCodeChipsRow({ label }: { label: string }) {
   const codes = extractVariableCodes(label);
   if (codes.length === 0) return null;
   return <HypothesisCodeChips codes={codes} />;
+}
+
+/** Progressive-disclosure fold for a pillar's full detail sections
+ *  (funnel, execution, placement, scaling, ICPs). Collapsed by default —
+ *  pillar cards lead with label, descriptor, and variable stack. */
+export function PillarDetailsFold({ pillar, profiles }: { pillar: MessagePillar; profiles?: ICPProfile[] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex items-center gap-1.5 text-caption font-medium text-muted-foreground/70 hover:text-foreground/80 transition-colors"
+      >
+        Pillar details
+        <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} aria-hidden />
+      </button>
+      {open && (
+        <div className="mt-2">
+          <PillarDetailSections pillar={pillar} profiles={profiles} />
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ─── Pillar detail sections ───────────────────────────────────────────
