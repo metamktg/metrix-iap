@@ -79,6 +79,8 @@ function metricValueForSegment(t: SegmentTotals, metric: Pick<MetricDef, "id" | 
       return { value: v, display: v != null ? `${v.toFixed(2)}%` : "—" };
     }
     // ── Library tile ID aliases (lib_* → same computation as segment IDs) ──
+    case "lib_clicks_all":
+      return metricValueForSegment(t, { id: "clicks_all", isResultEvent: false });
     case "lib_atc_rate":
       return metricValueForSegment(t, { id: "add_to_cart_rate", isResultEvent: false });
     case "lib_cost_per_atc":

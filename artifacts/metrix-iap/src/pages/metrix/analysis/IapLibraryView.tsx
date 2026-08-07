@@ -25,6 +25,7 @@ import { MetricPickerButton } from "@/components/creative/MetricPicker";
 import {
   buildLibraryMetricCatalog, metricById,
   LIBRARY_METRIC_STORAGE_KEY, LIBRARY_DEFAULT_METRIC_IDS,
+  type MetricDef,
 } from "@/lib/data/metricsCatalog";
 import {
   ModuleHeader, ModuleTabs, ModuleScopeGate, PendingState, FlowCrumb, LoopAction, useFromParam,
@@ -106,6 +107,9 @@ export function IapLibraryView() {
   useConceptHighlight(onHighlight);
   const [importOpen, setImportOpen] = useState(false);
   const [segmentsOpen, setSegmentsOpen] = useState(false);
+  // ── Tile-level segment grid: tracks which metric tile the user clicked ─
+  const [tileSegmentsOpen, setTileSegmentsOpen] = useState(false);
+  const [tileSegmentMetric, setTileSegmentMetric] = useState<MetricDef | null>(null);
   const [creativeLibraryOpen, setCreativeLibraryOpen] = useState(false);
   const [uploadCellId, setUploadCellId] = useState<string | null>(null);
   const [groupByConcept, setGroupByConcept] = useState(false);
@@ -388,7 +392,18 @@ export function IapLibraryView() {
                   {tileIds.map((id) => {
                     const m = metricById(tileCatalog, id);
                     if (!m) return null;
-                    return <MetricTile key={m.id} label={m.label} value={m.formatted} sub={m.sub} />;
+                    // lib_cells is a raw count (unique creative cells in selection)
+                    // — it has no meaningful segment-level breakdown, so don't make it clickable.
+                    const isSegmentable = m.id !== "lib_cells";
+                    return (
+                      <MetricTile
+                        key={m.id}
+                        label={m.label}
+                        value={m.formatted}
+                        sub={m.sub}
+                        onClick={isSegmentable ? () => { setTileSegmentMetric(m); setTileSegmentsOpen(true); } : undefined}
+                      />
+                    );
                   })}
                   {tileIds.length === 0 && (
                     <div className="col-span-2 md:col-span-4 text-caption text-muted-foreground/60 border border-dashed border-border/40 rounded-lg px-3 py-4 text-center">
@@ -999,8 +1014,20 @@ export function IapLibraryView() {
                   title={cardGridCell.book2_concept_name}
                   analysis={a}
                   cellIds={[cardGridCell.cell_id]}
+                  metric={tileSegmentMetric}
                 />
               )}
+
+              {/* ── Tile-level segment grid (account-wide, metric-scoped) ── */}
+              <SegmentGridModal
+                open={tileSegmentsOpen}
+                onClose={() => setTileSegmentsOpen(false)}
+                kicker="IAP Library · All cells"
+                title={tileSegmentMetric?.label ?? "Segment breakdown"}
+                analysis={a}
+                cellIds={null}
+                metric={tileSegmentMetric}
+              />
 
               {/* ── Variable drill-down (DNA cards, chips, table rows) ── */}
               <VariableDrilldownModal
