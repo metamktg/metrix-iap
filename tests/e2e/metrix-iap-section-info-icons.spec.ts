@@ -318,6 +318,85 @@ async function main() {
         }
       },
     );
+    // ── Strategy sub-page tests ────────────────────────────────────────────
+
+    // Test 5: Strategy Map — "Pillars" column header SectionInfoIcon.
+    await test(
+      'StrategyMap · "Pillars" SectionInfoIcon shows correct tooltip',
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        try {
+          await mockApis(ctx);
+          await gotoAndWait(
+            page,
+            `${BASE}/app/strategy/map?account=${ACCOUNT}`,
+            "Pillars",
+          );
+          await assertTooltip(
+            page,
+            "Validated message pillars from analysis — select one to trace its source cells and the hypotheses it feeds.",
+            "Strategy Map · Pillars SectionInfoIcon",
+          );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+
+    // Test 6: Avatars / ICP — "Matrix avatars" SectionInfoIcon (default view mode).
+    await test(
+      'AvatarsView · "Matrix avatars" SectionInfoIcon shows correct tooltip',
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        try {
+          await mockApis(ctx);
+          await gotoAndWait(
+            page,
+            `${BASE}/app/strategy/avatars?account=${ACCOUNT}`,
+            "Matrix avatars",
+          );
+          await assertTooltip(
+            page,
+            "Audience avatars from the MST matrix, each with its measured performance, creative DNA, and linked ICP profiles.",
+            "Avatars / ICP · Matrix avatars SectionInfoIcon",
+          );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+
+    // Test 7: Hypothesis Queue — "Hypothesis queue" SectionInfoIcon (default tab).
+    await test(
+      'HypothesisQueueView · "Hypothesis queue" SectionInfoIcon shows correct tooltip',
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        try {
+          await mockApis(ctx);
+          await gotoAndWait(
+            page,
+            `${BASE}/app/strategy/hypotheses?account=${ACCOUNT}`,
+            "Hypothesis queue",
+          );
+          await assertTooltip(
+            page,
+            "Active hypotheses derived from analysis, ordered as queued. Chips show the variable codes each hypothesis mentions; the drawer holds the full test design.",
+            "Hypothesis Queue · SectionInfoIcon",
+          );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
   } finally {
     await browser.close();
   }
