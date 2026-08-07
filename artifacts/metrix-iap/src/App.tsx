@@ -40,6 +40,7 @@ import { AudienceView } from "@/pages/metrix/analysis/AudienceView";
 import { PlacementsView } from "@/pages/metrix/analysis/PlacementsView";
 import { BudgetView } from "@/pages/metrix/analysis/BudgetView";
 import { AnalysisHistoryView } from "@/pages/metrix/analysis/AnalysisHistoryView";
+import { EngagementFunnelView } from "@/pages/metrix/analysis/EngagementFunnelView";
 import { StrategyCommandCenter } from "@/pages/metrix/strategy/StrategyCommandCenter";
 import { StrategyOverview } from "@/pages/metrix/strategy/StrategyOverview";
 import { StrategyMapView } from "@/pages/metrix/strategy/StrategyMapView";
@@ -108,6 +109,7 @@ export function Router() {
       <Route path="/app/analysis/placements" component={PlacementsView} />
       <Route path="/app/analysis/budget"     component={BudgetView} />
       <Route path="/app/analysis/history"    component={AnalysisHistoryView} />
+      <Route path="/app/analysis/funnel"    component={EngagementFunnelView} />
 
       {/* ── 04 Strategy ───────────────────────────────────────────────── */}
       <Route path="/app/strategy"              component={StrategyCommandCenter} />

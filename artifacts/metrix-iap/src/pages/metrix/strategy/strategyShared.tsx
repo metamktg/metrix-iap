@@ -13,6 +13,7 @@ import {
   type HierarchyRef,
 } from "@/lib/normalize";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { Funnel, Wrench, LayoutGrid, TrendingUp, Users, ArrowUpRight, Ban, FlaskConical, Search, Sparkles } from "lucide-react";
 import type { MessagePillar, ICPProfile, VariableCombination, ScalingPlaybook } from "@/lib/data/seedTypes";
 
@@ -32,20 +33,31 @@ export function familyLabel(family: string): string {
   return FAMILY_LABEL[family] ?? family.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-/** One readable chip per variable code, colored by family prefix. Code shown as tooltip on hover. */
-export function VariableChip({ code, showCode = false }: { code: string; showCode?: boolean }) {
+/** One readable chip per variable code, colored by family prefix. Styled info tooltip on hover. */
+export function VariableChip({ code, showCode = false, className }: { code: string; showCode?: boolean; className?: string }) {
   const prefix = getVariablePrefix(code);
   return (
-    <span
-      title={code}
-      className={cn(
-        "inline-flex items-center gap-1 text-label font-medium border px-1.5 py-0.5 rounded leading-none",
-        PREFIX_COLORS[prefix],
-      )}
-    >
-      {resolveVariableLabel(code)}
-      {showCode && <span className="font-mono text-label opacity-60">{code}</span>}
-    </span>
+    <TooltipProvider delayDuration={150}>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          className={cn(
+            "inline-flex items-center gap-1 text-label font-medium border px-1.5 py-0.5 rounded leading-none cursor-default",
+            PREFIX_COLORS[prefix],
+            className,
+          )}
+        >
+          {resolveVariableLabel(code)}
+          {showCode && <span className="font-mono text-label opacity-60">{code}</span>}
+          {!showCode && <span className="sr-only">{` (${code})`}</span>}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-[220px] space-y-0.5 text-left">
+        <p className="font-mono text-label text-primary-foreground/70">{code}</p>
+        <p className="text-label leading-relaxed text-primary-foreground/90">{resolveVariableLabel(code)}</p>
+      </TooltipContent>
+    </Tooltip>
+    </TooltipProvider>
   );
 }
 
@@ -81,16 +93,26 @@ export function VariableStackChips({ stack, maxVisible = 4 }: { stack: Record<st
   // Density rule: no family eyebrow on the chip face — the family and
   // raw code live in the title attr; the chip shows only the label.
   const chip = ([family, code]: [string, string]) => (
-    <span
-      key={family}
-      title={`${familyLabel(family)} · ${code}`}
-      className={cn(
-        "inline-flex items-center text-label font-medium border px-1.5 py-1 rounded leading-none",
-        PREFIX_COLORS[getVariablePrefix(code)],
-      )}
-    >
-      {resolveVariableLabel(code)}
-    </span>
+    <TooltipProvider key={family} delayDuration={150}>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          className={cn(
+            "inline-flex items-center text-label font-medium border px-1.5 py-1 rounded leading-none cursor-default",
+            PREFIX_COLORS[getVariablePrefix(code)],
+          )}
+        >
+          {resolveVariableLabel(code)}
+          <span className="sr-only">{` — ${familyLabel(family)} (${code})`}</span>
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-[220px] space-y-0.5 text-left">
+        <p className="text-label font-semibold text-primary-foreground/90">{familyLabel(family)}</p>
+        <p className="font-mono text-label text-primary-foreground/70">{code}</p>
+        <p className="text-label leading-relaxed text-primary-foreground/90">{resolveVariableLabel(code)}</p>
+      </TooltipContent>
+    </Tooltip>
+    </TooltipProvider>
   );
   const visible = entries.length > maxVisible ? entries.slice(0, maxVisible) : entries;
   const hidden = entries.length > maxVisible ? entries.slice(maxVisible) : [];
@@ -393,11 +415,11 @@ export function VariableCombinationsGrid({ combinations }: { combinations: Varia
           <CombinationChips combination={c.combination} />
           <div className="mt-auto pt-2 border-t border-border/20 flex items-center gap-4">
             <div>
-              <div className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70">CPA</div>
+              <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40">CPA</div>
               <div className="text-sm font-bold text-foreground tabular-nums">{fmtMetric("usd_unit", c.cpa)}</div>
             </div>
             <div>
-              <div className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70">CVR</div>
+              <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40">CVR</div>
               <div className="text-sm font-bold text-foreground tabular-nums">{fmtMetric("pct", c.cvr_pct)}</div>
             </div>
             {c.confidence && (

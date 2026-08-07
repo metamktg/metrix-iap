@@ -126,12 +126,12 @@ export function MstPerformanceView() {
                     const top = col.variants[0];
                     return (
                       <div key={col.columnId} className="rounded-xl border border-border/40 bg-white/[0.02] p-3">
-                        <div className="flex items-center gap-1.5 mb-1.5">
+                        <div className="flex items-center gap-1.5 mb-2">
                           <Users className="w-3 h-3 text-interactive/60" />
-                          <span className="text-caption font-medium text-foreground">{col.columnLabel}</span>
+                          <span className="text-sm font-bold text-foreground">{col.columnLabel}</span>
                         </div>
                         <p className="text-body text-foreground/85">{top ? readableVariables(top.conceptCode) : "—"}</p>
-                        <p className="text-label text-muted-foreground/60 mt-0.5 tabular-nums">{top ? fmtMetric(top.value) : "—"} · {col.agg.appearances} rows</p>
+                        <p className="text-[9px] font-mono text-muted-foreground/40 mt-0.5 tabular-nums">{top ? fmtMetric(top.value) : "—"} · {col.agg.appearances} rows</p>
                         {col.retire.length > 0 && col.retire[0] !== col.scale[0] && (
                           <DetailReveal
                             label="Retire candidate"
@@ -162,11 +162,11 @@ export function MstPerformanceView() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {diagonalAnalysis.map((d) => (
                     <div key={d.role} className="rounded-xl border border-border/40 bg-white/[0.02] p-3">
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="flex items-center gap-1.5 text-caption font-medium text-foreground"><GitMerge className="w-3 h-3 text-interactive/60" /> {d.label}</span>
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <span className="flex items-center gap-1.5 text-sm font-bold text-foreground"><GitMerge className="w-3 h-3 text-interactive/60" /> {d.label}</span>
                         <VerdictBadge verdict={d.verdict} />
                       </div>
-                      <p className="text-label text-muted-foreground/60 tabular-nums">{fmtMetric(d.agg.terminalMetricValue)} · {d.cellIds.join(", ")}</p>
+                      <p className="text-[9px] font-mono text-muted-foreground/40 tabular-nums">{fmtMetric(d.agg.terminalMetricValue)} · {d.cellIds.join(", ")}</p>
                     </div>
                   ))}
                 </div>

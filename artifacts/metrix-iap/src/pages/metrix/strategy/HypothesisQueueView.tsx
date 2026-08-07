@@ -11,14 +11,15 @@ import {
   ModuleHeader, ModuleTabs, ModuleScopeGate, PendingState,
   MetricTile, CrossLink, useFocusParam, FlowCrumb, useFromParam, LoopAction,
   StaleFocusNotice, DetailReveal, deriveLabel,
-  PILL_ACTIVE, PILL_INACTIVE,
+  PILL_ACTIVE, PILL_INACTIVE, SectionCard, SectionInfoIcon,
 } from "../shared";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import {
   HypothesisStatusBadge, PillarDetailSections, VariableStackChips, pillarHasDetails,
   HypothesisCodeChipsRow,
 } from "./strategyShared";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
-import { Layers, FlaskConical, AlertTriangle, ArrowRight, Beaker, Crosshair, Target, TrendingUp } from "lucide-react";
+import { Layers, FlaskConical, AlertTriangle, ArrowRight, Beaker, Crosshair, Target, TrendingUp, ChevronDown } from "lucide-react";
 import type { ActiveHypothesis } from "@/lib/data/seedTypes";
 import { TokenizedConceptText } from "@/components/concept/ConceptChip";
 import { cn } from "@/lib/utils";
@@ -43,6 +44,31 @@ function HypFact({
         <span className="text-label font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
       </div>
       <p className="text-caption text-foreground/80 leading-snug line-clamp-1">{deriveLabel(value, 56)}</p>
+    </div>
+  );
+}
+
+/** Progressive-disclosure fold for a pillar's full detail sections
+ *  (funnel, execution, placement, scaling, ICPs). Collapsed by default —
+ *  the pillar card leads with label, descriptor, and variable stack. */
+function PillarDetailsFold({ pillar, profiles }: React.ComponentProps<typeof PillarDetailSections>) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex items-center gap-1.5 text-caption font-medium text-muted-foreground/70 hover:text-foreground/80 transition-colors"
+      >
+        Pillar details
+        <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} />
+      </button>
+      {open && (
+        <div className="mt-2">
+          <PillarDetailSections pillar={pillar} profiles={profiles} />
+        </div>
+      )}
     </div>
   );
 }
@@ -108,7 +134,7 @@ export function HypothesisQueueView() {
               <StaleFocusNotice label="hypothesis" />
             )}
             <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
-              <MetricTile label="In queue" value={String(hyps.length)} />
+              <MetricTile label="In queue" value={String(hyps.length)} variant="primary" />
               <MetricTile label="Ready for briefs" value={String(ready.length)} />
               <MetricTile label="Validation required" value={String(validating.length)} />
               <MetricTile label="Message pillars" value={String(pillars.length)} />
@@ -125,7 +151,11 @@ export function HypothesisQueueView() {
                     action={<CrossLink to="/app/strategy/overview" label="Go to Strategy Overview" />}
                   />
                 ) : (
-                  <>
+                  <SectionCard
+                    title="Hypothesis queue"
+                    desc="Tap a card for full prose, criteria, and risk"
+                    right={<SectionInfoIcon tip="Active hypotheses derived from analysis, ordered as queued. Chips show the variable codes each hypothesis mentions; the drawer holds the full test design." />}
+                  >
                     {/* Status filter strip */}
                     <div className="flex items-center gap-1.5 mb-3 flex-wrap" role="group" aria-label="Filter hypotheses by status">
                       {([
@@ -214,7 +244,7 @@ export function HypothesisQueueView() {
                           );
                         })}
                     </div>
-                  </>
+                  </SectionCard>
                 )
               )}
 
@@ -224,6 +254,11 @@ export function HypothesisQueueView() {
                     action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />}
                   />
                 ) : (
+                  <SectionCard
+                    title="Message pillars"
+                    desc="The proven messages hypotheses build on"
+                    right={<SectionInfoIcon tip="Message pillars are the validated themes from analysis. Each shows its source cells, variable stack, and — behind the details fold — funnel, execution, placement, and scaling guidance." />}
+                  >
                   <div className="space-y-3">
                     {pillars.map((p) => {
                       const linkedBriefs = briefs.filter((b) => b.source_pillar === p.id);
@@ -231,7 +266,20 @@ export function HypothesisQueueView() {
                         <div key={p.id} className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
                           <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                             {p.source_cells.map((c) => (
-                              <CrossLink key={c} to={`/app/analysis/library?focus=${c}`} label={c} />
+                              <TooltipProvider key={c} delayDuration={150}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="inline-flex">
+                                      <CrossLink to={`/app/analysis/library?focus=${c}`} label={c} srNote={`source matrix cell — opens it in the IAP Library`} />
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="max-w-[240px]">
+                                    <p className="text-caption leading-relaxed">
+                                      Source matrix cell <span className="font-mono">{c}</span> — opens it in the IAP Library.
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             ))}
                           </div>
                           <p className="text-sm font-semibold text-foreground leading-tight">{p.label}</p>
@@ -251,7 +299,7 @@ export function HypothesisQueueView() {
                           </div>
                           {pillarHasDetails(p) && (
                             <div className="mt-3 pt-3 border-t border-border/20">
-                              <PillarDetailSections pillar={p} profiles={s.icp_profiles} />
+                              <PillarDetailsFold pillar={p} profiles={s.icp_profiles} />
                             </div>
                           )}
                           {linkedBriefs.length > 0 && (
@@ -263,6 +311,7 @@ export function HypothesisQueueView() {
                       );
                     })}
                   </div>
+                  </SectionCard>
                 )
               )}
             </div>

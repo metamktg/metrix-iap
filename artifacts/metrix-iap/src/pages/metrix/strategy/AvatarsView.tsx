@@ -30,6 +30,7 @@ import {
   type SegmentId, type SegmentRawTotals, type SegmentDerivedMetrics, type SegmentSignal,
 } from "@/lib/segment-analytics";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import {
   Users, Fingerprint, DoorOpen, MessageSquareQuote, Compass,
   ArrowDownRight, ArrowUpRight, ArrowDown, ArrowUp, Dna, ChevronDown, ChevronRight, Search, MapPin,
@@ -468,16 +469,26 @@ function PlacementsAccordion({ rows }: { rows: PlacementRow[] }) {
   if (top3.length === 0) return null;
   return (
     <div>
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        title="Account-level placement signal — no per-profile breakdown available"
-        className="flex items-center gap-1.5 text-caption font-medium text-muted-foreground/70 hover:text-foreground/80 transition-colors"
-      >
-        <MapPin className="w-3.5 h-3.5" />
-        Account placements
-        <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} />
-      </button>
+      <TooltipProvider delayDuration={150}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={() => setOpen((o) => !o)}
+              className="flex items-center gap-1.5 text-caption font-medium text-muted-foreground/70 hover:text-foreground/80 transition-colors"
+            >
+              <MapPin className="w-3.5 h-3.5" />
+              Account placements
+              <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-[260px]">
+            <p className="text-caption leading-relaxed">
+              Account-level placement signal — no per-profile breakdown available.
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       {open && (
         <div className="mt-2 space-y-1.5">
           {top3.map((r, i) => (
@@ -768,22 +779,35 @@ function AudienceSegmentTile({
         <p className={cn(TYPE.title, "font-semibold text-foreground leading-snug")}>
           {segmentLabel(seg)}
         </p>
-        <span
-          title={
-            signal.low
-              ? signal.reasons.join(" ")
-              : "Sufficient spend and impressions for a reliable read."
-          }
-          className={cn(
-            "shrink-0 rounded border px-1.5 py-0.5",
-            TYPE.label,
-            signal.low
-              ? "border-amber-400/30 bg-amber-400/[0.08] text-amber-400"
-              : "border-emerald-400/30 bg-emerald-400/[0.08] text-emerald-400",
-          )}
-        >
-          {signal.low ? "low signal" : "signal ✓"}
-        </span>
+        <TooltipProvider delayDuration={150}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span
+                className={cn(
+                  "shrink-0 rounded border px-1.5 py-0.5 cursor-default",
+                  TYPE.label,
+                  signal.low
+                    ? "border-amber-400/30 bg-amber-400/[0.08] text-amber-400"
+                    : "border-emerald-400/30 bg-emerald-400/[0.08] text-emerald-400",
+                )}
+              >
+                {signal.low ? "low signal" : "signal ✓"}
+                <span className="sr-only">
+                  {signal.low
+                    ? ` — ${signal.reasons.join(" ")}`
+                    : " — Sufficient spend and impressions for a reliable read."}
+                </span>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-[260px]">
+              <p className="text-caption leading-relaxed">
+                {signal.low
+                  ? signal.reasons.join(" ")
+                  : "Sufficient spend and impressions for a reliable read."}
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       {/* L1: 3 performance pills */}
@@ -991,9 +1015,22 @@ function DrawerAdList({
               </p>
               <div className="flex items-center gap-1.5 mt-0.5">
                 {ad.cell && (
-                  <span className="text-label font-mono border border-border/30 px-1 py-0.5 rounded text-muted-foreground/55">
-                    {ad.cell}
-                  </span>
+                  <TooltipProvider delayDuration={150}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="text-label font-mono border border-border/30 px-1 py-0.5 rounded text-muted-foreground/55 cursor-default">
+                          {ad.cell}
+                          <span className="sr-only">{` — matrix cell${ad.concept ? ` for ${ad.concept}` : ""}`}</span>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[240px]">
+                        <p className="text-caption leading-relaxed">
+                          Matrix cell <span className="font-mono">{ad.cell}</span>
+                          {ad.concept ? ` — ${ad.concept}` : ""}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
                 {ad.concept && (
                   <span className="text-label text-muted-foreground/55">{ad.concept}</span>
@@ -1325,7 +1362,7 @@ export function AvatarsView() {
 
             {/* Summary tiles */}
                 <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
-                  <MetricTile label="Avatars" value={String(matrix?.columns.length ?? 0)} />
+                  <MetricTile label="Avatars" value={String(matrix?.columns.length ?? 0)} variant="primary" />
                   <MetricTile label="Message angles" value={String(matrix?.cells.length ?? 0)} sub="matrix cells" />
                   <MetricTile label="ICP profiles" value={String(icpProfiles.length)} sub="strategy map" />
                   <MetricTile label="Segments" value={String(segmentList.length)} sub="audience signal" />

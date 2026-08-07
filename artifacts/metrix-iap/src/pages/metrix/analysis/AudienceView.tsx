@@ -26,7 +26,7 @@ import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
-  SkeletonTileRow, DatePresetBar, type ViewPreset, SegmentedToggle,
+  SkeletonTileRow, DatePresetBar, type ViewPreset, SegmentedToggle, SectionInfoIcon,
 } from "../shared";
 import { getGetAnalysisSummaryQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
@@ -156,13 +156,14 @@ const QUADRANT_LABELS = [
 ];
 
 function IntelligenceMapTab({
-  entries, totalSpend, medianCpa, onSelect, resultPlural,
+  entries, totalSpend, medianCpa, onSelect, resultPlural, topSeg,
 }: {
   entries: SegmentEntry[];
   totalSpend: number;
   medianCpa: number;
   onSelect: (seg: SegmentId) => void;
   resultPlural: string;
+  topSeg?: SegmentEntry;
 }) {
   const plotData = entries
     .filter((e) => e.derived.ctr != null && e.derived.cvr != null)
@@ -184,7 +185,11 @@ function IntelligenceMapTab({
     (props: { cx?: number; cy?: number; payload?: ScatterPoint }) => {
       const { cx = 0, cy = 0, payload } = props;
       if (!payload) return null;
-      const r = 7 + payload.spendShare * 28;
+      const isTop =
+        topSeg != null &&
+        payload.entry.seg.age === topSeg.seg.age &&
+        payload.entry.seg.gender === topSeg.seg.gender;
+      const r = (isTop ? 9 : 7) + payload.spendShare * 28;
       const eff = cpaEff(payload.entry.derived.cpa, medianCpa);
       const fill = EFF_COLOR[eff];
       const lbl = segmentLabel(payload.entry.seg);
@@ -197,11 +202,12 @@ function IntelligenceMapTab({
           onClick={() => onSelect(payload.entry.seg)}
           style={{ cursor: "pointer" }}
         >
-          <circle cx={cx} cy={cy} r={r + 5} fill={fill} fillOpacity={0.06} />
+          <circle cx={cx} cy={cy} r={r + 5} fill={fill} fillOpacity={isTop ? 0.15 : 0.06} />
           <circle
             cx={cx} cy={cy} r={r}
-            fill={fill} fillOpacity={0.7}
-            stroke="rgba(255,255,255,0.13)" strokeWidth={1.5}
+            fill={fill} fillOpacity={isTop ? 0.9 : 0.7}
+            stroke={isTop ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.13)"}
+            strokeWidth={isTop ? 2 : 1.5}
           />
           <text
             x={cx} y={cy + 0.5}
@@ -215,7 +221,7 @@ function IntelligenceMapTab({
         </g>
       );
     },
-    [medianCpa, onSelect]
+    [medianCpa, onSelect, topSeg]
   );
 
   function MapTooltip({ active, payload }: { active?: boolean; payload?: { payload: ScatterPoint }[] }) {
@@ -505,7 +511,7 @@ function RankedListTab({
     <SectionCard
       title="Segment performance"
       desc="All cells · re-rank by KPI · click a segment for drivers"
-      right={<RankSortBar metrics={rankMetrics} activeId={activeMetric.id} onSelect={onSelectMetric} groups={AUDIENCE_RANK_GROUPS} />}
+      right={<><SectionInfoIcon tip="Ranks each age–gender pocket by the active KPI so you can spot which segments are driving results and which need attention." /><RankSortBar metrics={rankMetrics} activeId={activeMetric.id} onSelect={onSelectMetric} groups={AUDIENCE_RANK_GROUPS} /></>}
     >
       <div className="space-y-2">
         {ranked.map((e, idx) => {
@@ -715,6 +721,7 @@ export function AudienceView() {
                       <MetricTile label="Signal spend" value={fmtUSD(totalSpend, 0)} />
                       <MetricTile label={term.Plural} value={fmtNum(totalResults)} />
                       <MetricTile
+                        variant="primary"
                         label={`Prime · ${activeMetric.label}`}
                         value={best ? segmentLabel(best.seg) : "—"}
                         sub={
@@ -738,6 +745,7 @@ export function AudienceView() {
                         medianCpa={medianCpa}
                         onSelect={setSelectedSeg}
                         resultPlural={term.Plural}
+                        topSeg={ranked[0]}
                       />
                     )}
 

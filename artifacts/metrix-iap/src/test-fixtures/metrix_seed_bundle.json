@@ -520,9 +520,9 @@
           "variation": "A",
           "test_id": "T1",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/41842fff-e3c0-4184-8597-5e868d8a857a/file",
+          "asset_filename": "C1A_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C1A_STC_APP_BOOK0_T2",
@@ -532,9 +532,9 @@
           "variation": "A",
           "test_id": "T2",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/99976511-4538-47fb-accb-4251b1df7b62/file",
+          "asset_filename": "C3E_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C1B_STC_APP_BOOK0_T1",
@@ -544,9 +544,9 @@
           "variation": "B",
           "test_id": "T1",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/da4fcd5c-0fe7-4f24-a794-7a3b5fa9dad3/file",
+          "asset_filename": "C1B_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C1B_STC_APP_BOOK0_T1 - Copy",
@@ -556,9 +556,9 @@
           "variation": "B",
           "test_id": "T1",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/975bae20-019a-4c58-8e3c-68beb4a4ae9e/file",
+          "asset_filename": "C5D_R01_1x1_Square_1080x1080_Moment_Uploaded_First_Doc_Square_U15.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C1B_STC_APP_BOOK0_T2",
@@ -568,9 +568,9 @@
           "variation": "B",
           "test_id": "T2",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/1deadd09-8447-4fed-952d-b590cee7f1f4/file",
+          "asset_filename": "C4B_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C1C_STC_APP_BOOK0_T1",
@@ -580,9 +580,9 @@
           "variation": "C",
           "test_id": "T1",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/3e452d1c-3253-41d9-991d-88db9e6bd6d6/file",
+          "asset_filename": "C1C_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C1C_STC_APP_BOOK0_T1 - Copy",
@@ -592,9 +592,9 @@
           "variation": "C",
           "test_id": "T1",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/dfde8ecd-295b-4d56-af03-91431ada3474/file",
+          "asset_filename": "C3A_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C1C_STC_APP_BOOK0_T2",
@@ -604,9 +604,9 @@
           "variation": "C",
           "test_id": "T2",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/97410083-87e2-4d5b-952b-08b1f3dbeff1/file",
+          "asset_filename": "C1C_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C1D_STC_APP_BOOK0_T1",
@@ -616,9 +616,9 @@
           "variation": "D",
           "test_id": "T1",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/50488103-5c29-4480-bda8-06275bb046c2/file",
+          "asset_filename": "C3B_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C1D_STC_APP_BOOK0_T2",
@@ -628,9 +628,9 @@
           "variation": "D",
           "test_id": "T2",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/05cbc036-a1a9-43ba-a094-926abf6d0c8d/file",
+          "asset_filename": "C1D_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C2A_STC_APP_BOOK0_T1",
@@ -640,9 +640,9 @@
           "variation": "A",
           "test_id": "T1",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/765fd16e-bb47-49a2-9c88-3676a575c052/file",
+          "asset_filename": "C2A_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C2A_STC_APP_BOOK0_T2",
@@ -652,9 +652,9 @@
           "variation": "A",
           "test_id": "T2",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/765fd16e-bb47-49a2-9c88-3676a575c052/file",
+          "asset_filename": "C2A_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C2A_STC_APP_BOOK0_T3",
@@ -664,9 +664,9 @@
           "variation": "A",
           "test_id": "T3",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/765fd16e-bb47-49a2-9c88-3676a575c052/file",
+          "asset_filename": "C2A_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C2B_STC_APP_BOOK0_T1",
@@ -676,9 +676,9 @@
           "variation": "B",
           "test_id": "T1",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/3cf6e6ed-8d72-4f41-a322-8aa6ee0fd47b/file",
+          "asset_filename": "C2B_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C2B_STC_APP_BOOK0_T1 - Copy",
@@ -688,9 +688,9 @@
           "variation": "B",
           "test_id": "T1",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/3cf6e6ed-8d72-4f41-a322-8aa6ee0fd47b/file",
+          "asset_filename": "C2B_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C2B_STC_APP_BOOK0_T2",
@@ -700,9 +700,9 @@
           "variation": "B",
           "test_id": "T2",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/3cf6e6ed-8d72-4f41-a322-8aa6ee0fd47b/file",
+          "asset_filename": "C2B_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C2B_STC_QF_BOOK2_T2",
@@ -712,9 +712,9 @@
           "variation": "B",
           "test_id": "T2",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": "C2B T2 Story.png",
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/3cf6e6ed-8d72-4f41-a322-8aa6ee0fd47b/file",
+          "asset_filename": "C2B_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C2C_STC_APP_BOOK0_T1",
@@ -724,9 +724,9 @@
           "variation": "C",
           "test_id": "T1",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/fb7964aa-08de-415a-a18c-68e5f3a4e90f/file",
+          "asset_filename": "C2C_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C2C_STC_APP_BOOK0_T1 - Copy",
@@ -736,9 +736,9 @@
           "variation": "C",
           "test_id": "T1",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/e7412d5d-117e-4524-a009-33c9f13b411d/file",
+          "asset_filename": "C2C_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C2C_STC_APP_BOOK0_T2",
@@ -748,9 +748,9 @@
           "variation": "C",
           "test_id": "T2",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/e7412d5d-117e-4524-a009-33c9f13b411d/file",
+          "asset_filename": "C2C_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C2D_STC_APP_BOOK0_T1",
@@ -796,9 +796,9 @@
           "variation": "E",
           "test_id": "T2",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": "C2E T4 Feed.png",
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/480e5ed7-5728-4fc1-b5a4-293736c58d48/file",
+          "asset_filename": "C2E_T4_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C2F_STC_QF_BOOK2_T1",
@@ -808,9 +808,9 @@
           "variation": "F",
           "test_id": "T1",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": "C2F Feed.png",
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/9665fc56-74c0-4ed8-a147-9ec6af778329/file",
+          "asset_filename": "C2F_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C2F_STC_QF_BOOK2_T2",
@@ -844,9 +844,9 @@
           "variation": "A",
           "test_id": "T2",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/3deb5291-05a1-43bd-bad7-a19da4f83a9f/file",
+          "asset_filename": "C3A_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C3B_STC_APP_BOOK0_T1 - Copy",
@@ -868,9 +868,9 @@
           "variation": "B",
           "test_id": "T2",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/9634562c-4d45-48e3-9ee8-5a6921017b90/file",
+          "asset_filename": "C3B_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C3C_STC_APP_BOOK0_T1",
@@ -880,9 +880,9 @@
           "variation": "C",
           "test_id": "T1",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/5c367cbd-2cd1-4f31-af5f-e918a535dfed/file",
+          "asset_filename": "C3C_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C3C_STC_APP_BOOK0_T1 - Copy",
@@ -916,9 +916,9 @@
           "variation": "D",
           "test_id": "T1",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/1eb4c946-ec24-406e-a9dd-9a0b797e1efa/file",
+          "asset_filename": "C3D_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C3D_STC_APP_BOOK0_T1 - Copy",
@@ -952,9 +952,9 @@
           "variation": "A",
           "test_id": "T1",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/1f734703-48a4-4317-99f5-5cc3ea10121d/file",
+          "asset_filename": "C4A_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C4A_STC_APP_BOOK0_T1 - Copy",
@@ -964,9 +964,9 @@
           "variation": "A",
           "test_id": "T1",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/2639f374-b562-4ebf-aa4d-d09b5bff6cf6/file",
+          "asset_filename": "C4A_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C4A_STC_APP_BOOK0_T2",
@@ -988,9 +988,9 @@
           "variation": "B",
           "test_id": "T1",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/eb5a317d-234e-49fe-bf59-59ebeeac5bfa/file",
+          "asset_filename": "C4B_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C4B_STC_APP_BOOK0_T1 - Copy",
@@ -1012,9 +1012,9 @@
           "variation": "B",
           "test_id": "T2",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/b2be4c5b-8591-4401-b688-86b344a43c5d/file",
+          "asset_filename": "C4B_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C4C_STC_APP_BOOK0_T1",
@@ -1024,9 +1024,9 @@
           "variation": "C",
           "test_id": "T1",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/60d7c41a-575e-4e4f-a12c-32efad9b5b37/file",
+          "asset_filename": "C4C_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C4C_STC_APP_BOOK0_T1 - Copy",
@@ -1060,9 +1060,9 @@
           "variation": "D",
           "test_id": "T1",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/81326619-0a29-4e71-a3d2-193c10fa2b02/file",
+          "asset_filename": "C4D_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C4D_STC_APP_BOOK0_T1 - Copy",
@@ -1096,9 +1096,9 @@
           "variation": "E",
           "test_id": "T1",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": "C4E Story.png",
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/c6fcf545-c36c-4ec7-856c-7b0c3b91f453/file",
+          "asset_filename": "C4E_FEED.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C4E_STC_QF_BOOK2_T1 - Copy",
@@ -1180,9 +1180,9 @@
           "variation": "A",
           "test_id": "T1",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/18ba553e-e4d4-4e2b-962e-2530b9e17ba0/file",
+          "asset_filename": "C6A_R01_1x1_Square_1080x1080_Other_Apps_Library_Square_U18.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C6A_STC_APP_BOOK0_T2",
@@ -1192,9 +1192,9 @@
           "variation": "A",
           "test_id": "T2",
           "meta_ad_id": null,
-          "creative_asset_url": null,
-          "asset_filename": null,
-          "asset_servable": false
+          "creative_asset_url": "/api/metrix/accounts/bookster/manual-imports/18ba553e-e4d4-4e2b-962e-2530b9e17ba0/file",
+          "asset_filename": "C6A_R01_1x1_Square_1080x1080_Other_Apps_Library_Square_U18.png",
+          "asset_servable": true
         },
         {
           "ad_name": "C6B_STC_APP_BOOK0_T1",
@@ -1380,12 +1380,14 @@
               "Results": 74,
               "cell_id": "C2B",
               "iap_read": "High-friction time-saving promise. Strong registration unlocker, but checkout-depth did not follow in V3.",
+              "purchases": 23,
               "CPA_result": 9.1326,
               "Impressions": 30803,
               "Link clicks": 463,
               "Result type": "Website registrations completed",
               "CTR_link_pct": 1.5031,
               "Clicks (all)": 1236,
+              "adds_to_cart": 69,
               "cta_variable": "CTA_StartFree",
               "hook_variable": "HK_Benefit",
               "tone_variable": "TN_Rational + TN_Relatable",
@@ -1394,6 +1396,7 @@
               "Amount spent (USD)": 675.81,
               "book2_concept_name": "Time-poor learner product demo / 1,000 books proof",
               "framework_variable": "FW_BAB",
+              "checkouts_initiated": 37,
               "pain_proof_variable": "HP_Time",
               "legacy_library_match": "C2B legacy cell found",
               "Result_per_link_click_pct": 15.9827
@@ -1404,12 +1407,14 @@
               "Results": 2,
               "cell_id": "C2B",
               "iap_read": "High-friction time-saving promise. Strong registration unlocker, but checkout-depth did not follow in V3.",
+              "purchases": 7,
               "CPA_result": 220.85,
               "Impressions": 10393,
               "Link clicks": 137,
               "Result type": "Website trials started",
               "CTR_link_pct": 1.3182,
               "Clicks (all)": 374,
+              "adds_to_cart": 20,
               "cta_variable": "CTA_StartFree",
               "hook_variable": "HK_Benefit",
               "tone_variable": "TN_Rational + TN_Relatable",
@@ -1418,6 +1423,7 @@
               "Amount spent (USD)": 441.7,
               "book2_concept_name": "Time-poor learner product demo / 1,000 books proof",
               "framework_variable": "FW_BAB",
+              "checkouts_initiated": 11,
               "pain_proof_variable": "HP_Time",
               "legacy_library_match": "C2B legacy cell found",
               "Result_per_link_click_pct": 1.4599
@@ -1428,12 +1434,14 @@
               "Results": 0,
               "cell_id": "C2B",
               "iap_read": "High-friction time-saving promise. Strong registration unlocker, but checkout-depth did not follow in V3.",
+              "purchases": 2,
               "CPA_result": null,
               "Impressions": 2538,
               "Link clicks": 49,
               "Result type": "onb_initiate_checkout",
               "CTR_link_pct": 1.9307,
               "Clicks (all)": 77,
+              "adds_to_cart": 7,
               "cta_variable": "CTA_StartFree",
               "hook_variable": "HK_Benefit",
               "tone_variable": "TN_Rational + TN_Relatable",
@@ -1442,6 +1450,7 @@
               "Amount spent (USD)": 110.92,
               "book2_concept_name": "Time-poor learner product demo / 1,000 books proof",
               "framework_variable": "FW_BAB",
+              "checkouts_initiated": 4,
               "pain_proof_variable": "HP_Time",
               "legacy_library_match": "C2B legacy cell found",
               "Result_per_link_click_pct": 0
@@ -3816,12 +3825,14 @@
               "Results": 0,
               "cell_id": "C2B",
               "iap_read": "High-friction time-saving promise. Strong registration unlocker, but checkout-depth did not follow in V3.",
+              "purchases": 2,
               "CPA_result": null,
               "Impressions": 2538,
               "Link clicks": 49,
               "Result type": "onb_initiate_checkout",
               "CTR_link_pct": 1.9307,
               "Clicks (all)": 77,
+              "adds_to_cart": 7,
               "cta_variable": "CTA_StartFree",
               "hook_variable": "HK_Benefit",
               "tone_variable": "TN_Rational + TN_Relatable",
@@ -3830,6 +3841,7 @@
               "Amount spent (USD)": 110.92,
               "book2_concept_name": "Time-poor learner product demo / 1,000 books proof",
               "framework_variable": "FW_BAB",
+              "checkouts_initiated": 4,
               "pain_proof_variable": "HP_Time",
               "legacy_library_match": "C2B legacy cell found",
               "Result_per_link_click_pct": 0
@@ -4429,201 +4441,221 @@
           ]
         },
         "strategy": {
-          "provenance": "imported",
+          "provenance": "generated",
           "message_pillars": [
             {
-              "id": "PILLAR_TimeEfficiency",
-              "label": "15-Minute Time Efficiency",
+              "id": "GEN_PILLAR_3293d125_1",
+              "label": "Efficiency-Proof Product Demo (Time-Poor Learner)",
               "source_cells": [
-                "C2"
+                "C2B"
               ],
-              "plain_descriptor": "Convert time-scarcity guilt into permission to learn efficiently",
-              "why_it_matters": "C2 concept: $7.09 CPA, 15.06% CVR, $2,332 spend, high confidence",
+              "plain_descriptor": "Defend and deepen the account's highest-volume, lowest-cost-per-result signal. C2B's CN_ProductDemo + HP_Time + HK_Benefit + FW_BAB combination is the confirmed registration engine (CPA $9.13 across 74 results, CVR 15.98% link-to-result). The sprint must isolate whether the format or the specific proof mechanism is doing the work, and test whether an alternate copy framework can unlock checkout depth that FW_BAB failed to produce in V3.",
+              "why_it_matters": "C2B: 74 website registrations, CPA $9.13, spend $675.81, CTR 1.50%, link-click-to-result 15.98%. Same cell at checkout depth: 0 onb_initiate_checkout results from $110.92 spend. BOOK0 C2 concept rollup: 329 results, CPA $7.09, CVR 15.06%, confidence high. Variable-level: HK_Benefit leads all hooks at checkout with 16 results, CPA $55.28 across 5 ads; FW_BAB produced 0 checkout results from $110.92 spend (null CPA); FW_AIDA produced 16 checkout results, CPA $48.34 across 4 ads. Demographic: female 45-54 CPA $6.06 (20 results), male 25-34 CPA $3.09 (4 results, link CVR 36.4%), female 25-34 CPA $9.30 (11 results) all from C2B breakdown.",
               "variable_stack": {
-                "framework": "FW_BAB",
+                "concept": "CN_ProductDemo",
                 "hook": "HK_Benefit",
+                "framework": "FW_BAB",
+                "tone": "TN_Rational",
                 "pain_proof": "HP_Time",
-                "concept": "CN_ProductDemo"
+                "proof": "PR_VisualDemo"
               },
-              "funnel_application": "TOF-MOF",
-              "execution_specifications": "Static, Feed-first, product-demo visual showing 15-minute mechanism",
-              "placement_strategy": "Feed, Facebook Reels, Instagram Reels (Android-weighted)",
-              "scaling_guidance": "Scale now; layer a second creative execution before expanding to new ICPs",
+              "funnel_application": "ST_MOFU primary; introduce ST_BOFU checkout-stage variant to close the registration-to-checkout gap. FW_BAB controls registration row; FW_AIDA or FW_FAB tested against it in the checkout-depth row.",
+              "execution_specifications": "Column constant: ICP_TimePoorLearner avatar, design system retaining visual demo proof format, CTA_StartFree family. Row-level angle variation must isolate framework (FW_BAB vs FW_AIDA vs FW_FAB) and hook (HK_Benefit vs HK_Problem) across the four cells. Allow Advantage+ to self-optimise toward high-performing demographic segments under broad ABO without narrow targeting.",
+              "placement_strategy": "Advantage+ auto-placements. Facebook Feed is the volume engine (8 checkout results at CPA $52.14 from placement signal). Facebook Reels produced 6 checkout results at CPA $22.35, the most efficient placement in the account. Build assets in native vertical 9:16 and landscape 16:9 simultaneously so Advantage+ can route correctly without quality degradation.",
+              "scaling_guidance": "This is the account's only high-confidence scaling candidate. Hold spend at current levels on the control cell and allocate incremental budget exclusively to the framework-isolation row. Do not increase C2B budget without resolving the checkout-depth gap. If FW_AIDA or FW_FAB produces checkout results at parity or better CPA than C4E's $52.57 within the sprint window, consolidate budget behind the winning framework variant.",
               "target_icps": [
-                "ICP_BOOK0_C2_TimePoorLearner"
+                "ICP_BOOK0_C2_TimePoorLearner",
+                "ICP_BOOK2_C2B_QuizCompleter"
               ],
-              "origin": "imported"
+              "origin": "generated"
             },
             {
-              "id": "PILLAR_RationalValue",
-              "label": "Rational Self-Improvement Bridge",
+              "id": "GEN_PILLAR_3293d125_2",
+              "label": "Aspirational Authority / Identity-Led Checkout Driver",
               "source_cells": [
-                "C2"
+                "C4E"
               ],
-              "plain_descriptor": "Close the curiosity-to-commercial gap for aspirational self-improvers with a rational proof bridge",
-              "why_it_matters": "C4C cell (TN_Rational): $155.80 spend, 21.8% CVR at ad level - promising but validation_required",
+              "plain_descriptor": "C4E is the account's current checkout-depth control. Despite higher cost per registration than C2B, it is the only cell that consistently converted to onb_initiate_checkout (14 results, CPA $52.57). The sprint must test whether identity-first hooks and aspirational tone are the isolated drivers, or whether the authority-proxy proof format is carrying the signal. A framework swap against the incumbent FW_AIDA should be the primary row variable.",
+              "why_it_matters": "C4E: 14 onb_initiate_checkout results, CPA $52.57, spend $735.99, CTR 2.54%, link-click-to-result 4.44%. Registration row of C4E: 2 results, CPA $3.74, CTR 5.99%, link-click-to-result 20%, highest CTR in the account for a registration result. Variable rollup: TN_Aspirational tied to 14 checkout results, CPA $52.57 across 2 ads; TN_Rational produced only 2 checkout results at CPA $74.21 across 3 ads; HK_Identity tied to same 14 results. HP_Confidence (CPA $52.57, 14 results) outperforms HP_Time (CPA $132.87, 1 result) at checkout depth. All signals co-located in C4E so cross-context confirmation is the sprint's primary analytical task.",
               "variable_stack": {
-                "framework": "FW_StoryBrand",
-                "tone": "TN_Rational",
-                "hook": "HK_Story",
-                "pain_proof": "HP_Confidence"
+                "concept": "CN_Lifestyle",
+                "hook": "HK_Identity",
+                "framework": "FW_AIDA",
+                "tone": "TN_Aspirational",
+                "pain_proof": "HP_Confidence",
+                "proof": "PR_AuthorityBookCover"
               },
-              "funnel_application": "MOF",
-              "execution_specifications": "Static or short video, rational proof overlay",
-              "placement_strategy": "Feed",
-              "scaling_guidance": "Fund a proper validation test at $300-500 before scaling",
+              "funnel_application": "ST_TOFU to ST_MOFU entry, with intent to carry through to onb_initiate_checkout. AW_ProblemAware to AW_SolutionAware transition. Targets users who are aspirationally motivated (HP_Confidence) rather than time-constrained (HP_Time), suggesting a different psychological entry point that may align with a different downstream cohort.",
+              "execution_specifications": "Column constant: aspirational authority avatar, design system retaining visible book-cover or authority-proxy visual, CTA_Implicit or CTA_StartFree family. Row A control: FW_AIDA + TN_Aspirational + HK_Identity. Row B: FW_StoryBrand + TN_Aspirational + HK_Identity (framework isolation). Row C: FW_AIDA + TN_Emotional + HK_Identity (tone isolation). Row D: FW_AIDA + TN_Aspirational + HK_Story (hook isolation). Each row isolates exactly one variable against Row A.",
+              "placement_strategy": "Facebook Reels is the priority placement for this pillar given CPA of $20.81 across 6 checkout results in placement signal. Build short-form vertical assets with identity-affirmation visual in first 2 seconds. Facebook Feed as secondary volume placement at CPA $52.24 for 6 checkout results.",
+              "scaling_guidance": "Do not scale spend until at least two of the four row variables are confirmed in isolation. The entire C4E signal currently lives in 2 unique ads, making variable-level confidence low despite the result volume. Sprint budget should be equal across all four rows to generate comparable signal within the sprint window.",
               "target_icps": [
-                "ICP_BOOK0_C2_TimePoorLearner"
+                "ICP_BOOK2_C2B_QuizCompleter",
+                "ICP_BOOK0_C5_BYOC_PENDING"
               ],
-              "origin": "imported"
+              "origin": "generated"
             },
             {
-              "id": "PILLAR_MaleEfficiencyTest",
-              "label": "Male 35-64 Purpose-Built Efficiency Angle",
-              "source_cells": [],
-              "plain_descriptor": "Convert an unclaimed high-efficiency audience pocket into a dedicated ICP",
-              "why_it_matters": "$9.49-$10.33 blended CPA on overflow traffic alone, no dedicated creative yet",
+              "id": "GEN_PILLAR_3293d125_3",
+              "label": "Retention Mechanism / Behavior-Shift Hook (Read Less, Keep More)",
+              "source_cells": [
+                "C2E"
+              ],
+              "plain_descriptor": "C2E introduced a new angle not present in the legacy matrix: CN_BehaviorShift framing around the retention mechanism rather than library breadth. Performance is mixed but the checkout-depth efficiency signal ($15.55 per checkout result, 1 result from $15.55 spend on tiny budget; $7.29 per registration from $14.58 spend) is the most cost-efficient in the account at depth, though volume is insufficient for a verdict. The sprint must scale this angle with controlled variable isolation to determine whether the behavior-shift concept or the PAS framework is responsible.",
+              "why_it_matters": "C2E checkout: 1 onb_initiate_checkout result, CPA $15.55, spend $15.55, CTR 2.13%, link-click-to-result 10%. C2E registration: 2 results, CPA $7.29, spend $14.58, CTR 2.40%, link-click-to-result 16.67%. C2E trials: 0 results from $313.39 spend (null CPA) — the cell consumed trial-stage budget without conversion in V1. Variable rollup: CN_BehaviorShift produced 1 checkout result, CPA $15.55 from 1 ad; FW_PAS produced 1 checkout result, CPA $15.55 from 1 ad. Both signals co-located and require cross-context replication. Demographic: female 55-64 CPA $2.05 (1 registration result), female 45-54 CPA $1.49 (1 registration result) from C2E breakdown — low volume but directionally interesting overlap with C2B top demographic segments.",
               "variable_stack": {
+                "concept": "CN_BehaviorShift",
+                "hook": "HK_Problem",
+                "framework": "FW_PAS",
+                "tone": "TN_Assertive",
                 "pain_proof": "HP_Efficiency",
-                "tone": "TN_Rational",
-                "hook": "HK_Benefit (hypothesis, not yet tested)"
+                "proof": "PR_VisualDemo"
               },
-              "funnel_application": "TOF",
-              "execution_specifications": "Static, direct rational tone, avoid identity-aspirational framing already used for C1",
-              "placement_strategy": "Feed",
-              "scaling_guidance": "Validate with a dedicated $300-500 test before treating as proven",
+              "funnel_application": "ST_TOFU to ST_MOFU. AW_ProblemAware entry. The behavior-shift angle addresses a distinct awareness layer: the user knows they have a reading/retention problem but has not yet been offered a mechanism-based solution. This differentiates from C2B's library-breadth proof and C4E's identity aspiration.",
+              "execution_specifications": "Column constant: same TimePoorLearner or QuizCompleter avatar family as C2B column to enable cross-pillar framework comparison. Design system: mechanism-visual or before-after retention graphic. CTA_TryFree or CTA_StartFree family. Row A: FW_PAS + TN_Assertive + HK_Problem (control replication of C2E). Row B: FW_AIDA + TN_Assertive + HK_Problem (framework isolation). Row C: FW_PAS + TN_Rational + HK_Problem (tone isolation). Row D: FW_PAS + TN_Assertive + HK_Benefit (hook isolation). Each row isolates exactly one variable.",
+              "placement_strategy": "Advantage+ auto-placements under broad ABO. Given the tiny spend base of C2E, do not restrict placements. Allow the algorithm to find the most efficient surface. Monitor Facebook Reels first given its superior checkout CPA ($20.81 and $22.35) in placement signal.",
+              "scaling_guidance": "Low-confidence recommendation. Do not scale this pillar until the sprint produces at least 5 checkout results across the column. Treat all four cells as validation-tier spending. If CPA at checkout remains below $30 across 10+ results, this becomes the next scaling candidate after Pillar 1.",
               "target_icps": [
+                "ICP_BOOK0_C2_TimePoorLearner",
+                "ICP_BOOK2_C2B_QuizCompleter"
+              ],
+              "origin": "generated"
+            },
+            {
+              "id": "GEN_PILLAR_3293d125_4",
+              "label": "Value-Stack Price Comparison (Efficiency ROI)",
+              "source_cells": [
+                "C2F"
+              ],
+              "plain_descriptor": "C2F is the newest extension and the only cell addressing HP_Money explicitly. It produced both a trial (CPA $38.01) and a checkout (CPA $21.95) on very small spend ($65.46 combined across result types), suggesting the value-comparison angle may close price-objection hesitators who registered via C2B or C2E but did not convert. The sprint must determine whether CN_ValueStack or CN_Comparison is the active ingredient, and whether FW_FAB or FW_AIDA is the more efficient framework for this angle.",
+              "why_it_matters": "C2F checkout: 1 onb_initiate_checkout result, CPA $21.95, spend $21.95, CTR 2.59%, link-click-to-result 10%. C2F trial: 1 Website trial started, CPA $38.01, spend $38.01, CTR 1.83%, link-click-to-result 4.17%. C2F registration: 0 results from $5.46 spend (null CPA). Variable rollup: CN_ValueStack 1 checkout result CPA $21.95 from 1 ad; CN_Comparison 1 checkout result CPA $21.95 from 1 ad; FW_FAB 1 checkout result CPA $21.95 from 1 ad; HP_Money 1 checkout result CPA $21.95 from 1 ad — all co-located, all require cross-context replication. IAP read: commercially clear, needs more budget before scaling.",
+              "variable_stack": {
+                "concept": "CN_ValueStack",
+                "hook": "HK_Benefit",
+                "framework": "FW_FAB",
+                "tone": "TN_Rational",
+                "pain_proof": "HP_Money",
+                "proof": "PR_DataDriven"
+              },
+              "funnel_application": "ST_MOFU to ST_BOFU. AW_SolutionAware to AW_MostAware. Targets users who are already aware of the product category and need a price-value justification to convert. Best deployed as a BOFU retargeting-compatible concept even under broad ABO, as Advantage+ may surface it to users with higher purchase intent signals.",
+              "execution_specifications": "Column constant: efficiency-oriented avatar (overlap with TimePoorLearner or MaleEfficiencyPocket). Design system: data-visual or side-by-side comparison graphic. CTA_TryFree family. Row A: FW_FAB + TN_Rational + HK_Benefit (control replication of C2F). Row B: FW_AIDA + TN_Rational + HK_Benefit (framework isolation). Row C: FW_FAB + TN_Assertive + HK_Benefit (tone isolation). Row D: FW_FAB + TN_Rational + HK_Shock (hook isolation — price contrast as shock). Each row isolates exactly one variable.",
+              "placement_strategy": "Advantage+ auto-placements. Given HP_Money angle, Facebook Feed is likely the highest-intent surface for deliberate value comparison. Facebook Reels can carry a condensed version. Do not restrict placements; let the algorithm route based on conversion signal.",
+              "scaling_guidance": "Validation-required recommendation. Single-result evidence base across all variable tags. Allocate minimum viable sprint budget (equal to C2E allocation) to generate 10+ checkout results before drawing conclusions. If CPA at checkout falls below $30 within the sprint, promote to Pillar 1 budget tier.",
+              "target_icps": [
+                "ICP_BOOK0_C2_TimePoorLearner",
                 "ICP_BOOK0_MaleEfficiencyPocket"
               ],
-              "origin": "imported"
+              "origin": "generated"
             }
           ],
           "active_hypotheses": [
             {
-              "id": "HYP_001",
-              "label": "We believe that isolating Row B (FW_BAB / product-demo) as a dedicated ad set within Concept C2 will lift CVR further because Row B already carries both the most spend and the strongest CPA cross-concept.",
-              "source": "Current C2B_STC_APP_BOOK0_T2 ad",
-              "status": "P1",
-              "pillar_id": "PILLAR_TimeEfficiency",
-              "risk": "Low - extends a proven lane",
-              "test_variant": "New Row-B static execution, same ICP, new visual",
-              "isolated_variable": "Visual execution only (framework/hook/pain held constant)",
-              "success_criteria": "CPA <= $7.00, CVR >= 15%",
-              "expected_impact": "10-20% CPA improvement",
-              "origin": "imported"
+              "id": "GEN_HYP_3293d125_1",
+              "label": "Replacing FW_BAB with FW_AIDA in the C2B-equivalent product-demo column will produce measurable onb_initiate_checkout results, whereas FW_BAB produced 0 checkout results from $110.92 spend. FW_AIDA is the only framework with confirmed checkout-depth results (16 results, CPA $48.34 across 4 ads in variable rollup).",
+              "source": "C2B (FW_BAB + CN_ProductDemo + HK_Benefit + TN_Rational, 0 checkout results from $110.92 spend)",
+              "status": "high",
+              "pillar_id": "GEN_PILLAR_3293d125_1",
+              "risk": "FW_AIDA's checkout results in variable rollup are co-located with C4E's aspirational concept, not the product-demo concept. The framework signal may not transfer across concept columns. If checkout results remain near zero, the variable interaction (framework x concept) rather than the framework alone may be the limiting factor.",
+              "test_variant": "Same column constants (CN_ProductDemo, HP_Time, TN_Rational, HK_Benefit, CTA_StartFree) with FW_AIDA substituted for FW_BAB across one dedicated row in the MST matrix. This row appears in both Pillar 1 column and a second column (Pillar 3 column) to give FW_AIDA at least 2 cross-context appearances as required by the golden rule.",
+              "isolated_variable": "FW_AIDA vs FW_BAB. Held constant: CN_ProductDemo, HK_Benefit, TN_Rational, HP_Time, CTA_StartFree, ICP_TimePoorLearner avatar. Varied across contexts: the concept column it appears in (C1 = TimePoorLearner product-demo, C3 = BehaviorShift product-demo) so the framework effect is readable across two distinct creative contexts, not just one.",
+              "success_criteria": "FW_AIDA variant produces at least 3 onb_initiate_checkout results within the sprint window at a CPA at or below $60 (within 15% of C4E's $52.57 checkout control), while the FW_BAB control row produces fewer than 2 checkout results on comparable spend.",
+              "expected_impact": "High. Resolving the registration-to-checkout gap in Pillar 1 is the account's most leveraged improvement opportunity given $675.81 already spent generating registrations that did not convert.",
+              "origin": "generated"
             },
             {
-              "id": "HYP_002",
-              "label": "We believe that confirming MMP/pixel health on the 3 zero-conversion campaigns will reveal a tracking gap rather than a genuine creative failure, because engagement (impressions/clicks) was present without a single downstream event across $2,963 of spend.",
-              "source": "N/A - diagnostic, not creative test",
-              "status": "P1",
-              "pillar_id": "PILLAR_RationalValue",
-              "risk": "High if left unresolved - future budget decisions on these lanes are unreliable until closed",
-              "test_variant": "N/A",
-              "isolated_variable": "Attribution/postback configuration",
-              "success_criteria": "Postback/pixel confirmed firing correctly, or confirmed broken and reinstrumented",
-              "expected_impact": "Determines whether ~$3k of historical spend and 3 campaign lanes are salvageable",
-              "origin": "imported"
+              "id": "GEN_HYP_3293d125_2",
+              "label": "Replacing TN_Rational with TN_Aspirational in the product-demo column will increase onb_initiate_checkout rate. TN_Aspirational is tied to 14 checkout results at CPA $52.57 in variable rollup; TN_Rational is tied to 2 checkout results at CPA $74.21 — a 30% worse CPA on 33% fewer results.",
+              "source": "C2B (TN_Rational + TN_Relatable, 0 checkout results from $110.92 spend; TN_Rational variable rollup: 2 checkout results, CPA $74.21)",
+              "status": "medium",
+              "pillar_id": "GEN_PILLAR_3293d125_1",
+              "risk": "TN_Aspirational may be intrinsically linked to the authority-proxy visual format (PR_AuthorityBookCover) in C4E rather than the tone itself. If the product-demo design system suppresses the aspirational signal, the test will underread tone and overread concept interaction. Low confidence that tone transfers cleanly across design systems.",
+              "test_variant": "Same C2B column constants (CN_ProductDemo, HP_Time, HK_Benefit, CTA_StartFree) with TN_Aspirational substituted for TN_Rational in one row. A second appearance of TN_Aspirational is placed in the Pillar 2 column (its home context) to satisfy the 2-4 appearance rule.",
+              "isolated_variable": "TN_Aspirational vs TN_Rational. Held constant across the test row: CN_ProductDemo, HP_Time, HK_Benefit, FW_AIDA, CTA_StartFree, ICP_TimePoorLearner. Varied context: appears in Pillar 1 column (product-demo) and Pillar 2 column (aspirational authority) so tone effect is readable independently of concept.",
+              "success_criteria": "TN_Aspirational row in Pillar 1 column produces at least 2 onb_initiate_checkout results within the sprint at CPA below $70, outperforming TN_Rational row in the same column by at least 20% on cost per checkout result.",
+              "expected_impact": "Medium. If confirmed, enables a single creative system to serve both registration and checkout depth without a separate concept column, reducing creative overhead.",
+              "origin": "generated"
             },
             {
-              "id": "HYP_003",
-              "label": "We believe that a dedicated Male 55-64 / Male 35-44 creative will outperform current overflow-driven CPA because these segments already convert best in the account without any purpose-built message.",
-              "source": "Current broad targeting (no dedicated creative)",
-              "status": "P2",
-              "pillar_id": "PILLAR_MaleEfficiencyTest",
-              "risk": "Medium - unproven whether performance holds with intentional targeting vs. algorithmic overflow",
-              "test_variant": "New rational-tone, efficiency-led static",
-              "isolated_variable": "Audience + message pairing",
-              "success_criteria": "CPA < $9.50 sustained at >= 20 results",
-              "expected_impact": "New scalable ICP if confirmed",
-              "origin": "imported"
+              "id": "GEN_HYP_3293d125_3",
+              "label": "Introducing HP_Confidence explicitly into the Pillar 1 product-demo column (replacing HP_Time in one row) will improve onb_initiate_checkout conversion rate. HP_Confidence is the pain variable tied to all 14 C4E checkout results (CPA $52.57); HP_Time is tied to only 1 checkout result (CPA $132.87) in variable rollup — a 60% worse CPA.",
+              "source": "C2B row with HP_Time (1 checkout result, CPA $132.87 in HP_Time variable rollup across 2 ads)",
+              "status": "medium",
+              "pillar_id": "GEN_PILLAR_3293d125_1",
+              "risk": "HP_Confidence may be inseparable from the aspirational lifestyle concept (CN_Lifestyle) in which it was tested. Grafting it onto a rational product-demo format may produce neither the registration efficiency of HP_Time nor the checkout depth of HP_Confidence. Mark as medium confidence.",
+              "test_variant": "Same Pillar 1 column constants with HP_Confidence substituted as the pain axis in one row. Copy reframes the product-demo around confidence in what you retain rather than time saved. PR_SocialProof added alongside PR_VisualDemo to mirror the proof stack that accompanied HP_Confidence in C4E.",
+              "isolated_variable": "HP_Confidence vs HP_Time. Held constant: CN_ProductDemo, HK_Benefit, FW_AIDA, TN_Rational, CTA_StartFree, ICP_TimePoorLearner. HP_Confidence also appears in Pillar 2 column (its established context) and must not appear more than 4 times across the full 16-cell matrix.",
+              "success_criteria": "HP_Confidence row in Pillar 1 column produces at least 2 onb_initiate_checkout results at CPA below $60 within the sprint, while HP_Time control row produces 0-1 results on comparable spend, replicating the variable rollup directional gap.",
+              "expected_impact": "Medium. If HP_Confidence transfers to the product-demo column, it creates a single high-efficiency creative system covering both funnel stages without requiring two separate concept columns.",
+              "origin": "generated"
             },
             {
-              "id": "HYP_004",
-              "label": "We believe replacing BOOK2 C2E and C4E with a C2B-mechanic-based execution will restore conversion because C2E/C4E are structurally different extension cells producing near-zero results on meaningful spend, while C2B (same concept family, core matrix cell) converts at 11.65% CVR.",
-              "source": "C2B_STC_QF_BOOK2_T2",
-              "status": "P1",
-              "pillar_id": "PILLAR_RationalValue",
-              "risk": "Low - reverting to a proven mechanic",
-              "test_variant": "New C2E/C4E replacement using C2B's proof mechanic",
-              "isolated_variable": "Message mechanic (E/F extension concept vs. proven B mechanic)",
-              "success_criteria": "CVR >= 8%, CPA <= $25",
-              "expected_impact": "Recover ~$1,400/period currently allocated to underperforming extension cells",
-              "origin": "imported"
+              "id": "GEN_HYP_3293d125_4",
+              "label": "Running the C4E aspirational-authority concept with FW_StoryBrand instead of FW_AIDA will maintain or improve onb_initiate_checkout results while reducing CPA below C4E's $52.57. FW_AIDA is the confirmed framework at depth but has not been tested against a narrative-structure alternative within this concept family.",
+              "source": "C4E (FW_AIDA + TN_Aspirational + HK_Identity + CN_Lifestyle + CN_Testimonial, 14 checkout results, CPA $52.57)",
+              "status": "medium",
+              "pillar_id": "GEN_PILLAR_3293d125_2",
+              "risk": "FW_StoryBrand requires longer narrative arc which may be incompatible with short-form Reels placements that currently deliver the lowest checkout CPA ($20.81). If Advantage+ routes most impressions to Reels, the StoryBrand format may be truncated before its narrative completes. Build a condensed 15-second version alongside the full format.",
+              "test_variant": "Pillar 2 column Row B: FW_StoryBrand substituted for FW_AIDA. All other column and row constants held: TN_Aspirational, HK_Identity, HP_Confidence, PR_AuthorityBookCover + PR_SocialProof, CTA_Implicit, same avatar. FW_StoryBrand appears in this one row only within the Pillar 2 column; if a second appearance is needed for golden-rule compliance, place it in Pillar 4 column Row B as a cross-concept framework test.",
+              "isolated_variable": "FW_StoryBrand vs FW_AIDA. Held constant: TN_Aspirational, HK_Identity, HP_Confidence, PR_AuthorityBookCover, PR_SocialProof, CTA_Implicit, aspirational-authority avatar and design system. The variable appears in Pillar 2 column (Row B) and optionally Pillar 4 column (Row B) to satisfy the 2-appearance minimum.",
+              "success_criteria": "FW_StoryBrand row produces at least 4 onb_initiate_checkout results within the sprint at CPA at or below $52.57 (matching C4E control), and CTR exceeds C4E's 2.54% baseline — indicating both engagement and conversion improvement.",
+              "expected_impact": "Medium. Framework optimisation within a confirmed concept family carries lower risk than concept-level changes. If CPA improves by 20%, this becomes the new checkout control.",
+              "origin": "generated"
+            },
+            {
+              "id": "GEN_HYP_3293d125_5",
+              "label": "Testing CN_BehaviorShift with FW_PAS against the C2B CN_ProductDemo + FW_BAB control at the registration stage will determine whether the behavior-shift concept angle produces registrations at comparable efficiency to the account's best-performing registration cell (C2B CPA $9.13).",
+              "source": "C2B (CN_ProductDemo + FW_BAB + HK_Benefit, 74 registrations, CPA $9.13)",
+              "status": "high",
+              "pillar_id": "GEN_PILLAR_3293d125_3",
+              "risk": "C2E consumed $313.39 in trial-stage spend with 0 trial results, suggesting the behavior-shift angle may attract registrations but not deeper conversions. If registration CPA is efficient but checkout depth remains zero, the angle is a registration-only concept. Monitor both result types simultaneously.",
+              "test_variant": "Pillar 3 column Row A: CN_BehaviorShift + FW_PAS + HK_Problem + TN_Assertive + HP_Efficiency + PR_VisualDemo + CTA_StartFree. This replicates the C2E concept angle in a controlled matrix column for the first time, allowing direct comparison against C2B at the registration stage.",
+              "isolated_variable": "CN_BehaviorShift vs CN_ProductDemo at registration stage. To isolate cleanly, all other angle variables in the Pillar 3 Row A cell must differ from C2B Row A only on the concept variable. In practice FW_PAS vs FW_BAB will also differ, so this hypothesis tests a concept + framework bundle rather than a pure single-variable isolation. Flag as a bundle test. CN_BehaviorShift must appear in 2-4 cells across the full matrix; place a second instance in Pillar 3 Row C with FW_AIDA to begin separating concept from framework in a later read.",
+              "success_criteria": "CN_BehaviorShift + FW_PAS row produces at least 10 registrations within the sprint at CPA below $15 (within 65% of C2B's $9.13 control), demonstrating the angle is viable at scale before committing to checkout-depth testing.",
+              "expected_impact": "High if confirmed. A second registration-efficient concept column reduces dependence on C2B and opens a new messaging lane for users who have already seen the time-saving angle.",
+              "origin": "generated"
+            },
+            {
+              "id": "GEN_HYP_3293d125_6",
+              "label": "Testing CTA_TryFree against CTA_StartFree within the Pillar 1 (product-demo) column at the checkout stage will determine whether the trial-framing CTA improves onb_initiate_checkout rate. CTA_TryFree produced 2 checkout results at CPA $18.75 across 2 ads in variable rollup; CTA_StartFree produced 15 checkout results at CPA $57.50 across 4 ads — CTA_TryFree shows a 67% lower CPA but on 87% less spend, making confidence low.",
+              "source": "CTA_StartFree (variable rollup: 15 checkout results, CPA $57.50 across 4 ads)",
+              "status": "low",
+              "pillar_id": "GEN_PILLAR_3293d125_1",
+              "risk": "CTA_TryFree's $18.75 CPA in variable rollup is co-located with C2E and C2F cells that carry different concept and tone variables. The CTA effect may be confounded by those surrounding variables. Low confidence in the isolated CTA signal until replicated in the Pillar 1 context.",
+              "test_variant": "Pillar 1 column Row D: identical angle variables to Row A control except CTA_TryFree substituted for CTA_StartFree. CTA_TryFree also appears in Pillar 4 column Row D (value-stack pillar, where it is already the column CTA constant) to satisfy the 2-appearance rule.",
+              "isolated_variable": "CTA_TryFree vs CTA_StartFree. Held constant: CN_ProductDemo, HK_Benefit, FW_AIDA, TN_Rational, HP_Time, PR_VisualDemo, ICP_TimePoorLearner avatar. The CTA variable is the only change in this row relative to Row A. It appears in 2 cells across the matrix minimum.",
+              "success_criteria": "CTA_TryFree row in Pillar 1 column produces at least 3 onb_initiate_checkout results within the sprint at CPA below $40, outperforming CTA_StartFree row in the same column by at least 25% on cost per checkout result, with spend exceeding $50 on each row before a verdict is drawn.",
+              "expected_impact": "Medium. A CTA swap is a low-cost creative change; if confirmed, it improves checkout efficiency across all columns that currently use CTA_StartFree without requiring new concept development.",
+              "origin": "generated"
             }
           ],
           "icp_profiles": [
             {
-              "profile_id": "ICP_BOOK0_C2_TimePoorLearner",
-              "profile_name": "Busy Parent / Time-Poor Learner (C2)",
-              "confidence_level": "high",
-              "performance_data": {
-                "cpa": 7.09,
-                "spend": 2332.11,
-                "confidence": "high",
-                "cvr_link_pct": 15.06
-              },
-              "message_resonance": "Highest resonance in account; 28% below blended BOOK0 CPA",
-              "behavioral_signals": "Responds to product-demo proof (HP_Time + CN_ProductDemo); best performing Row B (FW_BAB) cross-concept",
-              "funnel_entry_point": "TOF - App install",
-              "psychographic_profile": "No time for full books; guilt around not learning; wants permission to learn efficiently",
-              "demographic_foundation": "30-54, mixed gender, time-scarce professional or parent",
-              "strategic_recommendation": "Scale now with dedicated budget; build a second creative layer within this ICP before diversifying spend elsewhere",
-              "origin": "imported"
-            },
-            {
-              "profile_id": "ICP_BOOK0_MaleEfficiencyPocket",
-              "profile_name": "Male 55-64 / Male 35-44 efficiency pocket (cross-cut, not yet a dedicated ICP)",
+              "model": "claude-sonnet-4-6",
+              "profile_id": "GEN_ICP_3293d125_1",
+              "generated_at": "2026-08-06T16:19:12.240Z",
+              "profile_name": "Female 45-54 Efficiency Maximiser",
               "confidence_level": "medium",
-              "performance_data": {
-                "cpa_m3544": 10.33,
-                "cpa_m5564": 9.49,
-                "confidence": "medium",
-                "spend_m3544": 557.74,
-                "spend_m5564": 550.45
-              },
-              "message_resonance": "Unconfirmed - no dedicated message tested yet",
-              "behavioral_signals": "Best blended CPA in account ($9.49 and $10.33) despite no dedicated targeting or creative",
-              "funnel_entry_point": "Overflow from broad targeting",
-              "psychographic_profile": "Unconfirmed - currently only receiving algorithmic overflow traffic, not purpose-built creative",
-              "demographic_foundation": "Male, 35-44 and 55-64",
-              "strategic_recommendation": "Build and test a purpose-built creative for this segment before assuming it is a durable ICP",
-              "origin": "imported"
+              "message_resonance": "CN_ProductDemo + HK_Benefit + FW_BAB + TN_Rational + TN_Relatable + HP_Time + PR_VisualDemo + PR_DataDriven all confirmed resonant at registration stage from C2B evidence. No tested aspirational or identity-led angle for this segment; TN_Aspirational and HK_Identity remain untested hypotheses. PR_DataDriven (1,000 books proof) is likely the key credibility anchor given rational tone preference.",
+              "behavioral_signals": "Highest registration CVR in the C2B demographic breakdown (21.98% link-to-registration). Engages with rational, relatable tone and visual product demos. Current funnel position: strong at registration stage but checkout-depth behaviour for this specific segment is unconfirmed because C2B produced 0 checkout results overall. Price sensitivity unknown; HP_Time is the confirmed pain axis but HP_Money has not been tested against this segment. Responds quickly to thumbstop content that validates her time constraints.",
+              "funnel_entry_point": "TOF to MOF via product-demo registration flow. Enters at the efficiency promise and converts at registration; checkout conversion pathway untested.",
+              "psychographic_profile": "Mid-career professional or active parent at peak life complexity. Carries accumulated reading guilt: aware of books she intends to read, frustrated by the gap between intention and completion. Values practical proof over aspirational framing. Responds to the permission structure implicit in the 1,000-books-in-15-minutes product demo because it resolves guilt without demanding behaviour change. Decision style is deliberate rather than impulsive; she evaluates efficiency claims against her lived experience before committing.",
+              "demographic_foundation": "Female, age 45-54, broad targeting across Facebook Feed and Reels placements, likely mobile-dominant given Advantage+ auto-placement routing in the account. Geography not isolated in available evidence. This segment emerges from the C2B demographic breakdown where female 45-54 produced 20 registration results at CPA $6.06 from $121.26 spend — the highest result count and lowest CPA of any age-gender segment in the account.",
+              "strategic_recommendation": "Build a dedicated creative row within the Pillar 1 column that pairs the confirmed registration formula (CN_ProductDemo + HK_Benefit + TN_Rational) with FW_AIDA at the checkout stage to test whether this segment's registration efficiency translates to deeper funnel conversion. Do not narrow target; allow Advantage+ to find her under broad ABO and use the demographic breakdown post-hoc to confirm she is being reached.",
+              "origin": "generated"
             },
             {
-              "profile_id": "ICP_BOOK2_C2B_QuizCompleter",
-              "profile_name": "Quiz-gate registration completer (BOOK2, C2B)",
-              "confidence_level": "high",
-              "performance_data": {
-                "cpa": 16.28,
-                "spend": 1204.87,
-                "confidence": "high",
-                "cvr_link_pct": 11.65
-              },
-              "message_resonance": "Confirmed control cell for registration; checkout-stage resonance unconfirmed",
-              "behavioral_signals": "Strong registration unlocker; checkout-depth did not follow through in V3 per prior Book2 library read",
-              "funnel_entry_point": "TOF quiz -> registration",
-              "psychographic_profile": "Responds to product-demo / '1,000 books, 15 minutes each' proof",
-              "demographic_foundation": "Same targeting as BOOK2 broad quiz campaign; not yet demographically isolated",
-              "strategic_recommendation": "Keep as control; brief a checkout-stage-specific message layer to close the registration-to-checkout gap",
-              "origin": "imported"
-            },
-            {
-              "profile_id": "ICP_BOOK0_C5_BYOC_PENDING",
-              "profile_name": "BYOC Working Professional (C5) - pending full definition",
+              "model": "claude-sonnet-4-6",
+              "profile_id": "GEN_ICP_3293d125_2",
+              "generated_at": "2026-08-06T16:19:12.240Z",
+              "profile_name": "Male 25-34 Rapid-Conversion Efficiency Reader",
               "confidence_level": "validation_required",
-              "performance_data": {
-                "cpa": 20.55,
-                "spend": 452.07,
-                "confidence": "validation_required"
-              },
-              "message_resonance": "Unconfirmed",
-              "behavioral_signals": "Only 2 of 4 matrix rows (B, D) have live data; too thin to read",
-              "funnel_entry_point": "TOF - App install",
-              "psychographic_profile": "Needs to process specific professional content, not generic summaries",
-              "demographic_foundation": "25-40 working professionals, operators, founders (per Local Client Library CONCEPTS tab)",
-              "strategic_recommendation": "Do not judge from current data; needs full A-D funding before a verdict",
-              "origin": "imported"
+              "message_resonance": "CN_ProductDemo + HK_Benefit + TN_Rational confirmed at registration from C2B. Hypothesis: this segment may also respond to HK_Identity + TN_Aspirational (learn like people you admire) given the competitive knowledge-arbitrage motivation, but this is untested speculation — mark as low confidence. CN_BehaviorShift (read less, keep more) may resonate if framed as a productivity hack rather than a guilt resolution.",
+              "behavioral_signals": "Link-click-to-registration CVR of 36.36% from C2B breakdown — more than double the cell average of 15.98% and the highest conversion rate of any demographic segment in the account. CPA $3.09 on 4 results suggests the existing product-demo creative is accidentally well-optimised for this segment despite no deliberate targeting. Currently in overflow from broad ABO targeting. Urgency response appears high given the rapid CVR. Price sensitivity unknown; HP_Money angle untested.",
+              "funnel_entry_point": "TOF via broad targeting overflow, converting rapidly at registration stage. Checkout behaviour unconfirmed for this segment.",
+              "psychographic_profile": "Early-to-mid career professional with high information appetite and low tolerance for friction. Likely operates in a fast-feedback environment (tech, finance, entrepreneurship) where the ability to rapidly absorb book insights is a competitive signal rather than a leisure pursuit. Less guilt-driven than the female 45-54 segment; more motivated by knowledge arbitrage and efficiency identity. Decision style is fast and pattern-matching: if the product demo proves the mechanism in the first few seconds, conversion follows quickly.",
+              "demographic_foundation": "Male, age 25-34, identified via C2B demographic breakdown. Reached via broad targeting under Advantage+ auto-placements; no dedicated creative or targeting exists for this segment. Geography and device not isolated in available evidence. Small reach base (758 users) but produced 4 registration results at CPA $3.09 — the lowest absolute CPA in the entire account demographic breakdown.",
+              "strategic_recommendation": "Add a dedicated exploratory column in the next MST matrix using a purpose-built male efficiency-reader avatar (distinct from the female-skewed TimePoorLearner ICP). Test CN_ProductDemo + TN_Rational as control row alongside CN_BehaviorShift + TN_Assertive as test row to determine whether the high CVR is concept-agnostic or specific to the existing creative. Do not narrow demographic targeting; validate segment persistence under continued broad ABO before treating as a durable ICP.",
+              "origin": "generated"
             }
           ],
           "variable_combinations": [
@@ -5741,9 +5773,9 @@
             "status": "complete",
             "window_start": "2026-05-02",
             "window_end": "2026-07-07",
-            "generated_at": "2026-07-07T00:00:00+00:00",
+            "generated_at": "2026-08-06T16:19:12.555+00:00",
             "source_file": "strategic_map.json",
-            "note": null
+            "note": "Generated in-app by the Metrix engine (run 3293d125-2c59-4e45-b270-77959e564036)."
           },
           {
             "stage": "brief_builder",
@@ -8226,12 +8258,14 @@
               "Results": 0,
               "cell_id": "C2B",
               "iap_read": "Confidence: insufficient. Pre-signal window — zero purchases; no winner/loser calls. Concept evidence: hypothesis_only — reverse-engineered from the pre-pilot account audit (90% of prior spend skewed 45+/1 ad), not from a client-supplied audience baseline. No live MST performance data exists to validate or revise this yet..",
+              "purchases": 0,
               "CPA_result": null,
               "Impressions": 280,
               "Link clicks": 1,
               "Result type": "Website purchases",
               "CTR_link_pct": 0.3571,
               "Clicks (all)": 2,
+              "adds_to_cart": 0,
               "cta_variable": "CTA_Buy",
               "hook_variable": "Three months in the new place. Still bare walls.",
               "tone_variable": "TN_Rational",
@@ -8239,6 +8273,7 @@
               "concept_variable": "C2",
               "Amount spent (USD)": 3.77,
               "book2_concept_name": "Milestone2534",
+              "checkouts_initiated": 0,
               "Result_per_link_click_pct": 0
             },
             {

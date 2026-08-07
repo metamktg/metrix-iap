@@ -95,6 +95,7 @@ const RUNTIME_EXPORTS: Array<keyof typeof shared> = [
   "ImpactBadge",
   "ScopeBadge",
   "SectionCard",
+  "SectionInfoIcon",
   "SkeletonBlock",
   "SkeletonTileRow",
   "LoopChecklist",

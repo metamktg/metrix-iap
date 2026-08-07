@@ -14,6 +14,7 @@ import {
   useGetManualPerformanceCsvFormat,
   useStartManualAnalysisRun,
   useGetLatestAnalysisRun,
+  useListAnalysisRuns,
   useListManualImports,
   useUpdateManualImportAdNames,
   useSyncCreativeLinks,
@@ -42,6 +43,7 @@ import {
   AlertTriangle,
   RefreshCw,
   Images,
+  History,
 } from "lucide-react";
 
 function RunAnalysisBtn({
@@ -460,6 +462,9 @@ function CreativeLinkageStatus({
   if (total === 0) return null;
 
   const allLinked = linked === total && unlinked.length === 0;
+  // "No creatives linked at all" is common on first runs when ad names haven't been
+  // mapped yet — it's a normal setup step, not a failure. Use neutral framing.
+  const noneLinked = linked === 0 && total > 0;
 
   const handleResync = async () => {
     setSyncError(null);
@@ -479,6 +484,8 @@ function CreativeLinkageStatus({
         "rounded-lg border p-3 space-y-2",
         allLinked
           ? "border-emerald-400/25 bg-emerald-400/[0.04]"
+          : noneLinked
+          ? "border-border/40 bg-white/[0.02]"
           : "border-amber-400/30 bg-amber-400/[0.06]"
       )}
     >
@@ -486,21 +493,29 @@ function CreativeLinkageStatus({
         <Images
           className={cn(
             "w-3.5 h-3.5 shrink-0 mt-px",
-            allLinked ? "text-emerald-400" : "text-amber-400"
+            allLinked ? "text-emerald-400" : noneLinked ? "text-muted-foreground/70" : "text-amber-400"
           )}
         />
         <div className="min-w-0 flex-1 space-y-1">
           <div
             className={cn(
               "text-caption font-semibold",
-              allLinked ? "text-emerald-300" : "text-amber-200"
+              allLinked ? "text-emerald-300" : noneLinked ? "text-foreground/75" : "text-amber-200"
             )}
           >
             {allLinked
               ? `${linked} of ${total} creatives linked`
-              : `${linked} of ${total} creatives linked — ${unlinked.length} unmatched`}
+              : noneLinked
+              ? `${total} creative ${total === 1 ? "file" : "files"} staged — ad name mapping needed`
+              : `${linked} of ${total} creatives linked — ${unlinked.length} ad ${unlinked.length === 1 ? "name" : "names"} unmatched`}
           </div>
-          {!allLinked && unlinked.length > 0 && (
+          {noneLinked && (
+            <p className="text-label text-muted-foreground/70 leading-relaxed">
+              Map each staged creative file to an ad name in the upload panel, then re-sync to
+              link them to this analysis run.
+            </p>
+          )}
+          {!allLinked && !noneLinked && unlinked.length > 0 && (
             <div className="text-label text-amber-100/70 leading-relaxed space-y-0.5">
               <p>
                 These ad names had no matching row in the data — check that the names in
@@ -528,6 +543,8 @@ function CreativeLinkageStatus({
             "shrink-0 flex items-center gap-1 text-label font-medium border px-2.5 py-1.5 rounded transition-colors",
             allLinked
               ? "border-emerald-400/30 text-emerald-300 hover:bg-emerald-400/10"
+              : noneLinked
+              ? "border-border/50 text-muted-foreground/80 hover:bg-white/5"
               : "border-amber-400/30 text-amber-200 hover:bg-amber-400/10",
             syncMutation.isPending && "opacity-50 cursor-not-allowed"
           )}
@@ -720,6 +737,7 @@ export function AnalysisControls({
   const queryClient = useQueryClient();
   const startMutation = useStartManualAnalysisRun();
   const { data: latest, refetch } = useGetLatestAnalysisRun(accountId);
+  const { data: runsData } = useListAnalysisRuns(accountId);
   const { data: importsData, refetch: refetchImports } = useListManualImports(accountId);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const calledDoneRef = useRef(false);
@@ -833,8 +851,22 @@ export function AnalysisControls({
     }
   };
 
+  const priorRuns = (runsData?.runs ?? []).filter((r) => r.status === "success");
+
   return (
     <div className="space-y-3">
+      {/* Existing-runs context strip */}
+      {priorRuns.length > 0 && (
+        <div className="flex items-center gap-2 rounded-md border border-border/30 bg-white/[0.02] px-2.5 py-2">
+          <History className="w-3.5 h-3.5 text-muted-foreground/55 shrink-0" />
+          <span className="text-[11px] text-muted-foreground/70 leading-snug">
+            <span className="font-semibold text-foreground/80">
+              {priorRuns.length} existing run{priorRuns.length !== 1 ? "s" : ""}
+            </span>
+            {" "}· Running again adds another snapshot you can select independently when building strategy.
+          </span>
+        </div>
+      )}
       <div className="flex items-center gap-2">
         <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/85 shrink-0" />
         <span className="text-caption font-medium text-foreground">Date range to analyze</span>

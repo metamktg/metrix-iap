@@ -17,7 +17,7 @@ import {
 } from "@/lib/data/metrixSeedAdapter";
 import { RecommendationDeck, actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
 import {
-  ModuleHeader, SectionCard, CaveatNote, DetailReveal, deriveLabel,
+  ModuleHeader, SectionCard, SectionInfoIcon, CaveatNote, DetailReveal, deriveLabel,
   UnconfiguredState, PendingState, CrossLink, fmtUSD, fmtNum, eventLabel, resultTerm,
   SkeletonTileRow, LoopChecklist, type LoopChecklistStep,
 } from "./shared";
@@ -193,11 +193,10 @@ export function AdAccountOverview() {
         <div className="flex-1 min-w-0 overflow-y-auto px-6 py-3 space-y-3">
 
           {/* Account Totals — metric accordions */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-label font-mono uppercase tracking-widest text-data-caption">Account Totals</h2>
-              <MetricPickerButton catalog={metricCatalog} selected={selectedMetricIds} onToggle={toggle} onMove={move} onReset={reset} />
-            </div>
+          <SectionCard
+            title="Account Totals"
+            right={<MetricPickerButton catalog={metricCatalog} selected={selectedMetricIds} onToggle={toggle} onMove={move} onReset={reset} />}
+          >
             {isRefetching ? (
               <SkeletonTileRow count={selectedMetricIds.length || 4} />
             ) : null}
@@ -229,12 +228,13 @@ export function AdAccountOverview() {
                 </div>
               )}
             </div>
-          </div>
+          </SectionCard>
 
           {/* Current Focus */}
           <SectionCard
             title="Current focus"
             desc="Active sprint · top priority"
+            right={<SectionInfoIcon tip="Your active sprint and the top recommended action from the latest analysis." />}
           >
             <div className="grid grid-cols-dashboard-2 gap-3">
               <div className="rounded-xl border border-purple-400/20 bg-purple-400/[0.03] p-4 hover:border-purple-400/30 transition-colors">
@@ -274,35 +274,46 @@ export function AdAccountOverview() {
                     </p>
                   </>
                 ) : (
-                  <p className="text-body text-muted-foreground/80 leading-relaxed">No recommendations yet.</p>
+                  <div className="flex flex-col items-start gap-1.5 py-1">
+                    <Zap className="w-4 h-4 text-interactive/30" />
+                    <p className="text-caption font-semibold text-muted-foreground/60">No actions yet</p>
+                    <p className="text-label text-muted-foreground/50 leading-snug">
+                      Run an analysis to surface optimisation actions.{" "}
+                      <CrossLink to="/app/analysis" label="Go to Analysis" />
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
           </SectionCard>
 
           {/* Results by event */}
-          <SectionCard title="Results by event" desc="Conversion volume by event">
+          <SectionCard title="Results by event" desc="Conversion volume by event" right={<SectionInfoIcon tip="Conversion volume split by event type for the selected date window." />}>
             <div className="grid grid-cols-dashboard-4-sm gap-2">
-              {events.map(([key, e]) => (
-                <div key={key} className="mx-kpi-tile px-3 py-2.5">
-                  <div className="text-label font-semibold text-foreground/90 leading-tight mb-1.5 truncate">{eventLabel(key)}</div>
-                  <div className="text-stat metric-num leading-none">{fmtNum(e.results)}</div>
-                  <div className="text-label text-muted-foreground mt-2 space-y-0.5">
-                    <div>Spend <span className="text-foreground/90 font-medium">{fmtUSD(e.spend)}</span></div>
-                    <div>Clicks <span className="text-foreground/90 font-medium">{fmtNum(e.link_clicks)}</span></div>
+              {events.map(([key, e]) => {
+                const isZero = !e.results || e.results === 0;
+                return (
+                  <div key={key} className={cn("mx-kpi-tile px-3 py-2.5", isZero && "opacity-60")}>
+                    <div className="text-label font-semibold text-foreground/90 leading-tight mb-1.5 truncate">{eventLabel(key)}</div>
+                    <div className={cn("text-stat metric-num leading-none", isZero && "text-muted-foreground/45")}>{fmtNum(e.results)}</div>
+                    <div className="text-label text-muted-foreground mt-2 space-y-0.5">
+                      <div>Spend <span className="text-foreground/90 font-medium">{fmtUSD(e.spend)}</span></div>
+                      <div>Clicks <span className="text-foreground/60">{fmtNum(e.link_clicks)}</span></div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </SectionCard>
 
           {/* Core controls */}
-          <SectionCard title="Core controls" desc="Control creative per funnel stage">
+          <SectionCard title="Core controls" desc="Control creative per funnel stage" right={<SectionInfoIcon tip="The benchmark creatives that define performance expectations per funnel stage." />}>
             <div className="grid grid-cols-dashboard-2 gap-3">
               <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/[0.03] p-4 hover:border-emerald-400/30 transition-colors">
                 <div className="flex items-center gap-1.5 mb-2">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-400/80" />
                   <span className="text-caption font-semibold text-foreground">Primary control</span>
+                  <SectionInfoIcon tip="The top-performing creative benchmark for this funnel stage." />
                 </div>
                 <p className="text-title font-semibold text-foreground mb-1">{primaryControlName}</p>
                 {(() => {
@@ -317,7 +328,9 @@ export function AdAccountOverview() {
                   );
                 })()}
                 {primaryControlName !== core.primary_control && (
-                  <p className="text-label font-mono text-muted-foreground/40 mt-1.5">{core.primary_control}</p>
+                  <p className="text-label font-mono text-muted-foreground/40 mt-1.5">
+                    <span className="text-label text-muted-foreground/30 not-italic">Code · </span>{core.primary_control}
+                  </p>
                 )}
               </div>
               {core.registration_control && (
@@ -325,6 +338,7 @@ export function AdAccountOverview() {
                   <div className="flex items-center gap-1.5 mb-2">
                     <KeyRound className="w-3.5 h-3.5 text-[#62e6ff]/80" />
                     <span className="text-caption font-semibold text-foreground">{term.Singular} control</span>
+                    <SectionInfoIcon tip={`The control creative for the ${term.Singular} conversion stage.`} />
                   </div>
                   <p className="text-title font-semibold text-foreground mb-1">{registrationControlName ?? core.registration_control}</p>
                   {core.registration_control_read && core.registration_control && (() => {
@@ -339,7 +353,9 @@ export function AdAccountOverview() {
                     );
                   })()}
                   {registrationControlName !== core.registration_control && (
-                    <p className="text-label font-mono text-muted-foreground/40 mt-1.5">{core.registration_control}</p>
+                    <p className="text-label font-mono text-muted-foreground/40 mt-1.5">
+                      <span className="text-label text-muted-foreground/30 not-italic">Code · </span>{core.registration_control}
+                    </p>
                   )}
                 </div>
               )}
@@ -353,6 +369,7 @@ export function AdAccountOverview() {
           <SectionCard
             title="Optimization loop"
             desc="Approve to Task Tray or dismiss · never auto-applied"
+            right={<SectionInfoIcon tip="AI-generated recommendations to approve or dismiss — never applied automatically." />}
           >
             {deckCards.length ? (
               <RecommendationDeck scopeId={account.id} cards={deckCards} emptyLabel="All account recommendations reviewed" />
