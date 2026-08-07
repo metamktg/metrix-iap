@@ -6,7 +6,7 @@
 //   2. AnalysisOverview — "Top concepts by spend" section: hover its
 //      SectionInfoIcon and assert the expected tooltip text appears.
 //      (Conditional on having performance_by_cell data; bookster fixture has it.)
-//   3. StrategyOverview — "Strategy modules" section: hover its SectionInfoIcon
+//   3. StrategyOverview — "Go deeper" section: hover its SectionInfoIcon
 //      and assert the expected tooltip text appears.
 //   4. StrategyOverview — "Pillar coverage" section: hover its SectionInfoIcon
 //      and assert the expected tooltip text appears.
@@ -266,9 +266,9 @@ async function main() {
 
     // ── StrategyOverview tests ─────────────────────────────────────────────
 
-    // Test 3: "Strategy modules" section — always rendered when strategy data exists.
+    // Test 3: "Go deeper" section (formerly "Strategy modules") — always rendered when strategy data exists.
     await test(
-      'StrategyOverview · "Strategy modules" SectionInfoIcon shows correct tooltip',
+      'StrategyOverview · "Go deeper" SectionInfoIcon shows correct tooltip',
       async () => {
         const ctx = await browser.newContext({
           viewport: { width: 1440, height: 900 },
@@ -279,12 +279,12 @@ async function main() {
           await gotoAndWait(
             page,
             `${BASE}/app/strategy/overview?account=${ACCOUNT}`,
-            "Strategy modules",
+            "Go deeper",
           );
           await assertTooltip(
             page,
             "Deeper views of the same strategy from different angles — map, avatars, and hypothesis queue.",
-            "Strategy modules · SectionInfoIcon",
+            "Go deeper · SectionInfoIcon",
           );
         } finally {
           await ctx.close();

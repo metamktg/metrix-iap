@@ -9,7 +9,7 @@
 // Assertions:
 //   1. AnalysisOverview · "Analysis modules" SectionInfoIcon shows correct tooltip.
 //   2. AnalysisOverview · "Top concepts by spend" SectionInfoIcon shows correct tooltip.
-//   3. StrategyOverview · "Strategy modules" SectionInfoIcon shows correct tooltip.
+//   3. StrategyOverview · "Go deeper" SectionInfoIcon shows correct tooltip.
 //   4. StrategyOverview · "Pillar coverage" SectionInfoIcon shows correct tooltip.
 //
 // Run: pnpm --filter @workspace/scripts run smoke:metrix-iap-section-info-icons
