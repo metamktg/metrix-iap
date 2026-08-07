@@ -14,7 +14,7 @@ import {
   MetricTile, CrossLink, resultTerm, SectionCard, ConfidenceBadge,
   fmtUSD, fmtPct, fmtNum,
   DetailReveal, deriveLabel, SegmentedToggle, PILL_ACTIVE, PILL_INACTIVE,
-  useShowMore, ShowMoreButton, SegmentGenderIcon,
+  useShowMore, ShowMoreButton, SegmentGenderIcon, SectionInfoIcon,
 } from "../shared";
 import { DemographicTable } from "../analysis/tables";
 import { VariableStackChips, VariableChip, familyLabel } from "./strategyShared";
@@ -1433,6 +1433,7 @@ export function AvatarsView() {
                     <SectionCard
                       title="Matrix avatars"
                       desc={`Sorted by ${SORT_LABEL[sortBy]} · tap any card for detail`}
+                      right={<SectionInfoIcon tip="Audience avatars from the MST matrix, each with its measured performance, creative DNA, and linked ICP profiles." />}
                       >
                       <FoldedGrid
                         items={sortedColumns}
