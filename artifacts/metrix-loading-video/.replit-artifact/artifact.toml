@@ -1,0 +1,28 @@
+kind = "video"
+previewPath = "/metrix-loading-video/"
+title = "Metrix Loading Animation"
+description = "A ~4s seamlessly looping Metrix-branded loading animation video: Void Navy cockpit background with blue/cyan glows, the glowing Metrix mark powering up, a blue→cyan progress sweep, precision-grid shimmer, and branded skeleton-tile glints. Motion design for the app's boot/loading state."
+version = "1.0.0"
+id = "artifacts/metrix-loading-video"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/metrix-loading-video/" ]
+localPort = 22218
+
+[services.development]
+run = "pnpm --filter @workspace/metrix-loading-video run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/metrix-loading-video", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/metrix-loading-video/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22218"
+BASE_PATH = "/metrix-loading-video/"

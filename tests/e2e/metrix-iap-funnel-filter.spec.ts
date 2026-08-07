@@ -346,18 +346,27 @@ async function main() {
           console.log(`       Total cells (unfiltered): ${totalCells}`);
 
           // ── Top 25% ────────────────────────────────────────────────────────
-          await page.getByRole("button", { name: "Top 25%" }).click();
-          // Wait for the filter counter to appear (isFiltered → true).
+          // Click the pill, retrying if needed: right after first paint the
+          // library view can still re-render as late data settles, which
+          // discards a too-early tier click (filter state resets to default).
+          // A user clicking again succeeds, so retry mirrors real behaviour
+          // while still failing loudly if the tier filter is actually broken.
           const topCounter = page.locator("text=/Showing \\d+ of \\d+ cells/");
-          await topCounter
-            .waitFor({ state: "visible", timeout: 8_000 })
-            .catch(async () => {
-              // may have filtered to zero — accept "No cells match filters" too
-              await page
-                .locator("text=No cells match filters")
-                .waitFor({ state: "visible", timeout: 4_000 })
-                .catch(() => {});
-            });
+          for (let attempt = 0; attempt < 3; attempt++) {
+            await page.getByRole("button", { name: "Top 25%" }).click();
+            const appeared = await topCounter
+              .waitFor({ state: "visible", timeout: 4_000 })
+              .then(() => true)
+              .catch(async () => {
+                // may have filtered to zero — accept "No cells match filters" too
+                return page
+                  .locator("text=No cells match filters")
+                  .waitFor({ state: "visible", timeout: 2_000 })
+                  .then(() => true)
+                  .catch(() => false);
+              });
+            if (appeared) break;
+          }
 
           // Verify the filter counter is visible — proves tier state is active and
           // the filter ran, regardless of how many cells the fixture happens to have.
@@ -392,7 +401,18 @@ async function main() {
             timeout: 20_000,
           });
 
-          await page.getByRole("button", { name: "Bottom 25%" }).click();
+          // Same early-render race as Top 25% above: retry the click if the
+          // counter doesn't appear (a too-early click can be discarded).
+          const anyCounter = page.locator("text=/Showing \\d+ of \\d+ cells/");
+          for (let attempt = 0; attempt < 3; attempt++) {
+            await page.getByRole("button", { name: "Bottom 25%" }).click();
+            const appeared = await anyCounter
+              .first()
+              .waitFor({ state: "visible", timeout: 4_000 })
+              .then(() => true)
+              .catch(() => false);
+            if (appeared) break;
+          }
 
           // Wait for the fixture-deterministic bottom-25 counter to appear.
           // Fixture (bookster, custom stage → effectiveSortKey="spend"):

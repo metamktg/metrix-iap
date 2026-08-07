@@ -8,7 +8,7 @@ import { useState } from "react";
 import { useScopedAdAccountId, useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getReportBuilder, getWorkspaceSettings } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, ScopeBanner, SectionCard, CaveatNote, PendingState, CrossLink } from "../shared";
+import { ModuleHeader, ScopeBanner, SectionCard, CaveatNote, PendingState, CrossLink, DetailReveal, deriveLabel } from "../shared";
 import { ConnectMetaDialog, ManualImportDialog, CreativeLibraryDialog } from "../ConnectAccountDialogs";
 import { AgentWaitlistSection } from "./AgentWaitlistSection";
 import { cn } from "@workspace/command-deck/lib/utils";
@@ -301,10 +301,14 @@ export function GeneralView() {
         <SectionCard title="Data isolation" desc="How this account's data is scoped within the manager.">
           <div className="flex items-start gap-2.5 p-3 rounded-lg border border-emerald-400/15 bg-emerald-400/[0.03]">
             <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-            <p className="text-[11px] text-foreground/75 leading-relaxed">
-              All analysis, strategy, briefs, reports, and MST data are isolated to <span className="font-medium text-foreground">{account.name}</span>.
-              Only bottom-line performance totals roll up to the {manager.name} overview. Approving a recommendation creates a manual task and never auto-edits a live campaign.
-            </p>
+            <DetailReveal
+              label={deriveLabel(`All analysis, strategy, briefs, reports, and MST data are isolated to ${account.name}.`, 72)}
+              labelClassName="text-[11px] text-foreground/75 leading-relaxed"
+              eyebrow="Data isolation"
+              sections={[{
+                text: `All analysis, strategy, briefs, reports, and MST data are isolated to ${account.name}. Only bottom-line performance totals roll up to the ${manager.name} overview. Approving a recommendation creates a manual task and never auto-edits a live campaign.`,
+              }]}
+            />
           </div>
         </SectionCard>
 

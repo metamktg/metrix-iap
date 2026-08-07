@@ -62,6 +62,7 @@ const RUNTIME_EXPORTS: Array<keyof typeof shared> = [
   "eventLabel",
   "resultTerm",
   "ConfidenceBadge",
+  "SegmentGenderIcon",
   "SectionTabBar",
   "ModuleHeader",
   "RangeScopeBar",
@@ -204,6 +205,17 @@ describe("shared.tsx display components — render checks (no context)", () => {
   it("ConfidenceBadge renders non-empty output", () => {
     const { container } = render(<shared.ConfidenceBadge value="high" />);
     expect(container.firstChild).not.toBeNull();
+  });
+
+  it("SegmentGenderIcon renders for female and male, nothing for other values", () => {
+    const female = render(<shared.SegmentGenderIcon gender="female" />);
+    expect(female.container.firstChild).not.toBeNull();
+    cleanup();
+    const male = render(<shared.SegmentGenderIcon gender="Male" />);
+    expect(male.container.firstChild).not.toBeNull();
+    cleanup();
+    const other = render(<shared.SegmentGenderIcon gender="unknown" />);
+    expect(other.container.firstChild).toBeNull();
   });
 
   it("ImpactBadge renders non-empty output", () => {

@@ -14,7 +14,7 @@ import {
   MetricTile, CrossLink, resultTerm, SectionCard, ConfidenceBadge,
   fmtUSD, fmtPct, fmtNum,
   DetailReveal, deriveLabel, SegmentedToggle, PILL_ACTIVE, PILL_INACTIVE,
-  useShowMore, ShowMoreButton,
+  useShowMore, ShowMoreButton, SegmentGenderIcon,
 } from "../shared";
 import { DemographicTable } from "../analysis/tables";
 import { VariableStackChips, VariableChip, familyLabel } from "./strategyShared";
@@ -777,8 +777,11 @@ function AudienceSegmentTile({
     <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-3">
       {/* L1: identity + confidence badge */}
       <div className="flex items-start justify-between gap-2">
-        <p className={cn(TYPE.title, "font-semibold text-foreground leading-snug")}>
-          {segmentLabel(seg)}
+        <p className="flex items-center gap-1.5 min-w-0">
+          <SegmentGenderIcon gender={seg.gender} />
+          <span className={cn(TYPE.title, "text-foreground leading-snug truncate")}>
+            {segmentLabel(seg)}
+          </span>
         </p>
         <TooltipProvider delayDuration={150}>
           <Tooltip>
@@ -1361,7 +1364,7 @@ export function AvatarsView() {
   }, [icpProfiles, searchQuery, sortBy]);
 
   return (
-    <ModuleScopeGate section={SECTION} title="Avatars" account={account}>
+    <ModuleScopeGate section={SECTION} title="Avatars / ICP / PMF" account={account}>
       {() => {
         const acct = account!;
         const demo = analysis?.demographic_registration_signal ?? [];
@@ -1369,7 +1372,7 @@ export function AvatarsView() {
         if (!matrix && icpProfiles.length === 0) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Avatars" tabs="strategy" account={acct} />
+              <ModuleHeader section={SECTION} title="Avatars / ICP / PMF" tabs="strategy" account={acct} />
               <PendingState
                 title="No avatars yet"
                 message="Avatars are derived from the MST matrix and strategy ICP profiles once they exist for this account."
@@ -1400,7 +1403,7 @@ export function AvatarsView() {
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
             <ModuleHeader
               section={SECTION}
-              title="Avatars / ICP"
+              title="Avatars / ICP / PMF"
               subtitle="Matrix avatars · ICP profiles · audience signal"
               tabs="strategy"
               account={acct}

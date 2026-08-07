@@ -10,6 +10,8 @@
 // the library refreshes automatically.
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { TYPE } from "../typography";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { Images, Dna, RefreshCw, AlertTriangle, PlayCircle, TrendingUp, TrendingDown, Sliders } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
@@ -54,6 +56,7 @@ import type { SegmentId } from "@/lib/segment-analytics";
 import type { CellPerformanceRow, DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 import { CreativeLibraryDialog, ManualImportDialog } from "@/pages/metrix/ConnectAccountDialogs";
 import { CellCreativeUploadDialog } from "@/components/creative/CellCreativeUploadDialog";
+import { DeconstructionReviewQueue } from "@/components/creative/DeconstructionReviewQueue";
 import { useConceptHighlight } from "@/lib/concept-registry-context";
 import {
   type FunnelStage, FUNNEL_STAGE_CONFIGS, getFunnelStageConfig,
@@ -65,7 +68,7 @@ import {
 
 const SECTION = "Analysis · 03";
 
-type Tab = "cells" | "top" | "variables";
+type Tab = "cells" | "top" | "variables" | "review";
 
 const VARIABLE_FIELDS: { key: keyof CellPerformanceRow; label: string }[] = [
   { key: "hook_variable",       label: "Hook" },
@@ -246,7 +249,7 @@ export function IapLibraryView() {
                 <PendingState
                   title="Analysis pending"
                   message="No analysis data available for this account yet."
-                  action={<CrossLink to="/app/analysis/overview" label="Go to Analysis Overview" />}
+                  action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />}
                 />
               </div>
             );
@@ -265,6 +268,11 @@ export function IapLibraryView() {
             { id: "cells",     label: "Creative cells",   count: cells.length },
             { id: "top",       label: "Top performers",   count: topCells.length + topVariables.length },
             { id: "variables", label: "Creative DNA",     count: variables.length },
+            {
+              id: "review",
+              label: "Review queue",
+              count: (account?.creative_deconstructions ?? []).filter((d) => d.status === "needs_review").length,
+            },
           ];
 
           const pillarsForCell = (cellId: string) =>
@@ -367,9 +375,9 @@ export function IapLibraryView() {
                 </div>
               </div>
 
-              {(analysisRunsData?.runs.length ?? 0) > 0 && (
+              {(analysisRunsData?.runs?.length ?? 0) > 0 && (
                 <div className="px-6 pt-4">
-                  <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/30 mb-1.5">
+                  <p className={cn(TYPE.microLabel, "text-muted-foreground/30 mb-1.5")}>
                     Scope to analysis run
                   </p>
                   <RunSelector runs={analysisRunsData!.runs} value={runSelection} onChange={setRunSelection} />
@@ -555,7 +563,7 @@ export function IapLibraryView() {
                         : "cpa";
 
                       if (totalBeforeFilter === 0) {
-                        return <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." action={<CrossLink to="/app/analysis/overview" label="Back to Overview" />} />;
+                        return <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />} />;
                       }
 
                       return (
@@ -622,7 +630,7 @@ export function IapLibraryView() {
                       const rangeEnd = Math.min(safePage * pageSize, totalCells);
 
                       if (totalBeforeFilter === 0 && creativeOnlyCellIds.length === 0) {
-                        return <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." action={<CrossLink to="/app/analysis/overview" label="Back to Overview" />} />;
+                        return <PendingState title="No cells in selection" message="Adjust the metric selection to see cell performance." action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />} />;
                       }
 
                       return (
@@ -801,12 +809,12 @@ export function IapLibraryView() {
                           ))}
                         </div>
                       ) : (
-                        <PendingState title="No ranked cells" message="No ranked cells in the current metric selection." action={<CrossLink to="/app/analysis/overview" label="Back to Overview" />} />
+                        <PendingState title="No ranked cells" message="No ranked cells in the current metric selection." action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />} />
                       )}
                     </div>
                     <div>
                       <h3 className="text-caption font-mono uppercase tracking-widest text-muted-foreground/60 mb-2">Top checkout variables</h3>
-                      {topVariables.length ? <VariableTable rows={topVariables} onRowClick={(r) => setVariableCode(r.variable_id)} /> : <PendingState title="No ranked variables" message="No ranked variables in the current metric selection." action={<CrossLink to="/app/analysis/overview" label="Back to Overview" />} />}
+                      {topVariables.length ? <VariableTable rows={topVariables} onRowClick={(r) => setVariableCode(r.variable_id)} /> : <PendingState title="No ranked variables" message="No ranked variables in the current metric selection." action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />} />}
                     </div>
                   </div>
                 )}
@@ -871,8 +879,13 @@ export function IapLibraryView() {
                       <VariableTable rows={variables} onRowClick={(r) => setVariableCode(r.variable_id)} />
                     </div>
                   ) : (
-                    <PendingState title="No variables in selection" message="Adjust the metric selection to see variable performance." action={<CrossLink to="/app/analysis/overview" label="Back to Overview" />} />
+                    <PendingState title="No variables in selection" message="Adjust the metric selection to see variable performance." action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />} />
                   )
+                )}
+
+                {/* ── Review queue tab (sub-80% deconstructed creatives) ── */}
+                {tab === "review" && (
+                  <DeconstructionReviewQueue accountId={adAccountId} />
                 )}
               </div>
 

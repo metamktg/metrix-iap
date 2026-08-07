@@ -164,6 +164,54 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/manual-imports/restage-run/{runId}:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+      - name: runId
+        in: path
+        required: true
+        description: A past manual analysis run identifier.
+        schema:
+          type: string
+          minLength: 1
+    post:
+      operationId: restageManualImportsForRun
+      tags: [metrix]
+      summary: Restage the imports a past analysis run consumed
+      description: Flips every manual_imports row this run consumed (status=processed) back to staged and clears the run linkage, so "Run analysis" picks them up again to regenerate the analysis from the same files without re-uploading. Requires access to the account.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Imports restaged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RestageManualImportsResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/accounts/{accountId}/manual-imports/{importId}:
     parameters:
       - name: accountId
@@ -1030,7 +1078,7 @@ paths:
         description: Generation kind.
         schema:
           type: string
-          enum: [strategy, briefs]
+          enum: [strategy, briefs, deconstruct]
     get:
       operationId: getLatestGenerationRun
       tags: [metrix]
@@ -1059,6 +1107,178 @@ paths:
                 $ref: "#/components/schemas/ApiError"
         "403":
           description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/deconstruct-creatives:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+    post:
+      operationId: deconstructCreatives
+      tags: [metrix]
+      summary: Start a creative deconstruction run over uploaded creative assets
+      description: Analyzes the selected staged creative_asset uploads (images) against the IAP variable registry, grading each detected variable with a confidence score. Classifications at or above the 80% gate file into the account's local library automatically; below-gate results land in the review queue. Video files are recorded as unsupported. Returns 202 with the run id immediately; poll the latest-run endpoint (kind=deconstruct) for the outcome. Requires access to the account.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeconstructCreativesInput"
+      responses:
+        "202":
+          description: Deconstruction run started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StartGenerationResult"
+        "400":
+          description: No import ids provided
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: A deconstruction run is already in progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "422":
+          description: None of the selected uploads are creative assets on this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/creative-deconstructions:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+    get:
+      operationId: listCreativeDeconstructions
+      tags: [metrix]
+      summary: List creative deconstruction classifications for an account
+      description: Returns every stored classification (auto-filed, needs-review, user-overridden, discarded, unsupported) for the account's uploaded creatives, newest first. Requires access to the account.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Classification list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListCreativeDeconstructionsResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/creative-deconstructions/{deconstructionId}:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+      - name: deconstructionId
+        in: path
+        required: true
+        description: Creative deconstruction identifier.
+        schema:
+          type: string
+          minLength: 1
+    patch:
+      operationId: reviewCreativeDeconstruction
+      tags: [metrix]
+      summary: Review a below-gate creative classification
+      description: Applies a review action to a classification in the review queue. 'update_variables' replaces the stored variable set (registry-constrained, recorded as user-edited); 'bypass' explicitly overrides the confidence gate and files the entry into the local library (recorded as user_overridden); 'discard' rejects the classification and removes anything previously filed. Requires access to the account.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewCreativeDeconstructionInput"
+      responses:
+        "200":
+          description: Updated classification
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewCreativeDeconstructionResult"
+        "400":
+          description: Invalid action or no registry-valid variables provided
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Classification not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: The classification is not in the review queue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "422":
+          description: Unsupported (video) files cannot be classified
           content:
             application/json:
               schema:
@@ -3711,6 +3931,10 @@ components:
         status:
           type: string
           enum: [staged, processed, rejected]
+        manual_analysis_run_id:
+          type: string
+          description: The analysis run that consumed this import (status=processed), if any. Null for staged/rejected imports and for creative_asset uploads, which are never run-consumed.
+          nullable: true
         created_at:
           type: string
         link_result:
@@ -3730,6 +3954,14 @@ components:
         - ad_names
         - status
         - created_at
+    RestageManualImportsResult:
+      type: object
+      properties:
+        restaged:
+          type: integer
+          description: Number of manual_imports rows flipped from processed back to staged.
+      required:
+        - restaged
     ListManualImportsResult:
       type: object
       properties:
@@ -4150,7 +4382,7 @@ components:
           type: string
         kind:
           type: string
-          enum: [strategy, briefs]
+          enum: [strategy, briefs, deconstruct]
         status:
           type: string
           enum: [running, success, error]
@@ -4181,6 +4413,145 @@ components:
         - status
         - started_at
         - source_analysis_all_time
+    DeconstructCreativesInput:
+      type: object
+      properties:
+        import_ids:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          description: Ids of staged creative_asset manual imports to deconstruct (single file or a whole upload batch).
+      required:
+        - import_ids
+    DetectedCreativeVariable:
+      type: object
+      properties:
+        family:
+          type: string
+          description: Registry family (concept, framework, tonality, funnel_stage, awareness, pain_point, proof, hook).
+        code:
+          type: string
+          description: Registry-prefixed variable code (e.g. CN_UGC, FW_PAS, TN_Warm).
+        confidence:
+          type: number
+          description: Confidence 0..1 that the variable is genuinely expressed in the creative.
+        evidence:
+          type: string
+          nullable: true
+          description: Short note pointing at what in the creative supports the code.
+        user_edited:
+          type: boolean
+          description: True when the value was set by a reviewer rather than the model.
+      required:
+        - family
+        - code
+        - confidence
+    CreativeDeconstruction:
+      type: object
+      properties:
+        id:
+          type: string
+        manual_import_id:
+          type: string
+        filename:
+          type: string
+        ad_names:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [unsupported, auto_filed, needs_review, user_overridden, discarded]
+        variables:
+          type: array
+          items:
+            $ref: "#/components/schemas/DetectedCreativeVariable"
+        overall_confidence:
+          type: number
+          nullable: true
+          description: Deterministic mean of per-variable confidences (0..1). Null for unsupported files.
+        detected_copy:
+          type: object
+          nullable: true
+          properties:
+            primary_message:
+              type: string
+              nullable: true
+            secondary_message:
+              type: string
+              nullable: true
+            cta:
+              type: string
+              nullable: true
+            visual_system:
+              type: string
+              nullable: true
+        brief_ref:
+          type: string
+          nullable: true
+          description: Linked brief id when the mapped ad traces back to a generated/imported brief. Null for historical/brief-less creatives.
+        brief_variables:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: Brief-INTENDED variable codes for side-by-side comparison. Null when no brief is linked.
+        cell_id:
+          type: string
+          nullable: true
+          description: Library cell the entry was filed under (auto_filed / user_overridden only).
+        overridden_by:
+          type: string
+          nullable: true
+        overridden_at:
+          type: string
+          nullable: true
+        model:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+        updated_at:
+          type: string
+      required:
+        - id
+        - manual_import_id
+        - filename
+        - ad_names
+        - status
+        - variables
+        - created_at
+        - updated_at
+    ListCreativeDeconstructionsResult:
+      type: object
+      properties:
+        deconstructions:
+          type: array
+          items:
+            $ref: "#/components/schemas/CreativeDeconstruction"
+      required:
+        - deconstructions
+    ReviewCreativeDeconstructionInput:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [update_variables, bypass, discard]
+        variables:
+          type: array
+          items:
+            $ref: "#/components/schemas/DetectedCreativeVariable"
+          description: Replacement variable set. Required for update_variables; ignored otherwise.
+      required:
+        - action
+    ReviewCreativeDeconstructionResult:
+      type: object
+      properties:
+        deconstruction:
+          $ref: "#/components/schemas/CreativeDeconstruction"
+      required:
+        - deconstruction
     StageStatusResult:
       type: object
       properties:

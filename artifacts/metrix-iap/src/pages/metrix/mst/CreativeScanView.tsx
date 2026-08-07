@@ -12,7 +12,7 @@ import { CreativeCard } from "@/components/creative/CreativeCard";
 import { cardFromCell } from "@/lib/creative-assembly";
 import { Library, Tags } from "lucide-react";
 
-const SECTION = "MST · 07";
+const SECTION = "MST · 06";
 
 export function CreativeScanView() {
   const seed = useMetrixSeed();

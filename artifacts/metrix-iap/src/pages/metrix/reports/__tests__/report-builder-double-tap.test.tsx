@@ -1,4 +1,4 @@
-// ─── NewReportView — Generate Report double-tap guard ─────────────────────
+// ─── ReportBuilderView — Generate Report double-tap guard ──────────────
 //
 // Confirms that rapid successive clicks on the "Generate report" button fire
 // the underlying createReport mutate exactly once — even before any re-render
@@ -67,7 +67,7 @@ vi.mock("@workspace/api-client-react", async (importOriginal) => {
 import { AccountProvider } from "@/contexts/AccountContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DateRangeProvider } from "@/contexts/DateRangeContext";
-import { NewReportView } from "../NewReportView";
+import { ReportBuilderView } from "../ReportBuilderView";
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -89,7 +89,7 @@ function renderView() {
       <AuthProvider>
         <AccountProvider>
           <DateRangeProvider>
-            <NewReportView />
+            <ReportBuilderView />
           </DateRangeProvider>
         </AccountProvider>
       </AuthProvider>
@@ -108,7 +108,7 @@ beforeEach(() => {
 
 // ── Tests ──────────────────────────────────────────────────────────────────
 
-describe("NewReportView — Generate Report double-tap guard", () => {
+describe("ReportBuilderView — Generate Report double-tap guard", () => {
   it("renders the Generate report button for the bookster account", () => {
     selectBookster();
     renderView();

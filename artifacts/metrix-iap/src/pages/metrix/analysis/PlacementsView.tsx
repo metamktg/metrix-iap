@@ -302,7 +302,7 @@ export function PlacementsView() {
                   title="No placement signal"
                   message="Placement reads appear once delivery data exists for this account."
                   icon={LayoutGrid}
-                  action={<CrossLink to="/app/analysis/overview" label="Return to Analysis Overview" />}
+                  action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />}
                 />
               </div>
             );

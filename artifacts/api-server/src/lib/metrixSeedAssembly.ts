@@ -155,6 +155,7 @@ export type AccountTables = {
   failurePatterns: Map<string, Row[]>;
   adsRegistry: Map<string, Row[]>;
   cellCreativeOverrides: Map<string, Row[]>;
+  creativeDeconstructions: Map<string, Row[]>;
   accountModules: Row[];
   signalCards: Row[];
 };
@@ -205,6 +206,9 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
   const accountId = String(account["id"]);
   const modules = modulesFor(t.accountModules, accountId);
   const adPerformance = forAccount(t.adPerformance, accountId);
+  const creativeDeconstructions = forAccount(t.creativeDeconstructions, accountId).map(
+    deconstructionSeedShape,
+  );
 
   // ── No performance data yet → honest pending/unconfigured shape ─────
   if (adPerformance.length === 0) {
@@ -217,6 +221,7 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
       ...(account["meta_ad_account_id"] ? { meta_ad_account_id: account["meta_ad_account_id"] } : {}),
       iap: null,
       mst: modules.get("mst") ?? { status: "not_available" },
+      creative_deconstructions: creativeDeconstructions,
     };
   }
 
@@ -743,8 +748,30 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
       source_artifacts: mstDoc["source_artifacts"] ?? [],
     },
     listen: { signal_cards: listenCards },
+    creative_deconstructions: creativeDeconstructions,
   };
 }
+
+// ── Creative deconstruction classifications (per-account seed shape) ──
+// Content bytes never leave the DB; only the classification metadata the
+// client needs for badges + the review queue is exposed.
+const deconstructionSeedShape = (r: Row): Row => ({
+  id: String(r["id"]),
+  manual_import_id: String(r["manual_import_id"]),
+  filename: r["filename"],
+  ad_names: Array.isArray(r["ad_names"]) ? r["ad_names"] : [],
+  status: r["status"],
+  variables: Array.isArray(r["variables"]) ? r["variables"] : [],
+  overall_confidence: r["overall_confidence"] != null ? Number(r["overall_confidence"]) : null,
+  detected_copy: r["detected_copy"] ?? null,
+  brief_ref: r["brief_ref"] ?? null,
+  brief_variables: Array.isArray(r["brief_variables"]) ? r["brief_variables"] : null,
+  cell_id: r["cell_id"] ?? null,
+  overridden_by: r["overridden_by"] ?? null,
+  overridden_at: r["overridden_at"] ?? null,
+  created_at: String(r["created_at"]),
+  updated_at: String(r["updated_at"]),
+});
 
 // ── Cards ────────────────────────────────────────────────────────────
 const cardShape = (c: Row) => ({
@@ -794,6 +821,7 @@ export async function assembleMetrixSeed(): Promise<Row> {
     adsRegistryAll,
     cellCreativeOverridesAll,
     manualImportsCreativeAll,
+    creativeDeconstructionsAll,
   ] = await Promise.all([
     selectAll("app_config"),
     selectAll("ad_accounts", (q) => q.order("id")),
@@ -828,6 +856,11 @@ export async function assembleMetrixSeed(): Promise<Row> {
     selectAll("manual_imports", (q) =>
       q.eq("kind", "creative_asset").not("ad_names", "is", null),
     ).catch(() => [] as Row[]),
+    // Creative deconstruction classifications (review queue + badges).
+    // Graceful: [] if the table hasn't been created yet (pre-migration).
+    selectAll("creative_deconstructions", (q) => q.order("created_at", { ascending: false })).catch(
+      () => [] as Row[],
+    ),
   ]);
 
   if (adAccounts.length === 0 || adPerformanceAll.length === 0) {
@@ -1033,6 +1066,7 @@ export async function assembleMetrixSeed(): Promise<Row> {
     failurePatterns: groupByAccount(failurePatternsAll),
     adsRegistry: groupByAccount(finalAdsRegistryAll),
     cellCreativeOverrides: groupByAccount(cellCreativeOverridesAll),
+    creativeDeconstructions: groupByAccount(creativeDeconstructionsAll),
     accountModules,
     signalCards,
   };

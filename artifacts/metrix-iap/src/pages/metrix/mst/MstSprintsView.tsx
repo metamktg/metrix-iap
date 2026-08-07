@@ -1,4 +1,4 @@
-// ─── MST · Matrix Builder ─────────────────────────────────────────────
+// ─── MST · Sprints ──────────────────────────────────────────────────────
 // The 4×4 concept × shared-variable historical matrix for the account.
 // Diagonal roles highlight the primary (↘) and counter (↗) test paths.
 

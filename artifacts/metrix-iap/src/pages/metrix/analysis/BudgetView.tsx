@@ -110,7 +110,7 @@ export function BudgetView() {
                 title="No budget data"
                 message="Campaign spend totals appear once analysis is available."
                 icon={Wallet}
-                action={<CrossLink to="/app/analysis/overview" label="Return to Analysis Overview" />}
+                action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />}
               />
             </div>
           );
@@ -192,7 +192,7 @@ export function BudgetView() {
                 right={<SectionInfoIcon tip="Breaks down spend, results, and CPA by each tracked result event so you can see which conversion goals are running efficiently." />}
               >
                 {eventRows.length === 0 ? (
-                  <PendingState title="No events selected" message="Select at least one result event above." action={<CrossLink to="/app/analysis/overview" label="Return to Overview" />} />
+                  <PendingState title="No events selected" message="Select at least one result event above." action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />} />
                 ) : (
                   <EventRowsList rows={eventRows} />
                 )}
@@ -204,7 +204,7 @@ export function BudgetView() {
                 right={<SectionInfoIcon tip="Shows how ad spend is distributed across creative concepts so you can see which ideas are consuming the most budget." />}
                 >
                 {conceptRows.length === 0 ? (
-                  <PendingState title="No concept spend" message="No cell rows match the current metric selection." action={<CrossLink to="/app/analysis/overview" label="Return to Overview" />} />
+                  <PendingState title="No concept spend" message="No cell rows match the current metric selection." action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />} />
                 ) : (
                   <ConceptRowsList rows={conceptRows} maxConcept={maxConcept} />
                 )}

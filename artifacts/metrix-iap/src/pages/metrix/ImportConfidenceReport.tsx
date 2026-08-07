@@ -17,6 +17,7 @@ import { useState } from "react";
 import { ChevronDown, ChevronRight, TrendingDown } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
 import type { ManualImport } from "@workspace/api-client-react";
+import { InfoTooltip } from "./shared";
 
 // ── Signal weights (mirrors iapCsvSpec.ts SIGNAL_WEIGHTS) ──────────────
 // Maintained as a client-side copy so the frontend doesn't need a separate
@@ -271,13 +272,12 @@ export function ImportConfidenceReport({ imports }: { imports: ManualImport[] })
 
   return (
     <div className="space-y-2">
-      <div className="text-caption font-semibold text-foreground/85">
-        Import Confidence Report
+      <div className="flex items-center gap-1.5">
+        <div className="text-caption font-semibold text-foreground/85">
+          Import Confidence Report
+        </div>
+        <InfoTooltip content='Grade reflects weighted column coverage — columns with higher signal value carry more weight. Missing columns with a "−% signal" badge reduce analysis accuracy for this import.' />
       </div>
-      <p className="text-label text-muted-foreground/70 leading-relaxed">
-        Grade reflects weighted column coverage — columns with higher signal value carry more weight.
-        Missing columns with a "−% signal" badge reduce analysis accuracy for this import.
-      </p>
       {csvImports.map((imp) => (
         <SingleCsvConfidenceReport
           key={imp.id}

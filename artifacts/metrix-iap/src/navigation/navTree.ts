@@ -269,6 +269,12 @@ export const navTree: NavSection[] = [
         dataSource: "historical_matrix_4x4",
       },
       {
+        id: "mst-creative-scan",
+        label: "Creative Scan",
+        to: "/app/mst/creative-scan",
+        dataSource: "local_book2_library",
+      },
+      {
         id: "mst-performance",
         label: "Performance",
         to: "/app/mst/performance",
@@ -307,6 +313,39 @@ export const navTree: NavSection[] = [
         label: "History",
         to: "/app/reports/history",
         dataSource: "report_history",
+      },
+    ],
+  },
+  {
+    id: "exports",
+    number: "08",
+    label: "Exports",
+    icon: "Download",
+    landing: "/app/exports",
+    children: [
+      {
+        id: "exports-analysis",
+        label: "Analysis",
+        to: "/app/exports/analysis",
+        dataSource: "performance_by_cell, v3_variable_performance",
+      },
+      {
+        id: "exports-strategy",
+        label: "Strategy JSON",
+        to: "/app/exports/strategy",
+        dataSource: "message_pillars, active_hypotheses",
+      },
+      {
+        id: "exports-reports",
+        label: "Reports",
+        to: "/app/exports/reports",
+        dataSource: "export_formats, report_history",
+      },
+      {
+        id: "exports-brief",
+        label: "Brief",
+        to: "/app/exports/brief",
+        dataSource: "draft_briefs",
       },
     ],
   },

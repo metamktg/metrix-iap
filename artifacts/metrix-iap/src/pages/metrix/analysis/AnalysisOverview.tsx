@@ -899,7 +899,7 @@ export function AnalysisOverview() {
           },
           {
             to: "/app/analysis/budget",
-            label: "Budget Insight",
+            label: "Budget",
             Icon: Wallet,
             desc: "Spend allocation by result event, concept, and placement.",
             stat: `${fmtUSD(summary.total_spend_usd, 0)} analyzed`,

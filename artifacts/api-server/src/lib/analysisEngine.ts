@@ -348,6 +348,42 @@ async function updateProgress(runId: string, pct: number, stage: string): Promis
   }
 }
 
+/**
+ * Destages a successful run's consumed CSVs: flips them from 'staged' to
+ * 'processed' and tags them with the run that consumed them. This clears
+ * them out of "currently staged" gating (Run-analysis button, upload
+ * wizard slots) so the next run starts from an empty staging area, while
+ * keeping the files themselves (and their content) intact and visible in
+ * the Import History panel for restaging.
+ */
+async function markImportsProcessed(importIds: string[], runId: string): Promise<void> {
+  if (importIds.length === 0) return;
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("manual_imports")
+    .update({ status: "processed", manual_analysis_run_id: runId })
+    .in("id", importIds);
+  if (error) throw new Error(error.message);
+}
+
+/**
+ * Restages every import a past run consumed: flips them back to 'staged'
+ * and clears the run linkage, so "Run analysis" picks them up again
+ * without re-uploading. Used by the Import History panel's "Restage"
+ * action to regenerate an analysis run from a prior batch of files.
+ */
+export async function restageImportsForRun(accountId: string, runId: string): Promise<number> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("manual_imports")
+    .update({ status: "staged", manual_analysis_run_id: null })
+    .eq("account_id", accountId)
+    .eq("manual_analysis_run_id", runId)
+    .select("id");
+  if (error) throw new Error(error.message);
+  return (data ?? []).length;
+}
+
 /** Deletes every output table's rows this specific run wrote (partial-output cleanup on failure/staleness). */
 async function deleteRunOutputs(runId: string): Promise<void> {
   const supabase = getSupabase();
@@ -1370,6 +1406,15 @@ export async function startManualAnalysis(
         importsUsed: imports!.length,
         csvWarnings: allCsvWarnings.length > 0 ? allCsvWarnings : undefined,
       });
+      try {
+        await markImportsProcessed(imports!.map((i) => String(i["id"])), runId);
+      } catch (err) {
+        // Non-fatal: the run itself succeeded and its data is committed —
+        // a failure to destage only means the consumed files linger in the
+        // staging area rather than moving to history. Never re-fail a
+        // successful run over this.
+        logger.error({ err, accountId, runId }, "Failed to destage consumed manual imports");
+      }
       invalidateMetrixSeedCache();
       logger.info({ accountId, runId, rows: totalRows, dateStart, dateEnd }, "Manual analysis run succeeded");
     } catch (err) {

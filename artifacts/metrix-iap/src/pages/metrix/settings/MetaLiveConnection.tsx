@@ -23,7 +23,7 @@ import type {
   MetaReportPullStatus,
   MetaReportRow,
 } from "@workspace/api-client-react";
-import { SectionCard } from "../shared";
+import { SectionCard, InfoTooltip } from "../shared";
 import { cn } from "@workspace/command-deck/lib/utils";
 import {
   Plug,
@@ -162,11 +162,12 @@ export function MetaLiveConnection() {
           <div className="flex items-start gap-3 p-3 rounded-lg border border-border/40 bg-white/[0.02]">
             <ShieldCheck className="w-4 h-4 text-interactive/80 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
-              <div className="text-body font-semibold text-foreground">No Meta account connected</div>
+              <div className="flex items-center gap-1.5">
+                <div className="text-body font-semibold text-foreground">No Meta account connected</div>
+                <InfoTooltip content="Sign in with the Meta profile that has access to the pilot ad account." />
+              </div>
               <p className="text-caption text-muted-foreground/85 leading-relaxed mt-0.5">
-                Sign in with the Meta profile that has access to the pilot ad account. Metrix only
-                requests <span className="font-mono text-foreground/80">ads_read</span> — it can
-                never modify campaigns.
+                Metrix only requests <span className="font-mono text-foreground/80">ads_read</span> — it can never modify campaigns.
               </p>
             </div>
             <button

@@ -656,6 +656,34 @@ create table if not exists manual_imports (
 
 create index if not exists manual_imports_account_kind_idx on manual_imports (account_id, kind);
 
+-- Widen kind to the two CSV kinds ConnectAccountDialogs/Zod/analysisEngine
+-- already expect (Ad Summary, Conversion & Device) but this constraint
+-- never allowed — uploading either failed the INSERT despite passing every
+-- other validation layer. (Re)applied idempotently, same pattern as the
+-- match_method check below.
+do $$
+declare cname text;
+begin
+  for cname in
+    select conname
+    from pg_constraint
+    where conrelid = 'manual_imports'::regclass
+      and contype = 'c'
+      and pg_get_constraintdef(oid) ilike '%kind = ANY%'
+  loop
+    execute format('alter table manual_imports drop constraint %I', cname);
+  end loop;
+  alter table manual_imports
+    add constraint manual_imports_kind_check
+    check (kind in (
+      'performance_demo_csv',
+      'performance_placement_csv',
+      'performance_ad_summary_csv',
+      'performance_conversion_device_csv',
+      'creative_asset'
+    ));
+end $$;
+
 -- Idempotent backfill for databases created before this rework.
 alter table manual_imports add column if not exists content_type text;
 alter table manual_imports add column if not exists ad_names text[] not null default '{}';
@@ -782,6 +810,18 @@ create index if not exists placement_performance_run_idx on placement_performanc
 create index if not exists platform_performance_run_idx on platform_performance (manual_analysis_run_id);
 create index if not exists device_performance_run_idx on device_performance (manual_analysis_run_id);
 
+-- Links a staged import to the manual_analysis_run that consumed it. A
+-- successful run flips its consumed manual_imports rows from 'staged' to
+-- 'processed' and tags them here, so an Import History panel can show
+-- "which files fed which run" and offer a "restage" action (flip back to
+-- 'staged', clear this column) to redrive a new run from the same files
+-- without re-uploading. on delete set null (not cascade): deleting a run
+-- must never delete the underlying uploaded file.
+alter table manual_imports
+  add column if not exists manual_analysis_run_id uuid references manual_analysis_runs(id) on delete set null;
+
+create index if not exists manual_imports_run_idx on manual_imports (manual_analysis_run_id);
+
 -- concept_performance/variable_performance's old unique keys had no run
 -- component — that was safe only because the full-account wipe above
 -- guaranteed at most one row per key at any time. Now that the wipe is
@@ -903,7 +943,7 @@ declare
     'request_access', 'meta_oauth_pending', 'connected_ad_accounts', 'report_pulls',
     'report_rows', 'generation_runs', 'manual_imports', 'manual_analysis_runs',
     'cell_creative_overrides',
-    'import_metric_reconciliation'
+    'import_metric_reconciliation', 'creative_deconstructions'
   ];
 begin
   foreach t in array importer_tables loop
@@ -911,3 +951,147 @@ begin
     execute format('revoke all on public.%I from anon, authenticated', t);
   end loop;
 end $$;
+
+-- ── Creative deconstruction (Task: deconstruct uploaded creatives) ─────
+-- One row per (account, manual creative_asset import): the LLM classification
+-- of the uploaded creative against the IAP variable registry. Statuses:
+--   unsupported   — video/non-image file; never sent to the model
+--   auto_filed    — overall confidence ≥ gate; filed into library_cells
+--   needs_review  — below gate; sits in the review queue
+--   user_overridden — user explicitly bypassed the gate (or accepted after
+--                     edits) and the entry was filed into library_cells
+--   discarded     — user rejected the classification; nothing filed
+-- Re-deconstructing the same import replaces its row (unique constraint)
+-- and its derived library_cells rows — never duplicates.
+create table if not exists creative_deconstructions (
+  id uuid primary key default gen_random_uuid(),
+  account_id text not null references ad_accounts(id),
+  manual_import_id uuid not null references manual_imports(id) on delete cascade,
+  generation_run_id uuid,
+  filename text not null,
+  ad_names text[] not null default '{}',
+  status text not null check (status in ('unsupported', 'auto_filed', 'needs_review', 'user_overridden', 'discarded')),
+  variables jsonb not null default '[]',      -- [{family, code, confidence, evidence?, user_edited?}]
+  overall_confidence numeric,                 -- 0..1; null for unsupported
+  detected_copy jsonb,                        -- {primary_message?, secondary_message?, cta?, visual_system?}
+  brief_ref text,                             -- linked brief_id when the mapped ad traces to a brief
+  brief_variables jsonb,                      -- intended variables from the linked brief; null when brief-less
+  cell_id text,                               -- library cell id once filed
+  overridden_by text,                         -- who bypassed the confidence gate
+  overridden_at timestamptz,
+  model text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (account_id, manual_import_id)
+);
+
+create index if not exists creative_deconstructions_account_idx
+  on creative_deconstructions (account_id, status);
+
+-- Allow the 'deconstruct' generation kind (constraint predates it).
+do $$
+begin
+  alter table generation_runs drop constraint if exists generation_runs_kind_check;
+  alter table generation_runs
+    add constraint generation_runs_kind_check
+    check (kind in ('strategy', 'briefs', 'deconstruct'));
+end $$;
+
+-- RLS for the new table (importer_tables list above predates it; keep the
+-- table service-role-only like every other importer table).
+alter table if exists creative_deconstructions enable row level security;
+revoke all on creative_deconstructions from anon, authenticated;
+
+-- Atomic per-import replacement of a creative deconstruction and its derived
+-- library filing. Everything runs in ONE transaction: upsert the
+-- classification (unique on account_id + manual_import_id), swap the derived
+-- library_cells row(s), and stamp cell_id — so a failure at any point rolls
+-- the whole replacement back and the prior successful result survives.
+create or replace function metrix_replace_deconstruction_filing(
+  p_account_id text,
+  p_import_id uuid,
+  p_classification jsonb,
+  p_cell_id text,
+  p_library_row jsonb
+) returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+declare
+  v_row creative_deconstructions;
+  v_next_index integer;
+begin
+  insert into creative_deconstructions (
+    account_id, manual_import_id, generation_run_id, filename, ad_names, model,
+    status, variables, overall_confidence, detected_copy, brief_ref,
+    brief_variables, cell_id, overridden_by, overridden_at, updated_at
+  ) values (
+    p_account_id,
+    p_import_id,
+    (p_classification->>'generation_run_id')::uuid,
+    p_classification->>'filename',
+    coalesce(
+      (select array_agg(x) from jsonb_array_elements_text(coalesce(p_classification->'ad_names', '[]'::jsonb)) x),
+      '{}'::text[]
+    ),
+    p_classification->>'model',
+    p_classification->>'status',
+    coalesce(p_classification->'variables', '[]'::jsonb),
+    (p_classification->>'overall_confidence')::numeric,
+    p_classification->'detected_copy',
+    p_classification->>'brief_ref',
+    p_classification->'brief_variables',
+    p_cell_id,
+    p_classification->>'overridden_by',
+    (p_classification->>'overridden_at')::timestamptz,
+    now()
+  )
+  on conflict (account_id, manual_import_id) do update set
+    generation_run_id  = excluded.generation_run_id,
+    filename           = excluded.filename,
+    ad_names           = excluded.ad_names,
+    model              = excluded.model,
+    status             = excluded.status,
+    variables          = excluded.variables,
+    overall_confidence = excluded.overall_confidence,
+    detected_copy      = excluded.detected_copy,
+    brief_ref          = excluded.brief_ref,
+    brief_variables    = excluded.brief_variables,
+    cell_id            = excluded.cell_id,
+    overridden_by      = excluded.overridden_by,
+    overridden_at      = excluded.overridden_at,
+    updated_at         = now()
+  returning * into v_row;
+
+  delete from library_cells
+   where account_id = p_account_id
+     and payload->>'deconstruction_of' = p_import_id::text;
+
+  if p_library_row is not null then
+    select coalesce(max(row_index), -1) + 1 into v_next_index
+      from library_cells where account_id = p_account_id;
+    insert into library_cells (
+      account_id, cell_id, concept_id, asset_filename,
+      qa_mapping_status, mapping_confidence, row_index, payload
+    ) values (
+      p_account_id,
+      p_library_row->>'cell_id',
+      p_library_row->>'concept_id',
+      p_library_row->>'asset_filename',
+      p_library_row->>'qa_mapping_status',
+      p_library_row->>'mapping_confidence',
+      v_next_index,
+      jsonb_set(coalesce(p_library_row->'payload', '{}'::jsonb), '{deconstruction_id}', to_jsonb(v_row.id::text))
+    );
+    update creative_deconstructions set cell_id = p_cell_id, updated_at = now()
+      where id = v_row.id;
+    v_row.cell_id := p_cell_id;
+  end if;
+
+  return to_jsonb(v_row);
+end;
+$fn$;
+
+revoke all on function metrix_replace_deconstruction_filing(text, uuid, jsonb, text, jsonb)
+  from public, anon, authenticated;

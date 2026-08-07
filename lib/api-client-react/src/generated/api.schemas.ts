@@ -532,10 +532,17 @@ export interface ManualImport {
   /** How ad_names was auto-suggested at stage time (id code, confident filename similarity, or low-confidence closest guess), if it still matches the saved mapping. Cleared once the mapping is overridden. */
   match_method?: ManualImportMatchMethod;
   status: ManualImportStatus;
+  /** The analysis run that consumed this import (status=processed), if any. Null for staged/rejected imports and for creative_asset uploads, which are never run-consumed. */
+  manual_analysis_run_id?: string | null;
   created_at: string;
   link_result?: CreativeLinkResult;
   /** Column mapping results stored at upload time for performance CSV imports (absent for creative_asset uploads). Used to surface column health warnings at the 'Run analysis' step and to re-hydrate the mapping panel on subsequent visits without re-uploading. */
   mapping_summary?: ColumnMappingSummaryEntry[] | null;
+}
+
+export interface RestageManualImportsResult {
+  /** Number of manual_imports rows flipped from processed back to staged. */
+  restaged: number;
 }
 
 export interface ListManualImportsResult {
@@ -836,6 +843,7 @@ export type GenerationRunKind = typeof GenerationRunKind[keyof typeof Generation
 export const GenerationRunKind = {
   strategy: 'strategy',
   briefs: 'briefs',
+  deconstruct: 'deconstruct',
 } as const;
 
 export type GenerationRunStatus = typeof GenerationRunStatus[keyof typeof GenerationRunStatus];
@@ -860,6 +868,91 @@ export interface GenerationRun {
   source_analysis_run_ids?: string[] | null;
   /** True when this generation was grounded in every analysis run for the account rather than a specific selection. */
   source_analysis_all_time: boolean;
+}
+
+export interface DeconstructCreativesInput {
+  /**
+     * Ids of staged creative_asset manual imports to deconstruct (single file or a whole upload batch).
+     * @minItems 1
+     */
+  import_ids: string[];
+}
+
+export interface DetectedCreativeVariable {
+  /** Registry family (concept, framework, tonality, funnel_stage, awareness, pain_point, proof, hook). */
+  family: string;
+  /** Registry-prefixed variable code (e.g. CN_UGC, FW_PAS, TN_Warm). */
+  code: string;
+  /** Confidence 0..1 that the variable is genuinely expressed in the creative. */
+  confidence: number;
+  /** Short note pointing at what in the creative supports the code. */
+  evidence?: string | null;
+  /** True when the value was set by a reviewer rather than the model. */
+  user_edited?: boolean;
+}
+
+export type CreativeDeconstructionStatus = typeof CreativeDeconstructionStatus[keyof typeof CreativeDeconstructionStatus];
+
+
+export const CreativeDeconstructionStatus = {
+  unsupported: 'unsupported',
+  auto_filed: 'auto_filed',
+  needs_review: 'needs_review',
+  user_overridden: 'user_overridden',
+  discarded: 'discarded',
+} as const;
+
+export type CreativeDeconstructionDetectedCopy = {
+  primary_message?: string | null;
+  secondary_message?: string | null;
+  cta?: string | null;
+  visual_system?: string | null;
+} | null;
+
+export interface CreativeDeconstruction {
+  id: string;
+  manual_import_id: string;
+  filename: string;
+  ad_names: string[];
+  status: CreativeDeconstructionStatus;
+  variables: DetectedCreativeVariable[];
+  /** Deterministic mean of per-variable confidences (0..1). Null for unsupported files. */
+  overall_confidence?: number | null;
+  detected_copy?: CreativeDeconstructionDetectedCopy;
+  /** Linked brief id when the mapped ad traces back to a generated/imported brief. Null for historical/brief-less creatives. */
+  brief_ref?: string | null;
+  /** Brief-INTENDED variable codes for side-by-side comparison. Null when no brief is linked. */
+  brief_variables?: string[] | null;
+  /** Library cell the entry was filed under (auto_filed / user_overridden only). */
+  cell_id?: string | null;
+  overridden_by?: string | null;
+  overridden_at?: string | null;
+  model?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ListCreativeDeconstructionsResult {
+  deconstructions: CreativeDeconstruction[];
+}
+
+export type ReviewCreativeDeconstructionInputAction = typeof ReviewCreativeDeconstructionInputAction[keyof typeof ReviewCreativeDeconstructionInputAction];
+
+
+export const ReviewCreativeDeconstructionInputAction = {
+  update_variables: 'update_variables',
+  bypass: 'bypass',
+  discard: 'discard',
+} as const;
+
+export interface ReviewCreativeDeconstructionInput {
+  action: ReviewCreativeDeconstructionInputAction;
+  /** Replacement variable set. Required for update_variables; ignored otherwise. */
+  variables?: DetectedCreativeVariable[];
+}
+
+export interface ReviewCreativeDeconstructionResult {
+  deconstruction: CreativeDeconstruction;
 }
 
 export type StageStatusResultAnalysisStatus = typeof StageStatusResultAnalysisStatus[keyof typeof StageStatusResultAnalysisStatus];

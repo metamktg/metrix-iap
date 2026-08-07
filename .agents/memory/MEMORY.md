@@ -43,4 +43,8 @@
 - [Collapsible header a11y + chip tooltips](collapsible-header-a11y.md) — no role=button on wide clickable headers (e2e name collisions); chips need own TooltipProvider + aria-label for hidden codes.
 - [Command Deck consumption in Metrix IAP](command-deck-consumption.md) — theme comes from the package; app forces .dark on <html>; contrast tests must read tokens via loadEffectiveThemeCss().
 - [LLM JSON truncation handling](llm-json-truncation.md) — "Expected ',' or ']' in JSON" from generation runs = max_tokens cutoff; repair prompts can't fix it, escalate the output budget via stop_reason.
+- [IAP smoke suite coverage guard](iap-smoke-suite-guard.md) — orchestrator iterates a declarative step list; guard test fails on unwired smoke:metrix-iap-* scripts; hover-popover excluded (fixture-drifted spec).
+- [Workflow coverage guard](workflow-check-coverage-guard.md) — every check:*/smoke:* script must run in a workflow or be allowlisted with a reason; guard test parses .replit.
+- [Creative deconstruction flow](creative-deconstruction.md) — uploaded creatives classify against the registry via a 'deconstruct' generation run; 80% gate, prefix-based validation, provenance-keyed dedupe/cleanup in library_cells payloads.
 - [Metrix IAP home + analyze routes](metrix-iap-home-analyze-routes.md) — /app/home (HomeView) and /app/analyze routes were missing from App.tsx; navTree section is "Analysis" (→/app/analysis), not "Analyze" (→/app/analyze); sidebar defaults to expanded (empty localStorage).
+- [Seamless-loop video design](video-artifact-gotchas.md) — looping compositions: every timeline period must divide the loop; staggered repeats and boundary snaps need loop-length keyframes/opacity envelopes; verify by pixel-diffing frames one loop apart.

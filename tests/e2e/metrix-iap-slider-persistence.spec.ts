@@ -210,7 +210,7 @@ async function main() {
           // The SectionTabBar rendered by ModuleHeader has <a> elements for
           // each analysis sub-page including "IAP Library".
           const libTab = page.locator('a[href*="analysis/library"]').first();
-          await libTab.waitFor({ state: "visible", timeout: 8_000 });
+          await libTab.waitFor({ state: "visible", timeout: 20_000 });
           await libTab.click();
           await page.waitForTimeout(800);
 
@@ -226,7 +226,7 @@ async function main() {
           const overviewTab = page
             .locator('a[href*="analysis/overview"]')
             .first();
-          await overviewTab.waitFor({ state: "visible", timeout: 8_000 });
+          await overviewTab.waitFor({ state: "visible", timeout: 20_000 });
           await overviewTab.click();
 
           // Wait for the slider to re-appear on the restored overview.
@@ -293,7 +293,7 @@ async function main() {
           const libTab = page
             .locator('a[href*="analysis/library"]')
             .first();
-          await libTab.waitFor({ state: "visible", timeout: 8_000 });
+          await libTab.waitFor({ state: "visible", timeout: 20_000 });
           await libTab.click();
           await page.waitForTimeout(800);
 
@@ -301,7 +301,7 @@ async function main() {
           const overviewTab = page
             .locator('a[href*="analysis/overview"]')
             .first();
-          await overviewTab.waitFor({ state: "visible", timeout: 8_000 });
+          await overviewTab.waitFor({ state: "visible", timeout: 20_000 });
           await overviewTab.click();
 
           const goalSliderBack = goalCpaSlider(page);

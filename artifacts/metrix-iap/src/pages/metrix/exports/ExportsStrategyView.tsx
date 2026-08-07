@@ -19,7 +19,7 @@ export function ExportsStrategyView() {
   const account = getAdAccount(seed, adAccountId);
 
   return (
-    <ModuleScopeGate section={SECTION} title="Exports · Strategy JSON" account={account}>
+    <ModuleScopeGate section={SECTION} title="Strategy JSON" account={account}>
       {() => {
         const acct = account!;
         const strategy = getStrategyData(seed, adAccountId);
@@ -27,7 +27,7 @@ export function ExportsStrategyView() {
         if (!strategy || strategy.message_pillars.length === 0) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Exports · Strategy JSON" />
+              <ModuleHeader section={SECTION} title="Strategy JSON" />
               <ScopeBanner account={acct} />
               <PendingState title="No strategy data yet" message="Generate strategy first — there's nothing to export yet." icon={FileJson} />
             </div>
@@ -43,7 +43,7 @@ export function ExportsStrategyView() {
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
             <ModuleHeader
               section={SECTION}
-              title="Exports · Strategy JSON"
+              title="Strategy JSON"
               subtitle="Message pillars and active hypotheses, as shown in Strategy."
               table="message_pillars, active_hypotheses"
             />

@@ -16,6 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   useStageManualImport,
   useListManualImports,
+  type CreativeDeconstruction,
   useUpdateManualImportAdNames,
   useDeleteManualImport,
   getGetMetrixSeedQueryKey,
@@ -88,6 +89,7 @@ import {
 import { guessedCreativeImports } from "./manualImportUtils";
 import type { ManualImportInput, ManualImportResult } from "@workspace/api-client-react";
 import { suggestAdNameMatch, type AdNameMatch } from "@/lib/adNameMatch";
+import { useDeconstruction, DECONSTRUCTION_STATUS_LABEL } from "@/components/creative/useDeconstruction";
 
 export function PrimaryBtn({
   onClick,
@@ -161,24 +163,28 @@ export function ConnectMetaDialog({
             {
               Icon: ShieldCheck,
               title: "1 · Authorize with Meta",
-              desc: "Sign in with the Meta Business account that owns the ad account. Metrix requests read-only ads access (ads_read) — it can never edit campaigns.",
+              action: "Sign in with the Meta Business account that owns the ad account.",
+              why: "Metrix requests read-only ads access (ads_read) — it can never edit campaigns.",
             },
             {
               Icon: Database,
               title: "2 · Select the ad account",
-              desc: "Pick which ad account to link. Metrix scopes every module to exactly one ad account — no cross-account blending.",
+              action: "Pick which ad account to link.",
+              why: "Metrix scopes every module to exactly one ad account — no cross-account blending.",
             },
             {
               Icon: Clock,
               title: "3 · Pull reports",
-              desc: "Run the initial report pulls. Analysis surfaces stay honestly pending until the analysis pipeline processes the pulled data.",
+              action: "Run the initial report pulls.",
+              why: "Analysis surfaces stay honestly pending until the analysis pipeline processes the pulled data.",
             },
-          ].map(({ Icon, title, desc }) => (
+          ].map(({ Icon, title, action, why }) => (
             <div key={title} className="flex items-start gap-3 p-3 rounded-lg border border-border/40 bg-white/[0.02]">
               <Icon className="w-4 h-4 text-interactive/80 shrink-0 mt-0.5" />
               <div className="min-w-0">
                 <div className="text-body font-semibold text-foreground">{title}</div>
-                <p className="text-caption text-muted-foreground/85 leading-relaxed mt-0.5">{desc}</p>
+                <p className="text-caption text-foreground/75 mt-0.5">{action}</p>
+                <p className="text-label text-muted-foreground/60 leading-relaxed mt-0.5">{why}</p>
               </div>
             </div>
           ))}
@@ -280,6 +286,7 @@ const CSV_SLOTS: {
   csvClass: IapCsvClassKey;
   title: string;
   desc: string;
+  why?: string;
   optional?: boolean;
 }[] = [
   {
@@ -298,14 +305,16 @@ const CSV_SLOTS: {
     kind: "performance_ad_summary_csv",
     csvClass: "ad_summary",
     title: "Ad Summary CSV",
-    desc: "Ad-level export with no breakdown (one row per ad per day). Provides full spend unaffected by iOS privacy limits — fixes underreported spend totals from the Demographics CSV.",
+    desc: "Ad-level export with no breakdown (one row per ad per day).",
+    why: "Provides full spend unaffected by iOS privacy limits — fixes underreported spend totals from the Demographics CSV.",
     optional: true,
   },
   {
     kind: "performance_conversion_device_csv",
     csvClass: "conversion_device",
     title: "Conversion Device CSV",
-    desc: "Conversion Device pivot export from Meta Ads Manager. Rows carry only conversion metrics (no spend/impressions). Kept separate from the Placements CSV to avoid data collisions.",
+    desc: "Conversion Device pivot export from Meta Ads Manager. Rows carry only conversion metrics (no spend/impressions).",
+    why: "Kept separate from the Placements CSV to avoid data collisions.",
     optional: true,
   },
 ];
@@ -488,6 +497,7 @@ function CsvSlotUpload({
   csvClass,
   title,
   desc,
+  why,
   staged,
   onStaged,
   onRemoved,
@@ -499,6 +509,7 @@ function CsvSlotUpload({
   csvClass: IapCsvClassKey;
   title: string;
   desc: string;
+  why?: string;
   optional?: boolean;
   staged: ManualImport | null;
   onStaged: () => void;
@@ -633,7 +644,8 @@ function CsvSlotUpload({
               ? <span className="text-muted-foreground/60 font-normal">(optional)</span>
               : <span className="text-red-400/80 font-normal">*required</span>}
           </div>
-          <p className="text-caption text-muted-foreground/85 leading-relaxed mt-0.5">{desc}</p>
+          <p className="text-caption text-foreground/75 mt-0.5">{desc}</p>
+          {why && <p className="text-label text-muted-foreground/60 leading-relaxed mt-0.5">{why}</p>}
         </div>
       </div>
 
@@ -1176,9 +1188,11 @@ function CreativeUploadSection({
         <Images className="w-4 h-4 text-muted-foreground/85 shrink-0 mt-0.5" />
         <div className="min-w-0 flex-1">
           <div className="text-body font-semibold text-foreground">Creative library <span className="text-muted-foreground/80 font-normal">(optional)</span></div>
-          <p className="text-caption text-muted-foreground/85 leading-relaxed mt-0.5">
-            Stage individual ad creative files (images/videos) so they render immediately. Map each
-            file to the ad name(s) it represents — filenames matching an ad name are pre-mapped.
+          <p className="text-caption text-foreground/75 mt-0.5">
+            Stage individual ad creative files (images/videos) so they render immediately.
+          </p>
+          <p className="text-label text-muted-foreground/60 leading-relaxed mt-0.5">
+            Map each file to the ad name(s) it represents — filenames matching an ad name are pre-mapped.
           </p>
         </div>
       </div>
@@ -1444,10 +1458,15 @@ export function ManualUploadPanel({
     void queryClient.invalidateQueries({ queryKey: getListManualImportsQueryKey(accountId) });
   };
 
-  const demoImport = imports.find((i) => i.kind === "performance_demo_csv") ?? null;
-  const placementImport = imports.find((i) => i.kind === "performance_placement_csv") ?? null;
-  const summaryImport = imports.find((i) => i.kind === "performance_ad_summary_csv") ?? null;
-  const conversionDeviceImport = imports.find((i) => i.kind === "performance_conversion_device_csv") ?? null;
+  // A successful run destages the files it consumed (status flips to
+  // "processed") so the upload slots read as empty again for the next
+  // batch — a run's already-used files live in the Import History panel
+  // (Analysis Command Center) for restaging, not here.
+  const stagedImports = imports.filter((i) => i.status === "staged");
+  const demoImport = stagedImports.find((i) => i.kind === "performance_demo_csv") ?? null;
+  const placementImport = stagedImports.find((i) => i.kind === "performance_placement_csv") ?? null;
+  const summaryImport = stagedImports.find((i) => i.kind === "performance_ad_summary_csv") ?? null;
+  const conversionDeviceImport = stagedImports.find((i) => i.kind === "performance_conversion_device_csv") ?? null;
   const creativeAssets = imports.filter((i) => i.kind === "creative_asset");
   const guessedImports = guessedCreativeImports(imports);
   const bothRequiredStaged = Boolean(demoImport && placementImport);
@@ -1609,6 +1628,7 @@ export function ManualUploadPanel({
           csvClass={slot.csvClass}
           title={slot.title}
           desc={slot.desc}
+          why={slot.why}
           optional={slot.optional}
           staged={
             slot.kind === "performance_demo_csv"
@@ -1635,10 +1655,10 @@ export function ManualUploadPanel({
       />
 
       <div className="flex items-center justify-between pt-1 border-t border-border/30 mt-1">
-        <p className="text-label text-muted-foreground/75 leading-relaxed max-w-[60%]">
-          Both CSVs are required before you can continue. Files are stored raw until an analysis
-          run explicitly processes them.
-        </p>
+        <div className="max-w-[60%]">
+          <p className="text-label text-foreground/75 font-medium">Both CSVs are required before you can continue.</p>
+          <p className="text-label text-muted-foreground/55 leading-relaxed mt-0.5">Files are stored raw until an analysis run explicitly processes them.</p>
+        </div>
         <PrimaryBtn onClick={() => setStep("review")} disabled={!bothRequiredStaged}>
           Review <ArrowRight className="w-3.5 h-3.5" />
         </PrimaryBtn>
@@ -1652,6 +1672,99 @@ export function ManualUploadPanel({
 // whose CSVs are already staged/analyzed — no CSV re-upload required.
 // Ad-name mapping is dropdown-only against the account's real ads registry
 // (`account.ads`), so there's no way to mistype a mapping.
+
+// ─── Deconstruct staged creatives into the IAP library ────────────────
+// Per-file and per-batch triggers plus a classification badge for every
+// staged creative. Runs go through the generation engine (202 + poll);
+// results at/above the 80% gate file into the local library automatically,
+// below-gate results land in the IAP Library review queue.
+function DeconstructBadge({ status }: { status: CreativeDeconstruction["status"] }) {
+  const style: Record<CreativeDeconstruction["status"], string> = {
+    auto_filed: "border-emerald-400/30 bg-emerald-400/[0.06] text-emerald-400",
+    user_overridden: "border-emerald-400/30 bg-emerald-400/[0.06] text-emerald-400",
+    needs_review: "border-amber-400/30 bg-amber-400/[0.06] text-amber-300",
+    unsupported: "border-border/50 bg-white/[0.03] text-muted-foreground/80",
+    discarded: "border-border/50 bg-white/[0.03] text-muted-foreground/80",
+  };
+  return (
+    <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded border text-label font-medium whitespace-nowrap", style[status])}>
+      {DECONSTRUCTION_STATUS_LABEL[status]}
+    </span>
+  );
+}
+
+function CreativeDeconstructSection({
+  accountId,
+  creativeAssets,
+}: {
+  accountId: string;
+  creativeAssets: { id: string; filename: string; ad_names: string[] }[];
+}) {
+  const { byImportId, isRunning, start } = useDeconstruction(accountId);
+  if (creativeAssets.length === 0) return null;
+
+  const pending = creativeAssets.filter((a) => {
+    const d = byImportId.get(a.id);
+    return !d || d.status === "discarded";
+  });
+
+  return (
+    <div className="space-y-1.5" data-testid="deconstruct-section">
+      <div className="flex items-center justify-between px-0.5 gap-2">
+        <span className="text-label font-medium text-muted-foreground/85">
+          Deconstruct into IAP library
+        </span>
+        <button
+          onClick={() => void start(pending.map((a) => a.id))}
+          disabled={isRunning || pending.length === 0}
+          className="shrink-0 flex items-center gap-1 h-6 px-2 rounded border border-primary/30 bg-primary/10 text-label font-medium text-interactive hover:bg-primary/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          data-testid="deconstruct-all"
+        >
+          {isRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+          {isRunning ? "Deconstructing…" : `Deconstruct all${pending.length > 0 ? ` (${pending.length})` : ""}`}
+        </button>
+      </div>
+      <div className={cn("space-y-1", creativeAssets.length > 6 && "max-h-48 overflow-y-auto pr-1")}>
+        {creativeAssets.map((asset) => {
+          const d = byImportId.get(asset.id);
+          return (
+            <div key={asset.id} className="flex items-center gap-2 px-2 py-1 rounded border border-border/30 bg-white/[0.015]">
+              <span className="flex-1 min-w-0 truncate text-caption text-foreground/85">{asset.filename}</span>
+              {d && d.status !== "discarded" ? (
+                <>
+                  {d.overall_confidence != null && (
+                    <span className="text-label tabular-nums text-muted-foreground/80">
+                      {Math.round(d.overall_confidence * 100)}%
+                    </span>
+                  )}
+                  <DeconstructBadge status={d.status} />
+                </>
+              ) : (
+                <>
+                  <span className="text-label text-muted-foreground/70">Not classified</span>
+                  <button
+                    onClick={() => void start([asset.id])}
+                    disabled={isRunning}
+                    className="shrink-0 h-6 px-2 rounded border border-border/50 text-label font-medium text-muted-foreground/85 hover:text-foreground hover:border-primary/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    aria-label={`Deconstruct ${asset.filename}`}
+                  >
+                    Deconstruct
+                  </button>
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <div className="px-0.5">
+        <p className="text-label text-foreground/70 font-medium">Classification grades each creative against the IAP variable registry.</p>
+        <p className="text-label text-muted-foreground/55 leading-relaxed mt-0.5">
+          ≥80% confidence files into the library automatically; anything lower waits in the IAP Library review queue. Videos are marked unsupported for now.
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export function CreativeLibraryPanel({
   accountId,
@@ -1691,6 +1804,7 @@ export function CreativeLibraryPanel({
         availableAdNames={availableAdNames}
         onChanged={refresh}
       />
+      <CreativeDeconstructSection accountId={accountId} creativeAssets={creativeAssets} />
       {onDone && (
         <div className="flex items-center justify-between pt-2 border-t border-border/30">
           <span className="text-caption text-muted-foreground/85">

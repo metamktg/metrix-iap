@@ -48,6 +48,7 @@ import {
   ListManualImportsResponse,
   UpdateManualImportAdNamesBody,
   UpdateManualImportAdNamesResponse,
+  RestageManualImportsForRunResponse,
   GrantMemberAdAccountBody,
   GrantMemberAdAccountResponse,
   ListMemberAdAccountsResponse,
@@ -90,7 +91,9 @@ import {
   invalidateMetrixSeedCache,
 } from "../lib/metrixSeedAssembly";
 import { randomBytes } from "node:crypto";
+import { deleteDerivedLibraryEntries } from "../lib/deconstructionEngine";
 import { getSupabase } from "../lib/supabase";
+import { restageImportsForRun } from "../lib/analysisEngine";
 import { parseIapCsv, IapCsvFormatError } from "../lib/iapCsvParser";
 import type { IapCsvClass } from "../lib/iapCsvSpec";
 import {
@@ -1099,7 +1102,7 @@ router.get("/metrix/accounts/:accountId/manual-imports", requireAuth, async (req
     }
     const { data, error } = await supabase
       .from("manual_imports")
-      .select("id, account_id, kind, filename, content_type, size_bytes, ad_names, match_method, status, created_at, mapping_summary")
+      .select("id, account_id, kind, filename, content_type, size_bytes, ad_names, match_method, status, manual_analysis_run_id, created_at, mapping_summary")
       .eq("account_id", accountId)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
@@ -1115,6 +1118,7 @@ router.get("/metrix/accounts/:accountId/manual-imports", requireAuth, async (req
           ad_names: r["ad_names"] ?? [],
           match_method: r["match_method"] ?? null,
           status: r["status"],
+          manual_analysis_run_id: r["manual_analysis_run_id"] ?? null,
           created_at: String(r["created_at"]),
           mapping_summary: r["mapping_summary"] ?? null,
         })),
@@ -1124,6 +1128,33 @@ router.get("/metrix/accounts/:accountId/manual-imports", requireAuth, async (req
     req.log.error({ err, accountId }, "Failed to list manual imports");
     res.status(502).json({
       message: err instanceof Error ? err.message : "Could not list staged imports.",
+    });
+  }
+});
+
+router.post("/metrix/accounts/:accountId/manual-imports/restage-run/:runId", requireAuth, async (req, res) => {
+  const accountId = String(req.params["accountId"]);
+  const runId = String(req.params["runId"]);
+  const user = req.authUser!;
+  try {
+    if (user.role !== "admin" && !(await userHasAccountAccess(user.id, accountId))) {
+      res.status(403).json({ message: "You don't have access to this ad account." });
+      return;
+    }
+    const supabase = getSupabase();
+    const account = await supabase.from("ad_accounts").select("id").eq("id", accountId).limit(1);
+    if (account.error) throw new Error(account.error.message);
+    if (!account.data || account.data.length === 0) {
+      res.status(404).json({ message: "Ad account not found." });
+      return;
+    }
+    const restaged = await restageImportsForRun(accountId, runId);
+    req.log.info({ accountId, runId, restaged }, "Restaged manual imports from a past analysis run");
+    res.json(RestageManualImportsForRunResponse.parse({ restaged }));
+  } catch (err) {
+    req.log.error({ err, accountId, runId }, "Failed to restage manual imports");
+    res.status(502).json({
+      message: err instanceof Error ? err.message : "Could not restage the imports for this run.",
     });
   }
 });
@@ -1228,6 +1259,10 @@ router.delete("/metrix/accounts/:accountId/manual-imports/:importId", requireAut
       if (adNames.length > 0) {
         await syncCreativeAssetLinks(accountId, importId, "", adNames, []);
       }
+      // Library entries derived from this creative's deconstruction must not
+      // outlive the source file (the classification row itself cascades via
+      // the manual_import_id FK).
+      await deleteDerivedLibraryEntries(accountId, importId);
     }
     const del = await supabase.from("manual_imports").delete().eq("id", importId);
     if (del.error) throw new Error(del.error.message);

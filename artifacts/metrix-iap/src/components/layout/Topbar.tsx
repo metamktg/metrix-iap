@@ -145,34 +145,43 @@ export function Topbar() {
   const unconfigured = !isManager && activeAdAccount?.status === "unconfigured";
   const initials = leadLabel.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 
+  // The landing route's single breadcrumb ("Agency Overview"/"Account
+  // Overview") duplicates that page's own header verbatim with no
+  // navigational value (it isn't even a link) — suppress it there only.
+  // Every other route keeps its breadcrumb trail.
+  const isLandingRoute = location === "/" || location === "";
+
   return (
     <header className="h-[var(--topbar-h)] flex items-center gap-2 px-3 shrink-0 mx-topbar">
       {/* Breadcrumb */}
-      <nav aria-label="Breadcrumb" className="flex items-center gap-0 flex-1 min-w-0">
-        {crumbs.map((crumb, i) => {
-          const isLast = i === crumbs.length - 1;
-          return (
-            <span key={i} className="flex items-center min-w-0">
-              {i > 0 && <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0 mx-0.5" />}
-              {!isLast && crumb.to ? (
-                <Link
-                  href={crumb.to}
-                  className="text-body truncate text-muted-foreground/60 hover:text-foreground focus-visible:text-foreground rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                >
-                  {crumb.label}
-                </Link>
-              ) : (
-                <span
-                  aria-current={isLast ? "page" : undefined}
-                  className={cn("text-body truncate", isLast ? "text-foreground font-medium" : "text-muted-foreground/60")}
-                >
-                  {crumb.label}
-                </span>
-              )}
-            </span>
-          );
-        })}
-      </nav>
+      {!isLandingRoute && (
+        <nav aria-label="Breadcrumb" className="flex items-center gap-0 flex-1 min-w-0">
+          {crumbs.map((crumb, i) => {
+            const isLast = i === crumbs.length - 1;
+            return (
+              <span key={i} className="flex items-center min-w-0">
+                {i > 0 && <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0 mx-0.5" />}
+                {!isLast && crumb.to ? (
+                  <Link
+                    href={crumb.to}
+                    className="text-body truncate text-muted-foreground/60 hover:text-foreground focus-visible:text-foreground rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    {crumb.label}
+                  </Link>
+                ) : (
+                  <span
+                    aria-current={isLast ? "page" : undefined}
+                    className={cn("text-body truncate", isLast ? "text-foreground font-medium" : "text-muted-foreground/60")}
+                  >
+                    {crumb.label}
+                  </span>
+                )}
+              </span>
+            );
+          })}
+        </nav>
+      )}
+      {isLandingRoute && <div className="flex-1 min-w-0" />}
 
       {/* Status */}
       {isManager ? (
