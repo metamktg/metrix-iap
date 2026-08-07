@@ -11,7 +11,7 @@ import { getAdAccount, getStrategyData, getBriefBuilder } from "@/lib/data/metri
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CrossLink, fmtNum, LoopAction,
-  RangeScopeBar, NoDataInRangeState, DetailReveal, deriveLabel, InfoTooltip, SkeletonBlock,
+  RangeScopeBar, NoDataInRangeState, DetailReveal, deriveLabel, InfoTooltip, SkeletonBlock, SectionInfoIcon,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import {
@@ -256,7 +256,7 @@ function CollapsiblePlaybook({ playbook }: { playbook: NonNullable<ReturnType<ty
   });
 
   return (
-    <SectionCard title="Scaling playbook" desc="Scale · optimize · validate · explore · avoid">
+    <SectionCard title="Scaling playbook" desc="Scale · optimize · validate · explore · avoid" right={<SectionInfoIcon tip="Prioritised action list — what to scale, optimise, validate, explore, and avoid based on analysis reads." />}>
       <div className="space-y-2">
         {activeLanes.map(({ key, label, accent }) => {
           const items = playbook[key] as string[];
@@ -458,7 +458,7 @@ export function StrategyOverview() {
               <SectionCard
                 title="Pillar coverage"
                 desc="Source cell count per pillar · click to anchor to the card below"
-                right={<CrossLink to="/app/strategy/map" label="Map →" />}
+                right={<><SectionInfoIcon tip="Shows how many source cells back each message pillar, indicating which directions have the strongest evidence." /><CrossLink to="/app/strategy/map" label="Map →" /></>}
               >
                 <PillarCoverageStrip pillars={pillars} hypothesesFor={hypothesesFor} />
               </SectionCard>
@@ -470,7 +470,7 @@ export function StrategyOverview() {
                     <SectionCard
                       title="Hypothesis status"
                       desc="By validation stage"
-                      right={<CrossLink to="/app/strategy/hypotheses" label="Queue →" />}
+                      right={<><SectionInfoIcon tip="Breakdown of active hypotheses by validation stage so you can see what needs testing before it moves to brief." /><CrossLink to="/app/strategy/hypotheses" label="Queue →" /></>}
                     >
                       <SharePieChart
                         data={hypStatusData}
@@ -484,7 +484,7 @@ export function StrategyOverview() {
                     <SectionCard
                       title="Variable family map"
                       desc="Which variable families each pillar uses — row = family, column = pillar"
-                      right={<CrossLink to="/app/strategy/map" label="Map →" />}
+                      right={<><SectionInfoIcon tip="Grid showing which creative variable families are used by each message pillar, revealing gaps and overlaps in the strategy." /><CrossLink to="/app/strategy/map" label="Map →" /></>}
                     >
                       <VariableFamilyHeatmap pillars={pillars} />
                     </SectionCard>
@@ -493,7 +493,7 @@ export function StrategyOverview() {
               )}
 
               {/* ── Pillar cards (enhanced) ────────────────────────── */}
-              <SectionCard title="Message pillars" desc="Validated message directions · click source cells to explore">
+              <SectionCard title="Message pillars" desc="Validated message directions · click source cells to explore" right={<SectionInfoIcon tip="Validated messaging directions derived from high-performing cells, each anchored to the source creative evidence." />}>
                 <div className="grid grid-cols-dashboard-3 gap-3">
                   {pillars.map((p, i) => {
                     const t = splitTitle(p.label);
@@ -595,7 +595,7 @@ export function StrategyOverview() {
               )}
 
               {/* ── Strategy modules ──────────────────────────────────── */}
-              <SectionCard title="Strategy modules" desc="Same strategy · different angles">
+              <SectionCard title="Strategy modules" desc="Same strategy · different angles" right={<SectionInfoIcon tip="Deeper views of the same strategy from different angles — map, avatars, and hypothesis queue." />}>
                 <div className="grid grid-cols-dashboard-3 gap-3">
                   {subpages.map((s) => (
                     <div key={s.to} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2">
