@@ -1545,10 +1545,12 @@ export function SectionCard({
         )}
         onClick={collapsible ? () => setOpen((v) => !v) : undefined}
       >
-        <div className="flex-1 min-w-0">
-          <h3 className="text-title font-bold text-foreground leading-tight">{title}</h3>
+        <div className="flex-1 min-w-0 flex items-center gap-1.5">
+          <h3 className="text-title font-bold text-foreground leading-tight truncate">{title}</h3>
           {desc && (
-            <p className="text-label text-muted-foreground/50 leading-snug mt-0.5 line-clamp-1">{desc}</p>
+            <span onClick={(e) => e.stopPropagation()} className="shrink-0">
+              <InfoTooltip content={desc} />
+            </span>
           )}
         </div>
         <div className="shrink-0 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>

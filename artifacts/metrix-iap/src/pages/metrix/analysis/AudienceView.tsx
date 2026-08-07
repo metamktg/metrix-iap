@@ -258,8 +258,11 @@ function IntelligenceMapTab({
     const eff = cpaEff(pt.entry.derived.cpa, medianCpa);
     return (
       <div className="rounded-lg border border-border/50 bg-surface px-3 py-2.5 elevation-floating min-w-[160px]">
-        <p className={cn(TYPE.title, "font-semibold text-foreground mb-2")}>
-          {segmentLabel(pt.entry.seg)}
+        <p className="flex items-center gap-1.5 mb-2">
+          <SegmentGenderIcon gender={pt.entry.seg.gender} />
+          <span className={cn(TYPE.title, "text-foreground")}>
+            {segmentLabel(pt.entry.seg)}
+          </span>
         </p>
         <div className={cn("space-y-1", TYPE.caption, "text-muted-foreground")}>
           {[
