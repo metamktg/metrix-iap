@@ -73,7 +73,7 @@ vi.mock("@/components/generation/GenerationControls", () => ({
   }),
 }));
 
-vi.mock("@/hooks/use-toast", () => ({
+vi.mock("@workspace/command-deck/hooks/use-toast", () => ({
   useToast: () => ({ toast: vi.fn() }),
 }));
 

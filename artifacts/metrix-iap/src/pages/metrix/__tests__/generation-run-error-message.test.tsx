@@ -51,7 +51,7 @@ vi.mock("@workspace/api-client-react", async (importOriginal) => {
   };
 });
 
-vi.mock("@/hooks/use-toast", () => ({
+vi.mock("@workspace/command-deck/hooks/use-toast", () => ({
   useToast: () => ({ toast: mockToastFn }),
 }));
 

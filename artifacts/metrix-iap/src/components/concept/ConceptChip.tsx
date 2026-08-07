@@ -6,7 +6,7 @@
 // - Click: navigates to IAP Library with the concept cell focused.
 
 import { useLocation } from "wouter";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@workspace/command-deck/components/ui/tooltip";
 import { useConceptRegistry, useConceptDescriptor } from "@/lib/concept-registry-context";
 
 interface ConceptChipProps {

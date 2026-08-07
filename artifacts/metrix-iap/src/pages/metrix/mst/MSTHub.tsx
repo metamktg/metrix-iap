@@ -13,7 +13,7 @@ import {
   CrossLink,
   InfoTooltip,
 } from "../shared";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import {
   Layers,
   ArrowUpRight,

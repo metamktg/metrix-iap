@@ -9,9 +9,9 @@ import { useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getReportBuilder } from "@/lib/data/metrixSeedAdapter";
 import { ModuleHeader, SectionCard, CaveatNote, CrossLink } from "../shared";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { FileText, Palette, CalendarClock, Building2, Users, Check } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
+import { Switch } from "@workspace/command-deck/components/ui/switch";
 import { FORMAT_LABEL } from "./reportFormatLabels";
 import {
   useGetReportSettings,
@@ -20,7 +20,7 @@ import {
   type ReportSettingsUpdateInput,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@workspace/command-deck/hooks/use-toast";
 
 const SECTION = "Reports · 07";
 

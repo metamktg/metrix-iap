@@ -11,14 +11,70 @@ import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   CaveatNote, CrossLink, MetricSelectionBar, SectionCard, fmtUSD, fmtNum, fmtPct, eventLabel,
   SkeletonTileRow, DatePresetBar, type ViewPreset, SectionInfoIcon,
+  useShowMore, ShowMoreButton,
 } from "../shared";
 import { getGetAnalysisSummaryQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
 import { PlacementTable } from "./tables";
 import { Wallet, ChevronDown, ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 
 const SECTION = "Analysis · 03";
+
+// ── Event efficiency rows (folded) ────────────────────────────────────
+
+type EventRow = { event: string; totals: { spend: number; results: number; link_clicks: number } };
+
+function EventRowsList({ rows }: { rows: EventRow[] }) {
+  const fold = useShowMore(rows, 8);
+  return (
+    <div className="rounded-xl border border-border/40 overflow-hidden">
+      {/* Compact header row */}
+      <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-6 px-3 py-2 border-b border-border/30 bg-white/[0.015]">
+        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/55">Event</span>
+        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/55 text-right">Spend</span>
+        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/55 text-right">Results</span>
+        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/55 text-right">CPA</span>
+        <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/55 text-right">Clicks</span>
+      </div>
+      {fold.visible.map(({ event, totals }) => (
+        <div
+          key={event}
+          className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-6 px-3 py-2.5 border-b border-border/15 last:border-b-0 hover:bg-white/[0.02] transition-colors"
+        >
+          <span className="text-body font-medium text-foreground/90 truncate">{eventLabel(event)}</span>
+          <span className="text-body font-mono tabular-nums text-foreground/80 text-right">{fmtUSD(totals.spend, 0)}</span>
+          <span className="text-body font-mono tabular-nums text-foreground/80 text-right">{fmtNum(totals.results)}</span>
+          <span className="text-body font-mono tabular-nums text-foreground/80 text-right">{totals.results > 0 ? fmtUSD(totals.spend / totals.results) : "—"}</span>
+          <span className="text-body font-mono tabular-nums text-muted-foreground/60 text-right">{fmtNum(totals.link_clicks)}</span>
+        </div>
+      ))}
+      <ShowMoreButton total={rows.length} hiddenCount={fold.hiddenCount} expanded={fold.expanded} onToggle={fold.toggle} noun="events" />
+    </div>
+  );
+}
+
+// ── Spend-by-concept rows (folded) ────────────────────────────────────
+
+function ConceptRowsList({ rows, maxConcept }: { rows: [string, number][]; maxConcept: number }) {
+  const fold = useShowMore(rows, 8);
+  return (
+    <div className="space-y-2.5">
+      {fold.visible.map(([name, spend]) => (
+        <div key={name}>
+          <div className="flex items-center justify-between text-caption mb-1">
+            <span className="text-foreground/85 font-medium">{name}</span>
+            <span className="text-muted-foreground/60 tabular-nums">{fmtUSD(spend, 0)}</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
+            <div className="h-full bg-primary/50 rounded-full" style={{ width: `${Math.max((spend / maxConcept) * 100, 3)}%` }} />
+          </div>
+        </div>
+      ))}
+      <ShowMoreButton total={rows.length} hiddenCount={fold.hiddenCount} expanded={fold.expanded} onToggle={fold.toggle} noun="concepts" />
+    </div>
+  );
+}
 
 export function BudgetView() {
   const seed = useMetrixSeed();
@@ -138,28 +194,7 @@ export function BudgetView() {
                 {eventRows.length === 0 ? (
                   <PendingState title="No events selected" message="Select at least one result event above." action={<CrossLink to="/app/analysis/overview" label="Return to Overview" />} />
                 ) : (
-                  <div className="rounded-xl border border-border/40 overflow-hidden">
-                    {/* Compact header row */}
-                    <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-6 px-3 py-2 border-b border-border/30 bg-white/[0.015]">
-                      <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/55">Event</span>
-                      <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/55 text-right">Spend</span>
-                      <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/55 text-right">Results</span>
-                      <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/55 text-right">CPA</span>
-                      <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/55 text-right">Clicks</span>
-                    </div>
-                    {eventRows.map(({ event, totals }) => (
-                      <div
-                        key={event}
-                        className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-6 px-3 py-2.5 border-b border-border/15 last:border-b-0 hover:bg-white/[0.02] transition-colors"
-                      >
-                        <span className="text-body font-medium text-foreground/90 truncate">{eventLabel(event)}</span>
-                        <span className="text-body font-mono tabular-nums text-foreground/80 text-right">{fmtUSD(totals.spend, 0)}</span>
-                        <span className="text-body font-mono tabular-nums text-foreground/80 text-right">{fmtNum(totals.results)}</span>
-                        <span className="text-body font-mono tabular-nums text-foreground/80 text-right">{totals.results > 0 ? fmtUSD(totals.spend / totals.results) : "—"}</span>
-                        <span className="text-body font-mono tabular-nums text-muted-foreground/60 text-right">{fmtNum(totals.link_clicks)}</span>
-                      </div>
-                    ))}
-                  </div>
+                  <EventRowsList rows={eventRows} />
                 )}
               </SectionCard>
 
@@ -171,19 +206,7 @@ export function BudgetView() {
                 {conceptRows.length === 0 ? (
                   <PendingState title="No concept spend" message="No cell rows match the current metric selection." action={<CrossLink to="/app/analysis/overview" label="Return to Overview" />} />
                 ) : (
-                  <div className="space-y-2.5">
-                    {conceptRows.map(([name, spend]) => (
-                      <div key={name}>
-                        <div className="flex items-center justify-between text-caption mb-1">
-                          <span className="text-foreground/85 font-medium">{name}</span>
-                          <span className="text-muted-foreground/60 tabular-nums">{fmtUSD(spend, 0)}</span>
-                        </div>
-                        <div className="h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
-                          <div className="h-full bg-primary/50 rounded-full" style={{ width: `${Math.max((spend / maxConcept) * 100, 3)}%` }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <ConceptRowsList rows={conceptRows} maxConcept={maxConcept} />
                 )}
               </SectionCard>
 

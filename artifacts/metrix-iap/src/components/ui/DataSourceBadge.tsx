@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { Database, ChevronDown, ChevronUp } from "lucide-react";
 import { useState, useEffect } from "react";
 

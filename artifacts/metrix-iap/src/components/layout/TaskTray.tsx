@@ -11,7 +11,7 @@ import {
   ChevronDown, ChevronUp, PlayCircle, Loader2,
   CheckCircle2, XCircle, Upload, CalendarRange, UploadCloud,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { useAccount } from "@/contexts/AccountContext";
 import { useTaskTray } from "@/contexts/TaskTrayContext";
 import {

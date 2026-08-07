@@ -3,7 +3,7 @@
 // waitlist — emails are stored in Postgres via the API.
 
 import { useState } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { useJoinAgentWaitlist } from "@workspace/api-client-react";
 import { Clock, Brain, Database, Zap, ArrowRight, Mail, CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
 

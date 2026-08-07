@@ -8,14 +8,14 @@
 
 import { useState } from "react";
 import { ChevronsUpDown, Check, Briefcase } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@workspace/command-deck/components/ui/dropdown-menu";
 import { useAccount } from "@/contexts/AccountContext";
 
 const STATUS_DOT: Record<string, string> = {

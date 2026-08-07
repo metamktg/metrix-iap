@@ -11,7 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getWorkspaceSettings } from "@/lib/data/metrixSeedAdapter";
 import { ModuleHeader, SectionCard, PendingState, CaveatNote, DetailReveal, deriveLabel, CrossLink } from "../shared";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { Users, UserPlus, ShieldCheck, Loader2, X, RotateCw, Check } from "lucide-react";
 import {
   Dialog,
@@ -19,7 +19,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@workspace/command-deck/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,7 +29,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@workspace/command-deck/components/ui/alert-dialog";
 import {
   useListWorkspaceInvites,
   useListWorkspaceMembers,

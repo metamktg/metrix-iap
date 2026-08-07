@@ -5,7 +5,7 @@
 
 import { useState } from "react";
 import { CheckCircle2, Circle, Plug, FileUp, Copy, ArrowLeft, ExternalLink, Wifi } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { useAccount } from "@/contexts/AccountContext";
 import { ConnectMetaDialog, ManualImportDialog } from "../ConnectAccountDialogs";
 import { useGetMetaConnection } from "@workspace/api-client-react";

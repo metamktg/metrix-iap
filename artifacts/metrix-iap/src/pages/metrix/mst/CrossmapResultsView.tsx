@@ -11,6 +11,7 @@ import { getAdAccount, getMST, getAnalysisData, getCreativeLinkContext } from "@
 import {
   ModuleHeader, ModuleScopeGate, CaveatNote, PendingState, MetricTile,
   CrossLink, readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel,
+  useShowMore, ShowMoreButton,
 } from "../shared";
 import { useCellRunScope } from "@/lib/run-scope";
 import { RunSelector, ALL_TIME_SELECTION } from "@/components/analysis/RunSelector";
@@ -18,7 +19,7 @@ import { useListAnalysisRuns } from "@workspace/api-client-react";
 import { TilePerformanceModal } from "@/components/creative/TilePerformanceModal";
 import { TableShell, Th, Td } from "../analysis/tables";
 import { RankSortBar, useRankMetric, type RankMetric } from "../analysis/rankSort";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { GitMerge } from "lucide-react";
 import type { MSTMatrixCell } from "@/lib/data/seedTypes";
 
@@ -173,69 +174,14 @@ export function CrossmapResultsView() {
                     <Th right>Link CTR</Th>
                   </tr>
                 </thead>
-                <tbody>
-                  {rows.map(({ cell, perf, ran: hasData }) => {
-                    const diag = cell.diagonal_role === "diag_down" ? "Primary ↘" : cell.diagonal_role === "diag_up" ? "Counter ↗" : "—";
-                    if (!hasData) {
-                      return (
-                        <tr
-                          key={cell.cell_id}
-                          onClick={() => setActiveCell(cell)}
-                          className="border-b border-border/30 cursor-pointer hover:bg-white/[0.04]"
-                        >
-                          <Td><span className="font-mono text-caption text-muted-foreground/75">{cell.cell_id}</span></Td>
-                          <Td>
-                            <div className="font-medium text-foreground/75">{readableVariables(cell.concept_code)}</div>
-                            {cell.plain_text.headline && <div className="text-label text-muted-foreground/60 mt-0.5">{cell.plain_text.headline}</div>}
-                          </Td>
-                          <Td className={cn(cell.diagonal_role === "diag_down" && "text-interactive", cell.diagonal_role === "diag_up" && "text-teal-300")}>{diag}</Td>
-                          <Td className="text-muted-foreground/40">—</Td>
-                          <Td right>—</Td>
-                          <Td right>—</Td>
-                          <Td right>—</Td>
-                          <Td right>—</Td>
-                        </tr>
-                      );
-                    }
-                    return perf.map((r, i) => {
-                      const spendIntensity = maxPerfSpend > 0 ? r["Amount spent (USD)"] / maxPerfSpend : 0;
-                      const resultsIntensity = maxPerfResults > 0 ? r.Results / maxPerfResults : 0;
-                      const cpaIntensity =
-                        r.CPA_result != null && maxPerfCpa > minPerfCpa
-                          ? 1 - (r.CPA_result - minPerfCpa) / (maxPerfCpa - minPerfCpa)
-                          : 0;
-                      return (
-                        <tr
-                          key={cell.cell_id + r["Result type"]}
-                          onClick={() => setActiveCell(cell)}
-                          className="border-b border-border/30 cursor-pointer hover:bg-white/[0.04]"
-                        >
-                          <Td>{i === 0 ? <span className="font-mono text-caption text-foreground/85">{cell.cell_id}</span> : null}</Td>
-                          <Td>
-                            {i === 0 && (
-                              <>
-                                <div className="font-medium text-foreground">{readableVariables(cell.concept_code)}</div>
-                                {cell.plain_text.headline && <div className="text-label text-muted-foreground/70 mt-0.5">{cell.plain_text.headline}</div>}
-                              </>
-                            )}
-                          </Td>
-                          <Td className={cn(cell.diagonal_role === "diag_down" && "text-interactive", cell.diagonal_role === "diag_up" && "text-teal-300")}>{i === 0 ? diag : null}</Td>
-                          <Td>{eventLabel(r["Result type"])}</Td>
-                          <Td right style={spendIntensity > 0 ? { background: `rgba(99,102,241,${(spendIntensity * 0.20).toFixed(3)})` } : undefined}>
-                            {fmtUSD(r["Amount spent (USD)"])}
-                          </Td>
-                          <Td right style={resultsIntensity > 0 ? { background: `rgba(52,211,153,${(resultsIntensity * 0.18).toFixed(3)})` } : undefined}>
-                            {fmtNum(r.Results)}
-                          </Td>
-                          <Td right style={cpaIntensity > 0 ? { background: `rgba(52,211,153,${(cpaIntensity * 0.20).toFixed(3)})` } : undefined}>
-                            {r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
-                          </Td>
-                          <Td right>{fmtPct(r.CTR_link_pct)}</Td>
-                        </tr>
-                      );
-                    });
-                  })}
-                </tbody>
+                <CrossmapRows
+                  rows={rows}
+                  maxPerfSpend={maxPerfSpend}
+                  maxPerfResults={maxPerfResults}
+                  minPerfCpa={minPerfCpa}
+                  maxPerfCpa={maxPerfCpa}
+                  onSelectCell={setActiveCell}
+                />
               </TableShell>
 
               <div className="flex items-center justify-end gap-4">
@@ -259,5 +205,95 @@ export function CrossmapResultsView() {
         );
       }}
     </ModuleScopeGate>
+  );
+}
+
+function CrossmapRows({
+  rows,
+  maxPerfSpend,
+  maxPerfResults,
+  minPerfCpa,
+  maxPerfCpa,
+  onSelectCell,
+}: {
+  rows: CrossmapEnrichedRow[];
+  maxPerfSpend: number;
+  maxPerfResults: number;
+  minPerfCpa: number;
+  maxPerfCpa: number;
+  onSelectCell: (cell: MSTMatrixCell) => void;
+}) {
+  const fold = useShowMore(rows, 10);
+  return (
+    <tbody>
+      {fold.visible.map(({ cell, perf, ran: hasData }) => {
+        const diag = cell.diagonal_role === "diag_down" ? "Primary ↘" : cell.diagonal_role === "diag_up" ? "Counter ↗" : "—";
+        if (!hasData) {
+          return (
+            <tr
+              key={cell.cell_id}
+              onClick={() => onSelectCell(cell)}
+              className="border-b border-border/30 cursor-pointer hover:bg-white/[0.04]"
+            >
+              <Td><span className="font-mono text-caption text-muted-foreground/75">{cell.cell_id}</span></Td>
+              <Td>
+                <div className="font-medium text-foreground/75">{readableVariables(cell.concept_code)}</div>
+                {cell.plain_text.headline && <div className="text-label text-muted-foreground/60 mt-0.5">{cell.plain_text.headline}</div>}
+              </Td>
+              <Td className={cn(cell.diagonal_role === "diag_down" && "text-interactive", cell.diagonal_role === "diag_up" && "text-teal-300")}>{diag}</Td>
+              <Td className="text-muted-foreground/40">—</Td>
+              <Td right>—</Td>
+              <Td right>—</Td>
+              <Td right>—</Td>
+              <Td right>—</Td>
+            </tr>
+          );
+        }
+        return perf.map((r, i) => {
+          const spendIntensity = maxPerfSpend > 0 ? r["Amount spent (USD)"] / maxPerfSpend : 0;
+          const resultsIntensity = maxPerfResults > 0 ? r.Results / maxPerfResults : 0;
+          const cpaIntensity =
+            r.CPA_result != null && maxPerfCpa > minPerfCpa
+              ? 1 - (r.CPA_result - minPerfCpa) / (maxPerfCpa - minPerfCpa)
+              : 0;
+          return (
+            <tr
+              key={cell.cell_id + r["Result type"]}
+              onClick={() => onSelectCell(cell)}
+              className="border-b border-border/30 cursor-pointer hover:bg-white/[0.04]"
+            >
+              <Td>{i === 0 ? <span className="font-mono text-caption text-foreground/85">{cell.cell_id}</span> : null}</Td>
+              <Td>
+                {i === 0 && (
+                  <>
+                    <div className="font-medium text-foreground">{readableVariables(cell.concept_code)}</div>
+                    {cell.plain_text.headline && <div className="text-label text-muted-foreground/70 mt-0.5">{cell.plain_text.headline}</div>}
+                  </>
+                )}
+              </Td>
+              <Td className={cn(cell.diagonal_role === "diag_down" && "text-interactive", cell.diagonal_role === "diag_up" && "text-teal-300")}>{i === 0 ? diag : null}</Td>
+              <Td>{eventLabel(r["Result type"])}</Td>
+              <Td right style={spendIntensity > 0 ? { background: `rgba(99,102,241,${(spendIntensity * 0.20).toFixed(3)})` } : undefined}>
+                {fmtUSD(r["Amount spent (USD)"])}
+              </Td>
+              <Td right style={resultsIntensity > 0 ? { background: `rgba(52,211,153,${(resultsIntensity * 0.18).toFixed(3)})` } : undefined}>
+                {fmtNum(r.Results)}
+              </Td>
+              <Td right style={cpaIntensity > 0 ? { background: `rgba(52,211,153,${(cpaIntensity * 0.20).toFixed(3)})` } : undefined}>
+                {r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
+              </Td>
+              <Td right>{fmtPct(r.CTR_link_pct)}</Td>
+            </tr>
+          );
+        });
+      })}
+      {fold.hiddenCount > 0 && (
+        <tr>
+          <td colSpan={8} className="p-0">
+            <ShowMoreButton total={rows.length} hiddenCount={fold.hiddenCount} expanded={fold.expanded} onToggle={fold.toggle} noun="matrix cells" />
+          </td>
+        </tr>
+      )}
+    </tbody>
   );
 }

@@ -4,7 +4,7 @@
 // when a cell detail is open.
 
 import { Check, ClipboardList, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { useDecisions, getDecision, toggleDone, isDone } from "@/lib/data/decisionStore";
 import type { DeckCard } from "@/components/deck/RecommendationDeck";
 

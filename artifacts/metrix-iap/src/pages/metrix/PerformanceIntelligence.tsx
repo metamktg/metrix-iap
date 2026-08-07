@@ -16,7 +16,7 @@
 //   HypothesisQueuePanel    — top 5 hypotheses           (Strategy+Brief)
 
 import { useState, useMemo } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { TYPE } from "./typography";
 import {
   Carousel,
@@ -24,7 +24,7 @@ import {
   CarouselItem,
   CarouselPrevious,
   CarouselNext,
-} from "@/components/ui/carousel";
+} from "@workspace/command-deck/components/ui/carousel";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import {
   getAdAccount,

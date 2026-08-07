@@ -5,9 +5,9 @@
 
 import { useState } from "react";
 import { CalendarRange, ChevronDown, Check } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Switch } from "@/components/ui/switch";
-import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@workspace/command-deck/components/ui/popover";
+import { Switch } from "@workspace/command-deck/components/ui/switch";
+import { cn } from "@workspace/command-deck/lib/utils";
 import {
   useDateRange,
   PRESET_LABELS,

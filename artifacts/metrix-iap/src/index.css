@@ -1,61 +1,10 @@
-@import "tailwindcss";
-@import "tw-animate-css";
-@plugin "@tailwindcss/typography";
+/* Command Deck design system theme — imports Tailwind, plugins, and the
+   token theme (light `:root` + dark `.dark`). The Metrix IAP is always dark:
+   index.html sets class="dark" on <html>. */
+@import "@workspace/command-deck/styles.css";
 
-@custom-variant dark (&:is(.dark *));
-
+/* App-specific token → utility mappings the design system does not provide. */
 @theme inline {
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
-  --color-border: hsl(var(--border));
-  --color-input: hsl(var(--input));
-  --color-ring: hsl(var(--ring));
-
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--card-foreground));
-  --color-card-border: hsl(var(--card-border));
-
-  --color-popover: hsl(var(--popover));
-  --color-popover-foreground: hsl(var(--popover-foreground));
-  --color-popover-border: hsl(var(--popover-border));
-
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
-  --color-primary-border: var(--primary-border);
-
-  --color-secondary: hsl(var(--secondary));
-  --color-secondary-foreground: hsl(var(--secondary-foreground));
-  --color-secondary-border: var(--secondary-border);
-
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
-  --color-muted-border: var(--muted-border);
-
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
-  --color-accent-border: var(--accent-border);
-
-  --color-destructive: hsl(var(--destructive));
-  --color-destructive-foreground: hsl(var(--destructive-foreground));
-  --color-destructive-border: var(--destructive-border);
-
-  --color-chart-1: hsl(var(--chart-1));
-  --color-chart-2: hsl(var(--chart-2));
-  --color-chart-3: hsl(var(--chart-3));
-  --color-chart-4: hsl(var(--chart-4));
-  --color-chart-5: hsl(var(--chart-5));
-
-  --color-sidebar: hsl(var(--sidebar));
-  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
-  --color-sidebar-border: hsl(var(--sidebar-border));
-  --color-sidebar-primary: hsl(var(--sidebar-primary));
-  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
-  --color-sidebar-primary-border: var(--sidebar-primary-border);
-  --color-sidebar-accent: hsl(var(--sidebar-accent));
-  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
-  --color-sidebar-accent-border: var(--sidebar-accent-border);
-  --color-sidebar-ring: hsl(var(--sidebar-ring));
-
   /* Metrix brand colors */
   --color-metrix-blue: hsl(var(--metrix-blue));
   --color-metrix-cyan: hsl(var(--metrix-cyan));
@@ -82,15 +31,6 @@
   --color-status-warning: hsl(var(--status-warning));
   --color-status-danger: hsl(var(--status-danger));
   --color-status-info: hsl(var(--status-info));
-
-  --font-sans: var(--app-font-sans);
-  --font-serif: var(--app-font-serif);
-  --font-mono: var(--app-font-mono);
-
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -102,12 +42,6 @@
    ═══════════════════════════════════════════════════════════ */
 
 :root {
-  --button-outline: rgba(255,255,255, .10);
-  --badge-outline: rgba(255,255,255, .05);
-  --opaque-button-border-intensity: 9;
-  --elevate-1: rgba(255,255,255, .04);
-  --elevate-2: rgba(255,255,255, .09);
-
   /* ── Semantic surface / text / status tokens ── */
   /* Surface depth scale (lightest → deepest) */
   --surface-raised: 219 55% 13%;      /* elevated sub-panel */
@@ -179,63 +113,8 @@
    * transitions. The @media block below overrides it. */
   --transition-speed: 200ms;
 
-  /* ── Semantic tokens (HSL channels) mapped to the spec palette ── */
-  /* Background #050b18 */
-  --background: 221 66% 6%;
-  /* Foreground #f5f8ff */
-  --foreground: 222 100% 97%;
-  /* Border ≈ rgba(86,140,255,.18) blended over bg */
-  --border: 221 53% 20%;
-
-  /* Card = glass navy panel */
-  --card: 218 65% 10%;
-  --card-foreground: 222 100% 97%;
-  --card-border: 221 53% 20%;
-
-  /* Sidebar = deepest layer #020711 */
-  --sidebar: 220 79% 4%;
-  --sidebar-foreground: 222 100% 97%;
-  --sidebar-border: 221 53% 18%;
-  --sidebar-primary: 222 100% 54%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 218 55% 16%;
-  --sidebar-accent-foreground: 217 37% 88%;
-  --sidebar-ring: 222 100% 54%;
-
-  /* Popover */
-  --popover: 219 65% 9%;
-  --popover-foreground: 222 100% 97%;
-  --popover-border: 221 53% 22%;
-
-  /* Primary = Metrix electric blue #155dff */
-  --primary: 222 100% 54%;
-  --primary-foreground: 0 0% 100%;
-
-  /* Secondary = subtle glass surface */
-  --secondary: 218 55% 15%;
-  --secondary-foreground: 217 37% 84%;
-
-  /* Muted — text lifted for WCAG AA contrast (≥ 4.5:1 on bg-main at full opacity) */
-  --muted: 219 45% 16%;
-  --muted-foreground: 216 28% 78%;
-
-  /* Accent = slightly elevated panel */
-  --accent: 218 55% 17%;
-  --accent-foreground: 217 37% 88%;
-
-  /* Destructive = controlled red #ff4f61 */
-  --destructive: 354 100% 65%;
-  --destructive-foreground: 0 0% 100%;
-
-  --input: 221 50% 26%;
-  --ring: 222 100% 54%;
-
-  /* Charts — cyan/blue for revenue, warm hues sparingly */
-  --chart-1: 222 100% 54%;
-  --chart-2: 190 100% 54%;
-  --chart-3: 44 92% 63%;
-  --chart-4: 141 68% 53%;
-  --chart-5: 354 100% 65%;
+  /* Semantic shadcn tokens (background/card/primary/…) now come from
+     @workspace/command-deck/styles.css — do not redefine them here. */
 
   /* Metrix brand tokens */
   --metrix-blue: 222 100% 54%;
@@ -245,10 +124,8 @@
   --metrix-danger: 354 100% 65%;
   --metrix-panel: 218 65% 10%;
 
-  --app-font-sans: 'Sora', 'Inter', system-ui, sans-serif;
-  --app-font-serif: Georgia, serif;
-  --app-font-mono: 'IBM Plex Mono', 'SFMono-Regular', 'Menlo', Consolas, monospace;
-  --font-display: 'Sora', system-ui, sans-serif;
+  /* Display face follows the design system's sans (Inter). */
+  --font-display: var(--app-font-sans);
 
   /* ── Void Navy token set ──────────────────────────────────────────── */
   --void-navy:           #000B21;
@@ -264,7 +141,6 @@
     radial-gradient(ellipse at 30% 20%, #0099FF22 0%, transparent 55%),
     radial-gradient(ellipse at 70% 80%, #004D9933 0%, transparent 60%),
     linear-gradient(180deg, #000B21 0%, #04102B 100%);
-  --radius: 0.5rem;
 
   --shadow-2xs: 0 1px 2px 0 rgba(0,0,0,0.4);
   --shadow-xs: 0 1px 3px 0 rgba(0,0,0,0.5);
@@ -274,103 +150,10 @@
   --shadow-lg: 0 10px 20px -5px rgba(0,0,0,0.7), 0 4px 8px -3px rgba(0,0,0,0.4);
   --shadow-xl: 0 20px 30px -8px rgba(0,0,0,0.8), 0 8px 12px -4px rgba(0,0,0,0.4);
   --shadow-2xl: 0 24px 48px -12px rgba(0,0,0,0.9);
-  --tracking-normal: 0em;
-  --spacing: 0.25rem;
-
-  --sidebar-primary-border: hsl(var(--sidebar-primary));
-  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --sidebar-accent-border: hsl(var(--sidebar-accent));
-  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --primary-border: hsl(var(--primary));
-  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --secondary-border: hsl(var(--secondary));
-  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --muted-border: hsl(var(--muted));
-  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --accent-border: hsl(var(--accent));
-  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
-  --destructive-border: hsl(var(--destructive));
-  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 }
 
-/* Metrix is always dark — keep .dark in sync */
-.dark {
-  --button-outline: rgba(255,255,255, .10);
-  --badge-outline: rgba(255,255,255, .05);
-  --opaque-button-border-intensity: 9;
-  --elevate-1: rgba(255,255,255, .04);
-  --elevate-2: rgba(255,255,255, .09);
-
-  --background: 221 66% 6%;
-  --foreground: 222 100% 97%;
-  --border: 221 53% 20%;
-  --card: 218 65% 10%;
-  --card-foreground: 222 100% 97%;
-  --card-border: 221 53% 20%;
-  --sidebar: 220 79% 4%;
-  --sidebar-foreground: 222 100% 97%;
-  --sidebar-border: 221 53% 18%;
-  --sidebar-primary: 222 100% 54%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 218 55% 16%;
-  --sidebar-accent-foreground: 217 37% 88%;
-  --sidebar-ring: 222 100% 54%;
-  --popover: 219 65% 9%;
-  --popover-foreground: 222 100% 97%;
-  --popover-border: 221 53% 22%;
-  --primary: 222 100% 54%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 218 55% 15%;
-  --secondary-foreground: 217 37% 84%;
-  --muted: 219 45% 16%;
-  --muted-foreground: 216 28% 78%;
-  --accent: 218 55% 17%;
-  --accent-foreground: 217 37% 88%;
-  --destructive: 354 100% 65%;
-  --destructive-foreground: 0 0% 100%;
-  --input: 221 50% 26%;
-  --ring: 222 100% 54%;
-  --chart-1: 222 100% 54%;
-  --chart-2: 190 100% 54%;
-  --chart-3: 44 92% 63%;
-  --chart-4: 141 68% 53%;
-  --chart-5: 354 100% 65%;
-  --metrix-blue: 222 100% 54%;
-  --metrix-cyan: 190 100% 69%;
-  --metrix-gold: 44 92% 63%;
-  --metrix-success: 141 68% 53%;
-  --metrix-danger: 354 100% 65%;
-  --metrix-panel: 218 65% 10%;
-  /* Semantic tokens (same as :root — app is always dark) */
-  --surface-raised: 219 55% 13%;
-  --surface: 218 65% 10%;
-  --surface-sidebar: 222 55% 8%;
-  --surface-overlay: 222 61% 7%;
-  --surface-table: 222 55% 7%;
-  --surface-deep: 222 61% 6%;
-  --surface-preview: 222 65% 5%;
-  --border-subtle: 221 53% 18%;
-  --border-default: 221 53% 22%;
-  --text-primary: 222 100% 97%;
-  --text-secondary: 217 37% 88%;
-  --text-muted: 216 28% 78%;
-  --status-success: 141 68% 53%;
-  --status-warning: 44 92% 63%;
-  --status-danger: 354 100% 65%;
-  --status-info: 222 100% 54%;
-  /* Same as :root — app is always dark */
-  --mx-text-interactive: #5c9bff;
-
-  --shadow-2xs: 0 1px 2px 0 rgba(0,0,0,0.5);
-  --shadow-xs: 0 1px 3px 0 rgba(0,0,0,0.6);
-  --shadow-sm: 0 2px 4px -1px rgba(0,0,0,0.6), 0 1px 2px -1px rgba(0,0,0,0.5);
-  --shadow: 0 4px 6px -2px rgba(0,0,0,0.7), 0 2px 4px -1px rgba(0,0,0,0.5);
-  --shadow-md: 0 6px 10px -3px rgba(0,0,0,0.7), 0 3px 6px -2px rgba(0,0,0,0.5);
-  --shadow-lg: 0 10px 20px -5px rgba(0,0,0,0.8), 0 4px 8px -3px rgba(0,0,0,0.5);
-  --shadow-xl: 0 20px 30px -8px rgba(0,0,0,0.9), 0 8px 12px -4px rgba(0,0,0,0.5);
-  --shadow-2xl: 0 24px 48px -12px rgba(0,0,0,1);
-}
-
+/* No .dark override needed: the design system supplies the dark theme;
+   app-specific tokens above apply in both (app is always dark). */
 @layer base {
   * {
     @apply border-border;

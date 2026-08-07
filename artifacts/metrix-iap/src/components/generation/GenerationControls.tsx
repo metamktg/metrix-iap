@@ -16,7 +16,7 @@ import {
   ApiError,
   type GenerateStrategyInput,
 } from "@workspace/api-client-react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@workspace/command-deck/hooks/use-toast";
 import { Loader2, Sparkles, AlertTriangle } from "lucide-react";
 
 export type GenerationKind = "strategy" | "briefs";

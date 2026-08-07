@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 /**
  * Shared WCAG 2.x contrast helpers for accessibility tests.
  *
@@ -118,4 +120,21 @@ export function parseFocusRingOpacities(
     results.push(pct / 100);
   }
   return results;
+}
+
+/**
+ * Load the effective theme CSS for the always-dark Metrix IAP.
+ * Shadcn tokens (--primary, --ring, --background, …) come from the
+ * Command Deck design system package; the app is rendered with
+ * class="dark" on <html>, so the package's `.dark` block holds the
+ * effective values. App-specific tokens still live in the app's
+ * index.css. This returns the package `.dark` block FIRST (so
+ * extractCssVar's first-match wins) followed by the app stylesheet.
+ */
+export function loadEffectiveThemeCss(appCssPath: string, packageCssPath: string): string {
+  const pkgCss = readFileSync(packageCssPath, "utf-8");
+  const appCss = readFileSync(appCssPath, "utf-8");
+  const darkBlock = pkgCss.match(/\.dark\s*\{[\s\S]*?\n\}/)?.[0];
+  if (!darkBlock) throw new Error(".dark block not found in design-system stylesheet");
+  return `${darkBlock}\n${appCss}`;
 }

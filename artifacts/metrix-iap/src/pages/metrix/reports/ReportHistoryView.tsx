@@ -8,9 +8,9 @@ import { useAccount, useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getReportHistory } from "@/lib/data/metrixSeedAdapter";
 import { buildReportModel, downloadReportExport, parseReportModel, type BrandingMode } from "@/lib/reportExport";
-import { ModuleHeader, ModuleScopeGate, PendingState, MetricTile, CrossLink, fmtNum, deriveLabel } from "../shared";
+import { ModuleHeader, ModuleScopeGate, PendingState, MetricTile, CrossLink, fmtNum, deriveLabel, useShowMore, ShowMoreButton } from "../shared";
 import { FORMAT_LABEL } from "./reportFormatLabels";
-import { cn } from "@/lib/utils";
+import { cn } from "@workspace/command-deck/lib/utils";
 import { History, FileText, Building2, Users, FileDown, Check, Loader2, Trash2, X } from "lucide-react";
 import {
   useListWorkspaceReports,
@@ -19,8 +19,8 @@ import {
   getListWorkspaceReportsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
-import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@workspace/command-deck/hooks/use-toast";
+import { Checkbox } from "@workspace/command-deck/components/ui/checkbox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,7 +30,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@workspace/command-deck/components/ui/alert-dialog";
 
 const SECTION = "Reports · 06";
 
@@ -303,100 +303,17 @@ export function ReportHistoryView() {
             })()}
 
             <div className="px-6 py-5 space-y-3 max-w-3xl">
-              {sorted.map((r) => {
-                const selectable = selectMode && r.reportId != null;
-                const isSelected = r.reportId != null && selectedIds.has(r.reportId);
-                return (
-                <div
-                  key={r.id}
-                  onClick={selectable ? () => toggleSelected(r.reportId!) : undefined}
-                  className={cn(
-                    "rounded-xl border p-4 transition-colors",
-                    isSelected
-                      ? "border-red-400/40 bg-red-400/[0.06]"
-                      : "border-border/40 bg-white/[0.02]",
-                    selectable && "cursor-pointer hover:border-border/70",
-                  )}
-                >
-                  <div className="flex items-start gap-3">
-                    {selectMode && (
-                      <div className="flex items-center h-9 shrink-0">
-                        {r.reportId != null ? (
-                          <Checkbox
-                            checked={isSelected}
-                            onCheckedChange={() => toggleSelected(r.reportId!)}
-                            onClick={(e) => e.stopPropagation()}
-                            aria-label={`Select report "${r.title}"`}
-                          />
-                        ) : (
-                          <div className="w-4 h-4" title="Seed reports can't be deleted" />
-                        )}
-                      </div>
-                    )}
-                    <div className="w-9 h-9 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center shrink-0">
-                      <FileText className="w-4 h-4 text-muted-foreground/70" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="text-title font-semibold text-foreground leading-tight">{r.title}</h3>
-                        <span
-                          className={cn(
-                            "text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none",
-                            r.status === "exported"
-                              ? "text-emerald-400 border-emerald-400/25 bg-emerald-400/10"
-                              : "text-amber-400 border-amber-400/25 bg-amber-400/10"
-                          )}
-                        >
-                          {r.status}
-                        </span>
-                      </div>
-                      <p className="text-caption text-muted-foreground/80 mt-1 leading-relaxed line-clamp-1">{deriveLabel(r.summary, 90)}</p>
-                      <div className="flex items-center gap-3 mt-2 text-label font-mono text-muted-foreground/70 flex-wrap">
-                        <span>{fmtDate(r.generated_at)}</span>
-                        <span className="inline-flex items-center gap-1">
-                          {r.mode === "client" ? <Users className="w-3.5 h-3.5" /> : <Building2 className="w-3.5 h-3.5" />}
-                          {r.mode === "client" ? "Client-facing" : "Internal"} · {r.branding}
-                        </span>
-                        <span>{r.section_count} sections</span>
-                        {r.export_format && <span className="uppercase">{FORMAT_LABEL[r.export_format] ?? r.export_format}</span>}
-                      </div>
-                    </div>
-                    {r.status === "exported" && r.export_format && (
-                      <button
-                        onClick={() => download(r, r.export_format!)}
-                        disabled={busyId !== null}
-                        className={cn(
-                          "flex items-center gap-1.5 h-8 px-3 rounded-md border text-caption font-medium shrink-0 transition-colors disabled:opacity-60",
-                          doneId === r.id
-                            ? "border-emerald-400/30 text-emerald-400 bg-emerald-400/5"
-                            : "border-border/50 text-muted-foreground hover:text-foreground hover:bg-white/5"
-                        )}
-                      >
-                        {busyId === r.id ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : doneId === r.id ? (
-                          <Check className="w-3.5 h-3.5" />
-                        ) : (
-                          <FileDown className="w-3.5 h-3.5" />
-                        )}
-                        {doneId === r.id ? "Downloaded" : `Download ${FORMAT_LABEL[r.export_format] ?? r.export_format}`}
-                      </button>
-                    )}
-                    {r.reportId && (
-                      <button
-                        onClick={() => setConfirmDelete(r)}
-                        disabled={deleting}
-                        aria-label={`Delete report "${r.title}"`}
-                        title="Delete report"
-                        className="flex items-center justify-center h-8 w-8 rounded-md border border-border/50 text-muted-foreground hover:text-red-400 hover:border-red-400/30 hover:bg-red-400/5 shrink-0 transition-colors disabled:opacity-60"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-                );
-              })}
+              <ReportCardList
+                sorted={sorted}
+                selectMode={selectMode}
+                selectedIds={selectedIds}
+                toggleSelected={toggleSelected}
+                download={download}
+                busyId={busyId}
+                doneId={doneId}
+                deleting={deleting}
+                setConfirmDelete={setConfirmDelete}
+              />
 
               <AlertDialog open={confirmDelete !== null} onOpenChange={(open) => !open && !deleting && setConfirmDelete(null)}>
                 <AlertDialogContent>
@@ -472,5 +389,128 @@ export function ReportHistoryView() {
         );
       }}
     </ModuleScopeGate>
+  );
+}
+
+function ReportCardList({
+  sorted,
+  selectMode,
+  selectedIds,
+  toggleSelected,
+  download,
+  busyId,
+  doneId,
+  deleting,
+  setConfirmDelete,
+}: {
+  sorted: HistoryEntry[];
+  selectMode: boolean;
+  selectedIds: Set<number>;
+  toggleSelected: (reportId: number) => void;
+  download: (entry: HistoryEntry, format: string) => void;
+  busyId: string | null;
+  doneId: string | null;
+  deleting: boolean;
+  setConfirmDelete: (entry: HistoryEntry) => void;
+}) {
+  const fold = useShowMore(sorted, 8);
+  return (
+    <>
+      {fold.visible.map((r) => {
+        const selectable = selectMode && r.reportId != null;
+        const isSelected = r.reportId != null && selectedIds.has(r.reportId);
+        return (
+        <div
+          key={r.id}
+          onClick={selectable ? () => toggleSelected(r.reportId!) : undefined}
+          className={cn(
+            "rounded-xl border p-4 transition-colors",
+            isSelected
+              ? "border-red-400/40 bg-red-400/[0.06]"
+              : "border-border/40 bg-white/[0.02]",
+            selectable && "cursor-pointer hover:border-border/70",
+          )}
+        >
+          <div className="flex items-start gap-3">
+            {selectMode && (
+              <div className="flex items-center h-9 shrink-0">
+                {r.reportId != null ? (
+                  <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={() => toggleSelected(r.reportId!)}
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label={`Select report "${r.title}"`}
+                  />
+                ) : (
+                  <div className="w-4 h-4" title="Seed reports can't be deleted" />
+                )}
+              </div>
+            )}
+            <div className="w-9 h-9 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center shrink-0">
+              <FileText className="w-4 h-4 text-muted-foreground/70" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-title font-semibold text-foreground leading-tight">{r.title}</h3>
+                <span
+                  className={cn(
+                    "text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none",
+                    r.status === "exported"
+                      ? "text-emerald-400 border-emerald-400/25 bg-emerald-400/10"
+                      : "text-amber-400 border-amber-400/25 bg-amber-400/10"
+                  )}
+                >
+                  {r.status}
+                </span>
+              </div>
+              <p className="text-caption text-muted-foreground/80 mt-1 leading-relaxed line-clamp-1">{deriveLabel(r.summary, 90)}</p>
+              <div className="flex items-center gap-3 mt-2 text-label font-mono text-muted-foreground/70 flex-wrap">
+                <span>{fmtDate(r.generated_at)}</span>
+                <span className="inline-flex items-center gap-1">
+                  {r.mode === "client" ? <Users className="w-3.5 h-3.5" /> : <Building2 className="w-3.5 h-3.5" />}
+                  {r.mode === "client" ? "Client-facing" : "Internal"} · {r.branding}
+                </span>
+                <span>{r.section_count} sections</span>
+                {r.export_format && <span className="uppercase">{FORMAT_LABEL[r.export_format] ?? r.export_format}</span>}
+              </div>
+            </div>
+            {r.status === "exported" && r.export_format && (
+              <button
+                onClick={() => download(r, r.export_format!)}
+                disabled={busyId !== null}
+                className={cn(
+                  "flex items-center gap-1.5 h-8 px-3 rounded-md border text-caption font-medium shrink-0 transition-colors disabled:opacity-60",
+                  doneId === r.id
+                    ? "border-emerald-400/30 text-emerald-400 bg-emerald-400/5"
+                    : "border-border/50 text-muted-foreground hover:text-foreground hover:bg-white/5"
+                )}
+              >
+                {busyId === r.id ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : doneId === r.id ? (
+                  <Check className="w-3.5 h-3.5" />
+                ) : (
+                  <FileDown className="w-3.5 h-3.5" />
+                )}
+                {doneId === r.id ? "Downloaded" : `Download ${FORMAT_LABEL[r.export_format] ?? r.export_format}`}
+              </button>
+            )}
+            {r.reportId && (
+              <button
+                onClick={() => setConfirmDelete(r)}
+                disabled={deleting}
+                aria-label={`Delete report "${r.title}"`}
+                title="Delete report"
+                className="flex items-center justify-center h-8 w-8 rounded-md border border-border/50 text-muted-foreground hover:text-red-400 hover:border-red-400/30 hover:bg-red-400/5 shrink-0 transition-colors disabled:opacity-60"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+        );
+      })}
+      <ShowMoreButton total={sorted.length} hiddenCount={fold.hiddenCount} expanded={fold.expanded} onToggle={fold.toggle} noun="reports" />
+    </>
   );
 }
