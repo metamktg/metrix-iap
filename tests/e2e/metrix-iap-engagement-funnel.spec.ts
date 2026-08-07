@@ -412,6 +412,86 @@ async function main() {
       },
     );
 
+    // ── Test 5: Breakdown dimension switch preserves row presence ──────────
+    await test(
+      "Breakdown Audience → Placement switch shows at least one data row each time",
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        const jsErrors: string[] = [];
+        page.on("pageerror", (err) => jsErrors.push(err.message));
+        try {
+          await mockApis(ctx);
+          await gotoFunnel(page);
+
+          // Enter Breakdown mode.
+          await page.getByRole("button", { name: "Breakdown" }).click();
+
+          // The "Audience" dimension button appears once Breakdown mode is active.
+          const audienceBtn = page.getByRole("button", { name: "Audience" });
+          await audienceBtn.waitFor({ state: "visible", timeout: 8_000 });
+
+          // ── Audience dimension ──
+          // Click Audience and wait for the section card title to confirm the
+          // dimension has actually rendered (not just that rows exist).
+          await audienceBtn.click();
+          const audienceCardTitle = page.getByText("Audience segment breakdown").first();
+          await audienceCardTitle.waitFor({ state: "visible", timeout: 8_000 });
+          assert(
+            await audienceCardTitle.isVisible(),
+            'Expected "Audience segment breakdown" section card title after clicking Audience',
+          );
+          console.log('       "Audience segment breakdown" section card title visible ✓');
+
+          // Assert at least one data row in the tbody.
+          const audienceRows = page.locator("tbody tr");
+          const audienceCount = await audienceRows.count();
+          assert(
+            audienceCount > 0,
+            `Expected at least one data row in Audience breakdown, got ${audienceCount}`,
+          );
+          console.log(`       Audience breakdown: ${audienceCount} row(s) visible ✓`);
+
+          assert(
+            jsErrors.length === 0,
+            `Expected no JS errors after switching to Audience, got: ${jsErrors.join("; ")}`,
+          );
+
+          // ── Placement dimension ──
+          // Click Placement and wait for its distinct section card title.
+          const placementBtn = page.getByRole("button", { name: "Placement" });
+          await placementBtn.waitFor({ state: "visible", timeout: 8_000 });
+          await placementBtn.click();
+
+          // "Placement breakdown" title confirms the dimension actually switched.
+          const placementCardTitle = page.getByText("Placement breakdown").first();
+          await placementCardTitle.waitFor({ state: "visible", timeout: 8_000 });
+          assert(
+            await placementCardTitle.isVisible(),
+            'Expected "Placement breakdown" section card title after clicking Placement',
+          );
+          console.log('       "Placement breakdown" section card title visible ✓');
+
+          const placementRows = page.locator("tbody tr");
+          const placementCount = await placementRows.count();
+          assert(
+            placementCount > 0,
+            `Expected at least one data row in Placement breakdown, got ${placementCount}`,
+          );
+          console.log(`       Placement breakdown: ${placementCount} row(s) visible ✓`);
+
+          assert(
+            jsErrors.length === 0,
+            `Expected no JS errors after switching to Placement, got: ${jsErrors.join("; ")}`,
+          );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+
     // ── Test 6: PendingState renders when demographic data is absent ─────────
     await test(
       'PendingState shows "No engagement data" when demographic rows are empty',
@@ -455,7 +535,7 @@ async function main() {
       },
     );
 
-    // ── Test 5: Tab switches are error-free when cycled repeatedly ──────────
+    // ── Test 7: Tab switches are error-free when cycled repeatedly ──────────
     await test(
       "Cycling through all three tabs produces no JS errors",
       async () => {
