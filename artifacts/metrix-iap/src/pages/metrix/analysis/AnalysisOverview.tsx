@@ -1026,7 +1026,7 @@ export function AnalysisOverview() {
                   {trendData.length >= 2 && (
                     <SectionCard
                       title="Spend by month"
-                      desc="Day-prorated spend (blue, left axis) and results (green dashed, right axis)"
+                      desc="Day-prorated spend (blue) · results (green, right axis)"
                       right={<><SectionInfoIcon tip="Month-by-month spend trend with daily proration, plotted against result volume to surface delivery patterns." /><CrossLink to="/app/analysis/budget" label="Budget →" /></>}
                     >
                       <SpendTrendChart data={trendData} />
@@ -1117,7 +1117,7 @@ export function AnalysisOverview() {
                       desc={
                         effectiveGoalCpa != null
                           ? `Age × gender · goal CPA ${fmtUSD(effectiveGoalCpa, 0)} · emerald ≤ goal, amber > goal`
-                          : "Age × gender — cell colour = CPA (green = lower = better) · hover for detail"
+                          : "Age × gender · colour = CPA (green = better) · hover for detail"
                       }
                       right={
                         <div className="flex items-center gap-3">
