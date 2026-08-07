@@ -146,7 +146,7 @@ function ChildRow({
           "flex items-center gap-1.5 pl-3 pr-2 h-8 rounded-r text-[12px] transition-all",
           active
             ? "font-semibold text-foreground bg-primary/8"
-            : "text-foreground/65 hover:text-foreground hover:bg-[rgba(20,55,110,0.45)]"
+            : "text-foreground/65 hover:text-foreground hover:bg-primary/10"
         )}
       >
         <span className="flex-1 truncate leading-tight">{child.label}</span>
@@ -380,7 +380,7 @@ function ExpandableSection({
             ? "mx-nav-active"
             : sectionActive
               ? "text-foreground bg-white/[0.03]"
-              : "text-foreground/70 hover:text-foreground hover:bg-[rgba(20,55,110,0.4)]"
+              : "text-foreground/70 hover:text-foreground hover:bg-primary/10"
         )}
       >
         {/* Icon + label: navigates to landing page */}
@@ -482,7 +482,7 @@ function LeafSection({
           "flex items-center gap-2 px-2.5 h-9 rounded-lg text-[11px] font-semibold uppercase tracking-widest transition-all",
           active
             ? "mx-nav-active"
-            : "text-foreground/70 hover:text-foreground hover:bg-[rgba(20,55,110,0.45)]",
+            : "text-foreground/70 hover:text-foreground hover:bg-primary/10",
           section.placeholder && "opacity-60"
         )}
       >

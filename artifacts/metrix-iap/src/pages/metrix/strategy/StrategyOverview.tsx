@@ -237,7 +237,7 @@ function VariableFamilyHeatmap({ pillars }: { pillars: MessagePillar[] }) {
 const COLLAPSIBLE_LANE_CONFIG: readonly { key: string; label: string; accent: string }[] = [
   { key: "scale_now",          label: "Scale now", accent: "border-emerald-400/25 bg-emerald-400/[0.06] text-emerald-400" },
   { key: "optimize",           label: "Optimize",  accent: "border-amber-400/25 bg-amber-400/[0.06] text-amber-300" },
-  { key: "validate",           label: "Validate",  accent: "border-[#16d9ff]/25 bg-[#16d9ff]/[0.06] text-[#62e6ff]" },
+  { key: "validate",           label: "Validate",  accent: "border-accent/25 bg-accent/[0.06] text-accent" },
   { key: "explore",            label: "Explore",   accent: "border-purple-400/25 bg-purple-400/[0.06] text-purple-300" },
   { key: "avoid_combinations", label: "Avoid",     accent: "border-red-400/25 bg-red-400/[0.06] text-red-300" },
 ];

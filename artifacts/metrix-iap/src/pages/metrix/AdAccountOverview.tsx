@@ -334,9 +334,9 @@ export function AdAccountOverview() {
                 )}
               </div>
               {core.registration_control && (
-                <div className="rounded-xl border border-blue-400/20 bg-blue-400/[0.03] p-4 hover:border-blue-400/30 transition-colors">
+                <div className="rounded-xl border border-blue-400/20 bg-chart-1/[0.03] p-4 hover:border-blue-400/30 transition-colors">
                   <div className="flex items-center gap-1.5 mb-2">
-                    <KeyRound className="w-3.5 h-3.5 text-[#62e6ff]/80" />
+                    <KeyRound className="w-3.5 h-3.5 text-accent/80" />
                     <span className="text-caption font-semibold text-foreground">{term.Singular} control</span>
                     <SectionInfoIcon tip={`The control creative for the ${term.Singular} conversion stage.`} />
                   </div>

@@ -82,7 +82,7 @@ export function MetricHoverPopover({ metric, cellRows, onDiagnose, children }: M
 
   const hasChart = concepts.length >= 2;
   const chartConfig = isCpa ? CPA_CONFIG : DEFAULT_CONFIG;
-  const barColor = isCpa ? "#f59e0b" : "hsl(var(--interactive))";
+  const barColor = isCpa ? "hsl(var(--chart-4))" : "hsl(var(--interactive))";
 
   // Truncate concept names for Y-axis
   const chartData = concepts.map((c) => ({

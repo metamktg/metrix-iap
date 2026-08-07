@@ -91,10 +91,10 @@ function cpaEff(cpa: number | null, med: number): CpaEff {
 }
 
 const EFF_COLOR: Record<CpaEff, string> = {
-  efficient: "rgb(52,211,153)",
-  average:   "rgb(99,102,241)",
-  costly:    "rgb(251,191,36)",
-  unknown:   "rgb(100,116,139)",
+  efficient: "hsl(var(--chart-3))",
+  average:   "hsl(var(--chart-1))",
+  costly:    "hsl(var(--chart-4))",
+  unknown:   "hsl(var(--chart-5))",
 };
 
 const EFF_LABEL: Record<CpaEff, string> = {
@@ -348,14 +348,14 @@ function IntelligenceMapTab({
               type="number"
               domain={["auto", "auto"]}
               tickFormatter={(v: number) => `${v.toFixed(1)}%`}
-              tick={{ fill: "rgba(148,163,184,0.70)", fontSize: 10 }}
+              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
               axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
               tickLine={false}
               label={{
                 value: "Link CTR — ad engagement →",
                 position: "insideBottom",
                 offset: -30,
-                fill: "rgba(148,163,184,0.70)",
+                fill: "hsl(var(--muted-foreground))",
                 fontSize: 10,
               }}
             />
@@ -364,7 +364,7 @@ function IntelligenceMapTab({
               type="number"
               domain={["auto", "auto"]}
               tickFormatter={(v: number) => `${v.toFixed(1)}%`}
-              tick={{ fill: "rgba(148,163,184,0.70)", fontSize: 10 }}
+              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
               axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
               tickLine={false}
               label={{
@@ -372,24 +372,24 @@ function IntelligenceMapTab({
                 angle: -90,
                 position: "insideLeft",
                 offset: 50,
-                fill: "rgba(148,163,184,0.70)",
+                fill: "hsl(var(--muted-foreground))",
                 fontSize: 10,
               }}
             />
             {medCtr > 0 && (
               <ReferenceLine
                 x={medCtr}
-                stroke="rgba(99,102,241,0.30)"
+                stroke="hsl(var(--chart-1) / 0.30)"
                 strokeDasharray="4 3"
-                label={{ value: "median", position: "insideTopRight", fill: "rgba(99,102,241,0.70)", fontSize: 9 }}
+                label={{ value: "median", position: "insideTopRight", fill: "hsl(var(--chart-1) / 0.70)", fontSize: 9 }}
               />
             )}
             {medCvr > 0 && (
               <ReferenceLine
                 y={medCvr}
-                stroke="rgba(99,102,241,0.30)"
+                stroke="hsl(var(--chart-1) / 0.30)"
                 strokeDasharray="4 3"
-                label={{ value: "median", position: "insideTopRight", fill: "rgba(99,102,241,0.70)", fontSize: 9 }}
+                label={{ value: "median", position: "insideTopRight", fill: "hsl(var(--chart-1) / 0.70)", fontSize: 9 }}
               />
             )}
             <Tooltip content={<MapTooltip />} cursor={false} />

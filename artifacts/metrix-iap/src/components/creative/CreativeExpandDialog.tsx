@@ -401,7 +401,7 @@ function DemographicsTab({
                   style={{ width: `${barW}%` }}
                 >
                   <div
-                    className="h-full bg-blue-400/50"
+                    className="h-full bg-chart-1/50"
                     style={{ width: `${mBarPct}%` }}
                     title={`Male: ${metric === "spend" ? usd(mSpend) : num(mRes)}`}
                   />
@@ -415,8 +415,8 @@ function DemographicsTab({
 
               {/* M/F inline values */}
               <div className="flex items-center gap-3 mt-1.5">
-                <span className="flex items-center gap-1 text-label text-[#62e6ff]/80">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400/60 shrink-0" />
+                <span className="flex items-center gap-1 text-label text-accent/80">
+                  <span className="w-1.5 h-1.5 rounded-full bg-chart-1/60 shrink-0" />
                   M {metric === "spend" ? usd(mSpend) : num(mRes)}
                 </span>
                 <span className="flex items-center gap-1 text-label text-rose-300/80">
@@ -449,7 +449,7 @@ function DemographicsTab({
           <div className="grid grid-cols-2 divide-x divide-border/30">
             {([
               {
-                label: "Male", dot: "bg-blue-400", color: "text-[#62e6ff]",
+                label: "Male", dot: "bg-chart-1", color: "text-accent",
                 spend: activeBucket.male, results: activeBucket.maleResults,
                 cpa: activeBucket.maleCpa, ctr: activeBucket.maleCtr,
                 reach: activeBucket.maleReach, gender: activeBucket.maleGender,
@@ -492,7 +492,7 @@ function DemographicsTab({
                     className={cn(
                       "w-full text-label font-medium rounded-md border py-1.5 transition-colors",
                       g.label === "Male"
-                        ? "border-[#16d9ff]/25 text-[#62e6ff]/80 hover:bg-[#16d9ff]/10"
+                        ? "border-accent/25 text-accent/80 hover:bg-accent/10"
                         : "border-rose-400/25 text-rose-300/80 hover:bg-rose-400/10"
                     )}
                   >
