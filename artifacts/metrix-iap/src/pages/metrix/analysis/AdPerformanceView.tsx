@@ -11,11 +11,11 @@ import { getAdAccount, getAnalysisData, getCampaignSummary, getCoreControls, get
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
   CaveatNote, SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
-  RangeScopeBar, NoDataInRangeState,
+  RangeScopeBar, NoDataInRangeState, SectionInfoIcon,
 } from "../shared";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { useCellRangeScope, sumInRange } from "@/lib/date-scope";
-import { LineChart, Library, Users, LayoutGrid, Wallet } from "lucide-react";
+import { LineChart, Library, Users, LayoutGrid, Wallet, TrendingUp } from "lucide-react";
 
 const SECTION = "Analysis · 03";
 
@@ -102,6 +102,13 @@ export function AdPerformanceView() {
             desc: "Spend allocation by result event, concept, and placement.",
             stat: `${fmtUSD(summary.total_spend_usd, 0)} analyzed`,
           },
+          {
+            to: "/app/analysis/funnel",
+            label: "Engagement Funnel",
+            Icon: TrendingUp,
+            desc: "Frequency, CTR all vs link, reach CTR, and full conversion waterfall.",
+            stat: `${fmtNum(summary.total_impressions)} impressions · ${fmtNum(summary.total_link_clicks)} link clicks`,
+          },
         ];
 
         return (
@@ -122,14 +129,14 @@ export function AdPerformanceView() {
             <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
               {scoped ? (
                 <>
-                  <MetricTile label="Spend (in range)" value={fmtUSD(scoped.spend, 0)} sub="concept flights overlapping range" />
+                  <MetricTile variant="primary" label="Spend (in range)" value={fmtUSD(scoped.spend, 0)} sub="concept flights overlapping range" />
                   <MetricTile label="Link clicks (in range)" value={fmtNum(scoped.linkClicks)} />
                   <MetricTile label="Results (in range)" value={fmtNum(scoped.results)} />
                   <MetricTile label="Concept flights" value={String(scoped.concepts)} sub="overlapping selected range" />
                 </>
               ) : (
                 <>
-                  <MetricTile label="Total spend" value={fmtUSD(summary.total_spend_usd, 0)} />
+                  <MetricTile variant="primary" label="Total spend" value={fmtUSD(summary.total_spend_usd, 0)} />
                   <MetricTile label="Impressions" value={fmtNum(summary.total_impressions)} />
                   <MetricTile label="Link clicks" value={fmtNum(summary.total_link_clicks)} />
                   <MetricTile label="Link CTR" value={fmtPct(summary.overall_link_ctr_pct)} />
@@ -141,7 +148,7 @@ export function AdPerformanceView() {
               {summary.data_caveat && <CaveatNote text={summary.data_caveat} />}
 
               {controls && (
-                <SectionCard title="Core control reads" desc="The current control concept for each funnel depth." table="core_reanalysis_read">
+                <SectionCard title="Core control reads" desc="The current control concept for each funnel depth." table="core_reanalysis_read" right={<SectionInfoIcon tip="The winning concept at each funnel stage as determined by the most recent re-analysis run — the benchmark every new test is measured against." />}>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {(() => {
                       const primaryName = resolveConceptName(controls.primary_control);
@@ -185,7 +192,7 @@ export function AdPerformanceView() {
                 </SectionCard>
               )}
 
-              <SectionCard title="Analysis modules" desc="Each module reads a different slice of the same account data.">
+              <SectionCard title="Analysis modules" desc="Each module reads a different slice of the same account data." right={<SectionInfoIcon tip="Each module drills into a different dimension of the same import — Library (cell/variable performance), Audience, Placements, Budget, and Engagement Funnel." />}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {subpages.map((s) => (
                     <div key={s.to} className="rounded-xl border border-border/40 bg-white/[0.02] p-4 flex flex-col gap-2">

@@ -10,7 +10,7 @@ import { useMetricSelection } from "@/lib/metric-selection";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   CaveatNote, CrossLink, MetricSelectionBar, SectionCard, fmtUSD, fmtNum, fmtPct, eventLabel,
-  SkeletonTileRow, DatePresetBar, type ViewPreset,
+  SkeletonTileRow, DatePresetBar, type ViewPreset, SectionInfoIcon,
 } from "../shared";
 import { getGetAnalysisSummaryQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
@@ -111,14 +111,14 @@ export function BudgetView() {
               <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
                 {preset !== "all" && presetData ? (
                   <>
-                    <MetricTile label="Total spend" value={fmtUSD(presetData.totals.total_spend_usd, 0)} />
+                    <MetricTile variant="primary" label="Total spend" value={fmtUSD(presetData.totals.total_spend_usd, 0)} />
                     <MetricTile label="Impressions" value={fmtNum(presetData.totals.total_impressions)} />
                     <MetricTile label="Link clicks" value={fmtNum(presetData.totals.total_link_clicks)} />
                     <MetricTile label="Link CTR" value={fmtPct(presetData.totals.overall_link_ctr_pct)} />
                   </>
                 ) : (
                   <>
-                    <MetricTile label="Total spend" value={fmtUSD(summary.total_spend_usd, 0)} />
+                    <MetricTile variant="primary" label="Total spend" value={fmtUSD(summary.total_spend_usd, 0)} />
                     <MetricTile label="Impressions" value={fmtNum(summary.total_impressions)} />
                     <MetricTile label="Link clicks" value={fmtNum(summary.total_link_clicks)} />
                     <MetricTile label="Link CTR" value={fmtPct(summary.overall_link_ctr_pct)} />
@@ -133,6 +133,7 @@ export function BudgetView() {
               <SectionCard
                 title="Efficiency by result event"
                 desc="Spend · results · CPA per event type"
+                right={<SectionInfoIcon tip="Breaks down spend, results, and CPA by each tracked result event so you can see which conversion goals are running efficiently." />}
               >
                 {eventRows.length === 0 ? (
                   <PendingState title="No events selected" message="Select at least one result event above." action={<CrossLink to="/app/analysis/overview" label="Return to Overview" />} />
@@ -165,6 +166,7 @@ export function BudgetView() {
               <SectionCard
                 title="Spend by concept"
                 desc="Current metric selection"
+                right={<SectionInfoIcon tip="Shows how ad spend is distributed across creative concepts so you can see which ideas are consuming the most budget." />}
                 >
                 {conceptRows.length === 0 ? (
                   <PendingState title="No concept spend" message="No cell rows match the current metric selection." action={<CrossLink to="/app/analysis/overview" label="Return to Overview" />} />
@@ -193,7 +195,7 @@ export function BudgetView() {
                     aria-expanded={showPlacements}
                   >
                     <div className="text-left">
-                      <span className="text-body font-semibold text-foreground/80">Placement spend</span>
+                      <span className="text-sm font-bold text-foreground">Placement spend</span>
                       <span className="text-label text-muted-foreground/45 ml-2">
                         {a.v3_placement_signal.length + a.c4e_placement_signal.length} rows
                       </span>
@@ -210,13 +212,13 @@ export function BudgetView() {
                     <div className="border-t border-border/20 px-4 pb-4 pt-3 space-y-4">
                       {a.v3_placement_signal.length > 0 && (
                         <div>
-                          <h4 className="text-label font-mono uppercase tracking-widest text-muted-foreground/50 mb-2">V3 signal</h4>
+                          <h4 className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-2">V3 signal</h4>
                           <PlacementTable rows={a.v3_placement_signal} />
                         </div>
                       )}
                       {a.c4e_placement_signal.length > 0 && (
                         <div>
-                          <h4 className="text-label font-mono uppercase tracking-widest text-muted-foreground/50 mb-2">C4E signal</h4>
+                          <h4 className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-2">C4E signal</h4>
                           <PlacementTable rows={a.c4e_placement_signal} />
                         </div>
                       )}

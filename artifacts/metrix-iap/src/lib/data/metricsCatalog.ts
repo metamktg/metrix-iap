@@ -165,19 +165,71 @@ export function buildLibraryMetricCatalog(rows: CellPerformanceRow[]): MetricDef
   const ctr = impressions != null && impressions > 0 && linkClicks != null ? (linkClicks / impressions) * 100 : null;
   const multiEventSub = singleEvent ? undefined : "select one event to see delivery totals";
 
+  // ── Lower-funnel: conversion event aggregates ─────────────────────
+  //
+  // ATTRIBUTION GRAIN: performance_by_cell has one row per cell×result-event.
+  // The same physical funnel action (ATC, checkout) appears on every event row
+  // for a cell — summing across multiple events would double-count. All lower-
+  // funnel totals are therefore guarded by singleEvent (same rule as delivery
+  // metrics above). When multiple events are selected the tiles show null with
+  // a "select one event" sub-label.
+  //
+  // CVR: results per link click — both denominators share the same grain,
+  // so it is naturally null when linkClicks is null (multi-event).
+  const cvr = results > 0 && linkClicks != null && linkClicks > 0
+    ? (results / linkClicks) * 100
+    : null;
+
+  // adds_to_cart / checkouts_initiated are optional fields; null means not measured.
+  // Only aggregate when singleEvent to avoid cross-event double-counting.
+  const hasAtcData = singleEvent && rows.some((r) => r.adds_to_cart != null);
+  const hasChkData = singleEvent && rows.some((r) => r.checkouts_initiated != null);
+  const totalAtc = hasAtcData
+    ? rows.reduce((s, r) => s + (r.adds_to_cart ?? 0), 0)
+    : null;
+  const totalChk = hasChkData
+    ? rows.reduce((s, r) => s + (r.checkouts_initiated ?? 0), 0)
+    : null;
+  // Spend denominator for cost metrics: use singleEvent spend (same grain).
+  // When multi-event, totalAtc/totalChk are null so cost metrics are also null.
+  const singleEventSpend = singleEvent ? spend : null;
+
+  const atcRate = totalAtc != null && linkClicks != null && linkClicks > 0
+    ? (totalAtc / linkClicks) * 100
+    : null;
+  const checkoutRate = totalChk != null && linkClicks != null && linkClicks > 0
+    ? (totalChk / linkClicks) * 100
+    : null;
+  const costPerAtc = totalAtc != null && totalAtc > 0 && singleEventSpend != null
+    ? singleEventSpend / totalAtc
+    : null;
+  const costPerCheckout = totalChk != null && totalChk > 0 && singleEventSpend != null
+    ? singleEventSpend / totalChk
+    : null;
+
+  const noConvSub = !singleEvent
+    ? "select one event to see funnel metrics"
+    : "no conversion-event data in selection";
+
   const def = (id: string, label: string, value: number | null, formatted: string, sub?: string): MetricDef => ({
     id, label, value, formatted, isResultEvent: false, ...(sub ? { sub } : {}),
   });
 
   return [
-    def("lib_cells", "Creative cells", uniqueCells, fmtNum(uniqueCells)),
-    def("lib_spend", "Spend (selected)", spend, fmtUSD(spend, 0)),
-    def("lib_results", "Results (selected)", results, fmtNum(results)),
-    def("lib_cpa", "Avg CPA", cpa, cpa != null ? fmtUSD(cpa) : "—", "spend ÷ results across selection"),
-    def("lib_impressions", "Impressions", impressions, fmtNum(impressions), multiEventSub),
-    def("lib_reach", "Reach", reach, fmtNum(reach), multiEventSub),
-    def("lib_link_clicks", "Link clicks", linkClicks, fmtNum(linkClicks), multiEventSub),
-    def("lib_clicks_all", "Clicks (all)", clicksAll, fmtNum(clicksAll), multiEventSub),
-    def("lib_link_ctr", "Link CTR", ctr, ctr != null ? fmtPct(ctr) : "—", multiEventSub ?? "link clicks ÷ impressions"),
+    def("lib_cells",           "Creative cells",      uniqueCells,   fmtNum(uniqueCells)),
+    def("lib_spend",           "Spend (selected)",    spend,         fmtUSD(spend, 0)),
+    def("lib_results",         "Results (selected)",  results,       fmtNum(results)),
+    def("lib_cpa",             "Avg CPA",             cpa,           cpa != null ? fmtUSD(cpa) : "—",     "spend ÷ results across selection"),
+    def("lib_impressions",     "Impressions",         impressions,   fmtNum(impressions),                  multiEventSub),
+    def("lib_reach",           "Reach",               reach,         fmtNum(reach),                        multiEventSub),
+    def("lib_link_clicks",     "Link clicks",         linkClicks,    fmtNum(linkClicks),                   multiEventSub),
+    def("lib_clicks_all",      "Clicks (all)",        clicksAll,     fmtNum(clicksAll),                    multiEventSub),
+    def("lib_link_ctr",        "Link CTR",            ctr,           ctr != null ? fmtPct(ctr) : "—",     multiEventSub ?? "link clicks ÷ impressions"),
+    // ── Lower-funnel tiles ───────────────────────────────────────────
+    def("lib_cvr",             "CVR",                 cvr,           cvr != null ? fmtPct(cvr) : "—",     "results ÷ link clicks"),
+    def("lib_atc_rate",        "ATC rate",            atcRate,       atcRate != null ? fmtPct(atcRate) : "—",  hasAtcData ? "adds-to-cart ÷ link clicks" : noConvSub),
+    def("lib_checkout_rate",   "Checkout rate",       checkoutRate,  checkoutRate != null ? fmtPct(checkoutRate) : "—", hasChkData ? "checkouts ÷ link clicks" : noConvSub),
+    def("lib_cost_per_atc",    "Cost / ATC",          costPerAtc,    costPerAtc != null ? fmtUSD(costPerAtc) : "—", hasAtcData ? "spend ÷ adds-to-cart" : noConvSub),
+    def("lib_cost_per_checkout","Cost / Checkout",    costPerCheckout, costPerCheckout != null ? fmtUSD(costPerCheckout) : "—", hasChkData ? "spend ÷ checkouts initiated" : noConvSub),
   ];
 }

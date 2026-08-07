@@ -126,18 +126,18 @@ function PillarListCard({
       onClick={onClick}
       aria-pressed={selected}
       className={cn(
-        "w-full text-left px-3 py-2.5 border-l-2 transition-colors flex flex-col gap-1",
+        "w-full text-left px-3 py-2.5 border-l-2 transition-all flex flex-col gap-1",
         accentBorder,
         selected
-          ? "bg-primary/[0.07] border-r border-r-transparent"
+          ? "bg-primary/[0.09] border-r border-r-transparent shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.08)]"
           : "bg-transparent hover:bg-white/[0.04]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
       )}
     >
-      {/* Number + name row */}
+      {/* Number + dot + name */}
       <div className="flex items-start gap-1.5">
         <div className="flex items-center gap-1 mt-0.5 shrink-0">
-          <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", dot)} />
+          <span className={cn("w-1.5 h-1.5 rounded-full shrink-0 transition-opacity", dot, selected ? "opacity-100" : "opacity-50")} />
           <span className={cn(TYPE.label, "tabular-nums text-muted-foreground/50 w-3.5 text-right")}>
             {String(index + 1).padStart(2, "0")}
           </span>
@@ -145,29 +145,36 @@ function PillarListCard({
         <div className="flex-1 min-w-0">
           <p
             className={cn(
-              "text-body font-semibold leading-tight line-clamp-1",
-              selected ? "text-foreground" : "text-foreground/80"
+              "text-body font-semibold leading-tight line-clamp-2",
+              selected ? "text-foreground" : "text-foreground/75"
             )}
             title={pillar.label}
           >
             {t.main}
           </p>
+          {/* Descriptor snippet — visible only when selected */}
+          {selected && pillar.plain_descriptor && (
+            <p className={cn(TYPE.label, "text-muted-foreground/50 leading-snug mt-1 line-clamp-2")}>
+              {pillar.plain_descriptor.slice(0, 80)}
+              {pillar.plain_descriptor.length > 80 ? "…" : ""}
+            </p>
+          )}
         </div>
       </div>
 
-      {/* Cell count — single stat */}
-      {pillar.source_cells.length > 0 && (
-        <div className="pl-4">
-          <span className={cn(TYPE.label, "text-muted-foreground/50 tabular-nums")}>
-            {pillar.source_cells.length} cell{pillar.source_cells.length !== 1 ? "s" : ""}
-          </span>
-        </div>
-      )}
+      {/* Cell count + hyp count */}
+      <div className="pl-4 flex items-center gap-2">
+        <span className={cn(TYPE.label, selected ? "text-muted-foreground/60" : "text-muted-foreground/40", "tabular-nums")}>
+          {pillar.source_cells.length} cell{pillar.source_cells.length !== 1 ? "s" : ""}
+        </span>
+      </div>
     </button>
   );
 }
 
 // ─── Centre column: source cell card ─────────────────────────────────
+// Optical hierarchy: concept name is the primary text (what the creative IS),
+// cell code is the identifier below, spend/results are the evidence strip.
 
 function SourceCellCard({
   cellId,
@@ -181,8 +188,17 @@ function SourceCellCard({
   results?: number;
 }) {
   const { registry } = useConceptRegistry();
+  const hasEvidence = (spend ?? 0) > 0 || (results ?? 0) > 0;
   return (
-    <div className="rounded-lg border border-border/40 bg-white/[0.02] p-3 flex flex-col gap-1.5">
+    <div className="rounded-lg border border-border/40 bg-white/[0.025] p-3 flex flex-col gap-2">
+      {/* Primary: concept name (if available) */}
+      {conceptName && (
+        <p className={cn(TYPE.body, "font-semibold text-foreground/85 leading-snug truncate")} title={conceptName}>
+          {conceptName}
+        </p>
+      )}
+
+      {/* Cell code chip — identifier row */}
       <div className="flex items-center gap-2 flex-wrap">
         {registry[cellId] ? (
           <ConceptChip code={cellId} />
@@ -191,23 +207,22 @@ function SourceCellCard({
             {cellId}
           </span>
         )}
-        {conceptName && (
-          <span className={cn(TYPE.caption, "text-foreground/70 truncate")} title={conceptName}>
-            {conceptName}
-          </span>
-        )}
       </div>
-      {((spend ?? 0) > 0 || (results ?? 0) > 0) && (
-        <div className="flex items-center gap-3">
+
+      {/* Evidence strip — spend + results as secondary KPIs */}
+      {hasEvidence && (
+        <div className="flex items-center gap-3 pt-1 border-t border-border/15">
           {(spend ?? 0) > 0 && (
-            <span className="text-label text-muted-foreground/60 tabular-nums">
-              {fmtUSD(spend, 0)} spend
-            </span>
+            <div className="flex flex-col gap-0.5">
+              <span className={cn(TYPE.label, "text-muted-foreground/40 uppercase tracking-wide text-[9px]")}>Spend</span>
+              <span className={cn(TYPE.label, "text-foreground/65 tabular-nums font-semibold")}>{fmtUSD(spend, 0)}</span>
+            </div>
           )}
           {(results ?? 0) > 0 && (
-            <span className="text-label text-muted-foreground/60 tabular-nums">
-              {fmtNum(results)} results
-            </span>
+            <div className="flex flex-col gap-0.5">
+              <span className={cn(TYPE.label, "text-muted-foreground/40 uppercase tracking-wide text-[9px]")}>Results</span>
+              <span className={cn(TYPE.label, "text-foreground/65 tabular-nums font-semibold")}>{fmtNum(results)}</span>
+            </div>
           )}
         </div>
       )}
@@ -216,12 +231,26 @@ function SourceCellCard({
 }
 
 // ─── Right column: hypothesis card ────────────────────────────────────
+// Priority → left-border accent: high/P1 = amber, validation_required = blue,
+// ready_for_brief = emerald, everything else = neutral.
+
+function hypPriorityAccent(status: string): string {
+  const s = status.toLowerCase();
+  if (s === "high" || s === "p1") return "border-l-[3px] border-l-amber-400/60";
+  if (s === "medium" || s === "p2") return "border-l-[3px] border-l-amber-400/30";
+  if (s === "validation_required") return "border-l-[3px] border-l-[#16d9ff]/40";
+  if (s === "ready_for_brief_builder") return "border-l-[3px] border-l-emerald-400/50";
+  return "border-l-[3px] border-l-border/25";
+}
 
 function HypCard({ h }: { h: ActiveHypothesis }) {
   return (
     <div
       data-testid={`hyp-row-${h.id}`}
-      className="rounded-lg border border-border/30 bg-white/[0.015] px-3 py-2 flex flex-col gap-1.5"
+      className={cn(
+        "rounded-lg border border-border/30 bg-white/[0.015] px-3 py-2 flex flex-col gap-1.5 overflow-hidden",
+        hypPriorityAccent(h.status)
+      )}
     >
       <div className="flex items-start justify-between gap-2">
         <HypothesisStatusBadge status={h.status} />
@@ -493,8 +522,9 @@ export function StrategyMapView() {
                   {/* Left column — Pillars list (resizable) */}
                   <div style={{ width: leftWidth }} className="shrink-0 overflow-y-auto bg-white/[0.005]">
                     <div className="px-3 py-2 border-b border-border/20 sticky top-0 bg-background/90 backdrop-blur-sm z-10">
-                      <span className={cn(TYPE.label, "text-muted-foreground/60")}>
-                        {pillars.length} pillar{pillars.length !== 1 ? "s" : ""}
+                      <p className={cn(TYPE.label, "text-muted-foreground/35 uppercase tracking-wide text-[10px] mb-0.5")}>Pillars</p>
+                      <span className={cn(TYPE.caption, "font-semibold text-foreground/65")}>
+                        {pillars.length} message pillar{pillars.length !== 1 ? "s" : ""}
                       </span>
                     </div>
                     {pillars.map((p, i) => (
@@ -512,29 +542,35 @@ export function StrategyMapView() {
 
                   {/* Centre column — Source cells + variable legend */}
                   <div className="flex-1 overflow-y-auto">
-                    {/* Variable chip legend for selected pillar */}
+                    {/* Sticky header for selected pillar */}
                     <div className="px-4 py-2.5 border-b border-border/20 sticky top-0 bg-background/90 backdrop-blur-sm z-10 space-y-1.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5">
+                      {/* Eyebrow + pillar name */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-1.5 min-w-0">
                           <span
                             className={cn(
-                              "w-1.5 h-1.5 rounded-full shrink-0",
+                              "w-1.5 h-1.5 rounded-full shrink-0 mt-1",
                               PILLAR_DOT[selectedIdx % PILLAR_DOT.length]
                             )}
                           />
-                          <span className={cn(TYPE.caption, "font-semibold text-foreground/80 truncate")}>
-                            {splitTitle(selected.label).main}
-                          </span>
-                          <span className={cn(TYPE.label, "text-muted-foreground/45")}>
-                            · {selected.source_cells.length} cell{selected.source_cells.length !== 1 ? "s" : ""}
-                          </span>
+                          <div className="min-w-0">
+                            <p className={cn(TYPE.label, "text-muted-foreground/35 uppercase tracking-wide text-[10px] mb-0.5")}>
+                              Source cells
+                            </p>
+                            <span className={cn(TYPE.caption, "font-semibold text-foreground/80 leading-snug line-clamp-1")}>
+                              {splitTitle(selected.label).main}
+                            </span>
+                          </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           {evidenceTotals.spend > 0 && (
-                            <span className={cn(TYPE.label, "text-muted-foreground/50 tabular-nums")}>
+                            <span className={cn(TYPE.label, "text-muted-foreground/50 tabular-nums")} title="Total spend across source cells">
                               {fmtUSD(evidenceTotals.spend, 0)}
                             </span>
                           )}
+                          <span className={cn(TYPE.label, "text-muted-foreground/40 tabular-nums")}>
+                            {selected.source_cells.length} cell{selected.source_cells.length !== 1 ? "s" : ""}
+                          </span>
                           {analysis && selected.source_cells.length > 0 && (
                             <SegmentDrilldownButton onClick={() => setSegmentPillar(selected)} />
                           )}
@@ -630,14 +666,21 @@ export function StrategyMapView() {
 
                   {/* Right column — Hypotheses (resizable) */}
                   <div style={{ width: rightWidth }} className="shrink-0 overflow-y-auto">
-                    <div className="px-3 py-2 border-b border-border/20 sticky top-0 bg-background/90 backdrop-blur-sm z-10 flex items-center gap-2">
-                      <FlaskConical className="w-3.5 h-3.5 text-muted-foreground/50" />
-                      <span className={cn(TYPE.label, "text-muted-foreground/60")}>
-                        {selectedHyps.length} hypothes{selectedHyps.length !== 1 ? "es" : "is"}
-                      </span>
-                      {selectedHyps.length > 0 && (
-                        <CrossLink to="/app/strategy/hypotheses" label="Queue →" />
-                      )}
+                    <div className="px-3 py-2 border-b border-border/20 sticky top-0 bg-background/90 backdrop-blur-sm z-10">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <FlaskConical className="w-3 h-3 text-muted-foreground/40 shrink-0" />
+                          <div>
+                            <p className={cn(TYPE.label, "text-muted-foreground/35 uppercase tracking-wide text-[10px] mb-0.5")}>Hypotheses</p>
+                            <span className={cn(TYPE.caption, "font-semibold text-foreground/65")}>
+                              {selectedHyps.length} active
+                            </span>
+                          </div>
+                        </div>
+                        {selectedHyps.length > 0 && (
+                          <CrossLink to="/app/strategy/hypotheses" label="Queue →" />
+                        )}
+                      </div>
                     </div>
 
                     <div className="p-3 space-y-2">

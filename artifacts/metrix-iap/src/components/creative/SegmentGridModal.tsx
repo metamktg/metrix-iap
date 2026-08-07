@@ -29,6 +29,10 @@ interface SegmentTotals {
   reach: number | null;
   clicksAll: number | null;
   linkClicks: number;
+  /** Downstream funnel counts — null when not present in the demographic export. */
+  addsToCart: number | null;
+  checkoutsInitiated: number | null;
+  purchases: number | null;
 }
 
 /** Resolve the value + display for whichever metric tile was clicked, from a segment's totals. */
@@ -53,6 +57,54 @@ function metricValueForSegment(t: SegmentTotals, metric: Pick<MetricDef, "id" | 
       const v = t.impressions > 0 ? (t.linkClicks / t.impressions) * 100 : null;
       return { value: v, display: v != null ? `${v.toFixed(2)}%` : "—" };
     }
+    // ── Lower-funnel metrics ────────────────────────────────────────
+    case "add_to_cart_rate": {
+      const v = t.linkClicks > 0 && t.addsToCart != null ? (t.addsToCart / t.linkClicks) * 100 : null;
+      return { value: v, display: v != null ? `${v.toFixed(2)}%` : "—" };
+    }
+    case "cost_per_add_to_cart": {
+      const v = t.addsToCart != null && t.addsToCart > 0 ? t.spend / t.addsToCart : null;
+      return { value: v, display: v != null ? usd(v) : "—" };
+    }
+    case "checkout_rate": {
+      const v = t.linkClicks > 0 && t.checkoutsInitiated != null ? (t.checkoutsInitiated / t.linkClicks) * 100 : null;
+      return { value: v, display: v != null ? `${v.toFixed(2)}%` : "—" };
+    }
+    case "cost_per_checkout": {
+      const v = t.checkoutsInitiated != null && t.checkoutsInitiated > 0 ? t.spend / t.checkoutsInitiated : null;
+      return { value: v, display: v != null ? usd(v) : "—" };
+    }
+    case "cvr": {
+      const v = t.linkClicks > 0 ? (t.results / t.linkClicks) * 100 : null;
+      return { value: v, display: v != null ? `${v.toFixed(2)}%` : "—" };
+    }
+    // ── Library tile ID aliases (lib_* → same computation as segment IDs) ──
+    case "lib_clicks_all":
+      return metricValueForSegment(t, { id: "clicks_all", isResultEvent: false });
+    case "lib_atc_rate":
+      return metricValueForSegment(t, { id: "add_to_cart_rate", isResultEvent: false });
+    case "lib_cost_per_atc":
+      return metricValueForSegment(t, { id: "cost_per_add_to_cart", isResultEvent: false });
+    case "lib_checkout_rate":
+      return metricValueForSegment(t, { id: "checkout_rate", isResultEvent: false });
+    case "lib_cost_per_checkout":
+      return metricValueForSegment(t, { id: "cost_per_checkout", isResultEvent: false });
+    case "lib_cvr":
+      return metricValueForSegment(t, { id: "cvr", isResultEvent: false });
+    case "lib_cpa":
+      return metricValueForSegment(t, { id: "cpa_blended", isResultEvent: false });
+    case "lib_spend":
+      return metricValueForSegment(t, { id: "spend", isResultEvent: false });
+    case "lib_link_clicks":
+      return metricValueForSegment(t, { id: "link_clicks", isResultEvent: false });
+    case "lib_impressions":
+      return metricValueForSegment(t, { id: "impressions", isResultEvent: false });
+    case "lib_reach":
+      return metricValueForSegment(t, { id: "reach", isResultEvent: false });
+    case "lib_link_ctr":
+      return metricValueForSegment(t, { id: "link_ctr", isResultEvent: false });
+    case "lib_results":
+      return metricValueForSegment(t, { id: "results", isResultEvent: true });
     case "cpa_blended":
     default: {
       const v = t.results > 0 ? t.spend / t.results : null;
@@ -77,7 +129,7 @@ function buildAvatarSegments(rows: DemographicRow[], cellIds: string[] | null): 
       key,
       age: r.Age,
       gender: r.Gender,
-      totals: { spend: 0, results: 0, impressions: 0, reach: 0, clicksAll: 0, linkClicks: 0 },
+      totals: { spend: 0, results: 0, impressions: 0, reach: 0, clicksAll: 0, linkClicks: 0, addsToCart: null, checkoutsInitiated: null, purchases: null },
     };
     seg.totals.spend += r["Amount spent (USD)"];
     seg.totals.results += r.Results;
@@ -85,6 +137,9 @@ function buildAvatarSegments(rows: DemographicRow[], cellIds: string[] | null): 
     seg.totals.reach = (seg.totals.reach ?? 0) + r.Reach;
     seg.totals.clicksAll = (seg.totals.clicksAll ?? 0) + r["Clicks (all)"];
     seg.totals.linkClicks += r["Link clicks"];
+    if (r.adds_to_cart != null) seg.totals.addsToCart = (seg.totals.addsToCart ?? 0) + r.adds_to_cart;
+    if (r.checkouts_initiated != null) seg.totals.checkoutsInitiated = (seg.totals.checkoutsInitiated ?? 0) + r.checkouts_initiated;
+    if (r.purchases != null) seg.totals.purchases = (seg.totals.purchases ?? 0) + r.purchases;
     map.set(key, seg);
   }
   return Array.from(map.values()).sort((a, b) => b.totals.spend - a.totals.spend);
@@ -122,6 +177,9 @@ function topPlacements(a: AnalysisData, max = 5): { row: PlacementRow; totals: S
         reach: null,
         clicksAll: null,
         linkClicks: row["Link clicks"],
+        addsToCart: null,
+        checkoutsInitiated: null,
+        purchases: null,
       } satisfies SegmentTotals,
     }));
   return merged;

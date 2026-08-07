@@ -70,6 +70,10 @@ export interface CellPerformanceRow {
   cta_variable?: string;
   stage?: string;
   iap_read?: string;
+  /** Downstream funnel counts — present when the performance export carries them. */
+  adds_to_cart?: number | null;
+  checkouts_initiated?: number | null;
+  purchases?: number | null;
 }
 
 export interface VariablePerformanceRow {

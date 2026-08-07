@@ -249,15 +249,23 @@ function SingleCsvConfidenceReport({
  * Pass the full imports list; non-CSV imports are silently ignored.
  */
 export function ImportConfidenceReport({ imports }: { imports: ManualImport[] }) {
-  const csvImports = imports.filter(
-    (imp) =>
+  // Deduplicate by kind — keep only the most recent upload per CSV type.
+  // The server retains multiple rows for the same kind on re-uploads; without
+  // deduplication the same CSV card repeats once per historical upload.
+  const kindToImport = new Map<string, ManualImport>();
+  for (const imp of imports) {
+    if (
       (imp.kind === "performance_demo_csv" ||
         imp.kind === "performance_placement_csv" ||
         imp.kind === "performance_ad_summary_csv" ||
         imp.kind === "performance_conversion_device_csv") &&
       imp.mapping_summary &&
       imp.mapping_summary.length > 0
-  );
+    ) {
+      kindToImport.set(imp.kind, imp); // later entries win → most recent per kind
+    }
+  }
+  const csvImports = Array.from(kindToImport.values());
 
   if (csvImports.length === 0) return null;
 

@@ -13,7 +13,7 @@ import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CaveatNote, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
-  SkeletonTileRow, DatePresetBar, type ViewPreset,
+  SkeletonTileRow, DatePresetBar, type ViewPreset, SectionInfoIcon,
 } from "../shared";
 import { getGetAnalysisSummaryQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
@@ -168,7 +168,7 @@ function PlacementDetailDialog({ placement, v3Rows, c4eRows, accountRollup, onCl
           <div className="grid grid-cols-dashboard-4-sm gap-2">
             {tiles.map(({ label, value, delta }) => (
               <div key={label} className="mx-kpi-tile px-3 py-2.5">
-                <div className="text-label font-mono uppercase tracking-widest text-muted-foreground/60 mb-0.5">{label}</div>
+                <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/40 mb-0.5">{label}</div>
                 <div className="text-stat metric-num leading-none">{value}</div>
                 {delta && (
                   <div className={cn("text-label mt-1 leading-none", delta.good ? "text-accent" : "text-amber-300/80")}>
@@ -199,6 +199,7 @@ function ConversionTrackingSections({ cts }: { cts: ConversionTrackingSignal }) 
         <SectionCard
           title="Conversion-attributed placements"
           desc={`Funnel actions attributed to the converting placement. ${windowLabel ?? ""}`.trim()}
+          right={<SectionInfoIcon tip="Shows funnel actions (clicks, add-to-carts, purchases) attributed to each placement by the conversion tracking export." />}
         >
           <CaveatNote text="Conversion-attributed rows — delivery spend not applicable for this tracking basis." />
           <ConversionFunnelTable rows={cts.placements.map((r) => ({ ...r, label: r.placement }))} labelHeader="Placement" />
@@ -208,6 +209,7 @@ function ConversionTrackingSections({ cts }: { cts: ConversionTrackingSignal }) 
         <SectionCard
           title="Conversion-attributed platforms"
           desc="Funnel actions · by converting platform"
+          right={<SectionInfoIcon tip="Breaks down conversion-tracked funnel actions by the platform where the conversion was recorded." />}
         >
           <CaveatNote text="Conversion-attributed rows — delivery spend not applicable for this tracking basis." />
           <ConversionFunnelTable rows={cts.platforms.map((r) => ({ ...r, label: r.platform }))} labelHeader="Platform" />
@@ -217,6 +219,7 @@ function ConversionTrackingSections({ cts }: { cts: ConversionTrackingSignal }) 
         <SectionCard
           title="Conversion-attributed devices"
           desc="Funnel actions · by converting device"
+          right={<SectionInfoIcon tip="Shows which device types are completing conversions so you can align creative formats to the highest-converting device." />}
         >
           <CaveatNote text="Conversion-attributed rows — delivery spend not applicable for this tracking basis." />
           <ConversionFunnelTable rows={cts.devices.map((r) => ({ ...r, label: r.device }))} labelHeader="Device" />
@@ -333,6 +336,7 @@ export function PlacementsView() {
                         <MetricTile label="Link clicks" value={fmtNum(totalClicks)} />
                         <MetricTile label="Purchases" value={fmtNum(totalPurchases)} />
                         <MetricTile
+                          variant="primary"
                           label="Top placement"
                           value={top?.placement ?? "—"}
                           sub={top ? `${fmtNum(top.purchases ?? 0)} purchases · ${fmtNum(top.link_clicks ?? 0)} link clicks` : undefined}
@@ -378,6 +382,7 @@ export function PlacementsView() {
                   <MetricTile label="Placement spend" value={fmtUSD(totalSpend, 0)} />
                   <MetricTile label={term.Plural} value={fmtNum(totalResults)} />
                   <MetricTile
+                    variant="primary"
                     label={`Best · ${activeMetric.label}`}
                     value={best?.placement ?? "—"}
                     sub={
@@ -395,6 +400,7 @@ export function PlacementsView() {
                   desc="V3 + C4E combined · spend vs result share · click for breakdown"
                   right={
                     <div className="flex items-center gap-2">
+                      <SectionInfoIcon tip="Ranks each placement by spend, results, or CPA so you can see where delivery is concentrated and spot efficiency mismatches." />
                       {rollup.length > 1 && (
                         <button
                           onClick={() => setShowShareChart((v) => !v)}

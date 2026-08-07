@@ -364,7 +364,8 @@ describe("LoopCommandChain — Analysis stage running", () => {
     selectAccount("bookster");
     renderOverview();
     // Name may be "Analysis0:00" when running (elapsed timer rendered in tile)
-    const analysisTile = screen.getByRole("button", { name: /analysis/i });
+    // Use starts-with anchor so "Go to Analysis" CTA buttons are excluded.
+    const analysisTile = screen.getByRole("button", { name: /^analysis/i });
     expect(isDisabled(analysisTile)).toBe(false);
   });
 
@@ -379,7 +380,8 @@ describe("LoopCommandChain — Analysis stage running", () => {
     mockAnalysisRunStatus = "running";
     selectAccount("bookster");
     renderOverview();
-    const analysisTile = screen.getByRole("button", { name: /analysis/i });
+    // Name is "Analysis0:00" when running; starts-with anchor excludes "Go to Analysis" CTAs.
+    const analysisTile = screen.getByRole("button", { name: /^analysis/i });
     fireEvent.click(analysisTile);
     expect(screen.getByText("Running")).toBeTruthy();
   });
