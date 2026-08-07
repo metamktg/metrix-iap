@@ -37,8 +37,35 @@ const emptyTables = (): AccountTables => ({
   failurePatterns: new Map(),
   adsRegistry: new Map(),
   cellCreativeOverrides: new Map(),
+  creativeDeconstructions: new Map(),
   accountModules: [],
   signalCards: [],
+});
+
+describe("creative_deconstructions seed exposure", () => {
+  it("emits per-account classifications on both pending and full account shapes", () => {
+    const t = emptyTables();
+    t.creativeDeconstructions = groupByAccount([
+      {
+        id: "d1", account_id: "acct_a", manual_import_id: "imp1", filename: "x.png",
+        ad_names: ["ad_1"], status: "needs_review",
+        variables: [{ family: "concept", code: "CN_UGC", confidence: 0.6 }],
+        overall_confidence: 0.6, brief_ref: null, brief_variables: null,
+        cell_id: null, created_at: "2026-08-01", updated_at: "2026-08-01",
+      },
+    ]);
+    // Pending shape (no ad_performance rows)
+    const pending = buildAccountObject({ id: "acct_a", name: "A" }, t);
+    expect(pending["iap"]).toBeNull();
+    expect((pending["creative_deconstructions"] as Row[]).length).toBe(1);
+    const d = (pending["creative_deconstructions"] as Row[])[0]!;
+    expect(d["status"]).toBe("needs_review");
+    expect(d["overall_confidence"]).toBe(0.6);
+    expect(d["brief_variables"]).toBeNull();
+    // Other accounts see nothing
+    const other = buildAccountObject({ id: "acct_b", name: "B" }, t);
+    expect(other["creative_deconstructions"]).toEqual([]);
+  });
 });
 
 const perfRow = (accountId: string, over: Row = {}): Row => ({

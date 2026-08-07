@@ -53,6 +53,7 @@ import type {
   CreateAdAccountResult,
   CreateGoogleDocInput,
   CreateGoogleDocResult,
+  DeconstructCreativesInput,
   GenerateStrategyInput,
   GeneratedReportCreateInput,
   GeneratedReportCreateResult,
@@ -65,6 +66,7 @@ import type {
   LatestAnalysisRunResult,
   LatestGenerationRunResult,
   ListAgentWaitlistParams,
+  ListCreativeDeconstructionsResult,
   ListManualImportsResult,
   ListMetaReportRowsParams,
   ListSessionsResult,
@@ -87,6 +89,8 @@ import type {
   RequestAccessInput,
   RequestAccessResult,
   RestageManualImportsResult,
+  ReviewCreativeDeconstructionInput,
+  ReviewCreativeDeconstructionResult,
   RevokeSessionResult,
   RevokeWorkspaceInviteResult,
   RunMetaReportsResult,
@@ -1979,7 +1983,7 @@ export const useGenerateAccountBriefs = <TError = ErrorType<ApiError>,
     }
 
 export const getGetLatestGenerationRunUrl = (accountId: string,
-    kind: 'strategy' | 'briefs',) => {
+    kind: 'strategy' | 'briefs' | 'deconstruct',) => {
 
 
 
@@ -1992,7 +1996,7 @@ export const getGetLatestGenerationRunUrl = (accountId: string,
  * @summary Latest generation run for an account and kind
  */
 export const getLatestGenerationRun = async (accountId: string,
-    kind: 'strategy' | 'briefs', options?: RequestInit): Promise<LatestGenerationRunResult> => {
+    kind: 'strategy' | 'briefs' | 'deconstruct', options?: RequestInit): Promise<LatestGenerationRunResult> => {
 
   return customFetch<LatestGenerationRunResult>(getGetLatestGenerationRunUrl(accountId,kind),
   {
@@ -2008,7 +2012,7 @@ export const getLatestGenerationRun = async (accountId: string,
 
 
 export const getGetLatestGenerationRunQueryKey = (accountId: string,
-    kind: 'strategy' | 'briefs',) => {
+    kind: 'strategy' | 'briefs' | 'deconstruct',) => {
     return [
     `/api/metrix/accounts/${accountId}/generation-runs/${kind}/latest`
     ] as const;
@@ -2016,7 +2020,7 @@ export const getGetLatestGenerationRunQueryKey = (accountId: string,
 
 
 export const getGetLatestGenerationRunQueryOptions = <TData = Awaited<ReturnType<typeof getLatestGenerationRun>>, TError = ErrorType<ApiError>>(accountId: string,
-    kind: 'strategy' | 'briefs', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLatestGenerationRun>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+    kind: 'strategy' | 'briefs' | 'deconstruct', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLatestGenerationRun>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -2044,7 +2048,7 @@ export type GetLatestGenerationRunQueryError = ErrorType<ApiError>
 
 export function useGetLatestGenerationRun<TData = Awaited<ReturnType<typeof getLatestGenerationRun>>, TError = ErrorType<ApiError>>(
  accountId: string,
-    kind: 'strategy' | 'briefs', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLatestGenerationRun>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+    kind: 'strategy' | 'briefs' | 'deconstruct', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLatestGenerationRun>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
@@ -2060,6 +2064,230 @@ export function useGetLatestGenerationRun<TData = Awaited<ReturnType<typeof getL
 
 
 
+
+export const getDeconstructCreativesUrl = (accountId: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/deconstruct-creatives`
+}
+
+/**
+ * Analyzes the selected staged creative_asset uploads (images) against the IAP variable registry, grading each detected variable with a confidence score. Classifications at or above the 80% gate file into the account's local library automatically; below-gate results land in the review queue. Video files are recorded as unsupported. Returns 202 with the run id immediately; poll the latest-run endpoint (kind=deconstruct) for the outcome. Requires access to the account.
+ * @summary Start a creative deconstruction run over uploaded creative assets
+ */
+export const deconstructCreatives = async (accountId: string,
+    deconstructCreativesInput: DeconstructCreativesInput, options?: RequestInit): Promise<StartGenerationResult> => {
+
+  return customFetch<StartGenerationResult>(getDeconstructCreativesUrl(accountId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(deconstructCreativesInput)
+  }
+);}
+
+
+
+
+export const getDeconstructCreativesMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deconstructCreatives>>, TError,{accountId: string;data: BodyType<DeconstructCreativesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deconstructCreatives>>, TError,{accountId: string;data: BodyType<DeconstructCreativesInput>}, TContext> => {
+
+const mutationKey = ['deconstructCreatives'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deconstructCreatives>>, {accountId: string;data: BodyType<DeconstructCreativesInput>}> = (props) => {
+          const {accountId,data} = props ?? {};
+
+          return  deconstructCreatives(accountId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeconstructCreativesMutationResult = NonNullable<Awaited<ReturnType<typeof deconstructCreatives>>>
+    export type DeconstructCreativesMutationBody = BodyType<DeconstructCreativesInput>
+    export type DeconstructCreativesMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Start a creative deconstruction run over uploaded creative assets
+ */
+export const useDeconstructCreatives = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deconstructCreatives>>, TError,{accountId: string;data: BodyType<DeconstructCreativesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deconstructCreatives>>,
+        TError,
+        {accountId: string;data: BodyType<DeconstructCreativesInput>},
+        TContext
+      > => {
+      return useMutation(getDeconstructCreativesMutationOptions(options));
+    }
+
+export const getListCreativeDeconstructionsUrl = (accountId: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/creative-deconstructions`
+}
+
+/**
+ * Returns every stored classification (auto-filed, needs-review, user-overridden, discarded, unsupported) for the account's uploaded creatives, newest first. Requires access to the account.
+ * @summary List creative deconstruction classifications for an account
+ */
+export const listCreativeDeconstructions = async (accountId: string, options?: RequestInit): Promise<ListCreativeDeconstructionsResult> => {
+
+  return customFetch<ListCreativeDeconstructionsResult>(getListCreativeDeconstructionsUrl(accountId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCreativeDeconstructionsQueryKey = (accountId: string,) => {
+    return [
+    `/api/metrix/accounts/${accountId}/creative-deconstructions`
+    ] as const;
+    }
+
+
+export const getListCreativeDeconstructionsQueryOptions = <TData = Awaited<ReturnType<typeof listCreativeDeconstructions>>, TError = ErrorType<ApiError>>(accountId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCreativeDeconstructions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCreativeDeconstructionsQueryKey(accountId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCreativeDeconstructions>>> = ({ signal }) => listCreativeDeconstructions(accountId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: accountId !== null && accountId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCreativeDeconstructions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCreativeDeconstructionsQueryResult = NonNullable<Awaited<ReturnType<typeof listCreativeDeconstructions>>>
+export type ListCreativeDeconstructionsQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary List creative deconstruction classifications for an account
+ */
+
+export function useListCreativeDeconstructions<TData = Awaited<ReturnType<typeof listCreativeDeconstructions>>, TError = ErrorType<ApiError>>(
+ accountId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCreativeDeconstructions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCreativeDeconstructionsQueryOptions(accountId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getReviewCreativeDeconstructionUrl = (accountId: string,
+    deconstructionId: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/creative-deconstructions/${deconstructionId}`
+}
+
+/**
+ * Applies a review action to a classification in the review queue. 'update_variables' replaces the stored variable set (registry-constrained, recorded as user-edited); 'bypass' explicitly overrides the confidence gate and files the entry into the local library (recorded as user_overridden); 'discard' rejects the classification and removes anything previously filed. Requires access to the account.
+ * @summary Review a below-gate creative classification
+ */
+export const reviewCreativeDeconstruction = async (accountId: string,
+    deconstructionId: string,
+    reviewCreativeDeconstructionInput: ReviewCreativeDeconstructionInput, options?: RequestInit): Promise<ReviewCreativeDeconstructionResult> => {
+
+  return customFetch<ReviewCreativeDeconstructionResult>(getReviewCreativeDeconstructionUrl(accountId,deconstructionId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(reviewCreativeDeconstructionInput)
+  }
+);}
+
+
+
+
+export const getReviewCreativeDeconstructionMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewCreativeDeconstruction>>, TError,{accountId: string;deconstructionId: string;data: BodyType<ReviewCreativeDeconstructionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reviewCreativeDeconstruction>>, TError,{accountId: string;deconstructionId: string;data: BodyType<ReviewCreativeDeconstructionInput>}, TContext> => {
+
+const mutationKey = ['reviewCreativeDeconstruction'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewCreativeDeconstruction>>, {accountId: string;deconstructionId: string;data: BodyType<ReviewCreativeDeconstructionInput>}> = (props) => {
+          const {accountId,deconstructionId,data} = props ?? {};
+
+          return  reviewCreativeDeconstruction(accountId,deconstructionId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReviewCreativeDeconstructionMutationResult = NonNullable<Awaited<ReturnType<typeof reviewCreativeDeconstruction>>>
+    export type ReviewCreativeDeconstructionMutationBody = BodyType<ReviewCreativeDeconstructionInput>
+    export type ReviewCreativeDeconstructionMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Review a below-gate creative classification
+ */
+export const useReviewCreativeDeconstruction = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewCreativeDeconstruction>>, TError,{accountId: string;deconstructionId: string;data: BodyType<ReviewCreativeDeconstructionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reviewCreativeDeconstruction>>,
+        TError,
+        {accountId: string;deconstructionId: string;data: BodyType<ReviewCreativeDeconstructionInput>},
+        TContext
+      > => {
+      return useMutation(getReviewCreativeDeconstructionMutationOptions(options));
+    }
 
 export const getJoinAgentWaitlistUrl = () => {
 

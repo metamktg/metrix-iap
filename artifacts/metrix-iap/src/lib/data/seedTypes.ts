@@ -562,6 +562,48 @@ export interface AdAccount {
   iap?: IAPData | null;
   mst?: MST;
   listen?: { signal_cards: SignalCard[] };
+  /** Creative deconstruction classifications (uploaded creatives → IAP library). */
+  creative_deconstructions?: CreativeDeconstruction[];
+}
+
+// ─── Creative deconstruction (uploaded creatives → IAP library) ───────
+
+export interface DetectedCreativeVariable {
+  /** Registry family (concept, framework, tonality, funnel_stage, awareness, pain_point, proof, hook). */
+  family: string;
+  /** Registry-prefixed code, e.g. CN_UGC, FW_PAS, TN_Warm. */
+  code: string;
+  /** 0..1 confidence the variable is genuinely expressed in the creative. */
+  confidence: number;
+  evidence?: string | null;
+  user_edited?: boolean;
+}
+
+export interface CreativeDeconstruction {
+  id: string;
+  manual_import_id: string;
+  filename: string;
+  ad_names: string[];
+  status: "unsupported" | "auto_filed" | "needs_review" | "user_overridden" | "discarded";
+  variables: DetectedCreativeVariable[];
+  /** Deterministic mean of per-variable confidences; null for unsupported files. */
+  overall_confidence: number | null;
+  detected_copy?: {
+    primary_message?: string | null;
+    secondary_message?: string | null;
+    cta?: string | null;
+    visual_system?: string | null;
+  } | null;
+  /** Linked brief id — null for historical/brief-less creatives. */
+  brief_ref?: string | null;
+  /** Brief-INTENDED variable codes (side-by-side comparison); null when no brief is linked. */
+  brief_variables?: string[] | null;
+  /** Library cell the entry was filed under (auto_filed / user_overridden only). */
+  cell_id?: string | null;
+  overridden_by?: string | null;
+  overridden_at?: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 // ─── App defaults / root ──────────────────────────────────────────────

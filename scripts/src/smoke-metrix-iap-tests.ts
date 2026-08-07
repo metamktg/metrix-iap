@@ -1,19 +1,22 @@
-// Smoke check for the Metrix IAP vitest suite + login page layout e2e.
+// Smoke check orchestrator for the Metrix IAP suite.
 //
 // 1. Runs `vitest run` for the metrix-iap package and asserts all tests pass.
 //    Catches the class of regression where a jsdom environment bug (missing
 //    polyfill, broken mock, etc.) causes test failures that would otherwise
 //    only be noticed manually.
 //
-// 2. Runs the Playwright login page layout spec (smoke:login-page-layout)
-//    which boots the metrix-iap dev server and verifies the split-panel
-//    layout at mobile (375 px) and desktop (1280 px) widths.
+// 2. Runs every Playwright smoke step declared in
+//    src/lib/metrix-iap-smoke-steps.ts. That list is the single source of
+//    truth: the guard test metrix-iap-smoke-coverage.test.ts (scripts-tests
+//    workflow) fails when a smoke:metrix-iap-* script exists in package.json
+//    but is neither listed as a step nor explicitly excluded.
 //
 // Run: pnpm --filter @workspace/scripts run smoke:metrix-iap-tests
 
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { IAP_SMOKE_STEPS } from "./lib/metrix-iap-smoke-steps.js";
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -70,115 +73,20 @@ async function main() {
   });
   console.log("\nPASS  Metrix IAP vitest suite passed");
 
-  // ── Step 2: Playwright login page layout e2e ─────────────────────────────
-  console.log("\nRunning login page layout e2e...");
-  await spawnScript("smoke:login-page-layout", [
-    "--filter",
-    "@workspace/scripts",
-    "run",
-    "smoke:login-page-layout",
-  ]).catch((err) => {
-    fail("Login page layout e2e failed", String(err?.message ?? err));
-  });
-
-  // ── Step 3: Playwright Home screen + 5-section nav e2e ───────────────────
-  console.log("\nRunning Home screen + 5-section nav e2e...");
-  await spawnScript("smoke:metrix-iap-home-screen", [
-    "--filter",
-    "@workspace/scripts",
-    "run",
-    "smoke:metrix-iap-home-screen",
-  ]).catch((err) => {
-    fail("Home screen e2e failed", String(err?.message ?? err));
-  });
-
-  // ── Step 4: Playwright forgot-password flow e2e ───────────────────────────
-  console.log("\nRunning forgot-password flow e2e...");
-  await spawnScript("smoke:forgot-password", [
-    "--filter",
-    "@workspace/scripts",
-    "run",
-    "smoke:forgot-password",
-  ]).catch((err) => {
-    fail("Forgot-password e2e failed", String(err?.message ?? err));
-  });
-
-  // ── Step 5: Playwright slider persistence e2e ────────────────────────────
-  console.log("\nRunning slider persistence e2e...");
-  await spawnScript("smoke:metrix-iap-slider-persistence", [
-    "--filter",
-    "@workspace/scripts",
-    "run",
-    "smoke:metrix-iap-slider-persistence",
-  ]).catch((err) => {
-    fail("Slider persistence e2e failed", String(err?.message ?? err));
-  });
-
-  // ── Step 6: Playwright funnel filter e2e ─────────────────────────────────
-  console.log("\nRunning funnel filter e2e...");
-  await spawnScript("smoke:metrix-iap-funnel-filter", [
-    "--filter",
-    "@workspace/scripts",
-    "run",
-    "smoke:metrix-iap-funnel-filter",
-  ]).catch((err) => {
-    fail("Funnel filter e2e failed", String(err?.message ?? err));
-  });
-
-  // ── Step 7: Playwright engagement funnel e2e ──────────────────────────────
-  console.log("\nRunning engagement funnel e2e...");
-  await spawnScript("smoke:metrix-iap-engagement-funnel", [
-    "--filter",
-    "@workspace/scripts",
-    "run",
-    "smoke:metrix-iap-engagement-funnel",
-  ]).catch((err) => {
-    fail("Engagement funnel e2e failed", String(err?.message ?? err));
-  });
-
-  // ── Step 8: Playwright SectionInfoIcon tooltip e2e (EngagementFunnel + AdPerformance) ──
-  console.log("\nRunning SectionInfoIcon tooltip e2e (EngagementFunnel + AdPerformance)...");
-  await spawnScript("smoke:metrix-iap-section-info-icons", [
-    "--filter",
-    "@workspace/scripts",
-    "run",
-    "smoke:metrix-iap-section-info-icons",
-  ]).catch((err) => {
-    fail("SectionInfoIcon tooltip e2e failed", String(err?.message ?? err));
-  });
-
-  // ── Step 9: Playwright SectionInfoIcon tooltip e2e (Audience + Placements + Budget) ──
-  console.log("\nRunning SectionInfoIcon tooltip e2e (Audience + Placements + Budget)...");
-  await spawnScript("smoke:metrix-iap-section-info-tooltips", [
-    "--filter",
-    "@workspace/scripts",
-    "run",
-    "smoke:metrix-iap-section-info-tooltips",
-  ]).catch((err) => {
-    fail("SectionInfoIcon tooltip e2e failed", String(err?.message ?? err));
-  });
-
-  // ── Step 10: Playwright Avatars page tooltip e2e (signal badge + placements + cell chips) ──
-  console.log("\nRunning Avatars page tooltip e2e (signal badge + placements + cell chips)...");
-  await spawnScript("smoke:metrix-iap-avatars-tooltips", [
-    "--filter",
-    "@workspace/scripts",
-    "run",
-    "smoke:metrix-iap-avatars-tooltips",
-  ]).catch((err) => {
-    fail("Avatars page tooltip e2e failed", String(err?.message ?? err));
-  });
-
-  // ── Step 11: Playwright AdAccountOverview UX e2e ──────────────────────────
-  console.log("\nRunning AdAccountOverview UX e2e...");
-  await spawnScript("smoke:metrix-iap-ad-account-overview", [
-    "--filter",
-    "@workspace/scripts",
-    "run",
-    "smoke:metrix-iap-ad-account-overview",
-  ]).catch((err) => {
-    fail("AdAccountOverview UX e2e failed", String(err?.message ?? err));
-  });
+  // ── Remaining steps: declarative Playwright smoke list ───────────────────
+  for (const [i, step] of IAP_SMOKE_STEPS.entries()) {
+    console.log(
+      `\nRunning ${step.label} (step ${i + 2}/${IAP_SMOKE_STEPS.length + 1})...`,
+    );
+    await spawnScript(step.script, [
+      "--filter",
+      "@workspace/scripts",
+      "run",
+      step.script,
+    ]).catch((err) => {
+      fail(`${step.label} failed`, String(err?.message ?? err));
+    });
+  }
 
   console.log("\nPASS  All Metrix IAP smoke checks passed");
   process.exit(0);

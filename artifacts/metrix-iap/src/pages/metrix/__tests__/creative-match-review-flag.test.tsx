@@ -134,11 +134,15 @@ function renderPanel() {
   );
 }
 
-// Locate the mapping editor row for a given staged filename.
+// Locate the mapping editor row for a given staged filename. The filename
+// also renders in the deconstruct-status section, so search every match
+// for the one inside a mapping-editor card.
 function rowFor(filename: string): HTMLElement {
-  const el = screen.getByText(filename).closest("[class*='rounded-md']");
-  if (!el) throw new Error(`No mapping row found for ${filename}`);
-  return el as HTMLElement;
+  for (const node of screen.getAllByText(filename)) {
+    const el = node.closest("[class*='rounded-md']");
+    if (el) return el as HTMLElement;
+  }
+  throw new Error(`No mapping row found for ${filename}`);
 }
 
 describe("creative match review flag", () => {
@@ -154,9 +158,9 @@ describe("creative match review flag", () => {
     stage("CR1234_final.mp4");
 
     await waitFor(() => {
-      expect(screen.getByText("holiday_v3_1080x1080.mp4")).toBeTruthy();
-      expect(screen.getByText("Summer_Sale_v2.mp4")).toBeTruthy();
-      expect(screen.getByText("CR1234_final.mp4")).toBeTruthy();
+      expect(screen.getAllByText("holiday_v3_1080x1080.mp4").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("Summer_Sale_v2.mp4").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("CR1234_final.mp4").length).toBeGreaterThan(0);
     });
 
     // Guess row: a mapping WAS applied (ad selected) AND it is flagged for
@@ -183,7 +187,7 @@ describe("creative match review flag", () => {
     renderPanel();
     stage("holiday_v3_1080x1080.mp4");
 
-    await waitFor(() => expect(screen.getByText("holiday_v3_1080x1080.mp4")).toBeTruthy());
+    await waitFor(() => expect(screen.getAllByText("holiday_v3_1080x1080.mp4").length).toBeGreaterThan(0));
 
     // The staged import must carry the guess method (proves the mapping was
     // applied *with* the review signal, not silently) … The store populates

@@ -1,0 +1,61 @@
+@import 'tailwindcss';
+@import '@workspace/command-deck/styles.css';
+
+/* ═══════════════════════════════════════════════════════════
+   METRIX — Command Deck Loading Animation
+   Theme foundation comes from @workspace/command-deck (dark mode is
+   source-native); text colors and fonts are consumed from its tokens.
+   The Metrix brand accent ramp (Void Navy + electric blue → cyan) is the
+   product's cockpit palette, mirroring artifacts/metrix-iap/src/index.css.
+   Fonts: Share Tech Mono (terminal), Inter (body).
+   ═══════════════════════════════════════════════════════════ */
+:root {
+  /* Void Navy background scale (Metrix cockpit ramp, per metrix-iap) */
+  --mx-bg-deep: #020711;
+  --mx-bg-main: #050b18;
+
+  /* Electric blue → cyan accents (Metrix brand ramp, per metrix-iap) */
+  --mx-blue: #155dff;
+  --mx-blue-bright: #1f8fff;
+  --mx-cyan: #16d9ff;
+  --mx-cyan-soft: #62e6ff;
+
+  /* Text colors from Command Deck dark tokens */
+  --mx-text-primary: hsl(var(--foreground));
+  --mx-text-muted: hsl(var(--muted-foreground));
+
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'Share Tech Mono', monospace;
+}
+
+@theme inline {
+  --color-mx-bg-deep: var(--mx-bg-deep);
+  --color-mx-bg-main: var(--mx-bg-main);
+  --color-mx-blue: var(--mx-blue);
+  --color-mx-blue-bright: var(--mx-blue-bright);
+  --color-mx-cyan: var(--mx-cyan);
+  --color-mx-cyan-soft: var(--mx-cyan-soft);
+  --color-mx-text-primary: var(--mx-text-primary);
+  --color-mx-text-muted: var(--mx-text-muted);
+  --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
+}
+
+html,
+body {
+  background: var(--mx-bg-deep);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Logo drop-shadow signature cyan glow */
+.mx-logo-glow {
+  filter: drop-shadow(0 0 14px rgba(22, 217, 255, 0.55))
+    drop-shadow(0 0 34px rgba(21, 93, 255, 0.35));
+}
+
+/* Terminal label */
+.mx-mono {
+  font-family: var(--font-mono);
+}

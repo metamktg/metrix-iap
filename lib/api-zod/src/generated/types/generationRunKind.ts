@@ -12,4 +12,5 @@ export type GenerationRunKind = typeof GenerationRunKind[keyof typeof Generation
 export const GenerationRunKind = {
   strategy: 'strategy',
   briefs: 'briefs',
+  deconstruct: 'deconstruct',
 } as const;

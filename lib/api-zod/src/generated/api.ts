@@ -788,14 +788,14 @@ export const GenerateAccountBriefsResponse = zod.object({
 
 export const GetLatestGenerationRunParams = zod.object({
   "accountId": zod.coerce.string().min(1).describe('Ad account identifier.'),
-  "kind": zod.enum(['strategy', 'briefs']).describe('Generation kind.')
+  "kind": zod.enum(['strategy', 'briefs', 'deconstruct']).describe('Generation kind.')
 })
 
 export const GetLatestGenerationRunResponse = zod.object({
   "run": zod.object({
   "id": zod.string(),
   "account_id": zod.string(),
-  "kind": zod.enum(['strategy', 'briefs']),
+  "kind": zod.enum(['strategy', 'briefs', 'deconstruct']),
   "status": zod.enum(['running', 'success', 'error']),
   "error_message": zod.string().nullish(),
   "model": zod.string().nullish(),
@@ -804,6 +804,130 @@ export const GetLatestGenerationRunResponse = zod.object({
   "source_analysis_run_ids": zod.array(zod.string()).nullish().describe('Analysis run ids this generation was grounded in. Null for legacy runs predating run-scoping, or when source_analysis_all_time is true.'),
   "source_analysis_all_time": zod.boolean().describe('True when this generation was grounded in every analysis run for the account rather than a specific selection.')
 }).nullable()
+})
+
+
+/**
+ * Analyzes the selected staged creative_asset uploads (images) against the IAP variable registry, grading each detected variable with a confidence score. Classifications at or above the 80% gate file into the account's local library automatically; below-gate results land in the review queue. Video files are recorded as unsupported. Returns 202 with the run id immediately; poll the latest-run endpoint (kind=deconstruct) for the outcome. Requires access to the account.
+ * @summary Start a creative deconstruction run over uploaded creative assets
+ */
+
+
+
+export const DeconstructCreativesParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
+})
+
+
+
+
+export const DeconstructCreativesBody = zod.object({
+  "import_ids": zod.array(zod.string()).min(1).describe('Ids of staged creative_asset manual imports to deconstruct (single file or a whole upload batch).')
+})
+
+export const DeconstructCreativesResponse = zod.object({
+  "run_id": zod.string()
+})
+
+
+/**
+ * Returns every stored classification (auto-filed, needs-review, user-overridden, discarded, unsupported) for the account's uploaded creatives, newest first. Requires access to the account.
+ * @summary List creative deconstruction classifications for an account
+ */
+
+
+
+export const ListCreativeDeconstructionsParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
+})
+
+export const ListCreativeDeconstructionsResponse = zod.object({
+  "deconstructions": zod.array(zod.object({
+  "id": zod.string(),
+  "manual_import_id": zod.string(),
+  "filename": zod.string(),
+  "ad_names": zod.array(zod.string()),
+  "status": zod.enum(['unsupported', 'auto_filed', 'needs_review', 'user_overridden', 'discarded']),
+  "variables": zod.array(zod.object({
+  "family": zod.string().describe('Registry family (concept, framework, tonality, funnel_stage, awareness, pain_point, proof, hook).'),
+  "code": zod.string().describe('Registry-prefixed variable code (e.g. CN_UGC, FW_PAS, TN_Warm).'),
+  "confidence": zod.number().describe('Confidence 0..1 that the variable is genuinely expressed in the creative.'),
+  "evidence": zod.string().nullish().describe('Short note pointing at what in the creative supports the code.'),
+  "user_edited": zod.boolean().optional().describe('True when the value was set by a reviewer rather than the model.')
+})),
+  "overall_confidence": zod.number().nullish().describe('Deterministic mean of per-variable confidences (0..1). Null for unsupported files.'),
+  "detected_copy": zod.object({
+  "primary_message": zod.string().nullish(),
+  "secondary_message": zod.string().nullish(),
+  "cta": zod.string().nullish(),
+  "visual_system": zod.string().nullish()
+}).nullish(),
+  "brief_ref": zod.string().nullish().describe('Linked brief id when the mapped ad traces back to a generated\/imported brief. Null for historical\/brief-less creatives.'),
+  "brief_variables": zod.array(zod.string()).nullish().describe('Brief-INTENDED variable codes for side-by-side comparison. Null when no brief is linked.'),
+  "cell_id": zod.string().nullish().describe('Library cell the entry was filed under (auto_filed \/ user_overridden only).'),
+  "overridden_by": zod.string().nullish(),
+  "overridden_at": zod.string().nullish(),
+  "model": zod.string().nullish(),
+  "created_at": zod.string(),
+  "updated_at": zod.string()
+}))
+})
+
+
+/**
+ * Applies a review action to a classification in the review queue. 'update_variables' replaces the stored variable set (registry-constrained, recorded as user-edited); 'bypass' explicitly overrides the confidence gate and files the entry into the local library (recorded as user_overridden); 'discard' rejects the classification and removes anything previously filed. Requires access to the account.
+ * @summary Review a below-gate creative classification
+ */
+
+
+
+
+export const ReviewCreativeDeconstructionParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.'),
+  "deconstructionId": zod.coerce.string().min(1).describe('Creative deconstruction identifier.')
+})
+
+export const ReviewCreativeDeconstructionBody = zod.object({
+  "action": zod.enum(['update_variables', 'bypass', 'discard']),
+  "variables": zod.array(zod.object({
+  "family": zod.string().describe('Registry family (concept, framework, tonality, funnel_stage, awareness, pain_point, proof, hook).'),
+  "code": zod.string().describe('Registry-prefixed variable code (e.g. CN_UGC, FW_PAS, TN_Warm).'),
+  "confidence": zod.number().describe('Confidence 0..1 that the variable is genuinely expressed in the creative.'),
+  "evidence": zod.string().nullish().describe('Short note pointing at what in the creative supports the code.'),
+  "user_edited": zod.boolean().optional().describe('True when the value was set by a reviewer rather than the model.')
+})).optional().describe('Replacement variable set. Required for update_variables; ignored otherwise.')
+})
+
+export const ReviewCreativeDeconstructionResponse = zod.object({
+  "deconstruction": zod.object({
+  "id": zod.string(),
+  "manual_import_id": zod.string(),
+  "filename": zod.string(),
+  "ad_names": zod.array(zod.string()),
+  "status": zod.enum(['unsupported', 'auto_filed', 'needs_review', 'user_overridden', 'discarded']),
+  "variables": zod.array(zod.object({
+  "family": zod.string().describe('Registry family (concept, framework, tonality, funnel_stage, awareness, pain_point, proof, hook).'),
+  "code": zod.string().describe('Registry-prefixed variable code (e.g. CN_UGC, FW_PAS, TN_Warm).'),
+  "confidence": zod.number().describe('Confidence 0..1 that the variable is genuinely expressed in the creative.'),
+  "evidence": zod.string().nullish().describe('Short note pointing at what in the creative supports the code.'),
+  "user_edited": zod.boolean().optional().describe('True when the value was set by a reviewer rather than the model.')
+})),
+  "overall_confidence": zod.number().nullish().describe('Deterministic mean of per-variable confidences (0..1). Null for unsupported files.'),
+  "detected_copy": zod.object({
+  "primary_message": zod.string().nullish(),
+  "secondary_message": zod.string().nullish(),
+  "cta": zod.string().nullish(),
+  "visual_system": zod.string().nullish()
+}).nullish(),
+  "brief_ref": zod.string().nullish().describe('Linked brief id when the mapped ad traces back to a generated\/imported brief. Null for historical\/brief-less creatives.'),
+  "brief_variables": zod.array(zod.string()).nullish().describe('Brief-INTENDED variable codes for side-by-side comparison. Null when no brief is linked.'),
+  "cell_id": zod.string().nullish().describe('Library cell the entry was filed under (auto_filed \/ user_overridden only).'),
+  "overridden_by": zod.string().nullish(),
+  "overridden_at": zod.string().nullish(),
+  "model": zod.string().nullish(),
+  "created_at": zod.string(),
+  "updated_at": zod.string()
+})
 })
 
 
