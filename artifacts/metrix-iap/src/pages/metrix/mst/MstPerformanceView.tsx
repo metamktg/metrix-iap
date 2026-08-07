@@ -159,7 +159,7 @@ function ColumnAnalysisList({
               <span className="text-sm font-bold text-foreground">{col.columnLabel}</span>
             </div>
             <p className="text-body text-foreground/85">{top ? readableVariables(top.conceptCode) : "—"}</p>
-            <p className="text-[9px] font-mono text-muted-foreground/40 mt-0.5 tabular-nums">{top ? fmtMetric(top.value) : "—"} · {col.agg.appearances} rows</p>
+            <p className="text-micro font-mono text-muted-foreground/40 mt-0.5 tabular-nums">{top ? fmtMetric(top.value) : "—"} · {col.agg.appearances} rows</p>
             {col.retire.length > 0 && col.retire[0] !== col.scale[0] && (
               <DetailReveal
                 label="Retire candidate"
@@ -210,7 +210,7 @@ function DiagonalAnalysisList({
             <span className="flex items-center gap-1.5 text-sm font-bold text-foreground"><GitMerge className="w-3 h-3 text-interactive/60" /> {d.label}</span>
             <VerdictBadge verdict={d.verdict} />
           </div>
-          <p className="text-[9px] font-mono text-muted-foreground/40 tabular-nums">{fmtMetric(d.agg.terminalMetricValue)} · {d.cellIds.join(", ")}</p>
+          <p className="text-micro font-mono text-muted-foreground/40 tabular-nums">{fmtMetric(d.agg.terminalMetricValue)} · {d.cellIds.join(", ")}</p>
         </div>
       ))}
       <div className="md:col-span-2">

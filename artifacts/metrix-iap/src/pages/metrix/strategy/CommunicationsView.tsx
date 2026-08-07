@@ -213,7 +213,7 @@ function PillarList({ strategy }: { strategy: StrategyData }) {
                 <div>
                   <div className="flex items-center gap-1.5 mb-2">
                     <MessageSquare className="w-3 h-3 text-interactive/70 shrink-0" />
-                    <span className={cn(TYPE.label, "text-muted-foreground/65 font-semibold uppercase tracking-wide text-[10px]")}>
+                    <span className={cn(TYPE.label, "text-muted-foreground/65 font-semibold uppercase tracking-wide text-label")}>
                       What works
                     </span>
                   </div>
@@ -226,7 +226,7 @@ function PillarList({ strategy }: { strategy: StrategyData }) {
                     <div className="flex items-center justify-between gap-2 mb-2">
                       <div className="flex items-center gap-1.5">
                         <Users className="w-3 h-3 text-interactive/60 shrink-0" />
-                        <span className={cn(TYPE.label, "text-muted-foreground/55 font-semibold uppercase tracking-wide text-[10px]")}>
+                        <span className={cn(TYPE.label, "text-muted-foreground/55 font-semibold uppercase tracking-wide text-label")}>
                           Who responds
                         </span>
                       </div>

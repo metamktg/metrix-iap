@@ -94,9 +94,9 @@ function AccountLoopCard({
                   : "bg-muted-foreground/30"
             )}
           />
-          <span className="text-[13px] font-semibold text-foreground/90 truncate">{account.name}</span>
+          <span className="text-title font-semibold text-foreground/90 truncate">{account.name}</span>
           {account.platform && (
-            <span className="text-[10px] text-muted-foreground/50 shrink-0 hidden sm:inline">
+            <span className="text-label text-muted-foreground/50 shrink-0 hidden sm:inline">
               {account.platform}
             </span>
           )}
@@ -104,7 +104,7 @@ function AccountLoopCard({
         {configured && (
           <span
             className={cn(
-              "text-[10px] font-medium tabular-nums shrink-0 ml-3",
+              "text-label font-medium tabular-nums shrink-0 ml-3",
               allDone ? "text-emerald-400/80" : doneCount > 0 ? "text-amber-400/70" : "text-muted-foreground/50"
             )}
           >
@@ -141,7 +141,7 @@ function AccountLoopCard({
                 </div>
                 <span
                   className={cn(
-                    "text-[9px] font-medium leading-none whitespace-nowrap",
+                    "text-micro font-medium leading-none whitespace-nowrap",
                     stage.done
                       ? "text-emerald-400/80"
                       : "text-muted-foreground/45 group-hover/stage:text-muted-foreground/70"
@@ -167,7 +167,7 @@ function AccountLoopCard({
         /* Not connected state */
         <div className="flex items-center gap-2 py-1">
           <Plug className="w-3 h-3 text-muted-foreground/35 shrink-0" />
-          <span className="text-[11px] text-muted-foreground/45">
+          <span className="text-caption text-muted-foreground/45">
             Not connected — configure to begin
           </span>
         </div>
@@ -209,14 +209,14 @@ export function OverviewLoopSummary({ full = false }: { full?: boolean }) {
           <div className="flex items-center gap-3 px-0.5 mb-1">
             <div className="flex items-center gap-1.5">
               <Infinity className="w-3.5 h-3.5 text-interactive/70 shrink-0" />
-              <span className="text-[11px] font-semibold text-muted-foreground/70 uppercase tracking-widest">
+              <span className="text-caption font-semibold text-muted-foreground/70 uppercase tracking-widest">
                 IAP Loop
               </span>
             </div>
             <div className="flex-1 h-px bg-border/30 rounded-full" />
             <span
               className={cn(
-                "text-[11px] font-medium",
+                "text-caption font-medium",
                 completeRows.length === configuredRows.length && configuredRows.length > 0
                   ? "text-emerald-400/80"
                   : completeRows.length > 0
@@ -236,7 +236,7 @@ export function OverviewLoopSummary({ full = false }: { full?: boolean }) {
 
         {rows.length === 0 && (
           <div className="rounded-xl border border-border/30 bg-white/[0.01] px-4 py-6 text-center">
-            <span className="text-[12px] text-muted-foreground/50">No accounts configured.</span>
+            <span className="text-body text-muted-foreground/50">No accounts configured.</span>
           </div>
         )}
       </div>

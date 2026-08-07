@@ -38,9 +38,9 @@ export function StrategyHistoryView() {
                   {run.status === "running" && <Loader2 className="w-4 h-4 text-amber-400 animate-spin" />}
                   {run.status === "success" && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
                   {run.status === "error" && <XCircle className="w-4 h-4 text-red-400" />}
-                  <span className="text-[13px] font-semibold text-foreground capitalize">{run.status}</span>
+                  <span className="text-title font-semibold text-foreground capitalize">{run.status}</span>
                 </div>
-                <dl className="grid grid-cols-2 gap-3 text-[12px]">
+                <dl className="grid grid-cols-2 gap-3 text-body">
                   <div>
                     <dt className="text-muted-foreground/70">Started</dt>
                     <dd className="text-foreground/90">{new Date(run.started_at).toLocaleString()}</dd>
@@ -53,7 +53,7 @@ export function StrategyHistoryView() {
                   )}
                 </dl>
                 {run.error_message && (
-                  <p className="text-[11px] text-red-400/90 mt-3">{run.error_message}</p>
+                  <p className="text-caption text-red-400/90 mt-3">{run.error_message}</p>
                 )}
               </SectionCard>
             )}

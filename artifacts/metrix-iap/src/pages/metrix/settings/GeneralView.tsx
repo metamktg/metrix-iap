@@ -127,7 +127,7 @@ function NotificationPrefsSections() {
           {channels.map((c) => (
             <div key={c.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
               {c.id === "email" ? <Mail className="w-4 h-4 text-muted-foreground/70 shrink-0" /> : <MonitorSmartphone className="w-4 h-4 text-muted-foreground/70 shrink-0" />}
-              <div className="flex-1 text-[12px] font-medium text-foreground">{c.label}</div>
+              <div className="flex-1 text-body font-medium text-foreground">{c.label}</div>
               <button
                 type="button"
                 role="switch"
@@ -136,7 +136,7 @@ function NotificationPrefsSections() {
                 disabled={isPending}
                 data-testid={`toggle-channel-${c.id}`}
                 className={cn(
-                  "text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none transition-colors",
+                  "text-label font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border leading-none transition-colors",
                   c.enabled
                     ? "text-emerald-400 border-emerald-400/25 bg-emerald-400/10 hover:bg-emerald-400/20"
                     : "text-muted-foreground/70 border-border/40 bg-white/[0.03] hover:bg-white/[0.08]",
@@ -153,16 +153,16 @@ function NotificationPrefsSections() {
       <SectionCard title="Notification events" desc="Which product events notify the workspace, per channel. Click a mark to toggle.">
         <div className="rounded-lg border border-border/30 bg-white/[0.02] overflow-hidden">
           <div className="grid grid-cols-[1fr_56px_56px] gap-2 px-3 py-2 border-b border-border/30">
-            <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70 font-medium">Event</span>
-            <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70 font-medium text-center">Email</span>
-            <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70 font-medium text-center">In-app</span>
+            <span className="text-label uppercase tracking-wide text-muted-foreground/70 font-medium">Event</span>
+            <span className="text-label uppercase tracking-wide text-muted-foreground/70 font-medium text-center">Email</span>
+            <span className="text-label uppercase tracking-wide text-muted-foreground/70 font-medium text-center">In-app</span>
           </div>
           <div className="divide-y divide-border/20">
             {events.map((e) => (
               <div key={e.id} className="grid grid-cols-[1fr_56px_56px] gap-2 px-3 py-2.5 items-center">
                 <div className="min-w-0">
-                  <div className="text-[12px] font-medium text-foreground">{e.label}</div>
-                  <div className="text-[10px] text-muted-foreground/70 leading-tight mt-0.5">{e.description}</div>
+                  <div className="text-body font-medium text-foreground">{e.label}</div>
+                  <div className="text-label text-muted-foreground/70 leading-tight mt-0.5">{e.description}</div>
                 </div>
                 <div className="flex justify-center">
                   <PrefToggle on={e.email} onToggle={() => toggleEvent(e.id, "email")} disabled={isPending} label={`${e.label} via email`} testId={`toggle-event-${e.id}-email`} />
@@ -180,8 +180,8 @@ function NotificationPrefsSections() {
         <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
           <CalendarClock className="w-4 h-4 text-interactive shrink-0" />
           <div className="flex-1 min-w-0">
-            <div className="text-[12px] font-medium text-foreground capitalize">{notifications.digest.frequency} · {notifications.digest.day}</div>
-            <div className="text-[10px] text-muted-foreground/70 mt-0.5">{notifications.digest.description}</div>
+            <div className="text-body font-medium text-foreground capitalize">{notifications.digest.frequency} · {notifications.digest.day}</div>
+            <div className="text-label text-muted-foreground/70 mt-0.5">{notifications.digest.description}</div>
           </div>
         </div>
       </SectionCard>
@@ -225,13 +225,13 @@ export function GeneralView() {
             <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
               {configured ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> : <Circle className="w-4 h-4 text-muted-foreground/80 shrink-0" />}
               <div className="flex-1 min-w-0">
-                <div className="text-[12px] font-medium text-foreground">Meta ad account</div>
-                <div className="text-[10px] text-muted-foreground/85">{configured ? `${account.platform} · connected` : "Not connected"}</div>
+                <div className="text-body font-medium text-foreground">Meta ad account</div>
+                <div className="text-label text-muted-foreground/85">{configured ? `${account.platform} · connected` : "Not connected"}</div>
               </div>
               {!configured && (
                 <button
                   onClick={() => setConnectOpen(true)}
-                  className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-[11px] font-medium text-interactive hover:bg-primary/25 transition-colors"
+                  className="flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary/15 border border-primary/30 text-caption font-medium text-interactive hover:bg-primary/25 transition-colors"
                   data-testid="button-connect-account"
                 >
                   <Plug className="w-3 h-3" /> Connect
@@ -241,12 +241,12 @@ export function GeneralView() {
             <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
               <FileUp className="w-4 h-4 text-muted-foreground/85 shrink-0" />
               <div className="flex-1 min-w-0">
-                <div className="text-[12px] font-medium text-foreground">Manual import</div>
-                <div className="text-[10px] text-muted-foreground/85">Upload exported performance data</div>
+                <div className="text-body font-medium text-foreground">Manual import</div>
+                <div className="text-label text-muted-foreground/85">Upload exported performance data</div>
               </div>
               <button
                 onClick={() => setImportOpen(true)}
-                className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+                className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
                 data-testid="button-add-import"
               >
                 <FileUp className="w-3 h-3" /> Add import
@@ -256,14 +256,14 @@ export function GeneralView() {
               <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
                 <Images className="w-4 h-4 text-muted-foreground/85 shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <div className="text-[12px] font-medium text-foreground">Creative library</div>
-                  <div className="text-[10px] text-muted-foreground/85">
+                  <div className="text-body font-medium text-foreground">Creative library</div>
+                  <div className="text-label text-muted-foreground/85">
                     Add creative files after the fact, mapped to existing ads — no CSV re-upload needed
                   </div>
                 </div>
                 <button
                   onClick={() => setCreativeLibraryOpen(true)}
-                  className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+                  className="flex items-center gap-1.5 h-8 px-3 rounded-md border border-border/50 text-caption font-medium text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
                   data-testid="button-upload-creatives"
                 >
                   <Images className="w-3 h-3" /> Upload creatives
@@ -276,8 +276,8 @@ export function GeneralView() {
         {configured && (
           <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
             <div className="min-w-0">
-              <div className="text-[12px] font-medium text-foreground">Run analysis</div>
-              <div className="text-[10px] text-muted-foreground/85">Moved to the Analysis command center.</div>
+              <div className="text-body font-medium text-foreground">Run analysis</div>
+              <div className="text-label text-muted-foreground/85">Moved to the Analysis command center.</div>
             </div>
             <CrossLink to="/app/analysis" label="Go to Analysis" />
           </div>
@@ -288,8 +288,8 @@ export function GeneralView() {
             <div className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-white/[0.02]">
               <Palette className="w-4 h-4 text-interactive shrink-0" />
               <div className="flex-1 min-w-0">
-                <div className="text-[12px] font-medium text-foreground capitalize">{rb.default_branding} branding</div>
-                <div className="text-[10px] text-muted-foreground/85">White-label {rb.white_label_supported ? "supported" : "unavailable"} · formats: {rb.export_formats.join(", ")}</div>
+                <div className="text-body font-medium text-foreground capitalize">{rb.default_branding} branding</div>
+                <div className="text-label text-muted-foreground/85">White-label {rb.white_label_supported ? "supported" : "unavailable"} · formats: {rb.export_formats.join(", ")}</div>
               </div>
             </div>
             <div className="mt-2.5">
@@ -303,7 +303,7 @@ export function GeneralView() {
             <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
             <DetailReveal
               label={deriveLabel(`All analysis, strategy, briefs, reports, and MST data are isolated to ${account.name}.`, 72)}
-              labelClassName="text-[11px] text-foreground/75 leading-relaxed"
+              labelClassName="text-caption text-foreground/75 leading-relaxed"
               eyebrow="Data isolation"
               sections={[{
                 text: `All analysis, strategy, briefs, reports, and MST data are isolated to ${account.name}. Only bottom-line performance totals roll up to the ${manager.name} overview. Approving a recommendation creates a manual task and never auto-edits a live campaign.`,
@@ -316,7 +316,7 @@ export function GeneralView() {
 
         <AgentWaitlistSection />
 
-        <div className={cn("text-[10px] font-mono text-muted-foreground/80", "px-1")}>
+        <div className={cn("text-label font-mono text-muted-foreground/80", "px-1")}>
           Account ID · {account.id}
         </div>
       </div>

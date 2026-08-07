@@ -778,7 +778,7 @@ function ImportHistoryPanel({
         className="w-full flex items-center gap-2 px-2.5 py-2 text-left"
       >
         <History className="w-3.5 h-3.5 text-muted-foreground/55 shrink-0" />
-        <span className="text-[11px] text-muted-foreground/70 leading-snug flex-1">
+        <span className="text-caption text-muted-foreground/70 leading-snug flex-1">
           <span className="font-semibold text-foreground/80">
             Import history · {runsWithFiles.length} run{runsWithFiles.length !== 1 ? "s" : ""}
           </span>
@@ -816,7 +816,7 @@ function ImportHistoryPanel({
                 {files.map((f) => (
                   <span
                     key={f.id}
-                    className="text-[9px] font-mono text-muted-foreground/50 border border-border/30 rounded px-1 py-0.5 truncate max-w-[160px]"
+                    className="text-micro font-mono text-muted-foreground/50 border border-border/30 rounded px-1 py-0.5 truncate max-w-[160px]"
                     title={f.filename}
                   >
                     {f.filename}
@@ -976,7 +976,7 @@ export function AnalysisControls({
       {priorRuns.length > 0 && (
         <div className="flex items-center gap-2 rounded-md border border-border/30 bg-white/[0.02] px-2.5 py-2">
           <History className="w-3.5 h-3.5 text-muted-foreground/55 shrink-0" />
-          <span className="text-[11px] text-muted-foreground/70 leading-snug">
+          <span className="text-caption text-muted-foreground/70 leading-snug">
             <span className="font-semibold text-foreground/80">
               {priorRuns.length} existing run{priorRuns.length !== 1 ? "s" : ""}
             </span>

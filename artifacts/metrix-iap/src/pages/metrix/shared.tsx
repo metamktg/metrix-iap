@@ -992,7 +992,7 @@ export function MetricTile({
           <div className={cn(labelCls, "group-hover/tile:text-interactive/70 transition-colors")}>{label}</div>
           <div className="text-bignum font-bold text-foreground metric-num leading-none tracking-[-0.035em]">{value}</div>
           {sub && <div className="text-caption text-muted-foreground/65 mt-2 leading-snug line-clamp-2">{sub}</div>}
-          <div className="mt-2 text-[8px] font-mono uppercase tracking-wider text-interactive/0 group-hover/tile:text-interactive/50 transition-colors">Segment breakdown →</div>
+          <div className="mt-2 text-micro font-mono uppercase tracking-wider text-interactive/0 group-hover/tile:text-interactive/50 transition-colors">Segment breakdown →</div>
         </div>
       </button>
     );
@@ -1641,9 +1641,9 @@ export function ScopeBanner({ account }: { account: AdAccount }) {
   return (
     <div className="flex items-center gap-2 px-6 py-2 border-b border-border/30 bg-white/[0.015]">
       <Database className="w-3 h-3 text-muted-foreground/60 shrink-0" />
-      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">Scoped to ad account</span>
-      <span className="text-[12px] font-medium text-foreground/90">{account.name}</span>
-      <span className="text-[10px] font-mono text-muted-foreground/70">{account.platform}</span>
+      <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Scoped to ad account</span>
+      <span className="text-body font-medium text-foreground/90">{account.name}</span>
+      <span className="text-label font-mono text-muted-foreground/70">{account.platform}</span>
     </div>
   );
 }
@@ -1727,7 +1727,7 @@ export function StageLoopHub({ stages, current }: { stages: LoopStageInfo[]; cur
               onClick={() => !locked && navigate(s.to)}
               disabled={locked}
               className={cn(
-                "inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border text-[12px] font-medium transition-colors",
+                "inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border text-body font-medium transition-colors",
                 isCurrent
                   ? "border-primary/40 bg-primary/10 text-interactive"
                   : locked
