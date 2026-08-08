@@ -11,7 +11,7 @@
 // segment-analytics + sortByRankMetric pipeline, so the assertions track the
 // production ranking math instead of hard-coded segment names.
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
@@ -30,10 +30,12 @@ const seed = JSON.parse(
 );
 
 vi.mock("@/contexts/MetrixDataContext", () => ({
-  useMetrixSeed: () => seed,
+  useMetrixSeed: vi.fn(() => seed),
   useMetrixIsRefetching: () => false,
   MetrixDataProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
+
+import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 
 // jsdom has no layout, so ResponsiveContainer measures 0×0 and recharts
 // renders nothing. Give the chart a fixed size so bubbles actually mount.
@@ -146,7 +148,37 @@ function switchMetricViaGrid(metricId: string) {
   fireEvent.click(screen.getByRole("button", { name: /Intelligence Map/i }));
 }
 
-beforeEach(() => {
+// ── Synthetic seed with all-null CPA ─────────────────────────────────
+// Copies the real seed but zeroes out Results in every demographic row so
+// that every segment has results=0 → CPA=null. Spend is kept non-zero so
+// segments still exist and are plottable, but the CPA metric is entirely
+// absent. Used to verify that the winner highlight is suppressed rather
+// than arbitrarily emphasising the first-sorted segment.
+
+function buildNullCpaSeed() {
+  const copy = JSON.parse(JSON.stringify(seed));
+  for (const acct of copy.ad_accounts) {
+    const rows: Array<Record<string, unknown>> =
+      acct?.iap?.analysis?.demographic_registration_signal ?? [];
+    for (const row of rows) {
+      row["Results"] = 0;
+      row["CPA_result"] = null;
+    }
+  }
+  return copy;
+}
+
+function setupNullCpaSeed() {
+  vi.mocked(useMetrixSeed).mockReturnValue(buildNullCpaSeed());
+}
+
+function restoreRealSeed() {
+  vi.mocked(useMetrixSeed).mockReturnValue(seed);
+}
+
+// ── Shared beforeEach ─────────────────────────────────────────────────
+
+function resetStorage() {
   cleanup();
   sessionStorage.clear();
   localStorage.clear();
@@ -157,6 +189,11 @@ beforeEach(() => {
   );
   localStorage.setItem(VIEW_KEY, "map");
   localStorage.setItem(RANK_KEY, "results");
+}
+
+beforeEach(() => {
+  resetStorage();
+  restoreRealSeed();
 });
 
 // ── Tests ─────────────────────────────────────────────────────────────
@@ -201,5 +238,52 @@ describe("Intelligence Map winner highlight follows the active rank metric", () 
     switchMetricViaGrid("spend");
     const prime = screen.getByText(/Prime · Spend/i).closest("div")!.parentElement!;
     expect(within(prime as HTMLElement).getByText(expectedLeaderLabel("spend"))).toBeTruthy();
+  });
+});
+
+// ── All segments lack the active metric ───────────────────────────────
+// When every segment has a null value for the active rank metric, the
+// sort order is arbitrary — ranked[0] is not a meaningful winner. The
+// map must not emphasise any bubble, and the Prime tile must show "—"
+// instead of a segment name.
+
+describe("Intelligence Map: winner highlight suppressed when all segments lack metric data", () => {
+  beforeEach(() => {
+    resetStorage();
+    // Start on the map with CPA as the active rank metric.
+    localStorage.setItem(VIEW_KEY, "map");
+    localStorage.setItem(RANK_KEY, "cpa");
+    // Use the synthetic seed where every demographic row has Results=0 → CPA=null.
+    setupNullCpaSeed();
+  });
+
+  afterEach(() => {
+    restoreRealSeed();
+  });
+
+  it("renders no highlighted bubble when all segments have null CPA", () => {
+    const { container } = renderAudience();
+    const highlighted = highlightedBubbleLabels(container);
+    expect(highlighted).toHaveLength(0);
+  });
+
+  it("Prime tile shows '—' when all segments have null CPA", () => {
+    renderAudience();
+    // The tile label includes the active metric name.
+    const primeTileLabel = screen.getByText(/Prime · CPA/i);
+    const tileRoot = primeTileLabel.closest("div")!.parentElement!;
+    // The value cell directly follows the label row; it should read "—".
+    expect(within(tileRoot as HTMLElement).getByText("—")).toBeTruthy();
+  });
+
+  it("partial-null case: highlight still appears when at least one segment has CPA data", () => {
+    // Restore real seed (some segments have CPA, some may not).
+    restoreRealSeed();
+    localStorage.setItem(RANK_KEY, "cpa");
+    const { container } = renderAudience();
+    // Real fixture has segments with CPA, so exactly one bubble must be highlighted.
+    const highlighted = highlightedBubbleLabels(container);
+    expect(highlighted).toHaveLength(1);
+    expect(highlighted[0]).toBe(expectedLeaderLabel("cpa"));
   });
 });
