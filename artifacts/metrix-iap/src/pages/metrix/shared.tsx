@@ -1746,7 +1746,7 @@ export function StageLoopHub({ stages, current }: { stages: LoopStageInfo[]; cur
 }
 
 export interface StageStatusLike {
-  analysis: { status: LoopStageStatus | "none" };
+  analysis: { status: LoopStageStatus | "none"; validated?: boolean };
   strategy: { status: LoopStageStatus | "none" };
   briefs: { status: LoopStageStatus | "none"; count: number };
   mst: { unlocked: boolean };
@@ -1754,7 +1754,11 @@ export interface StageStatusLike {
 
 /** Builds the 5-stage Analysis→Strategy→Creative→MST→Reports row every command center renders. */
 export function buildLoopStages(s: StageStatusLike): LoopStageInfo[] {
-  const analysisOk = s.analysis.status === "success";
+  // Strategy (and downstream stages) unlock only when the analysis is
+  // VALIDATED — status=success plus the server-side completeness check
+  // confirming every analysis surface received data. `validated` may be
+  // absent on older payloads; treat only an explicit false as "not ready".
+  const analysisOk = s.analysis.status === "success" && s.analysis.validated !== false;
   const strategyOk = s.strategy.status === "success";
   return [
     { id: "analysis", label: "Analysis", to: "/app/analysis", status: s.analysis.status as LoopStageStatus },

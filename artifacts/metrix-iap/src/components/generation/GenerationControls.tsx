@@ -228,6 +228,37 @@ export function GenerateButton({
   );
 }
 
+/**
+ * Determinate progress bar for generation runs — same visual treatment as
+ * the analysis pipeline bar in ManualAnalysisControls (label + % readout +
+ * thin rounded track). Renders nothing when not running.
+ */
+export function GenerationProgressBar({
+  isRunning,
+  progressPercent,
+  stageLabel,
+}: {
+  isRunning: boolean;
+  progressPercent: number;
+  stageLabel: string;
+}) {
+  if (!isRunning) return null;
+  return (
+    <div className="space-y-1.5" data-testid="generation-progress-bar">
+      <div className="flex items-center justify-between gap-2 text-label text-muted-foreground/75">
+        <span className="truncate">{stageLabel}</span>
+        <span className="tabular-nums shrink-0">{progressPercent}%</span>
+      </div>
+      <div className="h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden">
+        <div
+          className="h-full rounded-full bg-primary/70 transition-[width] duration-700 ease-out"
+          style={{ width: `${progressPercent}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
 export function ProvenanceBadge({ provenance }: { provenance?: string }) {
   if (provenance !== "generated") return null;
   return (

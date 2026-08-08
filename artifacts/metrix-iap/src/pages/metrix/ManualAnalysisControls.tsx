@@ -14,6 +14,9 @@ import {
   useGetManualPerformanceCsvFormat,
   useStartManualAnalysisRun,
   useGetLatestAnalysisRun,
+  useGetAnalysisCompleteness,
+  getGetAnalysisCompletenessQueryKey,
+  getGetAccountStageStatusQueryKey,
   useListAnalysisRuns,
   useListManualImports,
   useUpdateManualImportAdNames,
@@ -445,6 +448,77 @@ export function GuessedMatchesCallout({
  * - Amber when some names couldn't be matched (mismatched ad_names).
  * - Includes a "Re-sync" button to retry linking without re-running analysis.
  */
+// ─── Analysis completeness report ───────────────────────────────────────
+// Server-verified per-surface check that every analysis module (metric
+// tiles, concepts, demographics, placements, platforms, devices, creative
+// library) actually received data for the latest run. Gaps are surfaced
+// explicitly — never a silent empty view. Strategy readiness gates on the
+// same server computation.
+function CompletenessPanel({ accountId, runId }: { accountId: string; runId: string | null }) {
+  const { data, isLoading } = useGetAnalysisCompleteness(accountId, {
+    query: {
+      // Keyed by run id so a fresh run always re-verifies.
+      queryKey: [...getGetAnalysisCompletenessQueryKey(accountId), runId ?? "account"],
+    },
+  });
+  if (isLoading || !data) return null;
+  const gaps = data.surfaces.filter((s) => s.required && !s.ok);
+  return (
+    <div
+      data-testid="analysis-completeness-panel"
+      className={cn(
+        "rounded-lg border p-3 space-y-2",
+        data.complete ? "border-emerald-400/25 bg-emerald-400/[0.05]" : "border-amber-400/30 bg-amber-400/[0.06]",
+      )}
+    >
+      <div className="flex items-center gap-2">
+        {data.complete ? (
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+        ) : (
+          <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+        )}
+        <span className={cn("text-caption font-semibold", data.complete ? "text-emerald-200" : "text-amber-200")}>
+          {data.complete
+            ? "Analysis validated — every module received data"
+            : `Analysis incomplete — ${gaps.length} module${gaps.length !== 1 ? "s" : ""} missing data`}
+        </span>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+        {data.surfaces.map((s) => (
+          <div key={s.key} className="flex items-center gap-1.5 min-w-0">
+            {s.ok ? (
+              <CheckCircle2 className={cn("w-3 h-3 shrink-0", s.rows > 0 ? "text-emerald-400/80" : "text-muted-foreground/50")} />
+            ) : (
+              <XCircle className="w-3 h-3 text-amber-400 shrink-0" />
+            )}
+            <span className={cn("text-label truncate", s.ok ? "text-muted-foreground/80" : "text-amber-200/90")}>
+              {s.label}
+            </span>
+            <span className="text-label tabular-nums text-muted-foreground/50 ml-auto shrink-0">
+              {s.rows.toLocaleString()} row{s.rows !== 1 ? "s" : ""}
+            </span>
+          </div>
+        ))}
+      </div>
+      {data.surfaces.some((s) => s.note) && (
+        <div className="space-y-0.5 pt-0.5">
+          {data.surfaces.filter((s) => s.note).map((s) => (
+            <p key={s.key} className="text-label text-muted-foreground/60 leading-relaxed">
+              {s.label}: {s.note}
+            </p>
+          ))}
+        </div>
+      )}
+      {!data.complete && (
+        <p className="text-label text-amber-200/75 leading-relaxed">
+          Strategy stays locked until every required module above has data. Re-run analysis or fix the
+          uploaded exports, then check again.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function CreativeLinkageStatus({
   accountId,
   run,
@@ -906,6 +980,10 @@ export function AnalysisControls({
       clearInterval(pollRef.current);
       pollRef.current = null;
       queryClient.invalidateQueries({ queryKey: getGetMetrixSeedQueryKey() });
+      // Re-verify completeness + stage gating everywhere the moment a run
+      // settles so Strategy/Loop surfaces flip to ready in the same pass.
+      queryClient.invalidateQueries({ queryKey: getGetAnalysisCompletenessQueryKey(accountId) });
+      queryClient.invalidateQueries({ queryKey: getGetAccountStageStatusQueryKey(accountId) });
     }
     return () => {
       if (pollRef.current) {
@@ -1192,6 +1270,9 @@ export function AnalysisControls({
       )}
 
       {run && run.status === "success" && <CsvWarningsPanel run={run} />}
+
+      {/* Server-verified module completeness — shown once the run settles */}
+      {run && run.status === "success" && <CompletenessPanel accountId={accountId} runId={run.id} />}
 
       {run && (run.status === "success" || run.status === "error") && (
         <CreativeLinkageStatus

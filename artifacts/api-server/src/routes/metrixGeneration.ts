@@ -21,6 +21,7 @@ import {
   startCreativeDeconstructionBackfill,
   type DetectedVariable,
 } from "../lib/deconstructionEngine";
+import { verifyAnalysisRunCompleteness } from "../lib/analysisEngine";
 
 const router: IRouter = Router();
 
@@ -50,6 +51,27 @@ router.post("/metrix/accounts/:accountId/generate/strategy", requireAuth, async 
   const runIds: string[] | "all" = allTime ? "all" : rawIds.map(String);
   try {
     if (!(await guardAccess(req, res, accountId))) return;
+    // ── Analysis-validated gate ──────────────────────────────────────────
+    // Strategy only unlocks once the analysis is verified as fully loaded
+    // into every required surface. Accounts WITHOUT any manual run
+    // (importer-seeded / live-Meta) are exempt from the run-scoped gate —
+    // the engine's own evidence check still rejects truly empty accounts.
+    const completeness = await verifyAnalysisRunCompleteness(accountId);
+    if (completeness.run_id && !completeness.complete) {
+      const gaps = completeness.surfaces
+        .filter((s) => s.required && !s.ok)
+        .map((s) => s.label);
+      const detail =
+        completeness.run_status === "running"
+          ? "An analysis run is still in progress — wait for it to finish."
+          : completeness.run_status === "error"
+            ? "The latest analysis run failed — re-run analysis first."
+            : gaps.length > 0
+              ? `These analysis surfaces have no data yet: ${gaps.join(", ")}.`
+              : "The latest analysis run has not been validated yet.";
+      res.status(409).json({ message: `Strategy generation requires a fully loaded analysis. ${detail}` });
+      return;
+    }
     const runId = await startStrategyGeneration(accountId, req.authUser!.email, runIds);
     req.log.info({ accountId, runId, runIds }, "Strategy generation started");
     res.status(202).json({ run_id: runId });

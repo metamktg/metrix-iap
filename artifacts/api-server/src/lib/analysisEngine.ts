@@ -282,6 +282,133 @@ export async function getLatestAnalysisRun(accountId: string): Promise<ManualAna
   return runShape(row);
 }
 
+// ─── Post-run completeness verification ────────────────────────────────
+// Confirms every analysis surface actually received data for the latest
+// run (or, for accounts without manual runs — importer/live-Meta — for the
+// account as a whole). This is the single "analysis validated" source of
+// truth the stage-status endpoint and the Strategy gate read, so no module
+// can show "ready" while another module's table is empty.
+
+export type AnalysisSurfaceCheck = {
+  /** Stable machine key, e.g. "ad_performance". */
+  key: string;
+  /** Human label shown in the UI, e.g. "Metric tiles & ad performance". */
+  label: string;
+  /** Row count found for this surface. */
+  rows: number;
+  /** Required surfaces must have rows for the analysis to count as complete. */
+  required: boolean;
+  /** True when this surface's expectation is satisfied. */
+  ok: boolean;
+  /** Honest context when a non-required surface is empty. */
+  note: string | null;
+};
+
+export type AnalysisCompleteness = {
+  /** Manual run the check is scoped to; null when scoped to the whole account (importer/live-Meta data). */
+  run_id: string | null;
+  run_status: "none" | "running" | "success" | "error";
+  /** True only when the run succeeded (or account-scoped data exists) AND every required surface has rows. */
+  complete: boolean;
+  checked_at: string;
+  surfaces: AnalysisSurfaceCheck[];
+};
+
+const COMPLETENESS_SURFACES: { key: string; table: string; label: string; required: boolean; emptyNote: string | null }[] = [
+  { key: "ad_performance",          table: "ad_performance",          label: "Metric tiles & ad performance", required: true,  emptyNote: null },
+  { key: "concept_performance",     table: "concept_performance",     label: "Concepts",                      required: false, emptyNote: "No concept codes detected in ad names — concept-level analysis is not applicable for this data." },
+  { key: "variable_performance",    table: "variable_performance",    label: "Variables",                     required: false, emptyNote: "No concept codes detected in ad names — variable-level analysis is not applicable for this data." },
+  { key: "demographic_performance", table: "demographic_performance", label: "Demographics (Audience)",       required: true,  emptyNote: null },
+  { key: "placement_performance",   table: "placement_performance",   label: "Placements",                    required: true,  emptyNote: null },
+  { key: "platform_performance",    table: "platform_performance",    label: "Platforms",                     required: true,  emptyNote: null },
+  { key: "device_performance",      table: "device_performance",      label: "Devices",                       required: true,  emptyNote: null },
+];
+
+/**
+ * Counts each analysis surface's rows for the account's latest manual run
+ * (run-scoped) or for the account as a whole when no manual run exists
+ * (importer/live-Meta accounts). Also checks the creative library linkage.
+ */
+export async function verifyAnalysisRunCompleteness(accountId: string): Promise<AnalysisCompleteness> {
+  const supabase = getSupabase();
+
+  // Latest manual run row (raw — we don't want report_pulls synthesis here;
+  // live-Meta/importer accounts are verified account-wide instead).
+  const { data: runRows, error: runErr } = await supabase
+    .from("manual_analysis_runs")
+    .select("id, status")
+    .eq("account_id", accountId)
+    .order("started_at", { ascending: false })
+    .limit(1);
+  if (runErr) throw new Error(runErr.message);
+  const latestRun = runRows?.[0] ?? null;
+  const runId = latestRun ? String(latestRun["id"]) : null;
+  const runStatus: AnalysisCompleteness["run_status"] = latestRun
+    ? (latestRun["status"] as AnalysisCompleteness["run_status"])
+    : "none";
+
+  const surfaces: AnalysisSurfaceCheck[] = await Promise.all(
+    COMPLETENESS_SURFACES.map(async (s) => {
+      let query = supabase.from(s.table).select("*", { count: "exact", head: true });
+      query = runId
+        ? query.eq("manual_analysis_run_id", runId)
+        : query.eq("account_id", accountId);
+      const { count, error } = await query;
+      if (error) throw new Error(`${s.table}: ${error.message}`);
+      const rows = count ?? 0;
+      return {
+        key: s.key,
+        label: s.label,
+        rows,
+        required: s.required,
+        ok: s.required ? rows > 0 : true,
+        note: rows === 0 ? s.emptyNote : null,
+      };
+    }),
+  );
+
+  // Creative library: informational — linkage is best-effort by design.
+  try {
+    const linkage = await computeCreativeLinkageSummary(accountId);
+    surfaces.push({
+      key: "creative_library",
+      label: "Creative library",
+      rows: linkage.linked,
+      required: false,
+      ok: linkage.total === 0 || linkage.linked > 0,
+      note:
+        linkage.total === 0
+          ? "No creative assets have been mapped for this account."
+          : linkage.linked < linkage.total
+            ? `${linkage.total - linkage.linked} of ${linkage.total} mapped creative(s) could not be linked to ad rows.`
+            : null,
+    });
+  } catch {
+    // Non-fatal: linkage summary failure must not fail the whole check.
+    surfaces.push({
+      key: "creative_library",
+      label: "Creative library",
+      rows: 0,
+      required: false,
+      ok: true,
+      note: "Creative linkage status could not be read.",
+    });
+  }
+
+  const requiredOk = surfaces.every((s) => !s.required || s.ok);
+  const complete = runId
+    ? runStatus === "success" && requiredOk
+    : requiredOk && surfaces.some((s) => s.rows > 0);
+
+  return {
+    run_id: runId,
+    run_status: runStatus,
+    complete,
+    checked_at: new Date().toISOString(),
+    surfaces,
+  };
+}
+
 async function startRun(accountId: string, dateRange: DateRangePreset, createdBy: string): Promise<string> {
   const latest = await getLatestAnalysisRun(accountId);
   if (latest && latest.status === "running") {
@@ -318,6 +445,11 @@ async function finishRun(
     .from("manual_analysis_runs")
     .update({
       status,
+      // Honest terminal progress: success = 100 with the stage cleared;
+      // error keeps the last real pct (shows where it died) but clears the
+      // stage label so the UI never displays a live-sounding stage on a
+      // settled run.
+      ...(status === "success" ? { progress_pct: 100, progress_stage: "" } : { progress_stage: "" }),
       error_message: fields.errorMessage ?? null,
       date_start: fields.dateStart ?? null,
       date_end: fields.dateEnd ?? null,

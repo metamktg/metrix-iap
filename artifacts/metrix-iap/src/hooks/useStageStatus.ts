@@ -18,7 +18,14 @@ export function useStageStatus(accountId: string | null) {
 
   return {
     isLoading: query.isLoading,
-    analysis: query.data?.analysis ?? { status: "none" as StageRunStatus, last_run_at: null, date_range: null },
+    analysis: query.data?.analysis ?? {
+      status: "none" as StageRunStatus,
+      last_run_at: null,
+      date_range: null,
+      validated: false,
+      progress_pct: 0,
+      progress_stage: "",
+    },
     strategy: query.data?.strategy ?? { status: "none" as StageRunStatus, last_run_at: null },
     briefs: query.data?.briefs ?? { status: "none" as StageRunStatus, last_run_at: null, count: 0 },
     mst: query.data?.mst ?? { unlocked: false },
