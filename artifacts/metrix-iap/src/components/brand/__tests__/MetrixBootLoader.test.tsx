@@ -43,6 +43,16 @@ describe("MetrixBootLoader — ARIA attributes", () => {
   });
 });
 
+describe("MetrixBootLoader — progress bar", () => {
+  afterEach(cleanup);
+
+  it("mounts the .mx-boot-fill progress bar element inside the loader", () => {
+    const { container } = render(<MetrixBootLoader />);
+    const fill = container.querySelector(".mx-boot-fill");
+    expect(fill).not.toBeNull();
+  });
+});
+
 describe("MetrixBootLoader — callout rotation (normal motion)", () => {
   beforeEach(() => {
     vi.useFakeTimers();
