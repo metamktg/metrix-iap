@@ -11,17 +11,87 @@ import { getAdAccount, getReportBuilder, getWorkspaceSettings } from "@/lib/data
 import { ModuleHeader, ScopeBanner, SectionCard, CaveatNote, PendingState, CrossLink, DetailReveal, deriveLabel } from "../shared";
 import { ConnectMetaDialog, ManualImportDialog, CreativeLibraryDialog } from "../ConnectAccountDialogs";
 import { AgentWaitlistSection } from "./AgentWaitlistSection";
+import { COHORT_OPTIONS } from "./cohortOptions";
 import { cn } from "@workspace/command-deck/lib/utils";
-import { Plug, FileUp, Palette, ShieldCheck, CheckCircle2, Circle, Images, Bell, Mail, MonitorSmartphone, CalendarClock, Check, Minus } from "lucide-react";
+import { Plug, FileUp, Palette, ShieldCheck, CheckCircle2, Circle, Images, Bell, Mail, MonitorSmartphone, CalendarClock, Check, Minus, Loader2 } from "lucide-react";
 import {
   useGetNotificationPrefs,
   useUpdateNotificationPrefs,
   getGetNotificationPrefsQueryKey,
+  useSetAccountCohort,
+  getGetMetrixSeedQueryKey,
+  ApiError,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@workspace/command-deck/hooks/use-toast";
 
 const SECTION = "Settings · 10";
+
+/**
+ * Account config only. This decides which terminal metric shows up in
+ * Budget, Ad Performance, and Exports for this account. It is answered once
+ * as part of account setup (the "what are you running ads towards?"
+ * question) and changed here deliberately — never presented as a flexible,
+ * inline toggle inside Analysis or any other workflow.
+ */
+function BusinessModelSection({ accountId, currentCohort }: { accountId: string; currentCohort: string | null | undefined }) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const mutation = useSetAccountCohort({
+    mutation: {
+      onSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: getGetMetrixSeedQueryKey() });
+      },
+      onError: (err: unknown) => {
+        toast({
+          variant: "destructive",
+          title: "Couldn't set business model",
+          description: err instanceof ApiError ? err.message : "Please try again.",
+        });
+      },
+    },
+  });
+
+  return (
+    <SectionCard
+      title="Business model"
+      desc="What conversion objective are you running ads towards? Decides which terminal metric this account reports in Budget, Ad Performance, and Exports."
+    >
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        {COHORT_OPTIONS.map((c) => {
+          const active = currentCohort === c.id;
+          return (
+            <button
+              key={c.id}
+              onClick={() => mutation.mutate({ accountId, data: { cohort: c.id } })}
+              disabled={mutation.isPending}
+              aria-pressed={active}
+              className={cn(
+                "flex items-center gap-2.5 p-3 rounded-lg border transition-colors text-left disabled:opacity-60",
+                active
+                  ? "border-primary/45 bg-primary/[0.06]"
+                  : "border-border/40 bg-white/[0.02] hover:border-primary/40 hover:bg-primary/[0.04]"
+              )}
+            >
+              {mutation.isPending && mutation.variables?.data.cohort === c.id ? (
+                <Loader2 className="w-4 h-4 text-interactive shrink-0 animate-spin" />
+              ) : (
+                <c.Icon className="w-4 h-4 text-interactive shrink-0" />
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <div className="text-body font-medium text-foreground">{c.label}</div>
+                  {active && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
+                </div>
+                <div className="text-label text-muted-foreground/70 mt-0.5">{c.desc}</div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </SectionCard>
+  );
+}
 
 function PrefToggle({
   on,
@@ -272,6 +342,8 @@ export function GeneralView() {
             )}
           </div>
         </SectionCard>
+
+        {configured && <BusinessModelSection accountId={account.id} currentCohort={account.cohort} />}
 
         {configured && (
           <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">

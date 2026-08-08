@@ -4,86 +4,25 @@
 // live only in the child pages (Ad Performance, IAP Library, Audience,
 // Placements, Budget, History).
 
-import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount } from "@/lib/data/metrixSeedAdapter";
 import { useStageStatus } from "@/hooks/useStageStatus";
 import {
-  ModuleHeader, ScopeBanner, ModuleScopeGate, SectionCard, StageLoopHub, buildLoopStages, CrossLink,
+  ModuleHeader, ScopeBanner, ModuleScopeGate, SectionCard, StageLoopHub, buildLoopStages, CrossLink, PendingState,
 } from "../shared";
 import { AnalysisControls } from "../ManualAnalysisControls";
-import { useSetAccountCohort, useListAnalysisRuns, getGetMetrixSeedQueryKey, ApiError } from "@workspace/api-client-react";
-import { useToast } from "@workspace/command-deck/hooks/use-toast";
-import { LayoutDashboard, Store, Target, Wrench, Smartphone, Loader2 } from "lucide-react";
-import type { AdAccount } from "@/lib/data/seedTypes";
+import { useListAnalysisRuns } from "@workspace/api-client-react";
+import { LayoutDashboard, Settings2 } from "lucide-react";
+import { COHORT_OPTIONS } from "../settings/cohortOptions";
 
 const SECTION = "Analysis · 03";
-
-const COHORT_OPTIONS: { id: NonNullable<AdAccount["cohort"]>; label: string; desc: string; Icon: typeof Store }[] = [
-  { id: "ecommerce", label: "Ecommerce", desc: "Terminal metric: purchases / ROAS", Icon: Store },
-  { id: "lead_gen", label: "Lead gen", desc: "Terminal metric: leads / cost per lead", Icon: Target },
-  { id: "service", label: "Service", desc: "Terminal metric: bookings / cost per booking", Icon: Wrench },
-  { id: "app", label: "App", desc: "Terminal metric: installs / cost per install", Icon: Smartphone },
-];
-
-function CohortSelector({ accountId, onDone }: { accountId: string; onDone?: () => void }) {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  const mutation = useSetAccountCohort({
-    mutation: {
-      onSuccess: () => {
-        void queryClient.invalidateQueries({ queryKey: getGetMetrixSeedQueryKey() });
-        onDone?.();
-      },
-      onError: (err: unknown) => {
-        toast({
-          variant: "destructive",
-          title: "Couldn't set business model",
-          description: err instanceof ApiError ? err.message : "Please try again.",
-        });
-      },
-    },
-  });
-
-  return (
-    <div className="space-y-3">
-      <p className="text-caption text-muted-foreground/80 leading-relaxed">
-        Set this account's business model before running analysis — it decides which terminal
-        metric shows up in Budget, Ad Performance, and Exports instead of assuming ROAS for
-        every account.
-      </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-        {COHORT_OPTIONS.map((c) => (
-          <button
-            key={c.id}
-            onClick={() => mutation.mutate({ accountId, data: { cohort: c.id } })}
-            disabled={mutation.isPending}
-            className="flex items-center gap-2.5 p-3 rounded-lg border border-border/40 bg-white/[0.02] hover:border-primary/40 hover:bg-primary/[0.04] transition-colors text-left disabled:opacity-60"
-          >
-            {mutation.isPending && mutation.variables?.data.cohort === c.id ? (
-              <Loader2 className="w-4 h-4 text-interactive shrink-0 animate-spin" />
-            ) : (
-              <c.Icon className="w-4 h-4 text-interactive shrink-0" />
-            )}
-            <div className="min-w-0">
-              <div className="text-body font-medium text-foreground">{c.label}</div>
-              <div className="text-label text-muted-foreground/70 mt-0.5">{c.desc}</div>
-            </div>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export function AnalysisCommandCenter() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
   const status = useStageStatus(account?.id ?? null);
-  const [changingCohort, setChangingCohort] = useState(false);
   const { data: runsData } = useListAnalysisRuns(account?.id ?? "");
   const runCount = (runsData?.runs ?? []).filter((r) => r.status === "success").length;
 
@@ -103,18 +42,21 @@ export function AnalysisCommandCenter() {
             <StageLoopHub stages={buildLoopStages(status)} current="analysis" />
 
             <div className="px-6 py-5 space-y-4 max-w-3xl">
-              {!acct.cohort || changingCohort ? (
-                <SectionCard title="Business model" desc="Required before analysis can run.">
-                  <CohortSelector accountId={acct.id} onDone={() => setChangingCohort(false)} />
+              {!acct.cohort ? (
+                <SectionCard title="Business model not set" desc="Configure it in account settings before analysis can run.">
+                  <PendingState
+                    title="No business model configured"
+                    message="This account's conversion objective (sales, leads, apps, local business) decides which terminal metric analysis reports — it's set once in Settings, not here."
+                    icon={Settings2}
+                    action={<CrossLink to="/app/settings/general" label="Go to Settings" />}
+                  />
                 </SectionCard>
               ) : (
                 <SectionCard
                   title="Run analysis"
                   desc="Pick a date range and explicitly analyze the staged manual uploads. Never runs automatically."
                   right={
-                    <button onClick={() => setChangingCohort(true)} className="text-label font-medium text-muted-foreground/70 hover:text-foreground transition-colors">
-                      {cohortLabel} · Change
-                    </button>
+                    <CrossLink to="/app/settings/general" label={`${cohortLabel} · Settings`} />
                   }
                 >
                   <AnalysisControls accountId={acct.id} />
