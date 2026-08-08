@@ -16,7 +16,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getStrategyData } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState,
-  SectionCard, ConfidenceBadge, deriveLabel, useShowMore, ShowMoreButton,
+  SectionCard, SectionInfoIcon, ConfidenceBadge, deriveLabel, useShowMore, ShowMoreButton,
 } from "../shared";
 import { TYPE } from "../typography";
 import { cn } from "@workspace/command-deck/lib/utils";
@@ -307,7 +307,18 @@ export function CommunicationsView() {
             <ScopeBanner account={account!} />
 
             <div className="px-6 py-5 space-y-3 max-w-3xl">
-              <PillarList strategy={strategy} />
+              <SectionCard
+                title="Message pillars"
+                table="message_pillars"
+                collapsible={false}
+                right={
+                  <SectionInfoIcon tip="Each pillar is a validated message direction backed by source cells — showing what creative angles work, who responds, and the strategic rationale behind them." />
+                }
+              >
+                <div className="pt-3 space-y-3">
+                  <PillarList strategy={strategy} />
+                </div>
+              </SectionCard>
             </div>
           </div>
         );

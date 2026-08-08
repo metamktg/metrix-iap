@@ -397,6 +397,31 @@ async function main() {
         }
       },
     );
+    // Test 8: Communications — "Message pillars" SectionInfoIcon.
+    await test(
+      'CommunicationsView · "Message pillars" SectionInfoIcon shows correct tooltip',
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        try {
+          await mockApis(ctx);
+          await gotoAndWait(
+            page,
+            `${BASE}/app/strategy/communications?account=${ACCOUNT}`,
+            "Message pillars",
+          );
+          await assertTooltip(
+            page,
+            "Each pillar is a validated message direction backed by source cells — showing what creative angles work, who responds, and the strategic rationale behind them.",
+            "Communications · Message pillars SectionInfoIcon",
+          );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
   } finally {
     await browser.close();
   }
