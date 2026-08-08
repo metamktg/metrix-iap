@@ -9,9 +9,7 @@ import { motion } from 'framer-motion';
 import { useVideoPlayer } from '@/lib/video';
 
 import { CockpitBackground } from './CockpitBackground';
-import { LogoCore } from './LogoCore';
 import { ProgressReadout } from './ProgressReadout';
-import { SkeletonPanel } from './SkeletonPanel';
 import { HudFrame } from './video_scenes/HudFrame';
 
 export const SCENE_DURATIONS = {
@@ -47,10 +45,10 @@ export default function VideoTemplate({
       className="w-full h-screen overflow-hidden relative"
       style={{ background: '#020711' }}
     >
-      {/* ── Persistent layers (never remount; loop on 4s timeline) ── */}
+      {/* ── Persistent layers (never remount; loop on 4s timeline) ──
+             Logo + callout + progress bar are one anchored group, rendered
+             together by ProgressReadout (logo left of text, bar under both). */}
       <CockpitBackground />
-      <SkeletonPanel />
-      <LogoCore />
       <ProgressReadout currentScene={sceneIndex} />
 
       {/* ── Persistent foreground HUD, phase-driven. The whole layer fades
