@@ -1,12 +1,17 @@
 // ─── Listen · Command Center (TL;DR) ────────────────────────────────────
-// The parent /app/listen route. Agency-wide TL;DR: alert counts and
-// connection state across every account, so a user can get the gist
-// without opening a single account. Absorbs the separate "TL;DR" concept
-// from the original design — no distinct child page for it (Q2).
+// The parent /app/listen route.
+// - With an ad account selected, this is that account's TL;DR only: its own
+//   signal counts, no cross-account roster or other accounts' connection
+//   statuses. Account-scoped modules must never leak other accounts' data.
+// - With the Manager/Agency overview selected (no ad account active), this
+//   falls back to the agency-wide TL;DR across every account, so a user can
+//   still get the gist without opening a single account. Absorbs the
+//   separate "TL;DR" concept from the original design — no distinct child
+//   page for it (Q2).
 
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
-import { useAccount } from "@/contexts/AccountContext";
-import { getAdAccounts, getListenSignals } from "@/lib/data/metrixSeedAdapter";
+import { useAccount, useScopedAdAccountId } from "@/contexts/AccountContext";
+import { getAdAccounts, getAdAccount, getListenSignals } from "@/lib/data/metrixSeedAdapter";
 import { ModuleHeader, MetricTile, CrossLink, PendingState } from "../shared";
 import { Radio, CheckCircle2, Circle, AlertTriangle } from "lucide-react";
 
@@ -15,6 +20,12 @@ const SECTION = "Listen · 02";
 export function ListenCommandCenter() {
   const seed = useMetrixSeed();
   const { selectAdAccount } = useAccount();
+  const scopedAdAccountId = useScopedAdAccountId();
+
+  if (scopedAdAccountId) {
+    return <ScopedListenSummary adAccountId={scopedAdAccountId} />;
+  }
+
   const accounts = getAdAccounts(seed);
 
   const rows = accounts.map((a) => {
@@ -75,6 +86,61 @@ export function ListenCommandCenter() {
             ))}
           </div>
         </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
+            <span className="text-body font-medium text-foreground">Alerts</span>
+            <CrossLink to="/app/listen/alerts" label="Open" />
+          </div>
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
+            <span className="text-body font-medium text-foreground">Signal</span>
+            <CrossLink to="/app/listen/signal" label="Open" />
+          </div>
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
+            <span className="text-body font-medium text-foreground">Recommendations</span>
+            <CrossLink to="/app/listen/recommendations" label="Open" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Account-scoped Listen TL;DR. Renders only the active account's own
+ * signals — no roster of other accounts, no cross-account connection list.
+ */
+function ScopedListenSummary({ adAccountId }: { adAccountId: string }) {
+  const seed = useMetrixSeed();
+  const account = getAdAccount(seed, adAccountId);
+  const signals = account?.status === "configured" ? getListenSignals(seed, adAccountId) : [];
+  const highImpact = signals.filter((s) => s.impact === "high").length;
+
+  return (
+    <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <ModuleHeader
+        section={SECTION}
+        title="Listen"
+        subtitle="What's going on in this account — alerts, signal, and what to do next."
+        account={account ?? undefined}
+      />
+      <div className="px-6 pt-5 grid grid-cols-2 gap-3">
+        <MetricTile label="High-impact signals" value={String(highImpact)} />
+        <MetricTile label="Total signals" value={String(signals.length)} />
+      </div>
+
+      <div className="px-6 py-5 space-y-4 max-w-3xl">
+        {highImpact === 0 ? (
+          <PendingState title="Nothing needs attention" message="No high-impact signals right now for this account." icon={Radio} />
+        ) : (
+          <div className="rounded-xl border border-red-400/20 bg-red-400/[0.03] p-4 flex items-center gap-3">
+            <AlertTriangle className="w-4 h-4 text-red-300/80 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="text-title font-semibold text-foreground">{highImpact} high-impact signal{highImpact === 1 ? "" : "s"}</div>
+              <div className="text-label text-muted-foreground/70 mt-0.5">Review in Alerts for details and recommended actions.</div>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
