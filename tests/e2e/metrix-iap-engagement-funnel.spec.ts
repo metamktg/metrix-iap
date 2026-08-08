@@ -56,6 +56,22 @@ const SEED_FIXTURE_EMPTY_DEMO = (() => {
   return JSON.stringify(seed);
 })();
 
+// A variant of the fixture with demographic rows present but Reach uniformly
+// zeroed. Used to verify the Scatter view's division-by-zero (frequency /
+// unique-CTR) path renders the empty-scatter message instead of crashing.
+const SEED_FIXTURE_ZERO_REACH = (() => {
+  const seed = JSON.parse(SEED_FIXTURE_BODY);
+  for (const acct of seed.ad_accounts ?? []) {
+    const rows = acct?.iap?.analysis?.demographic_registration_signal;
+    if (Array.isArray(rows)) {
+      for (const row of rows) {
+        row.Reach = 0;
+      }
+    }
+  }
+  return JSON.stringify(seed);
+})();
+
 // ── helpers ────────────────────────────────────────────────────────────────
 
 let passed = 0;
@@ -172,6 +188,67 @@ async function mockApisWithEmptyDemographic(ctx: BrowserContext): Promise<void> 
       status: 200,
       contentType: "application/json",
       body: SEED_FIXTURE_EMPTY_DEMO,
+    }),
+  );
+
+  await page.route("**/api/metrix/workspaces/*/reports", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ reports: [] }),
+    }),
+  );
+
+  await page.route("**/analysis/data-windows**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ windows: [] }),
+    }),
+  );
+
+  await page.route("**/analysis/summary**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        totals: {},
+        concept_rows: [],
+        placement_rows: [],
+        demographic_rows: [],
+      }),
+    }),
+  );
+}
+
+/**
+ * Same as mockApis but serves the zero-reach seed: demographic rows exist but
+ * every Reach value is 0, so frequency/unique-CTR derivations are all null.
+ */
+async function mockApisWithZeroReach(ctx: BrowserContext): Promise<void> {
+  const page = ctx.pages()[0]!;
+
+  await page.route("**/api/metrix/auth/me", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        user: {
+          id: "test-user",
+          email: "demo@metrix.app",
+          role: "admin",
+          must_change_password: false,
+          workspace_id: "metrix_manager",
+        },
+      }),
+    }),
+  );
+
+  await page.route("**/api/metrix/seed", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: SEED_FIXTURE_ZERO_REACH,
     }),
   );
 
@@ -408,6 +485,56 @@ async function main() {
           assert(
             jsErrors.length === 0,
             `Expected no JS errors in Scatter mode, got: ${jsErrors.join("; ")}`,
+          );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+
+    // ── Test 4b: Scatter mode with uniformly zero Reach is graceful ────────
+    await test(
+      "Scatter mode with all-zero Reach renders the section card and empty-scatter message without JS errors",
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        const jsErrors: string[] = [];
+        page.on("pageerror", (err) => jsErrors.push(err.message));
+        try {
+          await mockApisWithZeroReach(ctx);
+          await gotoFunnel(page);
+
+          // Switch to Scatter mode.
+          await page.getByRole("button", { name: "Scatter" }).click();
+          await page.waitForTimeout(400);
+
+          // The section card still renders (no crash).
+          const scatterCard = page.getByText(/Frequency × Link CTR/i).first();
+          await scatterCard.waitFor({ state: "visible", timeout: 8_000 });
+          assert(
+            await scatterCard.isVisible(),
+            'Expected "Frequency × Link CTR" section card to be visible with zero-reach data',
+          );
+          console.log('       Scatter section card visible with zero-reach seed ✓');
+
+          // With reach=0 everywhere, frequency/uniqueCtr are null for every
+          // segment, so no scatter points survive filtering and the explicit
+          // empty-state message must appear instead of a blank chart.
+          const emptyMsg = page
+            .getByText(/Need reach \+ impression data to plot frequency scatter/i)
+            .first();
+          await emptyMsg.waitFor({ state: "visible", timeout: 8_000 });
+          assert(
+            await emptyMsg.isVisible(),
+            "Expected the empty-scatter message when all Reach values are 0",
+          );
+          console.log("       Empty-scatter message visible ✓");
+
+          assert(
+            jsErrors.length === 0,
+            `Expected no JS errors in zero-reach Scatter mode, got: ${jsErrors.join("; ")}`,
           );
         } finally {
           await ctx.close();

@@ -15,6 +15,8 @@
 //      header — no JS errors.
 //   4. Scatter mode renders the "Frequency × Link CTR" section card
 //      — no JS errors.
+//   4b. Scatter mode with all demographic Reach values zeroed still renders
+//      the section card plus the empty-scatter message — no JS errors.
 //   5. Breakdown Audience → Placement dimension switch: section card title
 //      confirms the dimension switched; at least one data row is present
 //      after each switch — no JS errors.
