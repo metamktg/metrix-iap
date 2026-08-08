@@ -80,6 +80,10 @@ args = "disclosure-rulebook"
 task = "workflow.run"
 args = "command-deck-token-drift"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "communications-section-icons"
+
 [[workflows.workflow]]
 name = "api-smoke"
 author = "agent"
@@ -241,6 +245,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm --filter @workspace/scripts run check:command-deck-token-drift"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "communications-section-icons"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/scripts run check:communications-section-icons"
 
 [workflows.workflow.metadata]
 isValidation = true

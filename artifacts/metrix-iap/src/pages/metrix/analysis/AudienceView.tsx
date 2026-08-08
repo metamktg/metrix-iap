@@ -709,6 +709,17 @@ export function AudienceView() {
   const totalSpend = entries.reduce((n, e) => n + (e.totals.spend ?? 0), 0);
   const best = ranked[0];
 
+  // Suppress the winner highlight when the active metric has no data for any
+  // segment (all values are null). In that case ranked[0] is arbitrary — its
+  // position reflects insertion order, not metric leadership — so topSeg is
+  // left undefined so IntelligenceMapTab renders no bubble as the winner and
+  // the Prime tile falls back to "—".
+  const topSeg = useMemo(() => {
+    if (!best) return undefined;
+    if (activeMetric.value(best) == null) return undefined;
+    return best;
+  }, [best, activeMetric]);
+
   // Header KPI tiles: two independently swappable slots, resolved from the
   // account-wide (spend-weighted) totals so a rate metric like CVR/CTR/CPM
   // shows the real blended reading, never an average-of-averages.
@@ -782,10 +793,10 @@ export function AudienceView() {
                       <MetricTile
                         variant="primary"
                         label={`Prime · ${activeMetric.label}`}
-                        value={best ? segmentLabel(best.seg) : "—"}
+                        value={topSeg ? segmentLabel(topSeg.seg) : "—"}
                         sub={
-                          best && activeMetric.value(best) != null
-                            ? `${activeMetric.format(activeMetric.value(best)!)} ${activeMetric.label.toLowerCase()}`
+                          topSeg
+                            ? `${activeMetric.format(activeMetric.value(topSeg)!)} ${activeMetric.label.toLowerCase()}`
                             : undefined
                         }
                       />
@@ -804,7 +815,7 @@ export function AudienceView() {
                         medianCpa={medianCpa}
                         onSelect={setSelectedSeg}
                         resultPlural={term.Plural}
-                        topSeg={ranked[0]}
+                        topSeg={topSeg}
                       />
                     )}
 
