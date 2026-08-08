@@ -6,8 +6,9 @@
 // HTML interaction model:
 //   • Card root is a <div> with onClick → expand.  It is NOT a <button>
 //     so that nested interactive controls are valid HTML.
-//   • Interactive children (Map creative pill, Expand button, Ads Manager
-//     link) all call e.stopPropagation() so they don't double-fire.
+//   • Interactive children (Map creative pill, Expand/Upload buttons) all
+//     call e.stopPropagation() so they don't double-fire. The "View in Ads
+//     Manager" link lives only in the expand dialog, not on the tile.
 //   • Non-interactive areas use pointer-events-none so the root div click
 //     handler fires reliably across the full card face.
 //   • The hover action bar uses pointer-events-none by default and
@@ -16,10 +17,9 @@
 
 import { useMemo, useState, useCallback, useRef } from "react";
 import { cn } from "@workspace/command-deck/lib/utils";
-import { ImageOff, Maximize2, ExternalLink, Upload, AlertTriangle } from "lucide-react";
+import { ImageOff, Maximize2, Upload, AlertTriangle } from "lucide-react";
 import { resolveVariableLabel, getVariablePrefix, PREFIX_COLORS } from "@/lib/variable-registry";
 import { CreativeExpandDialog } from "./CreativeExpandDialog";
-import { buildAdsManagerAdUrl } from "./AdsManagerLink";
 import type { DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 
 // ─── Data shape ───────────────────────────────────────────────────────
@@ -251,11 +251,6 @@ export function CreativeCard({
   // but this ref acts as a belt-and-suspenders guard.
   const suppressRef = useRef(false);
 
-  const adsUrl =
-    data.metaAdId && data.adAccountId
-      ? buildAdsManagerAdUrl(data.adAccountId, data.metaAdId)
-      : null;
-
   const qaFlagged = data.qaMappingStatus === "flagged" || data.qaMappingStatus === "library_only_no_export_match";
 
   return (
@@ -339,19 +334,9 @@ export function CreativeCard({
                   {data.assetUrl ? "Replace" : "Upload"}
                 </button>
               )}
-              {adsUrl && (
-                <a
-                  href={adsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  title="View in Ads Manager"
-                  className="flex items-center gap-1 text-[9px] font-medium text-interactive/80 hover:text-interactive transition-colors"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  Ads Manager
-                </a>
-              )}
+              {/* "View in Ads Manager" intentionally lives only in the expand
+                  dialog (AdsManagerButton) — keeping it off the tile prevents
+                  the hover bar from overflowing/truncating on narrow tiles. */}
             </div>
           </div>
         </div>

@@ -5,7 +5,7 @@
 // Pure CSS for the glow/ring/progress fill (see index.css "mx-boot-*") —
 // no framer-motion at boot so the loader stays lightweight. Reduced-motion
 // users get static frames via the global prefers-reduced-motion override,
-// and the callout rotation itself is frozen on the first line via
+// and the callout rotation itself is frozen on its first line via
 // useReducedMotion() below.
 
 import { useEffect, useState } from "react";
@@ -19,7 +19,7 @@ import { useReducedMotion } from "@/hooks/useReducedMotion";
  * wraps into two balanced lines (text-wrap: balance) — never one long line
  * plus a short orphan word.
  */
-const CALLOUTS = [
+export const CALLOUTS = [
   "the concept code carries the creative identity.",
   "andromeda rewards diversity, punishes repetition.",
   "every winning ad leaves a variable fingerprint.",
@@ -36,10 +36,23 @@ const CALLOUTS = [
 // fades back in over FADE_MS — never two lines crossfading on top of each
 // other, which is what made the old approach hard to track.
 const READ_MS = 3800;
-const FADE_MS = 380;
+const FADE_MS = 420;
+
+/** Fisher–Yates shuffle (non-mutating). */
+function shuffle<T>(list: readonly T[]): T[] {
+  const out = [...list];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
 
 export function MetrixBootLoader() {
   const reducedMotion = useReducedMotion();
+  // Shuffled once per mount so lines play in a fresh random order each load,
+  // with no repeats until the whole list has cycled.
+  const [order] = useState<string[]>(() => shuffle(CALLOUTS));
   const [calloutIndex, setCalloutIndex] = useState(0);
   const [visible, setVisible] = useState(true);
 
@@ -49,7 +62,7 @@ export function MetrixBootLoader() {
     const cycleTimer = window.setInterval(() => {
       setVisible(false);
       swapTimer = window.setTimeout(() => {
-        setCalloutIndex((i) => (i + 1) % CALLOUTS.length);
+        setCalloutIndex((i) => (i + 1) % order.length);
         setVisible(true);
       }, FADE_MS);
     }, READ_MS + FADE_MS);
@@ -57,7 +70,7 @@ export function MetrixBootLoader() {
       window.clearInterval(cycleTimer);
       window.clearTimeout(swapTimer);
     };
-  }, [reducedMotion]);
+  }, [reducedMotion, order]);
 
   return (
     <div
@@ -66,43 +79,36 @@ export function MetrixBootLoader() {
       aria-busy="true"
       aria-label="Loading Metrix data"
     >
-      {/* Logo anchors the left edge of the text as one tight module — the
-          text column has a fixed width (not flex-fill) sized to match how
-          wide a balanced two-line callout actually renders, so the progress
-          bar underneath lines up flush with the text's right edge instead
-          of trailing off into empty space past it. Safe-area padding lives
-          on the outer centering wrapper (not here) so it never eats into
-          this row's own fixed width and force the text column to shrink. */}
-      <div className="flex flex-col gap-3 w-[19rem] max-w-full">
-        <div className="flex items-center gap-4">
-          {/* Glowing logo core with a subtle breathing pulse — no orbital ring.
-              Sized up relative to the text so it reads as the dominant anchor,
-              not a small icon beside the copy. */}
-          <div className="relative w-24 h-24 shrink-0 grid place-items-center">
-            <span className="mx-boot-core-glow" aria-hidden="true" />
-            <BrandLogo className="w-16 h-16 mx-boot-logo-pulse relative" />
-          </div>
+      {/* Vertical stack, everything centered on one axis: logo → callout →
+          progress bar. The column has a fixed width sized to how wide a
+          balanced two-line callout actually renders, so the progress bar
+          stays flush with the composition instead of trailing past it.
+          Safe-area padding lives on the outer centering wrapper. */}
+      <div className="flex flex-col items-center gap-4 w-[19rem] max-w-full">
+        {/* Glowing logo core with a 60 BPM breathing pulse — no orbital ring.
+            Sized up so it reads as the dominant anchor of the composition;
+            the glow scales with it. Tight box (no extra top padding) keeps
+            the whole stack optically centered on screen. */}
+        <div className="relative w-28 h-28 shrink-0 grid place-items-center">
+          <span className="mx-boot-core-glow" aria-hidden="true" />
+          <BrandLogo className="w-20 h-20 mx-boot-logo-pulse relative" />
+        </div>
 
-          {/* Fixed width + height, shrink-0 so a tight viewport can never
-              compress this below its intended width (which would force a
-              3rd wrapped line) — no layout jump between callouts, and the
-              column never grows wider than a callout actually needs, so it
-              doesn't leave the progress bar overshooting past the visible
-              text. Left-aligned so a wrapped two-line callout keeps one
-              steady reading edge, anchored to the logo. Height matches the
-              logo box so the text block is vertically centered against it. */}
-          <div className="h-24 w-48 shrink-0 flex items-center" aria-hidden="true">
-            <span
-              className="mx-boot-callout block w-full text-left text-[13px] font-normal leading-snug tracking-normal text-text-secondary"
-              style={{
-                opacity: visible ? 1 : 0,
-                transform: visible ? "translateY(0)" : "translateY(4px)",
-                textWrap: "balance",
-              }}
-            >
-              {CALLOUTS[calloutIndex]}
-            </span>
-          </div>
+        {/* Fixed height, so swapping between one- and two-line callouts can
+            never shift the logo or progress bar — no layout jump between
+            strings. Centered text, centered within the column, matching the
+            logo/progress-bar axis. */}
+        <div className="h-10 w-full flex items-center justify-center" aria-hidden="true">
+          <span
+            className="mx-boot-callout block w-full text-center text-[13px] font-normal leading-snug tracking-normal text-text-secondary"
+            style={{
+              opacity: visible ? 1 : 0,
+              transform: visible ? "translateY(0)" : "translateY(3px)",
+              textWrap: "balance",
+            }}
+          >
+            {order[calloutIndex]}
+          </span>
         </div>
 
         <div className="mx-boot-track" aria-hidden="true">
