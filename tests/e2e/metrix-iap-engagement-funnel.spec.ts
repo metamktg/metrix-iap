@@ -806,6 +806,97 @@ async function main() {
         }
       },
     );
+    // ── Test 9: audience-only sort falls back to CTR Link on Placement switch ─
+    await test(
+      "Sorting by an audience-only metric (Frequency) then switching to Placement falls back to CTR Link",
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        const jsErrors: string[] = [];
+        page.on("pageerror", (err) => jsErrors.push(err.message));
+        try {
+          await mockApis(ctx);
+          await gotoFunnel(page);
+
+          // Enter Breakdown mode (defaults to Audience dimension).
+          await page.getByRole("button", { name: "Breakdown" }).click();
+          const segmentHeader = page.locator("th").filter({ hasText: /^Segment$/ });
+          await segmentHeader.waitFor({ state: "visible", timeout: 8_000 });
+
+          // Open the "Sort by" dropdown and pick Frequency (audience-only metric).
+          const sortBarTrigger = page.getByRole("button", { name: /Sort by/ });
+          await sortBarTrigger.waitFor({ state: "visible", timeout: 8_000 });
+          await sortBarTrigger.click();
+          const frequencyOption = page.getByTestId("rank-metric-frequency");
+          await frequencyOption.waitFor({ state: "visible", timeout: 5_000 });
+          await frequencyOption.click();
+          await page.waitForTimeout(300);
+
+          // Confirm Frequency is now the active sort in Audience mode.
+          const freqHeaderBefore = page
+            .locator("th button")
+            .filter({ hasText: /^Frequency$/ });
+          await freqHeaderBefore.waitFor({ state: "visible", timeout: 5_000 });
+          const freqClassBefore = (await freqHeaderBefore.getAttribute("class")) ?? "";
+          assert(
+            freqClassBefore.includes("text-interactive"),
+            `Expected "Frequency" header to be active in Audience mode, class="${freqClassBefore}"`,
+          );
+          console.log('       "Frequency" sort active in Audience mode ✓');
+
+          // Switch dimension to Placement — Frequency has no values there.
+          await page.getByRole("button", { name: "Placement" }).click();
+          const placementCardTitle = page.getByText("Placement breakdown").first();
+          await placementCardTitle.waitFor({ state: "visible", timeout: 8_000 });
+
+          // Allow the fallback useEffect to fire and re-render.
+          await page.waitForTimeout(500);
+
+          // "Frequency" column must NOT appear — it has no data in Placement mode.
+          const freqHeaderAfter = page
+            .locator("th button")
+            .filter({ hasText: /^Frequency$/ });
+          const freqVisible = await freqHeaderAfter.isVisible().catch(() => false);
+          assert(
+            !freqVisible,
+            'Expected "Frequency" column to be absent in Placement mode (no placement data)',
+          );
+          console.log('       "Frequency" column absent in Placement mode ✓');
+
+          // "CTR Link" must now be the active (highlighted) sort — it is the fallback
+          // default and has data in Placement mode (linkClicks / impressions).
+          const ctrLinkHeader = page
+            .locator("th button")
+            .filter({ hasText: /^CTR Link$/ });
+          await ctrLinkHeader.waitFor({ state: "visible", timeout: 8_000 });
+          const ctrLinkClass = (await ctrLinkHeader.getAttribute("class")) ?? "";
+          assert(
+            ctrLinkClass.includes("text-interactive"),
+            `Expected "CTR Link" header to be the fallback active sort in Placement mode, class="${ctrLinkClass}"`,
+          );
+          console.log('       "CTR Link" is the fallback active sort in Placement mode ✓');
+
+          // Data rows must still be present and the table is not blank.
+          const placementRows = page.locator("tbody tr");
+          const rowCount = await placementRows.count();
+          assert(
+            rowCount > 0,
+            `Expected data rows in Placement mode after sort fallback, got ${rowCount}`,
+          );
+          console.log(`       ${rowCount} row(s) present after sort fallback ✓`);
+
+          assert(
+            jsErrors.length === 0,
+            `Expected no JS errors during sort fallback, got: ${jsErrors.join("; ")}`,
+          );
+          console.log("       No JS errors ✓");
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
   } finally {
     await browser.close();
   }
