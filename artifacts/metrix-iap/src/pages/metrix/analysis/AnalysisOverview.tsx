@@ -12,7 +12,7 @@ import {
   getAdAccount, getAnalysisData, getCampaignSummary, getCoreControls, getMST,
 } from "@/lib/data/metrixSeedAdapter";
 import {
-  ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
+  ModuleHeader, ModuleScopeGate, PendingState,
   SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
   DetailReveal, deriveLabel,
   LoopAction, SkeletonTileRow, InfoTooltip, readableVariables, eventLabel, SectionInfoIcon,
@@ -28,6 +28,10 @@ import { RunScopePicker } from "@/components/analysis/RunSelector";
 import { useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
 import { useQuery } from "@tanstack/react-query";
 import { SharePieChart } from "@/components/charts/SharePieChart";
+import { KpiTileRow } from "@/components/metrics/KpiTile";
+import {
+  buildMetricCatalog, metricSourceFromApiTotals, metricSourceFromCampaignSummary,
+} from "@/lib/data/metricsCatalog";
 import {
   AreaChart, Area, BarChart, Bar, Cell, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid, Brush,
@@ -1009,30 +1013,21 @@ export function AnalysisOverview() {
                   <div className="px-6 pt-5 flex gap-3 items-start">
                     {/* Left: 4 tiles in a 2×2 grid */}
                     <div className="flex-1 grid grid-cols-dashboard-4 gap-3">
-                        <>
-                          {runScoped ? (
-                            <>
-                              <MetricTile variant="primary" label="Total spend"  value={fmtUSD(scopedSpend, 0)} />
-                              <MetricTile label="Impressions"  value={fmtNum(scopedImpressions)} />
-                              <MetricTile label="Link clicks"  value={fmtNum(scopedLinkClicks)} />
-                              <MetricTile label="Link CTR"     value={fmtPct(scopedCtrPct)} />
-                            </>
-                          ) : selectedWindow && runData ? (
-                            <>
-                              <MetricTile variant="primary" label="Total spend"  value={fmtUSD(runData.totals.total_spend_usd, 0)} />
-                              <MetricTile label="Impressions"  value={fmtNum(runData.totals.total_impressions)} />
-                              <MetricTile label="Link clicks"  value={fmtNum(runData.totals.total_link_clicks)} />
-                              <MetricTile label="Link CTR"     value={fmtPct(runData.totals.overall_link_ctr_pct)} />
-                            </>
-                          ) : (
-                            <>
-                              <MetricTile variant="primary" label="Total spend"  value={fmtUSD(summary.total_spend_usd, 0)} />
-                              <MetricTile label="Impressions"  value={fmtNum(summary.total_impressions)} />
-                              <MetricTile label="Link clicks"  value={fmtNum(summary.total_link_clicks)} />
-                              <MetricTile label="Link CTR"     value={fmtPct(summary.overall_link_ctr_pct)} />
-                            </>
+                        <KpiTileRow
+                          viewKey={runScoped ? "analysis-overview:run-scoped" : "analysis-overview"}
+                          catalog={buildMetricCatalog(
+                            runScoped
+                              ? metricSourceFromApiTotals({
+                                  total_spend_usd: scopedSpend,
+                                  total_impressions: scopedImpressions,
+                                  total_link_clicks: scopedLinkClicks,
+                                  overall_link_ctr_pct: scopedCtrPct,
+                                })
+                              : selectedWindow && runData
+                                ? metricSourceFromApiTotals(runData.totals)
+                                : metricSourceFromCampaignSummary(summary),
                           )}
-                        </>
+                        />
                     </div>
                     {/* Right: result type donut — inline with tiles */}
                     {resultTypePie.length > 0 && (

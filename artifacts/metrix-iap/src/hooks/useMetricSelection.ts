@@ -73,6 +73,18 @@ export function useMetricSelection(availableIds: string[]) {
     });
   }, []);
 
+  /** Swap one selected metric for another in place (unified tile dropdown). */
+  const replace = useCallback((oldId: string, newId: string) => {
+    setSelected((prev) => {
+      const idx = prev.indexOf(oldId);
+      if (idx === -1 || prev.includes(newId)) return prev;
+      const next = [...prev];
+      next[idx] = newId;
+      writeStored(next);
+      return next;
+    });
+  }, []);
+
   const reset = useCallback(() => {
     const next = DEFAULT_METRIC_IDS.filter((id) => availableIds.includes(id));
     writeStored(next);
@@ -80,7 +92,7 @@ export function useMetricSelection(availableIds: string[]) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [availableIds.join(",")]);
 
-  return { selected, toggle, move, reset };
+  return { selected, toggle, move, replace, reset };
 }
 
 /**

@@ -53,6 +53,29 @@ export function metricSourceFromCampaignSummary(cs: CampaignSummary): MetricSour
   };
 }
 
+/** Shape of API summary totals (analysis runs / date presets) — structurally a CampaignSummary subset. */
+export interface ApiTotalsLike {
+  total_spend_usd: number;
+  total_impressions: number;
+  total_link_clicks: number;
+  overall_link_ctr_pct: number | null;
+  bottom_line_totals?: Record<string, SeedResultEventTotals>;
+}
+
+export function metricSourceFromApiTotals(t: ApiTotalsLike): MetricSource {
+  const events = Object.entries(t.bottom_line_totals ?? {});
+  return {
+    spend: t.total_spend_usd,
+    impressions: t.total_impressions,
+    reach: accountLevelDeliveryTotal(events, (e) => e.reach),
+    clicksAll: accountLevelDeliveryTotal(events, (e) => e.clicks_all),
+    linkClicks: t.total_link_clicks,
+    linkCtrPct: t.overall_link_ctr_pct,
+    resultEvents: events.map(([key, e]) => ({ key, label: eventLabel(key), results: e.results })),
+    isMultiEvent: events.length > 1,
+  };
+}
+
 export function metricSourceFromManagerTotals(totals: ManagerBottomLineTotals): MetricSource {
   const events = Object.entries(totals.result_totals_by_event);
   return {
@@ -75,7 +98,11 @@ export const STATIC_METRIC_IDS = [
   "clicks_all",
   "link_clicks",
   "link_ctr",
+  "ctr_all",
+  "cpc",
+  "cpm",
   "cpa_blended",
+  "cvr",
 ] as const;
 export type StaticMetricId = (typeof STATIC_METRIC_IDS)[number];
 
@@ -100,13 +127,34 @@ export interface MetricDef {
   sub?: string;
 }
 
-/** Build the full pickable catalog (static + this account's own result events) from a source. */
+/**
+ * Build the full pickable catalog (static + derived + this account's own
+ * result events) from a source. Metrics the source honestly cannot compute
+ * (null value) are omitted entirely — never rendered as blank tiles.
+ */
 export function buildMetricCatalog(source: MetricSource): MetricDef[] {
   const totalResults = source.resultEvents.reduce((n, e) => n + e.results, 0);
   const cpaBlended = source.spend != null && totalResults > 0 ? source.spend / totalResults : null;
   // For multi-event accounts, delivery totals (reach, clicks) are cross-event
   // sums that may over-count — flag them with a small caveat sub-label.
   const deliverySub = source.isMultiEvent ? "est. across events" : undefined;
+
+  // ── Derived metrics — only when the underlying data supports them ──
+  // CTR-family null guard: clicks > impressions indicates a Meta
+  // conversion-basis export; emit null instead of a bogus percentage.
+  const ctrAll =
+    source.clicksAll != null && source.impressions != null && source.impressions > 0 && source.clicksAll <= source.impressions
+      ? (source.clicksAll / source.impressions) * 100
+      : null;
+  const cpc = source.spend != null && source.linkClicks != null && source.linkClicks > 0
+    ? source.spend / source.linkClicks
+    : null;
+  const cpm = source.spend != null && source.impressions != null && source.impressions > 0
+    ? (source.spend / source.impressions) * 1000
+    : null;
+  const cvr = source.linkClicks != null && source.linkClicks > 0 && totalResults > 0 && totalResults <= source.linkClicks
+    ? (totalResults / source.linkClicks) * 100
+    : null;
 
   const catalog: MetricDef[] = [
     { id: "spend", label: "Total spend", value: source.spend, formatted: fmtUSD(source.spend), isResultEvent: false },
@@ -115,7 +163,11 @@ export function buildMetricCatalog(source: MetricSource): MetricDef[] {
     { id: "clicks_all", label: "Clicks (all)", value: source.clicksAll, formatted: fmtNum(source.clicksAll), isResultEvent: false, ...(deliverySub ? { sub: deliverySub } : {}) },
     { id: "link_clicks", label: "Link clicks", value: source.linkClicks, formatted: fmtNum(source.linkClicks), isResultEvent: false },
     { id: "link_ctr", label: "Link CTR", value: source.linkCtrPct, formatted: fmtPct(source.linkCtrPct), isResultEvent: false },
-    { id: "cpa_blended", label: "CPA (blended)", value: cpaBlended, formatted: cpaBlended != null ? fmtUSD(cpaBlended) : "—", isResultEvent: false },
+    { id: "ctr_all", label: "CTR (all)", value: ctrAll, formatted: fmtPct(ctrAll), isResultEvent: false, sub: "clicks (all) ÷ impressions" },
+    { id: "cpc", label: "CPC", value: cpc, formatted: cpc != null ? fmtUSD(cpc) : "—", isResultEvent: false, sub: "spend ÷ link clicks" },
+    { id: "cpm", label: "CPM", value: cpm, formatted: cpm != null ? fmtUSD(cpm) : "—", isResultEvent: false, sub: "spend ÷ impressions × 1,000" },
+    { id: "cpa_blended", label: "CPA (blended)", value: cpaBlended, formatted: cpaBlended != null ? fmtUSD(cpaBlended) : "—", isResultEvent: false, sub: "spend ÷ all results" },
+    { id: "cvr", label: "CVR", value: cvr, formatted: cvr != null ? fmtPct(cvr) : "—", isResultEvent: false, sub: "results ÷ link clicks" },
   ];
 
   for (const e of source.resultEvents) {
@@ -129,7 +181,12 @@ export function buildMetricCatalog(source: MetricSource): MetricDef[] {
     });
   }
 
-  return catalog;
+  // Hide derived metrics the source can't compute — no blank "—" entries in
+  // dropdowns for ratios we chose to add. Base source metrics keep their
+  // long-standing "—" behavior (diagnostic modal renders their honest
+  // empty state when a value is null).
+  const derivedIds = new Set(["ctr_all", "cpc", "cpm", "cvr"]);
+  return catalog.filter((m) => m.value != null || !derivedIds.has(m.id));
 }
 
 export function metricById(catalog: MetricDef[], id: string): MetricDef | null {

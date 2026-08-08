@@ -27,6 +27,7 @@ import { cn } from "@workspace/command-deck/lib/utils";
 import { buildMetricCatalog, metricSourceFromCampaignSummary, metricById } from "@/lib/data/metricsCatalog";
 import { useMetricSelection } from "@/hooks/useMetricSelection";
 import { MetricPickerButton } from "@/components/creative/MetricPicker";
+import { KpiTile } from "@/components/metrics/KpiTile";
 import { MetricDiagnosticModal } from "@/components/creative/MetricDiagnosticModal";
 import { MetricHoverPopover } from "@/components/metrics/MetricHoverPopover";
 import { LoopCommandChain } from "@/components/loop/LoopCommandChain";
@@ -115,7 +116,7 @@ export function AdAccountOverview() {
     [cs]
   );
   const availableMetricIds = useMemo(() => metricCatalog.map((m) => m.id), [metricCatalog]);
-  const { selected: selectedMetricIds, toggle, move, reset } = useMetricSelection(availableMetricIds);
+  const { selected: selectedMetricIds, toggle, move, replace, reset } = useMetricSelection(availableMetricIds);
   const [openMetricId, setOpenMetricId] = useState<string | null>(null);
   const [loopPanelCollapsed, setLoopPanelCollapsed] = useState(loadLoopPanelCollapsed);
   const [loopPanelWidth, setLoopPanelWidth] = useState(loadLoopPanelWidth);
@@ -302,14 +303,13 @@ export function AdAccountOverview() {
                     cellRows={analysis?.performance_by_cell ?? []}
                     onDiagnose={() => setOpenMetricId(id)}
                   >
-                    <button
+                    <KpiTile
+                      metricId={id}
+                      catalog={metricCatalog}
+                      onSelect={(newId) => replace(id, newId)}
                       onClick={() => setOpenMetricId(id)}
-                      className="flex flex-col text-left rounded-lg border px-3 py-2.5 pr-7 transition-all border-border/55 bg-white/[0.04] hover:border-border/70 hover:bg-white/[0.06] w-full"
-                    >
-                      <span className="text-label font-mono uppercase tracking-widest text-data-caption truncate mb-1">{m.label}</span>
-                      <span className="text-stat metric-num leading-none">{m.formatted}</span>
-                      {m.sub && <span className="text-label text-muted-foreground/75 mt-1 leading-tight truncate">{m.sub}</span>}
-                    </button>
+                      hideInfo
+                    />
                   </MetricHoverPopover>
                 );
               })}

@@ -12,7 +12,7 @@
 //
 // Data wiring is unchanged; only the presentation layer is redesigned.
 
-import { useMemo, useRef, useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   CheckCircle2, Plug, Plus, ArrowRight, ChevronDown, ChevronUp,
 } from "lucide-react";
@@ -26,9 +26,10 @@ import {
 import { AddAccountDialog } from "./AddAccountDialog";
 import { cn } from "@workspace/command-deck/lib/utils";
 import {
-  buildMetricCatalog, metricSourceFromManagerTotals, metricById,
-  resultMetricId, DEFAULT_METRIC_IDS, type MetricDef,
+  buildMetricCatalog, metricSourceFromManagerTotals, metricById, resultMetricId,
 } from "@/lib/data/metricsCatalog";
+import { KpiTile } from "@/components/metrics/KpiTile";
+import { useKpiTileMetrics } from "@/hooks/useKpiTileMetrics";
 import { MetricDiagnosticModal } from "@/components/creative/MetricDiagnosticModal";
 import { TokenizedConceptText } from "@/components/concept/ConceptChip";
 import { OverviewLoopSummary } from "./OverviewLoopHub";
@@ -54,144 +55,6 @@ function AccountBadge({ text }: { text: string }) {
     <span className="inline-flex text-label font-semibold border px-1.5 py-0.5 rounded uppercase tracking-wide leading-none bg-primary/10 text-interactive border-primary/20">
       {text}
     </span>
-  );
-}
-
-// ─── Per-tile metric picker dropdown ─────────────────────────────────────
-// Clicking a tile's label opens a categorised metric list. Every tile slot
-// independently tracks its own metric; values are shown inline so the user
-// can see what they're picking before swapping.
-
-interface MetricPickerDropdownProps {
-  catalog: MetricDef[];
-  activeId: string;
-  onSelect: (id: string) => void;
-  onClose: () => void;
-}
-
-function MetricPickerDropdown({ catalog, activeId, onSelect, onClose }: MetricPickerDropdownProps) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
-    };
-    // micro-delay so the click that opened the dropdown doesn't immediately close it
-    const tid = setTimeout(() => document.addEventListener("mousedown", handler), 50);
-    return () => { clearTimeout(tid); document.removeEventListener("mousedown", handler); };
-  }, [onClose]);
-
-  const staticMetrics = catalog.filter((m) => !m.isResultEvent);
-  const eventMetrics = catalog.filter((m) => m.isResultEvent);
-
-  const Row = ({ m }: { m: MetricDef }) => (
-    <button
-      key={m.id}
-      onClick={() => onSelect(m.id)}
-      className={cn(
-        "w-full text-left px-3 py-1.5 flex items-center justify-between gap-3 transition-colors",
-        m.id === activeId
-          ? "bg-primary/10 text-interactive"
-          : "text-foreground/75 hover:bg-white/[0.05]",
-      )}
-    >
-      <span className="text-caption truncate">{m.label}</span>
-      <span className="text-caption font-mono tabular-nums text-muted-foreground/55 shrink-0">
-        {m.value != null ? m.formatted : "—"}
-      </span>
-    </button>
-  );
-
-  return (
-    <div
-      ref={ref}
-      className="absolute top-full left-0 mt-1 z-50 w-56 rounded-lg border border-border/60 bg-[hsl(var(--surface-raised))] shadow-2xl py-1 overflow-hidden"
-    >
-      <div className="px-2.5 py-1 text-micro font-mono uppercase tracking-widest text-muted-foreground/45">
-        Delivery & efficiency
-      </div>
-      {staticMetrics.map((m) => <Row key={m.id} m={m} />)}
-
-      {eventMetrics.length > 0 && (
-        <>
-          <div className="mx-2 my-1 border-t border-border/20" />
-          <div className="px-2.5 py-1 text-micro font-mono uppercase tracking-widest text-muted-foreground/45">
-            Results by event
-          </div>
-          {eventMetrics.map((m) => <Row key={m.id} m={m} />)}
-        </>
-      )}
-    </div>
-  );
-}
-
-// ─── Single swappable metric tile ────────────────────────────────────────
-// Label row is the dropdown trigger; value area opens the diagnostic modal.
-
-interface MetricSelectTileProps {
-  metricId: string;
-  catalog: MetricDef[];
-  isRefetching: boolean;
-  onSelect: (id: string) => void;
-  onDiagnose: (id: string) => void;
-}
-
-function MetricSelectTile({ metricId, catalog, isRefetching, onSelect, onDiagnose }: MetricSelectTileProps) {
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const m = metricById(catalog, metricId);
-  if (!m) return null;
-
-  return (
-    <div className="relative">
-      <div className="mx-kpi-tile py-3 flex flex-col gap-1">
-        {/* Label → dropdown trigger */}
-        <button
-          onClick={(e) => { e.stopPropagation(); setPickerOpen((v) => !v); }}
-          className="flex items-center gap-1 group/lbl text-left w-fit"
-        >
-          <span className={cn(
-            TYPE.label,
-            "font-semibold uppercase tracking-[0.14em] truncate transition-colors",
-            pickerOpen ? "text-interactive" : "text-muted-foreground/65 group-hover/lbl:text-muted-foreground/90",
-          )}>
-            {m.label}
-          </span>
-          <ChevronDown className={cn(
-            "w-2.5 h-2.5 shrink-0 transition-all",
-            pickerOpen ? "rotate-180 text-interactive" : "text-muted-foreground/35 group-hover/lbl:text-muted-foreground/65",
-          )} />
-        </button>
-
-        {/* Value → diagnostic trigger */}
-        <button
-          onClick={() => onDiagnose(metricId)}
-          className="text-left hover:opacity-75 transition-opacity"
-        >
-          {isRefetching ? (
-            <span className="text-bignum font-bold text-muted-foreground/20 metric-num leading-none">—</span>
-          ) : (
-            <span className="text-bignum font-bold text-foreground metric-num leading-none tracking-[-0.035em]">
-              {m.formatted}
-            </span>
-          )}
-        </button>
-
-        {m.sub && (
-          <div className={cn(TYPE.caption, "text-muted-foreground/50 leading-snug line-clamp-1")}>
-            {m.sub}
-          </div>
-        )}
-      </div>
-
-      {pickerOpen && (
-        <MetricPickerDropdown
-          catalog={catalog}
-          activeId={metricId}
-          onSelect={(id) => { onSelect(id); setPickerOpen(false); }}
-          onClose={() => setPickerOpen(false)}
-        />
-      )}
-    </div>
   );
 }
 
@@ -561,29 +424,30 @@ export function ManagerOverview() {
     [accountTotalsMap],
   );
 
-  // Top-2 spend contributors for sub-label on the spend tile.
-  const spendSub = useMemo(() => {
-    const top2 = accountTotals.slice(0, 2);
-    if (top2.length === 0) return undefined;
-    return top2.map((r) => `${r.name} ${fmtCompactUSD(r.spend)}`).join(" · ");
-  }, [accountTotals]);
-
   // Metric catalog: static delivery metrics + result-event metrics.
   const metricCatalog = useMemo(() => buildMetricCatalog(metricSourceFromManagerTotals(totals)), [totals]);
+  const availableMetricIds = useMemo(() => metricCatalog.map((m) => m.id), [metricCatalog]);
 
-  // Per-tile metric selection — each of the TILE_COUNT slots tracks its own metric.
-  const [tileMetricIds, setTileMetricIds] = useState<string[]>(() => {
-    const defaults = DEFAULT_METRIC_IDS.slice(0, TILE_COUNT);
-    // Back-fill with any remaining catalog IDs if defaults are short.
-    return defaults;
-  });
-  const setTileMetric = (slotIndex: number, metricId: string) => {
-    setTileMetricIds((prev) => {
-      const next = [...prev];
-      next[slotIndex] = metricId;
-      return next;
-    });
-  };
+  // Per-tile metric selection — persisted per view so picks survive navigation.
+  const { tileMetricIds, setTileMetric } = useKpiTileMetrics("manager-overview", availableMetricIds, { tileCount: TILE_COUNT });
+
+  // Progressive disclosure: concise per-account split for the ⓘ hover —
+  // replaces the old inline "Bookster $8.0k · skov $4.8k" tile sub-text.
+  const perAccountSplit = useMemo(() => {
+    if (accountTotals.length === 0) return null;
+    return (
+      <div className="space-y-0.5">
+        <div className="font-semibold text-foreground/85">Per-account split</div>
+        {accountTotals.slice(0, 5).map((r) => (
+          <div key={r.id} className="flex items-center justify-between gap-3 tabular-nums">
+            <span className="truncate">{r.name}</span>
+            <span className="text-muted-foreground/80 shrink-0">{fmtCompactUSD(r.spend)}</span>
+          </div>
+        ))}
+        <div className="text-muted-foreground/70 pt-0.5">Blended across all configured accounts — see "By account" for the full table.</div>
+      </div>
+    );
+  }, [accountTotals]);
 
   // Diagnostic modal state.
   const [openMetricId, setOpenMetricId] = useState<string | null>(null);
@@ -660,36 +524,17 @@ export function ManagerOverview() {
             <SkeletonTileRow count={TILE_COUNT} />
           ) : (
             <div className="grid grid-cols-dashboard-4 gap-3">
-              {tileMetricIds.map((metricId, slotIdx) => {
-                // Inject spend sub-label for the spend tile.
-                const m = metricById(metricCatalog, metricId);
-                if (m && metricId === "spend" && spendSub) {
-                  // We need a patched version with spendSub — clone it to avoid mutation.
-                  const patched: MetricDef = { ...m, sub: spendSub };
-                  // Temporarily inject into catalog so MetricSelectTile sees it.
-                  const patchedCatalog = metricCatalog.map((c) => (c.id === "spend" ? patched : c));
-                  return (
-                    <MetricSelectTile
-                      key={slotIdx}
-                      metricId={metricId}
-                      catalog={patchedCatalog}
-                      isRefetching={isRefetching}
-                      onSelect={(id) => setTileMetric(slotIdx, id)}
-                      onDiagnose={(id) => setOpenMetricId(id)}
-                    />
-                  );
-                }
-                return (
-                  <MetricSelectTile
-                    key={slotIdx}
-                    metricId={metricId}
-                    catalog={metricCatalog}
-                    isRefetching={isRefetching}
-                    onSelect={(id) => setTileMetric(slotIdx, id)}
-                    onDiagnose={(id) => setOpenMetricId(id)}
-                  />
-                );
-              })}
+              {tileMetricIds.map((metricId, slotIdx) => (
+                <KpiTile
+                  key={slotIdx}
+                  metricId={metricId}
+                  catalog={metricCatalog}
+                  isRefetching={isRefetching}
+                  onSelect={(id) => setTileMetric(slotIdx, id)}
+                  onClick={() => setOpenMetricId(metricId)}
+                  disclosure={metricId === "spend" ? perAccountSplit : undefined}
+                />
+              ))}
             </div>
           )}
 

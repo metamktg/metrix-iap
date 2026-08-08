@@ -60,3 +60,7 @@
 - [Cell-scoped creative upload validation](cell-scoped-creative-validation.md) — direct tile uploads compare against the cell's existing DNA (no cell-picking); library_cells.payload jsonb must be updated alongside top-level columns.
 - [Drag-resize onDragEnd setState pitfall](drag-resize-setstate-updater.md) — read final drag value from a ref, not a setState functional updater, before calling a sibling/context setState like close().
 - [Run scoping & account identity](run-scope-picker.md) — sidebar-only account name; compact 3-run RunScopePicker; persisted per page+account via usePersistedRunScope (account-keyed state, inert when controlled).
+// hint: Logic changed on both sides. Requires understanding intent of each change.
+- [Seed fixture refresh scope](seed-fixture-refresh-scope.md) — full refresh:seed-fixture mid-task pulls other tasks' live data into your diff; refresh only when your task owns the shape change, and note it in drift_reason.
+- [Shared-Supabase test collisions](shared-supabase-test-collisions.md) — api-server suites run concurrently from all task envs against one dev Supabase; test inserts need per-run-unique keys; 522s/statement timeouts = load, not code.
+- [Run scoping & account identity](run-scope-picker.md) — ad-account name lives ONLY in the sidebar switcher (no page banners/chips); run scoping is the compact RunScopePicker popover, capped at 3 runs, never a standing checklist.

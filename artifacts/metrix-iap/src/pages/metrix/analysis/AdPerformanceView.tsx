@@ -18,6 +18,8 @@ import { cn } from "@workspace/command-deck/lib/utils";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { useCellRangeScope, sumInRange } from "@/lib/date-scope";
 import { LineChart, Library, Users, LayoutGrid, Wallet, TrendingUp } from "lucide-react";
+import { KpiTileRow } from "@/components/metrics/KpiTile";
+import { buildMetricCatalog, metricSourceFromCampaignSummary } from "@/lib/data/metricsCatalog";
 
 const SECTION = "Analysis · 03";
 
@@ -133,19 +135,28 @@ export function AdPerformanceView() {
             <>
             <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
               {scoped ? (
-                <>
-                  <MetricTile variant="primary" label="Spend (in range)" value={fmtUSD(scoped.spend, 0)} sub="concept flights overlapping range" />
-                  <MetricTile label="Link clicks (in range)" value={fmtNum(scoped.linkClicks)} />
-                  <MetricTile label="Results (in range)" value={fmtNum(scoped.results)} />
-                  <MetricTile label="Concept flights" value={String(scoped.concepts)} sub="overlapping selected range" />
-                </>
+                <KpiTileRow
+                  viewKey="ad-performance:in-range"
+                  catalog={buildMetricCatalog({
+                    spend: scoped.spend,
+                    impressions: null,
+                    reach: null,
+                    clicksAll: null,
+                    linkClicks: scoped.linkClicks,
+                    linkCtrPct: null,
+                    resultEvents: [{ key: "in_range_results", label: "Results (in range)", results: scoped.results }],
+                    isMultiEvent: false,
+                  })}
+                  tileCount={3}
+                  disclosures={{
+                    spend: <span>Range-scoped: {scoped.concepts} concept flight{scoped.concepts === 1 ? "" : "s"} overlapping the selected range — whole flights, no per-day interpolation.</span>,
+                  }}
+                />
               ) : (
-                <>
-                  <MetricTile variant="primary" label="Total spend" value={fmtUSD(summary.total_spend_usd, 0)} />
-                  <MetricTile label="Impressions" value={fmtNum(summary.total_impressions)} />
-                  <MetricTile label="Link clicks" value={fmtNum(summary.total_link_clicks)} />
-                  <MetricTile label="Link CTR" value={fmtPct(summary.overall_link_ctr_pct)} />
-                </>
+                <KpiTileRow
+                  viewKey="ad-performance"
+                  catalog={buildMetricCatalog(metricSourceFromCampaignSummary(summary))}
+                />
               )}
             </div>
 
