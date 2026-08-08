@@ -7,7 +7,7 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getStrategyData } from "@/lib/data/metrixSeedAdapter";
 import { buildExportEnvelope } from "@/lib/jsonExport";
-import { ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState } from "../shared";
+import { ModuleHeader, ModuleScopeGate, PendingState } from "../shared";
 import { DataLimitedCaveat, JsonExportCard } from "./exportsShared";
 import { FileJson } from "lucide-react";
 
@@ -28,7 +28,6 @@ export function ExportsStrategyView() {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Strategy JSON" />
-              <ScopeBanner account={acct} />
               <PendingState title="No strategy data yet" message="Generate strategy first — there's nothing to export yet." icon={FileJson} />
             </div>
           );
@@ -47,7 +46,6 @@ export function ExportsStrategyView() {
               subtitle="Message pillars and active hypotheses, as shown in Strategy."
               table="message_pillars, active_hypotheses"
             />
-            <ScopeBanner account={acct} />
             <div className="px-6 py-5 space-y-4 max-w-3xl">
               <DataLimitedCaveat />
               <JsonExportCard

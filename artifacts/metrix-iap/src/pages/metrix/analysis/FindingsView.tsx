@@ -448,7 +448,6 @@ export function FindingsView() {
         section="Analyze"
         title="Findings"
         subtitle="AI-generated verdict: concept tier rankings, performance lift vs baseline, and failure patterns."
-        account={account}
       />
 
       <div className="flex-1 overflow-y-auto">

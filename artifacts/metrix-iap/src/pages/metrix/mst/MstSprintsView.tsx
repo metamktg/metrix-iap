@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getMST, getAnalysisData, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, ScopeBanner, ModuleScopeGate, CaveatNote, PendingState, CrossLink, readableVariables } from "../shared";
+import { ModuleHeader, ModuleScopeGate, CaveatNote, PendingState, CrossLink, readableVariables } from "../shared";
 import { TilePerformanceModal } from "@/components/creative/TilePerformanceModal";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { Grid3x3 } from "lucide-react";
@@ -99,7 +99,6 @@ export function MstSprintsView() {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Sprints" />
-              <ScopeBanner account={acct} />
               <PendingState title="No matrix available" message={mst?.render_policy ?? "The matrix becomes available once historical data or imports exist."} icon={Grid3x3} />
             </div>
           );
@@ -114,7 +113,6 @@ export function MstSprintsView() {
               subtitle="The historical 4×4 concept × shared-variable test matrix for this account."
               table="historical_matrix_4x4"
             />
-            <ScopeBanner account={acct} />
             <div className="px-6 py-5 space-y-4">
               <CaveatNote text={mst.render_policy} />
               <MatrixGrid matrix={matrix} onCellClick={setActiveCell} />

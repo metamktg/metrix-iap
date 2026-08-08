@@ -73,7 +73,7 @@ import { useLocation, useSearch } from "wouter";
 import { ConnectMetaDialog, ManualImportDialog } from "./ConnectAccountDialogs";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
 import { useListManualImports } from "@workspace/api-client-react";
-import { Plug, FileUp, Clock, Database, Info, ArrowRight, ArrowLeftRight, CheckSquare, CheckCircle2, Square, CalendarRange, CalendarX2, AlertTriangle, ChevronDown, ChevronLeft, Sparkles, Map as MapIcon, Lock, Circle, Loader2, CircleCheck, CircleX, Venus, Mars } from "lucide-react";
+import { Plug, FileUp, Clock, Info, ArrowRight, ArrowLeftRight, CheckSquare, CheckCircle2, Square, CalendarRange, CalendarX2, AlertTriangle, ChevronDown, ChevronLeft, Sparkles, Map as MapIcon, Lock, Circle, Loader2, CircleCheck, CircleX, Venus, Mars } from "lucide-react";
 import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
 import { DataSourceBadge } from "@/components/ui/DataSourceBadge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@workspace/command-deck/components/ui/tooltip";
@@ -381,7 +381,6 @@ export function ModuleHeader({
   table,
   right,
   tabs,
-  account,
 }: {
   section: string;
   title: string;
@@ -389,7 +388,6 @@ export function ModuleHeader({
   table?: string;
   right?: React.ReactNode;
   tabs?: "analysis" | "strategy";
-  account?: AdAccount;
 }) {
   const sectionLabel = section.split(" · ")[0];
   // A stage's command-center hub sets title to the bare stage name (e.g.
@@ -410,15 +408,6 @@ export function ModuleHeader({
             <h1 className="mx-section-header__title">{title}</h1>
           </div>
           <div className="shrink-0 pt-0.5 flex items-center gap-2">
-            {account && (
-              <span
-                data-testid="banner-scope"
-                className="hidden sm:inline-flex items-center gap-1.5 text-caption text-muted-foreground/65"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/70 shrink-0" />
-                <span className="font-medium text-foreground/80 truncate max-w-[140px]">{account.name}</span>
-              </span>
-            )}
             {right}
             {table && <DataSourceBadge table={table} collapsible />}
           </div>
@@ -1680,18 +1669,8 @@ export function ShowMoreButton({
   );
 }
 
-// ─── Scope banner (which ad account a module is reading) ──────────────
-
-export function ScopeBanner({ account }: { account: AdAccount }) {
-  return (
-    <div className="flex items-center gap-2 px-6 py-2 border-b border-border/30 bg-white/[0.015]">
-      <Database className="w-3 h-3 text-muted-foreground/60 shrink-0" />
-      <span className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Scoped to ad account</span>
-      <span className="text-body font-medium text-foreground/90">{account.name}</span>
-      <span className="text-label font-mono text-muted-foreground/70">{account.platform}</span>
-    </div>
-  );
-}
+// (The "Scoped to ad account" banner and header account chip were removed —
+// the active ad account is shown once, in the sidebar account switcher.)
 
 // ─── Prerequisite gate ─────────────────────────────────────────────────
 // Hard gating between loop stages (e.g. Strategy requires a completed

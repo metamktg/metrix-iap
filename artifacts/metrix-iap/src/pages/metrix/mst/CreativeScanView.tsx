@@ -29,7 +29,7 @@ export function CreativeScanView() {
         if (!mst || mst.status !== "active" || !mst.local_book2_library?.length) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Creative Scan" account={acct} />
+              <ModuleHeader section={SECTION} title="Creative Scan" />
               <PendingState title="No scanned creatives" message={mst?.render_policy ?? "The creative scan populates once the local library is mapped."} icon={Library}
                 action={<CrossLink to="/app/mst/matrix" label="Open MST Matrix" />}
               />
@@ -72,7 +72,6 @@ export function CreativeScanView() {
               section={SECTION}
               title="Creative Scan"
               subtitle="Scanned creative library · variable library"
-              account={acct}
             />
             <ModuleTabs
               tabs={[

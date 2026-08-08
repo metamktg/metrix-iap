@@ -14,3 +14,5 @@ description: Where Metrix IAP's rendered data actually comes from, and which bun
 **Legacy scaffolding — bundled but never rendered:** `src/lib/mock/generate.ts` → `mock-data.ts` → `WorkspaceContext.tsx` chain is transitively bundled but never reaches the DOM (workspace onboarding UI never mounts on live routes). Treat as removable legacy.
 
 **How to apply:** To change rendered data, change the Supabase rows (importer/schema) or the api-server assembly — not seed JSON (the old static bundle now lives only as raw source data in `scripts/data/metrix/`) and not `generate.ts`.
+
+**Note (Aug 2026):** live seed currently has zero `recommendation_cards` across all accounts — the deck/Action Queue render only empty states; verify tray/approval flows via the Hypothesis Queue drawer instead.

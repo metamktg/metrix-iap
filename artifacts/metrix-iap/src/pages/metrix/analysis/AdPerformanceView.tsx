@@ -9,7 +9,7 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAnalysisData, getCampaignSummary, getCoreControls, getMST } from "@/lib/data/metrixSeedAdapter";
 import {
-  ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
+  ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   CaveatNote, SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
   RangeScopeBar, NoDataInRangeState, SectionInfoIcon,
 } from "../shared";
@@ -42,7 +42,6 @@ export function AdPerformanceView() {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Ad Performance" />
-              <ScopeBanner account={acct} />
               <PendingState title="No analysis yet" message="Analysis appears once performance data is connected or imported." icon={LineChart} />
             </div>
           );
@@ -121,7 +120,6 @@ export function AdPerformanceView() {
               subtitle="What the account's performance data says, and where to drill in."
               table="campaign_summary, performance_by_cell"
             />
-            <ScopeBanner account={acct} />
             <RangeScopeBar grainNote="Campaign totals cover the account's full flight window — this import has no daily grain." />
 
             {!rangeHasData ? (

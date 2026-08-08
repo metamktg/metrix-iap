@@ -115,7 +115,6 @@ function ScopedListenSummary({ adAccountId }: { adAccountId: string }) {
         section={SECTION}
         title="Listen"
         subtitle="What's going on in this account — alerts, signal, and what to do next."
-        account={account ?? undefined}
       />
       <div className="px-6 pt-5 grid grid-cols-2 gap-3">
         <MetricTile label="High-impact signals" value={String(highImpact)} />

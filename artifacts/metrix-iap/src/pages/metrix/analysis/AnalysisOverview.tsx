@@ -22,7 +22,10 @@ import {
 import {
   getGetAnalysisSummaryByDateRangeQueryOptions,
   getGetAccountAnalysisDataWindowsQueryOptions,
+  useListAnalysisRuns,
 } from "@workspace/api-client-react";
+import { RunScopePicker, ALL_TIME_SELECTION } from "@/components/analysis/RunSelector";
+import { useCellRunScope } from "@/lib/run-scope";
 import { useQuery } from "@tanstack/react-query";
 import { SharePieChart } from "@/components/charts/SharePieChart";
 import {
@@ -721,6 +724,11 @@ export function AnalysisOverview() {
   const [cellSort, setCellSort] = useState<CellSort>("spend");
   const { topN, setTopN, goalCpa, setGoalCpa, selectedWindow, setSelectedWindow } = useAnalysisView();
 
+  // ── Analysis-run scope (compact header dropdown) ──────────────────────
+  const [runSelection, setRunSelection] = useState(ALL_TIME_SELECTION);
+  const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "");
+  const { filterByRun } = useCellRunScope(analysis, runSelection);
+
   // Fetch available date windows from actual ad_performance data (not run metadata).
   const { data: windowsData, isFetching: windowsFetching } = useQuery({
     ...getGetAccountAnalysisDataWindowsQueryOptions(adAccountId ?? ""),
@@ -784,7 +792,7 @@ export function AnalysisOverview() {
         if (!summary || !a) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Analysis Overview" tabs="analysis" account={acct} />
+              <ModuleHeader section={SECTION} title="Analysis Overview" tabs="analysis" />
               <PendingState
                 title="No analysis yet"
                 message="Analysis appears once performance data is connected and an analysis run completes for this account."
@@ -801,7 +809,29 @@ export function AnalysisOverview() {
         }
 
         // ── Metric data ───────────────────────────────────────────────
-        const rollup      = a.concept_rollup ?? [];
+        // Run scoping: rollup rows carry manual_analysis_run_id directly;
+        // cell-level rows go through the shared cell→concept run mapping.
+        // Untagged legacy rows (null run id) always pass — never hide data
+        // we can't honestly attribute to a run.
+        const rollup = (a.concept_rollup ?? []).filter(
+          (r) =>
+            runSelection.allTime ||
+            r.manual_analysis_run_id == null ||
+            runSelection.selectedRunIds.includes(r.manual_analysis_run_id),
+        );
+        const cellRows = filterByRun(a.performance_by_cell);
+        const runScoped = !runSelection.allTime;
+
+        // Run-scoped KPI totals, derived from the scoped cell rows so the
+        // headline tiles always agree with the charts below them. Placement
+        // and variable rows carry no cell linkage, so those sections are
+        // explicitly labeled account-wide under a run selection instead of
+        // pretending to be scoped.
+        const scopedSpend = cellRows.reduce((s, r) => s + r["Amount spent (USD)"], 0);
+        const scopedImpressions = cellRows.reduce((s, r) => s + r.Impressions, 0);
+        const scopedLinkClicks = cellRows.reduce((s, r) => s + r["Link clicks"], 0);
+        const scopedCtrPct = scopedImpressions > 0 ? (scopedLinkClicks / scopedImpressions) * 100 : 0;
+        const scopedDemoRows = filterByRun(a.demographic_registration_signal);
 
         // ── MST lookup for control-name resolution ────────────────────
         const mst = getMST(seed, adAccountId);
@@ -824,7 +854,7 @@ export function AnalysisOverview() {
 
         // ── Result type donut data ────────────────────────────────────
         const resultTypeMap = new Map<string, number>();
-        for (const r of a.performance_by_cell) {
+        for (const r of cellRows) {
           const key = eventLabel(r["Result type"]);
           resultTypeMap.set(key, (resultTypeMap.get(key) ?? 0) + r["Amount spent (USD)"]);
         }
@@ -854,7 +884,7 @@ export function AnalysisOverview() {
                 results:    r.results,
                 resultType: "",
               }))
-          : [...a.performance_by_cell]
+          : [...cellRows]
               .sort((x, y) =>
                 cellSort === "spend"
                   ? y["Amount spent (USD)"] - x["Amount spent (USD)"]
@@ -899,7 +929,7 @@ export function AnalysisOverview() {
               CPA_result: r.results && r.results > 0 && r.spend ? r.spend / r.results : null,
               CTR_link_pct: 0, Result_per_link_click_pct: 0,
             }))
-          : a.demographic_registration_signal;
+          : scopedDemoRows;
         const heatmap = buildDemoHeatmap(heatmapRows);
 
         // ── Goal-CPA default: median of heatmap cell CPAs ─────────────
@@ -919,14 +949,14 @@ export function AnalysisOverview() {
             label: "IAP Library",
             Icon: Library,
             desc: "Cell and variable performance across the account.",
-            stat: `${a.performance_by_cell.length} cell rows · ${a.v3_variable_performance.length} variable rows`,
+            stat: `${cellRows.length} cell rows · ${a.v3_variable_performance.length} variable rows`,
           },
           {
             to: "/app/analysis/audience",
             label: "Audience",
             Icon: Users,
             desc: `Demographic ${term.singular} signal by age and gender.`,
-            stat: `${a.demographic_registration_signal.length} demographic rows`,
+            stat: `${scopedDemoRows.length} demographic rows`,
           },
           {
             to: "/app/analysis/placements",
@@ -940,7 +970,7 @@ export function AnalysisOverview() {
             label: "Budget",
             Icon: Wallet,
             desc: "Spend allocation by result event, concept, and placement.",
-            stat: `${fmtUSD(summary.total_spend_usd, 0)} analyzed`,
+            stat: `${fmtUSD(runScoped ? scopedSpend : summary.total_spend_usd, 0)} analyzed`,
           },
         ];
 
@@ -951,7 +981,13 @@ export function AnalysisOverview() {
               title="Analysis Overview"
               subtitle="Performance reads · drill-in modules"
               tabs="analysis"
-              account={acct}
+              right={
+                <RunScopePicker
+                  runs={analysisRunsData?.runs ?? []}
+                  value={runSelection}
+                  onChange={setRunSelection}
+                />
+              }
             />
             <>
                 {/* ── Data-window picker ──────────────────────────────── */}
@@ -972,7 +1008,14 @@ export function AnalysisOverview() {
                     {/* Left: 4 tiles in a 2×2 grid */}
                     <div className="flex-1 grid grid-cols-dashboard-4 gap-3">
                         <>
-                          {selectedWindow && runData ? (
+                          {runScoped ? (
+                            <>
+                              <MetricTile variant="primary" label="Total spend"  value={fmtUSD(scopedSpend, 0)} />
+                              <MetricTile label="Impressions"  value={fmtNum(scopedImpressions)} />
+                              <MetricTile label="Link clicks"  value={fmtNum(scopedLinkClicks)} />
+                              <MetricTile label="Link CTR"     value={fmtPct(scopedCtrPct)} />
+                            </>
+                          ) : selectedWindow && runData ? (
                             <>
                               <MetricTile variant="primary" label="Total spend"  value={fmtUSD(runData.totals.total_spend_usd, 0)} />
                               <MetricTile label="Impressions"  value={fmtNum(runData.totals.total_impressions)} />
@@ -1044,7 +1087,7 @@ export function AnalysisOverview() {
                       desc={
                         selectedWindow && runData
                           ? `${sortedCells.length} concept${sortedCells.length !== 1 ? "s" : ""} · run window · CPA`
-                          : `${term.Plural} · CPA · ${a.performance_by_cell.length} cells total`
+                          : `${term.Plural} · CPA · ${cellRows.length} cells total`
                       }
                       right={
                         <div className="flex items-center gap-3">
@@ -1090,7 +1133,7 @@ export function AnalysisOverview() {
                       {a.v3_variable_performance.length > 0 && (
                         <SectionCard
                           title="Variable performance"
-                          desc="Hook · Tone · Framework · Concept — top 8 · click column to sort"
+                          desc={`Hook · Tone · Framework · Concept — top 8 · click column to sort${runScoped ? " · account-wide (variable rows carry no run linkage)" : ""}`}
                           right={<><SectionInfoIcon tip="Shows how each creative variable family (hook, tone, framework, concept) performs on spend and CPA across the top results." /><CrossLink to="/app/analysis/library" label="Full →" /></>}
                         >
                           <CompactVariableTable rows={a.v3_variable_performance} />
@@ -1099,7 +1142,7 @@ export function AnalysisOverview() {
                       {allPlacements.length > 0 && (
                         <SectionCard
                           title="Top placements"
-                          desc="V3 + C4E combined · spend bar, CPA badge, CTR badge · top 6"
+                          desc={`V3 + C4E combined · spend bar, CPA badge, CTR badge · top 6${runScoped ? " · account-wide (placement rows carry no run linkage)" : ""}`}
                           right={<><SectionInfoIcon tip="Surfaces the highest-spend placements with their CPA and CTR so you know where delivery is concentrated." /><CrossLink to="/app/analysis/placements" label="Full →" /></>}
                         >
                           <PlacementTable

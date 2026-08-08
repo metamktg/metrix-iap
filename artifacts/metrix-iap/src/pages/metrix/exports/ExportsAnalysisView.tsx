@@ -7,7 +7,7 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import { buildExportEnvelope } from "@/lib/jsonExport";
-import { ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState } from "../shared";
+import { ModuleHeader, ModuleScopeGate, PendingState } from "../shared";
 import { DataLimitedCaveat, JsonExportCard } from "./exportsShared";
 import { BarChart3 } from "lucide-react";
 
@@ -28,7 +28,6 @@ export function ExportsAnalysisView() {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Analysis" />
-              <ScopeBanner account={acct} />
               <PendingState title="No analysis data yet" message="Run analysis first — there's nothing to export yet." icon={BarChart3} />
             </div>
           );
@@ -47,7 +46,6 @@ export function ExportsAnalysisView() {
               subtitle="Performance-by-cell and variable-performance data, as shown in Analysis."
               table="performance_by_cell, v3_variable_performance"
             />
-            <ScopeBanner account={acct} />
             <div className="px-6 py-5 space-y-4 max-w-3xl">
               <DataLimitedCaveat />
               <JsonExportCard

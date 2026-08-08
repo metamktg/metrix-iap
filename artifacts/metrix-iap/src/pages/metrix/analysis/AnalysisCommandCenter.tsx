@@ -9,7 +9,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount } from "@/lib/data/metrixSeedAdapter";
 import { useStageStatus } from "@/hooks/useStageStatus";
 import {
-  ModuleHeader, ScopeBanner, ModuleScopeGate, SectionCard, StageLoopHub, buildLoopStages, CrossLink, PendingState, HubNavGrid,
+  ModuleHeader, ModuleScopeGate, SectionCard, StageLoopHub, buildLoopStages, CrossLink, PendingState, HubNavGrid,
 } from "../shared";
 import { AnalysisControls } from "../ManualAnalysisControls";
 import { useListAnalysisRuns } from "@workspace/api-client-react";
@@ -38,7 +38,6 @@ export function AnalysisCommandCenter() {
               title="Analysis"
               subtitle="Run analysis on this account's staged data. Everything below reads a different slice of the same result."
             />
-            <ScopeBanner account={acct} />
             <StageLoopHub stages={buildLoopStages(status)} current="analysis" />
 
             <div className="px-6 py-5 space-y-4 max-w-3xl">

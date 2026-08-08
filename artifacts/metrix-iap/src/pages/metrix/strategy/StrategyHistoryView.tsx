@@ -8,7 +8,7 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount } from "@/lib/data/metrixSeedAdapter";
 import { useGetLatestGenerationRun, getGetLatestGenerationRunQueryKey } from "@workspace/api-client-react";
-import { ModuleHeader, ScopeBanner, ModuleScopeGate, SectionCard, PendingState, CaveatNote } from "../shared";
+import { ModuleHeader, ModuleScopeGate, SectionCard, PendingState, CaveatNote } from "../shared";
 import { History, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 
 const SECTION = "Strategy · 04";
@@ -27,7 +27,6 @@ export function StrategyHistoryView() {
       {() => (
         <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
           <ModuleHeader section={SECTION} title="History" subtitle="Strategy generation runs for this account." table="generation_runs" />
-          <ScopeBanner account={account!} />
           <div className="px-6 py-5 space-y-4 max-w-3xl">
             <CaveatNote text="Only the most recent strategy generation run is tracked today — a full multi-run log is planned but not yet built." />
             {!run ? (

@@ -1,19 +1,23 @@
 // Regression tests for MetrixBootLoader callout rotation and reduced-motion freeze.
-// Verifies:
-//   - initial ARIA attributes (role=status, aria-busy, aria-label)
-//   - first callout is shown on render
-//   - callout text advances after the rotation interval elapses (fake timers)
-//   - prefers-reduced-motion: reduce freezes the callout on the first line
+// The callout order is shuffled per mount, so tests assert membership in the
+// CALLOUTS list and change-over-time rather than a fixed sequence.
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, act, cleanup } from "@testing-library/react";
-import { MetrixBootLoader } from "@/components/brand/MetrixBootLoader";
+import {
+  MetrixBootLoader,
+  CALLOUTS,
+} from "@/components/brand/MetrixBootLoader";
 
-// Mirror the constants from the component so the test is tied to real values.
-// If the component's constants change, the tests will surface it.
-const FIRST_CALLOUT = "the concept code carries the creative identity.";
-const SECOND_CALLOUT = "andromeda rewards diversity, punishes repetition.";
+// Mirror the timing constants from the component so the test is tied to real
+// values. If the component's constants change, the tests will surface it.
 const READ_MS = 3800;
-const FADE_MS = 380;
+const FADE_MS = 420;
+
+/** Returns the currently rendered callout text. */
+function getCalloutText(container: HTMLElement): string {
+  const el = container.querySelector(".mx-boot-callout");
+  return el?.textContent ?? "";
+}
 
 /** Snapshot the current matchMedia so tests can restore it after overriding. */
 function makeMatchMediaStub(reducedMotion: boolean) {
@@ -63,13 +67,14 @@ describe("MetrixBootLoader — callout rotation (normal motion)", () => {
     cleanup();
   });
 
-  it("shows the first callout on initial render", () => {
-    render(<MetrixBootLoader />);
-    expect(screen.getByText(FIRST_CALLOUT)).toBeTruthy();
+  it("shows one of the known callouts on initial render", () => {
+    const { container } = render(<MetrixBootLoader />);
+    expect(CALLOUTS).toContain(getCalloutText(container));
   });
 
-  it("advances to the second callout after the rotation interval elapses", () => {
-    render(<MetrixBootLoader />);
+  it("advances to a different known callout after the rotation interval elapses", () => {
+    const { container } = render(<MetrixBootLoader />);
+    const first = getCalloutText(container);
 
     // The interval fires after READ_MS + FADE_MS ms; then the swap setTimeout
     // fires after a further FADE_MS ms — advance past both.
@@ -77,9 +82,25 @@ describe("MetrixBootLoader — callout rotation (normal motion)", () => {
       vi.advanceTimersByTime(READ_MS + FADE_MS + FADE_MS);
     });
 
-    expect(screen.getByText(SECOND_CALLOUT)).toBeTruthy();
-    // First callout should no longer be present in the DOM
-    expect(screen.queryByText(FIRST_CALLOUT)).toBeNull();
+    const second = getCalloutText(container);
+    expect(CALLOUTS).toContain(second);
+    expect(second).not.toBe(first);
+  });
+
+  it("shows every callout exactly once before any repeats (shuffled full cycle)", () => {
+    const { container } = render(<MetrixBootLoader />);
+    const seen: string[] = [getCalloutText(container)];
+
+    for (let i = 1; i < CALLOUTS.length; i++) {
+      act(() => {
+        vi.advanceTimersByTime(READ_MS + FADE_MS + FADE_MS);
+      });
+      seen.push(getCalloutText(container));
+    }
+
+    // All distinct, and together they cover the full callout list.
+    expect(new Set(seen).size).toBe(CALLOUTS.length);
+    expect([...seen].sort()).toEqual([...CALLOUTS].sort());
   });
 });
 
@@ -107,20 +128,20 @@ describe("MetrixBootLoader — callout rotation (reduced motion)", () => {
     });
   });
 
-  it("shows the first callout on initial render even with reduced motion", () => {
-    render(<MetrixBootLoader />);
-    expect(screen.getByText(FIRST_CALLOUT)).toBeTruthy();
+  it("shows a known callout on initial render even with reduced motion", () => {
+    const { container } = render(<MetrixBootLoader />);
+    expect(CALLOUTS).toContain(getCalloutText(container));
   });
 
   it("does NOT advance the callout when prefers-reduced-motion: reduce is active", () => {
-    render(<MetrixBootLoader />);
+    const { container } = render(<MetrixBootLoader />);
+    const first = getCalloutText(container);
 
     // Advance well past multiple rotation intervals — text must stay frozen
     act(() => {
       vi.advanceTimersByTime((READ_MS + FADE_MS) * 3);
     });
 
-    expect(screen.getByText(FIRST_CALLOUT)).toBeTruthy();
-    expect(screen.queryByText(SECOND_CALLOUT)).toBeNull();
+    expect(getCalloutText(container)).toBe(first);
   });
 });

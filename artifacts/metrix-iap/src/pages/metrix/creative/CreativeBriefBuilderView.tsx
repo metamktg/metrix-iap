@@ -10,7 +10,7 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getBriefBuilder, getStrategyData, getAnalysisData, getMST, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
 import {
-  ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState,
+  ModuleHeader, ModuleScopeGate, PendingState,
   CrossLink, useFocusParam, FlowCrumb, useFromParam, SectionCard, ConfidenceBadge,
   useShowMore, ShowMoreButton,
 } from "../shared";
@@ -19,6 +19,7 @@ import { cardFromCell } from "@/lib/creative-assembly";
 import { FileText, Sparkles, Download, Mail, ClipboardCheck } from "lucide-react";
 import type { DraftBrief } from "@/lib/data/seedTypes";
 import { TokenizedConceptText } from "@/components/concept/ConceptChip";
+import { AddToTrayButton } from "@/components/tray/AddToTrayButton";
 
 const SECTION = "Creative · 05";
 
@@ -93,11 +94,10 @@ export function CreativeBriefBuilderView() {
             <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
               <ModuleHeader section={SECTION} title="Brief Builder" subtitle="Choose a brief from Creative to open its workspace." />
               <p className="sr-only">Choose a brief from Creative</p>
-              <ScopeBanner account={acct} />
               {briefs.length === 0 ? (
                 <PendingState title="No briefs yet" message="Generate briefs from the Creative command center first." icon={FileText} action={<CrossLink to="/app/creative" label="Go to Creative" />} />
               ) : (
-                <BriefChooserList briefs={briefs} pillarOf={pillarOf} />
+                <BriefChooserList briefs={briefs} pillarOf={pillarOf} scopeId={adAccountId ?? ""} />
               )}
             </div>
           );
@@ -114,7 +114,6 @@ export function CreativeBriefBuilderView() {
               subtitle={`${detail.asset_type} brief · ${STATUS_LABEL[detail.status] ?? detail.status}`}
               right={<CrossLink to="/app/creative" label="Back to Creative" />}
             />
-            <ScopeBanner account={acct} />
             <FlowCrumb {...fp} />
 
             <div className="px-6 py-5 space-y-4 max-w-3xl">
@@ -126,6 +125,17 @@ export function CreativeBriefBuilderView() {
                   {detail.voice && ` · ${detail.voice}`}
                 </p>
                 {detail.confidence && <ConfidenceBadge value={detail.confidence} />}
+                <AddToTrayButton
+                  scopeId={adAccountId ?? ""}
+                  item={{
+                    id: detail.id,
+                    kind: "brief",
+                    title: `${pillar?.label ?? detail.source_pillar} — ${detail.asset_type} brief`,
+                    sub: detail.human_direction,
+                    href: `/app/creative/builder?focus=${detail.id}`,
+                  }}
+                  className="ml-auto"
+                />
               </div>
               <SectionCard title="Direction" desc="What to build.">
                 <p className="text-title text-foreground/85 leading-relaxed"><TokenizedConceptText text={detail.human_direction} /></p>
@@ -206,9 +216,11 @@ export function CreativeBriefBuilderView() {
 function BriefChooserList({
   briefs,
   pillarOf,
+  scopeId,
 }: {
   briefs: DraftBrief[];
   pillarOf: (id: string) => { label: string } | undefined;
+  scopeId: string;
 }) {
   const fold = useShowMore(briefs, 6);
   return (
@@ -219,7 +231,20 @@ function BriefChooserList({
             <p className="text-body font-semibold text-foreground leading-tight">{pillarOf(b.source_pillar)?.label ?? b.source_pillar}</p>
             <p className="text-label text-muted-foreground/70 mt-0.5">{b.asset_type} · {STATUS_LABEL[b.status] ?? b.status}</p>
           </div>
-          <CrossLink to={`/app/creative/builder?focus=${b.id}`} label="Open" />
+          <div className="flex items-center gap-2 shrink-0">
+            <AddToTrayButton
+              scopeId={scopeId}
+              item={{
+                id: b.id,
+                kind: "brief",
+                title: `${pillarOf(b.source_pillar)?.label ?? b.source_pillar} — ${b.asset_type} brief`,
+                sub: b.human_direction,
+                href: `/app/creative/builder?focus=${b.id}`,
+              }}
+              compact
+            />
+            <CrossLink to={`/app/creative/builder?focus=${b.id}`} label="Open" />
+          </div>
         </div>
       ))}
       <ShowMoreButton total={briefs.length} hiddenCount={fold.hiddenCount} expanded={fold.expanded} onToggle={fold.toggle} noun="briefs" />

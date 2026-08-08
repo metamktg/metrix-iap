@@ -412,29 +412,52 @@ export interface SignalCard {
 
 export interface MSTLibraryCell {
   cell_id: string;
+
   concept_id: string;
+
   book2_concept_name: string;
+
   legacy_library_match?: string;
+
   mapped_ad_names: string[];
+
   primary_message: string;
+
   secondary_message: string;
+
   cta: string;
+
   visual_system: string;
+
   hook_variable?: string;
+
   tone_variable?: string;
+
   framework_variable?: string;
+
   concept_variable?: string;
+
   pain_proof_variable?: string;
+
   proof_variable?: string;
+
   cta_variable?: string;
   /** Registry `funnel_stage` (ST_) code — distinct from `stage`, which is a human display label (e.g. "TOF"/"MOF"), never a registry code. */
+
   funnel_stage_variable?: string;
+
   awareness_variable?: string;
+
   stage?: string;
+
   iap_read?: string;
+
   asset_filename?: string;
+
   aspect_ratio?: string;
+
   qa_mapping_status?: string;
+
   mapping_confidence?: string;
 }
 

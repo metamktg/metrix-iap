@@ -10,7 +10,7 @@ import { useMemo } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, ScopeBanner, ModuleScopeGate, SectionCard, CaveatNote, CrossLink } from "../shared";
+import { ModuleHeader, ModuleScopeGate, SectionCard, CaveatNote, CrossLink } from "../shared";
 import { CreativeLibraryPanel } from "../ConnectAccountDialogs";
 
 const SECTION = "Creative · 05";
@@ -35,7 +35,6 @@ export function CreativeScanView() {
               title="Creative Scan"
               subtitle="Upload a creative and map it to an ad — it's staged immediately and added to the Creative Library."
             />
-            <ScopeBanner account={acct} />
             <div className="px-6 py-5 space-y-4 max-w-2xl">
               <CaveatNote text="An automated IAP-variable confidence pass against a suggested brief is planned but not yet built — this stages the file and maps it to an ad name." />
               <SectionCard title="Upload & map">

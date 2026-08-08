@@ -62,7 +62,6 @@ export function SignalView() {
               section={SECTION}
               title="Signal"
               subtitle="Source-backed signals · latest analysis"
-              account={acct}
             />
             {focus && !signals.some((s) => s.id === focus) && (
               <StaleFocusNotice label="signal" />

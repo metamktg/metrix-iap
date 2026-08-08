@@ -5,7 +5,6 @@
 // best-performing cells rise to the top immediately.
 
 import { useState } from "react";
-import { TYPE } from "../typography";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getMST, getAnalysisData, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
@@ -15,7 +14,7 @@ import {
   useShowMore, ShowMoreButton,
 } from "../shared";
 import { useCellRunScope } from "@/lib/run-scope";
-import { RunSelector, ALL_TIME_SELECTION } from "@/components/analysis/RunSelector";
+import { RunScopePicker, ALL_TIME_SELECTION, type RunSelectorValue } from "@/components/analysis/RunSelector";
 import { useListAnalysisRuns } from "@workspace/api-client-react";
 import { TilePerformanceModal } from "@/components/creative/TilePerformanceModal";
 import { TableShell, Th, Td } from "../analysis/tables";
@@ -47,12 +46,25 @@ const CROSSMAP_METRICS: RankMetric<CrossmapEnrichedRow>[] = [
   { id: "ctr",     label: "Link CTR", direction: "desc", value: (r) => r.ran ? r.avgCtr  : null, format: fmtPct },
 ];
 
-export function CrossmapResultsView({ renderHeader = true }: { renderHeader?: boolean } = {}) {
+export function CrossmapResultsView({
+  renderHeader = true,
+  runScope,
+  onRunScopeChange,
+}: {
+  renderHeader?: boolean;
+  /** When provided (with onRunScopeChange), run scoping is controlled by the
+   *  parent — e.g. MstCrossMapView owns the header picker for both tabs. */
+  runScope?: RunSelectorValue;
+  onRunScopeChange?: (v: RunSelectorValue) => void;
+} = {}) {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
   const [activeCell, setActiveCell] = useState<MSTMatrixCell | null>(null);
-  const [runSelection, setRunSelection] = useState(ALL_TIME_SELECTION);
+  const [localRunSelection, setLocalRunSelection] = useState(ALL_TIME_SELECTION);
+  const controlled = runScope !== undefined && onRunScopeChange !== undefined;
+  const runSelection = controlled ? runScope! : localRunSelection;
+  const setRunSelection = controlled ? onRunScopeChange! : setLocalRunSelection;
   const analysisData = getAnalysisData(seed, adAccountId);
   const { inRunScope } = useCellRunScope(analysisData, runSelection);
   const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "");
@@ -75,7 +87,7 @@ export function CrossmapResultsView({ renderHeader = true }: { renderHeader?: bo
         if (!mst || mst.status !== "active" || !matrix || !analysis) {
           return (
             <div className="flex-1 flex flex-col">
-              {renderHeader && <ModuleHeader section={SECTION} title="Crossmap Results" account={acct} />}
+              {renderHeader && <ModuleHeader section={SECTION} title="Crossmap Results" />}
               <PendingState title="No crossmap yet" message={mst?.render_policy ?? "Crossmap results appear once the matrix and performance data both exist."} icon={GitMerge}
                 action={<CrossLink to="/app/mst/matrix" label="Open MST Matrix" />}
               />
@@ -125,21 +137,25 @@ export function CrossmapResultsView({ renderHeader = true }: { renderHeader?: bo
 
         return (
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
-            {renderHeader && (
+            {renderHeader ? (
               <ModuleHeader
                 section={SECTION}
                 title="Crossmap Results"
                 subtitle="Planned cells × actual delivery"
-                account={acct}
+                right={
+                  <RunScopePicker
+                    runs={analysisRunsData?.runs ?? []}
+                    value={runSelection}
+                    onChange={setRunSelection}
+                  />
+                }
               />
-            )}
-            {(analysisRunsData?.runs.length ?? 0) > 0 && (
-              <div className="px-6 pt-4">
-                <p className={cn(TYPE.microLabel, "text-muted-foreground/30 mb-1.5")}>
-                  Scope to analysis run
-                </p>
-                <RunSelector runs={analysisRunsData!.runs} value={runSelection} onChange={setRunSelection} />
-              </div>
+            ) : controlled ? null : (
+              (analysisRunsData?.runs.length ?? 0) > 0 && (
+                <div className="px-6 pt-4 flex justify-end">
+                  <RunScopePicker runs={analysisRunsData!.runs} value={runSelection} onChange={setRunSelection} />
+                </div>
+              )
             )}
 
             <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">

@@ -105,7 +105,7 @@ export function BudgetView() {
         if (!summary) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Budget" tabs="analysis" account={acct} />
+              <ModuleHeader section={SECTION} title="Budget" tabs="analysis" />
               <PendingState
                 title="No budget data"
                 message="Campaign spend totals appear once analysis is available."
@@ -149,7 +149,6 @@ export function BudgetView() {
               title="Budget"
               subtitle="Spend allocation · by metric selection"
               tabs="analysis"
-              account={acct}
             />
             <MetricSelectionBar events={allEvents} isSelected={isSelected} onToggle={toggle} />
             <DatePresetBar

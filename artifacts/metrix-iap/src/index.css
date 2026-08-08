@@ -102,7 +102,9 @@
   /* ── AppShell panel geometry — single-file reference for all shell dims ── */
   --sidebar-expanded: 216px;
   --sidebar-collapsed: 56px;
-  --tray-open: 308px;
+  --tray-open-min: 260px;
+  --tray-open-default: 308px;
+  --tray-open-max: 480px;
   --tray-closed: 46px;
   --topbar-h: 44px;
 
@@ -797,24 +799,32 @@
   width: 60%;
   height: 60%;
   border-radius: 999px;
-  background: radial-gradient(circle, hsl(var(--primary) / 0.22), hsl(var(--accent) / 0.06) 55%, transparent 72%);
-  filter: blur(10px);
+  background: radial-gradient(circle, hsl(var(--primary) / 0.26), hsl(var(--accent) / 0.08) 55%, transparent 72%);
+  filter: blur(12px);
+  animation: mx-boot-glow-breathe 1s ease-in-out infinite;
+}
+@keyframes mx-boot-glow-breathe {
+  0%, 100% { opacity: 0.8; transform: scale(0.96); }
+  50%      { opacity: 1; transform: scale(1.05); }
 }
 
-/* Logo breathes with a subtle, slow pulse — calm, not attention-grabbing */
+/* Logo breathes at 60 BPM (1s cycle) — a heartbeat pace, slightly stronger
+   scale/opacity swing than before but still tasteful. */
 .mx-boot-logo-pulse {
-  animation: mx-boot-logo-breathe 2.8s ease-in-out infinite;
+  animation: mx-boot-logo-breathe 1s ease-in-out infinite;
 }
 @keyframes mx-boot-logo-breathe {
-  0%, 100% { transform: scale(0.98); opacity: 0.88; }
-  50%      { transform: scale(1.03); opacity: 1; }
+  0%, 100% { transform: scale(0.96); opacity: 0.84; }
+  50%      { transform: scale(1.05); opacity: 1; }
 }
 
 /* Rotating callout line — sequential fade (out, swap text, in) driven by
    MetrixBootLoader's READ_MS/FADE_MS timers; never two lines visible at
-   once, so the swap reads as one clean statement replacing the last. */
+   once, so the swap reads as one clean statement replacing the last.
+   Gentle ease-out on entry keeps the settle smooth with no flicker. */
 .mx-boot-callout {
-  transition: opacity 380ms var(--mx-ease), transform 380ms var(--mx-ease);
+  transition: opacity 420ms cubic-bezier(0.22, 1, 0.36, 1), transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
 }
 
 /* Progress track + blue→cyan fill sweep */
