@@ -552,6 +552,30 @@ export function findColumnInHeader(headers: string[], canonical: string): Column
 }
 
 /**
+ * Tokens that mark a column as a RATE/PERCENTAGE rather than a raw count or
+ * currency amount. A canonical and a candidate header must agree on whether
+ * either carries one of these — mixing them (e.g. mapping the count column
+ * "Landing page views" from the percentage column "Purchases rate per
+ * landing page views") silently divides/multiplies the wrong kind of number
+ * into the analysis, which token-overlap alone can't detect since both
+ * strings share the words "landing", "page", "views".
+ */
+const UNIT_MARKER_TOKENS = new Set(["rate", "pct", "percent", "percentage", "ratio"]);
+
+/**
+ * For a "Cost per X" / "Cost per Y" style canonical or header, returns the
+ * object tokens after "cost per" (e.g. ["interaction"] for "Cost per
+ * interaction"). Returns null when the tokens don't start with "cost per" —
+ * used to stop token-overlap inference from swapping one conversion event's
+ * cost-per metric for a different one (e.g. "Cost per interaction" filled
+ * from "Cost per purchase") just because both share "cost" and "per".
+ */
+function costPerObjectTokens(tokens: string[]): string[] | null {
+  if (tokens.length < 3 || tokens[0] !== "cost" || tokens[1] !== "per") return null;
+  return tokens.slice(2);
+}
+
+/**
  * Infers the best mapping from a list of unmapped CSV headers to a missing
  * canonical column using Jaccard token similarity on slugified forms.
  *
@@ -565,18 +589,44 @@ export function findColumnInHeader(headers: string[], canonical: string): Column
  *   ≥ 0.75 — high confidence, auto-promote silently
  *   0.50–0.74 — moderate confidence, auto-promote with a warning
  *   < 0.50 — not promoted; canonical stays missing
+ *
+ * Two semantic guards run before a candidate is even scored, because plain
+ * word overlap can't tell a count from a rate or one conversion event from
+ * another:
+ *  - Unit guard: a candidate is skipped when exactly one of the canonical/
+ *    header token sets contains a rate/percentage marker (see
+ *    UNIT_MARKER_TOKENS) — a rate must never silently fill a count/currency
+ *    column or vice versa.
+ *  - "Cost per X" object guard: when the canonical is a "Cost per X" metric,
+ *    a "Cost per Y" candidate is skipped unless X and Y share at least one
+ *    object token — otherwise a candidate cost tied to a completely
+ *    different result type could get promoted just for sharing "cost"/"per".
  */
 export function inferColumnMapping(
   unmappedHeaders: string[],
   missingCanonical: string,
 ): ColumnMatch | null {
-  const canonTokens = new Set(slugifyColumn(missingCanonical).split("_").filter(Boolean));
+  const canonTokenList = slugifyColumn(missingCanonical).split("_").filter(Boolean);
+  const canonTokens = new Set(canonTokenList);
   if (canonTokens.size === 0) return null;
+
+  const canonHasUnitMarker = canonTokenList.some((t) => UNIT_MARKER_TOKENS.has(t));
+  const canonCostObject = costPerObjectTokens(canonTokenList);
 
   let best: { headerValue: string; score: number } | null = null;
   for (const h of unmappedHeaders) {
-    const hTokens = new Set(slugifyColumn(h).split("_").filter(Boolean));
+    const hTokenList = slugifyColumn(h).split("_").filter(Boolean);
+    const hTokens = new Set(hTokenList);
     if (hTokens.size === 0) continue;
+
+    const hHasUnitMarker = hTokenList.some((t) => UNIT_MARKER_TOKENS.has(t));
+    if (canonHasUnitMarker !== hHasUnitMarker) continue; // count/currency vs rate — never cross-map
+
+    if (canonCostObject) {
+      const hCostObject = costPerObjectTokens(hTokenList);
+      if (hCostObject && !hCostObject.some((t) => canonCostObject.includes(t))) continue; // different "cost per" event
+    }
+
     const intersection = [...canonTokens].filter((t) => hTokens.has(t)).length;
     const union = new Set([...canonTokens, ...hTokens]).size;
     const jaccard = union > 0 ? intersection / union : 0;

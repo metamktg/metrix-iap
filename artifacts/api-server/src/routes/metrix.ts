@@ -1031,6 +1031,30 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
       }
     }
 
+    // ── Supersede any prior staged file of the same report type ─────────
+    // Standard operating procedure: exactly one active ('staged') file per
+    // (account, kind) at a time for the four performance-CSV kinds. Without
+    // this, re-uploading a corrected export left the old file staged too —
+    // startManualAnalysis would sum BOTH into the next run, double-counting
+    // spend/impressions for any overlapping dates, and the pre-run column
+    // health banner would show duplicate/stale blocks for the same report.
+    // 'rejected' is an existing manual_imports status (schema.sql) that was
+    // otherwise unused for this table — reused here as "superseded", not a
+    // validation failure. creative_asset uploads are unaffected: multiple
+    // creative files are expected to coexist.
+    let supersededCount = 0;
+    if (csvClass) {
+      const supersede = await supabase
+        .from("manual_imports")
+        .update({ status: "rejected" })
+        .eq("account_id", accountId)
+        .eq("kind", parsed.data.kind)
+        .eq("status", "staged")
+        .select("id");
+      if (supersede.error) throw new Error(supersede.error.message);
+      supersededCount = (supersede.data ?? []).length;
+    }
+
     // Staged only: the file is stored raw for the analysis pipeline. It is
     // never parsed into performance data at upload time — no fabricated
     // numbers appear in the app from an upload alone.
@@ -1060,16 +1084,19 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
     }
 
     req.log.info(
-      { accountId, kind: parsed.data.kind, filename: parsed.data.filename, sizeBytes: content.length },
+      { accountId, kind: parsed.data.kind, filename: parsed.data.filename, sizeBytes: content.length, supersededCount },
       "Manual import staged",
     );
+    const note = supersededCount > 0
+      ? `File staged for the analysis pipeline, replacing the previously staged file of this type. Performance data appears only after an analysis run processes it — nothing is parsed or fabricated at upload time.`
+      : "File staged for the analysis pipeline. Performance data appears only after an analysis run processes it — nothing is parsed or fabricated at upload time.";
     res.json(
       StageManualImportResponse.parse({
         status: "staged",
         import_id: String(insert.data["id"]),
         filename: parsed.data.filename,
         size_bytes: content.length,
-        note: "File staged for the analysis pipeline. Performance data appears only after an analysis run processes it — nothing is parsed or fabricated at upload time.",
+        note,
         ...(csvMappingSummary ? { mapping_summary: csvMappingSummary } : {}),
         ...(csvUploadWarnings ? { upload_warnings: csvUploadWarnings } : {}),
         ...(linkResult

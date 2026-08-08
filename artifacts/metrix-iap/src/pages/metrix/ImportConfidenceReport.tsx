@@ -250,20 +250,25 @@ function SingleCsvConfidenceReport({
  * Pass the full imports list; non-CSV imports are silently ignored.
  */
 export function ImportConfidenceReport({ imports }: { imports: ManualImport[] }) {
-  // Deduplicate by kind — keep only the most recent upload per CSV type.
-  // The server retains multiple rows for the same kind on re-uploads; without
-  // deduplication the same CSV card repeats once per historical upload.
+  // Deduplicate by kind — keep only the currently-staged upload per CSV
+  // type (the one the next analysis run will actually consume). The server
+  // list is sorted created_at DESC (newest first), so the FIRST staged match
+  // per kind is the most recent — a previous version of this loop called
+  // Map.set() on every match, which meant the LAST one visited (the OLDEST,
+  // given descending order) won, silently showing a stale confidence report.
   const kindToImport = new Map<string, ManualImport>();
   for (const imp of imports) {
     if (
+      imp.status === "staged" &&
       (imp.kind === "performance_demo_csv" ||
         imp.kind === "performance_placement_csv" ||
         imp.kind === "performance_ad_summary_csv" ||
         imp.kind === "performance_conversion_device_csv") &&
       imp.mapping_summary &&
-      imp.mapping_summary.length > 0
+      imp.mapping_summary.length > 0 &&
+      !kindToImport.has(imp.kind)
     ) {
-      kindToImport.set(imp.kind, imp); // later entries win → most recent per kind
+      kindToImport.set(imp.kind, imp); // first match per kind = most recent (list is newest-first)
     }
   }
   const csvImports = Array.from(kindToImport.values());
