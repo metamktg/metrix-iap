@@ -42,7 +42,7 @@ import {
   AdminRestoreUserResponse,
   CreateManualAdAccountBody,
   CreateManualAdAccountResponse,
-  SetAccountCohortResponse,
+  SetAccountObjectivesResponse,
   StageManualImportBody,
   StageManualImportResponse,
   ListManualImportsResponse,
@@ -877,15 +877,29 @@ router.post("/metrix/accounts", requireAuth, async (req, res) => {
   }
 });
 
-const COHORTS = ["ecommerce", "lead_gen", "service", "app"] as const;
+const OBJECTIVE_KEYS = ["ecommerce", "lead_gen", "service", "app"] as const;
 
-router.patch("/metrix/accounts/:accountId/cohort", requireAuth, async (req, res) => {
+// Replaces the account's full objectives set (one-or-more of the four
+// keys). Objectives are configured ONLY here (via Settings → General as
+// part of account setup) — the analysis run reads them, never writes them.
+// Validation stays as strict as the old single-cohort check: non-empty
+// array, known keys only, no duplicates.
+router.patch("/metrix/accounts/:accountId/objectives", requireAuth, async (req, res) => {
   const accountId = String(req.params["accountId"]);
-  const cohort = req.body?.["cohort"];
-  if (!COHORTS.includes(cohort)) {
-    res.status(400).json({ message: `cohort must be one of: ${COHORTS.join(", ")}.` });
+  const objectives = req.body?.["objectives"];
+  const valid =
+    Array.isArray(objectives) &&
+    objectives.length > 0 &&
+    objectives.every((o) => (OBJECTIVE_KEYS as readonly string[]).includes(o)) &&
+    new Set(objectives).size === objectives.length;
+  if (!valid) {
+    res.status(400).json({
+      message: `objectives must be a non-empty list of distinct values from: ${OBJECTIVE_KEYS.join(", ")}.`,
+    });
     return;
   }
+  // Canonical order, independent of click order.
+  const normalized = OBJECTIVE_KEYS.filter((k) => (objectives as string[]).includes(k));
   const user = req.authUser!;
   if (user.role !== "admin" && !(await userHasAccountAccess(user.id, accountId))) {
     res.status(403).json({ message: "You don't have access to this ad account." });
@@ -893,9 +907,11 @@ router.patch("/metrix/accounts/:accountId/cohort", requireAuth, async (req, res)
   }
   try {
     const supabase = getSupabase();
+    // Keep the legacy scalar column in lockstep (first objective) so any
+    // reader not yet migrated to the set never sees a stale value.
     const update = await supabase
       .from("ad_accounts")
-      .update({ cohort })
+      .update({ objectives: normalized, cohort: normalized[0] })
       .eq("id", accountId)
       .select("id");
     if (update.error) throw new Error(update.error.message);
@@ -904,12 +920,12 @@ router.patch("/metrix/accounts/:accountId/cohort", requireAuth, async (req, res)
       return;
     }
     invalidateMetrixSeedCache();
-    req.log.info({ accountId, cohort }, "Ad account cohort set");
-    res.json(SetAccountCohortResponse.parse({ account_id: accountId, cohort }));
+    req.log.info({ accountId, objectives: normalized }, "Ad account objectives set");
+    res.json(SetAccountObjectivesResponse.parse({ account_id: accountId, objectives: normalized }));
   } catch (err) {
-    req.log.error({ err, accountId }, "Failed to set account cohort");
+    req.log.error({ err, accountId }, "Failed to set account objectives");
     res.status(502).json({
-      message: err instanceof Error ? err.message : "Could not set the account's cohort.",
+      message: err instanceof Error ? err.message : "Could not set the account's objectives.",
     });
   }
 });

@@ -25,7 +25,9 @@ import { getSupabase } from "./supabase";
 import { invalidateMetrixSeedCache } from "./metrixSeedAssembly";
 import { logger } from "./logger";
 import { parseIapCsv, IapCsvFormatError, type IapCsvRow } from "./iapCsvParser";
-import { detectCsvClassFromHeaders, checkDuplicateCsvClasses, iapCsvClassLabel } from "./iapCsvSpec";
+import { detectCsvClassFromHeaders, checkDuplicateCsvClasses, iapCsvClassLabel, optionalMetricSlugsForGroups, type ObjectiveColumnGroup } from "./iapCsvSpec";
+import { resolveAccountObjectives } from "./cohortConfig";
+import { computeObjectiveCoverage, OBJECTIVE_GROUP_FOR_KEY } from "./objectiveCoverage";
 
 
 export const STALE_ANALYSIS_RUN_MS = 10 * 60 * 1000;
@@ -119,6 +121,10 @@ export type ManualAnalysisRun = {
   creatives_unlinked_names: string[] | null;
   /** Warnings produced during tolerant CSV parsing (auto-resolved aliases, missing columns, etc.). Null when parsing was clean. */
   csv_warnings: string[] | null;
+  /** Configured objectives whose column groups were present and assessed this run. Null on legacy/pre-objectives runs. */
+  objectives_assessed: string[] | null;
+  /** Non-blocking objective coverage flags: configured-but-absent skips and present-but-unconfigured suggestions. Null when none. */
+  objective_flags: string[] | null;
   /** Live progress percentage 0–100. Updated at each pipeline stage. 0 = idle/just started, 100 = complete. */
   progress_pct: number;
   /** Human-readable label for the current pipeline stage. Empty string when idle or complete. */
@@ -133,15 +139,18 @@ export type CreativeLinkageSummary = {
 
 type Row = Record<string, any>;
 
-const runShape = (r: Row): ManualAnalysisRun => {
-  let csvWarnings: string[] | null = null;
-  if (r["csv_warnings"]) {
-    try {
-      csvWarnings = JSON.parse(String(r["csv_warnings"]));
-    } catch {
-      csvWarnings = null;
-    }
+const parseJsonArray = (raw: unknown): string[] | null => {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(String(raw));
+    return Array.isArray(parsed) ? parsed.map(String) : null;
+  } catch {
+    return null;
   }
+};
+
+const runShape = (r: Row): ManualAnalysisRun => {
+  const csvWarnings = parseJsonArray(r["csv_warnings"]);
   return {
     id: String(r["id"]),
     account_id: String(r["account_id"]),
@@ -158,6 +167,8 @@ const runShape = (r: Row): ManualAnalysisRun => {
     creatives_total: null,
     creatives_unlinked_names: null,
     csv_warnings: csvWarnings,
+    objectives_assessed: parseJsonArray(r["objectives_assessed"]),
+    objective_flags: parseJsonArray(r["objective_flags"]),
     progress_pct: typeof r["progress_pct"] === "number" ? Number(r["progress_pct"]) : 0,
     progress_stage: r["progress_stage"] ? String(r["progress_stage"]) : "",
   };
@@ -165,7 +176,7 @@ const runShape = (r: Row): ManualAnalysisRun => {
 
 async function accountExists(accountId: string): Promise<Row | null> {
   const supabase = getSupabase();
-  const { data, error } = await supabase.from("ad_accounts").select("id, name").eq("id", accountId).limit(1);
+  const { data, error } = await supabase.from("ad_accounts").select("id, name, cohort, objectives").eq("id", accountId).limit(1);
   if (error) throw new Error(error.message);
   return data && data.length > 0 ? data[0]! : null;
 }
@@ -230,6 +241,8 @@ async function synthesizeRunFromReportPulls(accountId: string): Promise<ManualAn
     creatives_total: null,
     creatives_unlinked_names: null,
     csv_warnings: null,
+    objectives_assessed: null,
+    objective_flags: null,
     progress_pct: 0,
     progress_stage: "",
   };
@@ -438,6 +451,8 @@ async function finishRun(
     rowsIngested?: number;
     importsUsed?: number;
     csvWarnings?: string[];
+    objectivesAssessed?: string[];
+    objectiveFlags?: string[];
   },
 ): Promise<void> {
   const supabase = getSupabase();
@@ -457,6 +472,10 @@ async function finishRun(
       imports_used: fields.importsUsed ?? null,
       csv_warnings: fields.csvWarnings && fields.csvWarnings.length > 0
         ? JSON.stringify(fields.csvWarnings)
+        : null,
+      objectives_assessed: fields.objectivesAssessed ? JSON.stringify(fields.objectivesAssessed) : null,
+      objective_flags: fields.objectiveFlags && fields.objectiveFlags.length > 0
+        ? JSON.stringify(fields.objectiveFlags)
         : null,
       finished_at: new Date().toISOString(),
     })
@@ -823,11 +842,16 @@ export async function startManualAnalysis(
     try {
       await updateProgress(runId, 5, "Parsing demographics export");
       const allCsvWarnings: string[] = [];
+      // Objective column groups seen across ALL staged files this run —
+      // compared against the account's configured objectives (Settings →
+      // General) to decide what gets assessed vs flagged. Never blocks.
+      const objectiveGroupsPresent = new Set<ObjectiveColumnGroup>();
       const demoRows: IapCsvRow[] = [];
       for (const imp of demoImports) {
         const text = decodeStagedContent(String(imp["content"]));
         try {
           const result = parseIapCsv(text, "demographic");
+          for (const g of result.objectiveColumnGroupsPresent) objectiveGroupsPresent.add(g);
           demoRows.push(...result.rows);
           for (const w of result.warnings) {
             allCsvWarnings.push(`[Demographics "${imp["filename"]}"] ${w}`);
@@ -843,6 +867,7 @@ export async function startManualAnalysis(
         const text = decodeStagedContent(String(imp["content"]));
         try {
           const result = parseIapCsv(text, "device_placement");
+          for (const g of result.objectiveColumnGroupsPresent) objectiveGroupsPresent.add(g);
           placementRows.push(...result.rows);
           for (const w of result.warnings) {
             allCsvWarnings.push(`[Placements "${imp["filename"]}"] ${w}`);
@@ -863,6 +888,7 @@ export async function startManualAnalysis(
         const text = decodeStagedContent(String(imp["content"]));
         try {
           const result = parseIapCsv(text, "ad_summary");
+          for (const g of result.objectiveColumnGroupsPresent) objectiveGroupsPresent.add(g);
           summaryRows.push(...result.rows);
           for (const w of result.warnings) {
             allCsvWarnings.push(`[Ad Summary "${imp["filename"]}"] ${w}`);
@@ -884,6 +910,7 @@ export async function startManualAnalysis(
         const text = decodeStagedContent(String(imp["content"]));
         try {
           const result = parseIapCsv(text, "conversion_device");
+          for (const g of result.objectiveColumnGroupsPresent) objectiveGroupsPresent.add(g);
           conversionDeviceRows.push(...result.rows);
           for (const w of result.warnings) {
             allCsvWarnings.push(`[Conversion Device "${imp["filename"]}"] ${w}`);
@@ -891,6 +918,25 @@ export async function startManualAnalysis(
         } catch (err) {
           const detail = err instanceof IapCsvFormatError ? err.message : String(err);
           throw new AnalysisError(`Conversion Device file "${imp["filename"]}": ${detail}`, 422);
+        }
+      }
+
+      // ── Apply objective coverage to ingestion ──────────────────────────
+      // Only the account's CONFIGURED objectives (Settings → General) get
+      // assessed: optional-metric columns belonging to an unconfigured
+      // objective are dropped here, BEFORE any aggregation or persistence,
+      // so they can never flow into analysis tables, reports, or exports.
+      // Their presence still produces a non-blocking enable-suggestion flag
+      // via computeObjectiveCoverage (groups were recorded at parse time).
+      const configuredObjectives = resolveAccountObjectives(account);
+      const allowedOptionalSlugs = optionalMetricSlugsForGroups(
+        configuredObjectives.map((k) => OBJECTIVE_GROUP_FOR_KEY[k]),
+      );
+      for (const rows of [demoRows, placementRows, summaryRows, conversionDeviceRows]) {
+        for (const row of rows) {
+          for (const key of Object.keys(row.extra)) {
+            if (!allowedOptionalSlugs.has(key)) delete row.extra[key];
+          }
         }
       }
 
@@ -1531,12 +1577,22 @@ export async function startManualAnalysis(
         })
         .eq("id", accountId);
 
+      // ── Objective coverage (data-aware, never blocking) ────────────
+      // Configured objectives whose column groups are present get assessed
+      // as before; configured-but-absent ones are skipped with a flag;
+      // present-but-unconfigured groups produce an enable-suggestion flag
+      // (never auto-enabled — their columns were already dropped from
+      // ingestion above). Unmatched optional columns stay ignored.
+      const coverage = computeObjectiveCoverage(configuredObjectives, objectiveGroupsPresent);
+
       await finishRun(runId, "success", {
         dateStart,
         dateEnd,
         rowsIngested: totalRows,
         importsUsed: imports!.length,
         csvWarnings: allCsvWarnings.length > 0 ? allCsvWarnings : undefined,
+        objectivesAssessed: coverage.assessed,
+        objectiveFlags: coverage.flags.length > 0 ? coverage.flags : undefined,
       });
       try {
         await markImportsProcessed(imports!.map((i) => String(i["id"])), runId);

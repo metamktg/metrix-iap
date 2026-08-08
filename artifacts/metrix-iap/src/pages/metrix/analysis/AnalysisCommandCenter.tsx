@@ -13,8 +13,8 @@ import {
 } from "../shared";
 import { AnalysisControls } from "../ManualAnalysisControls";
 import { useListAnalysisRuns } from "@workspace/api-client-react";
-import { LayoutDashboard, Settings2, History } from "lucide-react";
-import { COHORT_OPTIONS } from "../settings/cohortOptions";
+import { LayoutDashboard, History } from "lucide-react";
+import { OBJECTIVE_OPTIONS } from "../settings/cohortOptions";
 
 const SECTION = "Analysis · 03";
 
@@ -30,7 +30,15 @@ export function AnalysisCommandCenter() {
     <ModuleScopeGate section={SECTION} title="Analysis" account={account}>
       {() => {
         const acct = account!;
-        const cohortLabel = COHORT_OPTIONS.find((c) => c.id === acct.cohort)?.label;
+        // Read-only summary of the account's configured objectives —
+        // objectives are configured only in Settings → General (account
+        // setup), never here, and never block an analysis run.
+        const objectiveLabels = (acct.objectives ?? [])
+          .map((o) => OBJECTIVE_OPTIONS.find((c) => c.id === o)?.label)
+          .filter((l): l is string => !!l);
+        const objectivesSummary = objectiveLabels.length > 0
+          ? `Objectives: ${objectiveLabels.join(", ")}`
+          : "No objectives configured";
         return (
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
             <ModuleHeader
@@ -41,26 +49,13 @@ export function AnalysisCommandCenter() {
             <StageLoopHub stages={buildLoopStages(status)} current="analysis" />
 
             <div className="px-6 py-5 space-y-4 max-w-3xl">
-              {!acct.cohort ? (
-                <SectionCard title="Business model not set" desc="Configure it in account settings before analysis can run.">
-                  <PendingState
-                    title="No business model configured"
-                    message="This account's conversion objective (sales, leads, apps, local business) decides which terminal metric analysis reports — it's set once in Settings, not here."
-                    icon={Settings2}
-                    action={<CrossLink to="/app/settings/general" label="Go to Settings" />}
-                  />
-                </SectionCard>
-              ) : (
-                <SectionCard
-                  title="Run analysis"
-                  desc="Pick a date range and explicitly analyze the staged manual uploads. Never runs automatically."
-                  right={
-                    <CrossLink to="/app/settings/general" label={`${cohortLabel} · Settings`} />
-                  }
-                >
-                  <AnalysisControls accountId={acct.id} />
-                </SectionCard>
-              )}
+              <SectionCard
+                title="Run analysis"
+                desc="Pick a date range and explicitly analyze the staged manual uploads. Never runs automatically."
+                right={<span className="text-label text-muted-foreground/70">{objectivesSummary}</span>}
+              >
+                <AnalysisControls accountId={acct.id} />
+              </SectionCard>
 
               <HubNavGrid
                 label="Explore Analysis"

@@ -15,6 +15,7 @@
 
 import { getSupabase } from "./supabase";
 import { syncAllCreativeLinksForAccount } from "./analysisEngine";
+import { resolveAccountObjectives } from "./cohortConfig";
 import { logger } from "./logger";
 
 type Row = Record<string, any>;
@@ -217,6 +218,9 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
       name: account["name"] ?? accountId,
       status: account["status"] ?? "unconfigured",
       platform: account["platform"] ?? "Meta Ads",
+      // Configured objectives (Settings → General); legacy single-cohort
+      // rows resolve to their one objective — never a silent default.
+      objectives: resolveAccountObjectives(account),
       ...(account["overview_state"] ? { overview_state: account["overview_state"] } : {}),
       ...(account["meta_ad_account_id"] ? { meta_ad_account_id: account["meta_ad_account_id"] } : {}),
       iap: null,
@@ -619,6 +623,9 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
     name: account["name"] ?? accountId,
     status: account["status"] ?? "configured",
     platform: account["platform"] ?? "Meta Ads",
+    // Configured objectives (Settings → General); legacy single-cohort
+    // rows resolve to their one objective — never a silent default.
+    objectives: resolveAccountObjectives(account),
     facebook_page_dp_url: account["facebook_page_dp_url"] ?? null,
     source_status: account["source_status"] ?? undefined,
     // Numeric Meta ad account id (no "act_" prefix) for Ads Manager deep

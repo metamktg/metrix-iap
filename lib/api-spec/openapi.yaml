@@ -933,7 +933,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
-  /metrix/accounts/{accountId}/cohort:
+  /metrix/accounts/{accountId}/objectives:
     parameters:
       - name: accountId
         in: path
@@ -943,10 +943,10 @@ paths:
           type: string
           minLength: 1
     patch:
-      operationId: setAccountCohort
+      operationId: setAccountObjectives
       tags: [metrix]
-      summary: Set the account's business-model cohort
-      description: Sets ecommerce/lead_gen/service/app on the ad account, so downstream terminal-metric reads (Budget, Ad Performance, Exports) branch on cohort instead of assuming ROAS/purchase. Required by the UI before the first analysis run. Requires access to the account.
+      summary: Set the account's configured objectives
+      description: Replaces the account's objectives set (one or more of ecommerce/lead_gen/service/app) as part of account setup (Settings → General only). The analysis run consults this set to decide which optional CSV column groups it assesses; downstream terminal-metric reads (Budget, Ad Performance, Exports) reason over it instead of assuming ROAS/purchase. Each account's objectives are independent — no shared agency-level state. Requires access to the account.
       security:
         - cookieAuth: []
       requestBody:
@@ -954,16 +954,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/SetAccountCohortInput"
+              $ref: "#/components/schemas/SetAccountObjectivesInput"
       responses:
         "200":
-          description: Cohort set
+          description: Objectives set
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SetAccountCohortResult"
+                $ref: "#/components/schemas/SetAccountObjectivesResult"
         "400":
-          description: Invalid cohort value
+          description: Invalid objectives value (empty list or unknown key)
           content:
             application/json:
               schema:
@@ -4204,6 +4204,18 @@ components:
             type: string
           nullable: true
           description: Warnings produced during tolerant CSV column matching (auto-resolved aliases, missing columns, unrecognised columns that might map to expected ones). Null when parsing was clean. Present on successful runs that had non-fatal column issues.
+        objectives_assessed:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: Configured objectives (Settings → General) whose required CSV column groups were present in this run's uploads and were therefore assessed. Null on legacy runs recorded before objective-aware analysis.
+        objective_flags:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: Non-blocking objective coverage notices — configured objectives skipped this run because their columns were absent (never fabricated), and detected column groups whose objective is not configured (a suggestion; never auto-enabled). Null when coverage matched exactly.
         progress_pct:
           type: integer
           description: Live progress percentage (0–100) while the run is executing. Updated at each pipeline stage. 0 when idle or just started; 100 on success.
@@ -4799,25 +4811,31 @@ components:
         - manage_team
         - view_agency_rollups
         - export_data
-    SetAccountCohortInput:
+    SetAccountObjectivesInput:
       type: object
       properties:
-        cohort:
-          type: string
-          enum: [ecommerce, lead_gen, service, app]
+        objectives:
+          type: array
+          description: Full replacement set of the account's objectives. At least one; duplicates rejected by the server.
+          minItems: 1
+          items:
+            type: string
+            enum: [ecommerce, lead_gen, service, app]
       required:
-        - cohort
-    SetAccountCohortResult:
+        - objectives
+    SetAccountObjectivesResult:
       type: object
       properties:
         account_id:
           type: string
-        cohort:
-          type: string
-          enum: [ecommerce, lead_gen, service, app]
+        objectives:
+          type: array
+          items:
+            type: string
+            enum: [ecommerce, lead_gen, service, app]
       required:
         - account_id
-        - cohort
+        - objectives
     SessionSummary:
       type: object
       properties:

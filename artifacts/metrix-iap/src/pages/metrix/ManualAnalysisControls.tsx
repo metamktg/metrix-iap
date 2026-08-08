@@ -310,6 +310,44 @@ function CsvWarningsPanel({ run }: { run: AnalysisRun }) {
   );
 }
 
+/**
+ * Non-blocking objective coverage notices from a completed run: configured
+ * objectives skipped because their columns were absent (nothing fabricated),
+ * and detected column groups whose objective isn't configured (a suggestion
+ * — never auto-enabled). Mirrors CsvWarningsPanel's amber pattern but in
+ * neutral blue: informational, the run itself succeeded.
+ */
+function ObjectiveFlagsPanel({ run }: { run: AnalysisRun }) {
+  const [expanded, setExpanded] = useState(false);
+  const flags = run.objective_flags;
+  if (!flags || flags.length === 0) return null;
+  const count = flags.length;
+
+  return (
+    <div className="rounded-lg border border-sky-400/30 bg-sky-400/[0.06] p-3 space-y-2">
+      <button onClick={() => setExpanded((v) => !v)} className="w-full flex items-start gap-2 text-left">
+        <AlertTriangle className="w-3.5 h-3.5 text-sky-400 shrink-0 mt-0.5" />
+        <div className="flex-1 min-w-0">
+          <div className="text-caption font-semibold text-sky-200">Objective coverage notices</div>
+          <p className="text-label text-sky-100/70 mt-0.5">
+            {count} {count === 1 ? "notice" : "notices"} about configured objectives vs the data in this run — nothing was blocked, fabricated, or auto-enabled.{" "}
+            <span className="underline cursor-pointer">{expanded ? "Hide" : "Show"} details</span>
+          </p>
+        </div>
+      </button>
+      {expanded && (
+        <ul className="space-y-1 pt-1 border-t border-sky-400/20">
+          {flags.map((f, i) => (
+            <li key={i} className="text-label text-sky-100/75 leading-relaxed">
+              · {f}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function StatusBadge({ run }: { run: AnalysisRun }) {
   if (run.status === "running") {
     return (
@@ -1270,6 +1308,7 @@ export function AnalysisControls({
       )}
 
       {run && run.status === "success" && <CsvWarningsPanel run={run} />}
+      {run && run.status === "success" && <ObjectiveFlagsPanel run={run} />}
 
       {/* Server-verified module completeness — shown once the run settles */}
       {run && run.status === "success" && <CompletenessPanel accountId={accountId} runId={run.id} />}

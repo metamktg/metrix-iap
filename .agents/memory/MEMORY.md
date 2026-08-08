@@ -1,4 +1,3 @@
-// hint: Logic changed on both sides. Requires understanding intent of each change.
 - [Metrix MST / IAP Matrix methodology](metrix-mst-methodology.md) — MST=Metrix Sprint Test; Concept×Angle matrix rules + real-cardinality honesty; matrix grid vs generated briefs are distinct surfaces; generated cell codes must align to the historical grid, not fetch order.
 - [Metrix IAP closed-loop linkage](metrix-iap-closed-loop.md) — cross-entity back-refs (Ad/Concept/Brief) filled at gen time by linkClosedLoop() IIFE, not per-render.
 - [Supabase RLS testing](supabase-rls-testing.md) — rolled-back-txn tests need savepoints around expected failures; gates must be triggers (BYPASSRLS skips RLS, not triggers); drizzle push hangs non-TTY.
@@ -18,6 +17,7 @@
 - [Express 5 params + middleware typing](express5-params-middleware-typing.md) — adding middleware args widens req.params to string|string[]; coerce with String() or Drizzle overloads break.
 - [Wouter hash deep-links break tests](wouter-hash-deeplinks.md) — use the ?focus= param convention for in-app deep-links, never a #hash; hashes 404 under the memory-location test harness.
 - [Orval Params-type name collision](orval-params-collision.md) — prefer path segments over query params for operation discriminators; mixed path+query params can collide on generated Params names.
+- [Metrix objectives replace cohort](metrix-objectives.md) — accounts carry an objectives SET (legacy cohort scalar is fallback); analysis assesses configured+present groups, flags the rest; SERVICE_METRICS shared by lead_gen/service.
 - [Metrix result terminology](metrix-result-terminology.md) — derive the account's result noun from analysis cell rows' Result type, never bottom-line totals (installs dominate totals and mislabel).
 - [Metrix manual analysis runs](metrix-manual-analysis-runs.md) — date presets anchor to MAX(date) in uploaded data, not wall clock; avoid circular imports between sibling component files (silent HMR-only failure).
 - [Metrix IAP data-window picker](metrix-iap-run-picker.md) — Analysis Overview uses DataWindowBar driven by getAccountAnalysisDataWindows (real ad_performance data, not run metadata); daterange route uses path params to avoid orval Params-type collision.

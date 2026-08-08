@@ -10,7 +10,8 @@ import type { AdAccount } from "./data/seedTypes";
 export interface ExportEnvelope<T> {
   exported_at: string;
   account: { id: string; name: string };
-  cohort: AdAccount["cohort"];
+  /** The account's configured objectives set (empty when none configured — never a guessed default). */
+  objectives: NonNullable<AdAccount["objectives"]>;
   note: string;
 }
 
@@ -25,7 +26,7 @@ export function buildExportEnvelope<T extends object>(
   return {
     exported_at: new Date().toISOString(),
     account: { id: account.id, name: account.name },
-    cohort: account.cohort,
+    objectives: account.objectives ?? [],
     note: DATA_LIMITED_NOTE,
     ...data,
   };

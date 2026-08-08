@@ -34,6 +34,19 @@ alter table ad_accounts add column if not exists meta_ad_account_id text;
 alter table ad_accounts add column if not exists cohort text
   check (cohort in ('ecommerce', 'lead_gen', 'service', 'app'));
 
+-- Objectives set (multi-value replacement for the scalar cohort): jsonb
+-- array of one-or-more cohort keys, configured only during account setup
+-- (Settings → General). The analysis run consults this set to decide which
+-- optional CSV column groups it assesses. The legacy `cohort` column is
+-- kept in lockstep (first objective) for any not-yet-migrated reader.
+alter table ad_accounts add column if not exists objectives jsonb;
+
+-- One-time idempotent backfill: an existing single-cohort account becomes
+-- an account with exactly that one objective — no re-configuration needed.
+update ad_accounts
+  set objectives = jsonb_build_array(cohort)
+  where objectives is null and cohort is not null;
+
 -- Ad-level registry. `meta_ad_id` and `creative_asset_url` are nullable by
 -- design: no Meta ad_id exists anywhere in the current package (only
 -- ad_name), and asset_path values are non-servable local paths. When real
@@ -773,6 +786,12 @@ alter table if exists manual_analysis_runs add column if not exists csv_warnings
 -- progress_stage: human-readable label for the active stage ("Parsing demographics export", etc.).
 alter table if exists manual_analysis_runs add column if not exists progress_pct integer not null default 0;
 alter table if exists manual_analysis_runs add column if not exists progress_stage text not null default '';
+
+-- Objective coverage recorded per run (JSON-encoded string arrays, nullable):
+-- objectives_assessed = configured objectives whose column groups were present;
+-- objective_flags = non-blocking skip/suggestion notices. Null on legacy runs.
+alter table if exists manual_analysis_runs add column if not exists objectives_assessed text;
+alter table if exists manual_analysis_runs add column if not exists objective_flags text;
 
 -- ─────────────────────────────────────────────────────────────────────
 -- Run-tagged history for analysis rollups (analysis-run scoping).

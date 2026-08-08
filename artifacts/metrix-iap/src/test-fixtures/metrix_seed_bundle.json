@@ -508,6 +508,9 @@
       "name": "Bookster",
       "status": "configured",
       "platform": "Meta Ads",
+      "objectives": [
+        "app"
+      ],
       "facebook_page_dp_url": null,
       "source_status": "imported_from_iap_loop_package",
       "meta_ad_account_id": null,
@@ -8038,6 +8041,9 @@
       "name": "East Coast Art Studio",
       "status": "configured",
       "platform": "Meta Ads",
+      "objectives": [
+        "ecommerce"
+      ],
       "facebook_page_dp_url": null,
       "source_status": "imported_from_iap_analysis_package",
       "meta_ad_account_id": "1202182091204847",
@@ -20478,6 +20484,7 @@
       "name": "Gabri",
       "status": "configured",
       "platform": "Meta Ads",
+      "objectives": [],
       "facebook_page_dp_url": null,
       "source_status": "manual_reports",
       "meta_ad_account_id": null,
@@ -21128,6 +21135,7 @@
       "name": "skov",
       "status": "configured",
       "platform": "Meta Ads",
+      "objectives": [],
       "facebook_page_dp_url": null,
       "source_status": "manual_reports",
       "meta_ad_account_id": null,
@@ -28508,6 +28516,7 @@
       "name": "BELT",
       "status": "configured",
       "platform": "Meta Ads",
+      "objectives": [],
       "facebook_page_dp_url": null,
       "source_status": "manual_reports",
       "meta_ad_account_id": null,
@@ -35597,6 +35606,7 @@
       "name": "Test",
       "status": "unconfigured",
       "platform": "Meta Ads",
+      "objectives": [],
       "overview_state": {
         "title": "Analysis not run yet",
         "description": "This ad account was created for manual report uploads. Upload exported Meta reports; performance and strategy data appears after the first analysis run processes them.",
@@ -35614,6 +35624,7 @@
       "name": "SKOV Pet",
       "status": "unconfigured",
       "platform": "Meta Ads",
+      "objectives": [],
       "facebook_page_dp_url": null,
       "meta_ad_account_id": null,
       "ads": [
