@@ -190,6 +190,14 @@ alter table device_performance add column if not exists adds_to_cart bigint;
 alter table device_performance add column if not exists checkouts_initiated bigint;
 alter table device_performance add column if not exists purchases bigint;
 alter table device_performance add column if not exists tracking_basis text;
+
+-- Distinguishes the two device_performance row families sharing the same
+-- (account_id, device, date_start, date_end) shape: 'impression' = legacy
+-- delivery-based device breakdown rows, 'conversion' = conversion-device
+-- export rows (tracking_basis='conversion'). Defaults to 'impression' so
+-- pre-existing rows read correctly without a backfill.
+alter table device_performance add column if not exists device_kind text not null default 'impression';
+
 alter table placement_performance add column if not exists adds_to_cart bigint;
 alter table placement_performance add column if not exists checkouts_initiated bigint;
 alter table placement_performance add column if not exists purchases bigint;
@@ -750,6 +758,13 @@ alter table demographic_performance add column if not exists extra_metrics jsonb
 alter table placement_performance add column if not exists extra_metrics jsonb;
 alter table platform_performance add column if not exists extra_metrics jsonb;
 alter table device_performance add column if not exists extra_metrics jsonb;
+
+-- Ad Summary export's creative-content columns (body text, headline, CTA
+-- type, link destination/caption) — string-valued, not performance metrics,
+-- so they're kept out of the numeric extra_metrics bucket. See
+-- CREATIVE_METADATA_COLUMNS in iapCsvSpec.ts. Null when the account's Ad
+-- Summary upload didn't carry creative columns for that ad.
+alter table ad_performance add column if not exists ad_creative_metadata jsonb;
 
 -- Manual-upload analysis runs (July 2026): parses staged manual_imports
 -- performance CSVs into ad_performance rows for a MANUALLY selected date
