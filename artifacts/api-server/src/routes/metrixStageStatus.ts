@@ -8,7 +8,7 @@
 import { Router, type IRouter } from "express";
 import { requireAuth } from "../middlewares/requireAuth";
 import { userHasAccountAccess } from "./metrix";
-import { getLatestAnalysisRun } from "../lib/analysisEngine";
+import { getLatestAnalysisRun, verifyAnalysisRunCompleteness } from "../lib/analysisEngine";
 import { getLatestGenerationRun } from "../lib/generationEngine";
 import { getSupabase } from "../lib/supabase";
 
@@ -28,8 +28,15 @@ router.get("/metrix/accounts/:accountId/stage-status", requireAuth, async (req, 
   try {
     if (!(await guardAccess(req, res, accountId))) return;
 
-    const [analysisRun, strategyRun, briefsRun, briefsCount] = await Promise.all([
+    const [analysisRun, completeness, strategyRun, briefsRun, briefsCount] = await Promise.all([
       getLatestAnalysisRun(accountId),
+      // "Validated" = every required analysis surface actually received rows
+      // for the latest run. Non-fatal: a verification failure must not take
+      // down the whole stage-status read — it just reports not-validated.
+      verifyAnalysisRunCompleteness(accountId).catch((err) => {
+        req.log.warn({ err, accountId }, "Analysis completeness check failed (reporting validated=false)");
+        return null;
+      }),
       getLatestGenerationRun(accountId, "strategy"),
       getLatestGenerationRun(accountId, "briefs"),
       getSupabase()
@@ -47,6 +54,9 @@ router.get("/metrix/accounts/:accountId/stage-status", requireAuth, async (req, 
         status: analysisRun?.status ?? "none",
         last_run_at: analysisRun?.finished_at ?? analysisRun?.started_at ?? null,
         date_range: analysisRun?.date_range ?? null,
+        validated: completeness?.complete ?? false,
+        progress_pct: analysisRun?.progress_pct ?? 0,
+        progress_stage: analysisRun?.progress_stage ?? "",
       },
       strategy: {
         status: strategyRun?.status ?? "none",

@@ -705,6 +705,8 @@ function CommandHub({
     rows_ingested?: number | null;
     finished_at?: string | null;
     error_message?: string | null;
+    progress_pct?: number;
+    progress_stage?: string;
   } | null;
   analysisRuns: AnalysisRun[];
   strategyLastRun: { status: string; finished_at?: string | null; error_message?: string | null; model?: string | null } | null;
@@ -804,10 +806,23 @@ function CommandHub({
         : stage === "strategy" ? "strategy"
         : stage === "briefs"   ? "briefs"
         : null;
-      const progressPct = activeKind
-        ? calcProgress(elapsedSeconds, EXPECTED_SECONDS[activeKind])
-        : 0;
-      const phaseLabel = activeKind ? getPhaseLabel(activeKind, progressPct) : "Processing…";
+      // Analysis reports REAL per-stage progress from the server pipeline
+      // (manual_analysis_runs.progress_pct/progress_stage, polled live).
+      // Strategy/briefs generation has no server-side progress signal yet,
+      // so those fall back to the elapsed-time estimate.
+      const serverPct = stage === "analysis" && typeof analysisRun?.progress_pct === "number"
+        ? analysisRun.progress_pct
+        : null;
+      const progressPct = serverPct !== null
+        ? serverPct
+        : activeKind
+          ? calcProgress(elapsedSeconds, EXPECTED_SECONDS[activeKind])
+          : 0;
+      const phaseLabel = stage === "analysis" && analysisRun?.progress_stage
+        ? analysisRun.progress_stage
+        : activeKind
+          ? getPhaseLabel(activeKind, progressPct)
+          : "Processing…";
       const progressView = (
         <div className="flex flex-col gap-2.5">
           {/* Phase label + percentage + elapsed */}

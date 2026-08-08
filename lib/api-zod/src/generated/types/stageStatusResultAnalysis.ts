@@ -12,4 +12,10 @@ export type StageStatusResultAnalysis = {
   status: StageStatusResultAnalysisStatus;
   last_run_at: string | null;
   date_range: StageStatusResultAnalysisDateRange;
+  /** True only when the completeness check confirms every required analysis surface received data for the latest run. Strategy readiness gates on this, not just status=success. */
+  validated: boolean;
+  /** Live pipeline progress (0–100) of the latest analysis run. 100 on success. */
+  progress_pct: number;
+  /** Human-readable label of the pipeline stage currently executing. Empty when idle or settled. */
+  progress_stage: string;
 };

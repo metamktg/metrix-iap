@@ -863,6 +863,41 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiError"
+  /metrix/accounts/{accountId}/analysis-completeness:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        description: Ad account identifier.
+        schema:
+          type: string
+          minLength: 1
+    get:
+      operationId: getAnalysisCompleteness
+      tags: [metrix]
+      summary: Verify every analysis surface received data (analysis-validated check)
+      description: Post-run completeness verification. Counts rows for each analysis surface (ad performance / metric tiles, concepts, variables, demographics, placements, platforms, devices, creative library) scoped to the account's latest manual analysis run, or account-wide when no manual run exists (importer / live-Meta accounts). This is the same computation stage-status "validated" and the Strategy gate read.
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Per-surface completeness result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisCompletenessResult"
+        "401":
+          description: Not logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "403":
+          description: No access to this account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /metrix/accounts/{accountId}/stage-status:
     parameters:
       - name: accountId
@@ -4618,6 +4653,49 @@ components:
           $ref: "#/components/schemas/CreativeDeconstruction"
       required:
         - deconstruction
+    AnalysisSurfaceCheck:
+      type: object
+      properties:
+        key:
+          type: string
+          description: Stable machine key for the surface (e.g. ad_performance, creative_library).
+        label:
+          type: string
+          description: Human-readable surface name shown in the UI.
+        rows:
+          type: integer
+          description: Row count found for this surface.
+        required:
+          type: boolean
+          description: Required surfaces must have rows for the analysis to count as complete.
+        ok:
+          type: boolean
+          description: True when this surface's expectation is satisfied.
+        note:
+          type: string
+          nullable: true
+          description: Honest context when a non-required surface is empty (e.g. no concept codes in ad names).
+      required: [key, label, rows, required, ok, note]
+    AnalysisCompletenessResult:
+      type: object
+      properties:
+        run_id:
+          type: string
+          nullable: true
+          description: Manual run the check is scoped to; null when scoped account-wide (importer / live-Meta data).
+        run_status:
+          type: string
+          enum: [none, running, success, error]
+        complete:
+          type: boolean
+          description: True only when the run succeeded (or account-scoped data exists) AND every required surface has rows.
+        checked_at:
+          type: string
+        surfaces:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnalysisSurfaceCheck"
+      required: [run_id, run_status, complete, checked_at, surfaces]
     StageStatusResult:
       type: object
       properties:
@@ -4634,7 +4712,16 @@ components:
               type: string
               nullable: true
               enum: [7d, 14d, 30d, all, null]
-          required: [status, last_run_at, date_range]
+            validated:
+              type: boolean
+              description: True only when the completeness check confirms every required analysis surface received data for the latest run. Strategy readiness gates on this, not just status=success.
+            progress_pct:
+              type: integer
+              description: Live pipeline progress (0–100) of the latest analysis run. 100 on success.
+            progress_stage:
+              type: string
+              description: Human-readable label of the pipeline stage currently executing. Empty when idle or settled.
+          required: [status, last_run_at, date_range, validated, progress_pct, progress_stage]
         strategy:
           type: object
           properties:

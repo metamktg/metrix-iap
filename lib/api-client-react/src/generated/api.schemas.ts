@@ -965,6 +965,41 @@ export interface ReviewCreativeDeconstructionResult {
   deconstruction: CreativeDeconstruction;
 }
 
+export interface AnalysisSurfaceCheck {
+  /** Stable machine key for the surface (e.g. ad_performance, creative_library). */
+  key: string;
+  /** Human-readable surface name shown in the UI. */
+  label: string;
+  /** Row count found for this surface. */
+  rows: number;
+  /** Required surfaces must have rows for the analysis to count as complete. */
+  required: boolean;
+  /** True when this surface's expectation is satisfied. */
+  ok: boolean;
+  /** Honest context when a non-required surface is empty (e.g. no concept codes in ad names). */
+  note: string | null;
+}
+
+export type AnalysisCompletenessResultRunStatus = typeof AnalysisCompletenessResultRunStatus[keyof typeof AnalysisCompletenessResultRunStatus];
+
+
+export const AnalysisCompletenessResultRunStatus = {
+  none: 'none',
+  running: 'running',
+  success: 'success',
+  error: 'error',
+} as const;
+
+export interface AnalysisCompletenessResult {
+  /** Manual run the check is scoped to; null when scoped account-wide (importer / live-Meta data). */
+  run_id: string | null;
+  run_status: AnalysisCompletenessResultRunStatus;
+  /** True only when the run succeeded (or account-scoped data exists) AND every required surface has rows. */
+  complete: boolean;
+  checked_at: string;
+  surfaces: AnalysisSurfaceCheck[];
+}
+
 export type StageStatusResultAnalysisStatus = typeof StageStatusResultAnalysisStatus[keyof typeof StageStatusResultAnalysisStatus];
 
 
@@ -989,6 +1024,12 @@ export type StageStatusResultAnalysis = {
   status: StageStatusResultAnalysisStatus;
   last_run_at: string | null;
   date_range: StageStatusResultAnalysisDateRange;
+  /** True only when the completeness check confirms every required analysis surface received data for the latest run. Strategy readiness gates on this, not just status=success. */
+  validated: boolean;
+  /** Live pipeline progress (0–100) of the latest analysis run. 100 on success. */
+  progress_pct: number;
+  /** Human-readable label of the pipeline stage currently executing. Empty when idle or settled. */
+  progress_stage: string;
 };
 
 export type StageStatusResultStrategyStatus = typeof StageStatusResultStrategyStatus[keyof typeof StageStatusResultStrategyStatus];

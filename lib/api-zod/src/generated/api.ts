@@ -688,6 +688,33 @@ export const GetAnalysisSummaryResponse = zod.object({
 
 
 /**
+ * Post-run completeness verification. Counts rows for each analysis surface (ad performance / metric tiles, concepts, variables, demographics, placements, platforms, devices, creative library) scoped to the account's latest manual analysis run, or account-wide when no manual run exists (importer / live-Meta accounts). This is the same computation stage-status "validated" and the Strategy gate read.
+ * @summary Verify every analysis surface received data (analysis-validated check)
+ */
+
+
+
+export const GetAnalysisCompletenessParams = zod.object({
+  "accountId": zod.coerce.string().min(1).describe('Ad account identifier.')
+})
+
+export const GetAnalysisCompletenessResponse = zod.object({
+  "run_id": zod.string().nullable().describe('Manual run the check is scoped to; null when scoped account-wide (importer \/ live-Meta data).'),
+  "run_status": zod.enum(['none', 'running', 'success', 'error']),
+  "complete": zod.boolean().describe('True only when the run succeeded (or account-scoped data exists) AND every required surface has rows.'),
+  "checked_at": zod.string(),
+  "surfaces": zod.array(zod.object({
+  "key": zod.string().describe('Stable machine key for the surface (e.g. ad_performance, creative_library).'),
+  "label": zod.string().describe('Human-readable surface name shown in the UI.'),
+  "rows": zod.number().describe('Row count found for this surface.'),
+  "required": zod.boolean().describe('Required surfaces must have rows for the analysis to count as complete.'),
+  "ok": zod.boolean().describe('True when this surface\'s expectation is satisfied.'),
+  "note": zod.string().nullable().describe('Honest context when a non-required surface is empty (e.g. no concept codes in ad names).')
+}))
+})
+
+
+/**
  * Composes the account's latest analysis run, latest strategy generation run, latest briefs generation run, and current brief count into one shape the frontend gates the Analysis → Strategy → Creative → MST loop on. Adds no new run tables — reads the existing manual_analysis_runs and generation_runs records. Requires access to the account.
  * @summary Loop stage status for an account (hard-gating source of truth)
  */
@@ -702,7 +729,10 @@ export const GetAccountStageStatusResponse = zod.object({
   "analysis": zod.object({
   "status": zod.enum(['none', 'running', 'success', 'error']),
   "last_run_at": zod.string().nullable(),
-  "date_range": zod.union([zod.literal('7d'),zod.literal('14d'),zod.literal('30d'),zod.literal('all'),zod.literal(null)]).nullable()
+  "date_range": zod.union([zod.literal('7d'),zod.literal('14d'),zod.literal('30d'),zod.literal('all'),zod.literal(null)]).nullable(),
+  "validated": zod.boolean().describe('True only when the completeness check confirms every required analysis surface received data for the latest run. Strategy readiness gates on this, not just status=success.'),
+  "progress_pct": zod.number().describe('Live pipeline progress (0–100) of the latest analysis run. 100 on success.'),
+  "progress_stage": zod.string().describe('Human-readable label of the pipeline stage currently executing. Empty when idle or settled.')
 }),
   "strategy": zod.object({
   "status": zod.enum(['none', 'running', 'success', 'error']),
