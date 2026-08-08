@@ -37,7 +37,7 @@ import {
   SectionInfoIcon,
 } from "../shared";
 import { useCellRunScope } from "@/lib/run-scope";
-import { RunSelector, ALL_TIME_SELECTION } from "@/components/analysis/RunSelector";
+import { RunScopePicker, ALL_TIME_SELECTION } from "@/components/analysis/RunSelector";
 import { useListAnalysisRuns } from "@workspace/api-client-react";
 import { CreativeCard } from "@/components/creative/CreativeCard";
 import { ConceptFamilyView } from "@/components/creative/ConceptFamilyView";
@@ -247,7 +247,7 @@ export function IapLibraryView() {
           if (!a) {
             return (
               <div className="flex-1 flex flex-col">
-                <ModuleHeader section={SECTION} title="IAP Library" tabs="analysis" account={acct} />
+                <ModuleHeader section={SECTION} title="IAP Library" tabs="analysis" />
                 <PendingState
                   title="Analysis pending"
                   message="No analysis data available for this account yet."
@@ -335,7 +335,13 @@ export function IapLibraryView() {
                 title="IAP Library"
                 subtitle="Cell & variable performance · by metric selection"
                 tabs="analysis"
-                account={acct}
+                right={
+                  <RunScopePicker
+                    runs={analysisRunsData?.runs ?? []}
+                    value={runSelection}
+                    onChange={setRunSelection}
+                  />
+                }
               />
               {focus && !a.performance_by_cell.some((r) => r.cell_id === focus) && (
                 <StaleFocusNotice label="creative cell" />
@@ -376,15 +382,6 @@ export function IapLibraryView() {
                   })}
                 </div>
               </div>
-
-              {(analysisRunsData?.runs?.length ?? 0) > 0 && (
-                <div className="px-6 pt-4">
-                  <p className={cn(TYPE.microLabel, "text-muted-foreground/30 mb-1.5")}>
-                    Scope to analysis run
-                  </p>
-                  <RunSelector runs={analysisRunsData!.runs} value={runSelection} onChange={setRunSelection} />
-                </div>
-              )}
 
               <div className="px-6 pt-5">
                 <div className="flex items-center justify-between mb-2">

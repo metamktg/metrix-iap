@@ -270,7 +270,6 @@ export function AdAccountOverview() {
         title={account.name}
         subtitle="Command chain · focus · optimization"
         right={<span className="text-label font-mono text-emerald-400/90 uppercase tracking-widest">Connected</span>}
-        account={account}
       />
 
       {/* ── IAP Loop Command Chain ────────────────────────────────────── */}

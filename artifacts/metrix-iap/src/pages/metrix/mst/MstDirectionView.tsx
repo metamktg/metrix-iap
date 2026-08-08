@@ -9,7 +9,7 @@
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, SectionCard, CrossLink } from "../shared";
+import { ModuleHeader, ModuleScopeGate, PendingState, SectionCard, CrossLink } from "../shared";
 import { Compass, TrendingUp, ShieldCheck, ArrowUpRight, Ban } from "lucide-react";
 
 const SECTION = "MST · 06";
@@ -35,7 +35,6 @@ export function MstDirectionView() {
             title="Direction"
             subtitle="The Optimization Loop — turns MST results into re-weighted variables and next-sprint priorities."
           />
-          <ScopeBanner account={account!} />
           <div className="px-6 py-5 space-y-4 max-w-3xl">
             <PendingState
               title="Not yet automated"

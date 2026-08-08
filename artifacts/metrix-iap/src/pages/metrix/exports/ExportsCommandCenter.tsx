@@ -8,7 +8,7 @@
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, ScopeBanner, ModuleScopeGate, HubNavGrid } from "../shared";
+import { ModuleHeader, ModuleScopeGate, HubNavGrid } from "../shared";
 import { BarChart3, FileJson, FileText, FileStack } from "lucide-react";
 
 const SECTION = "Exports · 08";
@@ -36,7 +36,6 @@ export function ExportsCommandCenter() {
               title="Exports"
               subtitle="Take this account's analysis, strategy, briefs, and reports out of Metrix."
             />
-            <ScopeBanner account={acct} />
             <div className="px-6 py-5 space-y-4 max-w-3xl">
               <HubNavGrid items={CHILDREN} label="Explore Exports" />
             </div>

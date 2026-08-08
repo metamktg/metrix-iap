@@ -8,7 +8,7 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount } from "@/lib/data/metrixSeedAdapter";
 import { useListManualImports, getListManualImportsQueryKey } from "@workspace/api-client-react";
-import { ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, CrossLink } from "../shared";
+import { ModuleHeader, ModuleScopeGate, PendingState, CrossLink } from "../shared";
 import { FileImage, ArrowLeftRight } from "lucide-react";
 
 const SECTION = "Creative · 05";
@@ -32,7 +32,6 @@ export function CreativeImportExportView() {
             subtitle="Staged creative asset uploads for this account."
             table="manual_imports"
           />
-          <ScopeBanner account={account!} />
           <div className="px-6 py-5 space-y-4 max-w-3xl">
             {creativeAssets.length === 0 ? (
               <PendingState

@@ -297,7 +297,7 @@ export function PlacementsView() {
           if (!hasDelivery && !hasConversion) {
             return (
               <div className="flex-1 flex flex-col">
-                <ModuleHeader section={SECTION} title="Placements" tabs="analysis" account={acct} />
+                <ModuleHeader section={SECTION} title="Placements" tabs="analysis" />
                 <PendingState
                   title="No placement signal"
                   message="Placement reads appear once delivery data exists for this account."
@@ -323,7 +323,6 @@ export function PlacementsView() {
                   title="Placements"
                   subtitle="Conversion-attributed placement signal · no delivery-based runs yet"
                   tabs="analysis"
-                  account={acct}
                 />
                   <>
                     {isRefetching ? (
@@ -363,7 +362,6 @@ export function PlacementsView() {
                 title="Placements"
                 subtitle="Delivery by placement · re-rank by KPI · click for breakdown"
                 tabs="analysis"
-                account={acct}
               />
               <>
               <DatePresetBar

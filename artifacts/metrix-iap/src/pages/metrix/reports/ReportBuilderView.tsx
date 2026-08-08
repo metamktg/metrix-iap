@@ -8,7 +8,7 @@ import { useAccount, useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getReportBuilder } from "@/lib/data/metrixSeedAdapter";
 import { buildReportModel, downloadReportExport, serializeReportModel, parseReportModel } from "@/lib/reportExport";
-import { ModuleHeader, ScopeBanner, ModuleScopeGate, SectionCard, ModuleTabs, CaveatNote, PendingState, CrossLink } from "../shared";
+import { ModuleHeader, ModuleScopeGate, SectionCard, ModuleTabs, CaveatNote, PendingState, CrossLink } from "../shared";
 import { useDateRange, formatIsoRange, isoMin, isoMax, type IsoRange } from "@/contexts/DateRangeContext";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { FileText, FileDown, Palette, Check, Eye, Building2, Users, Loader2, CalendarRange, Sparkles } from "lucide-react";
@@ -197,8 +197,7 @@ export function ReportBuilderView() {
         if (!rb) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Report Builder" account={acct} />
-              <ScopeBanner account={acct} />
+              <ModuleHeader section={SECTION} title="Report Builder" />
               <PendingState title="Report Builder pending" message="No report template is available for this account yet." icon={FileText}
                 action={<CrossLink to="/app/analysis/overview" label="Review Analysis first" />}
               />
@@ -222,9 +221,7 @@ export function ReportBuilderView() {
               section={SECTION}
               title="Report Builder"
               subtitle="Client-ready report · from analysis & strategy"
-              account={acct}
             />
-            <ScopeBanner account={acct} />
             <ModuleTabs tabs={tabs} active={tab} onChange={setTab} />
 
             <div className="px-6 py-5 space-y-5 max-w-4xl">

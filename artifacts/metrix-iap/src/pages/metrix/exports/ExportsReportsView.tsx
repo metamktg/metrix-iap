@@ -7,7 +7,7 @@
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getReportBuilder } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, ScopeBanner, ModuleScopeGate, SectionCard, PendingState, CrossLink } from "../shared";
+import { ModuleHeader, ModuleScopeGate, SectionCard, PendingState, CrossLink } from "../shared";
 import { FORMAT_LABEL } from "../reports/reportFormatLabels";
 import { FileText, Check } from "lucide-react";
 
@@ -28,7 +28,6 @@ export function ExportsReportsView() {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Reports" />
-              <ScopeBanner account={acct} />
               <PendingState title="No report configuration yet" message="Set up reporting for this account first." icon={FileText} />
             </div>
           );
@@ -42,7 +41,6 @@ export function ExportsReportsView() {
               subtitle="Reports already export as real files — download them from Report History."
               table="export_formats, report_history"
             />
-            <ScopeBanner account={acct} />
             <div className="px-6 py-5 space-y-4 max-w-3xl">
               <SectionCard title="Available formats" desc="Every generated report can be downloaded in these formats.">
                 <ul className="space-y-1.5">

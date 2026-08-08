@@ -13,6 +13,8 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount } from "@/lib/data/metrixSeedAdapter";
 import { ConceptMapView } from "./ConceptMapView";
 import { CrossmapResultsView } from "./CrossmapResultsView";
+import { RunScopePicker, ALL_TIME_SELECTION } from "@/components/analysis/RunSelector";
+import { useListAnalysisRuns } from "@workspace/api-client-react";
 import { Network, GitMerge } from "lucide-react";
 
 type Tab = "concept" | "crossmap";
@@ -41,13 +43,24 @@ export function MstCrossMapView() {
   const account = getAdAccount(seed, adAccountId);
   const content = TAB_CONTENT[tab];
 
+  // Run scope is owned here so the compact picker lives in the single
+  // visible header and the selection is shared across both tabs.
+  const [runScope, setRunScope] = useState(ALL_TIME_SELECTION);
+  const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "");
+
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
       <ModuleHeader
         section={content.section}
         title={content.title}
         subtitle={content.subtitle}
-        account={account ?? undefined}
+        right={
+          <RunScopePicker
+            runs={analysisRunsData?.runs ?? []}
+            value={runScope}
+            onChange={setRunScope}
+          />
+        }
       />
       <ModuleTabs
         tabs={[
@@ -58,7 +71,11 @@ export function MstCrossMapView() {
         onChange={(id) => setTab(id as Tab)}
       />
       <div className="flex-1 flex flex-col min-h-0">
-        {tab === "concept" ? <ConceptMapView renderHeader={false} /> : <CrossmapResultsView renderHeader={false} />}
+        {tab === "concept" ? (
+          <ConceptMapView renderHeader={false} runScope={runScope} onRunScopeChange={setRunScope} />
+        ) : (
+          <CrossmapResultsView renderHeader={false} runScope={runScope} onRunScopeChange={setRunScope} />
+        )}
       </div>
     </div>
   );

@@ -50,7 +50,6 @@ export function AlertsView() {
               section={SECTION}
               title="Alerts"
               subtitle="High-impact signals · data caveats"
-              account={acct}
             />
             <ConnectionNudgeBanner hasMetaConnection={hasMetaConnection} />
             <>

@@ -8,7 +8,7 @@ import { useState } from "react";
 import { useScopedAdAccountId, useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getReportBuilder, getWorkspaceSettings } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, ScopeBanner, SectionCard, CaveatNote, PendingState, CrossLink, DetailReveal, deriveLabel } from "../shared";
+import { ModuleHeader, SectionCard, CaveatNote, PendingState, CrossLink, DetailReveal, deriveLabel } from "../shared";
 import { ConnectMetaDialog, ManualImportDialog, CreativeLibraryDialog } from "../ConnectAccountDialogs";
 import { AgentWaitlistSection } from "./AgentWaitlistSection";
 import { COHORT_OPTIONS } from "./cohortOptions";
@@ -287,7 +287,6 @@ export function GeneralView() {
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
       <ModuleHeader section={SECTION} title="General" subtitle={`Configuration for ${account.name} under ${manager.name}.`} />
-      <ScopeBanner account={account} />
 
       <div className="px-6 py-5 space-y-5 max-w-3xl">
         <SectionCard title="Data connection" desc="Meta ad account connection and manual import status.">

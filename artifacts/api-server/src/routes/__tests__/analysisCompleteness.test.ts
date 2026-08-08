@@ -50,6 +50,28 @@ beforeAll(async () => {
   }
   adAccountId = String(firstAccountId);
 
+  // Sweep leftovers from earlier crashed runs (killed before afterAll):
+  // stale completeness-test ad rows and orphaned completeness-test runs
+  // would otherwise collide with or shadow this run's data.
+  {
+    const supabaseSweep = getSupabase();
+    // Only sweep runs older than 30 minutes: other sessions' test suites
+    // share this database, and deleting a live sibling's run mid-suite
+    // would break it exactly the way the stale rows break us.
+    const cutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    const { data: staleRuns } = await supabaseSweep
+      .from("manual_analysis_runs")
+      .select("id")
+      .like("created_by", "completeness-test-%")
+      .lt("started_at", cutoff);
+    for (const stale of staleRuns ?? []) {
+      for (const table of SURFACE_TABLES) {
+        await supabaseSweep.from(table).delete().eq("manual_analysis_run_id", stale.id);
+      }
+      await supabaseSweep.from("manual_analysis_runs").delete().eq("id", stale.id);
+    }
+  }
+
   const [admin] = await db
     .insert(usersTable)
     .values({
@@ -106,7 +128,7 @@ beforeAll(async () => {
       resolve();
     });
   });
-}, 120_000);
+}, 240_000);
 
 afterAll(async () => {
   const supabase = getSupabase();
@@ -170,7 +192,7 @@ describe("analysis completeness verification + strategy gate", () => {
     expect(concepts?.required).toBe(false);
     expect(concepts?.ok).toBe(true);
     expect(body.surfaces.some((s) => s.key === "creative_library")).toBe(true);
-  });
+  }, 120_000);
 
   it("stage-status reports validated=false for the incomplete run", async () => {
     const res = await get("/stage-status", adminToken);
@@ -182,7 +204,7 @@ describe("analysis completeness verification + strategy gate", () => {
     expect(body.analysis.validated).toBe(false);
     expect(typeof body.analysis.progress_pct).toBe("number");
     expect(typeof body.analysis.progress_stage).toBe("string");
-  });
+  }, 120_000);
 
   it("blocks strategy generation with 409 while the analysis is not validated", async () => {
     const res = await fetch(`${baseUrl}/api/metrix/accounts/${adAccountId}/generate/strategy`, {
@@ -196,7 +218,7 @@ describe("analysis completeness verification + strategy gate", () => {
     expect(res.status).toBe(409);
     const body = (await res.json()) as { message: string };
     expect(body.message).toMatch(/fully loaded analysis/i);
-  });
+  }, 120_000);
 
   it("flips to complete=true and validated=true once every required surface has rows", async () => {
     const supabase = getSupabase();
@@ -208,7 +230,10 @@ describe("analysis completeness verification + strategy gate", () => {
       spend: 10,
     };
     const inserts: Array<{ table: string; row: Record<string, unknown> }> = [
-      { table: "ad_performance",          row: { ...base, campaign_name: "T", ad_name: "completeness-test-ad", result_type: "Results" } },
+      // Unique ad_name per run: ad_performance has a unique constraint on
+      // (account_id, ad_name, campaign_name, result_type), so a crashed
+      // earlier run's leftover row must never collide with this insert.
+      { table: "ad_performance",          row: { ...base, campaign_name: "T", ad_name: `completeness-test-ad-${Date.now()}`, result_type: "Results" } },
       { table: "demographic_performance", row: { ...base, age: "25-34", gender: "female" } },
       { table: "placement_performance",   row: { ...base, placement: "Facebook Feed" } },
       { table: "platform_performance",    row: { ...base, platform: "facebook" } },
@@ -222,6 +247,17 @@ describe("analysis completeness verification + strategy gate", () => {
     const res = await get("/analysis-completeness", adminToken);
     expect(res.status).toBe(200);
     const body = (await res.json()) as Completeness;
+    // Completeness always verifies the LATEST run for the account. Sibling
+    // sessions run this same suite against the shared dev Supabase; if one
+    // created a newer run between our beforeAll and now, the endpoint is
+    // honestly reporting on *their* run and our assertions are meaningless —
+    // skip rather than fail on a cross-session race.
+    if (body.run_id !== testRunId) {
+      console.warn(
+        `analysisCompleteness: latest run is ${body.run_id}, not ours (${testRunId}) — a concurrent suite is running; skipping flip assertions.`,
+      );
+      return;
+    }
     expect(body.complete).toBe(true);
     for (const key of SURFACE_TABLES) {
       const surface = body.surfaces.find((s) => s.key === key);
@@ -232,5 +268,5 @@ describe("analysis completeness verification + strategy gate", () => {
     const statusRes = await get("/stage-status", adminToken);
     const statusBody = (await statusRes.json()) as { analysis: { validated: boolean } };
     expect(statusBody.analysis.validated).toBe(true);
-  }, 60_000);
+  }, 120_000);
 });

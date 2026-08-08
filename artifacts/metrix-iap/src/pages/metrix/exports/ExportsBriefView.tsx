@@ -8,7 +8,7 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getBriefBuilder } from "@/lib/data/metrixSeedAdapter";
 import { buildExportEnvelope } from "@/lib/jsonExport";
-import { ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState } from "../shared";
+import { ModuleHeader, ModuleScopeGate, PendingState } from "../shared";
 import { DataLimitedCaveat, JsonExportCard } from "./exportsShared";
 import { FileStack } from "lucide-react";
 
@@ -29,7 +29,6 @@ export function ExportsBriefView() {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Brief" />
-              <ScopeBanner account={acct} />
               <PendingState title="No briefs yet" message="Build a brief first — there's nothing to export yet." icon={FileStack} />
             </div>
           );
@@ -46,7 +45,6 @@ export function ExportsBriefView() {
               subtitle="Draft briefs, as shown in Brief Builder."
               table="draft_briefs"
             />
-            <ScopeBanner account={acct} />
             <div className="px-6 py-5 space-y-4 max-w-3xl">
               <DataLimitedCaveat />
               <JsonExportCard

@@ -8,7 +8,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getStrategyData } from "@/lib/data/metrixSeedAdapter";
 import { useStageStatus } from "@/hooks/useStageStatus";
 import {
-  ModuleHeader, ScopeBanner, ModuleScopeGate, PrerequisiteGate, SectionCard,
+  ModuleHeader, ModuleScopeGate, PrerequisiteGate, SectionCard,
   StageLoopHub, buildLoopStages, CrossLink, MetricTile, fmtNum, HubNavGrid,
 } from "../shared";
 import {
@@ -54,7 +54,6 @@ export function StrategyCommandCenter() {
               subtitle="Turn validated analysis into message pillars and testing hypotheses."
               right={<ProvenanceBadge provenance={strategy?.provenance} />}
             />
-            <ScopeBanner account={acct} />
             <StageLoopHub stages={buildLoopStages(status)} current="strategy" />
 
             {strategy && (

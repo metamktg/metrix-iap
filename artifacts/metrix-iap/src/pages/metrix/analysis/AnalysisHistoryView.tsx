@@ -9,7 +9,6 @@ import { getAdAccount } from "@/lib/data/metrixSeedAdapter";
 import { useListAnalysisRuns, type AnalysisRun } from "@workspace/api-client-react";
 import {
   ModuleHeader,
-  ScopeBanner,
   ModuleScopeGate,
   SectionCard,
   PendingState,
@@ -174,7 +173,6 @@ export function AnalysisHistoryView() {
             subtitle="All analysis runs for this account — each run is a distinct data snapshot."
             table="manual_analysis_runs"
           />
-          <ScopeBanner account={account!} />
           <div className="px-6 py-5 space-y-5 max-w-3xl">
 
             {/* Strategy grounding callout */}

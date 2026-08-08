@@ -14,7 +14,7 @@ import { getAdAccount, getMST, getAnalysisData } from "@/lib/data/metrixSeedAdap
 import { runMstAnalysis, type Verdict, type ColumnAnalysisEntry, type RowAnalysisEntry, type DiagonalAnalysisEntry } from "@/lib/mst-analysis";
 import { resolveCohortMeta } from "@/lib/data/cohortMeta";
 import {
-  ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState, MetricTile,
+  ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   CaveatNote, SectionCard, DetailReveal, readableVariables, fmtUSD, fmtNum,
   useShowMore, ShowMoreButton,
 } from "../shared";
@@ -63,7 +63,6 @@ export function MstPerformanceView() {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Performance" />
-              <ScopeBanner account={acct} />
               <PendingState title="No test results yet" message={mst?.render_policy ?? "MST performance appears once the matrix and performance data both exist."} icon={TrendingUp} />
             </div>
           );
@@ -82,7 +81,6 @@ export function MstPerformanceView() {
               subtitle={`Universal vs avatar-specific winners, ranked by ${cohortMeta.terminalMetricLabel}.`}
               table="historical_matrix_4x4, performance_by_cell"
             />
-            <ScopeBanner account={acct} />
             <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
               <MetricTile label="Variables ranked" value={String(crossmap.length)} />
               <MetricTile label="Avatars/columns" value={String(columnAnalysis.length)} />

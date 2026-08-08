@@ -32,7 +32,7 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed, useMetrixIsRefetching } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import {
-  ModuleHeader, ModuleScopeGate, ScopeBanner, PendingState,
+  ModuleHeader, ModuleScopeGate, PendingState,
   SectionCard, MetricTile, CrossLink, fmtNum, fmtPct, fmtUSD,
   SkeletonTileRow, CaveatNote, SectionInfoIcon,
 } from "../shared";
@@ -608,7 +608,7 @@ export function EngagementFunnelView() {
         if (demoRows.length === 0) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Engagement Funnel" tabs="analysis" account={acct} />
+              <ModuleHeader section={SECTION} title="Engagement Funnel" tabs="analysis" />
               <PendingState
                 title="No engagement data"
                 message="Stage demographic performance CSVs and run analysis to see the engagement funnel."
@@ -626,9 +626,7 @@ export function EngagementFunnelView() {
               title="Engagement Funnel"
               subtitle="Upstream engagement quality — reach, frequency, CTR all vs link — through to purchase. Sortable by any stage, any dimension."
               tabs="analysis"
-              account={acct}
             />
-            <ScopeBanner account={acct} />
 
             {/* ── Summary tiles ─────────────────────────────────────── */}
             {isRefetch ? (
