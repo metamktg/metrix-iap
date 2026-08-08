@@ -66,39 +66,41 @@ export function StrategyCommandCenter() {
             )}
 
             <div className="px-6 py-5 space-y-4 max-w-3xl">
-              <PrerequisiteGate
-                met={analysisOk}
-                title="Run analysis first"
-                message={gateMessage}
-                ctaLabel="Go to Analysis"
-                ctaTo="/app/analysis"
-              >
-                {() => (
-                  <SectionCard title="Generate strategy" desc="Runs the Metrix engine over this account's analysis data. Generated pillars/hypotheses fully replace the prior generated set.">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-caption text-muted-foreground/75">
-                        {strategy && strategy.message_pillars.length > 0
-                          ? `${strategy.message_pillars.length} message pillars currently active.`
-                          : "No strategy generated yet."}
-                      </span>
-                      <GenerateButton
-                        onClick={generation.start}
-                        isRunning={generation.isRunning}
-                        label={strategy && strategy.message_pillars.length > 0 ? "Regenerate strategy" : "Generate from analysis"}
-                        runningLabel="Generating…"
-                      />
-                    </div>
-                    <div className="mt-3 space-y-3">
-                      <GenerationProgressBar
-                        isRunning={generation.isRunning}
-                        progressPercent={generation.progressPercent}
-                        stageLabel={generation.progressStage ?? "Generating strategy from validated analysis…"}
-                      />
-                      <GenerationErrorNote message={generation.lastError} />
-                    </div>
-                  </SectionCard>
-                )}
-              </PrerequisiteGate>
+              <div data-tour="strategy-generate-panel">
+                <PrerequisiteGate
+                  met={analysisOk}
+                  title="Run analysis first"
+                  message={gateMessage}
+                  ctaLabel="Go to Analysis"
+                  ctaTo="/app/analysis"
+                >
+                  {() => (
+                    <SectionCard title="Generate strategy" desc="Runs the Metrix engine over this account's analysis data. Generated pillars/hypotheses fully replace the prior generated set.">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-caption text-muted-foreground/75">
+                          {strategy && strategy.message_pillars.length > 0
+                            ? `${strategy.message_pillars.length} message pillars currently active.`
+                            : "No strategy generated yet."}
+                        </span>
+                        <GenerateButton
+                          onClick={generation.start}
+                          isRunning={generation.isRunning}
+                          label={strategy && strategy.message_pillars.length > 0 ? "Regenerate strategy" : "Generate from analysis"}
+                          runningLabel="Generating…"
+                        />
+                      </div>
+                      <div className="mt-3 space-y-3">
+                        <GenerationProgressBar
+                          isRunning={generation.isRunning}
+                          progressPercent={generation.progressPercent}
+                          stageLabel={generation.progressStage ?? "Generating strategy from validated analysis…"}
+                        />
+                        <GenerationErrorNote message={generation.lastError} />
+                      </div>
+                    </SectionCard>
+                  )}
+                </PrerequisiteGate>
+              </div>
 
               <HubNavGrid items={CHILDREN} label="Explore Strategy" />
             </div>

@@ -3,11 +3,13 @@ import { Link, useLocation } from "wouter";
 import { cn } from "@workspace/command-deck/lib/utils";
 import {
   ChevronRight, Bell, CheckCircle2, PanelRightOpen, PanelRightClose,
-  Settings, CreditCard, Users, LogOut, User,
+  Settings, CreditCard, Users, LogOut, User, Compass,
 } from "lucide-react";
 import { useAccount } from "@/contexts/AccountContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTaskTray } from "@/contexts/TaskTrayContext";
+import { useOnboardingTour } from "@/contexts/OnboardingTourContext";
+import { FIRST_ANALYSIS_TOUR_ID } from "@/lib/onboarding/tourSteps";
 import { useTaskTrayCount } from "./TaskTray";
 import { buildBreadcrumbs } from "./breadcrumbs";
 
@@ -24,6 +26,7 @@ function AccountMenu({
 }) {
   const [, navigate] = useLocation();
   const { logout } = useAuth();
+  const { start } = useOnboardingTour();
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -81,6 +84,19 @@ function AccountMenu({
         <MenuItem icon={Users} label="Team & Access" onClick={() => go("/app/settings/team")} />
         <MenuItem icon={CreditCard} label="Billing" onClick={() => go("/app/settings/billing")} />
         <MenuItem icon={Settings} label="Settings" onClick={() => go("/app/settings")} />
+      </div>
+
+      {/* Product tour */}
+      <div className="border-t border-border/40 py-1.5">
+        <MenuItem
+          icon={Compass}
+          label="Take the product tour"
+          onClick={() => {
+            navigate("/app/analysis");
+            start(FIRST_ANALYSIS_TOUR_ID, { force: true });
+            onClose();
+          }}
+        />
       </div>
 
       {/* Sign out */}

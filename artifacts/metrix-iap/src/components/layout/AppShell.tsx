@@ -3,6 +3,8 @@ import { Topbar } from "./Topbar";
 import { TaskTray } from "./TaskTray";
 import { GlobalRunningBanner } from "./GlobalRunningBanner";
 import { useTaskTray } from "@/contexts/TaskTrayContext";
+import { OnboardingAutoStart } from "@/components/onboarding/OnboardingAutoStart";
+import { TourOverlay } from "@/components/onboarding/TourOverlay";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -27,6 +29,9 @@ export function AppShell({ children }: AppShellProps) {
           <TaskTray />
         </main>
       </div>
+
+      <OnboardingAutoStart />
+      <TourOverlay />
     </div>
   );
 }

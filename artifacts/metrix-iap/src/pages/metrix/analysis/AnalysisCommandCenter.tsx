@@ -49,13 +49,15 @@ export function AnalysisCommandCenter() {
             <StageLoopHub stages={buildLoopStages(status)} current="analysis" />
 
             <div className="px-6 py-5 space-y-4 max-w-3xl">
-              <SectionCard
-                title="Run analysis"
-                desc="Pick a date range and explicitly analyze the staged manual uploads. Never runs automatically."
-                right={<span className="text-label text-muted-foreground/70">{objectivesSummary}</span>}
-              >
-                <AnalysisControls accountId={acct.id} />
-              </SectionCard>
+              <div data-tour="analysis-run-panel">
+                <SectionCard
+                  title="Run analysis"
+                  desc="Pick a date range and explicitly analyze the staged manual uploads. Never runs automatically."
+                  right={<span className="text-label text-muted-foreground/70">{objectivesSummary}</span>}
+                >
+                  <AnalysisControls accountId={acct.id} />
+                </SectionCard>
+              </div>
 
               <HubNavGrid
                 label="Explore Analysis"
