@@ -131,9 +131,11 @@ const VARIABLE_ROW_FIELDS = [
   "pain_proof_variable",
   "proof_variable",
   "cta_variable",
+  "funnel_stage_variable",
+  "awareness_variable",
 ] satisfies (keyof CellPerformanceRow)[];
 
-export type VariableFamily = "concept" | "framework" | "tonality" | "hook" | "pain_point" | "proof" | "cta" | "stage";
+export type VariableFamily = "concept" | "framework" | "tonality" | "hook" | "pain_point" | "proof" | "cta" | "stage" | "awareness";
 
 // Prefix is the authoritative source of truth for family, not the source
 // field a code happened to be read from — a field can carry a code from a
@@ -149,6 +151,7 @@ const PREFIX_FAMILY: Record<string, VariableFamily> = {
   PR: "proof",
   CTA: "cta",
   ST: "stage",
+  AW: "awareness",
 };
 
 function familyOfCode(code: string): VariableFamily | null {

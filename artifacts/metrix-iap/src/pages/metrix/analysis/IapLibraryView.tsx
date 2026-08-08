@@ -78,6 +78,8 @@ const VARIABLE_FIELDS: { key: keyof CellPerformanceRow; label: string }[] = [
   { key: "pain_proof_variable", label: "Pain / proof" },
   { key: "proof_variable",      label: "Proof" },
   { key: "cta_variable",        label: "CTA" },
+  { key: "funnel_stage_variable", label: "Funnel stage" },
+  { key: "awareness_variable",  label: "Awareness" },
 ];
 
 export function IapLibraryView() {

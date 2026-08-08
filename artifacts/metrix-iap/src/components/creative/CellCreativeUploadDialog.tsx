@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { Upload, X, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { Upload, X, CheckCircle, AlertCircle, AlertTriangle, Loader2, ShieldCheck } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetMetrixSeedQueryKey } from "@workspace/api-client-react";
 import { cn } from "@workspace/command-deck/lib/utils";
@@ -11,6 +11,20 @@ import {
 } from "@workspace/command-deck/components/ui/dialog";
 
 const MAX_BYTES = 8 * 1024 * 1024;
+
+interface DetectedVariable {
+  family: string;
+  code: string;
+  confidence: number;
+}
+
+interface DnaValidation {
+  overall_confidence: number | null;
+  variables: DetectedVariable[];
+  expected: DetectedVariable[];
+  missing: string[];
+  conflicting: string[];
+}
 
 interface CellCreativeUploadDialogProps {
   open: boolean;
@@ -27,8 +41,12 @@ export function CellCreativeUploadDialog({
 }: CellCreativeUploadDialogProps) {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [status, setStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
+  const [status, setStatus] = useState<
+    "idle" | "validating" | "confirm" | "success" | "error"
+  >("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [validation, setValidation] = useState<DnaValidation | null>(null);
+  const [matched, setMatched] = useState<boolean>(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
@@ -38,6 +56,8 @@ export function CellCreativeUploadDialog({
     setPreviewUrl(null);
     setStatus("idle");
     setErrorMsg(null);
+    setValidation(null);
+    setMatched(false);
   }, [previewUrl]);
 
   const handleClose = useCallback(
@@ -81,40 +101,53 @@ export function CellCreativeUploadDialog({
     [handleFile],
   );
 
-  const upload = useCallback(async () => {
-    if (!file) return;
-    setStatus("uploading");
-    setErrorMsg(null);
-    try {
-      const buf = await file.arrayBuffer();
-      const uint8 = new Uint8Array(buf);
-      let binary = "";
-      const chunkSize = 8192;
-      for (let i = 0; i < uint8.length; i += chunkSize) {
-        binary += String.fromCharCode(...uint8.subarray(i, i + chunkSize));
-      }
-      const b64 = btoa(binary);
-      const res = await fetch(`/api/metrix/accounts/${accountId}/cells/${cellId}/creative`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          content_base64: b64,
-          filename: file.name,
-          content_type: file.type || "application/octet-stream",
-        }),
-      });
-      if (!res.ok) {
+  const upload = useCallback(
+    async (override = false) => {
+      if (!file) return;
+      setStatus("validating");
+      setErrorMsg(null);
+      try {
+        const buf = await file.arrayBuffer();
+        const uint8 = new Uint8Array(buf);
+        let binary = "";
+        const chunkSize = 8192;
+        for (let i = 0; i < uint8.length; i += chunkSize) {
+          binary += String.fromCharCode(...uint8.subarray(i, i + chunkSize));
+        }
+        const b64 = btoa(binary);
+        const res = await fetch(`/api/metrix/accounts/${accountId}/cells/${cellId}/creative`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            content_base64: b64,
+            filename: file.name,
+            content_type: file.type || "application/octet-stream",
+            ...(override ? { override: true } : {}),
+          }),
+        });
         const body = await res.json().catch(() => ({}));
-        throw new Error((body as { message?: string }).message ?? `Upload failed (${res.status})`);
+        if (res.status === 409 && (body as { status?: string }).status === "needs_confirmation") {
+          setValidation((body as { validation: DnaValidation }).validation);
+          setMatched(false);
+          setStatus("confirm");
+          return;
+        }
+        if (!res.ok) {
+          throw new Error((body as { message?: string }).message ?? `Upload failed (${res.status})`);
+        }
+        const fileValidation = (body as { validation?: DnaValidation | null }).validation ?? null;
+        setValidation(fileValidation);
+        setMatched(!override);
+        setStatus("success");
+        void queryClient.invalidateQueries({ queryKey: getGetMetrixSeedQueryKey() });
+      } catch (err) {
+        setStatus("error");
+        setErrorMsg(err instanceof Error ? err.message : "Upload failed.");
       }
-      setStatus("success");
-      void queryClient.invalidateQueries({ queryKey: getGetMetrixSeedQueryKey() });
-    } catch (err) {
-      setStatus("error");
-      setErrorMsg(err instanceof Error ? err.message : "Upload failed.");
-    }
-  }, [file, accountId, cellId, queryClient]);
+    },
+    [file, accountId, cellId, queryClient],
+  );
 
   const isVideo = file?.type.startsWith("video/") ?? false;
 
@@ -131,8 +164,16 @@ export function CellCreativeUploadDialog({
           <div className="flex flex-col items-center gap-3 py-6">
             <CheckCircle className="w-8 h-8 text-emerald-400" />
             <p className="text-body text-center text-muted-foreground">
-              Creative uploaded — the library will refresh automatically.
+              Creative filed to <span className="font-mono text-interactive">{cellId}</span> — the library will refresh automatically.
             </p>
+            {validation && (
+              <div className="w-full flex items-center gap-1.5 justify-center text-caption text-muted-foreground/70">
+                <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                {matched
+                  ? `Matched the cell's DNA${validation.overall_confidence != null ? ` · ${Math.round(validation.overall_confidence * 100)}% confidence` : ""}`
+                  : "Filed with an explicit override — mismatch was confirmed."}
+              </div>
+            )}
             <button
               type="button"
               onClick={() => onOpenChange(false)}
@@ -140,6 +181,43 @@ export function CellCreativeUploadDialog({
             >
               Close
             </button>
+          </div>
+        ) : status === "confirm" && validation ? (
+          <div className="space-y-3 py-1">
+            <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5">
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <div className="space-y-1.5 text-caption text-amber-200/90">
+                <p className="font-medium text-amber-200">Doesn't match this cell's recorded DNA</p>
+                {validation.missing.length > 0 && (
+                  <p>Missing: <span className="font-mono">{validation.missing.join(", ")}</span></p>
+                )}
+                {validation.conflicting.length > 0 && (
+                  <p>Conflicts: <span className="font-mono">{validation.conflicting.join(", ")}</span></p>
+                )}
+                {validation.overall_confidence != null && (
+                  <p>Detection confidence: {Math.round(validation.overall_confidence * 100)}%</p>
+                )}
+                <p className="opacity-80">
+                  Detected: {validation.variables.map((v) => v.code).join(", ") || "(nothing registry-valid)"}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => { setStatus("idle"); setValidation(null); }}
+                className="flex-1 py-2 rounded-lg text-body font-medium border border-border/50 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void upload(true)}
+                className="flex-1 py-2 rounded-lg text-body font-medium bg-amber-500/90 text-black hover:bg-amber-500 transition-colors"
+              >
+                Upload anyway
+              </button>
+            </div>
           </div>
         ) : (
           <div className="space-y-3">
@@ -227,8 +305,8 @@ export function CellCreativeUploadDialog({
 
             <button
               type="button"
-              disabled={!file || status === "uploading"}
-              onClick={upload}
+              disabled={!file || status === "validating"}
+              onClick={() => void upload(false)}
               className={cn(
                 "w-full py-2 rounded-lg text-body font-medium transition-colors",
                 "bg-primary text-primary-foreground hover:bg-primary/90",
@@ -236,10 +314,10 @@ export function CellCreativeUploadDialog({
                 "flex items-center justify-center gap-2",
               )}
             >
-              {status === "uploading" ? (
+              {status === "validating" ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  Uploading…
+                  Validating against IAP DNA…
                 </>
               ) : (
                 "Upload creative"

@@ -222,6 +222,8 @@ export function VariableCodeChips({ row }: { row: CellPerformanceRow }) {
     row.pain_proof_variable,
     row.proof_variable,
     row.cta_variable,
+    row.funnel_stage_variable,
+    row.awareness_variable,
   ].filter((c): c is string => Boolean(c));
   if (!codes.length) return null;
   return (

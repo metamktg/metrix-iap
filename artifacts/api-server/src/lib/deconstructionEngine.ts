@@ -139,6 +139,25 @@ export function alignCellId(opts: {
   return `C${maxCol + 1}A`;
 }
 
+/** Maps a registry family to the MSTLibraryCell payload column that stores it. */
+const FAMILY_TO_PAYLOAD_KEY: Record<string, string> = {
+  concept: "concept_variable",
+  framework: "framework_variable",
+  tonality: "tone_variable",
+  hook: "hook_variable",
+  pain_point: "pain_proof_variable",
+  proof: "proof_variable",
+  // NOTE: the registry `funnel_stage` family (ST_ prefix) is a distinct
+  // concept from the cell's `stage` field — `stage` holds a human display
+  // label (e.g. "TOF", "MOF", "TOF to MOF"), never a registry code, and
+  // must never be read/overwritten by this comparison. ST_/AW_ have no
+  // established registry definition yet (see variable_registry's
+  // registry_missing status), so they get their own dedicated, non-
+  // colliding payload keys here.
+  funnel_stage: "funnel_stage_variable",
+  awareness: "awareness_variable",
+};
+
 /** Leading matrix cell code of a brief position string ("C2B_..." → "C2B"). */
 export function briefCellCode(pos: string | null | undefined): string | null {
   const m = /^(C\d+[A-Z])/i.exec(String(pos ?? "").trim());
@@ -275,6 +294,367 @@ function deconstructionPrompt(opts: {
   ].join("\n");
 }
 
+// ─── cell-targeted upload validation ───────────────────────────────────
+// Manual uploads made directly onto a specific "No asset" tile (rather than
+// the freeform manual-import → deconstruct flow) must be classified against
+// the SAME registry, but scoped to the one cell the user targeted: the
+// question isn't "which cell does this belong to" (alignCellId's job) but
+// "does this creative actually match the DNA already on record for this
+// cell". No cell_id guessing happens here.
+
+export type CellCreativeValidation = {
+  /** unclassified: media type the model can't see (rare/broken upload). */
+  status: "matched" | "mismatch" | "unclassified";
+  overall_confidence: number | null;
+  variables: DetectedVariable[];
+  /** DNA already on record for this cell (empty when the cell has none yet). */
+  expected: DetectedVariable[];
+  /** Expected codes the upload did not reproduce. */
+  missing: string[];
+  /** Families where the upload shows a DIFFERENT code than the cell's record. */
+  conflicting: string[];
+  detected_copy: Row | null;
+  /** Internal: the cell's existing library_cells row, if any — never sent to the client. */
+  row?: Row | null;
+};
+
+function cellValidationPrompt(opts: {
+  accountName: string;
+  cellId: string;
+  filename: string;
+  adContexts: Array<Row>;
+  expected: DetectedVariable[];
+  registryFamilies: string[];
+  videoFrameLabels?: string[] | null;
+}): string {
+  const adLines =
+    opts.adContexts.length > 0
+      ? opts.adContexts
+          .map(
+            (a) =>
+              `- ad_name: ${a.ad_name}${a.concept ? ` | concept: ${a.concept}` : ""}${a.variation ? ` | variation: ${a.variation}` : ""}`,
+          )
+          .join("\n")
+      : "- (no live ads mapped to this cell yet — classify from the visual alone)";
+  return [
+    `You are the Metrix IAP creative deconstruction engine for the ad account "${opts.accountName}".`,
+    `This file is being uploaded DIRECTLY to library cell "${opts.cellId}" — do not choose or suggest a different cell. Your job is only to classify what the creative shows.`,
+    opts.videoFrameLabels && opts.videoFrameLabels.length > 0
+      ? `The creative "${opts.filename}" is a VIDEO. The attached images are keyframes extracted from it, in order: ${opts.videoFrameLabels.join(", ")}. Analyze them together as ONE creative.`
+      : `Analyze the attached creative image ("${opts.filename}").`,
+    "",
+    IAP_VARIABLE_TAXONOMY,
+    "",
+    `Registry families active for this account: ${opts.registryFamilies.join(", ") || "(all families)"}.`,
+    "",
+    "ADS CURRENTLY MAPPED TO THIS CELL (context only):",
+    adLines,
+    ...(opts.expected.length > 0
+      ? [
+          "",
+          `THIS CELL'S RECORDED DNA (what it is currently filed as — report what the upload ACTUALLY shows, not what's expected):`,
+          opts.expected.map((v) => `${v.family}: ${v.code}`).join(" + "),
+        ]
+      : []),
+    "",
+    "RULES:",
+    "- Detect ONE code per relevant family. Required stack when identifiable: concept (CN_), framework (FW_), tonality (TN_), hook (HK_). Add ST_/AW_/HP_/PR_ only when clearly present.",
+    "- family must be one of: concept, framework, tonality, funnel_stage, awareness, pain_point, proof, hook — and the code must carry that family's prefix.",
+    "- confidence is a number 0..1 reflecting how certain you are the variable is genuinely expressed in THIS creative. Never inflate; 0.5 means 'plausible guess'.",
+    "- evidence: one short sentence pointing at what in the image/copy supports the code.",
+    "- Also transcribe: primary_message, secondary_message, cta, visual_system.",
+    "",
+    'Return ONLY raw JSON: {"variables":[{"family":"...","code":"...","confidence":0.0,"evidence":"..."}],"primary_message":"...","secondary_message":"...","cta":"...","visual_system":"..."} — no prose, no markdown fences.',
+  ].join("\n");
+}
+
+/**
+ * library_cells DNA fields are frequently composite — multiple registry
+ * codes for the same family joined with " + " (mirrors the frontend's
+ * splitCodes() convention in segment-analytics.ts). Split into individual
+ * codes so comparisons work per-code, not per-raw-field-string.
+ */
+function splitCompositeCodes(v: unknown): string[] {
+  if (typeof v !== "string") return [];
+  return v
+    .split(/\s*\+\s*/)
+    .map((c) => c.trim())
+    .filter(Boolean);
+}
+
+/** DNA currently on record for a cell, read from its library_cells row (if any). */
+async function expectedVariablesForCell(accountId: string, cellId: string): Promise<{ row: Row | null; expected: DetectedVariable[] }> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("library_cells")
+    .select("*")
+    .eq("account_id", accountId)
+    .eq("cell_id", cellId)
+    .order("row_index", { ascending: true })
+    .limit(1);
+  if (error) throw new Error(error.message);
+  const row = data?.[0] ?? null;
+  if (!row) return { row: null, expected: [] };
+  const payload = (row["payload"] ?? {}) as Row;
+  const expected: DetectedVariable[] = [];
+  for (const [family, payloadKey] of Object.entries(FAMILY_TO_PAYLOAD_KEY)) {
+    const raw = payload[payloadKey] ?? row[payloadKey];
+    for (const code of splitCompositeCodes(raw)) {
+      expected.push({ family, code, confidence: 1 });
+    }
+  }
+  return { row, expected };
+}
+
+/**
+ * Classify an uploaded file against the registry, scoped to one known
+ * target cell — no cell guessing. Compares detected variables against the
+ * cell's recorded DNA (when it has one) so a visually-different creative
+ * can't silently overwrite a cell's identity without the user confirming.
+ * Read-only: performs no writes.
+ */
+export async function classifyCellCreative(opts: {
+  accountId: string;
+  cellId: string;
+  filename: string;
+  contentType: string | null;
+  bytes: Buffer;
+}): Promise<CellCreativeValidation> {
+  const empty: CellCreativeValidation = {
+    status: "unclassified",
+    overall_confidence: null,
+    variables: [],
+    expected: [],
+    missing: [],
+    conflicting: [],
+    detected_copy: null,
+  };
+
+  const mediaType = supportedImageMediaType(opts.contentType, opts.filename);
+  let videoFrames: Array<{ label: string; jpeg: Buffer }> | null = null;
+  if (!mediaType && isVideoCreative(opts.contentType, opts.filename)) {
+    try {
+      videoFrames = await extractVideoKeyframes(opts.bytes, opts.filename);
+    } catch (err) {
+      logger.warn({ accountId: opts.accountId, cellId: opts.cellId, err }, "Cell upload video keyframe extraction failed");
+      videoFrames = null;
+    }
+  }
+  if (!mediaType && !videoFrames) return empty;
+
+  const supabase = getSupabase();
+  const [{ data: account, error: accErr }, { row: libraryRow, expected }, { data: ads }, { data: registry }] = await Promise.all([
+    supabase.from("ad_accounts").select("id, name").eq("id", opts.accountId).limit(1),
+    expectedVariablesForCell(opts.accountId, opts.cellId),
+    supabase.from("ads").select("ad_name, concept, variation").eq("account_id", opts.accountId).eq("cell", opts.cellId),
+    supabase.from("variable_registry").select("prefix, family, status"),
+  ]);
+  if (accErr) throw new Error(accErr.message);
+  const accountName = String(account?.[0]?.["name"] ?? opts.accountId);
+  const registryFamilies = (registry ?? [])
+    .filter((r: Row) => String(r["status"] ?? "") !== "registry_missing")
+    .map((r: Row) => `${r["family"]} (${r["prefix"]})`);
+
+  const imageBlocks: Array<Record<string, unknown>> = videoFrames
+    ? videoFrames.map((f) => ({
+        type: "image",
+        source: { type: "base64", media_type: "image/jpeg", data: f.jpeg.toString("base64") },
+      }))
+    : [
+        {
+          type: "image",
+          source: { type: "base64", media_type: mediaType!, data: opts.bytes.toString("base64") },
+        },
+      ];
+  const content: ModelContent = [
+    ...imageBlocks,
+    {
+      type: "text",
+      text: cellValidationPrompt({
+        accountName,
+        cellId: opts.cellId,
+        filename: opts.filename,
+        adContexts: ads ?? [],
+        expected,
+        registryFamilies,
+        videoFrameLabels: videoFrames ? videoFrames.map((f) => f.label) : null,
+      }),
+    },
+  ];
+
+  const output = sanitizeGeneratedText(
+    await generateValidated(content, DeconstructionOutput, { maxTokens: 8192 }),
+    accountName,
+  );
+  const variables = sanitizeDetectedVariables(output.variables as DetectedVariable[]);
+  if (variables.length === 0) {
+    throw new Error(`Model returned no registry-valid variables for ${opts.filename}.`);
+  }
+  const overall = overallConfidence(variables);
+  const confidenceGate = gateDecision(overall) === "auto_filed";
+
+  const detectedByFamily = new Map(variables.map((v) => [v.family, v.code]));
+  // DNA fields are frequently composite (e.g. "TN_bold + TN_playful"), and
+  // the model reports one code per family — so a family matches when the
+  // detected code is a MEMBER of the expected set, not when it equals the
+  // whole (possibly multi-code) field verbatim.
+  const expectedByFamily = new Map<string, Set<string>>();
+  for (const exp of expected) {
+    const set = expectedByFamily.get(exp.family) ?? new Set<string>();
+    set.add(exp.code);
+    expectedByFamily.set(exp.family, set);
+  }
+  const missing: string[] = [];
+  const conflicting: string[] = [];
+  for (const [family, expectedCodes] of expectedByFamily) {
+    const got = detectedByFamily.get(family);
+    if (!got) {
+      missing.push(...expectedCodes);
+    } else if (!expectedCodes.has(got)) {
+      conflicting.push(`${[...expectedCodes].join(" + ")} → ${got}`);
+    }
+  }
+
+  const detected_copy = {
+    primary_message: output.primary_message ?? null,
+    secondary_message: output.secondary_message ?? null,
+    cta: output.cta ?? null,
+    visual_system: output.visual_system ?? null,
+  };
+
+  const matched = confidenceGate && missing.length === 0 && conflicting.length === 0;
+  return {
+    status: matched ? "matched" : "mismatch",
+    overall_confidence: overall,
+    variables,
+    expected,
+    missing,
+    conflicting,
+    detected_copy,
+    row: libraryRow,
+  };
+}
+
+/**
+ * Commit a cell-targeted upload: writes the servable asset override AND
+ * keeps the cell's library DNA record in sync with what was just validated
+ * (creates a library_cells row for a cell that never had one, or updates an
+ * existing row's variable fields) — so a later Creative Scan / backfill on
+ * this cell won't contradict what the user just confirmed.
+ */
+export async function fileCellCreativeOverride(opts: {
+  accountId: string;
+  cellId: string;
+  filename: string;
+  contentType: string;
+  bytes: Buffer;
+  validation: CellCreativeValidation;
+  overridden: boolean;
+}): Promise<void> {
+  const supabase = getSupabase();
+  const hexBytes = `\\x${opts.bytes.toString("hex")}`;
+  const upsert = await supabase.from("cell_creative_overrides").upsert(
+    {
+      account_id: opts.accountId,
+      cell_id: opts.cellId,
+      asset_bytes: hexBytes,
+      content_type: opts.contentType,
+      filename: opts.filename,
+      uploaded_at: new Date().toISOString(),
+    },
+    { onConflict: "account_id,cell_id" },
+  );
+  if (upsert.error) throw new Error(upsert.error.message);
+
+  if (opts.validation.status !== "unclassified") {
+    const status = opts.overridden ? "user_overridden" : "auto_classified";
+    const confidencePct =
+      opts.validation.overall_confidence != null ? `${Math.round(opts.validation.overall_confidence * 100)}%` : null;
+    const byFamily = new Map(opts.validation.variables.map((v) => [v.family, v.code]));
+    const existingRow = (opts.validation as CellCreativeValidation & { row?: Row | null }).row ?? null;
+    // Group the (possibly composite) recorded DNA by family so we only
+    // touch a field when the detection actually conflicts with (or adds to)
+    // what's already on record — a matching detection leaves a multi-code
+    // field untouched instead of collapsing it down to the single code the
+    // model happened to report this time.
+    const expectedByFamily = new Map<string, Set<string>>();
+    for (const e of opts.validation.expected) {
+      const set = expectedByFamily.get(e.family) ?? new Set<string>();
+      set.add(e.code);
+      expectedByFamily.set(e.family, set);
+    }
+
+    if (existingRow) {
+      const priorPayload = (existingRow["payload"] ?? {}) as Row;
+      const payload: Row = { ...priorPayload };
+      for (const [family, payloadKey] of Object.entries(FAMILY_TO_PAYLOAD_KEY)) {
+        const code = byFamily.get(family);
+        if (!code) continue;
+        const expectedCodes = expectedByFamily.get(family);
+        if (expectedCodes && expectedCodes.has(code)) continue; // already part of the recorded DNA — leave composite field intact
+        // No prior DNA for this family, or the detection conflicts with what
+        // was recorded (only reached after an explicit user override) —
+        // the newly validated creative's code becomes the new record.
+        payload[payloadKey] = code;
+      }
+      payload["asset_filename"] = opts.filename;
+      payload["qa_mapping_status"] = status;
+      payload["mapping_confidence"] = confidencePct;
+      const upd = await supabase
+        .from("library_cells")
+        .update({
+          asset_filename: opts.filename,
+          qa_mapping_status: status,
+          mapping_confidence: confidencePct,
+          payload,
+        })
+        .eq("id", existingRow["id"]);
+      if (upd.error) throw new Error(upd.error.message);
+    } else {
+      const conceptId = /^(C\d+)/i.exec(opts.cellId)?.[1]?.toUpperCase() ?? opts.cellId;
+      const { data: maxRow } = await supabase
+        .from("library_cells")
+        .select("row_index")
+        .eq("account_id", opts.accountId)
+        .order("row_index", { ascending: false })
+        .limit(1);
+      const nextRowIndex = (maxRow?.[0]?.["row_index"] ?? -1) + 1;
+      const copy = opts.validation.detected_copy ?? {};
+      const payload: Row = {
+        cell_id: opts.cellId,
+        concept_id: conceptId,
+        book2_concept_name: conceptId,
+        mapped_ad_names: [],
+        primary_message: copy["primary_message"] ?? "",
+        secondary_message: copy["secondary_message"] ?? "",
+        cta: copy["cta"] ?? "",
+        visual_system: copy["visual_system"] ?? "",
+        asset_filename: opts.filename,
+        qa_mapping_status: status,
+        mapping_confidence: confidencePct,
+        source: "manual_cell_upload",
+      };
+      for (const [family, payloadKey] of Object.entries(FAMILY_TO_PAYLOAD_KEY)) {
+        const code = byFamily.get(family);
+        if (code) payload[payloadKey] = code;
+      }
+      const ins = await supabase.from("library_cells").insert({
+        account_id: opts.accountId,
+        cell_id: opts.cellId,
+        concept_id: conceptId,
+        asset_filename: opts.filename,
+        qa_mapping_status: status,
+        mapping_confidence: confidencePct,
+        row_index: nextRowIndex,
+        payload,
+      });
+      if (ins.error) throw new Error(ins.error.message);
+    }
+  }
+
+  invalidateMetrixSeedCache();
+}
+
 // ─── library filing ───────────────────────────────────────────────────
 
 /** Build the MSTLibraryCell-shaped payload for a filed deconstruction. */
@@ -309,6 +689,8 @@ export function libraryPayloadFromDeconstruction(opts: {
     hook_variable: byFamily.get("hook") ?? undefined,
     pain_proof_variable: byFamily.get("pain_point") ?? undefined,
     proof_variable: byFamily.get("proof") ?? undefined,
+    funnel_stage_variable: byFamily.get("funnel_stage") ?? undefined,
+    awareness_variable: byFamily.get("awareness") ?? undefined,
     asset_filename: opts.filename,
     qa_mapping_status: opts.status === "auto_filed" ? "auto_classified" : "user_overridden",
     mapping_confidence: opts.overall != null ? `${Math.round(opts.overall * 100)}%` : null,
