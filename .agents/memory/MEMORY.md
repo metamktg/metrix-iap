@@ -58,4 +58,4 @@
 - [Supabase full outages](supabase-full-outage.md) — REST 522 + pooler connect timeouts together = project-wide outage (hours, seen under bulk vision runs); check both before debugging hung live tests.
 - [Cell-scoped creative upload validation](cell-scoped-creative-validation.md) — direct tile uploads compare against the cell's existing DNA (no cell-picking); library_cells.payload jsonb must be updated alongside top-level columns.
 - [Drag-resize onDragEnd setState pitfall](drag-resize-setstate-updater.md) — read final drag value from a ref, not a setState functional updater, before calling a sibling/context setState like close().
-- [Run scoping & account identity](run-scope-picker.md) — ad-account name lives ONLY in the sidebar switcher (no page banners/chips); run scoping is the compact RunScopePicker popover, capped at 3 runs, never a standing checklist.
+- [Run scoping & account identity](run-scope-picker.md) — sidebar-only account name; compact 3-run RunScopePicker; persisted per page+account via usePersistedRunScope (account-keyed state, inert when controlled).

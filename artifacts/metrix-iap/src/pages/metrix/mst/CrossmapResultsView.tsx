@@ -13,7 +13,7 @@ import {
   CrossLink, readableVariables, fmtUSD, fmtNum, fmtPct, eventLabel,
   useShowMore, ShowMoreButton,
 } from "../shared";
-import { useCellRunScope } from "@/lib/run-scope";
+import { useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
 import { RunScopePicker, ALL_TIME_SELECTION, type RunSelectorValue } from "@/components/analysis/RunSelector";
 import { useListAnalysisRuns } from "@workspace/api-client-react";
 import { TilePerformanceModal } from "@/components/creative/TilePerformanceModal";
@@ -61,13 +61,17 @@ export function CrossmapResultsView({
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
   const [activeCell, setActiveCell] = useState<MSTMatrixCell | null>(null);
-  const [localRunSelection, setLocalRunSelection] = useState(ALL_TIME_SELECTION);
+  const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "");
   const controlled = runScope !== undefined && onRunScopeChange !== undefined;
+  // When controlled, the parent owns persistence — the local hook is inert
+  // so it never reads/writes storage or runs the stale-run guard.
+  const [localRunSelection, setLocalRunSelection] = usePersistedRunScope(
+    "mst-crossmap", adAccountId, analysisRunsData?.runs, !controlled,
+  );
   const runSelection = controlled ? runScope! : localRunSelection;
   const setRunSelection = controlled ? onRunScopeChange! : setLocalRunSelection;
   const analysisData = getAnalysisData(seed, adAccountId);
   const { inRunScope } = useCellRunScope(analysisData, runSelection);
-  const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "");
 
   const { activeId: sortId, select: setSortId } = useRankMetric(
     CROSSMAP_SORT_KEY,

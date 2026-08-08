@@ -8,8 +8,8 @@ import { TYPE } from "../typography";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getStrategyData, getBriefBuilder, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
-import { RunScopePicker, ALL_TIME_SELECTION } from "@/components/analysis/RunSelector";
-import { useCellRunScope } from "@/lib/run-scope";
+import { RunScopePicker } from "@/components/analysis/RunSelector";
+import { useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
 import { useListAnalysisRuns } from "@workspace/api-client-react";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
@@ -330,8 +330,10 @@ export function StrategyOverview() {
   // Strategy pillars are anchored to source cells; a pillar is in scope
   // when any of its source cells belongs to a selected run's concepts.
   // Pillars with no source cells always pass (nothing to attribute).
-  const [runSelection, setRunSelection] = useState(ALL_TIME_SELECTION);
   const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "");
+  const [runSelection, setRunSelection] = usePersistedRunScope(
+    "strategy-overview", adAccountId, analysisRunsData?.runs,
+  );
   const { inRunScope } = useCellRunScope(getAnalysisData(seed, adAccountId), runSelection);
 
   return (

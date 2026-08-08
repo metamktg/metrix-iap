@@ -24,8 +24,8 @@ import {
   getGetAccountAnalysisDataWindowsQueryOptions,
   useListAnalysisRuns,
 } from "@workspace/api-client-react";
-import { RunScopePicker, ALL_TIME_SELECTION } from "@/components/analysis/RunSelector";
-import { useCellRunScope } from "@/lib/run-scope";
+import { RunScopePicker } from "@/components/analysis/RunSelector";
+import { useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
 import { useQuery } from "@tanstack/react-query";
 import { SharePieChart } from "@/components/charts/SharePieChart";
 import {
@@ -725,8 +725,10 @@ export function AnalysisOverview() {
   const { topN, setTopN, goalCpa, setGoalCpa, selectedWindow, setSelectedWindow } = useAnalysisView();
 
   // ── Analysis-run scope (compact header dropdown) ──────────────────────
-  const [runSelection, setRunSelection] = useState(ALL_TIME_SELECTION);
   const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "");
+  const [runSelection, setRunSelection] = usePersistedRunScope(
+    "analysis-overview", adAccountId, analysisRunsData?.runs,
+  );
   const { filterByRun } = useCellRunScope(analysis, runSelection);
 
   // Fetch available date windows from actual ad_performance data (not run metadata).

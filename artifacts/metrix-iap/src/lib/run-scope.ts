@@ -10,10 +10,116 @@
 // predating run-scoping (manual_analysis_run_id null), always passes —
 // never hide a row we can't honestly attribute to a run.
 
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useState, useEffect } from "react";
 import type { AnalysisData } from "@/lib/data/seedTypes";
 import { conceptForCell } from "@/lib/date-scope";
-import type { RunSelectorValue } from "@/components/analysis/RunSelector";
+import { ALL_TIME_SELECTION, type RunSelectorValue } from "@/components/analysis/RunSelector";
+import type { AnalysisRun } from "@workspace/api-client-react";
+
+// ─── Persisted run-scope selection ─────────────────────────────────────
+// Each page's RunScopePicker selection survives navigation (and refresh,
+// within the tab) per page + per ad account, mirroring the account
+// switcher's sessionStorage persistence. Stale-run guard: once the run
+// list loads, any stored run id that no longer exists resets the whole
+// selection to All time — a deleted run must never blank the page.
+
+function runScopeStorageKey(pageKey: string, adAccountId: string): string {
+  return `metrix.runScope.${pageKey}.${adAccountId}`;
+}
+
+function readStoredRunScope(pageKey: string, adAccountId: string | null): RunSelectorValue {
+  if (!adAccountId) return ALL_TIME_SELECTION;
+  try {
+    const raw = sessionStorage.getItem(runScopeStorageKey(pageKey, adAccountId));
+    if (!raw) return ALL_TIME_SELECTION;
+    const parsed = JSON.parse(raw) as unknown;
+    if (
+      typeof parsed === "object" && parsed !== null &&
+      typeof (parsed as RunSelectorValue).allTime === "boolean" &&
+      Array.isArray((parsed as RunSelectorValue).selectedRunIds) &&
+      (parsed as RunSelectorValue).selectedRunIds.every((id) => typeof id === "string")
+    ) {
+      const v = parsed as RunSelectorValue;
+      // An explicit non-all-time selection with no runs is invalid — normalize.
+      if (!v.allTime && v.selectedRunIds.length === 0) return ALL_TIME_SELECTION;
+      return v;
+    }
+  } catch {
+    // Corrupt JSON or storage unavailable — fall back to the default.
+  }
+  return ALL_TIME_SELECTION;
+}
+
+/**
+ * Drop-in replacement for `useState(ALL_TIME_SELECTION)` in pages using
+ * RunScopePicker. Persists the selection in sessionStorage per page and
+ * ad account, and falls back to All time when a stored run id no longer
+ * exists in the loaded run list (`runs` undefined = still loading; the
+ * guard waits until the list is actually known).
+ */
+export function usePersistedRunScope(
+  pageKey: string,
+  adAccountId: string | null,
+  runs: AnalysisRun[] | undefined,
+  /** When false, the hook is inert: plain local state, no storage reads,
+   *  writes, or stale-run validation. Used by controlled components whose
+   *  parent owns the persisted selection — an inert child must never write
+   *  its unused local state into the parent's shared storage key. */
+  enabled = true,
+): [RunSelectorValue, (v: RunSelectorValue) => void] {
+  // The selection is keyed to the page + account it was read/written for.
+  // On account (or page) change we reset synchronously during render —
+  // never letting a previous account's selection survive even one render,
+  // where the stale-run guard could validate it against the NEW account's
+  // run list and clobber that account's stored value.
+  const scopeKey = `${pageKey}|${adAccountId ?? ""}`;
+  const [state, setState] = useState<{ key: string; value: RunSelectorValue }>(() => ({
+    key: scopeKey,
+    value: enabled ? readStoredRunScope(pageKey, adAccountId) : ALL_TIME_SELECTION,
+  }));
+  if (state.key !== scopeKey) {
+    setState({
+      key: scopeKey,
+      value: enabled ? readStoredRunScope(pageKey, adAccountId) : ALL_TIME_SELECTION,
+    });
+  }
+  const selection =
+    state.key === scopeKey
+      ? state.value
+      : enabled
+        ? readStoredRunScope(pageKey, adAccountId)
+        : ALL_TIME_SELECTION;
+
+  const setSelection = useCallback(
+    (v: RunSelectorValue) => {
+      setState({ key: scopeKey, value: v });
+      if (!enabled || !adAccountId) return;
+      try {
+        sessionStorage.setItem(runScopeStorageKey(pageKey, adAccountId), JSON.stringify(v));
+      } catch {
+        // Storage full/unavailable — selection still works for this visit.
+      }
+    },
+    [pageKey, adAccountId, scopeKey, enabled],
+  );
+
+  // Stale-run guard: once runs are loaded, a stored id that no longer
+  // exists resets the selection (and the stored value) to All time.
+  // Only ever validates a selection belonging to the CURRENT scope key —
+  // never a previous account's leftover state, and never when inert.
+  useEffect(() => {
+    if (!enabled || runs === undefined) return;
+    if (state.key !== scopeKey) return;
+    const sel = state.value;
+    if (sel.allTime || sel.selectedRunIds.length === 0) return;
+    const known = new Set(runs.map((r) => r.id));
+    if (sel.selectedRunIds.some((id) => !known.has(id))) {
+      setSelection(ALL_TIME_SELECTION);
+    }
+  }, [runs, state, scopeKey, setSelection, enabled]);
+
+  return [selection, setSelection];
+}
 
 /** Per concept code, the set of analysis run ids (plus "null" for
  *  untagged/legacy rows) whose rollup contributed to that concept. */

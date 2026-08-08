@@ -36,8 +36,8 @@ import {
   StaleFocusNotice, PILL_ACTIVE, PILL_INACTIVE,
   SectionInfoIcon,
 } from "../shared";
-import { useCellRunScope } from "@/lib/run-scope";
-import { RunScopePicker, ALL_TIME_SELECTION } from "@/components/analysis/RunSelector";
+import { useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
+import { RunScopePicker } from "@/components/analysis/RunSelector";
 import { useListAnalysisRuns } from "@workspace/api-client-react";
 import { CreativeCard } from "@/components/creative/CreativeCard";
 import { ConceptFamilyView } from "@/components/creative/ConceptFamilyView";
@@ -131,14 +131,15 @@ export function IapLibraryView() {
   const [cardSegment, setCardSegment] = useState<{ segment: SegmentId; cellIds: string[] } | null>(null);
   // Full audience grid opened from a card's "Full breakdown" button on the Demographics tab
   const [cardGridCell, setCardGridCell] = useState<CellPerformanceRow | null>(null);
-  const [runSelection, setRunSelection] = useState(ALL_TIME_SELECTION);
-
   const a       = getAnalysisData(seed, adAccountId);
   const summary = getCampaignSummary(seed, adAccountId);
   const strategy = getStrategyData(seed, adAccountId);
   const mst     = getMST(seed, adAccountId);
   const fp      = useFromParam();
   const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "");
+  const [runSelection, setRunSelection] = usePersistedRunScope(
+    "iap-library", adAccountId, analysisRunsData?.runs,
+  );
 
   // Deck cards for Task Tray — derived from the account's optimization loop
   const optLoop = account?.iap?.optimization_loop ?? null;
