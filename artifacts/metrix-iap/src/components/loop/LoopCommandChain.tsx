@@ -365,8 +365,8 @@ function StageIntelligence({
     finished_at?: string | null;
     error_message?: string | null;
   } | null;
-  strategyLastRun: { status: string; finished_at?: string | null; error_message?: string | null; model?: string | null } | null;
-  briefsLastRun:   { status: string; finished_at?: string | null; error_message?: string | null } | null;
+  strategyLastRun: { status: string; finished_at?: string | null; error_message?: string | null; model?: string | null; progress_pct?: number | null; progress_stage?: string | null } | null;
+  briefsLastRun:   { status: string; finished_at?: string | null; error_message?: string | null; progress_pct?: number | null; progress_stage?: string | null } | null;
   loopStatus: { stage: string; window_start?: string | null; window_end?: string | null; generated_at?: string | null }[] | null;
   accountPlatform?: string;
 }) {
@@ -709,8 +709,8 @@ function CommandHub({
     progress_stage?: string;
   } | null;
   analysisRuns: AnalysisRun[];
-  strategyLastRun: { status: string; finished_at?: string | null; error_message?: string | null; model?: string | null } | null;
-  briefsLastRun:   { status: string; finished_at?: string | null; error_message?: string | null } | null;
+  strategyLastRun: { status: string; finished_at?: string | null; error_message?: string | null; model?: string | null; progress_pct?: number | null; progress_stage?: string | null } | null;
+  briefsLastRun:   { status: string; finished_at?: string | null; error_message?: string | null; progress_pct?: number | null; progress_stage?: string | null } | null;
   loopStatus: { stage: string; window_start?: string | null; window_end?: string | null; generated_at?: string | null }[] | null;
   accountPlatform?: string;
   allLoopComplete: boolean;
@@ -806,20 +806,30 @@ function CommandHub({
         : stage === "strategy" ? "strategy"
         : stage === "briefs"   ? "briefs"
         : null;
-      // Analysis reports REAL per-stage progress from the server pipeline
-      // (manual_analysis_runs.progress_pct/progress_stage, polled live).
-      // Strategy/briefs generation has no server-side progress signal yet,
-      // so those fall back to the elapsed-time estimate.
-      const serverPct = stage === "analysis" && typeof analysisRun?.progress_pct === "number"
-        ? analysisRun.progress_pct
-        : null;
+      // Prefer REAL per-stage progress from the server pipeline when available.
+      // Analysis: manual_analysis_runs.progress_pct/progress_stage (polled live).
+      // Strategy/briefs: generation_runs.progress_pct/progress_stage (polled live,
+      // written by the generation engine at each pipeline phase).
+      const serverPct =
+        stage === "analysis" && typeof analysisRun?.progress_pct === "number"
+          ? analysisRun.progress_pct
+          : stage === "strategy" && typeof strategyLastRun?.progress_pct === "number" && strategyLastRun.progress_pct > 0
+            ? strategyLastRun.progress_pct
+            : stage === "briefs" && typeof briefsLastRun?.progress_pct === "number" && briefsLastRun.progress_pct > 0
+              ? briefsLastRun.progress_pct
+              : null;
       const progressPct = serverPct !== null
         ? serverPct
         : activeKind
           ? calcProgress(elapsedSeconds, EXPECTED_SECONDS[activeKind])
           : 0;
-      const phaseLabel = stage === "analysis" && analysisRun?.progress_stage
-        ? analysisRun.progress_stage
+      const serverStage =
+        stage === "analysis"  ? (analysisRun?.progress_stage ?? null)
+        : stage === "strategy" ? (strategyLastRun?.progress_stage ?? null)
+        : stage === "briefs"   ? (briefsLastRun?.progress_stage ?? null)
+        : null;
+      const phaseLabel = serverPct !== null && serverStage
+        ? serverStage
         : activeKind
           ? getPhaseLabel(activeKind, progressPct)
           : "Processing…";
@@ -1782,8 +1792,21 @@ export function LoopCommandChain({
         {(analysisRunning || strategyRunning || briefsRunning) && (() => {
           const activeKind: "analysis" | "strategy" | "briefs" = analysisRunning ? "analysis" : strategyRunning ? "strategy" : "briefs";
           const activeElapsed = analysisRunning ? analysisElapsedSeconds : strategyRunning ? strategyGen.elapsedSeconds : briefsGen.elapsedSeconds;
-          const pct = calcProgress(activeElapsed, EXPECTED_SECONDS[activeKind]);
-          const phase = getPhaseLabel(activeKind, pct);
+          // Prefer real server-side progress when available; fall back to elapsed-time estimate.
+          const serverPct =
+            activeKind === "analysis" && typeof analysisRun?.progress_pct === "number"
+              ? analysisRun.progress_pct
+              : activeKind === "strategy" && typeof strategyLastRun?.progress_pct === "number" && strategyLastRun.progress_pct > 0
+                ? strategyLastRun.progress_pct
+                : activeKind === "briefs" && typeof briefsLastRun?.progress_pct === "number" && briefsLastRun.progress_pct > 0
+                  ? briefsLastRun.progress_pct
+                  : null;
+          const serverStage =
+            activeKind === "analysis"  ? (analysisRun?.progress_stage ?? null)
+            : activeKind === "strategy" ? (strategyLastRun?.progress_stage ?? null)
+            : (briefsLastRun?.progress_stage ?? null);
+          const pct = serverPct !== null ? serverPct : calcProgress(activeElapsed, EXPECTED_SECONDS[activeKind]);
+          const phase = (serverPct !== null && serverStage) ? serverStage : getPhaseLabel(activeKind, pct);
           const stageLabel = activeKind.charAt(0).toUpperCase() + activeKind.slice(1);
           return (
             <div className="flex flex-col gap-1.5 rounded-lg border border-amber-400/20 bg-amber-400/[0.04] px-2.5 py-2">

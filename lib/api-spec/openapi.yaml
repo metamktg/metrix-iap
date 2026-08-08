@@ -4506,6 +4506,12 @@ components:
           type: integer
           nullable: true
           description: Total items targeted by the run; null for runs without a per-item meter.
+        progress_pct:
+          type: integer
+          description: Live progress percentage (0–100) while the run is executing. Updated at each pipeline phase. 0 when just started; 100 on success.
+        progress_stage:
+          type: string
+          description: Human-readable label for the current pipeline phase (e.g. "Calling strategy model…"). Empty string when idle or complete.
       required:
         - id
         - account_id
@@ -4514,6 +4520,8 @@ components:
         - started_at
         - source_analysis_all_time
         - progress_done
+        - progress_pct
+        - progress_stage
     DeconstructCreativesInput:
       type: object
       properties:
