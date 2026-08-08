@@ -8,14 +8,19 @@ import { useMetrixSeed, useMetrixIsRefetching } from "@/contexts/MetrixDataConte
 import { getAdAccount, getAnalysisData, getCampaignSummary } from "@/lib/data/metrixSeedAdapter";
 import { useMetricSelection } from "@/lib/metric-selection";
 import {
-  ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
-  CaveatNote, CrossLink, MetricSelectionBar, SectionCard, fmtUSD, fmtNum, fmtPct, eventLabel,
+  ModuleHeader, ModuleScopeGate, PendingState,
+  CaveatNote, CrossLink, MetricSelectionBar, SectionCard, fmtUSD, fmtNum, eventLabel,
   SkeletonTileRow, DatePresetBar, type ViewPreset, SectionInfoIcon,
   useShowMore, ShowMoreButton,
 } from "../shared";
 import { getGetAnalysisSummaryQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
 import { PlacementTable } from "./tables";
+import { KpiTileRow } from "@/components/metrics/KpiTile";
+import { KpiDrilldownModal } from "@/components/metrics/KpiDrilldownModal";
+import {
+  buildMetricCatalog, metricSourceFromApiTotals, metricSourceFromCampaignSummary,
+} from "@/lib/data/metricsCatalog";
 import { Wallet, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
 
@@ -83,6 +88,9 @@ export function BudgetView() {
   const account = getAdAccount(seed, adAccountId);
   const [preset, setPreset] = useState<ViewPreset>("all");
   const [showPlacements, setShowPlacements] = useState(false);
+
+  // KPI tile drill-down modal (one shared modal for all tiles).
+  const [drillMetricId, setDrillMetricId] = useState<string | null>(null);
 
   const { data: presetData, isFetching: presetFetching } = useQuery({
     ...getGetAnalysisSummaryQueryOptions(adAccountId ?? "", preset),
@@ -164,23 +172,42 @@ export function BudgetView() {
               </div>
             ) : (
               <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
-                {preset !== "all" && presetData ? (
-                  <>
-                    <MetricTile variant="primary" label="Total spend" value={fmtUSD(presetData.totals.total_spend_usd, 0)} />
-                    <MetricTile label="Impressions" value={fmtNum(presetData.totals.total_impressions)} />
-                    <MetricTile label="Link clicks" value={fmtNum(presetData.totals.total_link_clicks)} />
-                    <MetricTile label="Link CTR" value={fmtPct(presetData.totals.overall_link_ctr_pct)} />
-                  </>
-                ) : (
-                  <>
-                    <MetricTile variant="primary" label="Total spend" value={fmtUSD(summary.total_spend_usd, 0)} />
-                    <MetricTile label="Impressions" value={fmtNum(summary.total_impressions)} />
-                    <MetricTile label="Link clicks" value={fmtNum(summary.total_link_clicks)} />
-                    <MetricTile label="Link CTR" value={fmtPct(summary.overall_link_ctr_pct)} />
-                  </>
-                )}
+                <KpiTileRow
+                  viewKey="budget"
+                  catalog={buildMetricCatalog(
+                    preset !== "all" && presetData
+                      ? metricSourceFromApiTotals(presetData.totals)
+                      : metricSourceFromCampaignSummary(summary),
+                  )}
+                  onTileClick={setDrillMetricId}
+                />
               </div>
             )}
+
+            <KpiDrilldownModal
+              open={drillMetricId != null}
+              onClose={() => setDrillMetricId(null)}
+              scope="account"
+              metricId={drillMetricId}
+              catalog={buildMetricCatalog(
+                preset !== "all" && presetData
+                  ? metricSourceFromApiTotals(presetData.totals)
+                  : metricSourceFromCampaignSummary(summary),
+              )}
+              analysis={a}
+              // Seed cell rows have no daily grain, so under a date preset we
+              // pass no cell rows rather than full-flight rows mislabeled as
+              // preset-scoped.
+              scopedCellRows={preset !== "all" ? [] : undefined}
+              scopeNarrowed={preset !== "all"}
+              windowLabel={
+                preset !== "all" && presetData?.available_window
+                  ? `${presetData.available_window.start} → ${presetData.available_window.end} (${preset})`
+                  : preset !== "all"
+                    ? `${preset} preset`
+                    : "all data (full flight)"
+              }
+            />
 
             <div className="px-6 py-5 space-y-4 max-w-5xl">
               {summary.data_caveat && <CaveatNote text={summary.data_caveat} />}

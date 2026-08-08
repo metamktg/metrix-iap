@@ -30,3 +30,27 @@ export function resolveCohortMeta(cohort: string | null | undefined): CohortMeta
   }
   return { label: "Unassigned", terminalMetricLabel: "cost per result", terminalMetricDirection: "lower_is_better" };
 }
+
+/**
+ * Resolve an account's configured objectives SET to a single display meta.
+ * Exactly one objective → that objective's specific meta. Zero → the honest
+ * "Unassigned" generic. Several → a generic "cost per result" reading with
+ * a combined label, since collapsing multiple terminal metrics into one
+ * specific label would mis-report at least one of them. Direction stays
+ * lower_is_better in all cases (true for all four objectives in v1), so
+ * ranking math remains correct for 0, 1, or many objectives.
+ */
+export function resolveObjectivesMeta(objectives: readonly string[] | null | undefined): CohortMeta {
+  const known = (objectives ?? []).filter((o): o is CohortKey =>
+    Object.prototype.hasOwnProperty.call(COHORT_META, o),
+  );
+  if (known.length === 1) return COHORT_META[known[0]!];
+  if (known.length > 1) {
+    return {
+      label: known.map((k) => COHORT_META[k].label).join(" + "),
+      terminalMetricLabel: "cost per result",
+      terminalMetricDirection: "lower_is_better",
+    };
+  }
+  return { label: "Unassigned", terminalMetricLabel: "cost per result", terminalMetricDirection: "lower_is_better" };
+}

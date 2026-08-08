@@ -55,57 +55,6 @@ function go(href: string, e: React.MouseEvent) {
   window.dispatchEvent(new PopStateEvent("popstate"));
 }
 
-// ─── Compact stage dots strip ────────────────────────────────────────
-
-function AccountStageDots({ stages }: { stages: AccountLoopStage[] }) {
-  return (
-    <span className="flex items-center gap-0.5">
-      {stages.map((s) => (
-        <span
-          key={s.id}
-          title={s.label}
-          className={cn(
-            "w-1.5 h-1.5 rounded-full shrink-0",
-            s.done ? "bg-emerald-400/80" : "bg-border/60"
-          )}
-        />
-      ))}
-    </span>
-  );
-}
-
-/** Compact account pill — name + 4 stage dots. */
-function AccountPill({
-  account,
-  stages,
-}: {
-  account: AdAccount;
-  stages: AccountLoopStage[];
-}) {
-  const abbrev =
-    account.name.length > 14 ? account.name.slice(0, 13).trimEnd() + "…" : account.name;
-  const configured = account.status === "configured";
-  return (
-    <span
-      title={account.name}
-      className={cn(
-        "inline-flex items-center gap-1.5 px-2 py-1 rounded border leading-none shrink-0",
-        configured
-          ? "bg-white/[0.03] border-border/40"
-          : "bg-white/[0.01] border-border/25 opacity-60"
-      )}
-      style={{ minWidth: "8rem", maxWidth: "9rem" }}
-    >
-      <span className={cn(TYPE.caption, "truncate text-foreground/80 flex-1 min-w-0")}>{abbrev}</span>
-      {configured ? (
-        <AccountStageDots stages={stages} />
-      ) : (
-        <span className={cn(TYPE.label, "text-muted-foreground/50 shrink-0")}>–</span>
-      )}
-    </span>
-  );
-}
-
 const STAGE_LABELS = ["Analysis", "Strategy", "Creative", "MST"] as const;
 
 // ─── Full-mode: individual account stage-chain card ────────────────────
@@ -331,15 +280,6 @@ export function OverviewLoopSummary({ full = false }: { full?: boolean }) {
         </div>
         <CrossLink to="/app/overview/loop" label="See full loop status" />
       </div>
-
-      {/* Horizontal account pills strip */}
-      {rows.length > 0 && (
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {rows.map(({ account, stages }) => (
-            <AccountPill key={account.id} account={account} stages={stages} />
-          ))}
-        </div>
-      )}
     </div>
   );
 }

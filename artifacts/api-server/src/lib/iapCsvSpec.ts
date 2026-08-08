@@ -180,6 +180,53 @@ export const APP_METRICS: readonly string[] = [
 /** Ecommerce + Service + App metrics: optional, present only for accounts of that business type. Never fabricated when absent. */
 export const OPTIONAL_METRICS: readonly string[] = [...ECOMMERCE_METRICS, ...SERVICE_METRICS, ...APP_METRICS];
 
+// ─── Objective column groups ────────────────────────────────────────────
+// There are only three REAL column groups in Meta exports, while the
+// objective vocabulary has four keys (ecommerce/lead_gen/service/app):
+// SERVICE_METRICS (Leads, Appointments, Registrations, Calls…) is shared
+// by both the lead_gen and service objectives. Column presence cannot
+// distinguish those two — that distinction stays business context set in
+// Settings, never inferred from data. Detection therefore reports the
+// shared group once as "service_or_lead_gen".
+export type ObjectiveColumnGroup = "ecommerce" | "service_or_lead_gen" | "app";
+
+export const OBJECTIVE_COLUMN_GROUPS: Record<ObjectiveColumnGroup, readonly string[]> = {
+  ecommerce: ECOMMERCE_METRICS,
+  service_or_lead_gen: SERVICE_METRICS,
+  app: APP_METRICS,
+};
+
+/**
+ * Which objective column groups are present, given the optional-metric
+ * column names (canonical, pre-slug) found in a CSV header. Presence-based
+ * only — a single column from a group counts as the group being present,
+ * matching the parser's existing "never fabricate absent optional metrics"
+ * presence rule.
+ */
+export function detectObjectiveColumnGroups(optionalMetricsPresent: readonly string[]): Set<ObjectiveColumnGroup> {
+  const present = new Set(optionalMetricsPresent);
+  const out = new Set<ObjectiveColumnGroup>();
+  for (const [group, cols] of Object.entries(OBJECTIVE_COLUMN_GROUPS) as [ObjectiveColumnGroup, readonly string[]][]) {
+    if (cols.some((c) => present.has(c))) out.add(group);
+  }
+  return out;
+}
+
+/**
+ * Slugified optional-metric column names belonging to the given objective
+ * column groups. Used by the analysis run to keep only the optional metrics
+ * that belong to the account's CONFIGURED objectives — columns for
+ * unconfigured objectives are dropped before aggregation (they only produce
+ * a non-blocking enable-suggestion flag, never persisted analysis data).
+ */
+export function optionalMetricSlugsForGroups(groups: Iterable<ObjectiveColumnGroup>): Set<string> {
+  const out = new Set<string>();
+  for (const group of groups) {
+    for (const col of OBJECTIVE_COLUMN_GROUPS[group]) out.add(slugifyColumn(col));
+  }
+  return out;
+}
+
 export const DEMOGRAPHIC_BREAKDOWN_COLUMNS: readonly string[] = [
   "Day",
   "Campaign ID",

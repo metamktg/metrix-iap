@@ -31,6 +31,10 @@ export interface AnalysisRun {
   creatives_unlinked_names?: string[] | null;
   /** Warnings produced during tolerant CSV column matching (auto-resolved aliases, missing columns, unrecognised columns that might map to expected ones). Null when parsing was clean. Present on successful runs that had non-fatal column issues. */
   csv_warnings?: string[] | null;
+  /** Configured objectives (Settings → General) whose required CSV column groups were present in this run's uploads and were therefore assessed. Null on legacy runs recorded before objective-aware analysis. */
+  objectives_assessed?: string[] | null;
+  /** Non-blocking objective coverage notices — configured objectives skipped this run because their columns were absent (never fabricated), and detected column groups whose objective is not configured (a suggestion; never auto-enabled). Null when coverage matched exactly. */
+  objective_flags?: string[] | null;
   /** Live progress percentage (0–100) while the run is executing. Updated at each pipeline stage. 0 when idle or just started; 100 on success. */
   progress_pct?: number;
   /** Human-readable label for the current pipeline stage (e.g. "Parsing demographics export"). Empty string when idle or complete. */

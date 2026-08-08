@@ -5,8 +5,10 @@
 // mounted at the parent /app/analysis route) owns execution + run
 // history — this page is read-only.
 
+import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
+import { KpiDrilldownModal } from "@/components/metrics/KpiDrilldownModal";
 import { getAdAccount, getAnalysisData, getCampaignSummary, getCoreControls, getMST } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
@@ -18,6 +20,8 @@ import { cn } from "@workspace/command-deck/lib/utils";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { useCellRangeScope, sumInRange } from "@/lib/date-scope";
 import { LineChart, Library, Users, LayoutGrid, Wallet, TrendingUp } from "lucide-react";
+import { KpiTileRow } from "@/components/metrics/KpiTile";
+import { buildMetricCatalog, metricSourceFromCampaignSummary } from "@/lib/data/metricsCatalog";
 
 const SECTION = "Analysis · 03";
 
@@ -28,6 +32,9 @@ export function AdPerformanceView() {
   const { rangeHasData } = useDateRange();
   const analysis = getAnalysisData(seed, adAccountId);
   const { range, narrowed, filterCells } = useCellRangeScope(analysis);
+
+  // KPI tile drill-down modal (one shared modal for all tiles).
+  const [drillMetricId, setDrillMetricId] = useState<string | null>(null);
 
   return (
     <ModuleScopeGate section={SECTION} title="Ad Performance" account={account}>
@@ -72,7 +79,10 @@ export function AdPerformanceView() {
           return text.replace(id, name);
         };
 
-        const subpages = [
+        // Featured modules get a full card (icon, description, stat); the
+        // rest collapse into a subordinate chip row — progressive disclosure
+        // instead of five identical tiles.
+        const featuredModules = [
           {
             to: "/app/analysis/library",
             label: "IAP Library",
@@ -82,6 +92,15 @@ export function AdPerformanceView() {
               ? `${cellRowsInRange} cell rows in range · ${a.v3_variable_performance.length} variable rows`
               : `${a.performance_by_cell.length} cell rows · ${a.v3_variable_performance.length} variable rows`,
           },
+          {
+            to: "/app/analysis/funnel",
+            label: "Engagement Funnel",
+            Icon: TrendingUp,
+            desc: "Frequency, CTR all vs link, and the full conversion waterfall.",
+            stat: `${fmtNum(summary.total_impressions)} impressions · ${fmtNum(summary.total_link_clicks)} link clicks`,
+          },
+        ];
+        const secondaryModules = [
           {
             to: "/app/analysis/audience",
             label: "Audience",
@@ -103,13 +122,6 @@ export function AdPerformanceView() {
             desc: "Spend allocation by result event, concept, and placement.",
             stat: `${fmtUSD(summary.total_spend_usd, 0)} analyzed`,
           },
-          {
-            to: "/app/analysis/funnel",
-            label: "Engagement Funnel",
-            Icon: TrendingUp,
-            desc: "Frequency, CTR all vs link, reach CTR, and full conversion waterfall.",
-            stat: `${fmtNum(summary.total_impressions)} impressions · ${fmtNum(summary.total_link_clicks)} link clicks`,
-          },
         ];
 
         return (
@@ -128,33 +140,72 @@ export function AdPerformanceView() {
             <>
             <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
               {scoped ? (
-                <>
-                  <MetricTile variant="primary" label="Spend (in range)" value={fmtUSD(scoped.spend, 0)} sub="concept flights overlapping range" />
-                  <MetricTile label="Link clicks (in range)" value={fmtNum(scoped.linkClicks)} />
-                  <MetricTile label="Results (in range)" value={fmtNum(scoped.results)} />
-                  <MetricTile label="Concept flights" value={String(scoped.concepts)} sub="overlapping selected range" />
-                </>
+                <KpiTileRow
+                  viewKey="ad-performance:in-range"
+                  onTileClick={setDrillMetricId}
+                  catalog={buildMetricCatalog({
+                    spend: scoped.spend,
+                    impressions: null,
+                    reach: null,
+                    clicksAll: null,
+                    linkClicks: scoped.linkClicks,
+                    linkCtrPct: null,
+                    resultEvents: [{ key: "in_range_results", label: "Results (in range)", results: scoped.results }],
+                    isMultiEvent: false,
+                  })}
+                  tileCount={3}
+                  disclosures={{
+                    spend: <span>Range-scoped: {scoped.concepts} concept flight{scoped.concepts === 1 ? "" : "s"} overlapping the selected range — whole flights, no per-day interpolation.</span>,
+                  }}
+                />
               ) : (
-                <>
-                  <MetricTile variant="primary" label="Total spend" value={fmtUSD(summary.total_spend_usd, 0)} />
-                  <MetricTile label="Impressions" value={fmtNum(summary.total_impressions)} />
-                  <MetricTile label="Link clicks" value={fmtNum(summary.total_link_clicks)} />
-                  <MetricTile label="Link CTR" value={fmtPct(summary.overall_link_ctr_pct)} />
-                </>
+                <KpiTileRow
+                  viewKey="ad-performance"
+                  catalog={buildMetricCatalog(metricSourceFromCampaignSummary(summary))}
+                  onTileClick={setDrillMetricId}
+                />
               )}
             </div>
+
+            <KpiDrilldownModal
+              open={drillMetricId != null}
+              onClose={() => setDrillMetricId(null)}
+              scope="account"
+              metricId={drillMetricId}
+              catalog={buildMetricCatalog(
+                scoped
+                  ? {
+                      spend: scoped.spend,
+                      impressions: null,
+                      reach: null,
+                      clicksAll: null,
+                      linkClicks: scoped.linkClicks,
+                      linkCtrPct: null,
+                      resultEvents: [{ key: "in_range_results", label: "Results (in range)", results: scoped.results }],
+                      isMultiEvent: false,
+                    }
+                  : metricSourceFromCampaignSummary(summary),
+              )}
+              analysis={a}
+              scopedCellRows={filterCells(a.performance_by_cell)}
+              scopeNarrowed={narrowed}
+              windowLabel={narrowed && range ? `${range.start} → ${range.end} (range-scoped)` : "full flight window"}
+            />
 
             <div className="px-6 py-5 space-y-4 max-w-5xl">
               {summary.data_caveat && <CaveatNote text={summary.data_caveat} />}
 
               {controls && (
                 <SectionCard title="Core control reads" desc="Control creative · per funnel depth" table="core_reanalysis_read" right={<SectionInfoIcon tip="The winning concept at each funnel stage as determined by the most recent re-analysis run — the benchmark every new test is measured against." />}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {/* Primary control dominates (accent card, 3/5 width);
+                      the secondary control read sits subordinate beside it. */}
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
                     {(() => {
                       const primaryName = resolveConceptName(controls.primary_control);
                       const primaryResolved = primaryName !== controls.primary_control;
                       return (
-                        <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
+                        <div className="relative rounded-xl border border-primary/35 bg-primary/[0.03] p-4 md:col-span-3">
+                          <div data-testid="primary-control-accent" className="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-primary/55 pointer-events-none" />
                           <div className={cn(TYPE.microLabel, "text-muted-foreground/70 mb-1.5")}>Primary control</div>
                           {/* Unresolved codes (no human name in local_book2_library) render
                               de-emphasized instead of borrowing the resolved-name treatment —
@@ -174,7 +225,7 @@ export function AdPerformanceView() {
                       const regName = resolveConceptName(regId);
                       const regResolved = regName !== regId;
                       return (
-                        <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
+                        <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4 md:col-span-2">
                           <div className={cn(TYPE.microLabel, "text-muted-foreground/70 mb-1.5")}>{term.Singular} control</div>
                           <p className={regResolved ? TYPE.title : cn(TYPE.body, "font-mono text-muted-foreground/70")}>
                             {regName}
@@ -198,16 +249,35 @@ export function AdPerformanceView() {
                   module's full description lives in the title attr, not as
                   always-visible first-layer prose. */}
               <SectionCard title="Analysis modules" desc="Same data · different slices" right={<SectionInfoIcon tip="Each module drills into a different dimension of the same import — Library (cell/variable performance), Audience, Placements, Budget, and Engagement Funnel." />}>
-                <div className="flex flex-wrap gap-2">
-                  {subpages.map((s) => (
+                {/* Progressive disclosure: the two data-heavy modules get full
+                    cards; the remaining slices sit as a subordinate chip row. */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {featuredModules.map((s) => (
+                    <div
+                      key={s.to}
+                      data-testid={`featured-module-${s.label.toLowerCase().replace(/\s+/g, "-")}`}
+                      className="flex flex-col gap-1.5 rounded-xl border border-border/40 bg-white/[0.02] p-4"
+                    >
+                      <div className="flex items-center gap-2">
+                        <s.Icon className="w-4 h-4 text-interactive shrink-0" />
+                        <span className={TYPE.title}>{s.label}</span>
+                        <div className="ml-auto"><CrossLink to={s.to} label="Open" /></div>
+                      </div>
+                      <p className={cn(TYPE.caption, "text-muted-foreground/70")}>{s.desc}</p>
+                      <span className={cn(TYPE.microLabel, "text-muted-foreground/50")}>{s.stat}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {secondaryModules.map((s) => (
                     <div
                       key={s.to}
                       title={s.desc}
-                      className="flex items-center gap-2 rounded-lg border border-border/40 bg-white/[0.02] pl-3 pr-1.5 py-1.5"
+                      className="flex items-center gap-2 rounded-lg border border-border/30 bg-white/[0.015] pl-3 pr-1.5 py-1.5"
                     >
-                      <s.Icon className="w-3.5 h-3.5 text-interactive shrink-0" />
+                      <s.Icon className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />
                       <div className="flex flex-col min-w-0">
-                        <span className={TYPE.title}>{s.label}</span>
+                        <span className={cn(TYPE.caption, "font-semibold text-foreground/90")}>{s.label}</span>
                         <span className={cn(TYPE.microLabel, "text-muted-foreground/50 truncate")}>{s.stat}</span>
                       </div>
                       <CrossLink to={s.to} label="Open" />

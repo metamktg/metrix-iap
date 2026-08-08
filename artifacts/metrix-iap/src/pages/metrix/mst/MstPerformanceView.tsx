@@ -12,7 +12,7 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getMST, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import { runMstAnalysis, type Verdict, type ColumnAnalysisEntry, type RowAnalysisEntry, type DiagonalAnalysisEntry } from "@/lib/mst-analysis";
-import { resolveCohortMeta } from "@/lib/data/cohortMeta";
+import { resolveObjectivesMeta } from "@/lib/data/cohortMeta";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   CaveatNote, SectionCard, DetailReveal, readableVariables, fmtUSD, fmtNum,
@@ -56,7 +56,9 @@ export function MstPerformanceView() {
         const acct = account!;
         const mst = getMST(seed, adAccountId);
         const analysis = getAnalysisData(seed, adAccountId);
-        const cohortMeta = resolveCohortMeta(acct.cohort);
+        // Objectives-aware: one objective → its specific terminal metric;
+        // zero/many → honest generic "cost per result" (all lower_is_better).
+        const cohortMeta = resolveObjectivesMeta(acct.objectives);
         const analysisResult = analysis ? runMstAnalysis(mst, analysis.performance_by_cell, cohortMeta.terminalMetricDirection) : null;
 
         if (!mst || mst.status !== "active" || !analysis || !analysisResult) {

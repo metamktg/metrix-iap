@@ -12,7 +12,7 @@ import {
   getAdAccount, getAnalysisData, getCampaignSummary, getCoreControls, getMST,
 } from "@/lib/data/metrixSeedAdapter";
 import {
-  ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
+  ModuleHeader, ModuleScopeGate, PendingState,
   SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
   DetailReveal, deriveLabel,
   LoopAction, SkeletonTileRow, InfoTooltip, readableVariables, eventLabel, SectionInfoIcon,
@@ -23,11 +23,17 @@ import {
   getGetAnalysisSummaryByDateRangeQueryOptions,
   getGetAccountAnalysisDataWindowsQueryOptions,
   useListAnalysisRuns,
+  getListAnalysisRunsQueryKey,
 } from "@workspace/api-client-react";
-import { RunScopePicker, ALL_TIME_SELECTION } from "@/components/analysis/RunSelector";
-import { useCellRunScope } from "@/lib/run-scope";
+import { RunScopePicker } from "@/components/analysis/RunSelector";
+import { useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
 import { useQuery } from "@tanstack/react-query";
 import { SharePieChart } from "@/components/charts/SharePieChart";
+import { KpiTileRow } from "@/components/metrics/KpiTile";
+import { KpiDrilldownModal } from "@/components/metrics/KpiDrilldownModal";
+import {
+  buildMetricCatalog, metricSourceFromApiTotals, metricSourceFromCampaignSummary,
+} from "@/lib/data/metricsCatalog";
 import {
   AreaChart, Area, BarChart, Bar, Cell, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid, Brush,
@@ -725,9 +731,14 @@ export function AnalysisOverview() {
   const { topN, setTopN, goalCpa, setGoalCpa, selectedWindow, setSelectedWindow } = useAnalysisView();
 
   // ── Analysis-run scope (compact header dropdown) ──────────────────────
-  const [runSelection, setRunSelection] = useState(ALL_TIME_SELECTION);
-  const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "");
+  const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "", { query: { enabled: !!adAccountId, queryKey: getListAnalysisRunsQueryKey(adAccountId ?? "") } });
+  const [runSelection, setRunSelection] = usePersistedRunScope(
+    "analysis-overview", adAccountId, analysisRunsData?.runs,
+  );
   const { filterByRun } = useCellRunScope(analysis, runSelection);
+
+  // KPI tile drill-down modal (one shared modal for all tiles).
+  const [drillMetricId, setDrillMetricId] = useState<string | null>(null);
 
   // Fetch available date windows from actual ad_performance data (not run metadata).
   const { data: windowsData, isFetching: windowsFetching } = useQuery({
@@ -942,6 +953,25 @@ export function AnalysisOverview() {
           : null;
         const effectiveGoalCpa = goalCpa ?? medianCpa;
 
+        // ── KPI tile catalog (shared by tiles + drill-down modal) ─────
+        const tileCatalog = buildMetricCatalog(
+          runScoped
+            ? metricSourceFromApiTotals({
+                total_spend_usd: scopedSpend,
+                total_impressions: scopedImpressions,
+                total_link_clicks: scopedLinkClicks,
+                overall_link_ctr_pct: scopedCtrPct,
+              })
+            : selectedWindow && runData
+              ? metricSourceFromApiTotals(runData.totals)
+              : metricSourceFromCampaignSummary(summary),
+        );
+        const drillWindowLabel = runScoped
+          ? "run-scoped selection"
+          : selectedWindow
+            ? `${selectedWindow.start} → ${selectedWindow.end}`
+            : "all data (full flight)";
+
         // ── Sub-page jump-off cards ───────────────────────────────────
         const subpages = [
           {
@@ -1007,30 +1037,11 @@ export function AnalysisOverview() {
                   <div className="px-6 pt-5 flex gap-3 items-start">
                     {/* Left: 4 tiles in a 2×2 grid */}
                     <div className="flex-1 grid grid-cols-dashboard-4 gap-3">
-                        <>
-                          {runScoped ? (
-                            <>
-                              <MetricTile variant="primary" label="Total spend"  value={fmtUSD(scopedSpend, 0)} />
-                              <MetricTile label="Impressions"  value={fmtNum(scopedImpressions)} />
-                              <MetricTile label="Link clicks"  value={fmtNum(scopedLinkClicks)} />
-                              <MetricTile label="Link CTR"     value={fmtPct(scopedCtrPct)} />
-                            </>
-                          ) : selectedWindow && runData ? (
-                            <>
-                              <MetricTile variant="primary" label="Total spend"  value={fmtUSD(runData.totals.total_spend_usd, 0)} />
-                              <MetricTile label="Impressions"  value={fmtNum(runData.totals.total_impressions)} />
-                              <MetricTile label="Link clicks"  value={fmtNum(runData.totals.total_link_clicks)} />
-                              <MetricTile label="Link CTR"     value={fmtPct(runData.totals.overall_link_ctr_pct)} />
-                            </>
-                          ) : (
-                            <>
-                              <MetricTile variant="primary" label="Total spend"  value={fmtUSD(summary.total_spend_usd, 0)} />
-                              <MetricTile label="Impressions"  value={fmtNum(summary.total_impressions)} />
-                              <MetricTile label="Link clicks"  value={fmtNum(summary.total_link_clicks)} />
-                              <MetricTile label="Link CTR"     value={fmtPct(summary.overall_link_ctr_pct)} />
-                            </>
-                          )}
-                        </>
+                        <KpiTileRow
+                          viewKey={runScoped ? "analysis-overview:run-scoped" : "analysis-overview"}
+                          catalog={tileCatalog}
+                          onTileClick={setDrillMetricId}
+                        />
                     </div>
                     {/* Right: result type donut — inline with tiles */}
                     {resultTypePie.length > 0 && (
@@ -1051,6 +1062,22 @@ export function AnalysisOverview() {
                     )}
                   </div>
                 )}
+
+                <KpiDrilldownModal
+                  open={drillMetricId != null}
+                  onClose={() => setDrillMetricId(null)}
+                  scope="account"
+                  metricId={drillMetricId}
+                  catalog={tileCatalog}
+                  analysis={a}
+                  // Run scoping maps cleanly onto seed cell rows; a date-window
+                  // selection does not (seed cells have no daily grain), so
+                  // under a window selection we pass no cell rows rather than
+                  // full-flight rows mislabeled as window-scoped.
+                  scopedCellRows={selectedWindow ? [] : cellRows}
+                  scopeNarrowed={runScoped || selectedWindow != null}
+                  windowLabel={drillWindowLabel}
+                />
 
                 {/* ── Secondary refresh action ──────────────────────── */}
                 <div className="px-6 pt-2 flex justify-end">

@@ -11,33 +11,36 @@ import { getAdAccount, getReportBuilder, getWorkspaceSettings } from "@/lib/data
 import { ModuleHeader, SectionCard, CaveatNote, PendingState, CrossLink, DetailReveal, deriveLabel } from "../shared";
 import { ConnectMetaDialog, ManualImportDialog, CreativeLibraryDialog } from "../ConnectAccountDialogs";
 import { AgentWaitlistSection } from "./AgentWaitlistSection";
-import { COHORT_OPTIONS } from "./cohortOptions";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { Plug, FileUp, Palette, ShieldCheck, CheckCircle2, Circle, Images, Bell, Mail, MonitorSmartphone, CalendarClock, Check, Minus, Loader2 } from "lucide-react";
 import {
   useGetNotificationPrefs,
   useUpdateNotificationPrefs,
   getGetNotificationPrefsQueryKey,
-  useSetAccountCohort,
+  useSetAccountObjectives,
   getGetMetrixSeedQueryKey,
   ApiError,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@workspace/command-deck/hooks/use-toast";
+import { OBJECTIVE_OPTIONS } from "./cohortOptions";
 
 const SECTION = "Settings · 10";
 
 /**
- * Account config only. This decides which terminal metric shows up in
- * Budget, Ad Performance, and Exports for this account. It is answered once
- * as part of account setup (the "what are you running ads towards?"
- * question) and changed here deliberately — never presented as a flexible,
- * inline toggle inside Analysis or any other workflow.
+ * Account config only. This decides which terminal metric(s) this account
+ * reports in Budget, Ad Performance, and Exports, and which optional CSV
+ * column groups the analysis run assesses. It is answered as part of
+ * account setup (the "what are you running ads towards?" question) and
+ * changed here deliberately — never presented as a flexible, inline toggle
+ * inside Analysis or any other workflow. Multi-select: an account can run
+ * towards several objectives at once; each account's set is independent.
  */
-function BusinessModelSection({ accountId, currentCohort }: { accountId: string; currentCohort: string | null | undefined }) {
+function ObjectivesSection({ accountId, currentObjectives }: { accountId: string; currentObjectives: string[] | undefined }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const mutation = useSetAccountCohort({
+  const selected = currentObjectives ?? [];
+  const mutation = useSetAccountObjectives({
     mutation: {
       onSuccess: () => {
         void queryClient.invalidateQueries({ queryKey: getGetMetrixSeedQueryKey() });
@@ -45,25 +48,40 @@ function BusinessModelSection({ accountId, currentCohort }: { accountId: string;
       onError: (err: unknown) => {
         toast({
           variant: "destructive",
-          title: "Couldn't set business model",
+          title: "Couldn't update objectives",
           description: err instanceof ApiError ? err.message : "Please try again.",
         });
       },
     },
   });
 
+  const toggle = (id: string) => {
+    const next = selected.includes(id) ? selected.filter((o) => o !== id) : [...selected, id];
+    if (next.length === 0) {
+      toast({
+        title: "At least one objective is required",
+        description: "Pick a different objective before removing this one.",
+      });
+      return;
+    }
+    mutation.mutate({ accountId, data: { objectives: next as ("ecommerce" | "lead_gen" | "service" | "app")[] } });
+  };
+
   return (
     <SectionCard
-      title="Business model"
-      desc="What conversion objective are you running ads towards? Decides which terminal metric this account reports in Budget, Ad Performance, and Exports."
+      title="Objectives"
+      desc="What are you running ads towards? Pick every objective this account runs — analysis assesses each one whose data is present, and they decide the terminal metrics reported in Budget, Ad Performance, and Exports."
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-        {COHORT_OPTIONS.map((c) => {
-          const active = currentCohort === c.id;
+        {OBJECTIVE_OPTIONS.map((c) => {
+          const active = selected.includes(c.id);
+          const pendingThis = mutation.isPending && (
+            (mutation.variables?.data.objectives ?? []).includes(c.id) !== active
+          );
           return (
             <button
               key={c.id}
-              onClick={() => mutation.mutate({ accountId, data: { cohort: c.id } })}
+              onClick={() => toggle(c.id)}
               disabled={mutation.isPending}
               aria-pressed={active}
               className={cn(
@@ -73,7 +91,7 @@ function BusinessModelSection({ accountId, currentCohort }: { accountId: string;
                   : "border-border/40 bg-white/[0.02] hover:border-primary/40 hover:bg-primary/[0.04]"
               )}
             >
-              {mutation.isPending && mutation.variables?.data.cohort === c.id ? (
+              {pendingThis ? (
                 <Loader2 className="w-4 h-4 text-interactive shrink-0 animate-spin" />
               ) : (
                 <c.Icon className="w-4 h-4 text-interactive shrink-0" />
@@ -92,7 +110,6 @@ function BusinessModelSection({ accountId, currentCohort }: { accountId: string;
     </SectionCard>
   );
 }
-
 function PrefToggle({
   on,
   onToggle,
@@ -342,7 +359,7 @@ export function GeneralView() {
           </div>
         </SectionCard>
 
-        {configured && <BusinessModelSection accountId={account.id} currentCohort={account.cohort} />}
+        {configured && <ObjectivesSection accountId={account.id} currentObjectives={account.objectives} />}
 
         {configured && (
           <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">

@@ -130,6 +130,12 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  // Unmount after every test (not just before the next one): the success
+  // toast schedules a Radix duration timer, and if the tree is still mounted
+  // when vitest tears down the jsdom environment, that timer fires against a
+  // destroyed window ("ReferenceError: window is not defined") and fails the
+  // whole run as an unhandled error.
+  cleanup();
   vi.clearAllTimers();
   vi.unstubAllGlobals();
 });

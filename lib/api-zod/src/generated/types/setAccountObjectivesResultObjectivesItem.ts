@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type SetAccountCohortResultCohort = typeof SetAccountCohortResultCohort[keyof typeof SetAccountCohortResultCohort];
+export type SetAccountObjectivesResultObjectivesItem = typeof SetAccountObjectivesResultObjectivesItem[keyof typeof SetAccountObjectivesResultObjectivesItem];
 
 
-export const SetAccountCohortResultCohort = {
+export const SetAccountObjectivesResultObjectivesItem = {
   ecommerce: 'ecommerce',
   lead_gen: 'lead_gen',
   service: 'service',

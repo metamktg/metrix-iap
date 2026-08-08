@@ -13,8 +13,9 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount } from "@/lib/data/metrixSeedAdapter";
 import { ConceptMapView } from "./ConceptMapView";
 import { CrossmapResultsView } from "./CrossmapResultsView";
-import { RunScopePicker, ALL_TIME_SELECTION } from "@/components/analysis/RunSelector";
-import { useListAnalysisRuns } from "@workspace/api-client-react";
+import { RunScopePicker } from "@/components/analysis/RunSelector";
+import { usePersistedRunScope } from "@/lib/run-scope";
+import { useListAnalysisRuns, getListAnalysisRunsQueryKey } from "@workspace/api-client-react";
 import { Network, GitMerge } from "lucide-react";
 
 type Tab = "concept" | "crossmap";
@@ -45,8 +46,10 @@ export function MstCrossMapView() {
 
   // Run scope is owned here so the compact picker lives in the single
   // visible header and the selection is shared across both tabs.
-  const [runScope, setRunScope] = useState(ALL_TIME_SELECTION);
-  const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "");
+  const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "", { query: { enabled: !!adAccountId, queryKey: getListAnalysisRunsQueryKey(adAccountId ?? "") } });
+  const [runScope, setRunScope] = usePersistedRunScope(
+    "mst-crossmap", adAccountId, analysisRunsData?.runs,
+  );
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">

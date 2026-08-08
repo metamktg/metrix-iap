@@ -28,6 +28,11 @@ let memberToken: string;
 let adAccountId: string;
 let testRunId: string | null = null;
 
+// Per-instance namespace: every constrained fixture field embeds this nonce
+// so parallel instances of this suite can never collide on natural unique
+// keys or delete each other's fixtures.
+const NONCE = crypto.randomUUID().slice(0, 8);
+
 const SURFACE_TABLES = [
   "ad_performance",
   "demographic_performance",
@@ -98,6 +103,24 @@ beforeAll(async () => {
   // Insert a fresh SUCCESS run with NO output rows — the completeness check
   // scopes to this (latest) run, so every required surface starts empty.
   const supabase = getSupabase();
+  // Sweep leftover runs from previous ABORTED sessions of this suite only:
+  // test-only created_by prefix AND older than 30 minutes, so a live sibling
+  // suite's fresh run is never touched. A stale success run would otherwise
+  // be "latest" and hijack the completeness scoping.
+  {
+    const { data: stale } = await supabase
+      .from("manual_analysis_runs")
+      .select("id")
+      .eq("account_id", adAccountId)
+      .like("created_by", "completeness-test-%")
+      .lt("started_at", new Date(Date.now() - 30 * 60_000).toISOString());
+    for (const r of stale ?? []) {
+      for (const table of SURFACE_TABLES) {
+        await supabase.from(table).delete().eq("manual_analysis_run_id", r["id"]);
+      }
+      await supabase.from("manual_analysis_runs").delete().eq("id", r["id"]);
+    }
+  }
   let runRows: Array<{ id: string | number }> | null = null;
   for (let attempt = 1; attempt <= 2; attempt++) {
     const { data, error } = await supabase
@@ -111,7 +134,7 @@ beforeAll(async () => {
         rows_ingested: 0,
         started_at: new Date(Date.now() - 5000).toISOString(),
         finished_at: new Date().toISOString(),
-        created_by: `completeness-test-${Date.now()}`,
+        created_by: `completeness-test-${NONCE}`,
       })
       .select("id");
     if (!error) { runRows = data; break; }
@@ -181,7 +204,7 @@ describe("analysis completeness verification + strategy gate", () => {
     // Every required surface must be present and flagged not-ok.
     const requiredKeys = SURFACE_TABLES.map(String);
     for (const key of requiredKeys) {
-      const surface = body.surfaces.find((s) => s.key === key);
+      const surface = body!.surfaces.find((s) => s.key === key);
       expect(surface, `surface ${key} missing from response`).toBeDefined();
       expect(surface!.required).toBe(true);
       expect(surface!.ok).toBe(false);
@@ -222,18 +245,26 @@ describe("analysis completeness verification + strategy gate", () => {
 
   it("flips to complete=true and validated=true once every required surface has rows", async () => {
     const supabase = getSupabase();
+    // Per-instance synthetic date derived from the suite NONCE: every
+    // surface table except ad_performance includes (date_start, date_end)
+    // in its natural unique key, so a nonce-derived day guarantees no
+    // collision with real data, crashed leftovers, or a parallel instance
+    // of this suite — without deleting anything that isn't ours.
+    const uniqueDay = new Date((parseInt(NONCE, 16) % 40_000) * 86_400_000)
+      .toISOString()
+      .slice(0, 10);
     const base = {
       account_id: adAccountId,
       manual_analysis_run_id: testRunId,
-      date_start: "2025-01-03",
-      date_end: "2025-01-03",
+      date_start: uniqueDay,
+      date_end: uniqueDay,
       spend: 10,
     };
     const inserts: Array<{ table: string; row: Record<string, unknown> }> = [
       // Unique ad_name per run: ad_performance has a unique constraint on
       // (account_id, ad_name, campaign_name, result_type), so a crashed
       // earlier run's leftover row must never collide with this insert.
-      { table: "ad_performance",          row: { ...base, campaign_name: "T", ad_name: `completeness-test-ad-${Date.now()}`, result_type: "Results" } },
+      { table: "ad_performance",          row: { ...base, campaign_name: "T", ad_name: `completeness-test-ad-${NONCE}`, result_type: "Results" } },
       { table: "demographic_performance", row: { ...base, age: "25-34", gender: "female" } },
       { table: "placement_performance",   row: { ...base, placement: "Facebook Feed" } },
       { table: "platform_performance",    row: { ...base, platform: "facebook" } },
@@ -244,23 +275,29 @@ describe("analysis completeness verification + strategy gate", () => {
       if (error) throw new Error(`${table}: ${error.message}`);
     }
 
-    const res = await get("/analysis-completeness", adminToken);
-    expect(res.status).toBe(200);
-    const body = (await res.json()) as Completeness;
     // Completeness always verifies the LATEST run for the account. Sibling
     // sessions run this same suite against the shared dev Supabase; if one
     // created a newer run between our beforeAll and now, the endpoint is
-    // honestly reporting on *their* run and our assertions are meaningless —
-    // skip rather than fail on a cross-session race.
-    if (body.run_id !== testRunId) {
-      console.warn(
-        `analysisCompleteness: latest run is ${body.run_id}, not ours (${testRunId}) — a concurrent suite is running; skipping flip assertions.`,
-      );
-      return;
+    // honestly reporting on *their* run. Retry a few times (their afterAll
+    // deletes their run quickly); only skip if the race persists.
+    let body: Completeness | null = null;
+    for (let attempt = 1; attempt <= 4; attempt++) {
+      const res = await get("/analysis-completeness", adminToken);
+      expect(res.status).toBe(200);
+      body = (await res.json()) as Completeness;
+      if (body.run_id === testRunId && body.complete) break;
+      if (attempt < 4) await new Promise((r) => setTimeout(r, 3_000));
     }
-    expect(body.complete).toBe(true);
+    // Deterministic: after retries, the endpoint must be scoped to OUR run.
+    // A sibling suite's run is deleted by its afterAll within seconds, so
+    // the retry window above absorbs legitimate cross-session overlap.
+    expect(
+      body!.run_id,
+      `completeness endpoint is scoped to run ${body!.run_id}, not ours (${testRunId}) — stale or concurrent manual_analysis_runs row for account ${adAccountId}`,
+    ).toBe(testRunId);
+    expect(body!.complete, JSON.stringify(body!.surfaces)).toBe(true);
     for (const key of SURFACE_TABLES) {
-      const surface = body.surfaces.find((s) => s.key === key);
+      const surface = body!.surfaces.find((s) => s.key === key);
       expect(surface!.ok).toBe(true);
       expect(surface!.rows).toBeGreaterThan(0);
     }

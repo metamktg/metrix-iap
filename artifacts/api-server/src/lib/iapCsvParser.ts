@@ -27,6 +27,8 @@ import {
   type IapCsvClass,
   IAP_CSV_CLASS_SPECS,
   type ColumnMatch,
+  detectObjectiveColumnGroups,
+  type ObjectiveColumnGroup,
 } from "./iapCsvSpec";
 
 export class IapCsvFormatError extends Error {
@@ -77,6 +79,13 @@ export type IapCsvParseResult = {
   rows: IapCsvRow[];
   /** Which optional (non-Base) metric columns were present in this file's header. */
   optionalMetricsPresent: string[];
+  /**
+   * Which objective column groups (ecommerce / service_or_lead_gen / app)
+   * had at least one column present in this file's header. Presence-based
+   * detection used by the analysis run to compare against the account's
+   * configured objectives — never to auto-enable anything.
+   */
+  objectiveColumnGroupsPresent: ObjectiveColumnGroup[];
   /**
    * Human-readable warnings generated during parsing: auto-resolved column
    * aliases, missing columns that proceeded with nulls, and unrecognised
@@ -583,6 +592,7 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
   return {
     rows,
     optionalMetricsPresent: optionalMetricsPresent.map(slugifyColumn),
+    objectiveColumnGroupsPresent: [...detectObjectiveColumnGroups(optionalMetricsPresent)],
     warnings,
     columnMappings,
     missingColumns,

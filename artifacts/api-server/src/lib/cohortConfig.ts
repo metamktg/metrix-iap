@@ -82,3 +82,47 @@ export function resolveCohort(cohort: string | null | undefined): CohortDefiniti
     ? COHORT_DEFINITIONS[cohort as CohortKey]
     : null;
 }
+
+// ─── Objectives (multi-value replacement for the scalar cohort) ────────
+// An account's "objectives" are a SET of one-or-more cohort keys. "Cohort"
+// remains the internal vocabulary (ecommerce/lead_gen/service/app); the
+// objectives set simply allows an account to run towards more than one at
+// once (e.g. a retailer doing both purchase and lead-capture campaigns).
+// Configured only in Settings → General; the analysis run consults this
+// set to decide which optional CSV column groups it assesses.
+
+/**
+ * Parse/validate an arbitrary stored value (jsonb array, string[], etc.)
+ * into a deduplicated, canonically-ordered list of objective keys.
+ * Unknown values are dropped, never guessed.
+ */
+export function normalizeObjectives(raw: unknown): CohortKey[] {
+  if (!Array.isArray(raw)) return [];
+  const set = new Set<CohortKey>();
+  for (const v of raw) {
+    if (typeof v === "string" && Object.prototype.hasOwnProperty.call(COHORT_DEFINITIONS, v)) {
+      set.add(v as CohortKey);
+    }
+  }
+  return COHORT_KEYS.filter((k) => set.has(k));
+}
+
+/**
+ * Resolve an ad_accounts row to its configured objectives. Reads the new
+ * `objectives` set first; falls back to the legacy scalar `cohort` column
+ * for rows written before the migration, so pre-existing single-cohort
+ * accounts keep working with no re-configuration. Returns [] (never a
+ * silent ecommerce default) when nothing is configured.
+ */
+export function resolveAccountObjectives(row: Record<string, unknown> | null | undefined): CohortKey[] {
+  if (!row) return [];
+  const fromSet = normalizeObjectives(row["objectives"]);
+  if (fromSet.length > 0) return fromSet;
+  const legacy = resolveCohort(row["cohort"] as string | null | undefined);
+  return legacy ? [legacy.cohort_key] : [];
+}
+
+/** Resolve objective keys to their full definitions (canonical order, unknowns dropped). */
+export function resolveObjectiveDefinitions(objectives: readonly string[] | null | undefined): CohortDefinition[] {
+  return normalizeObjectives(objectives ? [...objectives] : []).map((k) => COHORT_DEFINITIONS[k]);
+}

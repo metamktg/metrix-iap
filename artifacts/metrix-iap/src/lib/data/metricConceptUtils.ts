@@ -1,5 +1,5 @@
 // ─── Shared metric × concept utilities ───────────────────────────────
-// Extracted from MetricDiagnosticModal so the hover-card popover and the
+// Extracted from the old metric modal so the hover-card popover and the
 // full diagnostic modal can share the same ranking logic without duplication.
 
 import { fmtUSD, fmtNum } from "@/pages/metrix/shared";

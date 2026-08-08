@@ -20,7 +20,7 @@ import { z } from "zod";
 import { getSupabase } from "./supabase";
 import { invalidateMetrixSeedCache } from "./metrixSeedAssembly";
 import { logger } from "./logger";
-import { resolveCohort, type CohortDefinition } from "./cohortConfig";
+import { resolveAccountObjectives, COHORT_DEFINITIONS, type CohortDefinition } from "./cohortConfig";
 
 export const GENERATION_MODEL = "claude-sonnet-4-6";
 /** Runs stuck 'running' past this cutoff are treated as dead (server restart). */
@@ -193,7 +193,7 @@ async function accountExists(accountId: string): Promise<Row | null> {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from("ad_accounts")
-    .select("id, name, cohort")
+    .select("id, name, cohort, objectives")
     .eq("id", accountId)
     .limit(1);
   if (error) throw new Error(error.message);
@@ -204,22 +204,42 @@ async function accountExists(accountId: string): Promise<Row | null> {
  * "BUSINESS MODEL CONTEXT" block injected into every generation prompt.
  * This is the fix for the systemic ecommerce-hardcoding defect: without
  * it, the model defaults to purchase/CPA language for every client
- * regardless of their real terminal metric.
+ * regardless of their real terminal metric. Objectives-aware: an account
+ * can run towards several objectives at once; with none configured the
+ * language stays generic ("cost per result"), never a silent ecommerce
+ * default.
  */
-function cohortContextBlock(cohort: CohortDefinition | null): string {
-  if (!cohort) {
+function objectivesContextBlock(objectives: CohortDefinition[]): string {
+  if (objectives.length === 0) {
     return (
-      "BUSINESS MODEL CONTEXT: this account's cohort has not been configured yet. " +
+      "BUSINESS MODEL CONTEXT: this account's objectives have not been configured yet. " +
       "Do NOT assume ecommerce/purchase/ROAS language — write in terms of \"cost per result\" " +
       "generically until the account's real terminal metric is known."
     );
   }
+  if (objectives.length === 1) {
+    const cohort = objectives[0]!;
+    return (
+      `BUSINESS MODEL CONTEXT: this account's objective is ${cohort.label} ` +
+      `(key: ${cohort.cohort_key}). The metric that defines success is ${cohort.terminal_metric_label} ` +
+      `— lower is better. Do not reference ROAS, AOV, "purchase", or "add to cart" unless this ` +
+      `account's objective is ecommerce; use ${cohort.terminal_metric_label} language throughout.`
+    );
+  }
+  const list = objectives
+    .map((c) => `${c.label} (key: ${c.cohort_key}, terminal metric: ${c.terminal_metric_label} — lower is better)`)
+    .join("; ");
   return (
-    `BUSINESS MODEL CONTEXT: this account's business model is ${cohort.label} ` +
-    `(cohort: ${cohort.cohort_key}). The metric that defines success is ${cohort.terminal_metric_label} ` +
-    `— lower is better. Do not reference ROAS, AOV, "purchase", or "add to cart" unless this ` +
-    `account's cohort is ecommerce; use ${cohort.terminal_metric_label} language throughout.`
+    `BUSINESS MODEL CONTEXT: this account runs towards MULTIPLE objectives at once: ${list}. ` +
+    `Success is measured per objective by its own terminal metric — never collapse them into one number. ` +
+    `Only use ecommerce language (ROAS, AOV, "purchase", "add to cart") when speaking specifically about ` +
+    `the ecommerce objective; when speaking across objectives, use generic "cost per result" language.`
   );
+}
+
+/** Single display metric for prompt scaffolding: specific when exactly one objective, generic otherwise. */
+function terminalMetricLabelFor(objectives: CohortDefinition[]): string {
+  return objectives.length === 1 ? objectives[0]!.terminal_metric_label : "cost per result";
 }
 
 type StrategyEvidence = {
@@ -481,13 +501,13 @@ function strategyPrompt(
   evidence: Row,
   cellIds: Set<string>,
   icpIds: Set<string>,
-  cohort: CohortDefinition | null,
+  objectives: CohortDefinition[],
 ): string {
-  const terminalMetricLabel = cohort?.terminal_metric_label ?? "cost per result";
+  const terminalMetricLabel = terminalMetricLabelFor(objectives);
   return [
     "You are the METRIX strategy engine. From the ad-account analysis evidence below, produce message pillars and testing hypotheses for the next IAP creative cycle (Matrix Sprint Test).",
     "",
-    cohortContextBlock(cohort),
+    objectivesContextBlock(objectives),
     "",
     IAP_VARIABLE_TAXONOMY,
     "",
@@ -575,9 +595,9 @@ function briefsPrompt(
   pillars: Row[],
   evidence: Row,
   columns: BriefColumn[],
-  cohort: CohortDefinition | null,
+  objectives: CohortDefinition[],
 ): string {
-  const terminalMetricLabel = cohort?.terminal_metric_label ?? "cost per result";
+  const terminalMetricLabel = terminalMetricLabelFor(objectives);
   const pillarSummaries = pillars.map((row) => {
     const p = (row["payload"] ?? {}) as Row;
     return {
@@ -613,7 +633,7 @@ function briefsPrompt(
   return [
     "You are the METRIX brief builder. From the stored strategy pillars and supporting analysis evidence below, produce the next set of creative briefs as an IAP Matrix (Matrix Sprint Test).",
     "",
-    cohortContextBlock(cohort),
+    objectivesContextBlock(objectives),
     "",
     IAP_VARIABLE_TAXONOMY,
     "",
@@ -962,7 +982,7 @@ export async function startStrategyGeneration(
   }
   const account = await accountExists(accountId);
   if (!account) throw new GenerationError("Ad account not found.", 404);
-  const cohort = resolveCohort(account["cohort"] as string | null | undefined);
+  const objectives = resolveAccountObjectives(account).map((k) => COHORT_DEFINITIONS[k]);
   const { evidence, cellIds, icpIds } = await buildStrategyEvidence(
     accountId,
     String(account["name"] ?? accountId),
@@ -981,7 +1001,7 @@ export async function startStrategyGeneration(
     try {
       await setRunProgressPhase(runId, 10, "Calling strategy model…");
       const output = sanitizeGeneratedText(
-        await generateValidated(strategyPrompt(evidence, cellIds, icpIds, cohort), GeneratedStrategy, {
+        await generateValidated(strategyPrompt(evidence, cellIds, icpIds, objectives), GeneratedStrategy, {
           // Strategy JSON regularly exceeds the 8k default (a real run was cut
           // off at ~29k chars); generateValidated escalates further if needed.
           maxTokens: 16384,
@@ -1108,7 +1128,7 @@ export async function startStrategyGeneration(
 export async function startBriefsGeneration(accountId: string, createdBy: string): Promise<string> {
   const account = await accountExists(accountId);
   if (!account) throw new GenerationError("Ad account not found.", 404);
-  const cohort = resolveCohort(account["cohort"] as string | null | undefined);
+  const objectives = resolveAccountObjectives(account).map((k) => COHORT_DEFINITIONS[k]);
   const pillars = await storedPillars(accountId);
   if (pillars.length === 0) {
     throw new GenerationError(
@@ -1210,7 +1230,7 @@ export async function startBriefsGeneration(accountId: string, createdBy: string
     try {
       await setRunProgressPhase(runId, 10, "Calling brief model…");
       const output = sanitizeGeneratedText(
-        await generateValidated(briefsPrompt(pillars, evidence, columns, cohort), GeneratedBriefs, {
+        await generateValidated(briefsPrompt(pillars, evidence, columns, objectives), GeneratedBriefs, {
           // 16 fully-populated briefs overflow the 8k default → truncated JSON.
           maxTokens: 16384,
           // Enforce the locked 4×4 (general mode is exempt) via the repair retry.

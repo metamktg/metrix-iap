@@ -14,6 +14,16 @@
 //   useGetLatestGenerationRun (mock) → useGenerationRun (real hook, kind="briefs")
 //     → CreativeCommandCenter (real component) → GenerationProgressBar (real)
 //       → rendered label in the DOM
+//
+// ── Sibling creative views excluded (Task 623) ────────────────────────────
+// CreativeScanView and CreativeImportExportView are intentionally NOT covered
+// here: as of 2026-08-08 neither renders a GenerationProgressBar nor calls
+// useGenerationRun — they have no generation runs of their own (Creative Scan
+// is a locked/coming-soon stage; import/export is manual-upload driven).
+// When either view gains its own generation run, wire a GenerationProgressBar
+// and add a threading test following the pattern in this file (mock
+// useGetLatestGenerationRun, render the real view, assert the server stage
+// label and the fallback string both reach the DOM).
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, act } from "@testing-library/react";
