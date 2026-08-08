@@ -10,6 +10,9 @@
 //      "Segment" column header.
 //   4. "Scatter" mode — clicking the tab shows the scatter section card title
 //      containing "Frequency × Link CTR".
+//   5. Breakdown dimension switch — Audience → Placement keeps rows present.
+//   6. Column sort — a sort chosen in Audience mode stays active after
+//      switching to Placement, and clicking another column reorders rows.
 //   No JS errors are emitted during any tab switch.
 //
 // API calls are intercepted so no live API server is required.
@@ -492,7 +495,118 @@ async function main() {
       },
     );
 
-    // ── Test 6: PendingState renders when demographic data is absent ─────────
+    // ── Test 6: column sort survives a Breakdown dimension switch ───────────
+    await test(
+      "Column sort stays active across Audience → Placement switch and re-sorting reorders rows",
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        const jsErrors: string[] = [];
+        page.on("pageerror", (err) => jsErrors.push(err.message));
+        try {
+          await mockApis(ctx);
+          await gotoFunnel(page);
+
+          // Enter Breakdown mode (defaults to Audience dimension).
+          await page.getByRole("button", { name: "Breakdown" }).click();
+          const segmentHeader = page.locator("th").filter({ hasText: /^Segment$/ });
+          await segmentHeader.waitFor({ state: "visible", timeout: 8_000 });
+
+          // Helper: read the first-column segment labels in current row order.
+          const rowLabels = () =>
+            page.locator("tbody tr td:first-child").allInnerTexts();
+
+          // Reveal secondary columns so "Spend" is clickable. Spend is chosen
+          // because it has values in BOTH dimensions (Frequency/CTR All are
+          // audience-only and their columns disappear in Placement mode).
+          await page
+            .getByRole("button", { name: /Show \d+ more column/ })
+            .click();
+          await page.waitForTimeout(200);
+
+          // Sort by "Spend" in Audience mode.
+          const spendHeader = page
+            .locator("th button")
+            .filter({ hasText: /^Spend$/ });
+          await spendHeader.waitFor({ state: "visible", timeout: 8_000 });
+          await spendHeader.click();
+          await page.waitForTimeout(300);
+
+          // The active sort header is highlighted with the text-interactive class.
+          const spendClass = (await spendHeader.getAttribute("class")) ?? "";
+          assert(
+            spendClass.includes("text-interactive"),
+            `Expected "Spend" header to be active (text-interactive) after clicking it, class="${spendClass}"`,
+          );
+          console.log('       "Spend" sort active in Audience mode ✓');
+
+          // Switch dimension Audience → Placement.
+          await page.getByRole("button", { name: "Placement" }).click();
+          const placementCardTitle = page.getByText("Placement breakdown").first();
+          await placementCardTitle.waitFor({ state: "visible", timeout: 8_000 });
+
+          // Rows must still be present after the dimension switch.
+          const placementLabels = await rowLabels();
+          assert(
+            placementLabels.length > 0,
+            `Expected data rows after switching to Placement, got ${placementLabels.length}`,
+          );
+          console.log(`       ${placementLabels.length} row(s) present after switch ✓`);
+
+          // The "Spend" sort column must still be the active (highlighted) one.
+          // (The active sort column is always rendered, even when secondary
+          // columns are collapsed after the dimension switch remounts the table.)
+          const spendHeaderAfter = page
+            .locator("th button")
+            .filter({ hasText: /^Spend$/ });
+          await spendHeaderAfter.waitFor({ state: "visible", timeout: 8_000 });
+          const spendClassAfter = (await spendHeaderAfter.getAttribute("class")) ?? "";
+          assert(
+            spendClassAfter.includes("text-interactive"),
+            `Expected "Spend" header to remain active after dimension switch, class="${spendClassAfter}"`,
+          );
+          console.log('       "Spend" sort still active after dimension switch ✓');
+
+          // Click a second sort column in Placement mode and assert the row
+          // order actually changes.
+          const ctrHeader = page
+            .locator("th button")
+            .filter({ hasText: /^CTR Link$/ });
+          await ctrHeader.waitFor({ state: "visible", timeout: 8_000 });
+          await ctrHeader.click();
+          await page.waitForTimeout(300);
+
+          const ctrClass = (await ctrHeader.getAttribute("class")) ?? "";
+          assert(
+            ctrClass.includes("text-interactive"),
+            `Expected "CTR Link" header to be active after clicking it, class="${ctrClass}"`,
+          );
+
+          const resortedLabels = await rowLabels();
+          assert(
+            resortedLabels.length === placementLabels.length,
+            `Expected same row count after re-sort (${placementLabels.length}), got ${resortedLabels.length}`,
+          );
+          assert(
+            JSON.stringify(resortedLabels) !== JSON.stringify(placementLabels),
+            `Expected row order to change after sorting by "CTR Link", but it stayed: ${placementLabels.join(", ")}`,
+          );
+          console.log('       Row order changed after sorting by "CTR Link" ✓');
+
+          assert(
+            jsErrors.length === 0,
+            `Expected no JS errors during sort/dimension interactions, got: ${jsErrors.join("; ")}`,
+          );
+          console.log("       No JS errors ✓");
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+
+    // ── Test 7: PendingState renders when demographic data is absent ─────────
     await test(
       'PendingState shows "No engagement data" when demographic rows are empty',
       async () => {
@@ -535,7 +649,7 @@ async function main() {
       },
     );
 
-    // ── Test 7: Tab switches are error-free when cycled repeatedly ──────────
+    // ── Test 8: Tab switches are error-free when cycled repeatedly ──────────
     await test(
       "Cycling through all three tabs produces no JS errors",
       async () => {
