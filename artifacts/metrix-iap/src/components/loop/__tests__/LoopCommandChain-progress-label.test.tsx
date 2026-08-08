@@ -15,7 +15,7 @@
 // which label to render.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, cleanup, screen, fireEvent, act } from "@testing-library/react";
+import { render, cleanup, screen, within, fireEvent, act } from "@testing-library/react";
 import { Router as WouterRouter } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -313,5 +313,76 @@ describe("CommandHub Actions — server stage label while strategy is running", 
     fireEvent.click(strategyTile!);
 
     expect(screen.getAllByText(/loading analysis evidence/i).length).toBeGreaterThan(0);
+  });
+});
+
+// ── Briefs hub — server stage label threads through (Task 624) ────────────
+//
+// All assertions here are scoped WITHIN the CommandHub overlay panel (not the
+// global screen), so they fail if the hub itself stops receiving/rendering
+// briefsLastRun.progress_stage — even while the running strip shows the same
+// string elsewhere on the page.
+
+/** Open the Briefs CommandHub and return its overlay panel element. */
+function openBriefsHub(): HTMLElement {
+  const briefsTile = getStageTile(document.body, "Briefs");
+  expect(briefsTile).not.toBeNull();
+  fireEvent.click(briefsTile!);
+
+  // The hub renders as a fixed overlay containing the disabled "Draft Briefs"
+  // action button — unique to the Briefs hub while a run is in flight.
+  const draftBtn = screen
+    .getAllByRole("button")
+    .find((b) => /draft briefs/i.test(b.textContent ?? ""));
+  expect(draftBtn).toBeTruthy();
+  const overlay = draftBtn!.closest("div.fixed") as HTMLElement | null;
+  expect(overlay).not.toBeNull();
+  return overlay!;
+}
+
+describe("Briefs CommandHub — briefs progressStage threading (hub-scoped)", () => {
+  it("shows the server briefs progress_stage inside the hub bar when set", () => {
+    mockRunState.kind          = "briefs";
+    mockRunState.isRunning     = true;
+    mockRunState.progressPct   = 52;
+    mockRunState.progressStage = "Assembling MST matrix…";
+
+    renderChain();
+    const hub = openBriefsHub();
+
+    // Server stage label appears inside the hub panel itself
+    expect(within(hub).getByText(/assembling mst matrix/i)).toBeTruthy();
+    // Fallback label must not render inside the hub alongside the server stage
+    expect(within(hub).queryByText(/writing creative briefs/i)).toBeNull();
+    // The briefs pct value is rendered inside the hub
+    expect(within(hub).getByText(/52%/)).toBeTruthy();
+  });
+
+  it("shows the briefs-specific PHASE_LABELS fallback inside the hub when progress_stage is null", () => {
+    mockRunState.kind          = "briefs";
+    mockRunState.isRunning     = true;
+    mockRunState.progressPct   = 0;
+    mockRunState.progressStage = null;
+    mockRunState.elapsedSeconds = 0;
+
+    renderChain();
+    const hub = openBriefsHub();
+
+    // PHASE_LABELS.briefs[0] = "Loading strategy context…"
+    expect(within(hub).getByText(/loading strategy context/i)).toBeTruthy();
+  });
+
+  it("falls back to briefs PHASE_LABELS inside the hub when progress_pct > 0 but progress_stage is null", () => {
+    mockRunState.kind          = "briefs";
+    mockRunState.isRunning     = true;
+    mockRunState.progressPct   = 50;
+    mockRunState.progressStage = null;
+    mockRunState.elapsedSeconds = 0;
+
+    renderChain();
+    const hub = openBriefsHub();
+
+    // getPhaseLabel("briefs", 50) → "Writing creative briefs…" (threshold 48)
+    expect(within(hub).getByText(/writing creative briefs/i)).toBeTruthy();
   });
 });
