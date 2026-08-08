@@ -16,7 +16,7 @@ import {
   MetricTile, CaveatNote, CrossLink, StageLoopHub, buildLoopStages, FlowCrumb, useFromParam,
 } from "../shared";
 import {
-  useGenerationRun, GenerateButton, ProvenanceBadge, GenerationErrorNote,
+  useGenerationRun, GenerateButton, ProvenanceBadge, GenerationErrorNote, GenerationProgressBar,
 } from "@/components/generation/GenerationControls";
 import { FileText, Sparkles, Video, Users, Library, ScanLine, ArrowLeftRight } from "lucide-react";
 import { TokenizedConceptText } from "@/components/concept/ConceptChip";
@@ -108,7 +108,14 @@ export function CreativeCommandCenter() {
                         runningLabel="Generating…"
                       />
                     </div>
-                    <GenerationErrorNote message={generation.lastError} />
+                    <div className="mt-3 space-y-3">
+                      <GenerationProgressBar
+                        isRunning={generation.isRunning}
+                        progressPercent={generation.progressPercent}
+                        stageLabel={generation.progressStage ?? "Generating briefs from strategy…"}
+                      />
+                      <GenerationErrorNote message={generation.lastError} />
+                    </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       <MetricTile label="Total briefs" value={String(briefs.length)} />
