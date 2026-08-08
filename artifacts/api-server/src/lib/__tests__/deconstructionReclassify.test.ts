@@ -159,6 +159,7 @@ vi.mock("../generationEngine", () => ({
     }
   },
   startRun: vi.fn(async () => "run-new"),
+  setRunProgress: vi.fn(async () => {}),
   finishRun: vi.fn(async (_id: string, status: string, message?: string) => {
     finishCalls.push({ status, message });
   }),
