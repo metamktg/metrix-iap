@@ -8,7 +8,7 @@ import { useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccounts, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import { useListWorkspaceReports } from "@workspace/api-client-react";
-import { ModuleHeader, PrerequisiteGate, CrossLink, PendingState } from "../shared";
+import { ModuleHeader, PrerequisiteGate, PendingState, HubNavGrid } from "../shared";
 import { FileBarChart, Settings2, History, FileText } from "lucide-react";
 
 const SECTION = "Reports · 07";
@@ -62,20 +62,7 @@ export function ReportsCommandCenter() {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {CHILDREN.map((c) => (
-                  <div key={c.to} className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <c.Icon className="w-4 h-4 text-interactive shrink-0" />
-                      <div className="min-w-0">
-                        <div className="text-title font-semibold text-foreground">{c.label}</div>
-                        <p className="text-caption text-muted-foreground/80 leading-relaxed">{c.desc}</p>
-                      </div>
-                    </div>
-                    <CrossLink to={c.to} label="Open" />
-                  </div>
-                ))}
-              </div>
+              <HubNavGrid items={CHILDREN} label="Explore Reports" />
             </>
           )}
         </PrerequisiteGate>

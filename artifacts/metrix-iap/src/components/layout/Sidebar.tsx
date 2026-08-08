@@ -22,8 +22,17 @@ import { DataSourceBadgeToggle } from "@/components/ui/DataSourceBadge";
 import { navTree, sectionLandingRoute } from "@/navigation/navTree";
 import { useNavBadges } from "@/navigation/useNavBadges";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDragResize } from "@/hooks/useDragResize";
 import { AccountSwitcher } from "./AccountSwitcher";
 import type { NavSection, NavChild, NavIconName } from "@/navigation/navTree";
+
+// The sidebar never expands past this width by dragging — 216px is the
+// fixed "full" size; the slide handle can only shrink it down to the
+// collapsed rail. Expanding back to 216px happens via click, not drag.
+const EXPANDED_WIDTH = 216;
+const COLLAPSED_WIDTH = 56;
+// Drop below this width mid-drag and releasing snaps to the collapsed rail.
+const COLLAPSE_SNAP_WIDTH = 150;
 
 // ─── Icon map ──────────────────────────────────────────────────────────
 
@@ -517,6 +526,10 @@ export function Sidebar() {
   const badgeCounts = useNavBadges();
   const { user } = useAuth();
   const [collapsed, setCollapsed] = useState(loadCollapsed);
+  // Live width while a drag is in progress — overrides the collapsed/expanded
+  // CSS width class so the rail visibly tracks the pointer. Cleared on
+  // release once we've committed to a collapsed/expanded state.
+  const [dragWidth, setDragWidth] = useState<number | null>(null);
 
   function toggleCollapse() {
     setCollapsed(v => {
@@ -524,6 +537,36 @@ export function Sidebar() {
       return !v;
     });
   }
+
+  // Slide-to-collapse handle on the right edge. Dragging can only shrink the
+  // sidebar down toward the collapsed rail — it never grows past
+  // EXPANDED_WIDTH. A plain click (no drag) toggles collapsed/expanded, the
+  // same as clicking the explicit expand/collapse buttons.
+  const baseWidthRef = useRef(collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH);
+  const handlePointerDown = useDragResize(
+    (dx) => {
+      const next = Math.min(EXPANDED_WIDTH, Math.max(COLLAPSED_WIDTH, baseWidthRef.current + dx));
+      setDragWidth(next);
+    },
+    (wasDragged) => {
+      if (!wasDragged) {
+        toggleCollapse();
+      } else {
+        setDragWidth((finalWidth) => {
+          const shouldCollapse = (finalWidth ?? EXPANDED_WIDTH) < COLLAPSE_SNAP_WIDTH;
+          if (shouldCollapse !== collapsed) {
+            setCollapsed(shouldCollapse);
+            saveCollapsed(shouldCollapse);
+          }
+          return null;
+        });
+      }
+    }
+  );
+  const onHandlePointerDown = (e: React.PointerEvent) => {
+    baseWidthRef.current = collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH;
+    handlePointerDown(e);
+  };
 
   const isAdmin = user?.role === "admin";
   const visibleTree = isAdmin
@@ -559,10 +602,11 @@ export function Sidebar() {
     <aside
       data-collapsed={collapsed}
       className={cn(
-        "flex flex-col shrink-0 h-full overflow-hidden mx-sidebar",
-        "transition-[width] duration-200 ease-out",
-        collapsed ? "w-[56px]" : "w-[216px]"
+        "relative flex flex-col shrink-0 h-full overflow-hidden mx-sidebar",
+        dragWidth == null && "transition-[width] duration-200 ease-out",
+        dragWidth == null && (collapsed ? "w-[56px]" : "w-[216px]")
       )}
+      style={dragWidth != null ? { width: dragWidth } : undefined}
       aria-label="Workspace sidebar"
     >
       {/* Logo row — collapse toggle lives here as a small icon button */}
@@ -674,6 +718,22 @@ export function Sidebar() {
           </ol>
         )}
       </nav>
+
+      {/* Slide-to-collapse handle — drag left to shrink toward the rail
+          (never past EXPANDED_WIDTH going the other way); click to toggle. */}
+      <div
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Sidebar resize handle"
+        title={collapsed ? "Click to expand" : "Drag to collapse"}
+        onPointerDown={onHandlePointerDown}
+        className={cn(
+          "absolute top-0 right-0 h-full w-1.5 -mr-0.5 z-10 cursor-col-resize group/handle",
+          "flex items-center justify-center"
+        )}
+      >
+        <span className="w-px h-full bg-transparent group-hover/handle:bg-primary/40 transition-colors" />
+      </div>
 
       {/* Footer — data source badge + version only */}
       <div className={cn(
