@@ -55,7 +55,7 @@
 //      "Diagnose full breakdown" renders "No data for this metric yet" and
 //      omits concept rows — catches regressions in the hasData = false branch.
 //   18. SegmentDrilldownModal via VariableDrilldownModal: opening from the
-//      TopVariableStackStrip (FW_BAB carrier cell C2B) renders ≥1 segment row
+//      Creative DNA "hook" family card (HK_Problem carrier cell C2E) renders ≥1 segment row
 //      inside VariableDrilldownModal and the SegmentDrilldownModal description
 //      includes "scoped to" — catches regressions where cellIds is silently
 //      dropped to null at VariableDrilldownModal.tsx line 266.
@@ -65,8 +65,8 @@
 //      useLocation/navigate import.
 //   20. DNA family card → VariableDrilldownModal: navigating to
 //      /app/analysis/library?account=bookster, switching to the "Creative DNA"
-//      tab, and clicking the "raw_token" DNA family card (data-testid=
-//      "dna-family-raw_token") opens VariableDrilldownModal
+//      tab, and clicking the "concept" DNA family card (data-testid=
+//      "dna-family-concept") opens VariableDrilldownModal
 //      (data-testid="title-variable-drilldown" is visible). Catches regressions
 //      in the family-card onClick handler or in the modal's open-state logic.
 //
@@ -154,6 +154,17 @@ async function mockApis(ctx: BrowserContext): Promise<void> {
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({ reports: [] }),
+    }),
+  );
+
+  // Analysis runs — empty list. Pages like the MST Cross-Map call
+  // useListAnalysisRuns; without this mock the Vite dev server answers the
+  // unmatched request with index.html and the page crashes reading `.runs`.
+  await page.route("**/api/metrix/accounts/*/analysis-runs", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ runs: [] }),
     }),
   );
 }
@@ -1952,15 +1963,31 @@ async function main() {
           // C2B is the only cell_id that appears in both historical_matrix_4x4
           // and demographic_registration_signal for this account (62 demo rows,
           // 4 distinct cell_ids: C2B, C2E, C2F, C4E; matrix cells: C1A–C4D).
-          await page.goto(`${BASE}/app/mst/crossmap?account=${ACCOUNT}`, {
+          // NOTE: use the canonical /app/mst/cross-map path directly — the
+          // legacy /app/mst/crossmap route redirects but drops the ?account=
+          // query param, which leaves the page in the unconfigured state.
+          await page.goto(`${BASE}/app/mst/cross-map?account=${ACCOUNT}`, {
             waitUntil: "domcontentloaded",
           });
+
+          // The Cross-Map surface defaults to the "Concept Map" tab —
+          // switch to the "Crossmap Results" tab to mount CrossmapResultsView.
+          const crossmapTab = page.getByRole("button", { name: /Crossmap Results/i }).first();
+          await crossmapTab.waitFor({ state: "visible", timeout: 20_000 });
+          await crossmapTab.click();
 
           // Wait for the crossmap table to render — the "Matrix cell" column
           // header confirms the table is mounted and data has loaded.
           await page
-            .getByText("Matrix cell", { exact: false })
+            .getByRole("columnheader", { name: "Matrix cell" })
             .waitFor({ state: "visible", timeout: 20_000 });
+
+          // The table folds beyond the first few rows — expand it so the
+          // C2B row is guaranteed to be in the DOM regardless of sort order.
+          const showAllBtn = page.getByRole("button", { name: /Show all .* matrix cells/i });
+          if (await showAllBtn.isVisible().catch(() => false)) {
+            await showAllBtn.click();
+          }
 
           // Click the C2B row to open TilePerformanceModal scoped to that cell.
           // The table rows include a <span> with the font-mono cell_id text.
@@ -2505,20 +2532,21 @@ async function main() {
       },
     );
     // ── Test 18: SegmentGridModal via VariableDrilldownModal concept path ────
-    // Opens VariableDrilldownModal for the "FW_BAB" variable (which carries
-    // creative cell C2B in the bookster fixture — C2B has 62 demographic rows
-    // across all cells, with C2B rows confirmed present in the analysis).
-    // The modal shows "Segment performance — scoped to this variable's cells"
-    // rows computed by computeVariableDrilldown() using only carrier-cell demo
-    // rows (cellIds = ["C2B"]).  Clicking one of those rows opens
-    // SegmentDrilldownModal with cellIds=["C2B"] threaded through from
-    // VariableDrilldownModal (line 266 of VariableDrilldownModal.tsx).
+    // Opens VariableDrilldownModal via the IAP Library's Creative DNA tab:
+    // clicking the "hook" family card opens the drill-down for the family's
+    // top variable HK_Problem (lowest CPA in the fixture's hook family).
+    // HK_Problem's carrier cell is C2E, which has demographic rows in the
+    // fixture, so the modal shows "Segment performance — scoped to this
+    // variable's cells" rows computed by computeVariableDrilldown() using
+    // only carrier-cell demo rows (cellIds = ["C2E"]).  Clicking one of those
+    // rows opens SegmentDrilldownModal with cellIds threaded through from
+    // VariableDrilldownModal.
     //
     // This is the third non-null cellIds entry point into the segment drill-down
     // chain — the other two being Test 7 (account-level, cellIds=null) and
     // Test 16 (concept row → TilePerformanceModal, cellIds=["C2B"]).  A
     // regression in computeVariableDrilldown() carrier-cell filtering or in
-    // the cellIds prop threading at line 266 would silently empty the segment
+    // the cellIds prop threading would silently empty the segment
     // section without any existing test catching it.
     //
     // Assertions:
@@ -2530,7 +2558,7 @@ async function main() {
     //      VariableDrilldownModal into SegmentDrilldownModal (not silently
     //      dropped to null, which would widen the scope to the whole account).
     await test(
-      "SegmentGridModal via VariableDrilldownModal: FW_BAB carrier cells render ≥1 segment row and 'scoped to' description",
+      "SegmentGridModal via VariableDrilldownModal: HK_Problem carrier cells render ≥1 segment row and 'scoped to' description",
       async () => {
         const ctx = await browser.newContext({
           viewport: { width: 1440, height: 900 },
@@ -2539,36 +2567,33 @@ async function main() {
         try {
           await mockApis(ctx);
 
-          // Navigate to AnalysisHub — TopVariableStackStrip is rendered here
-          // and lists the top variable combinations from strategy.variable_combinations.
-          // The bookster fixture has three combos; two have a CPA value and are
-          // shown sorted ascending: "FW_StoryBrand + ..." (CPA 5.77) and
-          // "FW_BAB + HK_Benefit + HP_Time + CN_ProductDemo" (CPA 7.09).
-          // FW_BAB appears as hook_variable for cell C2B, which has demographic
-          // rows, so clicking the FW_BAB card yields a non-empty segment section.
-          await page.goto(`${BASE}/app/analysis?account=${ACCOUNT}`, {
+          // Navigate to the IAP Library — the Creative DNA tab renders family
+          // cards from rollupDnaFamilies(); the "hook" family card's top
+          // variable is HK_Problem whose carrier cell C2E has demographic rows.
+          await page.goto(`${BASE}/app/analysis/library?account=${ACCOUNT}`, {
             waitUntil: "domcontentloaded",
           });
 
-          // Wait for TopVariableStackStrip to mount — its section heading is
-          // "Top Variable Stacks".
+          // Wait for the library shell to render past the loading state.
           await page
-            .getByText("Top Variable Stacks", { exact: false })
+            .getByText("Creative DNA", { exact: false })
+            .first()
             .waitFor({ state: "visible", timeout: 20_000 });
 
-          // Find and click the variable-stack card that carries "FW_BAB".
-          // The card renders each code as a <span> with font-mono styling;
-          // .filter({ hasText }) matches any card whose visible text includes
-          // "FW_BAB".
-          const fwBabCard = page
-            .locator("button")
-            .filter({ hasText: "FW_BAB" })
-            .first();
-          await fwBabCard.waitFor({ state: "visible", timeout: 8_000 });
-          await fwBabCard.click();
+          // Click the "Creative DNA" tab to activate the variables panel.
+          await page
+            .getByRole("button", { name: /Creative DNA/i })
+            .first()
+            .click();
+
+          // Click the hook family card — opens VariableDrilldownModal for
+          // its top variable (HK_Problem).
+          const hookCard = page.locator('[data-testid="dna-family-hook"]');
+          await hookCard.waitFor({ state: "visible", timeout: 8_000 });
+          await hookCard.click();
 
           // VariableDrilldownModal opens — its title includes the human-readable
-          // label for "FW_BAB" via readableVariables() and also renders the raw
+          // label for "HK_Problem" via readableVariables() and also renders the raw
           // code in a <span> inside the DialogTitle (data-testid="title-variable-drilldown").
           const drilldownTitle = page.locator(
             '[data-testid="title-variable-drilldown"]',
@@ -2576,8 +2601,8 @@ async function main() {
           await drilldownTitle.waitFor({ state: "visible", timeout: 8_000 });
 
           // ── Assertion 1: ≥1 segment row renders ───────────────────────────
-          // computeVariableDrilldown scopes demographic rows to FW_BAB's carrier
-          // cells (C2B), then groups by age×gender into segment rows rendered as
+          // computeVariableDrilldown scopes demographic rows to HK_Problem's carrier
+          // cells (C2E), then groups by age×gender into segment rows rendered as
           // <button data-testid="row-variable-segment-{age}-{gender}">.
           // A count of 0 would mean carrier-cell filtering silently discarded
           // all demo rows or computeVariableDrilldown returned segments.available=false.
@@ -2588,19 +2613,19 @@ async function main() {
           const segRowCount = await segmentRows.count();
           assert(
             segRowCount >= 1,
-            `VariableDrilldownModal must render ≥1 segment row for FW_BAB ` +
-              `(carrier cell C2B has demographic data), but found ${segRowCount} rows. ` +
+            `VariableDrilldownModal must render ≥1 segment row for HK_Problem ` +
+              `(carrier cell C2E has demographic data), but found ${segRowCount} rows. ` +
               `computeVariableDrilldown() may have over-filtered the carrier-cell ` +
               `demographic rows, or segments.available is incorrectly false.`,
           );
 
           // ── Assertion 2: 'scoped to' appears after opening SegmentDrilldownModal ─
           // Click the first segment row to open SegmentDrilldownModal.
-          // VariableDrilldownModal passes cellIds=data.carrierCellIds (["C2B"])
-          // at line 266 of VariableDrilldownModal.tsx.  If cellIds is silently
-          // dropped to null the description reads "…from their own demographic
-          // rows" without the "(scoped to C2B)" suffix; if cellIds is correctly
-          // threaded, the description contains "(scoped to C2B)".
+          // VariableDrilldownModal passes cellIds=data.carrierCellIds (["C2E"]).
+          // If cellIds is silently dropped to null the description reads
+          // "…from their own demographic rows" without the "(scoped to C2E)"
+          // suffix; if cellIds is correctly threaded, the description
+          // contains "(scoped to C2E)".
           const firstSegmentRow = segmentRows.first();
           await firstSegmentRow.click();
 
@@ -2613,9 +2638,9 @@ async function main() {
           assert(
             dialogText.includes("scoped to"),
             `SegmentDrilldownModal description must include "scoped to" when ` +
-              `opened from VariableDrilldownModal with cellIds=["C2B"]. ` +
-              `This confirms the cellIds prop was threaded through at line 266 ` +
-              `of VariableDrilldownModal.tsx rather than silently dropped to null. ` +
+              `opened from VariableDrilldownModal with cellIds=["C2E"]. ` +
+              `This confirms the cellIds prop was threaded through from ` +
+              `VariableDrilldownModal rather than silently dropped to null. ` +
               `Got dialog text snippet: "${dialogText.slice(0, 400)}"`,
           );
         } finally {
@@ -2759,12 +2784,12 @@ async function main() {
     );
 
     // ── Test 20: DNA family card opens VariableDrilldownModal ─────────────
-    // The bookster fixture has four v3_variable_performance rows, all with
-    // variable_family="raw_token" and Result type="Mobile app installs".
-    // rollupDnaFamilies() collapses them into a single family card
-    // (data-testid="dna-family-raw_token") whose top variable is "APP"
-    // (lowest CPA at 9.81 in the fixture).  The card's onClick calls
-    // setVariableCode("APP"), which should open VariableDrilldownModal.
+    // The bookster fixture's v3_variable_performance rows span seven
+    // variable families (hook, framework, cta, concept, pain_proof, proof,
+    // tone).  rollupDnaFamilies() produces one card per family; the
+    // "concept" family card (data-testid="dna-family-concept") has top
+    // variable "CN_BehaviorShift" (lowest CPA in that family).  The card's
+    // onClick calls setVariableCode, which should open VariableDrilldownModal.
     //
     // Regression guard: a broken onClick handler or a setVariableCode/
     // open-state wiring regression would leave the modal unmounted;
@@ -2797,8 +2822,8 @@ async function main() {
             .first()
             .click();
 
-          // Wait for the DNA family card for the "raw_token" family to appear.
-          const dnaCard = page.locator('[data-testid="dna-family-raw_token"]');
+          // Wait for the DNA family card for the "concept" family to appear.
+          const dnaCard = page.locator('[data-testid="dna-family-concept"]');
           await dnaCard.waitFor({ state: "visible", timeout: 8_000 });
 
           // Confirm the card is interactive (role="button" is set only when
@@ -2806,10 +2831,10 @@ async function main() {
           const role = await dnaCard.getAttribute("role");
           assert(
             role === "button",
-            `dna-family-raw_token must have role="button" when the family has ` +
-              `a top variable (APP), but got role="${role}". ` +
+            `dna-family-concept must have role="button" when the family has ` +
+              `a top variable (CN_BehaviorShift), but got role="${role}". ` +
               `Check that rollupDnaFamilies() returns a non-null top entry for ` +
-              `the raw_token family in the bookster fixture.`,
+              `the concept family in the bookster fixture.`,
           );
 
           // Click the card — calls setVariableCode(f.top.variableId).
@@ -2825,7 +2850,7 @@ async function main() {
           const titleText = (await drilldownTitle.textContent()) ?? "";
           assert(
             titleText.trim().length > 0,
-            `VariableDrilldownModal title must be non-empty for variable "APP". ` +
+            `VariableDrilldownModal title must be non-empty for variable "CN_BehaviorShift". ` +
               `Check readableVariables() / VariableDrilldownModal header rendering.`,
           );
         } finally {

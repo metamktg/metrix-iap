@@ -12,7 +12,7 @@ import {
   StageLoopHub, buildLoopStages, CrossLink, MetricTile, fmtNum,
 } from "../shared";
 import {
-  useGenerationRun, GenerateButton, GenerationErrorNote, ProvenanceBadge,
+  useGenerationRun, GenerateButton, GenerationErrorNote, ProvenanceBadge, GenerationProgressBar,
 } from "@/components/generation/GenerationControls";
 import { Map, Users, MessageSquare, ListChecks, History, Compass } from "lucide-react";
 
@@ -39,7 +39,13 @@ export function StrategyCommandCenter() {
     <ModuleScopeGate section={SECTION} title="Strategy" account={account}>
       {() => {
         const acct = account!;
-        const analysisOk = status.analysis.status === "success";
+        // Strategy unlocks only once the analysis is VALIDATED: a successful
+        // run plus the server-side completeness check confirming every
+        // analysis surface (tiles, demographics, placements, …) got data.
+        const analysisOk = status.analysis.status === "success" && status.analysis.validated !== false;
+        const gateMessage = status.analysis.status === "success" && status.analysis.validated === false
+          ? "The latest analysis run finished, but not every analysis surface has validated data yet. Check the Analysis completeness report before generating strategy."
+          : "Strategy generation reads validated analysis data — this account doesn't have a completed analysis run yet.";
         return (
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
             <ModuleHeader
@@ -64,7 +70,7 @@ export function StrategyCommandCenter() {
               <PrerequisiteGate
                 met={analysisOk}
                 title="Run analysis first"
-                message="Strategy generation reads validated analysis data — this account doesn't have a completed analysis run yet."
+                message={gateMessage}
                 ctaLabel="Go to Analysis"
                 ctaTo="/app/analysis"
               >
@@ -83,7 +89,12 @@ export function StrategyCommandCenter() {
                         runningLabel="Generating…"
                       />
                     </div>
-                    <div className="mt-3">
+                    <div className="mt-3 space-y-3">
+                      <GenerationProgressBar
+                        isRunning={generation.isRunning}
+                        progressPercent={generation.progressPercent}
+                        stageLabel={generation.progressStage ?? "Generating strategy from validated analysis…"}
+                      />
                       <GenerationErrorNote message={generation.lastError} />
                     </div>
                   </SectionCard>

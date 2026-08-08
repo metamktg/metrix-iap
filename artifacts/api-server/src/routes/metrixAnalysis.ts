@@ -18,6 +18,7 @@ import {
   getAnalysisSummaryByRunId,
   getAnalysisSummaryByDateRange,
   getAccountAnalysisDataWindows,
+  verifyAnalysisRunCompleteness,
   VIEW_PRESETS,
   type DateRangePreset,
   type ViewPreset,
@@ -177,6 +178,23 @@ router.get("/metrix/accounts/:accountId/analysis-summary/:preset", requireAuth, 
   } catch (err) {
     req.log.error({ err, accountId, preset }, "Failed to compute analysis summary by preset");
     res.status(502).json({ message: err instanceof Error ? err.message : "Could not compute analysis summary." });
+  }
+});
+
+// ─── Analysis completeness verification ─────────────────────────────────────
+// Post-run check that every analysis surface (metric tiles/ad performance,
+// concepts, demographics, placements, platforms, devices, creative library)
+// actually received data. This is the "analysis validated" source of truth —
+// Strategy gating and the stage-status endpoint read the same computation.
+router.get("/metrix/accounts/:accountId/analysis-completeness", requireAuth, async (req, res) => {
+  const accountId = String(req.params["accountId"]);
+  try {
+    if (!(await guardAccess(req, res, accountId))) return;
+    const result = await verifyAnalysisRunCompleteness(accountId);
+    res.json(result);
+  } catch (err) {
+    req.log.error({ err, accountId }, "Failed to verify analysis completeness");
+    res.status(502).json({ message: err instanceof Error ? err.message : "Could not verify analysis completeness." });
   }
 });
 

@@ -15,8 +15,10 @@ import {
   briefIntendedVariables,
   libraryPayloadFromDeconstruction,
   supportedImageMediaType,
+  isVideoCreative,
   type DetectedVariable,
 } from "../deconstructionEngine";
+import { keyframeTimestamps } from "../videoKeyframes";
 
 const v = (family: string, code: string, confidence: number): DetectedVariable => ({
   family,
@@ -144,5 +146,36 @@ describe("supportedImageMediaType (video → unsupported)", () => {
     expect(supportedImageMediaType("video/mp4", "x.mp4")).toBeNull();
     expect(supportedImageMediaType(null, "x.mov")).toBeNull();
     expect(supportedImageMediaType(null, "x.psd")).toBeNull();
+  });
+});
+
+describe("isVideoCreative (video → keyframe classification)", () => {
+  it("detects videos by content-type or extension", () => {
+    expect(isVideoCreative("video/mp4", "x.mp4")).toBe(true);
+    expect(isVideoCreative("video/quicktime; codecs=avc1", "clip")).toBe(true);
+    expect(isVideoCreative("application/octet-stream", "x.MOV")).toBe(true);
+    expect(isVideoCreative(null, "x.webm")).toBe(true);
+  });
+  it("rejects images and unknown formats", () => {
+    expect(isVideoCreative("image/png", "x.png")).toBe(false);
+    expect(isVideoCreative(null, "x.psd")).toBe(false);
+    expect(isVideoCreative(null, "noext")).toBe(false);
+  });
+});
+
+describe("keyframeTimestamps", () => {
+  it("samples opening, middle, and closing frames for a normal-length video", () => {
+    const pts = keyframeTimestamps(30);
+    expect(pts.map((p) => p.timestamp)).toEqual([0.5, 15, 29]);
+    expect(pts[2]!.label).toContain("closing");
+  });
+  it("collapses near-duplicate points on very short clips", () => {
+    const pts = keyframeTimestamps(0.4);
+    expect(pts.length).toBeLessThan(3);
+    for (const p of pts) expect(p.timestamp).toBeGreaterThanOrEqual(0);
+  });
+  it("falls back to the opening frame when duration is unknown", () => {
+    expect(keyframeTimestamps(null)).toEqual([{ label: "opening frame", timestamp: 0 }]);
+    expect(keyframeTimestamps(NaN)).toEqual([{ label: "opening frame", timestamp: 0 }]);
   });
 });

@@ -93,10 +93,10 @@ interface FunnelStage {
 }
 
 const ZONE_COLOR: Record<FunnelStage["zone"], { bar: string; text: string; bg: string; border: string }> = {
-  awareness:  { bar: "bg-blue-400/70",   text: "text-blue-300",   bg: "bg-blue-400/[0.06]",   border: "border-blue-400/25" },
+  awareness:  { bar: "bg-chart-1/70",   text: "text-blue-300",   bg: "bg-chart-1/[0.06]",   border: "border-blue-400/25" },
   engagement: { bar: "bg-indigo-400/70", text: "text-indigo-300", bg: "bg-indigo-400/[0.06]", border: "border-indigo-400/25" },
   intent:     { bar: "bg-amber-400/70",  text: "text-amber-300",  bg: "bg-amber-400/[0.06]",  border: "border-amber-400/25" },
-  conversion: { bar: "bg-emerald-400/70",text: "text-emerald-300",bg: "bg-emerald-400/[0.06]",border: "border-emerald-400/25" },
+  conversion: { bar: "bg-chart-3/70",text: "text-emerald-300",bg: "bg-emerald-400/[0.06]",border: "border-emerald-400/25" },
 };
 
 function buildFunnelStages(rows: DemographicRow[]): FunnelStage[] {
@@ -195,7 +195,8 @@ function buildAudienceRows(rows: DemographicRow[]): BreakdownRow[] {
   });
 }
 
-function buildPlacementRows(rows: PlacementRow[]): BreakdownRow[] {
+/** Exported for unit tests. */
+export function buildPlacementRows(rows: PlacementRow[]): BreakdownRow[] {
   const grouped = new Map<string, PlacementRow[]>();
   for (const r of rows) {
     const key = `${r.Platform} · ${r.Placement}`;
@@ -315,7 +316,8 @@ function SortableHeader({
   );
 }
 
-function BreakdownTable({
+/** Exported for unit tests. */
+export function BreakdownTable({
   rows, sortId, onSort,
 }: {
   rows: BreakdownRow[];
@@ -334,9 +336,14 @@ function BreakdownTable({
 
   const allCols: RankMetric<BreakdownRow>[] = BREAKDOWN_METRICS.filter((m) => rows.some((r) => m.value(r) != null));
   // Default: show only priority cols + the active sort col (always visible for context)
-  const cols = showAllCols
-    ? allCols
-    : allCols.filter((m) => PRIORITY_COL_IDS.includes(m.id as (typeof PRIORITY_COL_IDS)[number]) || m.id === sortId);
+  // Default: show only priority cols + the active sort col (always visible for context).
+  // Edge case: if none of the priority/sort columns have data (e.g. placement rows
+  // where only Impressions and Spend are populated), fall back to showing every
+  // available column rather than silently rendering a table with zero metric columns.
+  const priorityCols = allCols.filter(
+    (m) => PRIORITY_COL_IDS.includes(m.id as (typeof PRIORITY_COL_IDS)[number]) || m.id === sortId
+  );
+  const cols = showAllCols || priorityCols.length === 0 ? allCols : priorityCols;
   const hiddenCount = allCols.length - cols.length;
 
   return (
@@ -438,15 +445,15 @@ function FrequencyScatter({ rows }: { rows: BreakdownRow[] }) {
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-3 text-label text-muted-foreground/60">
         <div className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full bg-blue-400/70" />
+          <div className="w-2 h-2 rounded-full bg-chart-1/70" />
           <span>High freq + high CTR → scale safely</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full bg-red-400/70" />
+          <div className="w-2 h-2 rounded-full bg-destructive/70" />
           <span>High freq + low CTR → creative fatigue</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full bg-emerald-400/70" />
+          <div className="w-2 h-2 rounded-full bg-chart-3/70" />
           <span>Low freq + high CTR → expand budget</span>
         </div>
         <div className="flex items-center gap-1.5">
@@ -483,7 +490,7 @@ function FrequencyScatter({ rows }: { rows: BreakdownRow[] }) {
               if (!active || !payload?.length) return null;
               const p = payload[0]?.payload as (ScatterPoint & { spendShare: number });
               return (
-                <div className="rounded-lg border border-border/50 bg-[#0a1628]/95 backdrop-blur px-3 py-2 shadow-lg text-caption space-y-0.5">
+                <div className="rounded-lg border border-border/50 bg-popover/95 backdrop-blur px-3 py-2 shadow-lg text-caption space-y-0.5">
                   <div className="font-semibold text-foreground">{p.label}</div>
                   <div className="text-muted-foreground/70">Frequency: <span className="text-foreground/90">{fmtFreq(p.x)}</span></div>
                   <div className="text-muted-foreground/70">Link CTR: <span className="text-foreground/90">{fmtRate(p.y, 2)}</span></div>
@@ -496,7 +503,7 @@ function FrequencyScatter({ rows }: { rows: BreakdownRow[] }) {
             {plotData.map((p, i) => {
               const highFreq = p.x >= medFreq;
               const highCtr  = p.y >= medCtr;
-              const color = highFreq && highCtr ? "#60a5fa" : highFreq && !highCtr ? "#f87171" : !highFreq && highCtr ? "#34d399" : "#94a3b8";
+              const color = highFreq && highCtr ? "hsl(var(--chart-1))" : highFreq && !highCtr ? "hsl(var(--destructive))" : !highFreq && highCtr ? "hsl(var(--chart-3))" : "hsl(var(--chart-5))";
               return (
                 <Cell
                   key={i}

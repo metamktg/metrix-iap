@@ -39,6 +39,10 @@ export const IAP_SMOKE_STEPS: SmokeStep[] = [
   },
   { label: "AdAccountOverview UX e2e", script: "smoke:metrix-iap-ad-account-overview" },
   { label: "IAP Library review queue e2e", script: "smoke:metrix-iap-review-queue" },
+  {
+    label: "MetricHoverPopover + drill-down e2e",
+    script: "smoke:metrix-iap-hover-popover",
+  },
 ];
 
 /**
@@ -49,8 +53,4 @@ export const EXCLUDED_METRIX_IAP_SMOKE_SCRIPTS: Record<string, string> = {
   "smoke:metrix-iap-tests": "the orchestrator itself — running it would recurse",
   "smoke:metrix-iap-build":
     "full production build; runs in its own dedicated workflow (metrix-iap-build)",
-  "smoke:metrix-iap-hover-popover":
-    "currently failing (3/26 assertions): the spec's drill-down/DNA tests assume seed " +
-    "fixture data (variable_family rows, C2B demographic rows) that no longer exists in " +
-    "the current fixture. Repair the spec against current data before promoting to a step.",
 };

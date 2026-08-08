@@ -159,6 +159,7 @@ vi.mock("../generationEngine", () => ({
     }
   },
   startRun: vi.fn(async () => "run-new"),
+  setRunProgress: vi.fn(async () => {}),
   finishRun: vi.fn(async (_id: string, status: string, message?: string) => {
     finishCalls.push({ status, message });
   }),
@@ -167,6 +168,13 @@ vi.mock("../generationEngine", () => ({
 }));
 
 vi.mock("../metrixSeedAssembly", () => ({ invalidateMetrixSeedCache: vi.fn() }));
+
+// ── video keyframe mock: extraction controlled per-test ───────────────
+let keyframeImpl: (bytes: Buffer, filename: string) => Promise<Array<{ label: string; timestamp: number; jpeg: Buffer }>> =
+  async () => [{ label: "opening frame", timestamp: 0, jpeg: Buffer.from([0xff, 0xd8, 0xff, 0x00]) }];
+vi.mock("../videoKeyframes", () => ({
+  extractVideoKeyframes: vi.fn((bytes: Buffer, filename: string) => keyframeImpl(bytes, filename)),
+}));
 
 import { startCreativeDeconstruction } from "../deconstructionEngine";
 
@@ -206,6 +214,10 @@ function seedPrior(importId: string, cellId: string) {
 beforeEach(() => {
   finishCalls.length = 0;
   rpcFailMode = false;
+  keyframeImpl = async () => [
+    { label: "opening frame", timestamp: 0, jpeg: Buffer.from([0xff, 0xd8, 0xff, 0x00]) },
+    { label: "middle frame", timestamp: 1, jpeg: Buffer.from([0xff, 0xd8, 0xff, 0x01]) },
+  ];
   for (const k of Object.keys(db)) delete db[k];
   db["ad_accounts"] = [{ id: ACCOUNT, name: "Test Account" }];
   db["ads"] = [];
@@ -316,5 +328,64 @@ describe("re-classification preserves prior results on failure", () => {
     const bCells = db["library_cells"]!.filter((r) => r["payload"]?.["deconstruction_of"] === "imp-b");
     expect(bCells).toHaveLength(1);
     expect(bCells[0]!["payload"]["deconstruction_run_id"]).toBe("run-old");
+  });
+});
+
+describe("video creatives classify via keyframes", () => {
+  it("a video extension with a misdetected image MIME type still goes through the keyframe pipeline", async () => {
+    db["manual_imports"]!.push({
+      id: "imp-v", account_id: ACCOUNT, kind: "creative_asset",
+      // Video file whose stored content_type is wrongly image-like.
+      filename: "promo.mp4", content_type: "image/png", content: "\\x0000", ad_names: [],
+    });
+    let seenContent: any = null;
+    modelImpl = async (content) => {
+      seenContent = content;
+      return {
+        variables: [{ family: "concept", code: "CN_ProductDemo", confidence: 0.92 }],
+        primary_message: "Video read",
+      };
+    };
+
+    await startCreativeDeconstruction(ACCOUNT, "tester", ["imp-v"]);
+    await waitForRun();
+
+    expect(finishCalls[0]!.status).toBe("success");
+    // The model received the extracted JPEG keyframes, not the raw bytes as image/png.
+    const imageBlocks = (seenContent as any[]).filter((b) => b.type === "image");
+    expect(imageBlocks).toHaveLength(2);
+    for (const b of imageBlocks) expect(b.source.media_type).toBe("image/jpeg");
+    const textBlock = (seenContent as any[]).find((b) => b.type === "text");
+    expect(textBlock.text).toContain("VIDEO");
+    expect(textBlock.text).toContain("opening frame");
+    // Confident classification filed into the library — no unsupported badge.
+    const dec = db["creative_deconstructions"]!.filter((r) => r["manual_import_id"] === "imp-v");
+    expect(dec).toHaveLength(1);
+    expect(dec[0]!["status"]).toBe("auto_filed");
+    expect(db["library_cells"]!.filter((r) => r["payload"]?.["deconstruction_of"] === "imp-v")).toHaveLength(1);
+  });
+
+  it("a video ffmpeg cannot decode is recorded as unsupported, not sent to the model", async () => {
+    keyframeImpl = async () => {
+      throw new Error("Could not extract any frames");
+    };
+    const modelSpy = vi.fn();
+    modelImpl = async (c) => {
+      modelSpy(c);
+      throw new Error("should not be called");
+    };
+    db["manual_imports"]!.push({
+      id: "imp-bad", account_id: ACCOUNT, kind: "creative_asset",
+      filename: "corrupt.mov", content_type: "video/quicktime", content: "\\x0000", ad_names: [],
+    });
+
+    await startCreativeDeconstruction(ACCOUNT, "tester", ["imp-bad"]);
+    await waitForRun();
+
+    expect(finishCalls[0]!.status).toBe("success");
+    expect(modelSpy).not.toHaveBeenCalled();
+    const dec = db["creative_deconstructions"]!.filter((r) => r["manual_import_id"] === "imp-bad");
+    expect(dec).toHaveLength(1);
+    expect(dec[0]!["status"]).toBe("unsupported");
   });
 });

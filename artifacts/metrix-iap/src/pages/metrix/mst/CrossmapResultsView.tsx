@@ -276,13 +276,13 @@ function CrossmapRows({
               </Td>
               <Td className={cn(cell.diagonal_role === "diag_down" && "text-interactive", cell.diagonal_role === "diag_up" && "text-teal-300")}>{i === 0 ? diag : null}</Td>
               <Td>{eventLabel(r["Result type"])}</Td>
-              <Td right style={spendIntensity > 0 ? { background: `rgba(99,102,241,${(spendIntensity * 0.20).toFixed(3)})` } : undefined}>
+              <Td right style={spendIntensity > 0 ? { background: `hsl(var(--chart-1) / ${(spendIntensity * 0.20).toFixed(3)})` } : undefined}>
                 {fmtUSD(r["Amount spent (USD)"])}
               </Td>
-              <Td right style={resultsIntensity > 0 ? { background: `rgba(52,211,153,${(resultsIntensity * 0.18).toFixed(3)})` } : undefined}>
+              <Td right style={resultsIntensity > 0 ? { background: `hsl(var(--chart-3) / ${(resultsIntensity * 0.18).toFixed(3)})` } : undefined}>
                 {fmtNum(r.Results)}
               </Td>
-              <Td right style={cpaIntensity > 0 ? { background: `rgba(52,211,153,${(cpaIntensity * 0.20).toFixed(3)})` } : undefined}>
+              <Td right style={cpaIntensity > 0 ? { background: `hsl(var(--chart-3) / ${(cpaIntensity * 0.20).toFixed(3)})` } : undefined}>
                 {r.CPA_result != null ? fmtUSD(r.CPA_result) : "—"}
               </Td>
               <Td right>{fmtPct(r.CTR_link_pct)}</Td>

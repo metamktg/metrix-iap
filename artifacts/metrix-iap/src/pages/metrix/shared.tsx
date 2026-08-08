@@ -274,7 +274,7 @@ export function SegmentGenderIcon({ gender }: { gender: string }) {
     return (
       <span
         aria-hidden
-        className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-400/15 text-blue-300 shrink-0"
+        className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-chart-1/15 text-blue-300 shrink-0"
       >
         <Mars className="w-3 h-3" />
       </span>
@@ -294,7 +294,7 @@ export function ConfidenceBadge({ value }: { value: string }) {
       : c.level === "high"
         ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/20"
         : v.includes("validation") || v.includes("required")
-          ? "bg-[#16d9ff]/10 text-[#62e6ff] border-[#16d9ff]/20"
+          ? "bg-accent/10 text-accent border-accent/20"
           : c.level === "directional"
             ? "bg-purple-400/10 text-purple-300 border-purple-400/20"
             : c.level === "medium"
@@ -987,7 +987,7 @@ export function MetricTile({
         )}
         title="Open segment breakdown for this metric"
       >
-        {isPrimary && <div className="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-primary/55 pointer-events-none" />}
+        {isPrimary && <div data-testid="metric-tile-primary-accent" className="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-primary/55 pointer-events-none" />}
         <div className="relative z-10">
           <div className={cn(labelCls, "group-hover/tile:text-interactive/70 transition-colors")}>{label}</div>
           <div className="text-bignum font-bold text-foreground metric-num leading-none tracking-[-0.035em]">{value}</div>
@@ -1002,7 +1002,7 @@ export function MetricTile({
       "mx-kpi-tile p-4 transition-colors group-hover:border-primary/30 relative",
       isPrimary && "border-primary/35 bg-primary/[0.03]"
     )}>
-      {isPrimary && <div className="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-primary/55 pointer-events-none" />}
+      {isPrimary && <div data-testid="metric-tile-primary-accent" className="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-primary/55 pointer-events-none" />}
       <div className="relative z-10">
         <div className={labelCls}>{label}</div>
         <div className="text-bignum font-bold text-foreground metric-num leading-none tracking-[-0.035em]">{value}</div>
@@ -1267,7 +1267,7 @@ export function StaleFocusNotice({ label = "item" }: { label?: string }) {
 // Layout (radius, padding, icon gaps) stays per-component; only the
 // active/inactive color treatment is shared here.
 export const PILL_ACTIVE =
-  "border-primary/60 bg-primary/20 text-interactive shadow-[0_0_0_1px_rgba(92,155,255,0.15)]";
+  "border-primary/60 bg-primary/20 text-interactive shadow-[0_0_0_1px_hsl(var(--primary)/0.15)]";
 export const PILL_INACTIVE =
   "border-border/40 text-muted-foreground/60 hover:text-foreground hover:bg-white/[0.04] hover:border-border/60";
 
@@ -1305,7 +1305,7 @@ export function SegmentedToggle<T extends string>({
             className={cn(
               "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-body font-medium transition-colors",
               isActive
-                ? "bg-primary/20 text-interactive shadow-[0_0_0_1px_rgba(92,155,255,0.15)]"
+                ? "bg-primary/20 text-interactive shadow-[0_0_0_1px_hsl(var(--primary)/0.15)]"
                 : "text-muted-foreground/60 hover:text-foreground/80"
             )}
           >
@@ -1550,7 +1550,7 @@ export function SectionCard({
     <section className="mx-card-hero overflow-hidden">
       <div
         className={cn(
-          "mx-accent-bar relative flex items-center gap-2 px-3.5 py-2 border-b border-[rgba(120,170,255,0.12)]",
+          "mx-accent-bar relative flex items-center gap-2 px-3.5 py-2 border-b border-primary/10",
           collapsible && "cursor-pointer select-none hover:bg-white/[0.02] transition-colors"
         )}
         onClick={collapsible ? () => setOpen((v) => !v) : undefined}
@@ -1746,7 +1746,7 @@ export function StageLoopHub({ stages, current }: { stages: LoopStageInfo[]; cur
 }
 
 export interface StageStatusLike {
-  analysis: { status: LoopStageStatus | "none" };
+  analysis: { status: LoopStageStatus | "none"; validated?: boolean };
   strategy: { status: LoopStageStatus | "none" };
   briefs: { status: LoopStageStatus | "none"; count: number };
   mst: { unlocked: boolean };
@@ -1754,7 +1754,11 @@ export interface StageStatusLike {
 
 /** Builds the 5-stage Analysis→Strategy→Creative→MST→Reports row every command center renders. */
 export function buildLoopStages(s: StageStatusLike): LoopStageInfo[] {
-  const analysisOk = s.analysis.status === "success";
+  // Strategy (and downstream stages) unlock only when the analysis is
+  // VALIDATED — status=success plus the server-side completeness check
+  // confirming every analysis surface received data. `validated` may be
+  // absent on older payloads; treat only an explicit false as "not ready".
+  const analysisOk = s.analysis.status === "success" && s.analysis.validated !== false;
   const strategyOk = s.strategy.status === "success";
   return [
     { id: "analysis", label: "Analysis", to: "/app/analysis", status: s.analysis.status as LoopStageStatus },

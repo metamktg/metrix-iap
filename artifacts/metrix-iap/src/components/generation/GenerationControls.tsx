@@ -187,15 +187,32 @@ export function useGenerationRun(accountId: string | null, kind: GenerationKind)
     return () => clearInterval(iv);
   }, [isRunning]);
 
+  // Prefer real server-side progress when available (non-zero from the DB).
+  // Fall back to the elapsed-time estimate only when the server hasn't written
+  // any progress yet (e.g. the run just started and the first phase hasn't
+  // committed) or the columns pre-date this feature (legacy runs).
+  const serverPct = run?.progress_pct ?? 0;
+  const serverStage = run?.progress_stage ?? "";
+  const hasRealProgress = isRunning && serverPct > 0;
+
   const progressPercent = isRunning
-    ? calcGenerationProgress(elapsedSeconds, kind)
+    ? hasRealProgress
+      ? serverPct
+      : calcGenerationProgress(elapsedSeconds, kind)
     : 0;
+
+  const progressStage = isRunning
+    ? hasRealProgress
+      ? serverStage
+      : null // caller falls back to PHASE_LABELS
+    : null;
 
   return {
     start,
     isRunning,
     elapsedSeconds,
     progressPercent,
+    progressStage,
     lastRun: run,
     lastError: run?.status === "error" ? (run.error_message ?? "Generation failed.") : null,
   };
@@ -225,6 +242,37 @@ export function GenerateButton({
       )}
       {isRunning ? runningLabel : label}
     </button>
+  );
+}
+
+/**
+ * Determinate progress bar for generation runs — same visual treatment as
+ * the analysis pipeline bar in ManualAnalysisControls (label + % readout +
+ * thin rounded track). Renders nothing when not running.
+ */
+export function GenerationProgressBar({
+  isRunning,
+  progressPercent,
+  stageLabel,
+}: {
+  isRunning: boolean;
+  progressPercent: number;
+  stageLabel: string;
+}) {
+  if (!isRunning) return null;
+  return (
+    <div className="space-y-1.5" data-testid="generation-progress-bar">
+      <div className="flex items-center justify-between gap-2 text-label text-muted-foreground/75">
+        <span className="truncate">{stageLabel}</span>
+        <span className="tabular-nums shrink-0">{progressPercent}%</span>
+      </div>
+      <div className="h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden">
+        <div
+          className="h-full rounded-full bg-primary/70 transition-[width] duration-700 ease-out"
+          style={{ width: `${progressPercent}%` }}
+        />
+      </div>
+    </div>
   );
 }
 

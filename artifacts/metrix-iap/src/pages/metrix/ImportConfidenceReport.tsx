@@ -66,7 +66,7 @@ function computeGrade(present: number, total: number): { grade: "A" | "B" | "C" 
 function GradeBadge({ grade }: { grade: "A" | "B" | "C" | "D" | "F" }) {
   const colors: Record<string, string> = {
     A: "bg-emerald-400/15 border-emerald-400/40 text-emerald-300",
-    B: "bg-blue-400/15 border-blue-400/40 text-blue-300",
+    B: "bg-chart-1/15 border-blue-400/40 text-blue-300",
     C: "bg-amber-400/15 border-amber-400/40 text-amber-300",
     D: "bg-orange-400/15 border-orange-400/40 text-orange-300",
     F: "bg-red-500/15 border-red-400/40 text-red-300",
@@ -86,7 +86,7 @@ function GradeBadge({ grade }: { grade: "A" | "B" | "C" | "D" | "F" }) {
 function TierBadge({ tier }: { tier: MappingEntry["tier"] }) {
   const styles: Record<string, string> = {
     exact: "bg-emerald-400/10 border-emerald-400/25 text-emerald-400",
-    resolved: "bg-blue-400/10 border-blue-400/25 text-blue-300",
+    resolved: "bg-chart-1/10 border-blue-400/25 text-blue-300",
     inferred: "bg-amber-400/10 border-amber-400/25 text-amber-300",
     missing: "bg-red-500/10 border-red-400/30 text-red-300",
   };
@@ -106,7 +106,7 @@ function ConfidenceBar({ value }: { value: number }) {
   const pct = Math.round(value * 100);
   const color =
     pct >= 90 ? "bg-emerald-400/60" :
-    pct >= 70 ? "bg-blue-400/60" :
+    pct >= 70 ? "bg-chart-1/60" :
     pct >= 50 ? "bg-amber-400/60" :
     "bg-red-400/60";
   return (

@@ -13,6 +13,7 @@ import {
   ModuleHeader, ModuleScopeGate, PendingState,
   CrossLink, fmtUSD, fmtNum, FlowCrumb, useFromParam, LoopAction,
   DetailReveal, deriveLabel, InfoTooltip, useShowMore, ShowMoreButton,
+  SectionInfoIcon,
 } from "../shared";
 import {
   VariableStackChips, IcpChips, PillarDetailSections, pillarHasDetails,
@@ -46,7 +47,7 @@ const PILLAR_ACCENTS = [
 
 const PILLAR_DOT = [
   "bg-emerald-400/70",
-  "bg-blue-400/70",
+  "bg-chart-1/70",
   "bg-purple-400/70",
   "bg-amber-400/70",
   "bg-cyan-400/70",
@@ -238,7 +239,7 @@ function hypPriorityAccent(status: string): string {
   const s = status.toLowerCase();
   if (s === "high" || s === "p1") return "border-l-[3px] border-l-amber-400/60";
   if (s === "medium" || s === "p2") return "border-l-[3px] border-l-amber-400/30";
-  if (s === "validation_required") return "border-l-[3px] border-l-[#16d9ff]/40";
+  if (s === "validation_required") return "border-l-[3px] border-l-accent/40";
   if (s === "ready_for_brief_builder") return "border-l-[3px] border-l-emerald-400/50";
   return "border-l-[3px] border-l-border/25";
 }
@@ -545,7 +546,10 @@ export function StrategyMapView() {
                   {/* Left column — Pillars list (resizable) */}
                   <div style={{ width: leftWidth }} className="shrink-0 overflow-y-auto bg-white/[0.005]">
                     <div className="px-3 py-2 border-b border-border/20 sticky top-0 bg-background/90 backdrop-blur-sm z-10">
-                      <p className={cn(TYPE.microLabel, "text-muted-foreground/35 mb-0.5")}>Pillars</p>
+                      <div className="flex items-center gap-1 mb-0.5">
+                        <p className={cn(TYPE.microLabel, "text-muted-foreground/35")}>Pillars</p>
+                        <SectionInfoIcon tip="Validated message pillars from analysis — select one to trace its source cells and the hypotheses it feeds." />
+                      </div>
                       <span className={cn(TYPE.caption, "font-semibold text-foreground/65")}>
                         {pillars.length} message pillar{pillars.length !== 1 ? "s" : ""}
                       </span>

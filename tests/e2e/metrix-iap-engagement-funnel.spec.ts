@@ -10,6 +10,9 @@
 //      "Segment" column header.
 //   4. "Scatter" mode — clicking the tab shows the scatter section card title
 //      containing "Frequency × Link CTR".
+//   5. Breakdown dimension switch — Audience → Placement keeps rows present.
+//   6. Column sort — a sort chosen in Audience mode stays active after
+//      switching to Placement, and clicking another column reorders rows.
 //   No JS errors are emitted during any tab switch.
 //
 // API calls are intercepted so no live API server is required.
@@ -48,6 +51,22 @@ const SEED_FIXTURE_EMPTY_DEMO = (() => {
     const analysis = acct?.iap?.analysis;
     if (analysis) {
       analysis.demographic_registration_signal = [];
+    }
+  }
+  return JSON.stringify(seed);
+})();
+
+// A variant of the fixture with demographic rows present but Reach uniformly
+// zeroed. Used to verify the Scatter view's division-by-zero (frequency /
+// unique-CTR) path renders the empty-scatter message instead of crashing.
+const SEED_FIXTURE_ZERO_REACH = (() => {
+  const seed = JSON.parse(SEED_FIXTURE_BODY);
+  for (const acct of seed.ad_accounts ?? []) {
+    const rows = acct?.iap?.analysis?.demographic_registration_signal;
+    if (Array.isArray(rows)) {
+      for (const row of rows) {
+        row.Reach = 0;
+      }
     }
   }
   return JSON.stringify(seed);
@@ -169,6 +188,67 @@ async function mockApisWithEmptyDemographic(ctx: BrowserContext): Promise<void> 
       status: 200,
       contentType: "application/json",
       body: SEED_FIXTURE_EMPTY_DEMO,
+    }),
+  );
+
+  await page.route("**/api/metrix/workspaces/*/reports", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ reports: [] }),
+    }),
+  );
+
+  await page.route("**/analysis/data-windows**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ windows: [] }),
+    }),
+  );
+
+  await page.route("**/analysis/summary**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        totals: {},
+        concept_rows: [],
+        placement_rows: [],
+        demographic_rows: [],
+      }),
+    }),
+  );
+}
+
+/**
+ * Same as mockApis but serves the zero-reach seed: demographic rows exist but
+ * every Reach value is 0, so frequency/unique-CTR derivations are all null.
+ */
+async function mockApisWithZeroReach(ctx: BrowserContext): Promise<void> {
+  const page = ctx.pages()[0]!;
+
+  await page.route("**/api/metrix/auth/me", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        user: {
+          id: "test-user",
+          email: "demo@metrix.app",
+          role: "admin",
+          must_change_password: false,
+          workspace_id: "metrix_manager",
+        },
+      }),
+    }),
+  );
+
+  await page.route("**/api/metrix/seed", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: SEED_FIXTURE_ZERO_REACH,
     }),
   );
 
@@ -412,6 +492,56 @@ async function main() {
       },
     );
 
+    // ── Test 4b: Scatter mode with uniformly zero Reach is graceful ────────
+    await test(
+      "Scatter mode with all-zero Reach renders the section card and empty-scatter message without JS errors",
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        const jsErrors: string[] = [];
+        page.on("pageerror", (err) => jsErrors.push(err.message));
+        try {
+          await mockApisWithZeroReach(ctx);
+          await gotoFunnel(page);
+
+          // Switch to Scatter mode.
+          await page.getByRole("button", { name: "Scatter" }).click();
+          await page.waitForTimeout(400);
+
+          // The section card still renders (no crash).
+          const scatterCard = page.getByText(/Frequency × Link CTR/i).first();
+          await scatterCard.waitFor({ state: "visible", timeout: 8_000 });
+          assert(
+            await scatterCard.isVisible(),
+            'Expected "Frequency × Link CTR" section card to be visible with zero-reach data',
+          );
+          console.log('       Scatter section card visible with zero-reach seed ✓');
+
+          // With reach=0 everywhere, frequency/uniqueCtr are null for every
+          // segment, so no scatter points survive filtering and the explicit
+          // empty-state message must appear instead of a blank chart.
+          const emptyMsg = page
+            .getByText(/Need reach \+ impression data to plot frequency scatter/i)
+            .first();
+          await emptyMsg.waitFor({ state: "visible", timeout: 8_000 });
+          assert(
+            await emptyMsg.isVisible(),
+            "Expected the empty-scatter message when all Reach values are 0",
+          );
+          console.log("       Empty-scatter message visible ✓");
+
+          assert(
+            jsErrors.length === 0,
+            `Expected no JS errors in zero-reach Scatter mode, got: ${jsErrors.join("; ")}`,
+          );
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+
     // ── Test 5: Breakdown dimension switch preserves row presence ──────────
     await test(
       "Breakdown Audience → Placement switch shows at least one data row each time",
@@ -492,7 +622,118 @@ async function main() {
       },
     );
 
-    // ── Test 6: PendingState renders when demographic data is absent ─────────
+    // ── Test 6: column sort survives a Breakdown dimension switch ───────────
+    await test(
+      "Column sort stays active across Audience → Placement switch and re-sorting reorders rows",
+      async () => {
+        const ctx = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+        });
+        const page = await ctx.newPage();
+        const jsErrors: string[] = [];
+        page.on("pageerror", (err) => jsErrors.push(err.message));
+        try {
+          await mockApis(ctx);
+          await gotoFunnel(page);
+
+          // Enter Breakdown mode (defaults to Audience dimension).
+          await page.getByRole("button", { name: "Breakdown" }).click();
+          const segmentHeader = page.locator("th").filter({ hasText: /^Segment$/ });
+          await segmentHeader.waitFor({ state: "visible", timeout: 8_000 });
+
+          // Helper: read the first-column segment labels in current row order.
+          const rowLabels = () =>
+            page.locator("tbody tr td:first-child").allInnerTexts();
+
+          // Reveal secondary columns so "Spend" is clickable. Spend is chosen
+          // because it has values in BOTH dimensions (Frequency/CTR All are
+          // audience-only and their columns disappear in Placement mode).
+          await page
+            .getByRole("button", { name: /Show \d+ more column/ })
+            .click();
+          await page.waitForTimeout(200);
+
+          // Sort by "Spend" in Audience mode.
+          const spendHeader = page
+            .locator("th button")
+            .filter({ hasText: /^Spend$/ });
+          await spendHeader.waitFor({ state: "visible", timeout: 8_000 });
+          await spendHeader.click();
+          await page.waitForTimeout(300);
+
+          // The active sort header is highlighted with the text-interactive class.
+          const spendClass = (await spendHeader.getAttribute("class")) ?? "";
+          assert(
+            spendClass.includes("text-interactive"),
+            `Expected "Spend" header to be active (text-interactive) after clicking it, class="${spendClass}"`,
+          );
+          console.log('       "Spend" sort active in Audience mode ✓');
+
+          // Switch dimension Audience → Placement.
+          await page.getByRole("button", { name: "Placement" }).click();
+          const placementCardTitle = page.getByText("Placement breakdown").first();
+          await placementCardTitle.waitFor({ state: "visible", timeout: 8_000 });
+
+          // Rows must still be present after the dimension switch.
+          const placementLabels = await rowLabels();
+          assert(
+            placementLabels.length > 0,
+            `Expected data rows after switching to Placement, got ${placementLabels.length}`,
+          );
+          console.log(`       ${placementLabels.length} row(s) present after switch ✓`);
+
+          // The "Spend" sort column must still be the active (highlighted) one.
+          // (The active sort column is always rendered, even when secondary
+          // columns are collapsed after the dimension switch remounts the table.)
+          const spendHeaderAfter = page
+            .locator("th button")
+            .filter({ hasText: /^Spend$/ });
+          await spendHeaderAfter.waitFor({ state: "visible", timeout: 8_000 });
+          const spendClassAfter = (await spendHeaderAfter.getAttribute("class")) ?? "";
+          assert(
+            spendClassAfter.includes("text-interactive"),
+            `Expected "Spend" header to remain active after dimension switch, class="${spendClassAfter}"`,
+          );
+          console.log('       "Spend" sort still active after dimension switch ✓');
+
+          // Click a second sort column in Placement mode and assert the row
+          // order actually changes.
+          const ctrHeader = page
+            .locator("th button")
+            .filter({ hasText: /^CTR Link$/ });
+          await ctrHeader.waitFor({ state: "visible", timeout: 8_000 });
+          await ctrHeader.click();
+          await page.waitForTimeout(300);
+
+          const ctrClass = (await ctrHeader.getAttribute("class")) ?? "";
+          assert(
+            ctrClass.includes("text-interactive"),
+            `Expected "CTR Link" header to be active after clicking it, class="${ctrClass}"`,
+          );
+
+          const resortedLabels = await rowLabels();
+          assert(
+            resortedLabels.length === placementLabels.length,
+            `Expected same row count after re-sort (${placementLabels.length}), got ${resortedLabels.length}`,
+          );
+          assert(
+            JSON.stringify(resortedLabels) !== JSON.stringify(placementLabels),
+            `Expected row order to change after sorting by "CTR Link", but it stayed: ${placementLabels.join(", ")}`,
+          );
+          console.log('       Row order changed after sorting by "CTR Link" ✓');
+
+          assert(
+            jsErrors.length === 0,
+            `Expected no JS errors during sort/dimension interactions, got: ${jsErrors.join("; ")}`,
+          );
+          console.log("       No JS errors ✓");
+        } finally {
+          await ctx.close();
+        }
+      },
+    );
+
+    // ── Test 7: PendingState renders when demographic data is absent ─────────
     await test(
       'PendingState shows "No engagement data" when demographic rows are empty',
       async () => {
@@ -535,7 +776,7 @@ async function main() {
       },
     );
 
-    // ── Test 7: Tab switches are error-free when cycled repeatedly ──────────
+    // ── Test 8: Tab switches are error-free when cycled repeatedly ──────────
     await test(
       "Cycling through all three tabs produces no JS errors",
       async () => {

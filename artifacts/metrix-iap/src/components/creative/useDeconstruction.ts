@@ -48,7 +48,7 @@ export function familyDisplayLabel(family: string): string {
 }
 
 export const DECONSTRUCTION_STATUS_LABEL: Record<CreativeDeconstruction["status"], string> = {
-  unsupported: "Video — not supported yet",
+  unsupported: "Unsupported format",
   auto_filed: "Classified",
   needs_review: "Needs review",
   user_overridden: "Accepted (override)",

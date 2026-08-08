@@ -28,6 +28,11 @@ const repoRoot = path.resolve(
 );
 
 const CSS_FILE = path.join(repoRoot, "artifacts/metrix-iap/src/index.css");
+/** Command Deck design-system stylesheet. The IAP is always dark (index.html
+ * sets class="dark"), so its `.dark { … }` block supplies the effective values
+ * for --foreground, --primary, --muted-foreground, … that the app's tokens
+ * alias. Merging it lets var() chains that cross into the package resolve. */
+const DS_CSS_FILE = path.join(repoRoot, "artifacts/command-deck/src/index.css");
 /** The dark cockpit background every text token must contrast against. */
 const BG_HEX = "#050b18"; // --mx-bg-main
 /** WCAG AA minimum for normal text. */
@@ -136,6 +141,17 @@ function resolveVar(
     return resolved != null ? `hsl(${resolved})` : null;
   }
 
+  // hsl(var(--x) / A) — resolve the inner var, keep the alpha for compositing
+  const hslVarAlphaMatch = trimmed.match(
+    /^hsl\(\s*var\((--[\w-]+)\)\s*\/\s*([\d.]+%?)\s*\)$/,
+  );
+  if (hslVarAlphaMatch) {
+    const inner = vars.get(hslVarAlphaMatch[1]!);
+    if (inner == null) return null;
+    const resolved = resolveVar(inner, vars, depth + 1);
+    return resolved != null ? `hsl(${resolved} / ${hslVarAlphaMatch[2]!})` : null;
+  }
+
   // var(--x) — resolve directly
   const varMatch = trimmed.match(/^var\((--[\w-]+)\)$/);
   if (varMatch) {
@@ -160,11 +176,28 @@ function parseColor(resolved: string | null): [number, number, number] | null {
     return hexToRgb(val);
   }
 
-  // hsl(H S% L%) or hsl(H, S%, L%) — extract the three numbers permissively
+  // hsl(H S% L%) / hsl(H, S%, L%) / hsl(H S% L% / A) — extract permissively.
+  // A trailing alpha (0–1 or %) is composited over the check background,
+  // matching how the always-dark app renders translucent text.
   if (val.startsWith("hsl(")) {
-    const nums = val.match(/[\d.]+/g);
+    const nums = val.match(/[\d.]+%?/g);
     if (nums && nums.length >= 3) {
-      return hslToRgb(parseFloat(nums[0]!), parseFloat(nums[1]!), parseFloat(nums[2]!));
+      const rgb = hslToRgb(
+        parseFloat(nums[0]!),
+        parseFloat(nums[1]!),
+        parseFloat(nums[2]!),
+      );
+      if (nums.length >= 4 && val.includes("/")) {
+        let a = parseFloat(nums[3]!);
+        if (nums[3]!.endsWith("%")) a /= 100;
+        const bg = hexToRgb(BG_HEX)!;
+        return [
+          Math.round(rgb[0] * a + bg[0] * (1 - a)),
+          Math.round(rgb[1] * a + bg[1] * (1 - a)),
+          Math.round(rgb[2] * a + bg[2] * (1 - a)),
+        ];
+      }
+      return rgb;
     }
   }
 
@@ -208,6 +241,22 @@ function main() {
   const css = fs.readFileSync(CSS_FILE, "utf-8");
   const vars = parseCssVars(css);
   const suppressed = suppressedTokens(css);
+
+  // Merge the Command Deck dark-theme variables (app is always dark) so that
+  // app tokens aliasing package vars (e.g. var(--foreground)) resolve to real
+  // colors. App-file declarations win; package vars only fill gaps.
+  if (fs.existsSync(DS_CSS_FILE)) {
+    const dsCss = fs.readFileSync(DS_CSS_FILE, "utf-8");
+    const darkBlock = dsCss.match(/\.dark\s*\{([^}]*)\}/);
+    if (darkBlock) {
+      for (const [name, val] of parseCssVars(darkBlock[1]!)) {
+        if (!vars.has(name)) vars.set(name, val);
+      }
+    }
+  } else {
+    console.error(`\nFAIL  Design-system CSS not found: ${DS_CSS_FILE}`);
+    process.exit(1);
+  }
 
   const bgRgb = hexToRgb(BG_HEX);
   if (!bgRgb) {
@@ -277,6 +326,17 @@ function main() {
     console.log(
       `  SKIP  ${r.name.padEnd(padName)}  value not resolvable: ${r.rawValue}`,
     );
+  }
+
+  // Zero evaluated tokens means the check is measuring nothing — that is a
+  // failure, not a pass (e.g. a var chain broke and everything got skipped).
+  if (failures.length === 0 && passed.length === 0 && exempt.length === 0) {
+    console.error(
+      `\nFAIL  0 text tokens could be evaluated (${skipped.length} skipped as unresolvable).\n` +
+        "      The check must resolve real colors — fix the var() chains or the\n" +
+        "      design-system CSS merge so tokens evaluate again.\n",
+    );
+    process.exit(1);
   }
 
   if (failures.length === 0) {

@@ -1,3 +1,4 @@
+// hint: Logic changed on both sides. Requires understanding intent of each change.
 - [Metrix MST / IAP Matrix methodology](metrix-mst-methodology.md) — MST=Metrix Sprint Test; Concept×Angle matrix rules + real-cardinality honesty; matrix grid vs generated briefs are distinct surfaces; generated cell codes must align to the historical grid, not fetch order.
 - [Metrix IAP closed-loop linkage](metrix-iap-closed-loop.md) — cross-entity back-refs (Ad/Concept/Brief) filled at gen time by linkClosedLoop() IIFE, not per-render.
 - [Supabase RLS testing](supabase-rls-testing.md) — rolled-back-txn tests need savepoints around expected failures; gates must be triggers (BYPASSRLS skips RLS, not triggers); drizzle push hangs non-TTY.
@@ -41,7 +42,7 @@
 - [variable_performance payload field names](variable-performance-payload-fields.md) — payload jsonb must use VariablePerformanceRow keys (e.g. "Amount spent (USD)", Results, CPA_result); seed assembly exposes r["payload"] directly to the client.
 - [Date-scope fixture tests with homogeneous windows](date-scope-fixture-homogeneous.md) — when full-period analysis gives all concepts the same date window, tests that need differential concept windows must use synthetic rollup data, not the fixture.
 - [Collapsible header a11y + chip tooltips](collapsible-header-a11y.md) — no role=button on wide clickable headers (e2e name collisions); chips need own TooltipProvider + aria-label for hidden codes.
-- [Command Deck consumption in Metrix IAP](command-deck-consumption.md) — theme comes from the package; app forces .dark on <html>; contrast tests must read tokens via loadEffectiveThemeCss().
+- [Command Deck consumption in Metrix IAP](command-deck-consumption.md) — all app-local color tokens are var-chains/color-mix over DS vars, no raw hex; css-token-contrast now SKIPs (var chains unresolvable); tests use loadEffectiveThemeCss().
 - [LLM JSON truncation handling](llm-json-truncation.md) — "Expected ',' or ']' in JSON" from generation runs = max_tokens cutoff; repair prompts can't fix it, escalate the output budget via stop_reason.
 - [IAP smoke suite coverage guard](iap-smoke-suite-guard.md) — orchestrator iterates a declarative step list; guard test fails on unwired smoke:metrix-iap-* scripts; hover-popover excluded (fixture-drifted spec).
 - [Workflow coverage guard](workflow-check-coverage-guard.md) — every check:*/smoke:* script must run in a workflow or be allowlisted with a reason; guard test parses .replit.
@@ -49,4 +50,9 @@
 - [Metrix IAP home + analyze routes](metrix-iap-home-analyze-routes.md) — /app/home (HomeView) and /app/analyze routes were missing from App.tsx; navTree section is "Analysis" (→/app/analysis), not "Analyze" (→/app/analyze); sidebar defaults to expanded (empty localStorage).
 - [Metrix CSV Day canonical + derived metrics](metrix-csv-day-canonical.md) — "Day" is the canonical date column; derivable/ranking columns accepted but never expected; rate↔count inference guard.
 - [Manual accounts render from the daterange summary API](metrix-manual-analysis-fulldata.md) — no concept codes → empty seed analysis tables; Overview defaults to full-span API rows; stale window guards; per-ad tile data on AdRecord.performance.
+- [Wouter Redirect drops query params](wouter-redirect-drops-query.md) — legacy-route redirects lose ?account=; e2e must hit canonical paths, click default tabs, and mock all API endpoints.
+- [Recharts scatter tests in jsdom](recharts-jsdom-testing.md) — mock ResponsiveContainer with fixed size (typed cloneElement) and select `g[role=img][aria-label]`; recharts adds an unlabeled role=img wrapper per shape.
 - [Seamless-loop video design](video-artifact-gotchas.md) — looping compositions: every timeline period must divide the loop; staggered repeats and boundary snaps need loop-length keyframes/opacity envelopes; verify by pixel-diffing frames one loop apart.
+- [Supabase dev outages](supabase-dev-outages.md) — shared dev Supabase can 522 for an hour+; light account lookup in test setup, poll rest endpoint, don't debug code on Cloudflare HTML errors.
+- [Validation workflows vs configureWorkflow](validation-workflows-vs-configure.md) — new check:* scripts wire in via setValidationCommand, not configureWorkflow (10-workflow limit + validation-type lock).
+- [Supabase full outages](supabase-full-outage.md) — REST 522 + pooler connect timeouts together = project-wide outage (hours, seen under bulk vision runs); check both before debugging hung live tests.

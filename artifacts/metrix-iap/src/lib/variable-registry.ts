@@ -181,7 +181,7 @@ export function resolveInlineVariableCodes(text: string): string {
 
 /** Color class per prefix for badge styling */
 export const PREFIX_COLORS: Record<VariablePrefix, string> = {
-  HK:      "bg-[#16d9ff]/10 text-[#62e6ff] border-[#16d9ff]/20",
+  HK:      "bg-accent/10 text-accent border-accent/20",
   TN:      "bg-purple-500/10 text-purple-300 border-purple-500/20",
   FW:      "bg-teal-500/10 text-teal-300 border-teal-500/20",
   CN:      "bg-amber-500/10 text-amber-300 border-amber-500/20",

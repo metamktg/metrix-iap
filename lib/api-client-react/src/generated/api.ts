@@ -34,6 +34,7 @@ import type {
   AdminUserActionResult,
   AdminUserAdAccountsResult,
   AdminUsersResult,
+  AnalysisCompletenessResult,
   AnalysisRunListResult,
   AnalysisSummaryResult,
   ApiError,
@@ -1678,6 +1679,84 @@ export function useGetAnalysisSummary<TData = Awaited<ReturnType<typeof getAnaly
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetAnalysisSummaryQueryOptions(accountId,preset,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetAnalysisCompletenessUrl = (accountId: string,) => {
+
+
+
+
+  return `/api/metrix/accounts/${accountId}/analysis-completeness`
+}
+
+/**
+ * Post-run completeness verification. Counts rows for each analysis surface (ad performance / metric tiles, concepts, variables, demographics, placements, platforms, devices, creative library) scoped to the account's latest manual analysis run, or account-wide when no manual run exists (importer / live-Meta accounts). This is the same computation stage-status "validated" and the Strategy gate read.
+ * @summary Verify every analysis surface received data (analysis-validated check)
+ */
+export const getAnalysisCompleteness = async (accountId: string, options?: RequestInit): Promise<AnalysisCompletenessResult> => {
+
+  return customFetch<AnalysisCompletenessResult>(getGetAnalysisCompletenessUrl(accountId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAnalysisCompletenessQueryKey = (accountId: string,) => {
+    return [
+    `/api/metrix/accounts/${accountId}/analysis-completeness`
+    ] as const;
+    }
+
+
+export const getGetAnalysisCompletenessQueryOptions = <TData = Awaited<ReturnType<typeof getAnalysisCompleteness>>, TError = ErrorType<ApiError>>(accountId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAnalysisCompleteness>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAnalysisCompletenessQueryKey(accountId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAnalysisCompleteness>>> = ({ signal }) => getAnalysisCompleteness(accountId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: accountId !== null && accountId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAnalysisCompleteness>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAnalysisCompletenessQueryResult = NonNullable<Awaited<ReturnType<typeof getAnalysisCompleteness>>>
+export type GetAnalysisCompletenessQueryError = ErrorType<ApiError>
+
+
+/**
+ * @summary Verify every analysis surface received data (analysis-validated check)
+ */
+
+export function useGetAnalysisCompleteness<TData = Awaited<ReturnType<typeof getAnalysisCompleteness>>, TError = ErrorType<ApiError>>(
+ accountId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAnalysisCompleteness>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAnalysisCompletenessQueryOptions(accountId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
