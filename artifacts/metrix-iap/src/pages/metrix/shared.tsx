@@ -1108,6 +1108,51 @@ export function CrossLink({ to, label, srNote }: { to: string; label: string; sr
   );
 }
 
+// ─── Hub navigation grid ────────────────────────────────────────────────
+// Every command center ends with a grid of links into its child pages.
+// This is the single shared rendering for that grid — one real fix beats
+// seven near-identical inline copies drifting out of sync. The whole card
+// is the click target (not a small trailing "Open" pill) so the affordance
+// matches the visual weight, a labeled "Explore" eyebrow gives the grid its
+// own place in the page hierarchy (rather than trailing off the primary
+// action with no heading at all), and each icon sits in a tinted chip so
+// the row doesn't read as one undifferentiated wall of identical cards.
+
+export interface HubNavItem {
+  to: string;
+  label: string;
+  desc: string;
+  Icon: React.ComponentType<{ className?: string }>;
+}
+
+export function HubNavGrid({ items, label = "Explore" }: { items: HubNavItem[]; label?: string }) {
+  const [, navigate] = useLocation();
+  return (
+    <div>
+      <div className={cn(TYPE.microLabel, "text-muted-foreground/45 mb-2.5 px-0.5")}>{label}</div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {items.map((c) => (
+          <button
+            key={c.to}
+            type="button"
+            onClick={() => navigate(c.to)}
+            className="group relative flex items-start gap-3 text-left rounded-xl border border-border/40 bg-white/[0.02] p-4 pr-8 transition-all hover:border-primary/35 hover:bg-primary/[0.05] hover:-translate-y-px"
+          >
+            <span className="shrink-0 w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center transition-colors group-hover:bg-primary/20 group-hover:border-primary/35">
+              <c.Icon className="w-4 h-4 text-interactive" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="text-title font-semibold text-foreground">{c.label}</div>
+              <p className="text-caption text-muted-foreground/80 leading-relaxed mt-0.5">{c.desc}</p>
+            </div>
+            <ArrowRight className="absolute right-3.5 top-4 w-3.5 h-3.5 text-muted-foreground/30 transition-all group-hover:text-interactive group-hover:translate-x-0.5" aria-hidden />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /**
  * Prominent loop-action button — Analysis → Strategy → Brief closed-loop CTAs.
  * Always ≥14px, solid fill on primary variant so it reads as a clear action.
