@@ -22,7 +22,7 @@
 // ThruPlay and video play % require a Meta video creative report CSV
 // which is not currently in the import spec — shown as "not available".
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ScatterChart, Scatter, XAxis, YAxis, CartesianGrid,
   ResponsiveContainer, Tooltip as RechartTooltip, ReferenceLine,
@@ -570,6 +570,34 @@ export function EngagementFunnelView() {
     return []; // device: future
   }, [dim, demoRows, placRows]);
 
+  // If the persisted sort metric has no values in the current dimension's rows
+  // (e.g. Frequency is audience-only and disappears in Placement mode), fall back
+  // to "ctrLink" or the first metric that actually has data. Without this, rows
+  // are sorted by an all-null column and no header is highlighted — an invisible sort.
+  const effectiveSortId = useMemo(() => {
+    if (breakdownRows.length === 0) return sortId;
+    const activeMetric = BREAKDOWN_METRICS.find((m) => m.id === sortId);
+    if (activeMetric && breakdownRows.some((r) => activeMetric.value(r) != null)) {
+      return sortId; // persisted sort has data in this dimension — keep it
+    }
+    // Prefer ctrLink (the default), otherwise use the first metric with any data.
+    const preferred = BREAKDOWN_METRICS.find(
+      (m) => m.id === "ctrLink" && breakdownRows.some((r) => m.value(r) != null)
+    );
+    const firstAvailable = BREAKDOWN_METRICS.find(
+      (m) => breakdownRows.some((r) => m.value(r) != null)
+    );
+    return (preferred ?? firstAvailable)?.id ?? sortId;
+  }, [sortId, breakdownRows]);
+
+  // Sync the fallback back to storage so the RankSortBar chip and the table
+  // header both reflect the same sort after a dimension switch.
+  useEffect(() => {
+    if (effectiveSortId !== sortId) {
+      setSort(effectiveSortId);
+    }
+  }, [effectiveSortId, sortId, setSort]);
+
   const summaryTiles = useMemo(() => buildSummaryTiles(demoRows), [demoRows]);
 
   return (
@@ -681,7 +709,7 @@ export function EngagementFunnelView() {
                 <div className="flex-1">
                   <RankSortBar
                     metrics={BREAKDOWN_METRICS}
-                    activeId={sortId}
+                    activeId={effectiveSortId}
                     onSelect={setSort}
                   />
                 </div>
@@ -752,7 +780,7 @@ export function EngagementFunnelView() {
                     </>
                   }
                 >
-                  <BreakdownTable rows={breakdownRows} sortId={sortId} onSort={setSort} />
+                  <BreakdownTable rows={breakdownRows} sortId={effectiveSortId} onSort={setSort} />
                   {dim === "audience" && (
                     <CaveatNote
                       text="Demographic rows don't carry raw impression counts per segment in every export — Frequency and CTR All are derived from available Reach and Impressions fields and may be 0 for some segments."
