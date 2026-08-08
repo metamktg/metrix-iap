@@ -29,6 +29,7 @@ import { useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
 import { useQuery } from "@tanstack/react-query";
 import { SharePieChart } from "@/components/charts/SharePieChart";
 import { KpiTileRow } from "@/components/metrics/KpiTile";
+import { KpiDrilldownModal } from "@/components/metrics/KpiDrilldownModal";
 import {
   buildMetricCatalog, metricSourceFromApiTotals, metricSourceFromCampaignSummary,
 } from "@/lib/data/metricsCatalog";
@@ -735,6 +736,9 @@ export function AnalysisOverview() {
   );
   const { filterByRun } = useCellRunScope(analysis, runSelection);
 
+  // KPI tile drill-down modal (one shared modal for all tiles).
+  const [drillMetricId, setDrillMetricId] = useState<string | null>(null);
+
   // Fetch available date windows from actual ad_performance data (not run metadata).
   const { data: windowsData, isFetching: windowsFetching } = useQuery({
     ...getGetAccountAnalysisDataWindowsQueryOptions(adAccountId ?? ""),
@@ -948,6 +952,25 @@ export function AnalysisOverview() {
           : null;
         const effectiveGoalCpa = goalCpa ?? medianCpa;
 
+        // ── KPI tile catalog (shared by tiles + drill-down modal) ─────
+        const tileCatalog = buildMetricCatalog(
+          runScoped
+            ? metricSourceFromApiTotals({
+                total_spend_usd: scopedSpend,
+                total_impressions: scopedImpressions,
+                total_link_clicks: scopedLinkClicks,
+                overall_link_ctr_pct: scopedCtrPct,
+              })
+            : selectedWindow && runData
+              ? metricSourceFromApiTotals(runData.totals)
+              : metricSourceFromCampaignSummary(summary),
+        );
+        const drillWindowLabel = runScoped
+          ? "run-scoped selection"
+          : selectedWindow
+            ? `${selectedWindow.start} → ${selectedWindow.end}`
+            : "all data (full flight)";
+
         // ── Sub-page jump-off cards ───────────────────────────────────
         const subpages = [
           {
@@ -1015,18 +1038,8 @@ export function AnalysisOverview() {
                     <div className="flex-1 grid grid-cols-dashboard-4 gap-3">
                         <KpiTileRow
                           viewKey={runScoped ? "analysis-overview:run-scoped" : "analysis-overview"}
-                          catalog={buildMetricCatalog(
-                            runScoped
-                              ? metricSourceFromApiTotals({
-                                  total_spend_usd: scopedSpend,
-                                  total_impressions: scopedImpressions,
-                                  total_link_clicks: scopedLinkClicks,
-                                  overall_link_ctr_pct: scopedCtrPct,
-                                })
-                              : selectedWindow && runData
-                                ? metricSourceFromApiTotals(runData.totals)
-                                : metricSourceFromCampaignSummary(summary),
-                          )}
+                          catalog={tileCatalog}
+                          onTileClick={setDrillMetricId}
                         />
                     </div>
                     {/* Right: result type donut — inline with tiles */}
@@ -1048,6 +1061,22 @@ export function AnalysisOverview() {
                     )}
                   </div>
                 )}
+
+                <KpiDrilldownModal
+                  open={drillMetricId != null}
+                  onClose={() => setDrillMetricId(null)}
+                  scope="account"
+                  metricId={drillMetricId}
+                  catalog={tileCatalog}
+                  analysis={a}
+                  // Run scoping maps cleanly onto seed cell rows; a date-window
+                  // selection does not (seed cells have no daily grain), so
+                  // under a window selection we pass no cell rows rather than
+                  // full-flight rows mislabeled as window-scoped.
+                  scopedCellRows={selectedWindow ? [] : cellRows}
+                  scopeNarrowed={runScoped || selectedWindow != null}
+                  windowLabel={drillWindowLabel}
+                />
 
                 {/* ── Secondary refresh action ──────────────────────── */}
                 <div className="px-6 pt-2 flex justify-end">

@@ -180,7 +180,7 @@ export function KpiTile({
 
       {/* Value — label + value only; no inline sub-text */}
       {onClick ? (
-        <button type="button" onClick={onClick} className="text-left hover:opacity-75 transition-opacity w-fit">
+        <button type="button" data-testid="kpi-tile-body" onClick={onClick} className="text-left hover:opacity-75 transition-opacity w-fit">
           <KpiValue formatted={m.formatted} isRefetching={isRefetching} />
         </button>
       ) : (

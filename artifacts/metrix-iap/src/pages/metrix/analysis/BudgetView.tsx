@@ -17,6 +17,7 @@ import { getGetAnalysisSummaryQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
 import { PlacementTable } from "./tables";
 import { KpiTileRow } from "@/components/metrics/KpiTile";
+import { KpiDrilldownModal } from "@/components/metrics/KpiDrilldownModal";
 import {
   buildMetricCatalog, metricSourceFromApiTotals, metricSourceFromCampaignSummary,
 } from "@/lib/data/metricsCatalog";
@@ -87,6 +88,9 @@ export function BudgetView() {
   const account = getAdAccount(seed, adAccountId);
   const [preset, setPreset] = useState<ViewPreset>("all");
   const [showPlacements, setShowPlacements] = useState(false);
+
+  // KPI tile drill-down modal (one shared modal for all tiles).
+  const [drillMetricId, setDrillMetricId] = useState<string | null>(null);
 
   const { data: presetData, isFetching: presetFetching } = useQuery({
     ...getGetAnalysisSummaryQueryOptions(adAccountId ?? "", preset),
@@ -175,9 +179,35 @@ export function BudgetView() {
                       ? metricSourceFromApiTotals(presetData.totals)
                       : metricSourceFromCampaignSummary(summary),
                   )}
+                  onTileClick={setDrillMetricId}
                 />
               </div>
             )}
+
+            <KpiDrilldownModal
+              open={drillMetricId != null}
+              onClose={() => setDrillMetricId(null)}
+              scope="account"
+              metricId={drillMetricId}
+              catalog={buildMetricCatalog(
+                preset !== "all" && presetData
+                  ? metricSourceFromApiTotals(presetData.totals)
+                  : metricSourceFromCampaignSummary(summary),
+              )}
+              analysis={a}
+              // Seed cell rows have no daily grain, so under a date preset we
+              // pass no cell rows rather than full-flight rows mislabeled as
+              // preset-scoped.
+              scopedCellRows={preset !== "all" ? [] : undefined}
+              scopeNarrowed={preset !== "all"}
+              windowLabel={
+                preset !== "all" && presetData?.available_window
+                  ? `${presetData.available_window.start} → ${presetData.available_window.end} (${preset})`
+                  : preset !== "all"
+                    ? `${preset} preset`
+                    : "all data (full flight)"
+              }
+            />
 
             <div className="px-6 py-5 space-y-4 max-w-5xl">
               {summary.data_caveat && <CaveatNote text={summary.data_caveat} />}

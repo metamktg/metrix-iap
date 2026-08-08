@@ -30,7 +30,7 @@ import {
 } from "@/lib/data/metricsCatalog";
 import { KpiTile } from "@/components/metrics/KpiTile";
 import { useKpiTileMetrics } from "@/hooks/useKpiTileMetrics";
-import { MetricDiagnosticModal } from "@/components/creative/MetricDiagnosticModal";
+import { KpiDrilldownModal } from "@/components/metrics/KpiDrilldownModal";
 import { TokenizedConceptText } from "@/components/concept/ConceptChip";
 import { OverviewLoopSummary } from "./OverviewLoopHub";
 import { TYPE } from "./typography";
@@ -631,12 +631,13 @@ export function ManagerOverview() {
       </div>
 
       <AddAccountDialog open={addOpen} onOpenChange={setAddOpen} />
-      <MetricDiagnosticModal
+      <KpiDrilldownModal
         open={openMetric != null}
         onClose={() => setOpenMetricId(null)}
-        metric={openMetric}
-        analysis={null}
         scope="manager"
+        metricId={openMetricId}
+        catalog={metricCatalog}
+        accounts={adAccounts}
       />
     </div>
   );

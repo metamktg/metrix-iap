@@ -5,8 +5,10 @@
 // mounted at the parent /app/analysis route) owns execution + run
 // history — this page is read-only.
 
+import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
+import { KpiDrilldownModal } from "@/components/metrics/KpiDrilldownModal";
 import { getAdAccount, getAnalysisData, getCampaignSummary, getCoreControls, getMST } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
@@ -30,6 +32,9 @@ export function AdPerformanceView() {
   const { rangeHasData } = useDateRange();
   const analysis = getAnalysisData(seed, adAccountId);
   const { range, narrowed, filterCells } = useCellRangeScope(analysis);
+
+  // KPI tile drill-down modal (one shared modal for all tiles).
+  const [drillMetricId, setDrillMetricId] = useState<string | null>(null);
 
   return (
     <ModuleScopeGate section={SECTION} title="Ad Performance" account={account}>
@@ -137,6 +142,7 @@ export function AdPerformanceView() {
               {scoped ? (
                 <KpiTileRow
                   viewKey="ad-performance:in-range"
+                  onTileClick={setDrillMetricId}
                   catalog={buildMetricCatalog({
                     spend: scoped.spend,
                     impressions: null,
@@ -156,9 +162,35 @@ export function AdPerformanceView() {
                 <KpiTileRow
                   viewKey="ad-performance"
                   catalog={buildMetricCatalog(metricSourceFromCampaignSummary(summary))}
+                  onTileClick={setDrillMetricId}
                 />
               )}
             </div>
+
+            <KpiDrilldownModal
+              open={drillMetricId != null}
+              onClose={() => setDrillMetricId(null)}
+              scope="account"
+              metricId={drillMetricId}
+              catalog={buildMetricCatalog(
+                scoped
+                  ? {
+                      spend: scoped.spend,
+                      impressions: null,
+                      reach: null,
+                      clicksAll: null,
+                      linkClicks: scoped.linkClicks,
+                      linkCtrPct: null,
+                      resultEvents: [{ key: "in_range_results", label: "Results (in range)", results: scoped.results }],
+                      isMultiEvent: false,
+                    }
+                  : metricSourceFromCampaignSummary(summary),
+              )}
+              analysis={a}
+              scopedCellRows={filterCells(a.performance_by_cell)}
+              scopeNarrowed={narrowed}
+              windowLabel={narrowed && range ? `${range.start} → ${range.end} (range-scoped)` : "full flight window"}
+            />
 
             <div className="px-6 py-5 space-y-4 max-w-5xl">
               {summary.data_caveat && <CaveatNote text={summary.data_caveat} />}

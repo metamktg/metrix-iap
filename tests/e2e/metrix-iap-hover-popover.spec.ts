@@ -5,64 +5,52 @@
 //      link_ctr) — hover opens a popover containing a bar chart ("Top concepts")
 //      or the stat-fallback text when fewer than two concept rows exist.
 //   2. The "Diagnose full breakdown" footer link inside the popover opens the
-//      MetricDiagnosticModal dialog.
+//      KpiDrilldownModal dialog (data-testid="kpi-drilldown-modal", header
+//      eyebrow "Metric breakdown").
 //   3. The CPA (blended) tile — popover header shows the correct metric label.
 //   4. A result-event tile (Mobile app installs) — popover header shows the
 //      event label.
-//   5. MetricDiagnosticModal concept list — standard metric (spend): modal shows
-//      ≥2 concept rows under "Top IAP library concepts" when performance_by_cell
-//      is populated.
-//   6. MetricDiagnosticModal concept list — result-event metric (Mobile app
-//      installs): modal shows ≥2 concept rows scoped to the event type.
-//   7. SegmentGridModal: clicking "Avatar × placement breakdown" from
-//      MetricDiagnosticModal (non-result-event) opens the grid and renders ≥1
-//      avatar segment row — catches silent empty-grid regressions.
-//   8. Result-event guard: "Avatar × placement breakdown" button is absent for
-//      result-event metrics; the info notice renders in its place.
-//   13a. SegmentGridModal placement marginals — spend metric: "All avatars" row
-//      shows dollar values (not "—") in placement cells, catching silent regressions
-//      in the spend case of metricValueForSegment().
-//   13b. SegmentGridModal placement marginals — link_ctr metric: "All avatars" row
-//      shows percentage values (not "—") in placement cells, catching regressions
-//      in the link_ctr case of metricValueForSegment().
-//   14. SegmentGridModal empty-state: when demographic_registration_signal is [],
-//      the modal renders "No demographic rows for this selection" and omits the
-//      grid table — catches regressions in the zero-row branch.
-//   15a. SegmentGridModal avatar blended column — impressions metric: "Blended"
-//      header is present and the first avatar row's blended cell shows a non-empty
-//      integer value (num(t.impressions)), not "—".
-//   15b. SegmentGridModal avatar blended column — link_clicks metric: "Blended"
-//      header is present and the first avatar row's blended cell shows a non-empty
-//      integer value (num(t.linkClicks)), not "—".
-//   15c. SegmentGridModal avatar blended column — cpa_blended metric: "Blended"
-//      header is present and the first avatar row's blended cell starts with "$"
-//      (usd() dollar format), not "—".
-//   15d. SegmentGridModal avatar blended column — reach metric: "Blended" header
-//      is present; demographic rows carry Reach data so the blended cell shows a
-//      non-"—" integer value; the unavailableOnPlacements description warning is
-//      also rendered; and every "All avatars" placement cell shows "—" (placement
-//      export has no Reach breakdown — topPlacements() sets reach: null).
-//   15e. SegmentGridModal avatar blended column — clicks_all metric: same pattern
-//      as 15d for "Clicks (all)"; blended cell is non-"—"; unavailableOnPlacements
-//      warning is rendered; every "All avatars" placement cell shows "—"
-//      (topPlacements() sets clicksAll: null).
+//   5. KpiDrilldownModal concept breakdown — standard metric (spend): the
+//      default breakdown is "concept"; Table view shows ≥2 concept rows.
+//   6. KpiDrilldownModal concept breakdown — result-event metric (Mobile app
+//      installs): Table view shows ≥2 concept rows scoped to the event type.
+//   7. KpiDrilldownModal avatar breakdown: selecting the "avatar" dimension and
+//      Table view renders ≥1 age-group segment row — catches silent empty
+//      breakdown regressions.
+//   8. Result-event × avatar restriction: selecting the "avatar" breakdown for
+//      a result-event metric renders the restriction notice and no table.
+//   13a. KpiDrilldownModal placement breakdown — spend metric: the metric column
+//      shows dollar values ("$"), never "n/a".
+//   13b. KpiDrilldownModal placement breakdown — link_ctr metric: the metric
+//      column shows percentage values ("%"), never "n/a".
+//   14. KpiDrilldownModal: when demographic_registration_signal is [], the
+//      Breakdown <select> offers no "avatar" option — catches the missing-
+//      dimension regression.
+//   15a. KpiDrilldownModal avatar breakdown — impressions metric: the metric
+//      column shows a numeric value, not "n/a".
+//   15b. KpiDrilldownModal avatar breakdown — link_clicks metric: the metric
+//      column shows a numeric value, not "n/a".
+//   15c. KpiDrilldownModal avatar breakdown — cpa_blended metric: the metric
+//      column starts with "$" (usd() dollar format), not "n/a".
+//   15d. KpiDrilldownModal — reach metric: avatar breakdown shows a numeric
+//      value; placement breakdown shows the restriction notice ("don't carry
+//      reach or clicks (all)") and no table.
+//   15e. KpiDrilldownModal — clicks_all metric: same pattern as 15d for
+//      "Clicks (all)".
 //   16. SegmentGridModal with cellIds: opening via a concept-row drilldown
 //      (TilePerformanceModal → cellIds=["C2B"]) renders ≥1 avatar segment row
 //      and the description says "scoped to C2B" — catches silent empty-grid
 //      regressions in the non-null cellIds branch of buildAvatarSegments().
-//   17. MetricDiagnosticModal empty state: when the chosen metric has no
-//      campaign_summary value (total_spend_usd = null), opening the modal via
-//      "Diagnose full breakdown" renders "No data for this metric yet" and
-//      omits concept rows — catches regressions in the hasData = false branch.
+//   17. KpiDrilldownModal empty state: when the chosen metric has no data
+//      (total_spend_usd = null, empty performance_by_cell), opening the modal
+//      renders the empty state (data-testid="kpi-drilldown-empty") and no table.
 //   18. SegmentDrilldownModal via VariableDrilldownModal: opening from the
 //      Creative DNA "hook" family card (HK_Problem carrier cell C2E) renders ≥1 segment row
 //      inside VariableDrilldownModal and the SegmentDrilldownModal description
 //      includes "scoped to" — catches regressions where cellIds is silently
 //      dropped to null at VariableDrilldownModal.tsx line 266.
-//   19. MetricDiagnosticModal concept row navigation: clicking the first concept
-//      row button navigates to /app/analysis/library with a focus= query param
-//      matching the cell id — catches typos in the route string or a broken
-//      useLocation/navigate import.
+//   19. KpiDrilldownModal cell breakdown: selecting the "cell" dimension and
+//      Table view lists cell ids (a known cell_id from the seed appears).
 //   20. DNA family card → VariableDrilldownModal: navigating to
 //      /app/analysis/library?account=bookster, switching to the "Creative DNA"
 //      tab, and clicking the "concept" DNA family card (data-testid=
@@ -169,6 +157,46 @@ async function mockApis(ctx: BrowserContext): Promise<void> {
   );
 }
 
+/**
+ * Open the KpiDrilldownModal for a metric tile.  The open path is unchanged
+ * from the old MetricDiagnosticModal flow: hover the tile, click the
+ * "Diagnose full breakdown" footer link inside the hover popover.  Only the
+ * dialog that opens changed — it is now KpiDrilldownModal
+ * (data-testid="kpi-drilldown-modal", header eyebrow "Metric breakdown").
+ * Returns a locator for the open modal.
+ */
+async function openDrilldown(
+  page: import("playwright-core").Page,
+  tileLabel: string,
+) {
+  await page
+    .getByText("Account Totals", { exact: false })
+    .waitFor({ state: "visible", timeout: 20_000 });
+
+  const tileBtn = page
+    .locator("button")
+    .filter({ hasText: tileLabel })
+    .first();
+  await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
+  await tileBtn.hover();
+
+  const diagnoseBtn = page.getByText("Diagnose full breakdown");
+  await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
+  await diagnoseBtn.click();
+
+  const modal = page.locator('[data-testid="kpi-drilldown-modal"]');
+  await modal.waitFor({ state: "visible", timeout: 8_000 });
+  return modal;
+}
+
+/** Switch the KpiDrilldownModal into table view (default view is chart). */
+async function toTableView(page: import("playwright-core").Page) {
+  await page.getByRole("button", { name: "Table view" }).click();
+  await page
+    .locator('[data-testid="kpi-drilldown-table"]')
+    .waitFor({ state: "visible", timeout: 5_000 });
+}
+
 // ── main ───────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -252,9 +280,9 @@ async function main() {
       );
     }
 
-    // ── Test 5: footer link opens MetricDiagnosticModal ───────────────────
+    // ── Test 5: footer link opens KpiDrilldownModal ───────────────────────
     await test(
-      '"Diagnose full breakdown" opens the MetricDiagnosticModal',
+      '"Diagnose full breakdown" opens the KpiDrilldownModal',
       async () => {
         const ctx = await browser.newContext({
           viewport: { width: 1440, height: 900 },
@@ -266,37 +294,18 @@ async function main() {
             waitUntil: "domcontentloaded",
           });
 
-          // Wait for the metric grid.
-          await page
-            .getByText("Account Totals", { exact: false })
-            .waitFor({ state: "visible", timeout: 20_000 });
+          // Open the drill-down for the "Total spend" tile (hover → footer link).
+          const modal = await openDrilldown(page, "Total spend");
 
-          // Hover the "Total spend" tile to open its popover.
-          const tileBtn = page
-            .locator("button")
-            .filter({ hasText: "Total spend" })
-            .first();
-          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
-          await tileBtn.hover();
+          // KpiDrilldownModal renders the "Metric breakdown" eyebrow in its
+          // header.  Wait for it to appear inside the modal.
+          const eyebrow = modal.getByText("Metric breakdown", { exact: false });
+          await eyebrow.waitFor({ state: "visible", timeout: 5_000 });
 
-          // Wait for the footer link inside the popover.
-          const diagnoseBtn = page.getByText("Diagnose full breakdown");
-          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
-
-          // Click the footer link — triggers onDiagnose() → MetricDiagnosticModal.
-          await diagnoseBtn.click();
-
-          // The MetricDiagnosticModal renders a Radix Dialog with the header
-          // text "Metric diagnostic".  Wait for it to appear.
-          const dialogHeader = page.getByText("Metric diagnostic", {
-            exact: false,
-          });
-          await dialogHeader.waitFor({ state: "visible", timeout: 5_000 });
-
-          const headerText = await dialogHeader.first().textContent();
+          const eyebrowText = await eyebrow.first().textContent();
           assert(
-            headerText?.includes("Metric diagnostic") ?? false,
-            `Expected "Metric diagnostic" in the modal header, got: "${headerText}"`,
+            eyebrowText?.includes("Metric breakdown") ?? false,
+            `Expected "Metric breakdown" in the modal header, got: "${eyebrowText}"`,
           );
         } finally {
           await ctx.close();
@@ -732,14 +741,13 @@ async function main() {
       },
     );
 
-    // ── Test 10: MetricDiagnosticModal concept list — standard metric ────────
+    // ── Test 10: KpiDrilldownModal concept breakdown — standard metric ───────
     // Opens the modal via "Diagnose full breakdown" on the "Total spend" tile
-    // with 3 synthetic concept rows injected.  Asserts the modal's concept list
-    // section ("Top IAP library concepts driving this metric") is visible and
-    // at least two concept-name rows appear — catching regressions in data
-    // mapping, empty-concepts path, or missing refValue inside the modal.
+    // with 3 synthetic concept rows injected.  The default breakdown dimension
+    // is "concept", so switching to Table view must list at least two concept
+    // rows — catching regressions in data mapping or the empty-concepts path.
     await test(
-      'MetricDiagnosticModal: standard metric (spend) shows ≥2 concept rows',
+      'KpiDrilldownModal: standard metric (spend) shows ≥2 concept rows',
       async () => {
         const ctx = await browser.newContext({
           viewport: { width: 1440, height: 900 },
@@ -830,55 +838,31 @@ async function main() {
             waitUntil: "domcontentloaded",
           });
 
-          await page
-            .getByText("Account Totals", { exact: false })
-            .waitFor({ state: "visible", timeout: 20_000 });
+          // Open the drill-down for the "Total spend" tile.
+          const modal = await openDrilldown(page, "Total spend");
 
-          // Hover the "Total spend" tile to open its popover.
-          const tileBtn = page
-            .locator("button")
-            .filter({ hasText: "Total spend" })
-            .first();
-          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
-          await tileBtn.hover();
+          // Default breakdown is "concept". Switch to Table view.
+          await toTableView(page);
 
-          // Click the "Diagnose full breakdown" footer link.
-          const diagnoseBtn = page.getByText("Diagnose full breakdown");
-          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
-          await diagnoseBtn.click();
-
-          // Wait for the MetricDiagnosticModal to appear.
-          const dialogHeader = page.getByText("Metric diagnostic", { exact: false });
-          await dialogHeader.waitFor({ state: "visible", timeout: 8_000 });
-
-          // The concept-list section heading must be present — this confirms the
-          // modal took the concepts.length >= 1 branch (not the empty-state path).
-          const conceptHeading = page.getByText(
-            "Top IAP library concepts driving this metric",
-            { exact: false },
-          );
-          await conceptHeading.waitFor({ state: "visible", timeout: 5_000 });
-
-          // Both injected concept names must appear as rows in the list.
-          const bodyText = (await page.locator("body").textContent()) ?? "";
+          // Both injected concept names must appear as rows in the table.
+          const table = modal.locator('[data-testid="kpi-drilldown-table"]');
+          const bodyText = (await table.textContent()) ?? "";
           assert(
             bodyText.includes("Concept Alpha"),
-            `MetricDiagnosticModal (spend) must show "Concept Alpha" in concept list. ` +
-              `Body text did not contain it.`,
+            `KpiDrilldownModal (spend) must show "Concept Alpha" in the concept table. ` +
+              `Table text did not contain it.`,
           );
           assert(
             bodyText.includes("Concept Beta"),
-            `MetricDiagnosticModal (spend) must show "Concept Beta" in concept list. ` +
-              `Body text did not contain it.`,
+            `KpiDrilldownModal (spend) must show "Concept Beta" in the concept table. ` +
+              `Table text did not contain it.`,
           );
 
-          // Confirm ≥2 concept-row buttons are rendered inside the modal dialog.
-          const dialog = page.locator('[role="dialog"]');
-          const conceptRows = dialog.locator('button').filter({ hasText: /Concept/ });
-          const rowCount = await conceptRows.count();
+          // Confirm ≥2 data rows are rendered in the table body.
+          const rowCount = await table.locator("tbody tr").count();
           assert(
             rowCount >= 2,
-            `MetricDiagnosticModal (spend) must render ≥2 concept rows, got ${rowCount}.`,
+            `KpiDrilldownModal (spend) must render ≥2 concept rows, got ${rowCount}.`,
           );
         } finally {
           await ctx.close();
@@ -886,12 +870,12 @@ async function main() {
       },
     );
 
-    // ── Test 11: MetricDiagnosticModal concept list — result-event metric ────
+    // ── Test 11: KpiDrilldownModal concept breakdown — result-event metric ───
     // Same flow as Test 10 but uses the "Mobile app installs" result-event tile.
-    // The modal scopes concepts via topConceptsForMetric() with isResultEvent=true,
-    // filtering by eventKey — a different code path from standard metrics.
+    // buildAccountBreakdown filters cell rows by the event key for result:*
+    // metrics — a different code path from standard metrics.
     await test(
-      'MetricDiagnosticModal: result-event metric (Mobile app installs) shows ≥2 concept rows',
+      'KpiDrilldownModal: result-event metric (Mobile app installs) shows ≥2 concept rows',
       async () => {
         const ctx = await browser.newContext({
           viewport: { width: 1440, height: 900 },
@@ -991,71 +975,47 @@ async function main() {
             waitUntil: "domcontentloaded",
           });
 
-          await page
-            .getByText("Account Totals", { exact: false })
-            .waitFor({ state: "visible", timeout: 20_000 });
+          // Open the drill-down for the result-event tile.
+          const modal = await openDrilldown(page, "Mobile app installs");
 
-          // Hover the result-event tile.
-          const tileBtn = page
-            .locator("button")
-            .filter({ hasText: "Mobile app installs" })
-            .first();
-          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
-          await tileBtn.hover();
-
-          // Click "Diagnose full breakdown" to open the modal.
-          const diagnoseBtn = page.getByText("Diagnose full breakdown");
-          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
-          await diagnoseBtn.click();
-
-          // Wait for the modal to open.
-          const dialogHeader = page.getByText("Metric diagnostic", { exact: false });
-          await dialogHeader.waitFor({ state: "visible", timeout: 8_000 });
-
-          // The concept-list heading must be present.
-          const conceptHeading = page.getByText(
-            "Top IAP library concepts driving this metric",
-            { exact: false },
-          );
-          await conceptHeading.waitFor({ state: "visible", timeout: 5_000 });
+          // Default breakdown is "concept". Switch to Table view.
+          await toTableView(page);
 
           // Both injected concept names must appear.
-          const bodyText = (await page.locator("body").textContent()) ?? "";
+          const table = modal.locator('[data-testid="kpi-drilldown-table"]');
+          const bodyText = (await table.textContent()) ?? "";
           assert(
             bodyText.includes("Concept Alpha"),
-            `MetricDiagnosticModal (result-event) must show "Concept Alpha" in concept list. ` +
-              `Body text did not contain it.`,
+            `KpiDrilldownModal (result-event) must show "Concept Alpha" in the concept table. ` +
+              `Table text did not contain it.`,
           );
           assert(
             bodyText.includes("Concept Beta"),
-            `MetricDiagnosticModal (result-event) must show "Concept Beta" in concept list. ` +
-              `Body text did not contain it.`,
+            `KpiDrilldownModal (result-event) must show "Concept Beta" in the concept table. ` +
+              `Table text did not contain it.`,
           );
 
-          // Confirm ≥2 concept-row buttons are rendered inside the modal dialog.
-          const dialog = page.locator('[role="dialog"]');
-          const conceptRows = dialog.locator('button').filter({ hasText: /Concept/ });
-          const rowCount = await conceptRows.count();
+          // Confirm ≥2 data rows are rendered in the table body.
+          const rowCount = await table.locator("tbody tr").count();
           assert(
             rowCount >= 2,
-            `MetricDiagnosticModal (result-event) must render ≥2 concept rows, got ${rowCount}.`,
+            `KpiDrilldownModal (result-event) must render ≥2 concept rows, got ${rowCount}.`,
           );
         } finally {
           await ctx.close();
         }
       },
     );
-    // ── Test 12: SegmentGridModal opens and renders ≥1 segment row ────────────
-    // Opens MetricDiagnosticModal for the "Total spend" standard metric and
-    // then clicks the "Avatar × placement breakdown" drilldown button. Asserts
-    // that SegmentGridModal opens and renders at least one avatar segment row.
-    // The bookster fixture ships with 62 demographic rows (18 unique age×gender
-    // combos) so avatars.length will be > 0 without any synthetic injection.
-    // Catches regressions in SegmentGridModal's data-mapping, empty-cell
-    // handling, or the avatar-segment pivot that would otherwise render silently
-    // empty.
+    // ── Test 12: KpiDrilldownModal avatar breakdown renders ≥1 segment row ────
+    // Opens KpiDrilldownModal for the "Total spend" standard metric, selects the
+    // "avatar" breakdown dimension (avatar segments are now a dimension inside
+    // the modal, not a separate SegmentGridModal), switches to Table view, and
+    // asserts at least one age-group label appears.  The bookster fixture ships
+    // with 62 demographic rows (18 unique age×gender combos) so the avatar
+    // dimension is offered and produces rows.  Catches regressions in the
+    // avatar row builder that would otherwise render silently empty.
     await test(
-      "SegmentGridModal: 'Avatar × placement breakdown' opens and renders ≥1 segment row",
+      "KpiDrilldownModal: avatar breakdown renders ≥1 segment row",
       async () => {
         const ctx = await browser.newContext({
           viewport: { width: 1440, height: 900 },
@@ -1067,56 +1027,17 @@ async function main() {
             waitUntil: "domcontentloaded",
           });
 
-          // Wait for the metric grid.
-          await page
-            .getByText("Account Totals", { exact: false })
-            .waitFor({ state: "visible", timeout: 20_000 });
+          // Open the drill-down for the "Total spend" tile.
+          const modal = await openDrilldown(page, "Total spend");
 
-          // Hover the "Total spend" tile to open the hover popover.
-          const tileBtn = page
-            .locator("button")
-            .filter({ hasText: "Total spend" })
-            .first();
-          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
-          await tileBtn.hover();
+          // Select the "avatar" breakdown dimension, then switch to Table view.
+          await modal.getByLabel("Breakdown").selectOption("avatar");
+          await toTableView(page);
 
-          // Click "Diagnose full breakdown" to open MetricDiagnosticModal.
-          const diagnoseBtn = page.getByText("Diagnose full breakdown");
-          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
-          await diagnoseBtn.click();
-
-          // Wait for MetricDiagnosticModal to open.
-          const diagnosticHeader = page.getByText("Metric diagnostic", {
-            exact: false,
-          });
-          await diagnosticHeader.waitFor({ state: "visible", timeout: 8_000 });
-
-          // The "Avatar × placement breakdown" button must be present for a
-          // non-result-event metric (scope="account", analysis present,
-          // !metric.isResultEvent branch in MetricDiagnosticModal.tsx).
-          // Use getByRole("button") to avoid matching the dialog description
-          // text which also contains "avatar × placement breakdown" as a phrase.
-          const segmentBtn = page.getByRole("button", {
-            name: "Avatar × placement breakdown",
-          });
-          await segmentBtn.waitFor({ state: "visible", timeout: 5_000 });
-
-          // Click the drilldown button to open SegmentGridModal.
-          await segmentBtn.click();
-
-          // SegmentGridModal renders a Dialog whose title is
-          // "{metric.label} — avatar × placement".
-          const segmentTitle = page.getByText(
-            "Total spend — avatar × placement",
-            { exact: false },
-          );
-          await segmentTitle.waitFor({ state: "visible", timeout: 8_000 });
-
-          // The bookster fixture has 18 unique avatar segments
-          // (age × gender combos).  Confirm at least one segment row is
-          // rendered — any age-group label is a reliable DOM signal.
-          // SegmentGridModal renders each row's age in a <div> inside <td>.
-          const bodyText = (await page.locator("body").textContent()) ?? "";
+          // The bookster fixture has 18 unique avatar segments (age × gender).
+          // Confirm at least one age-group label appears in the table.
+          const table = modal.locator('[data-testid="kpi-drilldown-table"]');
+          const bodyText = (await table.textContent()) ?? "";
           const hasSegmentRows =
             bodyText.includes("25-34") ||
             bodyText.includes("18-24") ||
@@ -1124,16 +1045,8 @@ async function main() {
             bodyText.includes("45-54");
           assert(
             hasSegmentRows,
-            "SegmentGridModal must render at least one avatar segment row " +
-              "(age-group label not found in page text — grid may be empty).",
-          );
-
-          // Confirm the "All avatars" placement-marginal footer row is also
-          // present — it renders whenever avatars.length > 0.
-          assert(
-            bodyText.includes("All avatars"),
-            'SegmentGridModal must render the "All avatars" placement-marginal ' +
-              "footer row when avatar segments exist.",
+            "KpiDrilldownModal avatar breakdown must render at least one segment row " +
+              "(age-group label not found in the table — breakdown may be empty).",
           );
         } finally {
           await ctx.close();
@@ -1141,17 +1054,14 @@ async function main() {
       },
     );
 
-    // ── Test 13a: SegmentGridModal placement marginals — spend metric ─────────
-    // Opens SegmentGridModal via the "Total spend" tile (default tile, no
-    // localStorage override needed).  Asserts:
-    //   • "All avatars" placement-marginal row is present (sub-label visible)
-    //   • Placement cells show dollar values (spend = usd(t.spend, 0)) rather
-    //     than the "—" sentinel that would appear if metricValueForSegment()
-    //     hit an unhandled branch.
-    // The bookster fixture ships 19 v3 + 19 c4e placement rows so topPlacements()
-    // will always return columns with non-zero spend.
+    // ── Test 13a: KpiDrilldownModal placement breakdown — spend metric ────────
+    // Opens KpiDrilldownModal via the "Total spend" tile (default tile, no
+    // localStorage override needed), selects the "placement" breakdown, switches
+    // to Table view, and asserts the metric column shows dollar values ("$")
+    // rather than "n/a".  The bookster fixture ships 19 v3 + 19 c4e placement
+    // rows so the placement breakdown always produces rows with real spend.
     await test(
-      "SegmentGridModal placement marginals — spend metric shows dollar values in 'All avatars' row",
+      "KpiDrilldownModal placement breakdown — spend metric shows dollar values",
       async () => {
         const ctx = await browser.newContext({
           viewport: { width: 1440, height: 900 },
@@ -1163,67 +1073,22 @@ async function main() {
             waitUntil: "domcontentloaded",
           });
 
-          await page
-            .getByText("Account Totals", { exact: false })
-            .waitFor({ state: "visible", timeout: 20_000 });
+          // Open the drill-down for the "Total spend" tile.
+          const modal = await openDrilldown(page, "Total spend");
 
-          // Hover the "Total spend" tile.
-          const tileBtn = page
-            .locator("button")
-            .filter({ hasText: "Total spend" })
-            .first();
-          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
-          await tileBtn.hover();
+          // Select the "placement" breakdown, then switch to Table view.
+          await modal.getByLabel("Breakdown").selectOption("placement");
+          await toTableView(page);
 
-          // Open MetricDiagnosticModal via the footer link.
-          const diagnoseBtn = page.getByText("Diagnose full breakdown");
-          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
-          await diagnoseBtn.click();
-
-          const diagnosticHeader = page.getByText("Metric diagnostic", {
-            exact: false,
-          });
-          await diagnosticHeader.waitFor({ state: "visible", timeout: 8_000 });
-
-          // Open SegmentGridModal via the drilldown button.
-          const segmentBtn = page.getByRole("button", {
-            name: "Avatar × placement breakdown",
-          });
-          await segmentBtn.waitFor({ state: "visible", timeout: 5_000 });
-          await segmentBtn.click();
-
-          // Wait for SegmentGridModal to open.
-          const segmentTitle = page.getByText(
-            "Total spend — avatar × placement",
-            { exact: false },
-          );
-          await segmentTitle.waitFor({ state: "visible", timeout: 8_000 });
-
-          // Locate the "All avatars" placement-marginal footer row inside the
-          // dialog and read its full text content.
-          const dialog = page.locator('[role="dialog"]').last();
-          const allAvatarsRow = dialog
-            .locator("tr")
-            .filter({ hasText: "All avatars" });
-          await allAvatarsRow.waitFor({ state: "visible", timeout: 5_000 });
-
-          const rowText = (await allAvatarsRow.textContent()) ?? "";
-
-          // Sub-label confirms we found the right row.
+          // For the spend metric the metric column formats as "$X" / "$X,XXX".
+          // The table must include at least one dollar sign — a missing "$"
+          // would mean every placement row rendered "n/a".
+          const table = modal.locator('[data-testid="kpi-drilldown-table"]');
+          const tableText = (await table.textContent()) ?? "";
           assert(
-            rowText.includes("placement marginals"),
-            `"All avatars" row must contain the "placement marginals" sub-label. ` +
-              `Row text: "${rowText}"`,
-          );
-
-          // For the spend metric, metricValueForSegment() returns usd(t.spend, 0)
-          // which formats as "$X" or "$X,XXX".  The row must include at least one
-          // dollar sign — a missing "$" means all placement cells rendered "—",
-          // signalling a broken metricValueForSegment() branch.
-          assert(
-            rowText.includes("$"),
-            `"All avatars" row for the spend metric must contain at least one dollar ` +
-              `value in the placement cells. Row text: "${rowText}"`,
+            tableText.includes("$"),
+            `Placement breakdown for the spend metric must contain at least one dollar ` +
+              `value in the metric column. Table text: "${tableText}"`,
           );
         } finally {
           await ctx.close();
@@ -1231,16 +1096,14 @@ async function main() {
       },
     );
 
-    // ── Test 13b: SegmentGridModal placement marginals — link_ctr metric ──────
+    // ── Test 13b: KpiDrilldownModal placement breakdown — link_ctr metric ─────
     // Same flow as 13a but uses the "Link CTR" tile (another default tile so no
-    // localStorage override needed).  Asserts:
-    //   • "All avatars" placement-marginal row is present
-    //   • Placement cells show percentage values (link_ctr = "X.XX%") rather than
-    //     "—", which would indicate an unhandled switch case in metricValueForSegment().
-    // The fixture placement rows carry both Link clicks and Impressions so the
-    // link_ctr branch (impressions > 0 → percentage) should produce real values.
+    // localStorage override needed).  Selects the "placement" breakdown, Table
+    // view, and asserts the metric column shows percentage values ("%") rather
+    // than "n/a".  The fixture placement rows carry both Link clicks and
+    // Impressions so the link_ctr ratio produces real percentages.
     await test(
-      "SegmentGridModal placement marginals — link_ctr metric shows percentage values in 'All avatars' row",
+      "KpiDrilldownModal placement breakdown — link_ctr metric shows percentage values",
       async () => {
         const ctx = await browser.newContext({
           viewport: { width: 1440, height: 900 },
@@ -1254,68 +1117,22 @@ async function main() {
             waitUntil: "domcontentloaded",
           });
 
-          await page
-            .getByText("Account Totals", { exact: false })
-            .waitFor({ state: "visible", timeout: 20_000 });
+          // Open the drill-down for the "Link CTR" tile.
+          const modal = await openDrilldown(page, "Link CTR");
 
-          // Hover the "Link CTR" tile.
-          const tileBtn = page
-            .locator("button")
-            .filter({ hasText: "Link CTR" })
-            .first();
-          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
-          await tileBtn.hover();
+          // Select the "placement" breakdown, then switch to Table view.
+          await modal.getByLabel("Breakdown").selectOption("placement");
+          await toTableView(page);
 
-          // Open MetricDiagnosticModal.
-          const diagnoseBtn = page.getByText("Diagnose full breakdown");
-          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
-          await diagnoseBtn.click();
-
-          const diagnosticHeader = page.getByText("Metric diagnostic", {
-            exact: false,
-          });
-          await diagnosticHeader.waitFor({ state: "visible", timeout: 8_000 });
-
-          // Open SegmentGridModal via the drilldown button.
-          const segmentBtn = page.getByRole("button", {
-            name: "Avatar × placement breakdown",
-          });
-          await segmentBtn.waitFor({ state: "visible", timeout: 5_000 });
-          await segmentBtn.click();
-
-          // Wait for SegmentGridModal to open — title will include the metric label.
-          const segmentTitle = page.getByText(
-            "Link CTR — avatar × placement",
-            { exact: false },
-          );
-          await segmentTitle.waitFor({ state: "visible", timeout: 8_000 });
-
-          // Locate the "All avatars" placement-marginal footer row inside the
-          // SegmentGridModal dialog (use `.last()` because MetricDiagnosticModal
-          // may still be stacked behind it as a second dialog).
-          const dialog = page.locator('[role="dialog"]').last();
-          const allAvatarsRow = dialog
-            .locator("tr")
-            .filter({ hasText: "All avatars" });
-          await allAvatarsRow.waitFor({ state: "visible", timeout: 5_000 });
-
-          const rowText = (await allAvatarsRow.textContent()) ?? "";
-
-          // Sub-label confirms we found the right row.
+          // For the link_ctr metric the ratio (linkClicks / impressions) * 100
+          // formats as "X.XX%".  At least one row must show a "%" — an all-"n/a"
+          // table would indicate a broken ratio computation.
+          const table = modal.locator('[data-testid="kpi-drilldown-table"]');
+          const tableText = (await table.textContent()) ?? "";
           assert(
-            rowText.includes("placement marginals"),
-            `"All avatars" row must contain the "placement marginals" sub-label. ` +
-              `Row text: "${rowText}"`,
-          );
-
-          // For the link_ctr metric, metricValueForSegment() computes
-          // (linkClicks / impressions) * 100 and formats as "X.XX%".  At least
-          // one placement cell must show a "%" — if all cells show "—" the
-          // switch case is broken or the arithmetic produced null unexpectedly.
-          assert(
-            rowText.includes("%"),
-            `"All avatars" row for the link_ctr metric must contain at least one ` +
-              `percentage value in the placement cells. Row text: "${rowText}"`,
+            tableText.includes("%"),
+            `Placement breakdown for the link_ctr metric must contain at least one ` +
+              `percentage value in the metric column. Table text: "${tableText}"`,
           );
         } finally {
           await ctx.close();
@@ -1323,13 +1140,14 @@ async function main() {
       },
     );
 
-    // ── Test 13: result-event guard — drilldown button absent ─────────────────
-    // For result-event metrics (isResultEvent=true) MetricDiagnosticModal
-    // replaces the "Avatar × placement breakdown" button with an info notice
-    // explaining why the breakdown is unavailable.  This test confirms the
-    // guard works: the button must not appear, and the info notice must.
+    // ── Test 13: result-event × avatar restriction notice ─────────────────────
+    // result:* metrics can't be honestly scoped to the avatar dimension (the
+    // demographic export carries no result-type column — see
+    // dimensionMetricRestriction in kpiBreakdown.ts).  Selecting the "avatar"
+    // breakdown for a result-event metric must render the restriction notice
+    // and NO table.
     await test(
-      "MetricDiagnosticModal: 'Avatar × placement breakdown' button absent for result-event metric",
+      "KpiDrilldownModal: result-event metric + avatar breakdown shows restriction notice and no table",
       async () => {
         const ctx = await browser.newContext({
           viewport: { width: 1440, height: 900 },
@@ -1415,64 +1233,43 @@ async function main() {
             waitUntil: "domcontentloaded",
           });
 
-          // Wait for the metric grid.
-          await page
-            .getByText("Account Totals", { exact: false })
-            .waitFor({ state: "visible", timeout: 20_000 });
+          // Open the drill-down for the result-event tile.
+          const modal = await openDrilldown(page, "Mobile app installs");
 
-          // Hover the result-event tile.
-          const tileBtn = page
-            .locator("button")
-            .filter({ hasText: "Mobile app installs" })
-            .first();
-          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
-          await tileBtn.hover();
+          // Select the "avatar" breakdown — result:* metrics can't be scoped to
+          // the demographic dimension, so a restriction notice must render.
+          await modal.getByLabel("Breakdown").selectOption("avatar");
 
-          // Click "Diagnose full breakdown" to open MetricDiagnosticModal.
-          const diagnoseBtn = page.getByText("Diagnose full breakdown");
-          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
-          await diagnoseBtn.click();
-
-          // Wait for the modal.
-          const diagnosticHeader = page.getByText("Metric diagnostic", {
-            exact: false,
-          });
-          await diagnosticHeader.waitFor({ state: "visible", timeout: 8_000 });
-
-          // The drilldown button must NOT be present for a result-event metric.
-          // Use getByRole("button") to target only the interactive button, not
-          // any dialog description text that mentions the same phrase.
-          const segmentBtnCount = await page
-            .getByRole("button", { name: "Avatar × placement breakdown" })
-            .count();
+          // The restriction notice must appear (dimensionMetricRestriction copy).
+          const bodyText = (await modal.textContent()) ?? "";
           assert(
-            segmentBtnCount === 0,
-            `"Avatar × placement breakdown" button must be absent for a result-event metric, ` +
-              `but ${segmentBtnCount} instance(s) were found.`,
+            bodyText.includes("can't be honestly scoped to this dimension"),
+            'The restriction notice ("can\'t be honestly scoped to this dimension") ' +
+              "must appear for a result-event metric under the avatar breakdown. " +
+              `Got modal text: "${bodyText.slice(0, 300)}"`,
           );
 
-          // The result-event info notice must be shown instead.
-          const bodyText = (await page.locator("body").textContent()) ?? "";
+          // No table must render while the restriction is active.
+          const tableCount = await modal
+            .locator('[data-testid="kpi-drilldown-table"]')
+            .count();
           assert(
-            bodyText.includes(
-              "Avatar × placement breakdown isn't available for",
-            ),
-            'The result-event info notice ("Avatar × placement breakdown isn\'t available for") ' +
-              "must appear in place of the drilldown button.",
+            tableCount === 0,
+            `No kpi-drilldown-table must render for a result-event metric under the ` +
+              `avatar breakdown, but found ${tableCount}.`,
           );
         } finally {
           await ctx.close();
         }
       },
     );
-    // ── Test 14: SegmentGridModal empty-state when demographic_registration_signal is [] ──
+    // ── Test 14: KpiDrilldownModal — avatar dimension absent when no demo rows ─
     // Builds a seed where demographic_registration_signal is an empty array so
-    // buildAvatarSegments() returns [] and avatars.length === 0.  The modal must
-    // render the "No demographic rows for this selection" message and must NOT
-    // render the grid table.  Catches regressions in the empty-state branch
-    // (wrong message text, missing container, or a JS crash on zero rows).
+    // listBreakdownDimensions() does NOT offer the "avatar" dimension.  The
+    // Breakdown <select> must therefore have no "avatar" option — the new-modal
+    // equivalent of the old empty-grid state.
     await test(
-      "SegmentGridModal: empty-state renders when no demographic rows exist",
+      "KpiDrilldownModal: Breakdown select has no avatar option when no demographic rows exist",
       async () => {
         const ctx = await browser.newContext({
           viewport: { width: 1440, height: 900 },
@@ -1480,11 +1277,9 @@ async function main() {
         const page = await ctx.newPage();
         try {
           // Build a seed with:
-          //   • 3 concept rows so MetricDiagnosticModal shows the full body
-          //     (metric.value non-null) and renders the "Avatar × placement
-          //     breakdown" drilldown button.
-          //   • demographic_registration_signal: [] so SegmentGridModal takes
-          //     the empty-state branch (avatars.length === 0).
+          //   • 3 concept rows so the modal has a populated concept breakdown.
+          //   • demographic_registration_signal: [] so listBreakdownDimensions()
+          //     omits the "avatar" dimension entirely.
           const modifiedSeed = JSON.parse(SEED_FIXTURE_BODY);
           const bookster = modifiedSeed.ad_accounts.find(
             (a: { id: string }) => a.id === ACCOUNT,
@@ -1570,81 +1365,35 @@ async function main() {
             waitUntil: "domcontentloaded",
           });
 
-          // Wait for the metric grid.
-          await page
-            .getByText("Account Totals", { exact: false })
-            .waitFor({ state: "visible", timeout: 20_000 });
+          // Open the drill-down for the "Total spend" tile.
+          const modal = await openDrilldown(page, "Total spend");
 
-          // Hover the "Total spend" tile to open the hover popover.
-          const tileBtn = page
-            .locator("button")
-            .filter({ hasText: "Total spend" })
-            .first();
-          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
-          await tileBtn.hover();
-
-          // Click "Diagnose full breakdown" to open MetricDiagnosticModal.
-          const diagnoseBtn = page.getByText("Diagnose full breakdown");
-          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
-          await diagnoseBtn.click();
-
-          // Wait for MetricDiagnosticModal to open.
-          const diagnosticHeader = page.getByText("Metric diagnostic", {
-            exact: false,
-          });
-          await diagnosticHeader.waitFor({ state: "visible", timeout: 8_000 });
-
-          // Click the "Avatar × placement breakdown" drilldown button to open
-          // SegmentGridModal with the empty demographic signal.
-          const segmentBtn = page.getByRole("button", {
-            name: "Avatar × placement breakdown",
-          });
-          await segmentBtn.waitFor({ state: "visible", timeout: 5_000 });
-          await segmentBtn.click();
-
-          // SegmentGridModal's dialog title must appear — confirms the modal
-          // opened and did not crash on zero rows.
-          const segmentTitle = page.getByText(
-            "Total spend — avatar × placement",
-            { exact: false },
-          );
-          await segmentTitle.waitFor({ state: "visible", timeout: 8_000 });
-
-          // The empty-state message must be visible.
-          const emptyMsg = page.getByText(
-            "No demographic rows for this selection",
-            { exact: false },
-          );
-          await emptyMsg.waitFor({ state: "visible", timeout: 5_000 });
-
-          const bodyText = (await page.locator("body").textContent()) ?? "";
+          // The Breakdown <select> must not offer an "avatar" option, since the
+          // account has no demographic rows.
+          const breakdownSelect = modal.getByLabel("Breakdown");
+          await breakdownSelect.waitFor({ state: "visible", timeout: 5_000 });
+          const optionValues = await breakdownSelect
+            .locator("option")
+            .evaluateAll((opts) =>
+              opts.map((o) => (o as HTMLOptionElement).value),
+            );
           assert(
-            bodyText.includes("No demographic rows for this selection"),
-            'SegmentGridModal empty-state must show "No demographic rows for this selection".',
-          );
-
-          // The grid table must NOT be rendered in the empty-state branch.
-          // SegmentGridModal's table contains the "Avatar segment" column header.
-          assert(
-            !bodyText.includes("Avatar segment"),
-            'SegmentGridModal must not render the grid table ("Avatar segment" header) ' +
-              "when avatars.length === 0.",
+            !optionValues.includes("avatar"),
+            `Breakdown select must not include an "avatar" option when there are no ` +
+              `demographic rows. Got option values: ${JSON.stringify(optionValues)}`,
           );
         } finally {
           await ctx.close();
         }
       },
     );
-    // ── Test 15a: SegmentGridModal avatar blended column — impressions metric ──
-    // Opens SegmentGridModal for the "Impressions" default tile and asserts:
-    //   • The "Blended" column header is visible in the dialog.
-    //   • The first avatar-segment row's blended cell shows a non-empty
-    //     formatted integer (num(t.impressions)) rather than "—", catching
-    //     any silent regression in the impressions case of metricValueForSegment().
-    // The bookster fixture has 62 demographic rows so at least one avatar
-    // segment exists and the grid table is rendered.
+    // ── Test 15a: KpiDrilldownModal avatar breakdown — impressions metric ─────
+    // Opens KpiDrilldownModal for the "Impressions" default tile, selects the
+    // "avatar" breakdown, switches to Table view, and asserts the metric column
+    // shows a numeric value (not "n/a") for the impressions metric.  The
+    // bookster fixture has 62 demographic rows so the avatar dimension exists.
     await test(
-      "SegmentGridModal avatar blended column — impressions metric shows a numeric value",
+      "KpiDrilldownModal avatar breakdown — impressions metric shows a numeric value",
       async () => {
         const ctx = await browser.newContext({
           viewport: { width: 1440, height: 900 },
@@ -1662,72 +1411,21 @@ async function main() {
             .getByText("Account Totals", { exact: false })
             .waitFor({ state: "visible", timeout: 20_000 });
 
-          // Hover the "Impressions" tile to open the hover popover.
-          const tileBtn = page
-            .locator("button")
-            .filter({ hasText: "Impressions" })
-            .first();
-          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
-          await tileBtn.hover();
+          // Open the drill-down for the "Impressions" tile.
+          const modal = await openDrilldown(page, "Impressions");
 
-          // Open MetricDiagnosticModal via the footer link.
-          const diagnoseBtn = page.getByText("Diagnose full breakdown");
-          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
-          await diagnoseBtn.click();
+          // Select the "avatar" breakdown, then switch to Table view.
+          await modal.getByLabel("Breakdown").selectOption("avatar");
+          await toTableView(page);
 
-          const diagnosticHeader = page.getByText("Metric diagnostic", {
-            exact: false,
-          });
-          await diagnosticHeader.waitFor({ state: "visible", timeout: 8_000 });
-
-          // Click "Avatar × placement breakdown" to open SegmentGridModal.
-          const segmentBtn = page.getByRole("button", {
-            name: "Avatar × placement breakdown",
-          });
-          await segmentBtn.waitFor({ state: "visible", timeout: 5_000 });
-          await segmentBtn.click();
-
-          // Wait for SegmentGridModal — title includes the metric label.
-          const segmentTitle = page.getByText(
-            "Impressions — avatar × placement",
-            { exact: false },
-          );
-          await segmentTitle.waitFor({ state: "visible", timeout: 8_000 });
-
-          const dialog = page.locator('[role="dialog"]').last();
-
-          // "Blended" column header must be visible in the modal.
-          const blendedHeader = dialog.locator("th").filter({ hasText: "Blended" });
-          await blendedHeader.waitFor({ state: "visible", timeout: 5_000 });
-          const blendedHeaderText = (await blendedHeader.textContent()) ?? "";
+          // The metric column of the first row must show a numeric value, not
+          // "n/a" — impressions sum honestly across demographic rows.
+          const table = modal.locator('[data-testid="kpi-drilldown-table"]');
+          const metricCell = table.locator("tbody tr").first().locator("td").nth(1);
+          const cellText = ((await metricCell.textContent()) ?? "").trim();
           assert(
-            blendedHeaderText.includes("Blended"),
-            `SegmentGridModal must render a "Blended" column header for the ` +
-              `impressions metric. Got: "${blendedHeaderText}"`,
-          );
-
-          // First avatar-segment row (not the "All avatars" footer) — its last
-          // <td> is the blended cell.  metricValueForSegment(impressions) calls
-          // num(t.impressions), which returns a formatted integer.  The cell's
-          // textContent is "{display} {metricLabel}\n{spend} · {results} res",
-          // so "Impressions" (the metric label) must appear AND the display must
-          // not be the "—" sentinel value.
-          const firstAvatarRow = dialog.locator("tbody tr").first();
-          await firstAvatarRow.waitFor({ state: "visible", timeout: 5_000 });
-          const blendedCell = firstAvatarRow.locator("td").last();
-          const cellText = (await blendedCell.textContent()) ?? "";
-
-          assert(
-            cellText.includes("Impressions"),
-            `First avatar row's blended cell must contain the metric label ` +
-              `"Impressions". Got: "${cellText}"`,
-          );
-          // The blended display value must not be the "—" sentinel — that would
-          // indicate metricValueForSegment() returned null for a non-null segment.
-          assert(
-            !cellText.startsWith("—"),
-            `First avatar row's blended cell must not show "—" for the ` +
-              `impressions metric (impressions > 0 should yield a real number). ` +
+            cellText.length > 0 && cellText !== "n/a" && /\d/.test(cellText),
+            `First avatar row's impressions value must be numeric, not "n/a". ` +
               `Got: "${cellText}"`,
           );
         } finally {
@@ -1736,11 +1434,11 @@ async function main() {
       },
     );
 
-    // ── Test 15b: SegmentGridModal avatar blended column — link_clicks metric ──
-    // Same as 15a but for the "Link clicks" default tile, which exercises the
-    // link_clicks case of metricValueForSegment() (num(t.linkClicks)).
+    // ── Test 15b: KpiDrilldownModal avatar breakdown — link_clicks metric ─────
+    // Same as 15a but for the "Link clicks" default tile — exercises the
+    // link_clicks sum in the avatar row builder.
     await test(
-      "SegmentGridModal avatar blended column — link_clicks metric shows a numeric value",
+      "KpiDrilldownModal avatar breakdown — link_clicks metric shows a numeric value",
       async () => {
         const ctx = await browser.newContext({
           viewport: { width: 1440, height: 900 },
@@ -1758,67 +1456,20 @@ async function main() {
             .getByText("Account Totals", { exact: false })
             .waitFor({ state: "visible", timeout: 20_000 });
 
-          // Hover the "Link clicks" tile.
-          const tileBtn = page
-            .locator("button")
-            .filter({ hasText: "Link clicks" })
-            .first();
-          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
-          await tileBtn.hover();
+          // Open the drill-down for the "Link clicks" tile.
+          const modal = await openDrilldown(page, "Link clicks");
 
-          // Open MetricDiagnosticModal.
-          const diagnoseBtn = page.getByText("Diagnose full breakdown");
-          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
-          await diagnoseBtn.click();
+          // Select the "avatar" breakdown, then switch to Table view.
+          await modal.getByLabel("Breakdown").selectOption("avatar");
+          await toTableView(page);
 
-          const diagnosticHeader = page.getByText("Metric diagnostic", {
-            exact: false,
-          });
-          await diagnosticHeader.waitFor({ state: "visible", timeout: 8_000 });
-
-          // Open SegmentGridModal.
-          const segmentBtn = page.getByRole("button", {
-            name: "Avatar × placement breakdown",
-          });
-          await segmentBtn.waitFor({ state: "visible", timeout: 5_000 });
-          await segmentBtn.click();
-
-          const segmentTitle = page.getByText(
-            "Link clicks — avatar × placement",
-            { exact: false },
-          );
-          await segmentTitle.waitFor({ state: "visible", timeout: 8_000 });
-
-          const dialog = page.locator('[role="dialog"]').last();
-
-          // "Blended" column header must be visible.
-          const blendedHeader = dialog.locator("th").filter({ hasText: "Blended" });
-          await blendedHeader.waitFor({ state: "visible", timeout: 5_000 });
-          const blendedHeaderText = (await blendedHeader.textContent()) ?? "";
+          // The metric column of the first row must show a numeric value.
+          const table = modal.locator('[data-testid="kpi-drilldown-table"]');
+          const metricCell = table.locator("tbody tr").first().locator("td").nth(1);
+          const cellText = ((await metricCell.textContent()) ?? "").trim();
           assert(
-            blendedHeaderText.includes("Blended"),
-            `SegmentGridModal must render a "Blended" column header for the ` +
-              `link_clicks metric. Got: "${blendedHeaderText}"`,
-          );
-
-          // First avatar-segment row — blended cell must contain the metric
-          // label "Link clicks" and must not show the "—" sentinel value.
-          // metricValueForSegment(link_clicks) calls num(t.linkClicks) which
-          // produces a positive integer for any row with link click data.
-          const firstAvatarRow = dialog.locator("tbody tr").first();
-          await firstAvatarRow.waitFor({ state: "visible", timeout: 5_000 });
-          const blendedCell = firstAvatarRow.locator("td").last();
-          const cellText = (await blendedCell.textContent()) ?? "";
-
-          assert(
-            cellText.includes("Link clicks"),
-            `First avatar row's blended cell must contain the metric label ` +
-              `"Link clicks". Got: "${cellText}"`,
-          );
-          assert(
-            !cellText.startsWith("—"),
-            `First avatar row's blended cell must not show "—" for the ` +
-              `link_clicks metric (linkClicks > 0 should yield a real number). ` +
+            cellText.length > 0 && cellText !== "n/a" && /\d/.test(cellText),
+            `First avatar row's link_clicks value must be numeric, not "n/a". ` +
               `Got: "${cellText}"`,
           );
         } finally {
@@ -1827,16 +1478,13 @@ async function main() {
       },
     );
 
-    // ── Test 15c: SegmentGridModal avatar blended column — cpa_blended metric ──
-    // Opens SegmentGridModal for the "CPA (blended)" tile.  The blended column
-    // for each avatar segment runs metricValueForSegment(cpa_blended) which
-    // computes spend / results and formats as a dollar value (usd(v)).
-    // Asserts:
-    //   • "Blended" column header is present.
-    //   • The first avatar-segment row's blended cell starts with "$" (a dollar-
-    //     formatted value), not "—" (which would signal null results or a bug).
+    // ── Test 15c: KpiDrilldownModal avatar breakdown — cpa_blended metric ─────
+    // Opens KpiDrilldownModal for the "CPA (blended)" tile, selects the "avatar"
+    // breakdown, and asserts the metric column shows a dollar value ("$").  The
+    // bookster demographic rows carry Results > 0 so spend ÷ results yields a
+    // real CPA for every avatar segment.
     await test(
-      "SegmentGridModal avatar blended column — cpa_blended metric shows a dollar value",
+      "KpiDrilldownModal avatar breakdown — cpa_blended metric shows a dollar value",
       async () => {
         const ctx = await browser.newContext({
           viewport: { width: 1440, height: 900 },
@@ -1861,71 +1509,22 @@ async function main() {
             .getByText("Account Totals", { exact: false })
             .waitFor({ state: "visible", timeout: 20_000 });
 
-          // Hover the "CPA (blended)" tile.
-          const tileBtn = page
-            .locator("button")
-            .filter({ hasText: "CPA (blended)" })
-            .first();
-          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
-          await tileBtn.hover();
+          // Open the drill-down for the "CPA (blended)" tile.
+          const modal = await openDrilldown(page, "CPA (blended)");
 
-          // Open MetricDiagnosticModal.
-          const diagnoseBtn = page.getByText("Diagnose full breakdown");
-          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
-          await diagnoseBtn.click();
+          // Select the "avatar" breakdown, then switch to Table view.
+          await modal.getByLabel("Breakdown").selectOption("avatar");
+          await toTableView(page);
 
-          const diagnosticHeader = page.getByText("Metric diagnostic", {
-            exact: false,
-          });
-          await diagnosticHeader.waitFor({ state: "visible", timeout: 8_000 });
-
-          // Open SegmentGridModal.
-          const segmentBtn = page.getByRole("button", {
-            name: "Avatar × placement breakdown",
-          });
-          await segmentBtn.waitFor({ state: "visible", timeout: 5_000 });
-          await segmentBtn.click();
-
-          const segmentTitle = page.getByText(
-            "CPA (blended) — avatar × placement",
-            { exact: false },
-          );
-          await segmentTitle.waitFor({ state: "visible", timeout: 8_000 });
-
-          const dialog = page.locator('[role="dialog"]').last();
-
-          // "Blended" column header must be visible.
-          const blendedHeader = dialog.locator("th").filter({ hasText: "Blended" });
-          await blendedHeader.waitFor({ state: "visible", timeout: 5_000 });
-          const blendedHeaderText = (await blendedHeader.textContent()) ?? "";
-          assert(
-            blendedHeaderText.includes("Blended"),
-            `SegmentGridModal must render a "Blended" column header for the ` +
-              `cpa_blended metric. Got: "${blendedHeaderText}"`,
-          );
-
-          // First avatar-segment row — blended cell must contain the metric
-          // label "CPA (blended)" and the display value must start with "$".
-          // metricValueForSegment(cpa_blended) computes spend / results via
-          // usd(v).  The bookster demographic rows have Results > 0 so the
-          // CPA formula yields a real dollar value for every avatar segment.
-          const firstAvatarRow = dialog.locator("tbody tr").first();
-          await firstAvatarRow.waitFor({ state: "visible", timeout: 5_000 });
-          const blendedCell = firstAvatarRow.locator("td").last();
-          const cellText = (await blendedCell.textContent()) ?? "";
-
-          assert(
-            cellText.includes("CPA (blended)"),
-            `First avatar row's blended cell must contain the metric label ` +
-              `"CPA (blended)". Got: "${cellText}"`,
-          );
-          // The dollar sign "$" must appear as the first character of the
-          // blended display value (usd() output) — if "$" is absent at the
-          // start, blended.display is either "—" (null results) or a wrong format.
+          // The metric column of the first row must start with "$" (usd()
+          // format) — spend ÷ results yields a real CPA for every segment.
+          const table = modal.locator('[data-testid="kpi-drilldown-table"]');
+          const metricCell = table.locator("tbody tr").first().locator("td").nth(1);
+          const cellText = ((await metricCell.textContent()) ?? "").trim();
           assert(
             cellText.startsWith("$"),
-            `First avatar row's blended cell must start with "$" for the ` +
-              `cpa_blended metric (usd() format). Got: "${cellText}"`,
+            `First avatar row's cpa_blended value must start with "$" (usd() format). ` +
+              `Got: "${cellText}"`,
           );
         } finally {
           await ctx.close();
@@ -2036,19 +1635,14 @@ async function main() {
       },
     );
 
-    // ── Test 15d: SegmentGridModal avatar blended column — reach metric ────────
-    // accountLevelDeliveryTotal() returns null when multiple result events exist
-    // (to avoid double-counting), so the bookster fixture's 4-event seed would
-    // render the "No data" state and hide the drilldown button.  We inject a
-    // modified seed that has exactly ONE event in bottom_line_totals with a
-    // meaningful reach value so metric.value is non-null.
-    // The demographic rows (unchanged from the fixture) carry Reach data, so
-    // buildAvatarSegments yields non-zero seg.totals.reach and the blended cell
-    // must show a formatted integer rather than "—".
-    // metric.id === "reach" also triggers unavailableOnPlacements in
-    // SegmentGridModal — the description must include the placement-caveat text.
+    // ── Test 15d: KpiDrilldownModal — reach metric across avatar / placement ──
+    // The demographic rows carry Reach, so the "avatar" breakdown must show a
+    // numeric reach value.  Placement rows don't carry reach in this import, so
+    // the "placement" breakdown must instead show the restriction notice
+    // ("don't carry reach or clicks (all)") and NO table — the new-modal
+    // equivalent of the old unavailableOnPlacements warning.
     await test(
-      "SegmentGridModal avatar blended column — reach metric shows a numeric value and unavailableOnPlacements warning",
+      "KpiDrilldownModal: reach metric shows a value under avatar and restriction notice under placement",
       async () => {
         const ctx = await browser.newContext({
           viewport: { width: 1440, height: 900 },
@@ -2116,123 +1710,50 @@ async function main() {
             waitUntil: "domcontentloaded",
           });
 
-          await page
-            .getByText("Account Totals", { exact: false })
-            .waitFor({ state: "visible", timeout: 20_000 });
+          // Open the drill-down for the "Reach" tile.
+          const modal = await openDrilldown(page, "Reach");
 
-          // Hover the "Reach" tile to open the hover popover.
-          const tileBtn = page
-            .locator("button")
-            .filter({ hasText: "Reach" })
-            .first();
-          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
-          await tileBtn.hover();
-
-          // Open MetricDiagnosticModal via the footer link.
-          const diagnoseBtn = page.getByText("Diagnose full breakdown");
-          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
-          await diagnoseBtn.click();
-
-          const diagnosticHeader = page.getByText("Metric diagnostic", {
-            exact: false,
-          });
-          await diagnosticHeader.waitFor({ state: "visible", timeout: 8_000 });
-
-          // Click "Avatar × placement breakdown" to open SegmentGridModal.
-          const segmentBtn = page.getByRole("button", {
-            name: "Avatar × placement breakdown",
-          });
-          await segmentBtn.waitFor({ state: "visible", timeout: 5_000 });
-          await segmentBtn.click();
-
-          // Wait for SegmentGridModal — title includes the metric label.
-          const segmentTitle = page.getByText(
-            "Reach — avatar × placement",
-            { exact: false },
-          );
-          await segmentTitle.waitFor({ state: "visible", timeout: 8_000 });
-
-          const dialog = page.locator('[role="dialog"]').last();
-
-          // "Blended" column header must be visible.
-          const blendedHeader = dialog.locator("th").filter({ hasText: "Blended" });
-          await blendedHeader.waitFor({ state: "visible", timeout: 5_000 });
-          const blendedHeaderText = (await blendedHeader.textContent()) ?? "";
+          // Avatar breakdown: demographic rows carry Reach, so the metric column
+          // must show a numeric value.
+          await modal.getByLabel("Breakdown").selectOption("avatar");
+          await toTableView(page);
+          const table = modal.locator('[data-testid="kpi-drilldown-table"]');
+          const avatarCell = table.locator("tbody tr").first().locator("td").nth(1);
+          const avatarText = ((await avatarCell.textContent()) ?? "").trim();
           assert(
-            blendedHeaderText.includes("Blended"),
-            `SegmentGridModal must render a "Blended" column header for the ` +
-              `reach metric. Got: "${blendedHeaderText}"`,
+            avatarText.length > 0 && avatarText !== "n/a" && /\d/.test(avatarText),
+            `First avatar row's reach value must be numeric, not "n/a". Got: "${avatarText}"`,
           );
 
-          // First avatar-segment row — blended cell must contain the metric
-          // label "Reach" and must NOT show "—".
-          // buildAvatarSegments sums r.Reach for every demographic row, so
-          // seg.totals.reach is a non-null positive integer.
-          // metricValueForSegment(reach) returns num(t.reach) when t.reach != null.
-          const firstAvatarRow = dialog.locator("tbody tr").first();
-          await firstAvatarRow.waitFor({ state: "visible", timeout: 5_000 });
-          const blendedCell = firstAvatarRow.locator("td").last();
-          const cellText = (await blendedCell.textContent()) ?? "";
-
+          // Placement breakdown: placement rows don't carry reach, so the modal
+          // must render the restriction notice and NO table.
+          await modal.getByLabel("Breakdown").selectOption("placement");
+          const modalText = (await modal.textContent()) ?? "";
           assert(
-            cellText.includes("Reach"),
-            `First avatar row's blended cell must contain the metric label ` +
-              `"Reach". Got: "${cellText}"`,
+            modalText.includes("don't carry reach or clicks (all)"),
+            `Placement breakdown for the reach metric must render the restriction notice ` +
+              `("don't carry reach or clicks (all)"). Got modal text: "${modalText.slice(0, 300)}"`,
           );
+          const tableCount = await modal
+            .locator('[data-testid="kpi-drilldown-table"]')
+            .count();
           assert(
-            !cellText.startsWith("—"),
-            `First avatar row's blended cell must not show "—" for the reach ` +
-              `metric (demographic rows carry Reach data). Got: "${cellText}"`,
+            tableCount === 0,
+            `No kpi-drilldown-table must render for the reach metric under the placement ` +
+              `breakdown, but found ${tableCount}.`,
           );
-
-          // The modal description must include the unavailableOnPlacements caveat.
-          // SegmentGridModal appends the placement-caveat sentence when metric.id
-          // is "reach" (unavailableOnPlacements = true in SegmentGridModal.tsx).
-          const fullDialogText = (await dialog.textContent()) ?? "";
-          assert(
-            fullDialogText.includes("placement export doesn't carry this metric"),
-            `SegmentGridModal description must include the unavailableOnPlacements ` +
-              `warning for the reach metric. Got dialog text: "${fullDialogText.slice(0, 300)}"`,
-          );
-
-          // The "All avatars" placement-marginal row must show "—" in the metric
-          // value div of every placement cell for the reach metric.
-          // topPlacements() always sets reach: null on placement totals, so
-          // metricValueForSegment(reach) returns "—" — never a fabricated number.
-          // Each placement cell has two divs: [0] = metric value, [1] = spend
-          // sub-line (always shows a dollar amount). We check only div[0].
-          const allAvatarsRow = dialog.locator("tbody tr").filter({ hasText: "All avatars" });
-          await allAvatarsRow.waitFor({ state: "visible", timeout: 5_000 });
-          // Placement cells are all tds except the first (avatar label) and last (empty blended).
-          const allAvatarsCells = await allAvatarsRow.locator("td").all();
-          // Must have at least 3 cells: label + ≥1 placement + blended-spacer.
-          assert(
-            allAvatarsCells.length >= 3,
-            `"All avatars" row must have ≥3 cells (label + placements + spacer). Got ${allAvatarsCells.length}`,
-          );
-          const placementCells = allAvatarsCells.slice(1, allAvatarsCells.length - 1);
-          for (let i = 0; i < placementCells.length; i++) {
-            // First div = metric value display; must be "—" for unavailable metrics.
-            const metricDiv = placementCells[i].locator("div").first();
-            const metricText = (await metricDiv.textContent()) ?? "";
-            assert(
-              metricText.trim() === "—",
-              `"All avatars" placement cell [${i}] metric-value div must be "—" for the reach metric. ` +
-                `Got: "${metricText}"`,
-            );
-          }
         } finally {
           await ctx.close();
         }
       },
     );
 
-    // ── Test 15e: SegmentGridModal avatar blended column — clicks_all metric ───
-    // Same pattern as 15d: inject a one-event seed so metric.value is non-null,
-    // then assert the blended cell shows a formatted integer (not "—") and the
-    // unavailableOnPlacements warning appears (metric.id === "clicks_all").
+    // ── Test 15e: KpiDrilldownModal — clicks_all across avatar / placement ────
+    // Same pattern as 15d: demographic rows carry Clicks (all) so the avatar
+    // breakdown shows a numeric value; placement rows don't carry it so the
+    // placement breakdown renders the restriction notice and no table.
     await test(
-      "SegmentGridModal avatar blended column — clicks_all metric shows a numeric value and unavailableOnPlacements warning",
+      "KpiDrilldownModal: clicks_all shows a value under avatar and restriction notice under placement",
       async () => {
         const ctx = await browser.newContext({
           viewport: { width: 1440, height: 900 },
@@ -2298,118 +1819,54 @@ async function main() {
             waitUntil: "domcontentloaded",
           });
 
-          await page
-            .getByText("Account Totals", { exact: false })
-            .waitFor({ state: "visible", timeout: 20_000 });
+          // Open the drill-down for the "Clicks (all)" tile.
+          const modal = await openDrilldown(page, "Clicks (all)");
 
-          // Hover the "Clicks (all)" tile.
-          const tileBtn = page
-            .locator("button")
-            .filter({ hasText: "Clicks (all)" })
-            .first();
-          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
-          await tileBtn.hover();
-
-          // Open MetricDiagnosticModal.
-          const diagnoseBtn = page.getByText("Diagnose full breakdown");
-          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
-          await diagnoseBtn.click();
-
-          const diagnosticHeader = page.getByText("Metric diagnostic", {
-            exact: false,
-          });
-          await diagnosticHeader.waitFor({ state: "visible", timeout: 8_000 });
-
-          // Click "Avatar × placement breakdown" to open SegmentGridModal.
-          const segmentBtn = page.getByRole("button", {
-            name: "Avatar × placement breakdown",
-          });
-          await segmentBtn.waitFor({ state: "visible", timeout: 5_000 });
-          await segmentBtn.click();
-
-          // Wait for SegmentGridModal — title includes the metric label.
-          const segmentTitle = page.getByText(
-            "Clicks (all) — avatar × placement",
-            { exact: false },
-          );
-          await segmentTitle.waitFor({ state: "visible", timeout: 8_000 });
-
-          const dialog = page.locator('[role="dialog"]').last();
-
-          // "Blended" column header must be visible.
-          const blendedHeader = dialog.locator("th").filter({ hasText: "Blended" });
-          await blendedHeader.waitFor({ state: "visible", timeout: 5_000 });
-          const blendedHeaderText = (await blendedHeader.textContent()) ?? "";
+          // Avatar breakdown: demographic rows carry Clicks (all), so the metric
+          // column must show a numeric value.
+          await modal.getByLabel("Breakdown").selectOption("avatar");
+          await toTableView(page);
+          const table = modal.locator('[data-testid="kpi-drilldown-table"]');
+          const avatarCell = table.locator("tbody tr").first().locator("td").nth(1);
+          const avatarText = ((await avatarCell.textContent()) ?? "").trim();
           assert(
-            blendedHeaderText.includes("Blended"),
-            `SegmentGridModal must render a "Blended" column header for the ` +
-              `clicks_all metric. Got: "${blendedHeaderText}"`,
+            avatarText.length > 0 && avatarText !== "n/a" && /\d/.test(avatarText),
+            `First avatar row's clicks_all value must be numeric, not "n/a". ` +
+              `Got: "${avatarText}"`,
           );
 
-          // First avatar-segment row — blended cell must contain the metric
-          // label "Clicks (all)" and must NOT show "—".
-          // buildAvatarSegments sums r["Clicks (all)"] into seg.totals.clicksAll,
-          // so metricValueForSegment(clicks_all) returns num(t.clicksAll) ≠ null.
-          const firstAvatarRow = dialog.locator("tbody tr").first();
-          await firstAvatarRow.waitFor({ state: "visible", timeout: 5_000 });
-          const blendedCell = firstAvatarRow.locator("td").last();
-          const cellText = (await blendedCell.textContent()) ?? "";
-
+          // Placement breakdown: placement rows don't carry clicks (all), so the
+          // modal must render the restriction notice and NO table.
+          await modal.getByLabel("Breakdown").selectOption("placement");
+          const modalText = (await modal.textContent()) ?? "";
           assert(
-            cellText.includes("Clicks (all)"),
-            `First avatar row's blended cell must contain the metric label ` +
-              `"Clicks (all)". Got: "${cellText}"`,
+            modalText.includes("don't carry reach or clicks (all)"),
+            `Placement breakdown for the clicks_all metric must render the restriction ` +
+              `notice ("don't carry reach or clicks (all)"). ` +
+              `Got modal text: "${modalText.slice(0, 300)}"`,
           );
+          const tableCount = await modal
+            .locator('[data-testid="kpi-drilldown-table"]')
+            .count();
           assert(
-            !cellText.startsWith("—"),
-            `First avatar row's blended cell must not show "—" for the ` +
-              `clicks_all metric (demographic rows carry clicks_all data). ` +
-              `Got: "${cellText}"`,
+            tableCount === 0,
+            `No kpi-drilldown-table must render for the clicks_all metric under the ` +
+              `placement breakdown, but found ${tableCount}.`,
           );
-
-          // The modal description must include the unavailableOnPlacements caveat.
-          const fullDialogText = (await dialog.textContent()) ?? "";
-          assert(
-            fullDialogText.includes("placement export doesn't carry this metric"),
-            `SegmentGridModal description must include the unavailableOnPlacements ` +
-              `warning for the clicks_all metric. Got dialog text: "${fullDialogText.slice(0, 300)}"`,
-          );
-
-          // The "All avatars" placement-marginal row must show "—" in the metric
-          // value div of every placement cell for clicks_all.  topPlacements()
-          // always sets clicksAll: null on placement totals, so
-          // metricValueForSegment returns "—" — never a fabricated value.
-          // Each placement cell: div[0] = metric value, div[1] = spend sub-line.
-          const allAvatarsRow = dialog.locator("tbody tr").filter({ hasText: "All avatars" });
-          await allAvatarsRow.waitFor({ state: "visible", timeout: 5_000 });
-          const allAvatarsCells = await allAvatarsRow.locator("td").all();
-          assert(
-            allAvatarsCells.length >= 3,
-            `"All avatars" row must have ≥3 cells (label + placements + spacer). Got ${allAvatarsCells.length}`,
-          );
-          const placementCells = allAvatarsCells.slice(1, allAvatarsCells.length - 1);
-          for (let i = 0; i < placementCells.length; i++) {
-            const metricDiv = placementCells[i].locator("div").first();
-            const metricText = (await metricDiv.textContent()) ?? "";
-            assert(
-              metricText.trim() === "—",
-              `"All avatars" placement cell [${i}] metric-value div must be "—" for the clicks_all metric. ` +
-                `Got: "${metricText}"`,
-            );
-          }
         } finally {
           await ctx.close();
         }
       },
     );
 
-    // ── Test 17: MetricDiagnosticModal empty state (null metric value) ────
-    // Injects a seed where total_spend_usd is null so the "Total spend" metric
-    // has value = null (hasData = false).  Opening MetricDiagnosticModal via
-    // "Diagnose full breakdown" must render the honest empty state and omit any
-    // concept rows — catches regressions in the !hasData branch of the modal.
+    // ── Test 17: KpiDrilldownModal empty state (no data for metric) ───────
+    // Injects a seed where total_spend_usd is null and performance_by_cell is
+    // empty, so the "Total spend" metric can't be honestly computed for any
+    // segment.  Opening KpiDrilldownModal via "Diagnose full breakdown" must
+    // render the honest empty state (data-testid="kpi-drilldown-empty") and no
+    // breakdown table — catches regressions in the empty-state branch.
     await test(
-      'MetricDiagnosticModal: null metric value shows "No data for this metric yet" empty state',
+      'KpiDrilldownModal: no data for metric shows the empty state',
       async () => {
         const ctx = await browser.newContext({
           viewport: { width: 1440, height: 900 },
@@ -2421,13 +1878,16 @@ async function main() {
           const bookster = modifiedSeed.ad_accounts.find(
             (a: { id: string }) => a.id === ACCOUNT,
           );
-          // Null out total_spend_usd → metricSourceFromCampaignSummary() sets
-          // source.spend = null → buildMetricCatalog() emits value: null for
-          // the "spend" metric → MetricDiagnosticModal hasData = false.
+          // Null out total_spend_usd and empty every delivery-source array so
+          // no breakdown dimension backs the "spend" metric with real rows →
+          // KpiDrilldownModal renders the honest empty state.
           bookster.iap.campaign_summary.total_spend_usd = null;
-          // Empty performance_by_cell so no concept rows could accidentally
-          // leak through and mask the empty-state branch.
           bookster.iap.analysis.performance_by_cell = [];
+          bookster.iap.analysis.demographic_registration_signal = [];
+          bookster.iap.analysis.v3_variable_performance = [];
+          bookster.iap.analysis.v3_placement_signal = [];
+          bookster.iap.analysis.c4e_placement_signal = [];
+          bookster.iap.analysis.conversion_tracking_signal = null;
 
           await page.route("**/api/metrix/auth/me", (route) =>
             route.fulfill({
@@ -2463,69 +1923,23 @@ async function main() {
             waitUntil: "domcontentloaded",
           });
 
-          await page
-            .getByText("Account Totals", { exact: false })
-            .waitFor({ state: "visible", timeout: 20_000 });
+          // Open the drill-down for the "Total spend" tile — the HoverCard and
+          // footer link are present even when the metric value is null.
+          const modal = await openDrilldown(page, "Total spend");
 
-          // Hover the "Total spend" tile — the HoverCard still opens even
-          // when the metric value is null.
-          const tileBtn = page
-            .locator("button")
-            .filter({ hasText: "Total spend" })
-            .first();
-          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
-          await tileBtn.hover();
+          // ── Assert 1: the empty state is visible ──────────────────────
+          const empty = modal.locator('[data-testid="kpi-drilldown-empty"]');
+          await empty.waitFor({ state: "visible", timeout: 5_000 });
 
-          // The "Diagnose full breakdown" footer link is always present.
-          const diagnoseBtn = page.getByText("Diagnose full breakdown");
-          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
-          await diagnoseBtn.click();
-
-          // Modal header must appear.
-          const dialogHeader = page.getByText("Metric diagnostic", {
-            exact: false,
-          });
-          await dialogHeader.waitFor({ state: "visible", timeout: 8_000 });
-
-          // ── Assert 1: empty-state copy is present ─────────────────────
-          const emptyHeading = page.getByText("No data for this metric yet", {
-            exact: false,
-          });
-          await emptyHeading.waitFor({ state: "visible", timeout: 5_000 });
-          const emptyText = (await emptyHeading.textContent()) ?? "";
+          // ── Assert 2: no breakdown table renders in the empty state ───
+          const tableCount = await modal
+            .locator('[data-testid="kpi-drilldown-table"]')
+            .count();
           assert(
-            emptyText.includes("No data for this metric yet"),
-            `MetricDiagnosticModal must show "No data for this metric yet" when ` +
-              `metric.value is null. Got: "${emptyText}"`,
+            tableCount === 0,
+            `KpiDrilldownModal must not render a breakdown table when the metric ` +
+              `has no data. Got ${tableCount} table(s).`,
           );
-
-          // ── Assert 2: concept rows are absent ─────────────────────────
-          // The "Top IAP library concepts" section must not exist in the modal.
-          const dialog = page.locator('[role="dialog"]').first();
-          const conceptSection = dialog.getByText(
-            "Top IAP library concepts driving this metric",
-            { exact: false },
-          );
-          const conceptSectionVisible = await conceptSection
-            .isVisible()
-            .catch(() => false);
-          assert(
-            !conceptSectionVisible,
-            `MetricDiagnosticModal must NOT render the concept-list section ` +
-              `("Top IAP library concepts") when metric.value is null.`,
-          );
-
-          // No concept-row buttons inside the modal.
-          const conceptRows = dialog
-            .locator("button")
-            .filter({ hasText: /Concept/ });
-          const rowCount = await conceptRows.count();
-          assert(
-            rowCount === 0,
-            `MetricDiagnosticModal must render 0 concept-row buttons when ` +
-              `metric.value is null. Got ${rowCount}.`,
-          );
-
         } finally {
           await ctx.close();
         }
@@ -2649,13 +2063,14 @@ async function main() {
       },
     );
 
-    // ── Test 19: MetricDiagnosticModal concept row navigation ─────────────────
-    // Opens MetricDiagnosticModal for the "Total spend" tile with 1 injected
-    // concept row (cell id "c_alpha"), then clicks that concept row button and
-    // asserts the URL navigates to /app/analysis/library?focus=c_alpha.
-    // Catches typos in the route string or a broken navigate() import.
+    // ── Test 19: KpiDrilldownModal cell breakdown lists cell ids ──────────────
+    // The new modal no longer navigates to the library. Instead it exposes a
+    // "cell" breakdown dimension whose rows are labeled "{cell_id} · {concept}".
+    // Opens KpiDrilldownModal for the "Total spend" tile with 1 injected cell
+    // row (cell id "c_alpha"), selects the "cell" breakdown, switches to Table
+    // view, and asserts the known cell id appears in the table.
     await test(
-      'MetricDiagnosticModal: clicking a concept row navigates to /app/analysis/library?focus=<cellId>',
+      'KpiDrilldownModal: cell breakdown lists cell ids in the table',
       async () => {
         const ctx = await browser.newContext({
           viewport: { width: 1440, height: 900 },
@@ -2718,64 +2133,21 @@ async function main() {
             waitUntil: "domcontentloaded",
           });
 
-          await page
-            .getByText("Account Totals", { exact: false })
-            .waitFor({ state: "visible", timeout: 20_000 });
+          // Open the drill-down for the "Total spend" tile.
+          const modal = await openDrilldown(page, "Total spend");
 
-          // Hover the "Total spend" tile to open its popover.
-          const tileBtn = page
-            .locator("button")
-            .filter({ hasText: "Total spend" })
-            .first();
-          await tileBtn.waitFor({ state: "visible", timeout: 8_000 });
-          await tileBtn.hover();
+          // Select the "cell" breakdown, then switch to Table view.
+          await modal.getByLabel("Breakdown").selectOption("cell");
+          await toTableView(page);
 
-          // Click "Diagnose full breakdown" to open MetricDiagnosticModal.
-          const diagnoseBtn = page.getByText("Diagnose full breakdown");
-          await diagnoseBtn.waitFor({ state: "visible", timeout: 5_000 });
-          await diagnoseBtn.click();
-
-          // Wait for MetricDiagnosticModal to appear.
-          const dialogHeader = page.getByText("Metric diagnostic", { exact: false });
-          await dialogHeader.waitFor({ state: "visible", timeout: 8_000 });
-
-          // Wait for the concept list section heading — confirms the modal is
-          // showing the non-empty concept list branch.
-          const conceptHeading = page.getByText(
-            "Top IAP library concepts driving this metric",
-            { exact: false },
-          );
-          await conceptHeading.waitFor({ state: "visible", timeout: 5_000 });
-
-          // Find the first concept row button inside the dialog and click it.
-          const dialog = page.locator('[role="dialog"]');
-          const firstConceptRow = dialog
-            .locator("button")
-            .filter({ hasText: /Concept Alpha/ })
-            .first();
-          await firstConceptRow.waitFor({ state: "visible", timeout: 5_000 });
-          await firstConceptRow.click();
-
-          // After navigation the URL must contain /app/analysis/library and
-          // the focus param must be the expected cell id "c_alpha".
-          await page.waitForURL(
-            (url) =>
-              url.pathname.includes("/app/analysis/library") &&
-              url.searchParams.get("focus") === "c_alpha",
-            { timeout: 8_000 },
-          );
-
-          const finalUrl = page.url();
+          // The cell breakdown labels each row "{cell_id} · {concept}", so the
+          // known cell id "c_alpha" must appear in the table.
+          const table = modal.locator('[data-testid="kpi-drilldown-table"]');
+          const tableText = (await table.textContent()) ?? "";
           assert(
-            finalUrl.includes("/app/analysis/library"),
-            `After clicking concept row the URL must contain "/app/analysis/library". ` +
-              `Got: "${finalUrl}". Check navigate() call in MetricDiagnosticModal.tsx.`,
-          );
-          assert(
-            finalUrl.includes("focus=c_alpha"),
-            `After clicking concept row the URL must contain "focus=c_alpha". ` +
-              `Got: "${finalUrl}". The cellId may be missing or incorrectly encoded ` +
-              `in the navigate() call at MetricDiagnosticModal.tsx line ~122.`,
+            tableText.includes("c_alpha"),
+            `KpiDrilldownModal cell breakdown must list the known cell id "c_alpha" ` +
+              `in the table. Table text: "${tableText}"`,
           );
         } finally {
           await ctx.close();

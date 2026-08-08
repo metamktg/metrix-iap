@@ -28,7 +28,7 @@ import { buildMetricCatalog, metricSourceFromCampaignSummary, metricById } from 
 import { useMetricSelection } from "@/hooks/useMetricSelection";
 import { MetricPickerButton } from "@/components/creative/MetricPicker";
 import { KpiTile } from "@/components/metrics/KpiTile";
-import { MetricDiagnosticModal } from "@/components/creative/MetricDiagnosticModal";
+import { KpiDrilldownModal } from "@/components/metrics/KpiDrilldownModal";
 import { MetricHoverPopover } from "@/components/metrics/MetricHoverPopover";
 import { LoopCommandChain } from "@/components/loop/LoopCommandChain";
 import { useDragResize } from "@/hooks/useDragResize";
@@ -536,13 +536,14 @@ export function AdAccountOverview() {
         )}
       </div>
 
-      <MetricDiagnosticModal
+      <KpiDrilldownModal
         open={openMetric != null}
         onClose={() => setOpenMetricId(null)}
-        metric={openMetric}
-        analysis={analysis}
-        mst={mst}
         scope="account"
+        metricId={openMetricId}
+        catalog={metricCatalog}
+        analysis={analysis}
+        windowLabel={cs?.window_start && cs?.window_end ? `${cs.window_start} → ${cs.window_end} (full flight)` : "full flight window"}
       />
     </div>
   );

@@ -1,13 +1,13 @@
 // ─── Metric Hover Popover ──────────────────────────────────────────────
 // Wraps a metric tile in a Radix HoverCard that shows a compact bar chart
 // of the top-5 concepts driving that metric, plus a footer link to the
-// full MetricDiagnosticModal.
+// full KpiDrilldownModal.
 //
 // Touch support: on devices where hover is unavailable (tablets / phones)
 // the built-in Radix hover trigger never fires.  This component detects
 // that situation and switches to a tap-to-toggle model:
 //   • Tap the Info icon  → open / close the popover
-//   • Tap the tile body  → open MetricDiagnosticModal (unchanged)
+//   • Tap the tile body  → open KpiDrilldownModal (unchanged)
 // Desktop hover behaviour is fully preserved — no regression.
 
 import { useMemo, useState } from "react";
