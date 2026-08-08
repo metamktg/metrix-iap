@@ -50,9 +50,20 @@ function SpendFloorInput({
     [onChange]
   );
 
+  const dirtyRef = useRef(false);
   useEffect(() => {
+    // Only debounce actual user edits — scheduling on mount leaks a timer
+    // that can fire after the environment is torn down (e.g. jsdom in tests)
+    // and dispatches a pointless state update on first render.
+    if (!dirtyRef.current) {
+      dirtyRef.current = true;
+      return;
+    }
     if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => flush(raw), 400);
+    timerRef.current = setTimeout(() => {
+      timerRef.current = null;
+      flush(raw);
+    }, 400);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [raw]);

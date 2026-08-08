@@ -56,6 +56,7 @@
 - [Supabase dev outages](supabase-dev-outages.md) — shared dev Supabase can 522 for an hour+; light account lookup in test setup, poll rest endpoint, don't debug code on Cloudflare HTML errors.
 - [Validation workflows vs configureWorkflow](validation-workflows-vs-configure.md) — new check:* scripts wire in via setValidationCommand, not configureWorkflow (10-workflow limit + validation-type lock).
 - [Supabase full outages](supabase-full-outage.md) — REST 522 + pooler connect timeouts together = project-wide outage (hours, seen under bulk vision runs); check both before debugging hung live tests.
+- [Shared-Supabase test fixture hygiene](shared-supabase-test-fixtures.md) — unique per-run values for dateless natural keys + prefix sweeps; `| head` SIGPIPE-kills vitest and skips afterAll cleanup.
 - [Cell-scoped creative upload validation](cell-scoped-creative-validation.md) — direct tile uploads compare against the cell's existing DNA (no cell-picking); library_cells.payload jsonb must be updated alongside top-level columns.
 - [Drag-resize onDragEnd setState pitfall](drag-resize-setstate-updater.md) — read final drag value from a ref, not a setState functional updater, before calling a sibling/context setState like close().
 - [Run scoping & account identity](run-scope-picker.md) — sidebar-only account name; compact 3-run RunScopePicker; persisted per page+account via usePersistedRunScope (account-keyed state, inert when controlled).
