@@ -8,7 +8,7 @@ import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import {
   ShieldCheck, KeyRound, Grid3x3,
-  Zap, ArrowRight,
+  Zap, ArrowRight, PanelRightClose, PanelRightOpen,
 } from "lucide-react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed, useMetrixIsRefetching } from "@/contexts/MetrixDataContext";
@@ -32,6 +32,28 @@ import { MetricHoverPopover } from "@/components/metrics/MetricHoverPopover";
 import { LoopCommandChain } from "@/components/loop/LoopCommandChain";
 
 const IMPACT_RANK: Record<string, number> = { high: 3, medium: 2, low: 1, setup: 0 };
+
+// ─── Loop-panel collapse persistence ──────────────────────────────────
+// The right-rail loop checklist is useful mid-setup but becomes visual
+// clutter once every account is configured and looping — let users hide
+// it, remembered across sessions like the main nav sidebar.
+const LOOP_PANEL_STORAGE_KEY = "metrix_loop_panel_collapsed";
+
+function loadLoopPanelCollapsed(): boolean {
+  try {
+    return localStorage.getItem(LOOP_PANEL_STORAGE_KEY) === "1";
+  } catch {
+    return false; // default: expanded
+  }
+}
+
+function saveLoopPanelCollapsed(v: boolean) {
+  try {
+    localStorage.setItem(LOOP_PANEL_STORAGE_KEY, v ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
+}
 
 // ── Main export ─────────────────────────────────────────────────────────
 
@@ -68,6 +90,14 @@ export function AdAccountOverview() {
   const availableMetricIds = useMemo(() => metricCatalog.map((m) => m.id), [metricCatalog]);
   const { selected: selectedMetricIds, toggle, move, reset } = useMetricSelection(availableMetricIds);
   const [openMetricId, setOpenMetricId] = useState<string | null>(null);
+  const [loopPanelCollapsed, setLoopPanelCollapsed] = useState(loadLoopPanelCollapsed);
+  const toggleLoopPanel = () => {
+    setLoopPanelCollapsed((v) => {
+      const next = !v;
+      saveLoopPanelCollapsed(next);
+      return next;
+    });
+  };
 
   // ── Early-exit states ───────────────────────────────────────────────
 
@@ -388,13 +418,38 @@ export function AdAccountOverview() {
           </SectionCard>
         </div>
 
-        {/* Right: loop-progress checklist — always visible; hides label once all steps complete */}
-        <div className="w-52 shrink-0 border-l border-border/30 overflow-y-auto py-3 px-3 space-y-2">
-          {!allLoopComplete && (
-            <p className={cn(TYPE.label, "text-muted-foreground/40 uppercase tracking-widest px-1 mb-1")}>Loop stages</p>
-          )}
-          <LoopChecklist steps={loopSteps} allComplete={allLoopComplete} />
-        </div>
+        {/* Right: loop-progress checklist — collapsible to reduce clutter once the loop is running steadily */}
+        {loopPanelCollapsed ? (
+          <div className="w-9 shrink-0 border-l border-border/30 flex flex-col items-center pt-3">
+            <button
+              type="button"
+              onClick={toggleLoopPanel}
+              aria-label="Show loop stages panel"
+              title="Show loop stages"
+              className="p-1.5 rounded hover:bg-white/[0.06] transition-colors text-muted-foreground/50 hover:text-foreground/80"
+            >
+              <PanelRightOpen className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="w-52 shrink-0 border-l border-border/30 overflow-y-auto py-3 px-3 space-y-2">
+            <div className="flex items-center justify-between px-1 mb-1">
+              {!allLoopComplete ? (
+                <p className={cn(TYPE.label, "text-muted-foreground/40 uppercase tracking-widest")}>Loop stages</p>
+              ) : <span />}
+              <button
+                type="button"
+                onClick={toggleLoopPanel}
+                aria-label="Hide loop stages panel"
+                title="Hide loop stages"
+                className="p-0.5 rounded hover:bg-white/[0.06] transition-colors text-muted-foreground/40 hover:text-foreground/80 shrink-0"
+              >
+                <PanelRightClose className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <LoopChecklist steps={loopSteps} allComplete={allLoopComplete} />
+          </div>
+        )}
       </div>
 
       <MetricDiagnosticModal
