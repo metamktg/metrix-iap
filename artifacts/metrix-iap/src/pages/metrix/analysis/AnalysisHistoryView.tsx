@@ -6,7 +6,7 @@
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount } from "@/lib/data/metrixSeedAdapter";
-import { useListAnalysisRuns, type AnalysisRun } from "@workspace/api-client-react";
+import { useListAnalysisRuns, getListAnalysisRunsQueryKey, type AnalysisRun } from "@workspace/api-client-react";
 import {
   ModuleHeader,
   ModuleScopeGate,
@@ -159,7 +159,7 @@ export function AnalysisHistoryView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
-  const { data, isLoading } = useListAnalysisRuns(account?.id ?? "");
+  const { data, isLoading } = useListAnalysisRuns(account?.id ?? "", { query: { enabled: !!account?.id, queryKey: getListAnalysisRunsQueryKey(account?.id ?? "") } });
   const runs = data?.runs ?? [];
   const successRuns = runs.filter((r) => r.status === "success");
 

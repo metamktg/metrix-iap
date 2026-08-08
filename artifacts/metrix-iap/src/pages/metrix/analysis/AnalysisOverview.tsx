@@ -23,6 +23,7 @@ import {
   getGetAnalysisSummaryByDateRangeQueryOptions,
   getGetAccountAnalysisDataWindowsQueryOptions,
   useListAnalysisRuns,
+  getListAnalysisRunsQueryKey,
 } from "@workspace/api-client-react";
 import { RunScopePicker } from "@/components/analysis/RunSelector";
 import { useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
@@ -730,7 +731,7 @@ export function AnalysisOverview() {
   const { topN, setTopN, goalCpa, setGoalCpa, selectedWindow, setSelectedWindow } = useAnalysisView();
 
   // ── Analysis-run scope (compact header dropdown) ──────────────────────
-  const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "");
+  const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "", { query: { enabled: !!adAccountId, queryKey: getListAnalysisRunsQueryKey(adAccountId ?? "") } });
   const [runSelection, setRunSelection] = usePersistedRunScope(
     "analysis-overview", adAccountId, analysisRunsData?.runs,
   );

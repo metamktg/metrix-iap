@@ -15,7 +15,7 @@ import {
 } from "../shared";
 import { useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
 import { RunScopePicker, ALL_TIME_SELECTION, type RunSelectorValue } from "@/components/analysis/RunSelector";
-import { useListAnalysisRuns } from "@workspace/api-client-react";
+import { useListAnalysisRuns, getListAnalysisRunsQueryKey } from "@workspace/api-client-react";
 import { TilePerformanceModal } from "@/components/creative/TilePerformanceModal";
 import { TableShell, Th, Td } from "../analysis/tables";
 import { RankSortBar, useRankMetric, type RankMetric } from "../analysis/rankSort";
@@ -61,7 +61,7 @@ export function CrossmapResultsView({
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
   const [activeCell, setActiveCell] = useState<MSTMatrixCell | null>(null);
-  const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "");
+  const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "", { query: { enabled: !!adAccountId, queryKey: getListAnalysisRunsQueryKey(adAccountId ?? "") } });
   const controlled = runScope !== undefined && onRunScopeChange !== undefined;
   // When controlled, the parent owns persistence — the local hook is inert
   // so it never reads/writes storage or runs the stale-run guard.

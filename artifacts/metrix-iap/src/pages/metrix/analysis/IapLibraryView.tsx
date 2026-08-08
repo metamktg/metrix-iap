@@ -38,7 +38,7 @@ import {
 } from "../shared";
 import { useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
 import { RunScopePicker } from "@/components/analysis/RunSelector";
-import { useListAnalysisRuns } from "@workspace/api-client-react";
+import { useListAnalysisRuns, getListAnalysisRunsQueryKey } from "@workspace/api-client-react";
 import { CreativeCard } from "@/components/creative/CreativeCard";
 import { ConceptFamilyView } from "@/components/creative/ConceptFamilyView";
 import { cardFromCell, libraryCellById } from "@/lib/creative-assembly";
@@ -136,7 +136,7 @@ export function IapLibraryView() {
   const strategy = getStrategyData(seed, adAccountId);
   const mst     = getMST(seed, adAccountId);
   const fp      = useFromParam();
-  const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "");
+  const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "", { query: { enabled: !!adAccountId, queryKey: getListAnalysisRunsQueryKey(adAccountId ?? "") } });
   const [runSelection, setRunSelection] = usePersistedRunScope(
     "iap-library", adAccountId, analysisRunsData?.runs,
   );
