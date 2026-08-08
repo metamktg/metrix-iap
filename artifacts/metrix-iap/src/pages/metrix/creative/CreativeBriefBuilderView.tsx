@@ -10,7 +10,7 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getBriefBuilder, getStrategyData, getAnalysisData, getMST, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
 import {
-  ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState,
+  ModuleHeader, ModuleScopeGate, PendingState,
   CrossLink, useFocusParam, FlowCrumb, useFromParam, SectionCard, ConfidenceBadge,
   useShowMore, ShowMoreButton,
 } from "../shared";
@@ -94,7 +94,6 @@ export function CreativeBriefBuilderView() {
             <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
               <ModuleHeader section={SECTION} title="Brief Builder" subtitle="Choose a brief from Creative to open its workspace." />
               <p className="sr-only">Choose a brief from Creative</p>
-              <ScopeBanner account={acct} />
               {briefs.length === 0 ? (
                 <PendingState title="No briefs yet" message="Generate briefs from the Creative command center first." icon={FileText} action={<CrossLink to="/app/creative" label="Go to Creative" />} />
               ) : (
@@ -115,7 +114,6 @@ export function CreativeBriefBuilderView() {
               subtitle={`${detail.asset_type} brief · ${STATUS_LABEL[detail.status] ?? detail.status}`}
               right={<CrossLink to="/app/creative" label="Back to Creative" />}
             />
-            <ScopeBanner account={acct} />
             <FlowCrumb {...fp} />
 
             <div className="px-6 py-5 space-y-4 max-w-3xl">

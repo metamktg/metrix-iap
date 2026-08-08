@@ -206,8 +206,14 @@ describe("Bookster selected (sanity)", () => {
     it(`${name} renders Bookster-scoped content`, () => {
       select("ad_account", "bookster");
       const { container } = renderView(View);
-      expect(container.textContent).toContain("Bookster");
+      // The account name is no longer repeated on the page (it lives in the
+      // sidebar switcher only) — assert the page passed its scope gate and
+      // rendered scoped content instead of a gate/unconfigured state.
+      expect(container.textContent).not.toContain("No ad account selected");
+      expect(container.textContent).not.toContain("Connect data source");
       expect(container.textContent).not.toContain("Connect Meta Ad Account");
+      // And it never re-introduces the removed account banner.
+      expect(container.textContent).not.toContain("Scoped to ad account");
     });
   }
 });

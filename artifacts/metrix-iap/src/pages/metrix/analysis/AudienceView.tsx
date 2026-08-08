@@ -745,7 +745,7 @@ export function AudienceView() {
           if (rows.length === 0) {
             return (
               <div className="flex-1 flex flex-col">
-                <ModuleHeader section={SECTION} title="Audience" tabs="analysis" account={acct} />
+                <ModuleHeader section={SECTION} title="Audience" tabs="analysis" />
                 <PendingState
                   title="No demographic signal"
                   message="Audience intelligence appears once demographic result data exists."
@@ -761,7 +761,6 @@ export function AudienceView() {
               <ModuleHeader
                 section={SECTION}
                 title="Audience"
-                account={acct}
                 subtitle="Audience intelligence: who converts, where the funnel holds, and what creative each pocket responds to."
                 tabs="analysis"
               />

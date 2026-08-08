@@ -9,7 +9,7 @@ import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getMST, getAnalysisData, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, ScopeBanner, ModuleScopeGate, ModuleTabs, CaveatNote, PendingState, readableVariables, CrossLink, InfoTooltip } from "../shared";
+import { ModuleHeader, ModuleScopeGate, ModuleTabs, CaveatNote, PendingState, readableVariables, CrossLink, InfoTooltip } from "../shared";
 import { CreativeCard } from "@/components/creative/CreativeCard";
 import { cardFromLibraryCell } from "@/lib/creative-assembly";
 import { Library, Tags } from "lucide-react";
@@ -32,7 +32,6 @@ export function CreativeLibraryView() {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Library" />
-              <ScopeBanner account={acct} />
               <PendingState title="No scanned creatives" message={mst?.render_policy ?? "The creative scan populates once the local library is mapped."} icon={Library} />
             </div>
           );
@@ -70,7 +69,6 @@ export function CreativeLibraryView() {
               subtitle="The scanned creative asset register and the variable library it produces."
               table="local_book2_library"
             />
-            <ScopeBanner account={acct} />
             <ModuleTabs
               tabs={[
                 { id: "library", label: "Concept library", count: library.length, Icon: Library },

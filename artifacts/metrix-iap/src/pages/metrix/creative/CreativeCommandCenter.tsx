@@ -12,7 +12,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getBriefBuilder, getStrategyData } from "@/lib/data/metrixSeedAdapter";
 import { useStageStatus } from "@/hooks/useStageStatus";
 import {
-  ModuleHeader, ScopeBanner, ModuleTabs, ModuleScopeGate, PrerequisiteGate, PendingState,
+  ModuleHeader, ModuleTabs, ModuleScopeGate, PrerequisiteGate, PendingState,
   MetricTile, CaveatNote, StageLoopHub, buildLoopStages, FlowCrumb, useFromParam, HubNavGrid,
 } from "../shared";
 import {
@@ -83,7 +83,6 @@ export function CreativeCommandCenter() {
               table="draft_briefs, message_pillars"
               right={<ProvenanceBadge provenance={bb?.provenance} />}
             />
-            <ScopeBanner account={acct} />
             <FlowCrumb {...fp} />
             <StageLoopHub stages={buildLoopStages(status)} current="creative" />
 

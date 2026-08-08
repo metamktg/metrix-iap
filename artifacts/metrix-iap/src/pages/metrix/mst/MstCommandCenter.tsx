@@ -9,7 +9,7 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount } from "@/lib/data/metrixSeedAdapter";
 import { useStageStatus } from "@/hooks/useStageStatus";
 import {
-  ModuleHeader, ScopeBanner, ModuleScopeGate, PrerequisiteGate,
+  ModuleHeader, ModuleScopeGate, PrerequisiteGate,
   StageLoopHub, buildLoopStages, HubNavGrid,
 } from "../shared";
 import { Network, Grid3x3, TrendingUp, Compass, Library } from "lucide-react";
@@ -41,7 +41,6 @@ export function MstCommandCenter() {
               title="MST"
               subtitle="Matrix Sprint Test results for this account's briefed creative."
             />
-            <ScopeBanner account={acct} />
             <StageLoopHub stages={buildLoopStages(status)} current="mst" />
 
             <div className="px-6 py-5 space-y-4 max-w-3xl">

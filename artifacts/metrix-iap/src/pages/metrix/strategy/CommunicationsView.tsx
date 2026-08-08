@@ -15,7 +15,7 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getStrategyData } from "@/lib/data/metrixSeedAdapter";
 import {
-  ModuleHeader, ScopeBanner, ModuleScopeGate, PendingState,
+  ModuleHeader, ModuleScopeGate, PendingState,
   SectionCard, SectionInfoIcon, ConfidenceBadge, deriveLabel, useShowMore, ShowMoreButton,
 } from "../shared";
 import { TYPE } from "../typography";
@@ -286,7 +286,6 @@ export function CommunicationsView() {
           return (
             <div className="flex-1 flex flex-col">
               <ModuleHeader section={SECTION} title="Communications" />
-              <ScopeBanner account={account!} />
               <PendingState
                 title="No communications data yet"
                 message="Communications derive from generated message pillars — generate strategy first."
@@ -304,7 +303,6 @@ export function CommunicationsView() {
               subtitle="Who responds, to what, and why — per message pillar."
               table="message_pillars, historical_matrix_4x4"
             />
-            <ScopeBanner account={account!} />
 
             <div className="px-6 py-5 space-y-3 max-w-3xl">
               <SectionCard

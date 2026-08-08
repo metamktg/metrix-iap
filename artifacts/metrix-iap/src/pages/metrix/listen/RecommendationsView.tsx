@@ -68,7 +68,6 @@ export function RecommendationsView() {
               section={SECTION}
               title="Recommendations"
               subtitle="Optimization loop · approval adds a manual task"
-              account={acct}
             />
             <ConnectionNudgeBanner hasMetaConnection={hasMetaConnection} />
             <>

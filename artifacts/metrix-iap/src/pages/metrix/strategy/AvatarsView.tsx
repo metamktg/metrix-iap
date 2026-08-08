@@ -1372,7 +1372,7 @@ export function AvatarsView() {
         if (!matrix && icpProfiles.length === 0) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Avatars / ICP / PMF" tabs="strategy" account={acct} />
+              <ModuleHeader section={SECTION} title="Avatars / ICP / PMF" tabs="strategy" />
               <PendingState
                 title="No avatars yet"
                 message="Avatars are derived from the MST matrix and strategy ICP profiles once they exist for this account."
@@ -1406,7 +1406,6 @@ export function AvatarsView() {
               title="Avatars / ICP / PMF"
               subtitle="Matrix avatars · ICP profiles · audience signal"
               tabs="strategy"
-              account={acct}
             />
 
             {/* Sticky sort / filter strip */}

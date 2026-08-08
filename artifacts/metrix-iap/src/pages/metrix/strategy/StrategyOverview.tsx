@@ -7,7 +7,10 @@ import { useState } from "react";
 import { TYPE } from "../typography";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
-import { getAdAccount, getStrategyData, getBriefBuilder } from "@/lib/data/metrixSeedAdapter";
+import { getAdAccount, getStrategyData, getBriefBuilder, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
+import { RunScopePicker, ALL_TIME_SELECTION } from "@/components/analysis/RunSelector";
+import { useCellRunScope } from "@/lib/run-scope";
+import { useListAnalysisRuns } from "@workspace/api-client-react";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   SectionCard, CrossLink, fmtNum, LoopAction,
@@ -323,6 +326,14 @@ export function StrategyOverview() {
   const generation = useGenerationRun(adAccountId, "strategy");
   const [expandedPillars, setExpandedPillars] = useState<Record<string, boolean>>({});
 
+  // ── Analysis-run scope (compact header dropdown) ──────────────────────
+  // Strategy pillars are anchored to source cells; a pillar is in scope
+  // when any of its source cells belongs to a selected run's concepts.
+  // Pillars with no source cells always pass (nothing to attribute).
+  const [runSelection, setRunSelection] = useState(ALL_TIME_SELECTION);
+  const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "");
+  const { inRunScope } = useCellRunScope(getAnalysisData(seed, adAccountId), runSelection);
+
   return (
     <ModuleScopeGate section={SECTION} title="Overview" account={account}>
       {() => {
@@ -334,7 +345,7 @@ export function StrategyOverview() {
         if (!strategy || strategy.message_pillars.length === 0) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Overview" tabs="strategy" account={acct} />
+              <ModuleHeader section={SECTION} title="Overview" tabs="strategy" />
               <PendingState title="No strategy yet" message="Strategy pillars derive from validated analysis reads." icon={Compass}
                 action={!hasAnalysis ? <CrossLink to="/app/analysis/overview" label="Review Analysis first" /> : undefined}
               />
@@ -363,8 +374,16 @@ export function StrategyOverview() {
           );
         }
 
-        const pillars = strategy.message_pillars;
-        const hypotheses = strategy.active_hypotheses;
+        // Scope pillars to the selected analysis run(s); their hypotheses
+        // follow (a hypothesis with no surviving pillar is out of scope,
+        // unless it isn't tied to a pillar at all).
+        const pillars = strategy.message_pillars.filter(
+          (p) => p.source_cells.length === 0 || p.source_cells.some((c) => inRunScope(c)),
+        );
+        const pillarIds = new Set(pillars.map((p) => p.id));
+        const hypotheses = strategy.active_hypotheses.filter(
+          (h) => !h.pillar_id || pillarIds.has(h.pillar_id),
+        );
 
         // Hypothesis categorisation — explicit set membership (no substring matching)
         const HYP_TESTING = new Set(["validation_required"]);
@@ -417,9 +436,13 @@ export function StrategyOverview() {
               title="Overview"
               subtitle="Pillar coverage · hypothesis breakdown · variable map"
               tabs="strategy"
-              account={acct}
               right={
                 <div className="flex items-center gap-2">
+                  <RunScopePicker
+                    runs={analysisRunsData?.runs ?? []}
+                    value={runSelection}
+                    onChange={setRunSelection}
+                  />
                   <ProvenanceBadge provenance={strategy.provenance} />
                   {hasAnalysis && (
                     <GenerateButton
