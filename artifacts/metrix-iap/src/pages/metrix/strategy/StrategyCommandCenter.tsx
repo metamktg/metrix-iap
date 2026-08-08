@@ -93,7 +93,7 @@ export function StrategyCommandCenter() {
                       <GenerationProgressBar
                         isRunning={generation.isRunning}
                         progressPercent={generation.progressPercent}
-                        stageLabel="Generating strategy from validated analysis…"
+                        stageLabel={generation.progressStage ?? "Generating strategy from validated analysis…"}
                       />
                       <GenerationErrorNote message={generation.lastError} />
                     </div>

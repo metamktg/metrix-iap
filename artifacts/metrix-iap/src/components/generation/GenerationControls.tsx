@@ -187,15 +187,32 @@ export function useGenerationRun(accountId: string | null, kind: GenerationKind)
     return () => clearInterval(iv);
   }, [isRunning]);
 
+  // Prefer real server-side progress when available (non-zero from the DB).
+  // Fall back to the elapsed-time estimate only when the server hasn't written
+  // any progress yet (e.g. the run just started and the first phase hasn't
+  // committed) or the columns pre-date this feature (legacy runs).
+  const serverPct = run?.progress_pct ?? 0;
+  const serverStage = run?.progress_stage ?? "";
+  const hasRealProgress = isRunning && serverPct > 0;
+
   const progressPercent = isRunning
-    ? calcGenerationProgress(elapsedSeconds, kind)
+    ? hasRealProgress
+      ? serverPct
+      : calcGenerationProgress(elapsedSeconds, kind)
     : 0;
+
+  const progressStage = isRunning
+    ? hasRealProgress
+      ? serverStage
+      : null // caller falls back to PHASE_LABELS
+    : null;
 
   return {
     start,
     isRunning,
     elapsedSeconds,
     progressPercent,
+    progressStage,
     lastRun: run,
     lastError: run?.status === "error" ? (run.error_message ?? "Generation failed.") : null,
   };

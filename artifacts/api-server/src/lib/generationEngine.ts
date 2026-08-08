@@ -741,6 +741,12 @@ export type GenerationRun = {
   progress_done: number;
   /** Total items targeted by the run; null for runs without a per-item meter. */
   progress_total: number | null;
+  /** Live progress percentage (0–100) while the run is executing. Updated at each pipeline phase.
+   *  0 when just started; 100 on success. */
+  progress_pct: number;
+  /** Human-readable label for the current pipeline phase (e.g. "Calling strategy model…").
+   *  Empty string when idle or complete. */
+  progress_stage: string;
 };
 
 const runShape = (r: Row): GenerationRun => ({
@@ -756,6 +762,8 @@ const runShape = (r: Row): GenerationRun => ({
   source_analysis_all_time: r["source_analysis_all_time"] === true,
   progress_done: Number(r["progress_done"] ?? 0),
   progress_total: r["progress_total"] != null ? Number(r["progress_total"]) : null,
+  progress_pct: typeof r["progress_pct"] === "number" ? Number(r["progress_pct"]) : 0,
+  progress_stage: r["progress_stage"] ? String(r["progress_stage"]) : "",
 });
 
 /** Latest run for an account+kind, with dead 'running' rows honestly flipped to error. */
@@ -847,6 +855,23 @@ export async function setRunProgress(runId: string, done: number, total: number)
   if (error) throw new Error(error.message);
 }
 
+/**
+ * Fire-and-forget per-phase progress update for strategy/briefs runs.
+ * Non-fatal: a progress write failure must never abort the generation pipeline.
+ * Mirrors the analysisEngine.ts `updateProgress` pattern.
+ */
+async function setRunProgressPhase(runId: string, pct: number, stage: string): Promise<void> {
+  try {
+    const supabase = getSupabase();
+    await supabase
+      .from("generation_runs")
+      .update({ progress_pct: pct, progress_stage: stage })
+      .eq("id", runId);
+  } catch {
+    // Silently ignore — progress display is non-critical
+  }
+}
+
 export async function finishRun(runId: string, status: "success" | "error", errorMessage?: string): Promise<void> {
   const supabase = getSupabase();
   const { error } = await supabase
@@ -858,6 +883,13 @@ export async function finishRun(runId: string, status: "success" | "error", erro
     })
     .eq("id", runId);
   if (error) throw new Error(error.message);
+  // Snap progress to 100% on success (fire-and-forget; columns may not exist yet
+  // on older deploys — the migration adds them post-merge).
+  if (status === "success") {
+    void setRunProgressPhase(runId, 100, "");
+  } else {
+    void setRunProgressPhase(runId, 0, "");
+  }
 }
 
 async function deleteRunOutputs(runId: string, kind: GenerationKind): Promise<void> {
@@ -947,6 +979,7 @@ export async function startStrategyGeneration(
 
   void (async () => {
     try {
+      await setRunProgressPhase(runId, 10, "Calling strategy model…");
       const output = sanitizeGeneratedText(
         await generateValidated(strategyPrompt(evidence, cellIds, icpIds, cohort), GeneratedStrategy, {
           // Strategy JSON regularly exceeds the 8k default (a real run was cut
@@ -956,6 +989,7 @@ export async function startStrategyGeneration(
         accountName,
       );
 
+      await setRunProgressPhase(runId, 60, "Persisting pillars…");
       // Drop hallucinated references — never present fabricated links.
       const pillars = output.pillars.map((p, i) => ({
         ...p,
@@ -981,6 +1015,7 @@ export async function startStrategyGeneration(
       );
       if (pillarInsert.error) throw new Error(pillarInsert.error.message);
 
+      await setRunProgressPhase(runId, 75, "Persisting hypotheses…");
       const hypInsert = await supabase.from("testing_hypotheses").insert(
         output.hypotheses.map((h, i) => {
           // Resolve the explicit pillar link from the model's 1-based index.
@@ -1009,6 +1044,7 @@ export async function startStrategyGeneration(
 
       const generatedIcpProfiles = output.icp_profiles ?? [];
       if (generatedIcpProfiles.length > 0) {
+        await setRunProgressPhase(runId, 85, "Persisting ICP profiles…");
         const icpInsert = await supabase.from("icp_profiles").insert(
           generatedIcpProfiles.map((p, i) => {
             const profileId = `GEN_ICP_${runTag}_${i + 1}`;
@@ -1043,6 +1079,7 @@ export async function startStrategyGeneration(
       // replaced — they'd reference pillars that no longer exist. Remove
       // them so the seed falls back to the imported briefs honestly;
       // the user can regenerate briefs from the new strategy.
+      await setRunProgressPhase(runId, 92, "Finalizing…");
       await deletePriorGenerated(accountId, "briefs");
 
       await upsertLoopStage(accountId, "strategy_map", runId);
@@ -1171,6 +1208,7 @@ export async function startBriefsGeneration(accountId: string, createdBy: string
 
   void (async () => {
     try {
+      await setRunProgressPhase(runId, 10, "Calling brief model…");
       const output = sanitizeGeneratedText(
         await generateValidated(briefsPrompt(pillars, evidence, columns, cohort), GeneratedBriefs, {
           // 16 fully-populated briefs overflow the 8k default → truncated JSON.
@@ -1181,6 +1219,7 @@ export async function startBriefsGeneration(accountId: string, createdBy: string
         accountName,
       );
 
+      await setRunProgressPhase(runId, 70, "Validating briefs…");
       const invalid = output.briefs.filter((b) => !pillarIds.has(b.message_pillar));
       if (invalid.length > 0) {
         throw new Error(
@@ -1188,6 +1227,7 @@ export async function startBriefsGeneration(accountId: string, createdBy: string
         );
       }
 
+      await setRunProgressPhase(runId, 80, "Persisting briefs…");
       await deletePriorGenerated(accountId, "briefs");
 
       const supabase = getSupabase();
@@ -1268,6 +1308,7 @@ export async function startBriefsGeneration(accountId: string, createdBy: string
       );
       if (insert.error) throw new Error(insert.error.message);
 
+      await setRunProgressPhase(runId, 95, "Finalizing…");
       await upsertLoopStage(accountId, "brief_builder", runId);
       await finishRun(runId, "success");
       invalidateMetrixSeedCache();

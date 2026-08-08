@@ -878,6 +878,10 @@ export interface GenerationRun {
   progress_done: number;
   /** Total items targeted by the run; null for runs without a per-item meter. */
   progress_total?: number | null;
+  /** Live progress percentage (0–100) while the run is executing. Updated at each pipeline phase. 0 when just started; 100 on success. */
+  progress_pct: number;
+  /** Human-readable label for the current pipeline phase (e.g. "Calling strategy model…"). Empty string when idle or complete. */
+  progress_stage: string;
 }
 
 export interface DeconstructCreativesInput {

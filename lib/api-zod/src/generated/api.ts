@@ -834,7 +834,9 @@ export const GetLatestGenerationRunResponse = zod.object({
   "source_analysis_run_ids": zod.array(zod.string()).nullish().describe('Analysis run ids this generation was grounded in. Null for legacy runs predating run-scoping, or when source_analysis_all_time is true.'),
   "source_analysis_all_time": zod.boolean().describe('True when this generation was grounded in every analysis run for the account rather than a specific selection.'),
   "progress_done": zod.number().describe('Items committed so far in a multi-item run (deconstruct). 0 for runs without a per-item meter.'),
-  "progress_total": zod.number().nullish().describe('Total items targeted by the run; null for runs without a per-item meter.')
+  "progress_total": zod.number().nullish().describe('Total items targeted by the run; null for runs without a per-item meter.'),
+  "progress_pct": zod.number().describe('Live progress percentage (0–100) while the run is executing. Updated at each pipeline phase. 0 when just started; 100 on success.'),
+  "progress_stage": zod.string().describe('Human-readable label for the current pipeline phase (e.g. \"Calling strategy model…\"). Empty string when idle or complete.')
 }).nullable()
 })
 

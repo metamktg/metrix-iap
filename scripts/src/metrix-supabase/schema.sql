@@ -872,6 +872,12 @@ alter table generation_runs add column if not exists source_analysis_all_time bo
 alter table generation_runs add column if not exists progress_done integer not null default 0;
 alter table generation_runs add column if not exists progress_total integer;
 
+-- Real pipeline progress for strategy / briefs runs (Task 616).
+-- progress_pct: 0–100 updated at each engine phase; 0 = just started, 100 = complete.
+-- progress_stage: human-readable label for the current phase (e.g. "Calling strategy model…").
+alter table generation_runs add column if not exists progress_pct integer not null default 0;
+alter table generation_runs add column if not exists progress_stage text not null default '';
+
 -- ─────────────────────────────────────────────────────────────────────
 -- Cell-level creative overrides (July 2026).
 --
