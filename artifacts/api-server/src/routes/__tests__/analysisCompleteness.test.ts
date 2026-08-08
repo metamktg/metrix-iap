@@ -208,7 +208,7 @@ describe("analysis completeness verification + strategy gate", () => {
       spend: 10,
     };
     const inserts: Array<{ table: string; row: Record<string, unknown> }> = [
-      { table: "ad_performance",          row: { ...base, campaign_name: "T", ad_name: "completeness-test-ad" } },
+      { table: "ad_performance",          row: { ...base, campaign_name: "T", ad_name: "completeness-test-ad", result_type: "Results" } },
       { table: "demographic_performance", row: { ...base, age: "25-34", gender: "female" } },
       { table: "placement_performance",   row: { ...base, placement: "Facebook Feed" } },
       { table: "platform_performance",    row: { ...base, platform: "facebook" } },
