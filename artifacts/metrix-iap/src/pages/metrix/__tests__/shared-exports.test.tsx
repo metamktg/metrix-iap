@@ -110,6 +110,7 @@ const RUNTIME_EXPORTS: Array<keyof typeof shared> = [
   "PrerequisiteGate",
   "StageLoopHub",
   "buildLoopStages",
+  "HubNavGrid",
 ];
 
 describe("shared.tsx exports — set equality", () => {

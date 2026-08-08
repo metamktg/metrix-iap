@@ -30,14 +30,23 @@ import { MetricPickerButton } from "@/components/creative/MetricPicker";
 import { MetricDiagnosticModal } from "@/components/creative/MetricDiagnosticModal";
 import { MetricHoverPopover } from "@/components/metrics/MetricHoverPopover";
 import { LoopCommandChain } from "@/components/loop/LoopCommandChain";
+import { useDragResize } from "@/hooks/useDragResize";
 
 const IMPACT_RANK: Record<string, number> = { high: 3, medium: 2, low: 1, setup: 0 };
 
-// ─── Loop-panel collapse persistence ──────────────────────────────────
+// ─── Loop-panel collapse + resize persistence ─────────────────────────
 // The right-rail loop checklist is useful mid-setup but becomes visual
 // clutter once every account is configured and looping — let users hide
-// it, remembered across sessions like the main nav sidebar.
+// it (or resize it), remembered across sessions like the main nav sidebar.
 const LOOP_PANEL_STORAGE_KEY = "metrix_loop_panel_collapsed";
+const LOOP_PANEL_WIDTH_KEY = "metrix_loop_panel_width";
+const LOOP_PANEL_COLLAPSED_WIDTH = 36;
+const LOOP_PANEL_DEFAULT_WIDTH = 208;
+const LOOP_PANEL_MIN_WIDTH = 160;
+const LOOP_PANEL_MAX_WIDTH = 360;
+// Drag the panel narrower than this and releasing snaps it fully closed —
+// unlike the left nav, this panel can also grow past its default width.
+const LOOP_PANEL_COLLAPSE_SNAP_WIDTH = 110;
 
 function loadLoopPanelCollapsed(): boolean {
   try {
@@ -50,6 +59,24 @@ function loadLoopPanelCollapsed(): boolean {
 function saveLoopPanelCollapsed(v: boolean) {
   try {
     localStorage.setItem(LOOP_PANEL_STORAGE_KEY, v ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
+}
+
+function loadLoopPanelWidth(): number {
+  try {
+    const raw = Number(localStorage.getItem(LOOP_PANEL_WIDTH_KEY));
+    if (Number.isFinite(raw) && raw >= LOOP_PANEL_MIN_WIDTH && raw <= LOOP_PANEL_MAX_WIDTH) return raw;
+  } catch {
+    /* ignore */
+  }
+  return LOOP_PANEL_DEFAULT_WIDTH;
+}
+
+function saveLoopPanelWidth(v: number) {
+  try {
+    localStorage.setItem(LOOP_PANEL_WIDTH_KEY, String(v));
   } catch {
     /* ignore */
   }
@@ -91,6 +118,8 @@ export function AdAccountOverview() {
   const { selected: selectedMetricIds, toggle, move, reset } = useMetricSelection(availableMetricIds);
   const [openMetricId, setOpenMetricId] = useState<string | null>(null);
   const [loopPanelCollapsed, setLoopPanelCollapsed] = useState(loadLoopPanelCollapsed);
+  const [loopPanelWidth, setLoopPanelWidth] = useState(loadLoopPanelWidth);
+  const [loopPanelDragWidth, setLoopPanelDragWidth] = useState<number | null>(null);
   const toggleLoopPanel = () => {
     setLoopPanelCollapsed((v) => {
       const next = !v;
@@ -98,6 +127,39 @@ export function AdAccountOverview() {
       return next;
     });
   };
+
+  // Resize handle on the panel's left edge — unlike the left nav, this
+  // panel can be dragged wider than its default, not just narrower.
+  // Dragging left grows it, dragging right shrinks it toward collapse.
+  const loopPanelWidthRef = { current: loopPanelWidth };
+  const handleLoopPanelPointerDown = useDragResize(
+    (dx) => {
+      const next = Math.min(
+        LOOP_PANEL_MAX_WIDTH,
+        Math.max(LOOP_PANEL_MIN_WIDTH - 40, loopPanelWidthRef.current - dx)
+      );
+      setLoopPanelDragWidth(next);
+    },
+    (wasDragged) => {
+      if (!wasDragged) return;
+      setLoopPanelDragWidth((finalWidth) => {
+        if (finalWidth == null) return null;
+        if (finalWidth < LOOP_PANEL_COLLAPSE_SNAP_WIDTH) {
+          setLoopPanelCollapsed(true);
+          saveLoopPanelCollapsed(true);
+        } else {
+          const clamped = Math.min(LOOP_PANEL_MAX_WIDTH, Math.max(LOOP_PANEL_MIN_WIDTH, finalWidth));
+          setLoopPanelWidth(clamped);
+          saveLoopPanelWidth(clamped);
+          if (loopPanelCollapsed) {
+            setLoopPanelCollapsed(false);
+            saveLoopPanelCollapsed(false);
+          }
+        }
+        return null;
+      });
+    }
+  );
 
   // ── Early-exit states ───────────────────────────────────────────────
 
@@ -418,21 +480,44 @@ export function AdAccountOverview() {
           </SectionCard>
         </div>
 
-        {/* Right: loop-progress checklist — collapsible to reduce clutter once the loop is running steadily */}
+        {/* Right: loop-progress checklist — collapsible + resizable (drag the left edge) to cut clutter once the loop is running steadily */}
         {loopPanelCollapsed ? (
-          <div className="w-9 shrink-0 border-l border-border/30 flex flex-col items-center pt-3">
+          <div
+            className="w-9 shrink-0 border-l border-border/30 flex flex-col items-center pt-3 cursor-pointer hover:bg-white/[0.02] transition-colors"
+            onClick={toggleLoopPanel}
+            role="button"
+            tabIndex={0}
+            aria-label="Show loop stages panel"
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleLoopPanel(); } }}
+          >
             <button
               type="button"
-              onClick={toggleLoopPanel}
+              onClick={(e) => { e.stopPropagation(); toggleLoopPanel(); }}
               aria-label="Show loop stages panel"
               title="Show loop stages"
               className="p-1.5 rounded hover:bg-white/[0.06] transition-colors text-muted-foreground/50 hover:text-foreground/80"
+              tabIndex={-1}
             >
               <PanelRightOpen className="w-4 h-4" />
             </button>
           </div>
         ) : (
-          <div className="w-52 shrink-0 border-l border-border/30 overflow-y-auto py-3 px-3 space-y-2">
+          <div
+            className="relative shrink-0 border-l border-border/30 overflow-y-auto py-3 px-3 space-y-2"
+            style={{ width: loopPanelDragWidth ?? loopPanelWidth }}
+          >
+            {/* Slide-to-resize handle — drag to widen/narrow, or drag past the
+                snap threshold to collapse fully. */}
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize loop stages panel (drag to resize, or drag left to collapse)"
+              title="Drag to resize"
+              onPointerDown={handleLoopPanelPointerDown}
+              className="absolute top-0 left-0 h-full w-1.5 -ml-0.5 z-10 cursor-col-resize group/handle flex items-center justify-center"
+            >
+              <span className="w-px h-full bg-transparent group-hover/handle:bg-primary/40 transition-colors" />
+            </div>
             <div className="flex items-center justify-between px-1 mb-1">
               {!allLoopComplete ? (
                 <p className={cn(TYPE.label, "text-muted-foreground/40 uppercase tracking-widest")}>Loop stages</p>

@@ -9,8 +9,8 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount } from "@/lib/data/metrixSeedAdapter";
 import { useStageStatus } from "@/hooks/useStageStatus";
 import {
-  ModuleHeader, ScopeBanner, ModuleScopeGate, PrerequisiteGate, CrossLink,
-  StageLoopHub, buildLoopStages,
+  ModuleHeader, ScopeBanner, ModuleScopeGate, PrerequisiteGate,
+  StageLoopHub, buildLoopStages, HubNavGrid,
 } from "../shared";
 import { Network, Grid3x3, TrendingUp, Compass, Library } from "lucide-react";
 
@@ -52,22 +52,7 @@ export function MstCommandCenter() {
                 ctaLabel="Go to Creative"
                 ctaTo="/app/creative"
               >
-                {() => (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {CHILDREN.map((c) => (
-                      <div key={c.to} className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <c.Icon className="w-4 h-4 text-interactive shrink-0" />
-                          <div className="min-w-0">
-                            <div className="text-title font-semibold text-foreground">{c.label}</div>
-                            <p className="text-caption text-muted-foreground/80 leading-relaxed">{c.desc}</p>
-                          </div>
-                        </div>
-                        <CrossLink to={c.to} label="Open" />
-                      </div>
-                    ))}
-                  </div>
-                )}
+                {() => <HubNavGrid items={CHILDREN} label="Explore MST" />}
               </PrerequisiteGate>
             </div>
           </div>

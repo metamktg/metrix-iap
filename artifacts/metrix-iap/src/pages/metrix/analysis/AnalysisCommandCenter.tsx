@@ -9,11 +9,11 @@ import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount } from "@/lib/data/metrixSeedAdapter";
 import { useStageStatus } from "@/hooks/useStageStatus";
 import {
-  ModuleHeader, ScopeBanner, ModuleScopeGate, SectionCard, StageLoopHub, buildLoopStages, CrossLink, PendingState,
+  ModuleHeader, ScopeBanner, ModuleScopeGate, SectionCard, StageLoopHub, buildLoopStages, CrossLink, PendingState, HubNavGrid,
 } from "../shared";
 import { AnalysisControls } from "../ManualAnalysisControls";
 import { useListAnalysisRuns } from "@workspace/api-client-react";
-import { LayoutDashboard, Settings2 } from "lucide-react";
+import { LayoutDashboard, Settings2, History } from "lucide-react";
 import { COHORT_OPTIONS } from "../settings/cohortOptions";
 
 const SECTION = "Analysis · 03";
@@ -63,37 +63,25 @@ export function AnalysisCommandCenter() {
                 </SectionCard>
               )}
 
-              <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <LayoutDashboard className="w-4 h-4 text-interactive shrink-0" />
-                  <div className="min-w-0">
-                    <div className="text-title font-semibold text-foreground">Ad Performance</div>
-                    <p className="text-caption text-muted-foreground/80 leading-relaxed">
-                      Campaign totals, control reads, and the full breakdown once analysis has run.
-                    </p>
-                  </div>
-                </div>
-                <CrossLink to="/app/analysis/performance" label="Open" />
-              </div>
-
-              <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <div className="text-title font-semibold text-foreground">Run history</div>
-                    {runCount > 0 && (
-                      <span className="text-micro font-semibold uppercase tracking-wider text-interactive/70 bg-primary/[0.06] border border-primary/20 rounded px-1.5 py-0.5 leading-none">
-                        {runCount} run{runCount !== 1 ? "s" : ""}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-caption text-muted-foreground/80 leading-relaxed">
-                    {runCount > 0
+              <HubNavGrid
+                label="Explore Analysis"
+                items={[
+                  {
+                    to: "/app/analysis/performance",
+                    label: "Ad Performance",
+                    desc: "Campaign totals, control reads, and the full breakdown once analysis has run.",
+                    Icon: LayoutDashboard,
+                  },
+                  {
+                    to: "/app/analysis/history",
+                    label: runCount > 0 ? `Run history · ${runCount} run${runCount !== 1 ? "s" : ""}` : "Run history",
+                    desc: runCount > 0
                       ? `${runCount} successful run${runCount !== 1 ? "s" : ""} — each can be selected independently when building strategy in the IAP Loop.`
-                      : "Full detail on analysis runs for this account, including data-integrity flags."}
-                  </p>
-                </div>
-                <CrossLink to="/app/analysis/history" label="Open" />
-              </div>
+                      : "Full detail on analysis runs for this account, including data-integrity flags.",
+                    Icon: History,
+                  },
+                ]}
+              />
             </div>
           </div>
         );

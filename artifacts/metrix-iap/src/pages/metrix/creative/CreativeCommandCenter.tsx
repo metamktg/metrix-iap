@@ -13,7 +13,7 @@ import { getAdAccount, getBriefBuilder, getStrategyData } from "@/lib/data/metri
 import { useStageStatus } from "@/hooks/useStageStatus";
 import {
   ModuleHeader, ScopeBanner, ModuleTabs, ModuleScopeGate, PrerequisiteGate, PendingState,
-  MetricTile, CaveatNote, CrossLink, StageLoopHub, buildLoopStages, FlowCrumb, useFromParam,
+  MetricTile, CaveatNote, StageLoopHub, buildLoopStages, FlowCrumb, useFromParam, HubNavGrid,
 } from "../shared";
 import {
   useGenerationRun, GenerateButton, ProvenanceBadge, GenerationErrorNote, GenerationProgressBar,
@@ -168,19 +168,8 @@ export function CreativeCommandCenter() {
                 )}
               </PrerequisiteGate>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-                {CHILDREN.map((c) => (
-                  <div key={c.to} className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <c.Icon className="w-4 h-4 text-interactive shrink-0" />
-                      <div className="min-w-0">
-                        <div className="text-title font-semibold text-foreground">{c.label}</div>
-                        <p className="text-caption text-muted-foreground/80 leading-relaxed">{c.desc}</p>
-                      </div>
-                    </div>
-                    <CrossLink to={c.to} label="Open" />
-                  </div>
-                ))}
+              <div className="pt-2">
+                <HubNavGrid items={CHILDREN} label="Explore Creative" />
               </div>
             </div>
           </div>

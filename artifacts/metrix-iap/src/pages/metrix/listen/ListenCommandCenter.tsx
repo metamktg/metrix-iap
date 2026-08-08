@@ -12,10 +12,16 @@
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { useAccount, useScopedAdAccountId } from "@/contexts/AccountContext";
 import { getAdAccounts, getAdAccount, getListenSignals } from "@/lib/data/metrixSeedAdapter";
-import { ModuleHeader, MetricTile, CrossLink, PendingState } from "../shared";
-import { Radio, CheckCircle2, Circle, AlertTriangle } from "lucide-react";
+import { ModuleHeader, MetricTile, PendingState, HubNavGrid } from "../shared";
+import { Radio, CheckCircle2, Circle, AlertTriangle, Bell, Activity, Lightbulb } from "lucide-react";
 
 const SECTION = "Listen · 02";
+
+const LISTEN_CHILDREN = [
+  { to: "/app/listen/alerts", label: "Alerts", desc: "High-impact signals worth acting on now.", Icon: Bell },
+  { to: "/app/listen/signal", label: "Signal", desc: "The full signal feed for this scope.", Icon: Activity },
+  { to: "/app/listen/recommendations", label: "Recommendations", desc: "Suggested next actions from what's been heard.", Icon: Lightbulb },
+];
 
 export function ListenCommandCenter() {
   const seed = useMetrixSeed();
@@ -87,20 +93,7 @@ export function ListenCommandCenter() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
-            <span className="text-body font-medium text-foreground">Alerts</span>
-            <CrossLink to="/app/listen/alerts" label="Open" />
-          </div>
-          <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
-            <span className="text-body font-medium text-foreground">Signal</span>
-            <CrossLink to="/app/listen/signal" label="Open" />
-          </div>
-          <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
-            <span className="text-body font-medium text-foreground">Recommendations</span>
-            <CrossLink to="/app/listen/recommendations" label="Open" />
-          </div>
-        </div>
+        <HubNavGrid items={LISTEN_CHILDREN} label="Explore Listen" />
       </div>
     </div>
   );
@@ -142,20 +135,7 @@ function ScopedListenSummary({ adAccountId }: { adAccountId: string }) {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
-            <span className="text-body font-medium text-foreground">Alerts</span>
-            <CrossLink to="/app/listen/alerts" label="Open" />
-          </div>
-          <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
-            <span className="text-body font-medium text-foreground">Signal</span>
-            <CrossLink to="/app/listen/signal" label="Open" />
-          </div>
-          <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
-            <span className="text-body font-medium text-foreground">Recommendations</span>
-            <CrossLink to="/app/listen/recommendations" label="Open" />
-          </div>
-        </div>
+        <HubNavGrid items={LISTEN_CHILDREN} label="Explore Listen" />
       </div>
     </div>
   );
