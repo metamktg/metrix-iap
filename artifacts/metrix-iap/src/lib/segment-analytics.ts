@@ -247,6 +247,9 @@ export interface VariableCarrier {
   pain_proof_variable?: string;
   proof_variable?: string;
   cta_variable?: string;
+  /** Registry `funnel_stage` (ST_) code — distinct from `stage`, which is a human display label (e.g. "TOF"/"MOF"), never a registry code. */
+  funnel_stage_variable?: string;
+  awareness_variable?: string;
 }
 
 export function codesFromCarrier(c: VariableCarrier | null | undefined): string[] {
@@ -259,6 +262,8 @@ export function codesFromCarrier(c: VariableCarrier | null | undefined): string[
     ...splitCodes(c.pain_proof_variable),
     ...splitCodes(c.proof_variable),
     ...splitCodes(c.cta_variable),
+    ...splitCodes(c.funnel_stage_variable),
+    ...splitCodes(c.awareness_variable),
   ];
 }
 

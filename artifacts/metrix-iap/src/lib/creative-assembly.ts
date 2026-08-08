@@ -22,6 +22,8 @@ function tagsFromPerfRow(row: CellPerformanceRow): string[] {
     row.pain_proof_variable,
     row.proof_variable,
     row.cta_variable,
+    row.funnel_stage_variable,
+    row.awareness_variable,
   ].filter((c): c is string => Boolean(c));
 }
 
@@ -34,6 +36,8 @@ function tagsFromLibraryCell(cell: MSTLibraryCell): string[] {
     cell.pain_proof_variable,
     cell.proof_variable,
     cell.cta_variable,
+    cell.funnel_stage_variable,
+    cell.awareness_variable,
   ].filter((c): c is string => Boolean(c));
 }
 
