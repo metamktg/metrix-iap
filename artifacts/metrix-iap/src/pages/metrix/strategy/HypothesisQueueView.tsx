@@ -23,6 +23,7 @@ import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { Layers, FlaskConical, AlertTriangle, ArrowRight, Beaker, Crosshair, Target, TrendingUp, ChevronDown } from "lucide-react";
 import type { ActiveHypothesis } from "@/lib/data/seedTypes";
 import { TokenizedConceptText } from "@/components/concept/ConceptChip";
+import { AddToTrayButton } from "@/components/tray/AddToTrayButton";
 import { cn } from "@workspace/command-deck/lib/utils";
 
 const SECTION = "Strategy · 04";
@@ -322,6 +323,16 @@ export function HypothesisQueueView() {
                 onClose={() => setDetail(null)}
                 footer={
                   <div className="flex items-center gap-4 flex-wrap">
+                    <AddToTrayButton
+                      scopeId={adAccountId ?? ""}
+                      item={{
+                        id: detail.id,
+                        kind: "hypothesis",
+                        title: deriveLabel(detail.label, 90),
+                        sub: detail.test_variant ? deriveLabel(detail.test_variant, 90) : undefined,
+                        href: `/app/strategy/hypotheses?focus=${detail.id}`,
+                      }}
+                    />
                     {detail.status === "ready_for_brief_builder" && (
                       <LoopAction
                         to={`/app/creative?from=strategy&fromHyp=${detail.id}`}

@@ -14,6 +14,7 @@ import {
   getDecision,
   setDecision,
 } from "@/lib/data/decisionStore";
+import { addToTray, removeFromTray } from "@/lib/data/trayStore";
 import { ConfidenceBadge, DenseText, UnconfiguredState } from "@/pages/metrix/shared";
 import type { RecommendationCard } from "@/lib/data/seedTypes";
 import {
@@ -117,7 +118,7 @@ function InlineDrawer({
       <div className="flex items-start gap-2 rounded-lg border border-amber-400/15 bg-amber-400/[0.04] px-3 py-2">
         <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
         <p className="text-caption text-amber-400/80 leading-relaxed">
-          Approving adds a manual implementation task to the Task Tray. No changes are applied automatically.
+          Adding to the tray files a manual implementation task in the Task Tray. No changes are applied automatically.
         </p>
       </div>
     </div>
@@ -140,12 +141,21 @@ function QueueCard({
   const impactLabel = fmtImpact(card);
 
   const approve = useCallback(() => {
+    // "Add to Tray": records the local decision (drives the tab lists) and
+    // files the item into the durable tray store the Task Tray renders.
     setDecision(adAccountId, card.id, "approved", {
       title: card.title,
       recommendedAction: card.recommended_action,
       actionGroup: scopeToActionGroup(card.scope),
       descriptor: card.manager_card_descriptor,
       scopeLabel: card.scope,
+    });
+    addToTray(adAccountId, {
+      id: card.id,
+      kind: "recommendation",
+      title: card.title,
+      sub: card.recommended_action,
+      href: "/app/listen/recommendations",
     });
   }, [adAccountId, card]);
 
@@ -156,6 +166,7 @@ function QueueCard({
 
   const restore = useCallback(() => {
     setDecision(adAccountId, card.id, "pending");
+    removeFromTray(adAccountId, card.id);
   }, [adAccountId, card.id]);
 
   const isDismissed = decision === "rejected";
@@ -201,7 +212,7 @@ function QueueCard({
           )}
           {isApproved && (
             <span className="flex items-center gap-1 text-label text-emerald-400 font-semibold">
-              <CheckCircle2 className="w-3.5 h-3.5" /> Approved
+              <CheckCircle2 className="w-3.5 h-3.5" /> In Tray
             </span>
           )}
         </div>
@@ -250,7 +261,7 @@ function QueueCard({
             onClick={(e) => { e.stopPropagation(); approve(); }}
             className="flex items-center gap-1.5 h-8 px-3 rounded bg-primary/15 border border-primary/30 text-caption font-semibold text-interactive hover:bg-primary/25 transition-colors"
           >
-            <Check className="w-3.5 h-3.5" /> Approve
+            <Check className="w-3.5 h-3.5" /> Add to Tray
           </button>
         </div>
       )}
@@ -364,7 +375,7 @@ export function ActionQueueView() {
 
   const TABS: { id: QueueTab; label: string; count: number }[] = [
     { id: "pending", label: "Pending", count: pendingCards.length },
-    { id: "approved", label: "Approved", count: approvedCards.length },
+    { id: "approved", label: "In Tray", count: approvedCards.length },
     { id: "dismissed", label: "Dismissed", count: dismissedCards.length },
   ];
 
@@ -389,7 +400,7 @@ export function ActionQueueView() {
           </h1>
           <p className="text-title text-muted-foreground/65 max-w-[520px] leading-relaxed">
             {allCards.length > 0
-              ? `${allCards.length} recommendation${allCards.length !== 1 ? "s" : ""} from the optimization loop, sorted by impact. Approve to add to the Task Tray.`
+              ? `${allCards.length} recommendation${allCards.length !== 1 ? "s" : ""} from the optimization loop, sorted by impact. Add items to your Task Tray to implement later.`
               : "Optimization loop recommendations appear here after analysis runs."}
           </p>
         </div>

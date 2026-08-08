@@ -102,7 +102,9 @@
   /* ── AppShell panel geometry — single-file reference for all shell dims ── */
   --sidebar-expanded: 216px;
   --sidebar-collapsed: 56px;
-  --tray-open: 308px;
+  --tray-open-min: 260px;
+  --tray-open-default: 308px;
+  --tray-open-max: 480px;
   --tray-closed: 46px;
   --topbar-h: 44px;
 

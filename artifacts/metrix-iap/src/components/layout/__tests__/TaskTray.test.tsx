@@ -1,13 +1,14 @@
 // ─── TaskTray tests ───────────────────────────────────────────────────
 //
-// Covers three surfaces:
+// Covers four surfaces:
 //   1. computeTrayCount — pure badge-count helper extracted from
-//      useTaskTrayCount; tests every combination of approved-undone,
-//      workflow (hypotheses / signals / pending drafts), and done items.
-//   2. decisionStore — the underlying store that feeds the Approved
-//      Actions section: setDecision, getAllApproved, toggleDone, undoLast.
-//   3. TaskTray component — RTL rendering of the Approved Actions section
-//      (grouped items, Done collapse toggle) and empty-state nudge links.
+//      useTaskTrayCount; combinations of open tray items, workflow items
+//      (hypotheses / signals / pending drafts), and caps.
+//   2. trayStore — the durable store that feeds the "My Tray" section:
+//      addToTray, removeFromTray, setTrayItemStatus, history queries.
+//   3. TaskTray component — RTL rendering of the My Tray section (items,
+//      complete/archive actions, History collapse) and empty-state nudges.
+//   4. Drag-to-resize + width persistence.
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, within, cleanup } from "@testing-library/react";
@@ -15,16 +16,16 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { computeTrayCount, TaskTray } from "../TaskTray";
 import {
-  setDecision,
-  toggleDone,
-  getAllApproved,
-  undoLast,
-  getDecision,
-  isDone,
-  hasLast,
+  addToTray,
+  removeFromTray,
+  setTrayItemStatus,
+  isInTray,
+  getTrayItem,
+  getOpenTrayItems,
+  getTrayHistory,
   _resetForTest,
-} from "@/lib/data/decisionStore";
-import type { CardMeta } from "@/lib/data/decisionStore";
+  type TrayItemInput,
+} from "@/lib/data/trayStore";
 
 // ── Mock wouter ───────────────────────────────────────────────────────
 // Replaces navigate with a spy so tests can assert the exact route
@@ -92,12 +93,13 @@ function closedTrayCtx() {
   return { open: false, toggle: vi.fn(), close: vi.fn() };
 }
 
-function makeMeta(overrides: Partial<CardMeta> = {}): CardMeta {
+function makeItem(overrides: Partial<TrayItemInput> = {}): TrayItemInput {
   return {
+    id: "card1",
+    kind: "recommendation",
     title: "Pause underperforming ad set",
-    recommendedAction: "Navigate to Ads Manager and pause the ad set.",
-    actionGroup: "Budget actions",
-    scopeLabel: "Bookster",
+    sub: "Navigate to Ads Manager and pause the ad set.",
+    href: "/app/listen/recommendations",
     ...overrides,
   };
 }
@@ -112,8 +114,6 @@ function renderTray() {
 }
 
 // Reset state and mocks before every test; RTL cleanup after every test.
-// In @testing-library/react v16 with vitest the automatic afterEach cleanup
-// is not guaranteed to run, so we call it explicitly.
 
 beforeEach(() => {
   _resetForTest();
@@ -133,42 +133,37 @@ afterEach(() => {
 
 describe("computeTrayCount", () => {
   it("returns 0 when all inputs are empty", () => {
-    expect(computeTrayCount({ approvedUndone: 0, hypotheses: [], signals: [], pendingDrafts: [] })).toBe(0);
+    expect(computeTrayCount({ openTrayItems: 0, hypotheses: [], signals: [], pendingDrafts: [] })).toBe(0);
   });
 
-  it("counts approved-undone items", () => {
-    expect(computeTrayCount({ approvedUndone: 3, hypotheses: [], signals: [], pendingDrafts: [] })).toBe(3);
-  });
-
-  it("done items are not included (caller must pre-filter)", () => {
-    expect(computeTrayCount({ approvedUndone: 0, hypotheses: [], signals: [], pendingDrafts: [] })).toBe(0);
-    expect(computeTrayCount({ approvedUndone: 2, hypotheses: [], signals: [], pendingDrafts: [] })).toBe(2);
+  it("counts open tray items", () => {
+    expect(computeTrayCount({ openTrayItems: 3, hypotheses: [], signals: [], pendingDrafts: [] })).toBe(3);
   });
 
   it("caps hypotheses at 3 regardless of array length", () => {
     const many = Array(10).fill({});
-    expect(computeTrayCount({ approvedUndone: 0, hypotheses: many, signals: [], pendingDrafts: [] })).toBe(3);
+    expect(computeTrayCount({ openTrayItems: 0, hypotheses: many, signals: [], pendingDrafts: [] })).toBe(3);
   });
 
   it("counts 1 and 2 hypotheses without capping", () => {
-    expect(computeTrayCount({ approvedUndone: 0, hypotheses: [{}], signals: [], pendingDrafts: [] })).toBe(1);
-    expect(computeTrayCount({ approvedUndone: 0, hypotheses: [{}, {}], signals: [], pendingDrafts: [] })).toBe(2);
+    expect(computeTrayCount({ openTrayItems: 0, hypotheses: [{}], signals: [], pendingDrafts: [] })).toBe(1);
+    expect(computeTrayCount({ openTrayItems: 0, hypotheses: [{}, {}], signals: [], pendingDrafts: [] })).toBe(2);
   });
 
   it("caps signals at 2 regardless of array length", () => {
     const many = Array(10).fill({});
-    expect(computeTrayCount({ approvedUndone: 0, hypotheses: [], signals: many, pendingDrafts: [] })).toBe(2);
+    expect(computeTrayCount({ openTrayItems: 0, hypotheses: [], signals: many, pendingDrafts: [] })).toBe(2);
   });
 
   it("counts 1 signal without capping", () => {
-    expect(computeTrayCount({ approvedUndone: 0, hypotheses: [], signals: [{}], pendingDrafts: [] })).toBe(1);
+    expect(computeTrayCount({ openTrayItems: 0, hypotheses: [], signals: [{}], pendingDrafts: [] })).toBe(1);
   });
 
   it("sums all four sources", () => {
-    // approvedUndone=1 + hyps capped@3 + signals capped@2 + drafts=4 = 10
+    // openTrayItems=1 + hyps capped@3 + signals capped@2 + drafts=4 = 10
     expect(
       computeTrayCount({
-        approvedUndone: 1,
+        openTrayItems: 1,
         hypotheses: Array(5).fill({}),
         signals: Array(5).fill({}),
         pendingDrafts: Array(4).fill({}),
@@ -179,146 +174,77 @@ describe("computeTrayCount", () => {
   it("caps the total at 99", () => {
     expect(
       computeTrayCount({
-        approvedUndone: 90,
+        openTrayItems: 90,
         hypotheses: Array(5).fill({}),
         signals: Array(5).fill({}),
         pendingDrafts: Array(50).fill({}),
       })
     ).toBe(99);
   });
-
-  it("returns 0 when all approved items are done (approvedUndone=0)", () => {
-    expect(computeTrayCount({ approvedUndone: 0, hypotheses: [], signals: [], pendingDrafts: [] })).toBe(0);
-  });
 });
 
 // ═════════════════════════════════════════════════════════════════════
-// 2. decisionStore — pure store functions
+// 2. trayStore — pure store functions
 // ═════════════════════════════════════════════════════════════════════
 
-describe("decisionStore: setDecision / getDecision", () => {
-  it("defaults to 'pending' for unknown keys", () => {
-    expect(getDecision("acct1", "card1")).toBe("pending");
+describe("trayStore: addToTray / removeFromTray / isInTray", () => {
+  it("adds an item as open", () => {
+    addToTray("acct1", makeItem());
+    expect(isInTray("acct1", "card1")).toBe(true);
+    expect(getTrayItem("acct1", "card1")?.status).toBe("open");
   });
 
-  it("stores an 'approved' decision with meta", () => {
-    setDecision("acct1", "card1", "approved", makeMeta());
-    expect(getDecision("acct1", "card1")).toBe("approved");
+  it("scopes items per account", () => {
+    addToTray("acct1", makeItem());
+    expect(isInTray("acct2", "card1")).toBe(false);
   });
 
-  it("stores a 'rejected' decision", () => {
-    setDecision("acct1", "card2", "rejected");
-    expect(getDecision("acct1", "card2")).toBe("rejected");
+  it("removeFromTray deletes the record entirely (undo of accidental add)", () => {
+    addToTray("acct1", makeItem());
+    removeFromTray("acct1", "card1");
+    expect(getTrayItem("acct1", "card1")).toBeUndefined();
   });
 
-  it("transitions from approved back to pending", () => {
-    setDecision("acct1", "card1", "approved", makeMeta());
-    setDecision("acct1", "card1", "pending");
-    expect(getDecision("acct1", "card1")).toBe("pending");
-  });
-
-  it("scopes keys per account — different accounts are independent", () => {
-    setDecision("acct1", "card1", "approved", makeMeta());
-    setDecision("acct2", "card1", "rejected");
-    expect(getDecision("acct1", "card1")).toBe("approved");
-    expect(getDecision("acct2", "card1")).toBe("rejected");
-  });
-
-  it("preserves existing meta when re-approving without new meta", () => {
-    const meta = makeMeta({ title: "Original title" });
-    setDecision("acct1", "card1", "approved", meta);
-    setDecision("acct1", "card1", "approved"); // no new meta
-    const [item] = getAllApproved();
-    expect(item.meta.title).toBe("Original title");
+  it("re-adding a completed item re-opens it", () => {
+    addToTray("acct1", makeItem());
+    setTrayItemStatus("acct1", "card1", "done");
+    addToTray("acct1", makeItem());
+    expect(getTrayItem("acct1", "card1")?.status).toBe("open");
   });
 });
 
-describe("decisionStore: getAllApproved", () => {
-  it("returns empty array when store is empty", () => {
-    expect(getAllApproved()).toHaveLength(0);
+describe("trayStore: setTrayItemStatus / history", () => {
+  it("marks an item done — it leaves the open list but stays in history", () => {
+    addToTray("a", makeItem({ id: "c1", title: "Task one" }));
+    setTrayItemStatus("a", "c1", "done");
+    expect(getOpenTrayItems("a")).toHaveLength(0);
+    const hist = getTrayHistory("a");
+    expect(hist).toHaveLength(1);
+    expect(hist[0].status).toBe("done");
   });
 
-  it("returns only approved records (not pending or rejected)", () => {
-    setDecision("a", "c1", "approved", makeMeta({ title: "Approved" }));
-    setDecision("a", "c2", "rejected");
-    setDecision("a", "c3", "pending");
-    const approved = getAllApproved();
-    expect(approved).toHaveLength(1);
-    expect(approved[0].cardId).toBe("c1");
+  it("archives an item — never deleted, kept in history", () => {
+    addToTray("a", makeItem({ id: "c1" }));
+    setTrayItemStatus("a", "c1", "archived");
+    expect(getTrayHistory("a")[0].status).toBe("archived");
   });
 
-  it("returns approved records with correct scopeId and cardId", () => {
-    setDecision("scope-abc", "card-xyz", "approved", makeMeta());
-    const [item] = getAllApproved();
-    expect(item.scopeId).toBe("scope-abc");
-    expect(item.cardId).toBe("card-xyz");
-  });
-
-  it("approved records without meta are excluded (meta required for tray display)", () => {
-    setDecision("a", "c1", "approved");
-    const approved = getAllApproved();
-    expect(approved).toHaveLength(0);
-  });
-
-  it("returns done flag correctly for toggled items", () => {
-    setDecision("a", "c1", "approved", makeMeta());
-    expect(getAllApproved()[0].done).toBe(false);
-    toggleDone("a", "c1");
-    expect(getAllApproved()[0].done).toBe(true);
-  });
-});
-
-describe("decisionStore: toggleDone", () => {
-  it("marks an approved item as done", () => {
-    setDecision("a", "c1", "approved", makeMeta());
-    toggleDone("a", "c1");
-    expect(isDone("a", "c1")).toBe(true);
-  });
-
-  it("toggles done back to false", () => {
-    setDecision("a", "c1", "approved", makeMeta());
-    toggleDone("a", "c1");
-    toggleDone("a", "c1");
-    expect(isDone("a", "c1")).toBe(false);
+  it("re-opening a done item moves it back out of history", () => {
+    addToTray("a", makeItem({ id: "c1" }));
+    setTrayItemStatus("a", "c1", "done");
+    setTrayItemStatus("a", "c1", "open");
+    expect(getOpenTrayItems("a")).toHaveLength(1);
+    expect(getTrayHistory("a")).toHaveLength(0);
   });
 
   it("is a no-op on a non-existent key", () => {
-    toggleDone("a", "does-not-exist");
-    expect(isDone("a", "does-not-exist")).toBe(false);
+    expect(() => setTrayItemStatus("a", "nope", "done")).not.toThrow();
   });
 
-  it("undone and done items are separately countable via getAllApproved", () => {
-    setDecision("a", "c1", "approved", makeMeta({ title: "Undone" }));
-    setDecision("a", "c2", "approved", makeMeta({ title: "Done" }));
-    toggleDone("a", "c2");
-    const all = getAllApproved();
-    const undone = all.filter((i) => !i.done);
-    const done = all.filter((i) => i.done);
-    expect(undone).toHaveLength(1);
-    expect(undone[0].meta.title).toBe("Undone");
-    expect(done).toHaveLength(1);
-    expect(done[0].meta.title).toBe("Done");
-  });
-});
-
-describe("decisionStore: undoLast", () => {
-  it("reverts the last setDecision call", () => {
-    setDecision("a", "c1", "approved", makeMeta());
-    expect(getDecision("a", "c1")).toBe("approved");
-    undoLast();
-    expect(getDecision("a", "c1")).toBe("pending");
-  });
-
-  it("hasLast is true after a decision, false after undo", () => {
-    setDecision("a", "c1", "approved", makeMeta());
-    expect(hasLast()).toBe(true);
-    undoLast();
-    expect(hasLast()).toBe(false);
-  });
-
-  it("is a no-op when there is nothing to undo", () => {
-    expect(() => undoLast()).not.toThrow();
-    expect(getAllApproved()).toHaveLength(0);
+  it("getOpenTrayItems without a scope returns items across scopes", () => {
+    addToTray("a", makeItem({ id: "c1" }));
+    addToTray("b", makeItem({ id: "c2" }));
+    expect(getOpenTrayItems()).toHaveLength(2);
   });
 });
 
@@ -326,19 +252,18 @@ describe("decisionStore: undoLast", () => {
 // 3. TaskTray component — rendering
 // ═════════════════════════════════════════════════════════════════════
 
-// Helper: find the Approved Actions section container
-function getApprovedSection(): HTMLElement {
+// Helper: find the My Tray section container
+function getTraySection(): HTMLElement {
   const heading = screen
-    .getAllByText("Approved Actions")
+    .getAllByText("My Tray")
     .find((el) => el.tagName === "SPAN");
   return heading!.closest(".px-4") as HTMLElement;
 }
 
 describe("TaskTray: empty-state nudge links navigate to the correct routes", () => {
-  it("Approved Actions nudge navigates to /app/listen/recommendations", () => {
+  it("My Tray nudge navigates to /app/listen/recommendations", () => {
     renderTray();
-    const section = getApprovedSection();
-    // The nudge button label differs from the bottom nav-link label ("Recommendations")
+    const section = getTraySection();
     const nudge = within(section).getByRole("button", { name: /go to recommendations/i });
     fireEvent.click(nudge);
     expect(mockNavigate).toHaveBeenCalledWith("/app/listen/recommendations");
@@ -372,117 +297,105 @@ describe("TaskTray: empty-state nudge links navigate to the correct routes", () 
   });
 });
 
-describe("TaskTray: Approved Actions section", () => {
-  it("shows 'Approve a recommendation to start' when store is empty", () => {
+describe("TaskTray: My Tray section", () => {
+  it("shows the add-to-tray hint when the store is empty", () => {
     renderTray();
-    const section = getApprovedSection();
-    expect(within(section).getByText(/approve a recommendation to start/i)).toBeTruthy();
+    const section = getTraySection();
+    expect(within(section).getByText(/nothing in your tray yet/i)).toBeTruthy();
   });
 
-  it("renders an approved item by title", () => {
-    setDecision("acct1", "card1", "approved", makeMeta({ title: "Increase budget by 20%" }));
+  it("renders an open tray item by title", () => {
+    addToTray("acct1", makeItem({ id: "c1", title: "Increase budget by 20%" }));
     renderTray();
-    const section = getApprovedSection();
+    const section = getTraySection();
     expect(within(section).getByText("Increase budget by 20%")).toBeTruthy();
   });
 
-  it("renders multiple approved items", () => {
-    setDecision("acct1", "card1", "approved", makeMeta({ title: "First action" }));
-    setDecision("acct1", "card2", "approved", makeMeta({ title: "Second action" }));
+  it("renders multiple open items", () => {
+    addToTray("acct1", makeItem({ id: "c1", title: "First action" }));
+    addToTray("acct1", makeItem({ id: "c2", title: "Second action" }));
     renderTray();
-    const section = getApprovedSection();
+    const section = getTraySection();
     expect(within(section).getByText("First action")).toBeTruthy();
     expect(within(section).getByText("Second action")).toBeTruthy();
   });
 
-  it("groups items under GROUP_ORDER labels", () => {
-    setDecision("acct1", "c1", "approved", makeMeta({ actionGroup: "Budget actions", title: "Budget item" }));
-    setDecision("acct1", "c2", "approved", makeMeta({ actionGroup: "Creative actions", title: "Creative item" }));
+  it("shows a kind chip on each item", () => {
+    addToTray("acct1", makeItem({ id: "c1", kind: "hypothesis", title: "Hyp item" }));
     renderTray();
-    const section = getApprovedSection();
-    // "Budget actions" / "Creative actions" appear both as the group header <p> AND
-    // as the actionGroup badge <span> on each card. Verify the <p> heading exists.
-    const budgetEls = within(section).getAllByText("Budget actions");
-    expect(budgetEls.some((el) => el.tagName === "P")).toBe(true);
-    const creativeEls = within(section).getAllByText("Creative actions");
-    expect(creativeEls.some((el) => el.tagName === "P")).toBe(true);
-    expect(within(section).getByText("Budget item")).toBeTruthy();
-    expect(within(section).getByText("Creative item")).toBeTruthy();
+    const section = getTraySection();
+    expect(within(section).getByText("Hypothesis")).toBeTruthy();
   });
 
-  it("renders ungrouped items without a group header for unrecognised actionGroup", () => {
-    setDecision("acct1", "c1", "approved", makeMeta({ actionGroup: "Custom group", title: "Custom item" }));
+  it("marking an item complete moves it into History", () => {
+    addToTray("acct1", makeItem({ id: "c1", title: "Complete me" }));
     renderTray();
-    const section = getApprovedSection();
-    expect(within(section).getByText("Custom item")).toBeTruthy();
-    // "Custom group" is not in GROUP_ORDER so no <p> group heading should be rendered.
-    // It may still appear as the actionGroup badge <span> on the card itself.
-    const els = within(section).queryAllByText("Custom group");
-    const hasGroupHeader = els.some((el) => el.tagName === "P");
-    expect(hasGroupHeader).toBe(false);
+    const section = getTraySection();
+    fireEvent.click(within(section).getByRole("button", { name: /mark complete/i }));
+    // No longer listed as an open card…
+    expect(within(section).queryByRole("button", { name: /mark complete/i })).toBeNull();
+    // …but available behind the History toggle.
+    fireEvent.click(within(section).getByText(/history \(1\)/i));
+    expect(within(section).getByText("Complete me")).toBeTruthy();
+    expect(within(section).getByText("Completed")).toBeTruthy();
   });
 
-  it("does not show a Done toggle when no items are done", () => {
-    setDecision("acct1", "c1", "approved", makeMeta({ title: "Active item" }));
+  it("archiving an item moves it into History with an Archived chip", () => {
+    addToTray("acct1", makeItem({ id: "c1", title: "Archive me" }));
     renderTray();
-    const section = getApprovedSection();
-    expect(within(section).queryByText(/done \(/i)).toBeNull();
+    const section = getTraySection();
+    fireEvent.click(within(section).getByRole("button", { name: /archive "archive me"/i }));
+    fireEvent.click(within(section).getByText(/history \(1\)/i));
+    expect(within(section).getByText("Archived")).toBeTruthy();
   });
 
-  it("shows a Done toggle when at least one item is marked done", () => {
-    setDecision("acct1", "c1", "approved", makeMeta({ title: "Completed item" }));
-    toggleDone("acct1", "c1");
+  it("history is never deleted — both done and archived items are listed", () => {
+    addToTray("acct1", makeItem({ id: "c1", title: "Done one" }));
+    addToTray("acct1", makeItem({ id: "c2", title: "Archived one" }));
+    setTrayItemStatus("acct1", "c1", "done");
+    setTrayItemStatus("acct1", "c2", "archived");
     renderTray();
-    const section = getApprovedSection();
-    expect(within(section).getByText(/done \(1\)/i)).toBeTruthy();
+    const section = getTraySection();
+    fireEvent.click(within(section).getByText(/history \(2\)/i));
+    expect(within(section).getByText("Done one")).toBeTruthy();
+    expect(within(section).getByText("Archived one")).toBeTruthy();
   });
 
-  it("done item is hidden behind the Done toggle until expanded", () => {
-    setDecision("acct1", "c1", "approved", makeMeta({ title: "Done task" }));
-    toggleDone("acct1", "c1");
+  it("a history item can be moved back to the tray", () => {
+    addToTray("acct1", makeItem({ id: "c1", title: "Restore me" }));
+    setTrayItemStatus("acct1", "c1", "done");
     renderTray();
-    const section = getApprovedSection();
-    // Before expand: "Done task" is not in the DOM (conditional render)
-    expect(within(section).queryByText("Done task")).toBeNull();
-    // Clicking the toggle shows it
-    fireEvent.click(within(section).getByText(/done \(1\)/i));
-    expect(within(section).getByText("Done task")).toBeTruthy();
+    const section = getTraySection();
+    fireEvent.click(within(section).getByText(/history \(1\)/i));
+    fireEvent.click(within(section).getByRole("button", { name: /move "restore me" back to tray/i }));
+    expect(getOpenTrayItems("acct1")).toHaveLength(1);
   });
 
-  it("Done toggle expands then collapses the done list on successive clicks", () => {
-    setDecision("acct1", "c1", "approved", makeMeta({ title: "Done entry" }));
-    toggleDone("acct1", "c1");
+  it("open item with an href exposes an open-source button that navigates", () => {
+    addToTray("acct1", makeItem({ id: "c1", title: "Linked", href: "/app/strategy/hypotheses?focus=h1" }));
     renderTray();
-    const section = getApprovedSection();
-    const toggle = within(section).getByText(/done \(1\)/i);
+    const section = getTraySection();
+    fireEvent.click(within(section).getByRole("button", { name: /open source of "linked"/i }));
+    expect(mockNavigate).toHaveBeenCalledWith("/app/strategy/hypotheses?focus=h1");
+  });
 
-    // Expand
+  it("History toggle expands then collapses on successive clicks", () => {
+    addToTray("acct1", makeItem({ id: "c1", title: "Done entry" }));
+    setTrayItemStatus("acct1", "c1", "done");
+    renderTray();
+    const section = getTraySection();
+    const toggle = within(section).getByText(/history \(1\)/i);
     fireEvent.click(toggle);
     expect(within(section).getByText("Done entry")).toBeTruthy();
-
-    // Collapse
     fireEvent.click(toggle);
     expect(within(section).queryByText("Done entry")).toBeNull();
   });
 
-  it("approved undone item has a 'Mark done' accessible button", () => {
-    setDecision("acct1", "c1", "approved", makeMeta({ title: "Todo" }));
+  it("does not show a History toggle when nothing is done or archived", () => {
+    addToTray("acct1", makeItem({ id: "c1" }));
     renderTray();
-    const section = getApprovedSection();
-    // getAllByRole because there could be multiple pending items in theory, but here only one
-    const btn = within(section).getAllByRole("button", { name: /mark done/i });
-    expect(btn.length).toBeGreaterThan(0);
-  });
-
-  it("approved done item has a 'Mark not done' accessible button when expanded", () => {
-    setDecision("acct1", "c1", "approved", makeMeta({ title: "Finished" }));
-    toggleDone("acct1", "c1");
-    renderTray();
-    const section = getApprovedSection();
-    // Expand the done list first
-    fireEvent.click(within(section).getByText(/done \(1\)/i));
-    const btn = within(section).getAllByRole("button", { name: /mark not done/i });
-    expect(btn.length).toBeGreaterThan(0);
+    const section = getTraySection();
+    expect(within(section).queryByText(/history \(/i)).toBeNull();
   });
 });
 
@@ -503,8 +416,8 @@ describe("TaskTray: minimised strip (closed state)", () => {
     expect(badges.length).toBe(0);
   });
 
-  it("shows a badge when there are approved-undone items", () => {
-    setDecision("acct1", "c1", "approved", makeMeta({ title: "Pending item" }));
+  it("shows a badge when there are open tray items", () => {
+    addToTray("acct1", makeItem({ id: "c1", title: "Pending item" }));
     renderTray();
     const badge = document.querySelector(".tabular-nums");
     expect(badge).toBeTruthy();
@@ -512,9 +425,9 @@ describe("TaskTray: minimised strip (closed state)", () => {
   });
 
   it("badge count does not include done items", () => {
-    setDecision("a", "c1", "approved", makeMeta({ title: "Active" }));
-    setDecision("a", "c2", "approved", makeMeta({ title: "Completed" }));
-    toggleDone("a", "c2"); // only 1 undone
+    addToTray("a", makeItem({ id: "c1", title: "Active" }));
+    addToTray("a", makeItem({ id: "c2", title: "Completed" }));
+    setTrayItemStatus("a", "c2", "done");
     renderTray();
     const badge = document.querySelector(".tabular-nums");
     expect(badge!.textContent).toBe("1");
@@ -522,12 +435,111 @@ describe("TaskTray: minimised strip (closed state)", () => {
 
   it("badge caps display at 9", () => {
     for (let i = 0; i < 10; i++) {
-      setDecision("a", `c${i}`, "approved", makeMeta({ title: `Item ${i}` }));
+      addToTray("a", makeItem({ id: `c${i}`, title: `Item ${i}` }));
     }
     renderTray();
     const badge = document.querySelector(".tabular-nums");
     // Math.min(10, 9) = 9
     expect(badge!.textContent).toBe("9");
+  });
+});
+
+// ═════════════════════════════════════════════════════════════════════
+// 4. Drag-to-resize + persistence — mirrors the sidebar's slide-handle
+//    clamp/snap behaviour, but for the right-docked tray.
+// ═════════════════════════════════════════════════════════════════════
+
+const WIDTH_KEY = "metrix_tray_width";
+
+function getResizeHandle(): HTMLElement {
+  return screen.getByLabelText("Task tray resize handle");
+}
+
+function drag(handle: HTMLElement, dx: number) {
+  fireEvent.pointerDown(handle, { clientX: 0 });
+  fireEvent.pointerMove(window, { clientX: dx });
+  fireEvent.pointerUp(window);
+}
+
+describe("TaskTray: drag-to-resize", () => {
+  beforeEach(() => {
+    localStorage.removeItem(WIDTH_KEY);
+  });
+
+  it("renders a resize handle only while open", () => {
+    renderTray();
+    expect(screen.getByLabelText("Task tray resize handle")).toBeTruthy();
+  });
+
+  it("does not render a resize handle when closed", () => {
+    mockUseTaskTray.mockReturnValue(closedTrayCtx());
+    renderTray();
+    expect(screen.queryByLabelText("Task tray resize handle")).toBeNull();
+  });
+
+  it("dragging the handle left grows the tray and persists the new width", () => {
+    renderTray();
+    const panel = screen.getByLabelText("Task tray resize handle").parentElement as HTMLElement;
+    const startWidth = panel.style.width;
+    // Handle sits on the left edge — dragging left (negative dx) grows the
+    // tray toward the max width.
+    drag(getResizeHandle(), -60);
+    expect(panel.style.width).not.toBe(startWidth);
+    const stored = localStorage.getItem(WIDTH_KEY);
+    expect(stored).toBeTruthy();
+    expect(Number(stored)).toBeGreaterThan(308);
+  });
+
+  it("dragging the handle right shrinks the tray toward the minimum width", () => {
+    renderTray();
+    drag(getResizeHandle(), 40);
+    const stored = Number(localStorage.getItem(WIDTH_KEY));
+    expect(stored).toBeLessThan(308);
+    expect(stored).toBeGreaterThanOrEqual(200); // never below the collapse-snap floor
+  });
+
+  it("dragging far enough toward the closed edge snaps the tray shut", () => {
+    const trayCtx = openTrayCtx();
+    mockUseTaskTray.mockReturnValue(trayCtx);
+    renderTray();
+    // Drag well past the collapse-snap threshold (default 308 - 300 = 8px, far below 200).
+    drag(getResizeHandle(), 300);
+    expect(trayCtx.close).toHaveBeenCalled();
+  });
+
+  it("a plain click on the handle (no drag) does not resize or close", () => {
+    const trayCtx = openTrayCtx();
+    mockUseTaskTray.mockReturnValue(trayCtx);
+    renderTray();
+    const handle = getResizeHandle();
+    fireEvent.pointerDown(handle, { clientX: 0 });
+    fireEvent.pointerUp(window);
+    expect(trayCtx.close).not.toHaveBeenCalled();
+    expect(localStorage.getItem(WIDTH_KEY)).toBeNull();
+  });
+
+  it("restores a previously persisted width on mount", () => {
+    localStorage.setItem(WIDTH_KEY, "400");
+    renderTray();
+    const panel = screen.getByLabelText("Task tray resize handle").parentElement as HTMLElement;
+    expect(panel.style.width).toBe("400px");
+  });
+
+  it("ignores a corrupt/out-of-range stored width and falls back to the default", () => {
+    localStorage.setItem(WIDTH_KEY, "99999");
+    renderTray();
+    const panel = screen.getByLabelText("Task tray resize handle").parentElement as HTMLElement;
+    expect(panel.style.width).toBe("308px");
+  });
+});
+
+describe("TaskTray: closed strip uses the collapsed width", () => {
+  it("renders at the fixed closed width", () => {
+    mockUseTaskTray.mockReturnValue(closedTrayCtx());
+    renderTray();
+    const strip = document.querySelector("[data-open='false']") as HTMLElement;
+    expect(strip).toBeTruthy();
+    expect(strip.style.width).toBe("46px");
   });
 });
 
@@ -538,24 +550,23 @@ describe("TaskTray: header summary", () => {
   });
 
   it("shows singular 'action pending' for a single item", () => {
-    setDecision("acct1", "c1", "approved", makeMeta({ title: "Single task" }));
+    addToTray("acct1", makeItem({ id: "c1", title: "Single task" }));
     renderTray();
     expect(screen.getByText("1 action pending")).toBeTruthy();
   });
 
   it("shows plural 'actions pending' for multiple items", () => {
-    setDecision("acct1", "c1", "approved", makeMeta({ title: "Task 1" }));
-    setDecision("acct1", "c2", "approved", makeMeta({ title: "Task 2" }));
+    addToTray("acct1", makeItem({ id: "c1", title: "Task 1" }));
+    addToTray("acct1", makeItem({ id: "c2", title: "Task 2" }));
     renderTray();
     expect(screen.getByText("2 actions pending")).toBeTruthy();
   });
 
-  it("does not count done approved items in the header total", () => {
-    setDecision("acct1", "c1", "approved", makeMeta({ title: "Active" }));
-    setDecision("acct1", "c2", "approved", makeMeta({ title: "Done" }));
-    toggleDone("acct1", "c2");
+  it("does not count done items in the header total", () => {
+    addToTray("acct1", makeItem({ id: "c1", title: "Active" }));
+    addToTray("acct1", makeItem({ id: "c2", title: "Done" }));
+    setTrayItemStatus("acct1", "c2", "done");
     renderTray();
-    // Only 1 undone → "1 action pending"
     expect(screen.getByText("1 action pending")).toBeTruthy();
   });
 });
