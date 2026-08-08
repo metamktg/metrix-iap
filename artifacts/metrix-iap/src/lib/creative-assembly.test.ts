@@ -6,7 +6,7 @@
 import { describe, it, expect } from "vitest";
 import { cardFromCell, primaryAdForCell } from "./creative-assembly";
 import { buildAdsManagerAdUrl } from "@/components/creative/AdsManagerLink";
-import type { AdRecord } from "@/lib/data/seedTypes";
+import type { AdRecord, MST } from "@/lib/data/seedTypes";
 
 const ads: AdRecord[] = [
   { ad_name: "C1A_T1", cell: "C1A", meta_ad_id: null, creative_asset_url: null },
@@ -80,6 +80,37 @@ describe("cardFromCell ad wiring", () => {
     expect(card.assetUrl).toBeNull();
     expect(card.metaAdId).toBeNull();
     expect(card.adAccountId).toBeNull();
+  });
+});
+
+describe("cardFromCell tag propagation", () => {
+  const mst: MST = {
+    status: "active",
+    render_policy: "",
+    local_book2_library: [
+      {
+        cell_id: "C1A",
+        concept_id: "C1",
+        book2_concept_name: "Concept One",
+        mapped_ad_names: [],
+        primary_message: "",
+        secondary_message: "",
+        cta: "",
+        visual_system: "",
+        tone_variable: "TN_bold",
+        funnel_stage_variable: "ST_Lower",
+        awareness_variable: "AW_ProblemAware",
+        stage: "MOF", // display label — must stay distinct from the registry codes
+      },
+    ],
+    source_artifacts: [],
+  };
+
+  it("exposes confirmed funnel_stage/awareness registry codes as tags without touching the display `stage` label", () => {
+    const card = cardFromCell("C1A", { ads: [], metaAdAccountId: null, mst });
+    expect(card.tags).toContain("ST_Lower");
+    expect(card.tags).toContain("AW_ProblemAware");
+    expect(card.stage).toBe("MOF");
   });
 });
 

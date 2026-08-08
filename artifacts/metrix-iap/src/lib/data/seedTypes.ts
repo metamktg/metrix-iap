@@ -68,6 +68,9 @@ export interface CellPerformanceRow {
   pain_proof_variable?: string;
   proof_variable?: string;
   cta_variable?: string;
+  /** Registry `funnel_stage` (ST_) code — distinct from `stage`, which is a human display label (e.g. "TOF"/"MOF"), never a registry code. */
+  funnel_stage_variable?: string;
+  awareness_variable?: string;
   stage?: string;
   iap_read?: string;
   /** Downstream funnel counts — present when the performance export carries them. */
@@ -424,6 +427,9 @@ export interface MSTLibraryCell {
   pain_proof_variable?: string;
   proof_variable?: string;
   cta_variable?: string;
+  /** Registry `funnel_stage` (ST_) code — distinct from `stage`, which is a human display label (e.g. "TOF"/"MOF"), never a registry code. */
+  funnel_stage_variable?: string;
+  awareness_variable?: string;
   stage?: string;
   iap_read?: string;
   asset_filename?: string;

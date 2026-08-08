@@ -51,6 +51,8 @@ export function CreativeScanView() {
           { label: "Concept", get: (c) => c.concept_variable },
           { label: "Proof", get: (c) => c.proof_variable },
           { label: "CTA", get: (c) => c.cta_variable },
+          { label: "Funnel stage", get: (c) => c.funnel_stage_variable },
+          { label: "Awareness", get: (c) => c.awareness_variable },
         ];
         const variableGroups = VAR_FAMILIES.map((f) => {
           const counts = new Map<string, number>();

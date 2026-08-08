@@ -91,7 +91,11 @@ import {
   invalidateMetrixSeedCache,
 } from "../lib/metrixSeedAssembly";
 import { randomBytes } from "node:crypto";
-import { deleteDerivedLibraryEntries } from "../lib/deconstructionEngine";
+import {
+  deleteDerivedLibraryEntries,
+  classifyCellCreative,
+  fileCellCreativeOverride,
+} from "../lib/deconstructionEngine";
 import { getSupabase } from "../lib/supabase";
 import { restageImportsForRun } from "../lib/analysisEngine";
 import { parseIapCsv, IapCsvFormatError } from "../lib/iapCsvParser";
@@ -1339,6 +1343,9 @@ router.post("/metrix/accounts/:accountId/cells/:cellId/creative", requireAuth, a
     content_base64: z.string().min(1),
     filename: z.string().min(1),
     content_type: z.string().min(1),
+    // Set once the caller has seen a "mismatch" validation and explicitly
+    // chose to file anyway (see the 409 response shape below).
+    override: z.boolean().optional(),
   });
   const parsed = CellCreativeUploadBody.safeParse(req.body);
   if (!parsed.success) {
@@ -1372,23 +1379,54 @@ router.post("/metrix/accounts/:accountId/cells/:cellId/creative", requireAuth, a
       res.status(413).json({ message: "File is too large — the limit is 8 MB." });
       return;
     }
-    const hexBytes = `\\x${content.toString("hex")}`;
-    const upsert = await supabase.from("cell_creative_overrides").upsert(
-      {
-        account_id: accountId,
-        cell_id: cellId,
-        asset_bytes: hexBytes,
-        content_type: parsed.data.content_type,
-        filename: parsed.data.filename,
-        uploaded_at: new Date().toISOString(),
-      },
-      { onConflict: "account_id,cell_id" },
-    );
-    if (upsert.error) throw new Error(upsert.error.message);
-    invalidateMetrixSeedCache();
+
+    // Classify against the registry, scoped to THIS cell — never guessed —
+    // before anything is written. A confident, matching result files
+    // immediately; a mismatch is reported back for the user to confirm
+    // before it overwrites the cell's creative.
+    const validation = await classifyCellCreative({
+      accountId,
+      cellId,
+      filename: parsed.data.filename,
+      contentType: parsed.data.content_type,
+      bytes: content,
+    });
+    if (validation.status === "mismatch" && !parsed.data.override) {
+      res.status(409).json({
+        message: "This upload doesn't match the cell's recorded creative DNA — review before filing.",
+        status: "needs_confirmation",
+        validation: {
+          overall_confidence: validation.overall_confidence,
+          variables: validation.variables,
+          expected: validation.expected,
+          missing: validation.missing,
+          conflicting: validation.conflicting,
+        },
+      });
+      return;
+    }
+
+    await fileCellCreativeOverride({
+      accountId,
+      cellId,
+      filename: parsed.data.filename,
+      contentType: parsed.data.content_type,
+      bytes: content,
+      validation,
+      overridden: validation.status === "mismatch" && parsed.data.override === true,
+    });
     res.json({
       asset_url: `/api/metrix/accounts/${accountId}/cells/${cellId}/creative`,
       cell_id: cellId,
+      validation:
+        validation.status === "unclassified"
+          ? null
+          : {
+              status: validation.status,
+              overall_confidence: validation.overall_confidence,
+              variables: validation.variables,
+              expected: validation.expected,
+            },
     });
   } catch (err) {
     req.log.error({ err, accountId, cellId }, "Failed to upload cell creative");
