@@ -10,16 +10,19 @@ import {
   ArrowRight, Zap, ChevronRight, Check, RotateCcw,
   ChevronDown, ChevronUp, PlayCircle, Loader2,
   CheckCircle2, XCircle, Upload, CalendarRange, UploadCloud,
+  Archive,
 } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { useAccount } from "@/contexts/AccountContext";
 import { useTaskTray } from "@/contexts/TaskTrayContext";
+import { useDragResize } from "@/hooks/useDragResize";
 import {
-  useDecisions,
-  getAllApproved,
-  toggleDone,
-  setDecision,
-} from "@/lib/data/decisionStore";
+  useTrayItems,
+  getOpenTrayItems,
+  getTrayHistory,
+  setTrayItemStatus,
+  type ScopedTrayItem,
+} from "@/lib/data/trayStore";
 import {
   useStartManualAnalysisRun,
   useGetLatestAnalysisRun,
@@ -30,14 +33,14 @@ import type { SignalCard } from "@/lib/data/seedTypes";
 
 // ─── Helpers ──────────────────────────────────────────────────────────
 
-const GROUP_ORDER = [
-  "Budget actions",
-  "Creative actions",
-  "Strategy updates",
-  "Brief updates",
-  "MST setup actions",
-  "Account setup",
-];
+// Kind label shown on each tray item chip.
+const KIND_LABEL = {
+  recommendation: "Recommendation",
+  hypothesis: "Hypothesis",
+  brief: "Brief",
+  signal: "Signal",
+  custom: "Task",
+} as const;
 
 const DATE_PRESETS = [
   { id: "7d" as const, label: "7 days" },
@@ -49,11 +52,51 @@ const DATE_PRESETS = [
 // Left-accent stripe colors keyed to item type
 const ACCENT = {
   approved: "before:bg-emerald-400",
+  recommendation: "before:bg-emerald-400",
   hypothesis: "before:bg-violet-400",
   brief: "before:bg-chart-1",
   signal: "before:bg-amber-400",
+  custom: "before:bg-emerald-400",
   nav: "",
 } as const;
+
+// ─── Resize geometry ────────────────────────────────────────────────────
+// Mirrors the sidebar's named-width pattern (EXPANDED_WIDTH / COLLAPSED_WIDTH
+// / COLLAPSE_SNAP_WIDTH) but for the right-docked tray, which resizes wider
+// than its historical fixed 308px default rather than only toggling between
+// two fixed sizes.
+const TRAY_CLOSED_WIDTH = 46;
+const TRAY_MIN_WIDTH = 260;
+const TRAY_DEFAULT_WIDTH = 308;
+const TRAY_MAX_WIDTH = 480;
+// Drop below this width mid-drag and releasing snaps the tray shut.
+const TRAY_COLLAPSE_SNAP_WIDTH = 200;
+
+// ─── Width persistence ──────────────────────────────────────────────────
+// Same load/save pattern as the sidebar's collapse preference: the user's
+// last resized open width survives a reload instead of resetting to the
+// 308px default.
+
+const WIDTH_STORAGE_KEY = "metrix_tray_width";
+
+function loadTrayWidth(): number {
+  try {
+    const raw = localStorage.getItem(WIDTH_STORAGE_KEY);
+    const n = raw ? parseInt(raw, 10) : NaN;
+    if (!Number.isNaN(n) && n >= TRAY_MIN_WIDTH && n <= TRAY_MAX_WIDTH) return n;
+  } catch {
+    /* ignore */
+  }
+  return TRAY_DEFAULT_WIDTH;
+}
+
+function saveTrayWidth(width: number) {
+  try {
+    localStorage.setItem(WIDTH_STORAGE_KEY, String(width));
+  } catch {
+    /* ignore */
+  }
+}
 
 // ─── Analysis section ─────────────────────────────────────────────────
 
@@ -356,57 +399,92 @@ function TrayItem({
   );
 }
 
-function ApprovedTaskItem({
-  item,
-}: {
-  item: { scopeId: string; cardId: string; meta: import("@/lib/data/decisionStore").CardMeta; done: boolean };
-}) {
-  const { scopeId, cardId, meta, done } = item;
+function TrayTaskItem({ item }: { item: ScopedTrayItem }) {
+  const [, navigate] = useLocation();
+  const { scopeId, id, kind, title, sub, href, status } = item;
+  const settled = status !== "open";
   return (
-    <TrayCard accent="approved" muted={done}>
+    <TrayCard accent={kind} muted={settled}>
       <div className="flex items-start gap-2">
-        <button
-          onClick={() => toggleDone(scopeId, cardId)}
-          aria-label={done ? "Mark not done" : "Mark done"}
-          className={cn(
-            "mt-0.5 w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors",
-            done
-              ? "bg-emerald-400/25 border-emerald-400/50 text-emerald-400"
-              : "border-border/50 text-transparent hover:border-emerald-400/60 hover:bg-emerald-400/5"
-          )}
-        >
-          <Check className="w-3.5 h-3.5" />
-        </button>
+        {status === "open" && (
+          <button
+            onClick={() => setTrayItemStatus(scopeId, id, "done")}
+            aria-label="Mark complete"
+            title="Mark complete"
+            className="mt-0.5 w-4 h-4 rounded border border-border/50 text-transparent hover:border-emerald-400/60 hover:bg-emerald-400/5 hover:text-emerald-400/60 flex items-center justify-center shrink-0 transition-colors"
+          >
+            <Check className="w-3.5 h-3.5" />
+          </button>
+        )}
 
         <div className="flex-1 min-w-0">
-          <p className={cn("text-body font-medium leading-tight", done ? "text-foreground/40 line-through" : "text-foreground/90")}>
-            {meta.title}
+          <p
+            className={cn(
+              "text-body font-medium leading-tight",
+              status === "done"
+                ? "text-foreground/40 line-through"
+                : status === "archived"
+                  ? "text-foreground/40"
+                  : "text-foreground/90",
+              href && !settled && "cursor-pointer hover:text-interactive transition-colors"
+            )}
+            onClick={href && !settled ? () => navigate(href) : undefined}
+          >
+            {title}
           </p>
-          {!done && (
-            <p className="text-label text-foreground/60 mt-0.5 leading-snug line-clamp-2">
-              {meta.recommendedAction}
-            </p>
+          {sub && !settled && (
+            <p className="text-label text-foreground/60 mt-0.5 leading-snug line-clamp-2">{sub}</p>
           )}
           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-            {meta.actionGroup && (
-              <span className="text-[8px] font-semibold border border-emerald-400/20 bg-emerald-400/[0.07] px-1.5 py-0.5 rounded text-emerald-400/80 leading-none">
-                {meta.actionGroup}
+            <span className="text-[8px] font-semibold border border-border/30 bg-white/[0.05] px-1.5 py-0.5 rounded text-foreground/55 leading-none">
+              {KIND_LABEL[kind]}
+            </span>
+            {settled && (
+              <span
+                className={cn(
+                  "text-[8px] font-semibold px-1.5 py-0.5 rounded leading-none border",
+                  status === "done"
+                    ? "border-emerald-400/20 bg-emerald-400/[0.07] text-emerald-400/80"
+                    : "border-border/30 bg-white/[0.04] text-muted-foreground/60"
+                )}
+              >
+                {status === "done" ? "Completed" : "Archived"}
               </span>
-            )}
-            {meta.scopeLabel && (
-              <span className="text-[8px] text-muted-foreground/50 font-mono">{meta.scopeLabel}</span>
             )}
           </div>
         </div>
 
-        <button
-          onClick={() => setDecision(scopeId, cardId, "pending")}
-          title="Return to deck"
-          aria-label="Return to deck"
-          className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground/40 hover:text-muted-foreground hover:bg-white/5 transition-colors shrink-0"
-        >
-          <RotateCcw className="w-3.5 h-3.5" />
-        </button>
+        {status === "open" ? (
+          <div className="flex flex-col items-center gap-1 shrink-0">
+            {href && (
+              <button
+                onClick={() => navigate(href)}
+                title="Open source"
+                aria-label={`Open source of "${title}"`}
+                className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground/40 hover:text-interactive hover:bg-white/5 transition-colors"
+              >
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+            <button
+              onClick={() => setTrayItemStatus(scopeId, id, "archived")}
+              title="Archive"
+              aria-label={`Archive "${title}"`}
+              className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground/40 hover:text-muted-foreground hover:bg-white/5 transition-colors"
+            >
+              <Archive className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setTrayItemStatus(scopeId, id, "open")}
+            title="Move back to tray"
+            aria-label={`Move "${title}" back to tray`}
+            className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground/40 hover:text-muted-foreground hover:bg-white/5 transition-colors shrink-0"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
     </TrayCard>
   );
@@ -425,11 +503,11 @@ function TrayNavLink({
   return (
     <button
       onClick={() => navigate(to)}
-      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-body font-medium text-foreground/60 hover:text-foreground hover:bg-white/[0.04] transition-colors text-left"
+      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-body font-medium text-foreground/60 hover:text-foreground hover:bg-white/[0.04] transition-colors text-left min-w-0"
     >
       {Icon && <Icon className="w-3.5 h-3.5 shrink-0 text-muted-foreground/50" />}
-      {label}
-      <ArrowRight className="w-3.5 h-3.5 ml-auto opacity-40" />
+      <span className="truncate">{label}</span>
+      <ArrowRight className="w-3.5 h-3.5 ml-auto opacity-40 shrink-0" />
     </button>
   );
 }
@@ -467,11 +545,56 @@ function EmptySlot({
 // ─── Main component ───────────────────────────────────────────────────
 
 export function TaskTray() {
-  useDecisions();
+  useTrayItems();
   const { open, toggle, close } = useTaskTray();
   const { activeAdAccount, activeAdAccountId, selectedAccountType } = useAccount();
   const [, navigate] = useLocation();
-  const [showDone, setShowDone] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+
+  // Persisted open width — restores the user's last resized size on reload
+  // instead of always resetting to the 308px default.
+  const [width, setWidth] = useState(loadTrayWidth);
+  // Live width while a drag is in progress — overrides the width transition
+  // so the panel visibly tracks the pointer. Cleared on release once we've
+  // committed to a resized/closed state.
+  const [dragWidth, setDragWidth] = useState<number | null>(null);
+  const baseWidthRef = useRef(width);
+  // Mirrors dragWidth state so onDragEnd can read the final value directly
+  // instead of reaching for it via a setState updater — updaters must stay
+  // pure, and closing the tray / persisting the width are side effects.
+  const dragWidthRef = useRef<number | null>(null);
+
+  // Drag handle on the tray's left edge. Dragging left (negative dx) grows
+  // the tray toward TRAY_MAX_WIDTH; dragging right shrinks it, and
+  // releasing below TRAY_COLLAPSE_SNAP_WIDTH snaps the tray shut — mirroring
+  // the sidebar's clamp/snap-to-collapse behaviour.
+  const handlePointerDown = useDragResize(
+    (dx) => {
+      const next = Math.min(
+        TRAY_MAX_WIDTH,
+        Math.max(TRAY_COLLAPSE_SNAP_WIDTH - 40, baseWidthRef.current - dx)
+      );
+      dragWidthRef.current = next;
+      setDragWidth(next);
+    },
+    (wasDragged) => {
+      if (!wasDragged) return;
+      const fw = dragWidthRef.current ?? width;
+      dragWidthRef.current = null;
+      if (fw < TRAY_COLLAPSE_SNAP_WIDTH) {
+        close();
+      } else {
+        const clamped = Math.min(TRAY_MAX_WIDTH, Math.max(TRAY_MIN_WIDTH, fw));
+        setWidth(clamped);
+        saveTrayWidth(clamped);
+      }
+      setDragWidth(null);
+    }
+  );
+  const onHandlePointerDown = (e: React.PointerEvent) => {
+    baseWidthRef.current = width;
+    handlePointerDown(e);
+  };
 
   const isAdAccountView = selectedAccountType === "ad_account" && !!activeAdAccountId;
 
@@ -483,94 +606,117 @@ export function TaskTray() {
   const topHyps = hypotheses.slice(0, 3);
   const topSignals = signals.slice(0, 2);
 
-  const allApproved = getAllApproved();
-  const approvedUndone = allApproved.filter((i) => !i.done);
-  const approvedDone = allApproved.filter((i) => i.done);
-
-  const approvedGroups = GROUP_ORDER.map((g) => ({
-    label: g,
-    rows: approvedUndone.filter((i) => i.meta.actionGroup === g),
-  })).filter((g) => g.rows.length > 0);
-
-  const ungroupedApproved = approvedUndone.filter(
-    (i) => !GROUP_ORDER.includes(i.meta.actionGroup)
-  );
+  // Items the user explicitly added to their tray ("Add to Tray" across the
+  // platform), scoped to the active ad account when one is selected.
+  const trayScope = isAdAccountView ? activeAdAccountId : undefined;
+  const openItems = getOpenTrayItems(trayScope);
+  const historyItems = getTrayHistory(trayScope);
 
   const workflowCount = topHyps.length + topSignals.length + pendingDrafts.length;
-  const totalItems = approvedUndone.length + workflowCount;
+  const totalItems = openItems.length + workflowCount;
 
-  // ── Minimized strip ──────────────────────────────────────────────────
-  if (!open) {
-    const hasPriorityItems = approvedUndone.length > 0;
-    return (
-      <div className="w-[var(--tray-closed)] shrink-0 border-l-2 border-border/50 bg-surface-sidebar flex flex-col items-center py-3 gap-2">
-        <button
-          onClick={toggle}
-          title="Expand task tray"
-          aria-label="Expand task tray"
-          className="flex flex-col items-center gap-2 w-full px-1 text-muted-foreground/60 hover:text-primary transition-colors group"
-        >
-          <div className="relative">
-            <div className={cn(
-              "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
-              hasPriorityItems
-                ? "bg-emerald-400/15 border border-emerald-400/30 group-hover:bg-emerald-400/20"
-                : "bg-white/[0.05] border border-border/40 group-hover:bg-white/[0.08]"
-            )}>
-              <ClipboardList
-                className={cn(
-                  "w-4 h-4 transition-transform group-hover:scale-110",
-                  hasPriorityItems ? "text-emerald-400" : "text-muted-foreground/70"
-                )}
-              />
-            </div>
-            {totalItems > 0 && (
-              <span className={cn(
-                "absolute -top-1.5 -right-1.5 min-w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold leading-none px-1 tabular-nums border",
-                hasPriorityItems
-                  ? "bg-emerald-500 text-white border-emerald-400/50"
-                  : "bg-primary text-primary-foreground border-primary/50"
-              )}>
-                {Math.min(totalItems, 9)}
-              </span>
-            )}
-          </div>
-        </button>
-
-        <div
-          className="flex-1 flex items-end justify-center pb-1 cursor-pointer"
-          onClick={toggle}
-          title="Expand task tray"
-        >
-          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/25" />
-        </div>
-
-        <button
-          onClick={toggle}
-          title="Expand"
-          aria-label="Expand task tray"
-          className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground/40 hover:text-primary hover:bg-white/[0.05] transition-colors"
-        >
-          <ChevronRight className="w-3.5 h-3.5" />
-        </button>
-      </div>
-    );
-  }
-
+  const hasPriorityItems = openItems.length > 0;
   const accountIsUnconfigured = isAdAccountView && activeAdAccount?.status !== "configured";
 
+  // A single persistent wrapper (rather than two early-returned subtrees)
+  // so the width change between closed/open animates smoothly instead of
+  // snapping — the same approach the sidebar uses for its collapsed/
+  // expanded <aside>. Live drag width overrides the CSS transition so the
+  // panel visibly tracks the pointer while dragging.
+  const currentWidth = open ? dragWidth ?? width : TRAY_CLOSED_WIDTH;
+
   return (
-    <div className="w-[var(--tray-open)] shrink-0 border-l-2 border-border/60 bg-surface-sidebar flex flex-col overflow-hidden">
+    <div
+      data-open={open}
+      className={cn(
+        "relative shrink-0 border-l-2 bg-surface-sidebar flex flex-col overflow-hidden",
+        open ? "border-border/60" : "border-border/50",
+        dragWidth == null && "transition-[width] duration-200 ease-out"
+      )}
+      style={{ width: currentWidth }}
+    >
+      {/* Slide-to-resize handle — drag left to grow the tray (up to
+          TRAY_MAX_WIDTH), drag right to shrink it; releasing below
+          TRAY_COLLAPSE_SNAP_WIDTH snaps the tray shut. Only present while
+          the tray is open — there's nothing to resize when collapsed. */}
+      {open && (
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Task tray resize handle"
+          title="Drag to resize"
+          onPointerDown={onHandlePointerDown}
+          className="absolute top-0 left-0 h-full w-1.5 -ml-0.5 z-10 cursor-col-resize group/handle flex items-center justify-center"
+        >
+          <span className="w-px h-full bg-transparent group-hover/handle:bg-primary/40 transition-colors" />
+        </div>
+      )}
+
+      {!open ? (
+        // ── Minimized strip ────────────────────────────────────────────
+        <div className="flex-1 flex flex-col items-center py-3 gap-2 min-w-0">
+          <button
+            onClick={toggle}
+            title="Expand task tray"
+            aria-label="Expand task tray"
+            className="flex flex-col items-center gap-2 w-full px-1 text-muted-foreground/60 hover:text-primary transition-colors group"
+          >
+            <div className="relative">
+              <div className={cn(
+                "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
+                hasPriorityItems
+                  ? "bg-emerald-400/15 border border-emerald-400/30 group-hover:bg-emerald-400/20"
+                  : "bg-white/[0.05] border border-border/40 group-hover:bg-white/[0.08]"
+              )}>
+                <ClipboardList
+                  className={cn(
+                    "w-4 h-4 transition-transform group-hover:scale-110",
+                    hasPriorityItems ? "text-emerald-400" : "text-muted-foreground/70"
+                  )}
+                />
+              </div>
+              {totalItems > 0 && (
+                <span className={cn(
+                  "absolute -top-1.5 -right-1.5 min-w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold leading-none px-1 tabular-nums border",
+                  hasPriorityItems
+                    ? "bg-emerald-500 text-white border-emerald-400/50"
+                    : "bg-primary text-primary-foreground border-primary/50"
+                )}>
+                  {Math.min(totalItems, 9)}
+                </span>
+              )}
+            </div>
+          </button>
+
+          <div
+            className="flex-1 flex items-end justify-center pb-1 cursor-pointer"
+            onClick={toggle}
+            title="Expand task tray"
+          >
+            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/25" />
+          </div>
+
+          <button
+            onClick={toggle}
+            title="Expand"
+            aria-label="Expand task tray"
+            className="w-7 h-7 rounded flex items-center justify-center text-muted-foreground/40 hover:text-primary hover:bg-white/[0.05] transition-colors"
+          >
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ) : (
+      <>
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50 bg-white/[0.02]">
         <div className="w-7 h-7 rounded-lg bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0">
           <ClipboardList className="w-4 h-4 text-interactive" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-label font-mono text-muted-foreground/50 uppercase tracking-widest leading-none mb-0.5">
+          <p className="text-label font-mono text-muted-foreground/50 uppercase tracking-widest leading-none mb-0.5 truncate">
             Workflow
           </p>
-          <p className="text-title font-semibold text-foreground leading-tight">
+          <p className="text-title font-semibold text-foreground leading-tight truncate">
             {totalItems === 0
               ? "All caught up"
               : `${totalItems} action${totalItems !== 1 ? "s" : ""} pending`}
@@ -600,49 +746,37 @@ export function TaskTray() {
           </>
         )}
 
-        {/* ── Approved Actions ──────────────────────────────────────── */}
-        <TraySection title="Approved Actions" count={approvedUndone.length} accentColor="bg-emerald-400">
-          {allApproved.length === 0 ? (
+        {/* ── My Tray — user-added actionable items ─────────────────── */}
+        <TraySection title="My Tray" count={openItems.length} accentColor="bg-emerald-400">
+          {openItems.length === 0 ? (
             <EmptySlot
-              message="Approve a recommendation to start"
+              message='Nothing in your tray yet. Use "Add to Tray" on recommendations, hypotheses, and briefs as you browse.'
               nudgeLabel="Go to Recommendations"
               nudgeTo="/app/listen/recommendations"
             />
           ) : (
-            <>
-              {approvedGroups.map((g) => (
-                <div key={g.label} className="space-y-1.5">
-                  <p className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground/50 px-0.5 mt-1">
-                    {g.label}
-                  </p>
-                  {g.rows.map((item) => (
-                    <ApprovedTaskItem key={`${item.scopeId}::${item.cardId}`} item={item} />
+            openItems.map((item) => (
+              <TrayTaskItem key={`${item.scopeId}::${item.id}`} item={item} />
+            ))
+          )}
+
+          {historyItems.length > 0 && (
+            <div className="mt-1">
+              <button
+                onClick={() => setShowHistory((v) => !v)}
+                className="flex items-center gap-1 text-label text-muted-foreground/50 hover:text-foreground/60 transition-colors px-0.5 py-0.5"
+              >
+                {showHistory ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                History ({historyItems.length})
+              </button>
+              {showHistory && (
+                <div className="space-y-1.5 mt-1">
+                  {historyItems.map((item) => (
+                    <TrayTaskItem key={`${item.scopeId}::${item.id}`} item={item} />
                   ))}
                 </div>
-              ))}
-              {ungroupedApproved.map((item) => (
-                <ApprovedTaskItem key={`${item.scopeId}::${item.cardId}`} item={item} />
-              ))}
-
-              {approvedDone.length > 0 && (
-                <div className="mt-1">
-                  <button
-                    onClick={() => setShowDone((v) => !v)}
-                    className="flex items-center gap-1 text-label text-muted-foreground/50 hover:text-foreground/60 transition-colors px-0.5 py-0.5"
-                  >
-                    {showDone ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                    Done ({approvedDone.length})
-                  </button>
-                  {showDone && (
-                    <div className="space-y-1.5 mt-1">
-                      {approvedDone.map((item) => (
-                        <ApprovedTaskItem key={`${item.scopeId}::${item.cardId}`} item={item} />
-                      ))}
-                    </div>
-                  )}
-                </div>
               )}
-            </>
+            </div>
           )}
           <TrayNavLink to="/app/listen/recommendations" label="Recommendations" icon={ClipboardList} />
         </TraySection>
@@ -739,6 +873,8 @@ export function TaskTray() {
           Action items update as you work through analysis, strategy &amp; briefs.
         </p>
       </div>
+      </>
+      )}
     </div>
   );
 }
@@ -748,18 +884,18 @@ export function TaskTray() {
 /** Compute the tray badge count from raw item arrays. All inputs are
  *  pre-sliced to their visible maximums so this stays a pure sum. */
 export function computeTrayCount({
-  approvedUndone,
+  openTrayItems,
   hypotheses,
   signals,
   pendingDrafts,
 }: {
-  approvedUndone: number;
+  openTrayItems: number;
   hypotheses: unknown[];
   signals: unknown[];
   pendingDrafts: unknown[];
 }): number {
   return Math.min(
-    approvedUndone +
+    openTrayItems +
       Math.min(hypotheses.length, 3) +
       Math.min(signals.length, 2) +
       pendingDrafts.length,
@@ -767,14 +903,16 @@ export function computeTrayCount({
   );
 }
 
-/** Badge count for the Topbar toggle — approved-undone + workflow items. */
+/** Badge count for the Topbar toggle — open tray items + workflow items. */
 export function useTaskTrayCount(): number {
-  useDecisions();
-  const { activeAdAccount } = useAccount();
+  useTrayItems();
+  const { activeAdAccount, activeAdAccountId, selectedAccountType } = useAccount();
   const hypotheses = activeAdAccount?.iap?.strategy?.active_hypotheses ?? [];
   const signals = activeAdAccount?.listen?.signal_cards ?? [];
   const drafts = activeAdAccount?.iap?.brief_builder?.draft_briefs ?? [];
   const pendingDrafts = drafts.filter((b) => b.status !== "approved");
-  const approvedUndone = getAllApproved().filter((i) => !i.done).length;
-  return computeTrayCount({ approvedUndone, hypotheses, signals, pendingDrafts });
+  const scope =
+    selectedAccountType === "ad_account" && activeAdAccountId ? activeAdAccountId : undefined;
+  const openTrayItems = getOpenTrayItems(scope).length;
+  return computeTrayCount({ openTrayItems, hypotheses, signals, pendingDrafts });
 }

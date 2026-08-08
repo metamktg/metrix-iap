@@ -29,6 +29,7 @@ import {
   toggleDone,
   isDone,
 } from "@/lib/data/decisionStore";
+import { addToTray, removeFromTray } from "@/lib/data/trayStore";
 import { TokenizedConceptText } from "@/components/concept/ConceptChip";
 import { deriveLabel } from "@/pages/metrix/shared";
 
@@ -166,7 +167,7 @@ function DetailDrawer({
             onClick={() => { onApprove(); onClose(); }}
             className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded bg-primary/15 border border-primary/30 text-body font-medium text-interactive hover:bg-primary/25 transition-colors"
           >
-            <Check className="w-3.5 h-3.5" /> Approve
+            <Check className="w-3.5 h-3.5" /> Add to Tray
           </button>
         </div>
       </div>
@@ -266,7 +267,7 @@ function SwipeCard({
               className="absolute top-4 left-4 text-caption font-bold uppercase tracking-widest text-emerald-400 border-2 border-emerald-400 rounded px-2 py-1 rotate-[-12deg]"
               style={{ opacity: approveOpacity }}
             >
-              Approve
+              Add to Tray
             </div>
             <div
               className="absolute top-4 right-4 text-caption font-bold uppercase tracking-widest text-red-400 border-2 border-red-400 rounded px-2 py-1 rotate-[12deg]"
@@ -333,9 +334,32 @@ export function RecommendationDeck({
   const approved = cards.filter((c) => decisionOf(c.id) === "approved");
   const rejected = cards.filter((c) => decisionOf(c.id) === "rejected");
 
-  const approve = useCallback((id: string) => setDecision(scopeId, id, "approved"), [scopeId]);
+  const approve = useCallback(
+    (id: string) => {
+      // "Add to Tray": local decision drives the deck tabs; the durable
+      // tray store is what the right Task Tray panel renders.
+      setDecision(scopeId, id, "approved");
+      const card = cards.find((c) => c.id === id);
+      if (card) {
+        addToTray(scopeId, {
+          id: card.id,
+          kind: "recommendation",
+          title: card.title,
+          sub: card.recommendedAction,
+          href: "/app/listen/recommendations",
+        });
+      }
+    },
+    [scopeId, cards]
+  );
   const reject = useCallback((id: string) => setDecision(scopeId, id, "rejected"), [scopeId]);
-  const restore = useCallback((id: string) => setDecision(scopeId, id, "pending"), [scopeId]);
+  const restore = useCallback(
+    (id: string) => {
+      setDecision(scopeId, id, "pending");
+      removeFromTray(scopeId, id);
+    },
+    [scopeId]
+  );
 
   // Keyboard on deck
   useEffect(() => {
@@ -394,7 +418,7 @@ export function RecommendationDeck({
               <CheckCircle2 className="w-4 h-4 text-emerald-400/60" />
             </div>
             <p className="text-title font-medium text-foreground/60">{emptyLabel}</p>
-            <p className="text-caption text-muted-foreground/60">Check the Task Tray for approved items.</p>
+            <p className="text-caption text-muted-foreground/60">Check the Task Tray for items you added.</p>
           </div>
         ) : (
           <div>
@@ -436,7 +460,7 @@ export function RecommendationDeck({
               <button
                 onClick={() => approve(pending[0].id)}
                 className="w-11 h-11 rounded-full flex items-center justify-center border border-emerald-400/30 text-emerald-400 hover:bg-emerald-400/10 transition-colors"
-                aria-label="Approve"
+                aria-label="Add to Tray"
               >
                 <Check className="w-5 h-5" />
               </button>
@@ -444,7 +468,7 @@ export function RecommendationDeck({
 
             <div className="flex items-center justify-center gap-3 mt-3 text-[9px] text-muted-foreground/60 font-mono">
               <span>← reject</span>
-              <span>→ approve</span>
+              <span>→ add to tray</span>
               <span>↑ / space details</span>
               <span>{pending.length} left</span>
             </div>
@@ -493,7 +517,7 @@ function TaskTray({
 }) {
   if (!items.length) {
     return (
-      <EmptyPanel Icon={ClipboardList} title="No approved tasks yet" sub="Approved recommendations appear here as manual implementation tasks." />
+      <EmptyPanel Icon={ClipboardList} title="Nothing in the tray yet" sub="Recommendations you add to the tray appear here as manual implementation tasks." />
     );
   }
   const groups = TRAY_GROUP_ORDER.map((g) => ({ label: g, rows: items.filter((i) => i.actionGroup === g) })).filter((g) => g.rows.length);
