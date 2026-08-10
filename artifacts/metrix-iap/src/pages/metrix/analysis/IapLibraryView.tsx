@@ -41,7 +41,7 @@ import { RunScopePicker } from "@/components/analysis/RunSelector";
 import { useListAnalysisRuns } from "@workspace/api-client-react";
 import { CreativeCard } from "@/components/creative/CreativeCard";
 import { ConceptFamilyView } from "@/components/creative/ConceptFamilyView";
-import { cardFromCell, libraryCellById } from "@/lib/creative-assembly";
+import { cardFromCell, libraryCellById, aggregatePerfStats } from "@/lib/creative-assembly";
 import { groupByConceptFamily } from "@/lib/concept-grouping";
 import { SegmentGridModal, SegmentDrilldownButton } from "@/components/creative/SegmentGridModal";
 import { SegmentDrilldownModal } from "@/components/creative/SegmentDrilldownModal";
@@ -307,17 +307,8 @@ export function IapLibraryView() {
           })();
 
           function aggStatsForCell(cellId: string, source: CellPerformanceRow[]): CreativeCardStats {
-            const rows    = source.filter((r) => r.cell_id === cellId);
-            const spend   = rows.reduce((s, r) => s + r["Amount spent (USD)"], 0);
-            const results = rows.reduce((s, r) => s + r.Results, 0);
-            const primary = rows[0];
-            return {
-              spend,
-              results,
-              cpa:         results > 0 ? spend / results : null,
-              ctrPct:      primary?.CTR_link_pct ?? null,
-              resultLabel: rows.length === 1 ? eventLabel(primary!["Result type"]) : `${rows.length} events`,
-            };
+            const rows = source.filter((r) => r.cell_id === cellId);
+            return aggregatePerfStats(rows, eventLabel) ?? { spend: 0, results: 0, cpa: null, ctrPct: null };
           }
 
           function uniqueCellRows(source: CellPerformanceRow[]): CellPerformanceRow[] {

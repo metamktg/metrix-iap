@@ -4,9 +4,9 @@
 // adAccountId, and the Ads Manager deep-link URL format.
 
 import { describe, it, expect } from "vitest";
-import { cardFromCell, primaryAdForCell } from "./creative-assembly";
+import { cardFromCell, primaryAdForCell, perfRowsForCell, aggregatePerfStats } from "./creative-assembly";
 import { buildAdsManagerAdUrl } from "@/components/creative/AdsManagerLink";
-import type { AdRecord, MST } from "@/lib/data/seedTypes";
+import type { AdRecord, CellPerformanceRow, MST } from "@/lib/data/seedTypes";
 
 const ads: AdRecord[] = [
   { ad_name: "C1A_T1", cell: "C1A", meta_ad_id: null, creative_asset_url: null },
@@ -111,6 +111,86 @@ describe("cardFromCell tag propagation", () => {
     expect(card.tags).toContain("ST_Lower");
     expect(card.tags).toContain("AW_ProblemAware");
     expect(card.stage).toBe("MOF");
+  });
+});
+
+// ─── Resolver collapse regression (Bookster C2B pattern) ──────────────
+// performance_by_cell carries one row per Result-type/campaign-flight
+// sharing a concept_code, e.g. the same creative flighted first toward
+// registrations, then trials, then checkout as three separate campaigns.
+// A join that picks only the highest-spend row silently discards the
+// other two real rows. See BRIEF_01_resolvercollapsebug.md.
+function perfRow(overrides: Partial<CellPerformanceRow> & { "Amount spent (USD)": number }): CellPerformanceRow {
+  return {
+    cell_id: "C2B",
+    "Result type": "Website registrations completed",
+    Reach: 0,
+    Impressions: 0,
+    Results: 0,
+    "Clicks (all)": 0,
+    "Link clicks": 0,
+    CPA_result: null,
+    CTR_link_pct: 0,
+    Result_per_link_click_pct: 0,
+    book2_concept_name: "Time-poor learner product demo",
+    ...overrides,
+  };
+}
+
+const multiRowCell: CellPerformanceRow[] = [
+  perfRow({ "Result type": "Website registrations completed", "Amount spent (USD)": 675.81, Results: 74, CTR_link_pct: 1.5031 }),
+  perfRow({ "Result type": "Website trials started", "Amount spent (USD)": 441.7, Results: 2, CTR_link_pct: 1.3182 }),
+  perfRow({ "Result type": "onb_initiate_checkout", "Amount spent (USD)": 110.92, Results: 0, CTR_link_pct: 1.9307 }),
+];
+
+describe("perfRowsForCell", () => {
+  it("returns every real row for a cell, not just one", () => {
+    expect(perfRowsForCell(multiRowCell, "C2B")).toHaveLength(3);
+  });
+
+  it("returns an empty array for a cell with no rows", () => {
+    expect(perfRowsForCell(multiRowCell, "C9Z")).toEqual([]);
+  });
+});
+
+describe("aggregatePerfStats", () => {
+  it("sums real spend and results across every row instead of keeping only the highest-spend one", () => {
+    const stats = aggregatePerfStats(multiRowCell);
+    expect(stats?.spend).toBeCloseTo(675.81 + 441.7 + 110.92);
+    expect(stats?.results).toBe(76);
+    expect(stats?.resultLabel).toBe("3 events");
+  });
+
+  it("takes CTR from the highest-spend row since it isn't additive", () => {
+    const stats = aggregatePerfStats(multiRowCell);
+    expect(stats?.ctrPct).toBe(1.5031);
+  });
+
+  it("labels a single row with its own result type via the label callback", () => {
+    const stats = aggregatePerfStats([multiRowCell[0]!], (key) => (key === "Website registrations completed" ? "Registrations" : key));
+    expect(stats?.resultLabel).toBe("Registrations");
+  });
+
+  it("returns undefined for no rows", () => {
+    expect(aggregatePerfStats([])).toBeUndefined();
+  });
+});
+
+describe("cardFromCell multi-row performance (no silent collapse)", () => {
+  it("aggregates stats across every row for the cell by default", () => {
+    const card = cardFromCell("C2B", { perfRows: multiRowCell, ads: [], metaAdAccountId: null });
+    expect(card.stats?.spend).toBeCloseTo(675.81 + 441.7 + 110.92);
+    expect(card.stats?.results).toBe(76);
+  });
+
+  it("exposes every real row on the card so detail views can show each one distinctly", () => {
+    const card = cardFromCell("C2B", { perfRows: multiRowCell, ads: [], metaAdAccountId: null });
+    expect(card.perfRows).toHaveLength(3);
+    expect(card.perfRows?.map((r) => r["Result type"])).toEqual([
+      "Website registrations completed",
+      "Website trials started",
+      "onb_initiate_checkout",
+    ]);
   });
 });
 

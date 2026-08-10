@@ -20,7 +20,7 @@ import { cn } from "@workspace/command-deck/lib/utils";
 import { ImageOff, Maximize2, Upload, AlertTriangle } from "lucide-react";
 import { resolveVariableLabel, getVariablePrefix, PREFIX_COLORS } from "@/lib/variable-registry";
 import { CreativeExpandDialog } from "./CreativeExpandDialog";
-import type { DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
+import type { CellPerformanceRow, DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 
 // ─── Data shape ───────────────────────────────────────────────────────
 
@@ -50,6 +50,14 @@ export interface CreativeCardData {
   /** Raw variable codes (may be compound "A + B"). */
   tags: string[];
   stats?: CreativeCardStats;
+  /**
+   * Every real performance row behind `stats` — `stats` sums these for the
+   * compact card face, but a concept can carry more than one real row (e.g.
+   * separate campaign flights toward different result types on the same
+   * creative). Kept so the expand dialog's Funnel tab can show each one
+   * distinctly instead of only the row `stats` was blended from.
+   */
+  perfRows?: CellPerformanceRow[];
   iapRead?: string | null;
   stage?: string | null;
   /** MSTLibraryCell.qa_mapping_status — "flagged"/"library_only_no_export_match" need attention. */
@@ -240,8 +248,13 @@ export function CreativeCard({
   onUploadCreative?: (cellId: string) => void;
   onSegmentClick?: (segment: { age: string; gender: string }) => void;
   onFullBreakdownClick?: () => void;
-  /** Performance row for the Funnel tab in the expand dialog. */
-  perfRow?: import("@/lib/data/seedTypes").CellPerformanceRow | null;
+  /**
+   * Single-row override for the Funnel tab, kept for callers that only have
+   * one specific row in hand. Prefer wiring `data.perfRows` (via
+   * cardFromCell/cardFromLibraryCell) — when present it takes precedence and
+   * carries every real row for the cell, not just one.
+   */
+  perfRow?: CellPerformanceRow | null;
 }) {
   const [open, setOpen] = useState(false);
   const openDialog = useCallback(() => setOpen(true), []);
@@ -377,7 +390,7 @@ export function CreativeCard({
         unmapped={unmapped}
         onUploadCreatives={onUploadCreatives}
         onSegmentClick={onSegmentClick}
-        perfRow={perfRow}
+        perfRows={data.perfRows && data.perfRows.length > 0 ? data.perfRows : perfRow ? [perfRow] : []}
       />
     </>
   );

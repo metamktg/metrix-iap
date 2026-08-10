@@ -12,7 +12,7 @@ import { fmtUSD, fmtNum, fmtPct } from "@/pages/metrix/shared";
 import type { ConceptFamilyGroup, AngleGroup, BlendedKPI } from "@/lib/concept-grouping";
 import { rankCellsByPrimaryKpi, type CellRankKpi } from "@/lib/concept-grouping";
 import { CreativeCard } from "./CreativeCard";
-import { cardFromCell } from "@/lib/creative-assembly";
+import { cardFromCell, aggregatePerfStats } from "@/lib/creative-assembly";
 import type { CardAssemblyOpts } from "@/lib/creative-assembly";
 import type { CellPerformanceRow, DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
 
@@ -71,15 +71,7 @@ function AngleRow({
 
   function aggStats(cellId: string) {
     const rows = group.allRows.filter((r) => r.cell_id === cellId);
-    const spend = rows.reduce((s, r) => s + r["Amount spent (USD)"], 0);
-    const results = rows.reduce((s, r) => s + r.Results, 0);
-    return {
-      spend,
-      results,
-      cpa: results > 0 ? spend / results : null,
-      ctrPct: rows[0]?.CTR_link_pct ?? null,
-      resultLabel: rows.length === 1 ? rows[0]!["Result type"] : `${rows.length} events`,
-    };
+    return aggregatePerfStats(rows) ?? { spend: 0, results: 0, cpa: null, ctrPct: null };
   }
 
   return (

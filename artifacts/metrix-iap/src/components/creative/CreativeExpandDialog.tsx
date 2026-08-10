@@ -600,8 +600,12 @@ function PlacementsTab({ rows }: { rows: PlacementRow[] }) {
 
 // ─── Funnel tab ─────────────────────────────────────────────────────────
 
-function FunnelTab({ perfRow }: { perfRow: CellPerformanceRow | null }) {
-  if (!perfRow) {
+// Renders every real performance row for the cell, not just one — a concept
+// can carry more than one row (separate campaign flights toward different
+// result types on the same creative); collapsing to a single row here would
+// silently hide the others' real spend/results from the funnel view too.
+function FunnelTab({ perfRows }: { perfRows: CellPerformanceRow[] }) {
+  if (!perfRows.length) {
     return (
       <div className="py-10 text-center space-y-1.5">
         <p className="text-body font-medium text-muted-foreground/60">No performance data</p>
@@ -609,19 +613,31 @@ function FunnelTab({ perfRow }: { perfRow: CellPerformanceRow | null }) {
       </div>
     );
   }
-  const steps = buildFunnelSteps(perfRow);
-  const hasAnyFunnel = perfRow.adds_to_cart != null || perfRow.checkouts_initiated != null || perfRow.purchases != null;
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">Conversion funnel</p>
-      </div>
-      <FunnelStepsChart steps={steps} />
-      {!hasAnyFunnel && (
-        <p className="text-[9px] text-muted-foreground/40 pt-1 border-t border-border/20">
-          Adds to cart, checkouts, and purchases are only available when the source export includes conversion-event columns.
-        </p>
-      )}
+    <div className="space-y-6">
+      {perfRows.map((row, i) => {
+        const steps = buildFunnelSteps(row);
+        const hasAnyFunnel = row.adds_to_cart != null || row.checkouts_initiated != null || row.purchases != null;
+        return (
+          <div key={`${row["Result type"]}-${i}`} className="space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-label font-mono uppercase tracking-widest text-muted-foreground/60">
+                Conversion funnel
+                {perfRows.length > 1 && <span className="text-interactive/70 normal-case"> · {row["Result type"]}</span>}
+              </p>
+              <span className="text-label text-muted-foreground/50 tabular-nums">
+                {usd(row["Amount spent (USD)"], 0)} · {num(row.Results)} results
+              </span>
+            </div>
+            <FunnelStepsChart steps={steps} />
+            {!hasAnyFunnel && (
+              <p className="text-[9px] text-muted-foreground/40 pt-1 border-t border-border/20">
+                Adds to cart, checkouts, and purchases are only available when the source export includes conversion-event columns.
+              </p>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -644,15 +660,15 @@ export interface CreativeExpandDialogProps {
   onUploadCreatives?: () => void;
   /** When provided, Demographics rows become tappable → segment drill-down. */
   onSegmentClick?: (segment: { age: string; gender: string }) => void;
-  /** Performance row for this cell — used to render the Funnel tab. */
-  perfRow?: CellPerformanceRow | null;
+  /** Every real performance row for this cell — used to render the Funnel tab. */
+  perfRows?: CellPerformanceRow[];
 }
 
 export function CreativeExpandDialog({
   open, onOpenChange, data,
   demographic = [], placements = [],
   expandFooter, unmapped, onUploadCreatives, onSegmentClick,
-  perfRow = null,
+  perfRows = [],
 }: CreativeExpandDialogProps) {
   const [tab, setTab] = useState<Tab>("overview");
 
@@ -733,7 +749,7 @@ export function CreativeExpandDialog({
               {tab === "overview"     && <OverviewTab      data={data} />}
               {tab === "demographics" && <DemographicsTab  rows={demographic} onSegmentClick={onSegmentClick} />}
               {tab === "placements"   && <PlacementsTab    rows={placements} />}
-              {tab === "funnel"       && <FunnelTab        perfRow={perfRow} />}
+              {tab === "funnel"       && <FunnelTab        perfRows={perfRows} />}
             </div>
 
             {/* Footer */}

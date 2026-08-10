@@ -6,7 +6,7 @@
 // backfilled. Until then those fields are null and the card renders the
 // labeled placeholder + pending Ads Manager state.
 
-import type { CreativeCardData } from "@/components/creative/CreativeCard";
+import type { CreativeCardData, CreativeCardStats } from "@/components/creative/CreativeCard";
 import type { AdRecord, CellPerformanceRow, MST, MSTLibraryCell, MSTMatrixCell } from "@/lib/data/seedTypes";
 
 export function libraryCellById(mst: MST | null | undefined, cellId: string): MSTLibraryCell | null {
@@ -48,6 +48,47 @@ export function primaryPerfRow(rows: CellPerformanceRow[], cellId: string): Cell
   return matches.reduce((best, r) =>
     r["Amount spent (USD)"] > best["Amount spent (USD)"] ? r : best
   );
+}
+
+/**
+ * Every real performance row for a cell — `performance_by_cell` carries one
+ * row per Meta "Result type"/campaign-flight sharing a concept_code (e.g. a
+ * creative flighted first toward registrations, then trials, then checkout
+ * as separate campaigns), not one row per cell. Use this — not
+ * `primaryPerfRow` — anywhere real spend/results must not be discarded.
+ */
+export function perfRowsForCell(rows: CellPerformanceRow[] | undefined, cellId: string): CellPerformanceRow[] {
+  return (rows ?? []).filter((r) => r.cell_id === cellId);
+}
+
+/**
+ * Honest aggregate stats across every real row for a cell. Spend and results
+ * are summed — genuine totals across real campaign flights of the same
+ * creative, not a fabricated blend — so a concept with multiple Result-type
+ * rows shows its true total instead of silently keeping only the
+ * highest-spend row and discarding the rest. CTR comes from the
+ * highest-spend row since it isn't meaningfully additive across rows.
+ * `labelForResultType` lets callers substitute a human-readable event label
+ * for the single-row case; the multi-row case always says "N events" so the
+ * blend is never presented as one homogeneous result type.
+ */
+export function aggregatePerfStats(
+  rows: CellPerformanceRow[],
+  labelForResultType: (resultType: string) => string = (resultType) => resultType
+): CreativeCardStats | undefined {
+  if (!rows.length) return undefined;
+  const spend = rows.reduce((s, r) => s + r["Amount spent (USD)"], 0);
+  const results = rows.reduce((s, r) => s + r.Results, 0);
+  const primary = rows.reduce((best, r) =>
+    r["Amount spent (USD)"] > best["Amount spent (USD)"] ? r : best
+  );
+  return {
+    spend,
+    results,
+    cpa: results > 0 ? spend / results : null,
+    ctrPct: primary.CTR_link_pct,
+    resultLabel: rows.length === 1 ? labelForResultType(primary["Result type"]) : `${rows.length} events`,
+  };
 }
 
 /**
@@ -118,7 +159,13 @@ export function cardFromLibraryCell(
   cellId: string,
   opts: CardAssemblyOpts
 ): CreativeCardData {
-  const perf = opts.perfRows ? primaryPerfRow(opts.perfRows, cellId) : null;
+  const perfRows = opts.perfRows ? perfRowsForCell(opts.perfRows, cellId) : [];
+  // Highest-spend row only for text fields (book2_concept_name/iap_read/stage
+  // are per-cell, not per-row, so any real row's copy is representative) —
+  // never for the numbers, which must reflect every real row (see stats below).
+  const perf = perfRows.length
+    ? perfRows.reduce((best, r) => (r["Amount spent (USD)"] > best["Amount spent (USD)"] ? r : best))
+    : null;
   const ad = primaryAdForCell(opts.ads, cellId, lib?.mapped_ad_names);
 
   const tags = lib ? tagsFromLibraryCell(lib) : perf ? tagsFromPerfRow(perf) : [];
@@ -139,14 +186,8 @@ export function cardFromLibraryCell(
     visualSystem: lib?.visual_system ?? null,
     assetFormat: (lib as { asset_format?: string } | null)?.asset_format ?? null,
     tags,
-    stats: perf
-      ? {
-          spend: perf["Amount spent (USD)"],
-          results: perf.Results,
-          cpa: perf.CPA_result,
-          ctrPct: perf.CTR_link_pct,
-        }
-      : undefined,
+    stats: aggregatePerfStats(perfRows),
+    perfRows,
     iapRead: lib?.iap_read ?? perf?.iap_read ?? null,
     stage: lib?.stage ?? perf?.stage ?? null,
     qaMappingStatus: lib?.qa_mapping_status ?? null,
