@@ -21,6 +21,7 @@ import { getSupabase } from "./supabase";
 import { invalidateMetrixSeedCache } from "./metrixSeedAssembly";
 import { logger } from "./logger";
 import { resolveAccountObjectives, COHORT_DEFINITIONS, type CohortDefinition } from "./cohortConfig";
+import { topRowsPerResultType } from "./evidenceSelection";
 
 export const GENERATION_MODEL = "claude-sonnet-4-6";
 /** Runs stuck 'running' past this cutoff are treated as dead (server restart). */
@@ -267,14 +268,8 @@ async function buildStrategyEvidence(
       rowsFor("account_modules", accountId, (q) => q.eq("module", "iap_metadata")),
     ]);
 
-  const cells = cellRows
-    .map((r) => r["payload"] as Row)
-    .sort((a, b) => num(b["Results"]) - num(a["Results"]))
-    .slice(0, 30);
-  const variables = varRows
-    .map((r) => r["payload"] as Row)
-    .sort((a, b) => num(b["Results"]) - num(a["Results"]))
-    .slice(0, 60);
+  const cells = topRowsPerResultType(cellRows.map((r) => r["payload"] as Row), 30);
+  const variables = topRowsPerResultType(varRows.map((r) => r["payload"] as Row), 60);
   const hasSignals =
     demoRows.length + placementRows.length + deviceRows.length + platformRows.length + placementPerfRows.length > 0;
 

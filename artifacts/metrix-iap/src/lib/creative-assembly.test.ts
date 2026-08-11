@@ -154,11 +154,44 @@ describe("perfRowsForCell", () => {
 });
 
 describe("aggregatePerfStats", () => {
-  it("sums real spend and results across every row instead of keeping only the highest-spend one", () => {
+  it("sums real spend across every row instead of keeping only the highest-spend one", () => {
     const stats = aggregatePerfStats(multiRowCell);
     expect(stats?.spend).toBeCloseTo(675.81 + 441.7 + 110.92);
-    expect(stats?.results).toBe(76);
+  });
+
+  // Regression guard: summing 74 registrations + 2 trials + 0 checkouts into
+  // "76 results" and dividing spend by it yields $16.16 — a cost per result
+  // that belongs to no ad, campaign, or event. Mixed-event sets must report
+  // no single results/CPA number at all.
+  it("reports NO results or CPA when rows span different result types", () => {
+    const stats = aggregatePerfStats(multiRowCell);
+    expect(stats?.results).toBeNull();
+    expect(stats?.cpa).toBeNull();
     expect(stats?.resultLabel).toBe("3 events");
+  });
+
+  it("sums results and derives CPA when every row shares one result type", () => {
+    // Same creative, same event, three separate campaign flights — genuinely additive.
+    const sameEvent = [
+      perfRow({ "Amount spent (USD)": 100, Results: 10, CTR_link_pct: 2 }),
+      perfRow({ "Amount spent (USD)": 200, Results: 15, CTR_link_pct: 1 }),
+      perfRow({ "Amount spent (USD)": 300, Results: 25, CTR_link_pct: 3 }),
+    ];
+    const stats = aggregatePerfStats(sameEvent);
+    expect(stats?.spend).toBeCloseTo(600);
+    expect(stats?.results).toBe(50);
+    expect(stats?.cpa).toBeCloseTo(12);
+  });
+
+  it("labels by DISTINCT event count, not row count", () => {
+    // 4 rows, 2 distinct events → "2 events" (not "4 events").
+    const stats = aggregatePerfStats([
+      perfRow({ "Result type": "Website registrations completed", "Amount spent (USD)": 10, Results: 1 }),
+      perfRow({ "Result type": "Website registrations completed", "Amount spent (USD)": 20, Results: 2 }),
+      perfRow({ "Result type": "Website trials started", "Amount spent (USD)": 30, Results: 3 }),
+      perfRow({ "Result type": "Website trials started", "Amount spent (USD)": 40, Results: 4 }),
+    ]);
+    expect(stats?.resultLabel).toBe("2 events");
   });
 
   it("takes CTR from the highest-spend row since it isn't additive", () => {
@@ -177,10 +210,11 @@ describe("aggregatePerfStats", () => {
 });
 
 describe("cardFromCell multi-row performance (no silent collapse)", () => {
-  it("aggregates stats across every row for the cell by default", () => {
+  it("totals real spend across every row for the cell, without inventing a blended result", () => {
     const card = cardFromCell("C2B", { perfRows: multiRowCell, ads: [], metaAdAccountId: null });
     expect(card.stats?.spend).toBeCloseTo(675.81 + 441.7 + 110.92);
-    expect(card.stats?.results).toBe(76);
+    expect(card.stats?.results).toBeNull();
+    expect(card.stats?.cpa).toBeNull();
   });
 
   it("exposes every real row on the card so detail views can show each one distinctly", () => {

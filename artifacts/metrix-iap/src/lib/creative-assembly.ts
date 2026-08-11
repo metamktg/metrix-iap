@@ -62,15 +62,32 @@ export function perfRowsForCell(rows: CellPerformanceRow[] | undefined, cellId: 
 }
 
 /**
- * Honest aggregate stats across every real row for a cell. Spend and results
- * are summed — genuine totals across real campaign flights of the same
- * creative, not a fabricated blend — so a concept with multiple Result-type
- * rows shows its true total instead of silently keeping only the
- * highest-spend row and discarding the rest. CTR comes from the
- * highest-spend row since it isn't meaningfully additive across rows.
+ * Aggregate stats across every real row for a cell.
+ *
+ * SPEND is always summed: rows for one cell are separate campaign flights of
+ * the same creative (different date windows, different campaigns), so their
+ * spend is genuinely additive and the total is the real money spent on that
+ * creative.
+ *
+ * RESULTS and CPA are only reported when every row shares one `Result type`.
+ * Rows for one cell frequently span DIFFERENT conversion events — e.g. a
+ * creative flighted toward registrations, then trials, then checkout as three
+ * campaigns. Adding 74 registrations + 2 trials + 0 checkouts into "76
+ * results" mixes incompatible denominators, and dividing total spend by it
+ * yields a cost-per-result that belongs to no ad, no campaign, and no event.
+ * The honest answer there is no single number — so results/cpa come back null,
+ * the card renders "—", and the real per-event rows stay available through
+ * `perfRows` (the expand dialog's Funnel tab shows each one distinctly).
+ *
+ * CTR is taken from the highest-spend row rather than averaged: it is a ratio,
+ * so averaging ratios across rows of unequal volume would weight a $10 row the
+ * same as a $700 one. (A volume-weighted CTR would be strictly better but
+ * needs per-row impressions carried through this type — see the wider
+ * TerminalAgg note in mst-analysis.ts.)
+ *
  * `labelForResultType` lets callers substitute a human-readable event label
- * for the single-row case; the multi-row case always says "N events" so the
- * blend is never presented as one homogeneous result type.
+ * for the single-event case; multi-event sets are labeled "N events" by
+ * DISTINCT event count, so the label never implies one homogeneous result.
  */
 export function aggregatePerfStats(
   rows: CellPerformanceRow[],
@@ -78,16 +95,20 @@ export function aggregatePerfStats(
 ): CreativeCardStats | undefined {
   if (!rows.length) return undefined;
   const spend = rows.reduce((s, r) => s + r["Amount spent (USD)"], 0);
-  const results = rows.reduce((s, r) => s + r.Results, 0);
   const primary = rows.reduce((best, r) =>
     r["Amount spent (USD)"] > best["Amount spent (USD)"] ? r : best
   );
+  const resultTypes = new Set(rows.map((r) => r["Result type"]));
+  const homogeneous = resultTypes.size === 1;
+  const results = homogeneous ? rows.reduce((s, r) => s + r.Results, 0) : null;
   return {
     spend,
     results,
-    cpa: results > 0 ? spend / results : null,
+    cpa: results != null && results > 0 ? spend / results : null,
     ctrPct: primary.CTR_link_pct,
-    resultLabel: rows.length === 1 ? labelForResultType(primary["Result type"]) : `${rows.length} events`,
+    resultLabel: homogeneous
+      ? labelForResultType(primary["Result type"])
+      : `${resultTypes.size} events`,
   };
 }
 
