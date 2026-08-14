@@ -142,7 +142,7 @@ the client, or accept a hard boot dependency and document it as required env in 
 
 ---
 
-## 7. Branch disposition — all 26
+## 7. Branch disposition — all 25 branches besides `main`
 
 **Merge (2):** `claude/new-session-d9skbh`, `claude/onboarding-analysis-workflow-hkz02o`
 
@@ -159,7 +159,7 @@ the client, or accept a hard boot dependency and document it as required env in 
 **Delete — history-rewrite artifacts (4):** `merge-replit-aug8`, `merge-replit-aug8-v2`, `mergeaug8`,
 `repo-cleanup-aug8`
 
-**Decide, then delete (14).** All orphaned, all pre-rewrite, none mergeable. Confirmed **not** on
+**Decide, then delete (13).** All orphaned, all pre-rewrite, none mergeable. Confirmed **not** on
 `main`: the ECAS Meta MCP scaffold (`ecas-meta-mcp-kickoff-04e45c`), the `/design-sync` skill
 (`design-system-sync-g5w00t`), and both pricing documents (`metrix-pricing-analysis-zbrqtn`,
 `pricing-service-tiers-xvdxi0`). The rest — `analysis-core-integration-kcvpa4`,
