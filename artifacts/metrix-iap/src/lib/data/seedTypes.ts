@@ -155,6 +155,24 @@ export interface ConversionTrackingSignal {
   placements: (ConversionFunnelRow & { placement: string })[];
 }
 
+/**
+ * Delivery-based device row (device_kind='impression'): real spend/impressions
+ * per device, mirroring the shape of v3/c4e placement signal rows. Can be
+ * empty even when the account has delivery data elsewhere — Meta's export can
+ * omit the "Impression device" breakdown for a given window/account (see
+ * conversion_tracking_signal for the funnel-attributed fallback in that case).
+ */
+export interface DeviceDeliveryRow {
+  device: string;
+  date_start: string;
+  date_end: string;
+  spend: number | null;
+  impressions: number | null;
+  link_clicks: number | null;
+  results: number | null;
+  cpa: number | null;
+}
+
 export interface ConceptRollupRow {
   book: string;
   concept: string;
@@ -179,6 +197,8 @@ export interface AnalysisData {
   demographic_registration_signal: DemographicRow[];
   v3_placement_signal: PlacementRow[];
   c4e_placement_signal: PlacementRow[];
+  /** Delivery-based device breakdown (real spend/impressions). Empty when Meta's export omitted the device dimension for this window — see conversion_tracking_signal.devices for the funnel-attributed fallback. */
+  device_delivery_signal?: DeviceDeliveryRow[];
   top_checkout_cells: CellPerformanceRow[];
   top_checkout_variables: VariablePerformanceRow[];
   /** Cross-book (BOOK0 + BOOK2) concept view from the normalized bundle. */
