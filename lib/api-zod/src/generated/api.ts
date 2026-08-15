@@ -341,7 +341,8 @@ export const StartManualAnalysisRunParams = zod.object({
 })
 
 export const StartManualAnalysisRunBody = zod.object({
-  "date_range": zod.enum(['7d', '14d', '30d', 'all']).describe('Date window to analyze, anchored to the latest date found in the uploaded data (not wall-clock time). \"all\" analyzes every uploaded date.')
+  "date_range": zod.enum(['7d', '14d', '30d', 'all']).describe('Date window to analyze, anchored to the latest date found in the uploaded data (not wall-clock time). \"all\" analyzes every uploaded date.'),
+  "confirm_conversion_export": zod.boolean().optional().describe('Pass true to proceed anyway after a prior call was rejected with a 409 conversion_export_confirmation_required error. Omit or leave false on the first attempt.')
 })
 
 export const StartManualAnalysisRunResponse = zod.object({

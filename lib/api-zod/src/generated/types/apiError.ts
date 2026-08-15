@@ -8,4 +8,8 @@
 
 export interface ApiError {
   message: string;
+  /** Optional machine-readable discriminator for errors callers need to branch on (e.g. conversion_export_confirmation_required). */
+  code?: string;
+  /** Optional extra detail relevant to `code`, such as the filenames that triggered it. */
+  files?: string[];
 }

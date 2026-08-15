@@ -28,8 +28,19 @@ import {
   useListWorkspaceReports, useListManualImports,
   useStartManualAnalysisRun, getGetMetrixSeedQueryKey,
   useCreateWorkspaceReport, getListWorkspaceReportsQueryKey,
+  ApiError,
 } from "@workspace/api-client-react";
 import type { AnalysisRun, GeneratedReportCreateInput } from "@workspace/api-client-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@workspace/command-deck/components/ui/alert-dialog";
 import { useGenerationRun } from "@/components/generation/GenerationControls";
 import { RunSelector, ALL_TIME_SELECTION, type RunSelectorValue } from "@/components/analysis/RunSelector";
 import { useToast } from "@workspace/command-deck/hooks/use-toast";
@@ -719,7 +730,7 @@ function CommandHub({
   analysisStarting: boolean;
   analysisStartError: string | null;
   onNavigate: (path: string) => void;
-  onStartAnalysis: (range: AnalysisDateRange) => Promise<void>;
+  onStartAnalysis: (range: AnalysisDateRange, confirmConversionExport?: boolean) => Promise<boolean>;
   onGenerateStrategy: (selection: RunSelectorValue) => void;
   onGenerateBriefs: () => void;
   reportGenerating: boolean;
@@ -1037,9 +1048,11 @@ function CommandHub({
                   setPendingConfirm(null);
                   goTo("/app/settings/integrations");
                 } else {
-                  await onStartAnalysis(localDateRange);
-                  setPendingConfirm(null);
-                  onClose();
+                  const started = await onStartAnalysis(localDateRange);
+                  if (started) {
+                    setPendingConfirm(null);
+                    onClose();
+                  }
                 }
               }}
               disabled={analysisStarting}
@@ -1644,27 +1657,49 @@ export function LoopCommandChain({
   // ── Analysis run mutation (fired from CommandHub confirmation) ───────────
   const startAnalysisMutation = useStartManualAnalysisRun();
   const [analysisStartError, setAnalysisStartError]  = useState<string | null>(null);
+  const [conversionExportConfirm, setConversionExportConfirm] = useState<{ range: AnalysisDateRange; message: string; files: string[] } | null>(null);
   // Double-tap guard: analysisFireRef blocks a second mutateAsync() call
   // synchronously (before any re-render); analysisFiring drives the disabled
   // state so the button disables in the very next render triggered by
   // setAnalysisFiring(true) — before mutation.isPending catches up.
   const analysisFireRef = useRef(false);
   const [analysisFiring, setAnalysisFiring] = useState(false);
-  const handleStartAnalysis = async (range: AnalysisDateRange): Promise<void> => {
-    if (analysisFireRef.current) return;
+  // Returns true when the run actually started (so callers can decide
+  // whether to close the confirmation panel), false when it was blocked
+  // (either by the conversion-export gate, which opens its own dialog, or
+  // by a hard error shown inline via analysisStartError).
+  const handleStartAnalysis = async (range: AnalysisDateRange, confirmConversionExport = false): Promise<boolean> => {
+    if (analysisFireRef.current) return false;
     analysisFireRef.current = true;
     setAnalysisFiring(true);
     setAnalysisStartError(null);
     try {
-      await startAnalysisMutation.mutateAsync({ accountId, data: { date_range: range } });
+      await startAnalysisMutation.mutateAsync({
+        accountId,
+        data: { date_range: range, ...(confirmConversionExport ? { confirm_conversion_export: true } : {}) },
+      });
+      setConversionExportConfirm(null);
       // Start polling immediately — don't wait for refetch to confirm "running"
       // so there's no timing gap where the run exists on the server but
       // analysisPolling is still false.
       setAnalysisPolling(true);
       await refetchAnalysis();
+      return true;
     } catch (err) {
+      if (err instanceof ApiError) {
+        const errData = err.data as { code?: string; files?: string[]; message?: string } | null;
+        if (errData?.code === "conversion_export_confirmation_required") {
+          setConversionExportConfirm({
+            range,
+            message: errData.message ?? err.message,
+            files: Array.isArray(errData.files) ? errData.files : [],
+          });
+          return false;
+        }
+      }
       const msg = err instanceof Error ? err.message : "Could not start analysis — check your connection.";
       setAnalysisStartError(msg);
+      return false;
     } finally {
       analysisFireRef.current = false;
       setAnalysisFiring(false);
@@ -1985,6 +2020,35 @@ export function LoopCommandChain({
           onGenerateReport={handleGenerateReport}
         />
       )}
+
+      <AlertDialog
+        open={!!conversionExportConfirm}
+        onOpenChange={(open) => { if (!open) setConversionExportConfirm(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>This looks like a conversion export, not a delivery export</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <span className="block">{conversionExportConfirm?.message}</span>
+              {conversionExportConfirm && conversionExportConfirm.files.length > 0 && (
+                <span className="block text-label text-muted-foreground/80">
+                  Affected file{conversionExportConfirm.files.length !== 1 ? "s" : ""}: {conversionExportConfirm.files.join(", ")}
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (conversionExportConfirm) void handleStartAnalysis(conversionExportConfirm.range, true);
+              }}
+            >
+              Run anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

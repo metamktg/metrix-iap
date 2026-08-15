@@ -118,6 +118,18 @@ export type IapCsvParseResult = {
    * DELIVERY_PRIMITIVES in iapCsvSpec.ts.
    */
   coverage: IapCsvCoverage;
+  /**
+   * True when this file's data matches the signature of a Meta
+   * conversion-event export (all-zero impressions) even though it was
+   * uploaded into a delivery-class slot. Callers that commit data (analysis
+   * runs) should treat this as a confirmation gate, not just a warning —
+   * saving it silently produces impossible CTR/CPM values.
+   *
+   * Complementary to `coverage`, not a duplicate of it: this flags explicit
+   * ZERO impressions (a conversion export), while the delivery coverage gate
+   * blocks BLANK or absent spend/impressions. A file can trip either alone.
+   */
+  conversionExportSuspected: boolean;
 };
 
 /** Measured fill for one canonical column across every parsed row. */
@@ -713,6 +725,7 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
   // conversion/action export — those exports attribute clicks and results to ad
   // delivery windows but record 0 impressions because they are not impression-
   // driven. Saving one silently produces impossible CTR values.
+  let conversionExportSuspected = false;
   if (csvClass !== "conversion_device") {
     const impressionsFound = baseMetricIdx.has("Impressions");
     if (impressionsFound) {
@@ -720,6 +733,7 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
       const allZeroOrNull = impressionValues.every((v) => v === null || v === 0);
       const anyExplicitZero = impressionValues.some((v) => v === 0);
       if (allZeroOrNull && anyExplicitZero) {
+        conversionExportSuspected = true;
         warnings.push(
           "This looks like a conversion-event export, not a delivery export. " +
             "Delivery exports include impression counts. " +
@@ -738,6 +752,7 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
     missingColumns,
     mappingSummary: Array.from(summaryMap.values()),
     coverage,
+    conversionExportSuspected,
   };
 }
 
