@@ -24,6 +24,7 @@ import type { ConversionTrackingSignal, PlacementRow } from "@/lib/data/seedType
 import { ConversionFunnelTable } from "./tables";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { RankSortBar, KpiStat, sortByRankMetric, useRankMetric, type RankMetric } from "./rankSort";
+import { TYPE } from "../typography";
 
 const SECTION = "Analysis · 03";
 const RANK_STORAGE_KEY = "metrix.placements.rank.v1";
@@ -430,7 +431,7 @@ export function PlacementsView() {
                     </div>
                   )}
 
-                  <div className="space-y-1.5 text-[18px] pl-[6px] pr-[6px] pt-[6px] pb-[6px]">
+                  <div className="space-y-1.5">
                     {ranked.map((s, idx) => {
                       const spendShare = totalSpend > 0 ? (s.spend / totalSpend) * 100 : 0;
                       const resultShare = totalResults > 0 ? (s.results / totalResults) * 100 : 0;
@@ -441,17 +442,17 @@ export function PlacementsView() {
                           key={s.placement}
                           onClick={() => setSelectedPlacement(s.placement)}
                           data-testid={`row-placement-${s.placement}`}
-                          className="w-full text-left rounded-lg px-3 py-2.5 border border-border/30 bg-white/[0.01] hover:border-primary/25 hover:bg-primary/[0.03] active:scale-[0.995] transition-all duration-100 group border-t-[2px] border-r-[2px] border-b-[2px] border-l-[2px] border-t-[color:var(--color-sky-500)] border-r-[color:var(--color-sky-500)] border-b-[color:var(--color-sky-500)] border-l-[color:var(--color-sky-500)]"
+                          className="w-full text-left rounded-lg px-3 py-2.5 border border-border/30 bg-white/[0.01] hover:border-primary/25 hover:bg-primary/[0.03] active:scale-[0.995] transition-all duration-100 group"
                         >
                           <div className="flex items-center gap-3">
                             <span className="w-5 shrink-0 text-label font-mono text-muted-foreground/40 tabular-nums">
                               {idx + 1}
                             </span>
                             <div className="min-w-0 w-44 shrink-0">
-                              <div className="font-medium text-foreground/90 truncate text-[16px]">{s.placement}</div>
+                              <div className={cn(TYPE.body, "font-medium text-foreground/90 truncate")}>{s.placement}</div>
                               {efficiency != null && (
                                 <div
-                                  className="font-mono mt-0.5 text-emerald-300/70 text-[14px] font-bold"
+                                  className="font-mono mt-0.5 text-emerald-300/70 text-label font-bold"
                                   title="Share of results ÷ share of spend"
                                 >
                                   {efficiency.toFixed(1)}× efficiency

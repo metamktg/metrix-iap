@@ -290,7 +290,7 @@ export function KpiStat({
 }) {
   return (
     <div className="min-w-0">
-      <div className="font-mono uppercase tracking-wider text-muted-foreground/50 mb-1 text-[12px]">
+      <div className={cn(TYPE.microLabel, "mb-1")}>
         {label}
       </div>
       <div
