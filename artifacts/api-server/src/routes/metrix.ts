@@ -930,7 +930,8 @@ router.patch("/metrix/accounts/:accountId/objectives", requireAuth, async (req, 
   }
 });
 
-const MAX_MANUAL_IMPORT_BYTES = 8 * 1024 * 1024;
+const MAX_MANUAL_IMPORT_BYTES = 50 * 1024 * 1024;
+const MAX_CELL_CREATIVE_BYTES = 8 * 1024 * 1024;
 const BASE64_RE = /^[A-Za-z0-9+/\-_]+={0,2}$/;
 
 /** Maps a performance-CSV import kind to its canonical IAP CSV template class. */
@@ -991,7 +992,7 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
       return;
     }
     if (content.length > MAX_MANUAL_IMPORT_BYTES) {
-      res.status(413).json({ message: "File is too large — the limit is 8 MB." });
+      res.status(413).json({ message: "File is too large — the limit is 50 MB." });
       return;
     }
 
@@ -1391,7 +1392,7 @@ router.post("/metrix/accounts/:accountId/cells/:cellId/creative", requireAuth, a
       res.status(400).json({ message: "The uploaded file is empty." });
       return;
     }
-    if (content.length > MAX_MANUAL_IMPORT_BYTES) {
+    if (content.length > MAX_CELL_CREATIVE_BYTES) {
       res.status(413).json({ message: "File is too large — the limit is 8 MB." });
       return;
     }

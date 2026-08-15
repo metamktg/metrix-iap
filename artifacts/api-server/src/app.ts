@@ -30,10 +30,11 @@ app.use(
 );
 app.use(cors());
 app.use(cookieParser());
-// Manual report uploads carry base64 file content (8 MB decoded max), so
-// this path gets a larger JSON body limit; everything else keeps the
-// express default (100kb). body-parser skips requests already parsed here.
-app.use("/api/metrix/accounts", express.json({ limit: "12mb" }));
+// Manual report uploads carry base64 file content (50 MB decoded max for
+// CSV/report imports; base64 inflates that by ~33%), so this path gets a
+// larger JSON body limit; everything else keeps the express default (100kb).
+// body-parser skips requests already parsed here.
+app.use("/api/metrix/accounts", express.json({ limit: "75mb" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

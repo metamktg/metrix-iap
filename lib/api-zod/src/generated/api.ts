@@ -72,7 +72,7 @@ export const StageManualImportBody = zod.object({
   "kind": zod.enum(['performance_demo_csv', 'performance_placement_csv', 'performance_ad_summary_csv', 'performance_conversion_device_csv', 'creative_asset']),
   "filename": zod.string().min(1).max(stageManualImportBodyFilenameMax),
   "content_type": zod.string().optional().describe('Original MIME type of the uploaded file, if known.'),
-  "content_base64": zod.string().min(1).describe('Base64-encoded file content. Max 8 MB decoded.'),
+  "content_base64": zod.string().min(1).describe('Base64-encoded file content. Max 50 MB decoded.'),
   "ad_names": zod.array(zod.string()).optional().describe('For creative_asset uploads only — the ad name(s) this creative is mapped to.'),
   "match_method": zod.enum(['id', 'fuzzy', 'guess']).optional().describe('How ad_names was auto-suggested at stage time (id code, confident filename similarity, or low-confidence closest guess), if at all.')
 })

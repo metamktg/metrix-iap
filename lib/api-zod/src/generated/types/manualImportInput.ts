@@ -18,7 +18,7 @@ export interface ManualImportInput {
   /** Original MIME type of the uploaded file, if known. */
   content_type?: string;
   /**
-     * Base64-encoded file content. Max 8 MB decoded.
+     * Base64-encoded file content. Max 50 MB decoded.
      * @minLength 1
      */
   content_base64: string;
