@@ -206,7 +206,6 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
           </span>
         )}
       </div>
-
       {/* Body */}
       <div className="px-3 py-2.5 space-y-2.5">
         {/* Last run summary */}
@@ -257,7 +256,7 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
         {/* Run / Re-run button — de-emphasised when recently run */}
         {recentlyRun && !isRunning ? (
           /* Subtle secondary link when within 28-day freshness window */
-          <button
+          (<button
             onClick={() => void handleRun()}
             disabled={startMutation.isPending}
             className="w-full flex items-center justify-center gap-1.5 h-7 rounded-lg border border-border/30 bg-white/[0.02] text-caption font-medium text-muted-foreground/60 hover:text-foreground/80 hover:bg-white/[0.05] hover:border-border/50 transition-colors"
@@ -267,10 +266,10 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
             ) : (
               <><RotateCcw className="w-3.5 h-3.5" /> Re-run analysis</>
             )}
-          </button>
+          </button>)
         ) : (
           /* Primary CTA — first run, failed, or stale (> 28 days) */
-          <button
+          (<button
             onClick={() => void handleRun()}
             disabled={isRunning || startMutation.isPending}
             className={cn(
@@ -285,7 +284,7 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
             ) : (
               <><PlayCircle className="w-3.5 h-3.5" /> Run analysis</>
             )}
-          </button>
+          </button>)
         )}
 
         {/* Upload link */}
@@ -324,11 +323,11 @@ function TraySection({
 }) {
   return (
     <div className="px-4">
-      <div className="flex items-center gap-1.5 mb-2.5">
+      <div className="flex items-center gap-1.5 mb-[0px] ml-[4px] text-[17px]">
         {accentColor && (
           <span className={cn("w-1 h-3 rounded-full shrink-0", accentColor)} />
         )}
-        <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground/75">
+        <span className="font-bold uppercase tracking-[0.18em] text-muted-foreground/75 text-[17px]">
           {title}
         </span>
         {count != null && count > 0 && (
@@ -354,7 +353,7 @@ function TrayCard({
   return (
     <div
       className={cn(
-        "relative rounded-lg border bg-white/[0.03] px-2.5 py-2 space-y-1.5",
+        "relative rounded-lg border bg-white/[0.03] px-2.5 py-2 pl-[14px] pt-[4px] pb-[14px] space-y-1.5",
         "before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:rounded-full",
         ACCENT[accent],
         muted ? "border-border/20 opacity-50" : "border-border/40"
@@ -380,16 +379,16 @@ function TrayItem({
 }) {
   return (
     <TrayCard accent={accent}>
-      <p className="text-body font-medium text-foreground/90 leading-snug line-clamp-2">{label}</p>
+      <p className="font-medium text-foreground/90 line-clamp-2 text-[15px] pt-[4px] pb-[4px] mb-[10px] mt-[0px] pr-[40px]">{label}</p>
       {sub && (
-        <span className="inline-block text-[9px] font-semibold uppercase tracking-wide bg-white/[0.06] border border-border/30 rounded px-1.5 py-0.5 text-foreground/55 leading-none">
+        <span className="inline-block font-semibold uppercase tracking-wide bg-white/[0.06] border border-border/30 rounded px-1.5 py-0.5 text-foreground/55 text-[15px]">
           {sub}
         </span>
       )}
       {onAction && (
         <button
           onClick={onAction}
-          className="inline-flex items-center gap-1 text-caption font-semibold text-primary-foreground bg-primary hover:bg-primary/90 rounded px-2 py-0.5 transition-colors"
+          className="inline-flex items-center gap-1 font-semibold text-primary-foreground bg-primary hover:bg-primary/90 rounded px-2 py-0.5 transition-colors text-[16px] pb-[4px] pt-[4px] pl-[8px] pr-[8px] ml-[2px] mr-[2px] mt-[4px] mb-[4px]"
         >
           {actionLabel}
           <ArrowRight className="w-3.5 h-3.5" />
@@ -503,10 +502,10 @@ function TrayNavLink({
   return (
     <button
       onClick={() => navigate(to)}
-      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-body font-medium text-foreground/60 hover:text-foreground hover:bg-white/[0.04] transition-colors text-left min-w-0"
+      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-foreground/60 hover:text-foreground hover:bg-white/[0.04] transition-colors text-left min-w-0 text-[14px] font-semibold"
     >
       {Icon && <Icon className="w-3.5 h-3.5 shrink-0 text-muted-foreground/50" />}
-      <span className="truncate">{label}</span>
+      <span className="truncate font-extrabold text-[18px] text-metrix-cyan bg-metrix-panel border-t-[3px] border-r-[3px] border-b-[3px] border-l-[3px] rounded-tl-[8px] rounded-tr-[8px] rounded-br-[8px] rounded-bl-[8px] opacity-[0.94] ml-[14px] mr-[14px] mt-[8px] mb-[8px] pt-[8px] pb-[8px] pl-[20px] pr-[20px] border-t-[color:var(--color-sky-500)] border-r-[color:var(--color-sky-500)] border-b-[color:var(--color-sky-500)] border-l-[color:var(--color-sky-500)]">{label}</span>
       <ArrowRight className="w-3.5 h-3.5 ml-auto opacity-40 shrink-0" />
     </button>
   );
@@ -528,7 +527,7 @@ function EmptySlot({
   const [, navigate] = useLocation();
   return (
     <div className="px-0.5 py-1.5 space-y-1">
-      <p className="text-caption text-foreground/40 leading-snug">{message}</p>
+      <p className="text-foreground/40 text-[15px]">{message}</p>
       {nudgeLabel && nudgeTo && (
         <button
           onClick={() => navigate(nudgeTo)}
@@ -651,10 +650,9 @@ export function TaskTray() {
           <span className="w-px h-full bg-transparent group-hover/handle:bg-primary/40 transition-colors" />
         </div>
       )}
-
       {!open ? (
         // ── Minimized strip ────────────────────────────────────────────
-        <div className="flex-1 flex flex-col items-center py-3 gap-2 min-w-0">
+        (<div className="flex-1 flex flex-col items-center py-3 gap-2 min-w-0">
           <button
             onClick={toggle}
             title="Expand task tray"
@@ -687,7 +685,6 @@ export function TaskTray() {
               )}
             </div>
           </button>
-
           <div
             className="flex-1 flex items-end justify-center pb-1 cursor-pointer"
             onClick={toggle}
@@ -695,7 +692,6 @@ export function TaskTray() {
           >
             <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/25" />
           </div>
-
           <button
             onClick={toggle}
             title="Expand"
@@ -704,7 +700,7 @@ export function TaskTray() {
           >
             <ChevronRight className="w-3.5 h-3.5" />
           </button>
-        </div>
+        </div>)
       ) : (
       <>
       {/* Header */}

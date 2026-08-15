@@ -12,7 +12,7 @@ import {
   ModuleHeader, ModuleScopeGate, SectionCard, StageLoopHub, buildLoopStages, CrossLink, PendingState, HubNavGrid,
 } from "../shared";
 import { AnalysisControls } from "../ManualAnalysisControls";
-import { useListAnalysisRuns } from "@workspace/api-client-react";
+import { useListAnalysisRuns, getListAnalysisRunsQueryKey } from "@workspace/api-client-react";
 import { LayoutDashboard, History } from "lucide-react";
 import { OBJECTIVE_OPTIONS } from "../settings/cohortOptions";
 
@@ -23,7 +23,7 @@ export function AnalysisCommandCenter() {
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
   const status = useStageStatus(account?.id ?? null);
-  const { data: runsData } = useListAnalysisRuns(account?.id ?? "");
+  const { data: runsData } = useListAnalysisRuns(account?.id ?? "", { query: { enabled: !!account?.id, queryKey: getListAnalysisRunsQueryKey(account?.id ?? "") } });
   const runCount = (runsData?.runs ?? []).filter((r) => r.status === "success").length;
 
   return (

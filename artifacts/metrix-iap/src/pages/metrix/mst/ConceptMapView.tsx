@@ -15,7 +15,7 @@ import { VariableCodeChips } from "../analysis/tables";
 import { InfoDrawer, DrawerField } from "@/components/ui/InfoDrawer";
 import { useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
 import { RunScopePicker, type RunSelectorValue } from "@/components/analysis/RunSelector";
-import { useListAnalysisRuns } from "@workspace/api-client-react";
+import { useListAnalysisRuns, getListAnalysisRunsQueryKey } from "@workspace/api-client-react";
 import { getMST } from "@/lib/data/metrixSeedAdapter";
 import { CreativeCard } from "@/components/creative/CreativeCard";
 import { cardFromCell } from "@/lib/creative-assembly";
@@ -49,7 +49,7 @@ export function ConceptMapView({
   const account = getAdAccount(seed, adAccountId);
   const [detail, setDetail] = useState<ConceptGroup | null>(null);
   const [segmentsOpen, setSegmentsOpen] = useState(false);
-  const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "");
+  const { data: analysisRunsData } = useListAnalysisRuns(adAccountId ?? "", { query: { enabled: !!adAccountId, queryKey: getListAnalysisRunsQueryKey(adAccountId ?? "") } });
   const controlled = runScope !== undefined && onRunScopeChange !== undefined;
   // When controlled, the parent owns persistence — the local hook is inert
   // so it never reads/writes storage or runs the stale-run guard.
