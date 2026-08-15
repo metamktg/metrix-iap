@@ -1,6 +1,7 @@
-# METRIX Manual Import — End-to-End Build Spec v1
+# METRIX Manual Import — End-to-End Build Spec (revised)
 
-**Status:** specification for build, pending sign-off
+**Status:** specification for build. Revision adds the interface specification (§9) and pairs every
+build phase with a UX acceptance gate alongside its data gate.
 **Companion:** `METRIX_Manual_Upload_Ingestion_Audit_Phase1.md` (the evidence this spec answers to)
 **Measurement basis:** a real client export — 34,148 rows, 239 ads, 442 days, 105 columns — plus
 direct reads of `iapCsvSpec.ts`, `iapCsvParser.ts`, `analysisEngine.ts`, `deconstructionEngine.ts`,
@@ -178,7 +179,123 @@ exclude it — while `call_to_action_type` is present on 96.2% of ads, exact and
 
 ---
 
+## 9. Interface specification
+
+Every new surface composes from the existing rulebook (`shared.tsx`, `typography.ts`) — the
+first-layer rule (no sentences on the primary layer; prose behind `DetailReveal`; labels from
+`deriveLabel()`), the `TYPE` role scale, `CaveatNote` for every honesty disclaimer, `fmtMetric` for
+all digits, polarity-coloured `ConfidenceBadge`, chip rows capped at 4 with `+N` overflow, and no
+nested interactive elements. `check:disclosure-rulebook` is a ratcheting gate; new surfaces land
+inside it.
+
+**One new principle: never show a number the user cannot act on.** `ImportConfidenceReport` currently
+computes an A–F grade from weighted column presence. "C" says nothing about what to change. Every
+diagnostic surface below replaces scores with a named capability plus the one export setting that
+unlocks it.
+
+### 9.1 Screen 1 — Add account
+
+The slot model (`CsvSlotUpload`, `performance_demo_csv` / `performance_placement_csv`) is retired.
+It pushed the platform's taxonomy onto the user and produced the four-way rejection. Replaced by one
+dropzone that fingerprints grain and facet from the header.
+
+- Streamed multipart upload with per-file progress; the 8 MB/12 MB caps go.
+- Facet shown as detected fact, not asked as a question. Same-facet files supersede, never accumulate.
+- Duplicate detection by content hash over normalised rows (the two test files were identical in
+  content and differed only in row order — a file hash misses that and doubles the account).
+- A file failing the coverage gate is rejected inline with the fix named; it never stages.
+- Creative upload is a separate, optional, later step — never in this dropzone.
+
+### 9.2 Screen 2 — Import review (capability ledger)
+
+Replaces `GradeBadge` / `computeGrade`, which are deleted rather than hidden.
+
+- Rows are capabilities ("Cost, efficiency & ROAS"), not columns.
+- Every unlocked row carries its evidence count; an unlocked row with no number behind it is a bug.
+- Every blocked row names exactly **one** export setting and carries one fix link. Where several
+  blocks share a cause they say so and share the link, so repetition reads as reassurance rather than
+  five chores.
+- Column-level mapping detail stays available behind `DetailReveal`.
+- Row order is stable across re-imports so returning users watch ✕ flip to ✓.
+
+### 9.3 Screen 3 — Structure tree
+
+Renders the moment the file lands, before any analysis, because identity parses nothing. Colliding
+names are shown as separate rows disambiguated by a mono `ad_id` suffix chip — the moment the user
+understands why IDs matter, at no explanation cost. Rename history surfaces both names with their
+observed windows.
+
+### 9.4 Screen 4 — Creative mapping and swipe queue
+
+Bulk-drop runs the match ladder first (Video ID / image hash → filename vs asset name → normalised
+filename → unambiguous ad name), clearing ~59% with no interaction. Only the remainder reaches the
+queue.
+
+- One card at a time, ranked candidates, keyboard-first: `↵` accepts top match, number keys pick an
+  alternate, `→` skips.
+- Candidates carry spend so near-identical creatives are distinguishable by what they did.
+- Many-to-one is normal and disclosed before commit ("attaches to 5 ads").
+- Colliding ad names are never auto-matched — the ladder skips that rung rather than guessing.
+- Skipping is free and reversible; the entry point persists as a quiet count, never a nag badge.
+- No review queue for mapping. Mapping is a decision, not a submission awaiting approval.
+
+### 9.5 Screen 5 — The two libraries
+
+The copy library is fully populated with zero user effort (46 entries from CSV alone), so the library
+is never empty and mapping visibly *adds* rather than being the price of entry.
+
+| Surface | Face (first layer) | Behind DetailReveal / drawer |
+| --- | --- | --- |
+| Copy entry | Hook segment or headline, code chips (max 4 + `+N`), ad count, spend | Full primary text, per-code evidence, ads using it |
+| Asset entry | Thumbnail, filename, code chips, ad count, spend | Full classification, video keyframes, ads using it |
+| Pairing view | Asset × copy grid with per-cell performance | Isolation read: what changed when only copy varied |
+
+The pairing view is the payoff and ships as a visible surface, not an internal capability: one image
+in the test account ran with five headlines, one video with four — copy contribution isolated with the
+visual held constant.
+
+Absent codes render through `CaveatNote` ("no asset mapped, visual codes not assessed"), never as an
+empty chip row that reads as a finding of nothing.
+
+### 9.6 State matrix
+
+Most import bugs are missing states, not wrong logic. Every surface implements all six.
+
+| State | Must never |
+| --- | --- |
+| Empty | Look like zero performance |
+| Working | Show a fake percentage or stall silently |
+| Complete | Claim complete with an empty primitive |
+| Partial | Round up to complete, or hide what's blocked |
+| Blocked | Render as empty — the defect P0 shipped against |
+| Failed | Discard work that did succeed |
+
+### 9.7 Message copy
+
+Copy is spec, not implementation detail. Every message names the cause, names one action, and states
+what was preserved. A message missing any of the three is not finished. Shipped strings live in
+`iapCsvParser.ts` and `deconstructionEngine.ts`; P3/P4 add:
+
+- *"Primary text isn't included in Meta's CSV exports. Connect the Meta API to read it."*
+- *"41 ads use Advantage+ dynamic creative. Meta serves several copies per ad and reports only at ad
+  level, so copy-level results aren't available for these."*
+
+---
+
 ## 7. Build phases and gates
+
+Each phase carries a **data gate** and a **UX gate**. Neither alone counts as done.
+
+### UX gates by phase
+
+| Phase | UX acceptance |
+| --- | --- |
+| P2 | The 15 identically-named ads render as 15 distinguishable rows; tree paints before any analysis run |
+| P3 | Every blocked ledger row names exactly one setting; no A–F grade remains in the tree; pairing view renders the 5-headline image |
+| P4 | `hook_segment` renders on API accounts and as an explicit `CaveatNote` on CSV ones — never approximated from the headline |
+| P5 | Absent codes render as `CaveatNote`, never as an empty chip row |
+| P6 | Swipe queue fully keyboard-operable; skipping entirely still yields a complete analysis; no slot vocabulary anywhere in the UI |
+
 
 ### P0 — Coverage gate and honest errors — SHIPPED
 
