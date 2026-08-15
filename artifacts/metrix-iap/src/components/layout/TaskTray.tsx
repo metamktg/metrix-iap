@@ -660,12 +660,7 @@ export function TaskTray() {
             className="flex flex-col items-center gap-2 w-full px-1 text-muted-foreground/60 hover:text-primary transition-colors group"
           >
             <div className="relative">
-              <div className={cn(
-                "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
-                hasPriorityItems
-                  ? "bg-emerald-400/15 border border-emerald-400/30 group-hover:bg-emerald-400/20"
-                  : "bg-white/[0.05] border border-border/40 group-hover:bg-white/[0.08]"
-              )}>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors bg-white/[0.05] border border-border/40 group-hover:bg-white/[0.08] border-t-[0px] border-r-[0px] border-b-[0px] border-l-[0px]">
                 <ClipboardList
                   className={cn(
                     "w-4 h-4 transition-transform group-hover:scale-110",
