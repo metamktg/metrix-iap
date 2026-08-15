@@ -315,7 +315,15 @@ export const IAP_CSV_CLASS_SPECS: Record<IapCsvClass, IapCsvClassSpec> = {
   device_placement: {
     className: "IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL",
     breakdownColumns: DEVICE_PLACEMENT_BREAKDOWN_COLUMNS,
-    requiredBreakdownColumns: ["Day", "Campaign name", "Ad name", "Impression device", "Platform", "Placement"],
+    // "Impression device" is intentionally NOT required: Meta's own export UI
+    // can omit or blank this column for some date ranges/account states (its
+    // device breakdown eligibility has shifted over time — see the
+    // device_performance schema notes). Treating it as required would hard-fail
+    // the entire placement/platform/spend ingestion just because the device
+    // dimension is unavailable. analysisEngine degrades gracefully per-row
+    // instead: rows with a blank device are excluded from device aggregation
+    // only, everything else (Placement, Platform, spend) still ingests.
+    requiredBreakdownColumns: ["Day", "Campaign name", "Ad name", "Platform", "Placement"],
   },
   ad_summary: {
     className: "IAP_AD_SUMMARY",

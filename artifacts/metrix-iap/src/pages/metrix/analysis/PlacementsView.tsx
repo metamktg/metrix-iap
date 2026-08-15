@@ -24,6 +24,7 @@ import type { ConversionTrackingSignal, PlacementRow } from "@/lib/data/seedType
 import { ConversionFunnelTable } from "./tables";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { RankSortBar, KpiStat, sortByRankMetric, useRankMetric, type RankMetric } from "./rankSort";
+import { TYPE } from "../typography";
 
 const SECTION = "Analysis · 03";
 const RANK_STORAGE_KEY = "metrix.placements.rank.v1";
@@ -441,24 +442,17 @@ export function PlacementsView() {
                           key={s.placement}
                           onClick={() => setSelectedPlacement(s.placement)}
                           data-testid={`row-placement-${s.placement}`}
-                          className={cn(
-                            "w-full text-left rounded-lg px-3 py-2.5 border border-border/30 bg-white/[0.01]",
-                            "hover:border-primary/25 hover:bg-primary/[0.03] active:scale-[0.995]",
-                            "transition-all duration-100 group"
-                          )}
+                          className="w-full text-left rounded-lg px-3 py-2.5 border border-border/30 bg-white/[0.01] hover:border-primary/25 hover:bg-primary/[0.03] active:scale-[0.995] transition-all duration-100 group"
                         >
                           <div className="flex items-center gap-3">
                             <span className="w-5 shrink-0 text-label font-mono text-muted-foreground/40 tabular-nums">
                               {idx + 1}
                             </span>
                             <div className="min-w-0 w-44 shrink-0">
-                              <div className="text-body font-medium text-foreground/90 truncate">{s.placement}</div>
+                              <div className={cn(TYPE.body, "font-medium text-foreground/90 truncate")}>{s.placement}</div>
                               {efficiency != null && (
                                 <div
-                                  className={cn(
-                                    "text-label font-mono mt-0.5",
-                                    efficiency >= 1 ? "text-emerald-300/70" : "text-muted-foreground/40"
-                                  )}
+                                  className="font-mono mt-0.5 text-emerald-300/70 text-label font-bold"
                                   title="Share of results ÷ share of spend"
                                 >
                                   {efficiency.toFixed(1)}× efficiency
@@ -500,7 +494,6 @@ export function PlacementsView() {
           );
         }}
       </ModuleScopeGate>
-
       <PlacementDetailDialog
         placement={selectedPlacement}
         v3Rows={analysis?.v3_placement_signal ?? []}

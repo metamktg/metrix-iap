@@ -370,6 +370,28 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
   const conversionDevices = conversionRows(devicePerformance, "device");
   const conversionPlatforms = conversionRows(platformPerformance, "platform");
   const conversionPlacements = conversionRows(placementPerformance, "placement");
+
+  // ── Delivery-based device signal ─────────────────────────────────────
+  // device_kind='impression' rows (tracking_basis NULL/'delivery') carry real
+  // spend/impressions per device, mirroring v3/c4e placement signal shape.
+  // Meta's export can omit this breakdown entirely for a given window (see
+  // analysisEngine's device-coverage csv_warnings) — in that case this array
+  // is simply empty and the UI falls back to conversion_tracking_signal.devices
+  // (funnel-attributed, not delivery) with honest labeling, never blended.
+  const deliveryDevices = devicePerformance
+    .filter((r) => r["device_kind"] === "impression" && r["tracking_basis"] !== "conversion")
+    .map((r) => ({
+      device: r["device"],
+      date_start: r["date_start"],
+      date_end: r["date_end"],
+      spend: r["spend"] === null ? null : Number(r["spend"]),
+      impressions: r["impressions"] === null ? null : Number(r["impressions"]),
+      link_clicks: r["link_clicks"] === null ? null : Number(r["link_clicks"]),
+      results: r["results"] === null ? null : Number(r["results"]),
+      cpa: r["cpa"] === null ? null : Number(r["cpa"]),
+    }))
+    .sort((a, b) => Number(b.spend ?? 0) - Number(a.spend ?? 0));
+
   const conversionTrackingSignal =
     conversionDevices.length + conversionPlatforms.length + conversionPlacements.length > 0
       ? {
@@ -392,6 +414,7 @@ export function buildAccountObject(account: Row, t: AccountTables): Row {
     demographic_registration_signal: demographicSignal.map((r) => r["payload"]),
     v3_placement_signal: placementSignal.filter((r) => r["signal_scope"] === "v3").map((r) => r["payload"]),
     c4e_placement_signal: placementSignal.filter((r) => r["signal_scope"] === "c4e").map((r) => r["payload"]),
+    device_delivery_signal: deliveryDevices,
     ...(conversionTrackingSignal ? { conversion_tracking_signal: conversionTrackingSignal } : {}),
     top_checkout_cells: topCheckoutCells,
     top_checkout_variables: topCheckoutVariables,
