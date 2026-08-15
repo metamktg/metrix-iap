@@ -144,15 +144,33 @@ describe("parseIapCsv — alias / fuzzy matching", () => {
     expect(result.warnings.some((w) => w.includes("Text"))).toBe(true);
   });
 
-  it("proceeds with warnings (not error) when base metric columns are missing", () => {
+  it("proceeds with warnings when NON-blocking base metric columns are missing", () => {
+    // Supply the delivery primitives, omit everything else. Missing engagement
+    // and video columns degrade confidence; they never block.
     const breakdownCols = DEMOGRAPHIC_BREAKDOWN_COLUMNS;
-    // Only provide breakdown columns — no base metrics at all
-    const header = [...breakdownCols.map(resolveCurrency)];
-    const row = [...breakdownCols.map(breakdownValue)];
+    const kept = ["Amount spent ({ACCOUNT_CURRENCY})", "Impressions", "Reach"];
+    const header = [...breakdownCols.map(resolveCurrency), ...kept.map(resolveCurrency)];
+    const row = [...breakdownCols.map(breakdownValue), ...kept.map(baseValue)];
     const result = parseIapCsv([line(header), line(row)].join("\n"), "demographic");
     expect(result.rows.length).toBe(1);
     expect(result.missingColumns.length).toBeGreaterThan(0);
     expect(result.warnings.some((w) => /missing|confidence/i.test(w))).toBe(true);
+  });
+
+  it("BLOCKS when a delivery primitive column is absent entirely", () => {
+    // Regression: the first release of the coverage gate only checked
+    // present-but-empty. A file with no spend column at all merely warned and
+    // proceeded to an analysis of zeroes — the same defect in a different
+    // shape. Absent and empty must both block.
+    const breakdownCols = DEMOGRAPHIC_BREAKDOWN_COLUMNS;
+    const header = [...breakdownCols.map(resolveCurrency)];
+    const row = [...breakdownCols.map(breakdownValue)];
+    const text = [line(header), line(row)].join("\n");
+    expect(() => parseIapCsv(text, "demographic")).toThrow(IapCsvFormatError);
+    // The message must name the ABSENT-column fix, not the conversion-breakdown one
+    expect(() => parseIapCsv(text, "demographic")).toThrow(/does not include/i);
+    expect(() => parseIapCsv(text, "demographic")).toThrow(/column picker/i);
+    expect(() => parseIapCsv(text, "demographic")).not.toThrow(/Conversion device/i);
   });
 });
 

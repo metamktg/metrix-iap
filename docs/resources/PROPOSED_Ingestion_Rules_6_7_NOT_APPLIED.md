@@ -1,9 +1,13 @@
-# PROPOSED — Ingestion Rules 5 (resolution), 6 and 7
+# PROPOSED — Ingestion Rules 5 (resolution), 6, 7, 8 and 9
 
-> **STATUS: PROPOSAL. NOT APPLIED.**
-> No source file has been changed. `iapCsvSpec.ts`, `iapCsvParser.ts` and the test suite are
-> untouched on this branch. This document exists to be reviewed and argued with before any code is
-> written. Nothing here ships without explicit sign-off.
+> **STATUS: RULES 5–9 ARE PROPOSALS. NOT APPLIED.**
+> None of the changes described in this document have been made. `BASE_METRICS` is unchanged, no
+> column has moved, no recipe has been altered. This document exists to be reviewed and argued with
+> before any of it is written. Nothing here ships without explicit sign-off.
+>
+> **Separately — one defect WAS found and fixed** during the second-pass review of already-shipped
+> work. It is not part of this proposal and required no approval, because it was a bug in code that
+> had already shipped rather than a new decision. See "Second-pass defect" at the end.
 
 **Companions:** `METRIX_Ingestion_Rule_Changes_v1.md` (Rules 1–5, already committed as advisory),
 `METRIX_Manual_Import_Build_Spec_v1.md`.
@@ -202,6 +206,104 @@ If any of those shift, the change is wrong and gets reverted rather than reconci
 
 ---
 
+## Rule 8 — Engagement metrics are the only readable signal on thin accounts
+
+Measured on the demographic export, 20 age × gender cells:
+
+| Signal | Cells with usable volume |
+| --- | ---: |
+| Purchases ≥ 30 (solid read) | **4 / 20** (20%) |
+| Purchases ≥ 10 (weak read) | 4 / 20 (20%) |
+| Purchases ≥ 1 (any at all) | 9 / 20 (45%) |
+| Adds to cart ≥ 30 | 4 / 20 (20%) |
+| Link clicks ≥ 100 | 5 / 20 (25%) |
+| **3-second video plays ≥ 100** | **14 / 20** (70%) |
+| **Page engagement ≥ 100** | **16 / 20** (80%) |
+
+**80% of the audience map is invisible on conversions alone.** Engagement quadruples the readable
+surface — 4 cells to 16. And this is a healthy account: $22,380 spend, 326 purchases. A 30-purchase
+threshold per cell is 10% of the account's entire conversion volume, which no thin account can hand
+to a single demographic pocket. A struggling account is strictly worse.
+
+### Two columns to add
+
+| Column | Device facet | Demo facet | Signal |
+| --- | ---: | ---: | --- |
+| `Instagram profile visits` | 100% filled · 4,910 | 0% (dead) | Brand curiosity — already in `BASE_METRICS`, never surfaced |
+| `Instagram follows` | 100% filled · 859 | 0% (dead) | Owned-audience intent — **not in `BASE_METRICS` at all** |
+
+Both are device-facet-only, the same pattern as the video block in Rule 4. That fact belongs in the
+capability ledger, not in a null.
+
+### Computed rate family — never ingested
+
+```
+thumbstop_rate     = 3s_plays          / impressions
+hold_rate          = thruplays         / 3s_plays
+completion_rate    = plays_100         / video_plays
+engagement_rate    = page_engagement   / impressions
+save_rate          = post_saves        / impressions
+share_rate         = post_shares       / impressions
+profile_visit_rate = ig_profile_visits / impressions
+follow_rate        = ig_follows        / impressions
+```
+
+### Weighted engagement intent score
+
+Raw engagement counts flatten a real hierarchy. In the device export: 26,171 reactions against 909
+saves and 987 shares. A save is a far higher-intent act than a reaction, and weighting them equally
+throws the signal away.
+
+This mirrors the cohort `intent_score_weights` pattern that already exists — the same architecture
+extended one layer up, so a thin account gets a **ranked** audience map when the conversion map is
+empty:
+
+```
+engagement_intent = (reactions × 1) + (link_clicks × 3) + (profile_visits × 4)
+                  + (shares × 6) + (saves × 8) + (follows × 10)
+```
+
+Weights are a starting proposal, not measured — they should be calibrated against accounts that
+later converted, and that calibration is itself a task rather than an assumption.
+
+---
+
+## Rule 9 — The date window is a read-time filter, not an import-time decision
+
+Row cost of daily granularity on the device export:
+
+| Grain | Rows | vs daily |
+| --- | ---: | ---: |
+| Daily (as exported) | 11,924 | — |
+| Weekly | 3,440 | 29% |
+| No `Day` column | 1,419 | **12%** |
+
+Daily costs 8.4× the rows — and that is the wrong thing to optimise. **You can always roll up, never
+down.** 11,924 rows is trivial to parse and store, while dropping `Day` permanently destroys fatigue
+detection, frequency decay and period-over-period comparison. `Day` stays in every recipe.
+
+The real problem is that the window is currently chosen at **run** time and baked into the run, so
+changing it means re-running analysis.
+
+- **Never truncate at import.** Ingest full history. A user who imports 195 days and gets 30 has lost
+  data recoverable only by re-exporting.
+- **Window is view state**, persisted per page + account — the pattern `RunScopePicker` already uses.
+- **Presets anchor to the data, not wall-clock.** "Last 30 days" on a file ending 2026-08-15 means
+  2026-07-17 → 2026-08-15. This is already documented behaviour and was one of the six re-landed
+  defects; it must stay fixed rather than be re-decided.
+- **The picker shows density, not just dates** — the capability-ledger pattern applied to time:
+
+```
+Last 7 days    ·  12 purchases  — too thin for audience analysis
+Last 30 days   ·  61 purchases  — creative reads OK, audience thin
+Last 90 days   · 210 purchases  — all analyses available
+All time (195) · 326 purchases
+```
+
+That makes the window an informed choice rather than a guess, and it reuses machinery that exists.
+
+---
+
 ## Decision required
 
 Each rule is independent and can be taken or left on its own:
@@ -209,3 +311,57 @@ Each rule is independent and can be taken or left on its own:
 - **Rule 5 resolution** — add `Landing page views` to the recipe, conditional.
 - **Rule 6** — click block seven → three.
 - **Rule 7** — move four computable metrics out of `BASE_METRICS`, replace the circular test.
+- **Rule 8** — add `Instagram profile visits` + `Instagram follows`, the computed rate family, and a
+  weighted engagement intent score for accounts without conversion density.
+- **Rule 9** — keep `Day` in every recipe; move the window from run-time to view-state with a
+  density-aware picker.
+
+---
+
+## Second-pass defect — found and FIXED (not part of the proposal above)
+
+Reviewing my own shipped coverage gate rather than the documents, I attacked it with a case I had
+not tested: an export with the spend **column entirely absent**, rather than present-but-empty.
+
+**Result: it parsed successfully.** 399 rows, `spend = 0`, and only a warning —
+*"⚠ Reduced confidence: core metric columns are missing and will be null."*
+
+That is the exact defect the gate was built to prevent, in a different shape. The gate tested
+`present && filledRows === 0`, so "the column is missing" fell through to the pre-existing warning
+path and proceeded to an analysis of zeroes.
+
+### Fix
+
+`isUnusable(col)` now returns true when a blocking delivery primitive is **absent OR empty**, and the
+error message branches three ways so it names the right fix:
+
+| Cause | Message |
+| --- | --- |
+| Column absent | "This export does not include *X*. Add that column in the Ads Reporting column picker and export again." |
+| All delivery metrics blank | Names the conversion/action breakdown as the cause |
+| Some blank | "Meta returned no values in *X* on any of the N rows" |
+
+### Test change
+
+`"proceeds with warnings (not error) when base metric columns are missing"` supplied **no base
+metrics at all** — including spend — and asserted success. It was asserting the defect. Split into:
+
+- `"proceeds with warnings when NON-blocking base metric columns are missing"` — supplies the
+  delivery primitives, omits engagement/video. Degrades confidence, never blocks.
+- `"BLOCKS when a delivery primitive column is absent entirely"` — asserts the throw, asserts the
+  message names the column-picker fix, and asserts it does **not** wrongly blame Conversion device.
+
+### Also hardened
+
+`noteDone()` increments progress unconditionally, and the per-import catch called it again. On any
+throw occurring *after* a successful `noteDone()` this would double-count run progress. Currently
+unreachable — nothing throws after it — but it depends on statement order rather than on a rule. Now
+guarded by a per-import `counted` flag.
+
+### Verification
+
+- Full workspace typecheck clean.
+- 136 tests passing across the four affected files.
+- **Zero drift on both real exports**, asserted rather than eyeballed: `king` 17,116 rows /
+  $17,805.35 / 1,490,366 impressions; `kingDEVi` 11,924 rows / $22,379.94 / 2,357,851 impressions —
+  exact match, warning counts unchanged (1 and 2).

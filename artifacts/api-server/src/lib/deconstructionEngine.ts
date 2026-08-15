@@ -1050,6 +1050,9 @@ export async function startCreativeDeconstruction(
       for (const imp of imports) {
         const importId = String(imp["id"]);
         const filename = String(imp["filename"]);
+        // Set the moment noteDone() runs for this import, so the catch below
+        // can tell "threw before we counted it" from "threw after".
+        let counted = false;
         try {
           const adNames: string[] = Array.isArray(imp["ad_names"]) ? imp["ad_names"].map(String) : [];
           const adRows = adNames.map((n) => adByName.get(n)).filter((a): a is Row => Boolean(a));
@@ -1200,7 +1203,11 @@ export async function startCreativeDeconstruction(
           const message = importErr instanceof Error ? importErr.message : String(importErr);
           logger.error({ accountId, runId, importId, filename, err: importErr }, "Creative deconstruction failed for one import");
           failures.push({ filename, message });
-          await noteDone();
+          // `done` is incremented unconditionally inside noteDone(), so calling
+          // it here after a throw that happened *past* a successful noteDone()
+          // would double-count progress. Guard on the per-import flag rather
+          // than reasoning about which line threw.
+          if (!counted) await noteDone();
         }
       }
 

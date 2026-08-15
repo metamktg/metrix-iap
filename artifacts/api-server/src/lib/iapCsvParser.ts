@@ -670,22 +670,40 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
   // hard error because no cost, rate or efficiency metric can be computed from
   // such a file — accepting it produces an analysis of zeroes that reads as
   // real. See DELIVERY_PRIMITIVES for why this happens.
-  const emptyDelivery = BLOCKING_DELIVERY_PRIMITIVES.filter((col) => emptyColumns.includes(col));
+  // A delivery primitive fails the gate two ways, and both produce the same
+  // unusable analysis: the column resolved but Meta returned nothing on any
+  // row, OR the column is not in the export at all. The first release of this
+  // gate only checked the former, so a file with no spend column simply warned
+  // and proceeded to an analysis of zeroes — the exact defect the gate exists
+  // to prevent, in a different shape.
+  const isUnusable = (col: string): boolean => {
+    const entry = coverage.columns.find((c) => c.canonical === col);
+    return !entry?.present || entry.filledRows === 0;
+  };
+  const emptyDelivery = BLOCKING_DELIVERY_PRIMITIVES.filter(isUnusable);
+  const absentDelivery = emptyDelivery.filter(
+    (col) => !coverage.columns.find((c) => c.canonical === col)?.present,
+  );
   if (emptyDelivery.length > 0) {
     const allDeliveryEmpty = DELIVERY_PRIMITIVES.every(
       (col) => emptyColumns.includes(col) || !coverage.columns.find((c) => c.canonical === col)?.present,
     );
     const named = emptyDelivery.map((c) => `"${resolveCurrencyLabel(c)}"`).join(" and ");
-    const cause = allDeliveryEmpty
+    // Three distinct causes, three distinct fixes. Naming the wrong one sends
+    // the user to change a setting that is already correct.
+    const cause = absentDelivery.length === emptyDelivery.length
+      ? `This export does not include ${named}. ` +
+        `Add ${absentDelivery.length === 1 ? "that column" : "those columns"} in the Ads Reporting ` +
+        `column picker and export again.`
+      : allDeliveryEmpty
       ? `Every delivery metric in this file is blank, which is what Meta returns when the export is ` +
         `broken down by a conversion or action dimension — most commonly "Conversion device". ` +
         `Meta cannot attribute spend or impressions to the device where a conversion later happened, ` +
-        `so it blanks them on every row.`
+        `so it blanks them on every row. Re-export without the conversion/action breakdown.`
       : `Meta returned no values in ${named} on any of the ${rows.length.toLocaleString()} rows in this file.`;
     throw new IapCsvFormatError(
-      `${cause} Without ${named} no cost, rate or efficiency metric can be calculated. ` +
-        `Re-export this report from Ads Manager without the conversion/action breakdown ` +
-        `and upload it again — your creative, placement and engagement data will all be preserved.`,
+      `${cause} Without ${named} no cost, rate or efficiency metric can be calculated — ` +
+        `your creative, placement and engagement data will all be preserved when you re-upload.`,
     );
   }
 
