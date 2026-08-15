@@ -37,7 +37,11 @@ artifacts of that reconciliation attempt. They are also orphaned.
 
 ### 2.1 `claude/manual-import-bugs-fix-e86i7q` (orphaned, no PR, 2026-08-08)
 
-Three defects fixed on this branch, **all four verified still live on `main`**:
+> **Status: re-landed.** Applied fresh onto `b38689a` as commit `b666b68` on
+> `claude/open-issues-synthesis-5ludoz`. On close review the branch carried **six** defects, not the
+> four catalogued below — see items 5 and 6. The source branch can now be deleted.
+
+Six defects fixed on this branch, **all verified live on `main`** before the re-land:
 
 1. **Manual analysis re-ingests every CSV ever uploaded.**
    `startManualAnalysis` (`analysisEngine.ts:795`) selects from `manual_imports` filtered only by
@@ -59,8 +63,18 @@ Three defects fixed on this branch, **all four verified still live on `main`**:
    guard and the "cost per X vs cost per Y" object-token check are absent from `iapCsvSpec.ts`.
    `iapCsvMapping.test.ts` exists on `main` but without the four safety cases that cover this.
 
+5. **Upload did not supersede the previous file of the same kind.** Re-uploading a corrected export
+   left the old file staged beside it, so the next run summed both and double-counted every
+   overlapping date. Now one active file per `(account, kind)`; creative assets stay exempt.
+
+6. **Creative auto-mapping matched new guesses against old guesses.** When the real `ads` registry was
+   empty it fell back to other creative imports' own `ad_names`, cascading mappings that can never
+   link — linkage is exact-string against real `ads.ad_name` rows. Relatedly,
+   `ImportConfidenceReport`'s per-kind dedup called `Map.set` on every match against a newest-first
+   list, so the **oldest** upload won and a stale confidence report was shown.
+
 **Disposition: re-land as fresh work off `main`, ahead of everything else in this register.** These
-are correctness bugs in the live manual-import path, not enhancements.
+are correctness bugs in the live manual-import path, not enhancements. **Done — `b666b68`.**
 
 ---
 
