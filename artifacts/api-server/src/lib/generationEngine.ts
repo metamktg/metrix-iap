@@ -237,9 +237,16 @@ function objectivesContextBlock(objectives: CohortDefinition[]): string {
   );
 }
 
-/** Single display metric for prompt scaffolding: specific when exactly one objective, generic otherwise. */
+/**
+ * Display metric label(s) for prompt scaffolding. When exactly one objective,
+ * returns its specific metric. When zero, returns the honest generic. When
+ * several, returns each metric joined with " / " so the model receives the
+ * full per-objective vocabulary instead of a collapsed "cost per result".
+ */
 function terminalMetricLabelFor(objectives: CohortDefinition[]): string {
-  return objectives.length === 1 ? objectives[0]!.terminal_metric_label : "cost per result";
+  if (objectives.length === 0) return "cost per result";
+  if (objectives.length === 1) return objectives[0]!.terminal_metric_label;
+  return objectives.map((c) => c.terminal_metric_label).join(" / ");
 }
 
 type StrategyEvidence = {
