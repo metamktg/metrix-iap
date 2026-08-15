@@ -27,9 +27,20 @@ import {
   useStartManualAnalysisRun,
   useGetLatestAnalysisRun,
   getGetMetrixSeedQueryKey,
+  ApiError,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { SignalCard } from "@/lib/data/seedTypes";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@workspace/command-deck/components/ui/alert-dialog";
 
 // ─── Helpers ──────────────────────────────────────────────────────────
 
@@ -149,6 +160,7 @@ function wasRecentlyRun(run: { status: string; finished_at?: string | null } | n
 function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
   const [dateRange, setDateRange] = useState<"7d" | "14d" | "30d" | "all">("30d");
   const [error, setError] = useState<string | null>(null);
+  const [conversionExportConfirm, setConversionExportConfirm] = useState<{ message: string; files: string[] } | null>(null);
   const queryClient = useQueryClient();
   const startMutation = useStartManualAnalysisRun();
   const { data: latest, refetch } = useGetLatestAnalysisRun(accountId);
@@ -173,12 +185,26 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
     };
   }, [isRunning, refetch, queryClient]);
 
-  const handleRun = async () => {
+  const handleRun = async (confirmConversionExport = false) => {
     setError(null);
     try {
-      await startMutation.mutateAsync({ accountId, data: { date_range: dateRange } });
+      await startMutation.mutateAsync({
+        accountId,
+        data: { date_range: dateRange, ...(confirmConversionExport ? { confirm_conversion_export: true } : {}) },
+      });
+      setConversionExportConfirm(null);
       await refetch();
     } catch (err: unknown) {
+      if (err instanceof ApiError) {
+        const errData = err.data as { code?: string; files?: string[]; message?: string } | null;
+        if (errData?.code === "conversion_export_confirmation_required") {
+          setConversionExportConfirm({
+            message: errData.message ?? err.message,
+            files: Array.isArray(errData.files) ? errData.files : [],
+          });
+          return;
+        }
+      }
       const msg = err instanceof Error ? err.message : "Could not start analysis. Try again.";
       setError(msg);
     }
@@ -290,6 +316,31 @@ function TrayAnalysisConfigured({ accountId }: { accountId: string }) {
         {/* Upload link */}
         <UploadDataLink accountId={accountId} />
       </div>
+
+      <AlertDialog
+        open={!!conversionExportConfirm}
+        onOpenChange={(open) => { if (!open) setConversionExportConfirm(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>This looks like a conversion export, not a delivery export</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <span className="block">{conversionExportConfirm?.message}</span>
+              {conversionExportConfirm && conversionExportConfirm.files.length > 0 && (
+                <span className="block text-label text-muted-foreground/80">
+                  Affected file{conversionExportConfirm.files.length !== 1 ? "s" : ""}: {conversionExportConfirm.files.join(", ")}
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => handleRun(true)}>
+              Run anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

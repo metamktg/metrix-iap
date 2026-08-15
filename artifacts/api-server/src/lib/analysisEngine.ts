@@ -25,6 +25,7 @@ import { getSupabase } from "./supabase";
 import { invalidateMetrixSeedCache } from "./metrixSeedAssembly";
 import { logger } from "./logger";
 import { parseIapCsv, IapCsvFormatError, type IapCsvRow } from "./iapCsvParser";
+import type { IapCsvClass } from "./iapCsvSpec";
 import { detectCsvClassFromHeaders, checkDuplicateCsvClasses, iapCsvClassLabel, optionalMetricSlugsForGroups, type ObjectiveColumnGroup } from "./iapCsvSpec";
 import { resolveAccountObjectives } from "./cohortConfig";
 import { computeObjectiveCoverage, OBJECTIVE_GROUP_FOR_KEY } from "./objectiveCoverage";
@@ -98,6 +99,10 @@ export class AnalysisError extends Error {
   constructor(
     message: string,
     public readonly statusCode: number,
+    /** Machine-readable discriminator for callers that need to branch (e.g. show a confirmation dialog). */
+    public readonly code?: string,
+    /** Extra structured detail relevant to `code`, e.g. the list of files that triggered it. */
+    public readonly files?: string[],
   ) {
     super(message);
     this.name = "AnalysisError";
@@ -787,6 +792,7 @@ export async function startManualAnalysis(
   accountId: string,
   dateRange: DateRangePreset,
   createdBy: string,
+  confirmConversionExport = false,
 ): Promise<string> {
   const account = await accountExists(accountId);
   if (!account) throw new AnalysisError("Ad account not found.", 404);
@@ -834,6 +840,39 @@ export async function startManualAnalysis(
         `upload the correct file in the other slot before running analysis.`,
       422,
     );
+  }
+
+  // ── Conversion-export confirmation gate ─────────────────────────────────
+  // Delivery-class files (demographic/placement/ad-summary) with the
+  // all-zero-impressions conversion-export signature would previously only
+  // surface a post-hoc warning AFTER the run committed impossible CTR/CPM
+  // numbers. Block here instead: require the caller to explicitly confirm
+  // before those files are used, unless they already have.
+  if (!confirmConversionExport) {
+    const deliveryImports: { filename: string; content: string; csvClass: IapCsvClass }[] = [
+      ...demoImports.map((i) => ({ filename: String(i["filename"]), content: String(i["content"]), csvClass: "demographic" as IapCsvClass })),
+      ...placementImports.map((i) => ({ filename: String(i["filename"]), content: String(i["content"]), csvClass: "device_placement" as IapCsvClass })),
+      ...summaryImports.map((i) => ({ filename: String(i["filename"]), content: String(i["content"]), csvClass: "ad_summary" as IapCsvClass })),
+    ];
+    const suspectFiles: string[] = [];
+    for (const imp of deliveryImports) {
+      try {
+        const result = parseIapCsv(decodeStagedContent(imp.content), imp.csvClass);
+        if (result.conversionExportSuspected) suspectFiles.push(imp.filename);
+      } catch {
+        // Malformed files are reported by the real parse pass below — skip here.
+      }
+    }
+    if (suspectFiles.length > 0) {
+      throw new AnalysisError(
+        `${suspectFiles.length === 1 ? "One of your staged files looks" : "Some of your staged files look"} like a Meta conversion-event export, not a delivery export: ${suspectFiles.join(", ")}. ` +
+          "Delivery exports include impression counts — a conversion export will produce impossible CTR/CPM values. " +
+          "Confirm to run anyway, or re-export from Ads Manager using the standard Delivery report type.",
+        409,
+        "conversion_export_confirmation_required",
+        suspectFiles,
+      );
+    }
   }
 
   const runId = await startRun(accountId, dateRange, createdBy);

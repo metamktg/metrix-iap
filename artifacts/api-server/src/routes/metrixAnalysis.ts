@@ -34,7 +34,11 @@ const DATE_RANGES: DateRangePreset[] = ["7d", "14d", "30d", "all"];
 
 function sendAnalysisError(res: any, err: unknown): void {
   if (err instanceof AnalysisError) {
-    res.status(err.statusCode).json({ message: err.message });
+    res.status(err.statusCode).json({
+      message: err.message,
+      ...(err.code ? { code: err.code } : {}),
+      ...(err.files ? { files: err.files } : {}),
+    });
     return;
   }
   res.status(502).json({
@@ -213,17 +217,20 @@ router.get("/metrix/accounts/:accountId/analysis-runs", requireAuth, async (req,
 router.post("/metrix/accounts/:accountId/analysis-runs", requireAuth, async (req, res) => {
   const accountId = String(req.params["accountId"]);
   const dateRange = req.body?.["date_range"];
+  const confirmConversionExport = req.body?.["confirm_conversion_export"] === true;
   if (!DATE_RANGES.includes(dateRange)) {
     res.status(400).json({ message: "date_range must be one of: 7d, 14d, 30d, all." });
     return;
   }
   try {
     if (!(await guardAccess(req, res, accountId))) return;
-    const runId = await startManualAnalysis(accountId, dateRange, req.authUser!.email);
+    const runId = await startManualAnalysis(accountId, dateRange, req.authUser!.email, confirmConversionExport);
     req.log.info({ accountId, runId, dateRange }, "Manual analysis run started");
     res.status(202).json({ run_id: runId });
   } catch (err) {
-    req.log.error({ err, accountId }, "Failed to start manual analysis run");
+    if (!(err instanceof AnalysisError && err.code === "conversion_export_confirmation_required")) {
+      req.log.error({ err, accountId }, "Failed to start manual analysis run");
+    }
     sendAnalysisError(res, err);
   }
 });

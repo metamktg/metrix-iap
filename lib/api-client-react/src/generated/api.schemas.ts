@@ -617,6 +617,8 @@ export const StartAnalysisInputDateRange = {
 export interface StartAnalysisInput {
   /** Date window to analyze, anchored to the latest date found in the uploaded data (not wall-clock time). "all" analyzes every uploaded date. */
   date_range: StartAnalysisInputDateRange;
+  /** Pass true to proceed anyway after a prior call was rejected with a 409 conversion_export_confirmation_required error. Omit or leave false on the first attempt. */
+  confirm_conversion_export?: boolean;
 }
 
 export type AnalysisRunStatus = typeof AnalysisRunStatus[keyof typeof AnalysisRunStatus];
@@ -1860,6 +1862,10 @@ export interface MetaReportRowsResult {
 
 export interface ApiError {
   message: string;
+  /** Optional machine-readable discriminator for errors callers need to branch on (e.g. conversion_export_confirmation_required). */
+  code?: string;
+  /** Optional extra detail relevant to `code`, such as the filenames that triggered it. */
+  files?: string[];
 }
 
 export interface HealthStatus {
