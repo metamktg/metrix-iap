@@ -16,7 +16,7 @@
 
 import { fmtUSD, fmtNum, fmtPct, eventLabel } from "@/pages/metrix/shared";
 import type {
-  AdAccount, AnalysisData, CellPerformanceRow, PlacementRow,
+  AdAccount, AnalysisData, CellPerformanceRow, PlacementRow, DeviceDeliveryRow,
 } from "./seedTypes";
 
 // ─── Group totals + ratio math ────────────────────────────────────────
@@ -263,6 +263,13 @@ export function listBreakdownDimensions(a: AnalysisData | null | undefined): Bre
     dims.push({ id: "placement", label: "Placement", basis: "delivery" });
     dims.push({ id: "platform", label: "Platform", basis: "delivery" });
   }
+  // Delivery-based device breakdown can be entirely absent for a window even
+  // when placement/platform are present — Meta's export can omit the
+  // "Impression device" column (see conversion_tracking_signal.devices for
+  // the funnel-attributed fallback in that case).
+  if ((a.device_delivery_signal ?? []).length > 0) {
+    dims.push({ id: "device", label: "Device", basis: "delivery" });
+  }
   const conv = a.conversion_tracking_signal;
   if (conv) {
     if (conv.devices.length > 0) dims.push({ id: "conv:device", label: "Device (conversion basis)", basis: "conversion" });
@@ -287,8 +294,8 @@ export function dimensionMetricRestriction(dimensionId: string, metricId: string
   if (metricId.startsWith("result:") && !(dimensionId === "cell" || dimensionId === "concept" || dimensionId.startsWith("var:"))) {
     return "The demographic and placement exports carry no result-type column, so per-event results can't be honestly scoped to this dimension.";
   }
-  if ((dimensionId === "placement" || dimensionId === "platform") && (metricId === "reach" || metricId === "clicks_all" || metricId === "ctr_all")) {
-    return "Placement rows don't carry reach or clicks (all) in this import.";
+  if ((dimensionId === "placement" || dimensionId === "platform" || dimensionId === "device") && (metricId === "reach" || metricId === "clicks_all" || metricId === "ctr_all")) {
+    return "Placement/device rows don't carry reach or clicks (all) in this import.";
   }
   return null;
 }
@@ -363,6 +370,12 @@ export function buildAccountBreakdown(
     return groupRows(rows, keyOf, keyOf, (r) => ({
       spend: r["Amount spent (USD)"], impressions: r.Impressions,
       linkClicks: r["Link clicks"], results: r.Results,
+    }), metricId);
+  }
+  if (dimensionId === "device") {
+    const rows: DeviceDeliveryRow[] = a.device_delivery_signal ?? [];
+    return groupRows(rows, (r) => r.device, (r) => r.device, (r) => ({
+      spend: r.spend, impressions: r.impressions, linkClicks: r.link_clicks, results: r.results,
     }), metricId);
   }
   if (dimensionId.startsWith("conv:")) {

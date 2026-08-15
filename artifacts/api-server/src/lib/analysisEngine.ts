@@ -1099,18 +1099,31 @@ export async function startManualAnalysis(
 
       // ── Device/placement/platform rows: aggregate placement export by
       // each dimension independently, across ads, per day.
+      //
+      // "Impression device" is no longer a required column (see iapCsvSpec.ts):
+      // Meta's own export UI can omit or blank this breakdown for some
+      // date ranges/accounts even though Placement/Platform/spend still export
+      // fine. Rows with a blank/missing device value are excluded from the
+      // device dimension only — they still feed placement/platform aggregation
+      // below, so a missing device breakdown never blocks the rest of the run.
       const deviceBuckets = new Map<string, AggBucket & { device: string; date: string }>();
       const placementBuckets = new Map<string, AggBucket & { placement: string; date: string }>();
       const platformBuckets = new Map<string, AggBucket & { platform: string; date: string }>();
+      let deviceEligibleRows = 0;
+      let deviceCoveredRows = 0;
       for (const row of scopedPlacement) {
         const date = row.breakdowns["Day"]!;
-        const device = row.breakdowns["Impression device"]!;
+        const device = row.breakdowns["Impression device"];
         const placement = row.breakdowns["Placement"]!;
         const platform = row.breakdowns["Platform"]!;
 
-        const dKey = [device, date].join("\u0001");
-        if (!deviceBuckets.has(dKey)) deviceBuckets.set(dKey, { ...emptyBucket(), device, date });
-        accumulate(deviceBuckets.get(dKey)!, row);
+        deviceEligibleRows += 1;
+        if (device != null && device.trim() !== "") {
+          deviceCoveredRows += 1;
+          const dKey = [device, date].join("\u0001");
+          if (!deviceBuckets.has(dKey)) deviceBuckets.set(dKey, { ...emptyBucket(), device, date });
+          accumulate(deviceBuckets.get(dKey)!, row);
+        }
 
         const pKey = [placement, date].join("\u0001");
         if (!placementBuckets.has(pKey)) placementBuckets.set(pKey, { ...emptyBucket(), placement, date });
@@ -1119,6 +1132,24 @@ export async function startManualAnalysis(
         const plKey = [platform, date].join("\u0001");
         if (!platformBuckets.has(plKey)) platformBuckets.set(plKey, { ...emptyBucket(), platform, date });
         accumulate(platformBuckets.get(plKey)!, row);
+      }
+      // Surface the gap honestly instead of silently emitting an empty/partial
+      // device breakdown: 0% coverage means Meta's export carried no device
+      // data at all for this window (its own export-eligibility limitation,
+      // not an error on our side); partial coverage means only some rows had
+      // it. Either way the run still succeeds — only the device dimension is
+      // degraded, and conversion-attributed device data (from a separate
+      // "Conversion device" upload, if staged) remains a fallback signal.
+      const deviceCoveragePct = deviceEligibleRows > 0 ? deviceCoveredRows / deviceEligibleRows : null;
+      if (deviceEligibleRows > 0 && deviceCoveredRows === 0) {
+        allCsvWarnings.push(
+          `[Impression device] This export carried no per-device breakdown for the "${dateRange}" window — Meta didn't include device data for these dates/account. ` +
+            `Device-level delivery metrics won't be shown for this window; conversion-attributed device data (if a "Conversion device" file is staged) is shown instead where available.`,
+        );
+      } else if (deviceCoveragePct !== null && deviceCoveragePct < 0.98 && deviceCoveredRows > 0) {
+        allCsvWarnings.push(
+          `[Impression device] Only ${Math.round(deviceCoveragePct * 100)}% of rows in this export carried a device breakdown — the remaining rows are excluded from device-level metrics but still count toward placement/platform/spend totals.`,
+        );
       }
 
       // Full refresh of this manual account's output rows within the

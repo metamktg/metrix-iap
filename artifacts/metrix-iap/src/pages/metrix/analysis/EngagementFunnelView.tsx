@@ -50,7 +50,7 @@ import {
   TrendingUp, Layers, Table2, Activity, ArrowDown, ArrowUp,
   ChevronsUpDown, Video, ArrowRight,
 } from "lucide-react";
-import type { DemographicRow, PlacementRow } from "@/lib/data/seedTypes";
+import type { DemographicRow, PlacementRow, DeviceDeliveryRow } from "@/lib/data/seedTypes";
 import { TYPE } from "../typography";
 
 const SECTION = "Analysis · 03";
@@ -191,6 +191,46 @@ function buildAudienceRows(rows: DemographicRow[]): BreakdownRow[] {
       checkoutRate: pct(t.checkoutsInitiated, t.addsToCart),
       cvr: pct(t.purchases, t.linkClicks),
       cpa: d.cpa,
+    };
+  });
+}
+
+/**
+ * Delivery-based device breakdown. Exported for unit tests. Rows can be
+ * entirely empty even when placement rows exist — Meta's export can omit
+ * the "Impression device" breakdown for a given window/account. Callers
+ * should fall back to conversion_tracking_signal.devices (funnel-attributed)
+ * with honest labeling in that case, never blend the two bases.
+ */
+export function buildDeviceRows(rows: DeviceDeliveryRow[]): BreakdownRow[] {
+  const grouped = new Map<string, DeviceDeliveryRow[]>();
+  for (const r of rows) {
+    if (!grouped.has(r.device)) grouped.set(r.device, []);
+    grouped.get(r.device)!.push(r);
+  }
+  return [...grouped.entries()].map(([label, rs]) => {
+    const impressions = rs.reduce((s, r) => s + (r.impressions ?? 0), 0);
+    const linkClicks  = rs.reduce((s, r) => s + (r.link_clicks ?? 0), 0);
+    const results     = rs.reduce((s, r) => s + (r.results ?? 0), 0);
+    const spend       = rs.reduce((s, r) => s + (r.spend ?? 0), 0);
+    const avgCtrLink  = impressions > 0 ? (linkClicks / impressions) * 100 : null;
+    return {
+      label,
+      impressions: impressions || null,
+      reach: null,
+      clicksAll: null,
+      linkClicks: linkClicks || null,
+      spend: spend || null,
+      results: results || null,
+      atc: null, checkout: null, purchases: null,
+      ctrLink: avgCtrLink,
+      ctrAll: null,
+      frequency: null,
+      uniqueCtr: null,
+      atcRate: null,
+      checkoutRate: null,
+      cvr: null,
+      cpa: spend > 0 && results > 0 ? spend / results : null,
     };
   });
 }
@@ -559,16 +599,18 @@ export function EngagementFunnelView() {
   const [dim, setDim]             = useState<BreakdownDim>("audience");
   const { activeId: sortId, select: setSort } = useRankMetric(SORT_KEY, BREAKDOWN_METRICS.map((m) => m.id), "ctrLink");
 
-  const demoRows  = analysis?.demographic_registration_signal ?? [];
-  const placRows  = [...(analysis?.v3_placement_signal ?? []), ...(analysis?.c4e_placement_signal ?? [])];
+  const demoRows   = analysis?.demographic_registration_signal ?? [];
+  const placRows   = [...(analysis?.v3_placement_signal ?? []), ...(analysis?.c4e_placement_signal ?? [])];
+  const deviceRows: DeviceDeliveryRow[] = analysis?.device_delivery_signal ?? [];
+  const convDevices = analysis?.conversion_tracking_signal?.devices ?? [];
 
   const funnelStages = useMemo(() => buildFunnelStages(demoRows), [demoRows]);
 
   const breakdownRows = useMemo<BreakdownRow[]>(() => {
     if (dim === "audience")  return buildAudienceRows(demoRows);
     if (dim === "placement") return buildPlacementRows(placRows);
-    return []; // device: future
-  }, [dim, demoRows, placRows]);
+    return buildDeviceRows(deviceRows);
+  }, [dim, demoRows, placRows, deviceRows]);
 
   // If the persisted sort metric has no values in the current dimension's rows
   // (e.g. Frequency is audience-only and disappears in Placement mode), fall back
@@ -685,7 +727,7 @@ export function EngagementFunnelView() {
               {/* Breakdown dimension (only in breakdown/scatter mode) */}
               {(viewMode === "breakdown" || viewMode === "scatter") && (
                 <div className="flex items-center gap-1 rounded-lg border border-border/40 p-0.5 bg-white/[0.02]">
-                  {([ ["audience", "Audience"], ["placement", "Placement"] ] as const).map(([d, l]) => (
+                  {([ ["audience", "Audience"], ["placement", "Placement"], ["device", "Device"] ] as const).map(([d, l]) => (
                     <button
                       key={d}
                       onClick={() => setDim(d)}
@@ -767,18 +809,31 @@ export function EngagementFunnelView() {
 
               {viewMode === "breakdown" && (
                 <SectionCard
-                  title={`${dim === "audience" ? "Audience segment" : "Placement"} breakdown`}
-                  desc={`All engagement metrics by ${dim === "audience" ? "age × gender pocket" : "placement × platform"}. Sort by any column to find highest-frequency or highest-intent segments.`}
+                  title={`${dim === "audience" ? "Audience segment" : dim === "placement" ? "Placement" : "Device"} breakdown`}
+                  desc={`All engagement metrics by ${dim === "audience" ? "age × gender pocket" : dim === "placement" ? "placement × platform" : "impression device"}. Sort by any column to find highest-frequency or highest-intent segments.`}
                   right={
                     <>
                       <span className="text-label text-muted-foreground/50">
-                        {breakdownRows.length} {dim === "audience" ? "pockets" : "placements"}
+                        {breakdownRows.length} {dim === "audience" ? "pockets" : dim === "placement" ? "placements" : "devices"}
                       </span>
                       <SectionInfoIcon tip="Sortable table of engagement metrics for each segment. Switch the sort column to surface your highest-frequency or highest-intent pockets." />
                     </>
                   }
                 >
-                  <BreakdownTable rows={breakdownRows} sortId={effectiveSortId} onSort={setSort} />
+                  {dim === "device" && breakdownRows.length === 0 ? (
+                    <>
+                      <div className="text-body text-muted-foreground/60 py-4">No device breakdown for this window.</div>
+                      <CaveatNote
+                        text={
+                          convDevices.length > 0
+                            ? "Meta's export didn't include per-device delivery data for this window, so device-level spend/impressions aren't available. Conversion-attributed device data is shown on the Placements page instead (funnel actions only — no spend/impressions)."
+                            : "Meta's export didn't include per-device delivery data for this window — this can happen for certain date ranges or account states. Placement and platform breakdowns are unaffected."
+                        }
+                      />
+                    </>
+                  ) : (
+                    <BreakdownTable rows={breakdownRows} sortId={effectiveSortId} onSort={setSort} />
+                  )}
                   {dim === "audience" && (
                     <CaveatNote
                       text="Demographic rows don't carry raw impression counts per segment in every export — Frequency and CTR All are derived from available Reach and Impressions fields and may be 0 for some segments."
@@ -790,7 +845,7 @@ export function EngagementFunnelView() {
               {viewMode === "scatter" && (
                 <>
                   <SectionCard
-                    title={`Frequency × Link CTR — ${dim === "audience" ? "Audience segments" : "Placements"}`}
+                    title={`Frequency × Link CTR — ${dim === "audience" ? "Audience segments" : dim === "placement" ? "Placements" : "Devices"}`}
                     desc="Each dot is a segment. Bubble size = spend share. Reference lines show the account median. High-frequency + low-CTR segments signal creative fatigue."
                     right={<SectionInfoIcon tip="Segments above the median frequency line but below the median CTR line are candidates for creative refresh — they've seen the ad often enough that engagement is declining." />}
                   >
