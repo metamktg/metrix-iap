@@ -302,7 +302,7 @@ export type IapCsvClass = "demographic" | "device_placement" | "ad_summary" | "c
 export type IapCsvClassSpec = {
   className: "IAP_DEMOGRAPHIC_TEXT_SIGNAL" | "IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL" | "IAP_AD_SUMMARY" | "IAP_CONVERSION_DEVICE_SIGNAL";
   breakdownColumns: readonly string[];
-  /** Breakdown columns that must have a value on every row (Date, Ad name are load-bearing). */
+  /** Breakdown columns that must have a value on every row (Day, Ad name are load-bearing). */
   requiredBreakdownColumns: readonly string[];
 };
 
