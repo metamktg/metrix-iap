@@ -144,15 +144,33 @@ describe("parseIapCsv — alias / fuzzy matching", () => {
     expect(result.warnings.some((w) => w.includes("Text"))).toBe(true);
   });
 
-  it("proceeds with warnings (not error) when base metric columns are missing", () => {
+  it("proceeds with warnings when NON-blocking base metric columns are missing", () => {
+    // Supply the delivery primitives, omit everything else. Missing engagement
+    // and video columns degrade confidence; they never block.
     const breakdownCols = DEMOGRAPHIC_BREAKDOWN_COLUMNS;
-    // Only provide breakdown columns — no base metrics at all
-    const header = [...breakdownCols.map(resolveCurrency)];
-    const row = [...breakdownCols.map(breakdownValue)];
+    const kept = ["Amount spent ({ACCOUNT_CURRENCY})", "Impressions", "Reach"];
+    const header = [...breakdownCols.map(resolveCurrency), ...kept.map(resolveCurrency)];
+    const row = [...breakdownCols.map(breakdownValue), ...kept.map(baseValue)];
     const result = parseIapCsv([line(header), line(row)].join("\n"), "demographic");
     expect(result.rows.length).toBe(1);
     expect(result.missingColumns.length).toBeGreaterThan(0);
     expect(result.warnings.some((w) => /missing|confidence/i.test(w))).toBe(true);
+  });
+
+  it("BLOCKS when a delivery primitive column is absent entirely", () => {
+    // Regression: the first release of the coverage gate only checked
+    // present-but-empty. A file with no spend column at all merely warned and
+    // proceeded to an analysis of zeroes — the same defect in a different
+    // shape. Absent and empty must both block.
+    const breakdownCols = DEMOGRAPHIC_BREAKDOWN_COLUMNS;
+    const header = [...breakdownCols.map(resolveCurrency)];
+    const row = [...breakdownCols.map(breakdownValue)];
+    const text = [line(header), line(row)].join("\n");
+    expect(() => parseIapCsv(text, "demographic")).toThrow(IapCsvFormatError);
+    // The message must name the ABSENT-column fix, not the conversion-breakdown one
+    expect(() => parseIapCsv(text, "demographic")).toThrow(/does not include/i);
+    expect(() => parseIapCsv(text, "demographic")).toThrow(/column picker/i);
+    expect(() => parseIapCsv(text, "demographic")).not.toThrow(/Conversion device/i);
   });
 });
 
@@ -190,9 +208,99 @@ describe("parseIapCsv — hard errors remain", () => {
       ...breakdownCols.map((c) => (c === "Gender" ? "" : breakdownValue(c))),
       ...BASE_METRICS.map(baseValue),
     ];
+    // The column exists; only the VALUE is blank — so this really is a
+    // totals/subtotals row and the message says so.
     expect(() => parseIapCsv([line(header), line(row)].join("\n"), "demographic")).toThrow(
-      /missing required value/i,
+      /present but blank on this row/i,
     );
+  });
+
+  it("names the missing COLUMN (not totals rows) when a required breakdown is absent", () => {
+    // Regression: a required breakdown column that never resolves is a property
+    // of the file, not of row 2. Previously this surfaced as
+    // "Row 2: missing required value ... must not include totals/subtotals rows",
+    // sending users to fix an export setting that was already correct.
+    const breakdownCols = breakdownColsFor("demographic").filter((c) => c !== "Gender");
+    const header = [...breakdownCols.map(resolveCurrency), ...BASE_METRICS.map(resolveCurrency)];
+    const row = [...breakdownCols.map(breakdownValue), ...BASE_METRICS.map(baseValue)];
+    const text = [line(header), line(row)].join("\n");
+    expect(() => parseIapCsv(text, "demographic")).toThrow(/missing .*column/i);
+    expect(() => parseIapCsv(text, "demographic")).toThrow(/Gender/);
+    expect(() => parseIapCsv(text, "demographic")).not.toThrow(/totals/i);
+  });
+});
+
+// ── Coverage gate: data presence, not header presence ────────────────────────
+
+describe("parseIapCsv — delivery coverage gate", () => {
+  /** Builds a valid CSV whose named base columns are present but blank on every row. */
+  function csvWithBlankColumns(cls: IapCsvClass, blank: string[]): string {
+    const breakdownCols = breakdownColsFor(cls);
+    const header = [...breakdownCols.map(resolveCurrency), ...BASE_METRICS.map(resolveCurrency)];
+    const mk = (day: string): string[] => [
+      ...breakdownCols.map((c) => (c === "Day" ? day : breakdownValue(c))),
+      ...BASE_METRICS.map((c) => (blank.includes(c) ? "" : baseValue(c))),
+    ];
+    return [line(header), line(mk("2026-06-01")), line(mk("2026-06-02"))].join("\n");
+  }
+
+  it("blocks a file whose spend column is present but empty on every row", () => {
+    const text = csvWithBlankColumns("demographic", ["Amount spent ({ACCOUNT_CURRENCY})"]);
+    expect(() => parseIapCsv(text, "demographic")).toThrow(IapCsvFormatError);
+    expect(() => parseIapCsv(text, "demographic")).toThrow(/no cost, rate or efficiency metric/i);
+  });
+
+  it("blocks a file whose impressions column is present but empty on every row", () => {
+    const text = csvWithBlankColumns("demographic", ["Impressions"]);
+    expect(() => parseIapCsv(text, "demographic")).toThrow(/Impressions/);
+  });
+
+  it("names the conversion-breakdown cause when ALL delivery metrics are blank", () => {
+    // This is the real-world shape: a Conversion device breakdown blanks spend,
+    // impressions, reach and frequency together.
+    const text = csvWithBlankColumns("demographic", [
+      "Amount spent ({ACCOUNT_CURRENCY})",
+      "Impressions",
+      "Reach",
+      "Frequency",
+    ]);
+    expect(() => parseIapCsv(text, "demographic")).toThrow(/Conversion device/i);
+    expect(() => parseIapCsv(text, "demographic")).toThrow(/preserved/i);
+  });
+
+  it("does NOT block when spend and impressions carry values", () => {
+    const result = parseIapCsv(validCsv("demographic").text, "demographic");
+    expect(result.coverage.totalRows).toBe(1);
+    const spend = result.coverage.columns.find(
+      (c) => c.canonical === "Amount spent ({ACCOUNT_CURRENCY})",
+    );
+    expect(spend?.present).toBe(true);
+    expect(spend?.filledRows).toBe(1);
+    expect(spend?.sum).toBeCloseTo(42.5);
+  });
+
+  it("reports empty columns without blocking when they are not delivery-critical", () => {
+    const text = csvWithBlankColumns("demographic", ["Post shares"]);
+    const result = parseIapCsv(text, "demographic");
+    expect(result.coverage.emptyColumns).toContain("Post shares");
+    expect(result.coverage.totalRows).toBe(2);
+  });
+});
+
+// ── Real-export column naming ────────────────────────────────────────────────
+
+describe("parseIapCsv — real Meta export column names", () => {
+  it('resolves "Device platform" to "Impression device"', () => {
+    // Observed in a real client export. Jaccard token overlap is 0.33 — below
+    // the 0.5 inference threshold — so this only works via the alias table.
+    const breakdownCols = breakdownColsFor("device_placement");
+    const header = [
+      ...breakdownCols.map((c) => (c === "Impression device" ? "Device platform" : c)),
+      ...BASE_METRICS.map(resolveCurrency),
+    ];
+    const row = [...breakdownCols.map(breakdownValue), ...BASE_METRICS.map(baseValue)];
+    const result = parseIapCsv([line(header), line(row)].join("\n"), "device_placement");
+    expect(result.rows[0]!.breakdowns["Impression device"]).toBe("iphone");
   });
 });
 

@@ -16,6 +16,7 @@ import {
   libraryPayloadFromDeconstruction,
   supportedImageMediaType,
   isVideoCreative,
+  isTransientInfraError,
   type DetectedVariable,
 } from "../deconstructionEngine";
 import { keyframeTimestamps } from "../videoKeyframes";
@@ -177,5 +178,36 @@ describe("keyframeTimestamps", () => {
   it("falls back to the opening frame when duration is unknown", () => {
     expect(keyframeTimestamps(null)).toEqual([{ label: "opening frame", timestamp: 0 }]);
     expect(keyframeTimestamps(NaN)).toEqual([{ label: "opening frame", timestamp: 0 }]);
+  });
+});
+
+// ── Transient infrastructure errors ──────────────────────────────────────────
+// A Cloudflare 525 against Supabase aborted an entire 65-file deconstruction
+// batch. These classify what is worth retrying vs what is a real data error.
+
+describe("isTransientInfraError", () => {
+  it("treats Cloudflare/gateway status codes as transient", () => {
+    for (const status of [502, 503, 504, 520, 524, 525, 429]) {
+      expect(isTransientInfraError(Object.assign(new Error("boom"), { status }))).toBe(true);
+    }
+  });
+
+  it("treats an HTML error page arriving where JSON was expected as transient", () => {
+    // supabase-js surfaces a Cloudflare 525 as a JSON parse failure, not a status.
+    expect(isTransientInfraError(new SyntaxError(`Unexpected token '<', "<!DOCTYPE "... is not valid JSON`))).toBe(true);
+    expect(isTransientInfraError(new Error("<!doctype html><html>cloudflare</html>"))).toBe(true);
+  });
+
+  it("treats socket and network failures as transient", () => {
+    for (const m of ["fetch failed", "socket hang up", "ECONNRESET", "ETIMEDOUT", "SSL handshake failed"]) {
+      expect(isTransientInfraError(new Error(m))).toBe(true);
+    }
+  });
+
+  it("does NOT retry real data or model errors", () => {
+    expect(isTransientInfraError(new Error("Model returned no registry-valid variables for a.png."))).toBe(false);
+    expect(isTransientInfraError(new Error("Ad account not found."))).toBe(false);
+    expect(isTransientInfraError(Object.assign(new Error("bad request"), { status: 400 }))).toBe(false);
+    expect(isTransientInfraError(Object.assign(new Error("forbidden"), { status: 403 }))).toBe(false);
   });
 });
