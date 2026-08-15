@@ -1,10 +1,9 @@
 ---
-name: Serving bytea file content from Supabase via PostgREST
-description: How to decode a Postgres bytea column read back through supabase-js/PostgREST for binary file serving (e.g. staged upload previews).
+name: Supabase bytea file serving
+description: PostgREST bytea read/write perf ceiling for file uploads stored as hex-encoded columns.
 ---
 
-When a `bytea` column is inserted via supabase-js as `` `\\x${buf.toString("hex")}` ``, reading it back through PostgREST also returns a hex string prefixed with `\x` (Postgres's default bytea output format), not raw bytes and not base64.
-
-**Why:** PostgREST serializes bytea using Postgres's `bytea_output` setting, which defaults to `hex` and includes the `\x` prefix on the wire — the same text form used for insert.
-
-**How to apply:** When implementing a binary passthrough route (e.g. `GET .../file` serving a staged upload for `<img>`/`<video>` src), strip a leading `\x` before hex-decoding: `Buffer.from(raw.startsWith("\\x") ? raw.slice(2) : raw, "hex")`. Only select the `content` column on the one route that needs bytes — list/metadata endpoints should never select it, to avoid pulling large blobs unnecessarily.
+- PostgREST returns bytea as a hex string with a `\x` prefix on read; bytea fetches for large images are slow (10-17s) and can time out under concurrent load — use an in-process TTL cache + in-flight Promise map to coalesce requests.
+- **Writes are equally constrained, not just reads.** Inserting a file as `\x${buffer.toString("hex")}` via a Supabase/PostgREST insert gets slow (~15-20s) starting around 10-20 MB of raw file content, and has been observed to intermittently time out (502) under shared-dev-Supabase load well before any application-level size limit is reached.
+- **Why:** the insert path holds multiple full in-memory copies of the payload at once (raw JSON string, base64-decoded buffer, hex-re-encoded string), and PostgREST's own request handling for large bytea columns is not fast. Pushing an app-level upload limit to 150-200 MB (to accommodate a "why not just raise it" request) reproduced a hard Node OOM crash — not just slowness.
+- **How to apply:** don't set an upload-size cap for bytea-backed file storage past what's been empirically verified to complete reliably (found ~75 MB decoded to be a reasonably safe ceiling with real-world CSVs in this project, still slow but survivable). If a feature genuinely needs larger files, move that storage to Object Storage with a streamed upload instead of raising the bytea cap further.
