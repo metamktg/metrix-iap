@@ -208,7 +208,7 @@ export function ConnectMetaDialog({
 
 // ─── Manual import upload panel (shared) ──────────────────────────────
 
-const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
+const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
 
 /**
  * Base64-encodes a file via FileReader.readAsDataURL — the browser does
@@ -553,7 +553,7 @@ function CsvSlotUpload({
     setMappingDiff(null);
     onMismatch?.(null);
     if (fileToStage.size > MAX_UPLOAD_BYTES) {
-      setError("File is too large — the limit is 8 MB.");
+      setError("File is too large — the limit is 50 MB.");
       setFile(null);
       if (fileRef.current) fileRef.current.value = "";
       return;
@@ -1139,7 +1139,7 @@ function CreativeUploadSection({
       setCurrentPct(0);
 
       if (file.size > MAX_UPLOAD_BYTES) {
-        failures.push(`${file.name} is too large — the limit is 8 MB.`);
+        failures.push(`${file.name} is too large — the limit is 50 MB.`);
         continue;
       }
 
@@ -1225,7 +1225,7 @@ function CreativeUploadSection({
             ? queueTotal > 1
               ? `Uploading file ${queueIndex} of ${queueTotal}${currentFile ? ` — ${currentFile}` : ""}…`
               : `Uploading${currentFile ? ` ${currentFile}` : ""}…`
-            : "Choose one or more creative files (max 8 MB each)"}
+            : "Choose one or more creative files (max 50 MB each)"}
         </span>
       </button>
 

@@ -3888,7 +3888,7 @@ components:
           description: Original MIME type of the uploaded file, if known.
         content_base64:
           type: string
-          description: Base64-encoded file content. Max 8 MB decoded.
+          description: Base64-encoded file content. Max 50 MB decoded.
           minLength: 1
         ad_names:
           type: array
