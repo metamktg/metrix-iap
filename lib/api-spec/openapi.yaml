@@ -456,7 +456,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
         "409":
-          description: An analysis run is already in progress
+          description: An analysis run is already in progress, or a staged file looks like a conversion-event export and needs confirm_conversion_export=true to proceed
           content:
             application/json:
               schema:
@@ -4147,6 +4147,9 @@ components:
           type: string
           enum: [7d, 14d, 30d, all]
           description: Date window to analyze, anchored to the latest date found in the uploaded data (not wall-clock time). "all" analyzes every uploaded date.
+        confirm_conversion_export:
+          type: boolean
+          description: Pass true to proceed anyway after a prior call was rejected with a 409 conversion_export_confirmation_required error. Omit or leave false on the first attempt.
       required:
         - date_range
     AnalysisRun:
@@ -5777,6 +5780,14 @@ components:
       properties:
         message:
           type: string
+        code:
+          type: string
+          description: Optional machine-readable discriminator for errors callers need to branch on (e.g. conversion_export_confirmation_required).
+        files:
+          type: array
+          items:
+            type: string
+          description: Optional extra detail relevant to `code`, such as the filenames that triggered it.
       required:
         - message
     HealthStatus:

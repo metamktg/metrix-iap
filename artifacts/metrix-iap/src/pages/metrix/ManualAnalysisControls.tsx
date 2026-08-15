@@ -36,6 +36,16 @@ import { ImportConfidenceReport } from "./ImportConfidenceReport";
 import { InfoTooltip } from "./shared";
 import { cn } from "@workspace/command-deck/lib/utils";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@workspace/command-deck/components/ui/alert-dialog";
+import {
   FileText,
   Download,
   ChevronDown,
@@ -959,6 +969,7 @@ export function AnalysisControls({
 }) {
   const [dateRange, setDateRange] = useState<"7d" | "14d" | "30d" | "all">("30d");
   const [error, setError] = useState<string | null>(null);
+  const [conversionExportConfirm, setConversionExportConfirm] = useState<{ message: string; files: string[] } | null>(null);
   const queryClient = useQueryClient();
   const startMutation = useStartManualAnalysisRun();
   const { data: latest, refetch } = useGetLatestAnalysisRun(accountId);
@@ -1070,12 +1081,26 @@ export function AnalysisControls({
     return () => clearTimeout(t);
   }, [run?.status, run?.id, onDone]);
 
-  const handleRun = async () => {
+  const handleRun = async (confirmConversionExport = false) => {
     setError(null);
     try {
-      await startMutation.mutateAsync({ accountId, data: { date_range: dateRange } });
+      await startMutation.mutateAsync({
+        accountId,
+        data: { date_range: dateRange, ...(confirmConversionExport ? { confirm_conversion_export: true } : {}) },
+      });
+      setConversionExportConfirm(null);
       await refetch();
     } catch (err) {
+      if (err instanceof ApiError) {
+        const errData = err.data as { code?: string; files?: string[]; message?: string } | null;
+        if (errData?.code === "conversion_export_confirmation_required") {
+          setConversionExportConfirm({
+            message: errData.message ?? err.message,
+            files: Array.isArray(errData.files) ? errData.files : [],
+          });
+          return;
+        }
+      }
       setError(
         err instanceof ApiError
           ? err.message
@@ -1224,7 +1249,7 @@ export function AnalysisControls({
           <span className="text-label text-muted-foreground/75">No analysis has been run yet.</span>
         )}
         <RunAnalysisBtn
-          onClick={handleRun}
+          onClick={() => handleRun()}
           disabled={
             isRunning ||
             startMutation.isPending ||
@@ -1252,6 +1277,31 @@ export function AnalysisControls({
           )}
         </RunAnalysisBtn>
       </div>
+
+      <AlertDialog
+        open={!!conversionExportConfirm}
+        onOpenChange={(open) => { if (!open) setConversionExportConfirm(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>This looks like a conversion export, not a delivery export</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <span className="block">{conversionExportConfirm?.message}</span>
+              {conversionExportConfirm && conversionExportConfirm.files.length > 0 && (
+                <span className="block text-label text-muted-foreground/80">
+                  Affected file{conversionExportConfirm.files.length !== 1 ? "s" : ""}: {conversionExportConfirm.files.join(", ")}
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => handleRun(true)}>
+              Run anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Real per-stage progress bar — polls every 1 s while running */}
       {(isRunning || run?.status === "success") && (

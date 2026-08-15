@@ -106,6 +106,14 @@ export type IapCsvParseResult = {
    * can render a complete column-mapping report to the user.
    */
   mappingSummary: ColumnMappingSummaryEntry[];
+  /**
+   * True when this file's data matches the signature of a Meta
+   * conversion-event export (all-zero impressions) even though it was
+   * uploaded into a delivery-class slot. Callers that commit data (analysis
+   * runs) should treat this as a confirmation gate, not just a warning —
+   * saving it silently produces impossible CTR/CPM values.
+   */
+  conversionExportSuspected: boolean;
 };
 
 function parseCsvLines(text: string): string[][] {
@@ -573,6 +581,7 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
   // conversion/action export — those exports attribute clicks and results to ad
   // delivery windows but record 0 impressions because they are not impression-
   // driven. Saving one silently produces impossible CTR values.
+  let conversionExportSuspected = false;
   if (csvClass !== "conversion_device") {
     const impressionsFound = baseMetricIdx.has("Impressions");
     if (impressionsFound) {
@@ -580,6 +589,7 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
       const allZeroOrNull = impressionValues.every((v) => v === null || v === 0);
       const anyExplicitZero = impressionValues.some((v) => v === 0);
       if (allZeroOrNull && anyExplicitZero) {
+        conversionExportSuspected = true;
         warnings.push(
           "This looks like a conversion-event export, not a delivery export. " +
             "Delivery exports include impression counts. " +
@@ -597,6 +607,7 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
     columnMappings,
     missingColumns,
     mappingSummary: Array.from(summaryMap.values()),
+    conversionExportSuspected,
   };
 }
 
