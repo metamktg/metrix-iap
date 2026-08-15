@@ -765,6 +765,7 @@ export function detectCsvClassMismatch(
       return (
         `This file looks like a Demographic pivot export — it contains ${quotedCols}, ` +
         `which only appears in that pivot type. ` +
+        `Did you upload it in the wrong slot? ` +
         `Upload it as the Demographics CSV instead, and provide an ad-level summary export here.`
       );
     }
@@ -776,6 +777,7 @@ export function detectCsvClassMismatch(
       return (
         `This file looks like a Device/Placement pivot export — it contains ${quotedCols}, ` +
         `which only appears in that pivot type. ` +
+        `Did you upload it in the wrong slot? ` +
         `Upload it as the Device/Placement CSV instead, and provide an ad-level summary export here.`
       );
     }
@@ -787,6 +789,7 @@ export function detectCsvClassMismatch(
       return (
         `This file looks like a Conversion Device pivot export — it contains ${quotedCols}, ` +
         `which only appears in that pivot type. ` +
+        `Did you upload it in the wrong slot? ` +
         `Upload it as the Conversion Device CSV instead, and provide an ad-level summary export here.`
       );
     }
@@ -802,6 +805,7 @@ export function detectCsvClassMismatch(
       const quotedCols = demoMatched.map((c) => `"${c}"`).join(", ");
       return (
         `This file looks like a Demographic pivot export — it contains ${quotedCols}. ` +
+        `Did you upload it in the wrong slot? ` +
         `Upload it as the Demographics CSV instead.`
       );
     }
@@ -812,6 +816,7 @@ export function detectCsvClassMismatch(
       const quotedCols = deviceMatched.map((c) => `"${c}"`).join(", ");
       return (
         `This file looks like a Device/Placement pivot export — it contains ${quotedCols}. ` +
+        `Did you upload it in the wrong slot? ` +
         `Upload it as the Placements CSV instead.`
       );
     }
