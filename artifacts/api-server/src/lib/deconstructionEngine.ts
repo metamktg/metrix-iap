@@ -819,6 +819,76 @@ export const DECONSTRUCT_CHUNK_PAUSE_MS = 3000;
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
+/** Retry schedule for transient infrastructure failures (ms between attempts). */
+const TRANSIENT_RETRY_DELAYS_MS = [1000, 3000, 8000] as const;
+
+/**
+ * True for failures that are infrastructure, not data — worth retrying.
+ *
+ * The motivating case is Cloudflare 525 (SSL handshake failed between the edge
+ * and the Supabase origin), which resolves on its own within seconds but
+ * returns an HTML error page. supabase-js surfaces that as an opaque fetch or
+ * JSON-parse failure rather than a status code, so the HTML signature is
+ * matched explicitly alongside the usual gateway and socket errors.
+ *
+ * Deliberately conservative: anything not recognised here is treated as a real
+ * data or model error and is NOT retried.
+ */
+export function isTransientInfraError(err: unknown): boolean {
+  const message = (err instanceof Error ? err.message : String(err)).toLowerCase();
+  const status = (err as { status?: number } | null)?.status;
+  if (typeof status === "number" && [408, 425, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524, 525, 526, 527, 530].includes(status)) {
+    return true;
+  }
+  return [
+    "fetch failed",
+    "network error",
+    "socket hang up",
+    "econnreset",
+    "econnrefused",
+    "etimedout",
+    "epipe",
+    "eai_again",
+    "und_err",
+    "terminated",
+    "handshake",
+    "gateway",
+    "service unavailable",
+    "too many requests",
+    // Cloudflare / proxy HTML error pages arriving where JSON was expected
+    "unexpected token '<'",
+    "<!doctype",
+    "cloudflare",
+  ].some((needle) => message.includes(needle));
+}
+
+/**
+ * Runs `fn`, retrying transient infrastructure failures with backoff.
+ * Non-transient errors throw immediately — a bad file should not be retried
+ * three times before it fails.
+ */
+async function withTransientRetry<T>(
+  fn: () => Promise<T>,
+  ctx: { accountId: string; runId: string; filename: string; step: string },
+): Promise<T> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= TRANSIENT_RETRY_DELAYS_MS.length; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      const delay = TRANSIENT_RETRY_DELAYS_MS[attempt];
+      if (delay === undefined || !isTransientInfraError(err)) throw err;
+      logger.warn(
+        { ...ctx, attempt: attempt + 1, delayMs: delay, err },
+        "Transient infrastructure error during deconstruction — retrying",
+      );
+      await sleep(delay);
+    }
+  }
+  throw lastErr;
+}
+
 /**
  * Pure selection rule for the bulk backfill: an import needs classification
  * when it has no deconstruction row at all, or its only row is 'discarded'.
@@ -971,153 +1041,191 @@ export async function startCreativeDeconstruction(
         }
       };
 
+      // Per-import failures are isolated: one bad file (or one transient
+      // Supabase/Cloudflare blip that outlives its retries) must not abandon
+      // the other 64 files in the batch. Failures are collected and reported
+      // together once every processable import has been attempted.
+      const failures: Array<{ filename: string; message: string }> = [];
+
       for (const imp of imports) {
         const importId = String(imp["id"]);
         const filename = String(imp["filename"]);
-        const adNames: string[] = Array.isArray(imp["ad_names"]) ? imp["ad_names"].map(String) : [];
-        const adRows = adNames.map((n) => adByName.get(n)).filter((a): a is Row => Boolean(a));
-        const mediaType = supportedImageMediaType(imp["content_type"] as string | null, filename);
+        try {
+          const adNames: string[] = Array.isArray(imp["ad_names"]) ? imp["ad_names"].map(String) : [];
+          const adRows = adNames.map((n) => adByName.get(n)).filter((a): a is Row => Boolean(a));
+          const mediaType = supportedImageMediaType(imp["content_type"] as string | null, filename);
 
-        const base: Row = {
-          generation_run_id: runId,
-          filename,
-          ad_names: adNames,
-          model: GENERATION_MODEL,
-        };
+          const base: Row = {
+            generation_run_id: runId,
+            filename,
+            ad_names: adNames,
+            model: GENERATION_MODEL,
+          };
 
-        // Video creatives are classified via extracted keyframes fed through
-        // the same image pipeline. Only truly unknown formats (and videos
-        // ffmpeg cannot decode) stay unsupported.
-        let videoFrames: Array<{ label: string; jpeg: Buffer }> | null = null;
-        if (!mediaType && isVideoCreative(imp["content_type"] as string | null, filename)) {
-          try {
-            videoFrames = await extractVideoKeyframes(decodeStagedBytes(String(imp["content"])), filename);
-          } catch (frameErr) {
-            logger.warn({ accountId, importId, filename, err: frameErr }, "Video keyframe extraction failed");
-            videoFrames = null;
+          // Video creatives are classified via extracted keyframes fed through
+          // the same image pipeline. Only truly unknown formats (and videos
+          // ffmpeg cannot decode) stay unsupported.
+          let videoFrames: Array<{ label: string; jpeg: Buffer }> | null = null;
+          if (!mediaType && isVideoCreative(imp["content_type"] as string | null, filename)) {
+            try {
+              videoFrames = await extractVideoKeyframes(decodeStagedBytes(String(imp["content"])), filename);
+            } catch (frameErr) {
+              logger.warn({ accountId, importId, filename, err: frameErr }, "Video keyframe extraction failed");
+              videoFrames = null;
+            }
           }
-        }
 
-        if (!mediaType && !videoFrames) {
-          // Atomic: unsupported replaces the prior classification and drops
-          // any library entry it no longer backs, in one transaction.
-          await commitReplacement(
-            accountId,
-            importId,
+          if (!mediaType && !videoFrames) {
+            // Atomic: unsupported replaces the prior classification and drops
+            // any library entry it no longer backs, in one transaction.
+            await commitReplacement(
+              accountId,
+              importId,
+              {
+                ...base,
+                status: "unsupported",
+                variables: [],
+                overall_confidence: null,
+                detected_copy: null,
+                brief_ref: null,
+                brief_variables: null,
+                overridden_by: null,
+                overridden_at: null,
+              },
+              null,
+              null,
+            );
+            await noteDone();
+            continue;
+          }
+
+          const brief = findBrief(adRows);
+          const briefIntended = brief ? briefIntendedVariables(brief.payload) : null;
+
+          // ── Model call: no writes have happened for this import yet. ──
+          const imageBlocks: Array<Record<string, unknown>> = videoFrames
+            ? videoFrames.map((f) => ({
+                type: "image",
+                source: { type: "base64", media_type: "image/jpeg", data: f.jpeg.toString("base64") },
+              }))
+            : [
+                {
+                  type: "image",
+                  source: {
+                    type: "base64",
+                    media_type: mediaType!,
+                    data: decodeStagedBytes(String(imp["content"])).toString("base64"),
+                  },
+                },
+              ];
+          const content: ModelContent = [
+            ...imageBlocks,
             {
-              ...base,
-              status: "unsupported",
-              variables: [],
-              overall_confidence: null,
-              detected_copy: null,
-              brief_ref: null,
-              brief_variables: null,
-              overridden_by: null,
-              overridden_at: null,
+              type: "text",
+              text: deconstructionPrompt({
+                accountName,
+                filename,
+                adContexts: adRows,
+                briefIntended,
+                registryFamilies,
+                videoFrameLabels: videoFrames ? videoFrames.map((f) => f.label) : null,
+              }),
             },
-            null,
-            null,
+          ];
+
+          const output = sanitizeGeneratedText(
+            await generateValidated(content, DeconstructionOutput, { maxTokens: 8192 }),
+            accountName,
+          );
+
+          const variables = sanitizeDetectedVariables(output.variables as DetectedVariable[]);
+          if (variables.length === 0) {
+            throw new Error(`Model returned no registry-valid variables for ${filename}.`);
+          }
+          const overall = overallConfidence(variables);
+          const status = gateDecision(overall);
+
+          const detectedCopy = {
+            primary_message: output.primary_message ?? null,
+            secondary_message: output.secondary_message ?? null,
+            cta: output.cta ?? null,
+            visual_system: output.visual_system ?? null,
+          };
+
+          const classification: Row = {
+            ...base,
+            status,
+            variables,
+            overall_confidence: overall,
+            detected_copy: detectedCopy,
+            brief_ref: brief?.briefId ?? null,
+            brief_variables: briefIntended,
+            overridden_by: null,
+            overridden_at: null,
+          };
+
+          // ── Commit: classification upsert + library swap in ONE transaction.
+          let filing: { cellId: string; libraryRow: Row } | null = null;
+          if (status === "auto_filed") {
+            filing = await computeFiling(
+              {
+                account_id: accountId,
+                manual_import_id: importId,
+                generation_run_id: runId,
+                filename,
+                ad_names: adNames,
+                variables,
+                detected_copy: detectedCopy,
+                overall_confidence: overall,
+                brief_ref_position: brief?.position ?? null,
+              },
+              "auto_filed",
+            );
+          }
+          await withTransientRetry(
+            () =>
+              commitReplacement(
+                accountId,
+                importId,
+                classification,
+                filing?.cellId ?? null,
+                filing?.libraryRow ?? null,
+              ),
+            { accountId, runId, filename, step: "commit" },
           );
           await noteDone();
-          continue;
+        } catch (importErr) {
+          // Isolated: record and move on. Everything already committed for
+          // earlier imports stays valid (each commit is atomic per import).
+          const message = importErr instanceof Error ? importErr.message : String(importErr);
+          logger.error({ accountId, runId, importId, filename, err: importErr }, "Creative deconstruction failed for one import");
+          failures.push({ filename, message });
+          await noteDone();
         }
-
-        const brief = findBrief(adRows);
-        const briefIntended = brief ? briefIntendedVariables(brief.payload) : null;
-
-        // ── Model call: no writes have happened for this import yet. ──
-        const imageBlocks: Array<Record<string, unknown>> = videoFrames
-          ? videoFrames.map((f) => ({
-              type: "image",
-              source: { type: "base64", media_type: "image/jpeg", data: f.jpeg.toString("base64") },
-            }))
-          : [
-              {
-                type: "image",
-                source: {
-                  type: "base64",
-                  media_type: mediaType!,
-                  data: decodeStagedBytes(String(imp["content"])).toString("base64"),
-                },
-              },
-            ];
-        const content: ModelContent = [
-          ...imageBlocks,
-          {
-            type: "text",
-            text: deconstructionPrompt({
-              accountName,
-              filename,
-              adContexts: adRows,
-              briefIntended,
-              registryFamilies,
-              videoFrameLabels: videoFrames ? videoFrames.map((f) => f.label) : null,
-            }),
-          },
-        ];
-
-        const output = sanitizeGeneratedText(
-          await generateValidated(content, DeconstructionOutput, { maxTokens: 8192 }),
-          accountName,
-        );
-
-        const variables = sanitizeDetectedVariables(output.variables as DetectedVariable[]);
-        if (variables.length === 0) {
-          throw new Error(`Model returned no registry-valid variables for ${filename}.`);
-        }
-        const overall = overallConfidence(variables);
-        const status = gateDecision(overall);
-
-        const detectedCopy = {
-          primary_message: output.primary_message ?? null,
-          secondary_message: output.secondary_message ?? null,
-          cta: output.cta ?? null,
-          visual_system: output.visual_system ?? null,
-        };
-
-        const classification: Row = {
-          ...base,
-          status,
-          variables,
-          overall_confidence: overall,
-          detected_copy: detectedCopy,
-          brief_ref: brief?.briefId ?? null,
-          brief_variables: briefIntended,
-          overridden_by: null,
-          overridden_at: null,
-        };
-
-        // ── Commit: classification upsert + library swap in ONE transaction.
-        let filing: { cellId: string; libraryRow: Row } | null = null;
-        if (status === "auto_filed") {
-          filing = await computeFiling(
-            {
-              account_id: accountId,
-              manual_import_id: importId,
-              generation_run_id: runId,
-              filename,
-              ad_names: adNames,
-              variables,
-              detected_copy: detectedCopy,
-              overall_confidence: overall,
-              brief_ref_position: brief?.position ?? null,
-            },
-            "auto_filed",
-          );
-        }
-        await commitReplacement(
-          accountId,
-          importId,
-          classification,
-          filing?.cellId ?? null,
-          filing?.libraryRow ?? null,
-        );
-        await noteDone();
       }
 
-      await finishRun(runId, "success");
-      invalidateMetrixSeedCache();
-      logger.info({ accountId, runId, count: imports.length }, "Creative deconstruction succeeded");
+      if (failures.length === 0) {
+        await finishRun(runId, "success");
+        invalidateMetrixSeedCache();
+        logger.info({ accountId, runId, count: imports.length }, "Creative deconstruction succeeded");
+      } else {
+        // Honest partial outcome: the run did not fully succeed, and the
+        // message names exactly what to re-run. Successful classifications are
+        // already committed and are not rolled back.
+        const succeeded = imports.length - failures.length;
+        const named = failures.slice(0, 5).map((f) => f.filename).join(", ");
+        const more = failures.length > 5 ? ` and ${failures.length - 5} more` : "";
+        await finishRun(
+          runId,
+          "error",
+          `${succeeded} of ${imports.length} creatives classified. ` +
+            `${failures.length} failed: ${named}${more}. ` +
+            `The successful classifications were saved — re-run deconstruction on the failed files only. ` +
+            `First error: ${failures[0]!.message}`,
+        );
+        invalidateMetrixSeedCache();
+        logger.warn({ accountId, runId, succeeded, failed: failures.length }, "Creative deconstruction completed with failures");
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       logger.error({ accountId, runId, err }, "Creative deconstruction failed");
