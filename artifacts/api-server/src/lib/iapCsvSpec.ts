@@ -102,21 +102,51 @@ export const DERIVED_OR_IRRELEVANT_METRICS: readonly string[] = [
   "Engagement rate ranking",
   "Conversion rate ranking",
   "Ad recall lift rate",
-];
 
-export const ECOMMERCE_METRICS: readonly string[] = [
-  "Adds to cart",
+  // ── Objective-group ratios (ecommerce / service / app) ───────────────
+  // Same rule as the cost-per-X block above: every one of these is
+  // spend ÷ count, value ÷ spend, or count ÷ count over columns the
+  // account already supplies. They were previously listed as expected
+  // members of ECOMMERCE_METRICS / SERVICE_METRICS / APP_METRICS, which
+  // put 22 derivable columns in front of the user as things to tick in
+  // the Ads Manager export dialog. They are now accepted transparently
+  // when present and never asked for.
   "Cost per add to cart",
-  "Adds to cart conversion value",
-  "Content views",
   "Cost per content view",
-  "Content views conversion value",
-  "Checkouts initiated",
   "Cost per checkout initiated",
-  "Purchases",
   "Cost per purchase",
   "Purchase ROAS (return on ad spend)",
   "Website purchase ROAS (return on ad spend)",
+  "Average purchases conversion value",
+  "Purchases rate per landing page views",
+  "Purchases rate per link clicks",
+  "Cost per lead",
+  "Cost per contact",
+  "Cost per appointment scheduled",
+  "Cost per registration completed",
+  "Cost per app install",
+  "Cost per mobile app install",
+  "Cost per app activation",
+  "Cost per in-app session",
+  "Cost per in-app purchase",
+  "Cost per in-app registration completed",
+  "Cost per in-app trial started",
+  "Cost per in-app subscription",
+  "Cost per rating submitted",
+];
+
+// Objective-group metrics list RAW COUNTS AND VALUES ONLY. Every cost-per-X,
+// ROAS and rate that Meta offers alongside these is derivable from a count
+// already here plus spend, so it lives in DERIVED_OR_IRRELEVANT_METRICS and is
+// accepted transparently rather than requested. A column earns a place in this
+// list only if it cannot be computed from other columns on the same row.
+export const ECOMMERCE_METRICS: readonly string[] = [
+  "Adds to cart",
+  "Adds to cart conversion value",
+  "Content views",
+  "Content views conversion value",
+  "Checkouts initiated",
+  "Purchases",
   "Website purchases",
   "Website purchases conversion value",
   "Direct website purchases",
@@ -126,24 +156,18 @@ export const ECOMMERCE_METRICS: readonly string[] = [
   "Meta purchases",
   "Meta purchases conversion value",
   "Purchases conversion value",
-  "Average purchases conversion value",
-  "Purchases rate per landing page views",
-  "Purchases rate per link clicks",
+  "Adds of payment info",
 ];
 
 export const SERVICE_METRICS: readonly string[] = [
   "Leads",
-  "Cost per lead",
   "Leads conversion value",
   "Meta leads",
   "Website leads",
   "Contacts",
-  "Cost per contact",
   "Contact conversion value",
   "Appointments scheduled",
-  "Cost per appointment scheduled",
   "Registrations completed",
-  "Cost per registration completed",
   "Registrations completed conversion value",
   "Calls placed",
   "20-second calls",
@@ -154,26 +178,17 @@ export const SERVICE_METRICS: readonly string[] = [
 
 export const APP_METRICS: readonly string[] = [
   "App installs",
-  "Cost per app install",
   "Mobile app installs",
-  "Cost per mobile app install",
-  "Cost per app activation",
   "App activations",
   "App activations conversion value",
   "In-app sessions",
-  "Cost per in-app session",
   "In-app sessions conversion value",
   "In-app purchases",
-  "Cost per in-app purchase",
   "In-app registrations completed",
-  "Cost per in-app registration completed",
   "In-app trials started",
-  "Cost per in-app trial started",
   "In-app subscriptions",
-  "Cost per in-app subscription",
   "In-app subscriptions conversion value",
   "Ratings submitted",
-  "Cost per rating submitted",
   "Ratings submitted conversion value",
 ];
 
@@ -433,6 +448,12 @@ export const COLUMN_ALIASES: Record<string, string> = {
   "device": "Impression device",
   "device type": "Impression device",
   "ad impression device": "Impression device",
+  // "Device platform" is what the Ads Reporting pivot exporter emits for the
+  // impression-device breakdown (observed in a real client export, Aug 2026).
+  // Token overlap with "Impression device" is only 0.33 — below the 0.5
+  // inference threshold — so without this entry the column never resolves.
+  "device platform": "Impression device",
+  "impression device platform": "Impression device",
   // Placement
   "ad placement": "Placement",
   "placement type": "Placement",
@@ -825,6 +846,41 @@ export function detectCsvClassMismatch(
  * Missing any of these triggers a "reduced confidence" warning rather than
  * a hard error — analysis proceeds with nulls for the missing columns.
  */
+/**
+ * Delivery primitives: metrics that only a DELIVERY-basis export can carry.
+ *
+ * Meta suppresses every one of these when the export is broken down by an
+ * action/conversion dimension (the confirmed case is "Conversion device" —
+ * an impression cannot be attributed to the device where a later conversion
+ * happened, so spend, reach and impressions come back blank on every row).
+ *
+ * A file whose spend or impressions column RESOLVES but carries no value on
+ * any row is therefore not a partially-degraded delivery export — it is an
+ * export from which no cost, efficiency or rate metric can ever be computed.
+ * `assertDeliveryCoverage` hard-blocks that case; see the coverage gate in
+ * iapCsvParser.ts.
+ *
+ * This check is deliberately data-driven rather than a list of banned
+ * breakdown columns: it catches any future Meta breakdown with the same
+ * effect, and it catches genuinely broken exports too.
+ */
+export const DELIVERY_PRIMITIVES: readonly string[] = [
+  "Amount spent ({ACCOUNT_CURRENCY})",
+  "Impressions",
+  "Reach",
+  "Frequency",
+];
+
+/**
+ * The subset of DELIVERY_PRIMITIVES whose absence makes the file unusable
+ * rather than merely degraded. Without spend there is no cost metric at all;
+ * without impressions there is no rate metric at all.
+ */
+export const BLOCKING_DELIVERY_PRIMITIVES: readonly string[] = [
+  "Amount spent ({ACCOUNT_CURRENCY})",
+  "Impressions",
+];
+
 export const CORE_BASE_METRICS: ReadonlySet<string> = new Set([
   "Amount spent ({ACCOUNT_CURRENCY})",
   "Reach",

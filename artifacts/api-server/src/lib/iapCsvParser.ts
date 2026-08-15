@@ -17,7 +17,10 @@ import {
   DERIVED_OR_IRRELEVANT_METRICS,
   OPTIONAL_METRICS,
   CORE_BASE_METRICS,
+  DELIVERY_PRIMITIVES,
+  BLOCKING_DELIVERY_PRIMITIVES,
   CREATIVE_METADATA_COLUMNS,
+  iapCsvClassLabel,
   headerMatchesColumn,
   slugifyColumn,
   findColumnInHeader,
@@ -107,13 +110,49 @@ export type IapCsvParseResult = {
    */
   mappingSummary: ColumnMappingSummaryEntry[];
   /**
+   * Per-column DATA coverage, measured over the parsed rows.
+   *
+   * Column resolution only proves a header exists. Coverage proves the column
+   * carries values. A file can resolve every required column and still be
+   * unusable because Meta returned every one of them blank — see
+   * DELIVERY_PRIMITIVES in iapCsvSpec.ts.
+   */
+  coverage: IapCsvCoverage;
+  /**
    * True when this file's data matches the signature of a Meta
    * conversion-event export (all-zero impressions) even though it was
    * uploaded into a delivery-class slot. Callers that commit data (analysis
    * runs) should treat this as a confirmation gate, not just a warning —
    * saving it silently produces impossible CTR/CPM values.
+   *
+   * Complementary to `coverage`, not a duplicate of it: this flags explicit
+   * ZERO impressions (a conversion export), while the delivery coverage gate
+   * blocks BLANK or absent spend/impressions. A file can trip either alone.
    */
   conversionExportSuspected: boolean;
+};
+
+/** Measured fill for one canonical column across every parsed row. */
+export type ColumnCoverageEntry = {
+  canonical: string;
+  slug: string;
+  /** The column resolved to a header cell (it exists in the file). */
+  present: boolean;
+  /** Rows carrying a non-blank value. */
+  filledRows: number;
+  /** Sum of numeric values; null for string-valued columns. */
+  sum: number | null;
+};
+
+export type IapCsvCoverage = {
+  totalRows: number;
+  columns: ColumnCoverageEntry[];
+  /**
+   * Canonical columns that RESOLVED in the header but carry no value on any
+   * row. This is the distinction the old parser could not make — and the one
+   * that separates "a column is missing" from "the export returned nothing".
+   */
+  emptyColumns: string[];
 };
 
 function parseCsvLines(text: string): string[][] {
@@ -513,6 +552,27 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
     }
   }
 
+  // ── Required breakdown COLUMNS (file-level, checked once) ─────────────
+  // A required breakdown column that never resolved is a property of the FILE,
+  // not of any row. Reporting it per-row produced the misleading
+  // "must not include totals/subtotals rows" message for what is really a
+  // column-naming mismatch, and sent users to fix an export setting that was
+  // already correct. Diagnose it here, before a single row is read.
+  const unresolvedRequired = spec.requiredBreakdownColumns.filter((col) => !breakdownIdx.has(col));
+  if (unresolvedRequired.length > 0) {
+    const details = unresolvedRequired.map((col) => {
+      const closest = suggestCanonicalForUnknown(col, unmappedHeaders);
+      return closest
+        ? `"${col}" (closest column in your file: "${closest}" — rename it to "${col}" and re-upload)`
+        : `"${col}"`;
+    });
+    throw new IapCsvFormatError(
+      `This export is missing ${unresolvedRequired.length === 1 ? "a column" : "columns"} the ` +
+        `${iapCsvClassLabel(csvClass)} report needs: ${details.join("; ")}. ` +
+        `Re-export from Ads Manager with ${unresolvedRequired.length === 1 ? "that breakdown" : "those breakdowns"} included.`,
+    );
+  }
+
   // ── Parse rows ────────────────────────────────────────────────────────
   const rows: IapCsvRow[] = [];
   for (let li = 1; li < lines.length; li++) {
@@ -525,11 +585,13 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
       breakdowns[col] = idx !== undefined ? (cells[idx] ?? "").trim() : "";
     }
 
-    // Required breakdown values (row-level — blank means totals row)
+    // Required breakdown VALUES (row-level). The column is known to exist by
+    // this point, so a blank really does mean a totals/subtotals row.
     for (const req of spec.requiredBreakdownColumns) {
       if (!breakdowns[req]) {
         throw new IapCsvFormatError(
-          `Row ${li + 1}: missing required value for "${req}". Meta pivot exports must not include totals/subtotals rows — check "no totals" is unchecked in the export.`,
+          `Row ${li + 1}: the "${req}" column is present but blank on this row. ` +
+            `Meta pivot exports must not include totals/subtotals rows — re-export with totals turned off.`,
         );
       }
     }
@@ -575,6 +637,88 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
     throw new IapCsvFormatError("The file has a header row but no data rows.");
   }
 
+  // ── Coverage: measure DATA, not headers ───────────────────────────────
+  // Everything above this point verifies that columns exist. Nothing above
+  // verifies that they carry values. This block closes that gap.
+  const coverageColumns: ColumnCoverageEntry[] = [];
+  const emptyColumns: string[] = [];
+  const STRING_VALUED = new Set(["Result type", "Result value type"]);
+
+  for (const col of BASE_METRICS) {
+    const slug = slugifyColumn(col);
+    const present =
+      col === "Amount spent ({ACCOUNT_CURRENCY})" ? amountSpentIdx >= 0 : baseMetricIdx.has(col);
+    let filledRows = 0;
+    let sum: number | null = STRING_VALUED.has(col) ? null : 0;
+    for (const row of rows) {
+      const v = row.base[slug];
+      if (v === null || v === undefined || v === "") continue;
+      filledRows++;
+      if (sum !== null && typeof v === "number") sum += v;
+    }
+    coverageColumns.push({ canonical: col, slug, present, filledRows, sum });
+    if (present && filledRows === 0) emptyColumns.push(col);
+  }
+
+  for (const col of optionalMetricsPresent) {
+    const slug = slugifyColumn(col);
+    let filledRows = 0;
+    let sum = 0;
+    for (const row of rows) {
+      const v = row.extra[slug];
+      if (v === null || v === undefined || v === "") continue;
+      filledRows++;
+      if (typeof v === "number") sum += v;
+    }
+    coverageColumns.push({ canonical: col, slug, present: true, filledRows, sum });
+    if (filledRows === 0) emptyColumns.push(col);
+  }
+
+  const coverage: IapCsvCoverage = { totalRows: rows.length, columns: coverageColumns, emptyColumns };
+
+  // ── Delivery coverage gate ────────────────────────────────────────────
+  // Blocks the case the header-only checks could never see: every required
+  // column resolved, and Meta returned nothing in any of them. Reported as a
+  // hard error because no cost, rate or efficiency metric can be computed from
+  // such a file — accepting it produces an analysis of zeroes that reads as
+  // real. See DELIVERY_PRIMITIVES for why this happens.
+  // A delivery primitive fails the gate two ways, and both produce the same
+  // unusable analysis: the column resolved but Meta returned nothing on any
+  // row, OR the column is not in the export at all. The first release of this
+  // gate only checked the former, so a file with no spend column simply warned
+  // and proceeded to an analysis of zeroes — the exact defect the gate exists
+  // to prevent, in a different shape.
+  const isUnusable = (col: string): boolean => {
+    const entry = coverage.columns.find((c) => c.canonical === col);
+    return !entry?.present || entry.filledRows === 0;
+  };
+  const emptyDelivery = BLOCKING_DELIVERY_PRIMITIVES.filter(isUnusable);
+  const absentDelivery = emptyDelivery.filter(
+    (col) => !coverage.columns.find((c) => c.canonical === col)?.present,
+  );
+  if (emptyDelivery.length > 0) {
+    const allDeliveryEmpty = DELIVERY_PRIMITIVES.every(
+      (col) => emptyColumns.includes(col) || !coverage.columns.find((c) => c.canonical === col)?.present,
+    );
+    const named = emptyDelivery.map((c) => `"${resolveCurrencyLabel(c)}"`).join(" and ");
+    // Three distinct causes, three distinct fixes. Naming the wrong one sends
+    // the user to change a setting that is already correct.
+    const cause = absentDelivery.length === emptyDelivery.length
+      ? `This export does not include ${named}. ` +
+        `Add ${absentDelivery.length === 1 ? "that column" : "those columns"} in the Ads Reporting ` +
+        `column picker and export again.`
+      : allDeliveryEmpty
+      ? `Every delivery metric in this file is blank, which is what Meta returns when the export is ` +
+        `broken down by a conversion or action dimension — most commonly "Conversion device". ` +
+        `Meta cannot attribute spend or impressions to the device where a conversion later happened, ` +
+        `so it blanks them on every row. Re-export without the conversion/action breakdown.`
+      : `Meta returned no values in ${named} on any of the ${rows.length.toLocaleString()} rows in this file.`;
+    throw new IapCsvFormatError(
+      `${cause} Without ${named} no cost, rate or efficiency metric can be calculated — ` +
+        `your creative, placement and engagement data will all be preserved when you re-upload.`,
+    );
+  }
+
   // ── Conversion-export detection ────────────────────────────────────────
   // Delivery exports (demographic, device_placement, ad_summary) always carry
   // real impression counts. All-zero impressions is the hallmark of a Meta
@@ -607,8 +751,14 @@ export function parseIapCsv(text: string, csvClass: IapCsvClass): IapCsvParseRes
     columnMappings,
     missingColumns,
     mappingSummary: Array.from(summaryMap.values()),
+    coverage,
     conversionExportSuspected,
   };
+}
+
+/** Display label for a canonical column, resolving the currency placeholder. */
+function resolveCurrencyLabel(col: string): string {
+  return col.replace("{ACCOUNT_CURRENCY}", "USD");
 }
 
 /** Converts a Meta "Day" cell (e.g. "2026-07-01") to an ISO date string, throwing on invalid dates. */
