@@ -12,7 +12,7 @@ import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getMST, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import { runMstAnalysis, type Verdict, type ColumnAnalysisEntry, type RowAnalysisEntry, type DiagonalAnalysisEntry } from "@/lib/mst-analysis";
-import { resolveObjectivesMeta } from "@/lib/data/cohortMeta";
+import { resolveObjectivesMeta, resolveObjectivesMetaList } from "@/lib/data/cohortMeta";
 import {
   ModuleHeader, ModuleScopeGate, PendingState, MetricTile,
   CaveatNote, SectionCard, DetailReveal, readableVariables, fmtUSD, fmtNum,
@@ -58,7 +58,11 @@ export function MstPerformanceView() {
         const analysis = getAnalysisData(seed, adAccountId);
         // Objectives-aware: one objective → its specific terminal metric;
         // zero/many → honest generic "cost per result" (all lower_is_better).
+        // cohortMeta drives the analysis direction (always lower_is_better v1).
+        // metaList drives per-objective display; length > 1 means multi-objective.
         const cohortMeta = resolveObjectivesMeta(acct.objectives);
+        const metaList = resolveObjectivesMetaList(acct.objectives);
+        const isMultiObjective = metaList.length > 1;
         const analysisResult = analysis ? runMstAnalysis(mst, analysis.performance_by_cell, cohortMeta.terminalMetricDirection) : null;
 
         if (!mst || mst.status !== "active" || !analysis || !analysisResult) {
@@ -80,17 +84,43 @@ export function MstPerformanceView() {
             <ModuleHeader
               section={SECTION}
               title="Performance"
-              subtitle={`Universal vs avatar-specific winners, ranked by ${cohortMeta.terminalMetricLabel}.`}
+              subtitle={
+                isMultiObjective
+                  ? `Universal vs avatar-specific winners, ranked by ${metaList.map((m) => m.terminalMetricLabel).join(" · ")}.`
+                  : `Universal vs avatar-specific winners, ranked by ${cohortMeta.terminalMetricLabel}.`
+              }
               table="historical_matrix_4x4, performance_by_cell"
             />
             <div className="px-6 pt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
               <MetricTile label="Variables ranked" value={String(crossmap.length)} />
               <MetricTile label="Avatars/columns" value={String(columnAnalysis.length)} />
-              <MetricTile label={`Top ${cohortMeta.terminalMetricLabel}`} value={topWinner ? fmtMetric(topWinner.agg.terminalMetricValue) : "—"} />
+              <MetricTile
+                label={isMultiObjective ? "Top terminal metric" : `Top ${cohortMeta.terminalMetricLabel}`}
+                value={topWinner ? fmtMetric(topWinner.agg.terminalMetricValue) : "—"}
+              />
               <MetricTile label="Universal winners" value={String(crossmap.filter((c) => c.verdict === "universal_winner").length)} />
             </div>
+            {isMultiObjective && (
+              <div className="px-6 pt-3 flex flex-wrap gap-2">
+                {metaList.map((m) => (
+                  <span
+                    key={m.label}
+                    className="inline-flex items-center gap-1 text-label px-2 py-0.5 rounded border border-border/40 bg-white/[0.03] text-muted-foreground/80"
+                  >
+                    <span className="font-medium text-foreground/70">{m.label}:</span>
+                    {m.terminalMetricLabel}
+                  </span>
+                ))}
+              </div>
+            )}
             <div className="px-6 py-5 space-y-4 max-w-4xl">
-              <CaveatNote text={`Verdicts are computed from observed cells only — rows/variables with fewer than 2 appearances are marked "insufficient data" rather than scored. Ranked by ${cohortMeta.terminalMetricLabel} (${cohortMeta.terminalMetricDirection === "lower_is_better" ? "lower is better" : "higher is better"}).`} />
+              <CaveatNote
+                text={
+                  isMultiObjective
+                    ? `Verdicts are computed from observed cells only — rows/variables with fewer than 2 appearances are marked "insufficient data" rather than scored. Ranked by the account's shared terminal metric direction (lower is better). Objectives assessed: ${metaList.map((m) => `${m.label} (${m.terminalMetricLabel})`).join(", ")}.`
+                    : `Verdicts are computed from observed cells only — rows/variables with fewer than 2 appearances are marked "insufficient data" rather than scored. Ranked by ${cohortMeta.terminalMetricLabel} (${cohortMeta.terminalMetricDirection === "lower_is_better" ? "lower is better" : "higher is better"}).`
+                }
+              />
 
               {goldenFormula && (
                 <SectionCard title="Golden formula" desc="Highest-performing variable combination found across the matrix.">

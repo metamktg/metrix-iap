@@ -54,3 +54,26 @@ export function resolveObjectivesMeta(objectives: readonly string[] | null | und
   }
   return { label: "Unassigned", terminalMetricLabel: "cost per result", terminalMetricDirection: "lower_is_better" };
 }
+
+/**
+ * Resolve an account's configured objectives SET to an ordered list of metas
+ * — one entry per known objective. Use this when the UI can render multiple
+ * chips or lines instead of a single collapsed value.
+ *
+ * Zero known objectives → one generic "Unassigned" entry (never ecommerce).
+ * Exactly one → single-element array with that objective's specific meta.
+ * Several → one entry per objective, each with its own specific metric label.
+ *
+ * The collapsed `resolveObjectivesMeta` remains the source of truth for
+ * ranking direction (all lower_is_better in v1) and anywhere a single scalar
+ * label is still required; this function is for per-objective display only.
+ */
+export function resolveObjectivesMetaList(objectives: readonly string[] | null | undefined): CohortMeta[] {
+  const known = (objectives ?? []).filter((o): o is CohortKey =>
+    Object.prototype.hasOwnProperty.call(COHORT_META, o),
+  );
+  if (known.length === 0) {
+    return [{ label: "Unassigned", terminalMetricLabel: "cost per result", terminalMetricDirection: "lower_is_better" }];
+  }
+  return known.map((k) => COHORT_META[k]);
+}
