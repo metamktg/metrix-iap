@@ -746,7 +746,6 @@ export function LoopChecklist({ steps, allComplete = false }: { steps: LoopCheck
         <div className="flex-1 h-px bg-border/20" />
         <span className="text-label font-mono tabular-nums text-muted-foreground/40">{doneCount}/{steps.length}</span>
       </div>
-
       {/* Completion banner — shown when all steps are done */}
       {allComplete ? (
         <div className="px-3 py-2.5 border-b border-border/15">
@@ -767,18 +766,15 @@ export function LoopChecklist({ steps, allComplete = false }: { steps: LoopCheck
         </div>
       ) : (
         /* Progress bar — only shown when at least one step is done */
-        doneCount > 0 && (
-          <div className="px-3 pt-2 pb-0">
-            <div className="h-0.5 rounded-full bg-border/30 overflow-hidden">
-              <div
-                className="h-full bg-emerald-400/50 rounded-full transition-all"
-                style={{ width: `${Math.round((doneCount / steps.length) * 100)}%` }}
-              />
-            </div>
+        (doneCount > 0 && (<div className="px-3 pt-2 pb-0">
+          <div className="h-0.5 rounded-full bg-border/30 overflow-hidden">
+            <div
+              className="h-full bg-emerald-400/50 rounded-full transition-all"
+              style={{ width: `${Math.round((doneCount / steps.length) * 100)}%` }}
+            />
           </div>
-        )
+        </div>))
       )}
-
       {steps.map((step, i) => {
         const isNext = !allComplete && i === nextIdx;
         const isAction = !!step.onClick || !!step.route;
@@ -1619,7 +1615,7 @@ export function SectionCard({
           )}
         </div>
       </div>
-      {bodyVisible && <div className="relative p-3">{children}</div>}
+      {bodyVisible && <div className="relative p-3 border-t-[0px] border-r-[0px] border-b-[0px] border-l-[0px]">{children}</div>}
     </section>
   );
 }
