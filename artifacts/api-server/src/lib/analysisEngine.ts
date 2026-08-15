@@ -525,6 +525,30 @@ async function markImportsProcessed(importIds: string[], runId: string): Promise
  */
 export async function restageImportsForRun(accountId: string, runId: string): Promise<number> {
   const supabase = getSupabase();
+
+  // Find which kinds this past run consumed, so any file CURRENTLY staged
+  // for those same kinds (e.g. a newer upload made since that run) is
+  // superseded first — otherwise restaging would put two 'staged' rows of
+  // the same kind side by side and the next run would double-count both,
+  // the same failure mode this SOP prevents on ordinary upload.
+  const { data: runImports, error: runImportsErr } = await supabase
+    .from("manual_imports")
+    .select("kind")
+    .eq("account_id", accountId)
+    .eq("manual_analysis_run_id", runId);
+  if (runImportsErr) throw new Error(runImportsErr.message);
+  const kinds = [...new Set((runImports ?? []).map((r) => String(r["kind"])))];
+
+  if (kinds.length > 0) {
+    const supersede = await supabase
+      .from("manual_imports")
+      .update({ status: "rejected" })
+      .eq("account_id", accountId)
+      .eq("status", "staged")
+      .in("kind", kinds);
+    if (supersede.error) throw new Error(supersede.error.message);
+  }
+
   const { data, error } = await supabase
     .from("manual_imports")
     .update({ status: "staged", manual_analysis_run_id: null })
@@ -792,10 +816,15 @@ export async function startManualAnalysis(
   if (!account) throw new AnalysisError("Ad account not found.", 404);
 
   const supabase = getSupabase();
+  // CRITICAL: must scope to status='staged' — otherwise every CSV ever
+  // uploaded for this account (including ones already consumed by a past
+  // run, now 'processed') gets re-fetched and re-summed into this run too,
+  // silently inflating spend/impressions/results more with every re-run.
   const { data: imports, error: importsErr } = await supabase
     .from("manual_imports")
     .select("id, filename, content, kind")
     .eq("account_id", accountId)
+    .eq("status", "staged")
     .in("kind", ["performance_demo_csv", "performance_placement_csv", "performance_ad_summary_csv", "performance_conversion_device_csv"]);
   if (importsErr) throw new Error(importsErr.message);
 
@@ -1690,11 +1719,15 @@ export async function getAnalysisSummaryByPreset(
   const minDate = allDates.reduce((a, b) => (a < b ? a : b), allDates[0]!);
   const available_window: AnalysisSummaryWindow = { start: minDate, end: maxDate };
 
-  // Anchor preset windows to today (wall-clock), not maxDate.
-  // "Last 7 days" means the last 7 calendar days from now — if the account's
-  // most recent data is older than 7 days, the 7d view correctly shows $0.
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const anchor = preset === "all" ? maxDate : todayStr;
+  // Anchor preset windows to the account's latest stored data date, not
+  // wall-clock time — manual CSV data is a static historical snapshot, so
+  // anchoring to "today" made "Last 7 days" show $0/broken totals for any
+  // account whose most recent upload was more than a few days old (the
+  // normal case for manual accounts). This matches how the analysis-run
+  // date-range picker (startManualAnalysis/withinRange, above) already
+  // anchors to maxDate, and the documented rule in replit.md: "Date window
+  // anchors to the latest date found in the data, not wall-clock time."
+  const anchor = maxDate;
 
   // Filter rows to the preset window.
   const filtered = adRows.filter((r: any) => withinViewPreset(String(r.date_start ?? ""), preset, anchor));

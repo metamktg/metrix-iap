@@ -1064,8 +1064,16 @@ function CreativeUploadSection({
   };
 
   const creativeAssets = imports.filter((i) => i.kind === "creative_asset");
-  const registryNames = useMemo(() => new Set(availableAdNames ?? []), [availableAdNames]);
-  const matchCandidates = registryNames.size > 0 ? registryNames : knownAdNames;
+  // Auto-mapping (on upload and "Auto-map all") only ever writes ad_names
+  // against the REAL ad registry (account.ads, populated by a successful
+  // analysis run). It must never fall back to `knownAdNames` — those are
+  // just other creative imports' own ad_names, which may themselves be
+  // unconfirmed guesses from before any registry existed. Matching a new
+  // guess against an old guess cascades false mappings that can never link
+  // (the exact-string sync in syncAllCreativeLinksForAccount only matches
+  // real `ads.ad_name` rows) — better to leave the file honestly unmapped
+  // until real ad names exist, so the user maps it deliberately.
+  const matchCandidates = useMemo(() => new Set(availableAdNames ?? []), [availableAdNames]);
   const mappedCount = creativeAssets.filter((a) => a.ad_names.length > 0).length;
   const unmappedAssets = creativeAssets.filter((a) => a.ad_names.length === 0);
   const isUploading = queueTotal > 0;

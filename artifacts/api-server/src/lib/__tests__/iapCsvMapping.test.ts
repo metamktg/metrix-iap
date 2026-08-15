@@ -234,6 +234,32 @@ describe("inferColumnMapping", () => {
     expect(result).not.toBeNull();
     expect(result!.confidence).toBe(1.0);
   });
+
+  it("never maps a count column from a rate/percentage header, even at ≥0.5 overlap", () => {
+    // Real-world false match: "Purchases rate per landing page views" scores
+    // exactly 0.5 Jaccard against "Landing page views" (shares landing/page/views)
+    // but is a percentage, not a count — mapping it in silently corrupts the LPV field.
+    const result = inferColumnMapping(["Purchases rate per landing page views"], "Landing page views");
+    expect(result).toBeNull();
+  });
+
+  it("never maps a rate/percentage canonical from a plain count header", () => {
+    const result = inferColumnMapping(["Landing page views"], "Purchases rate per landing page views");
+    expect(result).toBeNull();
+  });
+
+  it('never maps "Cost per X" from "Cost per Y" when X and Y are different conversion events', () => {
+    // Shares "cost"/"per" (Jaccard 0.5) but "purchase" and "interaction" are
+    // unrelated result types — this was silently corrupting cost-per-result math.
+    const result = inferColumnMapping(["Cost per purchase"], "Cost per interaction");
+    expect(result).toBeNull();
+  });
+
+  it('still allows "Cost per X" inference when the object token matches', () => {
+    const result = inferColumnMapping(["Cost per unique interaction"], "Cost per interaction");
+    expect(result).not.toBeNull();
+    expect(result!.headerValue).toBe("Cost per unique interaction");
+  });
 });
 
 // ── Scoring thresholds — auto-promotion via parseIapCsv ───────────────────────
