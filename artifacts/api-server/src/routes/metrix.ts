@@ -930,7 +930,19 @@ router.patch("/metrix/accounts/:accountId/objectives", requireAuth, async (req, 
   }
 });
 
-const MAX_MANUAL_IMPORT_BYTES = 50 * 1024 * 1024;
+// Real Meta Ads Manager pivot exports (demo/placement CSVs spanning many
+// months across breakdown dimensions) can exceed 50 MB for accounts with a
+// long history — that cap was rejecting legitimate files in production.
+// 75 MB gives real headroom (>20x the largest sample export on record).
+// NOTE: files are stored as hex-encoded bytea via a Supabase/PostgREST
+// insert, which gets slow (15-20s) well before this ceiling and has been
+// observed to intermittently time out under shared-dev-Supabase load —
+// pushing this cap materially higher (tested up to 150 MB) reproduced a
+// server OOM crash from holding multiple in-memory copies of the payload
+// (raw JSON string, base64 buffer, hex string) at once. If accounts
+// routinely need larger files, switch storage to Object Storage (streamed
+// upload) instead of raising this further.
+const MAX_MANUAL_IMPORT_BYTES = 75 * 1024 * 1024;
 const MAX_CELL_CREATIVE_BYTES = 8 * 1024 * 1024;
 const BASE64_RE = /^[A-Za-z0-9+/\-_]+={0,2}$/;
 
@@ -992,7 +1004,7 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
       return;
     }
     if (content.length > MAX_MANUAL_IMPORT_BYTES) {
-      res.status(413).json({ message: "File is too large — the limit is 50 MB." });
+      res.status(413).json({ message: "File is too large — the limit is 75 MB." });
       return;
     }
 

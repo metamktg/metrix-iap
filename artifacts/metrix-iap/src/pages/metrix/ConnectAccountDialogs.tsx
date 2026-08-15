@@ -208,7 +208,10 @@ export function ConnectMetaDialog({
 
 // ─── Manual import upload panel (shared) ──────────────────────────────
 
-const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
+// Kept in sync with MAX_MANUAL_IMPORT_BYTES on the server (metrix.ts) — real
+// Meta pivot exports spanning long date ranges can be well over 50 MB.
+const MAX_UPLOAD_BYTES = 75 * 1024 * 1024;
+const MAX_UPLOAD_MB_LABEL = "75 MB";
 
 /**
  * Base64-encodes a file via FileReader.readAsDataURL — the browser does
@@ -511,62 +514,89 @@ function PivotCsvUpload({
 
   const bothStaged = Boolean(demoStaged && placementStaged);
 
-  const handleStage = async (fileToStage: File) => {
+  // Stages a single file against whichever required slot is still open,
+  // self-correcting the guessed slot from the server's header-based
+  // classification. `demoAlreadyStaged` is threaded through explicitly
+  // (rather than read from the `demoStaged` prop) so a multi-file batch
+  // staged back-to-back in `handleFiles` targets the second required slot
+  // correctly even though the prop hasn't re-rendered yet between files.
+  const stageOne = async (fileToStage: File, demoAlreadyStaged: boolean): Promise<ManualImportResult> => {
+    const content_base64 = await fileToBase64(fileToStage);
+    let kind: "performance_demo_csv" | "performance_placement_csv" = !demoAlreadyStaged
+      ? "performance_demo_csv"
+      : "performance_placement_csv";
+    const stageAs = (k: typeof kind) =>
+      stageManualImportWithProgress(
+        accountId,
+        { kind: k, filename: fileToStage.name, content_type: fileToStage.type || undefined, content_base64 },
+        setUploadPct
+      );
+    try {
+      return await stageAs(kind);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      const correctedKind: typeof kind | null = msg.includes("Device/Placement CSV instead")
+        ? "performance_placement_csv"
+        : msg.includes("Demographic CSV instead") || msg.includes("Demographics CSV instead")
+        ? "performance_demo_csv"
+        : null;
+      if (correctedKind && correctedKind !== kind) {
+        kind = correctedKind;
+        return await stageAs(kind);
+      }
+      throw err;
+    }
+  };
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
     setError(null);
     setLastMapping(null);
     setLastWarnings(null);
-    if (fileToStage.size > MAX_UPLOAD_BYTES) {
-      setError("File is too large — the limit is 50 MB.");
+    const fileList = Array.from(files);
+    const oversized = fileList.filter((f) => f.size > MAX_UPLOAD_BYTES);
+    if (oversized.length > 0) {
+      setError(
+        `${oversized.map((f) => f.name).join(", ")} — file is too large — the limit is ${MAX_UPLOAD_MB_LABEL}.`
+      );
       if (fileRef.current) fileRef.current.value = "";
       return;
     }
-    setFile(fileToStage);
-    setUploadPct(0);
-    try {
-      const content_base64 = await fileToBase64(fileToStage);
-      let kind: "performance_demo_csv" | "performance_placement_csv" = !demoStaged
-        ? "performance_demo_csv"
-        : "performance_placement_csv";
-      const stageAs = (k: typeof kind) =>
-        stageManualImportWithProgress(
-          accountId,
-          { kind: k, filename: fileToStage.name, content_type: fileToStage.type || undefined, content_base64 },
-          setUploadPct
-        );
-      let result: ManualImportResult;
+
+    let demoNowStaged = Boolean(demoStaged);
+    const mappings: ColumnMappingSummaryEntry[] = [];
+    const warnings: string[] = [];
+    const failures: string[] = [];
+    let stagedAny = false;
+
+    for (const fileToStage of fileList) {
+      if (demoNowStaged && placementStaged) break; // both required slots already filled
+      setFile(fileToStage);
+      setUploadPct(0);
       try {
-        result = await stageAs(kind);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "";
-        const correctedKind: typeof kind | null = msg.includes("Device/Placement CSV instead")
-          ? "performance_placement_csv"
-          : msg.includes("Demographic CSV instead") || msg.includes("Demographics CSV instead")
-          ? "performance_demo_csv"
-          : null;
-        if (correctedKind && correctedKind !== kind) {
-          kind = correctedKind;
-          result = await stageAs(kind);
-        } else {
-          throw err;
+        const result = await stageOne(fileToStage, demoNowStaged);
+        demoNowStaged = true; // once either slot fills, the next file targets the other
+        stagedAny = true;
+        if (result.mapping_summary && result.mapping_summary.length > 0) {
+          mappings.push(...result.mapping_summary);
         }
+        if (result.upload_warnings && result.upload_warnings.length > 0) {
+          warnings.push(...result.upload_warnings);
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Upload failed. Check your connection and try again.";
+        failures.push(`${fileToStage.name}: ${msg}`);
+      } finally {
+        setUploadPct(null);
       }
-      if (result.mapping_summary && result.mapping_summary.length > 0) {
-        setLastMapping(result.mapping_summary);
-      }
-      if (result.upload_warnings && result.upload_warnings.length > 0) {
-        setLastWarnings(result.upload_warnings);
-      }
-      setFile(null);
-      if (fileRef.current) fileRef.current.value = "";
-      onStaged();
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Upload failed. Check your connection and try again.";
-      setError(msg);
-      setFile(null);
-      if (fileRef.current) fileRef.current.value = "";
-    } finally {
-      setUploadPct(null);
     }
+
+    setFile(null);
+    if (fileRef.current) fileRef.current.value = "";
+    if (mappings.length > 0) setLastMapping(mappings);
+    if (warnings.length > 0) setLastWarnings(warnings);
+    if (failures.length > 0) setError(failures.join(" "));
+    if (stagedAny) onStaged();
   };
 
   const handleRemove = async (staged: ManualImport) => {
@@ -619,11 +649,9 @@ function PivotCsvUpload({
             ref={fileRef}
             type="file"
             accept=".csv"
+            multiple
             className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void handleStage(f);
-            }}
+            onChange={(e) => void handleFiles(e.target.files)}
           />
           <button
             onClick={() => fileRef.current?.click()}
@@ -647,7 +675,7 @@ function PivotCsvUpload({
                 ? "Click to choose the Placements .csv file — uploads immediately"
                 : placementStaged
                 ? "Click to choose the Demographics .csv file — uploads immediately"
-                : "Click to choose a .csv file — uploads immediately"}
+                : "Click to choose both .csv files at once (or one at a time) — uploads immediately"}
             </span>
           </button>
           {uploadPct !== null && <UploadProgressBar pct={uploadPct} label={`Uploading ${file?.name ?? "file"}…`} />}
@@ -752,7 +780,7 @@ function CsvSlotUpload({
     setMappingDiff(null);
     onMismatch?.(null);
     if (fileToStage.size > MAX_UPLOAD_BYTES) {
-      setError("File is too large — the limit is 50 MB.");
+      setError(`File is too large — the limit is ${MAX_UPLOAD_MB_LABEL}.`);
       setFile(null);
       if (fileRef.current) fileRef.current.value = "";
       return;
@@ -1338,7 +1366,7 @@ function CreativeUploadSection({
       setCurrentPct(0);
 
       if (file.size > MAX_UPLOAD_BYTES) {
-        failures.push(`${file.name} is too large — the limit is 50 MB.`);
+        failures.push(`${file.name} is too large — the limit is ${MAX_UPLOAD_MB_LABEL}.`);
         continue;
       }
 
