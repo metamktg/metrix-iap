@@ -62,7 +62,6 @@ import {
   ArrowRight,
   ArrowLeft,
   Upload,
-  FileSpreadsheet,
   Images,
   Loader2,
   AlertTriangle,
@@ -77,7 +76,6 @@ import {
   Hash,
   Sparkles,
   GitMerge,
-  ArrowLeftRight,
 } from "lucide-react";
 import type { AdAccount } from "@/lib/data/seedTypes";
 import {
@@ -284,32 +282,6 @@ function stageManualImportWithProgress(
   });
 }
 
-const AD_MANAGER_CSV_SLOTS: {
-  kind: "performance_ad_summary_csv" | "performance_conversion_device_csv";
-  csvClass: IapCsvClassKey;
-  title: string;
-  desc: string;
-  why?: string;
-  optional?: boolean;
-}[] = [
-  {
-    kind: "performance_ad_summary_csv",
-    csvClass: "ad_summary",
-    title: "Ad Summary CSV",
-    desc: "Ad-level export with no breakdown (one row per ad per day).",
-    why: "Provides full spend unaffected by iOS privacy limits — fixes underreported spend totals from the Demographics CSV.",
-    optional: true,
-  },
-  {
-    kind: "performance_conversion_device_csv",
-    csvClass: "conversion_device",
-    title: "Conversion Device CSV",
-    desc: "Conversion Device pivot export from Meta Ads Manager. Rows carry only conversion metrics (no spend/impressions).",
-    why: "Kept separate from the Placements CSV to avoid data collisions.",
-    optional: true,
-  },
-];
-
 function UploadProgressBar({ pct, label }: { pct: number; label: string }) {
   return (
     <div className="space-y-1">
@@ -481,206 +453,239 @@ function CsvMappingPanel({ summary }: { summary: ColumnMappingSummaryEntry[] }) 
   );
 }
 
+type CsvKind =
+  | "performance_demo_csv"
+  | "performance_placement_csv"
+  | "performance_ad_summary_csv"
+  | "performance_conversion_device_csv";
+
+const SMART_CSV_SLOTS: {
+  kind: CsvKind;
+  csvClass: IapCsvClassKey;
+  label: string;
+  optional?: boolean;
+}[] = [
+  { kind: "performance_demo_csv", csvClass: "demographic", label: "Demographics" },
+  { kind: "performance_placement_csv", csvClass: "device_placement", label: "Placements" },
+  { kind: "performance_ad_summary_csv", csvClass: "ad_summary", label: "Ad Summary", optional: true },
+  { kind: "performance_conversion_device_csv", csvClass: "conversion_device", label: "Conversion Device", optional: true },
+];
+
+/** Reads the target kind a "wrong slot" server message is steering the file
+ *  towards, so a misfiled drop can be silently retried against the correct
+ *  slot instead of surfacing an error the user has to act on themselves. */
+function correctionTargetKind(msg: string): CsvKind | null {
+  if (/Device\/Placement CSV instead/.test(msg) || /Placements CSV instead/.test(msg)) {
+    return "performance_placement_csv";
+  }
+  if (/Demographics? CSV instead/.test(msg)) return "performance_demo_csv";
+  if (/Conversion Device CSV instead/.test(msg)) return "performance_conversion_device_csv";
+  return null;
+}
+
 /**
- * Single dropzone for both required pivot CSVs (Demographics + Placements).
- * The two exports share no visible distinction to a first-time uploader —
- * they only differ by which pivot template was used in Meta Ads Manager —
- * so instead of asking the user to pick a slot, this stages the file against
- * whichever required slot is still empty and lets the server's header-based
- * classification (detectCsvClassMismatch) correct the guess transparently:
- * a "wrong slot" response is retried once with the corrected kind before
- * ever surfacing an error to the user.
+ * One drop zone for every Meta performance export (2 required pivots + 2
+ * optional Ads Manager CSVs). Nobody uploading these files thinks in terms
+ * of "slots" — they just have a folder of exports from Meta — so instead of
+ * making the user sort files into four separately-labeled boxes, this
+ * accepts any number of files at once (dragged or picked, in any order) and
+ * classifies each one from its own headers: it tries the first still-open
+ * slot, and silently retries with the server's suggested slot if headers
+ * say otherwise. A file is only ever shown as an error if no slot fits.
  */
-function PivotCsvUpload({
+function SmartCsvUpload({
   accountId,
-  demoStaged,
-  placementStaged,
+  staged,
   onStaged,
   onRemoved,
 }: {
   accountId: string;
-  demoStaged: ManualImport | null;
-  placementStaged: ManualImport | null;
+  staged: Partial<Record<CsvKind, ManualImport | null>>;
   onStaged: () => void;
   onRemoved: () => void;
 }) {
-  const [file, setFile] = useState<File | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [uploadPct, setUploadPct] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [current, setCurrent] = useState<{ name: string; pct: number } | null>(null);
   const [lastMapping, setLastMapping] = useState<ColumnMappingSummaryEntry[] | null>(null);
   const [lastWarnings, setLastWarnings] = useState<string[] | null>(null);
+  const [failures, setFailures] = useState<string[] | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const deleteMutation = useDeleteManualImport();
 
-  const bothStaged = Boolean(demoStaged && placementStaged);
+  const bothRequiredStaged = Boolean(staged.performance_demo_csv && staged.performance_placement_csv);
 
-  // Stages a single file against whichever required slot is still open,
-  // self-correcting the guessed slot from the server's header-based
-  // classification. `demoAlreadyStaged` is threaded through explicitly
-  // (rather than read from the `demoStaged` prop) so a multi-file batch
-  // staged back-to-back in `handleFiles` targets the second required slot
-  // correctly even though the prop hasn't re-rendered yet between files.
-  const stageOne = async (fileToStage: File, demoAlreadyStaged: boolean): Promise<ManualImportResult> => {
+  const stageOne = async (fileToStage: File, alreadyFilled: Set<CsvKind>): Promise<ManualImportResult> => {
     const content_base64 = await fileToBase64(fileToStage);
-    let kind: "performance_demo_csv" | "performance_placement_csv" = !demoAlreadyStaged
-      ? "performance_demo_csv"
-      : "performance_placement_csv";
-    const stageAs = (k: typeof kind) =>
+    const stageAs = (k: CsvKind) =>
       stageManualImportWithProgress(
         accountId,
         { kind: k, filename: fileToStage.name, content_type: fileToStage.type || undefined, content_base64 },
-        setUploadPct
+        (pct) => setCurrent({ name: fileToStage.name, pct })
       );
-    try {
-      return await stageAs(kind);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "";
-      const correctedKind: typeof kind | null = msg.includes("Device/Placement CSV instead")
-        ? "performance_placement_csv"
-        : msg.includes("Demographic CSV instead") || msg.includes("Demographics CSV instead")
-        ? "performance_demo_csv"
-        : null;
-      if (correctedKind && correctedKind !== kind) {
-        kind = correctedKind;
+
+    const tried = new Set<CsvKind>();
+    let kind = SMART_CSV_SLOTS.find((s) => !alreadyFilled.has(s.kind))?.kind ?? "performance_ad_summary_csv";
+    for (let attempt = 0; attempt < SMART_CSV_SLOTS.length; attempt++) {
+      tried.add(kind);
+      try {
         return await stageAs(kind);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "";
+        const corrected = correctionTargetKind(msg);
+        if (corrected && !tried.has(corrected)) {
+          kind = corrected;
+          continue;
+        }
+        throw err;
       }
-      throw err;
     }
+    throw new Error("Could not determine which slot this file belongs in.");
   };
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    setError(null);
     setLastMapping(null);
     setLastWarnings(null);
+    setFailures(null);
     const fileList = Array.from(files);
     const oversized = fileList.filter((f) => f.size > MAX_UPLOAD_BYTES);
     if (oversized.length > 0) {
-      setError(
-        `${oversized.map((f) => f.name).join(", ")} — file is too large — the limit is ${MAX_UPLOAD_MB_LABEL}.`
-      );
+      setFailures(oversized.map((f) => `${f.name} — file is too large — the limit is ${MAX_UPLOAD_MB_LABEL}.`));
       if (fileRef.current) fileRef.current.value = "";
       return;
     }
 
-    let demoNowStaged = Boolean(demoStaged);
+    const filled = new Set<CsvKind>(
+      SMART_CSV_SLOTS.filter((s) => staged[s.kind]).map((s) => s.kind)
+    );
     const mappings: ColumnMappingSummaryEntry[] = [];
     const warnings: string[] = [];
-    const failures: string[] = [];
+    const fails: string[] = [];
     let stagedAny = false;
 
     for (const fileToStage of fileList) {
-      if (demoNowStaged && placementStaged) break; // both required slots already filled
-      setFile(fileToStage);
-      setUploadPct(0);
+      setCurrent({ name: fileToStage.name, pct: 0 });
       try {
-        const result = await stageOne(fileToStage, demoNowStaged);
-        demoNowStaged = true; // once either slot fills, the next file targets the other
+        const result = await stageOne(fileToStage, filled);
         stagedAny = true;
-        if (result.mapping_summary && result.mapping_summary.length > 0) {
-          mappings.push(...result.mapping_summary);
-        }
-        if (result.upload_warnings && result.upload_warnings.length > 0) {
-          warnings.push(...result.upload_warnings);
-        }
+        if (result.mapping_summary && result.mapping_summary.length > 0) mappings.push(...result.mapping_summary);
+        if (result.upload_warnings && result.upload_warnings.length > 0) warnings.push(...result.upload_warnings);
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Upload failed. Check your connection and try again.";
-        failures.push(`${fileToStage.name}: ${msg}`);
+        fails.push(`${fileToStage.name}: ${msg}`);
       } finally {
-        setUploadPct(null);
+        setCurrent(null);
       }
     }
 
-    setFile(null);
     if (fileRef.current) fileRef.current.value = "";
     if (mappings.length > 0) setLastMapping(mappings);
     if (warnings.length > 0) setLastWarnings(warnings);
-    if (failures.length > 0) setError(failures.join(" "));
+    if (fails.length > 0) setFailures(fails);
     if (stagedAny) onStaged();
   };
 
-  const handleRemove = async (staged: ManualImport) => {
-    await deleteMutation.mutateAsync({ accountId, importId: staged.id });
+  const handleRemove = async (importToRemove: ManualImport) => {
+    await deleteMutation.mutateAsync({ accountId, importId: importToRemove.id });
     onRemoved();
   };
 
   return (
     <div className="space-y-2">
-      <div className="flex items-start gap-3 p-3 rounded-lg border border-border/40 bg-white/[0.02]">
-        <FileSpreadsheet className={cn("w-4 h-4 shrink-0 mt-0.5", bothStaged ? "text-emerald-400" : "text-muted-foreground/85")} />
-        <div className="min-w-0 flex-1">
-          <div className="text-body font-semibold text-foreground">
-            Performance Pivot CSV <span className="text-red-400/80 font-normal">*both required</span>
-          </div>
-          <p className="text-caption text-foreground/75 mt-0.5">
-            Exact exports of the IAP_DEMOGRAPHIC_TEXT_SIGNAL and IAP_DEVICE_PLACEMENT_PLATFORM_SIGNAL pivot templates. Drop them here in either order — Metrix reads the headers and files each one automatically.
-          </p>
-        </div>
+      <div>
+        <div className="text-body font-semibold text-foreground">Performance CSVs</div>
+        <p className="text-caption text-foreground/75 mt-0.5">
+          Drag in every export you have from Meta Ads Manager — Metrix reads each file's headers and files it
+          automatically. Demographics and Placements are required; Ad Summary and Conversion Device are optional but recommended.
+        </p>
       </div>
 
-      <RequiredFormatPanel csvClass="demographic" />
-      <RequiredFormatPanel csvClass="device_placement" />
+      <input
+        ref={fileRef}
+        type="file"
+        accept=".csv"
+        multiple
+        className="hidden"
+        onChange={(e) => void handleFiles(e.target.files)}
+      />
+      <button
+        onClick={() => fileRef.current?.click()}
+        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setIsDragging(false);
+          void handleFiles(e.dataTransfer.files);
+        }}
+        disabled={current !== null}
+        className={cn(
+          "w-full flex flex-col items-center gap-1.5 p-5 rounded-lg border border-dashed transition-colors",
+          current !== null
+            ? "border-primary/30 bg-primary/[0.03] cursor-not-allowed"
+            : isDragging
+            ? "border-primary/60 bg-primary/[0.06]"
+            : "border-border/60 hover:border-primary/40 hover:bg-white/[0.02] cursor-pointer"
+        )}
+      >
+        {current !== null ? <Loader2 className="w-5 h-5 text-interactive animate-spin" /> : <Upload className="w-5 h-5 text-muted-foreground/85" />}
+        <span className="text-body font-medium text-foreground/85">
+          {current !== null ? `Uploading ${current.name}…` : "Drop your Meta CSV exports here, or click to browse"}
+        </span>
+        <span className="text-caption text-muted-foreground/60">Any number of files, any order — up to {MAX_UPLOAD_MB_LABEL} each</span>
+        {current !== null && <div className="w-full max-w-xs mt-1"><UploadProgressBar pct={current.pct} label="" /></div>}
+      </button>
 
-      {([
-        { staged: demoStaged, label: "Demographics" },
-        { staged: placementStaged, label: "Placements" },
-      ] as const).map(
-        ({ staged, label }) =>
-          staged && (
-            <div key={label} className="flex items-center gap-2 p-2 rounded-md border border-emerald-400/20 bg-emerald-400/[0.05]">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span className="text-caption text-foreground/80 truncate">{label} — {staged.filename}</span>
-              <span className="text-label font-semibold uppercase tracking-wide text-emerald-400/90 ml-auto shrink-0 mr-1">Staged</span>
-              <button
-                onClick={() => void handleRemove(staged)}
-                disabled={deleteMutation.isPending}
-                className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-muted-foreground/80 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                aria-label={`Remove ${staged.filename}`}
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
+      <div className="grid grid-cols-2 gap-1.5">
+        {SMART_CSV_SLOTS.map((slot) => {
+          const importForSlot = staged[slot.kind] ?? null;
+          return (
+            <div
+              key={slot.kind}
+              className={cn(
+                "flex items-center gap-1.5 px-2 py-1.5 rounded-md border text-label min-w-0",
+                importForSlot
+                  ? "border-emerald-400/20 bg-emerald-400/[0.05]"
+                  : "border-border/40 bg-white/[0.015]"
+              )}
+            >
+              {importForSlot ? (
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              ) : (
+                <div className={cn("w-3.5 h-3.5 rounded-full border shrink-0", slot.optional ? "border-border/50" : "border-amber-400/50")} />
+              )}
+              <span className={cn("truncate flex-1", importForSlot ? "text-foreground/85" : "text-muted-foreground/70")}>
+                {slot.label}
+                {!slot.optional && !importForSlot && <span className="text-amber-400/70"> *</span>}
+              </span>
+              {importForSlot && (
+                <button
+                  onClick={() => void handleRemove(importForSlot)}
+                  disabled={deleteMutation.isPending}
+                  className="shrink-0 w-5 h-5 flex items-center justify-center rounded text-muted-foreground/70 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  aria-label={`Remove ${slot.label} file`}
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              )}
             </div>
-          )
+          );
+        })}
+      </div>
+      {!bothRequiredStaged && (
+        <p className="text-label text-muted-foreground/55 px-0.5">* Demographics and Placements are required before you can continue.</p>
       )}
 
-      {!bothStaged && (
-        <>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".csv"
-            multiple
-            className="hidden"
-            onChange={(e) => void handleFiles(e.target.files)}
-          />
-          <button
-            onClick={() => fileRef.current?.click()}
-            disabled={uploadPct !== null}
-            className={cn(
-              "w-full flex flex-col items-center gap-1.5 p-4 rounded-lg border border-dashed transition-colors",
-              uploadPct !== null
-                ? "border-primary/30 bg-primary/[0.03] cursor-not-allowed"
-                : "border-border/60 hover:border-primary/40 hover:bg-white/[0.02] cursor-pointer"
-            )}
-          >
-            {uploadPct !== null ? (
-              <Loader2 className="w-4 h-4 text-interactive animate-spin" />
-            ) : (
-              <Upload className="w-4 h-4 text-muted-foreground/85" />
-            )}
-            <span className="text-caption text-muted-foreground/80">
-              {uploadPct !== null
-                ? `Uploading${file ? ` ${file.name}` : ""}…`
-                : demoStaged
-                ? "Click to choose the Placements .csv file — uploads immediately"
-                : placementStaged
-                ? "Click to choose the Demographics .csv file — uploads immediately"
-                : "Click to choose both .csv files at once (or one at a time) — uploads immediately"}
-            </span>
-          </button>
-          {uploadPct !== null && <UploadProgressBar pct={uploadPct} label={`Uploading ${file?.name ?? "file"}…`} />}
-        </>
-      )}
+      <details className="group rounded-lg border border-border/30">
+        <summary className="flex items-center gap-2 px-3 py-2 text-label font-medium text-muted-foreground/75 cursor-pointer hover:text-foreground/85 transition-colors [&::-webkit-details-marker]:hidden">
+          <ChevronRight className="w-3.5 h-3.5 shrink-0 transition-transform group-open:rotate-90" />
+          What format do these files need to be in?
+        </summary>
+        <div className="px-3 pb-3 space-y-2 pt-1">
+          {SMART_CSV_SLOTS.map((slot) => (
+            <RequiredFormatPanel key={slot.kind} csvClass={slot.csvClass} />
+          ))}
+        </div>
+      </details>
 
       {lastMapping && <CsvMappingPanel summary={lastMapping} />}
 
@@ -707,280 +712,20 @@ function PivotCsvUpload({
         </div>
       )}
 
-      {error && (
-        <div className="flex items-start gap-2 p-2.5 rounded-lg border border-red-400/25 bg-red-400/[0.06]">
-          <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
-          <p className="text-caption text-red-300 leading-relaxed">{error}</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function CsvSlotUpload({
-  optional,
-  accountId,
-  kind,
-  csvClass,
-  title,
-  desc,
-  why,
-  staged,
-  onStaged,
-  onRemoved,
-  highlightAsTarget,
-  onMismatch,
-}: {
-  accountId: string;
-  kind: "performance_demo_csv" | "performance_placement_csv" | "performance_ad_summary_csv" | "performance_conversion_device_csv";
-  csvClass: IapCsvClassKey;
-  title: string;
-  desc: string;
-  why?: string;
-  optional?: boolean;
-  staged: ManualImport | null;
-  onStaged: () => void;
-  onRemoved: () => void;
-  highlightAsTarget?: boolean;
-  onMismatch?: (targetCsvClass: IapCsvClassKey | null) => void;
-}) {
-  const [file, setFile] = useState<File | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [uploadPct, setUploadPct] = useState<number | null>(null);
-  const [uploadWarnings, setUploadWarnings] = useState<string[] | null>(null);
-  const [mappingSummary, setMappingSummary] = useState<ColumnMappingSummaryEntry[] | null>(
-    staged?.mapping_summary && staged.mapping_summary.length > 0 ? staged.mapping_summary : null
-  );
-  const [mappingDiff, setMappingDiff] = useState<{ nowFound: string[]; stillMissing: string[] } | null>(null);
-  const prevMappingSummaryRef = useRef<ColumnMappingSummaryEntry[] | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const deleteMutation = useDeleteManualImport();
-
-  useEffect(() => {
-    if (staged?.mapping_summary && staged.mapping_summary.length > 0) {
-      setMappingSummary(staged.mapping_summary);
-    } else {
-      setMappingSummary(null);
-    }
-  }, [staged]);
-
-  const isMismatch = Boolean(error?.includes("Did you upload it in the wrong slot?"));
-
-  /** Stages a file immediately. Accepts the file directly so it can be called
-   *  from the onChange handler before React state for `file` has settled. */
-  const handleStage = async (fileToStage: File) => {
-    setError(null);
-    setUploadWarnings(null);
-    // Capture the previous mapping summary before clearing so we can diff
-    // against it once the new file's summary arrives (re-upload scenario).
-    if (mappingSummary && mappingSummary.length > 0) {
-      prevMappingSummaryRef.current = mappingSummary;
-    }
-    setMappingSummary(null);
-    setMappingDiff(null);
-    onMismatch?.(null);
-    if (fileToStage.size > MAX_UPLOAD_BYTES) {
-      setError(`File is too large — the limit is ${MAX_UPLOAD_MB_LABEL}.`);
-      setFile(null);
-      if (fileRef.current) fileRef.current.value = "";
-      return;
-    }
-    setFile(fileToStage);
-    setUploadPct(0);
-    try {
-      const content_base64 = await fileToBase64(fileToStage);
-      const result = await stageManualImportWithProgress(
-        accountId,
-        { kind, filename: fileToStage.name, content_type: fileToStage.type || undefined, content_base64 },
-        setUploadPct
-      );
-      const newSummary = result.mapping_summary ?? [];
-      if (newSummary.length > 0) {
-        setMappingSummary(newSummary);
-      }
-      if (result.upload_warnings && result.upload_warnings.length > 0) {
-        setUploadWarnings(result.upload_warnings);
-      }
-      // Diff against the previous file's summary if this is a re-upload.
-      const prev = prevMappingSummaryRef.current;
-      if (prev && prev.length > 0) {
-        const prevMissingCols = new Set(
-          prev.filter((e) => e.tier === "missing").map((e) => e.canonical)
-        );
-        if (prevMissingCols.size > 0) {
-          const newMissingCols = new Set(
-            newSummary.filter((e) => e.tier === "missing").map((e) => e.canonical)
-          );
-          const nowFound = [...prevMissingCols].filter((col) => !newMissingCols.has(col));
-          const stillMissing = [...prevMissingCols].filter((col) => newMissingCols.has(col));
-          if (nowFound.length > 0 || stillMissing.length > 0) {
-            setMappingDiff({ nowFound, stillMissing });
-          }
-        }
-        prevMappingSummaryRef.current = null;
-      }
-      setFile(null);
-      if (fileRef.current) fileRef.current.value = "";
-      onStaged();
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Upload failed. Check your connection and try again.";
-      setError(msg);
-      if (msg.includes("Did you upload it in the wrong slot?")) {
-        const targetClass: IapCsvClassKey = msg.includes("Device/Placement CSV instead")
-          ? "device_placement"
-          : "demographic";
-        onMismatch?.(targetClass);
-      } else {
-        onMismatch?.(null);
-      }
-      setFile(null);
-      if (fileRef.current) fileRef.current.value = "";
-    } finally {
-      setUploadPct(null);
-    }
-  };
-
-  const handleRemove = async () => {
-    if (!staged) return;
-    // Preserve the current mapping summary so the next upload can diff against it.
-    if (mappingSummary && mappingSummary.length > 0) {
-      prevMappingSummaryRef.current = mappingSummary;
-    }
-    setMappingSummary(null);
-    setMappingDiff(null);
-    setUploadWarnings(null);
-    await deleteMutation.mutateAsync({ accountId, importId: staged.id });
-    onRemoved();
-  };
-
-  return (
-    <div className={cn("space-y-2 rounded-lg transition-colors", highlightAsTarget && "ring-1 ring-amber-400/40 ring-offset-2 ring-offset-background p-2 -m-2")}>
-      {highlightAsTarget && (
-        <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md border border-amber-400/35 bg-amber-400/[0.07]">
-          <ArrowLeftRight className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-          <span className="text-caption text-amber-300 font-semibold">Upload the misplaced file here instead</span>
-        </div>
-      )}
-
-      <div className="flex items-start gap-3 p-3 rounded-lg border border-border/40 bg-white/[0.02]">
-        <FileSpreadsheet className={cn("w-4 h-4 shrink-0 mt-0.5", staged ? "text-emerald-400" : "text-muted-foreground/85")} />
-        <div className="min-w-0 flex-1">
-          <div className="text-body font-semibold text-foreground">
-            {title}{" "}
-            {optional
-              ? <span className="text-muted-foreground/60 font-normal">(optional)</span>
-              : <span className="text-red-400/80 font-normal">*required</span>}
-          </div>
-          <p className="text-caption text-foreground/75 mt-0.5">{desc}</p>
-          {why && <p className="text-label text-muted-foreground/60 leading-relaxed mt-0.5">{why}</p>}
-        </div>
-      </div>
-
-      <RequiredFormatPanel csvClass={csvClass} />
-
-      {staged ? (
-        <div className="flex items-center gap-2 p-2 rounded-md border border-emerald-400/20 bg-emerald-400/[0.05]">
-          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-          <span className="text-caption text-foreground/80 truncate">{staged.filename}</span>
-          <span className="text-label font-semibold uppercase tracking-wide text-emerald-400/90 ml-auto shrink-0 mr-1">Staged</span>
-          <button
-            onClick={() => void handleRemove()}
-            disabled={deleteMutation.isPending}
-            className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-muted-foreground/80 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-            aria-label={`Remove ${staged.filename}`}
-          >
-            {deleteMutation.isPending ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Trash2 className="w-3.5 h-3.5" />
-            )}
-          </button>
-        </div>
-      ) : (
-        <>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".csv"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void handleStage(f);
-            }}
-          />
-          <button
-            onClick={() => fileRef.current?.click()}
-            disabled={uploadPct !== null}
-            className={cn(
-              "w-full flex flex-col items-center gap-1.5 p-4 rounded-lg border border-dashed transition-colors",
-              uploadPct !== null
-                ? "border-primary/30 bg-primary/[0.03] cursor-not-allowed"
-                : highlightAsTarget
-                ? "border-amber-400/50 bg-amber-400/[0.05] hover:border-amber-400/70 hover:bg-amber-400/[0.08] cursor-pointer"
-                : "border-border/60 hover:border-primary/40 hover:bg-white/[0.02] cursor-pointer"
-            )}
-          >
-            {uploadPct !== null ? (
-              <Loader2 className="w-4 h-4 text-interactive animate-spin" />
-            ) : highlightAsTarget ? (
-              <Upload className="w-4 h-4 text-amber-400" />
-            ) : (
-              <Upload className="w-4 h-4 text-muted-foreground/85" />
-            )}
-            <span className={cn("text-caption", highlightAsTarget ? "text-amber-300/90" : "text-muted-foreground/80")}>
-              {uploadPct !== null
-                ? `Uploading${file ? ` ${file.name}` : ""}…`
-                : highlightAsTarget
-                ? "Click to upload the misplaced file here"
-                : "Click to choose a .csv file — uploads immediately"}
+      {failures && failures.length > 0 && (
+        <div className="rounded-lg border border-amber-400/30 bg-amber-400/[0.06] p-3 space-y-1.5">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span className="text-caption font-semibold text-amber-200">
+              {failures.length === 1 ? "1 file needs a closer look" : `${failures.length} files need a closer look`}
             </span>
-          </button>
-          {uploadPct !== null && <UploadProgressBar pct={uploadPct} label={`Uploading ${file?.name ?? title}…`} />}
-        </>
-      )}
-
-      {mappingDiff && <CsvMappingDiffCallout diff={mappingDiff} />}
-
-      {mappingSummary && <CsvMappingPanel summary={mappingSummary} />}
-
-      {uploadWarnings && uploadWarnings.length > 0 && (
-        <div className="rounded-lg border border-amber-400/30 bg-amber-400/[0.06] p-3 space-y-2">
-          <div className="flex items-start gap-2">
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0 space-y-1">
-              <div className="text-caption font-semibold text-amber-200">File staged with a warning — check before running analysis</div>
-              <ul className="space-y-0.5">
-                {uploadWarnings.map((w, i) => (
-                  <li key={i} className="text-label text-amber-100/80 leading-relaxed">{w}</li>
-                ))}
-              </ul>
-            </div>
-            <button
-              onClick={() => setUploadWarnings(null)}
-              className="shrink-0 w-6 h-6 flex items-center justify-center rounded text-amber-300/70 hover:text-amber-200 hover:bg-amber-400/10 transition-colors"
-              aria-label="Dismiss warning"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
           </div>
+          <ul className="space-y-1 pl-[1.375rem]">
+            {failures.map((f, i) => (
+              <li key={i} className="text-caption text-amber-100/80 leading-relaxed">{f}</li>
+            ))}
+          </ul>
         </div>
-      )}
-
-      {error && (
-        isMismatch ? (
-          <div className="rounded-lg border border-amber-400/30 bg-amber-400/[0.06] p-3 space-y-1.5">
-            <div className="flex items-center gap-2">
-              <ArrowLeftRight className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span className="text-body font-semibold text-amber-300">File uploaded to wrong slot</span>
-            </div>
-            <p className="text-caption text-amber-200/80 leading-relaxed pl-[1.375rem]">{error}</p>
-          </div>
-        ) : (
-          <div className="flex items-start gap-2 p-2.5 rounded-lg border border-red-400/25 bg-red-400/[0.06]">
-            <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
-            <p className="text-caption text-red-300 leading-relaxed">{error}</p>
-          </div>
-        )
       )}
     </div>
   );
@@ -1846,37 +1591,17 @@ export function ManualUploadPanel({
         creativesCount={creativeAssets.length}
         onAnalysis={false}
       />
-      <PivotCsvUpload
+      <SmartCsvUpload
         accountId={accountId}
-        demoStaged={demoImport}
-        placementStaged={placementImport}
+        staged={{
+          performance_demo_csv: demoImport,
+          performance_placement_csv: placementImport,
+          performance_ad_summary_csv: summaryImport,
+          performance_conversion_device_csv: conversionDeviceImport,
+        }}
         onStaged={refresh}
         onRemoved={refresh}
       />
-
-      <div className="pt-2 border-t border-border/30 space-y-3">
-        <div>
-          <div className="text-body font-semibold text-foreground">Ad Manager CSVs</div>
-          <p className="text-label text-muted-foreground/60 leading-relaxed mt-0.5">
-            Supplementary exports straight from Meta Ads Manager — optional, but recommended for accurate spend and conversion data.
-          </p>
-        </div>
-        {AD_MANAGER_CSV_SLOTS.map((slot) => (
-          <CsvSlotUpload
-            key={slot.kind}
-            accountId={accountId}
-            kind={slot.kind}
-            csvClass={slot.csvClass}
-            title={slot.title}
-            desc={slot.desc}
-            why={slot.why}
-            optional={slot.optional}
-            staged={slot.kind === "performance_ad_summary_csv" ? summaryImport : conversionDeviceImport}
-            onStaged={refresh}
-            onRemoved={refresh}
-          />
-        ))}
-      </div>
 
       <CreativeUploadSection
         accountId={accountId}
