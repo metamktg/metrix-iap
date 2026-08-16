@@ -1888,6 +1888,9 @@ async function main() {
           bookster.iap.analysis.v3_placement_signal = [];
           bookster.iap.analysis.c4e_placement_signal = [];
           bookster.iap.analysis.conversion_tracking_signal = null;
+          // device_delivery_signal is a delivery-device breakdown; clear it too
+          // so no dimension provides spend rows → empty state is guaranteed.
+          bookster.iap.analysis.device_delivery_signal = [];
 
           await page.route("**/api/metrix/auth/me", (route) =>
             route.fulfill({

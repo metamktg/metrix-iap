@@ -29,13 +29,26 @@ const round = (v: number, dp = 2) => {
 
 async function selectAll(table: string, build?: (q: any) => any): Promise<Row[]> {
   const supabase = getSupabase();
-  let query: any = supabase.from(table).select("*");
-  if (build) query = build(query);
-  const { data, error } = await query;
-  if (error) {
-    throw new Error(`Supabase query failed for "${table}": ${error.message}`);
+  // Paginate in 1000-row pages so large tables (device_performance,
+  // demographic_performance, etc.) are fetched in full even when the
+  // Supabase / PostgREST server-side row limit is 1000.
+  const PAGE_SIZE = 1000;
+  let offset = 0;
+  const allRows: Row[] = [];
+  for (;;) {
+    let query: any = supabase.from(table).select("*");
+    if (build) query = build(query);
+    query = query.range(offset, offset + PAGE_SIZE - 1);
+    const { data, error } = await query;
+    if (error) {
+      throw new Error(`Supabase query failed for "${table}": ${error.message}`);
+    }
+    const rows: Row[] = data ?? [];
+    allRows.push(...rows);
+    if (rows.length < PAGE_SIZE) break;
+    offset += PAGE_SIZE;
   }
-  return data ?? [];
+  return allRows;
 }
 
 /** Group rows by account_id, preserving the fetch order within each group. */
@@ -872,19 +885,19 @@ export async function assembleMetrixSeed(): Promise<Row> {
     manualImportsCreativeAll,
     creativeDeconstructionsAll,
   ] = await Promise.all([
-    selectAll("app_config"),
+    selectAll("app_config", (q) => q.order("key")),
     selectAll("ad_accounts", (q) => q.order("id")),
-    selectAll("account_modules"),
+    selectAll("account_modules", (q) => q.order("account_id").order("module")),
     selectAll("signal_cards", (q) => q.order("id")),
-    selectAll("ad_performance"),
-    selectAll("concept_performance", (q) => q.order("book").order("concept")),
-    selectAll("campaign_windows", (q) => q.order("date_start")),
+    selectAll("ad_performance", (q) => q.order("id")),
+    selectAll("concept_performance", (q) => q.order("book").order("concept").order("id")),
+    selectAll("campaign_windows", (q) => q.order("date_start").order("id")),
     selectAll("data_quality_flags", (q) => q.order("id")),
-    selectAll("library_cells", (q) => q.order("row_index")),
+    selectAll("library_cells", (q) => q.order("row_index").order("id")),
     selectAll("library_cell_performance", (q) => q.order("id")),
     selectAll("variable_performance", (q) => q.order("id")),
-    selectAll("demographic_signal", (q) => q.order("row_index")),
-    selectAll("placement_signal", (q) => q.order("signal_scope").order("row_index")),
+    selectAll("demographic_signal", (q) => q.order("row_index").order("id")),
+    selectAll("placement_signal", (q) => q.order("signal_scope").order("row_index").order("id")),
     selectAll("device_performance", (q) => q.order("id")),
     selectAll("platform_performance", (q) => q.order("id")),
     selectAll("placement_performance", (q) => q.order("id")),
@@ -893,21 +906,21 @@ export async function assembleMetrixSeed(): Promise<Row> {
     selectAll("icp_profiles", (q) => q.order("id")),
     selectAll("variable_combinations", (q) => q.order("id")),
     selectAll("imported_creative_briefs", (q) => q.order("brief_id")),
-    selectAll("iap_runs"),
+    selectAll("iap_runs", (q) => q.order("account_id").order("stage")),
     selectAll("variable_registry", (q) => q.order("status").order("prefix")),
-    selectAll("concept_intelligence", (q) => q.order("book").order("concept_code")),
+    selectAll("concept_intelligence", (q) => q.order("book").order("concept_code").order("id")),
     selectAll("failure_patterns", (q) => q.order("id")),
-    selectAll("ads", (q) => q.order("ad_name")),
+    selectAll("ads", (q) => q.order("ad_name").order("id")),
     // Graceful: return [] if the table hasn't been created yet (pre-migration).
-    selectAll("cell_creative_overrides", (q) => q.order("uploaded_at")).catch(() => [] as Row[]),
+    selectAll("cell_creative_overrides", (q) => q.order("uploaded_at").order("id")).catch(() => [] as Row[]),
     // creative_asset manual_imports: used for auto-heal detection only; rows
     // with null ad_names are excluded because they carry no mapping to fix.
     selectAll("manual_imports", (q) =>
-      q.eq("kind", "creative_asset").not("ad_names", "is", null),
+      q.eq("kind", "creative_asset").not("ad_names", "is", null).order("id"),
     ).catch(() => [] as Row[]),
     // Creative deconstruction classifications (review queue + badges).
     // Graceful: [] if the table hasn't been created yet (pre-migration).
-    selectAll("creative_deconstructions", (q) => q.order("created_at", { ascending: false })).catch(
+    selectAll("creative_deconstructions", (q) => q.order("created_at", { ascending: false }).order("id", { ascending: false })).catch(
       () => [] as Row[],
     ),
   ]);
