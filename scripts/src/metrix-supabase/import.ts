@@ -1143,74 +1143,28 @@ async function importEcas(q: Q): Promise<number> {
   return adPerfCount;
 }
 
-// ── Row-count guard helpers ─────────────────────────────────────────────────
-// Every table that the import deletes, split by how it scopes the deletion.
-//
-// ACCOUNT_SCOPED_TABLES — deleted with `where account_id = any($1)` for the
-//   managed accounts (ACCOUNT_ID, ECAS_ACCOUNT_ID).
-// SKOV_PET_TABLES — deleted with `where account_id = 'skov_pet'` (account_modules
-//   only; the account row itself is upserted, not deleted).
-// GLOBAL_TABLES — deleted without any account_id filter (full-table wipe).
-//
-// All three groups are snapshotted before and after the import so no row loss
-// can go undetected.
-
-const ACCOUNT_SCOPED_TABLES = [
-  "ad_performance", "ads", "library_cells", "library_cell_performance",
-  "demographic_performance", "demographic_signal", "concept_performance",
-  "concept_intelligence", "iap_runs", "placement_performance",
-  "platform_performance", "device_performance", "icp_profiles",
-  "message_pillars", "variable_combinations", "testing_hypotheses",
-  "imported_creative_briefs", "variable_performance", "failure_patterns",
-  "data_quality_flags", "ad_traffic_quality", "placement_signal",
-  "copy_library", "signal_cards", "account_modules", "campaign_windows",
-] as const;
+// ── Row-count guard helpers (extracted to import-guard.ts for testability) ───
+import {
+  ACCOUNT_SCOPED_TABLES,
+  GLOBAL_TABLES,
+  SKOV_PET_ID,
+  type CountMap,
+  snapshotCounts as _snapshotCounts,
+  applyPreFlightGuard,
+  detectPostImportLoss,
+} from "./import-guard";
 
 const MANAGED_ACCOUNTS = [ACCOUNT_ID, ECAS_ACCOUNT_ID] as const;
-// skov_pet has account_modules deleted separately; snapshot it too.
-const SKOV_PET_ID = "skov_pet";
 
-// Global tables wiped entirely (no account_id filter).
-const GLOBAL_TABLES = ["variable_registry", "app_config"] as const;
-
-type CountMap = Map<string, number>;
-
+// Bind snapshotCounts to the module-level account constants.
 async function snapshotCounts(client: pg.Client): Promise<CountMap> {
-  const counts: CountMap = new Map();
-  // Account-scoped tables for the two primary managed accounts.
-  for (const table of ACCOUNT_SCOPED_TABLES) {
-    for (const acct of MANAGED_ACCOUNTS) {
-      const r = await client.query(
-        `select count(*) n from ${table} where account_id = $1`,
-        [acct],
-      );
-      counts.set(`${table}:${acct}`, Number(r.rows[0].n));
-    }
-  }
-  // account_modules is also deleted for skov_pet.
-  const skovMod = await client.query(
-    `select count(*) n from account_modules where account_id = $1`,
-    [SKOV_PET_ID],
+  return _snapshotCounts(
+    (text, values) => client.query(text, values as unknown[]),
+    MANAGED_ACCOUNTS,
+    SKOV_PET_ID,
+    ACCOUNT_SCOPED_TABLES,
+    GLOBAL_TABLES,
   );
-  counts.set(`account_modules:${SKOV_PET_ID}`, Number(skovMod.rows[0].n));
-  // Global tables (full-table wipe — any rows count as potentially lost data).
-  for (const table of GLOBAL_TABLES) {
-    const r = await client.query(`select count(*) n from ${table}`);
-    counts.set(table, Number(r.rows[0].n));
-  }
-  // signal_cards has a secondary full-table delete; already counted above per account
-  // but also capture the global total so the post-commit check can verify it.
-  counts.set("signal_cards:global", Number(
-    (await client.query(`select count(*) n from signal_cards`)).rows[0].n,
-  ));
-  return counts;
-}
-
-function formatCountMap(counts: CountMap, filter: (n: number) => boolean): string {
-  return [...counts.entries()]
-    .filter(([, n]) => filter(n))
-    .map(([k, n]) => `  ${k}: ${n}`)
-    .join("\n");
 }
 
 async function main() {
@@ -1280,24 +1234,9 @@ async function main() {
     // Tables are now locked; counts are stable for the duration of the
     // transaction.  On a fresh database every count is 0 — guard is a no-op.
     const preCounts = await snapshotCounts(client);
-    const existingRows = formatCountMap(preCounts, (n) => n > 0);
-    if (existingRows && !force) {
-      // Throw so the catch block rolls back and the finally block closes the
-      // connection cleanly before the process exits with code 1.
-      throw new Error(
-        `Import aborted: managed account tables already contain data:\n${existingRows}\n\n` +
-        `Re-running the import will DELETE and replace all these rows.  Any data added outside\n` +
-        `this import package (manual uploads, re-analysis runs) will be permanently lost.\n\n` +
-        `If you are certain you want to overwrite, re-run with --force:\n` +
-        `  pnpm --filter @workspace/scripts run import:metrix -- --force`,
-      );
-    }
-    if (existingRows && force) {
-      console.warn(
-        `--force passed: overwriting existing data for managed accounts.\n` +
-        `Pre-import counts (rows that will be deleted):\n${existingRows}`,
-      );
-    }
+    // applyPreFlightGuard throws if data exists and !force (caught below →
+    // rollback → process.exit(1)), or warns and returns if force is set.
+    applyPreFlightGuard(preCounts, force);
 
     // ── Wipe previously imported rows (idempotent re-run) ─────────────
     for (const t of dataTables) {
@@ -1734,18 +1673,9 @@ async function main() {
     // A loss means the delete ran but the re-population was incomplete (e.g.
     // a partial failure, a missing source file, or a concurrency issue).
     const postCounts = await snapshotCounts(client);
-    const losses: string[] = [];
-    const zeros: string[] = [];
-    for (const [key, pre] of preCounts) {
-      const post = postCounts.get(key) ?? 0;
-      if (pre > 0 && post < pre) {
-        losses.push(`  ${key}: ${pre} → ${post} (lost ${pre - post} rows)`);
-      }
-    }
     // Sanity-check: critical keys must be non-empty after every import regardless
     // of whether they had rows before (covers first-run as well as re-runs).
     const critical = [
-      // Per-account critical tables
       `ad_performance:${ACCOUNT_ID}`,
       `ads:${ACCOUNT_ID}`,
       `iap_runs:${ACCOUNT_ID}`,
@@ -1753,15 +1683,10 @@ async function main() {
       `ad_performance:${ECAS_ACCOUNT_ID}`,
       `iap_runs:${ECAS_ACCOUNT_ID}`,
       `account_modules:${ECAS_ACCOUNT_ID}`,
-      // Global tables always re-populated by every import run
       "variable_registry",
       "app_config",
     ];
-    for (const key of critical) {
-      if ((postCounts.get(key) ?? 0) === 0) {
-        zeros.push(`  ${key}: 0 rows (expected > 0)`);
-      }
-    }
+    const { losses, zeros } = detectPostImportLoss(preCounts, postCounts, critical);
     if (losses.length > 0 || zeros.length > 0) {
       const parts: string[] = [];
       if (losses.length > 0) parts.push(`Tables with fewer rows than before import:\n${losses.join("\n")}`);
