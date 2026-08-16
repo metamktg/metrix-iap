@@ -483,6 +483,70 @@ function correctionTargetKind(msg: string): CsvKind | null {
   return null;
 }
 
+/** Naive single-line CSV splitter, good enough for a header row (handles
+ *  simple quoted cells but not embedded newlines — the header is always a
+ *  single line). */
+function splitCsvHeaderLine(line: string): string[] {
+  const cells: string[] = [];
+  let cur = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      inQuotes = !inQuotes;
+    } else if (ch === "," && !inQuotes) {
+      cells.push(cur);
+      cur = "";
+    } else {
+      cur += ch;
+    }
+  }
+  cells.push(cur);
+  return cells.map((c) => c.trim().toLowerCase());
+}
+
+// Mirrors the server's exclusive signature-column detection in
+// iapCsvSpec.ts (CSV_CLASS_SIGNATURE_COLUMNS + its column-alias table), so
+// the client can pick the right slot from a file's own headers up front
+// instead of guessing by upload order and hoping a "wrong slot" server
+// message can steer it — that only covers some of the 4x4 class pairs.
+const CONVERSION_DEVICE_HEADER_SIGNALS = ["conversion device", "conv. device", "converting device", "device (conversion)"];
+const DEMOGRAPHIC_HEADER_SIGNALS = ["gender", "age"];
+const PLACEMENT_HEADER_SIGNALS = [
+  "placement",
+  "ad placement",
+  "placement type",
+  "impression device",
+  "device",
+  "device type",
+  "ad impression device",
+  "device platform",
+  "impression device platform",
+];
+
+/** Classifies a CSV by its header row into one of the 4 known Meta export
+ *  shapes. Order matters: conversion-device and demographic signals are
+ *  checked before the broader placement/device signal set so a conversion
+ *  export (which also has no Gender/Age) isn't caught by the "device" alias. */
+function classifyCsvHeaders(headerCells: string[]): CsvKind {
+  const has = (signals: string[]) => headerCells.some((h) => signals.includes(h));
+  if (has(CONVERSION_DEVICE_HEADER_SIGNALS)) return "performance_conversion_device_csv";
+  if (has(DEMOGRAPHIC_HEADER_SIGNALS)) return "performance_demo_csv";
+  if (has(PLACEMENT_HEADER_SIGNALS)) return "performance_placement_csv";
+  return "performance_ad_summary_csv";
+}
+
+/** Reads just enough of the file to get its header row and classify it. */
+async function sniffCsvKind(file: File): Promise<CsvKind> {
+  try {
+    const head = await file.slice(0, 16384).text();
+    const firstLine = head.split(/\r\n|\n|\r/)[0] ?? "";
+    return classifyCsvHeaders(splitCsvHeaderLine(firstLine));
+  } catch {
+    return "performance_ad_summary_csv";
+  }
+}
+
 /**
  * One drop zone for every Meta performance export (2 required pivots + 2
  * optional Ads Manager CSVs). Nobody uploading these files thinks in terms
@@ -514,8 +578,11 @@ function SmartCsvUpload({
 
   const bothRequiredStaged = Boolean(staged.performance_demo_csv && staged.performance_placement_csv);
 
-  const stageOne = async (fileToStage: File, alreadyFilled: Set<CsvKind>): Promise<ManualImportResult> => {
-    const content_base64 = await fileToBase64(fileToStage);
+  const stageOne = async (fileToStage: File): Promise<ManualImportResult> => {
+    const [content_base64, sniffedKind] = await Promise.all([
+      fileToBase64(fileToStage),
+      sniffCsvKind(fileToStage),
+    ]);
     const stageAs = (k: CsvKind) =>
       stageManualImportWithProgress(
         accountId,
@@ -523,17 +590,26 @@ function SmartCsvUpload({
         (pct) => setCurrent({ name: fileToStage.name, pct })
       );
 
+    // Classify from the file's own headers first (matches how the server
+    // itself tells the classes apart) rather than guessing by which slot is
+    // still empty. The "wrong slot" server message is kept only as a
+    // fallback for the rare case the header sniff and server disagree.
+    const order: CsvKind[] = [
+      sniffedKind,
+      ...SMART_CSV_SLOTS.map((s) => s.kind).filter((k) => k !== sniffedKind),
+    ];
     const tried = new Set<CsvKind>();
-    let kind = SMART_CSV_SLOTS.find((s) => !alreadyFilled.has(s.kind))?.kind ?? "performance_ad_summary_csv";
-    for (let attempt = 0; attempt < SMART_CSV_SLOTS.length; attempt++) {
+    let kind = order[0]!;
+    for (let attempt = 0; attempt < order.length; attempt++) {
       tried.add(kind);
       try {
         return await stageAs(kind);
       } catch (err) {
         const msg = err instanceof Error ? err.message : "";
         const corrected = correctionTargetKind(msg);
-        if (corrected && !tried.has(corrected)) {
-          kind = corrected;
+        const next = (corrected && !tried.has(corrected)) ? corrected : order.find((k2) => !tried.has(k2));
+        if (next) {
+          kind = next;
           continue;
         }
         throw err;
@@ -555,9 +631,6 @@ function SmartCsvUpload({
       return;
     }
 
-    const filled = new Set<CsvKind>(
-      SMART_CSV_SLOTS.filter((s) => staged[s.kind]).map((s) => s.kind)
-    );
     const mappings: ColumnMappingSummaryEntry[] = [];
     const warnings: string[] = [];
     const fails: string[] = [];
@@ -566,7 +639,7 @@ function SmartCsvUpload({
     for (const fileToStage of fileList) {
       setCurrent({ name: fileToStage.name, pct: 0 });
       try {
-        const result = await stageOne(fileToStage, filled);
+        const result = await stageOne(fileToStage);
         stagedAny = true;
         if (result.mapping_summary && result.mapping_summary.length > 0) mappings.push(...result.mapping_summary);
         if (result.upload_warnings && result.upload_warnings.length > 0) warnings.push(...result.upload_warnings);
