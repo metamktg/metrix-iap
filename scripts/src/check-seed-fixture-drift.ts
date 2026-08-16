@@ -61,8 +61,12 @@ type Shape = { [key: string]: Shape } | "scalar" | Shape[];
 function shapeOf(value: unknown): Shape {
   if (Array.isArray(value)) {
     if (value.length === 0) return [];
-    // Use the first element as a representative shape for arrays.
-    return [shapeOf(value[0])];
+    // Build a union representative from ALL elements so that one "pending"
+    // element (e.g. an ad account with no performance data yet) doesn't hide
+    // the full key coverage that fully-populated elements provide.  A key
+    // present in ANY element is considered part of the array's schema; an
+    // object shape beats a scalar (null) for the same key across elements.
+    return [mergeShapes(value.map((el) => shapeOf(el)))];
   }
   if (value !== null && typeof value === "object") {
     const out: { [key: string]: Shape } = {};
@@ -71,6 +75,50 @@ function shapeOf(value: unknown): Shape {
     }
     return out;
   }
+  return "scalar";
+}
+
+/**
+ * Merge multiple Shape values into a single representative shape.
+ * Used to build a union across all elements of an array so that no single
+ * element's "pending/sparse" state hides schema keys provided by other elements.
+ *
+ * Rules:
+ *   object beats scalar (null → "scalar" in our type; we keep any concrete object)
+ *   when multiple objects exist, union all their keys recursively
+ *   when multiple arrays exist, merge their element shapes
+ */
+function mergeShapes(shapes: Shape[]): Shape {
+  if (shapes.length === 0) return "scalar";
+  if (shapes.length === 1) return shapes[0]!;
+
+  const objectShapes = shapes.filter(
+    (s): s is { [key: string]: Shape } =>
+      !Array.isArray(s) && typeof s === "object" && s !== null,
+  );
+  const arrayShapes = shapes.filter((s): s is Shape[] => Array.isArray(s));
+
+  // Object wins over scalar; if any element is an object, use the merged object.
+  if (objectShapes.length > 0) {
+    const merged: { [key: string]: Shape } = {};
+    for (const obj of objectShapes) {
+      for (const [k, v] of Object.entries(obj)) {
+        if (k in merged) {
+          merged[k] = mergeShapes([merged[k]!, v]);
+        } else {
+          merged[k] = v;
+        }
+      }
+    }
+    return merged;
+  }
+
+  if (arrayShapes.length > 0) {
+    const elementShapes = arrayShapes.flat();
+    if (elementShapes.length === 0) return [];
+    return [mergeShapes(elementShapes)];
+  }
+
   return "scalar";
 }
 
