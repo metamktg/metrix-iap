@@ -99,6 +99,22 @@
   --mx-shadow-blue: 0 0 28px hsl(var(--primary) / 0.28);
   --mx-shadow-cyan: 0 0 36px hsl(var(--accent) / 0.24);
 
+  /* ── Nocturne tonal edge system (Metrix v1 design handoff) ──
+     Three edge weights plus the signature long rules that fade to
+     transparent at the ends instead of stopping hard at a corner.
+     Aliased from DS channel variables — the hex values live in
+     tokens.json (input = edge-strong, border = edge, sidebarBorder =
+     edge-soft); never restate them here. */
+  --mx-edge-strong: hsl(var(--input));       /* structural chrome: topbar, panel header/footer */
+  --mx-edge: hsl(var(--border));             /* container/card edges */
+  --mx-edge-soft: hsl(var(--sidebar-border));/* dense repeating rules: table rows, list separators */
+  --mx-edge-accent: hsl(var(--primary) / 0.42);
+  --mx-dim: hsl(var(--foreground) / 0.55);
+  --mx-dimmer: hsl(var(--foreground) / 0.40);
+  --mx-fade-x: linear-gradient(90deg, transparent, var(--mx-edge-strong) 56px, var(--mx-edge-strong) calc(100% - 56px), transparent);
+  --mx-fade-x-soft: linear-gradient(90deg, transparent, var(--mx-edge-soft) 28px, var(--mx-edge-soft) calc(100% - 28px), transparent);
+  --mx-fade-y: linear-gradient(180deg, transparent, var(--mx-edge-strong) 56px, var(--mx-edge-strong) calc(100% - 56px), transparent);
+
   /* ── AppShell panel geometry — single-file reference for all shell dims ── */
   --sidebar-expanded: 216px;
   --sidebar-collapsed: 56px;
