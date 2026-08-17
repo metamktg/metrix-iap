@@ -152,11 +152,16 @@ async function openReviewTab(
 }
 
 async function main() {
-  if (!CHROMIUM_EXE) {
-    console.error("REPLIT_PLAYWRIGHT_CHROMIUM_EXECUTABLE is not set");
-    process.exit(1);
-  }
-  const browser = await chromium.launch({ executablePath: CHROMIUM_EXE, headless: true });
+  // CHROMIUM_EXE may be undefined outside Replit (e.g. GitHub Actions, where
+  // ci.yml installs the matching Playwright browsers): playwright-core then
+  // resolves its own default browser, same as every sibling spec. This spec
+  // used to hard-exit when the env var was unset, which made it the only
+  // spec that could never run in CI.
+  const browser = await chromium.launch({
+    executablePath: CHROMIUM_EXE,
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  });
 
   await test("Review queue tab renders with empty state when nothing needs review", async () => {
     const { ctx, page } = await openReviewTab(browser, []);
