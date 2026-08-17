@@ -77,7 +77,7 @@ function AccountAvatar({
       {status != null && (
         <span
           className={cn(
-            "absolute rounded-full ring-[1.5px] ring-[hsl(222_45%_9%)]",
+            "absolute rounded-full ring-[1.5px] ring-surface-sidebar",
             dotSize[size],
             dotOffset[size],
             status === "configured" ? "bg-emerald-500" : "bg-muted-foreground/40"
@@ -170,7 +170,7 @@ function SwitcherPanel({
       style={{ position: "fixed", top: pos.top, left: pos.left, zIndex: 9999, width: 256 }}
       className={cn(
         "flex flex-col rounded-xl overflow-hidden",
-        "bg-[hsl(222_45%_9%)] border border-border/50",
+        "bg-surface-sidebar border border-border/50",
         "shadow-[0_8px_40px_rgba(0,0,0,0.55)]",
         "animate-in fade-in-0 zoom-in-95 duration-100"
       )}
