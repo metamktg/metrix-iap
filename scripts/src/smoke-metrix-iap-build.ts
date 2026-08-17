@@ -129,7 +129,13 @@ async function runSmoke() {
   );
 
   // ── Step 4: boot vite preview and assert the login form renders ──────────
-  const PREVIEW_PORT = "15178";
+  // 15195 is deliberately OUTSIDE the 15175–15192 range the e2e smoke scripts
+  // use for their dev servers. In CI all smoke steps share one runner and the
+  // e2e dev servers can outlive their step (the job-end cleanup reaps them as
+  // orphans) — this port previously collided with the register-session dev
+  // server (15178), and vite preview inherits server.strictPort=true, so the
+  // preview hard-failed instead of auto-incrementing.
+  const PREVIEW_PORT = "15195";
   const previewEnv: NodeJS.ProcessEnv = {
     ...process.env,
     NODE_ENV: "production",
@@ -209,9 +215,11 @@ function startPreviewServer(
     );
 
     let ready = false;
+    let output = "";
 
     const onData = (chunk: Buffer) => {
       const line = chunk.toString();
+      output += line;
       // Vite preview prints "Local:" or "localhost" when it is ready.
       if (!ready && /Local:|localhost/i.test(line)) {
         ready = true;
@@ -225,7 +233,13 @@ function startPreviewServer(
     child.on("error", reject);
     child.on("exit", (code) => {
       if (!ready) {
-        reject(new Error(`vite preview exited prematurely with code ${code}`));
+        // Include the child's own output — "exited prematurely" alone hid the
+        // real cause (e.g. "Port … is already in use") behind a generic code 1.
+        reject(
+          new Error(
+            `vite preview exited prematurely with code ${code}\n--- output ---\n${output || "(no output)"}`,
+          ),
+        );
       }
     });
 
