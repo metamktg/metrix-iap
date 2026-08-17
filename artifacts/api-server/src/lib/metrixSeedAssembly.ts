@@ -27,7 +27,7 @@ const round = (v: number, dp = 2) => {
   return Math.round(v * f) / f;
 };
 
-async function selectAll(table: string, build?: (q: any) => any): Promise<Row[]> {
+export async function selectAll(table: string, build?: (q: any) => any): Promise<Row[]> {
   const supabase = getSupabase();
   // Paginate in 1000-row pages so large tables (device_performance,
   // demographic_performance, etc.) are fetched in full even when the
