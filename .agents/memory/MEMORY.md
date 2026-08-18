@@ -66,3 +66,5 @@
 - [Seed fixture refresh scope](seed-fixture-refresh-scope.md) — full refresh:seed-fixture mid-task pulls other tasks' live data into your diff; refresh only when your task owns the shape change, and note it in drift_reason.
 - [Shared-Supabase test collisions](shared-supabase-test-collisions.md) — api-server suites run concurrently from all task envs against one dev Supabase; test inserts need per-run-unique keys; 522s/statement timeouts = load, not code.
 - [Run scoping & account identity](run-scope-picker.md) — ad-account name lives ONLY in the sidebar switcher (no page banners/chips); run scoping is the compact RunScopePicker popover, capped at 3 runs, never a standing checklist.
+- [Supabase dev-container connection pitfalls](supabase-dev-connection-pitfalls.md) — Direct connection host is IPv6-only (unreachable here); use Session pooler string; brute-force region via 28P01 vs XX000 if user can't produce it.
+- [Metrix has one Supabase project](metrix-single-supabase-project.md) — no dev/prod split exists; app + all admin scripts share one live project with real account data; never run import --force casually.
