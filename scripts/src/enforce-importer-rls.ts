@@ -22,6 +22,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 
+import { resolveSupabaseDbUrl } from "./lib/supabase-db-connection.js";
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SCHEMA_PATH = path.resolve(__dirname, "metrix-supabase/schema.sql");
 
@@ -68,8 +70,8 @@ function extractRlsBlock(schema: string): string {
 
 // ── main ──────────────────────────────────────────────────────────────────────
 
-const dbUrl = process.env["SUPABASE_DB_URL"];
-if (!dbUrl) fail("SUPABASE_DB_URL is not set — cannot connect to Supabase Postgres.");
+const dbUrl = resolveSupabaseDbUrl("SUPABASE_DB_URL");
+if (!dbUrl) fail("SUPABASE_DB_URL is not set (and no SUPABASE_DB_PASSWORD fallback) — cannot connect to Supabase Postgres.");
 
 console.log("\nMetrix importer — RLS enforcement\n");
 console.log("  Schema: ", SCHEMA_PATH);
