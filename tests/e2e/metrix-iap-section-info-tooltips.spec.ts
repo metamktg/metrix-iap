@@ -8,7 +8,7 @@
 // Assertions:
 //   1. Audience / "Segment performance" card (Ranked tab) — hover the ⓘ and
 //      assert [role="tooltip"] shows the exact expected tip text.
-//   2. Placements / "Spend by placement" card — same pattern.
+//   2. Placements / "Placement breakdown" card — same pattern.
 //   3. Budget / "Efficiency by result event" card — same pattern.
 //   4. IAP Library / metric tiles header icon — same pattern.
 //   5. Analysis Overview / "Analysis modules" card — same pattern.
@@ -226,9 +226,9 @@ async function main() {
       },
     );
 
-    // ── Test 2: Placements — "Spend by placement" card ─────────────────────
+    // ── Test 2: Placements — "Placement breakdown" card ───────────────────
     await test(
-      'Placements — "Spend by placement" SectionInfoIcon shows correct tip',
+      'Placements — "Placement breakdown" SectionInfoIcon shows correct tip',
       async () => {
         const ctx = await browser.newContext({
           viewport: { width: 1440, height: 900 },
@@ -245,10 +245,10 @@ async function main() {
 
           await assertSectionTooltip(
             page,
-            "Spend by placement",
-            "Ranks each placement by spend, results, or CPA so you can see where delivery is concentrated and spot efficiency mismatches.",
+            "Placement breakdown",
+            "Each placement's bar is scaled to the top placement on the active KPI. Cost-metric fills grade against the account blend — accent means at or under blend. Click a placement for the full breakdown.",
           );
-          console.log('       "Spend by placement" tooltip verified ✓');
+          console.log('       "Placement breakdown" tooltip verified ✓');
 
           assert(
             jsErrors.length === 0,
