@@ -16,6 +16,7 @@ import {
   getAdAccount, getAnalysisData, getMST,
 } from "@/lib/data/metrixSeedAdapter";
 import { RecommendationDeck, actionGroupForScope, type DeckCard } from "@/components/deck/RecommendationDeck";
+import { NextBestActionCard } from "@/components/deck/NextBestActionCard";
 import {
   ModuleHeader, SectionCard, SectionInfoIcon, CaveatNote, DetailReveal, deriveLabel,
   UnconfiguredState, PendingState, CrossLink, fmtUSD, fmtNum, eventLabel, resultTerm,
@@ -283,6 +284,10 @@ export function AdAccountOverview() {
 
         {/* Left: scrollable main content */}
         <div className="flex-1 min-w-0 overflow-y-auto px-6 py-3 space-y-3">
+
+          {/* Next best action — Nocturne hero for the top pending
+              recommendation; renders nothing when none are pending. */}
+          <NextBestActionCard scopeId={account.id} cards={deckCards} />
 
           {/* Account Totals — metric accordions */}
           <SectionCard
