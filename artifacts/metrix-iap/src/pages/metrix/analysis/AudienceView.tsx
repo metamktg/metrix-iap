@@ -530,6 +530,83 @@ function PocketGridTab({
 
 // ── Ranked List tab ───────────────────────────────────────────────────
 
+// ── Share balance — spend share vs result share, per pocket ───────────
+// Nocturne "Metrix v1" composition: two thin proportional bars per
+// segment (budget share vs result share) with the gap called out in
+// points. Everything is a share of the real scoped totals — a pocket
+// with no results simply shows a 0-width result bar, never an estimate.
+
+function ShareBalanceCard({ entries, onSelect }: {
+  entries: SegmentEntry[];
+  onSelect: (seg: SegmentId) => void;
+}) {
+  const totalSpend = entries.reduce((n, e) => n + (e.totals.spend ?? 0), 0);
+  const totalResults = entries.reduce((n, e) => n + (e.totals.results ?? 0), 0);
+  if (totalSpend <= 0) return null;
+
+  const rows = entries
+    .map((e) => {
+      const spendShare = ((e.totals.spend ?? 0) / totalSpend) * 100;
+      const resultShare = totalResults > 0 ? ((e.totals.results ?? 0) / totalResults) * 100 : 0;
+      return { e, spendShare, resultShare, gap: Math.round(resultShare - spendShare) };
+    })
+    .sort((a, b) => b.spendShare - a.spendShare);
+
+  return (
+    <SectionCard
+      title="Budget vs results"
+      desc="Share of spend against share of results · gap in points"
+      right={<SectionInfoIcon tip="Each pocket's share of scoped spend next to its share of scoped results. A positive gap returns more than its budget share; a negative gap takes more budget than it returns." />}
+    >
+      <div className="space-y-2.5" data-testid="share-balance-rows">
+        {rows.map(({ e, spendShare, resultShare, gap }) => (
+          <button
+            key={segmentLabel(e.seg)}
+            type="button"
+            onClick={() => onSelect(e.seg)}
+            data-testid={`share-balance-row-${segmentLabel(e.seg)}`}
+            className="w-full text-left rounded-lg px-2 py-1.5 -mx-2 hover:bg-white/[0.03] transition-colors"
+          >
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <span className={cn(TYPE.caption, "font-medium text-foreground/85 inline-flex items-center gap-1.5")}>
+                <SegmentGenderIcon gender={e.seg.gender} />
+                {segmentLabel(e.seg)}
+              </span>
+              <span className={cn(
+                TYPE.label,
+                "tabular-nums",
+                gap >= 3 ? "text-emerald-400" : gap <= -3 ? "text-amber-300" : "text-muted-foreground/45",
+              )}>
+                {gap > 0 ? "+" : ""}{gap}pts
+              </span>
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className={cn(TYPE.label, "w-12 shrink-0 text-muted-foreground/45 normal-case")}>Spend</span>
+                <div className="flex-1 h-[3px] rounded-full bg-white/[0.04] overflow-hidden">
+                  <div className="h-full rounded-full bg-primary/60" style={{ width: `${Math.min(spendShare, 100)}%` }} />
+                </div>
+                <span className={cn(TYPE.label, "w-9 shrink-0 text-right tabular-nums text-muted-foreground/60")}>
+                  {spendShare.toFixed(0)}%
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={cn(TYPE.label, "w-12 shrink-0 text-muted-foreground/45 normal-case")}>{totalResults > 0 ? "Results" : "Results —"}</span>
+                <div className="flex-1 h-[3px] rounded-full bg-white/[0.04] overflow-hidden">
+                  <div className="h-full rounded-full bg-chart-2/70" style={{ width: `${Math.min(resultShare, 100)}%` }} />
+                </div>
+                <span className={cn(TYPE.label, "w-9 shrink-0 text-right tabular-nums text-muted-foreground/60")}>
+                  {totalResults > 0 ? `${resultShare.toFixed(0)}%` : "n/a"}
+                </span>
+              </div>
+            </div>
+          </button>
+        ))}
+      </div>
+    </SectionCard>
+  );
+}
+
 function RankedListTab({
   ranked, activeMetric, onSelect, onSelectMetric, rankMetrics, resultPlural, medianCpa,
 }: {
@@ -840,6 +917,8 @@ export function AudienceView() {
                         medianCpa={medianCpa}
                       />
                     )}
+
+                    <ShareBalanceCard entries={entries} onSelect={setSelectedSeg} />
                   </div>
                 </>
             </div>
