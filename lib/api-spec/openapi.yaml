@@ -4391,6 +4391,16 @@ components:
         results: { type: number }
         link_clicks: { type: number }
       required: [concept, book, spend, results, link_clicks]
+    AnalysisSummaryDayRow:
+      type: object
+      description: One calendar day of additive ad_performance totals inside the active window — feeds sparklines and daily trend reads.
+      properties:
+        date: { type: string, description: "YYYY-MM-DD" }
+        spend: { type: number }
+        impressions: { type: number }
+        link_clicks: { type: number }
+        results: { type: number }
+      required: [date, spend, impressions, link_clicks, results]
     AnalysisSummaryResult:
       type: object
       properties:
@@ -4408,6 +4418,21 @@ components:
           description: Actual date window covered by this result after applying the preset filter.
         totals:
           $ref: "#/components/schemas/AnalysisSummaryTotals"
+        daily:
+          type: array
+          description: Per-day additive totals inside the active window, ascending by date.
+          items:
+            $ref: "#/components/schemas/AnalysisSummaryDayRow"
+        prior_totals:
+          allOf:
+            - $ref: "#/components/schemas/AnalysisSummaryTotals"
+          nullable: true
+          description: Real measured totals for the equal-length window immediately preceding the active one; null when no preceding window applies (preset "all") or it holds no rows.
+        prior_window:
+          allOf:
+            - $ref: "#/components/schemas/AnalysisSummaryWindow"
+          nullable: true
+          description: The preceding window prior_totals covers; null whenever prior_totals is null.
         demographic_rows:
           type: array
           items:
@@ -4420,7 +4445,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/AnalysisSummaryConceptRow"
-      required: [preset, available_window, active_window, totals, demographic_rows, placement_rows, concept_rows]
+      required: [preset, available_window, active_window, totals, daily, prior_totals, prior_window, demographic_rows, placement_rows, concept_rows]
     AccountAnalysisDataWindow:
       type: object
       required: [label, start, end, spend, rows]

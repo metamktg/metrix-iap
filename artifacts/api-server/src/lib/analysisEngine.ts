@@ -85,11 +85,27 @@ export interface AnalysisSummaryConceptRow {
   link_clicks: number;
 }
 
+/** One calendar day of additive ad_performance totals — feeds sparklines. */
+export interface AnalysisSummaryDayRow {
+  date: string; // YYYY-MM-DD
+  spend: number;
+  impressions: number;
+  link_clicks: number;
+  results: number;
+}
+
 export interface AnalysisSummaryResult {
   preset: ViewPreset;
   available_window: AnalysisSummaryWindow | null;
   active_window: AnalysisSummaryWindow | null;
   totals: AnalysisSummaryTotals;
+  /** Per-day additive totals inside the active window, ascending by date. */
+  daily: AnalysisSummaryDayRow[];
+  /** Totals for the equal-length window immediately preceding the active
+   *  one — real measured values, null when no preceding window applies
+   *  (preset "all") or it holds no rows. */
+  prior_totals: AnalysisSummaryTotals | null;
+  prior_window: AnalysisSummaryWindow | null;
   demographic_rows: AnalysisSummaryDemoRow[];
   placement_rows: AnalysisSummaryPlacementRow[];
   concept_rows: AnalysisSummaryConceptRow[];
@@ -1729,6 +1745,68 @@ function roundN(v: number, digits = 4): number {
   return Math.round(v * f) / f;
 }
 
+/** Group ad_performance rows into ascending per-day additive totals. */
+function buildDailySeries(rows: any[]): AnalysisSummaryDayRow[] {
+  const byDate = new Map<string, AnalysisSummaryDayRow>();
+  for (const r of rows) {
+    const date = String((r as any).date_start ?? "");
+    if (!date) continue;
+    const d = byDate.get(date) ?? { date, spend: 0, impressions: 0, link_clicks: 0, results: 0 };
+    d.spend       += Number((r as any).spend ?? 0);
+    d.impressions += Number((r as any).impressions ?? 0);
+    d.link_clicks += Number((r as any).link_clicks ?? 0);
+    d.results     += Number((r as any).results ?? 0);
+    byDate.set(date, d);
+  }
+  return Array.from(byDate.values())
+    .map((d) => ({ ...d, spend: roundN(d.spend) }))
+    .sort((a, b) => (a.date < b.date ? -1 : 1));
+}
+
+/** Aggregate ad_performance rows into AnalysisSummaryTotals (no breakdowns). */
+function buildTotals(rows: any[]): AnalysisSummaryTotals {
+  let totalSpend = 0, totalImpressions = 0, totalLinkClicks = 0;
+  const byEvent: Record<string, { spend: number; reach: number; impressions: number; results: number; clicks_all: number; link_clicks: number }> = {};
+  for (const r of rows) {
+    const spend       = Number((r as any).spend ?? 0);
+    const impressions = Number((r as any).impressions ?? 0);
+    const linkClicks  = Number((r as any).link_clicks ?? 0);
+    const results     = Number((r as any).results ?? 0);
+    const reach       = Number((r as any).reach ?? 0);
+    const clicksAll   = Number((r as any).clicks_all ?? 0);
+    const event       = String((r as any).result_type ?? "unknown");
+    totalSpend       += spend;
+    totalImpressions += impressions;
+    totalLinkClicks  += linkClicks;
+    byEvent[event] ??= { spend: 0, reach: 0, impressions: 0, results: 0, clicks_all: 0, link_clicks: 0 };
+    byEvent[event]!.spend       += spend;
+    byEvent[event]!.reach       += reach;
+    byEvent[event]!.impressions += impressions;
+    byEvent[event]!.results     += results;
+    byEvent[event]!.clicks_all  += clicksAll;
+    byEvent[event]!.link_clicks += linkClicks;
+  }
+  return {
+    total_spend_usd:      roundN(totalSpend),
+    total_impressions:    Math.round(totalImpressions),
+    total_link_clicks:    Math.round(totalLinkClicks),
+    overall_link_ctr_pct: totalImpressions > 0 ? roundN((totalLinkClicks / totalImpressions) * 100) : 0,
+    bottom_line_totals:   byEvent,
+  };
+}
+
+/** Shift a YYYY-MM-DD date by whole days (UTC-safe). */
+function shiftDate(date: string, days: number): string {
+  const t = new Date(`${date}T00:00:00Z`).getTime() + days * 24 * 60 * 60 * 1000;
+  return new Date(t).toISOString().slice(0, 10);
+}
+
+/** The equal-length window immediately preceding [start, end]. */
+export function priorWindowFor(start: string, end: string): AnalysisSummaryWindow {
+  const lenDays = Math.round((new Date(`${end}T00:00:00Z`).getTime() - new Date(`${start}T00:00:00Z`).getTime()) / (24 * 60 * 60 * 1000)) + 1;
+  return { start: shiftDate(start, -lenDays), end: shiftDate(start, -1) };
+}
+
 export async function getAnalysisSummaryByPreset(
   accountId: string,
   preset: ViewPreset,
@@ -1748,6 +1826,9 @@ export async function getAnalysisSummaryByPreset(
       available_window: null,
       active_window: null,
       totals: { total_spend_usd: 0, total_impressions: 0, total_link_clicks: 0, overall_link_ctr_pct: 0, bottom_line_totals: {} },
+      daily: [],
+      prior_totals: null,
+      prior_window: null,
       demographic_rows: [],
       placement_rows: [],
       concept_rows: [],
@@ -1892,6 +1973,27 @@ export async function getAnalysisSummaryByPreset(
     results:     v.results,
   }));
 
+  // ── Daily series + prior-window totals (real rows, already in memory) ──
+  // The prior window is the equal-length span immediately preceding the
+  // preset window (anchored the same way); null for "all" or when it holds
+  // no rows — never an estimate.
+  const daily = buildDailySeries(filtered);
+  let prior_totals: AnalysisSummaryTotals | null = null;
+  let prior_window: AnalysisSummaryWindow | null = null;
+  if (preset !== "all") {
+    const days = viewPresetDays(preset)!;
+    const curStart = shiftDate(anchor, -(days - 1));
+    const pw = priorWindowFor(curStart, anchor);
+    const priorRows = adRows.filter((r: any) => {
+      const d = String(r.date_start ?? "");
+      return d >= pw.start && d <= pw.end;
+    });
+    if (priorRows.length > 0) {
+      prior_totals = buildTotals(priorRows);
+      prior_window = pw;
+    }
+  }
+
   return {
     preset,
     available_window,
@@ -1903,6 +2005,9 @@ export async function getAnalysisSummaryByPreset(
       overall_link_ctr_pct: linkCtrPct,
       bottom_line_totals:   byEvent,
     },
+    daily,
+    prior_totals,
+    prior_window,
     demographic_rows,
     placement_rows,
     concept_rows,
@@ -1938,6 +2043,9 @@ async function _computeAnalysisSummaryForDateRange(
       available_window,
       active_window: null,
       totals: { total_spend_usd: 0, total_impressions: 0, total_link_clicks: 0, overall_link_ctr_pct: 0, bottom_line_totals: {} },
+      daily: [],
+      prior_totals: null,
+      prior_window: null,
       demographic_rows: [],
       placement_rows: [],
       concept_rows: [],
@@ -2059,6 +2167,25 @@ async function _computeAnalysisSummaryForDateRange(
   const activeStart = adDates.reduce((a, b) => (a < b ? a : b), start);
   const activeEnd   = adDates.reduce((a, b) => (a > b ? a : b), end);
 
+  // ── Daily series + prior-window totals ────────────────────────────
+  // Prior = equal-length window immediately preceding [start, end]; one
+  // lightweight totals-only query, null when it holds no rows.
+  const daily = buildDailySeries(adRows);
+  const pw = priorWindowFor(start, end);
+  let prior_totals: AnalysisSummaryTotals | null = null;
+  let prior_window: AnalysisSummaryWindow | null = null;
+  const { data: priorRows, error: priorErr } = await supabase
+    .from("ad_performance")
+    .select("date_start, spend, impressions, link_clicks, results, result_type, reach, clicks_all")
+    .eq("account_id", accountId)
+    .gte("date_start", pw.start)
+    .lte("date_start", pw.end);
+  if (priorErr) throw new Error(priorErr.message);
+  if (priorRows && priorRows.length > 0) {
+    prior_totals = buildTotals(priorRows);
+    prior_window = pw;
+  }
+
   return {
     preset: "all" as ViewPreset,
     available_window,
@@ -2070,6 +2197,9 @@ async function _computeAnalysisSummaryForDateRange(
       overall_link_ctr_pct: linkCtrPct,
       bottom_line_totals:   byEvent,
     },
+    daily,
+    prior_totals,
+    prior_window,
     demographic_rows,
     placement_rows,
     concept_rows,

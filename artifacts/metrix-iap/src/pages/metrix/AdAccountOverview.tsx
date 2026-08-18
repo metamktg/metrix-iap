@@ -21,11 +21,15 @@ import {
   ModuleHeader, SectionCard, SectionInfoIcon, CaveatNote, DetailReveal, deriveLabel,
   UnconfiguredState, PendingState, CrossLink, fmtUSD, fmtNum, eventLabel, resultTerm,
   SkeletonTileRow, LoopChecklist, type LoopChecklistStep,
+  DatePresetBar, type ViewPreset,
 } from "./shared";
 import { useListWorkspaceReports } from "@workspace/api-client-react";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
 import { cn } from "@workspace/command-deck/lib/utils";
-import { buildMetricCatalog, metricSourceFromCampaignSummary, metricById } from "@/lib/data/metricsCatalog";
+import { buildMetricCatalog, metricSourceFromCampaignSummary, metricSourceFromApiTotals, metricById } from "@/lib/data/metricsCatalog";
+import { getGetAnalysisSummaryQueryOptions } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
+import { trendForMetric, sparkSeriesForMetric, sparkPoints } from "@/lib/data/summaryTrends";
 import { useMetricSelection } from "@/hooks/useMetricSelection";
 import { MetricPickerButton } from "@/components/creative/MetricPicker";
 import { KpiTile } from "@/components/metrics/KpiTile";
@@ -112,10 +116,45 @@ export function AdAccountOverview() {
   const isRefetching = useMetrixIsRefetching();
   const { data: reportsData } = useListWorkspaceReports(seed.manager_account.id);
   const cs = account?.iap?.campaign_summary ?? null;
+
+  // Nocturne trend layer: the date-preset pills window the tiles through
+  // the analysis-summary endpoint (real per-day rows + real prior-window
+  // totals). "all" keeps the seed's full-flight campaign summary; a preset
+  // switches BOTH the tile values and their deltas/sparklines to the same
+  // window so the pairing can never disagree.
+  const [preset, setPreset] = useState<ViewPreset>("all");
+  const { data: summary, isFetching: summaryFetching } = useQuery({
+    ...getGetAnalysisSummaryQueryOptions(adAccountId ?? "", preset),
+    enabled: !!adAccountId && account?.status === "configured",
+  });
+  const windowedTotals = preset !== "all" && summary ? summary.totals : null;
   const metricCatalog = useMemo(
-    () => (cs ? buildMetricCatalog(metricSourceFromCampaignSummary(cs)) : []),
-    [cs]
+    () => {
+      if (windowedTotals) return buildMetricCatalog(metricSourceFromApiTotals(windowedTotals));
+      return cs ? buildMetricCatalog(metricSourceFromCampaignSummary(cs)) : [];
+    },
+    [cs, windowedTotals]
   );
+
+  // Format a raw prior value in the metric's own display format.
+  const formatLikeMetric = (metricId: string, v: number): string => {
+    if (metricId === "spend" || metricId === "cpa_blended" || metricId === "cpc" || metricId === "cpm") return fmtUSD(v);
+    if (metricId === "link_ctr" || metricId === "cvr") return `${v.toFixed(2)}%`;
+    return fmtNum(Math.round(v));
+  };
+
+  // Per-metric trend + sparkline, from the same summary window as the values.
+  const tileTrendFor = (metricId: string) => {
+    if (!summary) return { trend: null, spark: null };
+    const t = trendForMetric(metricId, summary.totals, summary.prior_totals);
+    const series = sparkSeriesForMetric(metricId, summary.daily ?? []);
+    return {
+      trend: t
+        ? { deltaPct: t.deltaPct, improved: t.improved, priorFormatted: formatLikeMetric(metricId, t.prior) }
+        : null,
+      spark: series ? sparkPoints(series) : null,
+    };
+  };
   const availableMetricIds = useMemo(() => metricCatalog.map((m) => m.id), [metricCatalog]);
   const { selected: selectedMetricIds, toggle, move, replace, reset } = useMetricSelection(availableMetricIds);
   const [openMetricId, setOpenMetricId] = useState<string | null>(null);
@@ -279,6 +318,15 @@ export function AdAccountOverview() {
         <LoopCommandChain accountId={account.id} account={account} managerId={seed.manager_account.id} />
       </div>
 
+      {/* ── Window pills — the canvas's 7d/14d/30d control; tiles, deltas
+             and sparklines all follow the same summary window. ─────────── */}
+      <DatePresetBar
+        value={preset}
+        onChange={setPreset}
+        availableWindow={summary?.available_window}
+        isFetching={summaryFetching}
+      />
+
       {/* ── Two-column body ────────────────────────────────────────── */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
 
@@ -294,10 +342,10 @@ export function AdAccountOverview() {
             title="Account Totals"
             right={<MetricPickerButton catalog={metricCatalog} selected={selectedMetricIds} onToggle={toggle} onMove={move} onReset={reset} />}
           >
-            {isRefetching ? (
+            {(isRefetching || (preset !== "all" && summaryFetching)) ? (
               <SkeletonTileRow count={selectedMetricIds.length || 4} />
             ) : null}
-            <div className={cn("grid grid-cols-dashboard-4 gap-2", isRefetching && "hidden")}>
+            <div className={cn("grid grid-cols-dashboard-4 gap-2", (isRefetching || (preset !== "all" && summaryFetching)) && "hidden")}>
               {selectedMetricIds.map((id) => {
                 const m = metricById(metricCatalog, id);
                 if (!m) return null;
@@ -308,13 +356,20 @@ export function AdAccountOverview() {
                     cellRows={analysis?.performance_by_cell ?? []}
                     onDiagnose={() => setOpenMetricId(id)}
                   >
-                    <KpiTile
-                      metricId={id}
-                      catalog={metricCatalog}
-                      onSelect={(newId) => replace(id, newId)}
-                      onClick={() => setOpenMetricId(id)}
-                      hideInfo
-                    />
+                    {(() => {
+                      const { trend, spark } = tileTrendFor(id);
+                      return (
+                        <KpiTile
+                          metricId={id}
+                          catalog={metricCatalog}
+                          onSelect={(newId) => replace(id, newId)}
+                          onClick={() => setOpenMetricId(id)}
+                          hideInfo
+                          trend={trend}
+                          sparkPoints={spark}
+                        />
+                      );
+                    })()}
                   </MetricHoverPopover>
                 );
               })}

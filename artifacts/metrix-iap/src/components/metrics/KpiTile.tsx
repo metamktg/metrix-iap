@@ -111,6 +111,15 @@ export function KpiInfoHover({ content }: { content: React.ReactNode }) {
 
 // ─── Unified tile ──────────────────────────────────────────────────────
 
+export interface KpiTileTrend {
+  /** Percent change vs the preceding equal-length window (real measured values). */
+  deltaPct: number;
+  /** True when the movement is an improvement (cost metrics improve downward). */
+  improved: boolean;
+  /** The prior window's formatted value ("prior $1,204"). */
+  priorFormatted: string;
+}
+
 export interface KpiTileProps {
   metricId: string;
   catalog: MetricDef[];
@@ -123,11 +132,15 @@ export interface KpiTileProps {
   /** Suppress the built-in ⓘ (when a wrapper like MetricHoverPopover renders its own). */
   hideInfo?: boolean;
   variant?: "primary" | "default";
+  /** Nocturne trend layer: delta vs the preceding window — omitted when no real prior exists. */
+  trend?: KpiTileTrend | null;
+  /** Nocturne sparkline: SVG polyline points for a 100×24 viewBox — omitted when no per-day series exists. */
+  sparkPoints?: string | null;
 }
 
 export function KpiTile({
   metricId, catalog, onSelect, onClick, isRefetching = false,
-  disclosure, hideInfo = false, variant = "default",
+  disclosure, hideInfo = false, variant = "default", trend, sparkPoints,
 }: KpiTileProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const m = metricById(catalog, metricId);
@@ -192,6 +205,42 @@ export function KpiTile({
         </button>
       ) : (
         <KpiValue formatted={m.formatted} isRefetching={isRefetching} />
+      )}
+
+      {/* Nocturne trend layer — delta vs the preceding window + prior value.
+          Rendered only from real measured values (props absent otherwise). */}
+      {!isRefetching && trend && (
+        <div className="flex items-center gap-2 flex-wrap" data-testid="kpi-tile-trend">
+          <span className={cn(
+            TYPE.body,
+            "tabular-nums font-medium",
+            trend.improved ? "text-emerald-400" : "text-amber-300",
+          )}>
+            {trend.deltaPct >= 0 ? "▲" : "▼"} {Math.abs(trend.deltaPct).toFixed(1)}%
+          </span>
+          <span className={cn(TYPE.caption, "text-muted-foreground/50 tabular-nums")}>
+            prior {trend.priorFormatted}
+          </span>
+        </div>
+      )}
+
+      {/* Nocturne sparkline — per-day series inside the active window. */}
+      {!isRefetching && sparkPoints && (
+        <svg
+          viewBox="0 0 100 24"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+          data-testid="kpi-tile-spark"
+          className="w-full h-6 mt-1 overflow-visible"
+        >
+          <polyline
+            points={sparkPoints}
+            fill="none"
+            stroke="hsl(var(--primary))"
+            strokeWidth="1.4"
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
       )}
 
       {pickerOpen && (
