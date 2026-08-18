@@ -11,13 +11,14 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
+import { resolveSupabaseDbUrl } from "./lib/supabase-db-connection.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCHEMA_PATH = join(__dirname, "metrix-supabase/schema.sql");
 
-const dbUrl = process.env.SUPABASE_DB_URL;
+const dbUrl = resolveSupabaseDbUrl("SUPABASE_DB_URL");
 if (!dbUrl) {
-  console.error("SUPABASE_DB_URL is not set.");
+  console.error("SUPABASE_DB_URL is not set (and no SUPABASE_DB_PASSWORD fallback).");
   process.exit(1);
 }
 

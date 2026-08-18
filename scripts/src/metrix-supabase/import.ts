@@ -36,6 +36,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 
+import { resolveSupabaseDbUrl } from "../lib/supabase-db-connection.js";
 import {
   META_EXPORT_FILE,
   exportAccountMismatchError,
@@ -1275,10 +1276,10 @@ async function main() {
       );
       process.exit(1);
     }
-    const prodUrl = process.env.SUPABASE_PROD_DB_URL;
+    const prodUrl = resolveSupabaseDbUrl("SUPABASE_PROD_DB_URL");
     if (!prodUrl) {
       console.error(
-        "❌  SUPABASE_PROD_DB_URL is not set.\n\n" +
+        "❌  SUPABASE_PROD_DB_URL is not set (and no SUPABASE_DB_PASSWORD fallback).\n\n" +
         "    --env=prod reads from SUPABASE_PROD_DB_URL, not SUPABASE_DB_URL.\n" +
         "    Set it to the production Supabase Postgres connection string.",
       );
@@ -1291,10 +1292,10 @@ async function main() {
       `    SUPABASE_PROD_DB_URL host: ${new URL(dbUrl).hostname}\n`,
     );
   } else {
-    const devUrl = process.env.SUPABASE_DEV_DB_URL;
+    const devUrl = resolveSupabaseDbUrl("SUPABASE_DEV_DB_URL");
     if (!devUrl) {
       console.error(
-        "❌  SUPABASE_DEV_DB_URL is not set.\n\n" +
+        "❌  SUPABASE_DEV_DB_URL is not set (and no SUPABASE_DB_PASSWORD fallback).\n\n" +
         "    --env=dev reads from SUPABASE_DEV_DB_URL, not SUPABASE_DB_URL.\n" +
         "    Set it to the development Supabase Postgres connection string.",
       );

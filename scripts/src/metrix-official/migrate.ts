@@ -24,6 +24,7 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
+import { resolveSupabaseDbUrl } from "../lib/supabase-db-connection.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SUPABASE_DIR = path.resolve(__dirname, "../../../supabase");
@@ -56,9 +57,9 @@ async function listSqlFiles(dir: string): Promise<SqlFile[]> {
 
 async function main() {
   const dryRun = process.argv.includes("--dry-run");
-  const dbUrl = process.env.SUPABASE_DB_URL;
+  const dbUrl = resolveSupabaseDbUrl("SUPABASE_DB_URL");
   if (!dbUrl) {
-    console.error("SUPABASE_DB_URL is not set.");
+    console.error("SUPABASE_DB_URL is not set (and no SUPABASE_DB_PASSWORD fallback).");
     process.exit(1);
   }
 
