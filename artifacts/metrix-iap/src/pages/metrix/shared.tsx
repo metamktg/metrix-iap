@@ -402,7 +402,12 @@ export function ModuleHeader({
         <div className="flex items-start gap-3">
           <div className="flex-1 min-w-0 mx-section-header">
             <div className="flex items-center gap-1.5">
-              <span className="mx-section-header__eyebrow">{eyebrowText}</span>
+              {/* Nocturne breadcrumb eyebrow: view context · module. This is a
+                  single-workspace agency deployment, so the view is static. */}
+              <span className="mx-section-header__eyebrow">
+                <span className="text-muted-foreground/45">Agency view · </span>
+                {eyebrowText}
+              </span>
               {subtitle && <InfoTooltip content={subtitle} />}
             </div>
             <h1 className="mx-section-header__title">{title}</h1>
