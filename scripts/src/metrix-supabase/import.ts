@@ -22,7 +22,13 @@
 // strategy_map and brief_builder are complete; creative_scan +
 // optimization_loop stay honestly pending.
 //
-// Usage: SUPABASE_DB_URL=postgres://... pnpm --filter @workspace/scripts run import:metrix
+// Usage:
+//   Dev:   SUPABASE_DEV_DB_URL=postgres://...  pnpm --filter @workspace/scripts run import:metrix -- --env=dev
+//   Prod:  SUPABASE_PROD_DB_URL=postgres://... IMPORT_ENV=production \
+//            pnpm --filter @workspace/scripts run import:metrix -- --env=prod --force
+//
+// --env is required and binds to a DISTINCT connection variable per environment
+// so a production URL cannot reach this script via --env=dev even by accident.
 // ═══════════════════════════════════════════════════════════════════════
 
 import { existsSync, readFileSync } from "node:fs";
@@ -1143,12 +1149,162 @@ async function importEcas(q: Q): Promise<number> {
   return adPerfCount;
 }
 
+// ── Row-count guard helpers ─────────────────────────────────────────────────
+// Every table that the import deletes, split by how it scopes the deletion.
+//
+// ACCOUNT_SCOPED_TABLES — deleted with `where account_id = any($1)` for the
+//   managed accounts (ACCOUNT_ID, ECAS_ACCOUNT_ID).
+// SKOV_PET_TABLES — deleted with `where account_id = 'skov_pet'` (account_modules
+//   only; the account row itself is upserted, not deleted).
+// GLOBAL_TABLES — deleted without any account_id filter (full-table wipe).
+//
+// All three groups are snapshotted before and after the import so no row loss
+// can go undetected.
+
+const ACCOUNT_SCOPED_TABLES = [
+  "ad_performance", "ads", "library_cells", "library_cell_performance",
+  "demographic_performance", "demographic_signal", "concept_performance",
+  "concept_intelligence", "iap_runs", "placement_performance",
+  "platform_performance", "device_performance", "icp_profiles",
+  "message_pillars", "variable_combinations", "testing_hypotheses",
+  "imported_creative_briefs", "variable_performance", "failure_patterns",
+  "data_quality_flags", "ad_traffic_quality", "placement_signal",
+  "copy_library", "signal_cards", "account_modules", "campaign_windows",
+] as const;
+
+const MANAGED_ACCOUNTS = [ACCOUNT_ID, ECAS_ACCOUNT_ID] as const;
+// skov_pet has account_modules deleted separately; snapshot it too.
+const SKOV_PET_ID = "skov_pet";
+
+// Global tables wiped entirely (no account_id filter).
+const GLOBAL_TABLES = ["variable_registry", "app_config"] as const;
+
+type CountMap = Map<string, number>;
+
+async function snapshotCounts(client: pg.Client): Promise<CountMap> {
+  const counts: CountMap = new Map();
+  // Account-scoped tables for the two primary managed accounts.
+  for (const table of ACCOUNT_SCOPED_TABLES) {
+    for (const acct of MANAGED_ACCOUNTS) {
+      const r = await client.query(
+        `select count(*) n from ${table} where account_id = $1`,
+        [acct],
+      );
+      counts.set(`${table}:${acct}`, Number(r.rows[0].n));
+    }
+  }
+  // account_modules is also deleted for skov_pet.
+  const skovMod = await client.query(
+    `select count(*) n from account_modules where account_id = $1`,
+    [SKOV_PET_ID],
+  );
+  counts.set(`account_modules:${SKOV_PET_ID}`, Number(skovMod.rows[0].n));
+  // Global tables (full-table wipe — any rows count as potentially lost data).
+  for (const table of GLOBAL_TABLES) {
+    const r = await client.query(`select count(*) n from ${table}`);
+    counts.set(table, Number(r.rows[0].n));
+  }
+  // signal_cards has a secondary full-table delete; already counted above per account
+  // but also capture the global total so the post-commit check can verify it.
+  counts.set("signal_cards:global", Number(
+    (await client.query(`select count(*) n from signal_cards`)).rows[0].n,
+  ));
+  return counts;
+}
+
+function formatCountMap(counts: CountMap, filter: (n: number) => boolean): string {
+  return [...counts.entries()]
+    .filter(([, n]) => filter(n))
+    .map(([k, n]) => `  ${k}: ${n}`)
+    .join("\n");
+}
+
 async function main() {
-  const dbUrl = process.env.SUPABASE_DB_URL;
-  if (!dbUrl) {
-    console.error("SUPABASE_DB_URL is not set. Provide the Supabase Postgres connection string.");
+  // ── Environment guard (required) ─────────────────────────────────────
+  // The import deletes every managed-account row and re-populates from
+  // source files in a single transaction.  Running it against the wrong
+  // database wipes live data with no undo.
+  //
+  // --env binds to a DISTINCT connection variable per environment:
+  //
+  //   --env=dev  → reads SUPABASE_DEV_DB_URL   (development Supabase project)
+  //   --env=prod → reads SUPABASE_PROD_DB_URL  (production Supabase project)
+  //              + requires IMPORT_ENV=production in the environment
+  //
+  // Using separate variables means a production URL physically cannot reach
+  // this script via --env=dev, and a development URL physically cannot
+  // satisfy --env=prod.  There is no shared SUPABASE_DB_URL fallback.
+  const envArgRaw = process.argv.find((a) => a.startsWith("--env="))?.slice("--env=".length);
+  if (!envArgRaw || (envArgRaw !== "dev" && envArgRaw !== "prod")) {
+    console.error(
+      "❌  --env flag is required.\n\n" +
+      "    Declare the target database on every run to prevent accidental data loss.\n" +
+      "    Each value reads from a different connection variable:\n\n" +
+      "      --env=dev   reads SUPABASE_DEV_DB_URL  (development Supabase project)\n" +
+      "      --env=prod  reads SUPABASE_PROD_DB_URL (production Supabase project)\n" +
+      "                  + requires IMPORT_ENV=production\n\n" +
+      "    Example (dev, first run):\n" +
+      "      SUPABASE_DEV_DB_URL=postgres://... \\\n" +
+      "        pnpm --filter @workspace/scripts run import:metrix -- --env=dev\n\n" +
+      "    Example (dev, overwrite existing data):\n" +
+      "      SUPABASE_DEV_DB_URL=postgres://... \\\n" +
+      "        pnpm --filter @workspace/scripts run import:metrix -- --env=dev --force\n\n" +
+      "    Example (prod):\n" +
+      "      SUPABASE_PROD_DB_URL=postgres://... IMPORT_ENV=production \\\n" +
+      "        pnpm --filter @workspace/scripts run import:metrix -- --env=prod --force",
+    );
     process.exit(1);
   }
+
+  let dbUrl: string;
+
+  if (envArgRaw === "prod") {
+    // Two-factor gate: the distinct prod connection variable AND the
+    // IMPORT_ENV confirmation flag must both be set deliberately.
+    // IMPORT_ENV is never present in the Replit workspace by default, so a
+    // stray copy-paste of the prod command in a dev shell fails here even
+    // if SUPABASE_PROD_DB_URL happens to be exported.
+    if (process.env.IMPORT_ENV !== "production") {
+      console.error(
+        "❌  Production import blocked.\n\n" +
+        "    --env=prod also requires IMPORT_ENV=production to be set in the environment.\n" +
+        "    This two-factor check prevents an accidental prod run from a dev shell.\n\n" +
+        "    Set both deliberately:\n" +
+        "      SUPABASE_PROD_DB_URL=postgres://... IMPORT_ENV=production \\\n" +
+        "        pnpm --filter @workspace/scripts run import:metrix -- --env=prod --force",
+      );
+      process.exit(1);
+    }
+    const prodUrl = process.env.SUPABASE_PROD_DB_URL;
+    if (!prodUrl) {
+      console.error(
+        "❌  SUPABASE_PROD_DB_URL is not set.\n\n" +
+        "    --env=prod reads from SUPABASE_PROD_DB_URL, not SUPABASE_DB_URL.\n" +
+        "    Set it to the production Supabase Postgres connection string.",
+      );
+      process.exit(1);
+    }
+    dbUrl = prodUrl;
+    console.warn(
+      "⚠️  PRODUCTION MODE — this import will DELETE and replace all managed-account\n" +
+      "    data in the PRODUCTION Supabase database.  There is no undo.\n" +
+      `    SUPABASE_PROD_DB_URL host: ${new URL(dbUrl).hostname}\n`,
+    );
+  } else {
+    const devUrl = process.env.SUPABASE_DEV_DB_URL;
+    if (!devUrl) {
+      console.error(
+        "❌  SUPABASE_DEV_DB_URL is not set.\n\n" +
+        "    --env=dev reads from SUPABASE_DEV_DB_URL, not SUPABASE_DB_URL.\n" +
+        "    Set it to the development Supabase Postgres connection string.",
+      );
+      process.exit(1);
+    }
+    dbUrl = devUrl;
+    console.log(`Running in dev mode (--env=dev). Target host: ${new URL(dbUrl).hostname}`);
+  }
+
+  const force = process.argv.includes("--force");
 
   const client = new pg.Client({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
   await client.connect();
@@ -1169,13 +1325,15 @@ async function main() {
 
   try {
     // ── DDL ────────────────────────────────────────────────────────────
+    // Schema must run first so all guarded tables exist before we query counts.
+    // CREATE TABLE IF NOT EXISTS makes this safe on a fresh database.
     const schemaSql = readFileSync(join(__dirname, "schema.sql"), "utf8");
     await q(schemaSql);
     console.log("Schema applied.");
 
-    await q("begin");
-
-    // ── Wipe previously imported rows (idempotent re-run) ─────────────
+    // ── Every table the import deletes ─────────────────────────────────
+    // Defined before BEGIN so the same list can be used for both the lock
+    // acquisition and the actual deletion.
     const dataTables = [
       "ad_performance", "demographic_performance", "placement_performance",
       "platform_performance", "device_performance", "concept_performance",
@@ -1186,6 +1344,46 @@ async function main() {
       "demographic_signal", "placement_signal", "copy_library", "signal_cards",
       "account_modules", "iap_runs", "ads",
     ];
+    // Global tables with no account_id filter also need to be locked.
+    const globalTables = ["variable_registry", "app_config"];
+
+    // ── Begin transaction before snapshotting ─────────────────────────
+    // The snapshot, preflight guard, deletion, and re-population all happen
+    // inside the same transaction with table-level locks held, eliminating
+    // the race window between counting rows and deleting them.
+    await q("begin");
+
+    // Acquire SHARE ROW EXCLUSIVE on every table we will wipe.  This mode
+    // blocks concurrent INSERT / UPDATE / DELETE but allows reads, so the
+    // app can still serve the API while the import runs.  The locks are
+    // released automatically on COMMIT or ROLLBACK.
+    const allLockTargets = [...dataTables, ...globalTables];
+    await q(`lock table ${allLockTargets.join(", ")} in share row exclusive mode`);
+
+    // ── Pre-flight: snapshot existing row counts ────────────────────────
+    // Tables are now locked; counts are stable for the duration of the
+    // transaction.  On a fresh database every count is 0 — guard is a no-op.
+    const preCounts = await snapshotCounts(client);
+    const existingRows = formatCountMap(preCounts, (n) => n > 0);
+    if (existingRows && !force) {
+      // Throw so the catch block rolls back and the finally block closes the
+      // connection cleanly before the process exits with code 1.
+      throw new Error(
+        `Import aborted: managed account tables already contain data:\n${existingRows}\n\n` +
+        `Re-running the import will DELETE and replace all these rows.  Any data added outside\n` +
+        `this import package (manual uploads, re-analysis runs) will be permanently lost.\n\n` +
+        `If you are certain you want to overwrite, re-run with --force:\n` +
+        `  SUPABASE_DEV_DB_URL=postgres://... pnpm --filter @workspace/scripts run import:metrix -- --env=dev --force`,
+      );
+    }
+    if (existingRows && force) {
+      console.warn(
+        `--force passed: overwriting existing data for managed accounts.\n` +
+        `Pre-import counts (rows that will be deleted):\n${existingRows}`,
+      );
+    }
+
+    // ── Wipe previously imported rows (idempotent re-run) ─────────────
     for (const t of dataTables) {
       await q(`delete from ${t} where account_id = any($1)`, [[ACCOUNT_ID, ECAS_ACCOUNT_ID]]);
     }
@@ -1614,6 +1812,53 @@ async function main() {
     console.log(`ECAS: imported ${ecasAdPerfCount} ad_performance rows for account '${ECAS_ACCOUNT_ID}'.`);
 
     await q("commit");
+
+    // ── Post-import row-count guard ────────────────────────────────────
+    // Verify that no table lost rows relative to the pre-import snapshot.
+    // A loss means the delete ran but the re-population was incomplete (e.g.
+    // a partial failure, a missing source file, or a concurrency issue).
+    const postCounts = await snapshotCounts(client);
+    const losses: string[] = [];
+    const zeros: string[] = [];
+    for (const [key, pre] of preCounts) {
+      const post = postCounts.get(key) ?? 0;
+      if (pre > 0 && post < pre) {
+        losses.push(`  ${key}: ${pre} → ${post} (lost ${pre - post} rows)`);
+      }
+    }
+    // Sanity-check: critical keys must be non-empty after every import regardless
+    // of whether they had rows before (covers first-run as well as re-runs).
+    const critical = [
+      // Per-account critical tables
+      `ad_performance:${ACCOUNT_ID}`,
+      `ads:${ACCOUNT_ID}`,
+      `iap_runs:${ACCOUNT_ID}`,
+      `account_modules:${ACCOUNT_ID}`,
+      `ad_performance:${ECAS_ACCOUNT_ID}`,
+      `iap_runs:${ECAS_ACCOUNT_ID}`,
+      `account_modules:${ECAS_ACCOUNT_ID}`,
+      // Global tables always re-populated by every import run
+      "variable_registry",
+      "app_config",
+    ];
+    for (const key of critical) {
+      if ((postCounts.get(key) ?? 0) === 0) {
+        zeros.push(`  ${key}: 0 rows (expected > 0)`);
+      }
+    }
+    if (losses.length > 0 || zeros.length > 0) {
+      const parts: string[] = [];
+      if (losses.length > 0) parts.push(`Tables with fewer rows than before import:\n${losses.join("\n")}`);
+      if (zeros.length > 0) parts.push(`Critical tables that ended up empty:\n${zeros.join("\n")}`);
+      console.error(
+        `\n⚠️  IMPORT INTEGRITY FAILURE — the database may be in a broken state:\n` +
+        parts.join("\n\n") +
+        `\n\nAction required: investigate the errors above, fix the root cause, then re-run the import with --force.`,
+      );
+      process.exitCode = 1; // flag failure without throwing (commit already succeeded)
+    } else {
+      console.log("Row-count guard passed: no tables lost rows.");
+    }
 
     // ── Report ─────────────────────────────────────────────────────────
     const counts = await client.query(`

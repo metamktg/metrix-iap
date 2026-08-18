@@ -39,6 +39,9 @@ let activeSeed: typeof baseSeed = baseSeed;
 let mockStrategyRunning = false;
 let mockBriefsRunning = false;
 let mockAnalysisRunStatus: string | null = null;
+let mockAnalysisErrorMessage: string | null = null;
+let mockStrategyLastError: string | null = null;
+let mockBriefsLastError: string | null = null;
 
 // ── Mocks ────────────────────────────────────────────────────────────────
 //
@@ -55,7 +58,7 @@ vi.mock("@workspace/api-client-react", async (importOriginal) => {
     ...actual,
     useGetLatestAnalysisRun: () => ({
       data: mockAnalysisRunStatus
-        ? { run: { status: mockAnalysisRunStatus } }
+        ? { run: { status: mockAnalysisRunStatus, error_message: mockAnalysisErrorMessage } }
         : null,
     }),
     useGetLatestGenerationRun: () => ({ data: null }),
@@ -79,7 +82,12 @@ vi.mock("@/components/generation/GenerationControls", () => ({
           : false,
     elapsedSeconds: 0,
     lastRun: null,
-    lastError: null,
+    lastError:
+      kind === "strategy"
+        ? mockStrategyLastError
+        : kind === "briefs"
+          ? mockBriefsLastError
+          : null,
   }),
 }));
 
@@ -173,6 +181,9 @@ beforeEach(() => {
   mockStrategyRunning = false;
   mockBriefsRunning = false;
   mockAnalysisRunStatus = null;
+  mockAnalysisErrorMessage = null;
+  mockStrategyLastError = null;
+  mockBriefsLastError = null;
   mockReportCount = 0;
 });
 
@@ -384,6 +395,65 @@ describe("LoopCommandChain — Analysis stage running", () => {
     const analysisTile = screen.getByRole("button", { name: /^analysis/i });
     fireEvent.click(analysisTile);
     expect(screen.getByText("Running")).toBeTruthy();
+  });
+});
+
+describe("LoopCommandChain — Analysis stage failed", () => {
+  // A run that ended in "error" must be visibly distinct from both "running"
+  // and "not started yet" — the bug this guards against left a failed run
+  // looking identical to an untouched stage once it settled.
+
+  it("Analysis tile shows a Failed label, not the idle stage name", () => {
+    mockAnalysisRunStatus = "error";
+    mockAnalysisErrorMessage = "Could not parse the uploaded file.";
+    const seed = seedWithNoAnalysisAccount();
+    selectAccount("fresh_account");
+    const { container } = renderOverview(seed);
+    expect(container.textContent).toContain("Failed");
+  });
+
+  it("Analysis tile is not disabled while failed — user can reopen it", () => {
+    mockAnalysisRunStatus = "error";
+    const seed = seedWithNoAnalysisAccount();
+    selectAccount("fresh_account");
+    renderOverview(seed);
+    const analysisTile = screen.getByRole("button", { name: /failed/i });
+    expect(isDisabled(analysisTile)).toBe(false);
+  });
+
+  it("shows a persistent failed strip with the error message and a retry link", () => {
+    mockAnalysisRunStatus = "error";
+    mockAnalysisErrorMessage = "Could not parse the uploaded file.";
+    const seed = seedWithNoAnalysisAccount();
+    selectAccount("fresh_account");
+    const { container } = renderOverview(seed);
+    expect(container.textContent).toContain("Analysis failed — not running");
+    expect(container.textContent).toContain("Could not parse the uploaded file.");
+    expect(screen.getByText(/Review & retry/i)).toBeTruthy();
+  });
+
+  it("does not show the failed strip once analysis data exists (superseded by a later success)", () => {
+    // Bookster's seed already has analysis data (analysisComplete = true),
+    // so a stale "error" status from an old run must not resurface as failed.
+    mockAnalysisRunStatus = "error";
+    selectAccount("bookster");
+    const { container } = renderOverview();
+    expect(container.textContent).not.toContain("Analysis failed — not running");
+  });
+});
+
+describe("LoopCommandChain — Strategy stage failed", () => {
+  it("Strategy tile shows Failed and strip surfaces the error, not silently reverting to Next", () => {
+    // Bookster already has strategy data (strategyComplete = true), which
+    // would suppress the failed strip (superseded by success) — use a fresh
+    // account with no strategy yet to exercise the general failed path.
+    mockStrategyLastError = "The engine could not generate message pillars.";
+    const seed = seedWithNoAnalysisAccount();
+    selectAccount("fresh_account");
+    const { container } = renderOverview(seed);
+    expect(container.textContent).toContain("Failed");
+    expect(container.textContent).toContain("Strategy failed — not running");
+    expect(container.textContent).toContain("The engine could not generate message pillars.");
   });
 });
 

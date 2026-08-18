@@ -286,7 +286,6 @@ timeoutMs = 90000
 [userenv]
 
 [userenv.shared]
-NEXT_PUBLIC_SUPABASE_URL = "lqryrmaipryeqtjbxjdh.supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_l9AOy2hiDMd7BbVB3T_x5w_X7JyPLZ-"
 PILOT_MODE = "true"
 PILOT_REQUIRED_AD_ACCOUNT_ID = "act_1202182091204847"

@@ -221,6 +221,7 @@ function StageTile({
   isComplete,
   isRunning,
   isStale,
+  isFailed,
   isNext,
   isLocked,
   isActive,
@@ -231,6 +232,7 @@ function StageTile({
   isComplete: boolean;
   isRunning: boolean;
   isStale: boolean;
+  isFailed?: boolean;
   isNext: boolean;
   isLocked: boolean;
   isActive: boolean;
@@ -252,6 +254,8 @@ function StageTile({
           ? "border-primary/55 bg-primary/[0.15] shadow-sm shadow-primary/20 cursor-pointer"
           : isRunning
           ? "border-amber-400/55 bg-amber-400/[0.10] cursor-pointer"
+          : isFailed
+          ? "border-red-400/55 bg-red-400/[0.10] hover:border-red-400/70 hover:bg-red-400/[0.14] cursor-pointer"
           : isStale
           ? "border-orange-400/50 bg-orange-400/[0.08] hover:border-orange-400/65 hover:bg-orange-400/[0.12] cursor-pointer"
           : isComplete
@@ -277,6 +281,7 @@ function StageTile({
           "w-4 h-4",
           isLocked   ? "text-muted-foreground/45"
             : isRunning  ? "text-amber-400"
+            : isFailed   ? "text-red-400"
             : isStale    ? "text-orange-400"
             : isComplete ? "text-emerald-400/90"
             : isNext     ? "text-interactive"
@@ -286,6 +291,8 @@ function StageTile({
         <span className="absolute -top-1 -right-1.5">
           {isRunning ? (
             <Loader2 className="w-3.5 h-3.5 text-amber-400 animate-spin" />
+          ) : isFailed ? (
+            <XCircle className="w-3.5 h-3.5 text-red-400" />
           ) : isStale ? (
             <RotateCcw className="w-3.5 h-3.5 text-orange-400" />
           ) : isComplete ? (
@@ -301,12 +308,13 @@ function StageTile({
         "text-label font-bold uppercase tracking-[0.14em] leading-none",
         isLocked   ? "text-muted-foreground/40"
           : isRunning  ? "text-amber-400/90"
+          : isFailed   ? "text-red-400/90"
           : isStale    ? "text-orange-400/85"
           : isComplete ? "text-emerald-400/80"
           : isNext     ? "text-interactive/85"
           : "text-muted-foreground/55",
       )}>
-        {label}
+        {isFailed ? "Failed" : label}
       </span>
 
       {/* Elapsed time — replaces label when running */}
@@ -1568,6 +1576,15 @@ export function LoopCommandChain({
   const strategyRunning = strategyGen.isRunning;
   const briefsRunning   = briefsGen.isRunning;
 
+  // A stage is "failed" when its most recent run ended in error and hasn't
+  // been superseded by a newer complete run. Kept separate from isRunning/
+  // isComplete so a failed run doesn't silently fall back to looking like
+  // "not started yet" — see staleStageDetection.ts note on why data presence
+  // and run status are different signals.
+  const analysisFailed = analysisRun?.status === "error" && !analysisComplete;
+  const strategyFailed = !!strategyGen.lastError && !strategyComplete;
+  const briefsFailed   = !!briefsGen.lastError && !briefsComplete;
+
   // ── Analysis elapsed-time counter ──────────────────────────────────────
   // Mirrors the pattern in useGenerationRun: starts ticking when
   // analysisRunning becomes true, resets when it becomes false.
@@ -1651,8 +1668,26 @@ export function LoopCommandChain({
         duration: 4000,
       });
     }
+    // Toast once when a run transitions to error — mirrors the success toast
+    // above. Without this, a failed analysis run left no signal at all: the
+    // running strip just disappeared and the tile quietly reverted to
+    // looking like "not started yet" (see the persistent red failed strip
+    // for the non-transient version of this same signal).
+    if (
+      status === "error" &&
+      runId &&
+      analysisToastRunIdRef.current !== runId &&
+      prevAnalysisStatusRef.current === "running"
+    ) {
+      analysisToastRunIdRef.current = runId;
+      toast({
+        title: "Analysis failed",
+        description: analysisRun?.error_message ?? "The analysis run ended with an error.",
+        variant: "destructive",
+      });
+    }
     prevAnalysisStatusRef.current = status;
-  }, [analysisRun?.status, analysisRun?.id, analysisRun?.date_start, analysisRun?.date_end, analysisPolling, analysisComplete, queryClient, toast]);
+  }, [analysisRun?.status, analysisRun?.id, analysisRun?.date_start, analysisRun?.date_end, analysisRun?.error_message, analysisPolling, analysisComplete, queryClient, toast]);
 
   // ── Analysis run mutation (fired from CommandHub confirmation) ───────────
   const startAnalysisMutation = useStartManualAnalysisRun();
@@ -1869,6 +1904,50 @@ export function LoopCommandChain({
           );
         })()}
 
+        {/* Failed strip — persists (unlike the transient toast) until the user
+            retries or a newer run supersedes it, so returning to the page or
+            reopening the tab never leaves "did it work?" ambiguous. Only shown
+            when nothing is actively running so it never competes with the
+            running strip above. */}
+        {!(analysisRunning || strategyRunning || briefsRunning) && (() => {
+          const failedKind: "analysis" | "strategy" | "briefs" | null = analysisFailed
+            ? "analysis"
+            : strategyFailed
+              ? "strategy"
+              : briefsFailed
+                ? "briefs"
+                : null;
+          if (!failedKind) return null;
+          const message =
+            failedKind === "analysis"
+              ? (analysisRun?.error_message ?? "The analysis run ended with an error.")
+              : failedKind === "strategy"
+                ? (strategyGen.lastError ?? "Strategy generation ended with an error.")
+                : (briefsGen.lastError ?? "Brief generation ended with an error.");
+          const stageLabel = failedKind.charAt(0).toUpperCase() + failedKind.slice(1);
+          return (
+            <div className="flex flex-col gap-1.5 rounded-lg border border-red-400/25 bg-red-400/[0.05] px-2.5 py-2">
+              <div className="flex items-start gap-1.5 min-w-0">
+                <XCircle className="w-3.5 h-3.5 text-red-400/80 shrink-0 mt-0.5" />
+                <div className="flex flex-col min-w-0 gap-0.5">
+                  <span className="text-label text-red-400/80 font-semibold">
+                    {stageLabel} failed — not running
+                  </span>
+                  <span className="text-label text-red-400/55 font-normal break-words">
+                    {message}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setActiveStage(failedKind)}
+                className="self-start text-label font-semibold text-red-400/80 hover:text-red-400 underline underline-offset-2"
+              >
+                Review &amp; retry
+              </button>
+            </div>
+          );
+        })()}
+
         {/* Six tiles + causal connectors */}
         <div className="flex items-center gap-0.5">
           <StageTile
@@ -1893,7 +1972,8 @@ export function LoopCommandChain({
             isComplete={analysisComplete}
             isRunning={analysisRunning}
             isStale={false}
-            isNext={dataComplete && !analysisComplete && !analysisRunning}
+            isFailed={analysisFailed}
+            isNext={dataComplete && !analysisComplete && !analysisRunning && !analysisFailed}
             isLocked={!dataComplete && !analysisComplete && !analysisRunning}
             isActive={activeStage === "analysis"}
             elapsedSeconds={analysisElapsedSeconds}
@@ -1910,7 +1990,8 @@ export function LoopCommandChain({
             isComplete={strategyComplete}
             isRunning={strategyRunning}
             isStale={strategyIsStale}
-            isNext={analysisComplete && !strategyComplete && !strategyRunning}
+            isFailed={strategyFailed}
+            isNext={analysisComplete && !strategyComplete && !strategyRunning && !strategyFailed}
             isLocked={!analysisComplete && !strategyComplete && !strategyRunning}
             isActive={activeStage === "strategy"}
             elapsedSeconds={strategyGen.elapsedSeconds}
@@ -1927,7 +2008,8 @@ export function LoopCommandChain({
             isComplete={briefsComplete}
             isRunning={briefsRunning}
             isStale={briefsIsStale}
-            isNext={strategyComplete && !briefsComplete && !briefsRunning}
+            isFailed={briefsFailed}
+            isNext={strategyComplete && !briefsComplete && !briefsRunning && !briefsFailed}
             isLocked={!strategyComplete && !briefsComplete && !briefsRunning}
             isActive={activeStage === "briefs"}
             elapsedSeconds={briefsGen.elapsedSeconds}

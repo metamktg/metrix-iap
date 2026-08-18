@@ -99,6 +99,22 @@
   --mx-shadow-blue: 0 0 28px hsl(var(--primary) / 0.28);
   --mx-shadow-cyan: 0 0 36px hsl(var(--accent) / 0.24);
 
+  /* ── Nocturne tonal edge system (Metrix v1 design handoff) ──
+     Three edge weights plus the signature long rules that fade to
+     transparent at the ends instead of stopping hard at a corner.
+     Aliased from DS channel variables — the hex values live in
+     tokens.json (input = edge-strong, border = edge, sidebarBorder =
+     edge-soft); never restate them here. */
+  --mx-edge-strong: hsl(var(--input));       /* structural chrome: topbar, panel header/footer */
+  --mx-edge: hsl(var(--border));             /* container/card edges */
+  --mx-edge-soft: hsl(var(--sidebar-border));/* dense repeating rules: table rows, list separators */
+  --mx-edge-accent: hsl(var(--primary) / 0.42);
+  --mx-dim: hsl(var(--foreground) / 0.55);
+  --mx-dimmer: hsl(var(--foreground) / 0.40);
+  --mx-fade-x: linear-gradient(90deg, transparent, var(--mx-edge-strong) 56px, var(--mx-edge-strong) calc(100% - 56px), transparent);
+  --mx-fade-x-soft: linear-gradient(90deg, transparent, var(--mx-edge-soft) 28px, var(--mx-edge-soft) calc(100% - 28px), transparent);
+  --mx-fade-y: linear-gradient(180deg, transparent, var(--mx-edge-strong) 56px, var(--mx-edge-strong) calc(100% - 56px), transparent);
+
   /* ── AppShell panel geometry — single-file reference for all shell dims ── */
   --sidebar-expanded: 216px;
   --sidebar-collapsed: 56px;
@@ -230,28 +246,35 @@
       linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--muted)) 48%, hsl(var(--background)) 100%);
   }
 
-  /* Sidebar — dark glass panel */
+  /* Sidebar — dark glass panel. The right edge is a Nocturne fading rule
+     (long structural rules fade to transparent over the outer 56px instead
+     of stopping hard at the corner), painted as a 1px background layer. */
   .mx-sidebar {
-    background: linear-gradient(180deg, hsl(var(--sidebar) / 0.92), hsl(var(--background) / 0.96));
-    border-right: 1px solid var(--mx-border-soft);
+    background:
+      var(--mx-fade-y) right / 1px 100% no-repeat,
+      linear-gradient(180deg, hsl(var(--sidebar) / 0.92), hsl(var(--background) / 0.96));
     box-shadow:
       inset 0 1px 0 rgba(255,255,255,0.05),
       12px 0 40px rgba(0, 0, 0, 0.35);
     backdrop-filter: blur(22px);
   }
 
-  /* Topbar — translucent glass strip */
+  /* Topbar — translucent glass strip with a Nocturne fading bottom rule
+     (structural chrome uses --mx-edge-strong via --mx-fade-x). */
   .mx-topbar {
-    background: linear-gradient(180deg, hsl(var(--sidebar) / 0.88), hsl(var(--background) / 0.82));
-    border-bottom: 1px solid var(--mx-border-soft);
+    background:
+      var(--mx-fade-x) bottom / 100% 1px no-repeat,
+      linear-gradient(180deg, hsl(var(--sidebar) / 0.88), hsl(var(--background) / 0.82));
     backdrop-filter: blur(18px);
   }
 
-  /* Premium glass card */
+  /* Premium glass card — Nocturne edges: container edge all round, top edge
+     one step lighter (simulated top-light on a dark ground). */
   .mx-card {
     position: relative;
     overflow: hidden;
-    border: 1px solid var(--mx-border-soft);
+    border: 1px solid var(--mx-edge);
+    border-top-color: var(--mx-edge-strong);
     border-radius: 14px;
     background: linear-gradient(180deg, hsl(var(--card) / 0.78), hsl(var(--background) / 0.84));
     box-shadow:
@@ -405,7 +428,8 @@
   .mx-card-hero {
     position: relative;
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.10);
+    border: 1px solid var(--mx-edge);
+    border-top-color: var(--mx-edge-strong);
     border-radius: 14px;
     background: linear-gradient(160deg, hsl(var(--card) / 0.78), hsl(var(--background) / 0.86));
     box-shadow:

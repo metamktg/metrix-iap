@@ -205,7 +205,7 @@ function HoverFlyout({
       style={{ position: "fixed", top, left, zIndex: 9999 }}
       className={cn(
         "w-48 rounded-lg shadow-xl",
-        "bg-[hsl(222_61%_10%)] border border-border/50",
+        "bg-surface-sidebar border border-border/50",
         "py-1",
       )}
       role="dialog"
