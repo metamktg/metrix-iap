@@ -383,22 +383,35 @@ export function AdAccountOverview() {
             </div>
           </SectionCard>
 
-          {/* Results by event */}
+          {/* Results by event — Nocturne canvas table */}
           <SectionCard title="Results by event" desc="Conversion volume by event" right={<SectionInfoIcon tip="Conversion volume split by event type for the selected date window." />}>
-            <div className="grid grid-cols-dashboard-4-sm gap-2">
-              {events.map(([key, e]) => {
-                const isZero = !e.results || e.results === 0;
-                return (
-                  <div key={key} className={cn("mx-kpi-tile px-3 py-2.5", isZero && "opacity-60")}>
-                    <div className="text-label font-semibold text-foreground/90 leading-tight mb-1.5 truncate">{eventLabel(key)}</div>
-                    <div className={cn("text-stat metric-num leading-none", isZero && "text-muted-foreground/45")}>{fmtNum(e.results)}</div>
-                    <div className="text-label text-muted-foreground mt-2 space-y-0.5">
-                      <div>Spend <span className="text-foreground/90 font-medium">{fmtUSD(e.spend)}</span></div>
-                      <div>Clicks <span className="text-foreground/60">{fmtNum(e.link_clicks)}</span></div>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="overflow-x-auto">
+              <table className="nc-table">
+                <thead>
+                  <tr>
+                    <th>Event</th>
+                    <th className="text-right">Results</th>
+                    <th className="text-right">Spend</th>
+                    <th className="text-right">Cost / result</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {events.map(([key, e]) => {
+                    const isZero = !e.results || e.results === 0;
+                    const cpa = e.results > 0 ? e.spend / e.results : null;
+                    return (
+                      <tr key={key} className={cn(isZero && "opacity-40")}>
+                        <td><span className="font-medium text-foreground/90">{eventLabel(key)}</span></td>
+                        <td className="text-right tabular-nums text-foreground/85">{fmtNum(e.results)}</td>
+                        <td className="text-right tabular-nums text-muted-foreground/70">{fmtUSD(e.spend, 0)}</td>
+                        <td className={cn("text-right tabular-nums", cpa != null ? "text-foreground/80" : "text-muted-foreground/35")}>
+                          {cpa != null ? fmtUSD(cpa) : "n/a"}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </SectionCard>
 

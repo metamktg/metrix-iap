@@ -163,10 +163,11 @@ export function KpiTile({
           onClick={(e) => { e.stopPropagation(); setPickerOpen((v) => !v); }}
           className="flex items-center gap-1 group/lbl text-left min-w-0"
         >
+          {/* Nocturne card-kicker: accent-tinted uppercase label */}
           <span className={cn(
             TYPE.label,
             "font-semibold uppercase tracking-[0.14em] truncate transition-colors",
-            pickerOpen ? "text-interactive" : "text-muted-foreground/65 group-hover/lbl:text-muted-foreground/90",
+            pickerOpen ? "text-interactive" : "text-interactive/75 group-hover/lbl:text-interactive",
           )}>
             {m.label}
           </span>
