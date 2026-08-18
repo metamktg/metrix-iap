@@ -86,25 +86,28 @@ describe("IAP Library ?focus=<cell_id>", () => {
 });
 
 describe("Creative Brief Builder ?focus=<brief id>", () => {
-  // Brief Builder promoted the old in-page drawer to a full dedicated
-  // page (/app/creative/builder) — no drawer/close button to find
-  // anymore, so these assert on the page content directly.
+  // Brief Builder is the canvas master-detail screen: the brief list is
+  // always on the left and ?focus selects which brief's workspace shows
+  // on the right — no drawer/close button to find, so these assert on
+  // the page content directly.
   it("renders the focused brief's own workspace", () => {
     const { container } = renderAt(`/app/creative/builder?focus=${brief.id}`);
     expect(container.textContent).toContain(brief.asset_type);
     expect(container.textContent).toContain(brief.human_direction);
   });
 
-  it("shows a brief picker without a focus param", () => {
+  it("selects the first brief without a focus param (canvas default)", () => {
     const { container } = renderAt("/app/creative/builder");
-    expect(container.textContent).toContain("Choose a brief from Creative");
+    const detail = container.querySelector('[data-testid="brief-detail"]');
+    expect(detail).not.toBeNull();
+    expect(container.querySelector('[data-testid="brief-list"]')).not.toBeNull();
   });
 
-  it("shows a brief picker for an unknown focus id", () => {
+  it("falls back to the first brief for an unknown focus id", () => {
     const { container } = renderAt(
       "/app/creative/builder?focus=__no_such_brief__"
     );
-    expect(container.textContent).toContain("Choose a brief from Creative");
+    expect(container.querySelector('[data-testid="brief-detail"]')).not.toBeNull();
   });
 });
 
