@@ -14,10 +14,10 @@ import { BarChart3, FileJson, FileText, FileStack } from "lucide-react";
 const SECTION = "Exports · 08";
 
 const CHILDREN = [
-  { to: "/app/exports/analysis", label: "Analysis", Icon: BarChart3, desc: "Performance-by-cell and variable-performance data, as data-limited JSON." },
-  { to: "/app/exports/strategy", label: "Strategy JSON", Icon: FileJson, desc: "Message pillars and active hypotheses, as data-limited JSON." },
-  { to: "/app/exports/reports", label: "Reports", Icon: FileText, desc: "PDF, HTML, and Google Doc export — already available from Report History." },
-  { to: "/app/exports/brief", label: "Brief", Icon: FileStack, desc: "Draft creative briefs, as data-limited JSON." },
+  { to: "/app/exports/analysis", label: "Analysis", Icon: BarChart3, desc: "Performance-by-cell and variable-performance data, as data-limited JSON.", lineage: "analysis.performance_by_cell[] · v3_variable_performance[]" },
+  { to: "/app/exports/strategy", label: "Strategy JSON", Icon: FileJson, desc: "Message pillars and active hypotheses, as data-limited JSON.", lineage: "strategy.message_pillars[] · active_hypotheses[]" },
+  { to: "/app/exports/reports", label: "Reports", Icon: FileText, desc: "PDF, HTML, and Google Doc export — already available from Report History.", lineage: "workspace_reports[] · pdf · google_doc · html" },
+  { to: "/app/exports/brief", label: "Brief", Icon: FileStack, desc: "Draft creative briefs, as data-limited JSON.", lineage: "brief_builder.draft_briefs[]" },
 ];
 
 export function ExportsCommandCenter() {

@@ -14,9 +14,9 @@ import { FileBarChart, Settings2, History, FileText } from "lucide-react";
 const SECTION = "Reports · 07";
 
 const CHILDREN = [
-  { to: "/app/reports/builder", label: "Report Builder", Icon: FileText, desc: "White-label and curate a report for a specific meeting objective." },
-  { to: "/app/reports/configuration", label: "Configuration", Icon: Settings2, desc: "Default template and scheduled-send settings." },
-  { to: "/app/reports/history", label: "History", Icon: History, desc: "Every report generated for this workspace." },
+  { to: "/app/reports/builder", label: "Report Builder", Icon: FileText, desc: "White-label and curate a report for a specific meeting objective.", lineage: "report_builder.report_sections[]" },
+  { to: "/app/reports/configuration", label: "Configuration", Icon: Settings2, desc: "Default template and scheduled-send settings.", lineage: "report_settings" },
+  { to: "/app/reports/history", label: "History", Icon: History, desc: "Every report generated for this workspace.", lineage: "workspace_reports[] · report_builder.report_history[]" },
 ];
 
 export function ReportsCommandCenter() {

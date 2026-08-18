@@ -1113,6 +1113,8 @@ export interface HubNavItem {
   label: string;
   desc: string;
   Icon: React.ComponentType<{ className?: string }>;
+  /** Canvas hub composition: the data lineage this view reads (mono caption, e.g. "analysis.concept_rollup[] · performance_by_cell[]"). */
+  lineage?: string;
 }
 
 export function HubNavGrid({ items, label = "Explore" }: { items: HubNavItem[]; label?: string }) {
@@ -1134,6 +1136,9 @@ export function HubNavGrid({ items, label = "Explore" }: { items: HubNavItem[]; 
             <div className="min-w-0 flex-1">
               <div className="text-title font-semibold text-foreground">{c.label}</div>
               <p className="text-caption text-muted-foreground/80 leading-relaxed mt-0.5">{c.desc}</p>
+              {c.lineage && (
+                <p className={cn(TYPE.microLabel, "text-muted-foreground/40 mt-1 truncate")} data-testid="hub-nav-lineage">{c.lineage}</p>
+              )}
             </div>
             <ArrowRight className="absolute right-3.5 top-4 w-3.5 h-3.5 text-muted-foreground/30 transition-all group-hover:text-interactive group-hover:translate-x-0.5" aria-hidden />
           </button>
