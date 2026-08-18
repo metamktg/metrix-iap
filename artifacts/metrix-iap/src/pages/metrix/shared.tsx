@@ -1591,7 +1591,8 @@ export function SectionCard({
         onClick={collapsible ? () => setOpen((v) => !v) : undefined}
       >
         <div className="flex-1 min-w-0 flex items-center gap-1.5">
-          <h3 className="text-title font-bold text-foreground leading-tight truncate">{title}</h3>
+          {/* Nocturne canvas card-title: 17px heading weight, sentence case */}
+          <h3 className="text-cardtitle font-semibold text-foreground leading-tight truncate">{title}</h3>
           {desc && (
             <span onClick={(e) => e.stopPropagation()} className="shrink-0">
               <InfoTooltip content={desc} />

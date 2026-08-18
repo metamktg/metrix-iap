@@ -3,7 +3,7 @@
 // Covers:
 //   1. "Account Totals" SectionCard header is present (not a bare h2).
 //   2. At least one SectionInfoIcon (info icon) is visible.
-//   3. Zero-result event tiles have the opacity-60 class applied.
+//   3. Zero-result event rows are dimmed (opacity-40) in the canvas table.
 //   4. "No actions yet" empty state renders when no recommendation cards exist.
 //
 // API calls are intercepted with page.route() so no live API server is needed.
@@ -178,8 +178,8 @@ async function main() {
       }
     });
 
-    // ── Test 3: zero-result event tiles have opacity-60 class ─────────────
-    await test("zero-result event tiles have opacity-60 class applied", async () => {
+    // ── Test 3: zero-result event rows are dimmed in the canvas table ─────
+    await test("zero-result event rows are dimmed in the Results-by-event table", async () => {
       const ctx = await browser.newContext({
         viewport: { width: 1440, height: 900 },
       });
@@ -188,16 +188,17 @@ async function main() {
         await mockApis(ctx);
         await gotoOverview(page);
 
-        // The bookster fixture has two zero-result events (Website trials started
-        // and onb_initiate_checkout). Each zero tile gets the opacity-60 class on
-        // its container div. Assert at least one such tile is present.
-        const zeroTiles = page.locator(".opacity-60");
-        const count = await zeroTiles.count();
+        // Since the Nocturne canvas replacement, Results by event renders as
+        // an .nc-table; zero-result events (the bookster fixture has two —
+        // Website trials started and onb_initiate_checkout) stay listed as
+        // rows dimmed with opacity-40. Assert at least one such row exists.
+        const zeroRows = page.locator(".nc-table tbody tr.opacity-40");
+        const count = await zeroRows.count();
         assert(
           count > 0,
-          `Expected at least one event tile with class "opacity-60" for zero-result events, found ${count}. Zero-value dimming may have been removed.`,
+          `Expected at least one dimmed (.opacity-40) zero-result row in the Results-by-event table, found ${count}. Zero-value dimming may have been removed.`,
         );
-        console.log(`       found ${count} zero-result tile(s) with opacity-60`);
+        console.log(`       found ${count} dimmed zero-result row(s)`);
       } finally {
         await ctx.close();
       }

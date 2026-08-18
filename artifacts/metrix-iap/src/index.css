@@ -586,6 +586,7 @@
   .text-stat    { font-size: 1.625rem;   line-height: 1.1; }  /* 26px */
   .text-bignum  { font-size: 1.75rem;    line-height: 1.1; }  /* 28px */
   .text-hero    { font-size: 2.5rem;     line-height: 1.0; }  /* 40px — oversized creative/display */
+  .text-cardtitle { font-size: 1.0625rem; line-height: 1.2; } /* 17px — Nocturne canvas card-title */
 
   /* ── Data text hierarchy — DS-derived steps, predictable contrast ──
        text-data-primary  foreground            — values, headings
@@ -896,4 +897,44 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ── Nocturne canvas table (Metrix v1 design handoff) ─────────────────
+ * The canvas's `.table` primitive translated to app tokens: uppercase dim
+ * column heads, row rules painted as row-level fading strips (the end-fade
+ * spans the row, not each cell), and a hover tint layered over the rule so
+ * it keeps painting. Use for every data table replaced by the canvas
+ * design (Results by event, event tables, register tables). */
+.nc-table { width: 100%; border-collapse: collapse; }
+.nc-table th {
+  text-align: left;
+  font-size: 0.6875rem; /* 11px — canvas th size; matches text-caption */
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground) / 0.75);
+  font-weight: 500;
+  padding: 8px 10px;
+  border-bottom: 1px solid transparent; /* layout only; the row paints the fading rule */
+}
+.nc-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid transparent;
+  font-size: 0.8125rem; /* 13px — canvas body size within tables */
+}
+.nc-table thead tr {
+  background: linear-gradient(to right,
+    transparent, hsl(var(--border)) 48px,
+    hsl(var(--border)) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px;
+}
+.nc-table tbody tr {
+  background: linear-gradient(to right,
+    transparent, hsl(var(--foreground) / 0.08) 48px,
+    hsl(var(--foreground) / 0.08) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px;
+}
+.nc-table tbody tr:hover {
+  background:
+    linear-gradient(hsl(var(--foreground) / 0.04), hsl(var(--foreground) / 0.04)) no-repeat 0 0 / 100% 100%,
+    linear-gradient(to right,
+      transparent, hsl(var(--foreground) / 0.08) 48px,
+      hsl(var(--foreground) / 0.08) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px;
 }
