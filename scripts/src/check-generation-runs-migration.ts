@@ -13,6 +13,7 @@
 //   pnpm --filter @workspace/scripts run check:generation-runs-migration
 
 import pg from "pg";
+import { resolveSupabaseDbUrl } from "./lib/supabase-db-connection.js";
 
 function pass(msg: string) {
   console.log(`  PASS  ${msg}`);
@@ -27,10 +28,10 @@ function fail(msg: string, detail?: string): never {
 const REQUIRED_COLUMNS = ["progress_pct", "progress_stage"] as const;
 const TABLE = "generation_runs";
 
-const dbUrl = process.env["SUPABASE_DB_URL"];
+const dbUrl = resolveSupabaseDbUrl("SUPABASE_DB_URL");
 if (!dbUrl) {
   console.log(
-    "SKIP  SUPABASE_DB_URL is not set — cannot verify migration. " +
+    "SKIP  SUPABASE_DB_URL is not set (and no SUPABASE_DB_PASSWORD fallback) — cannot verify migration. " +
       "Set it to the direct Postgres connection string and re-run.",
   );
   process.exit(0);
