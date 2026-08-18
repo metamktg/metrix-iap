@@ -32,6 +32,7 @@ import {
 } from "@/lib/data/kpiBreakdown";
 import { useDeepDive } from "@/contexts/DeepDiveContext";
 import { buildSegmentModule } from "@/lib/data/deepDive";
+import { SegmentHoverPreview } from "./SegmentHoverPreview";
 
 const CHART_CONFIG: ChartConfig = { value: { label: "Value", color: "hsl(var(--interactive))" } };
 
@@ -212,9 +213,10 @@ function FunnelRanking({ rows }: { rows: BreakdownRow[] }) {
 
 // ─── Mirrored ranked table (always rendered — the accessible view) ────
 
-function MirrorTable({ rows, metricLabel, onDrillSegment }: {
+function MirrorTable({ rows, metricLabel, dimensionLabel, onDrillSegment }: {
   rows: BreakdownRow[];
   metricLabel: string;
+  dimensionLabel: string;
   onDrillSegment?: (row: BreakdownRow) => void;
 }) {
   return (
@@ -232,19 +234,21 @@ function MirrorTable({ rows, metricLabel, onDrillSegment }: {
           {rows.map((r) => (
             <tr key={r.key} className="border-b border-border/15 last:border-b-0">
               <td className={cn(TYPE.body, "px-3 py-1.5 text-foreground/85 font-medium max-w-[240px] truncate")} title={r.note ?? r.label}>
-                {onDrillSegment ? (
-                  <button
-                    type="button"
-                    onClick={() => onDrillSegment(r)}
-                    className="text-left truncate max-w-full text-interactive hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
-                    data-testid={`breakdown-segment-${r.key}`}
-                    aria-label={`Open the deep dive for ${r.label}`}
-                  >
-                    {r.label}
-                  </button>
-                ) : (
-                  r.label
-                )}
+                <SegmentHoverPreview kicker={dimensionLabel} metricLabel={metricLabel} row={r} drillable={!!onDrillSegment}>
+                  {onDrillSegment ? (
+                    <button
+                      type="button"
+                      onClick={() => onDrillSegment(r)}
+                      className="text-left truncate max-w-full text-interactive hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded"
+                      data-testid={`breakdown-segment-${r.key}`}
+                      aria-label={`Open the deep dive for ${r.label}`}
+                    >
+                      {r.label}
+                    </button>
+                  ) : (
+                    <span>{r.label}</span>
+                  )}
+                </SegmentHoverPreview>
               </td>
               <td className={cn(TYPE.body, "px-3 py-1.5 tabular-nums text-right", r.value == null ? "text-muted-foreground/40" : "text-foreground font-semibold")}>
                 {r.formatted}
@@ -413,7 +417,7 @@ export function BreakdownExplorer({
             {form === "bar" && <RankedBars rows={rows} />}
             {form === "donut" && !donutBlocked && <DonutShare rows={rows} />}
             {form === "funnel" && <FunnelRanking rows={rows} />}
-            <MirrorTable rows={rows} metricLabel={metricLabel} onDrillSegment={onDrillSegment} />
+            <MirrorTable rows={rows} metricLabel={metricLabel} dimensionLabel={dimension?.label ?? "Segment"} onDrillSegment={onDrillSegment} />
           </div>
         )
       )}
