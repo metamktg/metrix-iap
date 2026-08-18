@@ -244,6 +244,72 @@ function DnaChipStrip({ variables, label, testId }: { variables: DnaVariable[]; 
   );
 }
 
+// ─── DNA loci bars ────────────────────────────────────────────────────
+// Nocturne "gene loci" composition: each measured variable as a diverging
+// bar around the avatar's own spend-weighted average CPA. The percentage
+// is a real derivation ((avg − cpa) / avg — positive = cheaper than the
+// avatar's average), never an invented isolation score. Variables without
+// a CPA are listed but carry no bar.
+
+function DnaLociBars({ variables, testId }: { variables: DnaVariable[]; testId: string }) {
+  const measured = variables.filter((v) => v.cpa != null && v.spend > 0);
+  if (measured.length < 2) return null;
+  const totalSpend = measured.reduce((n, v) => n + v.spend, 0);
+  const avgCpa = measured.reduce((n, v) => n + (v.cpa as number) * v.spend, 0) / totalSpend;
+  if (!(avgCpa > 0)) return null;
+
+  const rows = measured
+    .map((v) => ({ v, lift: ((avgCpa - (v.cpa as number)) / avgCpa) * 100 }))
+    .sort((a, b) => b.lift - a.lift);
+  const maxAbs = Math.max(10, ...rows.map((r) => Math.abs(r.lift)));
+
+  return (
+    <div data-testid={testId} className="mt-3">
+      <div className="flex items-center gap-1 mb-1.5">
+        <Dna className="w-3.5 h-3.5 text-interactive/70" />
+        <span className={cn(TYPE.label, "font-mono uppercase tracking-widest text-muted-foreground/60")}>
+          CPA vs avatar average
+        </span>
+      </div>
+      <div className="space-y-1.5">
+        {rows.map(({ v, lift }, idx) => {
+          const w = (Math.abs(lift) / maxAbs) * 50;
+          const good = lift >= 0;
+          return (
+            <div key={v.code} className="flex items-center gap-2">
+              <span className={cn(TYPE.label, "w-6 shrink-0 font-mono text-muted-foreground/40")}>
+                L{idx + 1}
+              </span>
+              <span className={cn(TYPE.caption, "w-28 shrink-0 font-mono truncate text-foreground/75")} title={v.code}>
+                {v.code}
+              </span>
+              <div className="relative flex-1 h-[5px]">
+                <div className="absolute inset-y-0 left-1/2 w-px bg-white/20" />
+                <div
+                  className={cn(
+                    "absolute inset-y-0 rounded-full",
+                    good ? "bg-primary/60" : "bg-red-400/45",
+                  )}
+                  style={good
+                    ? { left: "50%", width: `${w}%` }
+                    : { right: "50%", width: `${w}%` }}
+                />
+              </div>
+              <span className={cn(
+                TYPE.label,
+                "w-12 shrink-0 text-right tabular-nums",
+                good ? "text-emerald-400" : "text-red-300",
+              )}>
+                {lift > 0 ? "+" : ""}{lift.toFixed(0)}%
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ─── Sort / filter bar ────────────────────────────────────────────────
 
 function SortFilterBar({
@@ -434,6 +500,7 @@ function AvatarCard({
                 label={`Measured · ${dna.measuredCellIds.length} angle${dna.measuredCellIds.length === 1 ? "" : "s"}`}
                 testId={`avatar-dna-${col.id}`}
               />
+              <DnaLociBars variables={dna.variables} testId={`avatar-dna-loci-${col.id}`} />
             </div>
           )}
         </div>

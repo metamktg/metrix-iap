@@ -137,11 +137,10 @@ function renderChain(account: AdAccount = makeCompleteAccount()) {
  * the button — same approach used in LoopCommandChain-stale-badge.test.tsx.
  */
 function getStageTile(container: HTMLElement, label: string): HTMLElement | null {
-  const spans = Array.from(container.querySelectorAll<HTMLElement>("span"));
-  const labelSpan = spans.find(
-    (s) => s.textContent?.trim() === label && /uppercase/.test(s.className),
-  );
-  return labelSpan?.closest("button") ?? null;
+  // Stage tiles carry a stable data-testid (stage-tile-<stage>) since the
+  // Nocturne stepper restyle — resolve the label to its stage key.
+  const stage = label.toLowerCase() === "briefs" ? "briefs" : label.toLowerCase();
+  return container.querySelector<HTMLElement>(`[data-testid="stage-tile-${stage}"]`);
 }
 
 // ── Setup ─────────────────────────────────────────────────────────────────

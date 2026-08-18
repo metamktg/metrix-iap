@@ -10,7 +10,7 @@
 // use (mx-kpi-tile, TYPE, text-bignum, border-primary, …) — no new styles.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Info } from "lucide-react";
+import { ArrowUpRight, ChevronDown, Info } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@workspace/command-deck/components/ui/tooltip";
 import { TYPE } from "@/pages/metrix/typography";
@@ -154,7 +154,7 @@ export function KpiTile({
     >
       {isPrimary && <div data-testid="metric-tile-primary-accent" className="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-primary/55 pointer-events-none" />}
 
-      {/* Label row: dropdown trigger + optional info hover */}
+      {/* Label row: dropdown trigger + drill affordance + optional info hover */}
       <div className="flex items-center justify-between gap-1.5 min-w-0">
         <button
           type="button"
@@ -175,7 +175,13 @@ export function KpiTile({
             pickerOpen ? "rotate-180 text-interactive" : "text-muted-foreground/35 group-hover/lbl:text-muted-foreground/65",
           )} />
         </button>
-        {!hideInfo && infoContent && <KpiInfoHover content={infoContent} />}
+        <span className="flex items-center gap-1.5 shrink-0">
+          {/* Nocturne drill glyph — signals the tile opens a deep dive */}
+          {onClick && (
+            <ArrowUpRight aria-hidden="true" className="w-3 h-3 text-interactive/60" data-testid="kpi-tile-drill-glyph" />
+          )}
+          {!hideInfo && infoContent && <KpiInfoHover content={infoContent} />}
+        </span>
       </div>
 
       {/* Value — label + value only; no inline sub-text */}
@@ -239,10 +245,12 @@ export function KpiTileRow({
 }
 
 function KpiValue({ formatted, isRefetching }: { formatted: string; isRefetching: boolean }) {
+  // Nocturne stat treatment: heading-family weight (500) rather than the
+  // previous extrabold — the canvas's calmer hero-tile number.
   return isRefetching ? (
-    <span className="text-bignum font-bold text-muted-foreground/20 metric-num leading-none">—</span>
+    <span className="text-bignum font-medium text-muted-foreground/20 metric-num leading-none">—</span>
   ) : (
-    <span className="text-bignum font-bold text-foreground metric-num leading-none tracking-[-0.035em]">
+    <span className="text-bignum font-medium text-foreground metric-num leading-none tracking-[-0.02em]">
       {formatted}
     </span>
   );
