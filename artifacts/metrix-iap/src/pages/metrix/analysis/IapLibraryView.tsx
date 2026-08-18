@@ -38,6 +38,8 @@ import {
 } from "../shared";
 import { useCellRunScope, usePersistedRunScope } from "@/lib/run-scope";
 import { RunScopePicker } from "@/components/analysis/RunSelector";
+import { BreakdownExplorer } from "@/components/analysis/BreakdownExplorer";
+import { listBreakdownDimensions } from "@/lib/data/kpiBreakdown";
 import { useListAnalysisRuns, getListAnalysisRunsQueryKey } from "@workspace/api-client-react";
 import { CreativeCard } from "@/components/creative/CreativeCard";
 import { ConceptFamilyView } from "@/components/creative/ConceptFamilyView";
@@ -68,7 +70,7 @@ import {
 
 const SECTION = "Analysis · 03";
 
-type Tab = "cells" | "top" | "variables" | "review";
+type Tab = "cells" | "top" | "variables" | "breakdown" | "review";
 
 const VARIABLE_FIELDS: { key: keyof CellPerformanceRow; label: string }[] = [
   { key: "hook_variable",       label: "Hook" },
@@ -271,6 +273,9 @@ export function IapLibraryView() {
             { id: "cells",     label: "Creative cells",   count: cells.length },
             { id: "top",       label: "Top performers",   count: topCells.length + topVariables.length },
             { id: "variables", label: "Creative DNA",     count: variables.length },
+            // Breakdown: dimension × metric × chart cross-tab (Nocturne
+            // "Metrix v1" design). Count = dimensions actually backed by rows.
+            { id: "breakdown", label: "Breakdown",        count: listBreakdownDimensions(a).length },
             {
               id: "review",
               label: "Review queue",
@@ -940,6 +945,17 @@ export function IapLibraryView() {
                   ) : (
                     <PendingState title="No variables in selection" message="Adjust the metric selection to see variable performance." action={<CrossLink to="/app/analysis/overview" label="Review Analysis" />} />
                   )
+                )}
+
+                {/* ── Breakdown tab (dimension × metric × chart cross-tab) ── */}
+                {tab === "breakdown" && (
+                  <BreakdownExplorer
+                    analysis={a}
+                    catalog={tileCatalog}
+                    scopedCellRows={libCells}
+                    scopeNarrowed={!runSelection.allTime}
+                    windowLabel={runSelection.allTime ? undefined : "active run selection"}
+                  />
                 )}
 
                 {/* ── Review queue tab (sub-80% deconstructed creatives) ── */}

@@ -3,6 +3,7 @@ import { Topbar } from "./Topbar";
 import { TaskTray } from "./TaskTray";
 import { GlobalRunningBanner } from "./GlobalRunningBanner";
 import { useTaskTray } from "@/contexts/TaskTrayContext";
+import { DeepDivePanel } from "@/components/deepdive/DeepDivePanel";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -27,6 +28,9 @@ export function AppShell({ children }: AppShellProps) {
           <TaskTray />
         </main>
       </div>
+
+      {/* Deep-dive slide-over — renders null until a module is pushed. */}
+      <DeepDivePanel />
     </div>
   );
 }

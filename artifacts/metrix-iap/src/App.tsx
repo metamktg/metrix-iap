@@ -12,6 +12,7 @@ import { AdminWaitlistPage } from "@/pages/admin/AdminWaitlistPage";
 import { Loader2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TaskTrayProvider } from "@/contexts/TaskTrayContext";
+import { DeepDiveProvider } from "@/contexts/DeepDiveContext";
 import {
   RESET_PASSWORD_PATH,
   FORGOT_PASSWORD_PATH,
@@ -251,9 +252,11 @@ export function AuthGate() {
           <DateRangeProvider>
             <AnalysisViewProvider>
               <TaskTrayProvider>
-                <AppShell>
-                  <Router />
-                </AppShell>
+                <DeepDiveProvider>
+                  <AppShell>
+                    <Router />
+                  </AppShell>
+                </DeepDiveProvider>
               </TaskTrayProvider>
             </AnalysisViewProvider>
           </DateRangeProvider>
