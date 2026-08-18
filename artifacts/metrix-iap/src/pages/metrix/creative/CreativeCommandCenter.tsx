@@ -39,9 +39,9 @@ function formatOf(assetType: string): FormatTab {
 }
 
 const CHILDREN = [
-  { to: "/app/creative/library", label: "Library", Icon: Library, desc: "The creative asset register — distinct from the IAP Library's variable stacks." },
-  { to: "/app/creative/scan", label: "Creative Scan", Icon: ScanLine, desc: "Upload your own creative for an IAP-variable confidence pass." },
-  { to: "/app/creative/import-export", label: "Import & Export", Icon: ArrowLeftRight, desc: "Staged creative asset uploads for this account." },
+  { to: "/app/creative/library", label: "Library", Icon: Library, desc: "The creative asset register — distinct from the IAP Library's variable stacks.", lineage: "mst.local_book2_library[] · ads[]" },
+  { to: "/app/creative/scan", label: "Creative Scan", Icon: ScanLine, desc: "Upload your own creative for an IAP-variable confidence pass.", lineage: "loop_status → creative_scan" },
+  { to: "/app/creative/import-export", label: "Import & Export", Icon: ArrowLeftRight, desc: "Staged creative asset uploads for this account.", lineage: "manual_imports · creative_asset" },
 ];
 
 export function CreativeCommandCenter() {

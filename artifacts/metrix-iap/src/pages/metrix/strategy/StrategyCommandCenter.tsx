@@ -19,12 +19,12 @@ import { Map, Users, MessageSquare, ListChecks, History, Compass } from "lucide-
 const SECTION = "Strategy · 04";
 
 const CHILDREN = [
-  { to: "/app/strategy/overview", label: "Overview", Icon: Compass, desc: "The high-level configurable strategy view." },
-  { to: "/app/strategy/map", label: "Strategy Map", Icon: Map, desc: "How pillars, source cells, and hypotheses connect." },
-  { to: "/app/strategy/avatars", label: "Avatars / ICP / PMF", Icon: Users, desc: "The customer profiles the matrix targets." },
-  { to: "/app/strategy/communications", label: "Communications", Icon: MessageSquare, desc: "Who's responding, to what, and why." },
-  { to: "/app/strategy/hypotheses", label: "Hypothesis Queue", Icon: ListChecks, desc: "Active hypotheses and validation status." },
-  { to: "/app/strategy/history", label: "History", Icon: History, desc: "Past strategy generation runs." },
+  { to: "/app/strategy/overview", label: "Overview", Icon: Compass, desc: "The high-level configurable strategy view.", lineage: "strategy.* · composed" },
+  { to: "/app/strategy/map", label: "Strategy Map", Icon: Map, desc: "How pillars, source cells, and hypotheses connect.", lineage: "strategy.message_pillars[] · source_cells" },
+  { to: "/app/strategy/avatars", label: "Avatars / ICP / PMF", Icon: Users, desc: "The customer profiles the matrix targets.", lineage: "strategy.icp_profiles[]" },
+  { to: "/app/strategy/communications", label: "Communications", Icon: MessageSquare, desc: "Who's responding, to what, and why.", lineage: "strategy.message_pillars[]" },
+  { to: "/app/strategy/hypotheses", label: "Hypothesis Queue", Icon: ListChecks, desc: "Active hypotheses and validation status.", lineage: "strategy.active_hypotheses[]" },
+  { to: "/app/strategy/history", label: "History", Icon: History, desc: "Past strategy generation runs.", lineage: "generation_runs → strategy" },
 ];
 
 export function StrategyCommandCenter() {

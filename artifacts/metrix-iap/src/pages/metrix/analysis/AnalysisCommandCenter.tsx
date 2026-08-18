@@ -65,6 +65,7 @@ export function AnalysisCommandCenter() {
                     label: "Ad Performance",
                     desc: "Campaign totals, control reads, and the full breakdown once analysis has run.",
                     Icon: LayoutDashboard,
+                    lineage: "analysis.concept_rollup[] · performance_by_cell[]",
                   },
                   {
                     to: "/app/analysis/history",
@@ -73,6 +74,7 @@ export function AnalysisCommandCenter() {
                       ? `${runCount} successful run${runCount !== 1 ? "s" : ""} — each can be selected independently when building strategy in the IAP Loop.`
                       : "Full detail on analysis runs for this account, including data-integrity flags.",
                     Icon: History,
+                    lineage: "manual_analysis_runs[]",
                   },
                 ]}
               />
