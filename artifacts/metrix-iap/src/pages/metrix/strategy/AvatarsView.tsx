@@ -518,6 +518,45 @@ function PlacementsAccordion({ rows }: { rows: PlacementRow[] }) {
   );
 }
 
+// ─── ICP persona avatar ───────────────────────────────────────────────
+// Nocturne persona treatment: an initials medallion with a stable
+// per-profile hue (hashed from the name, so identity reads consistently
+// across sorts and sessions) — pure presentation, no data invented.
+
+function personaHue(name: string): number {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 360;
+  return h;
+}
+
+function personaInitials(name: string): string {
+  return name
+    .replace(/^The\s+/i, "")
+    .trim()
+    .split(/\s+/)
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function PersonaAvatar({ name }: { name: string }) {
+  const h = personaHue(name);
+  return (
+    <span
+      aria-hidden="true"
+      data-testid="icp-persona-avatar"
+      className="flex items-center justify-center w-10 h-10 rounded-full shrink-0 font-semibold text-callout"
+      style={{
+        background: `linear-gradient(155deg, hsl(${h} 42% 24%), hsl(${(h + 40) % 360} 36% 14%))`,
+        color: `hsl(${h} 70% 82%)`,
+      }}
+    >
+      {personaInitials(name)}
+    </span>
+  );
+}
+
 // ─── ICP profile card ─────────────────────────────────────────────────
 
 function IcpProfileCard({
@@ -571,11 +610,14 @@ function IcpProfileCard({
         flash ? "border-primary/70 bg-primary/[0.06]" : "border-border/40"
       )}
     >
-      {/* Header */}
+      {/* Header — persona medallion + identity */}
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-title font-semibold text-foreground leading-tight">{profile.profile_name}</p>
-          <span className="text-label font-mono text-muted-foreground/60">{profile.profile_id}</span>
+        <div className="flex items-center gap-3 min-w-0">
+          <PersonaAvatar name={profile.profile_name} />
+          <div className="min-w-0">
+            <p className="text-title font-semibold text-foreground leading-tight">{profile.profile_name}</p>
+            <span className="text-label font-mono text-muted-foreground/60">{profile.profile_id}</span>
+          </div>
         </div>
         {profile.confidence_level && <ConfidenceBadge value={profile.confidence_level} />}
       </div>

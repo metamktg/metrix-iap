@@ -735,11 +735,33 @@ export function Sidebar() {
         <span className="w-px h-full bg-transparent group-hover/handle:bg-primary/40 transition-colors" />
       </div>
 
-      {/* Footer — data source badge + version only */}
+      {/* Footer — signed-in user, data source badge + version */}
       <div className={cn(
         "border-t border-border/40 shrink-0",
         collapsed ? "py-3 flex flex-col items-center gap-2" : "px-3 py-3 space-y-2"
       )}>
+        {user && (
+          <div
+            className={cn("flex items-center gap-2 min-w-0", collapsed && "justify-center")}
+            data-testid="sidebar-user-footer"
+            title={user.email}
+          >
+            <span
+              aria-hidden="true"
+              className="flex items-center justify-center w-6 h-6 rounded-full shrink-0 bg-primary/15 border border-primary/25 text-interactive text-label font-bold leading-none"
+            >
+              {user.email.slice(0, 2).toUpperCase()}
+            </span>
+            {!collapsed && (
+              <div className="min-w-0">
+                <p className="text-caption font-medium text-foreground/85 truncate leading-tight">{user.email}</p>
+                <p className="text-label text-muted-foreground/55 leading-tight">
+                  {user.role === "admin" ? "Agency (internal)" : "Member"}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
         {!collapsed && <DataSourceBadgeToggle />}
         {!collapsed && (
           <div className="space-y-0.5">
