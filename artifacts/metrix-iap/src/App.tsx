@@ -36,6 +36,7 @@ import { AnalysisCommandCenter } from "@/pages/metrix/analysis/AnalysisCommandCe
 import { AnalysisOverview } from "@/pages/metrix/analysis/AnalysisOverview";
 import { AdPerformanceView } from "@/pages/metrix/analysis/AdPerformanceView";
 import { IapLibraryView } from "@/pages/metrix/analysis/IapLibraryView";
+import { AnalysisDnaView } from "@/pages/metrix/analysis/AnalysisDnaView";
 import { AudienceView } from "@/pages/metrix/analysis/AudienceView";
 import { PlacementsView } from "@/pages/metrix/analysis/PlacementsView";
 import { BudgetView } from "@/pages/metrix/analysis/BudgetView";
@@ -109,6 +110,7 @@ export function Router() {
       <Route path="/app/analysis"            component={AnalysisCommandCenter} />
       <Route path="/app/analysis/performance" component={AdPerformanceView} />
       <Route path="/app/analysis/library"    component={IapLibraryView} />
+      <Route path="/app/analysis/dna"        component={AnalysisDnaView} />
       <Route path="/app/analysis/audience"   component={AudienceView} />
       <Route path="/app/analysis/placements" component={PlacementsView} />
       <Route path="/app/analysis/budget"     component={BudgetView} />

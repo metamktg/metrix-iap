@@ -13,7 +13,7 @@ import {
 } from "../shared";
 import { AnalysisControls } from "../ManualAnalysisControls";
 import { useListAnalysisRuns, getListAnalysisRunsQueryKey } from "@workspace/api-client-react";
-import { LayoutDashboard, Library, Users, LayoutGrid, Wallet, History } from "lucide-react";
+import { LayoutDashboard, Library, Dna, Users, LayoutGrid, Wallet, History } from "lucide-react";
 import { OBJECTIVE_OPTIONS } from "../settings/cohortOptions";
 
 const SECTION = "Analysis · 03";
@@ -73,6 +73,13 @@ export function AnalysisCommandCenter() {
                     desc: "Cell and variable performance across the account.",
                     Icon: Library,
                     lineage: "analysis.performance_by_cell[] · v3_variable_performance[]",
+                  },
+                  {
+                    to: "/app/analysis/dna",
+                    label: "Creative DNA",
+                    desc: "Per-variable lift and tested combinations across the account.",
+                    Icon: Dna,
+                    lineage: "analysis.v3_variable_performance[] · scaling_playbook",
                   },
                   {
                     to: "/app/analysis/audience",
