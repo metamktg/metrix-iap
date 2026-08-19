@@ -64,8 +64,11 @@ export function StrategyCommandCenter() {
                   unconditional on real strategy data (as it always has), independent
                   of whether generation itself is currently gated. */}
               <SectionCard title="Generate strategy" desc="Runs the Metrix engine over this account's analysis data. Generated pillars/hypotheses fully replace the prior generated set.">
+                {/* 2x2 (not the page-width 4-across row this replaced) — the
+                    card's own max-w-3xl column doesn't leave enough room per
+                    tile at 4-across without truncating labels. */}
                 {strategy && (
-                  <div className="grid grid-cols-dashboard-4 gap-3 mb-4">
+                  <div className="grid grid-cols-2 gap-3 mb-4">
                     <MetricTile label="Message pillars" value={fmtNum(strategy.message_pillars.length)} variant="primary" />
                     <MetricTile label="Active hypotheses" value={fmtNum(strategy.active_hypotheses.length)} />
                     <MetricTile label="ICP profiles" value={fmtNum(strategy.icp_profiles?.length ?? 0)} />

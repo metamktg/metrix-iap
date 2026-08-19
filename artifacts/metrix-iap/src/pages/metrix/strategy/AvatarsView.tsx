@@ -646,6 +646,16 @@ function IcpProfileCard({
 }) {
   const perf = profile.performance_data ?? null;
   const hasPerf = perf != null && (perf.spend != null || perf.cpa != null || perf.cvr_link_pct != null);
+  // Rank-line confidence suffix: recognized levels (high/medium/low/directional)
+  // read as "· high confidence"; unrecognized raw values (e.g. the legacy
+  // "validation_required" status string) read as-is with no redundant
+  // "confidence" suffix appended.
+  const rankConfidence = profile.confidence_level ? normalizeConfidence(profile.confidence_level) : null;
+  const rankConfidenceText = rankConfidence
+    ? rankConfidence.level === "unknown"
+      ? rankConfidence.label
+      : `${rankConfidence.label.toLowerCase()} confidence`
+    : null;
   const [theoryOpen, setTheoryOpen] = useState(false);
   const [copyOpen, setCopyOpen] = useState(false);
   const hasTheory = Boolean(
@@ -688,7 +698,7 @@ function IcpProfileCard({
             {rank != null && (
               <p className={cn(TYPE.microLabel, "mb-0.5")}>
                 ICP {String(rank).padStart(2, "0")}
-                {profile.confidence_level && ` · ${normalizeConfidence(profile.confidence_level).label.toLowerCase()} confidence`}
+                {rankConfidenceText && ` · ${rankConfidenceText}`}
               </p>
             )}
             <p className="text-title font-semibold text-foreground leading-tight">{profile.profile_name}</p>
