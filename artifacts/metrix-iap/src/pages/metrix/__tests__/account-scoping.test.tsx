@@ -39,6 +39,7 @@ import { RecommendationsView } from "../listen/RecommendationsView";
 import { AnalysisCommandCenter } from "../analysis/AnalysisCommandCenter";
 import { AdPerformanceView } from "../analysis/AdPerformanceView";
 import { IapLibraryView } from "../analysis/IapLibraryView";
+import { AnalysisDnaView } from "../analysis/AnalysisDnaView";
 import { AudienceView } from "../analysis/AudienceView";
 import { PlacementsView } from "../analysis/PlacementsView";
 import { BudgetView } from "../analysis/BudgetView";
@@ -75,6 +76,7 @@ const GATED_VIEWS: [string, React.ComponentType][] = [
   ["Analysis · Command Center", AnalysisCommandCenter],
   ["Analysis · Ad Performance", AdPerformanceView],
   ["Analysis · IAP Library", IapLibraryView],
+  ["Analysis · Creative DNA", AnalysisDnaView],
   ["Analysis · Audience", AudienceView],
   ["Analysis · Placements", PlacementsView],
   ["Analysis · Budget", BudgetView],

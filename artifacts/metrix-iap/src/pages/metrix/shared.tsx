@@ -326,6 +326,7 @@ const SECTION_TABS: Record<"analysis" | "strategy", { label: string; to: string 
     { label: "Overview",        to: "/app/analysis/overview" },
     { label: "Ad Performance",  to: "/app/analysis/performance" },
     { label: "IAP Library",     to: "/app/analysis/library" },
+    { label: "Creative DNA",    to: "/app/analysis/dna" },
     { label: "Audience",        to: "/app/analysis/audience" },
     { label: "Placements",      to: "/app/analysis/placements" },
     { label: "Budget",          to: "/app/analysis/budget" },
