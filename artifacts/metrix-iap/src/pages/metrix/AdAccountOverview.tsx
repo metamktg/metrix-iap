@@ -21,7 +21,7 @@ import {
   ModuleHeader, SectionCard, SectionInfoIcon, CaveatNote, DetailReveal, deriveLabel,
   UnconfiguredState, PendingState, CrossLink, fmtUSD, fmtNum, eventLabel, resultTerm,
   SkeletonTileRow,
-  DatePresetBar, type ViewPreset,
+  OverviewHeaderControls, type ViewPreset,
 } from "./shared";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
 import { cn } from "@workspace/command-deck/lib/utils";
@@ -69,6 +69,12 @@ export function AdAccountOverview() {
   // switches BOTH the tile values and their deltas/sparklines to the same
   // window so the pairing can never disagree.
   const [preset, setPreset] = useState<ViewPreset>("all");
+  // "vs prior" / "Summary·Detailed" — the page-header cluster's real,
+  // visible effects: compareOn shows/hides each tile's already-computed
+  // trend-vs-prior line, detailOn expands the two control-read popovers
+  // below by default. Both start on, matching current default behavior.
+  const [compareOn, setCompareOn] = useState(true);
+  const [detailOn, setDetailOn] = useState(false);
   const { data: summary, isFetching: summaryFetching } = useQuery({
     ...getGetAnalysisSummaryQueryOptions(adAccountId ?? "", preset),
     enabled: !!adAccountId && account?.status === "configured",
@@ -90,10 +96,13 @@ export function AdAccountOverview() {
   };
 
   // Per-metric trend + sparkline, from the same summary window as the values.
+  // "vs prior" off hides the trend/prior line entirely — the sparkline (not
+  // a prior-period comparison) still renders either way.
   const tileTrendFor = (metricId: string) => {
     if (!summary) return { trend: null, spark: null };
-    const t = trendForMetric(metricId, summary.totals, summary.prior_totals);
     const series = sparkSeriesForMetric(metricId, summary.daily ?? []);
+    if (!compareOn) return { trend: null, spark: series ? sparkPoints(series) : null };
+    const t = trendForMetric(metricId, summary.totals, summary.prior_totals);
     return {
       trend: t
         ? { deltaPct: t.deltaPct, improved: t.improved, priorFormatted: formatLikeMetric(metricId, t.prior) }
@@ -195,21 +204,25 @@ export function AdAccountOverview() {
         section="Ad Account · 01"
         title={`${account.name} · Account Overview`}
         subtitle="Command chain · focus · optimization"
+        right={
+          <OverviewHeaderControls
+            preset={preset}
+            onPresetChange={setPreset}
+            isFetching={summaryFetching}
+            availableWindow={summary?.available_window}
+            compareOn={compareOn}
+            onToggleCompare={() => setCompareOn((v) => !v)}
+            detailOn={detailOn}
+            onToggleDetail={() => setDetailOn((v) => !v)}
+            exportTo="/app/exports/analysis"
+          />
+        }
       />
 
       {/* ── IAP Loop Command Chain ────────────────────────────────────── */}
       <div className="px-6 py-2 border-b border-border/40 shrink-0">
         <LoopCommandChain accountId={account.id} account={account} managerId={seed.manager_account.id} />
       </div>
-
-      {/* ── Window pills — the canvas's 7d/14d/30d control; tiles, deltas
-             and sparklines all follow the same summary window. ─────────── */}
-      <DatePresetBar
-        value={preset}
-        onChange={setPreset}
-        availableWindow={summary?.available_window}
-        isFetching={summaryFetching}
-      />
 
       {/* ── Main body ──────────────────────────────────────────────── */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
@@ -330,10 +343,12 @@ export function AdAccountOverview() {
                   const read = resolveControlText(core.primary_control_read, core.primary_control);
                   return (
                     <DetailReveal
+                      key={String(detailOn)}
                       label={deriveLabel(read, 72)}
                       labelClassName="text-body text-foreground/80 leading-relaxed"
                       eyebrow="Primary control"
                       sections={[{ label: "Control read", text: read }]}
+                      defaultOpen={detailOn}
                     />
                   );
                 })()}
@@ -355,10 +370,12 @@ export function AdAccountOverview() {
                     const read = resolveControlText(core.registration_control_read, core.registration_control);
                     return (
                       <DetailReveal
+                        key={String(detailOn)}
                         label={deriveLabel(read, 72)}
                         labelClassName="text-body text-foreground/80 leading-relaxed"
                         eyebrow={`${term.Singular} control`}
                         sections={[{ label: "Control read", text: read }]}
+                        defaultOpen={detailOn}
                       />
                     );
                   })()}

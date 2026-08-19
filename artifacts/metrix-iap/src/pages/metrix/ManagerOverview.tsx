@@ -13,8 +13,9 @@
 // Data wiring is unchanged; only the presentation layer is redesigned.
 
 import { useMemo, useState } from "react";
+import { useLocation } from "wouter";
 import {
-  CheckCircle2, Plug, Plus, ArrowRight, ChevronDown, ChevronUp,
+  CheckCircle2, Plug, Plus, ArrowRight, ChevronDown, ChevronUp, Download,
 } from "lucide-react";
 import { useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed, useMetrixIsRefetching } from "@/contexts/MetrixDataContext";
@@ -344,6 +345,7 @@ function RecommendationCardItem({
 const TILE_COUNT = 4;
 
 export function ManagerOverview() {
+  const [, navigate] = useLocation();
   const { manager, adAccounts, selectAdAccount } = useAccount();
   const seed = useMetrixSeed();
   const isRefetching = useMetrixIsRefetching();
@@ -444,9 +446,23 @@ export function ManagerOverview() {
         title={manager.name}
         subtitle="Blended performance · all ad accounts"
         right={
-          <span className={cn(TYPE.label, "font-mono text-muted-foreground/55 uppercase tracking-widest")}>
-            {data.configured_ad_accounts} configured · {data.unconfigured_ad_accounts} to set up
-          </span>
+          <div className="flex items-center gap-2.5">
+            <span className={cn(TYPE.label, "font-mono text-muted-foreground/55 uppercase tracking-widest")}>
+              {data.configured_ad_accounts} configured · {data.unconfigured_ad_accounts} to set up
+            </span>
+            {/* Manager scope has no windowed KPI-tile data source to drive a
+                real date-range/vs-prior/Summary control (unlike Account
+                Overview) — Export is the one control here with a genuine,
+                working destination, so it's the only addition to this header. */}
+            <button
+              type="button"
+              onClick={() => navigate("/app/exports")}
+              className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-border/40 text-caption font-medium text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.04] transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Export
+            </button>
+          </div>
         }
       />
 
