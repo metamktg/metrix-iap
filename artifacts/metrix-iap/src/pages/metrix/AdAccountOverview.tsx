@@ -8,7 +8,7 @@ import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import {
   ShieldCheck, KeyRound, Grid3x3,
-  Zap, ArrowRight, PanelRightClose, PanelRightOpen,
+  ArrowRight, PanelRightClose, PanelRightOpen,
 } from "lucide-react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed, useMetrixIsRefetching } from "@/contexts/MetrixDataContext";
@@ -37,8 +37,6 @@ import { KpiDrilldownModal } from "@/components/metrics/KpiDrilldownModal";
 import { MetricHoverPopover } from "@/components/metrics/MetricHoverPopover";
 import { LoopCommandChain } from "@/components/loop/LoopCommandChain";
 import { useDragResize } from "@/hooks/useDragResize";
-
-const IMPACT_RANK: Record<string, number> = { high: 3, medium: 2, low: 1, setup: 0 };
 
 // ─── Loop-panel collapse + resize persistence ─────────────────────────
 // The right-rail loop checklist is useful mid-setup but becomes visual
@@ -281,11 +279,6 @@ export function AdAccountOverview() {
   const libraryCount = new Set(lib.map((c) => c.cell_id)).size;
   const mstActive = mst?.status === "active";
 
-  const recCards = optLoop?.recommendation_cards ?? [];
-  const nextAction = [...recCards].sort(
-    (a, b) => (IMPACT_RANK[b.impact] ?? 0) - (IMPACT_RANK[a.impact] ?? 0)
-  )[0];
-
   const openMetric = openMetricId ? metricById(metricCatalog, openMetricId) : null;
 
   // ── Loop-checklist signals (same derivation as LoopCommandChain) ─────
@@ -381,62 +374,31 @@ export function AdAccountOverview() {
             </div>
           </SectionCard>
 
-          {/* Current Focus */}
-          <SectionCard
-            title="Current focus"
-            desc="Active sprint · top priority"
-            right={<SectionInfoIcon tip="Your active sprint and the top recommended action from the latest analysis." />}
-          >
-            <div className="grid grid-cols-dashboard-2 gap-3">
+          {/* Current sprint — MST status has no canvas equivalent on this
+              screen, so it stays as its own compact card. The "next
+              action" half that used to sit beside it read the exact same
+              optimization_loop.recommendation_cards as NextBestActionCard
+              above and has been removed as a duplicate surface. */}
+          {mstActive && (
+            <SectionCard
+              title="Current sprint"
+              desc="MST status"
+              right={<SectionInfoIcon tip="Whether a Matrix Sprint Test is active for this account, and how many matrix cells and library concepts it covers." />}
+            >
               <div className="rounded-xl border border-purple-400/20 bg-purple-400/[0.03] p-4 hover:border-purple-400/30 transition-colors">
                 <div className="flex items-center gap-1.5 mb-2">
                   <Grid3x3 className="w-3.5 h-3.5 text-purple-300/80" />
-                  <span className="text-caption font-semibold text-foreground">Current sprint</span>
+                  <span className="text-caption font-semibold text-foreground">MST active</span>
                 </div>
-                {mstActive ? (
-                  <>
-                    <p className="text-body text-foreground/80 leading-relaxed">
-                      MST active · <span className="font-semibold text-foreground">{matrixCellCount}</span> matrix cells · <span className="font-semibold text-foreground">{libraryCount}</span> library concepts
-                    </p>
-                    <button onClick={() => navigate("/app/mst")} className="mt-3 inline-flex items-center gap-1.5 text-caption font-semibold text-purple-300 hover:text-purple-200 transition-colors">
-                      Open MST <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  </>
-                ) : (
-                  <p className="text-body text-muted-foreground/80 leading-relaxed">No active sprint — import data to begin.</p>
-                )}
+                <p className="text-body text-foreground/80 leading-relaxed">
+                  <span className="font-semibold text-foreground">{matrixCellCount}</span> matrix cells · <span className="font-semibold text-foreground">{libraryCount}</span> library concepts
+                </p>
+                <button onClick={() => navigate("/app/mst")} className="mt-3 inline-flex items-center gap-1.5 text-caption font-semibold text-purple-300 hover:text-purple-200 transition-colors">
+                  Open MST <ArrowRight className="w-3.5 h-3.5" />
+                </button>
               </div>
-
-              <div className="rounded-xl border border-primary/20 bg-primary/[0.04] p-4 hover:border-primary/30 transition-colors">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <Zap className="w-3.5 h-3.5 text-interactive/80" />
-                  <span className="text-caption font-semibold text-foreground">Next action</span>
-                </div>
-                {nextAction ? (
-                  <>
-                    <DetailReveal
-                      label={nextAction.title}
-                      labelClassName="text-body font-semibold text-foreground leading-snug"
-                      eyebrow="Next action"
-                      sections={[{ label: "Recommended action", text: nextAction.recommended_action }]}
-                    />
-                    <p className="text-label text-muted-foreground/75 mt-2.5">
-                      {recCards.length} recommendation{recCards.length === 1 ? "" : "s"} in the loop below ↓
-                    </p>
-                  </>
-                ) : (
-                  <div className="flex flex-col items-start gap-1.5 py-1">
-                    <Zap className="w-4 h-4 text-interactive/30" />
-                    <p className="text-caption font-semibold text-muted-foreground/60">No actions yet</p>
-                    <p className="text-label text-muted-foreground/50 leading-snug">
-                      Run an analysis to surface optimisation actions.{" "}
-                      <CrossLink to="/app/analysis" label="Go to Analysis" />
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </SectionCard>
+            </SectionCard>
+          )}
 
           {/* Results by event — Nocturne canvas table */}
           <SectionCard title="Results by event" desc="Conversion volume by event" right={<SectionInfoIcon tip="Conversion volume split by event type for the selected date window." />}>
