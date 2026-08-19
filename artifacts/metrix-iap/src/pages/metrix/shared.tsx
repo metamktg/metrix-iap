@@ -73,7 +73,7 @@ import { useLocation, useSearch } from "wouter";
 import { ConnectMetaDialog, ManualImportDialog } from "./ConnectAccountDialogs";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
 import { useListManualImports } from "@workspace/api-client-react";
-import { Plug, FileUp, Clock, Info, ArrowRight, ArrowLeftRight, CheckSquare, CheckCircle2, Square, CalendarRange, CalendarX2, AlertTriangle, ChevronDown, ChevronLeft, Sparkles, Map as MapIcon, Lock, Circle, Loader2, CircleCheck, CircleX, Venus, Mars } from "lucide-react";
+import { Plug, FileUp, Clock, Info, ArrowRight, ArrowLeftRight, CheckSquare, CheckCircle2, Square, CalendarRange, CalendarX2, AlertTriangle, ChevronDown, ChevronLeft, Sparkles, Map as MapIcon, Lock, Venus, Mars } from "lucide-react";
 import { useDateRange, formatIsoRange } from "@/contexts/DateRangeContext";
 import { DataSourceBadge } from "@/components/ui/DataSourceBadge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@workspace/command-deck/components/ui/tooltip";
@@ -1714,9 +1714,22 @@ export function PrerequisiteGate({
 }
 
 // ─── Loop hub (command-center stage strip) ─────────────────────────────
-// Every command center renders this row: the 6 loop stages, the current
-// one highlighted, each a link to that stage's command center. Locked
-// stages (prerequisite unmet) are visibly disabled, never hidden.
+// Every command center renders this row: the 6 loop stages (Listen,
+// Analysis, Strategy, Creative, MST, Reports), the current one highlighted,
+// each a link to that stage's command center. Locked stages (prerequisite
+// unmet) are visibly disabled, never hidden.
+//
+// Visual spec matches the Nocturne canvas's command-center stepper (a
+// different spec from the checkmark-based Account Overview stepper in
+// OverviewLoopHub.tsx — do not conflate the two): a numbered circle per
+// stage — the number is always shown, there is no checkmark glyph on this
+// stepper — filled solid for the current stage, filled dim for a stage
+// already completed, transparent-with-outline for anything not yet
+// reached, connected by a 1px line that lights up once a stage is behind
+// you. `running`/`error`/`locked` (states the canvas mock has no concept
+// of, since it doesn't model live execution) are layered on as a small
+// status dot on the circle and, for `locked`, a disabled/non-clickable
+// affordance — real signal preserved, structural fidelity kept.
 
 export type LoopStageStatus = "locked" | "none" | "running" | "success" | "error";
 
@@ -1727,48 +1740,64 @@ export interface LoopStageInfo {
   status: LoopStageStatus;
 }
 
-const STAGE_DOT: Record<LoopStageStatus, React.ComponentType<{ className?: string }>> = {
-  locked: Lock,
-  none: Circle,
-  running: Loader2,
-  success: CircleCheck,
-  error: CircleX,
-};
-
-const STAGE_DOT_CLASS: Record<LoopStageStatus, string> = {
-  locked: "text-muted-foreground/40",
-  none: "text-muted-foreground/50",
-  running: "text-amber-400 animate-spin",
-  success: "text-emerald-400",
-  error: "text-red-400",
-};
-
 export function StageLoopHub({ stages, current }: { stages: LoopStageInfo[]; current?: string }) {
   const [, navigate] = useLocation();
   return (
-    <div className="flex items-center gap-1 flex-wrap px-6 py-3 border-b border-border/30 bg-white/[0.01]">
+    <div className="flex items-center flex-wrap px-6 py-4 border-b border-border/30 bg-white/[0.01]">
       {stages.map((s, i) => {
-        const Dot = STAGE_DOT[s.status];
         const isCurrent = s.id === current;
         const locked = s.status === "locked";
+        // A stage reads as "done" once it has real success output and isn't
+        // the one you're standing on — matches the canvas's done/current/
+        // future three-way split while deriving "done" from real status
+        // instead of screen position.
+        const done = !isCurrent && s.status === "success";
+        const flagged = !isCurrent && (s.status === "running" || s.status === "error");
         return (
-          <div key={s.id} className="flex items-center gap-1">
-            {i > 0 && <ArrowRight className="w-3 h-3 text-muted-foreground/25 shrink-0 mx-0.5" />}
+          <div key={s.id} className="flex items-center flex-1 min-w-[104px]">
             <button
+              type="button"
               onClick={() => !locked && navigate(s.to)}
               disabled={locked}
-              className={cn(
-                "inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border text-body font-medium transition-colors",
-                isCurrent
-                  ? "border-primary/40 bg-primary/10 text-interactive"
-                  : locked
-                    ? "border-border/25 text-muted-foreground/40 cursor-not-allowed"
-                    : "border-border/40 text-muted-foreground/70 hover:text-foreground hover:bg-white/[0.03]"
-              )}
+              aria-current={isCurrent ? "step" : undefined}
+              title={locked ? `${s.label} — locked` : s.label}
+              className={cn("group flex items-center gap-1.5", locked ? "cursor-not-allowed" : "cursor-pointer")}
             >
-              <Dot className={cn("w-3 h-3 shrink-0", STAGE_DOT_CLASS[s.status])} />
-              {s.label}
+              <span
+                className={cn(
+                  "relative flex items-center justify-center w-[22px] h-[22px] shrink-0 rounded-full border text-label font-semibold tabular-nums transition-colors",
+                  isCurrent
+                    ? "bg-primary border-transparent text-primary-foreground"
+                    : done
+                      ? "bg-primary/25 border-transparent text-primary-foreground/90"
+                      : "bg-transparent text-muted-foreground/40 " +
+                        (locked ? "border-border/40" : "border-border/60 group-hover:border-border")
+                )}
+              >
+                {i + 1}
+                {flagged && (
+                  <span
+                    className={cn(
+                      "absolute -top-0.5 -right-0.5 w-[7px] h-[7px] rounded-full ring-2 ring-background",
+                      s.status === "running" ? "bg-amber-400 animate-pulse" : "bg-red-400"
+                    )}
+                  />
+                )}
+              </span>
+              <span
+                className={cn(
+                  "text-body whitespace-nowrap transition-colors",
+                  isCurrent
+                    ? "text-foreground font-medium"
+                    : locked
+                      ? "text-muted-foreground/35"
+                      : "text-muted-foreground/60 group-hover:text-foreground/80 font-normal"
+                )}
+              >
+                {s.label}
+              </span>
             </button>
+            <span className={cn("flex-1 h-px mx-2.5 min-w-[12px]", done ? "bg-primary/40" : "bg-border/30")} />
           </div>
         );
       })}
@@ -1783,7 +1812,7 @@ export interface StageStatusLike {
   mst: { unlocked: boolean };
 }
 
-/** Builds the 5-stage Analysis→Strategy→Creative→MST→Reports row every command center renders. */
+/** Builds the 6-stage Listen→Analysis→Strategy→Creative→MST→Reports row every command center renders. */
 export function buildLoopStages(s: StageStatusLike): LoopStageInfo[] {
   // Strategy (and downstream stages) unlock only when the analysis is
   // VALIDATED — status=success plus the server-side completeness check
@@ -1792,6 +1821,11 @@ export function buildLoopStages(s: StageStatusLike): LoopStageInfo[] {
   const analysisOk = s.analysis.status === "success" && s.analysis.validated !== false;
   const strategyOk = s.strategy.status === "success";
   return [
+    // Listen has no prerequisite and no discrete "done" state to reach —
+    // it's a continuous signal-monitoring surface (real data, ListenCommandCenter)
+    // rather than a completable pipeline step, so it's always reachable
+    // and never reports "success"/"locked".
+    { id: "listen", label: "Listen", to: "/app/listen", status: "none" },
     { id: "analysis", label: "Analysis", to: "/app/analysis", status: s.analysis.status as LoopStageStatus },
     { id: "strategy", label: "Strategy", to: "/app/strategy", status: analysisOk ? (s.strategy.status as LoopStageStatus) : "locked" },
     { id: "creative", label: "Creative", to: "/app/creative", status: strategyOk ? (s.briefs.status as LoopStageStatus) : "locked" },
