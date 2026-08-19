@@ -1,8 +1,16 @@
 // @refresh reset
 // ─── IAP Loop · Command Chain ─────────────────────────────────────────
 //
-// SIX stage tiles — pure state at a glance, no data on face.
-// Stages: Data → Analysis → Strategy → Briefs → Report → Re-run
+// FIVE stage tiles — pure state at a glance, no data on face. Matches the
+// Nocturne canvas stepper spec exactly (22px circle + checkmark/number,
+// connecting line, no counter badge).
+// Stages: Data → Analysis → Strategy → Briefs → Report
+//
+// Re-running the loop is not its own stage — once every stage is complete,
+// the Analysis tile's Command Hub exposes "Re-run Analysis" (see the
+// Actions() branch for stage === "analysis"), so the click-to-open Command
+// Hub interaction that used to live on a standalone "Re-run" tile is fully
+// preserved without a 6th circle.
 //
 // Each tile is a clickable state light: icon + indicator + label only.
 //
@@ -58,7 +66,7 @@ import {
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
-type Stage = "data" | "analysis" | "strategy" | "briefs" | "report" | "rerun";
+type Stage = "data" | "analysis" | "strategy" | "briefs" | "report";
 
 // ── Route map ─────────────────────────────────────────────────────────────
 
@@ -88,10 +96,6 @@ const STAGE_ROUTES: Record<Stage, { label: string; path: string; desc: string }[
     { label: "New Report",    path: "/app/reports/new",     desc: "Generate a report" },
     { label: "Report History", path: "/app/reports/history", desc: "Past generations" },
   ],
-  rerun: [
-    { label: "Account Setup",  path: "/app/settings/account",     desc: "Uploads · source" },
-    { label: "Run Analysis",   path: "/app/settings/account",     desc: "Start next cycle" },
-  ],
 };
 
 // ── Stage config ──────────────────────────────────────────────────────────
@@ -102,10 +106,7 @@ const STAGE_CONFIG = {
   strategy: { icon: Layers,       label: "Strategy" },
   briefs:   { icon: FileText,     label: "Briefs"   },
   report:   { icon: FileBarChart, label: "Report"   },
-  rerun:    { icon: RotateCcw,    label: "Re-run"   },
 } as const;
-
-const TOTAL_STAGES = 5;
 
 const DATE_RANGES = [
   { id: "7d"  as const, label: "Last 7 days"  },
@@ -642,25 +643,6 @@ function ReportIntelligence({
   );
 }
 
-// ── Re-run intelligence ───────────────────────────────────────────────────
-
-function RerunIntelligence({ allLoopComplete }: { allLoopComplete: boolean }) {
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-1.5 flex-wrap">
-        <DepBadge label="Full loop complete" satisfied={allLoopComplete} />
-        <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/45" />
-        <span className="text-label text-data-caption">Next cycle</span>
-      </div>
-      {allLoopComplete && (
-        <div className="flex flex-wrap gap-1.5">
-          <StatPill value="Loop complete" />
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ── Command hub popup ─────────────────────────────────────────────────────
 
 function CommandHub({
@@ -695,7 +677,6 @@ function CommandHub({
   briefsLastRun,
   loopStatus,
   accountPlatform,
-  allLoopComplete,
   stagedImportCount,
   isLiveMeta,
   analysisStarting,
@@ -750,7 +731,6 @@ function CommandHub({
   briefsLastRun:   { status: string; finished_at?: string | null; error_message?: string | null; progress_pct?: number | null; progress_stage?: string | null } | null;
   loopStatus: { stage: string; window_start?: string | null; window_end?: string | null; generated_at?: string | null }[] | null;
   accountPlatform?: string;
-  allLoopComplete: boolean;
   stagedImportCount: number;
   isLiveMeta: boolean;
   analysisStarting: boolean;
@@ -788,8 +768,7 @@ function CommandHub({
     : stage === "analysis" ? analysisComplete
     : stage === "strategy" ? strategyComplete
     : stage === "briefs"   ? briefsComplete
-    : stage === "report"   ? reportComplete
-    : false; // "rerun" is never complete — the loop is cyclic
+    : reportComplete;
 
   const isStale = (stage === "strategy" && strategyIsStale)
     || (stage === "briefs" && briefsIsStale);
@@ -800,7 +779,6 @@ function CommandHub({
     : stage === "data"     ? "No data yet"
     : stage === "analysis" ? "Not run"
     : stage === "report"   ? (briefsComplete ? "Ready to generate" : "Needs briefs")
-    : stage === "rerun"    ? (allLoopComplete ? "Ready to re-run" : "Complete loop first")
     : stage === "strategy" ? (analysisComplete ? "Ready to generate" : "Needs analysis")
     : (strategyComplete ? "Ready to generate" : "Needs strategy");
 
@@ -810,7 +788,6 @@ function CommandHub({
     : (analysisComplete && stage === "strategy")
       || (strategyComplete && stage === "briefs")
       || (briefsComplete && stage === "report")
-      || (allLoopComplete && stage === "rerun")
     ? "text-interactive/90 bg-primary/[0.12] border-primary/35"
     : "text-muted-foreground/65 bg-white/[0.05] border-border/30";
 
@@ -987,7 +964,7 @@ function CommandHub({
       );
     }
 
-    if (stage === "analysis" || stage === "rerun") {
+    if (stage === "analysis") {
       if (pendingConfirm === "analysis") return (
         <div className="flex flex-col gap-2.5">
           {/* Last run context — shown when a prior run exists */}
@@ -1100,23 +1077,6 @@ function CommandHub({
               Cancel
             </button>
           </div>
-        </div>
-      );
-
-      if (stage === "rerun") return (
-        <div className="flex flex-wrap gap-1.5">
-          <button
-            onClick={() => allLoopComplete && setPendingConfirm("analysis")}
-            disabled={!allLoopComplete}
-            className={cn(
-              "inline-flex items-center gap-1.5 text-label font-semibold px-2.5 py-1.5 rounded-lg",
-              !allLoopComplete
-                ? "opacity-30 cursor-not-allowed mx-secondary-btn"
-                : "mx-primary-btn",
-            )}
-          >
-            <PlayCircle className="w-3.5 h-3.5" /> Re-run Analysis
-          </button>
         </div>
       );
 
@@ -1440,8 +1400,6 @@ function CommandHub({
               reportComplete={reportComplete}
               reportCount={reportCount}
             />
-          ) : stage === "rerun" ? (
-            <RerunIntelligence allLoopComplete={allLoopComplete} />
           ) : (
             <StageIntelligence
               stage={stage}
@@ -1481,7 +1439,7 @@ function CommandHub({
           <div className="grid grid-cols-2 gap-1">
             {routes.map((r) => {
               const isCurrent    = currentPath === r.path;
-              const isAccessible = isComplete || isRunning || (stage === "rerun" && allLoopComplete);
+              const isAccessible = isComplete || isRunning;
               return (
                 <button
                   key={r.path}
@@ -1587,8 +1545,6 @@ export function LoopCommandChain({
   const strategyComplete = pillarCount > 0;
   const briefsComplete   = briefCount > 0;
   const reportComplete   = reportCount > 0;
-  // rerun is the 6th tile — represents the next loop cycle; never "complete"
-  const allLoopComplete  = dataComplete && analysisComplete && strategyComplete && briefsComplete && reportComplete;
 
   const analysisRunning = analysisRun?.status === "running";
   const strategyRunning = strategyGen.isRunning;
@@ -1854,26 +1810,17 @@ export function LoopCommandChain({
     briefsRunning,
   });
 
-  const completeCount = [dataComplete, analysisComplete, strategyComplete, briefsComplete, reportComplete].filter(Boolean).length;
-  const anyRunning    = analysisRunning || strategyRunning || briefsRunning || reportGenerating;
+  const anyRunning = analysisRunning || strategyRunning || briefsRunning || reportGenerating;
 
   const toggle = (s: Stage) => setActiveStage((prev) => (prev === s ? null : s));
 
   return (
     <>
       <div className="mx-card p-2.5 flex flex-col gap-2">
-        {/* Header */}
+        {/* Header — canvas spec carries no counter badge; state reads
+            entirely off the 5 stage circles below. */}
         <div className="flex items-center justify-between">
           <span className="mx-section-label leading-none">IAP Loop</span>
-          <span className={cn(
-            "text-[9px] font-mono tabular-nums tracking-widest",
-            anyRunning          ? "text-amber-400/55"
-              : completeCount === TOTAL_STAGES ? "text-emerald-400/45"
-              : completeCount > 0   ? "text-interactive/40"
-              : "text-muted-foreground/22",
-          )}>
-            {anyRunning ? "●" : completeCount === TOTAL_STAGES ? "✓" : `${completeCount}/${TOTAL_STAGES}`}
-          </span>
         </div>
 
         {/* Running strip — persistent progress indicator whenever any stage is active */}
@@ -1966,8 +1913,13 @@ export function LoopCommandChain({
           );
         })()}
 
-        {/* Six stages — Nocturne numbered-circle stepper; each stage owns
-            its trailing connecting line (all but the last). */}
+        {/* Five stages — Nocturne numbered-circle stepper (canvas spec:
+            Data/Analysis/Strategy/Briefs/Report); each stage owns its
+            trailing connecting line (all but the last). Re-running the loop
+            is not its own stage circle — once Report is complete, clicking
+            back into the Analysis tile exposes "Re-run Analysis" (see
+            Actions() above), so the click-to-open Command Hub interaction
+            that used to live on the standalone "Re-run" tile is preserved. */}
         <div className="flex items-center" data-testid="loop-stepper">
           <StageTile
             stage="data"
@@ -2031,7 +1983,7 @@ export function LoopCommandChain({
           <StageTile
             stage="report"
             stageNumber={5}
-            showLine
+            showLine={false}
             isComplete={reportComplete}
             isRunning={reportGenerating}
             isStale={false}
@@ -2040,20 +1992,6 @@ export function LoopCommandChain({
             isActive={activeStage === "report"}
             elapsedSeconds={0}
             onClick={() => toggle("report")}
-          />
-
-          <StageTile
-            stage="rerun"
-            stageNumber={6}
-            showLine={false}
-            isComplete={false}
-            isRunning={false}
-            isStale={false}
-            isNext={allLoopComplete && !anyRunning}
-            isLocked={!allLoopComplete}
-            isActive={activeStage === "rerun"}
-            elapsedSeconds={0}
-            onClick={() => toggle("rerun")}
           />
         </div>
       </div>
@@ -2091,7 +2029,6 @@ export function LoopCommandChain({
           briefsLastRun={briefsLastRun}
           loopStatus={loopStatus}
           accountPlatform={account.platform}
-          allLoopComplete={allLoopComplete}
           stagedImportCount={stagedImportCount}
           isLiveMeta={isLiveMeta}
           analysisStarting={startAnalysisMutation.isPending || analysisFiring}
