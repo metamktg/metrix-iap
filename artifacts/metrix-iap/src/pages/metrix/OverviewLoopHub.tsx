@@ -1,22 +1,18 @@
 // ─── Overview · IAP Loop hub ────────────────────────────────────────────
-// Shared by the Overview pulse view (compact) and the full /app/overview/loop
-// page (per-account). Reads presence of real data already in the loaded
-// seed bundle rather than firing per-account network calls.
+// Compact rollup card embedded at the top of Manager Overview. Reads
+// presence of real data already in the loaded seed bundle rather than
+// firing per-account network calls.
 
-import { Fragment } from "react";
 import { useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import {
-  getAdAccounts,
   getAnalysisData,
   getStrategyData,
   getBriefBuilder,
   getMST,
 } from "@/lib/data/metrixSeedAdapter";
-import { CrossLink } from "./shared";
 import { TYPE } from "./typography";
 import { cn } from "@workspace/command-deck/lib/utils";
-import { CheckCircle2, Circle, Plug, Infinity } from "lucide-react";
 import type { AdAccount } from "@/lib/data/seedTypes";
 
 export interface AccountLoopStage {
@@ -47,139 +43,12 @@ export function accountLoopStages(
   ];
 }
 
-// ─── Navigation helper (client-side pushState) ────────────────────────
-
-function go(href: string, e: React.MouseEvent) {
-  e.preventDefault();
-  window.history.pushState({}, "", href);
-  window.dispatchEvent(new PopStateEvent("popstate"));
-}
-
 const STAGE_LABELS = ["Analysis", "Strategy", "Creative", "MST"] as const;
-
-// ─── Full-mode: individual account stage-chain card ────────────────────
-
-function AccountLoopCard({
-  account,
-  stages,
-}: {
-  account: AdAccount;
-  stages: AccountLoopStage[];
-}) {
-  const configured = account.status === "configured";
-  const doneCount = stages.filter((s) => s.done).length;
-  const allDone = configured && doneCount === stages.length;
-
-  return (
-    <div
-      className={cn(
-        "rounded-xl border px-4 py-3.5 transition-all",
-        allDone
-          ? "border-emerald-400/20 bg-emerald-400/[0.025]"
-          : configured
-            ? "border-border/40 bg-white/[0.02]"
-            : "border-border/20 bg-transparent opacity-55"
-      )}
-    >
-      {/* Account header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <span
-            className={cn(
-              "w-2 h-2 rounded-full shrink-0",
-              allDone
-                ? "bg-emerald-400"
-                : configured
-                  ? "bg-emerald-400/50"
-                  : "bg-muted-foreground/30"
-            )}
-          />
-          <span className="text-title font-semibold text-foreground/90 truncate">{account.name}</span>
-          {account.platform && (
-            <span className="text-label text-muted-foreground/50 shrink-0 hidden sm:inline">
-              {account.platform}
-            </span>
-          )}
-        </div>
-        {configured && (
-          <span
-            className={cn(
-              "text-label font-medium tabular-nums shrink-0 ml-3",
-              allDone ? "text-emerald-400/80" : doneCount > 0 ? "text-amber-400/70" : "text-muted-foreground/50"
-            )}
-          >
-            {doneCount}/{stages.length}
-          </span>
-        )}
-      </div>
-
-      {configured ? (
-        /* Stage chain: nodes connected by progress lines */
-        <div className="flex items-center">
-          {stages.map((stage, i) => (
-            <Fragment key={stage.id}>
-              {/* Stage node */}
-              <a
-                href={stage.to}
-                onClick={(e) => go(stage.to, e)}
-                title={`Go to ${stage.label}`}
-                className="flex flex-col items-center gap-1 px-1.5 py-1 rounded-lg hover:bg-white/[0.06] transition-colors group/stage"
-              >
-                <div
-                  className={cn(
-                    "w-[22px] h-[22px] rounded-full flex items-center justify-center border transition-all",
-                    stage.done
-                      ? "bg-emerald-400/15 border-emerald-400/40 group-hover/stage:bg-emerald-400/25"
-                      : "bg-white/[0.03] border-border/40 group-hover/stage:border-border/60"
-                  )}
-                >
-                  {stage.done ? (
-                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                  ) : (
-                    <Circle className="w-3 h-3 text-muted-foreground/40" />
-                  )}
-                </div>
-                <span
-                  className={cn(
-                    "text-micro font-medium leading-none whitespace-nowrap",
-                    stage.done
-                      ? "text-emerald-400/80"
-                      : "text-muted-foreground/45 group-hover/stage:text-muted-foreground/70"
-                  )}
-                >
-                  {stage.label}
-                </span>
-              </a>
-
-              {/* Connector line */}
-              {i < stages.length - 1 && (
-                <div
-                  className={cn(
-                    "flex-1 h-px mb-3.5 mx-0.5 transition-colors",
-                    stage.done ? "bg-emerald-400/30" : "bg-border/25"
-                  )}
-                />
-              )}
-            </Fragment>
-          ))}
-        </div>
-      ) : (
-        /* Not connected state */
-        <div className="flex items-center gap-2 py-1">
-          <Plug className="w-3 h-3 text-muted-foreground/35 shrink-0" />
-          <span className="text-caption text-muted-foreground/45">
-            Not connected — configure to begin
-          </span>
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ─── Main export ─────────────────────────────────────────────────────
 
-/** Rollup card — compact at top of Manager Overview, or full on /app/overview/loop. */
-export function OverviewLoopSummary({ full = false }: { full?: boolean }) {
+/** Compact rollup card embedded at the top of Manager Overview. */
+export function OverviewLoopSummary() {
   const seed = useMetrixSeed();
   const { adAccounts, selectedAccountType, activeAdAccountId } = useAccount();
 
@@ -197,53 +66,7 @@ export function OverviewLoopSummary({ full = false }: { full?: boolean }) {
   }));
 
   const configuredRows = rows.filter((r) => r.account.status === "configured");
-  const completeRows = configuredRows.filter((r) => r.stages.every((s) => s.done));
-  const isScoped = selectedAccountType === "ad_account";
 
-  // ── Full page view ────────────────────────────────────────────────────
-  if (full) {
-    return (
-      <div className="space-y-3">
-        {/* Summary banner */}
-        {!isScoped && configuredRows.length > 0 && (
-          <div className="flex items-center gap-3 px-0.5 mb-1">
-            <div className="flex items-center gap-1.5">
-              <Infinity className="w-3.5 h-3.5 text-interactive/70 shrink-0" />
-              <span className="text-caption font-semibold text-muted-foreground/70 uppercase tracking-widest">
-                IAP Loop
-              </span>
-            </div>
-            <div className="flex-1 h-px bg-border/30 rounded-full" />
-            <span
-              className={cn(
-                "text-caption font-medium",
-                completeRows.length === configuredRows.length && configuredRows.length > 0
-                  ? "text-emerald-400/80"
-                  : completeRows.length > 0
-                    ? "text-amber-400/70"
-                    : "text-muted-foreground/50"
-              )}
-            >
-              {completeRows.length} / {configuredRows.length} complete
-            </span>
-          </div>
-        )}
-
-        {/* Per-account stage-chain cards */}
-        {rows.map(({ account, stages }) => (
-          <AccountLoopCard key={account.id} account={account} stages={stages} />
-        ))}
-
-        {rows.length === 0 && (
-          <div className="rounded-xl border border-border/30 bg-white/[0.01] px-4 py-6 text-center">
-            <span className="text-body text-muted-foreground/50">No accounts configured.</span>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // ── Compact embedded view (manager overview card) ─────────────────────
   const total = configuredRows.length;
   const stageCounts = STAGE_LABELS.map((_, stageIdx) => ({
     label: STAGE_LABELS[stageIdx],
@@ -278,7 +101,6 @@ export function OverviewLoopSummary({ full = false }: { full?: boolean }) {
             </span>
           ))}
         </div>
-        <CrossLink to="/app/overview/loop" label="See full loop status" />
       </div>
     </div>
   );
