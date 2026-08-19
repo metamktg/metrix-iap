@@ -1,9 +1,10 @@
 // @refresh reset
 // ─── Required-format panel + manual analysis controls ──────────────────
 // Two pieces used by the manual-import flow:
-//  - RequiredFormatPanel: shows the exact columns a "Performance export
-//    (CSV)" upload must contain, straight from the server-side spec, plus
-//    a downloadable sample CSV.
+//  - RequiredFormatPanel: shows the exact columns a "Performance export"
+//    upload must contain, straight from the server-side spec, plus
+//    a downloadable sample CSV. Accepted upload formats are CSV (preferred)
+//    or XLSX — same required columns either way, only the container differs.
 //  - AnalysisControls: lets the user pick a date range and explicitly
 //    kick off analysis of their staged CSVs. Analysis NEVER runs
 //    automatically on upload — this is the only trigger. Polls the latest
@@ -96,11 +97,14 @@ function RunAnalysisBtn({
 
 export type IapCsvClassKey = "demographic" | "device_placement" | "ad_summary" | "conversion_device";
 
+// Labels the required-columns panel by report, not by file format — the
+// same columns are required whether the export arrives as CSV (preferred)
+// or XLSX; only the container differs.
 const CSV_CLASS_TITLES: Record<IapCsvClassKey, string> = {
-  demographic: "Demographics CSV",
-  device_placement: "Placements CSV",
-  ad_summary: "Ad Summary CSV",
-  conversion_device: "Conversion Device CSV",
+  demographic: "Demographics",
+  device_placement: "Placements",
+  ad_summary: "Ad Summary",
+  conversion_device: "Conversion Device",
 };
 
 /**
@@ -210,6 +214,9 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
             <p className="text-caption text-muted-foreground/80">Loading format spec…</p>
           ) : (
             <>
+              <p className="text-label text-muted-foreground/70">
+                Upload as CSV (preferred) or XLSX — same required columns either way.
+              </p>
               <div className="rounded-md border border-border/30 p-2">
                 <div className="text-label font-semibold uppercase tracking-wide text-muted-foreground/80 mb-1">
                   Breakdown columns
@@ -1161,17 +1168,17 @@ export function AnalysisControls({
 
       <MappingHealthBanner imports={importsData?.imports ?? []} />
 
-      {/* Spend coverage notice — shown when Ad Summary CSV is absent */}
+      {/* Spend coverage notice — shown when the Ad Summary export is absent */}
       {!hasSummary && !isRunning && (
         <div className="rounded-lg border border-amber-400/25 bg-amber-400/[0.05] p-3 space-y-1">
           <div className="flex items-start gap-2">
             <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0 space-y-1">
-              <div className="text-caption font-semibold text-amber-200">Spend will be underreported without Ad Summary CSV</div>
+              <div className="text-caption font-semibold text-amber-200">Spend will be underreported without an Ad Summary export</div>
               <p className="text-label text-amber-100/65 leading-relaxed">
                 Meta's demographic export only captures ~10–15% of actual spend — the rest is unattributable due to iOS
-                privacy limits. Upload an <strong className="text-amber-200/90">Ad Summary CSV</strong> (ad-level, no
-                demographic/device breakdown) to unlock full spend totals.
+                privacy limits. Upload an <strong className="text-amber-200/90">Ad Summary export</strong> (CSV or XLSX,
+                ad-level, no demographic/device breakdown) to unlock full spend totals.
               </p>
             </div>
           </div>
@@ -1217,7 +1224,7 @@ export function AnalysisControls({
               </div>
               <p className="text-label text-red-100/70 leading-relaxed">
                 One or more required breakdown columns (e.g. Age, Placement) were not found in your
-                CSV. Fix the file and re-upload it, or run anyway and review the error.
+                file. Fix the file and re-upload it, or run anyway and review the error.
               </p>
             </div>
           </div>

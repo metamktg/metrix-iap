@@ -4,8 +4,9 @@
 // performance data at upload time), and ConnectMetaDialog hands off to
 // the live Meta OAuth flow in Settings → Integrations.
 //
-// Manual imports require the two exact IAP CSV templates (Demographics +
-// Placements) plus optional individual creative files with an editable
+// Manual imports require the two exact IAP report templates (Demographics +
+// Placements), uploaded as CSV (preferred) or XLSX — same required columns
+// either way — plus optional individual creative files with an editable
 // ad-name mapping. Date range selection does NOT live here — it belongs
 // only to the explicit "Run analysis" step (see AnalysisControls),
 // which is surfaced from the account setup screen, not this dialog.
@@ -510,8 +511,15 @@ function classifyCsvHeaders(headerCells: string[]): CsvKind {
   return "performance_ad_summary_csv";
 }
 
-/** Reads just enough of the file to get its header row and classify it. */
+/** Reads just enough of the file to get its header row and classify it.
+ *  XLSX files are a ZIP container, not text — reading their raw bytes as a
+ *  string can't recover a header row, so this only attempts the text sniff
+ *  for .csv files. XLSX uploads fall through to the same slot-guessing +
+ *  server "wrong slot" retry (see `stageOne`) the CSV path already uses
+ *  whenever its own sniff comes back inconclusive, so a misfiled XLSX still
+ *  ends up in the correct slot — it just costs one extra staging attempt. */
 async function sniffCsvKind(file: File): Promise<CsvKind> {
+  if (/\.xlsx$/i.test(file.name)) return "performance_ad_summary_csv";
   try {
     const head = await file.slice(0, 16384).text();
     const firstLine = head.split(/\r\n|\n|\r/)[0] ?? "";
@@ -642,15 +650,16 @@ function SmartCsvUpload({
       <div>
         <div className="text-body font-semibold text-foreground">Performance CSVs</div>
         <p className="text-caption text-foreground/75 mt-0.5">
-          Drag in every export you have from Meta Ads Manager — Metrix reads each file's headers and files it
-          automatically. Demographics and Placements are required; Ad Summary and Conversion Device are optional but recommended.
+          Drag in every export you have from Meta Ads Manager — CSV or XLSX, Metrix reads each file's headers and
+          files it automatically. Demographics and Placements are required; Ad Summary and Conversion Device are
+          optional but recommended.
         </p>
       </div>
 
       <input
         ref={fileRef}
         type="file"
-        accept=".csv"
+        accept=".csv,.xlsx"
         multiple
         className="hidden"
         onChange={(e) => void handleFiles(e.target.files)}
@@ -676,7 +685,7 @@ function SmartCsvUpload({
       >
         {current !== null ? <Loader2 className="w-5 h-5 text-interactive animate-spin" /> : <Upload className="w-5 h-5 text-muted-foreground/85" />}
         <span className="text-body font-medium text-foreground/85">
-          {current !== null ? `Uploading ${current.name}…` : "Drop your Meta CSV exports here, or click to browse"}
+          {current !== null ? `Uploading ${current.name}…` : "Drop your Meta CSV or XLSX exports here, or click to browse"}
         </span>
         <span className="text-caption text-muted-foreground/60">Any number of files, any order — up to {MAX_UPLOAD_MB_LABEL} each</span>
         {current !== null && <div className="w-full max-w-xs mt-1"><UploadProgressBar pct={current.pct} label="" /></div>}
@@ -1541,7 +1550,7 @@ export function ManualUploadPanel({
               <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md border border-amber-400/25 bg-amber-400/[0.05]">
                 <div className="flex items-center gap-2 min-w-0">
                   <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                  <span className="text-caption text-amber-200/80 truncate">No Ad Summary CSV — spend may be underreported</span>
+                  <span className="text-caption text-amber-200/80 truncate">No Ad Summary export — spend may be underreported</span>
                 </div>
                 <button
                   onClick={() => setStep("upload")}

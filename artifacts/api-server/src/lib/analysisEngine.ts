@@ -29,6 +29,8 @@ import type { IapCsvClass } from "./iapCsvSpec";
 import { detectCsvClassFromHeaders, checkDuplicateCsvClasses, iapCsvClassLabel, optionalMetricSlugsForGroups, type ObjectiveColumnGroup } from "./iapCsvSpec";
 import { resolveAccountObjectives } from "./cohortConfig";
 import { computeObjectiveCoverage, OBJECTIVE_GROUP_FOR_KEY } from "./objectiveCoverage";
+import { convertXlsxToCsvText, looksLikeXlsxContent } from "./xlsxToCsv";
+import { extensionOf } from "./creativeAssetType";
 
 
 export const STALE_ANALYSIS_RUN_MS = 10 * 60 * 1000;
@@ -586,9 +588,30 @@ function withinRange(date: string, dateRange: DateRangePreset, maxDate: string):
   return d >= cutoff && d <= max;
 }
 
-function decodeStagedContent(hexOrRaw: string): string {
+function decodeStagedContentBuffer(hexOrRaw: string): Buffer {
   const hex = hexOrRaw.replace(/^\\x/, "");
-  return Buffer.from(hex, "hex").toString("utf8");
+  return Buffer.from(hex, "hex");
+}
+
+/**
+ * Decodes a staged manual_imports row's content into canonical CSV text,
+ * transparently converting XLSX workbooks (detected by filename extension or
+ * ZIP magic bytes, same rule as the upload route) into the exact CSV text
+ * shape parseIapCsv() expects — see xlsxToCsv.ts. Returns any XLSX
+ * conversion-time warnings (e.g. the Ad/Ad set/Campaign ID precision-loss
+ * guard) alongside the text so callers can fold them into csv_warnings the
+ * same way parseIapCsv's own warnings already are.
+ */
+async function decodeStagedContentAsCsvText(
+  hexOrRaw: string,
+  filename: string,
+): Promise<{ text: string; warnings: string[] }> {
+  const buf = decodeStagedContentBuffer(hexOrRaw);
+  if (extensionOf(filename) === "xlsx" || looksLikeXlsxContent(buf)) {
+    const converted = await convertXlsxToCsvText(buf);
+    return { text: converted.csvText, warnings: converted.warnings };
+  }
+  return { text: buf.toString("utf8"), warnings: [] };
 }
 
 /**
@@ -851,12 +874,20 @@ export async function startManualAnalysis(
   // A user can upload two copies of the same class (e.g. two demographic
   // exports) without triggering the upload-time mismatch check when the
   // file lacks the opposing class's exclusive signature columns.
-  const demoDetected = demoImports.map((imp) =>
-    detectCsvClassFromHeaders(csvFirstLineHeaders(decodeStagedContent(String(imp["content"])))),
-  );
-  const placementDetected = placementImports.map((imp) =>
-    detectCsvClassFromHeaders(csvFirstLineHeaders(decodeStagedContent(String(imp["content"])))),
-  );
+  // XLSX conversion errors on a genuinely corrupt file are deferred to the
+  // real parse pass below (same philosophy as the conversion-export gate
+  // just below this one) — an unreadable file just detects as "inconclusive"
+  // here rather than surfacing a confusing error from a pre-check.
+  const detectClassForImport = async (imp: { content?: unknown; filename?: unknown }): Promise<IapCsvClass | null> => {
+    try {
+      const { text } = await decodeStagedContentAsCsvText(String(imp["content"]), String(imp["filename"]));
+      return detectCsvClassFromHeaders(csvFirstLineHeaders(text));
+    } catch {
+      return null;
+    }
+  };
+  const demoDetected = await Promise.all(demoImports.map(detectClassForImport));
+  const placementDetected = await Promise.all(placementImports.map(detectClassForImport));
   const dupCheck = checkDuplicateCsvClasses(demoDetected, placementDetected);
   if (dupCheck) {
     throw new AnalysisError(
@@ -882,10 +913,11 @@ export async function startManualAnalysis(
     const suspectFiles: string[] = [];
     for (const imp of deliveryImports) {
       try {
-        const result = parseIapCsv(decodeStagedContent(imp.content), imp.csvClass);
+        const { text } = await decodeStagedContentAsCsvText(imp.content, imp.filename);
+        const result = parseIapCsv(text, imp.csvClass);
         if (result.conversionExportSuspected) suspectFiles.push(imp.filename);
       } catch {
-        // Malformed files are reported by the real parse pass below — skip here.
+        // Malformed files (including unreadable XLSX) are reported by the real parse pass below — skip here.
       }
     }
     if (suspectFiles.length > 0) {
@@ -912,8 +944,9 @@ export async function startManualAnalysis(
       const objectiveGroupsPresent = new Set<ObjectiveColumnGroup>();
       const demoRows: IapCsvRow[] = [];
       for (const imp of demoImports) {
-        const text = decodeStagedContent(String(imp["content"]));
         try {
+          const { text, warnings: xlsxWarnings } = await decodeStagedContentAsCsvText(String(imp["content"]), String(imp["filename"]));
+          for (const w of xlsxWarnings) allCsvWarnings.push(`[Demographics "${imp["filename"]}"] ${w}`);
           const result = parseIapCsv(text, "demographic");
           for (const g of result.objectiveColumnGroupsPresent) objectiveGroupsPresent.add(g);
           demoRows.push(...result.rows);
@@ -928,8 +961,9 @@ export async function startManualAnalysis(
       await updateProgress(runId, 20, "Parsing placements export");
       const placementRows: IapCsvRow[] = [];
       for (const imp of placementImports) {
-        const text = decodeStagedContent(String(imp["content"]));
         try {
+          const { text, warnings: xlsxWarnings } = await decodeStagedContentAsCsvText(String(imp["content"]), String(imp["filename"]));
+          for (const w of xlsxWarnings) allCsvWarnings.push(`[Placements "${imp["filename"]}"] ${w}`);
           const result = parseIapCsv(text, "device_placement");
           for (const g of result.objectiveColumnGroupsPresent) objectiveGroupsPresent.add(g);
           placementRows.push(...result.rows);
@@ -949,8 +983,9 @@ export async function startManualAnalysis(
       }
       const summaryRows: IapCsvRow[] = [];
       for (const imp of summaryImports) {
-        const text = decodeStagedContent(String(imp["content"]));
         try {
+          const { text, warnings: xlsxWarnings } = await decodeStagedContentAsCsvText(String(imp["content"]), String(imp["filename"]));
+          for (const w of xlsxWarnings) allCsvWarnings.push(`[Ad Summary "${imp["filename"]}"] ${w}`);
           const result = parseIapCsv(text, "ad_summary");
           for (const g of result.objectiveColumnGroupsPresent) objectiveGroupsPresent.add(g);
           summaryRows.push(...result.rows);
@@ -971,8 +1006,9 @@ export async function startManualAnalysis(
       }
       const conversionDeviceRows: IapCsvRow[] = [];
       for (const imp of conversionDeviceImports) {
-        const text = decodeStagedContent(String(imp["content"]));
         try {
+          const { text, warnings: xlsxWarnings } = await decodeStagedContentAsCsvText(String(imp["content"]), String(imp["filename"]));
+          for (const w of xlsxWarnings) allCsvWarnings.push(`[Conversion Device "${imp["filename"]}"] ${w}`);
           const result = parseIapCsv(text, "conversion_device");
           for (const g of result.objectiveColumnGroupsPresent) objectiveGroupsPresent.add(g);
           conversionDeviceRows.push(...result.rows);
