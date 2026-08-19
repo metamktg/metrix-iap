@@ -5,14 +5,15 @@
 // the subjective/asset side, the IAP Library is the objective/variable
 // side of the same underlying data.
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { getAdAccount, getMST, getAnalysisData, getCreativeLinkContext } from "@/lib/data/metrixSeedAdapter";
 import { ModuleHeader, ModuleScopeGate, ModuleTabs, CaveatNote, PendingState, readableVariables, CrossLink, InfoTooltip } from "../shared";
 import { CreativeCard } from "@/components/creative/CreativeCard";
 import { cardFromLibraryCell } from "@/lib/creative-assembly";
-import { Library, Tags } from "lucide-react";
+import { fmtMetric } from "@/lib/normalize";
+import { Library, Tags, LayoutGrid } from "lucide-react";
 
 const SECTION = "Creative · 05";
 
@@ -61,6 +62,22 @@ export function CreativeLibraryView() {
         }).filter((g) => g.items.length > 0);
         const distinctVarCount = variableGroups.reduce((n, g) => n + g.items.length, 0);
 
+        // Concept × funnel-stage cross-map: cost per result for every
+        // mapped concept at every real funnel stage this account's
+        // analysis actually carries. Stages come from the data itself
+        // (CellPerformanceRow.stage), never a hardcoded list, so accounts
+        // whose export doesn't populate stage render an honest empty state
+        // instead of fabricated columns.
+        const perfRows = getAnalysisData(seed, adAccountId)?.performance_by_cell ?? [];
+        const crossStages = [...new Set(perfRows.map((r) => r.stage).filter((s): s is string => Boolean(s)))];
+        const crossConcepts = [...new Set(library.map((c) => c.book2_concept_name))];
+        const crossCell = (concept: string, stage: string) => {
+          const rows = perfRows.filter((r) => r.book2_concept_name === concept && r.stage === stage);
+          const spend = rows.reduce((n, r) => n + (r["Amount spent (USD)"] || 0), 0);
+          const results = rows.reduce((n, r) => n + (r.Results || 0), 0);
+          return { cpa: results > 0 ? spend / results : null, spend, results, tested: rows.length > 0 };
+        };
+
         return (
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
             <ModuleHeader
@@ -73,6 +90,7 @@ export function CreativeLibraryView() {
               tabs={[
                 { id: "library", label: "Concept library", count: library.length, Icon: Library },
                 { id: "variables", label: "Variable library", count: distinctVarCount, Icon: Tags },
+                { id: "cross", label: "Cross-map", count: crossConcepts.length, Icon: LayoutGrid },
               ]}
               active={tab}
               onChange={setTab}
@@ -134,6 +152,53 @@ export function CreativeLibraryView() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                )
+              )}
+
+              {tab === "cross" && (
+                crossStages.length === 0 || crossConcepts.length === 0 ? (
+                  <PendingState
+                    title="No cross-map yet"
+                    message="This account's analysis doesn't carry funnel-stage labels on its cells yet, so a concept × funnel-stage read isn't available."
+                    icon={LayoutGrid}
+                  />
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-body text-muted-foreground/80">Cost per result by concept and funnel stage.</p>
+                      <InfoTooltip content="Aggregated from performance_by_cell for every asset mapped to a concept. Empty cells have no measured spend at that stage yet." />
+                    </div>
+                    <div className="overflow-x-auto">
+                      <div
+                        className="grid gap-1 min-w-[560px]"
+                        style={{ gridTemplateColumns: `minmax(200px,1.6fr) repeat(${crossStages.length}, minmax(120px, 1fr))` }}
+                      >
+                        <span />
+                        {crossStages.map((s) => (
+                          <span key={s} className="text-label text-muted-foreground/60 text-center leading-tight pb-1.5">{s}</span>
+                        ))}
+                        {crossConcepts.map((concept) => (
+                          <Fragment key={concept}>
+                            <div className="text-body font-medium text-foreground/85 leading-tight py-1.5 pr-2 truncate" title={concept}>
+                              {concept}
+                            </div>
+                            {crossStages.map((s) => {
+                              const cell = crossCell(concept, s);
+                              return (
+                                <div
+                                  key={`${concept}-${s}`}
+                                  title={cell.tested ? `${fmtMetric("usd_total", cell.spend)} spend · ${cell.results} results` : "Untested — no measured spend at this stage"}
+                                  className="rounded-md border border-border/30 bg-white/[0.015] py-1.5 text-center text-body tabular-nums text-foreground/85"
+                                >
+                                  {cell.tested ? fmtMetric("usd_unit", cell.cpa) : <span className="text-muted-foreground/40">—</span>}
+                                </div>
+                              );
+                            })}
+                          </Fragment>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 )
               )}
