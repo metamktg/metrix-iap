@@ -23,7 +23,6 @@
     "smoke:marketing-build": "tsx ./src/smoke-marketing-build.ts",
     "smoke:marketing-e2e": "tsx ./src/smoke-marketing-e2e.ts",
     "smoke:metrix-iap-hover-popover": "tsx ./src/smoke-metrix-iap-hover-popover.ts",
-    "smoke:metrix-iap-home-screen": "tsx ./src/smoke-metrix-iap-home-screen.ts",
     "smoke:forgot-password": "tsx ./src/smoke-forgot-password.ts",
     "smoke:metrix-iap-slider-persistence": "tsx ./src/smoke-metrix-iap-slider-persistence.ts",
     "smoke:register-session-persistence": "tsx ./src/smoke-register-session-persistence.ts",
