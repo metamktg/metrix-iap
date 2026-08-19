@@ -59,7 +59,10 @@ function PreviewBlock({ block }: { block: ReportBlock }) {
     return (
       <div className="flex gap-2 flex-wrap mb-2.5">
         {block.items.map((it) => (
-          <div key={it.label} className="flex-1 min-w-[130px] rounded-lg border border-border/40 bg-white/[0.015] px-3 py-2.5">
+          // Figure boxes pop back out to the card-chrome surface tone
+          // against the body's recessed background — the third tier of
+          // the wrapper(surface)/body(bg)/figure(surface) layering.
+          <div key={it.label} className="flex-1 min-w-[130px] rounded-lg border border-border/40 bg-card px-3 py-2.5">
             <div className={cn(TYPE.microLabel, "text-muted-foreground/55")}>{it.label}</div>
             <div className={cn("text-cardtitle font-medium text-foreground tabular-nums")}>{it.value}</div>
           </div>
@@ -111,19 +114,29 @@ function PreviewBlock({ block }: { block: ReportBlock }) {
 }
 
 function ReportPreviewPane({ model, audienceLabel }: { model: ReportModel; audienceLabel: string }) {
+  // Kicker: real account name + selected window, not a static string.
+  const kicker = model.windowLabel ? `${model.accountName} · ${model.windowLabel}` : model.accountName;
+  // Title: audience-differentiated, matching the real client/internal
+  // distinction the audience selector on the left already carries.
+  const title = model.mode === "client"
+    ? "What we learned and what happens next"
+    : "Full-window performance & strategy record";
   return (
-    <div className="rounded-xl border border-border/40 bg-white/[0.015] overflow-hidden min-w-0" data-testid="report-live-preview">
+    // Card chrome sits at the surface tone; the body below resets to the
+    // recessed background tone so it reads as a sunken sheet inside it —
+    // matching the canvas's wrapper(surface)/body(bg) contrast.
+    <div className="rounded-xl border border-border/40 bg-card overflow-hidden min-w-0" data-testid="report-live-preview">
       <div className="flex items-center justify-between gap-2.5 px-4 py-3 border-b border-border/30 flex-wrap">
         <span className={cn(TYPE.caption, "text-muted-foreground/70 flex gap-1.5")}>
           <span>Preview</span><span>·</span>
           <span>{model.sections.length} section{model.sections.length === 1 ? "" : "s"}</span>
           {model.windowLabel && (<><span>·</span><span className="tabular-nums">{model.windowLabel}</span></>)}
         </span>
-        <span className={cn(TYPE.label, "inline-flex border border-border/40 bg-white/[0.04] rounded-full px-2 py-0.5 text-foreground/70")}>{audienceLabel}</span>
+        <span className="mx-inline-badge">{audienceLabel}</span>
       </div>
-      <div className="px-5 py-5">
-        <div className={cn(TYPE.label, "font-semibold uppercase tracking-[0.14em] text-interactive/80 mb-1")}>Creative Signal Report</div>
-        <h2 className="text-lg font-semibold text-foreground">{model.docTitle}</h2>
+      <div className="px-5 py-5 bg-background">
+        <div className={cn(TYPE.label, "font-semibold uppercase tracking-[0.14em] text-interactive/80 mb-1")}>{kicker}</div>
+        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
         <p className={cn(TYPE.body, "text-muted-foreground/70 mt-1.5 max-w-[70ch]")}>{model.brandLine}</p>
 
         {model.sections.map((s) => (
@@ -398,8 +411,22 @@ export function ReportBuilderView() {
                                 type="checkbox"
                                 checked={included}
                                 onChange={() => toggleSection(s)}
-                                className="w-3.5 h-3.5 rounded border-border/60 bg-white/[0.04] accent-[hsl(var(--primary))] shrink-0"
+                                className="sr-only"
                               />
+                              {/* Canvas checkbox spec: a 15x15 colored box with a
+                                  checkmark glyph rather than a native control. The
+                                  real input above stays in the a11y tree (keyboard
+                                  focus, screen-reader checkbox role); this span is
+                                  purely decorative. */}
+                              <span
+                                aria-hidden="true"
+                                className={cn(
+                                  "flex items-center justify-center w-[15px] h-[15px] rounded-[3px] border shrink-0 transition-colors",
+                                  included ? "bg-primary border-primary text-primary-foreground" : "bg-white/[0.04] border-border/60"
+                                )}
+                              >
+                                {included && <Check className="w-2.5 h-2.5" strokeWidth={3} />}
+                              </span>
                               <span className={cn(TYPE.body, "truncate", included ? "text-foreground" : "text-muted-foreground/50 line-through")}>{s}</span>
                             </label>
                           );

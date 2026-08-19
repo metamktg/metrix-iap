@@ -83,9 +83,10 @@ describe("report builder canvas layout", () => {
     const internal = screen.getByRole("button", { name: /internal ops/i });
     expect(internal.getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByRole("button", { name: /client-facing/i })).toBeTruthy();
-    // Right: live preview with the report kicker and real section content.
+    // Right: live preview with the report kicker (real account name + the
+    // selected window, not a static string) and real section content.
     const preview = screen.getByTestId("report-live-preview");
-    expect(within(preview).getByText("Creative Signal Report")).toBeTruthy();
+    expect(within(preview).getByText(/Bookster/)).toBeTruthy();
     // The preview renders the real composed document — its section count
     // matches the sections checklist (all included by default).
     expect(within(preview).getByText(/\d+ sections/)).toBeTruthy();
