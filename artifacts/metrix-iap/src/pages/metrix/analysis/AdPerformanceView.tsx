@@ -5,7 +5,8 @@
 // mounted at the parent /app/analysis route) owns execution + run
 // history — this page is read-only.
 
-import { useState } from "react";
+import { useState, useMemo, Fragment } from "react";
+import { useLocation } from "wouter";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { KpiDrilldownModal } from "@/components/metrics/KpiDrilldownModal";
@@ -14,17 +15,21 @@ import {
   ModuleHeader, ModuleScopeGate, PendingState,
   CaveatNote, SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
   RangeScopeBar, NoDataInRangeState, SectionInfoIcon,
-  ConfidenceBadge, useShowMore, ShowMoreButton,
+  ConfidenceBadge, useShowMore, ShowMoreButton, DetailReveal,
+  PILL_ACTIVE, PILL_INACTIVE,
 } from "../shared";
 import { TYPE } from "../typography";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { useCellRangeScope, sumInRange } from "@/lib/date-scope";
-import { LineChart, Library, Users, LayoutGrid, Wallet, TrendingUp, AlertTriangle, Eye } from "lucide-react";
+import { LineChart, Library, Users, LayoutGrid, Wallet, TrendingUp, AlertTriangle, Eye, ChevronDown } from "lucide-react";
 import { KpiTileRow } from "@/components/metrics/KpiTile";
 import { buildMetricCatalog, metricSourceFromCampaignSummary } from "@/lib/data/metricsCatalog";
-import { bucketForConcept, BUCKET_LABEL } from "@/lib/data/scalingBuckets";
-import type { DataQualityFlag, ConceptRollupRow, ScalingPlaybook } from "@/lib/data/seedTypes";
+import { bucketEntryForConcept, BUCKET_LABEL, type ScalingBucket } from "@/lib/data/scalingBuckets";
+import { normalizeConfidence } from "@/lib/normalize";
+import { RankSortBar, sortByRankMetric, useRankMetric, type RankMetric } from "./rankSort";
+import { CombinationChips, familyLabel } from "../strategy/strategyShared";
+import type { DataQualityFlag, ConceptRollupRow, ScalingPlaybook, CellPerformanceRow, MSTLibraryCell } from "@/lib/data/seedTypes";
 
 const SECTION = "Analysis · 03";
 
@@ -37,6 +42,11 @@ const SECTION = "Analysis · 03";
 function flagHeadline(f: DataQualityFlag): string {
   const type = typeof f["type"] === "string" ? (f["type"] as string) : null;
   if (type) return type.replace(/_/g, " ");
+  // Some quality_flag entries (e.g. the live-pilot underspend/zero-conversion
+  // set) carry a `flag` id instead of `type` — a real, specific label beats
+  // the generic kind-only fallback below.
+  const flagId = typeof f["flag"] === "string" ? (f["flag"] as string) : null;
+  if (flagId) return flagId.replace(/_/g, " ");
   return f.kind === "attribution_window" ? "Attribution window" : f.kind.replace(/_/g, " ");
 }
 
@@ -49,8 +59,32 @@ function flagBody(f: DataQualityFlag): string {
   return parts.join(" · ") || "Raised by the last analysis run.";
 }
 
+// Evidence grid behind "Show evidence" — every scalar field actually present
+// on the real flag object, beyond the ones already surfaced in the headline
+// and so-what paragraph. Nothing here is computed or guessed; keys that
+// aren't present on a given flag simply don't produce a row.
+function flagEvidence(f: DataQualityFlag): { k: string; v: string }[] {
+  const rows: { k: string; v: string }[] = [{ k: "Kind", v: f.kind.replace(/_/g, " ") }];
+  const spend = typeof f["spend"] === "number" ? (f["spend"] as number) : null;
+  if (spend != null) rows.push({ k: "Spend affected", v: fmtUSD(spend) });
+  const results = typeof f["results"] === "number" ? (f["results"] as number) : null;
+  if (results != null) rows.push({ k: "Results", v: fmtNum(results) });
+  const campaign = typeof f["campaign"] === "string" ? (f["campaign"] as string) : null;
+  if (campaign) rows.push({ k: "Campaign", v: campaign });
+  const platform = typeof f["platform"] === "string" ? (f["platform"] as string) : null;
+  if (platform) rows.push({ k: "Platform", v: platform });
+  const placement = typeof f["placement"] === "string" ? (f["placement"] as string) : null;
+  if (placement) rows.push({ k: "Placement", v: placement });
+  const impressions = typeof f["impressions"] === "number" ? (f["impressions"] as number) : null;
+  if (impressions != null) rows.push({ k: "Impressions", v: fmtNum(impressions) });
+  const severity = typeof f["severity"] === "string" ? (f["severity"] as string) : null;
+  if (severity) rows.push({ k: "Severity", v: severity.charAt(0).toUpperCase() + severity.slice(1) });
+  return rows;
+}
+
 function SignalCards({ flags }: { flags: DataQualityFlag[] }) {
   const fold = useShowMore(flags, 4);
+  const [, navigate] = useLocation();
   if (flags.length === 0) return null;
   return (
     <SectionCard
@@ -62,26 +96,54 @@ function SignalCards({ flags }: { flags: DataQualityFlag[] }) {
         {fold.visible.map((f, i) => {
           const isAnomaly = f.kind === "anomaly";
           const severity = isAnomaly ? "Investigate" : f.kind === "quality_flag" ? "Watch" : "Note";
+          const spend = typeof f["spend"] === "number" ? (f["spend"] as number) : null;
+          const evidence = flagEvidence(f);
           return (
             <div
               key={i}
               className={cn(
-                "rounded-lg border px-3.5 py-3",
+                "rounded-lg border px-3.5 py-3 flex flex-col gap-2",
                 isAnomaly ? "border-amber-400/30 bg-amber-400/[0.04]" : "border-border/40 bg-white/[0.015]",
               )}
             >
-              <div className="flex items-center gap-1.5 mb-1">
+              <div className="flex items-center gap-1.5">
                 {isAnomaly
                   ? <AlertTriangle className="w-3.5 h-3.5 text-amber-400/80 shrink-0" />
                   : <Eye className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />}
                 <span className={cn(TYPE.label, "font-mono uppercase tracking-widest", isAnomaly ? "text-amber-400/85" : "text-muted-foreground/60")}>
                   {severity}
                 </span>
-                <span className={cn(TYPE.caption, "font-semibold text-foreground/90 capitalize truncate")}>
+                {/* Real spend-affected badge — never a fabricated confidence percentage. */}
+                {spend != null && (
+                  <span className={cn(TYPE.label, "ml-auto shrink-0 border rounded-full px-2 py-0.5 font-semibold normal-case tracking-normal text-muted-foreground/65 border-border/40 bg-white/[0.03]")}>
+                    {fmtUSD(spend, 0)} affected
+                  </span>
+                )}
+              </div>
+              <div>
+                <span className={cn(TYPE.caption, "font-semibold text-foreground/90 capitalize block")}>
                   {flagHeadline(f)}
                 </span>
+                <p className={cn(TYPE.body, "text-foreground/70 leading-relaxed mt-0.5")}>{flagBody(f)}</p>
               </div>
-              <p className={cn(TYPE.body, "text-foreground/70 leading-relaxed")}>{flagBody(f)}</p>
+              <DetailReveal
+                label="Show evidence"
+                labelClassName={cn(TYPE.caption, "font-semibold text-interactive")}
+                eyebrow="Evidence"
+                sections={evidence.map((e) => ({ label: e.k, text: e.v }))}
+              />
+              {/* No real per-flag acknowledge/snooze mechanism exists yet — this
+                  cross-links into the real Listen · Signal surface instead of a
+                  decorative "Verify tracking" button that would do nothing. */}
+              <div className="mt-auto pt-1">
+                <button
+                  type="button"
+                  onClick={() => navigate("/app/listen/signal")}
+                  className={cn(TYPE.caption, "inline-flex items-center gap-1.5 font-semibold rounded-lg border border-primary/40 bg-primary/15 text-interactive px-3 py-1.5 hover:bg-primary/25 transition-colors")}
+                >
+                  Review in Listen
+                </button>
+              </div>
             </div>
           );
         })}
@@ -100,7 +162,10 @@ function SignalCards({ flags }: { flags: DataQualityFlag[] }) {
 // ─── Concept tier table — the canvas's performance tier register ──────
 // One row per concept_rollup entry: real spend / CPA / CVR / confidence,
 // with the strategy map's scaling-playbook bucket as the tier tag. Rows
-// the playbook doesn't name stay unclassified — never guessed.
+// the playbook doesn't name stay unclassified — never guessed. Sortable,
+// filterable by tier, row-expandable (confidence, the real playbook entry
+// that produced the tier, and the concept's variable stack when the local
+// library maps it), capped at 4 rows with a show-more fold.
 
 const BUCKET_TAG_CLS: Record<string, string> = {
   scale_now: "border-primary/40 bg-primary/15 text-interactive",
@@ -110,20 +175,188 @@ const BUCKET_TAG_CLS: Record<string, string> = {
   avoid: "border-red-400/30 bg-red-400/10 text-red-300",
 };
 
-function ConceptTierTable({ rollup, playbook, resultNoun }: {
+// Real tier vocabulary only — the strategy map classifies into these five
+// buckets (plus "no match yet"). Canvas's mock used a sixth "Retire" label
+// that doesn't exist anywhere in this app's scaling-playbook system, so it
+// isn't reproduced here.
+const TIER_FILTERS: { id: string; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "scale_now", label: "Scale" },
+  { id: "optimize", label: "Optimize" },
+  { id: "validate", label: "Validate" },
+  { id: "explore", label: "Explore" },
+  { id: "avoid", label: "Avoid" },
+  { id: "unclassified", label: "Unclassified" },
+];
+
+interface TierRow extends ConceptRollupRow {
+  lift: number | null;
+  bucket: ScalingBucket | null;
+  bucketEntry: string | null;
+}
+
+/** CVR lift against the row's own book average — same formula MstSprintsView
+ *  uses for "CVR lift vs avg" (confidence-checked in a prior audit), just
+ *  applied across every book present in the rollup rather than one at a time. */
+function computeTierRows(rollup: ConceptRollupRow[], playbook: ScalingPlaybook | null): TierRow[] {
+  const cvrByBook = new Map<string, number[]>();
+  for (const r of rollup) {
+    if (r.cvr_link_pct != null) {
+      cvrByBook.set(r.book, [...(cvrByBook.get(r.book) ?? []), r.cvr_link_pct]);
+    }
+  }
+  const avgCvr = (book: string): number | null => {
+    const arr = cvrByBook.get(book);
+    if (!arr || arr.length === 0) return null;
+    return arr.reduce((n, v) => n + v, 0) / arr.length;
+  };
+  return rollup.map((r) => {
+    const avg = avgCvr(r.book);
+    const lift = avg != null && avg > 0 && r.cvr_link_pct != null
+      ? ((r.cvr_link_pct - avg) / avg) * 100
+      : null;
+    const match = bucketEntryForConcept(r.book, r.concept, playbook);
+    return { ...r, lift, bucket: match?.bucket ?? null, bucketEntry: match?.entry ?? null };
+  });
+}
+
+const CONFIDENCE_RANK: Record<string, number> = { high: 3, medium: 2, low: 1, directional: 0 };
+function confidenceRank(value: string | null): number | null {
+  if (!value) return null;
+  const { level } = normalizeConfidence(value);
+  return level in CONFIDENCE_RANK ? CONFIDENCE_RANK[level] : null;
+}
+
+const TIER_RANK_METRICS: RankMetric<TierRow>[] = [
+  { id: "spend", label: "Spend", direction: "desc", value: (r) => r.spend, format: (v) => fmtUSD(v, 0) },
+  { id: "cpa", label: "CPA", direction: "asc", value: (r) => r.cpa, format: (v) => fmtUSD(v) },
+  { id: "lift", label: "Lift", direction: "desc", value: (r) => r.lift, format: (v) => `${v >= 0 ? "+" : ""}${fmtPct(v)}` },
+  { id: "confidence", label: "Confidence", direction: "desc", value: (r) => confidenceRank(r.confidence), format: (v) => String(v) },
+];
+
+/** `local_book2_library`/`performance_by_cell`'s cell_id space is scoped to
+ *  one book (its name says so, and on multi-book accounts the concept-id
+ *  overlap confirms it: bookster's BOOK2 concepts C2/C4 own cells
+ *  C2B/C2E/C2F/C4E — BOOK0's same-numbered concepts own none). A concept
+ *  code alone (e.g. "C2") isn't unique across books, so a null book
+ *  (single-book accounts) is trusted, but a named book must say "BOOK2" or
+ *  the lookup is skipped rather than risk attributing another book's cell. */
+function inLibraryBookScope(book: string): boolean {
+  return !book || book.toUpperCase() === "BOOK2";
+}
+
+/** First mapped matrix cell for a concept (e.g. concept "C2" → cell "C2B") —
+ *  the same cell_id space `?focus=` already deep-links into on IAP Library.
+ *  Concepts with no mapped cell (BOOK0 in this account, for example — a
+ *  real, already-flagged data-quality gap) get no deep-dive link rather
+ *  than one that resolves to nothing. */
+function firstCellIdForConcept(book: string, concept: string, cells: CellPerformanceRow[]): string | null {
+  if (!inLibraryBookScope(book)) return null;
+  const re = new RegExp(`^${concept.toUpperCase()}[A-Z]$`);
+  const match = cells.find((c) => re.test(c.cell_id.toUpperCase()));
+  return match ? match.cell_id : null;
+}
+
+/** Union of each variable family across every local-library cell mapped to
+ *  this concept. Cells within a concept can carry different values per row
+ *  (e.g. Row B vs Row E), so this shows everything actually in use for the
+ *  concept rather than picking one row's stack and presenting it as "the"
+ *  answer. Returns null when the library maps no cell to this concept. */
+function conceptVariableStack(book: string, concept: string, library: MSTLibraryCell[]): Record<string, string> | null {
+  if (!inLibraryBookScope(book)) return null;
+  const cells = library.filter((c) => c.concept_id === concept);
+  if (cells.length === 0) return null;
+  const FAMILIES: Array<[string, keyof MSTLibraryCell]> = [
+    ["hook", "hook_variable"],
+    ["tone", "tone_variable"],
+    ["framework", "framework_variable"],
+    ["concept", "concept_variable"],
+    ["proof", "proof_variable"],
+    ["cta", "cta_variable"],
+  ];
+  const stack: Record<string, string> = {};
+  for (const [label, key] of FAMILIES) {
+    const values = new Set<string>();
+    for (const c of cells) {
+      const raw = c[key];
+      // Multi-code cells separate variants with "+" or "/" depending on the
+      // source library row — split on either so every real code becomes its
+      // own chip instead of one garbled compound string.
+      if (typeof raw === "string" && raw) {
+        raw.split(/\s*[+/]\s*/).forEach((v) => v.trim() && values.add(v.trim()));
+      }
+    }
+    if (values.size > 0) stack[label] = [...values].join(" + ");
+  }
+  return Object.keys(stack).length > 0 ? stack : null;
+}
+
+function ConceptTierTable({ rollup, playbook, resultNoun, cells, library }: {
   rollup: ConceptRollupRow[];
   playbook: ScalingPlaybook | null;
   resultNoun: string;
+  cells: CellPerformanceRow[];
+  library: MSTLibraryCell[];
 }) {
+  const [, navigate] = useLocation();
+  const [filter, setFilter] = useState<string>("all");
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
+  const { activeId, select } = useRankMetric(
+    "metrix_tier_sort_v1",
+    TIER_RANK_METRICS.map((m) => m.id),
+    "spend",
+  );
+  const tierRows = useMemo(() => computeTierRows(rollup, playbook), [rollup, playbook]);
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { all: tierRows.length };
+    for (const r of tierRows) {
+      const k = r.bucket ?? "unclassified";
+      c[k] = (c[k] ?? 0) + 1;
+    }
+    return c;
+  }, [tierRows]);
+  const activeMetric = TIER_RANK_METRICS.find((m) => m.id === activeId) ?? TIER_RANK_METRICS[0]!;
+  const filteredRows = filter === "all" ? tierRows : tierRows.filter((r) => (r.bucket ?? "unclassified") === filter);
+  const sortedRows = sortByRankMetric(filteredRows, activeMetric);
+  const fold = useShowMore(sortedRows, 4);
+
   if (rollup.length === 0) return null;
-  const rows = [...rollup].sort((a, b) => (b.spend ?? 0) - (a.spend ?? 0));
+
   return (
     <SectionCard
       title="Performance tiers"
       desc="Concept rollup · playbook classification"
       table="concept_rollup"
-      right={<SectionInfoIcon tip="Each concept's measured rollup with the strategy map's scaling-playbook classification. Unclassified concepts are position-only in the local library — no playbook entry names them yet." />}
+      right={
+        <div className="flex items-center gap-2">
+          <SectionInfoIcon tip="Each concept's measured rollup with the strategy map's scaling-playbook classification. Unclassified concepts are position-only in the local library — no playbook entry names them yet. Lift compares each concept's link-CVR against its book's average." />
+          <RankSortBar metrics={TIER_RANK_METRICS} activeId={activeMetric.id} onSelect={select} />
+        </div>
+      }
     >
+      <div className="flex items-center gap-1.5 mb-3 flex-wrap" role="group" aria-label="Filter concepts by tier">
+        {TIER_FILTERS.map(({ id, label }) => {
+          const active = filter === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => { setFilter(id); setExpandedKey(null); }}
+              aria-pressed={active}
+              className={cn(
+                "inline-flex items-center gap-1 h-6 px-2 rounded-full border text-label font-medium transition-colors",
+                active ? PILL_ACTIVE : PILL_INACTIVE,
+              )}
+            >
+              {label}
+              <span className={cn("text-label font-mono rounded px-0.5", active ? "text-interactive/70" : "text-muted-foreground/40")}>
+                {counts[id] ?? 0}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       <div className="overflow-x-auto">
         <table className="nc-table" data-testid="concept-tier-table">
           <thead>
@@ -132,38 +365,112 @@ function ConceptTierTable({ rollup, playbook, resultNoun }: {
               <th className="text-right">Spend</th>
               <th className="text-right">CPA</th>
               <th className="text-right">Link CVR</th>
+              <th className="text-right">Lift vs book avg</th>
               <th>Confidence</th>
               <th className="text-right">Tier</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => {
-              const bucket = bucketForConcept(r.book, r.concept, playbook);
+            {sortedRows.length === 0 && (
+              <tr>
+                <td colSpan={7} className="text-center py-4">
+                  <span className={cn(TYPE.caption, "text-muted-foreground/50")}>No concepts in this tier.</span>
+                </td>
+              </tr>
+            )}
+            {fold.visible.map((r) => {
+              const key = `${r.book}:${r.concept}`;
+              const isOpen = expandedKey === key;
               const zero = (r.results ?? 0) === 0;
+              const firstCellId = firstCellIdForConcept(r.book, r.concept, cells);
+              const varStack = conceptVariableStack(r.book, r.concept, library);
               return (
-                <tr key={`${r.book}:${r.concept}`} className={cn(zero && "opacity-50")}>
-                  <td>
-                    <span className="font-medium text-foreground/90">{r.book} · {r.concept}</span>
-                  </td>
-                  <td className="text-right tabular-nums text-muted-foreground/75">{r.spend != null ? fmtUSD(r.spend, 0) : "n/a"}</td>
-                  <td className="text-right tabular-nums text-foreground/80">{r.cpa != null ? fmtUSD(r.cpa) : zero ? `no ${resultNoun}` : "n/a"}</td>
-                  <td className="text-right tabular-nums text-muted-foreground/75">{r.cvr_link_pct != null ? fmtPct(r.cvr_link_pct) : "n/a"}</td>
-                  <td>{r.confidence ? <ConfidenceBadge value={r.confidence} /> : <span className={cn(TYPE.label, "text-muted-foreground/35")}>—</span>}</td>
-                  <td className="text-right">
-                    {bucket ? (
-                      <span className={cn(TYPE.label, "inline-flex border rounded-full px-2 py-0.5 font-semibold normal-case", BUCKET_TAG_CLS[bucket])}>
-                        {BUCKET_LABEL[bucket]}
+                <Fragment key={key}>
+                  <tr
+                    className={cn(zero && "opacity-50", "cursor-pointer")}
+                    onClick={() => setExpandedKey(isOpen ? null : key)}
+                    aria-expanded={isOpen}
+                  >
+                    <td>
+                      <span className="inline-flex items-center gap-1.5">
+                        <ChevronDown className={cn("w-3 h-3 text-muted-foreground/40 transition-transform shrink-0", isOpen && "rotate-180")} aria-hidden />
+                        <span className="font-medium text-foreground/90">{r.book} · {r.concept}</span>
                       </span>
-                    ) : (
-                      <span className={cn(TYPE.label, "text-muted-foreground/35")}>unclassified</span>
-                    )}
-                  </td>
-                </tr>
+                    </td>
+                    <td className="text-right tabular-nums text-muted-foreground/75">{r.spend != null ? fmtUSD(r.spend, 0) : "n/a"}</td>
+                    <td className="text-right tabular-nums text-foreground/80">{r.cpa != null ? fmtUSD(r.cpa) : zero ? `no ${resultNoun}` : "n/a"}</td>
+                    <td className="text-right tabular-nums text-muted-foreground/75">{r.cvr_link_pct != null ? fmtPct(r.cvr_link_pct) : "n/a"}</td>
+                    <td className={cn("text-right tabular-nums", r.lift == null ? "text-muted-foreground/40" : r.lift >= 0 ? "text-emerald-400" : "text-red-300")}>
+                      {r.lift == null ? "—" : `${r.lift >= 0 ? "+" : ""}${fmtPct(r.lift)}`}
+                    </td>
+                    <td>{r.confidence ? <ConfidenceBadge value={r.confidence} /> : <span className={cn(TYPE.label, "text-muted-foreground/35")}>—</span>}</td>
+                    <td className="text-right">
+                      {r.bucket ? (
+                        <span className={cn(TYPE.label, "inline-flex border rounded-full px-2 py-0.5 font-semibold normal-case", BUCKET_TAG_CLS[r.bucket])}>
+                          {BUCKET_LABEL[r.bucket]}
+                        </span>
+                      ) : (
+                        <span className={cn(TYPE.label, "text-muted-foreground/35")}>unclassified</span>
+                      )}
+                    </td>
+                  </tr>
+                  {isOpen && (
+                    <tr>
+                      <td colSpan={7} className="pb-3 pt-0">
+                        <div className="pl-5 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                          <div className="rounded-lg border border-border/40 bg-white/[0.02] px-3 py-2">
+                            <div className={cn(TYPE.microLabel, "mb-1")}>Confidence</div>
+                            <div className={TYPE.body}>{r.confidence ?? "Not scored yet"}</div>
+                          </div>
+                          <div className="rounded-lg border border-border/40 bg-white/[0.02] px-3 py-2">
+                            <div className={cn(TYPE.microLabel, "mb-1")}>Recommended next</div>
+                            <div className={TYPE.body}>
+                              {r.bucketEntry ?? "No playbook entry names this concept yet — position-only in the local library."}
+                            </div>
+                          </div>
+                          {varStack && (
+                            <div className="rounded-lg border border-border/40 bg-white/[0.02] px-3 py-2 sm:col-span-2">
+                              <div className={cn(TYPE.microLabel, "mb-1.5")}>Variable stack · across mapped rows</div>
+                              <div className="space-y-1.5">
+                                {Object.entries(varStack).map(([family, codes]) => (
+                                  <div key={family} className="flex items-start gap-2 flex-wrap">
+                                    <span className={cn(TYPE.microLabel, "shrink-0 pt-0.5 w-24")}>{familyLabel(family)}</span>
+                                    <CombinationChips combination={codes} />
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="pl-5 pt-2.5">
+                          {firstCellId ? (
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/app/analysis/library?focus=${firstCellId}`)}
+                              className={cn(TYPE.caption, "inline-flex items-center gap-1.5 font-medium rounded-lg border border-border/40 text-muted-foreground/70 px-3 py-1.5 hover:text-foreground/80 hover:border-border/60 transition-colors")}
+                            >
+                              Open creative deep dive
+                            </button>
+                          ) : (
+                            <span className={cn(TYPE.caption, "text-muted-foreground/40 italic")}>No mapped creative cell for this concept yet.</span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               );
             })}
           </tbody>
         </table>
       </div>
+      <ShowMoreButton
+        total={sortedRows.length}
+        hiddenCount={fold.hiddenCount}
+        expanded={fold.expanded}
+        onToggle={fold.toggle}
+        noun="concepts"
+      />
     </SectionCard>
   );
 }
@@ -396,6 +703,8 @@ export function AdPerformanceView() {
                 }
                 playbook={getStrategyData(seed, adAccountId)?.scaling_playbook ?? null}
                 resultNoun={term.plural}
+                cells={a.performance_by_cell}
+                library={lib}
               />
 
               {/* Reference strip only — these 5 destinations are already reachable

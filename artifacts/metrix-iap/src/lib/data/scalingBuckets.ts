@@ -35,16 +35,31 @@ const BUCKET_ORDER: Array<{ key: ScalingBucket; list: keyof ScalingPlaybook }> =
   { key: "avoid", list: "avoid_combinations" },
 ];
 
+/**
+ * Same match as `bucketForConcept`, but also returns the literal playbook
+ * entry string that produced the match — the real, source-backed rationale
+ * for that classification (e.g. "BOOK0 C3 (any variation) - zero
+ * conversions on real spend"), never a paraphrase or invented copy.
+ */
+export function bucketEntryForConcept(
+  book: string,
+  concept: string,
+  playbook: ScalingPlaybook | null | undefined,
+): { bucket: ScalingBucket; entry: string } | null {
+  if (!playbook) return null;
+  for (const { key, list } of BUCKET_ORDER) {
+    const entries = playbook[list];
+    if (!Array.isArray(entries)) continue;
+    const match = entries.find((e) => typeof e === "string" && entryMatches(e, book, concept));
+    if (match) return { bucket: key, entry: match as string };
+  }
+  return null;
+}
+
 export function bucketForConcept(
   book: string,
   concept: string,
   playbook: ScalingPlaybook | null | undefined,
 ): ScalingBucket | null {
-  if (!playbook) return null;
-  for (const { key, list } of BUCKET_ORDER) {
-    const entries = playbook[list];
-    if (!Array.isArray(entries)) continue;
-    if (entries.some((e) => typeof e === "string" && entryMatches(e, book, concept))) return key;
-  }
-  return null;
+  return bucketEntryForConcept(book, concept, playbook)?.bucket ?? null;
 }
