@@ -72,7 +72,29 @@ export function NextBestActionCard({ scopeId, cards }: NextBestActionCardProps) 
     setDecision(scopeId, card.id, "rejected");
   }, [scopeId, card]);
 
-  if (!card) return null;
+  // Honest empty state — matches the canvas's dashed "no next action" card
+  // rather than rendering nothing, and is explicit about *why* it's empty
+  // (no recommendations yet vs. everything already reviewed).
+  if (!card) {
+    return (
+      <div
+        className="rounded-xl border border-dashed border-border/40 px-5 py-4"
+        data-testid="next-best-action-empty"
+      >
+        <div className="flex items-center gap-1.5 mb-1.5">
+          <Zap className="w-3.5 h-3.5 text-muted-foreground/45" />
+          <span className={cn(TYPE.label, "font-mono uppercase tracking-widest text-muted-foreground/45")}>
+            Next best action
+          </span>
+        </div>
+        <p className={cn(TYPE.body, "text-muted-foreground/60 leading-relaxed")}>
+          {cards.length === 0
+            ? "No recommendations have been generated for this account yet."
+            : "All recommendations have been reviewed — nothing pending right now."}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div

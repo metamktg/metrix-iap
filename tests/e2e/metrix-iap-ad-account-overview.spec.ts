@@ -215,10 +215,9 @@ async function main() {
         await gotoOverview(page);
 
         // bookster has no optimization_loop recommendation_cards, so
-        // NextBestActionCard must render nothing — never a stale or
-        // fabricated recommendation, and never a leftover empty-state
-        // placeholder (the old duplicate "Current focus" panel that used
-        // to show one has been removed).
+        // NextBestActionCard must never show a stale or fabricated
+        // recommendation — it renders the honest dashed empty-state
+        // (data-testid="next-best-action-empty") instead of the hero card.
         const hero = page.locator('[data-testid="next-best-action-card"]');
         const count = await hero.count();
         assert(
