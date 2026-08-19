@@ -13,7 +13,7 @@ import {
 } from "../shared";
 import { AnalysisControls } from "../ManualAnalysisControls";
 import { useListAnalysisRuns, getListAnalysisRunsQueryKey } from "@workspace/api-client-react";
-import { LayoutDashboard, History } from "lucide-react";
+import { LayoutDashboard, Library, Users, LayoutGrid, Wallet, History } from "lucide-react";
 import { OBJECTIVE_OPTIONS } from "../settings/cohortOptions";
 
 const SECTION = "Analysis · 03";
@@ -66,6 +66,34 @@ export function AnalysisCommandCenter() {
                     desc: "Campaign totals, control reads, and the full breakdown once analysis has run.",
                     Icon: LayoutDashboard,
                     lineage: "analysis.concept_rollup[] · performance_by_cell[]",
+                  },
+                  {
+                    to: "/app/analysis/library",
+                    label: "IAP Library",
+                    desc: "Cell and variable performance across the account.",
+                    Icon: Library,
+                    lineage: "analysis.performance_by_cell[] · v3_variable_performance[]",
+                  },
+                  {
+                    to: "/app/analysis/audience",
+                    label: "Audience",
+                    desc: "Demographic result signal by age and gender.",
+                    Icon: Users,
+                    lineage: "analysis.demographic_registration_signal[]",
+                  },
+                  {
+                    to: "/app/analysis/placements",
+                    label: "Placements",
+                    desc: "Where delivery happened and what each placement produced.",
+                    Icon: LayoutGrid,
+                    lineage: "analysis.v3_placement_signal[] · c4e_placement_signal[]",
+                  },
+                  {
+                    to: "/app/analysis/budget",
+                    label: "Budget",
+                    desc: "Spend allocation by result event, concept, and placement.",
+                    Icon: Wallet,
+                    lineage: "campaign_summary · performance_by_cell[]",
                   },
                   {
                     to: "/app/analysis/history",
