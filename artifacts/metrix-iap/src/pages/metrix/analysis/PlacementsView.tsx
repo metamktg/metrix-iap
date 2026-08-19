@@ -133,9 +133,9 @@ function DeviceDeliveryCard({ rows }: { rows: DeviceDeliveryRow[] }) {
       right={<SectionInfoIcon tip="Real delivery spend, results, and cost per result by device across the full flight window. Stronger shading marks devices converting cheaper than the account blend." />}
     >
       <div className="overflow-x-auto">
-        <div className="grid gap-1 min-w-[530px]" style={{ gridTemplateColumns: "150px repeat(3, minmax(78px, 1fr))" }} data-testid="device-delivery-grid">
+        <div className="grid gap-1 min-w-[620px]" style={{ gridTemplateColumns: "150px repeat(4, minmax(78px, 1fr))" }} data-testid="device-delivery-grid">
           <span />
-          {["Cost / result", "Spend", "Results"].map((c) => (
+          {["Cost / result", "Spend", "Results", "Impressions"].map((c) => (
             <span key={c} className={cn(TYPE.label, "text-muted-foreground/60 text-center pb-1")}>{c}</span>
           ))}
           {devices.map((d) => {
@@ -158,6 +158,7 @@ function DeviceDeliveryCard({ rows }: { rows: DeviceDeliveryRow[] }) {
               </span>,
               <span key={`${d.device}-spend`} className={cellCls} style={cellStyle}>{fmtUSD(d.spend, 0)}</span>,
               <span key={`${d.device}-results`} className={cellCls} style={cellStyle}>{fmtNum(d.results)}</span>,
+              <span key={`${d.device}-impressions`} className={cellCls} style={cellStyle}>{fmtNum(d.impressions)}</span>,
             ];
           })}
         </div>
