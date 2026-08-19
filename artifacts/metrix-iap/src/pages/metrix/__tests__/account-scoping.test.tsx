@@ -176,25 +176,25 @@ describe("Manager selected", () => {
 });
 
 describe("Unconfigured-state actions (SKOV Pet)", () => {
-  it("Connect data source checklist step explains the real OAuth flow and hands off to Integrations", () => {
+  it("Connect data source checklist step shows the gated live-Meta 'Coming soon' state, not a working OAuth flow", () => {
     select("ad_account", "skov_pet");
     renderView(SignalView);
     // The "Connect data source" checklist step is now the entry point — no
-    // separate action button. Clicking it opens ConnectMetaDialog inline.
+    // separate action button. Clicking it opens ConnectMetaDialog inline,
+    // which is gated: it must never hand off into a live OAuth flow.
     fireEvent.click(screen.getByRole("button", { name: /Connect data source/i }));
     const dialog = screen.getByRole("dialog");
-    expect(dialog.textContent).toContain("Authorize with Meta");
-    expect(dialog.textContent).toContain("read-only ads access");
-    // The real connection lives in Settings → Integrations; the dialog
-    // hands off — it never fakes a connection.
-    expect(screen.getByRole("button", { name: /Go to Integrations/i })).toBeTruthy();
+    expect(dialog.textContent).toContain("Coming soon");
+    expect(dialog.textContent).toMatch(/use manual import/i);
+    // It must never promise a working hand-off into live OAuth.
+    expect(screen.queryByRole("button", { name: /Go to Integrations/i })).toBeNull();
   });
 
-  it("cancelling the connect dialog leaves the account unconfigured", () => {
+  it("closing the connect dialog leaves the account unconfigured", () => {
     select("ad_account", "skov_pet");
     renderView(SignalView);
     fireEvent.click(screen.getByRole("button", { name: /Connect data source/i }));
-    fireEvent.click(screen.getByRole("button", { name: /^Cancel$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^Got it$/i }));
     // Account must remain unconfigured — no performance data appears.
     expect(document.body.textContent).toContain("Connect data source");
     expect(document.body.textContent).not.toContain("Bookster");
