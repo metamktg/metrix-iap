@@ -4,12 +4,17 @@
 // report" entry point. Gated on at least one account in the workspace
 // having analysis data — reports have nothing to summarize otherwise.
 
-import { useAccount } from "@/contexts/AccountContext";
+import { useLocation } from "wouter";
+import { useAccount, useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
-import { getAdAccounts, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
+import { getAdAccounts, getAnalysisData, getReportBuilder } from "@/lib/data/metrixSeedAdapter";
+import { useStageStatus } from "@/hooks/useStageStatus";
 import { useListWorkspaceReports } from "@workspace/api-client-react";
-import { ModuleHeader, PrerequisiteGate, PendingState, HubNavGrid } from "../shared";
-import { FileBarChart, Settings2, History, FileText } from "lucide-react";
+import {
+  ModuleHeader, PrerequisiteGate, PendingState, HubNavGrid, SectionCard,
+  StageLoopHub, buildLoopStages, MetricTile, fmtNum,
+} from "../shared";
+import { FileBarChart, Settings2, History, FileText, Sparkles } from "lucide-react";
 
 const SECTION = "Reports · 07";
 
@@ -22,12 +27,25 @@ const CHILDREN = [
 export function ReportsCommandCenter() {
   const seed = useMetrixSeed();
   const { manager } = useAccount();
+  const scopedAdAccountId = useScopedAdAccountId();
+  const status = useStageStatus(scopedAdAccountId);
+  const [, navigate] = useLocation();
   const adAccounts = getAdAccounts(seed);
   const hasAnyAnalysis = adAccounts.some((a) => getAnalysisData(seed, a.id) != null);
   const { data: generatedData } = useListWorkspaceReports(manager.id);
-  const recent = [...(generatedData?.reports ?? [])]
-    .sort((a, b) => b.generated_at.localeCompare(a.generated_at))
-    .slice(0, 3);
+  const reports = generatedData?.reports ?? [];
+  const recent = [...reports].sort((a, b) => b.generated_at.localeCompare(a.generated_at)).slice(0, 3);
+  const lastSent = recent[0] ?? null;
+
+  // Sections/formats read from the account "Build report" would actually
+  // open: the active scoped account if it has analysis to report on,
+  // otherwise the first workspace account that does. Both tiles read "—"
+  // rather than guess when no account qualifies — never fabricated.
+  const scopedAccount = scopedAdAccountId ? adAccounts.find((a) => a.id === scopedAdAccountId) : undefined;
+  const previewAccount =
+    (scopedAccount && getAnalysisData(seed, scopedAccount.id) != null ? scopedAccount : undefined) ??
+    adAccounts.find((a) => getAnalysisData(seed, a.id) != null);
+  const previewRb = previewAccount ? getReportBuilder(seed, previewAccount.id) : null;
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
@@ -36,7 +54,9 @@ export function ReportsCommandCenter() {
         title="Reports"
         subtitle="Client-ready presentation, curated from validated analysis across the workspace."
       />
-      <div className="px-6 py-5 space-y-4 max-w-3xl">
+      <StageLoopHub stages={buildLoopStages(status)} current="reports" />
+
+      <div className="px-6 py-5 space-y-4 max-w-4xl">
         <PrerequisiteGate
           met={hasAnyAnalysis}
           title="No analysis data yet"
@@ -46,20 +66,50 @@ export function ReportsCommandCenter() {
         >
           {() => (
             <>
-              <div className="rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                <div className="text-caption font-semibold uppercase tracking-widest text-muted-foreground/70 mb-2">Recent reports</div>
-                {recent.length === 0 ? (
-                  <PendingState title="No reports yet" message="Build your first report from the Report Builder." icon={FileBarChart} />
-                ) : (
-                  <div className="space-y-2">
-                    {recent.map((r) => (
-                      <div key={r.id} className="flex items-center justify-between gap-3 py-1.5 border-b border-border/20 last:border-0">
-                        <span className="text-body text-foreground/85 truncate">{r.title}</span>
-                        <span className="text-label text-muted-foreground/60 shrink-0">{new Date(r.generated_at).toLocaleDateString()}</span>
-                      </div>
-                    ))}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                <SectionCard title="Build report" desc="Compose the client or internal report from the current loop state.">
+                  <div className="grid grid-cols-2 gap-2 mb-3.5">
+                    <MetricTile label="Sections" value={previewRb ? fmtNum(previewRb.report_sections.length) : "—"} sub={previewRb ? "available" : undefined} />
+                    <MetricTile
+                      label="Last sent"
+                      value={lastSent ? new Date(lastSent.generated_at).toLocaleDateString() : "Never"}
+                      sub={lastSent ? `${lastSent.mode} report` : undefined}
+                    />
+                    <MetricTile
+                      label="Formats"
+                      value={previewRb ? fmtNum(previewRb.export_formats.length) : "—"}
+                      sub={previewRb && previewRb.export_formats.length > 0 ? previewRb.export_formats.join(" · ") : undefined}
+                    />
+                    <MetricTile label="On file" value={fmtNum(reports.length)} sub="reports total" />
                   </div>
-                )}
+                  <button
+                    type="button"
+                    onClick={() => navigate("/app/reports/builder")}
+                    className="inline-flex items-center gap-1.5 text-body font-medium text-interactive border border-primary/30 bg-primary/10 hover:bg-primary/15 rounded-lg px-3 py-1.5 transition-colors"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    Build report
+                  </button>
+                </SectionCard>
+
+                <SectionCard title="Run history" desc="Every report generated for this workspace, most recent first.">
+                  {recent.length === 0 ? (
+                    <PendingState title="No reports yet" message="Build your first report from the Report Builder." icon={FileBarChart} />
+                  ) : (
+                    <div className="flex flex-col">
+                      {recent.map((r) => (
+                        <div key={r.id} className="flex items-center gap-2.5 py-2 border-t border-border/25 first:border-0 min-w-0">
+                          <span className="text-label font-mono text-muted-foreground/50 shrink-0">#{r.id}</span>
+                          <span className="flex-1 min-w-0">
+                            <span className="block text-body text-foreground/85 truncate">{r.title}</span>
+                            <span className="block text-label text-muted-foreground/60">{new Date(r.generated_at).toLocaleDateString()}</span>
+                          </span>
+                          <span className="mx-inline-badge shrink-0">{r.mode}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </SectionCard>
               </div>
 
               <HubNavGrid items={CHILDREN} label="Explore Reports" />
