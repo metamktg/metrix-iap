@@ -38,9 +38,9 @@ export function MstDirectionView() {
           <div className="px-6 py-5 space-y-4 max-w-3xl">
             <PendingState
               title="Not yet automated"
-              message="Re-weighting variables and classifying scale/optimize/validate/retire from this account's MST Performance results is not yet a running job in the app. Review Performance for the raw winners this stage would act on."
+              message="Re-weighting variables and classifying scale/optimize/validate/retire from this account's MST results is not yet a running job in the app. Review Cross-Map for the raw cell-level performance this stage would act on."
               icon={Compass}
-              action={<CrossLink to="/app/mst/performance" label="Open Performance" />}
+              action={<CrossLink to="/app/mst/cross-map" label="Open Cross-Map" />}
             />
             <SectionCard title="What Direction will do" desc="The four classifications every variable will land in once this is built.">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

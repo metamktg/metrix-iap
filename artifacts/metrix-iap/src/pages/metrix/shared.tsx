@@ -1720,8 +1720,8 @@ export function PrerequisiteGate({
 // unmet) are visibly disabled, never hidden.
 //
 // Visual spec matches the Nocturne canvas's command-center stepper (a
-// different spec from the checkmark-based Account Overview stepper in
-// OverviewLoopHub.tsx — do not conflate the two): a numbered circle per
+// different spec from the checkmark-based per-account rollup rendered on
+// Manager Overview via OverviewLoopHub.tsx — do not conflate the two): a numbered circle per
 // stage — the number is always shown, there is no checkmark glyph on this
 // stepper — filled solid for the current stage, filled dim for a stage
 // already completed, transparent-with-outline for anything not yet

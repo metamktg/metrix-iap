@@ -61,7 +61,6 @@ import { MstCommandCenter } from "../mst/MstCommandCenter";
 import { ConceptMapView } from "../mst/ConceptMapView";
 import { MstSprintsView } from "../mst/MstSprintsView";
 import { CrossmapResultsView } from "../mst/CrossmapResultsView";
-import { MstPerformanceView } from "../mst/MstPerformanceView";
 import { MstDirectionView } from "../mst/MstDirectionView";
 import { GeneralView } from "../settings/GeneralView";
 import { AdAccountOverview } from "../AdAccountOverview";
@@ -98,7 +97,6 @@ const GATED_VIEWS: [string, React.ComponentType][] = [
   ["MST · Concept Map", ConceptMapView],
   ["MST · Sprints", MstSprintsView],
   ["MST · Crossmap Results", CrossmapResultsView],
-  ["MST · Performance", MstPerformanceView],
   ["MST · Direction", MstDirectionView],
 ];
 
