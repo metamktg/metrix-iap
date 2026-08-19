@@ -5,10 +5,12 @@
 // against the account blend. Honesty rules under test: the device grid
 // only exists when rows carry real numbers (all-null manual imports get
 // nothing), and devices with zero conversions read "—" for cost per
-// result rather than a fabricated number.
+// result rather than a fabricated number. The device delivery card is a
+// collapsed-by-default disclosure (canvas's dMatrix.open) — tests open it
+// before asserting on its contents.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, cleanup, within, screen } from "@testing-library/react";
+import { render, cleanup, within, screen, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import fs from "node:fs";
 import path from "node:path";
@@ -75,8 +77,16 @@ describe("placement breakdown bars", () => {
 });
 
 describe("device delivery grid", () => {
+  it("is collapsed by default and opens on click", () => {
+    renderFor("bookster");
+    expect(screen.queryByTestId("device-delivery-grid")).toBeNull();
+    fireEvent.click(screen.getByText("Device delivery"));
+    expect(screen.getByTestId("device-delivery-grid")).toBeTruthy();
+  });
+
   it("renders Bookster's real device rollup shaded against the account blend", () => {
     renderFor("bookster");
+    fireEvent.click(screen.getByText("Device delivery"));
     const grid = screen.getByTestId("device-delivery-grid");
     // Bookster's device_delivery_signal carries real spend/results for
     // android/iphone/ipad/desktop devices.
