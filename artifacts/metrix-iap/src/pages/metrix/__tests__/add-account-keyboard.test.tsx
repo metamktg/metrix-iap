@@ -3,8 +3,9 @@
 // Guards the keyboard-critical paths through the multi-step add-account flow
 // using real userEvent interactions (tab, keyboard, click).
 //
-//  1. Choose step — Tab order: Tab cycles through the two choice buttons in
-//     the correct order (Meta live connection first, manual upload second).
+//  1. Choose step — Tab order: manual upload is the first, focusable, and
+//     only tabbable choice — live Meta connect is gated ("Coming soon"),
+//     rendered disabled and out of the tab sequence.
 //
 //  2. manual_name step — keyboard submission and Tab order:
 //       • Enter on the name input fires the create mutation (valid name).
@@ -144,50 +145,43 @@ beforeEach(() => {
 // ─────────────────────────────────────────────────────────────────────────
 
 describe("choose step — Tab order", () => {
-  it("Tab reaches the Meta button before the manual-upload button", async () => {
+  it("Tab reaches the manual-upload button first (Meta connect is disabled, out of sequence)", async () => {
     const user = userEvent.setup();
     renderDialog({ open: true, onOpenChange: vi.fn() });
 
-    // Start Tab from the beginning of the focus scope. Radix's first element
-    // inside the dialog content is the close button (×), then the two choice
-    // cards in DOM order. Tab until we hit one of the choice cards.
-    const metaBtn = screen.getByRole("button", { name: /Connect Meta Ad Account/i });
     const manualBtn = screen.getByRole("button", { name: /Upload manual reports/i });
 
-    // Cycle tab presses until the Meta button is focused.
+    // Cycle tab presses until the manual-upload button is focused. The
+    // disabled Meta button must never receive focus.
     for (let i = 0; i < 5; i++) {
       await user.tab();
-      if (document.activeElement === metaBtn) break;
+      if (document.activeElement === manualBtn) break;
     }
-    expect(document.activeElement).toBe(metaBtn);
-
-    // One more Tab → manual-upload button.
-    await user.tab();
     expect(document.activeElement).toBe(manualBtn);
   });
 
-  it("DOM order matches Tab order: Meta button precedes manual-upload button", () => {
+  it("DOM order matches priority: manual-upload button precedes the gated Meta button", () => {
     renderDialog({ open: true, onOpenChange: vi.fn() });
 
-    const metaBtn = screen.getByRole("button", { name: /Connect Meta Ad Account/i });
     const manualBtn = screen.getByRole("button", { name: /Upload manual reports/i });
+    const metaBtn = screen.getByRole("button", { name: /Connect Meta Ad Account/i });
 
-    // Node.DOCUMENT_POSITION_FOLLOWING (4) means manualBtn comes after metaBtn.
+    // Node.DOCUMENT_POSITION_FOLLOWING (4) means metaBtn comes after manualBtn.
     expect(
-      metaBtn.compareDocumentPosition(manualBtn) & Node.DOCUMENT_POSITION_FOLLOWING
+      manualBtn.compareDocumentPosition(metaBtn) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
   });
 
-  it("both choice buttons are in the tab sequence (no tabIndex=-1, not disabled)", () => {
+  it("manual-upload button is tabbable and enabled; the gated Meta button is disabled", () => {
     renderDialog({ open: true, onOpenChange: vi.fn() });
 
-    const metaBtn = screen.getByRole("button", { name: /Connect Meta Ad Account/i });
     const manualBtn = screen.getByRole("button", { name: /Upload manual reports/i });
+    const metaBtn = screen.getByRole("button", { name: /Connect Meta Ad Account/i });
 
-    expect(metaBtn.getAttribute("tabindex")).not.toBe("-1");
     expect(manualBtn.getAttribute("tabindex")).not.toBe("-1");
-    expect((metaBtn as HTMLButtonElement).disabled).toBe(false);
     expect((manualBtn as HTMLButtonElement).disabled).toBe(false);
+    expect((metaBtn as HTMLButtonElement).disabled).toBe(true);
+    expect(metaBtn.textContent).toMatch(/Coming soon/i);
   });
 });
 

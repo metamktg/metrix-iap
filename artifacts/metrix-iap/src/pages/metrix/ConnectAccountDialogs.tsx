@@ -11,7 +11,6 @@
 // which is surfaced from the account setup screen, not this dialog.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useStageManualImport,
@@ -55,7 +54,6 @@ import { cn } from "@workspace/command-deck/lib/utils";
 import {
   Plug,
   FileUp,
-  ShieldCheck,
   Database,
   CheckCircle2,
   Clock,
@@ -126,8 +124,12 @@ export function GhostBtn({ onClick, children }: { onClick: () => void; children:
 }
 
 // ─── Connect Meta Ad Account ──────────────────────────────────────────
-// The live Meta OAuth connection lives in Settings → Integrations. This
-// dialog explains the flow and hands off — it never fakes a connection.
+// Direct OAuth connection to Meta is not yet available in the UI — it's
+// real infrastructure (token handling, report-pull routes, the actual
+// OAuth exchange) that a focused future effort will build a proper
+// interface for. This dialog is an honest "coming soon" state — it never
+// hands off into a flow that doesn't work yet. Manual CSV import is the
+// supported, fully-functional way to bring in performance data today.
 
 export function ConnectMetaDialog({
   account,
@@ -138,66 +140,38 @@ export function ConnectMetaDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const [, navigate] = useLocation();
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-2 mb-1">
             <div className="w-8 h-8 rounded-lg border border-border/40 bg-white/[0.03] flex items-center justify-center">
-              <Plug className="w-4 h-4 text-interactive" />
+              <Plug className="w-4 h-4 text-muted-foreground/70" />
             </div>
+            <span className="text-label font-semibold uppercase tracking-widest border border-primary/25 bg-primary/[0.08] text-interactive/80 px-2 py-1 rounded">
+              Coming soon
+            </span>
           </div>
-          <DialogTitle className="text-base">Connect Meta Ad Account</DialogTitle>
+          <DialogTitle className="text-base">Live Meta connection</DialogTitle>
           <DialogDescription className="text-body leading-relaxed">
-            Link a live Meta ad account so Metrix can pull real performance data for{" "}
-            <span className="text-foreground/80 font-medium">{account.name}</span>.
+            Direct OAuth connection to Meta for{" "}
+            <span className="text-foreground/80 font-medium">{account.name}</span> is in active
+            development and isn't available yet.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3">
-          {[
-            {
-              Icon: ShieldCheck,
-              title: "1 · Authorize with Meta",
-              action: "Sign in with the Meta Business account that owns the ad account.",
-              why: "Metrix requests read-only ads access (ads_read) — it can never edit campaigns.",
-            },
-            {
-              Icon: Database,
-              title: "2 · Select the ad account",
-              action: "Pick which ad account to link.",
-              why: "Metrix scopes every module to exactly one ad account — no cross-account blending.",
-            },
-            {
-              Icon: Clock,
-              title: "3 · Pull reports",
-              action: "Run the initial report pulls.",
-              why: "Analysis surfaces stay honestly pending until the analysis pipeline processes the pulled data.",
-            },
-          ].map(({ Icon, title, action, why }) => (
-            <div key={title} className="flex items-start gap-3 p-3 rounded-lg border border-border/40 bg-white/[0.02]">
-              <Icon className="w-4 h-4 text-interactive/80 shrink-0 mt-0.5" />
-              <div className="min-w-0">
-                <div className="text-body font-semibold text-foreground">{title}</div>
-                <p className="text-caption text-foreground/75 mt-0.5">{action}</p>
-                <p className="text-label text-muted-foreground/60 leading-relaxed mt-0.5">{why}</p>
-              </div>
-            </div>
-          ))}
+        <div className="flex items-start gap-3 p-3 rounded-lg border border-border/40 bg-white/[0.02]">
+          <FileUp className="w-4 h-4 text-interactive/80 shrink-0 mt-0.5" />
+          <div className="min-w-0">
+            <div className="text-body font-semibold text-foreground">Use manual import instead</div>
+            <p className="text-caption text-foreground/75 mt-0.5">
+              Upload exported Meta reports for {account.name} today — no live connection required.
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center justify-end gap-2 pt-1">
-          <GhostBtn onClick={() => onOpenChange(false)}>Cancel</GhostBtn>
-          <PrimaryBtn
-            onClick={() => {
-              onOpenChange(false);
-              navigate("/app/settings/integrations");
-            }}
-          >
-            Go to Integrations <ArrowRight className="w-3.5 h-3.5" />
-          </PrimaryBtn>
+          <GhostBtn onClick={() => onOpenChange(false)}>Got it</GhostBtn>
         </div>
       </DialogContent>
     </Dialog>
