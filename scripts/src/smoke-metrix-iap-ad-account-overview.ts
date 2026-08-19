@@ -7,10 +7,10 @@
 // so no running API server is required.
 //
 // Assertions:
-//   1. "Account Totals" SectionCard header is visible on /app/account.
+//   1. "Results by event" SectionCard header is visible on /app/account.
 //   2. At least one SectionInfoIcon (info icon) is visible.
-//   3. Zero-result event tiles have the opacity-60 class applied.
-//   4. "No actions yet" empty state renders when no recommendation cards exist.
+//   3. Zero-result event rows have the opacity-60 class applied.
+//   4. "Next best action" empty state renders when no recommendation cards exist.
 //
 // Run: pnpm --filter @workspace/scripts run smoke:metrix-iap-ad-account-overview
 

@@ -122,7 +122,10 @@ export interface KpiTileProps {
   disclosure?: React.ReactNode;
   /** Suppress the built-in ⓘ (when a wrapper like MetricHoverPopover renders its own). */
   hideInfo?: boolean;
-  variant?: "primary" | "default";
+  /** "hero" = the Nocturne canvas's 4-tile Overview row: bigger value, whole
+   *  card clickable (not just the value line). Compact `default`/`primary`
+   *  are unchanged elsewhere on the platform. */
+  variant?: "primary" | "default" | "hero";
 }
 
 export function KpiTile({
@@ -143,13 +146,17 @@ export function KpiTile({
     : null;
 
   const isPrimary = variant === "primary";
+  const isHero = variant === "hero";
 
   return (
     <div
       data-testid="kpi-tile"
+      onClick={isHero && onClick ? onClick : undefined}
       className={cn(
-        "mx-kpi-tile p-4 relative flex flex-col gap-1",
+        "mx-kpi-tile relative flex flex-col gap-1.5",
+        isHero ? "p-5 gap-2" : "p-4",
         isPrimary && "border-primary/35 bg-primary/[0.03]",
+        isHero && onClick && "cursor-pointer hover:border-primary/40 transition-colors",
       )}
     >
       {isPrimary && <div data-testid="metric-tile-primary-accent" className="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-primary/55 pointer-events-none" />}
@@ -178,8 +185,12 @@ export function KpiTile({
         {!hideInfo && infoContent && <KpiInfoHover content={infoContent} />}
       </div>
 
-      {/* Value — label + value only; no inline sub-text */}
-      {onClick ? (
+      {/* Value — label + value only; no inline sub-text. Hero tiles skip the
+          inner button (the whole card is already the click target above) so
+          the big value never nests a second interactive element. */}
+      {isHero ? (
+        <KpiValue formatted={m.formatted} isRefetching={isRefetching} hero />
+      ) : onClick ? (
         <button type="button" data-testid="kpi-tile-body" onClick={onClick} className="text-left hover:opacity-75 transition-opacity w-fit">
           <KpiValue formatted={m.formatted} isRefetching={isRefetching} />
         </button>
@@ -238,11 +249,14 @@ export function KpiTileRow({
   );
 }
 
-function KpiValue({ formatted, isRefetching }: { formatted: string; isRefetching: boolean }) {
+function KpiValue({ formatted, isRefetching, hero = false }: { formatted: string; isRefetching: boolean; hero?: boolean }) {
+  // Hero tiles (canvas 4-tile Overview row) read at 26px/500-weight per the
+  // canvas spec (text-stat) — one step up from the compact platform-wide tile.
+  const sizeClass = hero ? "text-stat font-medium" : "text-bignum font-bold";
   return isRefetching ? (
-    <span className="text-bignum font-bold text-muted-foreground/20 metric-num leading-none">—</span>
+    <span className={cn(sizeClass, "text-muted-foreground/20 metric-num leading-none")}>—</span>
   ) : (
-    <span className="text-bignum font-bold text-foreground metric-num leading-none tracking-[-0.035em]">
+    <span className={cn(sizeClass, "text-foreground metric-num leading-none tracking-[-0.035em]")}>
       {formatted}
     </span>
   );

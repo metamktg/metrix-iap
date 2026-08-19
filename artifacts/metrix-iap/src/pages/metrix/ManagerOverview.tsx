@@ -13,12 +13,13 @@
 // Data wiring is unchanged; only the presentation layer is redesigned.
 
 import { useMemo, useState } from "react";
+import { useLocation } from "wouter";
 import {
   CheckCircle2, Plug, Plus, ArrowRight, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { useAccount } from "@/contexts/AccountContext";
 import { useMetrixSeed, useMetrixIsRefetching } from "@/contexts/MetrixDataContext";
-import { getManagerOverview } from "@/lib/data/metrixSeedAdapter";
+import { getManagerOverview, getAnalysisData, getStrategyData, getBriefBuilder } from "@/lib/data/metrixSeedAdapter";
 import {
   ModuleHeader, SectionCard, ConfidenceBadge, ImpactBadge, ScopeBadge,
   fmtUSD, fmtNum, eventLabel, SkeletonTileRow,
@@ -32,9 +33,14 @@ import { KpiTile } from "@/components/metrics/KpiTile";
 import { useKpiTileMetrics } from "@/hooks/useKpiTileMetrics";
 import { KpiDrilldownModal } from "@/components/metrics/KpiDrilldownModal";
 import { TokenizedConceptText } from "@/components/concept/ConceptChip";
-import { OverviewLoopSummary } from "./OverviewLoopHub";
+import { LoopStepper, type LoopStepperStage } from "@/components/loop/LoopStepper";
+import { NextBestActionCard } from "@/components/loop/NextBestActionCard";
+import { useListWorkspaceReports } from "@workspace/api-client-react";
+import { useDecisions, getDecision } from "@/lib/data/decisionStore";
 import { TYPE } from "./typography";
 import type { AdAccount } from "@/lib/data/seedTypes";
+
+const REC_IMPACT_RANK: Record<string, number> = { high: 4, medium: 3, setup: 2, low: 1 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
 
@@ -397,6 +403,7 @@ export function ManagerOverview() {
   const { manager, adAccounts, selectAdAccount } = useAccount();
   const seed = useMetrixSeed();
   const isRefetching = useMetrixIsRefetching();
+  const [, navigate] = useLocation();
   const [addOpen, setAddOpen] = useState(false);
   const [breakdownOpen, setBreakdownOpen] = useState(false);
   const data = getManagerOverview(seed);
@@ -404,6 +411,34 @@ export function ManagerOverview() {
   const events = Object.entries(totals.result_totals_by_event) as [string, { spend: number; reach: number; impressions: number; results: number; clicks_all: number; link_clicks: number }][];
 
   const accountName = (id: string) => adAccounts.find((a) => a.id === id)?.name ?? id;
+
+  // ── IAP loop stepper — canvas structural spec, scoped to the manager's
+  // aggregate: a stage is "done" only once every configured account has it
+  // done. The canvas has no dedicated manager screen (account.name drives
+  // its title everywhere), so this reuses the same 5-stage visual rather
+  // than a bespoke manager-only design.
+  const { data: reportsData } = useListWorkspaceReports(seed.manager_account.id);
+  const configuredAccounts = useMemo(() => adAccounts.filter((a) => a.status === "configured"), [adAccounts]);
+  const stageDoneForAll = (pick: (a: AdAccount) => boolean) =>
+    configuredAccounts.length > 0 && configuredAccounts.every(pick);
+  const loopStages: LoopStepperStage[] = [
+    { key: "data", label: "Data", done: configuredAccounts.length > 0 },
+    { key: "analysis", label: "Analysis", done: stageDoneForAll((a) => (getAnalysisData(seed, a.id)?.performance_by_cell.length ?? 0) > 0) },
+    { key: "strategy", label: "Strategy", done: stageDoneForAll((a) => (getStrategyData(seed, a.id)?.message_pillars.length ?? 0) > 0) },
+    { key: "briefs", label: "Briefs", done: stageDoneForAll((a) => (getBriefBuilder(seed, a.id)?.draft_briefs.length ?? 0) > 0) },
+    { key: "report", label: "Report", done: stageDoneForAll((a) => (reportsData?.reports ?? []).some((r) => r.ad_account_id === a.id)) },
+  ];
+
+  // ── Next best action — top-impact PENDING recommendation across all
+  // accounts. Read-only here (matches "Account recommendations" below):
+  // action always lives inside the source account.
+  useDecisions();
+  const topRecCard = useMemo(() => {
+    const pending = data.recommendation_cards.filter((c) => getDecision(c.account_id, c.id) === "pending");
+    return [...pending].sort(
+      (a, b) => (REC_IMPACT_RANK[b.impact?.toLowerCase()] ?? 0) - (REC_IMPACT_RANK[a.impact?.toLowerCase()] ?? 0)
+    )[0];
+  }, [data.recommendation_cards]);
 
   // Per-account KPI totals (spend → results → CPA) from ad account data.
   const accountTotalsMap = useMemo<Map<string, AccountTotals>>(() => {
@@ -501,8 +536,29 @@ export function ManagerOverview() {
       />
 
       <div className="px-6 py-5 space-y-5 max-w-6xl">
-        {/* IAP Loop progress strip */}
-        <OverviewLoopSummary />
+        {/* IAP loop stepper — canvas-accurate circle/checkmark visual,
+            aggregated across every configured account. */}
+        <LoopStepper stages={loopStages} onSelect={() => navigate("/app/overview/loop")} />
+
+        {/* Next best action — top cross-account recommendation. Read-only
+            here (action lives in the source account), matching the
+            "Account recommendations" section further down this page. */}
+        <NextBestActionCard
+          scopeId={topRecCard?.account_id ?? manager.id}
+          card={topRecCard ? {
+            id: topRecCard.id,
+            title: topRecCard.title,
+            rationale: topRecCard.rationale,
+            recommended_action: topRecCard.recommended_action,
+            impact: topRecCard.impact,
+            confidence: topRecCard.confidence,
+            source_path: topRecCard.source_path,
+          } : null}
+          readOnly
+          onOpen={() => topRecCard && selectAdAccount(topRecCard.account_id)}
+          openLabel={topRecCard ? (topRecCard.manager_card_descriptor ?? accountName(topRecCard.account_id)) : undefined}
+          emptyMessage="No cross-account recommendations right now — check back once accounts have fresh analysis."
+        />
 
         {/* ── Bottom-line metric tiles ───────────────────────────────── */}
         <div>
@@ -529,6 +585,7 @@ export function ManagerOverview() {
                   key={slotIdx}
                   metricId={metricId}
                   catalog={metricCatalog}
+                  variant="hero"
                   isRefetching={isRefetching}
                   onSelect={(id) => setTileMetric(slotIdx, id)}
                   onClick={() => setOpenMetricId(metricId)}

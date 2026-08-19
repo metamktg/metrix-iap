@@ -1,10 +1,15 @@
 // End-to-end Playwright tests for AdAccountOverview UX polish (Task 556).
 //
 // Covers:
-//   1. "Account Totals" SectionCard header is present (not a bare h2).
+//   1. "Results by event" SectionCard header is present (not a bare h2).
 //   2. At least one SectionInfoIcon (info icon) is visible.
-//   3. Zero-result event tiles have the opacity-60 class applied.
-//   4. "No actions yet" empty state renders when no recommendation cards exist.
+//   3. Zero-result event rows have the opacity-60 class applied.
+//   4. "Next best action" empty state renders when no recommendation cards exist.
+//
+// Updated for the Nocturne fidelity pass: "Account Totals" (N-tile grid) was
+// replaced by a fixed 4-tile KPI hero row with no section title, and the old
+// "Current focus" panel's "No actions yet" empty state was folded into the
+// new Next best action hero card's own empty state.
 //
 // API calls are intercepted with page.route() so no live API server is needed.
 // The seed fixture comes from the checked-in test snapshot; bookster is a
@@ -110,10 +115,10 @@ async function gotoOverview(page: Page): Promise<void> {
   await page.goto(`${BASE}/app/account?account=bookster`, {
     waitUntil: "domcontentloaded",
   });
-  // Wait for "Account Totals" heading to confirm the page has rendered past
-  // auth/seed loading — it's the first SectionCard on the configured account view.
+  // Wait for "Results by event" heading to confirm the page has rendered past
+  // auth/seed loading.
   await page
-    .locator("text=Account Totals")
+    .locator("text=Results by event")
     .first()
     .waitFor({ state: "visible", timeout: 25_000 });
 }
@@ -130,8 +135,8 @@ async function main() {
   });
 
   try {
-    // ── Test 1: "Account Totals" SectionCard header is present ───────────
-    await test('"Account Totals" SectionCard header is visible', async () => {
+    // ── Test 1: "Results by event" SectionCard header is present ─────────
+    await test('"Results by event" SectionCard header is visible', async () => {
       const ctx = await browser.newContext({
         viewport: { width: 1440, height: 900 },
       });
@@ -143,11 +148,11 @@ async function main() {
         // SectionCard renders the title in a heading element. Assert it is
         // visible — confirming the SectionCard wrapper is present rather than
         // a bare h2 or removed section.
-        const heading = page.locator("text=Account Totals").first();
+        const heading = page.locator("text=Results by event").first();
         const visible = await heading.isVisible();
         assert(
           visible,
-          '"Account Totals" heading not found. SectionCard wrapper may have been removed.',
+          '"Results by event" heading not found. SectionCard wrapper may have been removed.',
         );
         console.log(`       heading found and visible`);
       } finally {
@@ -178,8 +183,8 @@ async function main() {
       }
     });
 
-    // ── Test 3: zero-result event tiles have opacity-60 class ─────────────
-    await test("zero-result event tiles have opacity-60 class applied", async () => {
+    // ── Test 3: zero-result event rows have opacity-60 class ──────────────
+    await test("zero-result event rows have opacity-60 class applied", async () => {
       const ctx = await browser.newContext({
         viewport: { width: 1440, height: 900 },
       });
@@ -189,22 +194,22 @@ async function main() {
         await gotoOverview(page);
 
         // The bookster fixture has two zero-result events (Website trials started
-        // and onb_initiate_checkout). Each zero tile gets the opacity-60 class on
-        // its container div. Assert at least one such tile is present.
-        const zeroTiles = page.locator(".opacity-60");
-        const count = await zeroTiles.count();
+        // and onb_initiate_checkout). Each zero row gets the opacity-60 class on
+        // its <tr>. Assert at least one such row is present.
+        const zeroRows = page.locator(".opacity-60");
+        const count = await zeroRows.count();
         assert(
           count > 0,
-          `Expected at least one event tile with class "opacity-60" for zero-result events, found ${count}. Zero-value dimming may have been removed.`,
+          `Expected at least one event row with class "opacity-60" for zero-result events, found ${count}. Zero-value dimming may have been removed.`,
         );
-        console.log(`       found ${count} zero-result tile(s) with opacity-60`);
+        console.log(`       found ${count} zero-result row(s) with opacity-60`);
       } finally {
         await ctx.close();
       }
     });
 
-    // ── Test 4: "No actions yet" empty state renders ─────────────────────
-    await test('"No actions yet" empty state renders when no recommendation cards exist', async () => {
+    // ── Test 4: "Next best action" empty state renders ────────────────────
+    await test('"Next best action" empty state renders when no recommendation cards exist', async () => {
       const ctx = await browser.newContext({
         viewport: { width: 1440, height: 900 },
       });
@@ -214,16 +219,16 @@ async function main() {
         await gotoOverview(page);
 
         // bookster has no optimization_loop recommendation_cards, so the
-        // "Current focus" section shows the "No actions yet" empty state.
+        // Next best action hero card shows its honest empty state.
         const emptyState = page
-          .locator("text=No actions yet")
+          .locator("text=No recommendation is queued right now")
           .first();
         const visible = await emptyState.isVisible();
         assert(
           visible,
-          '"No actions yet" empty state not found. The empty state for missing recommendation cards may have been removed.',
+          '"Next best action" empty state not found. The empty state for missing recommendation cards may have been removed.',
         );
-        console.log(`       "No actions yet" empty state is visible`);
+        console.log(`       "Next best action" empty state is visible`);
       } finally {
         await ctx.close();
       }

@@ -42,6 +42,7 @@ import {
   AlertDialogTitle,
 } from "@workspace/command-deck/components/ui/alert-dialog";
 import { useGenerationRun } from "@/components/generation/GenerationControls";
+import { LoopStepper, type LoopStepperStage } from "./LoopStepper";
 import { RunSelector, ALL_TIME_SELECTION, type RunSelectorValue } from "@/components/analysis/RunSelector";
 import { useToast } from "@workspace/command-deck/hooks/use-toast";
 import type { AdAccount, StrategyData, BriefBuilder } from "@/lib/data/seedTypes";
@@ -1841,6 +1842,30 @@ export function LoopCommandChain({
 
   const toggle = (s: Stage) => setActiveStage((prev) => (prev === s ? null : s));
 
+  const stepperStages: LoopStepperStage[] = [
+    { key: "data",     label: "Data",     done: dataComplete },
+    {
+      key: "analysis", label: "Analysis", done: analysisComplete,
+      locked: !dataComplete && !analysisComplete && !analysisRunning,
+      failed: analysisFailed, running: analysisRunning,
+    },
+    {
+      key: "strategy", label: "Strategy", done: strategyComplete,
+      locked: !analysisComplete && !strategyComplete && !strategyRunning,
+      failed: strategyFailed, stale: strategyIsStale, running: strategyRunning,
+    },
+    {
+      key: "briefs",   label: "Briefs",   done: briefsComplete,
+      locked: !strategyComplete && !briefsComplete && !briefsRunning,
+      failed: briefsFailed, stale: briefsIsStale, running: briefsRunning,
+    },
+    {
+      key: "report",   label: "Report",   done: reportComplete,
+      locked: !briefsComplete && !reportComplete && !reportGenerating,
+      running: reportGenerating,
+    },
+  ];
+
   return (
     <>
       <div className="mx-card p-2.5 flex flex-col gap-2">
@@ -1948,108 +1973,13 @@ export function LoopCommandChain({
           );
         })()}
 
-        {/* Six tiles + causal connectors */}
-        <div className="flex items-center gap-0.5">
-          <StageTile
-            stage="data"
-            isComplete={dataComplete}
-            isRunning={false}
-            isStale={false}
-            isNext={!dataComplete}
-            isLocked={false}
-            isActive={activeStage === "data"}
-            elapsedSeconds={0}
-            onClick={() => toggle("data")}
-          />
-
-          <ArrowRight className={cn(
-            "w-2.5 h-2.5 shrink-0 transition-colors",
-            dataComplete ? "text-emerald-400/25" : "text-muted-foreground/10",
-          )} />
-
-          <StageTile
-            stage="analysis"
-            isComplete={analysisComplete}
-            isRunning={analysisRunning}
-            isStale={false}
-            isFailed={analysisFailed}
-            isNext={dataComplete && !analysisComplete && !analysisRunning && !analysisFailed}
-            isLocked={!dataComplete && !analysisComplete && !analysisRunning}
-            isActive={activeStage === "analysis"}
-            elapsedSeconds={analysisElapsedSeconds}
-            onClick={() => toggle("analysis")}
-          />
-
-          <ArrowRight className={cn(
-            "w-2.5 h-2.5 shrink-0 transition-colors",
-            analysisComplete ? "text-emerald-400/25" : "text-muted-foreground/10",
-          )} />
-
-          <StageTile
-            stage="strategy"
-            isComplete={strategyComplete}
-            isRunning={strategyRunning}
-            isStale={strategyIsStale}
-            isFailed={strategyFailed}
-            isNext={analysisComplete && !strategyComplete && !strategyRunning && !strategyFailed}
-            isLocked={!analysisComplete && !strategyComplete && !strategyRunning}
-            isActive={activeStage === "strategy"}
-            elapsedSeconds={strategyGen.elapsedSeconds}
-            onClick={() => toggle("strategy")}
-          />
-
-          <ArrowRight className={cn(
-            "w-2.5 h-2.5 shrink-0 transition-colors",
-            strategyComplete ? "text-emerald-400/25" : "text-muted-foreground/10",
-          )} />
-
-          <StageTile
-            stage="briefs"
-            isComplete={briefsComplete}
-            isRunning={briefsRunning}
-            isStale={briefsIsStale}
-            isFailed={briefsFailed}
-            isNext={strategyComplete && !briefsComplete && !briefsRunning && !briefsFailed}
-            isLocked={!strategyComplete && !briefsComplete && !briefsRunning}
-            isActive={activeStage === "briefs"}
-            elapsedSeconds={briefsGen.elapsedSeconds}
-            onClick={() => toggle("briefs")}
-          />
-
-          <ArrowRight className={cn(
-            "w-2.5 h-2.5 shrink-0 transition-colors",
-            briefsComplete ? "text-emerald-400/25" : "text-muted-foreground/10",
-          )} />
-
-          <StageTile
-            stage="report"
-            isComplete={reportComplete}
-            isRunning={reportGenerating}
-            isStale={false}
-            isNext={briefsComplete && !reportComplete && !reportGenerating}
-            isLocked={!briefsComplete && !reportComplete && !reportGenerating}
-            isActive={activeStage === "report"}
-            elapsedSeconds={0}
-            onClick={() => toggle("report")}
-          />
-
-          <ArrowRight className={cn(
-            "w-2.5 h-2.5 shrink-0 transition-colors",
-            allLoopComplete ? "text-interactive/20" : "text-muted-foreground/10",
-          )} />
-
-          <StageTile
-            stage="rerun"
-            isComplete={false}
-            isRunning={false}
-            isStale={false}
-            isNext={allLoopComplete && !anyRunning}
-            isLocked={!allLoopComplete}
-            isActive={activeStage === "rerun"}
-            elapsedSeconds={0}
-            onClick={() => toggle("rerun")}
-          />
-        </div>
+        {/* Five-stage loop stepper (Data → Analysis → Strategy → Briefs →
+            Report) — canvas-accurate circle/checkmark visual. Re-run isn't
+            a visible stage here (the canvas has none): once the loop is
+            complete, "Re-run Analysis" is reachable from the Analysis
+            stage's own hub, so no functionality is lost by dropping the
+            old 6th tile from the row. */}
+        <LoopStepper stages={stepperStages} onSelect={(key) => toggle(key as Stage)} />
       </div>
 
       {activeStage && (

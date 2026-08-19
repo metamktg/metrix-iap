@@ -7,8 +7,7 @@ import { TYPE } from "./typography";
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import {
-  ShieldCheck, KeyRound, Grid3x3,
-  Zap, ArrowRight, PanelRightClose, PanelRightOpen,
+  ShieldCheck, KeyRound, Grid3x3, ArrowRight, PanelRightClose, PanelRightOpen,
 } from "lucide-react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed, useMetrixIsRefetching } from "@/contexts/MetrixDataContext";
@@ -24,14 +23,17 @@ import {
 import { useListWorkspaceReports } from "@workspace/api-client-react";
 import { InlineAccountPicker } from "@/components/layout/InlineAccountPicker";
 import { cn } from "@workspace/command-deck/lib/utils";
-import { buildMetricCatalog, metricSourceFromCampaignSummary, metricById } from "@/lib/data/metricsCatalog";
-import { useMetricSelection } from "@/hooks/useMetricSelection";
-import { MetricPickerButton } from "@/components/creative/MetricPicker";
+import { buildMetricCatalog, metricSourceFromCampaignSummary, metricById, resultMetricId } from "@/lib/data/metricsCatalog";
+import { useKpiTileMetrics } from "@/hooks/useKpiTileMetrics";
 import { KpiTile } from "@/components/metrics/KpiTile";
 import { KpiDrilldownModal } from "@/components/metrics/KpiDrilldownModal";
-import { MetricHoverPopover } from "@/components/metrics/MetricHoverPopover";
 import { LoopCommandChain } from "@/components/loop/LoopCommandChain";
+import { NextBestActionCard } from "@/components/loop/NextBestActionCard";
 import { useDragResize } from "@/hooks/useDragResize";
+import { useDecisions, getDecision } from "@/lib/data/decisionStore";
+
+// Number of tile slots in the Nocturne canvas's 4-tile KPI hero row.
+const TILE_COUNT = 4;
 
 const IMPACT_RANK: Record<string, number> = { high: 3, medium: 2, low: 1, setup: 0 };
 
@@ -116,8 +118,11 @@ export function AdAccountOverview() {
     [cs]
   );
   const availableMetricIds = useMemo(() => metricCatalog.map((m) => m.id), [metricCatalog]);
-  const { selected: selectedMetricIds, toggle, move, replace, reset } = useMetricSelection(availableMetricIds);
+  const { tileMetricIds, setTileMetric } = useKpiTileMetrics("ad-account-overview", availableMetricIds, { tileCount: TILE_COUNT });
   const [openMetricId, setOpenMetricId] = useState<string | null>(null);
+  // Reactive decision-store subscription — the Next best action hero and the
+  // Optimization loop deck below both read pending/approved/rejected state.
+  useDecisions();
   const [loopPanelCollapsed, setLoopPanelCollapsed] = useState(loadLoopPanelCollapsed);
   const [loopPanelWidth, setLoopPanelWidth] = useState(loadLoopPanelWidth);
   const [loopPanelDragWidth, setLoopPanelDragWidth] = useState<number | null>(null);
@@ -182,7 +187,7 @@ export function AdAccountOverview() {
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         <ModuleHeader
           section="Ad Account · 01"
-          title={account.name}
+          title={`${account.name} · Account Overview`}
           subtitle="Set up this account to begin the IAP loop"
         />
         {/* Show the IAP loop blueprint for all accounts — unconfigured accounts
@@ -205,7 +210,7 @@ export function AdAccountOverview() {
   if (!core) {
     return (
       <div className="flex-1 flex flex-col">
-        <ModuleHeader section="Ad Account · 01" title={account.name} subtitle="Account overview" />
+        <ModuleHeader section="Ad Account · 01" title={`${account.name} · Account Overview`} subtitle="Account overview" />
         <PendingState
           title="Analysis data loading"
           message="Core analysis data is being assembled. Refresh in a moment."
@@ -242,7 +247,11 @@ export function AdAccountOverview() {
   const mstActive = mst?.status === "active";
 
   const recCards = optLoop?.recommendation_cards ?? [];
-  const nextAction = [...recCards].sort(
+  // Next best action = highest-impact PENDING recommendation — reads the same
+  // decision store as the Optimization loop deck below, so approving or
+  // dismissing the hero card advances to the next one instead of sticking.
+  const pendingRecCards = recCards.filter((c) => getDecision(account.id, c.id) === "pending");
+  const nextAction = [...pendingRecCards].sort(
     (a, b) => (IMPACT_RANK[b.impact] ?? 0) - (IMPACT_RANK[a.impact] ?? 0)
   )[0];
 
@@ -264,16 +273,18 @@ export function AdAccountOverview() {
   ];
   const allLoopComplete = loopSteps.every((s) => s.done);
 
+  const windowLabel = cs?.window_start && cs?.window_end ? `${cs.window_start} → ${cs.window_end}` : null;
+
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
       <ModuleHeader
         section="Ad Account · 01"
-        title={account.name}
+        title={`${account.name} · Account Overview`}
         subtitle="Command chain · focus · optimization"
         right={<span className="text-label font-mono text-emerald-400/90 uppercase tracking-widest">Connected</span>}
       />
 
-      {/* ── IAP Loop Command Chain ────────────────────────────────────── */}
+      {/* ── IAP Loop Command Chain (canvas-accurate 5-stage stepper) ──── */}
       <div className="px-6 py-2 border-b border-border/40 shrink-0">
         <LoopCommandChain accountId={account.id} account={account} managerId={seed.manager_account.id} />
       </div>
@@ -284,116 +295,90 @@ export function AdAccountOverview() {
         {/* Left: scrollable main content */}
         <div className="flex-1 min-w-0 overflow-y-auto px-6 py-3 space-y-3">
 
-          {/* Account Totals — metric accordions */}
-          <SectionCard
-            title="Account Totals"
-            right={<MetricPickerButton catalog={metricCatalog} selected={selectedMetricIds} onToggle={toggle} onMove={move} onReset={reset} />}
-          >
-            {isRefetching ? (
-              <SkeletonTileRow count={selectedMetricIds.length || 4} />
-            ) : null}
-            <div className={cn("grid grid-cols-dashboard-4 gap-2", isRefetching && "hidden")}>
-              {selectedMetricIds.map((id) => {
-                const m = metricById(metricCatalog, id);
-                if (!m) return null;
-                return (
-                  <MetricHoverPopover
-                    key={id}
-                    metric={m}
-                    cellRows={analysis?.performance_by_cell ?? []}
-                    onDiagnose={() => setOpenMetricId(id)}
-                  >
-                    <KpiTile
-                      metricId={id}
-                      catalog={metricCatalog}
-                      onSelect={(newId) => replace(id, newId)}
-                      onClick={() => setOpenMetricId(id)}
-                      hideInfo
-                    />
-                  </MetricHoverPopover>
-                );
-              })}
-              {selectedMetricIds.length === 0 && (
-                <div className="col-span-2 md:col-span-4 text-caption text-muted-foreground/50 border border-dashed border-border/40 rounded-xl px-4 py-5 text-center">
-                  No metrics selected — use "Customize" to add tiles.
-                </div>
-              )}
-            </div>
-          </SectionCard>
+          {/* Next best action — canvas hero card, real optimization-loop data.
+              Folds in the old "Current focus" panel's next-action half; the
+              MST-sprint half (no canvas equivalent) lives in the compact
+              strip right below so nothing real gets dropped. */}
+          <NextBestActionCard scopeId={account.id} card={nextAction ?? null} windowLabel={windowLabel} />
 
-          {/* Current Focus */}
-          <SectionCard
-            title="Current focus"
-            desc="Active sprint · top priority"
-            right={<SectionInfoIcon tip="Your active sprint and the top recommended action from the latest analysis." />}
-          >
-            <div className="grid grid-cols-dashboard-2 gap-3">
-              <div className="rounded-xl border border-purple-400/20 bg-purple-400/[0.03] p-4 hover:border-purple-400/30 transition-colors">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <Grid3x3 className="w-3.5 h-3.5 text-purple-300/80" />
-                  <span className="text-caption font-semibold text-foreground">Current sprint</span>
-                </div>
-                {mstActive ? (
-                  <>
-                    <p className="text-body text-foreground/80 leading-relaxed">
-                      MST active · <span className="font-semibold text-foreground">{matrixCellCount}</span> matrix cells · <span className="font-semibold text-foreground">{libraryCount}</span> library concepts
-                    </p>
-                    <button onClick={() => navigate("/app/mst")} className="mt-3 inline-flex items-center gap-1.5 text-caption font-semibold text-purple-300 hover:text-purple-200 transition-colors">
-                      Open MST <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  </>
-                ) : (
-                  <p className="text-body text-muted-foreground/80 leading-relaxed">No active sprint — import data to begin.</p>
-                )}
-              </div>
-
-              <div className="rounded-xl border border-primary/20 bg-primary/[0.04] p-4 hover:border-primary/30 transition-colors">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <Zap className="w-3.5 h-3.5 text-interactive/80" />
-                  <span className="text-caption font-semibold text-foreground">Next action</span>
-                </div>
-                {nextAction ? (
-                  <>
-                    <DetailReveal
-                      label={nextAction.title}
-                      labelClassName="text-body font-semibold text-foreground leading-snug"
-                      eyebrow="Next action"
-                      sections={[{ label: "Recommended action", text: nextAction.recommended_action }]}
-                    />
-                    <p className="text-label text-muted-foreground/75 mt-2.5">
-                      {recCards.length} recommendation{recCards.length === 1 ? "" : "s"} in the loop below ↓
-                    </p>
-                  </>
-                ) : (
-                  <div className="flex flex-col items-start gap-1.5 py-1">
-                    <Zap className="w-4 h-4 text-interactive/30" />
-                    <p className="text-caption font-semibold text-muted-foreground/60">No actions yet</p>
-                    <p className="text-label text-muted-foreground/50 leading-snug">
-                      Run an analysis to surface optimisation actions.{" "}
-                      <CrossLink to="/app/analysis" label="Go to Analysis" />
-                    </p>
-                  </div>
-                )}
-              </div>
+          {mstActive && (
+            <div className="flex items-center gap-2 px-1">
+              <Grid3x3 className="w-3.5 h-3.5 text-purple-300/70 shrink-0" />
+              <p className={cn(TYPE.caption, "text-muted-foreground/65")}>
+                Current sprint · MST active · <span className="font-semibold text-foreground/85">{matrixCellCount}</span> matrix cells · <span className="font-semibold text-foreground/85">{libraryCount}</span> library concepts
+              </p>
+              <button onClick={() => navigate("/app/mst")} className="inline-flex items-center gap-1 text-caption font-semibold text-purple-300 hover:text-purple-200 transition-colors shrink-0">
+                Open MST <ArrowRight className="w-3 h-3" />
+              </button>
             </div>
-          </SectionCard>
+          )}
+
+          {/* KPI tiles — canvas's fixed 4-tile hero row. Each slot keeps the
+              platform's per-tile metric-select dropdown (KpiTile's existing
+              onSelect/replace affordance), just constrained to 4 fixed slots
+              instead of the old variable-length "Account Totals" grid. */}
+          {isRefetching ? (
+            <SkeletonTileRow count={TILE_COUNT} />
+          ) : (
+            <div className="grid grid-cols-dashboard-4 gap-2">
+              {tileMetricIds.map((id, slotIdx) => (
+                <KpiTile
+                  key={slotIdx}
+                  metricId={id}
+                  catalog={metricCatalog}
+                  variant="hero"
+                  onSelect={(newId) => setTileMetric(slotIdx, newId)}
+                  onClick={() => setOpenMetricId(id)}
+                />
+              ))}
+            </div>
+          )}
 
           {/* Results by event */}
           <SectionCard title="Results by event" desc="Conversion volume by event" right={<SectionInfoIcon tip="Conversion volume split by event type for the selected date window." />}>
-            <div className="grid grid-cols-dashboard-4-sm gap-2">
-              {events.map(([key, e]) => {
-                const isZero = !e.results || e.results === 0;
-                return (
-                  <div key={key} className={cn("mx-kpi-tile px-3 py-2.5", isZero && "opacity-60")}>
-                    <div className="text-label font-semibold text-foreground/90 leading-tight mb-1.5 truncate">{eventLabel(key)}</div>
-                    <div className={cn("text-stat metric-num leading-none", isZero && "text-muted-foreground/45")}>{fmtNum(e.results)}</div>
-                    <div className="text-label text-muted-foreground mt-2 space-y-0.5">
-                      <div>Spend <span className="text-foreground/90 font-medium">{fmtUSD(e.spend)}</span></div>
-                      <div>Clicks <span className="text-foreground/60">{fmtNum(e.link_clicks)}</span></div>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr>
+                    {["Event", "Results", "Spend", "Cost per result"].map((h, i) => (
+                      <th key={h} className={cn(
+                        TYPE.label, "pb-2 border-b border-border/40 font-medium",
+                        i > 0 && "text-right",
+                      )}>
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {events.map(([key, e]) => {
+                    const isZero = !e.results || e.results === 0;
+                    const costPerResult = e.results > 0 ? e.spend / e.results : null;
+                    return (
+                      <tr
+                        key={key}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setOpenMetricId(resultMetricId(key))}
+                        onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); setOpenMetricId(resultMetricId(key)); } }}
+                        className={cn(
+                          "border-t border-border/20 cursor-pointer transition-colors hover:bg-primary/[0.05]",
+                          isZero && "opacity-60",
+                        )}
+                      >
+                        <td className={cn(TYPE.body, "py-2 font-medium text-foreground/85")}>
+                          {eventLabel(key)} <span className="text-interactive/80">›</span>
+                        </td>
+                        <td className={cn(TYPE.body, "py-2 text-right tabular-nums text-foreground/80")}>{fmtNum(e.results)}</td>
+                        <td className={cn(TYPE.body, "py-2 text-right tabular-nums text-foreground/70")}>{fmtUSD(e.spend)}</td>
+                        <td className={cn(TYPE.body, "py-2 text-right tabular-nums text-foreground/70")}>
+                          {costPerResult != null ? fmtUSD(costPerResult) : "—"}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </SectionCard>
 
