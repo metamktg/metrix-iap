@@ -34,6 +34,7 @@
     "smoke:metrix-iap-avatars-tooltips": "tsx ./src/smoke-metrix-iap-avatars-tooltips.ts",
     "smoke:metrix-iap-review-queue": "tsx ./src/smoke-metrix-iap-review-queue.ts",
     "smoke:metrix-iap-section-info-tooltips": "tsx ./src/smoke-metrix-iap-section-info-tooltips.ts",
+    "smoke:metrix-iap-manual-import": "tsx ./src/smoke-metrix-iap-manual-import.ts",
     "import:metrix": "tsx ./src/metrix-supabase/import.ts",
     "enforce:importer-rls": "tsx ./src/enforce-importer-rls.ts",
     "create:user": "tsx ./src/create-user.ts",

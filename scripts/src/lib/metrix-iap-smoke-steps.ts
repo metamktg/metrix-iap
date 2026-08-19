@@ -43,6 +43,7 @@ export const IAP_SMOKE_STEPS: SmokeStep[] = [
     label: "MetricHoverPopover + drill-down e2e",
     script: "smoke:metrix-iap-hover-popover",
   },
+  { label: "Manual import flow e2e", script: "smoke:metrix-iap-manual-import" },
 ];
 
 /**
