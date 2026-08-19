@@ -104,6 +104,7 @@ const RUNTIME_EXPORTS: Array<keyof typeof shared> = [
   "LoopChecklist",
   "VIEW_PRESETS",
   "DatePresetBar",
+  "OverviewHeaderControls",
   "DataWindowBar",
   "ConnectionNudgeBanner",
   "PrerequisiteGate",
