@@ -55,6 +55,7 @@ const RUNTIME_EXPORTS: Array<keyof typeof strategyShared> = [
   "VariableCombinationsGrid",
   "playbookHasContent",
   "ScalingPlaybookLanes",
+  "pillarTier",
 ];
 
 describe("strategyShared.tsx exports — set equality", () => {
@@ -113,6 +114,12 @@ describe("strategyShared.tsx utility functions — return-value checks", () => {
     const profiles = [{ profile_id: "ICP_01", profile_name: "High Intent Buyer" }];
     const result = strategyShared.icpName(profiles, "ICP_01");
     expect(result).toBe("High Intent Buyer");
+  });
+
+  it("pillarTier buckets by source_cells count (0 low / 1-2 medium / 3+ high)", () => {
+    expect(strategyShared.pillarTier([])).toBe("low");
+    expect(strategyShared.pillarTier(["c1"])).toBe("medium");
+    expect(strategyShared.pillarTier(["c1", "c2", "c3"])).toBe("high");
   });
 
   it("pillarHasDetails returns false for a bare pillar", () => {
