@@ -4,7 +4,7 @@
 //   1. "Account Totals" SectionCard header is present (not a bare h2).
 //   2. At least one SectionInfoIcon (info icon) is visible.
 //   3. Zero-result event rows are dimmed (opacity-40) in the canvas table.
-//   4. "No actions yet" empty state renders when no recommendation cards exist.
+//   4. No stray Next Best Action hero card renders when no recommendation cards exist.
 //
 // API calls are intercepted with page.route() so no live API server is needed.
 // The seed fixture comes from the checked-in test snapshot; bookster is a
@@ -204,8 +204,8 @@ async function main() {
       }
     });
 
-    // ── Test 4: "No actions yet" empty state renders ─────────────────────
-    await test('"No actions yet" empty state renders when no recommendation cards exist', async () => {
+    // ── Test 4: no stray Next Best Action hero when nothing is pending ───
+    await test("Next Best Action hero does not render when no recommendation cards exist", async () => {
       const ctx = await browser.newContext({
         viewport: { width: 1440, height: 900 },
       });
@@ -214,17 +214,18 @@ async function main() {
         await mockApis(ctx);
         await gotoOverview(page);
 
-        // bookster has no optimization_loop recommendation_cards, so the
-        // "Current focus" section shows the "No actions yet" empty state.
-        const emptyState = page
-          .locator("text=No actions yet")
-          .first();
-        const visible = await emptyState.isVisible();
+        // bookster has no optimization_loop recommendation_cards, so
+        // NextBestActionCard must render nothing — never a stale or
+        // fabricated recommendation, and never a leftover empty-state
+        // placeholder (the old duplicate "Current focus" panel that used
+        // to show one has been removed).
+        const hero = page.locator('[data-testid="next-best-action-card"]');
+        const count = await hero.count();
         assert(
-          visible,
-          '"No actions yet" empty state not found. The empty state for missing recommendation cards may have been removed.',
+          count === 0,
+          `Expected no Next Best Action hero card, found ${count}. It should render nothing when no recommendations are pending.`,
         );
-        console.log(`       "No actions yet" empty state is visible`);
+        console.log(`       Next Best Action hero correctly absent with no pending recommendations`);
       } finally {
         await ctx.close();
       }

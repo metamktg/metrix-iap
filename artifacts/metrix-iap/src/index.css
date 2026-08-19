@@ -3,6 +3,42 @@
    index.html sets class="dark" on <html>. */
 @import "@workspace/command-deck/styles.css";
 
+/* NOCTURNE PALETTE OVERRIDE
+   Command Deck ships a generic light-blurple app-shell dark theme.
+   The Metrix v1 canvas defines a literal palette instead: deep
+   saturated navy background (hex 0B1220) and a vivid blue accent
+   (hex 0A84FF). This block overrides the base channel triplets to
+   that exact palette, once, at the root. Every downstream --mx- and
+   --surface- alias below derives from these channels, so the whole
+   app re-themes from this one block. Border, destructive, input,
+   chart-2, chart-4, and accent already matched the canvas palette
+   and are left as-is. Values are the canvas hex tokens converted
+   to HSL. */
+.dark {
+  --background: 220 48.8% 8.4%;           /* canvas --color-bg #0B1220 */
+  --foreground: 216 100% 95.1%;           /* canvas --color-text #E6F0FF */
+  --card: 222 47.4% 11.2%;                /* canvas --color-surface #0F172A */
+  --card-foreground: 216 100% 95.1%;
+  --popover: 217 32.6% 17.5%;             /* canvas --color-neutral-800 #1E293B */
+  --popover-foreground: 216 100% 95.1%;
+  --primary: 210 100% 52%;                /* canvas --color-accent #0A84FF */
+  --primary-foreground: 216 100% 95.1%;
+  --secondary: 217 32.6% 17.5%;
+  --secondary-foreground: 216 27.5% 82.2%;
+  --muted: 216 35.7% 16.5%;               /* canvas --mx-edge-soft #1B2739 */
+  --muted-foreground: 217 10.7% 56.1%;    /* canvas --mx-dim (text 55% over bg) */
+  --sidebar: 220 48.8% 8.4%;              /* canvas sidebar panel: var(--color-bg) */
+  --sidebar-foreground: 216 100% 95.1%;
+  --sidebar-border: 218 35.3% 26.7%;      /* canvas --mx-edge-strong #2C3E5C */
+  --sidebar-primary: 210 100% 52%;
+  --sidebar-primary-foreground: 220 48.8% 8.4%;
+  --sidebar-accent: 217 32.6% 17.5%;
+  --sidebar-accent-foreground: 216 100% 95.1%;
+  --sidebar-ring: 210 100% 52%;
+  --ring: 210 100% 52%;
+  --chart-1: 210 100% 52%;                /* was the blurple primary default */
+}
+
 /* App-specific token → utility mappings the design system does not provide. */
 @theme inline {
   /* Metrix brand colors */
