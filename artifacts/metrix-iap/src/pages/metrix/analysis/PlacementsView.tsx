@@ -80,7 +80,8 @@ function buildRankMetrics(resultPlural: string): RankMetric<PlacementRollup>[] {
 // its cost-per-result compares to the account blend — stronger accent =
 // cheaper than blend. Rendered only when at least one row carries real
 // numbers; the seed's per-device data covers the full flight window
-// (no per-day grain), so preset narrowing does not apply here.
+// (no per-day grain), so preset narrowing does not apply here. Collapsed
+// by default (canvas's dMatrix.open disclosure) — click the card to open.
 
 interface DeviceRollup {
   device: string;
@@ -130,6 +131,7 @@ function DeviceDeliveryCard({ rows }: { rows: DeviceDeliveryRow[] }) {
       title="Device delivery"
       desc="Full window · shaded vs account blend"
       table="device_delivery_signal"
+      defaultOpen={false}
       right={<SectionInfoIcon tip="Real delivery spend, results, and cost per result by device across the full flight window. Stronger shading marks devices converting cheaper than the account blend." />}
     >
       <div className="overflow-x-auto">

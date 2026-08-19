@@ -1,7 +1,8 @@
 // ─── Creative · Command Center ──────────────────────────────────────────
-// The parent /app/creative route. Execution (generate briefs from
-// strategy) + lists every brief for this account — this doubles as brief
-// history, so there's no separate history child. Hard-gated on a
+// The parent /app/creative route. Execution card (generate briefs from
+// strategy — canvas's Command Center Execution-card pattern) + a run-
+// history card + lists every brief for this account — this doubles as
+// brief history, so there's no separate history child. Hard-gated on a
 // successful Strategy run. Clicking a brief opens its dedicated workspace
 // (Brief Builder, /app/creative/builder) rather than an in-page drawer.
 
@@ -14,11 +15,15 @@ import { useStageStatus } from "@/hooks/useStageStatus";
 import {
   ModuleHeader, ModuleTabs, ModuleScopeGate, PrerequisiteGate, PendingState,
   MetricTile, CaveatNote, StageLoopHub, buildLoopStages, FlowCrumb, useFromParam, HubNavGrid,
+  SectionCard, CrossLink,
 } from "../shared";
 import {
   useGenerationRun, GenerateButton, ProvenanceBadge, GenerationErrorNote, GenerationProgressBar,
 } from "@/components/generation/GenerationControls";
-import { FileText, Sparkles, Video, Users, Library, ScanLine, ArrowLeftRight } from "lucide-react";
+import {
+  FileText, Sparkles, Video, Users, Library, ScanLine, ArrowLeftRight, FileEdit,
+  CheckCircle2, XCircle, Loader2,
+} from "lucide-react";
 import { TokenizedConceptText } from "@/components/concept/ConceptChip";
 
 const SECTION = "Creative · 05";
@@ -40,6 +45,7 @@ function formatOf(assetType: string): FormatTab {
 
 const CHILDREN = [
   { to: "/app/creative/library", label: "Library", Icon: Library, desc: "The creative asset register — distinct from the IAP Library's variable stacks.", lineage: "mst.local_book2_library[] · ads[]" },
+  { to: "/app/creative/builder", label: "Brief builder", Icon: FileEdit, desc: "Open any generated brief in its own workspace to assign, export, or hand off for production.", lineage: "brief_builder.draft_briefs[]" },
   { to: "/app/creative/scan", label: "Creative Scan", Icon: ScanLine, desc: "Upload your own creative for an IAP-variable confidence pass.", lineage: "loop_status → creative_scan" },
   { to: "/app/creative/import-export", label: "Import & Export", Icon: ArrowLeftRight, desc: "Staged creative asset uploads for this account.", lineage: "manual_imports · creative_asset" },
 ];
@@ -74,6 +80,8 @@ export function CreativeCommandCenter() {
           { id: "ugc", label: "UGC", count: byFormat("ugc").length, Icon: Users },
         ];
 
+        const run = generation.lastRun;
+
         return (
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
             <ModuleHeader
@@ -87,6 +95,85 @@ export function CreativeCommandCenter() {
             <StageLoopHub stages={buildLoopStages(status)} current="creative" />
 
             <div className="px-6 py-5 space-y-4 max-w-4xl">
+              {/* Execution card: verb title + input-metric tiles + primary action —
+                  canvas's Command Center Execution-card pattern (COMMAND["creative.cc"]
+                  verb: "Generate briefs"). The tile grid stays unconditional on real
+                  brief/strategy data, independent of whether generation itself is
+                  currently gated — same rule StrategyCommandCenter follows. */}
+              <SectionCard
+                title="Generate briefs"
+                desc="Generates draft creative briefs from this account's strategy message pillars. Generated briefs fully replace the prior generated set for that kind."
+              >
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                  <MetricTile label="Total briefs" value={String(briefs.length)} variant="primary" />
+                  <MetricTile label="Pillars covered" value={String(pillarsCovered)} sub={`of ${strategy?.message_pillars.length ?? 0}`} />
+                  <MetricTile label="Static" value={String(byFormat("static").length)} />
+                  <MetricTile label="Video + UGC" value={String(byFormat("video").length + byFormat("ugc").length)} sub="no source-backed drafts yet" />
+                </div>
+                <PrerequisiteGate
+                  met={strategyOk}
+                  title="Generate strategy first"
+                  message="Briefs are generated from strategy message pillars — this account doesn't have a completed strategy run yet."
+                  ctaLabel="Go to Strategy"
+                  ctaTo="/app/strategy"
+                >
+                  {() => (
+                    <>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-caption text-muted-foreground/75">
+                          {briefs.length > 0 ? `${briefs.length} briefs across ${pillarsCovered} pillars.` : "No briefs generated yet."}
+                        </span>
+                        <GenerateButton
+                          onClick={generation.start}
+                          isRunning={generation.isRunning}
+                          label={bb?.provenance === "generated" ? "Regenerate briefs" : "Generate from strategy"}
+                          runningLabel="Generating…"
+                        />
+                      </div>
+                      <div className="mt-3 space-y-3">
+                        <GenerationProgressBar
+                          isRunning={generation.isRunning}
+                          progressPercent={generation.progressPercent}
+                          stageLabel={generation.progressStage ?? "Generating briefs from strategy…"}
+                        />
+                        <GenerationErrorNote message={generation.lastError} />
+                      </div>
+                    </>
+                  )}
+                </PrerequisiteGate>
+              </SectionCard>
+
+              {/* Run history card: the backend retains only the latest run per
+                  account+kind today (no run-list endpoint yet) — one real row,
+                  not a fabricated multi-run log. Mirrors StrategyCommandCenter. */}
+              <SectionCard
+                title="Run history"
+                desc="Most recent brief generation run for this account"
+                right={<CrossLink to="/app/creative/builder" label="View briefs" />}
+              >
+                {!run ? (
+                  <p className="text-caption text-muted-foreground/60">No generation runs yet for this account.</p>
+                ) : (
+                  <div className="flex items-center justify-between gap-3 rounded-lg border border-border/30 bg-white/[0.015] px-3 py-2.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      {run.status === "running" && <Loader2 className="w-4 h-4 text-amber-400 animate-spin shrink-0" />}
+                      {run.status === "success" && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
+                      {run.status === "error" && <XCircle className="w-4 h-4 text-red-400 shrink-0" />}
+                      <div className="min-w-0">
+                        <p className="text-body font-medium text-foreground/90 capitalize truncate">
+                          {run.status}
+                          <span className="ml-2 text-caption font-mono font-normal text-muted-foreground/40 normal-case">{run.id}</span>
+                        </p>
+                        <p className="text-caption text-muted-foreground/60">
+                          {new Date(run.started_at).toLocaleString()}
+                          {run.model ? ` · ${run.model}` : ""}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </SectionCard>
+
               <PrerequisiteGate
                 met={strategyOk}
                 title="Generate strategy first"
@@ -96,33 +183,6 @@ export function CreativeCommandCenter() {
               >
                 {() => (
                   <>
-                    <div className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-white/[0.02] p-4">
-                      <span className="text-caption text-muted-foreground/75">
-                        {briefs.length > 0 ? `${briefs.length} briefs across ${pillarsCovered} pillars.` : "No briefs generated yet."}
-                      </span>
-                      <GenerateButton
-                        onClick={generation.start}
-                        isRunning={generation.isRunning}
-                        label={bb?.provenance === "generated" ? "Regenerate briefs" : "Generate from strategy"}
-                        runningLabel="Generating…"
-                      />
-                    </div>
-                    <div className="mt-3 space-y-3">
-                      <GenerationProgressBar
-                        isRunning={generation.isRunning}
-                        progressPercent={generation.progressPercent}
-                        stageLabel={generation.progressStage ?? "Generating briefs from strategy…"}
-                      />
-                      <GenerationErrorNote message={generation.lastError} />
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      <MetricTile label="Total briefs" value={String(briefs.length)} />
-                      <MetricTile label="Pillars covered" value={String(pillarsCovered)} sub={`of ${strategy?.message_pillars.length ?? 0}`} />
-                      <MetricTile label="Static" value={String(byFormat("static").length)} />
-                      <MetricTile label="Video + UGC" value={String(byFormat("video").length + byFormat("ugc").length)} sub="no source-backed drafts yet" />
-                    </div>
-
                     <ModuleTabs tabs={TABS} active={tab} onChange={(id) => setTab(id)} />
 
                     {bb?.source_policy && <CaveatNote text={bb.source_policy} />}

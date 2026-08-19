@@ -138,6 +138,12 @@ export const navTree: NavSection[] = [
         dataSource: "performance_by_cell, v3_variable_performance",
       },
       {
+        id: "analysis-dna",
+        label: "Creative DNA",
+        to: "/app/analysis/dna",
+        dataSource: "v3_variable_performance, variable_combinations",
+      },
+      {
         id: "analysis-audience",
         label: "Audience",
         to: "/app/analysis/audience",
