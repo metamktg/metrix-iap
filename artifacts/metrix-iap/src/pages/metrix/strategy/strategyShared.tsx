@@ -33,6 +33,18 @@ export function familyLabel(family: string): string {
   return FAMILY_LABEL[family] ?? family.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+// ─── Pillar evidence tier ──────────────────────────────────────────────
+// Shared across Communications (confidence bar) and Avatars (coverage
+// matrix) — a pillar's real source_cells count is the one honest evidence
+// signal the seed carries; both views key their visuals off this same
+// derivation rather than each inventing their own threshold.
+
+export function pillarTier(cells: string[]): "high" | "medium" | "low" {
+  if (cells.length >= 3) return "high";
+  if (cells.length >= 1) return "medium";
+  return "low";
+}
+
 /** One readable chip per variable code, colored by family prefix. Styled info tooltip on hover. */
 export function VariableChip({ code, showCode = false, className }: { code: string; showCode?: boolean; className?: string }) {
   const prefix = getVariablePrefix(code);

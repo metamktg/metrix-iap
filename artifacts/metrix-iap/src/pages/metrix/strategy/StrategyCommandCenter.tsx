@@ -1,7 +1,8 @@
 // ─── Strategy · Command Center ──────────────────────────────────────────
 // The parent /app/strategy route. Execution (generate strategy from
-// analysis) + the loop-hub nav — no charts. Hard-gated on a successful
-// Analysis run. Analytical depth lives only in the child pages.
+// analysis) + a run-history card + the loop-hub nav — no charts.
+// Hard-gated on a successful Analysis run. Analytical depth lives only in
+// the child pages.
 
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
@@ -14,7 +15,7 @@ import {
 import {
   useGenerationRun, GenerateButton, GenerationErrorNote, ProvenanceBadge, GenerationProgressBar,
 } from "@/components/generation/GenerationControls";
-import { Map, Users, MessageSquare, ListChecks, History, Compass } from "lucide-react";
+import { Map, Users, MessageSquare, ListChecks, History, Compass, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 
 const SECTION = "Strategy · 04";
 
@@ -46,6 +47,7 @@ export function StrategyCommandCenter() {
         const gateMessage = status.analysis.status === "success" && status.analysis.validated === false
           ? "The latest analysis run finished, but not every analysis surface has validated data yet. Check the Analysis completeness report before generating strategy."
           : "Strategy generation reads validated analysis data — this account doesn't have a completed analysis run yet.";
+        const run = generation.lastRun;
         return (
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
             <ModuleHeader
@@ -56,49 +58,88 @@ export function StrategyCommandCenter() {
             />
             <StageLoopHub stages={buildLoopStages(status)} current="strategy" />
 
-            {strategy && (
-              <div className="px-6 pt-5 grid grid-cols-dashboard-4 gap-3">
-                <MetricTile label="Message pillars" value={fmtNum(strategy.message_pillars.length)} variant="primary" />
-                <MetricTile label="Active hypotheses" value={fmtNum(strategy.active_hypotheses.length)} />
-                <MetricTile label="ICP profiles" value={fmtNum(strategy.icp_profiles?.length ?? 0)} />
-                <MetricTile label="Ready for brief" value={fmtNum(strategy.active_hypotheses.filter((h) => h.status === "ready_for_brief_builder").length)} />
-              </div>
-            )}
-
             <div className="px-6 py-5 space-y-4 max-w-3xl">
-              <PrerequisiteGate
-                met={analysisOk}
-                title="Run analysis first"
-                message={gateMessage}
-                ctaLabel="Go to Analysis"
-                ctaTo="/app/analysis"
-              >
-                {() => (
-                  <SectionCard title="Generate strategy" desc="Runs the Metrix engine over this account's analysis data. Generated pillars/hypotheses fully replace the prior generated set.">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-caption text-muted-foreground/75">
-                        {strategy && strategy.message_pillars.length > 0
-                          ? `${strategy.message_pillars.length} message pillars currently active.`
-                          : "No strategy generated yet."}
-                      </span>
-                      <GenerateButton
-                        onClick={generation.start}
-                        isRunning={generation.isRunning}
-                        label={strategy && strategy.message_pillars.length > 0 ? "Regenerate strategy" : "Generate from analysis"}
-                        runningLabel="Generating…"
-                      />
-                    </div>
-                    <div className="mt-3 space-y-3">
-                      <GenerationProgressBar
-                        isRunning={generation.isRunning}
-                        progressPercent={generation.progressPercent}
-                        stageLabel={generation.progressStage ?? "Generating strategy from validated analysis…"}
-                      />
-                      <GenerationErrorNote message={generation.lastError} />
-                    </div>
-                  </SectionCard>
+              {/* Execution card: verb title + input-metric tiles + primary action —
+                  canvas's Command Center Execution-card pattern. The tile grid stays
+                  unconditional on real strategy data (as it always has), independent
+                  of whether generation itself is currently gated. */}
+              <SectionCard title="Generate strategy" desc="Runs the Metrix engine over this account's analysis data. Generated pillars/hypotheses fully replace the prior generated set.">
+                {/* 2x2 (not the page-width 4-across row this replaced) — the
+                    card's own max-w-3xl column doesn't leave enough room per
+                    tile at 4-across without truncating labels. */}
+                {strategy && (
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <MetricTile label="Message pillars" value={fmtNum(strategy.message_pillars.length)} variant="primary" />
+                    <MetricTile label="Active hypotheses" value={fmtNum(strategy.active_hypotheses.length)} />
+                    <MetricTile label="ICP profiles" value={fmtNum(strategy.icp_profiles?.length ?? 0)} />
+                    <MetricTile label="Ready for brief" value={fmtNum(strategy.active_hypotheses.filter((h) => h.status === "ready_for_brief_builder").length)} />
+                  </div>
                 )}
-              </PrerequisiteGate>
+                <PrerequisiteGate
+                  met={analysisOk}
+                  title="Run analysis first"
+                  message={gateMessage}
+                  ctaLabel="Go to Analysis"
+                  ctaTo="/app/analysis"
+                >
+                  {() => (
+                    <>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-caption text-muted-foreground/75">
+                          {strategy && strategy.message_pillars.length > 0
+                            ? `${strategy.message_pillars.length} message pillars currently active.`
+                            : "No strategy generated yet."}
+                        </span>
+                        <GenerateButton
+                          onClick={generation.start}
+                          isRunning={generation.isRunning}
+                          label={strategy && strategy.message_pillars.length > 0 ? "Regenerate strategy" : "Generate from analysis"}
+                          runningLabel="Generating…"
+                        />
+                      </div>
+                      <div className="mt-3 space-y-3">
+                        <GenerationProgressBar
+                          isRunning={generation.isRunning}
+                          progressPercent={generation.progressPercent}
+                          stageLabel={generation.progressStage ?? "Generating strategy from validated analysis…"}
+                        />
+                        <GenerationErrorNote message={generation.lastError} />
+                      </div>
+                    </>
+                  )}
+                </PrerequisiteGate>
+              </SectionCard>
+
+              {/* Run history card: the backend retains only the latest run per
+                  account+kind today (no run-list endpoint yet) — one real row,
+                  not a fabricated multi-run log. See History for the full detail. */}
+              <SectionCard
+                title="Run history"
+                desc="Most recent strategy generation run for this account"
+                right={<CrossLink to="/app/strategy/history" label="Full history" />}
+              >
+                {!run ? (
+                  <p className="text-caption text-muted-foreground/60">No generation runs yet for this account.</p>
+                ) : (
+                  <div className="flex items-center justify-between gap-3 rounded-lg border border-border/30 bg-white/[0.015] px-3 py-2.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      {run.status === "running" && <Loader2 className="w-4 h-4 text-amber-400 animate-spin shrink-0" />}
+                      {run.status === "success" && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
+                      {run.status === "error" && <XCircle className="w-4 h-4 text-red-400 shrink-0" />}
+                      <div className="min-w-0">
+                        <p className="text-body font-medium text-foreground/90 capitalize truncate">
+                          {run.status}
+                          <span className="ml-2 text-caption font-mono font-normal text-muted-foreground/40 normal-case">{run.id}</span>
+                        </p>
+                        <p className="text-caption text-muted-foreground/60">
+                          {new Date(run.started_at).toLocaleString()}
+                          {run.model ? ` · ${run.model}` : ""}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </SectionCard>
 
               <HubNavGrid items={CHILDREN} label="Explore Strategy" />
             </div>
