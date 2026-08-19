@@ -26,7 +26,7 @@
   --secondary: 217 32.6% 17.5%;
   --secondary-foreground: 216 27.5% 82.2%;
   --muted: 216 35.7% 16.5%;               /* canvas --mx-edge-soft #1B2739 */
-  --muted-foreground: 217 10.7% 56.1%;    /* canvas --mx-dim (text 55% over bg) */
+  --muted-foreground: 217 10.7% 60%;      /* canvas --mx-dim, nudged up from the raw 56.1% blend so --mx-text-faint (85% alpha) clears WCAG AA */
   --sidebar: 220 48.8% 8.4%;              /* canvas sidebar panel: var(--color-bg) */
   --sidebar-foreground: 216 100% 95.1%;
   --sidebar-border: 218 35.3% 26.7%;      /* canvas --mx-edge-strong #2C3E5C */
