@@ -327,10 +327,10 @@ async function main() {
         const page = await ctx.newPage();
         try {
           // Pre-seed localStorage so the CPA tile is selected before the app
-          // initialises — useMetricSelection reads this key on first render.
+          // initialises — useKpiTileMetrics reads this key on first render.
           await page.addInitScript(() => {
             localStorage.setItem(
-              "metrix.overview.metric_tiles.v1",
+              "metrix.kpi_tiles.v1::account-overview",
               JSON.stringify(["cpa_blended"]),
             );
           });
@@ -406,7 +406,7 @@ async function main() {
           // the app initialises.
           await page.addInitScript(() => {
             localStorage.setItem(
-              "metrix.overview.metric_tiles.v1",
+              "metrix.kpi_tiles.v1::account-overview",
               JSON.stringify(["result:Mobile app installs"]),
             );
           });
@@ -618,7 +618,7 @@ async function main() {
           // Select the CPA tile before the app initialises.
           await page.addInitScript(() => {
             localStorage.setItem(
-              "metrix.overview.metric_tiles.v1",
+              "metrix.kpi_tiles.v1::account-overview",
               JSON.stringify(["cpa_blended"]),
             );
           });
@@ -885,7 +885,7 @@ async function main() {
           // Select the result-event tile before the app initialises.
           await page.addInitScript(() => {
             localStorage.setItem(
-              "metrix.overview.metric_tiles.v1",
+              "metrix.kpi_tiles.v1::account-overview",
               JSON.stringify(["result:Mobile app installs"]),
             );
           });
@@ -1157,7 +1157,7 @@ async function main() {
           // Select the result-event tile before the app initialises.
           await page.addInitScript(() => {
             localStorage.setItem(
-              "metrix.overview.metric_tiles.v1",
+              "metrix.kpi_tiles.v1::account-overview",
               JSON.stringify(["result:Mobile app installs"]),
             );
           });
@@ -1495,7 +1495,7 @@ async function main() {
           // so the tile is selected before the app initialises.
           await page.addInitScript(() => {
             localStorage.setItem(
-              "metrix.overview.metric_tiles.v1",
+              "metrix.kpi_tiles.v1::account-overview",
               JSON.stringify(["cpa_blended"]),
             );
           });
@@ -1653,7 +1653,7 @@ async function main() {
           // is present before the app initialises.
           await page.addInitScript(() => {
             localStorage.setItem(
-              "metrix.overview.metric_tiles.v1",
+              "metrix.kpi_tiles.v1::account-overview",
               JSON.stringify(["reach"]),
             );
           });
@@ -1763,7 +1763,7 @@ async function main() {
           // "Clicks (all)" is not a default tile — inject via localStorage.
           await page.addInitScript(() => {
             localStorage.setItem(
-              "metrix.overview.metric_tiles.v1",
+              "metrix.kpi_tiles.v1::account-overview",
               JSON.stringify(["clicks_all"]),
             );
           });
