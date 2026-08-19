@@ -8,6 +8,11 @@
 //   4. Demographic CSV with all-zero impressions → 200, status:"staged",
 //      upload_warnings includes the conversion-export notice
 //   5. CSV with a missing critical breakdown column (Ad name) → 422
+//   6. Valid demographic XLSX (same data, real spreadsheet cell types) stages
+//      identically to the CSV case
+//   7. Demographic XLSX with a precision-lossy Ad ID (18-digit value stored
+//      as a JS number, mirroring a real Google-Sheets-authored export) still
+//      stages, but upload_warnings names the corrupted column
 //
 // Boots the real Express app in-process (app.listen(0)) against the live dev
 // DB / Supabase — the route's account-existence check reads Supabase directly,
@@ -18,6 +23,7 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { AddressInfo } from "node:net";
+import ExcelJS from "exceljs";
 import { db, pool, usersTable, userSessionsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import app from "../../app";
@@ -102,6 +108,49 @@ function buildCsv(
 
 function toBase64(text: string): string {
   return Buffer.from(text, "utf8").toString("base64");
+}
+
+/**
+ * Builds a minimal, valid demographic XLSX workbook with real spreadsheet
+ * cell types — a Date-typed "Day" cell (the exact serial-number-round-trip
+ * behaviour a real Excel/Sheets export produces) plus, optionally, an "Ad ID"
+ * cell holding a value that has already lost precision as a JS number
+ * (the observed real-world failure: an 18-digit Meta Ad ID collapsed to
+ * `1.20253E17` by a spreadsheet tool before the file was ever saved).
+ */
+async function buildDemographicXlsx(opts: { lossyAdId?: boolean } = {}): Promise<Buffer> {
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet("Sheet1");
+  const header = [...DEMOGRAPHIC_BREAKDOWN_COLUMNS.map(resolveCurrency), ...BASE_METRICS.map(resolveCurrency)];
+  sheet.addRow(header);
+
+  const cellValues: Record<string, ExcelJS.CellValue> = {
+    Day: new Date(Date.UTC(2026, 5, 1)), // → "2026-06-01"
+    "Campaign ID": "6001",
+    "Campaign name": "Prospecting - Broad",
+    "Ad set ID": "7001",
+    "Ad set name": "Prospecting - Broad - AS1",
+    "Ad ID": opts.lossyAdId ? 120253000000000000 : "8001", // lossy: > Number.MAX_SAFE_INTEGER
+    "Ad name": "UGC_Testimonial_v1",
+    Gender: "female",
+    Age: "25-34",
+    Text: "",
+    "Amount spent (USD)": 42.5,
+    Reach: 4800,
+    Impressions: 5100,
+    "Result type": "Purchases",
+    Results: 3,
+  };
+  const row = sheet.addRow(header.map((col) => cellValues[col] ?? null));
+  if (opts.lossyAdId) {
+    row.getCell(header.indexOf("Ad ID") + 1).numFmt = "0.00E+00";
+  }
+  const buf = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buf as ArrayBuffer);
+}
+
+function toBase64Buffer(buf: Buffer): string {
+  return buf.toString("base64");
 }
 
 // ── Test harness ─────────────────────────────────────────────────────────────
@@ -272,5 +321,47 @@ describe("POST /metrix/accounts/:accountId/manual-imports — CSV validation", (
     const msg = String(json["message"] ?? "");
     expect(msg).toMatch(/required columns could not be found/i);
     expect(msg).toMatch(/Ad name/i);
+  });
+
+  it("stages a valid demographic XLSX (same data as the CSV fixture) and returns status:staged", async () => {
+    const xlsxBuf = await buildDemographicXlsx();
+    const res = await fetch(stageUrl(), {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({
+        kind: "performance_demo_csv",
+        filename: "demo.xlsx",
+        content_base64: toBase64Buffer(xlsxBuf),
+      }),
+    });
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as Record<string, unknown>;
+    expect(json["status"]).toBe("staged");
+    expect(json["upload_warnings"]).toBeUndefined();
+    stagedImportIds.push(String(json["import_id"]));
+  });
+
+  it("stages a demographic XLSX with a precision-lossy Ad ID and surfaces the corruption warning (never blocks the upload)", async () => {
+    // Mirrors the real Google-Sheets-authored export this feature was built
+    // for: an 18-digit Meta Ad ID collapsed to a float before the file was
+    // ever saved. "Ad ID" is not required for the demographic class, so the
+    // file must still stage — but the corrupted column must be named.
+    const xlsxBuf = await buildDemographicXlsx({ lossyAdId: true });
+    const res = await fetch(stageUrl(), {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({
+        kind: "performance_demo_csv",
+        filename: "demo-corrupted-ad-id.xlsx",
+        content_base64: toBase64Buffer(xlsxBuf),
+      }),
+    });
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as Record<string, unknown>;
+    expect(json["status"]).toBe("staged");
+    const warnings = json["upload_warnings"] as string[] | undefined;
+    expect(Array.isArray(warnings)).toBe(true);
+    expect(warnings!.some((w) => w.includes('"Ad ID"') && /rounded number/i.test(w))).toBe(true);
+    stagedImportIds.push(String(json["import_id"]));
   });
 });

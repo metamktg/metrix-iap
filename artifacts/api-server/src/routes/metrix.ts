@@ -100,10 +100,12 @@ import { getSupabase } from "../lib/supabase";
 import { restageImportsForRun } from "../lib/analysisEngine";
 import { parseIapCsv, IapCsvFormatError } from "../lib/iapCsvParser";
 import type { IapCsvClass } from "../lib/iapCsvSpec";
+import { convertXlsxToCsvText, looksLikeXlsxContent } from "../lib/xlsxToCsv";
 import {
   detectCreativeAssetKind,
   creativeAssetTypeMismatch,
   resolveCreativeLinkResult,
+  extensionOf,
   type CreativeLinkResult,
 } from "../lib/creativeAssetType";
 import { notifyRequestAccess } from "../lib/requestAccessNotification";
@@ -1025,7 +1027,25 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
     let csvUploadWarnings: string[] | undefined;
     if (csvClass) {
       try {
-        const text = content.toString("utf8");
+        // Performance exports arrive as CSV (preferred, matches Meta's native
+        // export) or XLSX (common when a client/agency round-trips the export
+        // through Excel or Google Sheets first). Detect by content — the ZIP
+        // magic bytes every XLSX starts with — rather than trusting only the
+        // filename, so a mislabeled file still reaches the right parser.
+        // Either way the XLSX path converts to the exact same CSV text shape
+        // and hands off to the same parseIapCsv() used for native CSVs, so
+        // every downstream rule (aliases, class-mismatch detection, coverage
+        // gates, signal weights…) runs identically for both file types.
+        const isXlsx = extensionOf(parsed.data.filename) === "xlsx" || looksLikeXlsxContent(content);
+        let text: string;
+        let xlsxConversionWarnings: string[] = [];
+        if (isXlsx) {
+          const converted = await convertXlsxToCsvText(content);
+          text = converted.csvText;
+          xlsxConversionWarnings = converted.warnings;
+        } else {
+          text = content.toString("utf8");
+        }
         const parseResult = parseIapCsv(text, csvClass);
         if (parseResult.rows.length === 0) {
           res.status(422).json({
@@ -1041,8 +1061,9 @@ router.post("/metrix/accounts/:accountId/manual-imports", requireAuth, async (re
           tier: e.tier,
           is_required: e.isRequired,
         }));
-        if (parseResult.warnings.length > 0) {
-          csvUploadWarnings = parseResult.warnings;
+        const allWarnings = [...xlsxConversionWarnings, ...parseResult.warnings];
+        if (allWarnings.length > 0) {
+          csvUploadWarnings = allWarnings;
         }
       } catch (err) {
         if (err instanceof IapCsvFormatError) {

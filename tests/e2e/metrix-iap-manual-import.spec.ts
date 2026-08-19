@@ -441,7 +441,7 @@ async function main() {
         // auto-advance to Review only fires once BOTH required CSVs are
         // staged, and the creative-mapping UI only exists on Step 1.
         const demoPath = writeTempCsv("demo.csv", VALID_DEMO_CSV);
-        await page.locator('input[type="file"][accept=".csv"]').setInputFiles([demoPath]);
+        await page.locator('input[type="file"][accept=".csv,.xlsx"]').setInputFiles([demoPath]);
         await page.locator("text=Demographics").first().waitFor({ state: "visible" });
         // Slot auto-detected purely from the file's own headers (Gender/Age) —
         // its check mark appears without the user picking a slot.
@@ -468,7 +468,7 @@ async function main() {
         // device headers. This completes both required slots, which
         // auto-advances the panel straight to the Review step.
         const placementPath = writeTempCsv("placement.csv", VALID_PLACEMENT_CSV);
-        await page.locator('input[type="file"][accept=".csv"]').setInputFiles([placementPath]);
+        await page.locator('input[type="file"][accept=".csv,.xlsx"]').setInputFiles([placementPath]);
 
         await page.locator("text=STEP 2 OF 2 — REVIEW").waitFor({ state: "visible", timeout: 10_000 });
         await page.locator("text=Demographics — demo.csv").waitFor({ state: "visible" });
@@ -507,7 +507,7 @@ async function main() {
         await createManualAccount(page);
 
         const junkPath = writeTempCsv("junk.csv", MALFORMED_CSV);
-        await page.locator('input[type="file"][accept=".csv"]').setInputFiles([junkPath]);
+        await page.locator('input[type="file"][accept=".csv,.xlsx"]').setInputFiles([junkPath]);
 
         await page.locator("text=needs a closer look").waitFor({ state: "visible", timeout: 15_000 });
         const bodyText = await page.locator('[role="dialog"]').innerText();
@@ -543,7 +543,7 @@ async function main() {
         // Stage only ONE of the two required CSVs — deliberately incomplete,
         // never reaches the internal Review step.
         const demoPath = writeTempCsv("demo.csv", VALID_DEMO_CSV);
-        await page.locator('input[type="file"][accept=".csv"]').setInputFiles([demoPath]);
+        await page.locator('input[type="file"][accept=".csv,.xlsx"]').setInputFiles([demoPath]);
         await page.locator("text=Mapped to:").first().waitFor({ state: "hidden", timeout: 1 }).catch(() => {});
         await page.waitForTimeout(500);
 
@@ -558,7 +558,7 @@ async function main() {
         // "Keep staging" cancels back into the upload flow — dialog stays open.
         await page.locator('button:has-text("Keep staging")').click();
         await page.locator("text=Leave without completing?").waitFor({ state: "hidden", timeout: 5_000 });
-        await page.locator('input[type="file"][accept=".csv"]').waitFor({ state: "attached" });
+        await page.locator('input[type="file"][accept=".csv,.xlsx"]').waitFor({ state: "attached" });
 
         // Esc again, then "Leave anyway" actually closes it.
         await page.keyboard.press("Escape");
@@ -567,6 +567,44 @@ async function main() {
         await page.locator("text=Add Ad Account").waitFor({ state: "hidden", timeout: 5_000 });
 
         console.log("       Review-before-close gate correctly blocked, then honored an explicit Leave");
+      } finally {
+        await ctx.close();
+      }
+    });
+
+    // ── Test 4: XLSX is accepted alongside CSV ─────────────────────────────
+    // Server-side XLSX→CSV conversion is covered by DB-free unit tests
+    // (xlsxToCsv.test.ts) — constructing a byte-accurate XLSX workbook isn't
+    // practical to drive through this fully page.route()-mocked flow (the
+    // mock backend never touches real file bytes, and the exceljs dependency
+    // that builds a real workbook lives only inside @workspace/api-server's
+    // own node_modules, not resolvable from a repo-root-executed spec). This
+    // test instead proves the CLIENT half of XLSX support end to end: the
+    // file input accepts .xlsx, the updated "CSV or XLSX" copy is shown, and
+    // an .xlsx-named file dropped into the smart upload zone stages
+    // successfully through the real upload flow (client-side header sniffing
+    // short-circuits for .xlsx per ConnectAccountDialogs.tsx's sniffCsvKind,
+    // falling through to the same slot-guessing + server-correction retry
+    // the CSV path already relies on).
+    await test("XLSX files are accepted: input allows .xlsx, copy reflects both formats, and an .xlsx upload stages", async () => {
+      const ctx = await browser.newContext({ viewport: { width: 480, height: 1000 } });
+      const page = await ctx.newPage();
+      try {
+        await mockApis(ctx);
+        await createManualAccount(page);
+
+        const fileInput = page.locator('input[type="file"][accept=".csv,.xlsx"]');
+        await fileInput.waitFor({ state: "attached", timeout: 10_000 });
+        await page.locator("text=CSV or XLSX").first().waitFor({ state: "visible", timeout: 10_000 });
+
+        // An .xlsx-named file dropped alone (no Gender/Age/Placement text
+        // signal — the point is the CLIENT never tries to text-sniff it)
+        // stages via the same smart-slot flow a CSV would.
+        const summaryPath = writeTempCsv("ad-summary.xlsx", VALID_DEMO_CSV);
+        await fileInput.setInputFiles([summaryPath]);
+        await page.locator('[aria-label="Remove Ad Summary file"]').waitFor({ state: "visible", timeout: 10_000 });
+
+        console.log("       .xlsx accepted by the input, reflected in copy, and staged via the real upload flow");
       } finally {
         await ctx.close();
       }
