@@ -296,10 +296,15 @@ export function AddAccountDialog({
 
             <ManualUploadPanel accountId={created.account_id} />
 
-            <div className="flex items-center justify-between pt-1">
-              <GhostBtn onClick={() => setStep("manual_name")}>
-                <ArrowLeft className="w-3.5 h-3.5" /> Back
-              </GhostBtn>
+            {/* No "Back" here by design: the account already exists at this
+                point (created above), and there is no rename endpoint — a
+                "Back" that returned to the name step would let the user hit
+                "Create account" again and silently spawn a second, duplicate
+                account while orphaning this one's staged uploads. Backing out
+                of an upload in progress is handled inside ManualUploadPanel's
+                own Review step ("Back to uploads"), which stays within this
+                same account. */}
+            <div className="flex items-center justify-end pt-1">
               <GhostBtn onClick={finish}>Done — open account</GhostBtn>
             </div>
           </>

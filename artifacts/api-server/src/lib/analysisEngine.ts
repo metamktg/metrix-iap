@@ -814,10 +814,19 @@ export async function startManualAnalysis(
   if (!account) throw new AnalysisError("Ad account not found.", 404);
 
   const supabase = getSupabase();
+  // status='staged' is load-bearing, not an optimization: a prior successful
+  // run destages the CSVs it consumed to 'processed' (see markImportsProcessed)
+  // specifically so the NEXT run starts from an empty staging area. Without
+  // this filter, every subsequent run on an account would silently re-pull
+  // every CSV ever uploaded — not just the newly staged batch — and merge
+  // their rows together, double-counting spend/impressions/results for any
+  // date that appears in more than one file (virtually certain for "all" and
+  // for any overlapping weekly/monthly re-export).
   const { data: imports, error: importsErr } = await supabase
     .from("manual_imports")
     .select("id, filename, content, kind")
     .eq("account_id", accountId)
+    .eq("status", "staged")
     .in("kind", ["performance_demo_csv", "performance_placement_csv", "performance_ad_summary_csv", "performance_conversion_device_csv"]);
   if (importsErr) throw new Error(importsErr.message);
 
