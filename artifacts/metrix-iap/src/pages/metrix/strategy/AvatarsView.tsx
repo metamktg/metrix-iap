@@ -17,7 +17,8 @@ import {
   useShowMore, ShowMoreButton, SegmentGenderIcon, SectionInfoIcon,
 } from "../shared";
 import { DemographicTable } from "../analysis/tables";
-import { VariableStackChips, VariableChip, familyLabel } from "./strategyShared";
+import { VariableStackChips, VariableChip, familyLabel, pillarTier } from "./strategyShared";
+import { normalizeConfidence } from "@/lib/normalize";
 import {
   computeAvatarDna, mergeAvatarDna, columnIdForCell,
   type AvatarDna, type DnaVariable,
@@ -38,7 +39,7 @@ import {
 } from "lucide-react";
 import type {
   MSTMatrixColumn, MSTMatrixCell, ICPProfile, PlacementRow, AnalysisData,
-  AdRecord, ActiveHypothesis,
+  AdRecord, ActiveHypothesis, MessagePillar,
 } from "@/lib/data/seedTypes";
 import { cn } from "@workspace/command-deck/lib/utils";
 
@@ -628,7 +629,7 @@ function PersonaAvatar({ name }: { name: string }) {
 
 function IcpProfileCard({
   profile, registerRef, flash, avatars, onAvatarClick, dna,
-  placementRows, avgCpa, avgCvr, hypotheses,
+  placementRows, avgCpa, avgCvr, hypotheses, rank,
 }: {
   profile: ICPProfile;
   registerRef?: (el: HTMLDivElement | null) => void;
@@ -640,6 +641,8 @@ function IcpProfileCard({
   avgCpa: number | null;
   avgCvr?: number | null;
   hypotheses?: ActiveHypothesis[];
+  /** 1-based position in the currently rendered profile list — drives the "ICP 01 · …" rank line. */
+  rank?: number;
 }) {
   const perf = profile.performance_data ?? null;
   const hasPerf = perf != null && (perf.spend != null || perf.cpa != null || perf.cvr_link_pct != null);
@@ -682,12 +685,32 @@ function IcpProfileCard({
         <div className="flex items-center gap-3 min-w-0">
           <PersonaAvatar name={profile.profile_name} />
           <div className="min-w-0">
+            {rank != null && (
+              <p className={cn(TYPE.microLabel, "mb-0.5")}>
+                ICP {String(rank).padStart(2, "0")}
+                {profile.confidence_level && ` · ${normalizeConfidence(profile.confidence_level).label.toLowerCase()} confidence`}
+              </p>
+            )}
             <p className="text-title font-semibold text-foreground leading-tight">{profile.profile_name}</p>
             <span className="text-label font-mono text-muted-foreground/60">{profile.profile_id}</span>
           </div>
         </div>
         {profile.confidence_level && <ConfidenceBadge value={profile.confidence_level} />}
       </div>
+
+      {/* Pull-quote — the profile's own psychographic read, real data
+          (strategy.icp_profiles[].psychographic_profile), truncated with
+          the full sentence behind the reveal per the density rule. */}
+      {profile.psychographic_profile && (
+        <div className="mt-2.5">
+          <DetailReveal
+            label={`“${deriveLabel(profile.psychographic_profile, 90)}”`}
+            labelClassName={cn(TYPE.body, "italic text-muted-foreground/75 leading-relaxed")}
+            eyebrow="Psychographic read"
+            sections={[{ text: profile.psychographic_profile }]}
+          />
+        </div>
+      )}
 
       <div className="space-y-3 mt-3">
         {/* 1. Performance pills */}
@@ -1237,6 +1260,84 @@ function FoldedList<T>({
   );
 }
 
+// ─── Message → ICP coverage matrix ─────────────────────────────────────
+// Collapsible table: pillars × ICP profiles, cells marked proven/tested/
+// untested from the real message_pillars[].target_icps linkage + each
+// pillar's source_cells-derived evidence tier. Collapsed by default —
+// this is a cross-reference view, not primary-surface content.
+
+type CoverageLevel = "proven" | "tested" | "untested";
+
+const COVERAGE_STYLE: Record<CoverageLevel, string> = {
+  proven:   "bg-emerald-400/15 border-emerald-400/35 text-emerald-300",
+  tested:   "bg-accent/10 border-accent/25 text-foreground/80",
+  untested: "border-border/25 text-muted-foreground/35",
+};
+
+const COVERAGE_LABEL: Record<CoverageLevel, string> = {
+  proven: "Proven",
+  tested: "Tested",
+  untested: "—",
+};
+
+function CoverageMatrix({
+  rows, profiles,
+}: {
+  rows: { pillar: MessagePillar; cells: CoverageLevel[] }[];
+  profiles: ICPProfile[];
+}) {
+  if (rows.length === 0 || profiles.length === 0) return null;
+  return (
+    <SectionCard
+      title="Message → ICP coverage"
+      desc="Where each pillar is proven, tested, or never tried against a profile"
+      defaultOpen={false}
+    >
+      <div className="overflow-x-auto">
+        <table className="border-collapse w-full min-w-[560px]">
+          <thead>
+            <tr>
+              <th className={cn(TYPE.label, "text-left text-muted-foreground/50 font-semibold pb-2 pr-3")}>Pillar</th>
+              {profiles.map((profile) => (
+                <th
+                  key={profile.profile_id}
+                  className={cn(TYPE.label, "text-center text-muted-foreground/50 font-semibold pb-2 px-1.5")}
+                  title={profile.profile_name}
+                >
+                  {deriveLabel(profile.profile_name, 18)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(({ pillar, cells }) => (
+              <tr key={pillar.id}>
+                <td className={cn(TYPE.caption, "text-foreground/80 py-1 pr-3 max-w-[180px] truncate")} title={pillar.label}>
+                  {pillar.label}
+                </td>
+                {cells.map((level, i) => (
+                  <td key={i} className="py-1 px-1.5">
+                    <div
+                      className={cn(
+                        "rounded-md border text-center py-1.5",
+                        TYPE.label,
+                        "font-medium",
+                        COVERAGE_STYLE[level],
+                      )}
+                    >
+                      {COVERAGE_LABEL[level]}
+                    </div>
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </SectionCard>
+  );
+}
+
 // ─── Main view ────────────────────────────────────────────────────────
 
 export function AvatarsView() {
@@ -1421,6 +1522,27 @@ export function AvatarsView() {
     return result;
   }, [strategyData]);
 
+  // Message → ICP coverage matrix: for each pillar × ICP profile, "proven"
+  // when the pillar targets that profile (message_pillars[].target_icps)
+  // and the pillar's own evidence tier (real source_cells count) is high;
+  // "tested" when targeted at a lower tier; "untested" when the pillar
+  // never named that profile. No invented linkage — this is the exact
+  // real target_icps → profile_id relationship the seed already carries.
+  const coverageRows = useMemo(() => {
+    const pillars = strategyData?.message_pillars ?? [];
+    return pillars.map((p) => {
+      const targets = new Set(p.target_icps ?? []);
+      const tier = pillarTier(p.source_cells ?? []);
+      return {
+        pillar: p,
+        cells: icpProfiles.map((profile) => {
+          if (!targets.has(profile.profile_id)) return "untested" as const;
+          return tier === "high" ? "proven" as const : "tested" as const;
+        }),
+      };
+    });
+  }, [strategyData, icpProfiles]);
+
   // ─── Sorted / filtered lists ───────────────────────────────────────
 
   // Stable per-avatar identity index (original matrix order) so the accent color
@@ -1597,10 +1719,11 @@ export function AvatarsView() {
                           limit={5}
                           noun="profiles"
                           listClassName="space-y-3"
-                          renderItem={(p) => (
+                          renderItem={(p, i) => (
                             <IcpProfileCard
                               key={p.profile_id}
                               profile={p}
+                              rank={i + 1}
                               registerRef={(el) => { profileRefs.current[p.profile_id] = el; }}
                               flash={flashProfile === p.profile_id}
                               avatars={avatarsForProfile(p.profile_id)}
@@ -1618,6 +1741,11 @@ export function AvatarsView() {
                         />
                       )}
                     </SectionCard>
+                  )}
+
+                  {/* ── Message → ICP coverage — collapsible cross-reference table ── */}
+                  {viewMode === "profiles" && (
+                    <CoverageMatrix rows={coverageRows} profiles={icpProfiles} />
                   )}
 
                   {/* ── Audience segments — hierarchical tile authority ── */}

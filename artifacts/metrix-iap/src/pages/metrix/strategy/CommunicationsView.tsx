@@ -7,8 +7,9 @@
 //      these are the actual creative levers. "Who responds" is context.
 //   3. PROGRESSIVE DISCLOSURE: pillar title + descriptor always visible;
 //      "Why it matters" shows one line + expands; hypotheses collapse to a badge strip
-//   4. SCANNABILITY: index number + main title + tier badge readable in 300 ms
-//      without drilling in. The full 3-column grid is gone — it scattered authority.
+//   4. SCANNABILITY: index number + main title + confidence bar readable in 300 ms
+//      without drilling in. Cards lay out on a responsive grid (canvas parity),
+//      not a single-column list.
 
 import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
@@ -22,7 +23,7 @@ import { TYPE } from "../typography";
 import { cn } from "@workspace/command-deck/lib/utils";
 import {
   VariableStackChips, IcpChips, HypothesisLabel,
-  HypothesisStatusBadge, pillarHasDetails, PillarDetailsFold,
+  HypothesisStatusBadge, pillarHasDetails, PillarDetailsFold, pillarTier,
 } from "./strategyShared";
 import type { StrategyData } from "@/lib/data/seedTypes";
 import { MessageSquare, Users, Lightbulb, FlaskConical, ChevronDown } from "lucide-react";
@@ -30,12 +31,8 @@ import { MessageSquare, Users, Lightbulb, FlaskConical, ChevronDown } from "luci
 const SECTION = "Strategy · 04";
 
 // ─── Confidence tier (from source cell count) ────────────────────────────────
-
-function pillarTier(cells: string[]): "high" | "medium" | "low" {
-  if (cells.length >= 3) return "high";
-  if (cells.length >= 1) return "medium";
-  return "low";
-}
+// pillarTier itself lives in strategyShared (shared with the Avatars coverage
+// matrix) — this file keeps only the tier→visual mappings.
 
 /** Left-border accent by evidence tier — matches the recommendation-card pattern */
 const TIER_ACCENT: Record<string, string> = {
@@ -44,17 +41,44 @@ const TIER_ACCENT: Record<string, string> = {
   low:    "border-l-[3px] border-l-border/30",
 };
 
-const TIER_BADGE: Record<string, string> = {
-  high:   "bg-emerald-400/10 text-emerald-400 border border-emerald-400/20",
-  medium: "bg-amber-400/10  text-amber-300  border border-amber-400/20",
-  low:    "bg-muted          text-muted-foreground/50 border border-border/30",
-};
-
 const TIER_LABEL: Record<string, string> = {
   high:   "High evidence",
   medium: "Some evidence",
   low:    "Low evidence",
 };
+
+// Confidence-bar fill: same categorical tier the badge used to encode, now
+// expressed as a weight (not a literal percentage — source_cells.length has
+// no fixed upper bound across accounts, so a weight-per-tier is the honest
+// representation, the same pattern the tier itself already used for color).
+const TIER_FILL_PCT: Record<string, number> = { high: 88, medium: 55, low: 20 };
+const TIER_FILL_COLOR: Record<string, string> = {
+  high:   "bg-emerald-400/70",
+  medium: "bg-amber-400/60",
+  low:    "bg-muted-foreground/30",
+};
+
+/** Confidence progress bar — replaces the categorical badge with a
+ *  bar-with-fill visual, driven by the same real source_cells-derived
+ *  tier. Hoverable for the exact cell count behind the read. */
+function ConfidenceBar({ cells }: { cells: string[] }) {
+  const tier = pillarTier(cells);
+  const pct = TIER_FILL_PCT[tier];
+  return (
+    <div title={`${cells.length} source cell${cells.length !== 1 ? "s" : ""} behind this pillar`}>
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <span className={cn(TYPE.label, "text-muted-foreground/60")}>Confidence</span>
+        <span className={cn(TYPE.label, "text-muted-foreground/60")}>{TIER_LABEL[tier]}</span>
+      </div>
+      <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+        <div
+          className={cn("h-full rounded-full", TIER_FILL_COLOR[tier])}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
 
 // ─── "Why it matters" — 1-line visible, full text expandable ─────────────────
 
@@ -148,66 +172,57 @@ function HypothesesStrip({
   );
 }
 
-// ─── Pillar list (first 5 + show-more fold) ───────────────────────────────────
+// ─── Pillar grid (first 5 + show-more fold) ───────────────────────────────────
 
 function PillarList({ strategy }: { strategy: StrategyData }) {
   const fold = useShowMore(strategy.message_pillars, 5);
   return (
     <>
-      {fold.visible.map((p, i) => {
-        const targetIcps = p.target_icps ?? [];
-        const matchedProfiles = targetIcps
-          .map((id) => strategy.icp_profiles?.find((pr) => pr.profile_id === id))
-          .filter((pr): pr is NonNullable<typeof pr> => Boolean(pr));
-        const hypotheses = strategy.active_hypotheses.filter((h) => h.pillar_id === p.id);
-        const bestConfidence = matchedProfiles.map((pr) => pr.confidence_level).find(Boolean);
-        const messageResonance = matchedProfiles.map((pr) => pr.message_resonance).find(Boolean);
-        const tier = pillarTier(p.source_cells ?? []);
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 items-start">
+        {fold.visible.map((p, i) => {
+          const targetIcps = p.target_icps ?? [];
+          const matchedProfiles = targetIcps
+            .map((id) => strategy.icp_profiles?.find((pr) => pr.profile_id === id))
+            .filter((pr): pr is NonNullable<typeof pr> => Boolean(pr));
+          const hypotheses = strategy.active_hypotheses.filter((h) => h.pillar_id === p.id);
+          const bestConfidence = matchedProfiles.map((pr) => pr.confidence_level).find(Boolean);
+          const messageResonance = matchedProfiles.map((pr) => pr.message_resonance).find(Boolean);
+          const tier = pillarTier(p.source_cells ?? []);
 
-        return (
-          <div
-            key={p.id}
-            className={cn(
-              "rounded-xl border border-border/40 bg-white/[0.02] overflow-hidden",
-              TIER_ACCENT[tier]
-            )}
-          >
-            {/* ── Pillar header ── */}
-            <div className="px-4 pt-4 pb-3 flex items-start gap-3 border-b border-border/15">
-              {/* Index number */}
-              <span className={cn(TYPE.label, "tabular-nums text-muted-foreground/40 mt-0.5 w-5 text-right shrink-0")}>
-                {String(i + 1).padStart(2, "0")}
-              </span>
+          return (
+            <div
+              key={p.id}
+              className={cn(
+                "rounded-xl border border-border/40 bg-white/[0.02] overflow-hidden flex flex-col h-full",
+                TIER_ACCENT[tier]
+              )}
+            >
+              {/* ── Pillar header ── */}
+              <div className="px-4 pt-4 pb-3 flex items-start gap-3 border-b border-border/15">
+                {/* Index number */}
+                <span className={cn(TYPE.label, "tabular-nums text-muted-foreground/40 mt-0.5 w-5 text-right shrink-0")}>
+                  {String(i + 1).padStart(2, "0")}
+                </span>
 
-              {/* Title block */}
-              <div className="flex-1 min-w-0">
-                <p className="text-base font-bold text-foreground leading-snug line-clamp-2">
-                  {p.label}
-                </p>
-                {p.plain_descriptor && (
-                  <p className={cn(TYPE.caption, "text-muted-foreground/55 mt-1 leading-relaxed line-clamp-2")}>
-                    {p.plain_descriptor}
+                {/* Title block */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-base font-bold text-foreground leading-snug line-clamp-2">
+                    {p.label}
                   </p>
-                )}
+                  {p.plain_descriptor && (
+                    <p className={cn(TYPE.caption, "text-muted-foreground/55 mt-1 leading-relaxed line-clamp-2")}>
+                      {p.plain_descriptor}
+                    </p>
+                  )}
+                </div>
               </div>
 
-              {/* Evidence tier badge */}
-              <span
-                className={cn(
-                  "text-label font-semibold px-2 py-0.5 rounded-full leading-none shrink-0 whitespace-nowrap mt-0.5",
-                  TIER_BADGE[tier]
-                )}
-                title={`${p.source_cells?.length ?? 0} source cell${(p.source_cells?.length ?? 0) !== 1 ? "s" : ""}`}
-              >
-                {TIER_LABEL[tier]}
-              </span>
-            </div>
+              {/* ── Body ── */}
+              <div className="px-4 py-3.5 space-y-4 flex-1 flex flex-col">
 
-            {/* ── Body ── */}
-            <div className="px-4 py-3.5 space-y-4">
-
-              {/* Row 1: What works (primary) + Who responds (context) */}
-              <div className="grid grid-cols-[1fr_auto] gap-4 items-start">
+                {/* Confidence — bar-with-fill, replaces the categorical badge that
+                    used to sit in the header; same real source_cells-derived tier. */}
+                <ConfidenceBar cells={p.source_cells ?? []} />
 
                 {/* What works — variable signals — LEADS because it's the actionable creative lever */}
                 <div>
@@ -220,9 +235,9 @@ function PillarList({ strategy }: { strategy: StrategyData }) {
                   <VariableStackChips stack={p.variable_stack} />
                 </div>
 
-                {/* Who responds — ICP context — narrower, supporting role */}
+                {/* Who responds — ICP context */}
                 {(matchedProfiles.length > 0 || targetIcps.length > 0) && (
-                  <div className="shrink-0 min-w-[140px] max-w-[200px]">
+                  <div>
                     <div className="flex items-center justify-between gap-2 mb-2">
                       <div className="flex items-center gap-1.5">
                         <Users className="w-3 h-3 text-interactive/60 shrink-0" />
@@ -239,27 +254,27 @@ function PillarList({ strategy }: { strategy: StrategyData }) {
                     )}
                   </div>
                 )}
+
+                {/* Why it matters — strategic rationale, 1 line visible + expand */}
+                <WhyBlock
+                  whyText={p.why_it_matters}
+                  resonance={messageResonance}
+                />
+
+                {/* Pillar detail sections — folded behind "Pillar details" */}
+                {pillarHasDetails(p) && (
+                  <div className="pt-1 border-t border-border/15">
+                    <PillarDetailsFold pillar={p} profiles={strategy.icp_profiles} />
+                  </div>
+                )}
+
+                {/* Hypothesis strip — badge only, progressive disclosure */}
+                <HypothesesStrip hypotheses={hypotheses} />
               </div>
-
-              {/* Row 2: Why it matters — strategic rationale, 1 line visible + expand */}
-              <WhyBlock
-                whyText={p.why_it_matters}
-                resonance={messageResonance}
-              />
-
-              {/* Pillar detail sections — folded behind "Pillar details" */}
-              {pillarHasDetails(p) && (
-                <div className="pt-1 border-t border-border/15">
-                  <PillarDetailsFold pillar={p} profiles={strategy.icp_profiles} />
-                </div>
-              )}
-
-              {/* Hypothesis strip — badge only, progressive disclosure */}
-              <HypothesesStrip hypotheses={hypotheses} />
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
       <ShowMoreButton
         total={strategy.message_pillars.length}
         hiddenCount={fold.hiddenCount}
@@ -304,7 +319,7 @@ export function CommunicationsView() {
               table="message_pillars, historical_matrix_4x4"
             />
 
-            <div className="px-6 py-5 space-y-3 max-w-3xl">
+            <div className="px-6 py-5 space-y-3">
               <SectionCard
                 title="Message pillars"
                 table="message_pillars"
