@@ -2,12 +2,14 @@
 // The 4×4 concept × shared-variable historical matrix rendered as the
 // canvas grid: a status strip (Active tag · window · cells mapped),
 // column heads carrying each concept's real rollup CPA, cell cards with
-// the scaling-playbook tier tag and rollup confidence, and the
-// top-performing-concepts table underneath. Per the seed's render
-// policy, performance renders only where source-backed (concept_rollup,
-// concept level) — no per-cell pass/fail and no invented per-cell spend.
-// Diagonal roles (↘ primary / ↗ counter) are real seed data with no
-// canvas equivalent, kept as ring indicators.
+// an inner "Creative ›" button (canvas: cell.open), the scaling-playbook
+// tier tag and rollup confidence, and the top-performing-concepts table
+// underneath. Per the seed's render policy, performance renders only
+// where source-backed (concept_rollup, concept level) — no per-cell
+// pass/fail and no invented per-cell spend. Diagonal roles (↘ primary /
+// ↗ counter) are real seed data with no canvas equivalent, kept as ring
+// indicators. The whole cell stays clickable too (real-app addition
+// over canvas) — both open the same performance/creative pop-up.
 
 import { useState } from "react";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
@@ -130,24 +132,43 @@ export function MatrixGrid({ matrix, columnPerf = {}, onCellClick }: {
                 const isScale = bucket === "scale_now";
                 const isAvoid = bucket === "avoid";
                 const diag = cell?.diagonal_role;
-                const Tag = cell && onCellClick ? "button" : "div";
+                const clickable = Boolean(cell && onCellClick);
+                const openCell = () => { if (cell && onCellClick) onCellClick(cell); };
                 return (
-                  <Tag
+                  // Whole cell stays clickable (real-app enhancement over canvas, which only
+                  // wires the inner "Creative ›" button) — a plain div with a button role
+                  // rather than a native <button> so the nested Creative button below stays
+                  // valid HTML instead of button-in-button.
+                  <div
                     key={col.id + row.id}
-                    onClick={cell && onCellClick ? () => onCellClick(cell) : undefined}
-                    aria-label={cell && onCellClick ? `Open performance for ${cell.cell_id}` : undefined}
+                    role={clickable ? "button" : undefined}
+                    tabIndex={clickable ? 0 : undefined}
+                    onClick={clickable ? openCell : undefined}
+                    onKeyDown={clickable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openCell(); } } : undefined}
+                    aria-label={clickable ? `Open performance for ${cell!.cell_id}` : undefined}
                     data-testid={cell ? `matrix-cell-${cell.cell_id}` : undefined}
                     className={cn(
-                      "m-0.5 p-2.5 rounded-lg border text-left min-h-[112px] flex flex-col gap-1",
+                      "m-0.5 p-2.5 rounded-lg border text-left min-h-[112px] flex flex-col gap-1.5",
                       isScale ? "border-primary/50 bg-primary/[0.06]" : "bg-white/[0.02]",
                       !isScale && diag === "diag_down" && "border-primary/40 ring-1 ring-primary/15",
                       !isScale && diag === "diag_up" && "border-teal-400/40 ring-1 ring-teal-400/15",
                       !isScale && !diag && "border-border/40",
-                      cell && onCellClick && "cursor-pointer hover:bg-white/[0.05] hover:border-primary/40 transition-colors"
+                      clickable && "cursor-pointer hover:bg-white/[0.05] hover:border-primary/40 transition-colors"
                     )}
                   >
                     {cell ? (
                       <>
+                        {onCellClick && (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); openCell(); }}
+                            aria-label={`Open creative for ${cell.cell_id}`}
+                            data-testid={`matrix-cell-creative-${cell.cell_id}`}
+                            className="h-11 w-full rounded-md bg-white/[0.05] hover:bg-white/[0.09] transition-colors flex items-center justify-center gap-1 text-micro font-medium text-muted-foreground/75"
+                          >
+                            Creative <span className="text-interactive text-caption leading-none" aria-hidden="true">›</span>
+                          </button>
+                        )}
                         <div className="text-micro font-mono text-muted-foreground/45">{cell.cell_id}</div>
                         {cell.plain_text.headline && (
                           <div className="text-body font-semibold text-foreground leading-tight line-clamp-3">{cell.plain_text.headline}</div>
@@ -155,15 +176,14 @@ export function MatrixGrid({ matrix, columnPerf = {}, onCellClick }: {
                         <div className="mt-auto pt-1.5 flex items-center justify-between gap-1.5">
                           <span
                             className={cn(
-                              TYPE.label,
-                              "inline-flex border rounded-full px-2 py-0.5 font-semibold normal-case",
+                              "text-micro inline-flex rounded px-1.5 py-0.5 font-semibold leading-none",
                               isScale
-                                ? "border-primary/40 bg-primary/15 text-interactive"
+                                ? "bg-primary/25 text-interactive"
                                 : isAvoid
-                                  ? "border-red-400/30 bg-red-400/10 text-red-300"
+                                  ? "bg-red-400/25 text-red-300"
                                   : bucket
-                                    ? "border-border/40 bg-white/[0.04] text-foreground/70"
-                                    : "border-transparent text-muted-foreground/35",
+                                    ? "bg-white/[0.06] text-foreground/70"
+                                    : "text-muted-foreground/35",
                             )}
                           >
                             {bucket ? BUCKET_LABEL[bucket] : "—"}
@@ -176,7 +196,7 @@ export function MatrixGrid({ matrix, columnPerf = {}, onCellClick }: {
                     ) : (
                       <div className="text-caption text-muted-foreground/60">—</div>
                     )}
-                  </Tag>
+                  </div>
                 );
               })}
             </div>
