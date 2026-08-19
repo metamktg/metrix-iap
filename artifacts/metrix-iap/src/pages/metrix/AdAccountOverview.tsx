@@ -30,8 +30,7 @@ import { buildMetricCatalog, metricSourceFromCampaignSummary, metricSourceFromAp
 import { getGetAnalysisSummaryQueryOptions } from "@workspace/api-client-react";
 import { useQuery } from "@tanstack/react-query";
 import { trendForMetric, sparkSeriesForMetric, sparkPoints } from "@/lib/data/summaryTrends";
-import { useMetricSelection } from "@/hooks/useMetricSelection";
-import { MetricPickerButton } from "@/components/creative/MetricPicker";
+import { useKpiTileMetrics } from "@/hooks/useKpiTileMetrics";
 import { KpiTile } from "@/components/metrics/KpiTile";
 import { KpiDrilldownModal } from "@/components/metrics/KpiDrilldownModal";
 import { MetricHoverPopover } from "@/components/metrics/MetricHoverPopover";
@@ -154,7 +153,10 @@ export function AdAccountOverview() {
     };
   };
   const availableMetricIds = useMemo(() => metricCatalog.map((m) => m.id), [metricCatalog]);
-  const { selected: selectedMetricIds, toggle, move, replace, reset } = useMetricSelection(availableMetricIds);
+  // Nocturne hero KPI row: a fixed 4-tile grid (Alex's product decision),
+  // each slot independently metric-selectable via its own dropdown — not
+  // the old variable-length "add/remove tiles" picker.
+  const { tileMetricIds, setTileMetric } = useKpiTileMetrics("account-overview", availableMetricIds, { tileCount: 4 });
   const [openMetricId, setOpenMetricId] = useState<string | null>(null);
   const [loopPanelCollapsed, setLoopPanelCollapsed] = useState(loadLoopPanelCollapsed);
   const [loopPanelWidth, setLoopPanelWidth] = useState(loadLoopPanelWidth);
@@ -301,9 +303,8 @@ export function AdAccountOverview() {
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
       <ModuleHeader
         section="Ad Account · 01"
-        title={account.name}
+        title={`${account.name} · Account Overview`}
         subtitle="Command chain · focus · optimization"
-        right={<span className="text-label font-mono text-emerald-400/90 uppercase tracking-widest">Connected</span>}
       />
 
       {/* ── IAP Loop Command Chain ────────────────────────────────────── */}
@@ -330,21 +331,19 @@ export function AdAccountOverview() {
               recommendation; renders nothing when none are pending. */}
           <NextBestActionCard scopeId={account.id} cards={deckCards} />
 
-          {/* Account Totals — metric accordions */}
-          <SectionCard
-            title="Account Totals"
-            right={<MetricPickerButton catalog={metricCatalog} selected={selectedMetricIds} onToggle={toggle} onMove={move} onReset={reset} />}
-          >
+          {/* Account Totals — fixed 4-tile Nocturne hero row, each tile
+              independently metric-selectable via its own dropdown. */}
+          <SectionCard title="Account Totals">
             {(isRefetching || (preset !== "all" && summaryFetching)) ? (
-              <SkeletonTileRow count={selectedMetricIds.length || 4} />
+              <SkeletonTileRow count={4} />
             ) : null}
             <div className={cn("grid grid-cols-dashboard-4 gap-2", (isRefetching || (preset !== "all" && summaryFetching)) && "hidden")}>
-              {selectedMetricIds.map((id) => {
+              {tileMetricIds.map((id, slotIdx) => {
                 const m = metricById(metricCatalog, id);
                 if (!m) return null;
                 return (
                   <MetricHoverPopover
-                    key={id}
+                    key={slotIdx}
                     metric={m}
                     cellRows={analysis?.performance_by_cell ?? []}
                     onDiagnose={() => setOpenMetricId(id)}
@@ -355,7 +354,7 @@ export function AdAccountOverview() {
                         <KpiTile
                           metricId={id}
                           catalog={metricCatalog}
-                          onSelect={(newId) => replace(id, newId)}
+                          onSelect={(newId) => setTileMetric(slotIdx, newId)}
                           onClick={() => setOpenMetricId(id)}
                           hideInfo
                           trend={trend}
@@ -366,11 +365,6 @@ export function AdAccountOverview() {
                   </MetricHoverPopover>
                 );
               })}
-              {selectedMetricIds.length === 0 && (
-                <div className="col-span-2 md:col-span-4 text-caption text-muted-foreground/50 border border-dashed border-border/40 rounded-xl px-4 py-5 text-center">
-                  No metrics selected — use "Customize" to add tiles.
-                </div>
-              )}
             </div>
           </SectionCard>
 

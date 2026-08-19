@@ -94,4 +94,22 @@ describe("NextBestActionCard", () => {
     render(<NextBestActionCard scopeId={SCOPE} cards={[]} />);
     expect(screen.queryByTestId("next-best-action-card")).toBeNull();
   });
+
+  it("shows an honest dashed empty-state (not a bare blank) when there are no cards at all", () => {
+    render(<NextBestActionCard scopeId={SCOPE} cards={[]} />);
+    expect(screen.getByTestId("next-best-action-empty")).toBeTruthy();
+    expect(
+      screen.getByText("No recommendations have been generated for this account yet."),
+    ).toBeTruthy();
+  });
+
+  it("shows an honest empty-state explaining everything was reviewed once the only card is dismissed", () => {
+    render(<NextBestActionCard scopeId={SCOPE} cards={[card({ id: "only" })]} />);
+    fireEvent.click(screen.getByTestId("next-best-action-dismiss"));
+
+    expect(screen.getByTestId("next-best-action-empty")).toBeTruthy();
+    expect(
+      screen.getByText("All recommendations have been reviewed — nothing pending right now."),
+    ).toBeTruthy();
+  });
 });
