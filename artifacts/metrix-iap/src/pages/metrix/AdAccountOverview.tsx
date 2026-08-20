@@ -201,7 +201,7 @@ export function AdAccountOverview() {
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
       <ModuleHeader
-        section="Ad Account · 01"
+        section="Account Overview · 01"
         title={`${account.name} · Account Overview`}
         subtitle="Command chain · focus · optimization"
         right={

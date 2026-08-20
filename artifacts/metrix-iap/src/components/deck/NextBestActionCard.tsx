@@ -14,7 +14,7 @@
 // percentage or countdown.
 
 import { useCallback } from "react";
-import { Check, X, Zap } from "lucide-react";
+import { Check, Zap } from "lucide-react";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { TYPE } from "@/pages/metrix/typography";
 import { DetailReveal } from "@/pages/metrix/shared";
@@ -142,28 +142,25 @@ export function NextBestActionCard({ scopeId, cards }: NextBestActionCardProps) 
           </div>
         </div>
 
-        <div className="flex flex-col gap-2 shrink-0" role="group" aria-label="Decide on next best action">
+        <div className="flex flex-col items-end gap-1.5 shrink-0" role="group" aria-label="Decide on next best action">
           <button
             type="button"
             onClick={approve}
             data-testid="next-best-action-approve"
             className={cn(
               TYPE.caption,
-              "inline-flex items-center justify-center gap-1.5 font-semibold rounded-lg border border-primary/40 bg-primary/15 text-interactive px-3.5 py-1.5 hover:bg-primary/25 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              "inline-flex items-center justify-center gap-1.5 font-semibold rounded-lg border border-primary/50 bg-primary text-primary-foreground px-3.5 py-1.5 hover:bg-primary/90 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             )}
           >
-            <Check className="w-3.5 h-3.5" /> Approve to tray
+            <Check className="w-3.5 h-3.5" /> Approve
           </button>
           <button
             type="button"
             onClick={dismiss}
             data-testid="next-best-action-dismiss"
-            className={cn(
-              TYPE.caption,
-              "inline-flex items-center justify-center gap-1.5 font-medium rounded-lg border border-border/40 text-muted-foreground/70 px-3.5 py-1.5 hover:text-foreground/80 hover:border-border/60 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            )}
+            className={cn(TYPE.caption, "font-medium text-muted-foreground/70 px-1 py-0.5 hover:text-foreground/80 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded")}
           >
-            <X className="w-3.5 h-3.5" /> Dismiss
+            Dismiss
           </button>
         </div>
       </div>
