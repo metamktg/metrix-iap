@@ -5,7 +5,7 @@
 // mounted at the parent /app/analysis route) owns execution + run
 // history — this page is read-only.
 
-import { useState, useMemo, Fragment } from "react";
+import { useState, useMemo, useEffect, Fragment } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
@@ -17,7 +17,7 @@ import {
   CaveatNote, SectionCard, CrossLink, fmtUSD, fmtNum, fmtPct, resultTerm,
   RangeScopeBar, NoDataInRangeState, SectionInfoIcon,
   ConfidenceBadge, useShowMore, ShowMoreButton, DetailReveal,
-  PILL_ACTIVE, PILL_INACTIVE,
+  PILL_ACTIVE, PILL_INACTIVE, OverviewHeaderControls, type ViewPreset,
 } from "../shared";
 import { TYPE } from "../typography";
 import { cn } from "@workspace/command-deck/lib/utils";
@@ -27,7 +27,7 @@ import {
   LineChart, Library, Users, LayoutGrid, Wallet, TrendingUp, AlertTriangle, Eye, Search,
   ChevronDown, ArrowRight,
 } from "lucide-react";
-import { KpiTileRow } from "@/components/metrics/KpiTile";
+import { KpiTileRow, type KpiTileTrend } from "@/components/metrics/KpiTile";
 import { buildMetricCatalog, metricSourceFromCampaignSummary } from "@/lib/data/metricsCatalog";
 import { bucketEntryForConcept, BUCKET_LABEL, type ScalingBucket } from "@/lib/data/scalingBuckets";
 import { normalizeConfidence } from "@/lib/normalize";
@@ -37,10 +37,19 @@ import type { DataQualityFlag, ConceptRollupRow, ScalingPlaybook, CellPerformanc
 import { buildFunnelStages, ZONE_COLOR, type FunnelStage } from "./EngagementFunnelView";
 import { resolveObjectivesMeta, type CohortMeta } from "@/lib/data/cohortMeta";
 import { getGetAnalysisSummaryQueryOptions } from "@workspace/api-client-react";
-import { trendForMetric } from "@/lib/data/summaryTrends";
+import { trendForMetric, sparkSeriesForMetric, sparkPoints } from "@/lib/data/summaryTrends";
 import { AddToTrayButton } from "@/components/tray/AddToTrayButton";
 
 const SECTION = "Analysis · 03";
+
+/** Format a raw prior-window value in the metric's own display format —
+ *  mirrors AdAccountOverview's formatLikeMetric so the "vs prior" trend
+ *  line reads the same way everywhere it appears. */
+function formatTrendValue(metricId: string, v: number): string {
+  if (metricId === "spend" || metricId === "cpa_blended" || metricId === "cpc" || metricId === "cpm") return fmtUSD(v);
+  if (metricId === "link_ctr" || metricId === "cvr") return `${v.toFixed(2)}%`;
+  return fmtNum(Math.round(v));
+}
 
 // ─── Signal cards — the canvas's "signals worth acting on" strip ──────
 // Renders the account's real data_quality flags (raised by the last
@@ -120,7 +129,61 @@ const SIGNAL_TIER_FILTERS: { id: "all" | SignalTier; label: string }[] = [
   { id: "investigate", label: "Investigate" },
 ];
 
-function SignalCards({ flags, scopeId }: { flags: DataQualityFlag[]; scopeId: string }) {
+const TIER_ORDER: SignalTier[] = ["act_now", "watch", "investigate"];
+const TIER_ICON: Record<SignalTier, typeof AlertTriangle> = {
+  act_now: AlertTriangle,
+  watch: Eye,
+  investigate: Search,
+};
+
+/** The single headline card per tier: highest real $ affected first (the
+ *  only real severity signal these flags carry), falling back to the first
+ *  flag in tier order when none carries a spend figure. Null when the tier
+ *  has no real flags for this account — never backfilled with a placeholder. */
+function highestPriorityFlag(flags: DataQualityFlag[], tier: SignalTier): DataQualityFlag | null {
+  const inTier = flags.filter((f) => tierForFlag(f) === tier);
+  if (inTier.length === 0) return null;
+  const withSpend = (f: DataQualityFlag) => (typeof f["spend"] === "number" ? (f["spend"] as number) : -1);
+  return [...inTier].sort((a, b) => withSpend(b) - withSpend(a))[0]!;
+}
+
+function SignalHeadlineCard({ tier, flag }: { tier: SignalTier; flag: DataQualityFlag | null }) {
+  const Icon = TIER_ICON[tier];
+  const isActNow = tier === "act_now";
+  const spend = flag && typeof flag["spend"] === "number" ? (flag["spend"] as number) : null;
+  return (
+    <div
+      data-testid={`signal-headline-${tier}`}
+      className={cn(
+        "rounded-lg border px-3.5 py-3 flex flex-col gap-1.5 min-h-[92px]",
+        flag && isActNow ? "border-amber-400/30 bg-amber-400/[0.04]" : "border-border/40 bg-white/[0.015]",
+      )}
+    >
+      <div className="flex items-center gap-1.5">
+        <Icon className={cn("w-3.5 h-3.5 shrink-0", flag && isActNow ? "text-amber-400/80" : "text-muted-foreground/50")} />
+        <span className={cn(TYPE.label, "font-mono uppercase tracking-widest", flag && isActNow ? "text-amber-400/85" : "text-muted-foreground/60")}>
+          {TIER_LABEL[tier]}
+        </span>
+      </div>
+      {flag ? (
+        <>
+          <span className={cn(TYPE.caption, "font-semibold text-foreground/90 capitalize")}>{flagHeadline(flag)}</span>
+          {spend != null ? (
+            <span className={cn(TYPE.body, "font-semibold text-foreground/80")}>{fmtUSD(spend, 0)} affected</span>
+          ) : (
+            <span className={cn(TYPE.caption, "text-muted-foreground/60")}>{flagBody(flag)}</span>
+          )}
+        </>
+      ) : (
+        <span className={cn(TYPE.caption, "text-muted-foreground/40 italic")}>
+          No {TIER_LABEL[tier].toLowerCase()} signals this run.
+        </span>
+      )}
+    </div>
+  );
+}
+
+function SignalCards({ flags, scopeId, detailOn }: { flags: DataQualityFlag[]; scopeId: string; detailOn: boolean }) {
   const [filter, setFilter] = useState<"all" | SignalTier>("all");
   const [, navigate] = useLocation();
   const counts = useMemo(() => {
@@ -137,6 +200,16 @@ function SignalCards({ flags, scopeId }: { flags: DataQualityFlag[]; scopeId: st
       desc="Data-quality flags from the last analysis run · grouped by real urgency"
       right={<SectionInfoIcon tip="Grouped by each flag's real kind: anomalies (Act now), quality-tracking caveats (Watch), everything else like attribution-window notes (Investigate). No confidence percentage — flags carry no real confidence score." />}
     >
+      {/* Curated headline row: the single highest-$-impact real flag per
+          tier, one column each — the mock's top-line "signals worth acting
+          on" read. The full filterable list (below) is never removed, just
+          no longer the only view. */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 mb-4" data-testid="signal-headline-row">
+        {TIER_ORDER.map((tier) => (
+          <SignalHeadlineCard key={tier} tier={tier} flag={highestPriorityFlag(flags, tier)} />
+        ))}
+      </div>
+      <div className={cn(TYPE.microLabel, "text-muted-foreground/45 mb-2 px-0.5")}>All signals</div>
       <div className="flex items-center gap-1.5 mb-3 flex-wrap" role="group" aria-label="Filter signals by tier">
         {SIGNAL_TIER_FILTERS.map(({ id, label }) => {
           const active = filter === id;
@@ -196,12 +269,29 @@ function SignalCards({ flags, scopeId }: { flags: DataQualityFlag[]; scopeId: st
                 </span>
                 <p className={cn(TYPE.body, "text-foreground/70 leading-relaxed mt-0.5")}>{flagBody(f)}</p>
               </div>
-              <DetailReveal
-                label="Show evidence"
-                labelClassName={cn(TYPE.caption, "font-semibold text-interactive")}
-                eyebrow="Evidence"
-                sections={evidence.map((e) => ({ label: e.k, text: e.v }))}
-              />
+              {/* Summary/Detailed header toggle: "Detailed" renders every
+                  card's evidence inline (never several simultaneously-open
+                  popovers — Radix's dismissable-layer stack only tolerates
+                  one uncontrolled Popover opening at a time); "Summary"
+                  restores the compact click-to-reveal popover. */}
+              {detailOn ? (
+                <div className="rounded-lg border border-border/30 bg-white/[0.02] p-2.5 space-y-1.5" data-testid="signal-evidence-inline">
+                  <div className={cn(TYPE.microLabel, "text-muted-foreground/60")}>Evidence</div>
+                  {evidence.map((e) => (
+                    <div key={e.k} className="flex items-baseline gap-2 flex-wrap">
+                      <span className={cn(TYPE.microLabel, "shrink-0 w-28 text-muted-foreground/50")}>{e.k}</span>
+                      <span className={TYPE.body}>{e.v}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <DetailReveal
+                  label="Show evidence"
+                  labelClassName={cn(TYPE.caption, "font-semibold text-interactive")}
+                  eyebrow="Evidence"
+                  sections={evidence.map((e) => ({ label: e.k, text: e.v }))}
+                />
+              )}
               {/* Real actions only: a cross-link into the real Listen · Signal
                   surface, and Add to Tray (the app's real file-for-later
                   mechanism — the honest substitute for the canvas's mocked
@@ -374,16 +464,19 @@ function conceptVariableStack(book: string, concept: string, library: MSTLibrary
   return Object.keys(stack).length > 0 ? stack : null;
 }
 
-function ConceptTierTable({ rollup, playbook, resultNoun, cells, library }: {
+function ConceptTierTable({ rollup, playbook, resultNoun, cells, library, detailOn }: {
   rollup: ConceptRollupRow[];
   playbook: ScalingPlaybook | null;
   resultNoun: string;
   cells: CellPerformanceRow[];
   library: MSTLibraryCell[];
+  /** Header "Summary/Detailed" toggle — sets each row's default expanded
+   *  state; individual rows can still be clicked open/closed afterward. */
+  detailOn: boolean;
 }) {
   const [, navigate] = useLocation();
   const [filter, setFilter] = useState<string>("all");
-  const [expandedKey, setExpandedKey] = useState<string | null>(null);
+  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
   const { activeId, select } = useRankMetric(
     "metrix_tier_sort_v1",
     TIER_RANK_METRICS.map((m) => m.id),
@@ -402,6 +495,22 @@ function ConceptTierTable({ rollup, playbook, resultNoun, cells, library }: {
   const filteredRows = filter === "all" ? tierRows : tierRows.filter((r) => (r.bucket ?? "unclassified") === filter);
   const sortedRows = sortByRankMetric(filteredRows, activeMetric);
   const fold = useShowMore(sortedRows, 4);
+
+  // Toggling the header's Summary/Detailed control re-defaults every row's
+  // expanded state; a row clicked afterward stays under the user's control
+  // until the toggle flips again.
+  useEffect(() => {
+    setExpandedKeys(detailOn ? new Set(tierRows.map((r) => `${r.book}:${r.concept}`)) : new Set());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detailOn]);
+
+  const toggleRow = (key: string) => {
+    setExpandedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
 
   if (rollup.length === 0) return null;
 
@@ -424,7 +533,7 @@ function ConceptTierTable({ rollup, playbook, resultNoun, cells, library }: {
             <button
               key={id}
               type="button"
-              onClick={() => { setFilter(id); setExpandedKey(null); }}
+              onClick={() => { setFilter(id); setExpandedKeys(new Set()); }}
               aria-pressed={active}
               className={cn(
                 "inline-flex items-center gap-1 h-6 px-2 rounded-full border text-label font-medium transition-colors",
@@ -463,7 +572,7 @@ function ConceptTierTable({ rollup, playbook, resultNoun, cells, library }: {
             )}
             {fold.visible.map((r) => {
               const key = `${r.book}:${r.concept}`;
-              const isOpen = expandedKey === key;
+              const isOpen = expandedKeys.has(key);
               const zero = (r.results ?? 0) === 0;
               const firstCellId = firstCellIdForConcept(r.book, r.concept, cells);
               const varStack = conceptVariableStack(r.book, r.concept, library);
@@ -471,7 +580,7 @@ function ConceptTierTable({ rollup, playbook, resultNoun, cells, library }: {
                 <Fragment key={key}>
                   <tr
                     className={cn(zero && "opacity-50", "cursor-pointer")}
-                    onClick={() => setExpandedKey(isOpen ? null : key)}
+                    onClick={() => toggleRow(key)}
                     aria-expanded={isOpen}
                   >
                     <td>
@@ -646,6 +755,14 @@ function BuyerIntentFunnelCard({
 // same windowed totals/prior_totals pair the KPI tiles already use
 // (summaryTrends.ts), so that's what renders here instead.
 
+// Bar heights for the 2-bar mini chart — proportional to the taller of the
+// two real values, capped at BAR_MAX_H px, with a small floor so a near-zero
+// value still renders a visible sliver rather than vanishing.
+const BAR_MAX_H = 56;
+function barHeightPx(value: number, maxVal: number): number {
+  return Math.max((value / maxVal) * BAR_MAX_H, 4);
+}
+
 function CostPerResultCard({ adAccountId, accountConfigured }: { adAccountId: string | null; accountConfigured: boolean }) {
   const { data: summary, isLoading } = useQuery({
     ...getGetAnalysisSummaryQueryOptions(adAccountId ?? "", "28d"),
@@ -653,6 +770,7 @@ function CostPerResultCard({ adAccountId, accountConfigured }: { adAccountId: st
   });
   const trend = summary ? trendForMetric("cpa_blended", summary.totals, summary.prior_totals) : null;
   const delta = trend ? trend.current - trend.prior : null;
+  const maxVal = trend ? Math.max(trend.prior, trend.current, 0.01) : 1;
 
   return (
     <SectionCard
@@ -661,17 +779,28 @@ function CostPerResultCard({ adAccountId, accountConfigured }: { adAccountId: st
       right={<SectionInfoIcon tip="The same prior-period comparison the KPI tiles use (analysis-summary endpoint, 28-day window). A full per-factor breakdown by audience, creative, and placement isn't available — see the note below." />}
     >
       {trend ? (
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="rounded-lg border border-border/40 bg-white/[0.02] px-4 py-2.5">
-            <div className={cn(TYPE.microLabel, "mb-1")}>Prior window</div>
-            <div className={TYPE.title}>{fmtUSD(trend.prior)}</div>
+        <div className="flex flex-wrap items-end gap-5">
+          {/* Honest 2-bar visual — only the two real windowed values this
+              data model supports, no fabricated per-factor bars. */}
+          <div className="flex items-end gap-3" data-testid="cpr-mini-chart">
+            <div className="flex flex-col items-center gap-1.5 w-16">
+              <span className={cn(TYPE.caption, "font-semibold text-foreground/75 tabular-nums")}>{fmtUSD(trend.prior)}</span>
+              <div
+                className="w-8 rounded-t bg-muted-foreground/25"
+                style={{ height: `${barHeightPx(trend.prior, maxVal)}px` }}
+              />
+              <span className={cn(TYPE.microLabel, "text-muted-foreground/55")}>Prior window</span>
+            </div>
+            <div className="flex flex-col items-center gap-1.5 w-16">
+              <span className={cn(TYPE.caption, "font-semibold text-foreground tabular-nums")}>{fmtUSD(trend.current)}</span>
+              <div
+                className={cn("w-8 rounded-t", trend.improved ? "bg-emerald-400/70" : "bg-amber-400/70")}
+                style={{ height: `${barHeightPx(trend.current, maxVal)}px` }}
+              />
+              <span className={cn(TYPE.microLabel, "text-muted-foreground/55")}>Current window</span>
+            </div>
           </div>
-          <ArrowRight className="w-4 h-4 text-muted-foreground/40 shrink-0" />
-          <div className="rounded-lg border border-primary/35 bg-primary/[0.03] px-4 py-2.5">
-            <div className={cn(TYPE.microLabel, "mb-1")}>Current window</div>
-            <div className={TYPE.title}>{fmtUSD(trend.current)}</div>
-          </div>
-          <div className={cn(TYPE.body, "font-semibold", trend.improved ? "text-emerald-400" : "text-red-300")}>
+          <div className={cn(TYPE.body, "font-semibold pb-1", trend.improved ? "text-emerald-400" : "text-red-300")}>
             {trend.deltaPct >= 0 ? "+" : ""}{trend.deltaPct.toFixed(1)}%
             {delta != null && <span className="text-muted-foreground/60 font-normal"> ({delta >= 0 ? "+" : "−"}{fmtUSD(Math.abs(delta))})</span>}
           </div>
@@ -699,6 +828,31 @@ export function AdPerformanceView() {
   // KPI tile drill-down modal (one shared modal for all tiles).
   const [drillMetricId, setDrillMetricId] = useState<string | null>(null);
 
+  // Header cluster (date-range pills · vs prior · Summary/Detailed · Export)
+  // — mirrors AdAccountOverview's own local window/compare/detail state
+  // exactly, independent of the global date-range scope used by
+  // RangeScopeBar/the KPI tiles above (same split AnalysisCommandCenter
+  // already runs: a local preset alongside the app-wide date range).
+  const [headerPreset, setHeaderPreset] = useState<ViewPreset>("all");
+  const [compareOn, setCompareOn] = useState(true);
+  const [detailOn, setDetailOn] = useState(false);
+  const { data: headerSummary, isFetching: headerSummaryFetching } = useQuery({
+    ...getGetAnalysisSummaryQueryOptions(adAccountId ?? "", headerPreset),
+    enabled: !!adAccountId && account?.status === "configured",
+  });
+  // Real trend/sparkline per metric id, sourced from the header's own
+  // analysis-summary window — "vs prior" off hides the trend line, on
+  // shows it, exactly like AdAccountOverview's KPI tiles.
+  const tileTrendFor = (metricId: string): { trend: KpiTileTrend | null; spark: string | null } => {
+    if (!compareOn || !headerSummary) return { trend: null, spark: null };
+    const t = trendForMetric(metricId, headerSummary.totals, headerSummary.prior_totals);
+    const series = sparkSeriesForMetric(metricId, headerSummary.daily ?? []);
+    return {
+      trend: t ? { deltaPct: t.deltaPct, improved: t.improved, priorFormatted: formatTrendValue(metricId, t.prior) } : null,
+      spark: series ? sparkPoints(series) : null,
+    };
+  };
+
   return (
     <ModuleScopeGate section={SECTION} title="Ad Performance" account={account}>
       {() => {
@@ -711,7 +865,7 @@ export function AdPerformanceView() {
         if (!summary || !a) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Ad Performance" />
+              <ModuleHeader section={SECTION} title={`${acct.name} · Ad Performance`} />
               <PendingState title="No analysis yet" message="Analysis appears once performance data is connected or imported." icon={LineChart} />
             </div>
           );
@@ -800,9 +954,22 @@ export function AdPerformanceView() {
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
             <ModuleHeader
               section={SECTION}
-              title="Ad Performance"
+              title={`${acct.name} · Ad Performance`}
               subtitle="What the account's performance data says, and where to drill in."
               table="campaign_summary, performance_by_cell"
+              right={
+                <OverviewHeaderControls
+                  preset={headerPreset}
+                  onPresetChange={setHeaderPreset}
+                  isFetching={headerSummaryFetching}
+                  availableWindow={headerSummary?.available_window}
+                  compareOn={compareOn}
+                  onToggleCompare={() => setCompareOn((v) => !v)}
+                  detailOn={detailOn}
+                  onToggleDetail={() => setDetailOn((v) => !v)}
+                  exportTo="/app/exports/analysis"
+                />
+              }
             />
             <RangeScopeBar grainNote="Campaign totals cover the account's full flight window — this import has no daily grain." />
 
@@ -829,12 +996,14 @@ export function AdPerformanceView() {
                   disclosures={{
                     spend: <span>Range-scoped: {scoped.concepts} concept flight{scoped.concepts === 1 ? "" : "s"} overlapping the selected range — whole flights, no per-day interpolation.</span>,
                   }}
+                  trendFor={tileTrendFor}
                 />
               ) : (
                 <KpiTileRow
                   viewKey="ad-performance"
                   catalog={buildMetricCatalog(metricSourceFromCampaignSummary(summary))}
                   onTileClick={setDrillMetricId}
+                  trendFor={tileTrendFor}
                 />
               )}
             </div>
@@ -867,11 +1036,12 @@ export function AdPerformanceView() {
             <div className="px-6 py-5 space-y-4 max-w-5xl">
               {summary.data_caveat && <CaveatNote text={summary.data_caveat} />}
 
-              <SignalCards flags={acct.iap?.data_quality ?? []} scopeId={acct.id} />
+              <SignalCards flags={acct.iap?.data_quality ?? []} scopeId={acct.id} detailOn={detailOn} />
 
-              <BuyerIntentFunnelCard stages={funnelStages} isEcommerceCohort={isEcommerceCohort} cohortMeta={cohortMeta} />
-
-              <CostPerResultCard adAccountId={adAccountId} accountConfigured={acct.status === "configured"} />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <BuyerIntentFunnelCard stages={funnelStages} isEcommerceCohort={isEcommerceCohort} cohortMeta={cohortMeta} />
+                <CostPerResultCard adAccountId={adAccountId} accountConfigured={acct.status === "configured"} />
+              </div>
 
               {controls && (
                 <SectionCard title="Core control reads" desc="Control creative · per funnel depth" table="core_reanalysis_read" right={<SectionInfoIcon tip="The winning concept at each funnel stage as determined by the most recent re-analysis run — the benchmark every new test is measured against." />}>
@@ -931,6 +1101,7 @@ export function AdPerformanceView() {
                 resultNoun={term.plural}
                 cells={a.performance_by_cell}
                 library={lib}
+                detailOn={detailOn}
               />
 
               {/* Reference strip only — these 5 destinations are already reachable

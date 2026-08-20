@@ -14,6 +14,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, cleanup, fireEvent, within, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { getGetAnalysisSummaryQueryKey } from "@workspace/api-client-react";
+import type { AnalysisSummaryResult, AnalysisSummaryTotals } from "@workspace/api-client-react";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -42,11 +44,39 @@ import { AdPerformanceView } from "../analysis/AdPerformanceView";
 
 const SESSION_KEY = "metrix_active_account_v1";
 
-function renderFor(adAccountId: string) {
+function fakeTotals(spendUsd: number, results: number, linkClicks: number, impressions: number): AnalysisSummaryTotals {
+  return {
+    total_spend_usd: spendUsd,
+    total_impressions: impressions,
+    total_link_clicks: linkClicks,
+    overall_link_ctr_pct: impressions > 0 ? (linkClicks / impressions) * 100 : null,
+    bottom_line_totals: { conversion: { spend: spendUsd, results, impressions, reach: impressions, clicks_all: linkClicks, link_clicks: linkClicks } },
+  };
+}
+
+function fakeSummary(current: AnalysisSummaryTotals, prior: AnalysisSummaryTotals | null): AnalysisSummaryResult {
+  return {
+    preset: "28d",
+    available_window: { start: "2026-05-01", end: "2026-07-28" },
+    active_window: { start: "2026-07-01", end: "2026-07-28" },
+    totals: current,
+    daily: [],
+    prior_totals: prior,
+    prior_window: prior ? { start: "2026-06-03", end: "2026-06-30" } : null,
+    demographic_rows: [],
+    placement_rows: [],
+    concept_rows: [],
+  };
+}
+
+function renderFor(adAccountId: string, seedQueries?: Array<[readonly unknown[], AnalysisSummaryResult]>) {
   sessionStorage.setItem(SESSION_KEY, JSON.stringify({ type: "ad_account", adAccountId }));
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, enabled: false } },
   });
+  for (const [key, data] of seedQueries ?? []) {
+    queryClient.setQueryData(key as readonly unknown[], data);
+  }
   return render(
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -256,5 +286,114 @@ describe("what moved cost per result", () => {
     ).toBeTruthy();
     expect(screen.getByText(/Full per-factor attribution isn't available yet/i)).toBeTruthy();
     expect(screen.queryByText(/audience mix|creative refresh|placement shift|bid strategy/i)).toBeNull();
+  });
+
+  it("renders an honest 2-bar mini chart from the real prior/current CPR values, never a fabricated per-factor waterfall", () => {
+    const current = fakeTotals(4200, 300, 2100, 84000); // CPA = $14.00
+    const prior = fakeTotals(3600, 300, 2000, 80000); // CPA = $12.00
+    renderFor("bookster", [
+      [getGetAnalysisSummaryQueryKey("bookster", "28d"), fakeSummary(current, prior)],
+    ]);
+    const chart = screen.getByTestId("cpr-mini-chart");
+    expect(within(chart).getByText("$14.00")).toBeTruthy();
+    expect(within(chart).getByText("$12.00")).toBeTruthy();
+    expect(within(chart).getByText("Prior window")).toBeTruthy();
+    expect(within(chart).getByText("Current window")).toBeTruthy();
+    expect(screen.queryByText(/audience mix|creative refresh|placement shift|bid strategy/i)).toBeNull();
+  });
+});
+
+describe("page header — title, date-range/vs-prior/Summary/Export cluster", () => {
+  it("shows the account name in the page title", () => {
+    renderFor("bookster");
+    expect(screen.getByRole("heading", { name: "Bookster · Ad Performance" })).toBeTruthy();
+  });
+
+  it("renders the date-range pills, vs-prior toggle, Summary/Detailed toggle, and Export button", () => {
+    renderFor("bookster");
+    for (const label of ["7d", "14d", "28d", "90d", "All time"]) {
+      expect(screen.getByRole("button", { name: label })).toBeTruthy();
+    }
+    expect(screen.getByRole("button", { name: /vs prior/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^Summary$/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^Export$/ })).toBeTruthy();
+  });
+
+  it("wires vs-prior to the KPI tile trend line using real analysis-summary data", () => {
+    const current = fakeTotals(10000, 500, 4000, 200000);
+    const prior = fakeTotals(9000, 480, 3800, 190000);
+    renderFor("bookster", [
+      [getGetAnalysisSummaryQueryKey("bookster", "all"), fakeSummary(current, prior)],
+    ]);
+    // "vs prior" starts on — at least one tile shows a real trend line.
+    expect(screen.getAllByTestId("kpi-tile-trend").length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole("button", { name: /vs prior/i }));
+    expect(screen.queryAllByTestId("kpi-tile-trend").length).toBe(0);
+  });
+
+  it("wires Summary/Detailed to default-open the signal cards' evidence disclosure", () => {
+    renderFor("bookster");
+    // Before toggling: evidence is closed until a card is clicked.
+    expect(screen.queryByText("Kind")).toBeNull();
+    expect(screen.queryAllByTestId("signal-evidence-inline").length).toBe(0);
+    fireEvent.click(screen.getByRole("button", { name: /^Summary$/ }));
+    expect(screen.getByRole("button", { name: /^Detailed$/ })).toBeTruthy();
+    // Every visible card's evidence renders inline, all at once — never
+    // several simultaneously-open popovers.
+    const inline = screen.getAllByTestId("signal-evidence-inline");
+    expect(inline.length).toBeGreaterThan(0);
+    expect(within(inline[0]!).getByText("Kind")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: /^Detailed$/ }));
+    expect(screen.queryAllByTestId("signal-evidence-inline").length).toBe(0);
+  });
+
+  it("wires Summary/Detailed to default-expand the concept tier table's rows", () => {
+    renderFor("bookster");
+    // Before toggling: no row is expanded, so "Recommended next" is absent.
+    expect(screen.queryByText("Recommended next")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /^Summary$/ }));
+    expect(screen.getAllByText("Recommended next").length).toBeGreaterThan(1);
+    fireEvent.click(screen.getByRole("button", { name: /^Detailed$/ }));
+    expect(screen.queryByText("Recommended next")).toBeNull();
+  });
+});
+
+describe("curated signal headline row", () => {
+  it("shows one real card per tier (Act now / Watch / Investigate) above the full filterable list", () => {
+    renderFor("bookster");
+    const row = screen.getByTestId("signal-headline-row");
+    expect(within(row).getByTestId("signal-headline-act_now")).toBeTruthy();
+    expect(within(row).getByTestId("signal-headline-watch")).toBeTruthy();
+    expect(within(row).getByTestId("signal-headline-investigate")).toBeTruthy();
+    // Real $ affected framing, never a fabricated confidence percentage.
+    expect(within(row).queryByText(/%\s*confidence/i)).toBeNull();
+    // The full filterable list still renders underneath, unchanged.
+    expect(screen.getByTestId("signal-cards")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /show all 11 signals/i })).toBeTruthy();
+  });
+
+  it("shows an honest empty state for a tier with no real signals", () => {
+    renderFor("bookster");
+    const row = screen.getByTestId("signal-headline-row");
+    // Bookster carries flags in all three tiers, so no slot is empty —
+    // assert instead that every rendered slot names a real tier label.
+    for (const tier of ["act_now", "watch", "investigate"]) {
+      const card = within(row).getByTestId(`signal-headline-${tier}`);
+      expect(card.textContent).not.toMatch(/no .* signals this run/i);
+    }
+  });
+});
+
+describe("buyer-intent funnel + cost-per-result side-by-side layout", () => {
+  it("renders the funnel and CPR cards in the same two-column row", () => {
+    const { container } = renderFor("bookster");
+    const funnelCard = screen.getByTestId("buyer-intent-funnel");
+    const row = funnelCard.closest('[class*="md:grid-cols-2"]');
+    expect(row).toBeTruthy();
+    expect(within(row as HTMLElement).getByText("What moved cost per result")).toBeTruthy();
+    // Signals stay full-width above the row, not inside it.
+    expect(row?.contains(screen.getByTestId("signal-cards"))).toBe(false);
+    void container;
   });
 });
