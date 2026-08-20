@@ -1,14 +1,15 @@
 // ─── Ad Performance — canvas signal cards + concept tier table ────────
 // The Nocturne analysis.performance composition: real data_quality flags
-// render as severity-graded signal cards (fold at 4) with an evidence
-// disclosure and a real cross-link action, and the concept rollup renders
-// as a sortable/filterable/expandable nc-table with the strategy map's
+// render as tier-graded signal cards (Act now / Watch / Investigate,
+// filterable, fold at 4) with an evidence disclosure and real actions
+// (cross-link + Add to Tray), and the concept rollup renders as a
+// sortable/filterable/expandable nc-table with the strategy map's
 // scaling-playbook bucket as the tier tag, capped at 4 rows with a
-// show-more fold. Honesty rules under test: anomalies read as
-// "Investigate", rows the playbook doesn't name stay unclassified (C2
-// never borrows a C2B entry), accounts with no flags show no strip, and
-// a concept's deep-dive/variable-stack lookup never borrows another
-// book's mapped cell.
+// show-more fold. Honesty rules under test: anomalies grade as "Act now"
+// (the only real tiering field a flag carries is `kind`), rows the
+// playbook doesn't name stay unclassified (C2 never borrows a C2B entry),
+// accounts with no flags show no strip, and a concept's deep-dive/
+// variable-stack lookup never borrows another book's mapped cell.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, cleanup, fireEvent, within, screen } from "@testing-library/react";
@@ -69,17 +70,30 @@ beforeEach(() => {
 });
 
 describe("signal cards (data_quality flags)", () => {
-  it("renders Bookster's real flags with severity grading and a fold at 4", () => {
+  it("renders Bookster's real flags with tier grading and a fold at 4", () => {
     renderFor("bookster");
     const strip = screen.getByTestId("signal-cards");
     // Bookster's bundle carries 11 flags — 4 visible, the rest folded.
-    expect(within(strip).getAllByText(/^(Investigate|Watch|Note)$/).length).toBe(4);
-    // Anomalies grade as Investigate.
-    expect(within(strip).getAllByText("Investigate").length).toBeGreaterThan(0);
+    expect(within(strip).getAllByText(/^(Act now|Watch|Investigate)$/).length).toBe(4);
+    // Anomalies grade as Act now.
+    expect(within(strip).getAllByText("Act now").length).toBeGreaterThan(0);
 
     const more = screen.getByRole("button", { name: /show all 11 signals/i });
     fireEvent.click(more);
-    expect(within(strip).getAllByText(/^(Investigate|Watch|Note)$/).length).toBe(11);
+    expect(within(strip).getAllByText(/^(Act now|Watch|Investigate)$/).length).toBe(11);
+  });
+
+  it("filters signals by tier via the chip row, with real counts", () => {
+    renderFor("bookster");
+    const strip = screen.getByTestId("signal-cards");
+    // Bookster: 5 anomaly (Act now), 4 quality_flag (Watch), 2 other (Investigate).
+    fireEvent.click(screen.getByRole("button", { name: /^Act now/ }));
+    expect(screen.getByRole("button", { name: /show all 5 signals/i })).toBeTruthy();
+    expect(within(strip).getAllByText("Act now").length).toBe(4); // fold still caps at 4
+
+    fireEvent.click(screen.getByRole("button", { name: /^Watch/ }));
+    expect(within(strip).getAllByText("Watch").length).toBe(4);
+    expect(screen.queryByRole("button", { name: /show all \d+ signals/i })).toBeNull();
   });
 
   it("renders nothing for an account with no flags", () => {
@@ -205,5 +219,42 @@ describe("concept tier table (rollup × scaling playbook)", () => {
     fireEvent.click(book0C2);
     expect(screen.queryByRole("button", { name: "Open creative deep dive" })).toBeNull();
     expect(screen.getByText(/No mapped creative cell for this concept yet/)).toBeTruthy();
+  });
+});
+
+describe("buyer-intent funnel (cohort-aware)", () => {
+  it("shows real ecommerce lower-funnel stages for an ecommerce-cohort account", () => {
+    renderFor("ecas"); // objectives: ["ecommerce"], real atc=122 / checkout=2 / purchases=4
+    const funnel = screen.getByTestId("buyer-intent-funnel");
+    expect(within(funnel).getByText("Add to cart")).toBeTruthy();
+    expect(within(funnel).getByText("Checkout")).toBeTruthy();
+    expect(within(funnel).getByText("Purchase")).toBeTruthy();
+  });
+
+  it("drops ecommerce-only stages for a non-ecommerce cohort instead of showing fake zero bars", () => {
+    renderFor("bookster"); // objectives: ["app"]
+    const funnel = screen.getByTestId("buyer-intent-funnel");
+    expect(within(funnel).queryByText("Add to cart")).toBeNull();
+    expect(within(funnel).queryByText("Checkout")).toBeNull();
+    expect(within(funnel).queryByText("Purchase")).toBeNull();
+    // Upstream stages with real data still render.
+    expect(within(funnel).getByText("Impressions")).toBeTruthy();
+    expect(within(funnel).getByText("Link clicks")).toBeTruthy();
+    // The cohort-mismatch caveat names the account's real terminal metric.
+    expect(screen.getByText(/cost per activation/i)).toBeTruthy();
+  });
+});
+
+describe("what moved cost per result", () => {
+  it("shows a real prior/current comparison or an honest empty state, never a fabricated per-factor waterfall", () => {
+    renderFor("bookster");
+    expect(screen.getByText("What moved cost per result")).toBeTruthy();
+    // No live analysis-summary fetch is mocked in this test — the card must
+    // fall back to an honest empty state rather than crash or show fake bars.
+    expect(
+      screen.getByText(/Not enough prior-period data|Loading prior-period comparison/i)
+    ).toBeTruthy();
+    expect(screen.getByText(/Full per-factor attribution isn't available yet/i)).toBeTruthy();
+    expect(screen.queryByText(/audience mix|creative refresh|placement shift|bid strategy/i)).toBeNull();
   });
 });
