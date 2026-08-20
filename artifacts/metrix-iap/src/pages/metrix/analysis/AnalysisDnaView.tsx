@@ -199,7 +199,7 @@ export function AnalysisDnaView() {
           if (variableRows.length === 0 && combinations.length === 0) {
             return (
               <div className="flex-1 flex flex-col">
-                <ModuleHeader section={SECTION} title="Creative DNA" tabs="analysis" />
+                <ModuleHeader section={SECTION} title="Creative DNA" accountName={account!.name} tabs="analysis" />
                 <PendingState
                   title="No creative DNA signal"
                   message="Gene loci and formula sequences appear once variable-level performance or tested combinations exist for this account."
@@ -215,6 +215,7 @@ export function AnalysisDnaView() {
               <ModuleHeader
                 section={SECTION}
                 title="Creative DNA"
+                accountName={account!.name}
                 subtitle="Per-variable lift and tested combinations — the account's isolated creative signal."
                 tabs="analysis"
               />

@@ -326,7 +326,7 @@ export function ReportBuilderView() {
         if (!rb) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Report Builder" />
+              <ModuleHeader section={SECTION} title="Report Builder" accountName={acct.name} />
               <PendingState title="Report Builder pending" message="No report template is available for this account yet." icon={FileText}
                 action={<CrossLink to="/app/analysis/overview" label="Review Analysis first" />}
               />
@@ -356,6 +356,7 @@ export function ReportBuilderView() {
             <ModuleHeader
               section={SECTION}
               title="Report Builder"
+              accountName={acct.name}
               subtitle="Client-ready report · from analysis & strategy"
             />
             <ModuleTabs tabs={tabs} active={tab} onChange={setTab} />

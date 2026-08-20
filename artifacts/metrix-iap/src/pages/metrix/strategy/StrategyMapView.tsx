@@ -478,7 +478,7 @@ export function StrategyMapView() {
         if (!strategy || strategy.message_pillars.length === 0) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Strategy Map" tabs="strategy" />
+              <ModuleHeader section={SECTION} title="Strategy Map" accountName={acct.name} tabs="strategy" />
               <PendingState
                 title="No strategy map"
                 message="The map draws from message pillars — none exist for this account yet."
@@ -534,6 +534,7 @@ export function StrategyMapView() {
             <ModuleHeader
               section={SECTION}
               title="Strategy Map"
+              accountName={acct.name}
               subtitle="Select a pillar to explore its source cells and hypotheses"
               tabs="strategy"
             />

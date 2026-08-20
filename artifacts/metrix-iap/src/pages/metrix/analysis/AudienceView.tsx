@@ -762,7 +762,7 @@ export function AudienceView() {
           if (rows.length === 0) {
             return (
               <div className="flex-1 flex flex-col">
-                <ModuleHeader section={SECTION} title="Audience" tabs="analysis" />
+                <ModuleHeader section={SECTION} title="Audience" accountName={acct.name} tabs="analysis" />
                 <PendingState
                   title="No demographic signal"
                   message="Audience intelligence appears once demographic result data exists."
@@ -778,6 +778,7 @@ export function AudienceView() {
               <ModuleHeader
                 section={SECTION}
                 title="Audience"
+                accountName={acct.name}
                 subtitle={`${clusterGroups.length} real behavioral cluster${clusterGroups.length !== 1 ? "s" : ""}, derived from the demographic breakdown — not declared targeting.`}
                 tabs="analysis"
               />

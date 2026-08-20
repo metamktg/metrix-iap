@@ -56,6 +56,7 @@ export function MstCrossMapView() {
       <ModuleHeader
         section={content.section}
         title={content.title}
+        accountName={account?.name}
         subtitle={content.subtitle}
         right={
           <RunScopePicker

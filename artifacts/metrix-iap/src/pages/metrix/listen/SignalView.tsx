@@ -61,6 +61,7 @@ export function SignalView() {
             <ModuleHeader
               section={SECTION}
               title="Signal"
+              accountName={acct.name}
               subtitle="Source-backed signals · latest analysis"
             />
             {focus && !signals.some((s) => s.id === focus) && (

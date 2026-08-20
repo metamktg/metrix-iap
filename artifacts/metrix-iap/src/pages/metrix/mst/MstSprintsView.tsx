@@ -273,7 +273,7 @@ export function MstSprintsView() {
         if (!mst || mst.status !== "active" || !mst.historical_matrix_4x4) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Sprints" />
+              <ModuleHeader section={SECTION} title="Sprints" accountName={account!.name} />
               <PendingState title="No matrix available" message={mst?.render_policy ?? "The matrix becomes available once historical data or imports exist."} icon={Grid3x3} />
             </div>
           );
@@ -295,6 +295,7 @@ export function MstSprintsView() {
             <ModuleHeader
               section={SECTION}
               title="Sprints"
+              accountName={account!.name}
               subtitle="Historical 4×4 matrix · playbook tiers · concept-level performance"
               table="historical_matrix_4x4"
             />

@@ -53,6 +53,7 @@ export function StrategyCommandCenter() {
             <ModuleHeader
               section={SECTION}
               title="Strategy"
+              accountName={acct.name}
               subtitle="Turn validated analysis into message pillars and testing hypotheses."
               right={<ProvenanceBadge provenance={strategy?.provenance} />}
             />

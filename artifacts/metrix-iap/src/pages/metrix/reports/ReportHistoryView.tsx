@@ -201,7 +201,7 @@ export function ReportHistoryView() {
         if (history.length === 0) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="History" />
+              <ModuleHeader section={SECTION} title="History" accountName={acct.name} />
               <PendingState title="No reports yet" message="Reports you compose and export will appear here." icon={History}
                 action={<CrossLink to="/app/reports/builder" label="Compose the first report" />}
               />
@@ -217,6 +217,7 @@ export function ReportHistoryView() {
             <ModuleHeader
               section={SECTION}
               title="History"
+              accountName={acct.name}
               subtitle="All generated reports · newest first"
             />
 

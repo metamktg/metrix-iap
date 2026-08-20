@@ -28,7 +28,7 @@ export function ExportsBriefView() {
         if (!briefBuilder || briefBuilder.draft_briefs.length === 0) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Brief" />
+              <ModuleHeader section={SECTION} title="Brief" accountName={acct.name} />
               <PendingState title="No briefs yet" message="Build a brief first — there's nothing to export yet." icon={FileStack} />
             </div>
           );
@@ -42,6 +42,7 @@ export function ExportsBriefView() {
             <ModuleHeader
               section={SECTION}
               title="Brief"
+              accountName={acct.name}
               subtitle="Draft briefs, as shown in Brief Builder."
               table="draft_briefs"
             />

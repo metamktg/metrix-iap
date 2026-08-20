@@ -803,7 +803,7 @@ export function AnalysisOverview() {
         if (!summary || !a) {
           return (
             <div className="flex-1 flex flex-col">
-              <ModuleHeader section={SECTION} title="Analysis Overview" tabs="analysis" />
+              <ModuleHeader section={SECTION} title="Analysis Overview" accountName={acct.name} tabs="analysis" />
               <PendingState
                 title="No analysis yet"
                 message="Analysis appears once performance data is connected and an analysis run completes for this account."
@@ -1009,6 +1009,7 @@ export function AnalysisOverview() {
             <ModuleHeader
               section={SECTION}
               title="Analysis Overview"
+              accountName={acct.name}
               subtitle="Performance reads · drill-in modules"
               tabs="analysis"
               right={
