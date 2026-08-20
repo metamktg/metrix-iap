@@ -67,6 +67,10 @@ export function AnalysisCommandCenter() {
   // Mirrors AnalysisControls' own dateRange state — real value, no second
   // source of truth for what the next run will actually analyze.
   const [runWindow, setRunWindow] = useState<AnalysisDateRange>("30d");
+  // Summary/Detailed header toggle. Real backing: it's the same collapsed
+  // state that gates the execution card's date-range chooser + warnings —
+  // not a decorative pill. Summary = collapsed (tiles + button only).
+  const [detailOn, setDetailOn] = useState(false);
 
   return (
     <ModuleScopeGate section={SECTION} title="Analysis" account={account}>
@@ -86,12 +90,14 @@ export function AnalysisCommandCenter() {
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
             <ModuleHeader
               section={SECTION}
-              title="Analysis"
-              subtitle="Run analysis on this account's staged data. Everything below reads a different slice of the same result."
+              title={`${acct.name} · Analysis`}
+              subtitle="Analyze this account's staged uploads for a chosen window. Never runs automatically — every child page reads a different slice of the same result."
               right={
                 <OverviewHeaderControls
                   preset={preset}
                   onPresetChange={setPreset}
+                  detailOn={detailOn}
+                  onToggleDetail={() => setDetailOn((v) => !v)}
                   exportTo="/app/exports/analysis"
                 />
               }
@@ -116,7 +122,7 @@ export function AnalysisCommandCenter() {
                   <MetricTile label="Window" value={WINDOW_TILE_LABEL[runWindow]} />
                   <MetricTile label="Objectives" value={objectivesMeta.label} />
                 </div>
-                <AnalysisControls accountId={acct.id} onDateRangeChange={setRunWindow} />
+                <AnalysisControls accountId={acct.id} onDateRangeChange={setRunWindow} detailsOpen={detailOn} />
               </SectionCard>
 
               <SectionCard
@@ -137,7 +143,10 @@ export function AnalysisCommandCenter() {
                         <FileText className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
                         <span className="flex-1 min-w-0">
                           <span className="block text-body text-foreground/85 truncate">{imp.filename}</span>
-                          <span className="block text-label text-muted-foreground/60">{IMPORT_KIND_LABEL[imp.kind] ?? imp.kind}</span>
+                          <span className="block text-label text-muted-foreground/60">
+                            {IMPORT_KIND_LABEL[imp.kind] ?? imp.kind}
+                            {imp.created_at && ` · ${new Date(imp.created_at).toLocaleString()}`}
+                          </span>
                         </span>
                         <span className="mx-inline-badge mx-inline-badge--info shrink-0">Staged</span>
                       </div>

@@ -34,7 +34,7 @@ type MockRun = {
 };
 
 let mockRuns: MockRun[] = [];
-let mockImports: { id: string; filename: string; kind: string; status: string }[] = [];
+let mockImports: { id: string; filename: string; kind: string; status: string; created_at?: string }[] = [];
 let navigateSpy: ReturnType<typeof vi.fn>;
 
 vi.mock("wouter", async (importOriginal) => {
@@ -116,6 +116,20 @@ describe("AnalysisCommandCenter — header control cluster", () => {
     fireEvent.click(exportBtn);
     expect(navigateSpy).toHaveBeenCalledWith("/app/exports/analysis");
   });
+
+  it("titles the page with the real account name, not a bare 'Analysis'", async () => {
+    await act(async () => { renderCC(); });
+    expect(screen.getByRole("heading", { name: "Bookster · Analysis" })).toBeTruthy();
+  });
+
+  it("carries a Summary/Detailed toggle wired to the execution card's disclosure state", async () => {
+    await act(async () => { renderCC(); });
+    // Starts collapsed ("Summary") — real backing, not decorative.
+    const toggle = screen.getByRole("button", { name: /Summary/ });
+    expect(toggle.getAttribute("aria-pressed")).toBe("false");
+    await act(async () => { fireEvent.click(toggle); });
+    expect(screen.getByRole("button", { name: /Detailed/ }).getAttribute("aria-pressed")).toBe("true");
+  });
 });
 
 describe("AnalysisCommandCenter — execution card is honest pre-run readiness", () => {
@@ -142,6 +156,37 @@ describe("AnalysisCommandCenter — execution card is honest pre-run readiness",
     const tileWrapper = screen.getByText("Staged imports").parentElement;
     expect(tileWrapper?.textContent).toContain("0");
   });
+
+  it("stays compact by default: the Run analysis button is visible but the date-range chooser and pre-run warnings are collapsed", async () => {
+    // No Ad Summary export staged and both required CSVs missing — in the
+    // old always-expanded layout this would render both warning boxes.
+    mockImports = [];
+    await act(async () => { renderCC(); });
+    expect(screen.getByRole("button", { name: /Run analysis/ })).toBeTruthy();
+    expect(screen.getByText("Date range to analyze")).toBeTruthy();
+    expect(screen.queryByText("Last 7 days")).toBeNull();
+    expect(screen.queryByText("Spend will be underreported without an Ad Summary export")).toBeNull();
+    expect(screen.queryByText("Both reports are required before running analysis")).toBeNull();
+  });
+
+  it("reveals the date-range chooser and warnings when the disclosure is opened", async () => {
+    mockImports = [];
+    await act(async () => { renderCC(); });
+    const reveal = screen.getByText("Date range to analyze");
+    await act(async () => { fireEvent.click(reveal); });
+    expect(screen.getByText("Last 7 days")).toBeTruthy();
+    expect(screen.getByText("Spend will be underreported without an Ad Summary export")).toBeTruthy();
+    expect(screen.getByText("Both reports are required before running analysis")).toBeTruthy();
+  });
+
+  it("expands the execution card's disclosure when the header Summary/Detailed toggle is switched to Detailed", async () => {
+    mockImports = [];
+    await act(async () => { renderCC(); });
+    expect(screen.queryByText("Last 7 days")).toBeNull();
+    const toggle = screen.getByRole("button", { name: /Summary/ });
+    await act(async () => { fireEvent.click(toggle); });
+    expect(screen.getByText("Last 7 days")).toBeTruthy();
+  });
 });
 
 describe("AnalysisCommandCenter — Manual import card", () => {
@@ -164,6 +209,17 @@ describe("AnalysisCommandCenter — Manual import card", () => {
     // A processed (already-consumed) import is not part of the current staging area.
     expect(screen.queryByText("old-file.csv")).toBeNull();
     expect(screen.getAllByText("Staged").length).toBe(2);
+  });
+
+  it("shows each staged file's real created_at timestamp next to its kind label", async () => {
+    mockImports = [
+      { id: "imp-1", filename: "demographics-export.csv", kind: "performance_demo_csv", status: "staged", created_at: "2026-08-19T05:58:00.000Z" },
+    ];
+    await act(async () => { renderCC(); });
+    const filenameEl = screen.getByText("demographics-export.csv");
+    const kindLine = filenameEl.parentElement?.querySelector("span:nth-child(2)");
+    expect(kindLine?.textContent).toContain("Demographics CSV");
+    expect(kindLine?.textContent).toContain("·");
   });
 });
 
