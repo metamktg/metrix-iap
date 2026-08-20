@@ -270,7 +270,9 @@ export function RequiredFormatPanel({ csvClass }: { csvClass: IapCsvClassKey }) 
   );
 }
 
-const DATE_RANGES: { id: "7d" | "14d" | "30d" | "all"; label: string }[] = [
+export type AnalysisDateRange = "7d" | "14d" | "30d" | "all";
+
+export const DATE_RANGES: { id: AnalysisDateRange; label: string }[] = [
   { id: "7d", label: "Last 7 days" },
   { id: "14d", label: "Last 14 days" },
   { id: "30d", label: "Last 30 days" },
@@ -969,12 +971,24 @@ function ImportHistoryPanel({
 export function AnalysisControls({
   accountId,
   onDone,
+  onDateRangeChange,
 }: {
   accountId: string;
   /** Called once when the run status transitions to "success". */
   onDone?: () => void;
+  /** Mirrors the currently-selected "date range to analyze" up to the parent — e.g. so a readiness tile can show it without duplicating this component's own state. Fires on mount and on every change. */
+  onDateRangeChange?: (range: AnalysisDateRange) => void;
 }) {
-  const [dateRange, setDateRange] = useState<"7d" | "14d" | "30d" | "all">("30d");
+  const [dateRange, setDateRangeState] = useState<AnalysisDateRange>("30d");
+  const setDateRange = (r: AnalysisDateRange) => {
+    setDateRangeState(r);
+    onDateRangeChange?.(r);
+  };
+  useEffect(() => {
+    onDateRangeChange?.(dateRange);
+    // Fire once on mount so a parent tile shows the real default immediately, not a guess.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [error, setError] = useState<string | null>(null);
   const [conversionExportConfirm, setConversionExportConfirm] = useState<{ message: string; files: string[] } | null>(null);
   const queryClient = useQueryClient();
