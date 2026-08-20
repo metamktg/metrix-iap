@@ -83,7 +83,7 @@ function fmtFreq(v: number | null): string {
 
 // ─── funnel stage definitions ─────────────────────────────────────────
 
-interface FunnelStage {
+export interface FunnelStage {
   id: string;
   label: string;
   value: number | null;
@@ -92,14 +92,17 @@ interface FunnelStage {
   zone: "awareness" | "engagement" | "intent" | "conversion";
 }
 
-const ZONE_COLOR: Record<FunnelStage["zone"], { bar: string; text: string; bg: string; border: string }> = {
+export const ZONE_COLOR: Record<FunnelStage["zone"], { bar: string; text: string; bg: string; border: string }> = {
   awareness:  { bar: "bg-chart-1/70",   text: "text-blue-300",   bg: "bg-chart-1/[0.06]",   border: "border-blue-400/25" },
   engagement: { bar: "bg-indigo-400/70", text: "text-indigo-300", bg: "bg-indigo-400/[0.06]", border: "border-indigo-400/25" },
   intent:     { bar: "bg-amber-400/70",  text: "text-amber-300",  bg: "bg-amber-400/[0.06]",  border: "border-amber-400/25" },
   conversion: { bar: "bg-chart-3/70",text: "text-emerald-300",bg: "bg-emerald-400/[0.06]",border: "border-emerald-400/25" },
 };
 
-function buildFunnelStages(rows: DemographicRow[]): FunnelStage[] {
+/** Exported so callers outside this view (e.g. AdPerformanceView's compact
+ *  "Buyer-intent funnel" card) can reuse the exact same stage math instead
+ *  of re-deriving it. */
+export function buildFunnelStages(rows: DemographicRow[]): FunnelStage[] {
   const totals = rows.reduce(
     (acc, r) => {
       acc.impressions += r.Impressions ?? 0;

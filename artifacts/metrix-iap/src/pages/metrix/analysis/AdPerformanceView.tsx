@@ -7,6 +7,7 @@
 
 import { useState, useMemo, Fragment } from "react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
 import { KpiDrilldownModal } from "@/components/metrics/KpiDrilldownModal";
@@ -22,7 +23,10 @@ import { TYPE } from "../typography";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { useDateRange } from "@/contexts/DateRangeContext";
 import { useCellRangeScope, sumInRange } from "@/lib/date-scope";
-import { LineChart, Library, Users, LayoutGrid, Wallet, TrendingUp, AlertTriangle, Eye, ChevronDown } from "lucide-react";
+import {
+  LineChart, Library, Users, LayoutGrid, Wallet, TrendingUp, AlertTriangle, Eye, Search,
+  ChevronDown, ArrowRight,
+} from "lucide-react";
 import { KpiTileRow } from "@/components/metrics/KpiTile";
 import { buildMetricCatalog, metricSourceFromCampaignSummary } from "@/lib/data/metricsCatalog";
 import { bucketEntryForConcept, BUCKET_LABEL, type ScalingBucket } from "@/lib/data/scalingBuckets";
@@ -30,14 +34,23 @@ import { normalizeConfidence } from "@/lib/normalize";
 import { RankSortBar, sortByRankMetric, useRankMetric, type RankMetric } from "./rankSort";
 import { CombinationChips, familyLabel } from "../strategy/strategyShared";
 import type { DataQualityFlag, ConceptRollupRow, ScalingPlaybook, CellPerformanceRow, MSTLibraryCell } from "@/lib/data/seedTypes";
+import { buildFunnelStages, ZONE_COLOR, type FunnelStage } from "./EngagementFunnelView";
+import { resolveObjectivesMeta, type CohortMeta } from "@/lib/data/cohortMeta";
+import { getGetAnalysisSummaryQueryOptions } from "@workspace/api-client-react";
+import { trendForMetric } from "@/lib/data/summaryTrends";
+import { AddToTrayButton } from "@/components/tray/AddToTrayButton";
 
 const SECTION = "Analysis · 03";
 
-// ─── Signal cards — the canvas's analysis signal strip ────────────────
+// ─── Signal cards — the canvas's "signals worth acting on" strip ──────
 // Renders the account's real data_quality flags (raised by the last
-// analysis run): anomalies read as "Investigate", quality flags as
-// "Watch", everything else (attribution window, quality score) as
-// neutral notes. First surface in the app to render these flags.
+// analysis run), grouped into the canvas's ACT NOW / WATCH / INVESTIGATE
+// tiers. `kind` is the only real tiering field a flag carries — anomalies
+// (zero-conversion campaigns, placement burn with no conversions) map to
+// Act now, quality_flag entries (tracking-variance caveats) map to Watch,
+// everything else (attribution-window notes, the quality score) maps to
+// Investigate. No confidence percentage is shown per card or tier: flags
+// carry no real confidence score, and fabricating one was ruled out.
 
 function flagHeadline(f: DataQualityFlag): string {
   const type = typeof f["type"] === "string" ? (f["type"] as string) : null;
@@ -82,36 +95,93 @@ function flagEvidence(f: DataQualityFlag): { k: string; v: string }[] {
   return rows;
 }
 
-function SignalCards({ flags }: { flags: DataQualityFlag[] }) {
-  const fold = useShowMore(flags, 4);
+type SignalTier = "act_now" | "watch" | "investigate";
+
+const TIER_LABEL: Record<SignalTier, string> = {
+  act_now: "Act now",
+  watch: "Watch",
+  investigate: "Investigate",
+};
+
+/** The flag's real `kind` is the only tiering field these objects carry —
+ *  no severity/urgency/confidence field exists on DataQualityFlag, so this
+ *  is a straight rename of the kind-based split the cards already used
+ *  (anomaly/quality_flag/other), not a new categorical field. */
+function tierForFlag(f: DataQualityFlag): SignalTier {
+  if (f.kind === "anomaly") return "act_now";
+  if (f.kind === "quality_flag") return "watch";
+  return "investigate";
+}
+
+const SIGNAL_TIER_FILTERS: { id: "all" | SignalTier; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "act_now", label: "Act now" },
+  { id: "watch", label: "Watch" },
+  { id: "investigate", label: "Investigate" },
+];
+
+function SignalCards({ flags, scopeId }: { flags: DataQualityFlag[]; scopeId: string }) {
+  const [filter, setFilter] = useState<"all" | SignalTier>("all");
   const [, navigate] = useLocation();
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { all: flags.length, act_now: 0, watch: 0, investigate: 0 };
+    for (const f of flags) c[tierForFlag(f)] += 1;
+    return c;
+  }, [flags]);
+  const filtered = filter === "all" ? flags : flags.filter((f) => tierForFlag(f) === filter);
+  const fold = useShowMore(filtered, 4);
   if (flags.length === 0) return null;
   return (
     <SectionCard
-      title="Signals"
-      desc="Data-quality flags from the last analysis run"
-      right={<SectionInfoIcon tip="Anomalies and quality flags the analysis raised against this window — tracking gaps, zero-conversion campaigns, coverage caveats. Investigate before treating affected reads as final." />}
+      title="Signals worth acting on"
+      desc="Data-quality flags from the last analysis run · grouped by real urgency"
+      right={<SectionInfoIcon tip="Grouped by each flag's real kind: anomalies (Act now), quality-tracking caveats (Watch), everything else like attribution-window notes (Investigate). No confidence percentage — flags carry no real confidence score." />}
     >
+      <div className="flex items-center gap-1.5 mb-3 flex-wrap" role="group" aria-label="Filter signals by tier">
+        {SIGNAL_TIER_FILTERS.map(({ id, label }) => {
+          const active = filter === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setFilter(id)}
+              aria-pressed={active}
+              className={cn(
+                "inline-flex items-center gap-1 h-6 px-2 rounded-full border text-label font-medium transition-colors",
+                active ? PILL_ACTIVE : PILL_INACTIVE,
+              )}
+            >
+              {label}
+              <span className={cn("text-label font-mono rounded px-0.5", active ? "text-interactive/70" : "text-muted-foreground/40")}>
+                {counts[id] ?? 0}
+              </span>
+            </button>
+          );
+        })}
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5" data-testid="signal-cards">
-        {fold.visible.map((f, i) => {
-          const isAnomaly = f.kind === "anomaly";
-          const severity = isAnomaly ? "Investigate" : f.kind === "quality_flag" ? "Watch" : "Note";
+        {fold.visible.map((f) => {
+          const tier = tierForFlag(f);
+          const isActNow = tier === "act_now";
           const spend = typeof f["spend"] === "number" ? (f["spend"] as number) : null;
           const evidence = flagEvidence(f);
+          const globalIndex = flags.indexOf(f);
           return (
             <div
-              key={i}
+              key={globalIndex}
               className={cn(
                 "rounded-lg border px-3.5 py-3 flex flex-col gap-2",
-                isAnomaly ? "border-amber-400/30 bg-amber-400/[0.04]" : "border-border/40 bg-white/[0.015]",
+                isActNow ? "border-amber-400/30 bg-amber-400/[0.04]" : "border-border/40 bg-white/[0.015]",
               )}
             >
               <div className="flex items-center gap-1.5">
-                {isAnomaly
+                {isActNow
                   ? <AlertTriangle className="w-3.5 h-3.5 text-amber-400/80 shrink-0" />
-                  : <Eye className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />}
-                <span className={cn(TYPE.label, "font-mono uppercase tracking-widest", isAnomaly ? "text-amber-400/85" : "text-muted-foreground/60")}>
-                  {severity}
+                  : tier === "watch"
+                    ? <Eye className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
+                    : <Search className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />}
+                <span className={cn(TYPE.label, "font-mono uppercase tracking-widest", isActNow ? "text-amber-400/85" : "text-muted-foreground/60")}>
+                  {TIER_LABEL[tier]}
                 </span>
                 {/* Real spend-affected badge — never a fabricated confidence percentage. */}
                 {spend != null && (
@@ -132,10 +202,13 @@ function SignalCards({ flags }: { flags: DataQualityFlag[] }) {
                 eyebrow="Evidence"
                 sections={evidence.map((e) => ({ label: e.k, text: e.v }))}
               />
-              {/* No real per-flag acknowledge/snooze mechanism exists yet — this
-                  cross-links into the real Listen · Signal surface instead of a
-                  decorative "Verify tracking" button that would do nothing. */}
-              <div className="mt-auto pt-1">
+              {/* Real actions only: a cross-link into the real Listen · Signal
+                  surface, and Add to Tray (the app's real file-for-later
+                  mechanism — the honest substitute for the canvas's mocked
+                  "Snooze" button, which has no backend). No "Shift budget" /
+                  "Split bids" / "Draft exclusion" — none of those mutating
+                  actions exist anywhere in this app yet. */}
+              <div className="mt-auto pt-1 flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => navigate("/app/listen/signal")}
@@ -143,13 +216,23 @@ function SignalCards({ flags }: { flags: DataQualityFlag[] }) {
                 >
                   Review in Listen
                 </button>
+                <AddToTrayButton
+                  scopeId={scopeId}
+                  item={{
+                    id: `signal-${globalIndex}`,
+                    kind: "signal",
+                    title: flagHeadline(f),
+                    sub: flagBody(f),
+                    href: "/app/listen/signal",
+                  }}
+                />
               </div>
             </div>
           );
         })}
       </div>
       <ShowMoreButton
-        total={flags.length}
+        total={filtered.length}
         hiddenCount={fold.hiddenCount}
         expanded={fold.expanded}
         onToggle={fold.toggle}
@@ -475,6 +558,136 @@ function ConceptTierTable({ rollup, playbook, resultNoun, cells, library }: {
   );
 }
 
+// ─── Buyer-intent funnel — cohort-aware compact read ───────────────────
+// Reuses EngagementFunnelView's real stage math (buildFunnelStages) rather
+// than re-deriving it. Ecommerce-only stages (add to cart, checkout,
+// purchase) are dropped outright for any account whose configured
+// objectives aren't purely "ecommerce" — never rendered as fabricated zero
+// bars for a cohort they don't apply to. An ecommerce account whose lower
+// funnel genuinely reads zero (tracking not wired up yet) still gets the
+// original "not configured for ecommerce tracking" caveat, not the
+// cohort-mismatch one.
+
+function BuyerIntentFunnelCard({
+  stages, isEcommerceCohort, cohortMeta,
+}: {
+  stages: FunnelStage[];
+  isEcommerceCohort: boolean;
+  cohortMeta: CohortMeta;
+}) {
+  const droppedForCohort = !isEcommerceCohort;
+  const lowerFunnelStages = stages.filter((s) => s.zone === "intent" || s.zone === "conversion");
+  const hasLowerFunnelData = lowerFunnelStages.some((s) => s.value != null);
+  const visibleStages = (droppedForCohort ? stages.filter((s) => s.zone !== "intent" && s.zone !== "conversion") : stages)
+    .filter((s) => s.value != null);
+
+  if (visibleStages.length === 0) return null;
+  const maxVal = visibleStages[0]!.value!;
+
+  return (
+    <SectionCard
+      title="Buyer-intent funnel"
+      desc="Impressions through real intent signal · stage-over-stage retention"
+      right={<SectionInfoIcon tip="Impressions → Clicks (all) → Link clicks, plus Add to cart / Checkout / Purchase for ecommerce-cohort accounts only. Each stage's % is measured against the previous real stage, never fabricated." />}
+    >
+      <div className="space-y-1.5" data-testid="buyer-intent-funnel">
+        {visibleStages.map((stage) => {
+          const c = ZONE_COLOR[stage.zone];
+          const barW = Math.max((stage.value! / maxVal) * 100, 1.5);
+          return (
+            <div key={stage.id} className={cn("rounded-lg border p-2.5", c.bg, c.border)}>
+              <div className="flex items-center gap-3">
+                <span className={cn(TYPE.label, "font-semibold uppercase tracking-widest text-muted-foreground/60 w-28 shrink-0")}>
+                  {stage.label}
+                </span>
+                <div className="flex-1 h-4 bg-white/[0.04] rounded overflow-hidden">
+                  <div className={cn("h-full rounded transition-all", c.bar)} style={{ width: `${barW}%` }} />
+                </div>
+                <span className={cn(TYPE.body, "font-semibold text-foreground tabular-nums w-20 text-right shrink-0")}>
+                  {fmtNum(stage.value!)}
+                </span>
+              </div>
+              {stage.pctOfPrev != null && (
+                <div className="flex items-center gap-1 ml-28 pl-3 mt-1">
+                  <ArrowRight className="w-3 h-3 text-muted-foreground/35" />
+                  <span className={cn(TYPE.microLabel, stage.pctOfPrev >= 20 ? "text-emerald-400/70" : stage.pctOfPrev >= 5 ? c.text : "text-red-400/70")}>
+                    {stage.pctOfPrev.toFixed(1)}% of previous stage
+                  </span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {droppedForCohort ? (
+        <div className="mt-2">
+          <CaveatNote text={`Cohort: ${cohortMeta.label} — no ecommerce funnel stages. Terminal metric: ${cohortMeta.terminalMetricLabel}.`} />
+        </div>
+      ) : !hasLowerFunnelData ? (
+        <div className="mt-2">
+          <CaveatNote text="Add-to-cart, checkout, and purchase data comes from the demographic export when the account is configured for ecommerce tracking. These fields appear once a matching export is staged and analyzed." />
+        </div>
+      ) : null}
+      <div className="pt-2.5">
+        <CrossLink to="/app/analysis/funnel" label="Open full funnel breakdown" />
+      </div>
+    </SectionCard>
+  );
+}
+
+// ─── What moved cost per result — real prior-vs-current, no fabricated
+//     per-factor waterfall ───────────────────────────────────────────
+// The canvas mocked a 4-bar waterfall (audience mix / creative refresh /
+// placement shift / bid strategy). None of those breakdowns carry a prior
+// window to diff against anywhere in this schema — demographic_rows,
+// placement_rows, and concept_rows on AnalysisSummaryResult are current-
+// window-only, and no bid_strategy field exists anywhere in the repo. The
+// only real prior-vs-current comparison this data model supports is the
+// same windowed totals/prior_totals pair the KPI tiles already use
+// (summaryTrends.ts), so that's what renders here instead.
+
+function CostPerResultCard({ adAccountId, accountConfigured }: { adAccountId: string | null; accountConfigured: boolean }) {
+  const { data: summary, isLoading } = useQuery({
+    ...getGetAnalysisSummaryQueryOptions(adAccountId ?? "", "28d"),
+    enabled: !!adAccountId && accountConfigured,
+  });
+  const trend = summary ? trendForMetric("cpa_blended", summary.totals, summary.prior_totals) : null;
+  const delta = trend ? trend.current - trend.prior : null;
+
+  return (
+    <SectionCard
+      title="What moved cost per result"
+      desc="Prior 28-day window vs current · blended cost per result across all result events"
+      right={<SectionInfoIcon tip="The same prior-period comparison the KPI tiles use (analysis-summary endpoint, 28-day window). A full per-factor breakdown by audience, creative, and placement isn't available — see the note below." />}
+    >
+      {trend ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="rounded-lg border border-border/40 bg-white/[0.02] px-4 py-2.5">
+            <div className={cn(TYPE.microLabel, "mb-1")}>Prior window</div>
+            <div className={TYPE.title}>{fmtUSD(trend.prior)}</div>
+          </div>
+          <ArrowRight className="w-4 h-4 text-muted-foreground/40 shrink-0" />
+          <div className="rounded-lg border border-primary/35 bg-primary/[0.03] px-4 py-2.5">
+            <div className={cn(TYPE.microLabel, "mb-1")}>Current window</div>
+            <div className={TYPE.title}>{fmtUSD(trend.current)}</div>
+          </div>
+          <div className={cn(TYPE.body, "font-semibold", trend.improved ? "text-emerald-400" : "text-red-300")}>
+            {trend.deltaPct >= 0 ? "+" : ""}{trend.deltaPct.toFixed(1)}%
+            {delta != null && <span className="text-muted-foreground/60 font-normal"> ({delta >= 0 ? "+" : "−"}{fmtUSD(Math.abs(delta))})</span>}
+          </div>
+        </div>
+      ) : (
+        <p className={cn(TYPE.body, "text-muted-foreground/60")}>
+          {isLoading ? "Loading prior-period comparison…" : "Not enough prior-period data in this window for a real comparison yet."}
+        </p>
+      )}
+      <p className={cn(TYPE.caption, "text-muted-foreground/55 mt-3")}>
+        Full per-factor attribution isn't available yet — placement, audience, and creative breakdowns don't carry prior-period comparisons in the current data model.
+      </p>
+    </SectionCard>
+  );
+}
+
 export function AdPerformanceView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
@@ -518,6 +731,15 @@ export function AdPerformanceView() {
             }
           : null;
         const cellRowsInRange = filterCells(a.performance_by_cell).length;
+
+        // Cohort-aware buyer-intent funnel: only a single configured
+        // "ecommerce" objective keeps the ecommerce-only lower-funnel
+        // stages (add to cart / checkout / purchase) — unassigned or
+        // mixed-objective accounts stay conservative and drop them rather
+        // than assume ecommerce.
+        const cohortMeta = resolveObjectivesMeta(acct.objectives);
+        const isEcommerceCohort = acct.objectives?.length === 1 && acct.objectives[0] === "ecommerce";
+        const funnelStages = buildFunnelStages(a.demographic_registration_signal);
 
         const mst = getMST(seed, adAccountId);
         const lib = mst?.local_book2_library ?? [];
@@ -645,7 +867,11 @@ export function AdPerformanceView() {
             <div className="px-6 py-5 space-y-4 max-w-5xl">
               {summary.data_caveat && <CaveatNote text={summary.data_caveat} />}
 
-              <SignalCards flags={acct.iap?.data_quality ?? []} />
+              <SignalCards flags={acct.iap?.data_quality ?? []} scopeId={acct.id} />
+
+              <BuyerIntentFunnelCard stages={funnelStages} isEcommerceCohort={isEcommerceCohort} cohortMeta={cohortMeta} />
+
+              <CostPerResultCard adAccountId={adAccountId} accountConfigured={acct.status === "configured"} />
 
               {controls && (
                 <SectionCard title="Core control reads" desc="Control creative · per funnel depth" table="core_reanalysis_read" right={<SectionInfoIcon tip="The winning concept at each funnel stage as determined by the most recent re-analysis run — the benchmark every new test is measured against." />}>
