@@ -4,24 +4,49 @@
 // live only in the child pages (Ad Performance, IAP Library, Audience,
 // Placements, Budget, History).
 
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { useScopedAdAccountId } from "@/contexts/AccountContext";
 import { useMetrixSeed } from "@/contexts/MetrixDataContext";
-import { getAdAccount, getAnalysisData, getCampaignSummary } from "@/lib/data/metrixSeedAdapter";
+import { getAdAccount, getAnalysisData } from "@/lib/data/metrixSeedAdapter";
 import { useStageStatus } from "@/hooks/useStageStatus";
+import { resolveObjectivesMeta } from "@/lib/data/cohortMeta";
 import {
-  ModuleHeader, ModuleScopeGate, SectionCard, StageLoopHub, buildLoopStages, CrossLink, PendingState, HubNavGrid,
-  MetricTile, fmtNum,
+  ModuleHeader, ModuleScopeGate, SectionCard, StageLoopHub, buildLoopStages, CrossLink, HubNavGrid,
+  MetricTile, fmtNum, OverviewHeaderControls, type ViewPreset,
 } from "../shared";
-import { AnalysisControls } from "../ManualAnalysisControls";
-import { useListAnalysisRuns, getListAnalysisRunsQueryKey } from "@workspace/api-client-react";
+import { AnalysisControls, type AnalysisDateRange } from "../ManualAnalysisControls";
+import {
+  useListAnalysisRuns, getListAnalysisRunsQueryKey,
+  useListManualImports, getListManualImportsQueryKey,
+  type ManualImportKind,
+} from "@workspace/api-client-react";
 import {
   LayoutDashboard, Library, Dna, Users, LayoutGrid, Wallet, History,
-  CheckCircle2, XCircle, Loader2, FileJson,
+  CheckCircle2, XCircle, Loader2, FileJson, FileText,
 } from "lucide-react";
-import { OBJECTIVE_OPTIONS } from "../settings/cohortOptions";
 
 const SECTION = "Analysis · 03";
+
+// Header window pill → how many days back a run counts as "in window".
+// "all" has no cutoff. Distinct from AnalysisControls' own date-range picker
+// below (AnalysisDateRange, "7d"/"14d"/"30d"/"all") — that one scopes what
+// staged CSV history the NEXT run will ingest; this one just filters which
+// past runs the Run History card shows. Different questions, different
+// controls, deliberately not merged.
+const PRESET_DAYS: Record<Exclude<ViewPreset, "all">, number> = { "7d": 7, "14d": 14, "28d": 28, "90d": 90 };
+
+const WINDOW_TILE_LABEL: Record<AnalysisDateRange, string> = {
+  "7d": "7 days", "14d": "14 days", "30d": "30 days", all: "All staged data",
+};
+
+const IMPORT_KIND_LABEL: Record<ManualImportKind, string> = {
+  performance_demo_csv: "Demographics CSV",
+  performance_placement_csv: "Placements CSV",
+  performance_ad_summary_csv: "Ad Summary CSV",
+  performance_conversion_device_csv: "Conversion Device CSV",
+  creative_asset: "Creative asset",
+};
 
 export function AnalysisCommandCenter() {
   const [, navigate] = useLocation();
@@ -30,49 +55,32 @@ export function AnalysisCommandCenter() {
   const account = getAdAccount(seed, adAccountId);
   const status = useStageStatus(account?.id ?? null);
   const { data: runsData } = useListAnalysisRuns(account?.id ?? "", { query: { enabled: !!account?.id, queryKey: getListAnalysisRunsQueryKey(account?.id ?? "") } });
+  const { data: importsData } = useListManualImports(account?.id ?? "", { query: { enabled: !!account?.id, queryKey: getListManualImportsQueryKey(account?.id ?? "") } });
   const runs = runsData?.runs ?? [];
   const runCount = runs.filter((r) => r.status === "success").length;
-  const analysis = getAnalysisData(seed, adAccountId);
-  const campaignSummary = getCampaignSummary(seed, adAccountId);
+  const stagedImports = (importsData?.imports ?? []).filter((imp) => imp.status === "staged");
+
+  // Header display-window pill — filters which past runs the Run History
+  // card shows below. Distinct from AnalysisControls' own "date range to
+  // analyze" picker (see PRESET_DAYS comment above).
+  const [preset, setPreset] = useState<ViewPreset>("all");
+  // Mirrors AnalysisControls' own dateRange state — real value, no second
+  // source of truth for what the next run will actually analyze.
+  const [runWindow, setRunWindow] = useState<AnalysisDateRange>("30d");
 
   return (
     <ModuleScopeGate section={SECTION} title="Analysis" account={account}>
       {() => {
         const acct = account!;
-        // Read-only summary of the account's configured objectives —
-        // objectives are configured only in Settings → General (account
-        // setup), never here, and never block an analysis run.
-        const objectiveLabels = (acct.objectives ?? [])
-          .map((o) => OBJECTIVE_OPTIONS.find((c) => c.id === o)?.label)
-          .filter((l): l is string => !!l);
-        const objectivesSummary = objectiveLabels.length > 0
-          ? `Objectives: ${objectiveLabels.join(", ")}`
-          : "No objectives configured";
+        const objectivesMeta = resolveObjectivesMeta(acct.objectives);
+        const adsInScope = acct.ads?.length ?? 0;
+        const analysis = getAnalysisData(seed, adAccountId);
 
-        // Execution-card input tiles — every value reads a slice of this
-        // account's own real analysis data (never fabricated, never a
-        // second data fetch). Cells/concepts/events count distinct real
-        // rows; window reads the account's own campaign summary window.
-        const cellCount = analysis
-          ? new Set(analysis.performance_by_cell.map((r) => r.cell_id)).size
-          : null;
-        const conceptCount = analysis?.concept_rollup
-          ? new Set(analysis.concept_rollup.map((r) => `${r.book}:${r.concept}`)).size
-          : analysis
-          ? new Set(analysis.performance_by_cell.map((r) => r.book2_concept_name)).size
-          : null;
-        const eventCount = campaignSummary
-          ? Object.keys(campaignSummary.bottom_line_totals ?? {}).length
-          : null;
-        const windowDays = (() => {
-          const start = campaignSummary?.window_start;
-          const end = campaignSummary?.window_end;
-          if (!start || !end) return null;
-          const days = Math.round((new Date(end).getTime() - new Date(start).getTime()) / 86_400_000) + 1;
-          return days > 0 ? days : null;
-        })();
-
-        const recentRuns = runs.slice(0, 3);
+        const recentRuns = preset === "all"
+          ? runs.slice(0, 3)
+          : runs
+              .filter((r) => r.started_at && Date.now() - new Date(r.started_at).getTime() <= PRESET_DAYS[preset] * 86_400_000)
+              .slice(0, 3);
 
         return (
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
@@ -80,6 +88,13 @@ export function AnalysisCommandCenter() {
               section={SECTION}
               title="Analysis"
               subtitle="Run analysis on this account's staged data. Everything below reads a different slice of the same result."
+              right={
+                <OverviewHeaderControls
+                  preset={preset}
+                  onPresetChange={setPreset}
+                  exportTo="/app/exports/analysis"
+                />
+              }
             />
             <StageLoopHub stages={buildLoopStages(status)} current="analysis" />
 
@@ -87,30 +102,61 @@ export function AnalysisCommandCenter() {
               <SectionCard
                 title="Run analysis"
                 desc="Pick a date range and explicitly analyze the staged manual uploads. Never runs automatically."
-                right={<span className="text-label text-muted-foreground/70">{objectivesSummary}</span>}
               >
-                {analysis && (
-                  // 2x2 (not a page-width 4-across row) — this card's own
-                  // max-w-3xl column doesn't leave enough room per tile at
-                  // 4-across without truncating labels (same fix already
-                  // applied in StrategyCommandCenter's execution card).
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <MetricTile label="Cells analysed" value={cellCount != null ? fmtNum(cellCount) : "—"} variant="primary" />
-                    <MetricTile label="Concepts rolled up" value={conceptCount != null ? fmtNum(conceptCount) : "—"} />
-                    <MetricTile label="Window" value={windowDays != null ? `${windowDays} days` : "—"} />
-                    <MetricTile label="Events tracked" value={eventCount != null ? fmtNum(eventCount) : "—"} />
+                {/* 2x2 (not a page-width 4-across row) — this card's own
+                    max-w-3xl column doesn't leave enough room per tile at
+                    4-across without truncating labels (same fix already
+                    applied in StrategyCommandCenter's execution card).
+                    Pre-run readiness stats, not stale analysis-derived
+                    numbers — every value here still reflects real state
+                    even when no analysis has ever run for this account. */}
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <MetricTile label="Staged imports" value={fmtNum(stagedImports.length)} variant="primary" />
+                  <MetricTile label="Ads in scope" value={fmtNum(adsInScope)} />
+                  <MetricTile label="Window" value={WINDOW_TILE_LABEL[runWindow]} />
+                  <MetricTile label="Objectives" value={objectivesMeta.label} />
+                </div>
+                <AnalysisControls accountId={acct.id} onDateRangeChange={setRunWindow} />
+              </SectionCard>
+
+              <SectionCard
+                title="Manual import"
+                desc={stagedImports.length > 0
+                  ? `${stagedImports.length} file${stagedImports.length !== 1 ? "s" : ""} staged for the next analysis run.`
+                  : "No files currently staged."}
+                right={<CrossLink to="/app/settings/general" label="Manage imports" />}
+              >
+                {stagedImports.length === 0 ? (
+                  <p className="text-caption text-muted-foreground/60">
+                    Upload performance exports from Settings → General before running analysis.
+                  </p>
+                ) : (
+                  <div className="flex flex-col">
+                    {stagedImports.map((imp) => (
+                      <div key={imp.id} className="flex items-center gap-2.5 py-2 border-t border-border/25 first:border-0 min-w-0">
+                        <FileText className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
+                        <span className="flex-1 min-w-0">
+                          <span className="block text-body text-foreground/85 truncate">{imp.filename}</span>
+                          <span className="block text-label text-muted-foreground/60">{IMPORT_KIND_LABEL[imp.kind] ?? imp.kind}</span>
+                        </span>
+                        <span className="mx-inline-badge mx-inline-badge--info shrink-0">Staged</span>
+                      </div>
+                    ))}
                   </div>
                 )}
-                <AnalysisControls accountId={acct.id} />
               </SectionCard>
 
               <SectionCard
                 title="Run history"
-                desc="Most recent analysis runs for this account, most recent first."
+                desc={preset === "all"
+                  ? "Most recent analysis runs for this account, most recent first."
+                  : `Analysis runs from the last ${PRESET_DAYS[preset]} days, most recent first.`}
                 right={<CrossLink to="/app/analysis/history" label="Full history" />}
               >
                 {recentRuns.length === 0 ? (
-                  <p className="text-caption text-muted-foreground/60">No analysis runs yet for this account.</p>
+                  <p className="text-caption text-muted-foreground/60">
+                    {runs.length === 0 ? "No analysis runs yet for this account." : "No analysis runs in the selected window."}
+                  </p>
                 ) : (
                   <div className="flex flex-col">
                     {recentRuns.map((r) => (
