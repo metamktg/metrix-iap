@@ -336,12 +336,12 @@ function CsvMappingPanel({ summary }: { summary: ColumnMappingSummaryEntry[] }) 
 
   const headerColor =
     missing.length > 0
-      ? "border-amber-400/25 bg-amber-400/[0.04]"
+      ? "border-status-warning/25 bg-status-warning/[0.04]"
       : "border-emerald-400/20 bg-emerald-400/[0.03]";
   const chevronColor =
-    missing.length > 0 ? "text-amber-400/80" : "text-emerald-400/80";
+    missing.length > 0 ? "text-status-warning/80" : "text-emerald-400/80";
   const iconColor =
-    missing.length > 0 ? "text-amber-400" : "text-emerald-400";
+    missing.length > 0 ? "text-status-warning" : "text-emerald-400";
 
   return (
     <div className={cn("rounded-lg border overflow-hidden", headerColor)}>
@@ -375,13 +375,13 @@ function CsvMappingPanel({ summary }: { summary: ColumnMappingSummaryEntry[] }) 
                       "flex items-start gap-2 px-2 py-1.5 rounded text-label",
                       isHigh
                         ? "bg-emerald-400/[0.06] border border-emerald-400/15"
-                        : "bg-amber-400/[0.06] border border-amber-400/15"
+                        : "bg-status-warning/[0.06] border border-status-warning/15"
                     )}
                   >
                     <CheckCircle2
                       className={cn(
                         "w-3.5 h-3.5 shrink-0 mt-px",
-                        isHigh ? "text-emerald-400" : "text-amber-400"
+                        isHigh ? "text-emerald-400" : "text-status-warning"
                       )}
                     />
                     <div className="min-w-0 flex-1">
@@ -392,7 +392,7 @@ function CsvMappingPanel({ summary }: { summary: ColumnMappingSummaryEntry[] }) 
                       <span
                         className={cn(
                           "ml-1.5 text-label font-semibold uppercase tracking-wide",
-                          isHigh ? "text-emerald-400/80" : "text-amber-400/80"
+                          isHigh ? "text-emerald-400/80" : "text-status-warning/80"
                         )}
                       >
                         {Math.round(e.confidence * 100)}%
@@ -707,11 +707,11 @@ function SmartCsvUpload({
               {importForSlot ? (
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
               ) : (
-                <div className={cn("w-3.5 h-3.5 rounded-full border shrink-0", slot.optional ? "border-border/50" : "border-amber-400/50")} />
+                <div className={cn("w-3.5 h-3.5 rounded-full border shrink-0", slot.optional ? "border-border/50" : "border-status-warning/50")} />
               )}
               <span className={cn("truncate flex-1", importForSlot ? "text-foreground/85" : "text-muted-foreground/70")}>
                 {slot.label}
-                {!slot.optional && !importForSlot && <span className="text-amber-400/70"> *</span>}
+                {!slot.optional && !importForSlot && <span className="text-status-warning/70"> *</span>}
               </span>
               {importForSlot && (
                 <button
@@ -746,20 +746,20 @@ function SmartCsvUpload({
       {lastMapping && <CsvMappingPanel summary={lastMapping} />}
 
       {lastWarnings && lastWarnings.length > 0 && (
-        <div className="rounded-lg border border-amber-400/30 bg-amber-400/[0.06] p-3 space-y-2">
+        <div className="rounded-lg border border-status-warning/30 bg-status-warning/[0.06] p-3 space-y-2">
           <div className="flex items-start gap-2">
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+            <AlertTriangle className="w-3.5 h-3.5 text-status-warning shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0 space-y-1">
-              <div className="text-caption font-semibold text-amber-200">File staged with a warning — check before running analysis</div>
+              <div className="text-caption font-semibold text-status-warning">File staged with a warning — check before running analysis</div>
               <ul className="space-y-0.5">
                 {lastWarnings.map((w, i) => (
-                  <li key={i} className="text-label text-amber-100/80 leading-relaxed">{w}</li>
+                  <li key={i} className="text-label text-status-warning/80 leading-relaxed">{w}</li>
                 ))}
               </ul>
             </div>
             <button
               onClick={() => setLastWarnings(null)}
-              className="shrink-0 w-6 h-6 flex items-center justify-center rounded text-amber-300/70 hover:text-amber-200 hover:bg-amber-400/10 transition-colors"
+              className="shrink-0 w-6 h-6 flex items-center justify-center rounded text-status-warning/70 hover:text-status-warning hover:bg-status-warning/10 transition-colors"
               aria-label="Dismiss warning"
             >
               <X className="w-3.5 h-3.5" />
@@ -769,16 +769,16 @@ function SmartCsvUpload({
       )}
 
       {failures && failures.length > 0 && (
-        <div className="rounded-lg border border-amber-400/30 bg-amber-400/[0.06] p-3 space-y-1.5">
+        <div className="rounded-lg border border-status-warning/30 bg-status-warning/[0.06] p-3 space-y-1.5">
           <div className="flex items-center gap-2">
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span className="text-caption font-semibold text-amber-200">
+            <AlertTriangle className="w-3.5 h-3.5 text-status-warning shrink-0" />
+            <span className="text-caption font-semibold text-status-warning">
               {failures.length === 1 ? "1 file needs a closer look" : `${failures.length} files need a closer look`}
             </span>
           </div>
           <ul className="space-y-1 pl-[1.375rem]">
             {failures.map((f, i) => (
-              <li key={i} className="text-caption text-amber-100/80 leading-relaxed">{f}</li>
+              <li key={i} className="text-caption text-status-warning/80 leading-relaxed">{f}</li>
             ))}
           </ul>
         </div>
@@ -860,7 +860,7 @@ function MatchMethodBadge({ method }: { method?: "id" | "fuzzy" | "guess" | null
   const config = {
     id: { icon: Hash, label: "Matched by ID code", className: "bg-primary/10 text-interactive" },
     fuzzy: { icon: Sparkles, label: "Matched by filename similarity", className: "bg-white/[0.06] text-muted-foreground/85" },
-    guess: { icon: Sparkles, label: "Best guess — please review", className: "bg-amber-400/10 text-amber-300" },
+    guess: { icon: Sparkles, label: "Best guess — please review", className: "bg-status-warning/10 text-status-warning" },
   }[method];
   const Icon = config.icon;
   return (
@@ -972,7 +972,7 @@ function CreativeAdNamesEditor({
     <div
       className={cn(
         "p-2 rounded-md border bg-white/[0.02] space-y-1.5",
-        asset.ad_names.length > 0 ? "border-border/30" : "border-amber-400/30 bg-amber-400/[0.03]"
+        asset.ad_names.length > 0 ? "border-border/30" : "border-status-warning/30 bg-status-warning/[0.03]"
       )}
     >
       <div className="flex items-center gap-2">
@@ -1038,7 +1038,7 @@ function CreativeAdNamesEditor({
         </div>
       )}
       {mismatch && (
-        <div className="flex items-start gap-1.5 text-label text-amber-400/90">
+        <div className="flex items-start gap-1.5 text-label text-status-warning/90">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
           <span>
             {parsedNames.filter((n) => !knownAdNames.has(n)).join(", ")} not found among ad names seen in the staged
@@ -1276,9 +1276,9 @@ function CreativeUploadSection({
       )}
 
       {linkNotices.length > 0 && (
-        <div className="flex items-start gap-2 p-2.5 rounded-lg border border-amber-400/25 bg-amber-400/[0.06]">
-          <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-          <div className="text-caption text-amber-300 leading-relaxed space-y-0.5">
+        <div className="flex items-start gap-2 p-2.5 rounded-lg border border-status-warning/25 bg-status-warning/[0.06]">
+          <AlertTriangle className="w-3.5 h-3.5 text-status-warning shrink-0 mt-0.5" />
+          <div className="text-caption text-status-warning leading-relaxed space-y-0.5">
             {linkNotices.map((msg, i) => (
               <p key={i}>{msg}</p>
             ))}
@@ -1293,7 +1293,7 @@ function CreativeUploadSection({
               {mappedCount} of {creativeAssets.length} mapped
             </span>
             {mappedCount < creativeAssets.length && (
-              <span className="text-label text-amber-400/90">Pick an ad name for each highlighted file below</span>
+              <span className="text-label text-status-warning/90">Pick an ad name for each highlighted file below</span>
             )}
             {unmappedAssets.length > 0 && matchCandidates.size > 0 && (
               <button
@@ -1432,7 +1432,7 @@ function PipelineProgress({
                   s.done
                     ? "bg-emerald-400/20 border-emerald-400/50"
                     : s.partial
-                    ? "bg-amber-400/15 border-amber-400/40"
+                    ? "bg-status-warning/15 border-status-warning/40"
                     : s.active
                     ? "bg-primary/15 border-primary/40"
                     : "bg-white/[0.03] border-border/40"
@@ -1441,7 +1441,7 @@ function PipelineProgress({
                 {s.done ? (
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                 ) : s.partial ? (
-                  <Clock className="w-3.5 h-3.5 text-amber-400" />
+                  <Clock className="w-3.5 h-3.5 text-status-warning" />
                 ) : s.active ? (
                   <div className="w-2 h-2 rounded-full bg-primary/70" />
                 ) : (
@@ -1547,14 +1547,14 @@ export function ManualUploadPanel({
               </div>
             ) : (
               /* Inline nudge — no separate warning block needed */
-              <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md border border-amber-400/25 bg-amber-400/[0.05]">
+              <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md border border-status-warning/25 bg-status-warning/[0.05]">
                 <div className="flex items-center gap-2 min-w-0">
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                  <span className="text-caption text-amber-200/80 truncate">No Ad Summary export — spend may be underreported</span>
+                  <AlertTriangle className="w-3.5 h-3.5 text-status-warning shrink-0" />
+                  <span className="text-caption text-status-warning/80 truncate">No Ad Summary export — spend may be underreported</span>
                 </div>
                 <button
                   onClick={() => setStep("upload")}
-                  className="shrink-0 flex items-center gap-1 h-6 px-2.5 rounded border border-amber-400/35 bg-amber-400/10 text-label font-medium text-amber-200 hover:bg-amber-400/20 transition-colors"
+                  className="shrink-0 flex items-center gap-1 h-6 px-2.5 rounded border border-status-warning/35 bg-status-warning/10 text-label font-medium text-status-warning hover:bg-status-warning/20 transition-colors"
                 >
                   <ArrowLeft className="w-3 h-3" /> Add one
                 </button>
@@ -1575,12 +1575,12 @@ export function ManualUploadPanel({
                 </span>
                 {creativeUnmappedCount > 0 ? (
                   <>
-                    <span className="text-label font-medium text-amber-400 shrink-0">
+                    <span className="text-label font-medium text-status-warning shrink-0">
                       {creativeMappedCount}/{creativeAssets.length} mapped
                     </span>
                     <button
                       onClick={() => setStep("upload")}
-                      className="shrink-0 flex items-center gap-1 h-6 px-2.5 rounded border border-amber-400/35 bg-amber-400/10 text-label font-medium text-amber-200 hover:bg-amber-400/20 transition-colors"
+                      className="shrink-0 flex items-center gap-1 h-6 px-2.5 rounded border border-status-warning/35 bg-status-warning/10 text-label font-medium text-status-warning hover:bg-status-warning/20 transition-colors"
                     >
                       Fix mappings
                     </button>
@@ -1695,7 +1695,7 @@ function DeconstructBadge({ status }: { status: CreativeDeconstruction["status"]
   const style: Record<CreativeDeconstruction["status"], string> = {
     auto_filed: "border-emerald-400/30 bg-emerald-400/[0.06] text-emerald-400",
     user_overridden: "border-emerald-400/30 bg-emerald-400/[0.06] text-emerald-400",
-    needs_review: "border-amber-400/30 bg-amber-400/[0.06] text-amber-300",
+    needs_review: "border-status-warning/30 bg-status-warning/[0.06] text-status-warning",
     unsupported: "border-border/50 bg-white/[0.03] text-muted-foreground/80",
     discarded: "border-border/50 bg-white/[0.03] text-muted-foreground/80",
   };

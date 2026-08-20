@@ -61,7 +61,7 @@ interface MetricHoverPopoverProps {
 }
 
 export function MetricHoverPopover({ metric, cellRows, onDiagnose, children }: MetricHoverPopoverProps) {
-  const isCpa = metric.id === "cpa_blended";
+  const isCpa = metric.id === "cpa_blended" || metric.id.startsWith("cost:");
   const isCtr = metric.id === "link_ctr";
   const isTouch = useIsTouch();
 

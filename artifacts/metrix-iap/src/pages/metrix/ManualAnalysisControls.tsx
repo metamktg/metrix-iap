@@ -81,12 +81,12 @@ function RunAnalysisBtn({
       className={cn(
         "flex items-center gap-1.5 h-8 px-3 rounded-md border text-caption font-medium transition-colors",
         warning
-          ? "bg-amber-400/15 border-amber-400/40 text-amber-200"
+          ? "bg-status-warning/15 border-status-warning/40 text-status-warning"
           : "bg-primary/15 border-primary/30 text-interactive",
         disabled
           ? "opacity-60 cursor-not-allowed"
           : warning
-          ? "hover:bg-amber-400/25"
+          ? "hover:bg-status-warning/25"
           : "hover:bg-primary/25"
       )}
     >
@@ -295,19 +295,19 @@ function CsvWarningsPanel({ run }: { run: AnalysisRun }) {
   const count = warnings.length;
 
   return (
-    <div className="rounded-lg border border-amber-400/30 bg-amber-400/[0.06] p-3 space-y-2">
+    <div className="rounded-lg border border-status-warning/30 bg-status-warning/[0.06] p-3 space-y-2">
       <button
         onClick={() => setExpanded((v) => !v)}
         className="w-full flex items-start gap-2 text-left"
       >
-        <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+        <AlertTriangle className="w-3.5 h-3.5 text-status-warning shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
-          <div className="text-caption font-semibold text-amber-200">
+          <div className="text-caption font-semibold text-status-warning">
             {hasReducedConfidence
               ? "Analysis succeeded with reduced confidence"
               : "Analysis succeeded with column adjustments"}
           </div>
-          <p className="text-label text-amber-100/70 mt-0.5">
+          <p className="text-label text-status-warning/70 mt-0.5">
             {hasReducedConfidence
               ? "Some core metric columns were missing — key efficiency scores may be incomplete. "
               : ""}
@@ -317,9 +317,9 @@ function CsvWarningsPanel({ run }: { run: AnalysisRun }) {
         </div>
       </button>
       {expanded && (
-        <ul className="space-y-1 pt-1 border-t border-amber-400/20">
+        <ul className="space-y-1 pt-1 border-t border-status-warning/20">
           {warnings.map((w, i) => (
-            <li key={i} className="text-label text-amber-100/75 leading-relaxed">
+            <li key={i} className="text-label text-status-warning/75 leading-relaxed">
               · {w}
             </li>
           ))}
@@ -370,7 +370,7 @@ function ObjectiveFlagsPanel({ run }: { run: AnalysisRun }) {
 function StatusBadge({ run }: { run: AnalysisRun }) {
   if (run.status === "running") {
     return (
-      <span className="flex items-center gap-1 text-label font-semibold uppercase tracking-wide text-amber-400">
+      <span className="flex items-center gap-1 text-label font-semibold uppercase tracking-wide text-status-warning">
         <Loader2 className="w-3.5 h-3.5 animate-spin" /> Running
       </span>
     );
@@ -441,23 +441,23 @@ export function GuessedMatchesCallout({
   };
 
   return (
-    <div className="rounded-lg border border-amber-400/30 bg-amber-400/[0.06] p-3 space-y-2">
+    <div className="rounded-lg border border-status-warning/30 bg-status-warning/[0.06] p-3 space-y-2">
       <div className="flex items-start gap-2">
-        <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+        <AlertTriangle className="w-4 h-4 text-status-warning shrink-0 mt-0.5" />
         <div className="min-w-0 space-y-1">
-          <div className="text-body font-semibold text-amber-200">
+          <div className="text-body font-semibold text-status-warning">
             {count} creative {plural ? "matches need" : "match needs"} review
           </div>
-          <p className="text-caption text-amber-100/80 leading-relaxed">
+          <p className="text-caption text-status-warning/80 leading-relaxed">
             {plural ? "These filenames" : "This filename"} didn't clearly match an ad name, so we
             picked the most likely one as a best guess. Confirm {plural ? "they're" : "it's"} right
             or fix {plural ? "them" : "it"} first — otherwise analysis may link the wrong creative to
             an ad.
           </p>
-          <ul className="text-label text-amber-100/70 leading-relaxed space-y-0.5 pt-0.5">
+          <ul className="text-label text-status-warning/70 leading-relaxed space-y-0.5 pt-0.5">
             {guessedImports.map((imp) => (
               <li key={imp.id} className="truncate">
-                <span className="text-amber-100/90">{imp.filename}</span>
+                <span className="text-status-warning/90">{imp.filename}</span>
                 {imp.ad_names.length > 0 ? ` → ${imp.ad_names.join(", ")}` : " → unmapped"}
               </li>
             ))}
@@ -472,8 +472,8 @@ export function GuessedMatchesCallout({
           className={cn(
             "flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-caption font-medium transition-colors",
             confirming || updateMutation.isPending
-              ? "border-amber-400/30 text-amber-200/60 cursor-not-allowed"
-              : "bg-amber-400/15 border-amber-400/40 text-amber-100 hover:bg-amber-400/25"
+              ? "border-status-warning/30 text-status-warning/60 cursor-not-allowed"
+              : "bg-status-warning/15 border-status-warning/40 text-status-warning hover:bg-status-warning/25"
           )}
         >
           {confirming ? (
@@ -489,7 +489,7 @@ export function GuessedMatchesCallout({
         {onReview && (
           <button
             onClick={onReview}
-            className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-amber-400/30 text-caption font-medium text-amber-100/85 hover:bg-amber-400/10 transition-colors"
+            className="flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-status-warning/30 text-caption font-medium text-status-warning/85 hover:bg-status-warning/10 transition-colors"
           >
             {reviewLabel ?? "Review & fix"}
           </button>
@@ -525,16 +525,16 @@ function CompletenessPanel({ accountId, runId }: { accountId: string; runId: str
       data-testid="analysis-completeness-panel"
       className={cn(
         "rounded-lg border p-3 space-y-2",
-        data.complete ? "border-emerald-400/25 bg-emerald-400/[0.05]" : "border-amber-400/30 bg-amber-400/[0.06]",
+        data.complete ? "border-emerald-400/25 bg-emerald-400/[0.05]" : "border-status-warning/30 bg-status-warning/[0.06]",
       )}
     >
       <div className="flex items-center gap-2">
         {data.complete ? (
           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
         ) : (
-          <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+          <AlertTriangle className="w-3.5 h-3.5 text-status-warning shrink-0" />
         )}
-        <span className={cn("text-caption font-semibold", data.complete ? "text-emerald-200" : "text-amber-200")}>
+        <span className={cn("text-caption font-semibold", data.complete ? "text-emerald-200" : "text-status-warning")}>
           {data.complete
             ? "Analysis validated — every module received data"
             : `Analysis incomplete — ${gaps.length} module${gaps.length !== 1 ? "s" : ""} missing data`}
@@ -546,9 +546,9 @@ function CompletenessPanel({ accountId, runId }: { accountId: string; runId: str
             {s.ok ? (
               <CheckCircle2 className={cn("w-3 h-3 shrink-0", s.rows > 0 ? "text-emerald-400/80" : "text-muted-foreground/50")} />
             ) : (
-              <XCircle className="w-3 h-3 text-amber-400 shrink-0" />
+              <XCircle className="w-3 h-3 text-status-warning shrink-0" />
             )}
-            <span className={cn("text-label truncate", s.ok ? "text-muted-foreground/80" : "text-amber-200/90")}>
+            <span className={cn("text-label truncate", s.ok ? "text-muted-foreground/80" : "text-status-warning/90")}>
               {s.label}
             </span>
             <span className="text-label tabular-nums text-muted-foreground/50 ml-auto shrink-0">
@@ -567,7 +567,7 @@ function CompletenessPanel({ accountId, runId }: { accountId: string; runId: str
         </div>
       )}
       {!data.complete && (
-        <p className="text-label text-amber-200/75 leading-relaxed">
+        <p className="text-label text-status-warning/75 leading-relaxed">
           Strategy stays locked until every required module above has data. Re-run analysis or fix the
           uploaded exports, then check again.
         </p>
@@ -619,21 +619,21 @@ function CreativeLinkageStatus({
           ? "border-emerald-400/25 bg-emerald-400/[0.04]"
           : noneLinked
           ? "border-border/40 bg-white/[0.02]"
-          : "border-amber-400/30 bg-amber-400/[0.06]"
+          : "border-status-warning/30 bg-status-warning/[0.06]"
       )}
     >
       <div className="flex items-start gap-2">
         <Images
           className={cn(
             "w-3.5 h-3.5 shrink-0 mt-px",
-            allLinked ? "text-emerald-400" : noneLinked ? "text-muted-foreground/70" : "text-amber-400"
+            allLinked ? "text-emerald-400" : noneLinked ? "text-muted-foreground/70" : "text-status-warning"
           )}
         />
         <div className="min-w-0 flex-1 space-y-1">
           <div
             className={cn(
               "text-caption font-semibold",
-              allLinked ? "text-emerald-300" : noneLinked ? "text-foreground/75" : "text-amber-200"
+              allLinked ? "text-emerald-300" : noneLinked ? "text-foreground/75" : "text-status-warning"
             )}
           >
             {allLinked
@@ -649,19 +649,19 @@ function CreativeLinkageStatus({
             </p>
           )}
           {!allLinked && !noneLinked && unlinked.length > 0 && (
-            <div className="text-label text-amber-100/70 leading-relaxed space-y-0.5">
+            <div className="text-label text-status-warning/70 leading-relaxed space-y-0.5">
               <p>
                 These ad names had no matching row in the data — check that the names in
                 the creative mapping exactly match what's in your CSV:
               </p>
               <ul className="space-y-0.5 pt-0.5">
                 {unlinked.slice(0, 5).map((name) => (
-                  <li key={name} className="truncate text-amber-100/85">
+                  <li key={name} className="truncate text-status-warning/85">
                     · {name}
                   </li>
                 ))}
                 {unlinked.length > 5 && (
-                  <li className="text-amber-100/50">
+                  <li className="text-status-warning/50">
                     …and {unlinked.length - 5} more
                   </li>
                 )}
@@ -678,7 +678,7 @@ function CreativeLinkageStatus({
               ? "border-emerald-400/30 text-emerald-300 hover:bg-emerald-400/10"
               : noneLinked
               ? "border-border/50 text-muted-foreground/80 hover:bg-white/5"
-              : "border-amber-400/30 text-amber-200 hover:bg-amber-400/10",
+              : "border-status-warning/30 text-status-warning hover:bg-status-warning/10",
             syncMutation.isPending && "opacity-50 cursor-not-allowed"
           )}
           title="Re-attempt linking all staged creatives to their mapped ad names"
@@ -779,7 +779,7 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
             ? "bg-red-500/15 border-red-400/40 text-red-300"
             : p.tier === "missing"
             ? "bg-red-500/10 border-red-400/30 text-red-300"
-            : "bg-amber-400/10 border-amber-400/30 text-amber-300"
+            : "bg-status-warning/10 border-status-warning/30 text-status-warning"
         )}
       >
         {p.tier === "missing" ? "missing" : "low confidence"}
@@ -823,21 +823,21 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
 
       {/* ── Optional-missing + inferred section (amber) ────────────────── */}
       {amberProblems.length > 0 && (
-        <div className="rounded-lg border border-amber-400/30 bg-amber-400/[0.06] p-3 space-y-2">
+        <div className="rounded-lg border border-status-warning/30 bg-status-warning/[0.06] p-3 space-y-2">
           <button
             onClick={() => setExpanded((v) => !v)}
             className="w-full flex items-start gap-2 text-left"
           >
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+            <AlertTriangle className="w-3.5 h-3.5 text-status-warning shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
-              <div className="text-caption font-semibold text-amber-200">
+              <div className="text-caption font-semibold text-status-warning">
                 {optionalMissing.length > 0 && inferred.length > 0
                   ? `${optionalMissing.length} column${optionalMissing.length > 1 ? "s" : ""} missing, ${inferred.length} low-confidence`
                   : optionalMissing.length > 0
                   ? `${optionalMissing.length} optional column${optionalMissing.length > 1 ? "s" : ""} missing`
                   : `${inferred.length} column${inferred.length > 1 ? "s" : ""} matched with low confidence`}
               </div>
-              <p className="text-label text-amber-100/70 mt-0.5 leading-relaxed">
+              <p className="text-label text-status-warning/70 mt-0.5 leading-relaxed">
                 {optionalMissing.length > 0
                   ? "Missing optional columns may reduce analysis accuracy. Consider fixing your CSV first."
                   : "These columns were matched by similarity rather than name. Verify the CSV header matches the expected column names."}{" "}
@@ -846,7 +846,7 @@ function MappingHealthBanner({ imports }: { imports: ManualImport[] }) {
             </div>
           </button>
           {expanded && (
-            <ul className="space-y-1 pt-1 border-t border-amber-400/20">
+            <ul className="space-y-1 pt-1 border-t border-status-warning/20">
               {amberProblems.map((p, i) => renderProblemRow(p, i))}
             </ul>
           )}
@@ -1165,14 +1165,14 @@ export function AnalysisControls({
 
   // Spend coverage notice — shown when the Ad Summary export is absent
   const spendWarningBox = !hasSummary && !isRunning && (
-    <div className="rounded-lg border border-amber-400/25 bg-amber-400/[0.05] p-3 space-y-1">
+    <div className="rounded-lg border border-status-warning/25 bg-status-warning/[0.05] p-3 space-y-1">
       <div className="flex items-start gap-2">
-        <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+        <AlertTriangle className="w-3.5 h-3.5 text-status-warning shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0 space-y-1">
-          <div className="text-caption font-semibold text-amber-200">Spend will be underreported without an Ad Summary export</div>
-          <p className="text-label text-amber-100/65 leading-relaxed">
+          <div className="text-caption font-semibold text-status-warning">Spend will be underreported without an Ad Summary export</div>
+          <p className="text-label text-status-warning/65 leading-relaxed">
             Meta's demographic export only captures ~10–15% of actual spend — the rest is unattributable due to iOS
-            privacy limits. Upload an <strong className="text-amber-200/90">Ad Summary export</strong> (CSV or XLSX,
+            privacy limits. Upload an <strong className="text-status-warning/90">Ad Summary export</strong> (CSV or XLSX,
             ad-level, no demographic/device breakdown) to unlock full spend totals.
           </p>
         </div>

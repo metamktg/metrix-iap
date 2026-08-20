@@ -194,6 +194,23 @@ const RESULT_NOUNS: Array<[RegExp, string, string]> = [
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
+/** Singular/plural noun match for a single result-event key, or undefined when no known pattern fits. */
+function nounMatchFor(key: string): [singular: string, plural: string] | undefined {
+  const found = RESULT_NOUNS.find(([re]) => re.test(key));
+  return found ? [found[1], found[2]] : undefined;
+}
+
+/**
+ * "Cost per X" label for one specific result-event key (not the account's
+ * dominant event) — used by per-objective cost metrics so every real event
+ * type an account reports gets its own honestly-labeled tile, never a
+ * hardcoded ecommerce-flavored list.
+ */
+export function costPerResultLabel(key: string): string {
+  const noun = nounMatchFor(key)?.[0] ?? eventLabel(key).toLowerCase();
+  return `Cost per ${noun}`;
+}
+
 /**
  * Derive the account's result noun from its own analysis data: the
  * dominant "Result type" across creative-cell rows (what the analysis
@@ -245,9 +262,9 @@ export function resultTerm(account: AdAccount | null | undefined): ResultTerm {
     dominant = iap?.campaign_summary?.campaign_windows?.find((w) => w.result_type)?.result_type ?? null;
   }
 
-  const match = dominant ? RESULT_NOUNS.find(([re]) => re.test(dominant)) : undefined;
-  const singular = match?.[1] ?? "result";
-  const plural = match?.[2] ?? "results";
+  const match = dominant ? nounMatchFor(dominant) : undefined;
+  const singular = match?.[0] ?? "result";
+  const plural = match?.[1] ?? "results";
   return { singular, plural, Singular: capitalize(singular), Plural: capitalize(plural) };
 }
 
@@ -499,30 +516,30 @@ export function CaveatNote({
   const preview = isLong ? text.slice(0, THRESHOLD).trimEnd() + "…" : text;
 
   return (
-    <div className="rounded-lg border border-amber-400/15 bg-amber-400/[0.03] overflow-hidden">
+    <div className="rounded-lg border border-status-warning/15 bg-status-warning/[0.03] overflow-hidden">
       <button
         onClick={isLong ? () => setExpanded((v) => !v) : undefined}
         disabled={!isLong}
         className={cn(
           "w-full flex items-start gap-2 px-3 py-2 text-left",
-          isLong && "hover:bg-amber-400/[0.05] active:bg-amber-400/[0.08] transition-colors"
+          isLong && "hover:bg-status-warning/[0.05] active:bg-status-warning/[0.08] transition-colors"
         )}
       >
-        <Info className="w-3.5 h-3.5 text-amber-400/70 shrink-0 mt-1" />
+        <Info className="w-3.5 h-3.5 text-status-warning/70 shrink-0 mt-1" />
         <div className="flex-1 min-w-0">
           {source && (
-            <span className="text-label font-mono uppercase tracking-widest text-amber-400/65 block mb-0.5">
+            <span className="text-label font-mono uppercase tracking-widest text-status-warning/65 block mb-0.5">
               {source}
             </span>
           )}
-          <p className="text-body text-amber-400/90 leading-snug">
+          <p className="text-body text-status-warning/90 leading-snug">
             {expanded ? text : preview}
           </p>
         </div>
         {isLong && (
           <ChevronDown
             className={cn(
-              "w-3.5 h-3.5 text-amber-400/40 shrink-0 mt-1 transition-transform duration-150",
+              "w-3.5 h-3.5 text-status-warning/40 shrink-0 mt-1 transition-transform duration-150",
               expanded && "rotate-180"
             )}
           />
@@ -1297,10 +1314,10 @@ export function useStaleFocus(
 export function StaleFocusNotice({ label = "item" }: { label?: string }) {
   return (
     <div
-      className="mx-4 mt-2 flex items-center gap-2 rounded-md border border-amber-400/15 bg-amber-400/[0.03] px-3 py-1.5"
+      className="mx-4 mt-2 flex items-center gap-2 rounded-md border border-status-warning/15 bg-status-warning/[0.03] px-3 py-1.5"
       data-testid="notice-stale-focus"
     >
-      <AlertTriangle className="w-3.5 h-3.5 text-amber-400/70 shrink-0" />
+      <AlertTriangle className="w-3.5 h-3.5 text-status-warning/70 shrink-0" />
       <p className="text-body text-foreground/75 leading-none">
         Linked {label} no longer available — removed, regenerated, or outside the current range.
       </p>
