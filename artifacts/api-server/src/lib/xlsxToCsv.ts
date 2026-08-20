@@ -93,7 +93,7 @@ function textualCellValue(raw: ExcelJS.CellValue): string {
   if (raw instanceof Date) return formatUtcIsoDate(raw);
   if (typeof raw === "object") {
     if ("richText" in raw && Array.isArray(raw.richText)) {
-      return raw.richText.map((rt) => rt.text ?? "").join("");
+      return raw.richText.map((rt: { text?: string }) => rt.text ?? "").join("");
     }
     if ("text" in raw && "hyperlink" in raw) {
       return String(raw.text ?? "");
