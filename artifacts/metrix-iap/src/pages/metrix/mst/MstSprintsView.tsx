@@ -22,7 +22,9 @@ import {
   SectionCard, SectionInfoIcon, ConfidenceBadge, fmtUSD, fmtPct,
 } from "../shared";
 import { TYPE } from "../typography";
-import { TilePerformanceModal } from "@/components/creative/TilePerformanceModal";
+import { useDeepDive } from "@/contexts/DeepDiveContext";
+import { buildCellDeepDiveModule } from "@/lib/data/deepDive";
+import { SegmentGridModal } from "@/components/creative/SegmentGridModal";
 import { bucketForConcept, BUCKET_LABEL, type ScalingBucket } from "@/lib/data/scalingBuckets";
 import { cn } from "@workspace/command-deck/lib/utils";
 import { Grid3x3 } from "lucide-react";
@@ -263,7 +265,8 @@ export function MstSprintsView() {
   const seed = useMetrixSeed();
   const adAccountId = useScopedAdAccountId();
   const account = getAdAccount(seed, adAccountId);
-  const [activeCell, setActiveCell] = useState<MSTMatrixCell | null>(null);
+  const deepDive = useDeepDive();
+  const [segmentsFor, setSegmentsFor] = useState<{ cellId: string; title: string } | null>(null);
 
   return (
     <ModuleScopeGate section={SECTION} title="Sprints" account={account}>
@@ -327,7 +330,23 @@ export function MstSprintsView() {
               </div>
 
               <CaveatNote text={mst.render_policy} />
-              <MatrixGrid matrix={matrix} columnPerf={columnPerf} onCellClick={setActiveCell} />
+              <MatrixGrid
+                matrix={matrix}
+                columnPerf={columnPerf}
+                onCellClick={(cell) => {
+                  deepDive.push(
+                    buildCellDeepDiveModule({
+                      cellId: cell.cell_id,
+                      matrixCell: cell,
+                      analysis: getAnalysisData(seed, adAccountId),
+                      mst,
+                      ...getCreativeLinkContext(seed, adAccountId),
+                      trayScopeId: adAccountId,
+                      onOpenSegments: () => setSegmentsFor({ cellId: cell.cell_id, title: cell.plain_text.headline ?? cell.cell_id }),
+                    }),
+                  );
+                }}
+              />
               <div className="flex items-center gap-4 text-caption text-muted-foreground/75 flex-wrap">
                 <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded border border-primary/40 ring-1 ring-primary/15 inline-block" /> Primary diagonal (↘)</span>
                 <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded border border-teal-400/40 ring-1 ring-teal-400/15 inline-block" /> Counter diagonal (↗)</span>
@@ -337,15 +356,14 @@ export function MstSprintsView() {
 
               <TopConceptsTable rollup={rollup} book={book} />
             </div>
-            {activeCell && (
-              <TilePerformanceModal
+            {segmentsFor && (
+              <SegmentGridModal
                 open
-                onClose={() => setActiveCell(null)}
-                cellId={activeCell.cell_id}
-                matrixCell={activeCell}
-                analysis={getAnalysisData(seed, adAccountId)}
-                mst={mst}
-                {...getCreativeLinkContext(seed, adAccountId)}
+                onClose={() => setSegmentsFor(null)}
+                kicker={`MST tile · ${segmentsFor.cellId}`}
+                title={segmentsFor.title}
+                analysis={getAnalysisData(seed, adAccountId)!}
+                cellIds={[segmentsFor.cellId]}
               />
             )}
           </div>
