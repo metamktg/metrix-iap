@@ -56,6 +56,14 @@ const RUNTIME_EXPORTS: Array<keyof typeof strategyShared> = [
   "playbookHasContent",
   "ScalingPlaybookLanes",
   "pillarTier",
+  "personaHue",
+  "personaInitials",
+  "PersonaAvatar",
+  "StatGrid",
+  "AccordionToggle",
+  "DnaChipStrip",
+  "FoldedGrid",
+  "FoldedList",
 ];
 
 describe("strategyShared.tsx exports — set equality", () => {
@@ -286,6 +294,65 @@ describe("strategyShared.tsx display components — render checks", () => {
       optimize: ["FW_social_proof variants need budget increase"],
     };
     const { container } = render(<strategyShared.ScalingPlaybookLanes playbook={playbook} />);
+    expect(container.firstChild).not.toBeNull();
+  });
+
+  it("PersonaAvatar renders non-empty output", () => {
+    const { container } = render(<strategyShared.PersonaAvatar name="High Intent Buyer" />);
+    expect(container.firstChild).not.toBeNull();
+  });
+
+  it("StatGrid renders non-empty output for a non-empty cell list", () => {
+    const { container } = render(
+      <strategyShared.StatGrid cells={[{ label: "Spend", value: "$100" }]} />,
+    );
+    expect(container.firstChild).not.toBeNull();
+  });
+
+  it("AccordionToggle renders non-empty output", () => {
+    const { container } = render(
+      <strategyShared.AccordionToggle label="Profile detail" open={false} onToggle={() => {}} />,
+    );
+    expect(container.firstChild).not.toBeNull();
+  });
+
+  it("DnaChipStrip renders non-empty output for a non-empty variable list", () => {
+    const { container } = render(
+      <strategyShared.DnaChipStrip
+        variables={[{
+          code: "HK_benefit", family: "hook", cellIds: ["A1"],
+          spend: 100, results: 5, impressions: 1000, linkClicks: 40, cpa: 20, ctrPct: 4,
+        }]}
+        label="Measured"
+        testId="dna-chip-strip-test"
+      />,
+    );
+    expect(container.firstChild).not.toBeNull();
+  });
+
+  it("FoldedGrid renders non-empty output for a non-empty item list", () => {
+    const { container } = render(
+      <strategyShared.FoldedGrid
+        items={["a", "b"]}
+        limit={5}
+        noun="items"
+        gridClassName="grid"
+        renderItem={(item) => <span key={item}>{item}</span>}
+      />,
+    );
+    expect(container.firstChild).not.toBeNull();
+  });
+
+  it("FoldedList renders non-empty output for a non-empty item list", () => {
+    const { container } = render(
+      <strategyShared.FoldedList
+        items={["a", "b"]}
+        limit={5}
+        noun="items"
+        listClassName="space-y-1"
+        renderItem={(item) => <span key={item}>{item}</span>}
+      />,
+    );
     expect(container.firstChild).not.toBeNull();
   });
 });
